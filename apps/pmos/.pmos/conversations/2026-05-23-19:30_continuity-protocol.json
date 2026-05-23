@@ -1,0 +1,39 @@
+{
+  "taskId": "PMOS-CONTINUITY-PROTOCOL-V1",
+  "topic": "continuity-protocol",
+  "timestamp": "2026-05-23T19:30:00.000Z",
+  "task": "Implement PMOS Runtime Continuity Protocol",
+  "userPrompt": "Implement canonical PMOS Runtime Continuity Workflow. Transform PMOS from passive documentation layer into active runtime continuity system supporting deterministic continuity between sessions, agents, models, and development stages.",
+  "generatedPrompt": "PMOS-CONTINUITY-PROTOCOL-V1 — full structured prompt sent to VSC Copilot agent via IMPLEMENTATION TASK block.",
+  "implementationSummary": "Extended conversation-persistence.ts with three new exports: saveTaskArtifact() (saves .md+.json task artifacts to .pmos/conversations/), rebuildRuntimeContext() (overwrites runtime-context.md with active operational snapshot only), and PromptLineage/ExecutionLineage interfaces extending ConversationEntry for full lineage tracking. Added 'continuity' to ConversationEntryType. Created .pmos/protocols/ directory with PMOS-PROMPT-PROTOCOL.md, PMOS-MEMORY-ROUTINE.md, and PMOS-TASK-TEMPLATE.md. Updated runtime-context.md to active operational snapshot format.",
+  "changedFiles": [
+    "apps/pmos/src/lib/pmos/conversation-persistence.ts",
+    "apps/pmos/.pmos/protocols/PMOS-PROMPT-PROTOCOL.md",
+    "apps/pmos/.pmos/protocols/PMOS-MEMORY-ROUTINE.md",
+    "apps/pmos/.pmos/protocols/PMOS-TASK-TEMPLATE.md",
+    "apps/pmos/.context/runtime-context.md",
+    "apps/pmos/.pmos/conversations/2026-05-23-19:30_continuity-protocol.md",
+    "apps/pmos/.pmos/conversations/2026-05-23-19:30_continuity-protocol.json"
+  ],
+  "architecturalImpact": "PMOS now supports full execution lineage persistence (prompt + execution) via filesystem-only artifacts. runtime-context.md semantics enforced: active operational snapshot only, never a documentation dump. Continuity recovery is now possible across sessions.",
+  "decisions": [
+    "saveTaskArtifact() uses filesystem only — no DB dependency",
+    "Task artifacts saved to .pmos/conversations/ (not logs/ subdir)",
+    "rebuildRuntimeContext() overwrites runtime-context.md — never appends",
+    "ConversationEntry extended with optional promptLineage + executionLineage fields (backward-compatible)",
+    "New ConversationEntryType: 'continuity' for task lineage entries",
+    "Governance hardening: all functions return typed empty state on failure, never throw"
+  ],
+  "risks": [
+    "Colon in filename (HH:MM) works on macOS/Linux but not Windows — acceptable for this project scope",
+    "rebuildRuntimeContext() path resolution assumes apps/pmos/ directory depth — consistent with existing convention"
+  ],
+  "blockers": [],
+  "nextSteps": [
+    "Verify Render build succeeds after f1abbde (seed.ts import fix)",
+    "Call saveTaskArtifact() + appendConversationEntry() + rebuildRuntimeContext() after every major task",
+    "Use PMOS-TASK-TEMPLATE.md for all future implementation tasks",
+    "Consider exposing saveTaskArtifact via a PMOS API route for UI-triggered memory saves"
+  ],
+  "status": "complete"
+}
