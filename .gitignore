@@ -16,9 +16,6 @@ apps/pmos/.env
 apps/pmos/.env.local
 apps/pmos/.env.*.local
 
-# Prisma generated client
-apps/pmos/src/generated/
-
 # TypeScript build info
 *.tsbuildinfo
 
