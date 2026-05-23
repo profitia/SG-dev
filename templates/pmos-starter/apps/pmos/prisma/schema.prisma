@@ -1,0 +1,488 @@
+// PMOS — Project Memory Operating System
+// Prisma Schema — PostgreSQL (Neon recommended)
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum NodeStatus {
+  backlog
+  in_progress
+  blocked
+  done
+  archived
+}
+
+enum Priority {
+  low
+  medium
+  high
+}
+
+enum CanonicalAlignment {
+  high
+  medium
+  low
+}
+
+enum WarningSeverity {
+  low
+  medium
+  high
+  critical
+}
+
+enum WarningType {
+  dashboard_gravity
+  runtime_boundary
+  business_logic_leak
+  orchestration_drift
+  overengineering
+  prompt_coupling
+  architecture_debt
+}
+
+enum NodeScope {
+  active
+  strategic_backlog
+}
+
+enum PromptStatus {
+  queued
+  running
+  completed
+  failed
+  archived
+}
+
+enum BlueprintSourceType {
+  document
+  specification
+  decision_record
+  principle_set
+}
+
+enum ChangeType {
+  created
+  updated
+  deleted
+  renamed
+  migrated
+}
+
+enum ImpactLevel {
+  low
+  medium
+  high
+  critical
+}
+
+enum TemplateType {
+  implementation
+  refactor
+  migration
+  architecture
+  debugging
+  runtime_analysis
+  performance
+  infra
+  warning_resolution
+}
+
+enum ConversationType {
+  implementation
+  architecture
+  debugging
+  philosophy
+  runtime_analysis
+  orchestration
+  ux
+  continuity
+  governance
+  infrastructure
+}
+
+enum ImportanceLevel {
+  low
+  medium
+  high
+  foundational
+}
+
+// ─── Core Models ─────────────────────────────────────────────────────────────
+
+model RoadmapNode {
+  id          String   @id @default(cuid())
+  parentId    String?  @map("parent_id")
+  title       String
+  description String?  @db.Text
+  status      NodeStatus @default(backlog)
+  priority    Priority   @default(medium)
+  order       Int        @default(0)
+  sortKey     String     @default("") @map("sort_key")
+  scope       NodeScope  @default(active)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  parent    RoadmapNode?  @relation("NodeChildren", fields: [parentId], references: [id], onDelete: SetNull)
+  children  RoadmapNode[] @relation("NodeChildren")
+
+  tags            RoadmapNodeTag[]
+  logs            RoadmapNodeLog[]
+  decisions       RoadmapNodeDecision[]
+  warnings        ArchitectureWarning[]
+  principles      RoadmapNodePrinciple[]
+  promptExecutions PromptExecution[]
+  conversations   ConversationRoadmapNode[]
+
+  @@map("roadmap_nodes")
+}
+
+model ExecutionLog {
+  id                  String             @id @default(cuid())
+  title               String
+  summary             String?            @db.Text
+  prompt              String?            @db.Text
+  changedFiles        String[]           @map("changed_files")
+  architecturalImpact String?            @db.Text @map("architectural_impact")
+  blockers            String?            @db.Text
+  nextSteps           String?            @db.Text @map("next_steps")
+  canonicalAlignment  CanonicalAlignment @default(medium) @map("canonical_alignment")
+  createdAt           DateTime           @default(now()) @map("created_at")
+
+  tags           LogTag[]
+  nodes          RoadmapNodeLog[]
+  warnings       ArchitectureWarning[]
+  promptExecution PromptExecution?
+  changedFileEntries ChangedFile[]
+  conversations  ConversationLog[]
+
+  @@map("execution_logs")
+}
+
+model Decision {
+  id              String   @id @default(cuid())
+  number          Int      @unique @default(autoincrement())
+  title           String
+  decision        String   @db.Text
+  reason          String?  @db.Text
+  impact          String?  @db.Text
+  affectedSystems String[] @map("affected_systems")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  nodes      RoadmapNodeDecision[]
+  principles DecisionPrinciple[]
+  conversations ConversationDecision[]
+
+  @@map("decisions")
+}
+
+model Tag {
+  id   String @id @default(cuid())
+  name String @unique
+
+  roadmapNodes RoadmapNodeTag[]
+  logs         LogTag[]
+
+  @@map("tags")
+}
+
+// ─── Junction Tables ──────────────────────────────────────────────────────────
+
+model RoadmapNodeTag {
+  nodeId String @map("node_id")
+  tagId  String @map("tag_id")
+
+  node RoadmapNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  tag  Tag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([nodeId, tagId])
+  @@map("roadmap_node_tags")
+}
+
+model LogTag {
+  logId String @map("log_id")
+  tagId String @map("tag_id")
+
+  log ExecutionLog @relation(fields: [logId], references: [id], onDelete: Cascade)
+  tag Tag          @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([logId, tagId])
+  @@map("log_tags")
+}
+
+model RoadmapNodeLog {
+  nodeId String @map("node_id")
+  logId  String @map("log_id")
+
+  node RoadmapNode  @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  log  ExecutionLog @relation(fields: [logId], references: [id], onDelete: Cascade)
+
+  @@id([nodeId, logId])
+  @@map("roadmap_node_logs")
+}
+
+model RoadmapNodeDecision {
+  nodeId     String @map("node_id")
+  decisionId String @map("decision_id")
+
+  node     RoadmapNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  decision Decision    @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+
+  @@id([nodeId, decisionId])
+  @@map("roadmap_node_decisions")
+}
+
+// ─── Architecture Warnings ────────────────────────────────────────────────────
+
+model ArchitectureWarning {
+  id           String          @id @default(cuid())
+  title        String
+  description  String          @db.Text
+  severity     WarningSeverity @default(medium)
+  type         WarningType
+  affectedArea String?         @map("affected_area")
+  resolved     Boolean         @default(false)
+  resolvedAt   DateTime?       @map("resolved_at")
+
+  relatedLogId          String? @map("related_log_id")
+  relatedRoadmapNodeId  String? @map("related_roadmap_node_id")
+  relatedPrincipleId    String? @map("related_principle_id")
+
+  relatedLog          ExecutionLog?       @relation(fields: [relatedLogId], references: [id], onDelete: SetNull)
+  relatedRoadmapNode  RoadmapNode?        @relation(fields: [relatedRoadmapNodeId], references: [id], onDelete: SetNull)
+  relatedPrinciple    CanonicalPrinciple? @relation(fields: [relatedPrincipleId], references: [id], onDelete: SetNull)
+  conversations       ConversationWarning[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("architecture_warnings")
+}
+
+// ─── Canonical Principles ─────────────────────────────────────────────────────
+
+model CanonicalPrinciple {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  reason      String?  @db.Text
+  priority    Priority @default(medium)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  nodes     RoadmapNodePrinciple[]
+  decisions DecisionPrinciple[]
+  warnings  ArchitectureWarning[]
+  conversations ConversationPrinciple[]
+
+  @@map("canonical_principles")
+}
+
+model RoadmapNodePrinciple {
+  nodeId      String @map("node_id")
+  principleId String @map("principle_id")
+
+  node      RoadmapNode        @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  principle CanonicalPrinciple @relation(fields: [principleId], references: [id], onDelete: Cascade)
+
+  @@id([nodeId, principleId])
+  @@map("roadmap_node_principles")
+}
+
+model DecisionPrinciple {
+  decisionId  String @map("decision_id")
+  principleId String @map("principle_id")
+
+  decision  Decision           @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  principle CanonicalPrinciple @relation(fields: [principleId], references: [id], onDelete: Cascade)
+
+  @@id([decisionId, principleId])
+  @@map("decision_principles")
+}
+
+// ─── Prompt Execution ─────────────────────────────────────────────────────────
+
+model PromptExecution {
+  id                  String        @id @default(cuid())
+  title               String
+  etap                String?
+  subetap             String?
+  node                String?
+  domain              String?
+  promptType          String?       @map("prompt_type")
+  promptContent       String        @db.Text @map("prompt_content")
+  executionSummary    String?       @db.Text @map("execution_summary")
+  architecturalImpact String?       @db.Text @map("architectural_impact")
+  changedFiles        String[]      @map("changed_files")
+  blockers            String?       @db.Text
+  nextSteps           String?       @db.Text @map("next_steps")
+  status              PromptStatus  @default(queued)
+  roadmapNodeId       String?       @map("roadmap_node_id")
+  executionLogId      String?       @unique @map("execution_log_id")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+
+  roadmapNode  RoadmapNode?  @relation(fields: [roadmapNodeId], references: [id], onDelete: SetNull)
+  executionLog ExecutionLog? @relation(fields: [executionLogId], references: [id], onDelete: SetNull)
+  changedFileEntries ChangedFile[]
+  conversations ConversationPrompt[]
+
+  @@map("prompt_executions")
+}
+
+// ─── Changed Files ────────────────────────────────────────────────────────────
+
+model ChangedFile {
+  id                String       @id @default(cuid())
+  path              String
+  changeType        ChangeType   @default(updated) @map("change_type")
+  impactLevel       ImpactLevel  @default(medium) @map("impact_level")
+  notes             String?      @db.Text
+  executionLogId    String?      @map("execution_log_id")
+  promptExecutionId String?      @map("prompt_execution_id")
+  createdAt         DateTime     @default(now()) @map("created_at")
+
+  executionLog    ExecutionLog?    @relation(fields: [executionLogId], references: [id], onDelete: Cascade)
+  promptExecution PromptExecution? @relation(fields: [promptExecutionId], references: [id], onDelete: Cascade)
+
+  @@index([path])
+  @@index([impactLevel])
+  @@index([changeType])
+  @@map("changed_files")
+}
+
+// ─── Prompt Templates ─────────────────────────────────────────────────────────
+
+model PromptTemplate {
+  id              String       @id @default(cuid())
+  name            String
+  description     String?      @db.Text
+  templateType    TemplateType @map("template_type")
+  templateContent String       @db.Text @map("template_content")
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  @@map("prompt_templates")
+}
+
+// ─── Blueprint Sources ────────────────────────────────────────────────────────
+
+model BlueprintSource {
+  id          String              @id @default(cuid())
+  title       String
+  description String?             @db.Text
+  sourceType  BlueprintSourceType @map("source_type")
+  version     String              @default("v1")
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  @@map("blueprint_sources")
+}
+
+// ─── Conversation Artifacts ───────────────────────────────────────────────────
+
+model ConversationArtifact {
+  id               String           @id @default(cuid())
+  conversationId   String           @unique @map("conversation_id")
+  timestamp        DateTime
+  project          String           @default("project")
+  taskId           String?          @map("task_id")
+  etap             String?
+  subetap          String?
+  domains          String[]
+  conversationType ConversationType @map("conversation_type")
+  importanceLevel  ImportanceLevel  @map("importance_level")
+  userPrompt       String           @db.Text @map("user_prompt")
+  llmResponse      String           @db.Text @map("llm_response")
+  summary          String           @db.Text
+  tags             String[]
+  chronologyOrder  Int              @default(0) @map("chronology_order")
+  filesPath        String?          @map("files_path")
+  createdAt        DateTime         @default(now()) @map("created_at")
+
+  linkedDecisions  ConversationDecision[]
+  linkedWarnings   ConversationWarning[]
+  linkedNodes      ConversationRoadmapNode[]
+  linkedLogs       ConversationLog[]
+  linkedPrinciples ConversationPrinciple[]
+  linkedPrompts    ConversationPrompt[]
+
+  @@index([timestamp])
+  @@index([etap])
+  @@index([importanceLevel])
+  @@index([conversationType])
+  @@map("conversation_artifacts")
+}
+
+model ConversationDecision {
+  conversationId String @map("conversation_id")
+  decisionId     String @map("decision_id")
+
+  conversation ConversationArtifact @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  decision     Decision             @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, decisionId])
+  @@map("conversation_decisions")
+}
+
+model ConversationWarning {
+  conversationId String @map("conversation_id")
+  warningId      String @map("warning_id")
+
+  conversation ConversationArtifact @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  warning      ArchitectureWarning  @relation(fields: [warningId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, warningId])
+  @@map("conversation_warnings")
+}
+
+model ConversationRoadmapNode {
+  conversationId String @map("conversation_id")
+  nodeId         String @map("node_id")
+
+  conversation ConversationArtifact @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  node         RoadmapNode          @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, nodeId])
+  @@map("conversation_roadmap_nodes")
+}
+
+model ConversationLog {
+  conversationId String @map("conversation_id")
+  logId          String @map("log_id")
+
+  conversation ConversationArtifact @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  log          ExecutionLog         @relation(fields: [logId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, logId])
+  @@map("conversation_logs")
+}
+
+model ConversationPrinciple {
+  conversationId String @map("conversation_id")
+  principleId    String @map("principle_id")
+
+  conversation ConversationArtifact @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  principle    CanonicalPrinciple   @relation(fields: [principleId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, principleId])
+  @@map("conversation_principles")
+}
+
+model ConversationPrompt {
+  conversationId    String @map("conversation_id")
+  promptExecutionId String @map("prompt_execution_id")
+
+  conversation    ConversationArtifact @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  promptExecution PromptExecution      @relation(fields: [promptExecutionId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, promptExecutionId])
+  @@map("conversation_prompts")
+}

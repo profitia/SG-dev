@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: pmos-spendguru2-development
+    runtime: node
+    rootDir: apps/pmos
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3200
+      - key: NEXT_PUBLIC_APP_URL
+        value: https://pmos-spendguru2-development.onrender.com
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false

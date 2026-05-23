@@ -1,0 +1,12 @@
+{
+  "id": "08da595c-c757-409f-8431-ef869b474a0c",
+  "timestamp": "2026-05-23T18:45:12.998Z",
+  "pmosUrl": "http://localhost:3200",
+  "mode": "live",
+  "activeEtap": "ETAP 3 — Integrations",
+  "activeNode": "3.2 — External API Integration",
+  "warningCount": 2,
+  "principleCount": 4,
+  "executionCount": 1,
+  "contextPath": "apps/pmos/.context/runtime-context.md"
+}

@@ -1,0 +1,260 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   THEME TOKENS — dark (default)
+   ============================================================ */
+:root,
+.dark {
+  --bg-base:           #0a0a0a;
+  --bg-surface:        #111111;
+  --bg-elevated:       #161616;
+  --bg-hover:          #1a1a1a;
+  --bg-border:         #1e1e1e;
+  --bg-border-subtle:  #181818;
+
+  --text-primary:      #ebebeb;
+  --text-secondary:    #7a7a7a;
+  --text-tertiary:     #444444;
+  --text-muted:        #2e2e2e;
+
+  --accent:            #5b5fc7;
+  --accent-hover:      #7175d8;
+  --accent-muted:      rgba(91, 95, 199, 0.12);
+  --accent-muted-hover: rgba(91, 95, 199, 0.2);
+
+  --status-done:       #2a7a4a;
+  --status-done-text:  #4ade80;
+  --status-active:     #92400e;
+  --status-active-text: #fbbf24;
+  --status-blocked:    #7f1d1d;
+  --status-blocked-text: #f87171;
+  --status-backlog:    #1c1c1c;
+  --status-backlog-text: #555555;
+
+  --warn-critical:     #f87171;
+  --warn-high:         #fb923c;
+  --warn-medium:       #fbbf24;
+  --warn-low:          #555555;
+
+  --scrollbar-thumb:   #252525;
+  --scrollbar-thumb-hover: #333333;
+  --selection-bg:      rgba(91, 95, 199, 0.2);
+  --code-bg:           #0d0d0d;
+  --code-border:       #1c1c1c;
+  --code-text:         #818cf8;
+
+  --shadow-sm:         0 1px 3px rgba(0,0,0,0.5);
+  --shadow-md:         0 4px 16px rgba(0,0,0,0.6);
+  --shadow-lg:         0 8px 32px rgba(0,0,0,0.7);
+  --shadow-overlay:    0 16px 48px rgba(0,0,0,0.8);
+}
+
+/* ============================================================
+   THEME TOKENS — light
+   ============================================================ */
+.light {
+  --bg-base:           #fafaf9;
+  --bg-surface:        #f5f4f2;
+  --bg-elevated:       #eeede9;
+  --bg-hover:          #e8e6e2;
+  --bg-border:         #dddbd6;
+  --bg-border-subtle:  #e4e2de;
+
+  --text-primary:      #1a1a18;
+  --text-secondary:    #5a5852;
+  --text-tertiary:     #9a9690;
+  --text-muted:        #c5c3be;
+
+  --accent:            #5b5fc7;
+  --accent-hover:      #4c50b8;
+  --accent-muted:      rgba(91, 95, 199, 0.1);
+  --accent-muted-hover: rgba(91, 95, 199, 0.18);
+
+  --status-done:       #d1fae5;
+  --status-done-text:  #065f46;
+  --status-active:     #fef3c7;
+  --status-active-text: #92400e;
+  --status-blocked:    #fee2e2;
+  --status-blocked-text: #991b1b;
+  --status-backlog:    #f0ede8;
+  --status-backlog-text: #9a9690;
+
+  --warn-critical:     #dc2626;
+  --warn-high:         #ea580c;
+  --warn-medium:       #d97706;
+  --warn-low:          #9a9690;
+
+  --scrollbar-thumb:   #d5d3ce;
+  --scrollbar-thumb-hover: #c5c3be;
+  --selection-bg:      rgba(91, 95, 199, 0.15);
+  --code-bg:           #eceae6;
+  --code-border:       #dddbd6;
+  --code-text:         #4c50b8;
+
+  --shadow-sm:         0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md:         0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg:         0 8px 32px rgba(0,0,0,0.1);
+  --shadow-overlay:    0 16px 48px rgba(0,0,0,0.14);
+}
+
+/* ============================================================
+   BASE RESET & TYPOGRAPHY
+   ============================================================ */
+@layer base {
+  * {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
+
+  html,
+  body {
+    max-width: 100vw;
+    overflow-x: hidden;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Smooth theme transitions — only on explicit toggle */
+  .theme-transition,
+  .theme-transition * {
+    transition:
+      background-color 200ms ease,
+      border-color 200ms ease,
+      color 100ms ease;
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+
+  ::selection {
+    background: var(--selection-bg);
+    color: var(--text-primary);
+  }
+}
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Runtime prose */
+  .prose-runtime {
+    color: var(--text-secondary);
+    line-height: 1.65;
+    font-size: 0.8125rem;
+  }
+
+  .prose-runtime strong {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .prose-runtime code {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    color: var(--code-text);
+  }
+
+  /* Focus ring — system-native */
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Chip variants */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.65rem;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--bg-border);
+    background: var(--bg-elevated);
+    color: var(--text-tertiary);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    white-space: nowrap;
+  }
+
+  .chip-accent {
+    border-color: var(--accent-muted-hover);
+    background: var(--accent-muted);
+    color: var(--accent);
+  }
+
+  .chip-warn {
+    border-color: rgba(251, 146, 60, 0.2);
+    background: rgba(251, 146, 60, 0.08);
+    color: var(--warn-high);
+  }
+
+  .chip-done {
+    border-color: rgba(74, 222, 128, 0.2);
+    background: rgba(74, 222, 128, 0.08);
+    color: var(--status-done-text);
+  }
+
+  .chip-blocked {
+    border-color: rgba(248, 113, 113, 0.2);
+    background: rgba(248, 113, 113, 0.08);
+    color: var(--warn-critical);
+  }
+
+  /* Section label */
+  .section-label {
+    font-size: 0.625rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 6px;
+  }
+
+  /* Runtime card */
+  .runtime-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--bg-border);
+    border-radius: 8px;
+    transition: border-color 150ms ease;
+  }
+
+  .runtime-card:hover {
+    border-color: color-mix(in srgb, var(--bg-border) 50%, var(--accent) 50%);
+  }
+
+  /* Separator */
+  .runtime-separator {
+    height: 1px;
+    background: var(--bg-border);
+    margin: 0;
+  }
+}

@@ -1,0 +1,30 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Next.js build output
+apps/pmos/.next/
+apps/pmos/out/
+
+# Environment — never commit secrets
+apps/pmos/.env
+apps/pmos/.env.local
+apps/pmos/.env.*.local
+
+# Prisma generated client
+apps/pmos/src/generated/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Editor
+.vscode/settings.json
+.idea/
+
+# OS
+Thumbs.db
