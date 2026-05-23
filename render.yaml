@@ -3,7 +3,7 @@ services:
     name: pmos-spendguru2-development
     runtime: node
     rootDir: apps/pmos
-    buildCommand: npm install && npm run build
+      buildCommand: npm install --include=dev && npm run build
     startCommand: npm run start
     plan: free
     envVars:
