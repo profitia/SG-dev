@@ -18,7 +18,7 @@ type NodeWithChildren = {
   scope: string
   tags: Tag[]
   _count: Count
-  children: NodeWithChildren[]
+  children?: NodeWithChildren[]
 }
 
 interface RoadmapTreeProps {
@@ -33,7 +33,7 @@ export function RoadmapTree({ node, depth }: RoadmapTreeProps) {
 
   const [expanded, setExpanded] = useState(defaultExpanded)
 
-  const hasChildren = node.children.length > 0
+  const hasChildren = (node.children?.length ?? 0) > 0
   const isDone = node.status === 'done'
   const isStrategic = node.scope === 'strategic_backlog'
 
@@ -97,7 +97,7 @@ export function RoadmapTree({ node, depth }: RoadmapTreeProps) {
       {/* Children */}
       {expanded && hasChildren && (
         <div className="relative">
-          {[...node.children]
+          {[...(node.children ?? [])]
             .sort((a, b) => a.order - b.order)
             .map((child) => (
               <RoadmapTree key={child.id} node={child} depth={depth + 1} />

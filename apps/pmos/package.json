@@ -14,6 +14,9 @@
     "db:migrate": "dotenv -e .env.local -- prisma migrate dev",
     "db:studio": "dotenv -e .env.local -- prisma studio",
     "db:seed": "dotenv -e .env.local -- tsx prisma/seed.ts",
+    "pmos:save": "npx dotenv-cli -e .env.local -- tsx scripts/pmos-save.ts",
+    "pmos:context": "npx dotenv-cli -e .env.local -- tsx scripts/build-runtime-context.ts",
+    "pmos:ingest-sg2-roadmap": "npx dotenv-cli -e .env.local -- tsx scripts/ingest-sg2-roadmap-to-pmos.ts",
     "context:build": "tsx ../../scripts/build-pmos-context.ts"
   },
   "dependencies": {
