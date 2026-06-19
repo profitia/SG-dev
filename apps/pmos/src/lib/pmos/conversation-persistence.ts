@@ -13,11 +13,11 @@
  * running PMOS server.
  *
  * Storage:
- *   .pmos/conversations/logs/<id>.json         — lineage events
+ *   .pmos/conversations/logs/<id>.json          — lineage events
  *   .pmos/conversations/<timestamp>_<topic>.md  — task artifacts (markdown)
  *   .pmos/conversations/<timestamp>_<topic>.json — task artifacts (JSON)
- *   .context/runtime-context.md                — active operational snapshot
  *
+ * Runtime context ownership is handled elsewhere by the canonical PMOS runtime builder.
  * Each entry is a single flat JSON file — readable, diffable, git-friendly.
  */
 
@@ -30,6 +30,7 @@ import {
 } from 'fs'
 import { join, resolve, dirname } from 'path'
 import { randomUUID } from 'crypto'
+import { assertNonCanonicalPmosWriteAllowed } from './noncanonical-write-guard'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -101,16 +102,6 @@ export interface SaveArtifactResult {
   jsonPath: string | null
 }
 
-export interface RuntimeContextInput {
-  projectName: string
-  activeEtap: string
-  activeNode?: string
-  activeDomains?: string[]
-  activeBlockers?: string[]
-  activeRisks?: string[]
-  nextActions?: string[]
-}
-
 // ── Paths ─────────────────────────────────────────────────────────────────────
 
 function resolvePmosRoot(): string {
@@ -126,10 +117,6 @@ function resolveLogsDir(): string {
 
 function resolveConversationsDir(): string {
   return resolve(resolvePmosRoot(), '.pmos/conversations')
-}
-
-function resolveContextDir(): string {
-  return resolve(resolvePmosRoot(), '.context')
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -220,6 +207,8 @@ function buildArtifactMarkdown(input: TaskArtifactInput, timestamp: string): str
 export function appendConversationEntry(
   input: Omit<ConversationEntry, 'id' | 'timestamp'>,
 ): ConversationEntry | null {
+  assertNonCanonicalPmosWriteAllowed('appendConversationEntry()')
+
   const entry: ConversationEntry = {
     id: randomUUID(),
     timestamp: new Date().toISOString(),
@@ -246,6 +235,8 @@ export function appendConversationEntry(
  * Never throws — returns null paths on failure.
  */
 export function saveTaskArtifact(input: TaskArtifactInput): SaveArtifactResult {
+  assertNonCanonicalPmosWriteAllowed('saveTaskArtifact()')
+
   const result: SaveArtifactResult = { mdPath: null, jsonPath: null }
 
   const timestamp = input.timestamp ?? new Date().toISOString()
@@ -274,75 +265,6 @@ export function saveTaskArtifact(input: TaskArtifactInput): SaveArtifactResult {
   }
 
   return result
-}
-
-/**
- * Rebuilds runtime-context.md as an active operational snapshot.
- * Overwrites the existing file — does NOT accumulate history.
- * Historical continuity belongs in .pmos/conversations/ artifacts.
- * Returns true if successful, false if write failed.
- */
-export function rebuildRuntimeContext(input: RuntimeContextInput): boolean {
-  const now = new Date().toISOString()
-  const lines: string[] = [
-    `# PMOS Runtime Context — ${input.projectName}`,
-    ``,
-    `> Generated: ${now}`,
-    `> Source: PMOS Runtime Continuity Protocol`,
-    ``,
-    `---`,
-    ``,
-    `## Active ETAP`,
-    ``,
-    input.activeEtap,
-    ``,
-  ]
-
-  if (input.activeNode) {
-    lines.push(`## Current Focus`, ``, input.activeNode, ``)
-  }
-
-  if (input.activeDomains && input.activeDomains.length > 0) {
-    lines.push(`## Active Domains`, ``)
-    input.activeDomains.forEach((d) => lines.push(`- ${d}`))
-    lines.push(``)
-  }
-
-  if (input.activeRisks && input.activeRisks.length > 0) {
-    lines.push(`## Active Risks`, ``)
-    input.activeRisks.forEach((r) => lines.push(`- ${r}`))
-    lines.push(``)
-  }
-
-  if (input.activeBlockers && input.activeBlockers.length > 0) {
-    lines.push(`## Active Blockers`, ``)
-    input.activeBlockers.forEach((b) => lines.push(`- ${b}`))
-    lines.push(``)
-  }
-
-  if (input.nextActions && input.nextActions.length > 0) {
-    lines.push(`## Next Actions`, ``)
-    input.nextActions.forEach((a) => lines.push(`- ${a}`))
-    lines.push(``)
-  }
-
-  lines.push(
-    `---`,
-    `_This file is auto-generated. Do not edit manually._`,
-    `_Run: \`npx tsx scripts/build-pmos-context.ts\` or use PMOS Runtime Continuity Protocol_`,
-  )
-
-  const contextDir = resolveContextDir()
-  if (!ensureDir(contextDir)) return false
-
-  const contextPath = join(contextDir, 'runtime-context.md')
-  try {
-    writeFileSync(contextPath, lines.join('\n'), 'utf-8')
-    return true
-  } catch (err) {
-    console.warn('[PMOS] rebuildRuntimeContext: write failed:', (err as Error).message)
-    return false
-  }
 }
 
 /**

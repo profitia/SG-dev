@@ -55,50 +55,15 @@ export async function GET(req: NextRequest) {
 // POST /api/conversations — create from sync script
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
+    await req.json()
 
-    const {
-      conversation_id,
-      timestamp,
-      project,
-      task_id,
-      etap,
-      subetap,
-      domains,
-      conversation_type,
-      importance_level,
-      user_prompt,
-      llm_response,
-      summary,
-      linked_entities,
-      chronology_order,
-      tags,
-    } = body
-
-    if (!conversation_id || !user_prompt || !summary) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
-
-    const artifact = await db.conversationArtifact.create({
-      data: {
-        conversationId: conversation_id,
-        timestamp: new Date(timestamp),
-        project: project ?? 'project',
-        taskId: task_id ?? null,
-        etap: etap ?? null,
-        subetap: subetap ?? null,
-        domains: domains ?? [],
-        conversationType: conversation_type ?? 'implementation',
-        importanceLevel: importance_level ?? 'medium',
-        userPrompt: user_prompt,
-        llmResponse: llm_response ?? '',
-        summary,
-        tags: tags ?? [],
-        chronologyOrder: chronology_order ?? 0,
+    return NextResponse.json(
+      {
+        error: 'Direct ConversationArtifact creation is disabled. Use apps/pmos/.pmos/pending-artifact.json and run cd apps/pmos && npm run pmos:save.',
+        code: 'PMOS_CANONICAL_SAVE_REQUIRED',
       },
-    })
-
-    return NextResponse.json({ id: artifact.id, conversation_id: artifact.conversationId }, { status: 201 })
+      { status: 410 },
+    )
   } catch (err) {
     console.error('[conversations POST]', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
