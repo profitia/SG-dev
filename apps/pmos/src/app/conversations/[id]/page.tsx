@@ -1,6 +1,8 @@
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { buildCanonicalConversationReadModel } from '@/lib/pmos/flight-record-read'
+import { CopyArtifactButton } from './copy-artifact-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,6 +30,7 @@ export default async function ConversationPage({ params }: { params: { id: strin
   const artifact = await db.conversationArtifact.findUnique({
     where: { id: params.id },
     include: {
+      artifacts: { orderBy: { createdAt: 'desc' } },
       linkedDecisions: { include: { decision: { select: { id: true, title: true, number: true } } } },
       linkedWarnings: { include: { warning: { select: { id: true, title: true, severity: true, resolved: true } } } },
       linkedNodes: { include: { node: { select: { id: true, title: true, status: true } } } },
@@ -38,6 +41,15 @@ export default async function ConversationPage({ params }: { params: { id: strin
   })
 
   if (!artifact) notFound()
+
+  const canonical = buildCanonicalConversationReadModel(artifact.flightRecordJson)
+  const conversationType = canonical.metadata.conversationType ?? artifact.conversationType ?? 'unknown'
+  const importanceLevel = canonical.metadata.importanceLevel ?? artifact.importanceLevel ?? 'medium'
+  const etap = canonical.metadata.etap ?? artifact.etap
+  const subetap = canonical.metadata.subetap ?? artifact.subetap
+  const displayTimestamp = canonical.metadata.timestamp ?? artifact.timestamp.toISOString()
+  const displayTaskId = canonical.metadata.taskId ?? artifact.taskId
+  const derivedArtifacts = artifact.artifacts.filter((item) => item.artifactNature === 'DERIVED')
 
   const hasLinks =
     artifact.linkedDecisions.length > 0 ||
@@ -60,55 +72,210 @@ export default async function ConversationPage({ params }: { params: { id: strin
             </Link>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className={`text-xs font-medium px-2 py-0.5 rounded border ${IMPORTANCE_COLORS[artifact.importanceLevel] ?? IMPORTANCE_COLORS.medium}`}>
-                  {artifact.importanceLevel}
+                <span className={`text-xs font-medium px-2 py-0.5 rounded border ${IMPORTANCE_COLORS[importanceLevel] ?? IMPORTANCE_COLORS.medium}`}>
+                  {importanceLevel}
                 </span>
-                <span className={`text-xs font-medium ${TYPE_COLORS[artifact.conversationType] ?? 'text-text-secondary'}`}>
-                  {artifact.conversationType.replace('_', ' ')}
+                <span className={`text-xs font-medium ${TYPE_COLORS[conversationType] ?? 'text-text-secondary'}`}>
+                  {conversationType.replace('_', ' ')}
                 </span>
-                {artifact.etap && (
-                  <span className="text-xs text-text-tertiary font-mono">{artifact.etap}{artifact.subetap ? ` / ${artifact.subetap}` : ''}</span>
+                {etap && (
+                  <span className="text-xs text-text-tertiary font-mono">{etap}{subetap ? ` / ${subetap}` : ''}</span>
                 )}
                 <span className="text-text-muted text-xs">#{artifact.chronologyOrder}</span>
               </div>
               <p className="text-text-secondary text-xs mt-0.5">
-                {new Date(artifact.timestamp).toLocaleString('pl-PL', {
+                {new Date(displayTimestamp).toLocaleString('pl-PL', {
                   day: 'numeric', month: 'short', year: 'numeric',
                   hour: '2-digit', minute: '2-digit',
                 })}
               </p>
             </div>
           </div>
-          {artifact.taskId && (
+          {displayTaskId && (
             <span className="text-xs font-mono text-text-tertiary border border-bg-border rounded px-2 py-0.5">
-              {artifact.taskId}
+              {displayTaskId}
             </span>
           )}
         </div>
       </div>
 
       <div className="px-8 py-6 max-w-4xl space-y-6">
-
-        {/* Summary */}
-        <section className="bg-bg-surface border border-bg-border rounded-lg p-5">
-          <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-2">Summary</p>
-          <p className="text-text-primary text-sm leading-relaxed">{artifact.summary}</p>
-        </section>
-
-        {/* Domains + Tags */}
-        {(artifact.domains.length > 0 || artifact.tags.length > 0) && (
-          <section className="flex flex-wrap gap-3">
-            {artifact.domains.map((d) => (
-              <span key={d} className="text-xs px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20">
-                {d}
-              </span>
-            ))}
-            {artifact.tags.map((t) => (
-              <span key={t} className="text-xs px-2 py-0.5 rounded-full bg-bg-surface text-text-secondary border border-bg-border">
-                #{t}
-              </span>
-            ))}
+        {!canonical.available ? (
+          <section className="bg-orange-950/20 border border-orange-700/40 rounded-lg p-5">
+            <p className="text-xs font-medium uppercase tracking-widest text-orange-300 mb-2">Canonical Record Unavailable</p>
+            <p className="text-orange-200 text-sm leading-relaxed">
+              This conversation cannot be rendered because `flightRecordJson` is missing or invalid.
+            </p>
           </section>
+        ) : (
+          <>
+            <section className="bg-bg-surface border border-bg-border rounded-lg p-5">
+              <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-2">Task</p>
+              <p className="text-text-primary text-sm leading-relaxed">{canonical.task.originalTaskRequest}</p>
+            </section>
+
+            <section className="bg-bg-surface border border-bg-border rounded-lg p-5 space-y-4">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-2">Reasoning Summary</p>
+                <p className="text-text-primary text-sm leading-relaxed">{canonical.analysis.reasoningSummary}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-2">Execution Summary</p>
+                <div className="text-xs text-text-primary leading-relaxed whitespace-pre-wrap break-words">
+                  {canonical.analysis.executionSummary}
+                </div>
+              </div>
+            </section>
+
+            {(artifact.domains.length > 0 || artifact.tags.length > 0) && (
+              <section className="flex flex-wrap gap-3">
+                {artifact.domains.map((d) => (
+                  <span key={d} className="text-xs px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20">
+                    {d}
+                  </span>
+                ))}
+                {artifact.tags.map((t) => (
+                  <span key={t} className="text-xs px-2 py-0.5 rounded-full bg-bg-surface text-text-secondary border border-bg-border">
+                    #{t}
+                  </span>
+                ))}
+              </section>
+            )}
+
+            <section className="bg-bg-surface border border-bg-border rounded-lg p-5 space-y-4">
+              <ListSection title="Findings" items={canonical.findings.findings} emptyLabel="No findings recorded." />
+              <ListSection title="Blockers" items={canonical.findings.blockers} emptyLabel="No blockers recorded." />
+              <ListSection title="Residual Risks" items={canonical.findings.residualRisks} emptyLabel="No residual risks recorded." />
+            </section>
+
+            <section className="bg-bg-surface border border-bg-border rounded-lg p-5">
+              <ListSection title="Decisions" items={canonical.decisions.decisions} emptyLabel="No decisions recorded." />
+            </section>
+
+            <section className="bg-bg-surface border border-bg-border rounded-lg p-5 space-y-4">
+              <ListSection title="Recommendations" items={canonical.actions.recommendations} emptyLabel="No recommendations recorded." />
+              <ListSection title="Validations Executed" items={canonical.actions.validationsExecuted} emptyLabel="No validations recorded." />
+              <ListSection title="Validations Not Executed" items={canonical.actions.validationsNotExecuted} emptyLabel="None." />
+              <ListSection title="Artifacts Created" items={canonical.actions.artifactsCreated} emptyLabel="No artifacts recorded." />
+              <ListSection title="Artifacts Modified" items={canonical.actions.artifactsModified} emptyLabel="No artifacts recorded." />
+            </section>
+
+            <section className="bg-bg-surface border border-bg-border rounded-lg p-5">
+              <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-2">Result</p>
+              <p className="text-text-primary text-sm leading-relaxed">{canonical.result.finalStatus}</p>
+            </section>
+
+            <section className="bg-bg-surface border border-bg-border rounded-lg p-5">
+              <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-3">Completion Evidence</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <EvidencePill label="closeoutState" value={canonical.completionEvidence.closeoutState} />
+                <EvidencePill label="pmosSaveStatus" value={canonical.completionEvidence.pmosSaveStatus} />
+                <EvidencePill label="vectorRebuildStatus" value={canonical.completionEvidence.vectorRebuildStatus} />
+                <EvidencePill label="archiveCompletenessStatus" value={canonical.completionEvidence.archiveCompletenessStatus} />
+                <EvidencePill label="executionTrailStatus" value={canonical.completionEvidence.executionTrailStatus} />
+              </div>
+            </section>
+
+            <section className="bg-bg-surface border border-bg-border rounded-lg p-5 space-y-4">
+              <p className="text-xs font-medium uppercase tracking-widest text-text-muted">Derived Artifacts</p>
+              {derivedArtifacts.length > 0 ? (
+                <div className="space-y-4">
+                  {derivedArtifacts.map((derivedArtifact) => {
+                    const sourceRefs = Array.isArray(derivedArtifact.sourceRefs) ? derivedArtifact.sourceRefs : []
+                    const handoffPayload = derivedArtifact.artifactKind === 'HANDOFF' ? asHandoffPayload(derivedArtifact.payload) : null
+                    const handoffCopyText = handoffPayload?.bridgePayloadText ?? derivedArtifact.copyReadyText
+
+                    return (
+                      <div key={derivedArtifact.id} className="rounded-lg border border-bg-border bg-bg-elevated p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div>
+                            <p className="text-sm text-text-primary">{derivedArtifact.artifactKind}</p>
+                            <p className="text-xs text-text-tertiary mt-1">
+                              {derivedArtifact.version} · {derivedArtifact.status} · {new Date(derivedArtifact.createdAt).toLocaleString('pl-PL')}
+                            </p>
+                          </div>
+                          {handoffCopyText ? <CopyArtifactButton text={handoffCopyText} /> : null}
+                        </div>
+
+                        {handoffPayload ? (
+                          <>
+                            <div className="rounded border border-bg-border bg-bg-base p-3 space-y-1 text-sm">
+                              <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-2">GPT Handoff</p>
+                              <p className="text-text-primary">Status: {derivedArtifact.status}</p>
+                              <p className="text-text-primary">Persistence: POSTGRESQL</p>
+                              <p className="text-text-primary break-all">Artifact ID: {derivedArtifact.id}</p>
+                              <p className="text-text-primary break-all">Conversation ID: {derivedArtifact.conversationId}</p>
+                              <p className="text-text-primary">Task ID: {derivedArtifact.taskId}</p>
+                              <p className="text-text-primary">Artifact Nature: {derivedArtifact.artifactNature}</p>
+                              <p className="text-text-primary">Artifact Kind: {derivedArtifact.artifactKind}</p>
+                              <p className="text-text-primary">Created At: {new Date(derivedArtifact.createdAt).toLocaleString('pl-PL')}</p>
+                            </div>
+
+                            <div className="space-y-3">
+                              <p className="text-xs font-medium uppercase tracking-widest text-text-muted">Handoff Summary</p>
+                              <SummarySection title="Original Objective" items={[handoffPayload.originalObjective]} emptyLabel="None recorded." />
+                              <SummarySection title="CURRENT STATE" items={handoffPayload.currentState} emptyLabel="None recorded." />
+                              <SummarySection title="Completed Work" items={handoffPayload.completedWork} emptyLabel="None recorded." />
+                              <SummarySection title="Not Completed" items={handoffPayload.notCompleted} emptyLabel="None recorded." />
+                              <SummarySection title="Key Findings" items={handoffPayload.keyFindings} emptyLabel="None recorded." />
+                              <SummarySection title="Decisions" items={handoffPayload.decisions} emptyLabel="None recorded." />
+                              <SummarySection title="Blockers" items={handoffPayload.blockers} emptyLabel="None recorded." />
+                              <SummarySection title="Residual Risks" items={handoffPayload.residualRisks} emptyLabel="None recorded." />
+                              <SummarySection title="Open Questions" items={handoffPayload.openQuestions} emptyLabel="None recorded." />
+                              <SummarySection title="Outstanding Topics" items={handoffPayload.outstandingTopics} emptyLabel="None recorded." />
+                            </div>
+
+                            <div>
+                              <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-2">GPT Bridge Payload</p>
+                              <pre className="text-xs text-text-primary leading-relaxed whitespace-pre-wrap break-words rounded border border-bg-border bg-bg-base p-3 overflow-x-auto">
+                                {handoffPayload.bridgePayloadText}
+                              </pre>
+                            </div>
+                          </>
+                        ) : null}
+
+                        {sourceRefs.length > 0 ? (
+                          <div>
+                            <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-2">Source Refs</p>
+                            <ul className="space-y-1.5 text-sm text-text-secondary leading-relaxed">
+                              {sourceRefs.map((sourceRef, index) => {
+                                const kind = typeof sourceRef === 'object' && sourceRef !== null && 'sourceArtifactKind' in sourceRef
+                                  ? String(sourceRef.sourceArtifactKind)
+                                  : 'UNKNOWN'
+                                const ref = typeof sourceRef === 'object' && sourceRef !== null && 'sourceArtifactRef' in sourceRef
+                                  ? String(sourceRef.sourceArtifactRef)
+                                  : 'UNKNOWN'
+
+                                return (
+                                  <li key={`${derivedArtifact.id}-${index}`} className="flex gap-2">
+                                    <span className="text-text-muted">-</span>
+                                    <span>{kind}: {ref}</span>
+                                  </li>
+                                )
+                              })}
+                            </ul>
+                          </div>
+                        ) : null}
+
+                        {!handoffPayload && derivedArtifact.copyReadyText ? (
+                          <div>
+                            <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-2">Copy Ready Text</p>
+                            <pre className="text-xs text-text-primary leading-relaxed whitespace-pre-wrap break-words rounded border border-bg-border bg-bg-base p-3 overflow-x-auto">
+                              {derivedArtifact.copyReadyText}
+                            </pre>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-text-tertiary">No copy-ready payload recorded.</p>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-text-tertiary">No derived artifacts recorded.</p>
+              )}
+            </section>
+          </>
         )}
 
         {/* Linked Entities */}
@@ -174,31 +341,96 @@ export default async function ConversationPage({ params }: { params: { id: strin
           </section>
         )}
 
-        {/* User Prompt */}
-        <section>
-          <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-3">User Prompt</p>
-          <div className="bg-bg-surface border border-bg-border rounded-lg p-4">
-            <pre className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap font-mono break-words">
-              {artifact.userPrompt}
-            </pre>
-          </div>
-        </section>
-
-        {/* LLM Response */}
-        <section>
-          <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-3">LLM Response</p>
-          <div className="bg-bg-surface border border-bg-border rounded-lg p-4">
-            <div className="text-xs text-text-primary leading-relaxed whitespace-pre-wrap break-words">
-              {artifact.llmResponse}
-            </div>
-          </div>
-        </section>
-
         {/* Conversation ID */}
         <section className="pb-8">
           <p className="text-xs text-text-muted font-mono">{artifact.conversationId}</p>
         </section>
       </div>
+    </div>
+  )
+}
+
+type HandoffPayloadView = {
+  originalObjective: string
+  currentState: string[]
+  completedWork: string[]
+  notCompleted: string[]
+  keyFindings: string[]
+  decisions: string[]
+  blockers: string[]
+  residualRisks: string[]
+  openQuestions: string[]
+  outstandingTopics: string[]
+  bridgePayloadText: string
+}
+
+function asHandoffPayload(value: unknown): HandoffPayloadView | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+
+  const record = value as Record<string, unknown>
+  const asString = (input: unknown): string => typeof input === 'string' ? input : ''
+  const asStringArray = (input: unknown): string[] => Array.isArray(input) ? input.filter((item): item is string => typeof item === 'string') : []
+
+  return {
+    originalObjective: asString(record.originalObjective),
+    currentState: asStringArray(record.currentState),
+    completedWork: asStringArray(record.completedWork),
+    notCompleted: asStringArray(record.notCompleted),
+    keyFindings: asStringArray(record.keyFindings),
+    decisions: asStringArray(record.decisions),
+    blockers: asStringArray(record.blockers),
+    residualRisks: asStringArray(record.residualRisks),
+    openQuestions: asStringArray(record.openQuestions),
+    outstandingTopics: asStringArray(record.outstandingTopics),
+    bridgePayloadText: asString(record.bridgePayloadText),
+  }
+}
+
+function SummarySection({ title, items, emptyLabel }: { title: string; items: string[]; emptyLabel: string }) {
+  return (
+    <div>
+      <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-2">{title}</p>
+      {items.length > 0 ? (
+        <ul className="space-y-1.5 text-sm text-text-secondary leading-relaxed">
+          {items.map((item) => (
+            <li key={`${title}-${item}`} className="flex gap-2">
+              <span className="text-text-muted">-</span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-text-tertiary">{emptyLabel}</p>
+      )}
+    </div>
+  )
+}
+
+function ListSection({ title, items, emptyLabel }: { title: string; items: string[]; emptyLabel: string }) {
+  return (
+    <div>
+      <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-2">{title}</p>
+      {items.length > 0 ? (
+        <ul className="space-y-1.5 text-sm text-text-secondary leading-relaxed">
+          {items.map((item) => (
+            <li key={item} className="flex gap-2">
+              <span className="text-text-muted">-</span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-text-tertiary">{emptyLabel}</p>
+      )}
+    </div>
+  )
+}
+
+function EvidencePill({ label, value }: { label: string; value: string | null }) {
+  return (
+    <div className="rounded border border-bg-border bg-bg-elevated px-3 py-2">
+      <p className="text-text-muted font-mono mb-1">{label}</p>
+      <p className="text-text-primary">{value ?? 'UNKNOWN'}</p>
     </div>
   )
 }
