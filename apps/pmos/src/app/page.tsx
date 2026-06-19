@@ -9,6 +9,7 @@ export default async function EventLedgerPage() {
     ...event,
     timestamp: event.timestamp.toISOString(),
   }))
+  const serializedSourceRecords = JSON.parse(JSON.stringify(sourceRecords))
 
   return (
     <div className="flex h-full flex-col px-6 py-5">
@@ -36,7 +37,7 @@ export default async function EventLedgerPage() {
         <span className="font-mono text-xs text-text-tertiary">{serializedEvents.length} rows</span>
       </div>
 
-      <EventLedgerTable events={serializedEvents} sourceRecords={sourceRecords} />
+      <EventLedgerTable events={serializedEvents} sourceRecords={serializedSourceRecords} />
     </div>
   )
 }

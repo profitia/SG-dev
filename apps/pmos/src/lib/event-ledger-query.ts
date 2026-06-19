@@ -165,6 +165,14 @@ function toJsonObject(value: unknown): Prisma.JsonObject {
   return JSON.parse(JSON.stringify(value ?? null)) as Prisma.JsonObject
 }
 
+function toJsonValue(value: Prisma.JsonValue | null | undefined): Prisma.JsonValue | null {
+  if (value === undefined) {
+    return null
+  }
+
+  return JSON.parse(JSON.stringify(value)) as Prisma.JsonValue
+}
+
 function firstNonEmptyString(...values: Array<string | null | undefined>): string | null {
   for (const value of values) {
     if (typeof value === 'string' && value.trim().length > 0) {
@@ -241,7 +249,7 @@ function toLinkedConversationRecord(conversations: LinkedConversationRecord[] | 
 
   return {
     record: toJsonObject(linkedConversation),
-    rawJson: linkedConversation.flightRecordJson,
+    rawJson: toJsonValue(linkedConversation.flightRecordJson),
   }
 }
 
@@ -332,7 +340,7 @@ function findHeuristicConversation(
 
   return {
     record: toJsonObject(bestMatch),
-    rawJson: bestMatch.flightRecordJson,
+    rawJson: toJsonValue(bestMatch.flightRecordJson),
   }
 }
 
@@ -475,7 +483,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
     sourceRecords[`conversation_artifacts:${record.id}`] = {
       sourceTable: 'conversation_artifacts',
       record: toJsonObject(record),
-      rawJson: record.flightRecordJson,
+      rawJson: toJsonValue(record.flightRecordJson),
       linkedConversation: null,
     }
     return {
