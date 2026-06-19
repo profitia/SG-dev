@@ -44,6 +44,10 @@ export type EventLedgerSourceRecord = {
   sourceTable: EventSourceTable
   record: Prisma.JsonObject
   rawJson: Prisma.JsonValue | null
+  linkedConversation: {
+    record: Prisma.JsonObject
+    rawJson: Prisma.JsonValue | null
+  } | null
 }
 
 export type EventLedgerData = {
@@ -85,6 +89,22 @@ type ConversationEventRecord = {
   subetap: string | null
   summary: string
   flightRecordJson: Prisma.JsonValue | null
+  filesPath?: string | null
+}
+
+type LinkedConversationRecord = {
+  conversation: {
+    id: string
+    conversationId: string
+    timestamp: Date
+    taskId: string | null
+    scope: string | null
+    etap: string | null
+    subetap: string | null
+    summary: string
+    flightRecordJson: Prisma.JsonValue | null
+    filesPath: string | null
+  }
 }
 
 type PromptExecutionEventRecord = {
@@ -95,24 +115,28 @@ type PromptExecutionEventRecord = {
   subetap: string | null
   node: string | null
   domain: string | null
+  conversations?: LinkedConversationRecord[]
 }
 
 type ExecutionLogEventRecord = {
   id: string
   createdAt: Date
   title: string
+  conversations?: LinkedConversationRecord[]
 }
 
 type DecisionEventRecord = {
   id: string
   createdAt: Date
   title: string
+  conversations?: LinkedConversationRecord[]
 }
 
 type WarningEventRecord = {
   id: string
   createdAt: Date
   title: string
+  conversations?: LinkedConversationRecord[]
 }
 
 type ChangedFileEventRecord = {
@@ -209,6 +233,18 @@ function getArchiveArtifactTaskId(rawPayload: Prisma.JsonValue | null, pathValue
   return match?.[1] ?? null
 }
 
+function toLinkedConversationRecord(conversations: LinkedConversationRecord[] | undefined): EventLedgerSourceRecord['linkedConversation'] {
+  const linkedConversation = conversations?.[0]?.conversation
+  if (!linkedConversation) {
+    return null
+  }
+
+  return {
+    record: toJsonObject(linkedConversation),
+    rawJson: linkedConversation.flightRecordJson,
+  }
+}
+
 export async function eventLedgerQuery(): Promise<EventLedgerData> {
   const conversationArtifactDelegate = (db as unknown as {
     conversationArtifact?: {
@@ -268,18 +304,50 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
     findManyIfAvailable(promptExecutionDelegate, {
       orderBy: { createdAt: 'desc' },
       take: 250,
+      include: {
+        conversations: {
+          take: 1,
+          include: {
+            conversation: true,
+          },
+        },
+      },
     }),
     findManyIfAvailable(executionLogDelegate, {
       orderBy: { createdAt: 'desc' },
       take: 250,
+      include: {
+        conversations: {
+          take: 1,
+          include: {
+            conversation: true,
+          },
+        },
+      },
     }),
     findManyIfAvailable(decisionDelegate, {
       orderBy: { createdAt: 'desc' },
       take: 250,
+      include: {
+        conversations: {
+          take: 1,
+          include: {
+            conversation: true,
+          },
+        },
+      },
     }),
     findManyIfAvailable(architectureWarningDelegate, {
       orderBy: { createdAt: 'desc' },
       take: 250,
+      include: {
+        conversations: {
+          take: 1,
+          include: {
+            conversation: true,
+          },
+        },
+      },
     }),
     findManyIfAvailable(changedFileDelegate, {
       orderBy: { createdAt: 'desc' },
@@ -317,6 +385,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       sourceTable: 'conversation_artifacts',
       record: toJsonObject(record),
       rawJson: record.flightRecordJson,
+      linkedConversation: null,
     }
     return {
       id: `conversation_artifacts:${record.id}`,
@@ -335,6 +404,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       sourceTable: 'prompt_executions',
       record: toJsonObject(record),
       rawJson: null,
+      linkedConversation: toLinkedConversationRecord(record.conversations),
     }
     return {
       id: `prompt_executions:${record.id}`,
@@ -353,6 +423,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       sourceTable: 'execution_logs',
       record: toJsonObject(record),
       rawJson: null,
+      linkedConversation: toLinkedConversationRecord(record.conversations),
     }
     return {
       id: `execution_logs:${record.id}`,
@@ -371,6 +442,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       sourceTable: 'decisions',
       record: toJsonObject(record),
       rawJson: null,
+      linkedConversation: toLinkedConversationRecord(record.conversations),
     }
     return {
       id: `decisions:${record.id}`,
@@ -389,6 +461,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       sourceTable: 'architecture_warnings',
       record: toJsonObject(record),
       rawJson: null,
+      linkedConversation: toLinkedConversationRecord(record.conversations),
     }
     return {
       id: `architecture_warnings:${record.id}`,
@@ -407,6 +480,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       sourceTable: 'changed_files',
       record: toJsonObject(record),
       rawJson: null,
+      linkedConversation: null,
     }
     return {
       id: `changed_files:${record.id}`,
@@ -427,6 +501,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
         sourceTable: 'archive_artifacts',
         record: toJsonObject(record),
         rawJson: record.rawPayload,
+        linkedConversation: null,
       }
 
       const isCloseout = record.source.sourceKind === 'PMOS_CLOSEOUTS'

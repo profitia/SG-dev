@@ -88,11 +88,16 @@ function buildTraceabilityLinks(filesPath: string | null): string[] {
 }
 
 function buildCanonicalConversationView(selectedRecord: EventLedgerSourceRecord): string | null {
-  if (selectedRecord.sourceTable !== 'conversation_artifacts') {
+  const conversationSource =
+    selectedRecord.sourceTable === 'conversation_artifacts'
+      ? selectedRecord
+      : selectedRecord.linkedConversation
+
+  if (!conversationSource) {
     return null
   }
 
-  const flightRecord = asRecord(selectedRecord.rawJson)
+  const flightRecord = asRecord(conversationSource.rawJson)
   if (!flightRecord) {
     return null
   }
@@ -105,7 +110,7 @@ function buildCanonicalConversationView(selectedRecord: EventLedgerSourceRecord)
   const actions = asRecord(flightRecord.actions)
   const result = asRecord(flightRecord.result)
   const completionEvidence = asRecord(flightRecord.completionEvidence)
-  const record = asRecord(selectedRecord.record)
+  const record = asRecord(conversationSource.record)
 
   const taskId = asString(metadata?.taskId) ?? 'UNKNOWN-TASK'
   const conversationId = asString(metadata?.conversationId)
