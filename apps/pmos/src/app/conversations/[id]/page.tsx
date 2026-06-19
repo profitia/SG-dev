@@ -30,7 +30,6 @@ export default async function ConversationPage({ params }: { params: { id: strin
   const artifact = await db.conversationArtifact.findUnique({
     where: { id: params.id },
     include: {
-      artifacts: { orderBy: { createdAt: 'desc' } },
       linkedDecisions: { include: { decision: { select: { id: true, title: true, number: true } } } },
       linkedWarnings: { include: { warning: { select: { id: true, title: true, severity: true, resolved: true } } } },
       linkedNodes: { include: { node: { select: { id: true, title: true, status: true } } } },
@@ -42,6 +41,25 @@ export default async function ConversationPage({ params }: { params: { id: strin
 
   if (!artifact) notFound()
 
+  const derivedArtifacts = await db.$queryRaw<DerivedArtifactRecord[]>`
+    SELECT
+      id,
+      artifact_kind AS "artifactKind",
+      artifact_nature AS "artifactNature",
+      version,
+      status,
+      task_id AS "taskId",
+      conversation_id AS "conversationId",
+      payload,
+      copy_ready_text AS "copyReadyText",
+      source_refs AS "sourceRefs",
+      created_at AS "createdAt"
+    FROM artifacts
+    WHERE conversation_id = ${artifact.conversationId}
+      AND artifact_nature = 'DERIVED'
+    ORDER BY created_at DESC
+  `
+
   const canonical = buildCanonicalConversationReadModel(artifact.flightRecordJson)
   const conversationType = canonical.metadata.conversationType ?? artifact.conversationType ?? 'unknown'
   const importanceLevel = canonical.metadata.importanceLevel ?? artifact.importanceLevel ?? 'medium'
@@ -49,7 +67,6 @@ export default async function ConversationPage({ params }: { params: { id: strin
   const subetap = canonical.metadata.subetap ?? artifact.subetap
   const displayTimestamp = canonical.metadata.timestamp ?? artifact.timestamp.toISOString()
   const displayTaskId = canonical.metadata.taskId ?? artifact.taskId
-  const derivedArtifacts = artifact.artifacts.filter((item) => item.artifactNature === 'DERIVED')
 
   const hasLinks =
     artifact.linkedDecisions.length > 0 ||
@@ -348,6 +365,20 @@ export default async function ConversationPage({ params }: { params: { id: strin
       </div>
     </div>
   )
+}
+
+type DerivedArtifactRecord = {
+  id: string
+  artifactKind: string
+  artifactNature: string
+  version: string
+  status: string
+  taskId: string | null
+  conversationId: string
+  payload: unknown
+  copyReadyText: string | null
+  sourceRefs: unknown
+  createdAt: Date
 }
 
 type HandoffPayloadView = {
