@@ -24,5 +24,19 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "scripts",
+    "src/lib/pmos/atomic-io.ts",
+    "src/lib/pmos/runtime-context-write.ts",
+    "src/lib/pmos/runtime-authority.ts",
+    "src/lib/pmos/operations.ts",
+    "src/lib/pmos/execution-trail.ts",
+    "src/lib/pmos/operator-preflight.ts",
+    "src/lib/pmos/authority-registry.ts",
+    "src/lib/pmos/noncanonical-write-guard.ts",
+    "src/lib/pmos/archive-completeness.ts",
+    "src/lib/pmos/conversation-persistence.ts",
+    "src/lib/pmos/governance-reader.ts"
+  ]
 }

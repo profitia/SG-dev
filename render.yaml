@@ -1,9 +1,27 @@
+# render.yaml — SpendGuru 2.0 Render Blueprint
+#
+# SCOPE:
+# This file currently defines the PMOS dev-time tool only.
+# PMOS (pmos-spendguru2-development) is NOT the SG2 application runtime.
+# It is a developer workflow tool and must not be used as a substitute for
+# the SG2 production or staging runtime.
+#
+# SG2 PRODUCTION AND STAGING SERVICES:
+# spendguru-production and spendguru-staging are NOT defined here yet.
+# They cannot be safely defined until apps/sg-runtime/ is scaffolded and
+# its build/start commands are confirmed.
+# See: docs/render-blueprint-plan.md for the planned blueprint.
+#
+# DO NOT add spendguru-production or spendguru-staging to this file
+# until apps/sg-runtime/ exists and commands are verified locally.
+
 services:
+  # PMOS — Developer Workflow Tool (dev-time only, NOT SG2 production runtime)
   - type: web
     name: pmos-spendguru2-development
     runtime: node
     rootDir: apps/pmos
-      buildCommand: npm install --include=dev && npm run build
+    buildCommand: npm install --include=dev && npx prisma generate && npx next build
     startCommand: npm run start
     plan: free
     envVars:
