@@ -53,6 +53,21 @@ export type EventLedgerData = {
 
 type ArchiveEventSourceKind = 'PMOS_CLOSEOUTS' | 'PMOS_EXECUTION_TRAILS'
 
+type ArchiveArtifactEventRecord = {
+  id: string
+  artifactKey: string
+  recordId: string | null
+  path: string | null
+  rawPayload: Prisma.JsonValue | null
+  metadata: Prisma.JsonValue | null
+  observedAt: Date | null
+  createdAt: Date
+  source: {
+    sourceKind: string
+    sourceKey: string
+  }
+}
+
 const ARCHIVE_EVENT_SOURCE_KINDS = [
   'PMOS_CLOSEOUTS',
   'PMOS_EXECUTION_TRAILS',
@@ -99,6 +114,12 @@ function getArchiveArtifactTaskId(rawPayload: Prisma.JsonValue | null, pathValue
 }
 
 export async function eventLedgerQuery(): Promise<EventLedgerData> {
+  const archiveArtifactDelegate = (db as unknown as {
+    archiveArtifact: {
+      findMany: (args: unknown) => Promise<ArchiveArtifactEventRecord[]>
+    }
+  }).archiveArtifact
+
   const [
     conversations,
     prompts,
@@ -132,7 +153,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       orderBy: { createdAt: 'desc' },
       take: 250,
     }),
-    db.archiveArtifact.findMany({
+    archiveArtifactDelegate.findMany({
       where: {
         source: {
           sourceKind: {
