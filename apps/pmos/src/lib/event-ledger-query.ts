@@ -68,6 +68,12 @@ type ArchiveArtifactEventRecord = {
   }
 }
 
+type ArchiveSourceEventRecord = {
+  sourceKind: string
+  sourceKey: string
+  artifacts: ArchiveArtifactEventRecord[]
+}
+
 type ConversationEventRecord = {
   id: string
   conversationId: string
@@ -189,11 +195,11 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
     }
   }).changedFile
 
-  const archiveArtifactDelegate = (db as unknown as {
-    archiveArtifact: {
-      findMany: (args: unknown) => Promise<ArchiveArtifactEventRecord[]>
+  const archiveSourceDelegate = (db as unknown as {
+    archiveSource: {
+      findMany: (args: unknown) => Promise<ArchiveSourceEventRecord[]>
     }
-  }).archiveArtifact
+  }).archiveSource
 
   const [
     conversations,
@@ -202,7 +208,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
     decisions,
     warnings,
     changedFiles,
-    archiveArtifacts,
+    archiveSources,
   ] = await Promise.all([
     conversationArtifactDelegate.findMany({
       orderBy: { timestamp: 'desc' },
@@ -228,21 +234,30 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       orderBy: { createdAt: 'desc' },
       take: 250,
     }),
-    archiveArtifactDelegate.findMany({
+    archiveSourceDelegate.findMany({
       where: {
-        source: {
-          sourceKind: {
-            in: [...ARCHIVE_EVENT_SOURCE_KINDS],
-          },
+        sourceKind: {
+          in: [...ARCHIVE_EVENT_SOURCE_KINDS],
         },
       },
-      orderBy: { observedAt: 'desc' },
-      take: 250,
       include: {
-        source: { select: { sourceKind: true, sourceKey: true } },
+        artifacts: {
+          orderBy: { observedAt: 'desc' },
+          take: 250,
+        },
       },
     }),
   ])
+
+  const archiveArtifacts = archiveSources.flatMap((source) =>
+    source.artifacts.map((artifact) => ({
+      ...artifact,
+      source: {
+        sourceKind: source.sourceKind,
+        sourceKey: source.sourceKey,
+      },
+    })),
+  )
 
   const sourceRecords: Record<string, EventLedgerSourceRecord> = {}
 
