@@ -83,13 +83,22 @@ type ConversationEventRecord = {
   id: string
   conversationId: string
   timestamp: Date
+  project: string
   taskId: string | null
   scope: string | null
   etap: string | null
   subetap: string | null
+  domains: string[]
+  conversationType: string | null
+  importanceLevel: string | null
+  userPrompt: string
+  llmResponse: string
   summary: string
+  tags: string[]
+  chronologyOrder: number
   flightRecordJson: Prisma.JsonValue | null
-  filesPath?: string | null
+  filesPath: string | null
+  createdAt: Date
 }
 
 type LinkedConversationRecord = {
@@ -345,12 +354,6 @@ function findHeuristicConversation(
 }
 
 export async function eventLedgerQuery(): Promise<EventLedgerData> {
-  const conversationArtifactDelegate = (db as unknown as {
-    conversationArtifact?: {
-      findMany: (args: unknown) => Promise<ConversationEventRecord[]>
-    }
-  }).conversationArtifact
-
   const promptExecutionDelegate = (db as unknown as {
     promptExecution?: {
       findMany: (args: unknown) => Promise<PromptExecutionEventRecord[]>
@@ -396,10 +399,31 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
     changedFiles,
     archiveSources,
   ] = await Promise.all([
-    findManyIfAvailable(conversationArtifactDelegate, {
-      orderBy: { timestamp: 'desc' },
-      take: 250,
-    }),
+    db.$queryRaw<ConversationEventRecord[]>(Prisma.sql`
+      SELECT
+        id,
+        conversation_id AS "conversationId",
+        timestamp,
+        project,
+        task_id AS "taskId",
+        scope,
+        etap,
+        subetap,
+        domains,
+        conversation_type AS "conversationType",
+        importance_level AS "importanceLevel",
+        user_prompt AS "userPrompt",
+        llm_response AS "llmResponse",
+        summary,
+        tags,
+        chronology_order AS "chronologyOrder",
+        flight_record_json AS "flightRecordJson",
+        files_path AS "filesPath",
+        created_at AS "createdAt"
+      FROM conversation_artifacts
+      ORDER BY timestamp DESC
+      LIMIT 250
+    `),
     findManyIfAvailable(promptExecutionDelegate, {
       orderBy: { createdAt: 'desc' },
       take: 250,
