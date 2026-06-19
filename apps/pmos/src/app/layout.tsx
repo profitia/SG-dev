@@ -1,18 +1,15 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import { Sidebar } from '@/components/layout/Sidebar'
-import { GlobalSearch } from '@/components/search/GlobalSearch'
 import { ThemeProvider } from '@/components/layout/ThemeProvider'
-import { RuntimeFocusBar } from '@/components/layout/RuntimeFocusBar'
 
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'PMOS — Project Memory Operating System',
-  description: 'AI-native embedded development memory runtime',
+  title: 'PMOS Event Ledger',
+  description: 'PostgreSQL event ledger for PMOS runtime history',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
@@ -35,16 +32,7 @@ export default function RootLayout({
       </head>
       <body className="bg-bg-base text-text-primary font-sans antialiased">
         <ThemeProvider>
-          <GlobalSearch />
-          <div className="flex h-screen overflow-hidden">
-            <Sidebar />
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <RuntimeFocusBar />
-              <main className="flex-1 overflow-y-auto">
-                {children}
-              </main>
-            </div>
-          </div>
+          <main className="h-screen overflow-y-auto">{children}</main>
         </ThemeProvider>
       </body>
     </html>
