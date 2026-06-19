@@ -41,6 +41,13 @@ export default async function ConversationPage({ params }: { params: { id: strin
 
   if (!artifact) notFound()
 
+  const conversationRows = await db.$queryRaw<Array<{ flightRecordJson: unknown }>>`
+    SELECT flight_record_json AS "flightRecordJson"
+    FROM conversation_artifacts
+    WHERE id = ${params.id}
+    LIMIT 1
+  `
+
   const derivedArtifacts = await db.$queryRaw<DerivedArtifactRecord[]>`
     SELECT
       id,
@@ -60,7 +67,7 @@ export default async function ConversationPage({ params }: { params: { id: strin
     ORDER BY created_at DESC
   `
 
-  const canonical = buildCanonicalConversationReadModel(artifact.flightRecordJson)
+  const canonical = buildCanonicalConversationReadModel(conversationRows[0]?.flightRecordJson)
   const conversationType = canonical.metadata.conversationType ?? artifact.conversationType ?? 'unknown'
   const importanceLevel = canonical.metadata.importanceLevel ?? artifact.importanceLevel ?? 'medium'
   const etap = canonical.metadata.etap ?? artifact.etap
