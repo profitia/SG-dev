@@ -4,12 +4,13 @@ import { eventLedgerQuery } from '@/lib/event-ledger-query'
 export const dynamic = 'force-dynamic'
 
 export default async function EventLedgerPage() {
-  const { events, stats, sourceRecords } = await eventLedgerQuery()
+  const { events, stats, sourceRecords, handoffArtifactsByConversationId } = await eventLedgerQuery()
   const serializedEvents = events.map((event) => ({
     ...event,
     timestamp: event.timestamp.toISOString(),
   }))
   const serializedSourceRecords = JSON.parse(JSON.stringify(sourceRecords))
+  const serializedHandoffArtifactsByConversationId = JSON.parse(JSON.stringify(handoffArtifactsByConversationId))
 
   return (
     <div className="flex h-full flex-col px-6 py-5">
@@ -37,7 +38,11 @@ export default async function EventLedgerPage() {
         <span className="font-mono text-xs text-text-tertiary">{serializedEvents.length} rows</span>
       </div>
 
-      <EventLedgerTable events={serializedEvents} sourceRecords={serializedSourceRecords} />
+      <EventLedgerTable
+        events={serializedEvents}
+        sourceRecords={serializedSourceRecords}
+        handoffArtifactsByConversationId={serializedHandoffArtifactsByConversationId}
+      />
     </div>
   )
 }

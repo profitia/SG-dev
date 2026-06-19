@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react'
 
-import type { EventLedgerSourceRecord, EventRow } from '@/lib/event-ledger-query'
+import type { EventLedgerSourceRecord, EventRow, HandoffArtifactRecord } from '@/lib/event-ledger-query'
 
 type EventRowView = Omit<EventRow, 'timestamp'> & {
   timestamp: string
@@ -11,6 +11,17 @@ type EventRowView = Omit<EventRow, 'timestamp'> & {
 type EventLedgerTableProps = {
   events: EventRowView[]
   sourceRecords: Record<string, EventLedgerSourceRecord>
+  handoffArtifactsByConversationId: Record<string, HandoffArtifactRecordView>
+}
+
+type HandoffArtifactRecordView = Omit<HandoffArtifactRecord, 'createdAt'> & {
+  createdAt: string
+}
+
+type HandoffPayloadView = {
+  resultStatus?: string
+  recommendedNextDecision?: string
+  bridgePayloadText?: string
 }
 
 type SearchScope =
@@ -293,6 +304,36 @@ function buildMetadataView(selectedEvent: EventRowView, selectedRecord: EventLed
   return metadataValues.join('\n\n')
 }
 
+function getConversationId(selectedRecord: EventLedgerSourceRecord): string | null {
+  const conversationSource = getConversationSource(selectedRecord)
+
+  if (!conversationSource) {
+    return null
+  }
+
+  const recordConversationId = asString((conversationSource.record as Record<string, unknown>).conversationId)
+  if (recordConversationId) {
+    return recordConversationId
+  }
+
+  const flightRecord = asRecord(conversationSource.rawJson)
+  const metadata = asRecord(flightRecord?.metadata)
+  return asString(metadata?.conversationId)
+}
+
+function asHandoffPayload(value: unknown): HandoffPayloadView | null {
+  const payload = asRecord(value)
+  if (!payload) {
+    return null
+  }
+
+  return {
+    resultStatus: asString(payload.resultStatus) ?? undefined,
+    recommendedNextDecision: asString(payload.recommendedNextDecision) ?? undefined,
+    bridgePayloadText: asString(payload.bridgePayloadText) ?? undefined,
+  }
+}
+
 function buildSearchDocument(event: EventRowView, sourceRecord: EventLedgerSourceRecord): SearchDocument {
   const rawRecordText = prettyJson(sourceRecord.record)
   const rawJsonText = sourceRecord.rawJson !== null ? prettyJson(sourceRecord.rawJson) : ''
@@ -399,7 +440,7 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
   )
 }
 
-export function EventLedgerTable({ events, sourceRecords }: EventLedgerTableProps) {
+export function EventLedgerTable({ events, sourceRecords, handoffArtifactsByConversationId }: EventLedgerTableProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchEverything, setSearchEverything] = useState(true)
   const [searchScopes, setSearchScopes] = useState<SearchScopeState>(EMPTY_SCOPE_STATE)
@@ -478,11 +519,17 @@ export function EventLedgerTable({ events, sourceRecords }: EventLedgerTableProp
     [filteredEvents, selectedEventId],
   )
   const selectedRecord = selectedEvent ? sourceRecords[selectedEvent.id] ?? null : null
+  const selectedConversationId = selectedRecord ? getConversationId(selectedRecord) : null
+  const selectedHandoffArtifact = selectedConversationId ? handoffArtifactsByConversationId[selectedConversationId] ?? null : null
+  const handoffPayload = selectedHandoffArtifact ? asHandoffPayload(selectedHandoffArtifact.payload) : null
   const canonicalConversationView = selectedRecord ? buildCanonicalConversationView(selectedRecord) : null
   const metadataView = selectedEvent && selectedRecord ? buildMetadataView(selectedEvent, selectedRecord) : null
 
   const rawRecordText = selectedRecord ? prettyJson(selectedRecord.record) : null
   const rawJsonText = selectedRecord?.rawJson !== null && selectedRecord?.rawJson !== undefined ? prettyJson(selectedRecord.rawJson) : null
+  const rawHandoffPayloadText = selectedHandoffArtifact?.payload !== null && selectedHandoffArtifact?.payload !== undefined
+    ? prettyJson(selectedHandoffArtifact.payload)
+    : null
 
   const clearFilters = () => {
     setSearchQuery('')
@@ -729,6 +776,71 @@ export function EventLedgerTable({ events, sourceRecords }: EventLedgerTableProp
               </pre>
             </section>
 
+            {selectedHandoffArtifact ? (
+              <section>
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <h3 className="section-label mb-0">GPT HANDOFF</h3>
+                  {handoffPayload?.bridgePayloadText ? <CopyTextButton text={handoffPayload.bridgePayloadText} label="Copy bridge payload" /> : null}
+                </div>
+
+                <div className="space-y-4 rounded border border-bg-border bg-bg-surface p-4">
+                  <div>
+                    <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-text-tertiary">Handoff Metadata</p>
+                    <div className="space-y-2 text-xs">
+                      <MetaRow label="Artifact ID" value={selectedHandoffArtifact.id} query={searchQuery} />
+                      <MetaRow label="Created At" value={selectedHandoffArtifact.createdAt} query={searchQuery} />
+                      <MetaRow label="Task ID" value={selectedHandoffArtifact.taskId ?? '-'} query={searchQuery} />
+                      <MetaRow label="Conversation ID" value={selectedHandoffArtifact.conversationId} query={searchQuery} />
+                      <MetaRow label="Status" value={selectedHandoffArtifact.status} query={searchQuery} />
+                      <MetaRow label="Version" value={selectedHandoffArtifact.version} query={searchQuery} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-text-tertiary">Handoff Summary</p>
+                    <div className="space-y-2 rounded border border-bg-border bg-bg-base p-3 text-xs leading-relaxed text-text-primary">
+                      <SummaryTextRow label="resultStatus" value={handoffPayload?.resultStatus ?? null} query={searchQuery} />
+                      <SummaryTextRow label="recommendedNextDecision" value={handoffPayload?.recommendedNextDecision ?? null} query={searchQuery} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-text-tertiary">GPT Bridge Payload</p>
+                      {handoffPayload?.bridgePayloadText ? <CopyTextButton text={handoffPayload.bridgePayloadText} label="Copy bridge payload" /> : null}
+                    </div>
+                    <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded border border-bg-border bg-bg-base p-4 text-[11px] leading-relaxed text-text-primary">
+                      <HighlightedText text={handoffPayload?.bridgePayloadText ?? 'No bridge payload recorded.'} query={searchQuery} />
+                    </pre>
+                  </div>
+
+                  <div>
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-text-tertiary">Copy Ready Text</p>
+                      {selectedHandoffArtifact.copyReadyText ? <CopyTextButton text={selectedHandoffArtifact.copyReadyText} label="Copy ready text" /> : null}
+                    </div>
+                    <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded border border-bg-border bg-bg-base p-4 text-[11px] leading-relaxed text-text-primary">
+                      <HighlightedText text={selectedHandoffArtifact.copyReadyText ?? 'No copy ready text recorded.'} query={searchQuery} />
+                    </pre>
+                  </div>
+
+                  <div>
+                    <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-text-tertiary">Raw Handoff Payload</p>
+                    <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded border border-bg-border bg-bg-base p-4 text-[11px] leading-relaxed text-text-primary">
+                      <HighlightedText text={rawHandoffPayloadText ?? 'No handoff payload recorded.'} query={searchQuery} />
+                    </pre>
+                  </div>
+                </div>
+              </section>
+            ) : selectedConversationId ? (
+              <section>
+                <h3 className="section-label">GPT HANDOFF</h3>
+                <div className="rounded border border-bg-border bg-bg-surface p-4 text-xs leading-relaxed text-text-secondary">
+                  No persisted HANDOFF artifact was found in PostgreSQL for conversation {selectedConversationId}.
+                </div>
+              </section>
+            ) : null}
+
             <section>
               <h3 className="section-label">Full Conversation</h3>
               {canonicalConversationView ? (
@@ -765,5 +877,36 @@ function MetaRow({ label, value, query }: { label: string; value: string; query:
         <HighlightedText text={value} query={query} />
       </span>
     </div>
+  )
+}
+
+function SummaryTextRow({ label, value, query }: { label: string; value: string | null; query: string }) {
+  return (
+    <div className="space-y-1">
+      <p className="font-mono text-text-tertiary">{label}</p>
+      <div className="rounded border border-bg-border bg-bg-surface p-3 text-text-primary">
+        <HighlightedText text={value ?? 'Not recorded.'} query={query} />
+      </div>
+    </div>
+  )
+}
+
+function CopyTextButton({ text, label }: { text: string; label: string }) {
+  const [copied, setCopied] = useState(false)
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    window.setTimeout(() => setCopied(false), 1500)
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="rounded border border-bg-border bg-bg-elevated px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:border-bg-hover hover:text-text-primary"
+    >
+      {copied ? 'Copied' : label}
+    </button>
   )
 }

@@ -50,10 +50,24 @@ export type EventLedgerSourceRecord = {
   } | null
 }
 
+export type HandoffArtifactRecord = {
+  id: string
+  artifactKind: 'HANDOFF'
+  artifactNature: string
+  version: string
+  status: string
+  taskId: string | null
+  conversationId: string
+  payload: Prisma.JsonValue | null
+  copyReadyText: string | null
+  createdAt: Date
+}
+
 export type EventLedgerData = {
   events: EventRow[]
   stats: EventLedgerStats
   sourceRecords: Record<string, EventLedgerSourceRecord>
+  handoffArtifactsByConversationId: Record<string, HandoffArtifactRecord>
 }
 
 type ArchiveEventSourceKind = 'PMOS_CLOSEOUTS' | 'PMOS_EXECUTION_TRAILS'
@@ -501,6 +515,34 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
     })),
   )
 
+  const conversationIds = Array.from(new Set(conversations.map((record) => record.conversationId).filter(Boolean)))
+  const handoffArtifacts = conversationIds.length > 0
+    ? await db.$queryRaw<HandoffArtifactRecord[]>(Prisma.sql`
+        SELECT
+          id,
+          artifact_kind AS "artifactKind",
+          artifact_nature AS "artifactNature",
+          version,
+          status,
+          task_id AS "taskId",
+          conversation_id AS "conversationId",
+          payload,
+          copy_ready_text AS "copyReadyText",
+          created_at AS "createdAt"
+        FROM artifacts
+        WHERE artifact_kind = 'HANDOFF'
+          AND conversation_id IN (${Prisma.join(conversationIds)})
+        ORDER BY created_at DESC
+      `)
+    : []
+
+  const handoffArtifactsByConversationId = handoffArtifacts.reduce<Record<string, HandoffArtifactRecord>>((accumulator, artifact) => {
+    if (!accumulator[artifact.conversationId]) {
+      accumulator[artifact.conversationId] = artifact
+    }
+    return accumulator
+  }, {})
+
   const sourceRecords: Record<string, EventLedgerSourceRecord> = {}
 
   const conversationEvents: EventRow[] = conversations.map((record) => {
@@ -672,5 +714,6 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       executionTrailCount,
     },
     sourceRecords,
+    handoffArtifactsByConversationId,
   }
 }
