@@ -45,9 +45,8 @@ export function EventLedgerTable({ events, sourceRecords }: EventLedgerTableProp
             <tr className="border-b border-bg-border">
               <th className="px-4 py-3 font-medium">Timestamp</th>
               <th className="px-4 py-3 font-medium">Event Type</th>
-              <th className="px-4 py-3 font-medium">Source Table</th>
+              <th className="px-4 py-3 font-medium">Runtime Context</th>
               <th className="px-4 py-3 font-medium">Task ID</th>
-              <th className="px-4 py-3 font-medium">Record ID</th>
               <th className="px-4 py-3 font-medium">Title</th>
             </tr>
           </thead>
@@ -64,9 +63,8 @@ export function EventLedgerTable({ events, sourceRecords }: EventLedgerTableProp
                 >
                   <td className="px-4 py-3 font-mono text-text-secondary">{formatTimestamp(event.timestamp)}</td>
                   <td className="px-4 py-3 font-mono text-text-primary">{event.eventType}</td>
-                  <td className="px-4 py-3 font-mono text-text-secondary">{event.sourceTable}</td>
+                  <td className="px-4 py-3 font-mono text-text-secondary">{event.runtimeContext ?? '-'}</td>
                   <td className="px-4 py-3 font-mono text-text-secondary">{event.taskId ?? '-'}</td>
-                  <td className="px-4 py-3 font-mono text-text-secondary">{event.rawRecordId}</td>
                   <td className="px-4 py-3 text-text-primary">{event.title}</td>
                 </tr>
               )
@@ -91,17 +89,11 @@ export function EventLedgerTable({ events, sourceRecords }: EventLedgerTableProp
                 <MetaRow label="Event ID" value={selectedEvent.id} />
                 <MetaRow label="Event Type" value={selectedEvent.eventType} />
                 <MetaRow label="Timestamp" value={selectedEvent.timestamp} />
+                <MetaRow label="Runtime Context" value={selectedEvent.runtimeContext ?? '-'} />
                 <MetaRow label="Source Table" value={selectedEvent.sourceTable} />
                 <MetaRow label="Task ID" value={selectedEvent.taskId ?? '-'} />
                 <MetaRow label="Record ID" value={selectedEvent.rawRecordId} />
                 <MetaRow label="Title" value={selectedEvent.title} />
-              </div>
-            </section>
-
-            <section>
-              <h3 className="section-label">Source Table</h3>
-              <div className="rounded border border-bg-border bg-bg-surface p-4 font-mono text-xs text-text-primary">
-                {selectedRecord.sourceTable}
               </div>
             </section>
 

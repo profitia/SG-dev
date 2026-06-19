@@ -25,6 +25,7 @@ export type EventRow = {
   id: string
   eventType: EventType
   timestamp: Date
+  runtimeContext: string | null
   sourceTable: EventSourceTable
   taskId: string | null
   title: string
@@ -79,6 +80,9 @@ type ConversationEventRecord = {
   conversationId: string
   timestamp: Date
   taskId: string | null
+  scope: string | null
+  etap: string | null
+  subetap: string | null
   summary: string
   flightRecordJson: Prisma.JsonValue | null
 }
@@ -87,6 +91,10 @@ type PromptExecutionEventRecord = {
   id: string
   createdAt: Date
   title: string
+  etap: string | null
+  subetap: string | null
+  node: string | null
+  domain: string | null
 }
 
 type ExecutionLogEventRecord = {
@@ -131,6 +139,38 @@ async function findManyIfAvailable<T>(
 
 function toJsonObject(value: unknown): Prisma.JsonObject {
   return JSON.parse(JSON.stringify(value ?? null)) as Prisma.JsonObject
+}
+
+function firstNonEmptyString(...values: Array<string | null | undefined>): string | null {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value.trim()
+    }
+  }
+
+  return null
+}
+
+function getJsonStringField(value: Prisma.JsonValue | null, fieldName: string): string | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null
+  }
+
+  const candidate = (value as Record<string, unknown>)[fieldName]
+  return typeof candidate === 'string' && candidate.trim().length > 0 ? candidate.trim() : null
+}
+
+function getArchiveArtifactRuntimeContext(record: ArchiveArtifactEventRecord): string | null {
+  return firstNonEmptyString(
+    getJsonStringField(record.rawPayload, 'runtimeContext'),
+    getJsonStringField(record.rawPayload, 'runtime_context'),
+    getJsonStringField(record.rawPayload, 'scope'),
+    getJsonStringField(record.rawPayload, 'domain'),
+    getJsonStringField(record.metadata, 'runtimeContext'),
+    getJsonStringField(record.metadata, 'runtime_context'),
+    getJsonStringField(record.metadata, 'scope'),
+    record.source.sourceKind,
+  )
 }
 
 function getArchiveArtifactTitle(artifact: {
@@ -282,6 +322,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       id: `conversation_artifacts:${record.id}`,
       eventType: 'CONVERSATION_SAVED',
       timestamp: record.timestamp,
+      runtimeContext: firstNonEmptyString(record.scope, record.etap, record.subetap),
       sourceTable: 'conversation_artifacts',
       taskId: record.taskId ?? null,
       title: record.summary || record.conversationId,
@@ -299,6 +340,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       id: `prompt_executions:${record.id}`,
       eventType: 'PROMPT_EXECUTION_SAVED',
       timestamp: record.createdAt,
+      runtimeContext: firstNonEmptyString(record.domain, record.etap, record.subetap, record.node),
       sourceTable: 'prompt_executions',
       taskId: null,
       title: record.title,
@@ -316,6 +358,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       id: `execution_logs:${record.id}`,
       eventType: 'EXECUTION_LOG_SAVED',
       timestamp: record.createdAt,
+      runtimeContext: null,
       sourceTable: 'execution_logs',
       taskId: null,
       title: record.title,
@@ -333,6 +376,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       id: `decisions:${record.id}`,
       eventType: 'DECISION_CREATED',
       timestamp: record.createdAt,
+      runtimeContext: null,
       sourceTable: 'decisions',
       taskId: null,
       title: record.title,
@@ -350,6 +394,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       id: `architecture_warnings:${record.id}`,
       eventType: 'WARNING_CREATED',
       timestamp: record.createdAt,
+      runtimeContext: null,
       sourceTable: 'architecture_warnings',
       taskId: null,
       title: record.title,
@@ -367,6 +412,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       id: `changed_files:${record.id}`,
       eventType: 'FILE_CHANGED',
       timestamp: record.createdAt,
+      runtimeContext: null,
       sourceTable: 'changed_files',
       taskId: null,
       title: record.path,
@@ -388,6 +434,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
         id: `archive_artifacts:${record.id}`,
         eventType: isCloseout ? 'CLOSEOUT_SAVED' : 'EXECUTION_TRAIL_RECORDED',
         timestamp: record.observedAt ?? record.createdAt,
+        runtimeContext: getArchiveArtifactRuntimeContext(record),
         sourceTable: 'archive_artifacts',
         taskId: getArchiveArtifactTaskId(record.rawPayload, record.path),
         title: getArchiveArtifactTitle(record),
