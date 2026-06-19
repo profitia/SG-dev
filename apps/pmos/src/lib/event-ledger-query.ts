@@ -245,6 +245,97 @@ function toLinkedConversationRecord(conversations: LinkedConversationRecord[] | 
   }
 }
 
+function normalizeText(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9\-]+/g, ' ').trim()
+}
+
+function extractSearchTokens(value: string): string[] {
+  const tokens = normalizeText(value)
+    .split(/\s+/)
+    .filter((token) => token.length >= 4 || /\d/.test(token))
+
+  return Array.from(new Set(tokens))
+}
+
+function buildConversationSearchText(record: ConversationEventRecord): string {
+  const payloadParts = [record.conversationId, record.summary]
+
+  if (record.flightRecordJson && typeof record.flightRecordJson === 'object' && !Array.isArray(record.flightRecordJson)) {
+    const flightRecord = record.flightRecordJson as Record<string, unknown>
+    const task = flightRecord.task as Record<string, unknown> | undefined
+    const analysis = flightRecord.analysis as Record<string, unknown> | undefined
+
+    if (typeof task?.originalTaskRequest === 'string') {
+      payloadParts.push(task.originalTaskRequest)
+    }
+
+    if (typeof analysis?.executionSummary === 'string') {
+      payloadParts.push(analysis.executionSummary)
+    }
+
+    if (typeof analysis?.reasoningSummary === 'string') {
+      payloadParts.push(analysis.reasoningSummary)
+    }
+  }
+
+  return normalizeText(payloadParts.filter(Boolean).join(' '))
+}
+
+function scoreConversationCandidate(
+  title: string,
+  eventTimestamp: Date,
+  conversation: ConversationEventRecord,
+  conversationSearchText: string,
+): number {
+  const normalizedTitle = normalizeText(title)
+  let score = 0
+
+  if (normalizedTitle.length > 0 && conversationSearchText.includes(normalizedTitle)) {
+    score += 12
+  }
+
+  const tokens = extractSearchTokens(title)
+  for (const token of tokens) {
+    if (conversationSearchText.includes(token)) {
+      score += token.length >= 10 ? 3 : 2
+    }
+  }
+
+  const hoursDiff = Math.abs(eventTimestamp.getTime() - conversation.timestamp.getTime()) / (1000 * 60 * 60)
+  if (hoursDiff <= 24) score += 3
+  else if (hoursDiff <= 72) score += 2
+  else if (hoursDiff <= 168) score += 1
+
+  return score
+}
+
+function findHeuristicConversation(
+  title: string,
+  eventTimestamp: Date,
+  conversations: ConversationEventRecord[],
+): EventLedgerSourceRecord['linkedConversation'] {
+  let bestMatch: ConversationEventRecord | null = null
+  let bestScore = 0
+
+  for (const conversation of conversations) {
+    const searchText = buildConversationSearchText(conversation)
+    const score = scoreConversationCandidate(title, eventTimestamp, conversation, searchText)
+    if (score > bestScore) {
+      bestScore = score
+      bestMatch = conversation
+    }
+  }
+
+  if (!bestMatch || bestScore < 4) {
+    return null
+  }
+
+  return {
+    record: toJsonObject(bestMatch),
+    rawJson: bestMatch.flightRecordJson,
+  }
+}
+
 export async function eventLedgerQuery(): Promise<EventLedgerData> {
   const conversationArtifactDelegate = (db as unknown as {
     conversationArtifact?: {
@@ -400,11 +491,12 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
   })
 
   const promptEvents: EventRow[] = prompts.map((record) => {
+    const linkedConversation = toLinkedConversationRecord(record.conversations) ?? findHeuristicConversation(record.title, record.createdAt, conversations)
     sourceRecords[`prompt_executions:${record.id}`] = {
       sourceTable: 'prompt_executions',
       record: toJsonObject(record),
       rawJson: null,
-      linkedConversation: toLinkedConversationRecord(record.conversations),
+      linkedConversation,
     }
     return {
       id: `prompt_executions:${record.id}`,
@@ -419,11 +511,12 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
   })
 
   const logEvents: EventRow[] = logs.map((record) => {
+    const linkedConversation = toLinkedConversationRecord(record.conversations) ?? findHeuristicConversation(record.title, record.createdAt, conversations)
     sourceRecords[`execution_logs:${record.id}`] = {
       sourceTable: 'execution_logs',
       record: toJsonObject(record),
       rawJson: null,
-      linkedConversation: toLinkedConversationRecord(record.conversations),
+      linkedConversation,
     }
     return {
       id: `execution_logs:${record.id}`,
@@ -438,11 +531,12 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
   })
 
   const decisionEvents: EventRow[] = decisions.map((record) => {
+    const linkedConversation = toLinkedConversationRecord(record.conversations) ?? findHeuristicConversation(record.title, record.createdAt, conversations)
     sourceRecords[`decisions:${record.id}`] = {
       sourceTable: 'decisions',
       record: toJsonObject(record),
       rawJson: null,
-      linkedConversation: toLinkedConversationRecord(record.conversations),
+      linkedConversation,
     }
     return {
       id: `decisions:${record.id}`,
@@ -457,11 +551,12 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
   })
 
   const warningEvents: EventRow[] = warnings.map((record) => {
+    const linkedConversation = toLinkedConversationRecord(record.conversations) ?? findHeuristicConversation(record.title, record.createdAt, conversations)
     sourceRecords[`architecture_warnings:${record.id}`] = {
       sourceTable: 'architecture_warnings',
       record: toJsonObject(record),
       rawJson: null,
-      linkedConversation: toLinkedConversationRecord(record.conversations),
+      linkedConversation,
     }
     return {
       id: `architecture_warnings:${record.id}`,

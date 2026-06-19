@@ -271,14 +271,18 @@ export function EventLedgerTable({ events, sourceRecords }: EventLedgerTableProp
               </pre>
             </section>
 
-            {canonicalConversationView && (
-              <section>
-                <h3 className="section-label">Full Conversation</h3>
+            <section>
+              <h3 className="section-label">Full Conversation</h3>
+              {canonicalConversationView ? (
                 <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded border border-bg-border bg-bg-surface p-4 text-[11px] leading-relaxed text-text-primary">
                   {canonicalConversationView}
                 </pre>
-              </section>
-            )}
+              ) : (
+                <div className="rounded border border-bg-border bg-bg-surface p-4 text-xs leading-relaxed text-text-secondary">
+                  No linked conversation record was found for this event in the current PostgreSQL-backed lookup.
+                </div>
+              )}
+            </section>
 
             {selectedRecord.rawJson !== null && (
               <section>
