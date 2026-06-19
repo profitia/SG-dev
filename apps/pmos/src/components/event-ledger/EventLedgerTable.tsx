@@ -28,6 +28,167 @@ function prettyJson(value: unknown): string {
   return JSON.stringify(value, null, 2)
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null
+}
+
+function asString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null
+}
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0) : []
+}
+
+function pushSection(lines: string[], title: string, body: string[] | string | null) {
+  if (Array.isArray(body)) {
+    if (body.length === 0) return
+    lines.push(`## ${title}`)
+    lines.push('')
+    for (const item of body) {
+      lines.push(`- ${item}`)
+    }
+    lines.push('')
+    return
+  }
+
+  if (!body) return
+
+  lines.push(`## ${title}`)
+  lines.push('')
+  lines.push(body)
+  lines.push('')
+}
+
+function buildTraceabilityLinks(filesPath: string | null): string[] {
+  if (!filesPath) return []
+
+  const markdownPath = filesPath
+  const jsonPath = filesPath.endsWith('.md') ? filesPath.replace(/\.md$/, '.json') : null
+  const slug = filesPath
+    .split('/')
+    .pop()
+    ?.replace(/\.md$/, '')
+
+  const links = [`- Markdown artifact: ${markdownPath}`]
+
+  if (jsonPath) {
+    links.push(`- JSON artifact: ${jsonPath}`)
+  }
+
+  if (slug) {
+    links.push(`- Execution trail JSONL: apps/pmos/.pmos/conversations/logs/${slug}.execution-trail.jsonl`)
+    links.push(`- Execution trail Markdown: apps/pmos/.pmos/conversations/logs/${slug}.execution-trail.md`)
+    links.push(`- Closeout evidence: apps/pmos/.pmos/recovery/closeouts/${slug}.closeout.json`)
+  }
+
+  return links
+}
+
+function buildCanonicalConversationView(selectedRecord: EventLedgerSourceRecord): string | null {
+  if (selectedRecord.sourceTable !== 'conversation_artifacts') {
+    return null
+  }
+
+  const flightRecord = asRecord(selectedRecord.rawJson)
+  if (!flightRecord) {
+    return null
+  }
+
+  const metadata = asRecord(flightRecord.metadata)
+  const task = asRecord(flightRecord.task)
+  const analysis = asRecord(flightRecord.analysis)
+  const findings = asRecord(flightRecord.findings)
+  const decisions = asRecord(flightRecord.decisions)
+  const actions = asRecord(flightRecord.actions)
+  const result = asRecord(flightRecord.result)
+  const completionEvidence = asRecord(flightRecord.completionEvidence)
+  const record = asRecord(selectedRecord.record)
+
+  const taskId = asString(metadata?.taskId) ?? 'UNKNOWN-TASK'
+  const conversationId = asString(metadata?.conversationId)
+  const timestamp = asString(metadata?.timestamp)
+  const project = asString(metadata?.project)
+  const etap = asString(metadata?.etap)
+  const scope = asString(metadata?.scope)
+  const subetap = asString(metadata?.subetap)
+  const conversationType = asString(metadata?.conversationType)
+  const importanceLevel = asString(metadata?.importanceLevel)
+  const filesPath = asString(record?.filesPath)
+
+  const lines = [`# PMOS Flight Record - ${taskId}`, '']
+
+  if (conversationId) lines.push(`> **Conversation ID:** ${conversationId}`)
+  if (timestamp) lines.push(`> **Timestamp:** ${timestamp}`)
+  if (project) lines.push(`> **Project:** ${project}`)
+  if (etap) lines.push(`> **ETAP:** ${etap}`)
+  if (subetap) lines.push(`> **Subetap:** ${subetap}`)
+  if (scope) lines.push(`> **Scope:** ${scope}`)
+  if (conversationType) lines.push(`> **Conversation Type:** ${conversationType}`)
+  if (importanceLevel) lines.push(`> **Importance Level:** ${importanceLevel}`)
+
+  lines.push('')
+  lines.push('---')
+  lines.push('')
+
+  pushSection(lines, 'Task', asString(task?.originalTaskRequest))
+
+  const analysisParts = [asString(analysis?.executionSummary), asString(analysis?.reasoningSummary)].filter(
+    (value): value is string => Boolean(value),
+  )
+  pushSection(lines, 'Analysis', analysisParts.join('\n\n'))
+  pushSection(lines, 'Findings', asStringArray(findings?.findings))
+  pushSection(lines, 'Blockers', asStringArray(findings?.blockers))
+  pushSection(lines, 'Residual Risks', asStringArray(findings?.residualRisks))
+  pushSection(lines, 'Decisions', asStringArray(decisions?.decisions))
+  pushSection(lines, 'Actions', asStringArray(actions?.recommendations))
+  pushSection(lines, 'Validations Executed', asStringArray(actions?.validationsExecuted))
+  pushSection(lines, 'Validations Not Executed', asStringArray(actions?.validationsNotExecuted))
+  pushSection(lines, 'Artifacts Created', asStringArray(actions?.artifactsCreated))
+  pushSection(lines, 'Artifacts Modified', asStringArray(actions?.artifactsModified))
+
+  const finalStatus = asString(result?.finalStatus)
+  if (finalStatus) {
+    lines.push('## Result')
+    lines.push('')
+    lines.push(`Final status: ${finalStatus}`)
+    lines.push('')
+  }
+
+  const evidenceLines = [
+    asString(completionEvidence?.closeoutState) ? `- closeoutState: ${asString(completionEvidence?.closeoutState)}` : null,
+    asString(completionEvidence?.pmosSaveStatus) ? `- pmosSaveStatus: ${asString(completionEvidence?.pmosSaveStatus)}` : null,
+    asString(completionEvidence?.vectorRebuildStatus) ? `- vectorRebuildStatus: ${asString(completionEvidence?.vectorRebuildStatus)}` : null,
+    asString(completionEvidence?.archiveCompletenessStatus)
+      ? `- archiveCompletenessStatus: ${asString(completionEvidence?.archiveCompletenessStatus)}`
+      : null,
+    asString(completionEvidence?.executionTrailStatus)
+      ? `- executionTrailStatus: ${asString(completionEvidence?.executionTrailStatus)}`
+      : null,
+  ].filter((value): value is string => Boolean(value))
+
+  if (evidenceLines.length > 0) {
+    lines.push('## Completion Evidence')
+    lines.push('')
+    lines.push(...evidenceLines)
+    lines.push('')
+  }
+
+  const traceabilityLinks = buildTraceabilityLinks(filesPath)
+  if (traceabilityLinks.length > 0) {
+    lines.push('## Traceability Links')
+    lines.push('')
+    lines.push(...traceabilityLinks)
+    lines.push('')
+  }
+
+  lines.push('---')
+
+  return lines.join('\n')
+}
+
 export function EventLedgerTable({ events, sourceRecords }: EventLedgerTableProps) {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(events[0]?.id ?? null)
 
@@ -36,6 +197,7 @@ export function EventLedgerTable({ events, sourceRecords }: EventLedgerTableProp
     [events, selectedEventId],
   )
   const selectedRecord = selectedEvent ? sourceRecords[selectedEvent.id] ?? null : null
+  const canonicalConversationView = selectedRecord ? buildCanonicalConversationView(selectedRecord) : null
 
   return (
     <div className="flex min-h-0 flex-1 overflow-hidden border border-bg-border bg-bg-surface">
@@ -103,6 +265,15 @@ export function EventLedgerTable({ events, sourceRecords }: EventLedgerTableProp
                 {prettyJson(selectedRecord.record)}
               </pre>
             </section>
+
+            {canonicalConversationView && (
+              <section>
+                <h3 className="section-label">Full Conversation</h3>
+                <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded border border-bg-border bg-bg-surface p-4 text-[11px] leading-relaxed text-text-primary">
+                  {canonicalConversationView}
+                </pre>
+              </section>
+            )}
 
             {selectedRecord.rawJson !== null && (
               <section>
