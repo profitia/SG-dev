@@ -20,6 +20,7 @@ type HandoffArtifactRecordView = Omit<HandoffArtifactRecord, 'createdAt'> & {
 
 type HandoffPayloadView = {
   resultStatus?: string
+  currentState?: string[]
   recommendedNextDecision?: string
   bridgePayloadText?: string
 }
@@ -329,6 +330,7 @@ function asHandoffPayload(value: unknown): HandoffPayloadView | null {
 
   return {
     resultStatus: asString(payload.resultStatus) ?? undefined,
+    currentState: asStringArray(payload.currentState),
     recommendedNextDecision: asString(payload.recommendedNextDecision) ?? undefined,
     bridgePayloadText: asString(payload.bridgePayloadText) ?? undefined,
   }
@@ -800,6 +802,7 @@ export function EventLedgerTable({ events, sourceRecords, handoffArtifactsByConv
                     <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-text-tertiary">Handoff Summary</p>
                     <div className="space-y-2 rounded border border-bg-border bg-bg-base p-3 text-xs leading-relaxed text-text-primary">
                       <SummaryTextRow label="resultStatus" value={handoffPayload?.resultStatus ?? null} query={searchQuery} />
+                      <SummaryListRow label="CURRENT STATE" items={handoffPayload?.currentState ?? []} query={searchQuery} />
                       <SummaryTextRow label="recommendedNextDecision" value={handoffPayload?.recommendedNextDecision ?? null} query={searchQuery} />
                     </div>
                   </div>
@@ -886,6 +889,28 @@ function SummaryTextRow({ label, value, query }: { label: string; value: string 
       <p className="font-mono text-text-tertiary">{label}</p>
       <div className="rounded border border-bg-border bg-bg-surface p-3 text-text-primary">
         <HighlightedText text={value ?? 'Not recorded.'} query={query} />
+      </div>
+    </div>
+  )
+}
+
+function SummaryListRow({ label, items, query }: { label: string; items: string[]; query: string }) {
+  return (
+    <div className="space-y-1">
+      <p className="font-mono text-text-tertiary">{label}</p>
+      <div className="rounded border border-bg-border bg-bg-surface p-3 text-text-primary">
+        {items.length > 0 ? (
+          <ul className="space-y-1">
+            {items.map((item) => (
+              <li key={`${label}-${item}`} className="flex gap-2">
+                <span className="text-text-tertiary">-</span>
+                <span><HighlightedText text={item} query={query} /></span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <span>Not recorded.</span>
+        )}
       </div>
     </div>
   )
