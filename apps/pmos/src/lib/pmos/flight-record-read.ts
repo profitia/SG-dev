@@ -1,8 +1,17 @@
-import { type FlightRecordV1, validatePendingArtifact } from '../../../../../packages/governance/src'
+type FlightRecordLike = {
+  metadata: Record<string, unknown>
+  task: Record<string, unknown>
+  analysis: Record<string, unknown>
+  findings: Record<string, unknown>
+  decisions: Record<string, unknown>
+  actions: Record<string, unknown>
+  result: Record<string, unknown>
+  completionEvidence: Record<string, unknown>
+}
 
 export interface CanonicalConversationReadModel {
   available: boolean
-  flightRecord: FlightRecordV1 | null
+  flightRecord: FlightRecordLike | null
   metadata: {
     conversationId: string | null
     taskId: string | null
@@ -51,14 +60,34 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === 'string')
 }
 
-export function readCanonicalFlightRecord(value: unknown): FlightRecordV1 | null {
-  if (typeof value !== 'object' || value === null) return null
+function asString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null
+}
 
-  const candidate = value as FlightRecordV1
-  const validation = validatePendingArtifact(candidate)
-  if (!validation.valid) return null
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
 
-  return candidate
+export function readCanonicalFlightRecord(value: unknown): FlightRecordLike | null {
+  if (!isRecord(value)) return null
+
+  const candidate = value as Record<string, unknown>
+  const sections = [
+    'metadata',
+    'task',
+    'analysis',
+    'findings',
+    'decisions',
+    'actions',
+    'result',
+    'completionEvidence',
+  ]
+
+  if (sections.some((section) => !isRecord(candidate[section]))) {
+    return null
+  }
+
+  return candidate as FlightRecordLike
 }
 
 export function buildCanonicalConversationReadModel(value: unknown): CanonicalConversationReadModel {
@@ -117,21 +146,21 @@ export function buildCanonicalConversationReadModel(value: unknown): CanonicalCo
     available: true,
     flightRecord,
     metadata: {
-      conversationId: flightRecord.metadata.conversationId ?? null,
-      taskId: flightRecord.metadata.taskId ?? null,
-      etap: flightRecord.metadata.etap ?? null,
-      subetap: flightRecord.metadata.subetap ?? null,
+      conversationId: asString(flightRecord.metadata.conversationId),
+      taskId: asString(flightRecord.metadata.taskId),
+      etap: asString(flightRecord.metadata.etap),
+      subetap: asString(flightRecord.metadata.subetap),
       scope: typeof flightRecord.metadata.scope === 'string' ? flightRecord.metadata.scope : null,
-      timestamp: flightRecord.metadata.timestamp ?? null,
+      timestamp: asString(flightRecord.metadata.timestamp),
       conversationType: typeof flightRecord.metadata.conversationType === 'string' ? flightRecord.metadata.conversationType : null,
       importanceLevel: typeof flightRecord.metadata.importanceLevel === 'string' ? flightRecord.metadata.importanceLevel : null,
     },
     task: {
-      originalTaskRequest: flightRecord.task.originalTaskRequest ?? null,
+      originalTaskRequest: asString(flightRecord.task.originalTaskRequest),
     },
     analysis: {
-      executionSummary: flightRecord.analysis.executionSummary ?? null,
-      reasoningSummary: flightRecord.analysis.reasoningSummary ?? null,
+      executionSummary: asString(flightRecord.analysis.executionSummary),
+      reasoningSummary: asString(flightRecord.analysis.reasoningSummary),
     },
     findings: {
       findings: isStringArray(flightRecord.findings.findings) ? flightRecord.findings.findings : [],
@@ -153,10 +182,10 @@ export function buildCanonicalConversationReadModel(value: unknown): CanonicalCo
     },
     completionEvidence: {
       closeoutState: typeof flightRecord.completionEvidence.closeoutState === 'string' ? flightRecord.completionEvidence.closeoutState : null,
-      pmosSaveStatus: flightRecord.completionEvidence.pmosSaveStatus ?? null,
-      vectorRebuildStatus: flightRecord.completionEvidence.vectorRebuildStatus ?? null,
-      archiveCompletenessStatus: flightRecord.completionEvidence.archiveCompletenessStatus ?? null,
-      executionTrailStatus: flightRecord.completionEvidence.executionTrailStatus ?? null,
+      pmosSaveStatus: asString(flightRecord.completionEvidence.pmosSaveStatus),
+      vectorRebuildStatus: asString(flightRecord.completionEvidence.vectorRebuildStatus),
+      archiveCompletenessStatus: asString(flightRecord.completionEvidence.archiveCompletenessStatus),
+      executionTrailStatus: asString(flightRecord.completionEvidence.executionTrailStatus),
     },
   }
 }
