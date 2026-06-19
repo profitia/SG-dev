@@ -1,4 +1,4 @@
-import { ArchiveSourceKind, Prisma } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 
 import { db } from '@/lib/db'
 
@@ -51,9 +51,11 @@ export type EventLedgerData = {
   sourceRecords: Record<string, EventLedgerSourceRecord>
 }
 
+type ArchiveEventSourceKind = 'PMOS_CLOSEOUTS' | 'PMOS_EXECUTION_TRAILS'
+
 const ARCHIVE_EVENT_SOURCE_KINDS = [
-  ArchiveSourceKind.PMOS_CLOSEOUTS,
-  ArchiveSourceKind.PMOS_EXECUTION_TRAILS,
+  'PMOS_CLOSEOUTS',
+  'PMOS_EXECUTION_TRAILS',
 ] as const
 
 function toJsonObject(value: unknown): Prisma.JsonObject {
@@ -63,13 +65,13 @@ function toJsonObject(value: unknown): Prisma.JsonObject {
 function getArchiveArtifactTitle(artifact: {
   path: string | null
   artifactKey: string
-  source: { sourceKind: ArchiveSourceKind }
+  source: { sourceKind: string }
 }): string {
   const pathPart = artifact.path?.split('/').pop() ?? artifact.artifactKey
-  if (artifact.source.sourceKind === ArchiveSourceKind.PMOS_CLOSEOUTS) {
+  if (artifact.source.sourceKind === 'PMOS_CLOSEOUTS') {
     return pathPart
   }
-  if (artifact.source.sourceKind === ArchiveSourceKind.PMOS_EXECUTION_TRAILS) {
+  if (artifact.source.sourceKind === 'PMOS_EXECUTION_TRAILS') {
     return pathPart
   }
   return artifact.artifactKey
@@ -259,7 +261,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
         rawJson: record.rawPayload,
       }
 
-      const isCloseout = record.source.sourceKind === ArchiveSourceKind.PMOS_CLOSEOUTS
+      const isCloseout = record.source.sourceKind === 'PMOS_CLOSEOUTS'
       return {
         id: `archive_artifacts:${record.id}`,
         eventType: isCloseout ? 'CLOSEOUT_SAVED' : 'EXECUTION_TRAIL_RECORDED',
