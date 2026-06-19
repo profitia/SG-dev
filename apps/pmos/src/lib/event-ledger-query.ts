@@ -118,6 +118,17 @@ const ARCHIVE_EVENT_SOURCE_KINDS = [
   'PMOS_EXECUTION_TRAILS',
 ] as const
 
+async function findManyIfAvailable<T>(
+  delegate: { findMany?: (args: unknown) => Promise<T[]> } | undefined,
+  args: unknown,
+): Promise<T[]> {
+  if (!delegate || typeof delegate.findMany !== 'function') {
+    return []
+  }
+
+  return delegate.findMany(args)
+}
+
 function toJsonObject(value: unknown): Prisma.JsonObject {
   return JSON.parse(JSON.stringify(value ?? null)) as Prisma.JsonObject
 }
@@ -160,43 +171,43 @@ function getArchiveArtifactTaskId(rawPayload: Prisma.JsonValue | null, pathValue
 
 export async function eventLedgerQuery(): Promise<EventLedgerData> {
   const conversationArtifactDelegate = (db as unknown as {
-    conversationArtifact: {
+    conversationArtifact?: {
       findMany: (args: unknown) => Promise<ConversationEventRecord[]>
     }
   }).conversationArtifact
 
   const promptExecutionDelegate = (db as unknown as {
-    promptExecution: {
+    promptExecution?: {
       findMany: (args: unknown) => Promise<PromptExecutionEventRecord[]>
     }
   }).promptExecution
 
   const executionLogDelegate = (db as unknown as {
-    executionLog: {
+    executionLog?: {
       findMany: (args: unknown) => Promise<ExecutionLogEventRecord[]>
     }
   }).executionLog
 
   const decisionDelegate = (db as unknown as {
-    decision: {
+    decision?: {
       findMany: (args: unknown) => Promise<DecisionEventRecord[]>
     }
   }).decision
 
   const architectureWarningDelegate = (db as unknown as {
-    architectureWarning: {
+    architectureWarning?: {
       findMany: (args: unknown) => Promise<WarningEventRecord[]>
     }
   }).architectureWarning
 
   const changedFileDelegate = (db as unknown as {
-    changedFile: {
+    changedFile?: {
       findMany: (args: unknown) => Promise<ChangedFileEventRecord[]>
     }
   }).changedFile
 
   const archiveSourceDelegate = (db as unknown as {
-    archiveSource: {
+    archiveSource?: {
       findMany: (args: unknown) => Promise<ArchiveSourceEventRecord[]>
     }
   }).archiveSource
@@ -210,31 +221,31 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
     changedFiles,
     archiveSources,
   ] = await Promise.all([
-    conversationArtifactDelegate.findMany({
+    findManyIfAvailable(conversationArtifactDelegate, {
       orderBy: { timestamp: 'desc' },
       take: 250,
     }),
-    promptExecutionDelegate.findMany({
+    findManyIfAvailable(promptExecutionDelegate, {
       orderBy: { createdAt: 'desc' },
       take: 250,
     }),
-    executionLogDelegate.findMany({
+    findManyIfAvailable(executionLogDelegate, {
       orderBy: { createdAt: 'desc' },
       take: 250,
     }),
-    decisionDelegate.findMany({
+    findManyIfAvailable(decisionDelegate, {
       orderBy: { createdAt: 'desc' },
       take: 250,
     }),
-    architectureWarningDelegate.findMany({
+    findManyIfAvailable(architectureWarningDelegate, {
       orderBy: { createdAt: 'desc' },
       take: 250,
     }),
-    changedFileDelegate.findMany({
+    findManyIfAvailable(changedFileDelegate, {
       orderBy: { createdAt: 'desc' },
       take: 250,
     }),
-    archiveSourceDelegate.findMany({
+    findManyIfAvailable(archiveSourceDelegate, {
       where: {
         sourceKind: {
           in: [...ARCHIVE_EVENT_SOURCE_KINDS],
