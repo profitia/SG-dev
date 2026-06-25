@@ -984,18 +984,29 @@ function projectConversationArtifactScalarParity(record: {
   summary: string
   filesPath: string | null
 }): Record<string, unknown> {
+  const metadata: Record<string, unknown> = {
+    conversationId: record.conversationId,
+    project: record.project,
+    taskId: record.taskId,
+    etap: record.etap,
+    scope: record.scope,
+    timestamp: record.timestamp.toISOString(),
+  }
+
+  if (record.subetap !== null) {
+    metadata.subetap = record.subetap
+  }
+
+  if (record.conversationType !== null) {
+    metadata.conversationType = record.conversationType
+  }
+
+  if (record.importanceLevel !== null) {
+    metadata.importanceLevel = record.importanceLevel
+  }
+
   return {
-    metadata: {
-      conversationId: record.conversationId,
-      project: record.project,
-      taskId: record.taskId,
-      etap: record.etap,
-      scope: record.scope,
-      timestamp: record.timestamp.toISOString(),
-      subetap: record.subetap,
-      conversationType: record.conversationType,
-      importanceLevel: record.importanceLevel,
-    },
+    metadata,
     task: {
       originalTaskRequest: record.userPrompt,
     },
