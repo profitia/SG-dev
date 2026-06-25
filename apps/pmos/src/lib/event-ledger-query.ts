@@ -206,6 +206,23 @@ function firstNonEmptyString(...values: Array<string | null | undefined>): strin
   return null
 }
 
+function truncateSingleLine(value: string, maxLength = 120): string {
+  const normalized = value.replace(/\s+/g, ' ').trim()
+  if (normalized.length <= maxLength) {
+    return normalized
+  }
+
+  return `${normalized.slice(0, maxLength - 1).trimEnd()}…`
+}
+
+function getConversationEventTitle(record: ConversationEventRecord): string {
+  return firstNonEmptyString(
+    record.taskId,
+    record.userPrompt ? truncateSingleLine(record.userPrompt) : null,
+    record.conversationId,
+  ) ?? record.conversationId
+}
+
 function getJsonStringField(value: Prisma.JsonValue | null, fieldName: string): string | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null
@@ -559,7 +576,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       runtimeContext: firstNonEmptyString(record.scope, record.etap, record.subetap),
       sourceTable: 'conversation_artifacts',
       taskId: record.taskId ?? null,
-      title: record.summary || record.conversationId,
+      title: getConversationEventTitle(record),
       rawRecordId: record.id,
     }
   })
