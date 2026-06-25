@@ -34,7 +34,10 @@ import {
   ArtifactKind,
   ArtifactNature,
   ArtifactStatus,
+  CANONICAL_ETAP_NAMES,
+  CANONICAL_SCOPE_CLASSIFICATIONS,
   type CloseoutEvidence,
+  ConversationType,
   type FlightRecordV1,
   type GptHandoffArtifactV1,
   type PendingArtifact,
@@ -68,6 +71,7 @@ import {
   readRuntimeAuthoritySnapshot,
   renderRuntimeAuthorityMarkdown,
 } from '../src/lib/pmos/runtime-authority'
+import { createCanonicalFlightRecordPayload } from '../src/lib/pmos/flight-record-snapshot'
 import { assertDatabaseUrl } from '../src/lib/pmos/operator-preflight'
 import {
   atomicCopyFile,
@@ -94,6 +98,19 @@ const RUNTIME_RECOVERY_DIR = path.join(RECOVERY_DIR, 'runtime')
 const ACTIVE_CLOSEOUT_FILE = path.join(RECOVERY_DIR, 'active-closeout.json')
 const RUNTIME_CONTEXT_FILE = path.resolve(__dirname, '../.context/runtime-context.md')
 const RUNTIME_CONTEXT_INTEGRITY_FILE = path.resolve(__dirname, '../.context/runtime-context.integrity.json')
+
+const CANONICAL_PROJECT_NAMES: ReadonlySet<string> = new Set([
+  'SpendGuru 2.0',
+])
+
+const CANONICAL_WORKSPACE_NAMES: ReadonlySet<string> = new Set([
+  'SG-dev',
+  'sg2-pcog-runtime',
+])
+
+const CANONICAL_CONVERSATION_TYPE_NAMES: ReadonlySet<string> = new Set(
+  Object.values(ConversationType),
+)
 
 // ── Advisory File Lock ────────────────────────────────────────────────────────
 // Prevents concurrent pmos-save invocations from racing on the same artifact.
@@ -127,6 +144,197 @@ function buildArtifactBaseName(artifact: PendingArtifact): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
   return `${prefix}_${slug}`
+}
+
+function normalizeWhitespace(value: string): string {
+  return value.replace(/\s+/g, ' ').trim()
+}
+
+function normalizeOptionalString(value: string | undefined): string | undefined {
+  if (typeof value !== 'string') return value
+  const normalized = normalizeWhitespace(value)
+  return normalized.length > 0 ? normalized : undefined
+}
+
+function normalizeStringList(values: string[]): string[] {
+  return values
+    .map((value) => normalizeWhitespace(value))
+    .filter((value) => value.length > 0)
+}
+
+function normalizeProjectName(project: string): string {
+  const normalized = normalizeWhitespace(project).replace(/\s*\[[^\]]+\]\s*$/g, '')
+  const key = normalized.toLowerCase()
+
+  if (
+    key === 'spendguru 2.0'
+    || key === 'spend guru'
+    || key === 'spendguru'
+    || key === 'spendguru 2 0'
+    || key === 'spendguru-2'
+    || key === 'sg2-discovery-runtime'
+    || key === 'sg-dev'
+    || key === 'spendguru 2.0 - pmos'
+    || key === 'spendguru 2.0 - pcos runtime'
+    || key === 'spendguru 2.0 — pmos'
+    || key === 'spendguru 2.0 — pcos runtime'
+  ) {
+    return 'SpendGuru 2.0'
+  }
+
+  return normalized
+}
+
+function normalizeWorkspaceName(workspace: string): string {
+  const normalized = normalizeWhitespace(workspace).replace(/\s*\[[^\]]+\]\s*$/g, '')
+  const key = normalized.toLowerCase()
+
+  if (key === 'sg-dev' || key === 'sg dev' || key === 'sgdev') {
+    return 'SG-dev'
+  }
+
+  if (key === 'sg2-pcog-runtime' || key === 'sg2 pcog runtime' || key === 'sg2_pcog_runtime') {
+    return 'sg2-pcog-runtime'
+  }
+
+  return normalized
+}
+
+function normalizeScopeValue(scope: string): string {
+  const normalized = normalizeWhitespace(scope).toLowerCase()
+
+  if (normalized === 'impl') return 'implementation'
+  if (normalized === 'gov') return 'governance'
+  if (normalized === 'arch') return 'architecture'
+  if (normalized === 'doc' || normalized === 'docs') return 'documentation'
+
+  return normalized
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function normalizeEtapName(etap: string): string {
+  return normalizeWhitespace(etap)
+}
+
+function normalizeSubetapName(subetap: string, taskId: string): string {
+  const normalized = normalizeWhitespace(subetap).replace(/\s*\[[^\]]+\]\s*$/g, '')
+  const taskPrefix = new RegExp(`^${escapeRegExp(taskId)}\s+-\s+`)
+
+  if (normalized === taskId) {
+    return taskId
+  }
+
+  if (taskPrefix.test(normalized)) {
+    return normalized.replace(taskPrefix, `${taskId} — `)
+  }
+
+  return normalized
+}
+
+function normalizeConversationTypeValue(conversationType: string | undefined): string | undefined {
+  if (typeof conversationType !== 'string') return conversationType
+
+  const normalized = normalizeWhitespace(conversationType).toLowerCase()
+
+  if (normalized === 'impl') return ConversationType.IMPLEMENTATION
+  if (normalized === 'arch') return ConversationType.ARCHITECTURE
+  if (normalized === 'debug') return ConversationType.DEBUGGING
+  if (normalized === 'runtime analysis' || normalized === 'runtime-analysis') return ConversationType.RUNTIME_ANALYSIS
+  if (normalized === 'orchestrator') return ConversationType.ORCHESTRATION
+  if (normalized === 'ui') return ConversationType.UX
+  if (normalized === 'gov') return ConversationType.GOVERNANCE
+  if (normalized === 'infra') return ConversationType.INFRASTRUCTURE
+
+  return normalized.length > 0 ? normalized : undefined
+}
+
+function validateCanonicalizedMetadata(artifact: PendingArtifact): string[] {
+  const errors: string[] = []
+  const rawMetadata = artifact.metadata as Record<string, unknown>
+  const workspace = typeof rawMetadata.workspace === 'string' ? rawMetadata.workspace : undefined
+
+  if (!CANONICAL_PROJECT_NAMES.has(artifact.metadata.project)) {
+    errors.push(`metadata.project normalization failed: "${artifact.metadata.project}" is not canonical — valid: ${[...CANONICAL_PROJECT_NAMES].join(', ')}`)
+  }
+
+  if (workspace !== undefined && !CANONICAL_WORKSPACE_NAMES.has(workspace)) {
+    errors.push(`metadata.workspace normalization failed: "${workspace}" is not canonical — valid: ${[...CANONICAL_WORKSPACE_NAMES].join(', ')}`)
+  }
+
+  if (!CANONICAL_SCOPE_CLASSIFICATIONS.has(artifact.metadata.scope)) {
+    errors.push(`metadata.scope normalization failed: "${artifact.metadata.scope}" is not canonical — valid: ${[...CANONICAL_SCOPE_CLASSIFICATIONS].join(', ')}`)
+  }
+
+  if (!CANONICAL_ETAP_NAMES.has(artifact.metadata.etap)) {
+    errors.push(`metadata.etap normalization failed: "${artifact.metadata.etap}" is not canonical`)
+  }
+
+  if (
+    artifact.metadata.conversationType !== undefined
+    && !CANONICAL_CONVERSATION_TYPE_NAMES.has(artifact.metadata.conversationType)
+  ) {
+    errors.push(`metadata.conversationType normalization failed: "${artifact.metadata.conversationType}" is not canonical — valid: ${[...CANONICAL_CONVERSATION_TYPE_NAMES].join(', ')}`)
+  }
+
+  return errors
+}
+
+function normalizePendingArtifact(artifact: PendingArtifact): PendingArtifact {
+  const rawMetadata = artifact.metadata as Record<string, unknown>
+  const rawWorkspace = typeof rawMetadata.workspace === 'string' ? rawMetadata.workspace : undefined
+
+  return {
+    ...artifact,
+    metadata: {
+      ...artifact.metadata,
+      conversationId: normalizeWhitespace(artifact.metadata.conversationId),
+      project: normalizeProjectName(artifact.metadata.project),
+      taskId: normalizeWhitespace(artifact.metadata.taskId),
+      etap: normalizeEtapName(artifact.metadata.etap),
+      scope: normalizeScopeValue(artifact.metadata.scope),
+      timestamp: normalizeWhitespace(artifact.metadata.timestamp),
+      subetap: typeof artifact.metadata.subetap === 'string'
+        ? normalizeSubetapName(artifact.metadata.subetap, normalizeWhitespace(artifact.metadata.taskId))
+        : normalizeOptionalString(artifact.metadata.subetap),
+      conversationType: normalizeConversationTypeValue(artifact.metadata.conversationType),
+      importanceLevel: normalizeOptionalString(artifact.metadata.importanceLevel),
+      ...(rawWorkspace ? { workspace: normalizeWorkspaceName(rawWorkspace) } : {}),
+    },
+    task: {
+      ...artifact.task,
+      originalTaskRequest: artifact.task.originalTaskRequest.trim(),
+    },
+    analysis: {
+      ...artifact.analysis,
+      executionSummary: artifact.analysis.executionSummary.trim(),
+      reasoningSummary: artifact.analysis.reasoningSummary.trim(),
+    },
+    findings: {
+      findings: normalizeStringList(artifact.findings.findings),
+      blockers: normalizeStringList(artifact.findings.blockers),
+      residualRisks: normalizeStringList(artifact.findings.residualRisks),
+    },
+    decisions: {
+      decisions: normalizeStringList(artifact.decisions.decisions),
+    },
+    actions: {
+      recommendations: normalizeStringList(artifact.actions.recommendations),
+      validationsExecuted: normalizeStringList(artifact.actions.validationsExecuted),
+      validationsNotExecuted: normalizeStringList(artifact.actions.validationsNotExecuted),
+      artifactsCreated: normalizeStringList(artifact.actions.artifactsCreated),
+      artifactsModified: normalizeStringList(artifact.actions.artifactsModified),
+    },
+    result: {
+      ...artifact.result,
+    },
+    completionEvidence: {
+      ...artifact.completionEvidence,
+    },
+    ...(artifact.contextLinks ? { contextLinks: { ...artifact.contextLinks } } : {}),
+  }
 }
 
 interface AdvisoryLock {
@@ -276,6 +484,37 @@ function writeJson(filePath: string, data: unknown): void {
   })
 }
 
+function hasCompletedExecutionTrail(baseName: string): boolean {
+  try {
+    const events = readExecutionTrailEvents(baseName)
+    return events.some((event) => event.eventType === ExecutionTrailEventType.TASK_COMPLETED && event.status === ExecutionTrailEventStatus.SUCCEEDED)
+  } catch {
+    return false
+  }
+}
+
+function hasMatchingPendingArtifactBackup(baseName: string, artifact: PendingArtifact): boolean {
+  if (!fs.existsSync(PENDING_BACKUP_DIR)) return false
+
+  const entryPrefix = `${baseName}__backup_`
+  const entries = fs.readdirSync(PENDING_BACKUP_DIR, { withFileTypes: true })
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.startsWith(entryPrefix) || !entry.name.endsWith('.json')) {
+      continue
+    }
+
+    const candidate = readJsonFileSafe<PendingArtifact>(path.join(PENDING_BACKUP_DIR, entry.name))
+    if (!candidate.value) continue
+
+    const normalizedCandidate = normalizePendingArtifact(candidate.value)
+    if (hashObject(normalizedCandidate) === hashObject(artifact)) {
+      return true
+    }
+  }
+
+  return false
+}
+
 function copyToRecoveryTarget(sourcePath: string, targetDir: string, fileName: string): string | null {
   if (!fs.existsSync(sourcePath)) return null
   ensureDir(targetDir)
@@ -295,7 +534,7 @@ function writeConversationArtifactFiles(params: {
   integrityPath: string
   lockPath: string
   recoveryDir: string
-  handoff?: PersistedHandoffArtifact | null
+  handoff?: GptHandoffArtifactV1 | null
   traceability: {
     executionTrailPath?: string | null
     executionTrailMarkdownPath?: string | null
@@ -358,7 +597,7 @@ function buildMarkdown(
     closeoutEvidencePath?: string | null
     pendingArtifactBackupPath?: string | null
   },
-  handoff?: PersistedHandoffArtifact | null,
+  handoff?: GptHandoffArtifactV1 | null,
 ): string {
   const lines: string[] = []
 
@@ -601,7 +840,206 @@ function bootstrapExecutionTrail(baseName: string, artifact: PendingArtifact): v
   })
 }
 
-function buildConversationArtifactProjection(artifact: FlightRecordV1, filesPath: string) {
+function formatJsonValue(value: unknown): string {
+  if (value === undefined) return 'undefined'
+  return JSON.stringify(value)
+}
+
+function collectJsonDiffs(expected: unknown, actual: unknown, currentPath = 'flightRecordJson', diffs: string[] = []): string[] {
+  if (diffs.length >= 50) return diffs
+
+  if (Array.isArray(expected) || Array.isArray(actual)) {
+    if (!Array.isArray(expected) || !Array.isArray(actual)) {
+      diffs.push(`${currentPath}: expected ${Array.isArray(expected) ? 'array' : typeof expected}, got ${Array.isArray(actual) ? 'array' : typeof actual}`)
+      return diffs
+    }
+
+    if (expected.length !== actual.length) {
+      diffs.push(`${currentPath}.length: expected ${expected.length}, got ${actual.length}`)
+    }
+
+    const maxLength = Math.max(expected.length, actual.length)
+    for (let index = 0; index < maxLength && diffs.length < 50; index += 1) {
+      collectJsonDiffs(expected[index], actual[index], `${currentPath}[${index}]`, diffs)
+    }
+
+    return diffs
+  }
+
+  const expectedIsObject = typeof expected === 'object' && expected !== null
+  const actualIsObject = typeof actual === 'object' && actual !== null
+
+  if (expectedIsObject || actualIsObject) {
+    if (!expectedIsObject || !actualIsObject) {
+      diffs.push(`${currentPath}: expected ${expectedIsObject ? 'object' : typeof expected}, got ${actualIsObject ? 'object' : typeof actual}`)
+      return diffs
+    }
+
+    const expectedKeys = Object.keys(expected as Record<string, unknown>).sort()
+    const actualKeys = Object.keys(actual as Record<string, unknown>).sort()
+    const allKeys = Array.from(new Set([...expectedKeys, ...actualKeys])).sort()
+
+    for (const key of allKeys) {
+      if (diffs.length >= 50) break
+      const hasExpectedKey = Object.prototype.hasOwnProperty.call(expected, key)
+      const hasActualKey = Object.prototype.hasOwnProperty.call(actual, key)
+
+      if (!hasExpectedKey) {
+        diffs.push(`${currentPath}.${key}: unexpected value ${formatJsonValue((actual as Record<string, unknown>)[key])}`)
+        continue
+      }
+
+      if (!hasActualKey) {
+        diffs.push(`${currentPath}.${key}: missing value, expected ${formatJsonValue((expected as Record<string, unknown>)[key])}`)
+        continue
+      }
+
+      collectJsonDiffs(
+        (expected as Record<string, unknown>)[key],
+        (actual as Record<string, unknown>)[key],
+        `${currentPath}.${key}`,
+        diffs,
+      )
+    }
+
+    return diffs
+  }
+
+  if (!Object.is(expected, actual)) {
+    diffs.push(`${currentPath}: expected ${formatJsonValue(expected)}, got ${formatJsonValue(actual)}`)
+  }
+
+  return diffs
+}
+
+function collectMissingFactPaths(expected: unknown, actual: unknown, currentPath = 'artifact', diffs: string[] = []): string[] {
+  if (diffs.length >= 50) return diffs
+
+  if (Array.isArray(expected)) {
+    if (!Array.isArray(actual)) {
+      diffs.push(`${currentPath}: expected array, got ${typeof actual}`)
+      return diffs
+    }
+
+    for (let index = 0; index < expected.length && diffs.length < 50; index += 1) {
+      if (index >= actual.length) {
+        diffs.push(`${currentPath}[${index}]: missing array item`)
+        continue
+      }
+      collectMissingFactPaths(expected[index], actual[index], `${currentPath}[${index}]`, diffs)
+    }
+
+    return diffs
+  }
+
+  const expectedIsObject = typeof expected === 'object' && expected !== null
+  if (!expectedIsObject) {
+    if (actual === undefined) {
+      diffs.push(`${currentPath}: missing value`)
+    }
+    return diffs
+  }
+
+  if (typeof actual !== 'object' || actual === null || Array.isArray(actual)) {
+    diffs.push(`${currentPath}: expected object, got ${Array.isArray(actual) ? 'array' : typeof actual}`)
+    return diffs
+  }
+
+  for (const key of Object.keys(expected as Record<string, unknown>).sort()) {
+    if (diffs.length >= 50) break
+    if (!Object.prototype.hasOwnProperty.call(actual, key)) {
+      diffs.push(`${currentPath}.${key}: missing field`)
+      continue
+    }
+
+    collectMissingFactPaths(
+      (expected as Record<string, unknown>)[key],
+      (actual as Record<string, unknown>)[key],
+      `${currentPath}.${key}`,
+      diffs,
+    )
+  }
+
+  return diffs
+}
+
+function stripCompletionEvidence(artifact: FlightRecordV1): Omit<FlightRecordV1, 'completionEvidence'> {
+  const { completionEvidence, ...rest } = artifact
+  void completionEvidence
+  return rest
+}
+
+function projectConversationArtifactScalarParity(record: {
+  conversationId: string
+  timestamp: Date
+  project: string
+  taskId: string
+  scope: string
+  etap: string
+  subetap: string | null
+  conversationType: PrismaConversationType | null
+  importanceLevel: PrismaImportanceLevel | null
+  userPrompt: string
+  llmResponse: string
+  summary: string
+  filesPath: string | null
+}): Record<string, unknown> {
+  return {
+    metadata: {
+      conversationId: record.conversationId,
+      project: record.project,
+      taskId: record.taskId,
+      etap: record.etap,
+      scope: record.scope,
+      timestamp: record.timestamp.toISOString(),
+      subetap: record.subetap,
+      conversationType: record.conversationType,
+      importanceLevel: record.importanceLevel,
+    },
+    task: {
+      originalTaskRequest: record.userPrompt,
+    },
+    analysis: {
+      executionSummary: record.llmResponse,
+      reasoningSummary: record.summary,
+    },
+    summary: record.summary,
+    filesPath: record.filesPath,
+  }
+}
+
+function projectFlightRecordCompletionEvidence(closeout: CloseoutEvidence): FlightRecordV1['completionEvidence'] {
+  return {
+    closeoutState: closeout.closeoutState,
+    pmosSaveStatus: closeout.pmosSaveStatus,
+    vectorRebuildStatus: closeout.vectorRebuildStatus,
+    archiveCompletenessStatus: closeout.archiveCompletenessStatus,
+    executionTrailStatus: closeout.executionTrailStatus,
+  }
+}
+
+function readConversationJsonArtifactOrThrow(jsonPath: string): FlightRecordV1 {
+  const artifact = readJsonFileSafe<FlightRecordV1>(jsonPath)
+  if (!artifact.value) {
+    throw new Error(artifact.error ?? `Conversation JSON artifact missing at ${jsonPath}`)
+  }
+
+  const validation = validatePendingArtifact(artifact.value)
+  if (!validation.valid) {
+    throw new Error(`Conversation JSON artifact failed ValidatorV2: ${validation.errors.join(' | ')}`)
+  }
+
+  return artifact.value
+}
+
+function buildConversationArtifactProjection(
+  artifact: FlightRecordV1,
+  filesPath: string,
+  flightRecordPayload: FlightRecordV1,
+  closeout: CloseoutEvidence,
+) {
+  const summary = buildConversationArtifactSummary(artifact, closeout)
+
   return {
     timestamp: new Date(artifact.metadata.timestamp),
     project: artifact.metadata.project,
@@ -614,10 +1052,36 @@ function buildConversationArtifactProjection(artifact: FlightRecordV1, filesPath
     importanceLevel: (artifact.metadata.importanceLevel ?? null) as PrismaImportanceLevel | null,
     userPrompt: artifact.task.originalTaskRequest,
     llmResponse: artifact.analysis.executionSummary,
-    summary: artifact.analysis.reasoningSummary,
+    summary,
     tags: [],
     chronologyOrder: 0,
-    flightRecordJson: artifact as unknown as Prisma.InputJsonValue,
+    flightRecordJson: flightRecordPayload as unknown as Prisma.InputJsonValue,
+    filesPath,
+  }
+}
+
+function buildConversationArtifactMutableProjection(
+  artifact: FlightRecordV1,
+  filesPath: string,
+  closeout: CloseoutEvidence,
+) {
+  const summary = buildConversationArtifactSummary(artifact, closeout)
+
+  return {
+    timestamp: new Date(artifact.metadata.timestamp),
+    project: artifact.metadata.project,
+    taskId: artifact.metadata.taskId,
+    scope: artifact.metadata.scope,
+    etap: artifact.metadata.etap,
+    subetap: artifact.metadata.subetap ?? null,
+    domains: [],
+    conversationType: (artifact.metadata.conversationType ?? null) as PrismaConversationType | null,
+    importanceLevel: (artifact.metadata.importanceLevel ?? null) as PrismaImportanceLevel | null,
+    userPrompt: artifact.task.originalTaskRequest,
+    llmResponse: artifact.analysis.executionSummary,
+    summary,
+    tags: [],
+    chronologyOrder: 0,
     filesPath,
   }
 }
@@ -741,6 +1205,71 @@ function buildHandoffTextSection(title: string, items: string[]): string {
   return `${title}:\n${items.map((item) => `- ${item}`).join('\n')}`
 }
 
+function buildDerivedHandoffPayload(artifact: FlightRecordV1, closeout: CloseoutEvidence) {
+  const completedWork = [
+    ...artifact.findings.findings,
+    ...artifact.actions.artifactsCreated.map((item) => `Created: ${item}`),
+    ...artifact.actions.artifactsModified.map((item) => `Modified: ${item}`),
+    ...artifact.actions.validationsExecuted.map((item) => `Validated: ${item}`),
+  ]
+
+  const notCompleted = [
+    ...artifact.actions.validationsNotExecuted.map((item) => `Validation not executed: ${item}`),
+    ...(closeout.recoveryRequired ? [`Recovery required: ${closeout.recoveryReason ?? 'unknown reason'}`] : []),
+  ]
+
+  const openQuestions = artifact.actions.recommendations.filter((item) => item.trim().endsWith('?'))
+  const outstandingTopics = artifact.actions.recommendations.filter((item) => !item.trim().endsWith('?'))
+  const unresolvedAreas = [
+    ...artifact.findings.blockers,
+    ...artifact.findings.residualRisks,
+    ...artifact.actions.validationsNotExecuted,
+  ]
+  const recommendedNextDecision = outstandingTopics[0] ?? openQuestions[0] ?? 'None recorded.'
+  const currentState = buildCurrentStateSnapshot(artifact, closeout)
+  const bridgePayloadText = buildBridgePayloadText({
+    originalObjective: artifact.task.originalTaskRequest,
+    resultStatus: artifact.result.finalStatus,
+    currentState,
+    completedWork,
+    notCompleted,
+    keyFindings: artifact.findings.findings,
+    decisions: artifact.decisions.decisions,
+    residualRisks: artifact.findings.residualRisks,
+    openQuestions,
+    recommendedNextDecision,
+  })
+
+  return {
+    originalObjective: artifact.task.originalTaskRequest,
+    resultStatus: artifact.result.finalStatus,
+    currentState,
+    completedWork,
+    notCompleted,
+    keyFindings: artifact.findings.findings,
+    decisions: artifact.decisions.decisions,
+    blockers: artifact.findings.blockers,
+    residualRisks: artifact.findings.residualRisks,
+    openQuestions,
+    outstandingTopics,
+    unresolvedAreas,
+    recommendedNextDecision,
+    bridgePayloadText,
+    copyReadyText: bridgePayloadText,
+  }
+}
+
+function buildConversationArtifactSummary(artifact: FlightRecordV1, closeout: CloseoutEvidence): string {
+  const payload = buildDerivedHandoffPayload(artifact, closeout)
+
+  return [
+    artifact.analysis.reasoningSummary,
+    '',
+    'Handoff:',
+    payload.bridgePayloadText,
+  ].join('\n').trim()
+}
+
 function buildCurrentStateSnapshot(artifact: FlightRecordV1, closeout: CloseoutEvidence): string[] {
   const currentState: string[] = []
 
@@ -851,67 +1380,7 @@ function readPersistedHandoffArtifactOrThrow(row: {
 }
 
 function buildGptHandoffArtifact(artifact: FlightRecordV1, closeout: CloseoutEvidence, closeoutRef: string): GptHandoffArtifactV1 {
-  const completedWork = [
-    ...artifact.findings.findings,
-    ...artifact.actions.artifactsCreated.map((item) => `Created: ${item}`),
-    ...artifact.actions.artifactsModified.map((item) => `Modified: ${item}`),
-    ...artifact.actions.validationsExecuted.map((item) => `Validated: ${item}`),
-  ]
-
-  const notCompleted = [
-    ...artifact.actions.validationsNotExecuted.map((item) => `Validation not executed: ${item}`),
-    ...(closeout.recoveryRequired ? [`Recovery required: ${closeout.recoveryReason ?? 'unknown reason'}`] : []),
-  ]
-
-  const openQuestions = artifact.actions.recommendations.filter((item) => item.trim().endsWith('?'))
-  const outstandingTopics = artifact.actions.recommendations.filter((item) => !item.trim().endsWith('?'))
-  const unresolvedAreas = [
-    ...artifact.findings.blockers,
-    ...artifact.findings.residualRisks,
-    ...artifact.actions.validationsNotExecuted,
-  ]
-  const recommendedNextDecision = outstandingTopics[0] ?? openQuestions[0] ?? 'None recorded.'
-  const currentState = buildCurrentStateSnapshot(artifact, closeout)
-
-  const payload = {
-    originalObjective: artifact.task.originalTaskRequest,
-    resultStatus: artifact.result.finalStatus,
-    currentState,
-    completedWork,
-    notCompleted,
-    keyFindings: artifact.findings.findings,
-    decisions: artifact.decisions.decisions,
-    blockers: artifact.findings.blockers,
-    residualRisks: artifact.findings.residualRisks,
-    openQuestions,
-    outstandingTopics,
-    unresolvedAreas,
-    recommendedNextDecision,
-    bridgePayloadText: buildBridgePayloadText({
-      originalObjective: artifact.task.originalTaskRequest,
-      resultStatus: artifact.result.finalStatus,
-      currentState,
-      completedWork,
-      notCompleted,
-      keyFindings: artifact.findings.findings,
-      decisions: artifact.decisions.decisions,
-      residualRisks: artifact.findings.residualRisks,
-      openQuestions,
-      recommendedNextDecision,
-    }),
-    copyReadyText: buildBridgePayloadText({
-      originalObjective: artifact.task.originalTaskRequest,
-      resultStatus: artifact.result.finalStatus,
-      currentState,
-      completedWork,
-      notCompleted,
-      keyFindings: artifact.findings.findings,
-      decisions: artifact.decisions.decisions,
-      residualRisks: artifact.findings.residualRisks,
-      openQuestions,
-      recommendedNextDecision,
-    }),
-  }
+  const payload = buildDerivedHandoffPayload(artifact, closeout)
 
   return {
     id: `${artifact.metadata.conversationId}:${ArtifactKind.HANDOFF}:v1`,
@@ -936,7 +1405,7 @@ async function persistGptHandoffArtifact(params: {
   artifact: FlightRecordV1
   closeout: CloseoutEvidence
   closeoutRef: string
-}): Promise<PersistedHandoffArtifact> {
+}): Promise<GptHandoffArtifactV1> {
   const handoffArtifact = buildGptHandoffArtifact(params.artifact, params.closeout, params.closeoutRef)
   const validation = validateGptHandoffArtifact(handoffArtifact)
 
@@ -991,11 +1460,23 @@ async function persistGptHandoffArtifact(params: {
     throw new Error(`GPT handoff artifact persistence failed: ${handoffArtifact.id} not found in PostgreSQL after upsert.`)
   }
 
-  return readPersistedHandoffArtifactOrThrow(persisted)
+  const persistedArtifact = readPersistedHandoffArtifactOrThrow(persisted)
+  const { createdAtDate: _createdAtDate, createdAt: _persistedCreatedAt, ...persistedComparable } = persistedArtifact
+  const { createdAt: _expectedCreatedAt, ...expectedComparable } = handoffArtifact
+  const handoffParityDiffs = collectJsonDiffs(expectedComparable, persistedComparable, 'gptHandoffArtifact')
+  if (handoffParityDiffs.length > 0) {
+    throw new Error([
+      `GPT handoff artifact parity failed for ${handoffArtifact.id}`,
+      ...handoffParityDiffs.map((diff) => `- ${diff}`),
+    ].join('\n'))
+  }
+
+  return handoffArtifact
 }
 
 async function finalizeRuntimeContextCloseout(params: {
   artifact: FlightRecordV1
+  conversationArtifactSnapshot: FlightRecordV1
   evidence: CloseoutEvidence
   baseName: string
   mdPath: string
@@ -1009,7 +1490,7 @@ async function finalizeRuntimeContextCloseout(params: {
     pendingArtifactBackupPath: string
   }
 }): Promise<void> {
-  const { artifact, evidence, baseName, mdPath, jsonPath, integrityPath, lockPath, traceability } = params
+  const { artifact, conversationArtifactSnapshot, evidence, baseName, mdPath, jsonPath, integrityPath, lockPath, traceability } = params
 
   evidence.vectorRebuildStatus = 'STARTED'
   evidence.vectorRebuildStartedAt = new Date().toISOString()
@@ -1078,13 +1559,7 @@ async function finalizeRuntimeContextCloseout(params: {
     })
     syncFactPreservationEvidence(baseName, evidence)
     syncFlightRecordCompletionEvidence(artifact, evidence)
-    writeConversationArtifactFiles({ artifact, baseName, mdPath, jsonPath, integrityPath, lockPath, recoveryDir: QUARANTINE_DIR, traceability })
-    await prisma.conversationArtifact.update({
-      where: { conversationId: artifact.metadata.conversationId },
-      data: {
-        flightRecordJson: artifact as unknown as Prisma.InputJsonValue,
-      },
-    })
+    writeConversationArtifactFiles({ artifact: conversationArtifactSnapshot, baseName, mdPath, jsonPath, integrityPath, lockPath, recoveryDir: QUARANTINE_DIR, traceability })
     writeJson(closeoutEvidencePath!, evidence)
     throw new Error(evidence.vectorRebuildError)
   }
@@ -1120,14 +1595,7 @@ async function finalizeRuntimeContextCloseout(params: {
   syncFactPreservationEvidence(baseName, evidence)
   syncFlightRecordCompletionEvidence(artifact, evidence)
 
-  writeConversationArtifactFiles({ artifact, baseName, mdPath, jsonPath, integrityPath, lockPath, recoveryDir: QUARANTINE_DIR, traceability })
-
-  await prisma.conversationArtifact.update({
-    where: { conversationId: artifact.metadata.conversationId },
-    data: {
-      flightRecordJson: artifact as unknown as Prisma.InputJsonValue,
-    },
-  })
+  writeConversationArtifactFiles({ artifact: conversationArtifactSnapshot, baseName, mdPath, jsonPath, integrityPath, lockPath, recoveryDir: QUARANTINE_DIR, traceability })
 
   writeJson(closeoutEvidencePath!, evidence)
 }
@@ -1160,6 +1628,9 @@ async function main() {
   if (!artifact) {
     throw new Error('Pending artifact payload is empty.')
   }
+  artifact = normalizePendingArtifact(artifact)
+  const normalizedPendingArtifactPayload = createCanonicalFlightRecordPayload(artifact)
+  const canonicalizationErrors = validateCanonicalizedMetadata(artifact)
   baseName = buildArtifactBaseName(artifact)
 
   ensureDir(PENDING_BACKUP_DIR)
@@ -1168,6 +1639,28 @@ async function main() {
   ensureDir(CLOSEOUTS_DIR)
   ensureDir(OPERATIONS_DIR)
   ensureDir(RUNTIME_RECOVERY_DIR)
+
+  console.log(`[pmos-save] Artifact: ${artifact.metadata.conversationId}`)
+  console.log(`[pmos-save] Task: ${artifact.metadata.taskId}`)
+  console.log(`[pmos-save] ETAP: ${artifact.metadata.etap}`)
+
+  // ── Acquire advisory lock (prevents concurrent pmos-save for same artifact) ─
+  acquireAdvisoryLock(artifact.metadata.conversationId)
+
+  const orphanReplayDetected = (
+    !fs.existsSync(ACTIVE_CLOSEOUT_FILE)
+    && hasCompletedExecutionTrail(baseName)
+    && hasMatchingPendingArtifactBackup(baseName, artifact)
+  )
+
+  if (orphanReplayDetected) {
+    fs.unlinkSync(PENDING_FILE)
+    console.log('[pmos-save] ✓ Reconciled orphaned pending-artifact from completed closeout evidence')
+    console.log('[pmos-save] ✓ Cleared pending-artifact.json')
+    releaseAdvisoryLock()
+    console.log('[pmos-save] PMOS persistence COMPLETE.')
+    return
+  }
 
   pendingBackupPath = path.join(PENDING_BACKUP_DIR, `${baseName}__backup_${buildRecoverySuffix()}.json`)
   closeoutEvidencePath = path.join(CLOSEOUTS_DIR, `${baseName}.closeout.json`)
@@ -1185,13 +1678,6 @@ async function main() {
     details: { pendingArtifactBackupPath: relativize(pendingBackupPath) },
     status: ExecutionTrailEventStatus.SUCCEEDED,
   })
-
-  console.log(`[pmos-save] Artifact: ${artifact.metadata.conversationId}`)
-  console.log(`[pmos-save] Task: ${artifact.metadata.taskId}`)
-  console.log(`[pmos-save] ETAP: ${artifact.metadata.etap}`)
-
-  // ── Acquire advisory lock (prevents concurrent pmos-save for same artifact) ─
-  acquireAdvisoryLock(artifact.metadata.conversationId)
 
   // ── GOV-3-2 Hard Governance Validation ─────────────────────────────────────
   // Invalid governance = FAIL SAVE. No warnings. Hard stop.
@@ -1258,6 +1744,41 @@ async function main() {
       console.warn('[pmos-save] ⚠️  Legacy ETAP detected (historical artifact — allowed):')
       legacyWarnings.forEach((w) => console.warn(`  → ${w}`))
     }
+  }
+
+  if (canonicalizationErrors.length > 0) {
+    const quarantinePath = copyToRecoveryTarget(
+      pendingBackupPath,
+      QUARANTINE_DIR,
+      `${baseName}__canonicalization-failed_${buildRecoverySuffix()}.json`,
+    )
+    evidence.pmosSaveStatus = 'FAILED'
+    evidence.pmosSaveError = canonicalizationErrors.join(' | ')
+    evidence.recoveryRequired = true
+    evidence.recoveryReason = 'Pending artifact normalization did not resolve to canonical PMOS metadata.'
+    evidence.manualRecoveryInstructions = [
+      'Fix the non-canonical metadata values in pending-artifact.json and rerun cd apps/pmos && npm run pmos:save.',
+      `Inspect backup: ${relativize(pendingBackupPath)}.`,
+      quarantinePath ? `Inspect quarantine copy: ${relativize(quarantinePath)}.` : 'Quarantine copy unavailable.',
+      'Do not call task_complete. Task state is INCOMPLETE — RECOVERY REQUIRED.',
+    ]
+    appendState(evidence, CloseoutState.PMOS_SAVE_FAILED)
+    appendState(evidence, CloseoutState.RECOVERY_REQUIRED)
+    syncFactPreservationEvidence(baseName, evidence)
+    writeJson(closeoutEvidencePath, evidence)
+    appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.PMOS_SAVE_FAILED, 'Pending artifact normalization did not resolve to canonical PMOS metadata.', {
+      details: { errors: canonicalizationErrors },
+      status: ExecutionTrailEventStatus.FAILED,
+      severity: ExecutionTrailEventSeverity.ERROR,
+    })
+    appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.TASK_INCOMPLETE, 'Task incomplete because PMOS normalization did not resolve to canonical metadata.', {
+      details: { recoveryRequired: true },
+      status: ExecutionTrailEventStatus.INCOMPLETE,
+      severity: ExecutionTrailEventSeverity.ERROR,
+    })
+    console.error('\n[pmos-save] ❌ CANONICALIZATION FAIL — normalized metadata is still non-canonical:')
+    canonicalizationErrors.forEach((error) => console.error(`  → ${error}`))
+    throw new Error(`Canonicalization validation failed: ${canonicalizationErrors.join(' | ')}`)
   }
   appendState(evidence, CloseoutState.PENDING_ARTIFACT_VALIDATED)
   writeJson(closeoutEvidencePath, evidence)
@@ -1375,23 +1896,82 @@ async function main() {
   writeConversationArtifactFiles({ artifact, baseName, mdPath, jsonPath, integrityPath, lockPath, traceability })
 
   // 3. Persist the final canonical FlightRecordV1 to Postgres.
-  const persistenceProjection = buildConversationArtifactProjection(artifact, conversationMdPath)
+  const canonicalFlightRecordPayload = createCanonicalFlightRecordPayload(artifact)
+  const pendingArtifactSharedDiffs = collectJsonDiffs(
+    stripCompletionEvidence(normalizedPendingArtifactPayload),
+    stripCompletionEvidence(canonicalFlightRecordPayload),
+    'pendingArtifact',
+  )
+  if (pendingArtifactSharedDiffs.length > 0) {
+    throw new Error([
+      `PendingArtifact parity failed for ${artifact.metadata.conversationId}`,
+      ...pendingArtifactSharedDiffs.map((diff) => `- ${diff}`),
+    ].join('\n'))
+  }
+
+  const closeoutCompletionDiffs = collectJsonDiffs(
+    canonicalFlightRecordPayload.completionEvidence,
+    projectFlightRecordCompletionEvidence(evidence),
+    'completionEvidence',
+  )
+  if (closeoutCompletionDiffs.length > 0) {
+    throw new Error([
+      `Closeout completion evidence drift detected for ${artifact.metadata.conversationId}`,
+      ...closeoutCompletionDiffs.map((diff) => `- ${diff}`),
+    ].join('\n'))
+  }
+
+  const jsonMirrorBeforeDb = readConversationJsonArtifactOrThrow(jsonPath)
+  const preDbMirrorDiffs = collectJsonDiffs(canonicalFlightRecordPayload, jsonMirrorBeforeDb, 'conversationJsonMirror')
+  if (preDbMirrorDiffs.length > 0) {
+    throw new Error([
+      `Conversation JSON mirror drift detected before DB persistence for ${artifact.metadata.conversationId}`,
+      ...preDbMirrorDiffs.map((diff) => `- ${diff}`),
+    ].join('\n'))
+  }
+
+  const persistenceProjection = buildConversationArtifactProjection(artifact, conversationMdPath, canonicalFlightRecordPayload, evidence)
+  const mutableProjection = buildConversationArtifactMutableProjection(artifact, conversationMdPath, evidence)
   const relationCreateWrites = buildConversationArtifactRelationCreateWrites(artifact)
   const relationUpdateWrites = buildConversationArtifactRelationUpdateWrites(artifact)
   const existing = await prisma.conversationArtifact.findUnique({
     where: { conversationId: artifact.metadata.conversationId },
+    select: {
+      id: true,
+      conversationId: true,
+      flightRecordJson: true,
+    },
   })
 
   if (existing) {
-    console.log('[pmos-save] ConversationArtifact already exists — updating.')
-    const updated = await prisma.conversationArtifact.update({
-      where: { conversationId: artifact.metadata.conversationId },
-      data: {
-        ...persistenceProjection,
-        ...relationUpdateWrites,
-      },
-    })
-    persistedDbRecordId = updated.id
+    if (existing.flightRecordJson != null) {
+      const immutableSnapshotDiffs = collectJsonDiffs(canonicalFlightRecordPayload, existing.flightRecordJson)
+      if (immutableSnapshotDiffs.length > 0) {
+        throw new Error([
+          `Immutable flightRecordJson violation for ${artifact.metadata.conversationId}`,
+          'ConversationArtifact already contains a canonical PMOS snapshot and the incoming save would change it.',
+          ...immutableSnapshotDiffs.map((diff) => `- ${diff}`),
+        ].join('\n'))
+      }
+
+      const updated = await prisma.conversationArtifact.update({
+        where: { conversationId: artifact.metadata.conversationId },
+        data: {
+          ...mutableProjection,
+          ...relationUpdateWrites,
+        },
+      })
+      persistedDbRecordId = updated.id
+    } else {
+      const updated = await prisma.conversationArtifact.update({
+        where: { conversationId: artifact.metadata.conversationId },
+        data: {
+          ...persistenceProjection,
+          ...relationUpdateWrites,
+        },
+      })
+      persistedDbRecordId = updated.id
+    }
   } else {
     const created = await prisma.conversationArtifact.create({
       data: {
@@ -1409,8 +1989,19 @@ async function main() {
   const persistedRecord = await prisma.conversationArtifact.findUnique({
     where: { conversationId: artifact.metadata.conversationId },
     select: {
-      id: true,
       conversationId: true,
+      timestamp: true,
+      project: true,
+      taskId: true,
+      scope: true,
+      etap: true,
+      subetap: true,
+      conversationType: true,
+      importanceLevel: true,
+      userPrompt: true,
+      llmResponse: true,
+      summary: true,
+      filesPath: true,
       flightRecordJson: true,
     },
   })
@@ -1419,9 +2010,42 @@ async function main() {
     throw new Error(`DB read-back failed for ${artifact.metadata.conversationId}`)
   }
 
+  const saveIntegrityDiffs = collectJsonDiffs(canonicalFlightRecordPayload, persistedRecord.flightRecordJson)
+  if (saveIntegrityDiffs.length > 0) {
+    throw new Error([
+      `Save integrity validation failed for ${artifact.metadata.conversationId}`,
+      ...saveIntegrityDiffs.map((diff) => `- ${diff}`),
+    ].join('\n'))
+  }
+
+  const dbScalarParityDiffs = collectJsonDiffs(
+    {
+      metadata: canonicalFlightRecordPayload.metadata,
+      task: canonicalFlightRecordPayload.task,
+      analysis: {
+        ...canonicalFlightRecordPayload.analysis,
+        reasoningSummary: buildConversationArtifactSummary(canonicalFlightRecordPayload, evidence),
+      },
+      summary: buildConversationArtifactSummary(canonicalFlightRecordPayload, evidence),
+      filesPath: conversationMdPath,
+    },
+    projectConversationArtifactScalarParity(persistedRecord),
+    'conversationArtifactRow',
+  )
+  if (dbScalarParityDiffs.length > 0) {
+    throw new Error([
+      `ConversationArtifact scalar parity failed for ${artifact.metadata.conversationId}`,
+      ...dbScalarParityDiffs.map((diff) => `- ${diff}`),
+    ].join('\n'))
+  }
+
   const reconstructedFlightRecord = reconstructFlightRecordFromDbOrThrow(persistedRecord)
-  if (hashObject(reconstructedFlightRecord) !== hashObject(artifact)) {
-    throw new Error(`DB read-back integrity mismatch for ${artifact.metadata.conversationId}`)
+  const postDbMirrorDiffs = collectJsonDiffs(canonicalFlightRecordPayload, readConversationJsonArtifactOrThrow(jsonPath), 'conversationJsonMirror')
+  if (postDbMirrorDiffs.length > 0) {
+    throw new Error([
+      `Conversation JSON mirror drift detected after DB persistence for ${artifact.metadata.conversationId}`,
+      ...postDbMirrorDiffs.map((diff) => `- ${diff}`),
+    ].join('\n'))
   }
 
   console.log('[pmos-save] ✓ DB record persisted.')
@@ -1436,6 +2060,7 @@ async function main() {
 
   await finalizeRuntimeContextCloseout({
     artifact,
+    conversationArtifactSnapshot: canonicalFlightRecordPayload,
     evidence,
     baseName,
     mdPath,
@@ -1445,6 +2070,14 @@ async function main() {
     traceability,
   })
 
+  const postCloseoutMirrorDiffs = collectJsonDiffs(canonicalFlightRecordPayload, readConversationJsonArtifactOrThrow(jsonPath), 'conversationJsonMirror')
+  if (postCloseoutMirrorDiffs.length > 0) {
+    throw new Error([
+      `Conversation JSON mirror drift detected after runtime-context closeout for ${artifact.metadata.conversationId}`,
+      ...postCloseoutMirrorDiffs.map((diff) => `- ${diff}`),
+    ].join('\n'))
+  }
+
   const persistedHandoff = await persistGptHandoffArtifact({
     artifact,
     closeout: evidence,
@@ -1452,7 +2085,7 @@ async function main() {
   })
 
   writeConversationArtifactFiles({
-    artifact,
+    artifact: canonicalFlightRecordPayload,
     baseName,
     mdPath,
     jsonPath,
@@ -1462,6 +2095,14 @@ async function main() {
     handoff: persistedHandoff,
     traceability,
   })
+
+  const postHandoffMirrorDiffs = collectJsonDiffs(canonicalFlightRecordPayload, readConversationJsonArtifactOrThrow(jsonPath), 'conversationJsonMirror')
+  if (postHandoffMirrorDiffs.length > 0) {
+    throw new Error([
+      `Conversation JSON mirror drift detected after GPT handoff persistence for ${artifact.metadata.conversationId}`,
+      ...postHandoffMirrorDiffs.map((diff) => `- ${diff}`),
+    ].join('\n'))
+  }
 
   appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.ARTIFACT_CREATED, 'GPT handoff artifact generated from finalized closeout state.', {
     details: {
