@@ -35,10 +35,14 @@ export async function POST(req: NextRequest) {
     }
 
     const artifactId = buildPublicationArtifactId(sourceConversationId)
-    const publicationArtifact = await db.artifact.findUnique({
-      where: { id: artifactId },
-      select: { id: true, payload: true },
-    })
+    const publicationArtifacts = await db.$queryRawUnsafe<Array<{ id: string; payload: Prisma.JsonValue }>>(
+      `SELECT "id", "payload"
+       FROM "artifacts"
+       WHERE "id" = $1
+       LIMIT 1`,
+      artifactId,
+    )
+    const publicationArtifact = publicationArtifacts[0] ?? null
 
     if (!publicationArtifact) {
       return NextResponse.json({ error: 'Publication artifact not found' }, { status: 404 })
@@ -68,12 +72,14 @@ export async function POST(req: NextRequest) {
       },
     }
 
-    await db.artifact.update({
-      where: { id: artifactId },
-      data: {
-        payload: updatedPayload as Prisma.InputJsonValue,
-      },
-    })
+    await db.$executeRawUnsafe(
+      `UPDATE "artifacts"
+       SET "payload" = $2::jsonb,
+           "updated_at" = NOW()
+       WHERE "id" = $1`,
+      artifactId,
+      JSON.stringify(updatedPayload as Prisma.InputJsonValue),
+    )
 
     return new Response(null, { status: 204 })
   } catch (error) {

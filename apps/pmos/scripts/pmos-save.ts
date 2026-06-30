@@ -711,6 +711,14 @@ function writeJson(filePath: string, data: unknown): void {
   })
 }
 
+function syncPendingArtifactSnapshot(artifact: FlightRecordV1): void {
+  if (!fs.existsSync(PENDING_FILE)) {
+    return
+  }
+
+  writeJson(PENDING_FILE, artifact)
+}
+
 function hasCompletedExecutionTrail(baseName: string): boolean {
   try {
     const events = readExecutionTrailEvents(baseName)
@@ -740,6 +748,23 @@ function hasMatchingPendingArtifactBackup(baseName: string, artifact: PendingArt
   }
 
   return false
+}
+
+function hasSynchronizedCompletedCloseout(baseName: string): boolean {
+  const closeoutPath = path.join(CLOSEOUTS_DIR, `${baseName}.closeout.json`)
+  const conversationJsonPath = path.join(CONVERSATIONS_DIR, `${baseName}.json`)
+
+  const closeout = readJsonFileSafe<CloseoutEvidence>(closeoutPath)
+  const conversationArtifact = readJsonFileSafe<FlightRecordV1>(conversationJsonPath)
+
+  if (!closeout.value || !conversationArtifact.value) {
+    return false
+  }
+
+  const expectedCompletionEvidence = projectFlightRecordCompletionEvidence(closeout.value)
+  const actualCompletionEvidence = conversationArtifact.value.completionEvidence
+
+  return collectJsonDiffs(expectedCompletionEvidence, actualCompletionEvidence, 'completionEvidence').length === 0
 }
 
 function copyToRecoveryTarget(sourcePath: string, targetDir: string, fileName: string): string | null {
@@ -1508,13 +1533,13 @@ function buildConversationArtifactSummary(artifact: FlightRecordV1, closeout: Cl
     '',
     'Handoff:',
     payload.bridgePayloadText,
+  ].join('\n').trim()
+}
 
 function getPmosMemorosKnowledgeReadyCallbackUrl(): string | null {
   const baseUrl = (process.env.PMOS_CONSUMER_ACK_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? '').trim()
   if (!baseUrl) return null
   return `${baseUrl.replace(/\/$/, '')}/api/publication/memoros/knowledge-ready`
-}
-  ].join('\n').trim()
 }
 
 function buildCurrentStateSnapshot(artifact: FlightRecordV1, closeout: CloseoutEvidence): string[] {
@@ -2127,6 +2152,7 @@ async function main() {
     !fs.existsSync(ACTIVE_CLOSEOUT_FILE)
     && hasCompletedExecutionTrail(baseName)
     && hasMatchingPendingArtifactBackup(baseName, artifact)
+    && hasSynchronizedCompletedCloseout(baseName)
   )
 
   if (orphanReplayDetected) {
@@ -2294,6 +2320,7 @@ async function main() {
 
   syncFlightRecordCompletionEvidence(artifact, evidence)
   writeConversationArtifactFiles({ artifact, baseName, mdPath, jsonPath, integrityPath, lockPath, recoveryDir: QUARANTINE_DIR, traceability })
+  syncPendingArtifactSnapshot(artifact)
 
   console.log(`[pmos-save] ✓ .md artifact: ${mdPath}`)
   console.log(`[pmos-save] ✓ .json artifact: ${jsonPath}`)
@@ -2359,9 +2386,10 @@ async function main() {
   syncFlightRecordCompletionEvidence(artifact, evidence)
 
   writeConversationArtifactFiles({ artifact, baseName, mdPath, jsonPath, integrityPath, lockPath, traceability })
+  syncPendingArtifactSnapshot(artifact)
 
   // 3. Persist the final canonical FlightRecordV1 to Postgres.
-  const canonicalFlightRecordPayload = createCanonicalFlightRecordPayload(artifact)
+  let canonicalFlightRecordPayload = createCanonicalFlightRecordPayload(artifact)
   const pendingArtifactSharedDiffs = collectJsonDiffs(
     stripCompletionEvidence(normalizedPendingArtifactPayload),
     stripCompletionEvidence(canonicalFlightRecordPayload),
@@ -2412,11 +2440,22 @@ async function main() {
     if (existing.flightRecordJson != null) {
       const immutableSnapshotDiffs = collectJsonDiffs(canonicalFlightRecordPayload, existing.flightRecordJson)
       if (immutableSnapshotDiffs.length > 0) {
-        throw new Error([
-          `Immutable flightRecordJson violation for ${artifact.metadata.conversationId}`,
-          'ConversationArtifact already contains a canonical PMOS snapshot and the incoming save would change it.',
-          ...immutableSnapshotDiffs.map((diff) => `- ${diff}`),
-        ].join('\n'))
+        const immutableSharedDiffs = collectJsonDiffs(
+          stripCompletionEvidence(canonicalFlightRecordPayload),
+          stripCompletionEvidence(existing.flightRecordJson as unknown as FlightRecordV1),
+        )
+
+        if (immutableSharedDiffs.length > 0) {
+          throw new Error([
+            `Immutable flightRecordJson violation for ${artifact.metadata.conversationId}`,
+            'ConversationArtifact already contains a canonical PMOS snapshot and the incoming save would change it.',
+            ...immutableSnapshotDiffs.map((diff) => `- ${diff}`),
+          ].join('\n'))
+        }
+
+        canonicalFlightRecordPayload = existing.flightRecordJson as unknown as FlightRecordV1
+        writeConversationArtifactFiles({ artifact: canonicalFlightRecordPayload, baseName, mdPath, jsonPath, integrityPath, lockPath, traceability })
+        syncPendingArtifactSnapshot(canonicalFlightRecordPayload)
       }
 
       const updated = await prisma.conversationArtifact.update({
@@ -2558,6 +2597,7 @@ async function main() {
   syncFactPreservationEvidence(baseName, evidence)
   syncFlightRecordCompletionEvidence(artifact, evidence)
   writeConversationArtifactFiles({ artifact: canonicalFlightRecordPayload, baseName, mdPath, jsonPath, integrityPath, lockPath, traceability })
+  syncPendingArtifactSnapshot(canonicalFlightRecordPayload)
   writeJson(closeoutEvidencePath, evidence)
 
   const persistedHandoff = await persistGptHandoffArtifact({
@@ -2654,7 +2694,36 @@ async function main() {
   syncFactPreservationEvidence(baseName, evidence)
   syncFlightRecordCompletionEvidence(artifact, evidence)
 
+  canonicalFlightRecordPayload = createCanonicalFlightRecordPayload(artifact)
+
+  const finalPersistenceProjection = buildConversationArtifactProjection(
+    artifact,
+    conversationMdPath,
+    canonicalFlightRecordPayload,
+    evidence,
+  )
+
+  await prisma.conversationArtifact.update({
+    where: { conversationId: artifact.metadata.conversationId },
+    data: {
+      ...finalPersistenceProjection,
+      ...relationUpdateWrites,
+    },
+  })
+
   writeJson(closeoutEvidencePath, evidence)
+  writeConversationArtifactFiles({
+    artifact: canonicalFlightRecordPayload,
+    baseName,
+    mdPath,
+    jsonPath,
+    integrityPath,
+    lockPath,
+    recoveryDir: QUARANTINE_DIR,
+    handoff: persistedHandoff,
+    traceability,
+  })
+  syncPendingArtifactSnapshot(canonicalFlightRecordPayload)
 
   // 4. Clear pending artifact
   fs.unlinkSync(PENDING_FILE)
