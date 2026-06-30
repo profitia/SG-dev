@@ -5,8 +5,8 @@
 // Inserts ConversationArtifact into PMOS DB
 // Writes .md and .json lineage artifacts to apps/pmos/.pmos/conversations/
 //
-// GOVERNANCE: Hard validates ETAP, pipeline, conversationType, importanceLevel
-//             before any DB write. Invalid governance = FAIL SAVE.
+// GOVERNANCE: Hard validates PMOS-owned execution metadata before any DB write.
+//             Foreign planning metadata is preserved as opaque compatibility payload.
 //
 // Usage:
 //   npx tsx scripts/pmos-save.ts
@@ -34,7 +34,6 @@ import {
   ArtifactKind,
   ArtifactNature,
   ArtifactStatus,
-  CANONICAL_ETAP_NAMES,
   CANONICAL_SCOPE_CLASSIFICATIONS,
   type CloseoutEvidence,
   ConversationType,
@@ -80,6 +79,7 @@ import {
   quarantineTextArtifact,
   readJsonFileSafe,
 } from '../src/lib/pmos/atomic-io'
+import { materializePendingArtifactFromBootstrap } from '../src/lib/pmos/completion-authority'
 import { repairRuntimeContextArtifacts } from '../src/lib/pmos/runtime-context-write'
 
 const prisma = new PrismaClient()
@@ -98,6 +98,8 @@ const RUNTIME_RECOVERY_DIR = path.join(RECOVERY_DIR, 'runtime')
 const ACTIVE_CLOSEOUT_FILE = path.join(RECOVERY_DIR, 'active-closeout.json')
 const RUNTIME_CONTEXT_FILE = path.resolve(__dirname, '../.context/runtime-context.md')
 const RUNTIME_CONTEXT_INTEGRITY_FILE = path.resolve(__dirname, '../.context/runtime-context.integrity.json')
+const DEFAULT_MEMOROS_API_BASE_URL = 'http://localhost:4000'
+const MEMOROS_IMPORT_ROUTE = '/api/import/pmos-artifact'
 
 const CANONICAL_PROJECT_NAMES: ReadonlySet<string> = new Set([
   'SpendGuru 2.0',
@@ -118,6 +120,112 @@ const CANONICAL_CONVERSATION_TYPE_NAMES: ReadonlySet<string> = new Set(
 // Stale lock detection: lock older than LOCK_STALE_MS is treated as abandoned.
 const ADVISORY_LOCK_FILE = path.join(PMOS_DIR, '.pmos-save.lock')
 const LOCK_STALE_MS = 60_000 // 60 seconds — enough for any normal save operation
+
+type ParsedArgs = {
+  bootstrapInputPath: string | null
+  usedLegacyInputFlag: boolean
+}
+
+type PersistedConversationArtifactForPublication = {
+  id: string
+  conversationId: string
+  timestamp: Date
+  project: string
+  taskId: string | null
+  scope: string | null
+  etap: string | null
+  subetap: string | null
+  summary: string
+  conversationType: PrismaConversationType | null
+  importanceLevel: PrismaImportanceLevel | null
+  filesPath: string | null
+  flightRecordJson: Prisma.JsonValue | null
+}
+
+type PmosConversationArtifactPublicationRecord = {
+  id: string
+  conversationId: string
+  timestamp: string
+  project: string | null
+  taskId: string | null
+  etap: string | null
+  subetap: string | null
+  scope: string | null
+  summary: string | null
+  conversationType: string | null
+  importanceLevel: string | null
+  filesPath: string | null
+  flightRecordJson: Record<string, unknown>
+}
+
+type MemorosPublicationTargetSnapshot = {
+  baseUrl: string
+  endpoint: string
+  projectId: string | null
+}
+
+type MemorosPublicationConfig = {
+  endpoint: string
+  projectId: string
+}
+
+type MemorosPublicationAck = {
+  threadId: string
+  sourceRecordId: string | null
+  title: string
+  projectId: string
+  contractVersion: string
+  sourceTable: string
+  sourceRecordExternalId: string
+  alreadyImported: boolean
+  knowledgeProcessingId: string | null
+  knowledgeProcessingStatus: 'pending' | 'running' | 'knowledge_ready' | 'failed' | null
+  consumerReadinessStatus: 'pending' | 'ready' | 'failed' | null
+}
+
+type MemorosConsumerReadiness = {
+  consumer: 'MEMOROS'
+  status: 'pending' | 'ready' | 'failed'
+  knowledgeProcessingId: string | null
+  currentStage: string | null
+  threadId: string | null
+  sourceRecordId: string | null
+  projectId: string | null
+  metrics: Record<string, unknown> | null
+  retrievalProbe: Record<string, unknown> | null
+  acknowledgedAt: string | null
+  error: { code: string | null; message: string | null } | null
+}
+
+type MemorosPublicationPayloadV1 = {
+  targetSystem: 'MEMOROS'
+  endpoint: string
+  projectId: string | null
+  attemptedAt: string
+  publishedAt: string | null
+  sourceConversationArtifactId: string
+  sourceConversationId: string
+  sourceHandoffArtifactId: string | null
+  ack: MemorosPublicationAck | null
+  consumerReadiness: MemorosConsumerReadiness | null
+  error: string | null
+}
+
+type MemorosPublicationArtifactV1 = {
+  id: string
+  artifactKind: ArtifactKind
+  artifactNature: ArtifactNature
+  version: string
+  status: ArtifactStatus
+  taskId: string
+  conversationId: string
+  createdAt: string
+  sourceRefs: Array<{
+    sourceArtifactKind: ArtifactKind
+    sourceArtifactRef: string
+  }>
+  payload: MemorosPublicationPayloadV1
+}
 
 // ── Filename Helpers ──────────────────────────────────────────────────────────
 
@@ -146,6 +254,58 @@ function buildArtifactBaseName(artifact: PendingArtifact): string {
   return `${prefix}_${slug}`
 }
 
+function parseArgs(): ParsedArgs {
+  const args = process.argv.slice(2)
+  let bootstrapInputPath: string | null = null
+  let usedLegacyInputFlag = false
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index]
+    if (arg === '--bootstrap-input') {
+      bootstrapInputPath = args[index + 1] ?? null
+      index += 1
+      continue
+    }
+    if (arg === '--input') {
+      bootstrapInputPath = args[index + 1] ?? null
+      usedLegacyInputFlag = true
+      index += 1
+    }
+  }
+
+  return { bootstrapInputPath, usedLegacyInputFlag }
+}
+
+function ensurePendingArtifactReady(params: ParsedArgs): void {
+  if (fs.existsSync(PENDING_FILE)) {
+    if (params.bootstrapInputPath) {
+      console.warn('[pmos-save] WARNING: Ignoring bootstrap input because pending-artifact.json already exists.')
+    }
+    return
+  }
+
+  if (!params.bootstrapInputPath) {
+    console.error(`[pmos-save] ERROR: No pending artifact found at ${PENDING_FILE}`)
+    console.error('[pmos-save] Provide apps/pmos/.pmos/pending-artifact.json or rerun with --bootstrap-input <path-to-bootstrap-json>.')
+    process.exit(1)
+  }
+
+  if (params.usedLegacyInputFlag) {
+    console.warn('[pmos-save] WARNING: --input is a legacy transitional alias. Prefer --bootstrap-input.')
+  }
+
+  try {
+    const artifact = materializePendingArtifactFromBootstrap({
+      bootstrapInputPath: params.bootstrapInputPath,
+      pendingFilePath: PENDING_FILE,
+    })
+    console.log(`[pmos-save] Preflight created pending-artifact.json for ${artifact.metadata.taskId}`)
+  } catch (error) {
+    console.error(`[pmos-save] ERROR: ${(error as Error).message}`)
+    process.exit(1)
+  }
+}
+
 function normalizeWhitespace(value: string): string {
   return value.replace(/\s+/g, ' ').trim()
 }
@@ -156,10 +316,98 @@ function normalizeOptionalString(value: string | undefined): string | undefined 
   return normalized.length > 0 ? normalized : undefined
 }
 
+function readLegacyPlanningContext(metadata: Record<string, unknown>): { etap?: string; subetap?: string } {
+  const compatibility = typeof metadata.compatibility === 'object' && metadata.compatibility !== null
+    ? metadata.compatibility as Record<string, unknown>
+    : null
+  const legacyPlanningContext = compatibility && typeof compatibility.legacyPlanningContext === 'object' && compatibility.legacyPlanningContext !== null
+    ? compatibility.legacyPlanningContext as Record<string, unknown>
+    : null
+
+  const etap = typeof legacyPlanningContext?.etap === 'string'
+    ? legacyPlanningContext.etap
+    : typeof metadata.etap === 'string'
+      ? metadata.etap
+      : undefined
+
+  const subetap = typeof legacyPlanningContext?.subetap === 'string'
+    ? legacyPlanningContext.subetap
+    : typeof metadata.subetap === 'string'
+      ? metadata.subetap
+      : undefined
+
+  return { etap, subetap }
+}
+
+function normalizeLegacyPlanningCompatibility(metadata: Record<string, unknown>): Record<string, unknown> | undefined {
+  const legacyPlanningContext = readLegacyPlanningContext(metadata)
+  const etap = normalizeOptionalString(legacyPlanningContext.etap)
+  const subetap = normalizeOptionalString(legacyPlanningContext.subetap)
+
+  if (!etap && !subetap) {
+    return undefined
+  }
+
+  return {
+    legacyPlanningContext: {
+      ...(etap ? { etap } : {}),
+      ...(subetap ? { subetap } : {}),
+    },
+  }
+}
+
 function normalizeStringList(values: string[]): string[] {
   return values
     .map((value) => normalizeWhitespace(value))
     .filter((value) => value.length > 0)
+}
+
+function getMemorosPublicationTargetSnapshot(): MemorosPublicationTargetSnapshot {
+  const configuredBaseUrl = normalizeOptionalString(process.env.MEMOROS_API_BASE_URL) ?? DEFAULT_MEMOROS_API_BASE_URL
+  const baseUrl = configuredBaseUrl.replace(/\/+$/, '')
+
+  return {
+    baseUrl,
+    endpoint: `${baseUrl}${MEMOROS_IMPORT_ROUTE}`,
+    projectId: normalizeOptionalString(process.env.MEMOROS_PROJECT_ID) ?? null,
+  }
+}
+
+function getMemorosPublicationConfigOrThrow(): MemorosPublicationConfig {
+  const snapshot = getMemorosPublicationTargetSnapshot()
+
+  if (!snapshot.projectId) {
+    throw new Error('MEMOROS publication is not configured: set MEMOROS_PROJECT_ID in apps/pmos/.env.local.')
+  }
+
+  return {
+    endpoint: snapshot.endpoint,
+    projectId: snapshot.projectId,
+  }
+}
+
+function buildPmosConversationArtifactPublicationRecord(
+  record: PersistedConversationArtifactForPublication,
+): PmosConversationArtifactPublicationRecord {
+  if (!record.flightRecordJson || typeof record.flightRecordJson !== 'object' || Array.isArray(record.flightRecordJson)) {
+    throw new Error(`ConversationArtifact ${record.id} is missing a valid flightRecordJson payload for MEMOROS publication.`)
+  }
+
+  return {
+    id: record.id,
+    conversationId: record.conversationId,
+    timestamp: record.timestamp.toISOString(),
+    project: record.project,
+    taskId: record.taskId,
+    etap: record.etap,
+    subetap: record.subetap,
+    scope: record.scope,
+    summary: record.summary,
+    conversationType: record.conversationType,
+    importanceLevel: record.importanceLevel,
+    filesPath: record.filesPath,
+    flightRecordJson: record.flightRecordJson as Record<string, unknown>,
+  }
 }
 
 function normalizeProjectName(project: string): string {
@@ -211,29 +459,6 @@ function normalizeScopeValue(scope: string): string {
   return normalized
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-function normalizeEtapName(etap: string): string {
-  return normalizeWhitespace(etap)
-}
-
-function normalizeSubetapName(subetap: string, taskId: string): string {
-  const normalized = normalizeWhitespace(subetap).replace(/\s*\[[^\]]+\]\s*$/g, '')
-  const taskPrefix = new RegExp(`^${escapeRegExp(taskId)}\s+-\s+`)
-
-  if (normalized === taskId) {
-    return taskId
-  }
-
-  if (taskPrefix.test(normalized)) {
-    return normalized.replace(taskPrefix, `${taskId} — `)
-  }
-
-  return normalized
-}
-
 function normalizeConversationTypeValue(conversationType: string | undefined): string | undefined {
   if (typeof conversationType !== 'string') return conversationType
 
@@ -255,6 +480,7 @@ function validateCanonicalizedMetadata(artifact: PendingArtifact): string[] {
   const errors: string[] = []
   const rawMetadata = artifact.metadata as Record<string, unknown>
   const workspace = typeof rawMetadata.workspace === 'string' ? rawMetadata.workspace : undefined
+  const legacyPlanningContext = readLegacyPlanningContext(rawMetadata)
 
   if (!CANONICAL_PROJECT_NAMES.has(artifact.metadata.project)) {
     errors.push(`metadata.project normalization failed: "${artifact.metadata.project}" is not canonical — valid: ${[...CANONICAL_PROJECT_NAMES].join(', ')}`)
@@ -266,10 +492,6 @@ function validateCanonicalizedMetadata(artifact: PendingArtifact): string[] {
 
   if (!CANONICAL_SCOPE_CLASSIFICATIONS.has(artifact.metadata.scope)) {
     errors.push(`metadata.scope normalization failed: "${artifact.metadata.scope}" is not canonical — valid: ${[...CANONICAL_SCOPE_CLASSIFICATIONS].join(', ')}`)
-  }
-
-  if (!CANONICAL_ETAP_NAMES.has(artifact.metadata.etap)) {
-    errors.push(`metadata.etap normalization failed: "${artifact.metadata.etap}" is not canonical`)
   }
 
   if (
@@ -285,6 +507,7 @@ function validateCanonicalizedMetadata(artifact: PendingArtifact): string[] {
 function normalizePendingArtifact(artifact: PendingArtifact): PendingArtifact {
   const rawMetadata = artifact.metadata as Record<string, unknown>
   const rawWorkspace = typeof rawMetadata.workspace === 'string' ? rawMetadata.workspace : undefined
+  const compatibility = normalizeLegacyPlanningCompatibility(rawMetadata)
 
   return {
     ...artifact,
@@ -293,14 +516,11 @@ function normalizePendingArtifact(artifact: PendingArtifact): PendingArtifact {
       conversationId: normalizeWhitespace(artifact.metadata.conversationId),
       project: normalizeProjectName(artifact.metadata.project),
       taskId: normalizeWhitespace(artifact.metadata.taskId),
-      etap: normalizeEtapName(artifact.metadata.etap),
       scope: normalizeScopeValue(artifact.metadata.scope),
       timestamp: normalizeWhitespace(artifact.metadata.timestamp),
-      subetap: typeof artifact.metadata.subetap === 'string'
-        ? normalizeSubetapName(artifact.metadata.subetap, normalizeWhitespace(artifact.metadata.taskId))
-        : normalizeOptionalString(artifact.metadata.subetap),
       conversationType: normalizeConversationTypeValue(artifact.metadata.conversationType),
       importanceLevel: normalizeOptionalString(artifact.metadata.importanceLevel),
+      ...(compatibility ? { compatibility } : {}),
       ...(rawWorkspace ? { workspace: normalizeWorkspaceName(rawWorkspace) } : {}),
     },
     task: {
@@ -410,6 +630,8 @@ let closeoutEvidencePath: string | null = null
 let evidence: CloseoutEvidence | null = null
 let pendingBackupPath: string | null = null
 let persistedDbRecordId: string | null = null
+let persistedConversationArtifactForPublication: PersistedConversationArtifactForPublication | null = null
+let persistedHandoffArtifactForPublication: GptHandoffArtifactV1 | null = null
 
 function ensureDir(dir: string): void {
   if (!fs.existsSync(dir)) {
@@ -453,6 +675,10 @@ function createInitialEvidence(backupPath: string): CloseoutEvidence {
     vectorRebuildStartedAt: null,
     vectorRebuildCompletedAt: null,
     vectorRebuildError: null,
+    handoffPublicationStatus: 'NOT_STARTED',
+    handoffPublicationStartedAt: null,
+    handoffPublicationCompletedAt: null,
+    handoffPublicationError: null,
     runtimeContextPath: null,
     runtimeContextIntegrityPath: null,
     runtimeContextIntegrityStatus: 'UNKNOWN',
@@ -471,6 +697,7 @@ function createInitialEvidence(backupPath: string): CloseoutEvidence {
       'Do not call task_complete until closeoutState = CLOSEOUT_COMPLETE.',
       'If PMOS save fails or is partial, inspect the recovery sidecar and restore from pending-artifact backup or quarantine copy.',
       'If runtime-context finalization fails after PMOS save, rerun cd apps/pmos && npm run pmos:context and treat the task as INCOMPLETE until verification passes.',
+      'If handoff publication fails after runtime verification, treat the task as INCOMPLETE until the HANDOFF artifact is persisted and read back successfully.',
     ],
     stateHistory: [CloseoutState.INITIATED],
   }
@@ -600,15 +827,16 @@ function buildMarkdown(
   handoff?: GptHandoffArtifactV1 | null,
 ): string {
   const lines: string[] = []
+  const legacyPlanningContext = readLegacyPlanningContext(artifact.metadata as Record<string, unknown>)
 
   lines.push(`# PMOS Flight Record — ${artifact.metadata.taskId}`)
   lines.push('')
   lines.push(`> **Conversation ID:** ${artifact.metadata.conversationId}`)
   lines.push(`> **Timestamp:** ${artifact.metadata.timestamp}`)
   lines.push(`> **Project:** ${artifact.metadata.project}`)
-  lines.push(`> **ETAP:** ${artifact.metadata.etap}`)
+  if (legacyPlanningContext.etap) lines.push(`> **Legacy ETAP (compatibility):** ${legacyPlanningContext.etap}`)
   lines.push(`> **Scope:** ${artifact.metadata.scope}`)
-  if (artifact.metadata.subetap) lines.push(`> **Node:** ${artifact.metadata.subetap}`)
+  if (legacyPlanningContext.subetap) lines.push(`> **Legacy Node (compatibility):** ${legacyPlanningContext.subetap}`)
   if (artifact.metadata.conversationType) lines.push(`> **Type:** ${artifact.metadata.conversationType}`)
   if (artifact.metadata.importanceLevel) lines.push(`> **Importance:** ${artifact.metadata.importanceLevel}`)
   lines.push('')
@@ -720,6 +948,9 @@ function buildMarkdown(
   lines.push(`- closeoutState: ${artifact.completionEvidence.closeoutState}`)
   lines.push(`- pmosSaveStatus: ${artifact.completionEvidence.pmosSaveStatus}`)
   lines.push(`- vectorRebuildStatus: ${artifact.completionEvidence.vectorRebuildStatus}`)
+  if (artifact.completionEvidence.handoffPublicationStatus) {
+    lines.push(`- handoffPublicationStatus: ${artifact.completionEvidence.handoffPublicationStatus}`)
+  }
   lines.push(`- archiveCompletenessStatus: ${artifact.completionEvidence.archiveCompletenessStatus}`)
   lines.push(`- executionTrailStatus: ${artifact.completionEvidence.executionTrailStatus}`)
   lines.push('')
@@ -988,13 +1219,17 @@ function projectConversationArtifactScalarParity(record: {
     conversationId: record.conversationId,
     project: record.project,
     taskId: record.taskId,
-    etap: record.etap,
     scope: record.scope,
     timestamp: record.timestamp.toISOString(),
   }
 
-  if (record.subetap !== null) {
-    metadata.subetap = record.subetap
+  if (record.etap !== null || record.subetap !== null) {
+    metadata.compatibility = {
+      legacyPlanningContext: {
+        ...(record.etap !== null ? { etap: record.etap } : {}),
+        ...(record.subetap !== null ? { subetap: record.subetap } : {}),
+      },
+    }
   }
 
   if (record.conversationType !== null) {
@@ -1024,6 +1259,7 @@ function projectFlightRecordCompletionEvidence(closeout: CloseoutEvidence): Flig
     closeoutState: closeout.closeoutState,
     pmosSaveStatus: closeout.pmosSaveStatus,
     vectorRebuildStatus: closeout.vectorRebuildStatus,
+    handoffPublicationStatus: closeout.handoffPublicationStatus,
     archiveCompletenessStatus: closeout.archiveCompletenessStatus,
     executionTrailStatus: closeout.executionTrailStatus,
   }
@@ -1050,14 +1286,15 @@ function buildConversationArtifactProjection(
   closeout: CloseoutEvidence,
 ) {
   const summary = buildConversationArtifactSummary(artifact, closeout)
+  const legacyPlanningContext = readLegacyPlanningContext(artifact.metadata as Record<string, unknown>)
 
   return {
     timestamp: new Date(artifact.metadata.timestamp),
     project: artifact.metadata.project,
     taskId: artifact.metadata.taskId,
     scope: artifact.metadata.scope,
-    etap: artifact.metadata.etap,
-    subetap: artifact.metadata.subetap ?? null,
+    etap: legacyPlanningContext.etap ?? null,
+    subetap: legacyPlanningContext.subetap ?? null,
     domains: [],
     conversationType: (artifact.metadata.conversationType ?? null) as PrismaConversationType | null,
     importanceLevel: (artifact.metadata.importanceLevel ?? null) as PrismaImportanceLevel | null,
@@ -1077,14 +1314,15 @@ function buildConversationArtifactMutableProjection(
   closeout: CloseoutEvidence,
 ) {
   const summary = buildConversationArtifactSummary(artifact, closeout)
+  const legacyPlanningContext = readLegacyPlanningContext(artifact.metadata as Record<string, unknown>)
 
   return {
     timestamp: new Date(artifact.metadata.timestamp),
     project: artifact.metadata.project,
     taskId: artifact.metadata.taskId,
     scope: artifact.metadata.scope,
-    etap: artifact.metadata.etap,
-    subetap: artifact.metadata.subetap ?? null,
+    etap: legacyPlanningContext.etap ?? null,
+    subetap: legacyPlanningContext.subetap ?? null,
     domains: [],
     conversationType: (artifact.metadata.conversationType ?? null) as PrismaConversationType | null,
     importanceLevel: (artifact.metadata.importanceLevel ?? null) as PrismaImportanceLevel | null,
@@ -1116,11 +1354,6 @@ function buildConversationArtifactRelationCreateWrites(artifact: FlightRecordV1)
         warning: { connect: { id: warningId } },
       })),
     },
-    linkedNodes: {
-      create: uniqueIds(links?.nodeIds).map((nodeId) => ({
-        node: { connect: { id: nodeId } },
-      })),
-    },
     linkedLogs: {
       create: uniqueIds(links?.logIds).map((logId) => ({
         log: { connect: { id: logId } },
@@ -1150,10 +1383,6 @@ function buildConversationArtifactRelationUpdateWrites(artifact: FlightRecordV1)
     linkedWarnings: {
       deleteMany: {},
       create: createWrites.linkedWarnings.create,
-    },
-    linkedNodes: {
-      deleteMany: {},
-      create: createWrites.linkedNodes.create,
     },
     linkedLogs: {
       deleteMany: {},
@@ -1194,6 +1423,7 @@ function syncFlightRecordCompletionEvidence(artifact: FlightRecordV1, closeout: 
   artifact.completionEvidence.closeoutState = closeout.closeoutState
   artifact.completionEvidence.pmosSaveStatus = closeout.pmosSaveStatus
   artifact.completionEvidence.vectorRebuildStatus = closeout.vectorRebuildStatus
+  artifact.completionEvidence.handoffPublicationStatus = closeout.handoffPublicationStatus
   artifact.completionEvidence.archiveCompletenessStatus = closeout.archiveCompletenessStatus
   artifact.completionEvidence.executionTrailStatus = closeout.executionTrailStatus
   return artifact
@@ -1278,13 +1508,19 @@ function buildConversationArtifactSummary(artifact: FlightRecordV1, closeout: Cl
     '',
     'Handoff:',
     payload.bridgePayloadText,
+
+function getPmosMemorosKnowledgeReadyCallbackUrl(): string | null {
+  const baseUrl = (process.env.PMOS_CONSUMER_ACK_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? '').trim()
+  if (!baseUrl) return null
+  return `${baseUrl.replace(/\/$/, '')}/api/publication/memoros/knowledge-ready`
+}
   ].join('\n').trim()
 }
 
 function buildCurrentStateSnapshot(artifact: FlightRecordV1, closeout: CloseoutEvidence): string[] {
   const currentState: string[] = []
 
-  currentState.push(`Persisted HANDOFF: ${closeout.pmosSaveStatus === 'SUCCEEDED' ? 'ACTIVE' : closeout.pmosSaveStatus === 'FAILED' ? 'FAILED' : 'PENDING'}`)
+  currentState.push(`Persisted HANDOFF: ${closeout.handoffPublicationStatus === 'SUCCEEDED' ? 'ACTIVE' : closeout.handoffPublicationStatus === 'FAILED' ? 'FAILED' : 'PENDING'}`)
   currentState.push(`PostgreSQL Persistence: ${closeout.pmosSaveStatus === 'SUCCEEDED' ? 'ACTIVE' : closeout.pmosSaveStatus === 'FAILED' ? 'FAILED' : 'PENDING'}`)
 
   const eventLedgerVisibility = artifact.actions.validationsExecuted.some((item) => /event details|event ledger/i.test(item))
@@ -1485,6 +1721,247 @@ async function persistGptHandoffArtifact(params: {
   return handoffArtifact
 }
 
+function buildMemorosPublicationArtifact(params: {
+  conversationArtifact: PersistedConversationArtifactForPublication
+  handoffArtifactId: string | null
+  closeoutRef: string
+  target: MemorosPublicationTargetSnapshot
+  attemptedAt: string
+  publishedAt: string | null
+  ack: MemorosPublicationAck | null
+  consumerReadiness: MemorosConsumerReadiness | null
+  error: string | null
+  status: ArtifactStatus
+}): MemorosPublicationArtifactV1 {
+  return {
+    id: `${params.conversationArtifact.conversationId}:${ArtifactKind.PUBLICATION}:MEMOROS:v1`,
+    artifactKind: ArtifactKind.PUBLICATION,
+    artifactNature: ArtifactNature.DERIVED,
+    version: 'v1',
+    status: params.status,
+    taskId: params.conversationArtifact.taskId ?? params.conversationArtifact.conversationId,
+    conversationId: params.conversationArtifact.conversationId,
+    createdAt: new Date().toISOString(),
+    sourceRefs: [
+      {
+        sourceArtifactKind: ArtifactKind.CLOSEOUT,
+        sourceArtifactRef: params.closeoutRef,
+      },
+      ...(params.handoffArtifactId
+        ? [{
+            sourceArtifactKind: ArtifactKind.HANDOFF,
+            sourceArtifactRef: params.handoffArtifactId,
+          }]
+        : []),
+    ],
+    payload: {
+      targetSystem: 'MEMOROS',
+      endpoint: params.target.endpoint,
+      projectId: params.target.projectId,
+      attemptedAt: params.attemptedAt,
+      publishedAt: params.publishedAt,
+      sourceConversationArtifactId: params.conversationArtifact.id,
+      sourceConversationId: params.conversationArtifact.conversationId,
+      sourceHandoffArtifactId: params.handoffArtifactId,
+      ack: params.ack,
+      consumerReadiness: params.consumerReadiness,
+      error: params.error,
+    },
+  }
+}
+
+function readPersistedMemorosPublicationArtifactOrThrow(row: {
+  id: string
+  artifactKind: PrismaArtifactKind
+  artifactNature: PrismaArtifactNature
+  version: string
+  status: PrismaArtifactStatus
+  taskId: string
+  conversationId: string
+  sourceRefs: Prisma.JsonValue
+  payload: Prisma.JsonValue
+  createdAt: Date
+}) {
+  return {
+    id: row.id,
+    artifactKind: row.artifactKind as unknown as ArtifactKind,
+    artifactNature: row.artifactNature as unknown as ArtifactNature,
+    version: row.version,
+    status: row.status as unknown as ArtifactStatus,
+    taskId: row.taskId,
+    conversationId: row.conversationId,
+    createdAt: row.createdAt.toISOString(),
+    sourceRefs: row.sourceRefs as unknown as MemorosPublicationArtifactV1['sourceRefs'],
+    payload: row.payload as unknown as MemorosPublicationPayloadV1,
+  }
+}
+
+async function persistMemorosPublicationArtifact(params: {
+  conversationArtifact: PersistedConversationArtifactForPublication
+  handoffArtifactId: string | null
+  closeoutRef: string
+  target: MemorosPublicationTargetSnapshot
+  attemptedAt: string
+  publishedAt: string | null
+  ack: MemorosPublicationAck | null
+  consumerReadiness: MemorosConsumerReadiness | null
+  error: string | null
+  status: ArtifactStatus
+}): Promise<MemorosPublicationArtifactV1> {
+  const publicationArtifact = buildMemorosPublicationArtifact(params)
+
+  const prismaStatus = publicationArtifact.status === ArtifactStatus.DELIVERED
+    ? PrismaArtifactStatus.DELIVERED
+    : publicationArtifact.status === ArtifactStatus.FAILED
+      ? PrismaArtifactStatus.FAILED
+      : PrismaArtifactStatus.GENERATED
+
+  await prisma.artifact.upsert({
+    where: { id: publicationArtifact.id },
+    update: {
+      artifactKind: PrismaArtifactKind.PUBLICATION,
+      artifactNature: PrismaArtifactNature.DERIVED,
+      version: publicationArtifact.version,
+      status: prismaStatus,
+      taskId: publicationArtifact.taskId,
+      conversationId: publicationArtifact.conversationId,
+      sourceRefs: publicationArtifact.sourceRefs as unknown as Prisma.InputJsonValue,
+      payload: publicationArtifact.payload as unknown as Prisma.InputJsonValue,
+    },
+    create: {
+      id: publicationArtifact.id,
+      artifactKind: PrismaArtifactKind.PUBLICATION,
+      artifactNature: PrismaArtifactNature.DERIVED,
+      version: publicationArtifact.version,
+      status: prismaStatus,
+      taskId: publicationArtifact.taskId,
+      conversationId: publicationArtifact.conversationId,
+      sourceRefs: publicationArtifact.sourceRefs as unknown as Prisma.InputJsonValue,
+      payload: publicationArtifact.payload as unknown as Prisma.InputJsonValue,
+    },
+  })
+
+  const persisted = await prisma.artifact.findUnique({
+    where: { id: publicationArtifact.id },
+    select: {
+      id: true,
+      artifactKind: true,
+      artifactNature: true,
+      version: true,
+      status: true,
+      taskId: true,
+      conversationId: true,
+      sourceRefs: true,
+      payload: true,
+      createdAt: true,
+    },
+  })
+
+  if (!persisted) {
+    throw new Error(`MEMOROS publication artifact persistence failed: ${publicationArtifact.id} not found after upsert.`)
+  }
+
+  const persistedArtifact = readPersistedMemorosPublicationArtifactOrThrow(persisted)
+  const { createdAt: _persistedCreatedAt, ...persistedComparable } = persistedArtifact
+  const { createdAt: _expectedCreatedAt, ...expectedComparable } = publicationArtifact
+  const parityDiffs = collectJsonDiffs(expectedComparable, persistedComparable, 'memorosPublicationArtifact')
+  if (parityDiffs.length > 0) {
+    throw new Error([
+      `MEMOROS publication artifact parity failed for ${publicationArtifact.id}`,
+      ...parityDiffs.map((diff) => `- ${diff}`),
+    ].join('\n'))
+  }
+
+  return publicationArtifact
+}
+
+async function publishConversationArtifactToMemoros(params: {
+  conversationArtifact: PersistedConversationArtifactForPublication
+  handoffArtifactId: string
+  closeoutRef: string
+}): Promise<{ ack: MemorosPublicationAck; publicationArtifact: MemorosPublicationArtifactV1 }> {
+  const config = getMemorosPublicationConfigOrThrow()
+  const target = getMemorosPublicationTargetSnapshot()
+  const attemptedAt = new Date().toISOString()
+
+  await persistMemorosPublicationArtifact({
+    conversationArtifact: params.conversationArtifact,
+    handoffArtifactId: params.handoffArtifactId,
+    closeoutRef: params.closeoutRef,
+    target,
+    attemptedAt,
+    publishedAt: null,
+    ack: null,
+    consumerReadiness: null,
+    error: null,
+    status: ArtifactStatus.GENERATED,
+  })
+
+  const callbackUrl = getPmosMemorosKnowledgeReadyCallbackUrl()
+
+  const response = await fetch(config.endpoint, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      projectId: config.projectId,
+      callbackUrl,
+      artifact: buildPmosConversationArtifactPublicationRecord(params.conversationArtifact),
+    }),
+  })
+
+  const responseBody = await response.json().catch(() => null) as {
+    ok?: boolean
+    data?: MemorosPublicationAck
+    error?: { code?: string; message?: string }
+  } | null
+
+  if (!response.ok || !responseBody?.ok || !responseBody.data) {
+    const errorMessage = responseBody?.error?.message
+      ?? `HTTP ${response.status} ${response.statusText || 'MEMOROS publication failed'}`
+    throw new Error(`MEMOROS publication failed: ${errorMessage}`)
+  }
+
+  const ack = responseBody.data
+  if (!ack.threadId || !ack.projectId || !ack.contractVersion || !ack.sourceTable || !ack.sourceRecordExternalId) {
+    throw new Error('MEMOROS publication failed: response ACK is missing required fields.')
+  }
+
+  const publishedAt = new Date().toISOString()
+  const consumerReadiness: MemorosConsumerReadiness = {
+    consumer: 'MEMOROS',
+    status: ack.consumerReadinessStatus === 'ready'
+      ? 'ready'
+      : ack.consumerReadinessStatus === 'failed'
+        ? 'failed'
+        : 'pending',
+    knowledgeProcessingId: ack.knowledgeProcessingId,
+    currentStage: ack.knowledgeProcessingStatus,
+    threadId: ack.threadId,
+    sourceRecordId: ack.sourceRecordId,
+    projectId: ack.projectId,
+    metrics: null,
+    retrievalProbe: null,
+    acknowledgedAt: null,
+    error: null,
+  }
+  const publicationArtifact = await persistMemorosPublicationArtifact({
+    conversationArtifact: params.conversationArtifact,
+    handoffArtifactId: params.handoffArtifactId,
+    closeoutRef: params.closeoutRef,
+    target,
+    attemptedAt,
+    publishedAt,
+    ack,
+    consumerReadiness,
+    error: null,
+    status: ArtifactStatus.DELIVERED,
+  })
+
+  return { ack, publicationArtifact }
+}
+
 async function finalizeRuntimeContextCloseout(params: {
   artifact: FlightRecordV1
   conversationArtifactSnapshot: FlightRecordV1
@@ -1579,26 +2056,16 @@ async function finalizeRuntimeContextCloseout(params: {
   evidence.vectorRebuildError = null
   appendState(evidence, CloseoutState.VECTOR_REBUILD_SUCCEEDED)
   appendState(evidence, CloseoutState.RUNTIME_CONTEXT_VERIFIED)
-  appendState(evidence, CloseoutState.CLOSEOUT_COMPLETE)
-  evidence.closeoutCompletedAt = new Date().toISOString()
   evidence.recoveryRequired = false
   evidence.recoveryReason = null
-  evidence.manualRecoveryInstructions = ['Closeout completed in PMOS. No recovery action required.']
+  evidence.manualRecoveryInstructions = [
+    'Runtime verification completed in PMOS.',
+    'Do not call task_complete until HANDOFF publication succeeds and closeoutState = CLOSEOUT_COMPLETE.',
+  ]
 
   appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.VECTOR_REBUILD_SUCCEEDED, 'PMOS runtime-context rebuild succeeded.', {
     details: { runtimeContextPath: evidence.runtimeContextPath },
     relatedFiles: [evidence.runtimeContextPath, evidence.runtimeContextIntegrityPath].filter(Boolean) as string[],
-    status: ExecutionTrailEventStatus.SUCCEEDED,
-    source: 'pmos-save/runtime-context',
-  })
-  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.CLOSEOUT_COMPLETED, 'Closeout completed after PMOS runtime-context verification passed.', {
-    details: { closeoutState: evidence.closeoutState },
-    relatedFiles: [traceability.closeoutEvidencePath, evidence.runtimeContextPath, evidence.runtimeContextIntegrityPath].filter(Boolean) as string[],
-    status: ExecutionTrailEventStatus.SUCCEEDED,
-    source: 'pmos-save/runtime-context',
-  })
-  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.TASK_COMPLETED, 'Task completed with PMOS save and PMOS-owned runtime-context rebuild success.', {
-    details: { closeoutState: evidence.closeoutState, runtimeContextIntegrityStatus: evidence.runtimeContextIntegrityStatus },
     status: ExecutionTrailEventStatus.SUCCEEDED,
     source: 'pmos-save/runtime-context',
   })
@@ -1612,15 +2079,12 @@ async function finalizeRuntimeContextCloseout(params: {
 }
 
 async function main() {
+  const args = parseArgs()
   assertDatabaseUrl('pmos:save')
   console.log('[pmos-save] Starting PMOS persistence routine...')
 
-  // 1. Read pending artifact
-  if (!fs.existsSync(PENDING_FILE)) {
-    console.error(`[pmos-save] ERROR: No pending artifact found at ${PENDING_FILE}`)
-    console.error('[pmos-save] Create .pmos/pending-artifact.json before running pmos:save')
-    process.exit(1)
-  }
+  // 1. Preflight the pending artifact handoff surface.
+  ensurePendingArtifactReady(args)
 
   const raw = fs.readFileSync(PENDING_FILE, 'utf-8')
   try {
@@ -1653,7 +2117,8 @@ async function main() {
 
   console.log(`[pmos-save] Artifact: ${artifact.metadata.conversationId}`)
   console.log(`[pmos-save] Task: ${artifact.metadata.taskId}`)
-  console.log(`[pmos-save] ETAP: ${artifact.metadata.etap}`)
+  const legacyPlanningContext = readLegacyPlanningContext(artifact.metadata as Record<string, unknown>)
+  console.log(`[pmos-save] Legacy ETAP compatibility: ${legacyPlanningContext.etap ?? '<none>'}`)
 
   // ── Acquire advisory lock (prevents concurrent pmos-save for same artifact) ─
   acquireAdvisoryLock(artifact.metadata.conversationId)
@@ -1691,7 +2156,7 @@ async function main() {
   })
 
   // ── GOV-3-2 Hard Governance Validation ─────────────────────────────────────
-  // Invalid governance = FAIL SAVE. No warnings. Hard stop.
+  // PMOS enforces execution-domain legality and preserves foreign metadata as payload.
   console.log('[pmos-save] Running governance validation (GOV-3-2)...')
   const validation = validatePendingArtifact(artifact)
   appendState(evidence, CloseoutState.PMOS_SAVE_STARTED)
@@ -1705,12 +2170,7 @@ async function main() {
   })
 
   if (!validation.valid) {
-    // Filter: legacy ETAPs in artifacts are warnings only (historical linege protection)
-    const hardErrors = validation.errors.filter((e) => {
-      // Allow legacy ETAP names — they are immutable historical records
-      if (e.includes('legacy ETAP')) return false
-      return true
-    })
+    const hardErrors = validation.errors
 
     if (hardErrors.length > 0) {
       const quarantinePath = copyToRecoveryTarget(
@@ -1749,12 +2209,6 @@ async function main() {
       throw new Error(`Governance validation failed: ${hardErrors.join(' | ')}`)
     }
 
-    // Legacy ETAPs: warn but allow (immutable historical lineage)
-    const legacyWarnings = validation.errors.filter((e) => e.includes('legacy ETAP'))
-    if (legacyWarnings.length > 0) {
-      console.warn('[pmos-save] ⚠️  Legacy ETAP detected (historical artifact — allowed):')
-      legacyWarnings.forEach((w) => console.warn(`  → ${w}`))
-    }
   }
 
   if (canonicalizationErrors.length > 0) {
@@ -2000,6 +2454,7 @@ async function main() {
   const persistedRecord = await prisma.conversationArtifact.findUnique({
     where: { conversationId: artifact.metadata.conversationId },
     select: {
+      id: true,
       conversationId: true,
       timestamp: true,
       project: true,
@@ -2020,6 +2475,8 @@ async function main() {
   if (!persistedRecord) {
     throw new Error(`DB read-back failed for ${artifact.metadata.conversationId}`)
   }
+
+  persistedConversationArtifactForPublication = persistedRecord
 
   const saveIntegrityDiffs = collectJsonDiffs(canonicalFlightRecordPayload, persistedRecord.flightRecordJson)
   if (saveIntegrityDiffs.length > 0) {
@@ -2089,11 +2546,52 @@ async function main() {
     ].join('\n'))
   }
 
+  evidence.handoffPublicationStatus = 'STARTED'
+  evidence.handoffPublicationStartedAt = new Date().toISOString()
+  evidence.handoffPublicationError = null
+  appendState(evidence, CloseoutState.HANDOFF_PUBLICATION_STARTED)
+  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.HANDOFF_PUBLICATION_STARTED, 'MEMOROS publication started after PMOS runtime verification passed.', {
+    details: { closeoutState: evidence.closeoutState },
+    status: ExecutionTrailEventStatus.STARTED,
+    source: 'pmos-save/handoff',
+  })
+  syncFactPreservationEvidence(baseName, evidence)
+  syncFlightRecordCompletionEvidence(artifact, evidence)
+  writeConversationArtifactFiles({ artifact: canonicalFlightRecordPayload, baseName, mdPath, jsonPath, integrityPath, lockPath, traceability })
+  writeJson(closeoutEvidencePath, evidence)
+
   const persistedHandoff = await persistGptHandoffArtifact({
     artifact,
     closeout: evidence,
     closeoutRef: relativize(closeoutEvidencePath),
   })
+  persistedHandoffArtifactForPublication = persistedHandoff
+
+  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.ARTIFACT_CREATED, 'GPT handoff artifact generated from finalized closeout state.', {
+    details: {
+      artifactKind: ArtifactKind.HANDOFF,
+      artifactId: persistedHandoff.id,
+      closeoutState: evidence.closeoutState,
+    },
+    status: ExecutionTrailEventStatus.SUCCEEDED,
+    source: 'pmos-save/handoff',
+  })
+
+  const memorosPublication = await publishConversationArtifactToMemoros({
+    conversationArtifact: persistedConversationArtifactForPublication,
+    handoffArtifactId: persistedHandoff.id,
+    closeoutRef: relativize(closeoutEvidencePath),
+  })
+
+  evidence.handoffPublicationStatus = 'SUCCEEDED'
+  evidence.handoffPublicationCompletedAt = new Date().toISOString()
+  evidence.handoffPublicationError = null
+  appendState(evidence, CloseoutState.HANDOFF_PUBLICATION_SUCCEEDED)
+  appendState(evidence, CloseoutState.CLOSEOUT_COMPLETE)
+  evidence.closeoutCompletedAt = new Date().toISOString()
+  evidence.recoveryRequired = false
+  evidence.recoveryReason = null
+  evidence.manualRecoveryInstructions = ['Closeout completed in PMOS. No recovery action required.']
 
   writeConversationArtifactFiles({
     artifact: canonicalFlightRecordPayload,
@@ -2115,15 +2613,46 @@ async function main() {
     ].join('\n'))
   }
 
-  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.ARTIFACT_CREATED, 'GPT handoff artifact generated from finalized closeout state.', {
+  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.ARTIFACT_CREATED, 'MEMOROS publication record persisted after import ACK.', {
     details: {
-      artifactKind: ArtifactKind.HANDOFF,
-      artifactId: persistedHandoff.id,
+      artifactKind: ArtifactKind.PUBLICATION,
+      artifactId: memorosPublication.publicationArtifact.id,
       closeoutState: evidence.closeoutState,
+      threadId: memorosPublication.ack.threadId,
+      sourceRecordId: memorosPublication.ack.sourceRecordId,
     },
     status: ExecutionTrailEventStatus.SUCCEEDED,
     source: 'pmos-save/handoff',
   })
+  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.HANDOFF_PUBLICATION_SUCCEEDED, 'MEMOROS acknowledged publication after Thread and SourceRecord persistence.', {
+    details: {
+      artifactId: memorosPublication.publicationArtifact.id,
+      closeoutState: evidence.closeoutState,
+      threadId: memorosPublication.ack.threadId,
+      sourceRecordId: memorosPublication.ack.sourceRecordId,
+      alreadyImported: memorosPublication.ack.alreadyImported,
+    },
+    status: ExecutionTrailEventStatus.SUCCEEDED,
+    source: 'pmos-save/handoff',
+  })
+  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.CLOSEOUT_COMPLETED, 'Closeout completed after PMOS save, runtime verification, and handoff publication all passed.', {
+    details: { closeoutState: evidence.closeoutState, handoffPublicationStatus: evidence.handoffPublicationStatus },
+    relatedFiles: [traceability.closeoutEvidencePath, evidence.runtimeContextPath, evidence.runtimeContextIntegrityPath].filter(Boolean) as string[],
+    status: ExecutionTrailEventStatus.SUCCEEDED,
+    source: 'pmos-save/handoff',
+  })
+  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.TASK_COMPLETED, 'Task completed only after PMOS persistence, runtime verification, and persisted handoff publication succeeded.', {
+    details: {
+      closeoutState: evidence.closeoutState,
+      runtimeContextIntegrityStatus: evidence.runtimeContextIntegrityStatus,
+      handoffPublicationStatus: evidence.handoffPublicationStatus,
+    },
+    status: ExecutionTrailEventStatus.SUCCEEDED,
+    source: 'pmos-save/handoff',
+  })
+
+  syncFactPreservationEvidence(baseName, evidence)
+  syncFlightRecordCompletionEvidence(artifact, evidence)
 
   writeJson(closeoutEvidencePath, evidence)
 
@@ -2145,6 +2674,22 @@ main()
   .catch((e) => {
     const error = e as Error
     if (artifact && evidence && closeoutEvidencePath) {
+      if (persistedConversationArtifactForPublication && evidence.handoffPublicationStatus === 'STARTED') {
+        void persistMemorosPublicationArtifact({
+          conversationArtifact: persistedConversationArtifactForPublication,
+          handoffArtifactId: persistedHandoffArtifactForPublication?.id ?? null,
+          closeoutRef: relativize(closeoutEvidencePath),
+          target: getMemorosPublicationTargetSnapshot(),
+          attemptedAt: evidence.handoffPublicationStartedAt ?? new Date().toISOString(),
+          publishedAt: null,
+          ack: null,
+          error: error.message,
+          status: ArtifactStatus.FAILED,
+        }).catch((publicationPersistenceError) => {
+          console.error(`[pmos-save] Failed to persist MEMOROS publication failure state: ${(publicationPersistenceError as Error).message}`)
+        })
+      }
+
       const recoveryCopy = copyToRecoveryTarget(
         pendingBackupPath ?? PENDING_FILE,
         evidence.pmosSaveStatus === 'FAILED' ? QUARANTINE_DIR : FAILED_ARTIFACTS_DIR,
@@ -2153,6 +2698,17 @@ main()
 
       if (evidence.pmosSaveStatus !== 'PARTIAL' && evidence.pmosSaveStatus !== 'FAILED') {
         evidence.pmosSaveStatus = persistedDbRecordId || evidence.pmosSaveConversationMdPath ? 'PARTIAL' : 'FAILED'
+      }
+      if (evidence.handoffPublicationStatus === 'STARTED') {
+        evidence.handoffPublicationStatus = 'FAILED'
+        evidence.handoffPublicationCompletedAt = new Date().toISOString()
+        evidence.handoffPublicationError = error.message
+        appendState(evidence, CloseoutState.HANDOFF_PUBLICATION_FAILED)
+        appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.HANDOFF_PUBLICATION_FAILED, 'MEMOROS publication failed or did not complete.', {
+          details: { error: error.message },
+          status: ExecutionTrailEventStatus.FAILED,
+          severity: ExecutionTrailEventSeverity.ERROR,
+        })
       }
       if (!evidence.pmosSaveError) evidence.pmosSaveError = error.message
       evidence.recoveryRequired = true
