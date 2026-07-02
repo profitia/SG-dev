@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: pcos-explorer-preview
+    runtime: node
+    rootDir: apps/pcos-explorer
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: npm run start
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PCOS_EXPLORER_PREVIEW_MODE
+        value: mock
+      - key: PCOS_EXPLORER_ENV
+        value: SANDBOX
+      - key: PCOS_EXPLORER_ORG_ID
+        value: pcos-default
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false

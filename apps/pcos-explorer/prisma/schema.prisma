@@ -1,0 +1,517 @@
+// PCOS Cognition Explorer — read-only Prisma schema
+// Connects to the PCOS LAB PostgreSQL database (Neon).
+// Maps to the canonical H-model tables written by apps/pcos-runtime.
+//
+// ARCHITECTURAL RULE: This schema is ABSOLUTELY READ-ONLY.
+// No migrations, no mutations, no writes.
+// Source of truth: apps/pcos-runtime/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PCOS-H1 Enums
+// ══════════════════════════════════════════════════════════════════════════════
+
+enum CognitionEnvironment {
+  LAB
+  PROD
+  SANDBOX
+
+  @@map("CognitionEnvironment")
+}
+
+enum HydrationRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+  PROMOTED
+  CHECKPOINTED
+
+  @@map("HydrationRunStatus")
+}
+
+enum HydrationStage {
+  H2_SNOWFLAKE_CONNECTIVITY
+  H3_LAB_HYDRATION
+  H4_COGNITION_VALIDATION
+  H5_COGNITION_PROMOTION
+  H6_SANDBOX_ORCHESTRATION
+
+  @@map("HydrationStage")
+}
+
+enum IngestBatchStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  SKIPPED
+
+  @@map("IngestBatchStatus")
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PCOS-H1 — Hydration Run (parent record for all cognition lifecycle ops)
+// ══════════════════════════════════════════════════════════════════════════════
+
+model HydrationRun {
+  id                String               @id @default(cuid())
+  orgId             String
+  environment       CognitionEnvironment
+  stage             HydrationStage
+  status            HydrationRunStatus   @default(PENDING)
+  isDryRun          Boolean              @default(false)
+  replayToken       String?
+  currentPhase      String?
+  batchSize         Int                  @default(500)
+  recordsProcessed  Int                  @default(0)
+  errorMessage      String?
+  stateMetadata     Json?
+  promotionSourceId String?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  failedAt          DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  deletedAt         DateTime?
+
+  ontologyNodes      HydrationOntologyNode[]
+  cognitionMemory    HydrationCognitionMemory[]
+  intelligenceUnits  HydrationIntelligenceUnit[]
+  retrievalDocuments HydrationRetrievalDocument[]
+  embeddingRecords   HydrationEmbeddingRecord[]
+  lineageEvents      HydrationLineageEvent[]
+  ingestBatches      HydrationIngestBatch[]
+
+  @@index([orgId])
+  @@index([orgId, environment])
+  @@index([orgId, status])
+  @@index([orgId, stage])
+  @@map("hydration_runs")
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PCOS-H1 — Environment State (LAB/PROD/SANDBOX operational state)
+// ══════════════════════════════════════════════════════════════════════════════
+
+model CognitionEnvironmentState {
+  id                     String               @id @default(cuid())
+  orgId                  String
+  environment            CognitionEnvironment
+  lastHydrationRunId     String?
+  lastHydrationAt        DateTime?
+  lastPromotionAt        DateTime?
+  cognitionMaturityScore Float?
+  isPromotionReady       Boolean              @default(false)
+  topologyVersion        String?
+  stateMetadata          Json?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  deletedAt              DateTime?
+
+  @@unique([orgId, environment])
+  @@index([orgId])
+  @@map("cognition_environment_states")
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PCOS-H3 — Cognition substrate models
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Ingest batch — one paginated Snowflake fetch batch within a hydration run
+model HydrationIngestBatch {
+  id              String   @id @default(cuid())
+  orgId           String
+  hydrationRunId  String
+  batchIndex      Int
+  source          String
+  recordsFetched  Int
+  recordsAccepted Int
+  recordsRejected Int
+  cursorStart     String?
+  cursorEnd       String?
+  processingMs    Int?
+  status          String
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  hydrationRun HydrationRun @relation(fields: [hydrationRunId], references: [id])
+
+  @@index([orgId, hydrationRunId])
+  @@map("hydration_ingest_batches")
+}
+
+// Ontology node — versioned procurement knowledge graph node
+model HydrationOntologyNode {
+  id              String   @id @default(cuid())
+  orgId           String
+  hydrationRunId  String
+  nodeType        String
+  nodeKey         String
+  nodePayload     Json
+  vectorEmbedding Float[]
+  ontologyVersion String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  hydrationRun HydrationRun @relation(fields: [hydrationRunId], references: [id])
+
+  @@unique([orgId, nodeType, nodeKey])
+  @@index([orgId, nodeType])
+  @@map("hydration_ontology_nodes")
+}
+
+// Cognition memory — persistent procurement memory unit per org
+model HydrationCognitionMemory {
+  id              String   @id @default(cuid())
+  orgId           String
+  hydrationRunId  String
+  memoryType      String
+  subjectId       String
+  memoryKey       String
+  memoryPayload   Json
+  temporalContext String?
+  confidenceScore Float
+  sourceRunId     String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  hydrationRun HydrationRun @relation(fields: [hydrationRunId], references: [id])
+
+  @@unique([orgId, memoryKey])
+  @@index([orgId, memoryType, subjectId])
+  @@map("hydration_cognition_memory")
+}
+
+// Intelligence unit — baseline procurement intelligence per subject
+model HydrationIntelligenceUnit {
+  id                  String    @id @default(cuid())
+  orgId               String
+  hydrationRunId      String
+  intelligenceType    String
+  subjectId           String
+  intelligencePayload Json
+  validFrom           DateTime?
+  validUntil          DateTime?
+  confidenceScore     Float
+  dataQualityScore    Float
+  sourceRunId         String
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  hydrationRun HydrationRun @relation(fields: [hydrationRunId], references: [id])
+
+  @@unique([orgId, intelligenceType, subjectId])
+  @@index([orgId, intelligenceType])
+  @@map("hydration_intelligence_units")
+}
+
+// Retrieval document — indexed document for CIC context lookup
+model HydrationRetrievalDocument {
+  id               String   @id @default(cuid())
+  orgId            String
+  hydrationRunId   String
+  indexType        String
+  documentId       String
+  documentType     String
+  documentPayload  Json
+  searchableTokens String[]
+  embeddingRef     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  deletedAt        DateTime?
+
+  hydrationRun HydrationRun @relation(fields: [hydrationRunId], references: [id])
+
+  @@unique([orgId, indexType, documentId])
+  @@index([orgId, indexType])
+  @@map("hydration_retrieval_documents")
+}
+
+// Embedding record — persisted vector embedding for a retrieval document
+model HydrationEmbeddingRecord {
+  id             String   @id @default(cuid())
+  orgId          String
+  hydrationRunId String
+  documentId     String
+  documentType   String
+  modelId        String
+  vectorJson     String
+  dimensions     Int
+  tokenCount     Int
+  sourceRunId    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  hydrationRun HydrationRun @relation(fields: [hydrationRunId], references: [id])
+
+  @@unique([orgId, documentId])
+  @@index([orgId, documentType])
+  @@map("hydration_embedding_records")
+}
+
+// Lineage event — immutable audit event for each hydration stage
+model HydrationLineageEvent {
+  id             String         @id @default(cuid())
+  orgId          String
+  hydrationRunId String
+  stage          HydrationStage
+  eventType      String
+  entityRef      String?
+  sourceRef      String?
+  payload        Json?
+  createdAt      DateTime       @default(now())
+
+  hydrationRun HydrationRun @relation(fields: [hydrationRunId], references: [id])
+
+  @@index([orgId, hydrationRunId])
+  @@index([orgId, stage, eventType])
+  @@map("hydration_lineage_events")
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PCOS-H4 — Cognition Validation & Quality Runtime
+// ══════════════════════════════════════════════════════════════════════════════
+
+enum ValidationRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CHECKPOINTED
+
+  @@map("ValidationRunStatus")
+}
+
+// Top-level record for one H4 validation execution
+model CognitionValidationRun {
+  id               String               @id @default(cuid())
+  orgId            String
+  hydrationRunId   String
+  environment      CognitionEnvironment
+  status           ValidationRunStatus  @default(PENDING)
+  currentPhase     String?
+  overallScore     Float?
+  isPromotionReady Boolean              @default(false)
+  errorMessage     String?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  deletedAt        DateTime?
+
+  qualityScores       CognitionQualityScore[]
+  promotionEvaluation PromotionReadinessEvaluation?
+  maturityScore       CognitionMaturityScore?
+
+  @@index([orgId])
+  @@index([orgId, hydrationRunId])
+  @@map("cognition_validation_runs")
+}
+
+// Per-dimension quality score (7 dimensions)
+model CognitionQualityScore {
+  id              String   @id @default(cuid())
+  orgId           String
+  validationRunId String
+  dimension       String
+  score           Float
+  confidence      Float
+  metadata        Json?
+  createdAt       DateTime @default(now())
+
+  validationRun CognitionValidationRun @relation(fields: [validationRunId], references: [id])
+
+  @@index([orgId, validationRunId])
+  @@map("cognition_quality_scores")
+}
+
+// Promotion gate evaluation (1:1 per validation run)
+model PromotionReadinessEvaluation {
+  id              String   @id @default(cuid())
+  orgId           String
+  validationRunId String   @unique
+  isReady         Boolean
+  readinessScore  Float
+  blockers        Json
+  warnings        Json
+  reasoning       String
+  classifiedAs    String
+  evaluatedAt     DateTime @default(now())
+
+  validationRun CognitionValidationRun @relation(fields: [validationRunId], references: [id])
+
+  @@index([orgId])
+  @@map("promotion_readiness_evaluations")
+}
+
+// Weighted overall maturity score (1:1 per validation run)
+model CognitionMaturityScore {
+  id                String   @id @default(cuid())
+  orgId             String
+  validationRunId   String   @unique
+  overallScore      Float
+  erScore           Float
+  ontologyScore     Float
+  retrievalScore    Float
+  embeddingsScore   Float
+  intelligenceScore Float
+  graphScore        Float
+  benchmarkScore    Float
+  maturityClass     String
+  scoringVersion    String
+  createdAt         DateTime @default(now())
+
+  validationRun CognitionValidationRun @relation(fields: [validationRunId], references: [id])
+
+  @@index([orgId])
+  @@map("cognition_maturity_scores")
+}
+
+// =============================================================================
+// PCOS-H4 (supplement) — Validation Lineage
+// Read-only view — PCOS Runtime is the write owner.
+// =============================================================================
+
+// Immutable audit trail for each H4 validation phase
+model ValidationLineageEvent {
+  id              String   @id @default(cuid())
+  orgId           String
+  validationRunId String
+  phase           String
+  eventType       String
+  entityRef       String?
+  payload         Json?
+  createdAt       DateTime @default(now())
+
+  @@index([orgId, validationRunId])
+  @@map("validation_lineage_events")
+}
+
+// =============================================================================
+// PCOS-H5 — Cognition Promotion Runtime
+// Read-only view — PCOS Runtime is the write owner.
+// =============================================================================
+
+enum PromotionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  ROLLING_BACK
+  ROLLED_BACK
+  CHECKPOINTED
+
+  @@map("PromotionStatus")
+}
+
+// Immutable snapshot of LAB cognition created before promotion
+model CognitionSnapshot {
+  id              String    @id @default(cuid())
+  orgId           String
+  promotionRunId  String
+  hydrationRunId  String
+  validationRunId String
+  status          String
+  snapshotVersion String
+  integrityHash   String
+  metadata        Json
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([orgId, promotionRunId])
+  @@index([orgId, status])
+  @@map("cognition_snapshots")
+}
+
+// Semantic version record for each promoted cognition snapshot
+model CognitionVersion {
+  id                String    @id @default(cuid())
+  orgId             String
+  promotionRunId    String
+  snapshotId        String
+  versionString     String
+  semverMajor       Int
+  semverMinor       Int
+  semverPatch       Int
+  versionLabel      String
+  previousVersionId String?
+  status            String
+  deletedAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([orgId, promotionRunId])
+  @@index([orgId, status])
+  @@map("cognition_versions")
+}
+
+// Top-level H5 promotion pipeline execution record
+model PromotionExecution {
+  id                    String          @id @default(cuid())
+  orgId                 String
+  sourceHydrationRunId  String
+  sourceValidationRunId String
+  currentPhase          String
+  status                PromotionStatus @default(PENDING)
+  isPromoted            Boolean         @default(false)
+  productionVersionId   String?
+  failureReason         String?
+  completedAt           DateTime?
+  deletedAt             DateTime?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@index([orgId, status])
+  @@index([orgId, sourceValidationRunId])
+  @@map("promotion_executions")
+}
+
+// Phase-level telemetry events for promotion pipeline
+model PromotionTelemetryEvent {
+  id             String   @id @default(cuid())
+  orgId          String
+  promotionRunId String
+  phase          String
+  eventType      String
+  metricName     String
+  metricValue    Float?
+  tags           Json?
+  createdAt      DateTime @default(now())
+
+  @@index([orgId, promotionRunId])
+  @@index([orgId, phase, eventType])
+  @@map("promotion_telemetry_events")
+}
+
+// Full audit trail for H5 promotion phase events
+model PromotionLineageEvent {
+  id             String   @id @default(cuid())
+  orgId          String
+  promotionRunId String
+  phase          String
+  eventType      String
+  entityRef      String?
+  payload        Json?
+  createdAt      DateTime @default(now())
+
+  @@index([orgId, promotionRunId])
+  @@index([orgId, phase, eventType])
+  @@map("promotion_lineage_events")
+}
