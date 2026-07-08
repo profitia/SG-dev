@@ -10,11 +10,34 @@ npm-debug.log*
 # Next.js build output
 apps/pmos/.next/
 apps/pmos/out/
+apps/sg-runtime/.next/
+apps/sg-runtime/out/
+apps/vercly/.next/
+apps/vercly/out/
 
 # Environment — never commit secrets
+# Root-level env files
+.env
+.env.local
+.env.*.local
+
+# PMOS env files
 apps/pmos/.env
 apps/pmos/.env.local
 apps/pmos/.env.*.local
+
+# VECTOR env files
+apps/vector/.env
+apps/vector/.env.local
+apps/vector/.env.*.local
+
+# SG2 runtime env files (apps/sg-runtime — created in future BUILD node)
+apps/sg-runtime/.env
+apps/sg-runtime/.env.local
+apps/sg-runtime/.env.*.local
+
+# Catch-all for any other app-level env files added later
+# .env.example files are SAFE to commit — never add them here
 
 # TypeScript build info
 *.tsbuildinfo
@@ -25,3 +48,6 @@ apps/pmos/.env.*.local
 
 # OS
 Thumbs.db
+
+# MEMOROS Sync Buffer — local only, do not commit
+.memoros-sync/

@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum CompanyVerificationStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  TIMEOUT
+  CANCELLED
+}
+
+model CompanyVerification {
+  id                    String                    @id @default(cuid())
+  orgId                 String
+  requestedByUserId     String
+  inputId               String
+  inputName             String
+  country               String
+  selectedSectionsJson  Json
+  provider              String
+  providerCorrelationId String?
+  status                CompanyVerificationStatus @default(PENDING)
+  isComplete            Boolean                   @default(false)
+  stateAsOfDate         DateTime?
+  queriedRegistersJson  Json?
+  errorCount            Int                       @default(0)
+  fatalErrorCount       Int                       @default(0)
+  riskLevel             String?
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+  completedAt           DateTime?
+
+  payloads CompanyVerificationPayload[]
+
+  @@index([orgId])
+  @@index([orgId, status])
+  @@index([requestedByUserId])
+  @@index([createdAt])
+  @@map("company_verifications")
+}
+
+model CompanyVerificationPayload {
+  id             String              @id @default(cuid())
+  verificationId String
+  payloadJson    Json
+  isFinal        Boolean             @default(false)
+  receivedAt     DateTime            @default(now())
+
+  verification CompanyVerification @relation(fields: [verificationId], references: [id], onDelete: Cascade)
+
+  @@index([verificationId, receivedAt])
+  @@map("company_verification_payloads")
+}
