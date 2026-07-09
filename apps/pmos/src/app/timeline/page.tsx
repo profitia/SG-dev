@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import Link from 'next/link'
+import { buildCanonicalConversationReadModel } from '@/lib/pmos/flight-record-read'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,10 +67,9 @@ const TYPE_LABELS: Record<string, string> = {
 export default async function TimelinePage({
   searchParams,
 }: {
-  searchParams: { type?: string; etap?: string }
+  searchParams: { type?: string }
 }) {
   const filterType = searchParams.type ?? 'all'
-  const filterEtap = searchParams.etap ?? ''
 
   const wantType = (t: string) => filterType === 'all' || filterType === t
 
@@ -78,9 +78,24 @@ export default async function TimelinePage({
       ? db.promptExecution.findMany({
           orderBy: { createdAt: 'desc' },
           take: 50,
-          where: filterEtap ? { etap: { contains: filterEtap } } : undefined,
-          include: {
-            roadmapNode: { select: { title: true } },
+          select: {
+            id: true,
+            title: true,
+            etap: true,
+            subetap: true,
+            node: true,
+            domain: true,
+            promptType: true,
+            promptContent: true,
+            executionSummary: true,
+            architecturalImpact: true,
+            changedFiles: true,
+            blockers: true,
+            nextSteps: true,
+            status: true,
+            executionLogId: true,
+            createdAt: true,
+            updatedAt: true,
             changedFileEntries: { select: { path: true, changeType: true, impactLevel: true } },
           },
         })
@@ -90,7 +105,6 @@ export default async function TimelinePage({
           orderBy: { createdAt: 'desc' },
           take: 30,
           include: {
-            nodes: { include: { node: { select: { title: true } } } },
             changedFileEntries: { select: { path: true, changeType: true, impactLevel: true } },
           },
         })
@@ -103,26 +117,44 @@ export default async function TimelinePage({
           where: { resolved: false },
           orderBy: { createdAt: 'desc' },
           take: 20,
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            severity: true,
+            type: true,
+            affectedArea: true,
+            resolved: true,
+            resolvedAt: true,
+            relatedLogId: true,
+            relatedPrincipleId: true,
+            createdAt: true,
+          },
         })
       : Promise.resolve([]),
     wantType('conversation')
       ? db.conversationArtifact.findMany({
           orderBy: { timestamp: 'desc' },
           take: 40,
-          where: filterEtap ? { etap: { contains: filterEtap } } : undefined,
           select: {
             id: true,
-            summary: true,
             conversationType: true,
             importanceLevel: true,
             timestamp: true,
             etap: true,
+            subetap: true,
             domains: true,
             taskId: true,
+            flightRecordJson: true,
           },
         })
       : Promise.resolve([]),
   ])
+
+  const canonicalConversations = conversations.map((conversation) => ({
+    ...conversation,
+    canonical: buildCanonicalConversationReadModel(conversation.flightRecordJson),
+  }))
 
   type TimelineItem =
     | { type: 'prompt';       date: Date; data: (typeof prompts)[0] }
@@ -136,10 +168,8 @@ export default async function TimelinePage({
     ...logs.map((l)    => ({ type: 'log'          as const, date: l.createdAt,  data: l })),
     ...decisions.map((d) => ({ type: 'decision'   as const, date: d.createdAt,  data: d })),
     ...warnings.map((w) =>  ({ type: 'warning'    as const, date: w.createdAt,  data: w })),
-    ...conversations.map((c) => ({ type: 'conversation' as const, date: c.timestamp, data: c })),
+    ...canonicalConversations.map((c) => ({ type: 'conversation' as const, date: c.timestamp, data: c })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
-  const etapParam = filterEtap ? `&etap=${filterEtap}` : ''
 
   return (
     <div className="min-h-full">
@@ -163,7 +193,7 @@ export default async function TimelinePage({
       {/* Filter bar */}
       <div className="flex items-center gap-1 px-6 py-2 border-b border-bg-border bg-bg-base">
         <Link
-          href={filterEtap ? `/timeline?etap=${filterEtap}` : '/timeline'}
+          href="/timeline"
           className={`px-2.5 py-1 rounded text-2xs font-medium transition-colors ${
             filterType === 'all'
               ? 'bg-accent/15 text-accent'
@@ -175,7 +205,7 @@ export default async function TimelinePage({
         {ALL_TYPES.map((t) => (
           <Link
             key={t}
-            href={`/timeline?type=${t}${etapParam}`}
+            href={`/timeline?type=${t}`}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-2xs font-medium transition-colors ${
               filterType === t
                 ? 'bg-accent/15 text-accent'
@@ -263,7 +293,6 @@ export default async function TimelinePage({
                               </div>
                               <DateStamp date={l.createdAt} />
                             </div>
-                            {l.nodes.length > 0 && <span className="chip">→ {l.nodes[0].node.title}</span>}
                             {l.summary && <p className="text-text-tertiary text-3xs mt-1 leading-relaxed line-clamp-2">{l.summary}</p>}
                           </div>
                         )
@@ -304,22 +333,27 @@ export default async function TimelinePage({
                       })()}
 
                       {item.type === 'conversation' && (() => {
-                        const c = item.data as (typeof conversations)[0]
+                        const c = item.data as (typeof canonicalConversations)[0]
+                        const headline = c.canonical.analysis.reasoningSummary ?? 'Canonical flight record unavailable.'
+                        const conversationType = c.canonical.metadata.conversationType ?? c.conversationType ?? 'unknown'
+                        const importanceLevel = c.canonical.metadata.importanceLevel ?? c.importanceLevel ?? 'medium'
+                        const etap = c.canonical.metadata.etap ?? c.etap
+                        const subetap = c.canonical.metadata.subetap ?? c.subetap
                         return (
                           <Link href={`/conversations/${c.id}`} className="block group/inner">
                             <div className="flex items-start justify-between gap-2 mb-1">
                               <div className="flex items-baseline gap-2 min-w-0">
                                 <span className={`font-mono text-3xs flex-shrink-0 ${TYPE_LABEL_COLOR['conversation']}`}>{TYPE_LABEL_SHORT['conversation']}</span>
-                                <span className="text-text-primary text-2xs font-medium truncate group-hover/inner:text-cyan-400 transition-colors">{c.summary}</span>
+                                <span className="text-text-primary text-2xs font-medium truncate group-hover/inner:text-cyan-400 transition-colors">{headline}</span>
                               </div>
                               <DateStamp date={c.timestamp} />
                             </div>
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              {c.etap && <span className="chip font-mono">ETAP {c.etap}</span>}
-                              <span className="chip">{c.conversationType.replace('_', ' ')}</span>
+                              {etap && <span className="chip font-mono">ETAP {etap}{subetap ? ` / ${subetap}` : ''}</span>}
+                              <span className="chip">{conversationType.replace('_', ' ')}</span>
                               <span className="chip flex items-center gap-1">
-                                <span className={`w-1 h-1 rounded-full ${IMPORTANCE_DOT[c.importanceLevel] ?? 'bg-neutral-500'}`} />
-                                {c.importanceLevel}
+                                <span className={`w-1 h-1 rounded-full ${IMPORTANCE_DOT[importanceLevel] ?? 'bg-neutral-500'}`} />
+                                {importanceLevel}
                               </span>
                               {c.domains.slice(0, 2).map((d) => (
                                 <span key={d} className="chip">{d}</span>

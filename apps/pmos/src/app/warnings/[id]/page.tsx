@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { resolveArchitectureWarning } from '@/lib/actions/warnings'
+import { buildCanonicalConversationReadModel } from '@/lib/pmos/flight-record-read'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,20 +43,31 @@ const IMPORTANCE_COLOR: Record<string, string> = {
 export default async function WarningDetailPage({ params }: { params: { id: string } }) {
   const warning = await db.architectureWarning.findUnique({
     where: { id: params.id },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      severity: true,
+      type: true,
+      affectedArea: true,
+      resolved: true,
+      resolvedAt: true,
+      relatedLogId: true,
+      relatedPrincipleId: true,
+      createdAt: true,
       relatedLog:         { select: { id: true, title: true, createdAt: true } },
-      relatedRoadmapNode: { select: { id: true, title: true, status: true } },
       conversations: {
         include: {
           conversation: {
             select: {
               id: true,
-              summary: true,
               conversationType: true,
               importanceLevel: true,
               timestamp: true,
               etap: true,
+              subetap: true,
               domains: true,
+              flightRecordJson: true,
             },
           },
         },
@@ -68,6 +80,24 @@ export default async function WarningDetailPage({ params }: { params: { id: stri
 
   const sevKey = warning.severity as keyof typeof SEVERITY_CONFIG
   const sev = SEVERITY_CONFIG[sevKey] ?? SEVERITY_CONFIG.medium
+  const canonicalWarning = {
+    ...warning,
+    conversations: warning.conversations.map(({ conversation }) => {
+      const canonical = buildCanonicalConversationReadModel(conversation.flightRecordJson)
+      return {
+        conversation: {
+          id: conversation.id,
+          summary: canonical.analysis.reasoningSummary ?? 'Canonical flight record unavailable.',
+          conversationType: canonical.metadata.conversationType ?? conversation.conversationType ?? 'unknown',
+          importanceLevel: canonical.metadata.importanceLevel ?? conversation.importanceLevel ?? 'medium',
+          timestamp: canonical.metadata.timestamp ? new Date(canonical.metadata.timestamp) : conversation.timestamp,
+          etap: canonical.metadata.etap ?? conversation.etap,
+          subetap: canonical.metadata.subetap ?? conversation.subetap,
+          domains: conversation.domains,
+        },
+      }
+    }),
+  }
 
   return (
     <div className="min-h-full">
@@ -131,23 +161,10 @@ export default async function WarningDetailPage({ params }: { params: { id: stri
         </section>
 
         {/* Related Entities */}
-        {(warning.relatedLog || warning.relatedRoadmapNode) && (
+        {warning.relatedLog && (
           <section>
             <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-3">Related Entities</p>
             <div className="flex flex-wrap gap-3">
-              {warning.relatedRoadmapNode && (
-                <Link
-                  href="/roadmap"
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-surface border border-bg-border hover:border-bg-hover transition-colors"
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      warning.relatedRoadmapNode.status === 'done' ? 'bg-green-500' : 'bg-accent'
-                    }`}
-                  />
-                  <span className="text-sm text-text-secondary">{warning.relatedRoadmapNode.title}</span>
-                </Link>
-              )}
               {warning.relatedLog && (
                 <Link
                   href="/logs"
@@ -172,11 +189,11 @@ export default async function WarningDetailPage({ params }: { params: { id: stri
               <p className="text-xs font-medium uppercase tracking-widest text-text-muted">Reasoning Lineage</p>
             </div>
             <span className="text-2xs text-text-muted bg-bg-surface border border-bg-border rounded-full px-2 py-0.5">
-              {warning.conversations.length} conversation{warning.conversations.length !== 1 ? 's' : ''}
+              {canonicalWarning.conversations.length} conversation{canonicalWarning.conversations.length !== 1 ? 's' : ''}
             </span>
           </div>
 
-          {warning.conversations.length === 0 ? (
+          {canonicalWarning.conversations.length === 0 ? (
             <div className="border border-dashed border-bg-border rounded-lg px-5 py-10 text-center">
               <p className="text-text-tertiary text-sm mb-1">No reasoning history linked to this warning.</p>
               <p className="text-text-muted text-xs">
@@ -185,7 +202,7 @@ export default async function WarningDetailPage({ params }: { params: { id: stri
             </div>
           ) : (
             <div className="space-y-2">
-              {warning.conversations.map(({ conversation }, idx) => (
+              {canonicalWarning.conversations.map(({ conversation }, idx) => (
                 <Link
                   key={conversation.id}
                   href={`/conversations/${conversation.id}`}
@@ -209,7 +226,7 @@ export default async function WarningDetailPage({ params }: { params: { id: stri
                       {conversation.etap && (
                         <>
                           <span className="text-text-muted text-2xs">·</span>
-                          <span className="text-2xs text-text-tertiary font-mono">ETAP {conversation.etap}</span>
+                          <span className="text-2xs text-text-tertiary font-mono">ETAP {conversation.etap}{conversation.subetap ? ` / ${conversation.subetap}` : ''}</span>
                         </>
                       )}
                       <span className="text-text-muted text-2xs">·</span>

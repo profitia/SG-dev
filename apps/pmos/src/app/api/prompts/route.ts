@@ -6,15 +6,29 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const status = searchParams.get('status')
-  const nodeId = searchParams.get('nodeId')
 
   const prompts = await db.promptExecution.findMany({
     where: {
       ...(status ? { status: status as 'queued' | 'running' | 'completed' | 'failed' | 'archived' } : {}),
-      ...(nodeId ? { roadmapNodeId: nodeId } : {}),
     },
-    include: {
-      roadmapNode: { select: { id: true, title: true } },
+    select: {
+      id: true,
+      title: true,
+      etap: true,
+      subetap: true,
+      node: true,
+      domain: true,
+      promptType: true,
+      promptContent: true,
+      executionSummary: true,
+      architecturalImpact: true,
+      changedFiles: true,
+      blockers: true,
+      nextSteps: true,
+      status: true,
+      executionLogId: true,
+      createdAt: true,
+      updatedAt: true,
     },
     orderBy: { createdAt: 'desc' },
   })
@@ -40,7 +54,6 @@ export async function POST(req: Request) {
       blockers: body.blockers ?? null,
       nextSteps: body.nextSteps ?? null,
       status: body.status ?? 'completed',
-      roadmapNodeId: body.roadmapNodeId ?? null,
     },
   })
 

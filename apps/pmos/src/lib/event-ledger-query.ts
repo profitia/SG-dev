@@ -385,12 +385,6 @@ function findHeuristicConversation(
 }
 
 export async function eventLedgerQuery(): Promise<EventLedgerData> {
-  const promptExecutionDelegate = (db as unknown as {
-    promptExecution?: {
-      findMany: (args: unknown) => Promise<PromptExecutionEventRecord[]>
-    }
-  }).promptExecution
-
   const executionLogDelegate = (db as unknown as {
     executionLog?: {
       findMany: (args: unknown) => Promise<ExecutionLogEventRecord[]>
@@ -402,12 +396,6 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       findMany: (args: unknown) => Promise<DecisionEventRecord[]>
     }
   }).decision
-
-  const architectureWarningDelegate = (db as unknown as {
-    architectureWarning?: {
-      findMany: (args: unknown) => Promise<WarningEventRecord[]>
-    }
-  }).architectureWarning
 
   const changedFileDelegate = (db as unknown as {
     changedFile?: {
@@ -455,18 +443,19 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       ORDER BY timestamp DESC
       LIMIT 250
     `),
-    findManyIfAvailable(promptExecutionDelegate, {
-      orderBy: { createdAt: 'desc' },
-      take: 250,
-      include: {
-        conversations: {
-          take: 1,
-          include: {
-            conversation: true,
-          },
-        },
-      },
-    }),
+    db.$queryRaw<PromptExecutionEventRecord[]>(Prisma.sql`
+      SELECT
+        id,
+        created_at AS "createdAt",
+        title,
+        etap,
+        subetap,
+        node,
+        domain
+      FROM prompt_executions
+      ORDER BY created_at DESC
+      LIMIT 250
+    `),
     findManyIfAvailable(executionLogDelegate, {
       orderBy: { createdAt: 'desc' },
       take: 250,
@@ -491,18 +480,15 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
         },
       },
     }),
-    findManyIfAvailable(architectureWarningDelegate, {
-      orderBy: { createdAt: 'desc' },
-      take: 250,
-      include: {
-        conversations: {
-          take: 1,
-          include: {
-            conversation: true,
-          },
-        },
-      },
-    }),
+    db.$queryRaw<WarningEventRecord[]>(Prisma.sql`
+      SELECT
+        id,
+        created_at AS "createdAt",
+        title
+      FROM architecture_warnings
+      ORDER BY created_at DESC
+      LIMIT 250
+    `),
     findManyIfAvailable(changedFileDelegate, {
       orderBy: { createdAt: 'desc' },
       take: 250,
@@ -573,7 +559,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       id: `conversation_artifacts:${record.id}`,
       eventType: 'CONVERSATION_SAVED',
       timestamp: record.timestamp,
-      runtimeContext: firstNonEmptyString(record.scope, record.etap, record.subetap),
+      runtimeContext: firstNonEmptyString(record.scope),
       sourceTable: 'conversation_artifacts',
       taskId: record.taskId ?? null,
       title: getConversationEventTitle(record),
@@ -582,7 +568,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
   })
 
   const promptEvents: EventRow[] = prompts.map((record) => {
-    const linkedConversation = toLinkedConversationRecord(record.conversations) ?? findHeuristicConversation(record.title, record.createdAt, conversations)
+    const linkedConversation = findHeuristicConversation(record.title, record.createdAt, conversations)
     sourceRecords[`prompt_executions:${record.id}`] = {
       sourceTable: 'prompt_executions',
       record: toJsonObject(record),
@@ -593,7 +579,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       id: `prompt_executions:${record.id}`,
       eventType: 'PROMPT_EXECUTION_SAVED',
       timestamp: record.createdAt,
-      runtimeContext: firstNonEmptyString(record.domain, record.etap, record.subetap, record.node),
+      runtimeContext: firstNonEmptyString(record.domain, record.node),
       sourceTable: 'prompt_executions',
       taskId: null,
       title: record.title,
@@ -642,7 +628,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
   })
 
   const warningEvents: EventRow[] = warnings.map((record) => {
-    const linkedConversation = toLinkedConversationRecord(record.conversations) ?? findHeuristicConversation(record.title, record.createdAt, conversations)
+    const linkedConversation = findHeuristicConversation(record.title, record.createdAt, conversations)
     sourceRecords[`architecture_warnings:${record.id}`] = {
       sourceTable: 'architecture_warnings',
       record: toJsonObject(record),

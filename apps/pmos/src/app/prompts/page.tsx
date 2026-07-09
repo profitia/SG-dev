@@ -31,8 +31,24 @@ function PmosHeaderBadge({ etap, subetap, node, domain, promptType }: {
 
 export default async function PromptsPage() {
   const prompts = await db.promptExecution.findMany({
-    include: {
-      roadmapNode: { select: { id: true, title: true } },
+    select: {
+      id: true,
+      title: true,
+      etap: true,
+      subetap: true,
+      node: true,
+      domain: true,
+      promptType: true,
+      promptContent: true,
+      executionSummary: true,
+      architecturalImpact: true,
+      changedFiles: true,
+      blockers: true,
+      nextSteps: true,
+      status: true,
+      executionLogId: true,
+      createdAt: true,
+      updatedAt: true,
     },
     orderBy: { createdAt: 'desc' },
   })
@@ -51,7 +67,7 @@ export default async function PromptsPage() {
         <div>
           <h1 className="text-text-primary text-xl font-semibold mb-1">Prompt Executions</h1>
           <p className="text-text-tertiary text-sm">
-            Canonical execution memory — every implementation prompt linked to roadmap
+            Canonical execution memory for implementation prompts
           </p>
         </div>
         <Link
@@ -84,12 +100,10 @@ export default async function PromptsPage() {
       <div className="bg-bg-surface border border-bg-border rounded-lg p-4 mb-8">
         <p className="text-text-tertiary text-xs font-mono mb-2 text-accent/70"># PMOS EXECUTION STANDARD</p>
         <pre className="text-text-secondary text-xs font-mono leading-relaxed whitespace-pre">{`[PMOS]
-ETAP: <number>
-SUBETAP: <number.number>
-NODE: <roadmap node name>
+      NODE: <execution node name>
 DOMAIN: <domain1,domain2>
 TYPE: implementation | refactor | analysis | fix`}</pre>
-        <p className="text-text-tertiary text-2xs mt-2">Every implementation prompt must carry this header for execution tracking and roadmap continuity.</p>
+        <p className="text-text-tertiary text-2xs mt-2">Every implementation prompt must carry this header for execution tracking and continuity.</p>
       </div>
 
       {/* Timeline */}
@@ -159,11 +173,6 @@ TYPE: implementation | refactor | analysis | fix`}</pre>
 
                   {/* Footer */}
                   <div className="flex items-center gap-4 pt-1">
-                    {prompt.roadmapNode && (
-                      <span className="text-2xs text-text-tertiary">
-                        → {prompt.roadmapNode.title}
-                      </span>
-                    )}
                     <span className="text-2xs text-text-tertiary ml-auto">
                       {new Date(prompt.createdAt).toLocaleDateString('pl-PL', {
                         day: '2-digit', month: 'short', year: 'numeric',

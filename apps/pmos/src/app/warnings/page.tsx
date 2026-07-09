@@ -1,19 +1,30 @@
 import { db } from '@/lib/db'
 import { WarningList } from '@/components/warnings/WarningList'
 import Link from 'next/link'
+import { buildCanonicalConversationReadModel } from '@/lib/pmos/flight-record-read'
 
 export const dynamic = 'force-dynamic'
 
 export default async function WarningsPage() {
   const warnings = await db.architectureWarning.findMany({
     where: { resolved: false },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      severity: true,
+      type: true,
+      affectedArea: true,
+      resolved: true,
+      resolvedAt: true,
+      relatedLogId: true,
+      relatedPrincipleId: true,
+      createdAt: true,
       relatedLog: { select: { id: true, title: true } },
-      relatedRoadmapNode: { select: { id: true, title: true } },
       conversations: {
         include: {
           conversation: {
-            select: { id: true, summary: true, conversationType: true, importanceLevel: true, timestamp: true },
+            select: { id: true, conversationType: true, importanceLevel: true, timestamp: true, flightRecordJson: true },
           },
         },
         orderBy: { conversation: { timestamp: 'desc' } },
@@ -22,6 +33,22 @@ export default async function WarningsPage() {
     },
     orderBy: { createdAt: 'desc' },
   })
+
+  const canonicalWarnings = warnings.map((warning) => ({
+    ...warning,
+    conversations: warning.conversations.map(({ conversation }) => {
+      const canonical = buildCanonicalConversationReadModel(conversation.flightRecordJson)
+      return {
+        conversation: {
+          id: conversation.id,
+          summary: canonical.analysis.reasoningSummary ?? 'Canonical flight record unavailable.',
+          conversationType: canonical.metadata.conversationType ?? conversation.conversationType ?? 'unknown',
+          importanceLevel: canonical.metadata.importanceLevel ?? conversation.importanceLevel ?? 'medium',
+          timestamp: canonical.metadata.timestamp ? new Date(canonical.metadata.timestamp) : conversation.timestamp,
+        },
+      }
+    }),
+  }))
 
   const resolved = await db.architectureWarning.count({ where: { resolved: true } })
 
@@ -74,7 +101,7 @@ export default async function WarningsPage() {
             <p className="text-text-tertiary text-sm">No active warnings.</p>
           </div>
         ) : (
-          <WarningList warnings={warnings} />
+          <WarningList warnings={canonicalWarnings} />
         )}
       </div>
     </div>

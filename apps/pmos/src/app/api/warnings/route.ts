@@ -9,9 +9,19 @@ export async function GET(req: Request) {
 
   const warnings = await db.architectureWarning.findMany({
     where: { resolved },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      severity: true,
+      type: true,
+      affectedArea: true,
+      resolved: true,
+      resolvedAt: true,
+      relatedLogId: true,
+      relatedPrincipleId: true,
+      createdAt: true,
       relatedLog: { select: { id: true, title: true } },
-      relatedRoadmapNode: { select: { id: true, title: true } },
     },
     orderBy: [
       { severity: 'asc' }, // critical first (alphabetical: critical < high < low < medium)
@@ -33,7 +43,6 @@ export async function POST(req: Request) {
       type: body.type,
       affectedArea: body.affectedArea ?? null,
       relatedLogId: body.relatedLogId ?? null,
-      relatedRoadmapNodeId: body.relatedRoadmapNodeId ?? null,
     },
   })
 
