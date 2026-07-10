@@ -10,15 +10,10 @@ npm-debug.log*
 # Next.js build output
 apps/pmos/.next/
 apps/pmos/out/
-apps/dashboard-preview/.next/
-apps/dashboard-preview/out/
 apps/sg-runtime/.next/
 apps/sg-runtime/out/
 apps/vercly/.next/
 apps/vercly/out/
-
-# Generated clients / build outputs
-apps/dashboard-preview/src/generated/
 
 # Environment — never commit secrets
 # Root-level env files
