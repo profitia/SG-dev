@@ -1,0 +1,48 @@
+{
+  "Metadata": {
+    "title": "Time Series Intelligence Viewer",
+    "description": "Interaktywny obszar analizy szeregów czasowych"
+  },
+  "Home": {
+    "title": "Time Series Intelligence Viewer",
+    "subtitle": "Interaktywna powierzchnia do analizy rynku, jakosci prognoz i kontekstu benchmarku.",
+    "status": "Aplikacja działa. Viewer wspiera szybka analize rynku i interpretacje prognoz.",
+    "filters": "Filtry",
+    "chart": "Wykres",
+    "records": "Rekordy",
+    "details": "Szczegóły"
+  },
+  "RawDataView": {
+    "workspaceTitle": "Obszar analityczny",
+    "workspaceSubtitle": "Wybierz komponent i zakres analizy.",
+    "language": "Język",
+    "component": "Komponent",
+    "benchmark": "Benchmark",
+    "componentSearchPlaceholder": "Szukaj komponentów",
+    "benchmarkSearchPlaceholder": "Szukaj benchmarków",
+    "searchEmptyTitle": "Brak pasujących komponentów.",
+    "searchEmptyHint": "Spróbuj użyć innej frazy.",
+    "benchmarkSearchEmptyTitle": "Brak pasujących benchmarków.",
+    "benchmarkSearchEmptyHint": "Spróbuj użyć innej frazy.",
+    "selectBenchmark": "Wybierz benchmark",
+    "benchmarkMissing": "Brak indeksu",
+    "singleBenchmark": "Pojedynczy benchmark",
+    "showForecast": "Pokaż prognozy",
+    "showForecastAccuracy": "Pokaż trafność prognoz",
+    "forecastAccuracy": "Trafność prognozy",
+    "benchmarkRequired": "Ten componentName ma wiele benchmarków. Wybierz benchmark przed renderowaniem wykresu.",
+    "chartNeedsBenchmark": "Wybierz benchmark, aby pokazać wykres dla tego komponentu.",
+    "chartEmpty": "Brak danych do narysowania wykresu dla bieżącego wyboru.",
+    "detailEmpty": "Wybierz punkt na wykresie, aby zobaczyć szczegóły biznesowe.",
+    "resetZoom": "Reset zoom",
+    "sourceLabel": "Źródło",
+    "componentCount": "Komponenty: {count}",
+    "benchmarkCount": "Benchmarki: {count}",
+    "loading": "Ładowanie...",
+    "ready": "Gotowe",
+    "errors": {
+      "components": "Nie udało się pobrać listy komponentów.",
+      "series": "Nie udało się pobrać serii danych."
+    }
+  }
+}
