@@ -1,0 +1,67 @@
+{
+  "Metadata": {
+    "title": "Time Series Intelligence Viewer",
+    "description": "Interaktywny obszar analizy szeregów czasowych"
+  },
+  "Home": {
+    "title": "Time Series Intelligence Viewer",
+    "subtitle": "Interaktywna powierzchnia do analizy rynku, jakosci prognoz i kontekstu benchmarku.",
+    "status": "Aplikacja działa. Viewer wspiera szybka analize rynku i interpretacje prognoz.",
+    "filters": "Filtry",
+    "chart": "Wykres",
+    "records": "Rekordy",
+    "details": "Szczegóły"
+  },
+  "RawDataView": {
+    "workspaceTitle": "Obszar analityczny",
+    "workspaceSubtitle": "Wybierz komponent i zakres analizy.",
+    "language": "Język",
+    "toggleTheme": "Przełącz motyw kolorystyczny",
+    "switchToDark": "Przełącz na tryb ciemny",
+    "switchToLight": "Przełącz na tryb jasny",
+    "component": "Komponent",
+    "benchmark": "Benchmark",
+    "componentSearchPlaceholder": "Szukaj komponentów",
+    "benchmarkSearchPlaceholder": "Szukaj benchmarków",
+    "searchEmptyTitle": "Brak pasujących komponentów",
+    "searchEmptyHint": "Spróbuj użyć innej frazy.",
+    "benchmarkSearchEmptyTitle": "Brak pasujących benchmarków",
+    "benchmarkSearchEmptyHint": "Spróbuj użyć innej frazy.",
+    "selectBenchmark": "Wybierz benchmark",
+    "benchmarkMissing": "Brak indeksu",
+    "singleBenchmark": "Pojedynczy benchmark",
+    "showForecast": "Pokaż prognozy",
+    "showForecastAccuracy": "Pokaż trafność prognoz",
+    "forecastAccuracy": "Trafność prognozy",
+    "accuracyPresentationMode": "Sposób prezentacji",
+    "forecastHorizon": "Horyzont prognozy",
+    "forecastHorizonInfoButton": "Wyjaśnij horyzont prognozy",
+    "forecastHorizonInfoTitle": "Jak czytać horyzont",
+    "forecastHorizonInfoBody": "1M porównuje rzeczywisty odczyt z prognozą przygotowaną miesiąc wcześniej. 3M i 6M wykorzystują starsze migawki prognozy dla tego samego miesiąca docelowego.",
+    "historicalForecastUnavailableHint": "Historyczne prognozy nie są dostępne dla tego benchmarku. Możesz nadal używać widoku odchylenia procentowego.",
+    "historicalForecastErrorHint": "Nie udało się teraz załadować historycznych prognoz. Możesz spróbować ponownie albo pozostać przy widoku odchylenia procentowego.",
+    "pinnedTooltipLabel": "Przypięty punkt",
+    "accuracyModes": {
+      "percentageArrows": "Odchylenie %",
+      "historicalForecast": "Historyczna prognoza"
+    },
+    "benchmarkRequired": "Ten komponent ma wiele benchmarków. Wybierz jeden przed wyświetleniem wykresu.",
+    "chartNeedsBenchmark": "Wybierz benchmark, aby pokazać wykres dla tego komponentu.",
+    "chartEmpty": "Brak danych do narysowania wykresu dla bieżącego wyboru.",
+    "detailEmpty": "Wybierz punkt na wykresie, aby zobaczyć szczegóły biznesowe.",
+    "resetZoom": "Reset zoom",
+    "sourceLabel": "Źródło",
+    "componentCount": "Komponenty: {count}",
+    "benchmarkCount": "Benchmarki: {count}",
+    "loading": "Ładowanie...",
+    "ready": "Gotowe",
+    "retry": "Spróbuj ponownie",
+    "loadingTitle": "Przygotowujemy dane do analizy",
+    "loadingHint": "Łączenie historii i prognozy",
+    "errors": {
+      "components": "Nie udało się pobrać listy komponentów.",
+      "series": "Nie udało się pobrać danych wykresu.",
+      "timeout": "Żądanie trwało zbyt długo. Spróbuj ponownie."
+    }
+  }
+}
