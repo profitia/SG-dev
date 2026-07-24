@@ -740,8 +740,13 @@ export function EventLedgerTable({ events, sourceRecords, handoffArtifactsByConv
 
       <aside className="w-[420px] min-w-[420px] border-l border-bg-border bg-bg-base">
         <div className="border-b border-bg-border px-5 py-4">
-          <h2 className="text-sm font-semibold text-text-primary">Event Details</h2>
-          <p className="mt-1 text-xs text-text-secondary">Raw PostgreSQL-backed record view</p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-text-primary">Event Details</h2>
+              <p className="mt-1 text-xs text-text-secondary">Raw PostgreSQL-backed record view</p>
+            </div>
+            {handoffPayload?.bridgePayloadText ? <CopyTextButton text={handoffPayload.bridgePayloadText} label="Copy bridge payload" /> : null}
+          </div>
         </div>
 
         {!selectedEvent || !selectedRecord ? (
@@ -782,7 +787,6 @@ export function EventLedgerTable({ events, sourceRecords, handoffArtifactsByConv
               <section>
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <h3 className="section-label mb-0">GPT HANDOFF</h3>
-                  {handoffPayload?.bridgePayloadText ? <CopyTextButton text={handoffPayload.bridgePayloadText} label="Copy bridge payload" /> : null}
                 </div>
 
                 <div className="space-y-4 rounded border border-bg-border bg-bg-surface p-4">
@@ -810,7 +814,6 @@ export function EventLedgerTable({ events, sourceRecords, handoffArtifactsByConv
                   <div>
                     <div className="mb-2 flex items-center justify-between gap-3">
                       <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-text-tertiary">GPT Bridge Payload</p>
-                      {handoffPayload?.bridgePayloadText ? <CopyTextButton text={handoffPayload.bridgePayloadText} label="Copy bridge payload" /> : null}
                     </div>
                     <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded border border-bg-border bg-bg-base p-4 text-[11px] leading-relaxed text-text-primary">
                       <HighlightedText text={handoffPayload?.bridgePayloadText ?? 'No bridge payload recorded.'} query={searchQuery} />
