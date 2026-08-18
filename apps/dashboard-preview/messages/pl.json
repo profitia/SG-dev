@@ -68,5 +68,46 @@
       "series": "Nie udało się pobrać danych wykresu.",
       "timeout": "Żądanie trwało zbyt długo. Spróbuj ponownie."
     }
+  },
+  "DashboardVariants": {
+    "kicker": "Biblioteka doświadczeń dashboardu",
+    "libraryTitle": "Kanoniczny rejestr wariantów",
+    "currentVariantLabel": "Rozwiązany runtime",
+    "lifecycleLabel": "Cykl życia",
+    "runtimeLabel": "Runtime hosta",
+    "switcherLabel": "Uruchamialne warianty standalone",
+    "switcherHint": "Tryb standalone może przełączać się tylko między uruchamialnymi zarejestrowanymi wariantami. Hosty embedded powinny pozostać przy stabilnym kontrakcie Finder, dopóki kolejny wariant nie zostanie zmaterializowany.",
+    "variantLabels": {
+      "historicalV1": "Historical v1",
+      "finderEmbeddedV2": "Finder Embedded v2",
+      "forecastPortfolioV3": "Forecast Portfolio v3"
+    },
+    "variantSummaries": {
+      "historicalV1": "Odtworzony legacy dashboard-first UX dla historii i trafności prognoz.",
+      "finderEmbeddedV2": "Bieżący chart-first UX benchmarku z kompatybilnością embedded hosta.",
+      "forecastPortfolioV3": "Zarezerwowany slot rejestru dla przyszłego Forecast Core UX bez obecnej implementacji runtime."
+    },
+    "availability": {
+      "runnable": "Uruchamialny",
+      "provenance-only": "Tylko rejestrowy",
+      "planned": "Planowany"
+    },
+    "lifecycle": {
+      "legacy": "Legacy lineage",
+      "active": "Aktywny baseline",
+      "planned": "Planowana lineage"
+    },
+    "notices": {
+      "unknownFallbackTitle": "Nieznane żądanie wariantu",
+      "unknownFallbackMessage": "Wariant \"{variantId}\" nie jest zarejestrowany. Zamiast tego załadowano {fallbackLabel}."
+    },
+    "unavailable": {
+      "title": "{variantLabel} nie jest uruchamialny w tym baseline",
+      "historicalV1Message": "Ten wpis rejestru zachowuje wyłącznie odtworzoną lineage historycznego UX. Kanoniczna aplikacja Dashboard Preview nie materializuje go dziś jako uruchamialnej powierzchni.",
+      "forecastPortfolioV3Message": "Ten wpis rejestru rezerwuje przyszły Forecast Portfolio UX. W Dashboard Preview nie ma jeszcze implementacji runtime tej wersji.",
+      "runtimeStatus": "Runtime hosta: {status}",
+      "lifecycleStatus": "Cykl życia: {status}",
+      "openActiveBaseline": "Otwórz aktywny baseline"
+    }
   }
 }

@@ -166,6 +166,114 @@ body:has(.app-shell.is-embedded) .chart-range-buttons {
   font-size: 0.92rem;
 }
 
+.variant-library-panel {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.variant-library-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+}
+
+.variant-library-copy {
+  display: grid;
+  gap: 0.35rem;
+  max-width: 60ch;
+}
+
+.variant-library-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.variant-library-summary {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.variant-library-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  min-width: min(100%, 420px);
+  margin: 0;
+}
+
+.variant-library-meta div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.variant-library-meta dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.variant-library-meta dd {
+  margin: 0;
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+.variant-switcher {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.variant-switcher-label {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.variant-switcher-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.variant-switcher-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.35rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 95%, transparent);
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: border-color var(--sg-duration-fast) ease, background-color var(--sg-duration-fast) ease, color var(--sg-duration-fast) ease;
+}
+
+.variant-switcher-link:hover,
+.variant-switcher-link:focus-visible {
+  background: color-mix(in srgb, var(--sg-color-info) 8%, white 92%);
+}
+
+.variant-switcher-link.is-active {
+  border-color: color-mix(in srgb, var(--sg-color-action-secondary) 28%, var(--border));
+  background: color-mix(in srgb, var(--sg-color-info) 12%, white 88%);
+  color: color-mix(in srgb, var(--sg-color-action-primary) 76%, var(--text));
+}
+
+.variant-switcher-hint {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
 .shell-grid {
   display: grid;
   gap: 1.25rem;
@@ -686,6 +794,15 @@ input:focus-visible {
   background: color-mix(in srgb, var(--sg-color-action-primary) 88%, white 12%);
 }
 
+.variant-notice {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.variant-notice p {
+  margin: 0.35rem 0 0;
+}
+
 .summary-panel {
   display: grid;
   gap: 1.2rem;
@@ -995,6 +1112,61 @@ body:has(.app-shell.is-embedded) .chart-reset-button {
   border-radius: 0;
   padding: 0;
   box-shadow: none;
+}
+
+.variant-state-panel {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.variant-state-panel.is-embedded {
+  box-shadow: none;
+}
+
+.variant-state-kicker {
+  margin: 0 0 0.45rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.variant-state-title {
+  margin: 0;
+  font-size: clamp(1.25rem, 2vw, 1.7rem);
+  line-height: 1.15;
+}
+
+.variant-state-body {
+  margin: 0.7rem 0 0;
+  max-width: 62ch;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.variant-state-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.variant-state-meta-item {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.1rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--sg-color-info) 18%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sg-color-info) 8%, white 92%);
+  font-size: 0.84rem;
+  color: color-mix(in srgb, var(--sg-color-action-primary) 76%, var(--text));
+}
+
+.variant-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .chart-axis {
@@ -1814,6 +1986,10 @@ body:has(.app-shell.is-embedded) .chart-reset-button {
 
   .app-shell-brand {
     align-items: flex-start;
+  }
+
+  .variant-library-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .summary-metrics {

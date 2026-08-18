@@ -68,5 +68,46 @@
       "series": "Failed to load the chart data.",
       "timeout": "The request took too long. Try again."
     }
+  },
+  "DashboardVariants": {
+    "kicker": "Dashboard experience library",
+    "libraryTitle": "Canonical variant registry",
+    "currentVariantLabel": "Resolved runtime",
+    "lifecycleLabel": "Lifecycle",
+    "runtimeLabel": "Host runtime",
+    "switcherLabel": "Runnable standalone variants",
+    "switcherHint": "Standalone mode can switch only between runnable registered variants. Embedded hosts should stay on the stable Finder contract until another variant is materialized.",
+    "variantLabels": {
+      "historicalV1": "Historical v1",
+      "finderEmbeddedV2": "Finder Embedded v2",
+      "forecastPortfolioV3": "Forecast Portfolio v3"
+    },
+    "variantSummaries": {
+      "historicalV1": "Recovered legacy dashboard-first historical and forecast-accuracy experience.",
+      "finderEmbeddedV2": "Current chart-first benchmark experience with embedded host compatibility.",
+      "forecastPortfolioV3": "Reserved registry slot for the future Forecast Core UX without runtime implementation yet."
+    },
+    "availability": {
+      "runnable": "Runnable",
+      "provenance-only": "Registry only",
+      "planned": "Planned"
+    },
+    "lifecycle": {
+      "legacy": "Legacy lineage",
+      "active": "Active baseline",
+      "planned": "Planned lineage"
+    },
+    "notices": {
+      "unknownFallbackTitle": "Unknown variant request",
+      "unknownFallbackMessage": "Variant \"{variantId}\" is not registered. Loaded {fallbackLabel} instead."
+    },
+    "unavailable": {
+      "title": "{variantLabel} is not runnable in this baseline",
+      "historicalV1Message": "This registry entry preserves the recovered historical UX lineage only. The canonical Dashboard Preview app does not materialize it as a runnable surface.",
+      "forecastPortfolioV3Message": "This registry entry reserves the future Forecast Portfolio UX. No runtime implementation is present in Dashboard Preview yet.",
+      "runtimeStatus": "Host runtime: {status}",
+      "lifecycleStatus": "Lifecycle: {status}",
+      "openActiveBaseline": "Open active baseline"
+    }
   }
 }

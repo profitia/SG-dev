@@ -86,6 +86,28 @@ The host application determines **where and in what business context** the chart
 
 Dashboard Preview determines **how the chart itself behaves and is rendered**.
 
+### 3.1 Experience Variants Stay Inside One Canonical App
+
+If Dashboard Preview needs multiple business-facing compositions, demos, or host-specific experiences, they must be implemented as UX variants inside the single canonical application:
+
+```text
+apps/dashboard-preview
+```
+
+They must not be modeled as separate chart applications, parallel chart ownership surfaces, or Git-version naming schemes.
+
+The canonical runtime registry and resolver rules for these experiences are defined in:
+
+```text
+apps/dashboard-preview/DASHBOARD_PREVIEW_VARIANT_REGISTRY_CANON.md
+```
+
+Mandatory distinction:
+
+```text
+UX Variant != Git Version
+```
+
 ---
 
 ## 4. Single Source of Truth for Chart Functionality
