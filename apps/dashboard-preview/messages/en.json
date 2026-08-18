@@ -1,0 +1,72 @@
+{
+  "Metadata": {
+    "title": "Time Series Intelligence Viewer",
+    "description": "Interactive time series intelligence workspace"
+  },
+  "Home": {
+    "title": "Time Series Intelligence Viewer",
+    "subtitle": "Interactive analysis surface for market history, forecast quality and benchmark context.",
+    "status": "The application is running. The viewer is focused on market analysis and forecast interpretation.",
+    "filters": "Filters",
+    "chart": "Chart",
+    "records": "Records",
+    "details": "Details"
+  },
+  "RawDataView": {
+    "workspaceTitle": "Analysis workspace",
+    "workspaceSubtitle": "Select a component and analysis range.",
+    "language": "Language",
+    "toggleTheme": "Toggle color theme",
+    "switchToDark": "Switch to dark mode",
+    "switchToLight": "Switch to light mode",
+    "component": "Component",
+    "benchmark": "Benchmark",
+    "componentSearchPlaceholder": "Search components",
+    "benchmarkSearchPlaceholder": "Search benchmarks",
+    "searchEmptyTitle": "No matching components found",
+    "searchEmptyHint": "Try another keyword.",
+    "benchmarkSearchEmptyTitle": "No matching benchmarks found",
+    "benchmarkSearchEmptyHint": "Try another keyword.",
+    "selectBenchmark": "Select a benchmark",
+    "benchmarkMissing": "Missing index",
+    "singleBenchmark": "Single benchmark",
+    "historicalForecast": "Historical forecast",
+    "forecastHorizon": "Forecast horizon",
+    "forecastAccuracyInfoLabel": "Forecast accuracy explanation",
+    "forecastAccuracyInfoLine1": "1M compares the actual reading with the forecast prepared one month earlier.",
+    "forecastAccuracyInfoLine2": "3M, 6M and 12M use older forecast snapshots prepared respectively 3, 6 or 12 months before the target month.",
+    "showForecast": "Show forecast",
+    "showForecastAccuracy": "Show forecast accuracy",
+    "forecastAccuracy": "Forecast Accuracy",
+    "accuracyPresentationMode": "Presentation mode",
+    "forecastHorizon": "Forecast horizon",
+    "forecastHorizonInfoButton": "Explain forecast horizon",
+    "forecastHorizonInfoTitle": "How to read the horizon",
+    "forecastHorizonInfoBody": "1M compares the actual reading with the forecast that was made one month earlier. 3M and 6M use older forecast snapshots for that same target month.",
+    "historicalForecastUnavailableHint": "Historical forecast data is not available for this benchmark. You can still use the percentage difference view.",
+    "historicalForecastErrorHint": "Historical forecast data could not be loaded right now. You can retry or keep using the percentage difference view.",
+    "pinnedTooltipLabel": "Pinned selection",
+    "accuracyModes": {
+      "percentageArrows": "Percentage difference",
+      "historicalForecast": "Historical forecast"
+    },
+    "benchmarkRequired": "This component has multiple benchmarks. Pick one before rendering the chart.",
+    "chartNeedsBenchmark": "Select a benchmark to draw the chart for this component.",
+    "chartEmpty": "No data is available for the current chart selection.",
+    "detailEmpty": "Select a chart point to inspect the business detail panel.",
+    "resetZoom": "Reset zoom",
+    "sourceLabel": "Source",
+    "componentCount": "Components: {count}",
+    "benchmarkCount": "Benchmarks: {count}",
+    "loading": "Loading...",
+    "ready": "Ready",
+    "retry": "Retry",
+    "loadingTitle": "Preparing data for analysis",
+    "loadingHint": "Combining history and forecast",
+    "errors": {
+      "components": "Failed to load the component list.",
+      "series": "Failed to load the chart data.",
+      "timeout": "The request took too long. Try again."
+    }
+  }
+}

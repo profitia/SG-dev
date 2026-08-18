@@ -1,0 +1,7 @@
+/src/generated/prisma/
+/runtime/data-runtime/.env*
+/runtime/data-runtime/node_modules/
+/runtime/data-runtime/dist/
+/runtime/data-runtime/*.log
+/runtime/data-runtime/snowflake.log
+.DS_Store

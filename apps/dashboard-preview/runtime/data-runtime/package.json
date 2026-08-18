@@ -1,0 +1,35 @@
+{
+  "name": "@sg/data-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Data Runtime - narrow synchronization runtime for dashboard-serving pipelines in SpendGuru 2.0",
+  "type": "module",
+  "scripts": {
+    "test": "find src -name '*.test.ts' -print0 | xargs -0 tsx --test",
+    "test:focused:hydration-lease": "tsx --test src/runtime/execution-lease.test.ts src/runtime/execution-heartbeat-controller.test.ts src/runtime/pipeline-runner.test.ts src/runtime/stale-hydration-recovery.test.ts src/cli/run-recover-stale.test.ts",
+    "test:integration:hydration-lease": "find src -name '*.integration.test.ts' -print0 | xargs -0 tsx --test",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --outDir dist",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:bootstrap-registry:dry-run": "tsx scripts/bootstrap-registry.ts --dry-run",
+    "db:bootstrap-registry:apply": "tsx scripts/bootstrap-registry.ts --apply",
+    "db:bootstrap-registry:staging": "DATA_RUNTIME_ENV=STAGING tsx scripts/bootstrap-registry.ts --dry-run",
+    "run:source-sync": "tsx src/cli/run-source-sync.ts",
+    "run:pipeline": "tsx src/cli/run-pipeline.ts",
+    "run:recover-stale": "tsx src/cli/run-recover-stale.ts"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "dotenv": "^17.4.2",
+    "pg": "^8.16.3",
+    "snowflake-sdk": "^2.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.41",
+    "prisma": "^7.8.0",
+    "tsx": "^4.22.3",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "@sg/dashboard-preview",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SpendGuru 2.0 - Internal Dashboard Preview",
+  "scripts": {
+    "dev": "next dev --port 3002",
+    "build": "prisma generate --schema prisma/schema.prisma && next build",
+    "start": "next start --hostname 0.0.0.0 --port ${PORT:-3002}",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "test:mapper": "tsx --test tests/dashboard-record-mapper.test.ts"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "next": "14.2.29",
+    "next-intl": "^3.26.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "@types/react": "^18.3.20",
+    "@types/react-dom": "^18.3.7",
+    "prisma": "^7.8.0",
+    "tsx": "^4.22.3",
+    "typescript": "^5.8.3"
+  }
+}

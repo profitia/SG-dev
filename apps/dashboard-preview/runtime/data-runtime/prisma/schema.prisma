@@ -1,0 +1,394 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DrConnectorKind {
+  SNOWFLAKE
+  REST_API
+  CSV
+  EXCEL
+  S3
+}
+
+enum DrDatasetType {
+  BUSINESS
+  REFERENCE
+  SYSTEM
+}
+
+enum DrPipelineTargetStore {
+  DASHBOARD_INDEX
+  FORECAST_ACCURACY
+}
+
+enum DrRunMode {
+  MANUAL
+  INCREMENTAL
+  REPLAY
+  SCHEDULED
+}
+
+enum DrRunStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  PARTIAL
+}
+
+enum DrRunDatasetStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  PARTIAL
+  SKIPPED
+}
+
+enum DrWatermarkType {
+  TIMESTAMP
+  DATE
+  NUMBER
+  STRING
+}
+
+model DrConnector {
+  id         String          @id @default(cuid())
+  code       String          @unique
+  name       String
+  kind       DrConnectorKind
+  configJson Json?           @map("config_json")
+  isActive   Boolean         @default(true) @map("is_active")
+  createdAt  DateTime        @default(now()) @map("created_at")
+  updatedAt  DateTime        @updatedAt @map("updated_at")
+
+  sources DrSource[]
+
+  @@index([kind])
+  @@index([isActive])
+  @@map("dr_connectors")
+}
+
+model DrSource {
+  id         String   @id @default(cuid())
+  connectorId String  @map("connector_id")
+  code       String   @unique
+  name       String
+  configJson Json?    @map("config_json")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  connector              DrConnector               @relation(fields: [connectorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  datasets               DrDataset[]
+  pipelines              DrPipeline[]
+  runs                   DrRun[]
+  runDatasets            DrRunDataset[]
+  watermarks             DrWatermark[]
+  rawRecords             DrRawRecord[]
+  dashboardIndexRecords  DrDashboardIndexRecord[]
+  forecastAccuracyRecords DrForecastAccuracyRecord[]
+
+  @@index([connectorId])
+  @@index([isActive])
+  @@map("dr_sources")
+}
+
+model DrDataset {
+  id             String           @id @default(cuid())
+  sourceId       String           @map("source_id")
+  code           String
+  name           String
+  datasetType    DrDatasetType    @map("dataset_type")
+  sourceDatabase String           @map("source_database")
+  sourceSchema   String           @map("source_schema")
+  sourceObject   String           @map("source_object")
+  watermarkColumn String?         @map("watermark_column")
+  watermarkType  DrWatermarkType? @map("watermark_type")
+  fetchConfigJson Json?           @map("fetch_config_json")
+  isActive       Boolean          @default(true) @map("is_active")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  source                 DrSource                  @relation(fields: [sourceId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  pipelines              DrPipeline[]
+  runDatasets            DrRunDataset[]
+  watermarks             DrWatermark[]
+  rawRecords             DrRawRecord[]
+  dashboardIndexRecords  DrDashboardIndexRecord[]
+  forecastAccuracyRecords DrForecastAccuracyRecord[]
+
+  @@unique([sourceId, code])
+  @@index([sourceId])
+  @@index([datasetType])
+  @@index([isActive])
+  @@index([sourceDatabase, sourceSchema, sourceObject])
+  @@map("dr_datasets")
+}
+
+model DrPipeline {
+  id               String                @id @default(cuid())
+  sourceId         String                @map("source_id")
+  datasetId        String                @map("dataset_id")
+  code             String
+  name             String
+  targetStore      DrPipelineTargetStore @map("target_store")
+  configJson       Json?                 @map("config_json")
+  configFingerprint String?              @map("config_fingerprint")
+  isActive         Boolean               @default(true) @map("is_active")
+  createdAt        DateTime              @default(now()) @map("created_at")
+  updatedAt        DateTime              @updatedAt @map("updated_at")
+
+  source                 DrSource                  @relation(fields: [sourceId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  dataset                DrDataset                 @relation(fields: [datasetId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  runs                   DrRun[]
+  watermarks             DrWatermark[]
+  rawRecords             DrRawRecord[]
+  dashboardIndexRecords  DrDashboardIndexRecord[]
+  forecastAccuracyRecords DrForecastAccuracyRecord[]
+
+  @@unique([sourceId, datasetId, code])
+  @@index([sourceId])
+  @@index([datasetId])
+  @@index([targetStore])
+  @@index([isActive])
+  @@index([configFingerprint])
+  @@map("dr_pipelines")
+}
+
+model DrRun {
+  id                        String        @id @default(cuid())
+  organizationId            String        @map("organization_id")
+  sourceId                  String        @map("source_id")
+  pipelineId                String        @map("pipeline_id")
+  runMode                   DrRunMode     @map("run_mode")
+  status                    DrRunStatus   @default(PENDING)
+  triggeredBy               String?       @map("triggered_by")
+  pipelineConfigFingerprint String?       @map("pipeline_config_fingerprint")
+  pipelineVersion           String?       @map("pipeline_version")
+  registrySnapshotJson      Json?         @map("registry_snapshot_json")
+  statsJson                 Json?         @map("stats_json")
+  errorMessage              String?       @map("error_message")
+  leaseOwnerId              String?       @map("lease_owner_id") @db.VarChar(128)
+  leaseTokenHash            Bytes?        @map("lease_token_hash")
+  leaseEpoch                BigInt        @default(0) @map("lease_epoch")
+  leaseAcquiredAt           DateTime?     @map("lease_acquired_at") @db.Timestamptz(6)
+  leaseHeartbeatAt          DateTime?     @map("lease_heartbeat_at") @db.Timestamptz(6)
+  leaseExpiresAt            DateTime?     @map("lease_expires_at") @db.Timestamptz(6)
+  leaseReleasedAt           DateTime?     @map("lease_released_at") @db.Timestamptz(6)
+  recoveredAt               DateTime?     @map("recovered_at") @db.Timestamptz(6)
+  recoveryReasonCode        String?       @map("recovery_reason_code") @db.VarChar(64)
+  startedAt                 DateTime?     @map("started_at")
+  completedAt               DateTime?     @map("completed_at")
+  failedAt                  DateTime?     @map("failed_at")
+  createdAt                 DateTime      @default(now()) @map("created_at")
+  updatedAt                 DateTime      @updatedAt @map("updated_at")
+  deletedAt                 DateTime?     @map("deleted_at")
+
+  source                  DrSource                   @relation(fields: [sourceId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  pipeline                DrPipeline                 @relation(fields: [pipelineId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  runDatasets             DrRunDataset[]
+  rawRecords              DrRawRecord[]              @relation("RunRawRecords")
+  replayChildRawRecords   DrRawRecord[]              @relation("ReplayParentRun")
+  updatedWatermarks       DrWatermark[]              @relation("WatermarkUpdatedByRun")
+  latestDashboardRecords  DrDashboardIndexRecord[]   @relation("DashboardIndexLatestRun")
+  latestForecastAccuracyRecords DrForecastAccuracyRecord[] @relation("ForecastAccuracyLatestRun")
+
+  @@index([organizationId])
+  @@index([organizationId, pipelineId, startedAt])
+  @@index([organizationId, status])
+  @@index([organizationId, status, leaseExpiresAt])
+  @@index([organizationId, pipelineId, status, leaseExpiresAt])
+  @@index([sourceId])
+  @@index([pipelineId])
+  @@index([pipelineVersion])
+  @@map("dr_runs")
+}
+
+model DrRunDataset {
+  id                   String             @id @default(cuid())
+  organizationId       String             @map("organization_id")
+  runId                String             @map("run_id")
+  sourceId             String             @map("source_id")
+  datasetId            String             @map("dataset_id")
+  datasetType          DrDatasetType      @map("dataset_type")
+  status               DrRunDatasetStatus @default(PENDING)
+  rowsRead             Int                @default(0) @map("rows_read")
+  rowsWrittenRaw       Int                @default(0) @map("rows_written_raw")
+  rowsWrittenDashboard Int                @default(0) @map("rows_written_dashboard")
+  rowsDeduplicated     Int                @default(0) @map("rows_deduplicated")
+  rowsFailed           Int                @default(0) @map("rows_failed")
+  watermarkBefore      String?            @map("watermark_before")
+  watermarkAfter       String?            @map("watermark_after")
+  errorMessage         String?            @map("error_message")
+  startedAt            DateTime?          @map("started_at")
+  completedAt          DateTime?          @map("completed_at")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+  deletedAt            DateTime?          @map("deleted_at")
+
+  run         DrRun         @relation(fields: [runId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  source      DrSource      @relation(fields: [sourceId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  dataset     DrDataset     @relation(fields: [datasetId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  rawRecords  DrRawRecord[]
+
+  @@unique([runId, datasetId])
+  @@index([organizationId])
+  @@index([runId])
+  @@index([datasetId])
+  @@index([organizationId, datasetId, status])
+  @@map("dr_run_datasets")
+}
+
+model DrWatermark {
+  id              String           @id @default(cuid())
+  organizationId  String           @map("organization_id")
+  sourceId        String           @map("source_id")
+  datasetId       String           @map("dataset_id")
+  pipelineId      String           @map("pipeline_id")
+  watermarkColumn String           @map("watermark_column")
+  watermarkType   DrWatermarkType  @map("watermark_type")
+  lastValue       String?          @map("last_value")
+  lastSyncedAt    DateTime?        @map("last_synced_at")
+  updatedByRunId  String?          @map("updated_by_run_id")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  deletedAt       DateTime?        @map("deleted_at")
+
+  source        DrSource    @relation(fields: [sourceId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  dataset       DrDataset   @relation(fields: [datasetId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  pipeline      DrPipeline  @relation(fields: [pipelineId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  updatedByRun  DrRun?      @relation("WatermarkUpdatedByRun", fields: [updatedByRunId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@unique([organizationId, sourceId, datasetId, pipelineId])
+  @@index([organizationId])
+  @@index([pipelineId])
+  @@index([updatedByRunId])
+  @@map("dr_watermarks")
+}
+
+model DrRawRecord {
+  id              String     @id @default(cuid())
+  organizationId  String     @map("organization_id")
+  runId           String     @map("run_id")
+  runDatasetId    String     @map("run_dataset_id")
+  sourceId        String     @map("source_id")
+  datasetId       String     @map("dataset_id")
+  pipelineId      String     @map("pipeline_id")
+  connectorKey    String     @map("connector_key")
+  sourceDatabase  String     @map("source_database")
+  sourceSchema    String     @map("source_schema")
+  sourceObject    String     @map("source_object")
+  sourceRowId     String?    @map("source_row_id")
+  sourceUpdatedAt DateTime?  @map("source_updated_at")
+  payloadJson     Json       @map("payload_json")
+  payloadHash     String     @map("payload_hash")
+  ingestedAt      DateTime   @map("ingested_at")
+  isReplayed      Boolean    @default(false) @map("is_replayed")
+  replayOfRunId   String?    @map("replay_of_run_id")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  deletedAt       DateTime?  @map("deleted_at")
+
+  run          DrRun         @relation("RunRawRecords", fields: [runId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  runDataset   DrRunDataset  @relation(fields: [runDatasetId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  source       DrSource      @relation(fields: [sourceId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  dataset      DrDataset     @relation(fields: [datasetId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  pipeline     DrPipeline    @relation(fields: [pipelineId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  replayOfRun  DrRun?        @relation("ReplayParentRun", fields: [replayOfRunId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([organizationId, runId])
+  @@index([organizationId, runDatasetId])
+  @@index([organizationId, datasetId, sourceUpdatedAt])
+  @@index([organizationId, datasetId, payloadHash])
+  @@index([organizationId, pipelineId, ingestedAt])
+  @@index([replayOfRunId])
+  @@index([organizationId, replayOfRunId])
+  @@map("dr_raw_records")
+}
+
+model DrDashboardIndexRecord {
+  id              String     @id @default(cuid())
+  organizationId  String     @map("organization_id")
+  sourceId        String     @map("source_id")
+  datasetId       String     @map("dataset_id")
+  pipelineId      String     @map("pipeline_id")
+  latestRunId     String     @map("latest_run_id")
+  dedupeKey       String     @map("dedupe_key")
+  scenarioType    String     @map("scenario_type")
+  componentId     String     @map("component_id")
+  componentName   String     @map("component_name")
+  componentCode   String?    @map("component_code")
+  metricValue     Decimal?   @map("metric_value") @db.Decimal(18, 6)
+  unit            String?
+  currency        String?
+  sourceDate      DateTime?  @map("source_date")
+  market          String?
+  country         String?
+  qualityStatus   String?    @map("quality_status")
+  duplicateStatus String?    @map("duplicate_status")
+  rawRecordCount  Int        @default(0) @map("raw_record_count")
+  duplicateCount  Int        @default(0) @map("duplicate_count")
+  lineageJson     Json?      @map("lineage_json")
+  metadataJson    Json?      @map("metadata_json")
+  lastSyncedAt    DateTime   @map("last_synced_at")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+  deletedAt       DateTime?  @map("deleted_at")
+
+  source      DrSource   @relation(fields: [sourceId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  dataset     DrDataset  @relation(fields: [datasetId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  pipeline    DrPipeline @relation(fields: [pipelineId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  latestRun   DrRun      @relation("DashboardIndexLatestRun", fields: [latestRunId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([organizationId, pipelineId, dedupeKey])
+  @@index([organizationId, pipelineId, sourceDate])
+  @@index([organizationId, pipelineId, scenarioType, sourceDate])
+  @@index([organizationId, pipelineId, componentId])
+  @@index([organizationId, pipelineId, market, sourceDate])
+  @@index([latestRunId])
+  @@map("dr_dashboard_index_records")
+}
+
+model DrForecastAccuracyRecord {
+  id              String     @id @default(cuid())
+  organizationId  String     @map("organization_id")
+  sourceId        String     @map("source_id")
+  datasetId       String     @map("dataset_id")
+  pipelineId      String     @map("pipeline_id")
+  latestRunId     String     @map("latest_run_id")
+  dedupeKey       String     @map("dedupe_key")
+  benchmarkCode   String     @map("benchmark_code")
+  sourceTableName String     @map("source_table_name")
+  orgTableName    String?    @map("org_table_name")
+  targetDate      DateTime   @map("target_date")
+  horizonMonths   Int        @map("horizon_months")
+  actualValue     Decimal?   @map("actual_value") @db.Decimal(18, 6)
+  forecastValue   Decimal    @map("forecast_value") @db.Decimal(18, 6)
+  differenceValue Decimal?   @map("difference_value") @db.Decimal(18, 6)
+  errorType       String?    @map("error_type")
+  duplicateStatus String?    @map("duplicate_status")
+  rawRecordCount  Int        @default(0) @map("raw_record_count")
+  duplicateCount  Int        @default(0) @map("duplicate_count")
+  lineageJson     Json?      @map("lineage_json")
+  metadataJson    Json?      @map("metadata_json")
+  lastSyncedAt    DateTime   @map("last_synced_at")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+  deletedAt       DateTime?  @map("deleted_at")
+
+  source      DrSource   @relation(fields: [sourceId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  dataset     DrDataset  @relation(fields: [datasetId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  pipeline    DrPipeline @relation(fields: [pipelineId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  latestRun   DrRun      @relation("ForecastAccuracyLatestRun", fields: [latestRunId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([organizationId, pipelineId, dedupeKey])
+  @@index([organizationId, pipelineId, benchmarkCode, targetDate])
+  @@index([organizationId, pipelineId, targetDate])
+  @@index([organizationId, pipelineId, horizonMonths, targetDate])
+  @@index([latestRunId])
+  @@map("dr_forecast_accuracy_records")
+}
