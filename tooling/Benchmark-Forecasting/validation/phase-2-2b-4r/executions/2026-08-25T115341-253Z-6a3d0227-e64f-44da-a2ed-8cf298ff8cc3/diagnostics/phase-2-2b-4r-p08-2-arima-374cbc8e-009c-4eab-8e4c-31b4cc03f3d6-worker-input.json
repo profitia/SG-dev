@@ -1,0 +1,34 @@
+[
+  {
+    "stressRunId": "phase-2-2b-4r-p08-2-arima-374cbc8e-009c-4eab-8e4c-31b4cc03f3d6",
+    "scenarioId": "P08",
+    "virtualUserId": "vu-1",
+    "requestId": "phase-2-2b-4r-p08-2-arima-374cbc8e-009c-4eab-8e4c-31b4cc03f3d6-request-1",
+    "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|arima",
+    "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|arima|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+    "operation": "VERIFICATION",
+    "seriesId": "wocaes0280",
+    "modelId": "arima",
+    "targetBasis": "MONTHLY_AVERAGE",
+    "targetSemantics": "MONTHLY_AVERAGE",
+    "sourceFrequency": "MONTHLY",
+    "targetCadence": "MONTHLY",
+    "precheck": true
+  },
+  {
+    "stressRunId": "phase-2-2b-4r-p08-2-arima-374cbc8e-009c-4eab-8e4c-31b4cc03f3d6",
+    "scenarioId": "P08",
+    "virtualUserId": "vu-2",
+    "requestId": "phase-2-2b-4r-p08-2-arima-374cbc8e-009c-4eab-8e4c-31b4cc03f3d6-request-2",
+    "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|arima",
+    "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|arima|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+    "operation": "VERIFICATION",
+    "seriesId": "wocaes0280",
+    "modelId": "arima",
+    "targetBasis": "MONTHLY_AVERAGE",
+    "targetSemantics": "MONTHLY_AVERAGE",
+    "sourceFrequency": "MONTHLY",
+    "targetCadence": "MONTHLY",
+    "precheck": true
+  }
+]

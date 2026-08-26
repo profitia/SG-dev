@@ -12,6 +12,11 @@ import {
   type DashboardVariantId,
 } from '@/lib/dashboard-variants/registry'
 
+const FORECAST_PORTFOLIO_DEFAULT_BENCHMARK = {
+  seriesId: 'wocaes0074',
+  displayName: 'Brent, Spot, FOB North Sea',
+} as const
+
 type LocaleHomePageProps = {
   params: {
     locale: string
@@ -67,6 +72,34 @@ export default async function LocaleHomePage({
     variantId: DEFAULT_DASHBOARD_VARIANT_ID,
   })
 
+  const variantSwitcherHref = (variantId: DashboardVariantId) => {
+    if (variantId === 'historical-v1') {
+      const nextSearchParams = { ...searchParams }
+
+      delete nextSearchParams.seriesId
+      delete nextSearchParams.displayName
+      delete nextSearchParams.range
+
+      return buildDashboardVariantHref({ locale, searchParams: nextSearchParams, variantId })
+    }
+
+    if (variantId !== 'forecast-portfolio-v3') {
+      return buildDashboardVariantHref({ locale, searchParams, variantId })
+    }
+
+    const nextSearchParams = { ...searchParams }
+
+    if (!readFirstSearchParamValue(nextSearchParams.seriesId)) {
+      nextSearchParams.seriesId = FORECAST_PORTFOLIO_DEFAULT_BENCHMARK.seriesId
+    }
+
+    if (!readFirstSearchParamValue(nextSearchParams.displayName)) {
+      nextSearchParams.displayName = FORECAST_PORTFOLIO_DEFAULT_BENCHMARK.displayName
+    }
+
+    return buildDashboardVariantHref({ locale, searchParams: nextSearchParams, variantId })
+  }
+
   const variantLibrary = embedded
     ? null
     : {
@@ -84,7 +117,7 @@ export default async function LocaleHomePage({
         switcherItems: getStandaloneSwitcherVariants().map((variant) => ({
           id: variant.id,
           label: variantLabel(variant.id),
-          href: buildDashboardVariantHref({ locale, searchParams, variantId: variant.id }),
+          href: variantSwitcherHref(variant.id),
           active: variant.id === resolution.resolvedVariant.id,
         })),
       }
@@ -102,7 +135,11 @@ export default async function LocaleHomePage({
   return (
     <DashboardShell embedded={embedded} notice={notice} variantLibrary={variantLibrary}>
       {resolution.isRunnable ? (
-        <RawDataView embedded={embedded} />
+        <RawDataView
+          embedded={embedded}
+          variant={resolution.resolvedVariant.id}
+          forcedBenchmarkSubject={resolution.resolvedVariant.id === 'forecast-portfolio-v3' ? FORECAST_PORTFOLIO_DEFAULT_BENCHMARK : null}
+        />
       ) : (
         <DashboardVariantState
           embedded={embedded}

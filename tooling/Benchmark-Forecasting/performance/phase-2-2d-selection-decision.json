@@ -1,0 +1,89 @@
+{
+  "task": "FORECAST_PHASE_2_2D_SELECTION_DECISION",
+  "phase": "2.2D",
+  "generatedAt": "2026-08-25T16:12:08.510Z",
+  "method": {
+    "arbitraryNumericScoreUsed": false,
+    "order": [
+      "REJECT_NON_CAUSAL",
+      "DEFER_UNPROVEN",
+      "COMPARE_DIRECT",
+      "SELECT_SMALLEST_SUFFICIENT",
+      "RECORD_COMPLEMENTS"
+    ],
+    "principlesEqual": true
+  },
+  "primarySelected": true,
+  "primary": {
+    "candidateId": "C01",
+    "candidateName": "CACHE_MISS_COALESCING",
+    "confidence": "STRONGLY_SUPPORTED_DIRECT",
+    "target": "CONCURRENT_UNCOALESCED_FULL_TABLE_APPLICATION_READS",
+    "exactCausalMetric": "APPLICATION_FULL_TABLE_READ_OWNER_COUNT_PER_EXACT_ORGANIZATION_PIPELINE_MISS_WINDOW"
+  },
+  "whySelected": [
+    "Directly removes the UNCOALESCED and CONCURRENT read-count terms.",
+    "Preserves the full query and all downstream business-safe semantics.",
+    "Smallest source surface, no infrastructure dependency, and source-only rollback.",
+    "Can be proven independently by owner/read count before high-concurrency testing."
+  ],
+  "falsificationCriteria": [
+    "P09 requests do not share one exact organization/pipeline read key.",
+    "An existing per-request semantic dependency requires independent read results.",
+    "A same-key owner cannot be failure-cleaned without changing query/cache semantics.",
+    "Controlled Phase 2.3 evidence shows duplicate full-table reads remain or no causal-pressure reduction occurs."
+  ],
+  "conditionalSecondary": [
+    {
+      "candidateId": "C02",
+      "trigger": "IF C01 proves one owner read per exact miss window but P09 remains capacity-bound or the single owner read remains materially costly, THEN evaluate C02 with semantic-equivalence and index-plan gates."
+    },
+    {
+      "candidateId": "C03",
+      "trigger": "IF C01 is accepted yet timeout/abort cases still leave material server or DB work, THEN prove driver cancellation feasibility and evaluate C03 separately."
+    }
+  ],
+  "deferred": [
+    {
+      "candidateId": "C04",
+      "evidenceRequired": "Controlled post-C01 evidence showing overload from simultaneous distinct-key owner reads plus a bounded fairness/tail-latency contract."
+    },
+    {
+      "candidateId": "C05",
+      "evidenceRequired": "Direct client-side acquisition count/wait telemetry and isolated database-capacity evidence after C01/C02 evaluation."
+    }
+  ],
+  "rejected": [
+    {
+      "candidateId": "C06",
+      "reason": "Retained as mandatory validation hygiene, but rejected as the Phase 2.3 production optimization because it does not address the P09 cause."
+    }
+  ],
+  "alternatives": [
+    {
+      "candidateId": "C02",
+      "decision": "CONDITIONAL_SECONDARY",
+      "reason": "Complementary read-cost reduction, but not the smallest first experiment and carries materially larger semantic and index uncertainty."
+    },
+    {
+      "candidateId": "C03",
+      "decision": "CONDITIONAL_SECONDARY",
+      "reason": "Evidence supports damage limitation after timeout, not prevention of the established first cause."
+    },
+    {
+      "candidateId": "C04",
+      "decision": "DEFER",
+      "reason": "A concurrency cap is not justified before redundant same-key reads are removed and the remaining distinct-key capacity is measured."
+    },
+    {
+      "candidateId": "C05",
+      "decision": "DEFER",
+      "reason": "Pool tuning depends on an explicitly unobservable boundary and cannot be promoted from PostgreSQL wait_event evidence."
+    },
+    {
+      "candidateId": "C06",
+      "decision": "REJECT",
+      "reason": "Retained as mandatory validation hygiene, but rejected as the Phase 2.3 production optimization because it does not address the P09 cause."
+    }
+  ]
+}

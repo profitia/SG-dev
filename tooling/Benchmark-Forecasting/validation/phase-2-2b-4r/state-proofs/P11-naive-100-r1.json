@@ -1,0 +1,91 @@
+{
+  "task": "FORECAST_PHASE_2_2B_4R_CONTROLLED_BEFORE_AFTER_COMPARATIVE_STRESS_RERUN",
+  "recordedBeforeLoad": true,
+  "generatedAt": "2026-08-25T13:15:38.091Z",
+  "scenario": "P11",
+  "model": "naive",
+  "concurrency": 100,
+  "repetition": 1,
+  "snapshotId": "SNAPSHOT_WARM_CURRENT_MISS",
+  "snapshotHash": "348f6299efd74570ab13da2a944dbd16435f56b59013bd6c4c94f4083a7009a6",
+  "inputHistoryState": [
+    {
+      "seriesId": "chpric0077",
+      "observationCount": 56,
+      "historyStart": "1998-12-31T00:00:00",
+      "historyEnd": "2026-06-30T00:00:00",
+      "historyFingerprint": "7c0f7c9d17ed790103413a79afa48de6"
+    },
+    {
+      "seriesId": "cndemo0001",
+      "observationCount": 77,
+      "historyStart": "1949-12-31T00:00:00",
+      "historyEnd": "2025-12-31T00:00:00",
+      "historyFingerprint": "a969db62fa6711120e075f86d6dc81c0"
+    },
+    {
+      "seriesId": "istrad0862",
+      "observationCount": 110,
+      "historyStart": "2008-02-29T00:00:00",
+      "historyEnd": "2026-04-30T00:00:00",
+      "historyFingerprint": "c04a51f33a2a58666038aaad7ca5ff1e"
+    },
+    {
+      "seriesId": "trsurv1145",
+      "observationCount": 282,
+      "historyStart": "2001-08-31T00:00:00",
+      "historyEnd": "2095-04-30T00:00:00",
+      "historyFingerprint": "6218f760b9b8bcd84ef93e1a5ff15546"
+    },
+    {
+      "seriesId": "usnaac0169",
+      "observationCount": 318,
+      "historyStart": "1947-03-31T00:00:00",
+      "historyEnd": "2026-06-30T00:00:00",
+      "historyFingerprint": "d2025fd11820f8ad45781d7dbf99df85"
+    },
+    {
+      "seriesId": "wocaes0074",
+      "observationCount": 10659,
+      "historyStart": "1985-10-01T00:00:00",
+      "historyEnd": "2026-08-20T00:00:00",
+      "historyFingerprint": "ebbcb638ce447e4813eac339ce2b45d7"
+    },
+    {
+      "seriesId": "wocaes0280",
+      "observationCount": 21718,
+      "historyStart": "1985-01-03T23:00:00",
+      "historyEnd": "2026-08-21T00:00:00",
+      "historyFingerprint": "7afe5dd3e125915ed483a9ba0bf28ae4"
+    }
+  ],
+  "currentPreparedArtifactState": {
+    "chpric0077": 4,
+    "cndemo0001": 4,
+    "istrad0862": 4
+  },
+  "verificationArtifactState": {
+    "chpric0077": 4,
+    "cndemo0001": 4,
+    "istrad0862": 4,
+    "usnaac0169": 4,
+    "wocaes0074": 15,
+    "wocaes0280": 1
+  },
+  "providerPermissionState": "DENIED",
+  "databaseArtifactCount": {
+    "currentRuns": 28,
+    "verificationRuns": 33
+  },
+  "historyFingerprint": {
+    "chpric0077": "7c0f7c9d17ed790103413a79afa48de6",
+    "cndemo0001": "a969db62fa6711120e075f86d6dc81c0",
+    "istrad0862": "c04a51f33a2a58666038aaad7ca5ff1e",
+    "trsurv1145": "6218f760b9b8bcd84ef93e1a5ff15546",
+    "usnaac0169": "d2025fd11820f8ad45781d7dbf99df85",
+    "wocaes0074": "ebbcb638ce447e4813eac339ce2b45d7",
+    "wocaes0280": "7afe5dd3e125915ed483a9ba0bf28ae4"
+  },
+  "logicalKeyCount": 1,
+  "restoreValidation": "PASS"
+}

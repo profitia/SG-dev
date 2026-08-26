@@ -7,6 +7,10 @@ import type {
 } from '@/lib/benchmark/contracts'
 import { normalizeBenchmarkObservationDate, parseBenchmarkObservationDate } from '@/lib/benchmark/observation-date'
 import { fetchMacrobondSeriesHistory } from '@/lib/benchmark/macrobond'
+import {
+  forecastStressTelemetry,
+  type ForecastStressTelemetry,
+} from '@/lib/forecast/stress-telemetry'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 
 type MarketDataSource = 'postgres' | 'macrobond'
@@ -43,6 +47,7 @@ type BenchmarkMarketDataServiceDependencies = {
   fetchProviderSeriesHistory: (seriesId: string) => Promise<BenchmarkHistoricalSeriesResult>
   now: () => Date
   logEvent: (event: string, data: Record<string, string | number | boolean | null>) => void
+  telemetry: Pick<ForecastStressTelemetry, 'emit' | 'assertProviderAllowed'>
 }
 
 type ResolvedSeriesResult = {
@@ -374,6 +379,26 @@ export function createBenchmarkMarketDataService(
     fetchProviderSeriesHistory: dependencies.fetchProviderSeriesHistory ?? fetchMacrobondSeriesHistory,
     now: dependencies.now ?? (() => new Date()),
     logEvent: dependencies.logEvent ?? logMarketDataEvent,
+    telemetry: dependencies.telemetry ?? forecastStressTelemetry,
+  }
+  const inFlightStoredSeriesReads = new Map<string, Promise<StoredSeriesSnapshot | null>>()
+
+  async function readStoredSeries(seriesId: string) {
+    const existingRead = inFlightStoredSeriesReads.get(seriesId)
+    if (existingRead) {
+      return existingRead
+    }
+
+    const ownerRead = Promise.resolve().then(() => resolvedDependencies.repository.readStoredSeries(seriesId))
+    inFlightStoredSeriesReads.set(seriesId, ownerRead)
+
+    try {
+      return await ownerRead
+    } finally {
+      if (inFlightStoredSeriesReads.get(seriesId) === ownerRead) {
+        inFlightStoredSeriesReads.delete(seriesId)
+      }
+    }
   }
 
   return {
@@ -388,10 +413,22 @@ export function createBenchmarkMarketDataService(
 
       try {
         const dbReadStartedAt = performance.now()
-        snapshot = await resolvedDependencies.repository.readStoredSeries(seriesId)
+        snapshot = await readStoredSeries(seriesId)
         dbReadMs = performance.now() - dbReadStartedAt
+        resolvedDependencies.telemetry.emit('database_read', {
+          operation: 'market_history',
+          queryCount: 1,
+          durationMs: dbReadMs,
+          failed: false,
+        })
       } catch (error) {
         dbReadFailed = true
+        resolvedDependencies.telemetry.emit('database_read', {
+          operation: 'market_history',
+          queryCount: 1,
+          durationMs: dbReadMs,
+          failed: true,
+        })
         resolvedDependencies.logEvent('BENCHMARK_MARKET_DATA', {
           seriesId,
           requestedRange,
@@ -435,9 +472,31 @@ export function createBenchmarkMarketDataService(
       }
 
       try {
+        resolvedDependencies.telemetry.assertProviderAllowed(seriesId)
         const providerFetchStartedAt = performance.now()
-        const history = normalizeHistoricalSeriesDates(await resolvedDependencies.fetchProviderSeriesHistory(seriesId))
+        let providerHistory: BenchmarkHistoricalSeriesResult
+        try {
+          providerHistory = await resolvedDependencies.fetchProviderSeriesHistory(seriesId)
+        } catch (error) {
+          providerFetchMs = performance.now() - providerFetchStartedAt
+          resolvedDependencies.telemetry.emit('provider_call', {
+            provider: 'macrobond',
+            operation: 'history',
+            count: 1,
+            durationMs: providerFetchMs,
+            failures: 1,
+          })
+          throw error
+        }
+        const history = normalizeHistoricalSeriesDates(providerHistory)
         providerFetchMs = performance.now() - providerFetchStartedAt
+        resolvedDependencies.telemetry.emit('provider_call', {
+          provider: 'macrobond',
+          operation: 'history',
+          count: 1,
+          durationMs: providerFetchMs,
+          failures: 0,
+        })
         assertExactSeries(seriesId, history)
 
         let hydratedObservationCount = 0
@@ -447,7 +506,22 @@ export function createBenchmarkMarketDataService(
             const persisted = await resolvedDependencies.repository.upsertSeriesHistory(history)
             persistMs = performance.now() - persistStartedAt
             hydratedObservationCount = persisted.hydratedObservationCount
+            resolvedDependencies.telemetry.emit('persistence', {
+              operation: 'market_hydration',
+              artifactWrites: 1,
+              pointWrites: hydratedObservationCount,
+              verificationRecordWrites: 0,
+              writeFailures: 0,
+              durationMs: persistMs,
+            })
           } catch (error) {
+            resolvedDependencies.telemetry.emit('persistence', {
+              operation: 'market_hydration',
+              artifactWrites: 0,
+              pointWrites: 0,
+              verificationRecordWrites: 0,
+              writeFailures: 1,
+            })
             resolvedDependencies.logEvent('BENCHMARK_MARKET_DATA', {
               seriesId,
               requestedRange,

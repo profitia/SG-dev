@@ -1,0 +1,409 @@
+{
+  "contractVersion": 1,
+  "snapshotManifestVersion": 1,
+  "databaseCloneAlias": "phase-2-1-local-clone-v1",
+  "deterministicRestore": true,
+  "restoreCommand": "node tooling/Benchmark-Forecasting/performance/phase-2-1-environment.mjs restore <SNAPSHOT_ID>",
+  "credentialsIncluded": false,
+  "createdAt": "2026-08-24T11:15:40.566Z",
+  "snapshots": [
+    {
+      "snapshotId": "SNAPSHOT_HOT_READY",
+      "snapshotVersion": 1,
+      "databaseCloneAlias": "phase-2-1-local-clone-v1",
+      "databaseRole": "marketData",
+      "archiveFile": ".phase-2-1-runtime/snapshots-v1/snapshot_hot_ready.dump",
+      "sha256": "9f515a60464edb5d9f9bc3c40e83446b3a301908a17f72bb71b8ca63ecf59393",
+      "state": {
+        "cohort": [
+          {
+            "seriesId": "chpric0077",
+            "observationCount": 56,
+            "historyStart": "1998-12-31T00:00:00",
+            "historyEnd": "2026-06-30T00:00:00",
+            "historyFingerprint": "7c0f7c9d17ed790103413a79afa48de6"
+          },
+          {
+            "seriesId": "cndemo0001",
+            "observationCount": 77,
+            "historyStart": "1949-12-31T00:00:00",
+            "historyEnd": "2025-12-31T00:00:00",
+            "historyFingerprint": "a969db62fa6711120e075f86d6dc81c0"
+          },
+          {
+            "seriesId": "istrad0862",
+            "observationCount": 110,
+            "historyStart": "2008-02-29T00:00:00",
+            "historyEnd": "2026-04-30T00:00:00",
+            "historyFingerprint": "c04a51f33a2a58666038aaad7ca5ff1e"
+          },
+          {
+            "seriesId": "trsurv1145",
+            "observationCount": 282,
+            "historyStart": "2001-08-31T00:00:00",
+            "historyEnd": "2095-04-30T00:00:00",
+            "historyFingerprint": "6218f760b9b8bcd84ef93e1a5ff15546"
+          },
+          {
+            "seriesId": "usnaac0169",
+            "observationCount": 318,
+            "historyStart": "1947-03-31T00:00:00",
+            "historyEnd": "2026-06-30T00:00:00",
+            "historyFingerprint": "d2025fd11820f8ad45781d7dbf99df85"
+          },
+          {
+            "seriesId": "wocaes0074",
+            "observationCount": 10659,
+            "historyStart": "1985-10-01T00:00:00",
+            "historyEnd": "2026-08-20T00:00:00",
+            "historyFingerprint": "ebbcb638ce447e4813eac339ce2b45d7"
+          },
+          {
+            "seriesId": "wocaes0280",
+            "observationCount": 21718,
+            "historyStart": "1985-01-03T23:00:00",
+            "historyEnd": "2026-08-21T00:00:00",
+            "historyFingerprint": "7afe5dd3e125915ed483a9ba0bf28ae4"
+          }
+        ],
+        "currentRuns": 49,
+        "verificationRuns": 33,
+        "currentBySeries": {
+          "chpric0077": 4,
+          "cndemo0001": 4,
+          "istrad0862": 4,
+          "usnaac0169": 4,
+          "wocaes0074": 16,
+          "wocaes0280": 1
+        },
+        "verificationBySeries": {
+          "chpric0077": 4,
+          "cndemo0001": 4,
+          "istrad0862": 4,
+          "usnaac0169": 4,
+          "wocaes0074": 15,
+          "wocaes0280": 1
+        }
+      },
+      "immutable": true
+    },
+    {
+      "snapshotId": "SNAPSHOT_WARM_CURRENT_MISS",
+      "snapshotVersion": 1,
+      "databaseCloneAlias": "phase-2-1-local-clone-v1",
+      "databaseRole": "marketData",
+      "archiveFile": ".phase-2-1-runtime/snapshots-v1/snapshot_warm_current_miss.dump",
+      "sha256": "348f6299efd74570ab13da2a944dbd16435f56b59013bd6c4c94f4083a7009a6",
+      "state": {
+        "cohort": [
+          {
+            "seriesId": "chpric0077",
+            "observationCount": 56,
+            "historyStart": "1998-12-31T00:00:00",
+            "historyEnd": "2026-06-30T00:00:00",
+            "historyFingerprint": "7c0f7c9d17ed790103413a79afa48de6"
+          },
+          {
+            "seriesId": "cndemo0001",
+            "observationCount": 77,
+            "historyStart": "1949-12-31T00:00:00",
+            "historyEnd": "2025-12-31T00:00:00",
+            "historyFingerprint": "a969db62fa6711120e075f86d6dc81c0"
+          },
+          {
+            "seriesId": "istrad0862",
+            "observationCount": 110,
+            "historyStart": "2008-02-29T00:00:00",
+            "historyEnd": "2026-04-30T00:00:00",
+            "historyFingerprint": "c04a51f33a2a58666038aaad7ca5ff1e"
+          },
+          {
+            "seriesId": "trsurv1145",
+            "observationCount": 282,
+            "historyStart": "2001-08-31T00:00:00",
+            "historyEnd": "2095-04-30T00:00:00",
+            "historyFingerprint": "6218f760b9b8bcd84ef93e1a5ff15546"
+          },
+          {
+            "seriesId": "usnaac0169",
+            "observationCount": 318,
+            "historyStart": "1947-03-31T00:00:00",
+            "historyEnd": "2026-06-30T00:00:00",
+            "historyFingerprint": "d2025fd11820f8ad45781d7dbf99df85"
+          },
+          {
+            "seriesId": "wocaes0074",
+            "observationCount": 10659,
+            "historyStart": "1985-10-01T00:00:00",
+            "historyEnd": "2026-08-20T00:00:00",
+            "historyFingerprint": "ebbcb638ce447e4813eac339ce2b45d7"
+          },
+          {
+            "seriesId": "wocaes0280",
+            "observationCount": 21718,
+            "historyStart": "1985-01-03T23:00:00",
+            "historyEnd": "2026-08-21T00:00:00",
+            "historyFingerprint": "7afe5dd3e125915ed483a9ba0bf28ae4"
+          }
+        ],
+        "currentRuns": 28,
+        "verificationRuns": 33,
+        "currentBySeries": {
+          "chpric0077": 4,
+          "cndemo0001": 4,
+          "istrad0862": 4
+        },
+        "verificationBySeries": {
+          "chpric0077": 4,
+          "cndemo0001": 4,
+          "istrad0862": 4,
+          "usnaac0169": 4,
+          "wocaes0074": 15,
+          "wocaes0280": 1
+        }
+      },
+      "immutable": true
+    },
+    {
+      "snapshotId": "SNAPSHOT_COLD_CURRENT_MISS",
+      "snapshotVersion": 1,
+      "databaseCloneAlias": "phase-2-1-local-clone-v1",
+      "databaseRole": "marketData",
+      "archiveFile": ".phase-2-1-runtime/snapshots-v1/snapshot_cold_current_miss.dump",
+      "sha256": "4eaf2ee5229b89938166c67517b5f793f263ebc2df9a6f3d1cb22c6e5248e202",
+      "state": {
+        "cohort": [
+          {
+            "seriesId": "chpric0077",
+            "observationCount": 56,
+            "historyStart": "1998-12-31T00:00:00",
+            "historyEnd": "2026-06-30T00:00:00",
+            "historyFingerprint": "7c0f7c9d17ed790103413a79afa48de6"
+          },
+          {
+            "seriesId": "cndemo0001",
+            "observationCount": 77,
+            "historyStart": "1949-12-31T00:00:00",
+            "historyEnd": "2025-12-31T00:00:00",
+            "historyFingerprint": "a969db62fa6711120e075f86d6dc81c0"
+          },
+          {
+            "seriesId": "istrad0862",
+            "observationCount": 110,
+            "historyStart": "2008-02-29T00:00:00",
+            "historyEnd": "2026-04-30T00:00:00",
+            "historyFingerprint": "c04a51f33a2a58666038aaad7ca5ff1e"
+          },
+          {
+            "seriesId": "trsurv1145",
+            "observationCount": 282,
+            "historyStart": "2001-08-31T00:00:00",
+            "historyEnd": "2095-04-30T00:00:00",
+            "historyFingerprint": "6218f760b9b8bcd84ef93e1a5ff15546"
+          },
+          {
+            "seriesId": "usnaac0169",
+            "observationCount": 318,
+            "historyStart": "1947-03-31T00:00:00",
+            "historyEnd": "2026-06-30T00:00:00",
+            "historyFingerprint": "d2025fd11820f8ad45781d7dbf99df85"
+          },
+          {
+            "seriesId": "wocaes0280",
+            "observationCount": 21718,
+            "historyStart": "1985-01-03T23:00:00",
+            "historyEnd": "2026-08-21T00:00:00",
+            "historyFingerprint": "7afe5dd3e125915ed483a9ba0bf28ae4"
+          }
+        ],
+        "currentRuns": 33,
+        "verificationRuns": 18,
+        "currentBySeries": {
+          "chpric0077": 4,
+          "cndemo0001": 4,
+          "istrad0862": 4,
+          "usnaac0169": 4,
+          "wocaes0280": 1
+        },
+        "verificationBySeries": {
+          "chpric0077": 4,
+          "cndemo0001": 4,
+          "istrad0862": 4,
+          "usnaac0169": 4,
+          "wocaes0280": 1
+        }
+      },
+      "immutable": true
+    },
+    {
+      "snapshotId": "SNAPSHOT_VERIFICATION_READY",
+      "snapshotVersion": 1,
+      "databaseCloneAlias": "phase-2-1-local-clone-v1",
+      "databaseRole": "marketData",
+      "archiveFile": ".phase-2-1-runtime/snapshots-v1/snapshot_verification_ready.dump",
+      "sha256": "bc4612e49bec2235a2a07f2274689ee59503b343ddbefe321feb65ebf97edce1",
+      "state": {
+        "cohort": [
+          {
+            "seriesId": "chpric0077",
+            "observationCount": 56,
+            "historyStart": "1998-12-31T00:00:00",
+            "historyEnd": "2026-06-30T00:00:00",
+            "historyFingerprint": "7c0f7c9d17ed790103413a79afa48de6"
+          },
+          {
+            "seriesId": "cndemo0001",
+            "observationCount": 77,
+            "historyStart": "1949-12-31T00:00:00",
+            "historyEnd": "2025-12-31T00:00:00",
+            "historyFingerprint": "a969db62fa6711120e075f86d6dc81c0"
+          },
+          {
+            "seriesId": "istrad0862",
+            "observationCount": 110,
+            "historyStart": "2008-02-29T00:00:00",
+            "historyEnd": "2026-04-30T00:00:00",
+            "historyFingerprint": "c04a51f33a2a58666038aaad7ca5ff1e"
+          },
+          {
+            "seriesId": "trsurv1145",
+            "observationCount": 282,
+            "historyStart": "2001-08-31T00:00:00",
+            "historyEnd": "2095-04-30T00:00:00",
+            "historyFingerprint": "6218f760b9b8bcd84ef93e1a5ff15546"
+          },
+          {
+            "seriesId": "usnaac0169",
+            "observationCount": 318,
+            "historyStart": "1947-03-31T00:00:00",
+            "historyEnd": "2026-06-30T00:00:00",
+            "historyFingerprint": "d2025fd11820f8ad45781d7dbf99df85"
+          },
+          {
+            "seriesId": "wocaes0074",
+            "observationCount": 10659,
+            "historyStart": "1985-10-01T00:00:00",
+            "historyEnd": "2026-08-20T00:00:00",
+            "historyFingerprint": "ebbcb638ce447e4813eac339ce2b45d7"
+          },
+          {
+            "seriesId": "wocaes0280",
+            "observationCount": 21718,
+            "historyStart": "1985-01-03T23:00:00",
+            "historyEnd": "2026-08-21T00:00:00",
+            "historyFingerprint": "7afe5dd3e125915ed483a9ba0bf28ae4"
+          }
+        ],
+        "currentRuns": 49,
+        "verificationRuns": 33,
+        "currentBySeries": {
+          "chpric0077": 4,
+          "cndemo0001": 4,
+          "istrad0862": 4,
+          "usnaac0169": 4,
+          "wocaes0074": 16,
+          "wocaes0280": 1
+        },
+        "verificationBySeries": {
+          "chpric0077": 4,
+          "cndemo0001": 4,
+          "istrad0862": 4,
+          "usnaac0169": 4,
+          "wocaes0074": 15,
+          "wocaes0280": 1
+        }
+      },
+      "immutable": true
+    },
+    {
+      "snapshotId": "SNAPSHOT_VERIFICATION_MISS",
+      "snapshotVersion": 1,
+      "databaseCloneAlias": "phase-2-1-local-clone-v1",
+      "databaseRole": "marketData",
+      "archiveFile": ".phase-2-1-runtime/snapshots-v1/snapshot_verification_miss.dump",
+      "sha256": "526ebbce316c500ec4eb866dd2ac55d1cf59226b99b89ff05631a4fe53af8425",
+      "state": {
+        "cohort": [
+          {
+            "seriesId": "chpric0077",
+            "observationCount": 56,
+            "historyStart": "1998-12-31T00:00:00",
+            "historyEnd": "2026-06-30T00:00:00",
+            "historyFingerprint": "7c0f7c9d17ed790103413a79afa48de6"
+          },
+          {
+            "seriesId": "cndemo0001",
+            "observationCount": 77,
+            "historyStart": "1949-12-31T00:00:00",
+            "historyEnd": "2025-12-31T00:00:00",
+            "historyFingerprint": "a969db62fa6711120e075f86d6dc81c0"
+          },
+          {
+            "seriesId": "istrad0862",
+            "observationCount": 110,
+            "historyStart": "2008-02-29T00:00:00",
+            "historyEnd": "2026-04-30T00:00:00",
+            "historyFingerprint": "c04a51f33a2a58666038aaad7ca5ff1e"
+          },
+          {
+            "seriesId": "trsurv1145",
+            "observationCount": 282,
+            "historyStart": "2001-08-31T00:00:00",
+            "historyEnd": "2095-04-30T00:00:00",
+            "historyFingerprint": "6218f760b9b8bcd84ef93e1a5ff15546"
+          },
+          {
+            "seriesId": "usnaac0169",
+            "observationCount": 318,
+            "historyStart": "1947-03-31T00:00:00",
+            "historyEnd": "2026-06-30T00:00:00",
+            "historyFingerprint": "d2025fd11820f8ad45781d7dbf99df85"
+          },
+          {
+            "seriesId": "wocaes0074",
+            "observationCount": 10659,
+            "historyStart": "1985-10-01T00:00:00",
+            "historyEnd": "2026-08-20T00:00:00",
+            "historyFingerprint": "ebbcb638ce447e4813eac339ce2b45d7"
+          },
+          {
+            "seriesId": "wocaes0280",
+            "observationCount": 21718,
+            "historyStart": "1985-01-03T23:00:00",
+            "historyEnd": "2026-08-21T00:00:00",
+            "historyFingerprint": "7afe5dd3e125915ed483a9ba0bf28ae4"
+          }
+        ],
+        "currentRuns": 49,
+        "verificationRuns": 13,
+        "currentBySeries": {
+          "chpric0077": 4,
+          "cndemo0001": 4,
+          "istrad0862": 4,
+          "usnaac0169": 4,
+          "wocaes0074": 16,
+          "wocaes0280": 1
+        },
+        "verificationBySeries": {
+          "chpric0077": 4,
+          "cndemo0001": 4,
+          "istrad0862": 4
+        }
+      },
+      "immutable": true
+    },
+    {
+      "snapshotId": "SNAPSHOT_UX_READY",
+      "snapshotVersion": 1,
+      "databaseCloneAlias": "phase-2-1-local-clone-v1",
+      "databaseRole": "application",
+      "archiveFile": ".phase-2-1-runtime/snapshots-v1/snapshot_ux_ready.dump",
+      "sha256": "90cfa08f51efcc50a2faad05ff6956e42b058342154c0d398e308769a94daff4",
+      "state": {
+        "dashboardSchemaPresent": true,
+        "requiredTableCount": 10
+      },
+      "immutable": true
+    }
+  ]
+}

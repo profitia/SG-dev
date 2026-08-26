@@ -1,0 +1,88 @@
+{
+  "task": "FORECAST_PHASE_2_2B_1_CURRENT_FORECAST_SINGLE_FLIGHT_EXPERIMENT",
+  "generatedAt": "2026-08-24T21:25:41.748Z",
+  "classification": "FUNCTIONAL_REGRESSION_EVIDENCE",
+  "preparedAndSearch": {
+    "task": "FORECAST_PHASE_2_2B_1_CURRENT_FORECAST_SINGLE_FLIGHT_EXPERIMENT",
+    "generatedAt": "2026-08-24T21:14:38.809Z",
+    "classification": "PREPARED_AND_SEARCH_REGRESSION_EVIDENCE",
+    "currentAndSearch": {
+      "P01": {
+        "requests": 2,
+        "canonicalResponses": 2
+      },
+      "P02": {
+        "requests": 3,
+        "canonicalResponses": 3
+      },
+      "P09": {
+        "requests": 3,
+        "canonicalResponses": 3
+      },
+      "P10": {
+        "requests": 3,
+        "canonicalResponses": 3
+      },
+      "counts": {
+        "currentComputes": 0,
+        "verificationComputes": 0,
+        "modelFits": 0,
+        "providerCalls": 0,
+        "persistenceWrites": 0,
+        "singleFlightOwners": 0
+      }
+    },
+    "verificationReady": {
+      "P06": {
+        "requests": 2,
+        "canonicalResponses": 2
+      },
+      "P07": {
+        "requests": 3,
+        "canonicalResponses": 3
+      },
+      "counts": {
+        "currentComputes": 0,
+        "verificationComputes": 0,
+        "modelFits": 0,
+        "providerCalls": 0,
+        "persistenceWrites": 0,
+        "singleFlightOwners": 0
+      }
+    },
+    "acceptedPhase22aEvidenceModified": false,
+    "status": "PASS"
+  },
+  "suites": {
+    "forecastCore": {
+      "passed": 218,
+      "failed": 0
+    },
+    "sgRuntimeForecastAndMarketData": {
+      "passed": 153,
+      "failed": 0
+    },
+    "dashboardForecast": {
+      "passed": 100,
+      "failed": 0
+    },
+    "phase22bContractTooling": {
+      "passed": 31,
+      "failed": 0
+    },
+    "phase22b0FrozenValidator": "PASS",
+    "sgRuntimeTypecheck": "PASS",
+    "dashboardTypecheck": "PASS",
+    "editorDiagnostics": "PASS",
+    "gitDiffCheck": "PASS"
+  },
+  "phase22aCorrectnessTooling": {
+    "gate": "PASS",
+    "P01": "PASS",
+    "P06": "PASS",
+    "P07": "PASS",
+    "P11": "PASS"
+  },
+  "fullPhase21BaselineRerun": false,
+  "status": "PASS"
+}

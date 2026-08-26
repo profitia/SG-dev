@@ -1,0 +1,162 @@
+{
+  "task": "FORECAST_PHASE_2_3_BEFORE_AFTER_COMPARISON",
+  "generatedAt": "2026-08-25T16:54:29.557Z",
+  "before": {
+    "p09At100": {
+      "successes": "100/100",
+      "latencyP50Ms": [
+        24825.468021,
+        25089.61977,
+        24057.455729
+      ],
+      "directApplicationOwnerCount": "NOT_OBSERVED"
+    },
+    "p09At1000": {
+      "successes": 234,
+      "timeouts": 766,
+      "directApplicationOwnerCount": "NOT_OBSERVED"
+    }
+  },
+  "after": {
+    "p09At100": {
+      "scenario": "P09",
+      "concurrency": 100,
+      "requests": 100,
+      "successes": 100,
+      "failures": 0,
+      "timeouts": 0,
+      "correctness": "PASS",
+      "releaseSpreadMs": 8.743708,
+      "latencyP50Ms": 8828.559791,
+      "latencyP95Ms": 8896.290238,
+      "latencyP99Ms": 8898.9302,
+      "throughputRps": 11.229955,
+      "peakMemoryMb": null,
+      "postCooldownMemoryDeltaMb": null,
+      "forecastCompute": 0,
+      "verificationCompute": 0,
+      "forecastOwners": 0,
+      "forecastWrites": 0,
+      "providerCalls": 0,
+      "applicationDatabase": {
+        "before": {
+          "commits": 214,
+          "rollbacks": 0,
+          "read": 1442498,
+          "fetched": 32572,
+          "inserted": 107396,
+          "updated": 68,
+          "deleted": 0,
+          "deadlocks": 0
+        },
+        "after": {
+          "commits": 219,
+          "rollbacks": 0,
+          "read": 1443107,
+          "fetched": 33178,
+          "inserted": 107396,
+          "updated": 68,
+          "deleted": 0,
+          "deadlocks": 0
+        },
+        "delta": {
+          "queryCount": null,
+          "writeCount": 0,
+          "transactionCommits": 5,
+          "transactionRollbacks": 0,
+          "rowsReturned": 609,
+          "rowsFetched": 606,
+          "deadlocks": 0
+        }
+      }
+    },
+    "p09At1000": {
+      "scenario": "P09",
+      "concurrency": 1000,
+      "requests": 1000,
+      "successes": 0,
+      "failures": 1000,
+      "timeouts": 0,
+      "correctness": "FAIL",
+      "releaseSpreadMs": 65.807709,
+      "latencyP50Ms": 20138.512459,
+      "latencyP95Ms": 20256.575264,
+      "latencyP99Ms": 20267.91955,
+      "throughputRps": 49.262207,
+      "peakMemoryMb": null,
+      "postCooldownMemoryDeltaMb": null,
+      "forecastCompute": 0,
+      "verificationCompute": 0,
+      "forecastOwners": 0,
+      "forecastWrites": 0,
+      "providerCalls": 0,
+      "applicationDatabase": {
+        "before": {
+          "commits": 214,
+          "rollbacks": 0,
+          "read": 1442498,
+          "fetched": 32572,
+          "inserted": 107396,
+          "updated": 68,
+          "deleted": 0,
+          "deadlocks": 0
+        },
+        "after": {
+          "commits": 243,
+          "rollbacks": 0,
+          "read": 1457004,
+          "fetched": 37556,
+          "inserted": 107539,
+          "updated": 183,
+          "deleted": 1,
+          "deadlocks": 0
+        },
+        "delta": {
+          "queryCount": null,
+          "writeCount": 259,
+          "transactionCommits": 29,
+          "transactionRollbacks": 0,
+          "rowsReturned": 14506,
+          "rowsFetched": 4984,
+          "deadlocks": 0
+        }
+      }
+    },
+    "c01At100": {
+      "exactKeys": 1,
+      "physicalOwners": 1,
+      "joiners": 99,
+      "cacheHits": 0,
+      "underlyingReads": 1,
+      "completedReads": 1,
+      "failedReads": 0,
+      "duplicateReads": 0,
+      "entryReleases": 1,
+      "activeEntriesAfterSettlement": 0
+    },
+    "c01At1000": {
+      "exactKeys": 1,
+      "physicalOwners": 1,
+      "joiners": 999,
+      "cacheHits": 0,
+      "underlyingReads": 1,
+      "completedReads": 1,
+      "failedReads": 0,
+      "duplicateReads": 0,
+      "entryReleases": 1,
+      "activeEntriesAfterSettlement": 0
+    }
+  },
+  "classifications": {
+    "structuralEffect": "CONFIRMED",
+    "causalEffect": "CONFIRMED",
+    "capacityEffect": "MIXED",
+    "uxEffect": "MIXED",
+    "resourceEffect": "NOT_COMPARABLE",
+    "capabilityEffect": "REGRESSED_AT_1000"
+  },
+  "comparability": {
+    "p09At100": "LAWFULLY_COMPARABLE",
+    "p09At1000": "LAWFULLY_COMPARABLE_FOR_OUTCOMES_AND_STRUCTURE; RESOURCE_NUMERICS_NOT_COMPARABLE"
+  }
+}

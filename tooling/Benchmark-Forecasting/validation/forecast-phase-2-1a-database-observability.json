@@ -1,0 +1,45 @@
+{
+  "task": "FORECAST_PHASE_2_1A_ENVIRONMENT_INSTRUMENTATION_READINESS",
+  "contractVersion": 1,
+  "environmentId": "phase-2-1-local-isolated-v1",
+  "cloneAlias": "phase-2-1-local-clone-v1",
+  "collectionMethod": "PostgreSQL pg_stat_database and pg_stat_activity on guarded loopback targets",
+  "collectedAt": "2026-08-24T11:45:13.087Z",
+  "credentialsIncluded": false,
+  "databases": [
+    {
+      "databaseRole": "application",
+      "databaseName": "sg_phase_2_1_app",
+      "connectionCount": 1,
+      "activeConnectionCount": 1,
+      "waitingConnectionCount": 0,
+      "transactionCommits": 214,
+      "transactionRollbacks": 0,
+      "blocksRead": 78770,
+      "blocksHit": 152178,
+      "rowsReturned": 1442586,
+      "rowsFetched": 32660,
+      "rowsInserted": 107396,
+      "rowsUpdated": 68,
+      "rowsDeleted": 0,
+      "deadlocks": 0
+    },
+    {
+      "databaseRole": "marketData",
+      "databaseName": "sg_phase_2_1_market_data",
+      "connectionCount": 1,
+      "activeConnectionCount": 1,
+      "waitingConnectionCount": 0,
+      "transactionCommits": 145,
+      "transactionRollbacks": 0,
+      "blocksRead": 10501,
+      "blocksHit": 150195,
+      "rowsReturned": 1998730,
+      "rowsFetched": 21456,
+      "rowsInserted": 437958,
+      "rowsUpdated": 73,
+      "rowsDeleted": 15,
+      "deadlocks": 0
+    }
+  ]
+}

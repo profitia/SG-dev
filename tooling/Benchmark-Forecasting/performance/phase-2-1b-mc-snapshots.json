@@ -1,0 +1,71 @@
+{
+  "contractVersion": 1,
+  "measurementControlRevision": 2,
+  "databaseCloneAlias": "phase-2-1-local-clone-v1",
+  "immutable": true,
+  "providerCallsDuringPreparation": 0,
+  "createdAt": "2026-08-24T13:08:49.430Z",
+  "snapshots": [
+    {
+      "snapshotId": "SNAPSHOT_HOT_READY",
+      "snapshotVersion": 2,
+      "archiveFile": ".phase-2-1-runtime/snapshots-mc-r2/snapshot_hot_ready.dump",
+      "sha256": "104b2607b56e4e035b6e696464977930574768330cd02a45d035029d0f296715",
+      "exactCurrentState": {
+        "daily": [
+          {
+            "store": "rolling_daily_current_forecast_snapshots",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "ets",
+            "frequencyIdentity": "DAILY",
+            "status": "AVAILABLE",
+            "historyFingerprint": "d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753",
+            "forecastOrigin": "2026-08-20T00:00:00"
+          }
+        ],
+        "monthly": [
+          {
+            "store": "forecast_current_runs",
+            "seriesId": "wocaes0280",
+            "targetBasis": "MONTHLY_AVERAGE",
+            "methodId": "MONTHLY_AVERAGE",
+            "methodVersion": "benchmark-forecasting-mvp-phase2-v1",
+            "modelId": "ets",
+            "frequencyIdentity": "FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY",
+            "status": "AVAILABLE",
+            "historyFingerprint": "d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6",
+            "forecastOrigin": "2026-07-01T00:00:00"
+          }
+        ],
+        "quarterly": [
+          {
+            "store": "forecast_current_runs",
+            "seriesId": "usnaac0169",
+            "targetBasis": "END_OF_PERIOD",
+            "methodId": "END_OF_PERIOD",
+            "methodVersion": "benchmark-forecasting-mvp-phase2-v1",
+            "modelId": "ets",
+            "frequencyIdentity": "FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY",
+            "status": "AVAILABLE",
+            "historyFingerprint": "c422e8542541af40f72df1b633df729406ff4f9d3459d04cca35a525b9782224",
+            "forecastOrigin": "2026-04-01T00:00:00"
+          }
+        ]
+      }
+    },
+    {
+      "snapshotId": "SNAPSHOT_WARM_CURRENT_MISS",
+      "snapshotVersion": 2,
+      "archiveFile": ".phase-2-1-runtime/snapshots-mc-r2/snapshot_warm_current_miss.dump",
+      "sha256": "7c640979428c4df5a0d1c0b3bfc8cd35ba9f7d0a01547436f2c4c044ef27b61c",
+      "exactCurrentState": {
+        "daily": [],
+        "monthly": [],
+        "quarterly": []
+      }
+    }
+  ]
+}

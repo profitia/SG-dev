@@ -1,0 +1,1064 @@
+{
+  "task": "FORECAST_PHASE_2_2B_4R_EXECUTION_ACCOUNTING",
+  "generatedAt": "2026-08-25T13:52:47.963Z",
+  "executionId": "2026-08-25T115341-253Z-6a3d0227-e64f-44da-a2ed-8cf298ff8cc3",
+  "plannedCells": 105,
+  "validCompleted": 51,
+  "safetyBlocked": 23,
+  "invalidState": 0,
+  "contractAborted": 31,
+  "total": 105,
+  "allTerminal": true,
+  "cells": [
+    {
+      "cellId": "B4R-P03-naive-10-R1",
+      "scenario": "P03",
+      "model": "naive",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p03-10-naive-0675d83c-af85-4f73-bf37-39f9afaf72af"
+    },
+    {
+      "cellId": "B4R-P03-naive-100-R1",
+      "scenario": "P03",
+      "model": "naive",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p03-100-naive-badd2ce8-c5d6-4215-8543-5fc7bbfe25bf"
+    },
+    {
+      "cellId": "B4R-P03-naive-1000-R1",
+      "scenario": "P03",
+      "model": "naive",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P03-damped_holt-10-R1",
+      "scenario": "P03",
+      "model": "damped_holt",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p03-10-damped_holt-8ef81d10-51bf-4718-b63f-d6cc30d39185"
+    },
+    {
+      "cellId": "B4R-P03-damped_holt-100-R1",
+      "scenario": "P03",
+      "model": "damped_holt",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p03-100-damped_holt-a0b95323-111b-47ff-b418-499314f389f5"
+    },
+    {
+      "cellId": "B4R-P03-damped_holt-1000-R1",
+      "scenario": "P03",
+      "model": "damped_holt",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P03-ets-10-R1",
+      "scenario": "P03",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p03-10-ets-e94f2b94-6658-471b-aaff-84b424cb62c6"
+    },
+    {
+      "cellId": "B4R-P03-ets-100-R1",
+      "scenario": "P03",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p03-100-ets-a6fef93b-3239-4247-93e0-6e567f4885fb"
+    },
+    {
+      "cellId": "B4R-P03-ets-1000-R1",
+      "scenario": "P03",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P03-arima-10-R1",
+      "scenario": "P03",
+      "model": "arima",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p03-10-arima-5535c5fe-7d75-4865-a8e2-856f79d37b0c"
+    },
+    {
+      "cellId": "B4R-P03-arima-100-R1",
+      "scenario": "P03",
+      "model": "arima",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p03-100-arima-9bdc4872-d6e2-4022-adf9-3dbd8ec636bd"
+    },
+    {
+      "cellId": "B4R-P03-arima-1000-R1",
+      "scenario": "P03",
+      "model": "arima",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P04-naive-10-R1",
+      "scenario": "P04",
+      "model": "naive",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p04-10-naive-940e139d-b75c-4f22-acf3-b297d0c69f54"
+    },
+    {
+      "cellId": "B4R-P04-naive-100-R1",
+      "scenario": "P04",
+      "model": "naive",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p04-100-naive-9dc8f29f-1cb5-4c31-9236-30f407c00d86"
+    },
+    {
+      "cellId": "B4R-P04-naive-1000-R1",
+      "scenario": "P04",
+      "model": "naive",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p04-1000-naive-a34c2ab0-c97d-40c4-a26f-dd7fe1c51c4e"
+    },
+    {
+      "cellId": "B4R-P04-damped_holt-10-R1",
+      "scenario": "P04",
+      "model": "damped_holt",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p04-10-damped_holt-bf40d161-220b-423b-8a84-1cbf9db40aa3"
+    },
+    {
+      "cellId": "B4R-P04-damped_holt-100-R1",
+      "scenario": "P04",
+      "model": "damped_holt",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p04-100-damped_holt-5af9e891-48e2-4bd0-83fc-fe673dbd7d55"
+    },
+    {
+      "cellId": "B4R-P04-damped_holt-1000-R1",
+      "scenario": "P04",
+      "model": "damped_holt",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p04-1000-damped_holt-5d2a6477-1156-4a43-8438-e7c7cacefb96"
+    },
+    {
+      "cellId": "B4R-P04-ets-10-R1",
+      "scenario": "P04",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514"
+    },
+    {
+      "cellId": "B4R-P04-ets-100-R1",
+      "scenario": "P04",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p04-100-ets-0a66d126-65a1-46d9-bdbd-6a460a216bc9"
+    },
+    {
+      "cellId": "B4R-P04-ets-1000-R1",
+      "scenario": "P04",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p04-1000-ets-dc871635-66ee-4192-a08c-7d4fb32a7426"
+    },
+    {
+      "cellId": "B4R-P04-arima-10-R1",
+      "scenario": "P04",
+      "model": "arima",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p04-10-arima-e37febf2-de27-4443-8e9a-5c231b1dfbb8"
+    },
+    {
+      "cellId": "B4R-P04-arima-100-R1",
+      "scenario": "P04",
+      "model": "arima",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p04-100-arima-3d9ddc92-dbff-4138-ac55-a584fa8341bd"
+    },
+    {
+      "cellId": "B4R-P04-arima-1000-R1",
+      "scenario": "P04",
+      "model": "arima",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p04-1000-arima-2aa4f372-c9ba-4282-99d5-e0c3dd827798"
+    },
+    {
+      "cellId": "B4R-P05-ets-10-R1",
+      "scenario": "P05",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p05-10-ets-e1f87559-613d-4aa5-98ff-7866c58a14a8"
+    },
+    {
+      "cellId": "B4R-P05-ets-100-R1",
+      "scenario": "P05",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p05-100-ets-47a594a1-f719-491c-9f9b-d5feb0c04774"
+    },
+    {
+      "cellId": "B4R-P05-ets-1000-R1",
+      "scenario": "P05",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P08-naive-10-R1",
+      "scenario": "P08",
+      "model": "naive",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p08-10-naive-4a0cba58-2557-4494-ae8a-0670b2f338b1"
+    },
+    {
+      "cellId": "B4R-P08-naive-100-R1",
+      "scenario": "P08",
+      "model": "naive",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p08-100-naive-2b433c67-4fcc-4e09-ac8b-fd2413eaec82"
+    },
+    {
+      "cellId": "B4R-P08-naive-1000-R1",
+      "scenario": "P08",
+      "model": "naive",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P08-damped_holt-10-R1",
+      "scenario": "P08",
+      "model": "damped_holt",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p08-10-damped_holt-77704f44-7429-4995-b12a-4c46b2e8510c"
+    },
+    {
+      "cellId": "B4R-P08-damped_holt-100-R1",
+      "scenario": "P08",
+      "model": "damped_holt",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p08-100-damped_holt-94fa3588-36d9-4b49-ac9a-45809ff72930"
+    },
+    {
+      "cellId": "B4R-P08-damped_holt-1000-R1",
+      "scenario": "P08",
+      "model": "damped_holt",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P08-ets-10-R1",
+      "scenario": "P08",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p08-10-ets-b85d641b-c7ba-4d90-993b-e344d8704fb8"
+    },
+    {
+      "cellId": "B4R-P08-ets-100-R1",
+      "scenario": "P08",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p08-100-ets-102d412f-a589-4ce5-9bc9-c3bfd8f7fa7d"
+    },
+    {
+      "cellId": "B4R-P08-ets-1000-R1",
+      "scenario": "P08",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P08-arima-10-R1",
+      "scenario": "P08",
+      "model": "arima",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p08-10-arima-ee9127fe-3810-4949-9d6a-5c538e5862c9"
+    },
+    {
+      "cellId": "B4R-P08-arima-100-R1",
+      "scenario": "P08",
+      "model": "arima",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p08-100-arima-fc83d14e-92de-4ed5-bb83-0e413a438f4f"
+    },
+    {
+      "cellId": "B4R-P08-arima-1000-R1",
+      "scenario": "P08",
+      "model": "arima",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P11-naive-10-R1",
+      "scenario": "P11",
+      "model": "naive",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p11-10-naive-a09453fc-f579-4ac9-bfb1-cb63302e259a"
+    },
+    {
+      "cellId": "B4R-P11-naive-100-R1",
+      "scenario": "P11",
+      "model": "naive",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "MANDATORY_SETTLEMENT_FAILED",
+      "stressRunId": "phase-2-2b-4r-p11-100-naive-a967041d-4820-4567-9d86-3b29190c91b4"
+    },
+    {
+      "cellId": "B4R-P11-naive-1000-R1",
+      "scenario": "P11",
+      "model": "naive",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "MANDATORY_SETTLEMENT_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P11-damped_holt-10-R1",
+      "scenario": "P11",
+      "model": "damped_holt",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p11-10-damped_holt-69076135-ef92-4fd7-a5b3-b8051509cf90"
+    },
+    {
+      "cellId": "B4R-P11-damped_holt-100-R1",
+      "scenario": "P11",
+      "model": "damped_holt",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p11-100-damped_holt-6580ae0f-e5fb-4007-8042-0073d7413878"
+    },
+    {
+      "cellId": "B4R-P11-damped_holt-1000-R1",
+      "scenario": "P11",
+      "model": "damped_holt",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P11-ets-10-R1",
+      "scenario": "P11",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p11-10-ets-70fbb569-ad81-4121-88cf-8aba1f3c279d"
+    },
+    {
+      "cellId": "B4R-P11-ets-100-R1",
+      "scenario": "P11",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p11-100-ets-22d12eda-c216-4ce1-aa7f-2d2bddc2b01b"
+    },
+    {
+      "cellId": "B4R-P11-ets-1000-R1",
+      "scenario": "P11",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P11-arima-10-R1",
+      "scenario": "P11",
+      "model": "arima",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p11-10-arima-c66aa990-9acc-4f3e-b7b8-570967a2f6cf"
+    },
+    {
+      "cellId": "B4R-P11-arima-100-R1",
+      "scenario": "P11",
+      "model": "arima",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p11-100-arima-78862c49-a745-44b5-91e8-c62808a3c72e"
+    },
+    {
+      "cellId": "B4R-P11-arima-1000-R1",
+      "scenario": "P11",
+      "model": "arima",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P01-ets-10-R1",
+      "scenario": "P01",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p01-10-ets-303fa5f9-a244-443f-913e-0badb40161a4"
+    },
+    {
+      "cellId": "B4R-P01-ets-10-R2",
+      "scenario": "P01",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 2,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p01-10-ets-192637de-e9d0-475f-8b64-255eea02ad7c"
+    },
+    {
+      "cellId": "B4R-P01-ets-10-R3",
+      "scenario": "P01",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 3,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p01-10-ets-99894cf0-4cba-4bd9-b7f8-7805c6157a02"
+    },
+    {
+      "cellId": "B4R-P01-ets-100-R1",
+      "scenario": "P01",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p01-100-ets-88f91e5c-583f-4009-9ade-d8a4f219e1e5"
+    },
+    {
+      "cellId": "B4R-P01-ets-100-R2",
+      "scenario": "P01",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 2,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p01-100-ets-b5b97c28-de60-4ebb-a244-4108a9fb5e86"
+    },
+    {
+      "cellId": "B4R-P01-ets-100-R3",
+      "scenario": "P01",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 3,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p01-100-ets-2027c750-c0dd-47d3-8865-39de4dc9b19f"
+    },
+    {
+      "cellId": "B4R-P01-ets-1000-R1",
+      "scenario": "P01",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p01-1000-ets-fa419cc1-99f4-4bec-899e-4e13f01b8935"
+    },
+    {
+      "cellId": "B4R-P01-ets-1000-R2",
+      "scenario": "P01",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 2,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "MANDATORY_STOP_AFTER_SAFETY_BLOCKED:CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P01-ets-1000-R3",
+      "scenario": "P01",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 3,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "MANDATORY_STOP_AFTER_SAFETY_BLOCKED:CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P02-ets-10-R1",
+      "scenario": "P02",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p02-10-ets-a9bb72cd-9729-4d52-99e4-cb850cefabcc"
+    },
+    {
+      "cellId": "B4R-P02-ets-10-R2",
+      "scenario": "P02",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 2,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p02-10-ets-cc6183cb-9ed6-4842-96f0-f8b414e85015"
+    },
+    {
+      "cellId": "B4R-P02-ets-10-R3",
+      "scenario": "P02",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 3,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p02-10-ets-5b84b460-4f80-4c02-be5a-1bd4df25e88c"
+    },
+    {
+      "cellId": "B4R-P02-ets-100-R1",
+      "scenario": "P02",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p02-100-ets-8f62d0ed-abc8-4cb8-9fce-da917b272e13"
+    },
+    {
+      "cellId": "B4R-P02-ets-100-R2",
+      "scenario": "P02",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 2,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p02-100-ets-11702c97-0e89-4156-bd60-89c9cabed567"
+    },
+    {
+      "cellId": "B4R-P02-ets-100-R3",
+      "scenario": "P02",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 3,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p02-100-ets-006ff9aa-73c3-4595-8503-20bc6132f5e8"
+    },
+    {
+      "cellId": "B4R-P02-ets-1000-R1",
+      "scenario": "P02",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p02-1000-ets-5f3b1a29-9ec8-4056-84a8-e346130e1a56"
+    },
+    {
+      "cellId": "B4R-P02-ets-1000-R2",
+      "scenario": "P02",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 2,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "MANDATORY_STOP_AFTER_SAFETY_BLOCKED:CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P02-ets-1000-R3",
+      "scenario": "P02",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 3,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "MANDATORY_STOP_AFTER_SAFETY_BLOCKED:CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P06-ets-10-R1",
+      "scenario": "P06",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p06-10-ets-e95782c4-6757-4449-99cf-2282094c8be9"
+    },
+    {
+      "cellId": "B4R-P06-ets-10-R2",
+      "scenario": "P06",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 2,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p06-10-ets-ddaabfba-a7d0-4c2f-a1dc-cb44cff94941"
+    },
+    {
+      "cellId": "B4R-P06-ets-10-R3",
+      "scenario": "P06",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 3,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p06-10-ets-e64122e5-981b-4c84-91fb-881ac94d1be0"
+    },
+    {
+      "cellId": "B4R-P06-ets-100-R1",
+      "scenario": "P06",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p06-100-ets-2332d1b4-0709-4217-94f7-6a383db92492"
+    },
+    {
+      "cellId": "B4R-P06-ets-100-R2",
+      "scenario": "P06",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 2,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p06-100-ets-24934695-ae15-445e-a1d9-500a657801d3"
+    },
+    {
+      "cellId": "B4R-P06-ets-100-R3",
+      "scenario": "P06",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 3,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p06-100-ets-e576e0a9-df61-41c8-8186-4d7905fcfdef"
+    },
+    {
+      "cellId": "B4R-P06-ets-1000-R1",
+      "scenario": "P06",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p06-1000-ets-7d96afae-e1f1-41f2-89eb-4f4c130515a5"
+    },
+    {
+      "cellId": "B4R-P06-ets-1000-R2",
+      "scenario": "P06",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 2,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "MANDATORY_STOP_AFTER_SAFETY_BLOCKED:CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P06-ets-1000-R3",
+      "scenario": "P06",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 3,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "MANDATORY_STOP_AFTER_SAFETY_BLOCKED:CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P07-ets-10-R1",
+      "scenario": "P07",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p07-10-ets-30639141-f237-421c-bb01-b563069f6018"
+    },
+    {
+      "cellId": "B4R-P07-ets-10-R2",
+      "scenario": "P07",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 2,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p07-10-ets-51cb3f4d-d910-45a5-96e2-2aab63e14a01"
+    },
+    {
+      "cellId": "B4R-P07-ets-10-R3",
+      "scenario": "P07",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 3,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p07-10-ets-70b48d74-7b45-439c-997c-1788fcb4ed96"
+    },
+    {
+      "cellId": "B4R-P07-ets-100-R1",
+      "scenario": "P07",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p07-100-ets-acb7c5c1-2fd2-4b6f-9143-e709cfbc347d"
+    },
+    {
+      "cellId": "B4R-P07-ets-100-R2",
+      "scenario": "P07",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 2,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p07-100-ets-565ed829-f4ca-4159-82e3-52da89bb476c"
+    },
+    {
+      "cellId": "B4R-P07-ets-100-R3",
+      "scenario": "P07",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 3,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p07-100-ets-59f21091-bde8-457d-9c56-5e7e8ad45215"
+    },
+    {
+      "cellId": "B4R-P07-ets-1000-R1",
+      "scenario": "P07",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "CORRECTNESS_FAILED",
+      "stressRunId": "phase-2-2b-4r-p07-1000-ets-91ed342b-06fd-4c85-bb82-14e3afdc8fdd"
+    },
+    {
+      "cellId": "B4R-P07-ets-1000-R2",
+      "scenario": "P07",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 2,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "MANDATORY_STOP_AFTER_SAFETY_BLOCKED:CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P07-ets-1000-R3",
+      "scenario": "P07",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 3,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "MANDATORY_STOP_AFTER_SAFETY_BLOCKED:CORRECTNESS_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P09-mixed-10-R1",
+      "scenario": "P09",
+      "model": "mixed",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p09-10-ets-e7f4d395-134b-4f0c-97f1-2645212084a8"
+    },
+    {
+      "cellId": "B4R-P09-mixed-10-R2",
+      "scenario": "P09",
+      "model": "mixed",
+      "concurrency": 10,
+      "repetition": 2,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p09-10-ets-f8171e48-c559-4390-b149-716c4a3570a0"
+    },
+    {
+      "cellId": "B4R-P09-mixed-10-R3",
+      "scenario": "P09",
+      "model": "mixed",
+      "concurrency": 10,
+      "repetition": 3,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p09-10-ets-19949b51-686b-4b58-9718-2f3c28a2948a"
+    },
+    {
+      "cellId": "B4R-P09-mixed-100-R1",
+      "scenario": "P09",
+      "model": "mixed",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p09-100-ets-4d7e21da-3e96-4173-8593-ee1a8f78768a"
+    },
+    {
+      "cellId": "B4R-P09-mixed-100-R2",
+      "scenario": "P09",
+      "model": "mixed",
+      "concurrency": 100,
+      "repetition": 2,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p09-100-ets-1a0cfb73-fb23-4410-9cac-53117ff27f61"
+    },
+    {
+      "cellId": "B4R-P09-mixed-100-R3",
+      "scenario": "P09",
+      "model": "mixed",
+      "concurrency": 100,
+      "repetition": 3,
+      "terminalStatus": "VALID_COMPLETED",
+      "terminalReason": null,
+      "stressRunId": "phase-2-2b-4r-p09-100-ets-bbef3dc8-730f-462e-ba8d-980278b9260d"
+    },
+    {
+      "cellId": "B4R-P09-mixed-1000-R1",
+      "scenario": "P09",
+      "model": "mixed",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "MANDATORY_SETTLEMENT_FAILED",
+      "stressRunId": "phase-2-2b-4r-p09-1000-ets-f745411d-2178-40e7-b45e-3d16509fdfb5"
+    },
+    {
+      "cellId": "B4R-P09-mixed-1000-R2",
+      "scenario": "P09",
+      "model": "mixed",
+      "concurrency": 1000,
+      "repetition": 2,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "MANDATORY_STOP_AFTER_SAFETY_BLOCKED:MANDATORY_SETTLEMENT_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P09-mixed-1000-R3",
+      "scenario": "P09",
+      "model": "mixed",
+      "concurrency": 1000,
+      "repetition": 3,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "MANDATORY_STOP_AFTER_SAFETY_BLOCKED:MANDATORY_SETTLEMENT_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P10-ets-10-R1",
+      "scenario": "P10",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "MANDATORY_SETTLEMENT_FAILED",
+      "stressRunId": "phase-2-2b-4r-p10-10-ets-f59b5af2-f85e-4dad-9e5f-6eb89fb2e2df"
+    },
+    {
+      "cellId": "B4R-P10-ets-10-R2",
+      "scenario": "P10",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 2,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "MANDATORY_STOP_AFTER_SAFETY_BLOCKED:MANDATORY_SETTLEMENT_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P10-ets-10-R3",
+      "scenario": "P10",
+      "model": "ets",
+      "concurrency": 10,
+      "repetition": 3,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "MANDATORY_STOP_AFTER_SAFETY_BLOCKED:MANDATORY_SETTLEMENT_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P10-ets-100-R1",
+      "scenario": "P10",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 1,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "MANDATORY_SETTLEMENT_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P10-ets-100-R2",
+      "scenario": "P10",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 2,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "MANDATORY_SETTLEMENT_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P10-ets-100-R3",
+      "scenario": "P10",
+      "model": "ets",
+      "concurrency": 100,
+      "repetition": 3,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "MANDATORY_SETTLEMENT_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P10-ets-1000-R1",
+      "scenario": "P10",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 1,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "MANDATORY_SETTLEMENT_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P10-ets-1000-R2",
+      "scenario": "P10",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 2,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "MANDATORY_SETTLEMENT_FAILED",
+      "stressRunId": null
+    },
+    {
+      "cellId": "B4R-P10-ets-1000-R3",
+      "scenario": "P10",
+      "model": "ets",
+      "concurrency": 1000,
+      "repetition": 3,
+      "terminalStatus": "CONTRACT_ABORTED",
+      "terminalReason": "MANDATORY_SETTLEMENT_FAILED",
+      "stressRunId": null
+    }
+  ]
+}

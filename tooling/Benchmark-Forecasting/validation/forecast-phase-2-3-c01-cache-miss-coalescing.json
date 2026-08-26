@@ -1,0 +1,956 @@
+{
+  "task": "FORECAST_PHASE_2_3_C01_CACHE_MISS_COALESCING_INTEGRATION_REGRESSION",
+  "phase": "2.3",
+  "generatedAt": "2026-08-25T16:54:29.562Z",
+  "preconditions": {
+    "phase22cGate": "PASS",
+    "phase22dGate": "PASS",
+    "selectedCandidate": "C01_CACHE_MISS_COALESCING",
+    "selectionConfidence": "STRONGLY_SUPPORTED_DIRECT"
+  },
+  "immutableEvidence": {
+    "status": "PASS",
+    "counts": {
+      "before": 22,
+      "originalB4": 3,
+      "phase1r": 1,
+      "b4r": 7,
+      "phase22c": 9,
+      "phase22d": 6
+    }
+  },
+  "implementation": {
+    "scope": "PROCESS_LOCAL_EXACT_KEY_IN_FLIGHT_ONLY",
+    "resultCacheTtlChanged": false,
+    "resultCacheIdentityChanged": false,
+    "queryChanged": false,
+    "filteringChanged": false,
+    "indexChanged": false,
+    "cancellationChanged": false,
+    "dbPoolChanged": false
+  },
+  "structuralProof": {
+    "sameKeyRequests": 10,
+    "exactKeys": 1,
+    "owners": 1,
+    "joiners": 9,
+    "underlyingReads": 1,
+    "duplicateReads": 0,
+    "activeEntriesAfterSettlement": 0
+  },
+  "correctness": {
+    "semanticEquivalence": "PASS",
+    "organizationIsolation": "PASS",
+    "pipelineIsolation": "PASS",
+    "failureCleanup": "PASS",
+    "retryAfterFailure": "PASS"
+  },
+  "p09LowerControl": {
+    "terminalState": "VALID_COMPLETED",
+    "result": {
+      "scenario": "P09",
+      "concurrency": 100,
+      "requests": 100,
+      "successes": 100,
+      "failures": 0,
+      "timeouts": 0,
+      "correctness": "PASS",
+      "releaseSpreadMs": 8.743708,
+      "latencyP50Ms": 8828.559791,
+      "latencyP95Ms": 8896.290238,
+      "latencyP99Ms": 8898.9302,
+      "throughputRps": 11.229955,
+      "peakMemoryMb": null,
+      "postCooldownMemoryDeltaMb": null,
+      "forecastCompute": 0,
+      "verificationCompute": 0,
+      "forecastOwners": 0,
+      "forecastWrites": 0,
+      "providerCalls": 0,
+      "applicationDatabase": {
+        "before": {
+          "commits": 214,
+          "rollbacks": 0,
+          "read": 1442498,
+          "fetched": 32572,
+          "inserted": 107396,
+          "updated": 68,
+          "deleted": 0,
+          "deadlocks": 0
+        },
+        "after": {
+          "commits": 219,
+          "rollbacks": 0,
+          "read": 1443107,
+          "fetched": 33178,
+          "inserted": 107396,
+          "updated": 68,
+          "deleted": 0,
+          "deadlocks": 0
+        },
+        "delta": {
+          "queryCount": null,
+          "writeCount": 0,
+          "transactionCommits": 5,
+          "transactionRollbacks": 0,
+          "rowsReturned": 609,
+          "rowsFetched": 606,
+          "deadlocks": 0
+        }
+      }
+    },
+    "c01": {
+      "exactKeys": 1,
+      "physicalOwners": 1,
+      "joiners": 99,
+      "cacheHits": 0,
+      "underlyingReads": 1,
+      "completedReads": 1,
+      "failedReads": 0,
+      "duplicateReads": 0,
+      "entryReleases": 1,
+      "activeEntriesAfterSettlement": 0
+    },
+    "settlement": "PASS"
+  },
+  "p09HighConcurrency": {
+    "authorized": true,
+    "executed": true,
+    "executionCount": 1,
+    "terminalState": "FAIL",
+    "result": {
+      "scenario": "P09",
+      "concurrency": 1000,
+      "requests": 1000,
+      "successes": 0,
+      "failures": 1000,
+      "timeouts": 0,
+      "correctness": "FAIL",
+      "releaseSpreadMs": 65.807709,
+      "latencyP50Ms": 20138.512459,
+      "latencyP95Ms": 20256.575264,
+      "latencyP99Ms": 20267.91955,
+      "throughputRps": 49.262207,
+      "peakMemoryMb": null,
+      "postCooldownMemoryDeltaMb": null,
+      "forecastCompute": 0,
+      "verificationCompute": 0,
+      "forecastOwners": 0,
+      "forecastWrites": 0,
+      "providerCalls": 0,
+      "applicationDatabase": {
+        "before": {
+          "commits": 214,
+          "rollbacks": 0,
+          "read": 1442498,
+          "fetched": 32572,
+          "inserted": 107396,
+          "updated": 68,
+          "deleted": 0,
+          "deadlocks": 0
+        },
+        "after": {
+          "commits": 243,
+          "rollbacks": 0,
+          "read": 1457004,
+          "fetched": 37556,
+          "inserted": 107539,
+          "updated": 183,
+          "deleted": 1,
+          "deadlocks": 0
+        },
+        "delta": {
+          "queryCount": null,
+          "writeCount": 259,
+          "transactionCommits": 29,
+          "transactionRollbacks": 0,
+          "rowsReturned": 14506,
+          "rowsFetched": 4984,
+          "deadlocks": 0
+        }
+      }
+    },
+    "c01": {
+      "exactKeys": 1,
+      "physicalOwners": 1,
+      "joiners": 999,
+      "cacheHits": 0,
+      "underlyingReads": 1,
+      "completedReads": 1,
+      "failedReads": 0,
+      "duplicateReads": 0,
+      "entryReleases": 1,
+      "activeEntriesAfterSettlement": 0
+    },
+    "settlement": "PASS",
+    "replayed": false
+  },
+  "p10Control": {
+    "isolated": true,
+    "terminalState": "VALID_COMPLETED",
+    "result": {
+      "scenario": "P10",
+      "concurrency": 10,
+      "requests": 10,
+      "successes": 10,
+      "failures": 0,
+      "timeouts": 0,
+      "correctness": "PASS",
+      "releaseSpreadMs": 2.165167,
+      "latencyP50Ms": 833.916083,
+      "latencyP95Ms": 839.919707,
+      "latencyP99Ms": 840.646741,
+      "throughputRps": 11.893032,
+      "peakMemoryMb": null,
+      "postCooldownMemoryDeltaMb": null,
+      "forecastCompute": 0,
+      "verificationCompute": 0,
+      "forecastOwners": 0,
+      "forecastWrites": 0,
+      "providerCalls": 0,
+      "functionalOutcomes": {
+        "SUCCESS_COMPUTED": 10
+      },
+      "preparedHitCount": 0,
+      "preparedMissCount": 0,
+      "preparedResolveSpans": 10,
+      "applicationDatabase": {
+        "before": {
+          "commits": 214,
+          "rollbacks": 0,
+          "read": 1442498,
+          "fetched": 32572,
+          "inserted": 107396,
+          "updated": 68,
+          "deleted": 0,
+          "deadlocks": 0
+        },
+        "after": {
+          "commits": 218,
+          "rollbacks": 0,
+          "read": 1443091,
+          "fetched": 33163,
+          "inserted": 107396,
+          "updated": 68,
+          "deleted": 0,
+          "deadlocks": 0
+        },
+        "delta": {
+          "queryCount": null,
+          "writeCount": 0,
+          "transactionCommits": 4,
+          "transactionRollbacks": 0,
+          "rowsReturned": 593,
+          "rowsFetched": 591,
+          "deadlocks": 0
+        }
+      }
+    },
+    "c01Engaged": false,
+    "settlement": "PASS"
+  },
+  "effects": {
+    "causalEffect": "CONFIRMED",
+    "capacityEffect": "MIXED",
+    "uxEffect": "MIXED",
+    "resourceEffect": "NOT_COMPARABLE"
+  },
+  "conditionalSecondaries": {
+    "C02": "NOT_TRIGGERED",
+    "C03": "NOT_TRIGGERED"
+  },
+  "scopeGuards": {
+    "C02Implemented": false,
+    "C03Implemented": false,
+    "C04Implemented": false,
+    "C05Implemented": false,
+    "distributedCoalescingImplemented": false,
+    "currentSingleFlightChanged": false,
+    "verificationSingleFlightChanged": false,
+    "forecastPersistenceChanged": false,
+    "queryChanged": false,
+    "indexChanged": false,
+    "dbPoolChanged": false,
+    "timeoutChanged": false,
+    "infrastructureChanged": false
+  },
+  "regression": {
+    "status": "PASS",
+    "passed": 13,
+    "expected": 13
+  },
+  "migrationReadiness": {
+    "status": "PASS",
+    "taskAttributedPathCount": 51,
+    "newNestedGitRepositories": 0,
+    "newExternalSourceRepositories": 0
+  },
+  "acceptanceConditions": {
+    "expected": 108,
+    "passed": 107,
+    "blocked": 0,
+    "failed": 1,
+    "conditions": [
+      {
+        "id": 1,
+        "status": "PASS",
+        "description": "Phase 2.2C remains PASS.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 2,
+        "status": "PASS",
+        "description": "Phase 2.2D remains PASS.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 3,
+        "status": "PASS",
+        "description": "C01 remains the selected Phase 2.3 mechanism.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 4,
+        "status": "PASS",
+        "description": "Selection confidence remains STRONGLY_SUPPORTED_DIRECT.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 5,
+        "status": "PASS",
+        "description": "Accepted P09 root cause remains unchanged.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 6,
+        "status": "PASS",
+        "description": "Immutable BEFORE hashes pass.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 7,
+        "status": "PASS",
+        "description": "Original B4 hashes pass.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 8,
+        "status": "PASS",
+        "description": "Accepted 1R hashes pass.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 9,
+        "status": "PASS",
+        "description": "Accepted B4R hashes pass.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 10,
+        "status": "PASS",
+        "description": "Accepted Phase 2.2C hashes pass.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 11,
+        "status": "PASS",
+        "description": "Accepted Phase 2.2D hashes pass.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 12,
+        "status": "PASS",
+        "description": "C01 is implemented as process-local.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 13,
+        "status": "PASS",
+        "description": "C01 is exact-key scoped.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 14,
+        "status": "PASS",
+        "description": "C01 is in-flight-only.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 15,
+        "status": "PASS",
+        "description": "Existing result-cache TTL remains unchanged.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 16,
+        "status": "PASS",
+        "description": "Existing result-cache identity remains unchanged.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 17,
+        "status": "PASS",
+        "description": "C01 does not become a second result cache.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 18,
+        "status": "PASS",
+        "description": "Exact organization identity is preserved.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 19,
+        "status": "PASS",
+        "description": "Exact pipeline identity is preserved.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 20,
+        "status": "PASS",
+        "description": "Existing null/optional key semantics are preserved.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 21,
+        "status": "PASS",
+        "description": "Different exact keys do not coalesce.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 22,
+        "status": "PASS",
+        "description": "Different organizations do not coalesce.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 23,
+        "status": "PASS",
+        "description": "Different pipelines do not coalesce.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 24,
+        "status": "PASS",
+        "description": "Result-cache HIT does not acquire a C01 owner.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 25,
+        "status": "PASS",
+        "description": "Result-cache HIT does not execute the underlying full-table read.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 26,
+        "status": "PASS",
+        "description": "Result-cache MISS can acquire exactly one owner per exact active key.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 27,
+        "status": "PASS",
+        "description": "Overlapping same-key MISS callers join the owner.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 28,
+        "status": "PASS",
+        "description": "Joiners do not execute the underlying full-table read.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 29,
+        "status": "PASS",
+        "description": "Owner lifetime covers the race through existing cache publication.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 30,
+        "status": "PASS",
+        "description": "Successful owner entry is released.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 31,
+        "status": "PASS",
+        "description": "Failed owner entry is released.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 32,
+        "status": "PASS",
+        "description": "Failed owner does not poison future retries.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 33,
+        "status": "PASS",
+        "description": "Later request after failure can become a new owner.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 34,
+        "status": "PASS",
+        "description": "One waiter does not introduce cancellation of shared work.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 35,
+        "status": "PASS",
+        "description": "Existing cancellation behavior remains unchanged.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 36,
+        "status": "PASS",
+        "description": "Underlying application query remains unchanged.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 37,
+        "status": "PASS",
+        "description": "Query predicates remain unchanged.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 38,
+        "status": "PASS",
+        "description": "Query ordering remains unchanged.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 39,
+        "status": "PASS",
+        "description": "Selected columns remain unchanged.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 40,
+        "status": "PASS",
+        "description": "DB-side filtering is not introduced.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 41,
+        "status": "PASS",
+        "description": "Business filtering behavior remains unchanged.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 42,
+        "status": "PASS",
+        "description": "Existing response mapping remains semantically equivalent.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 43,
+        "status": "PASS",
+        "description": "Organization isolation semantic tests pass.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 44,
+        "status": "PASS",
+        "description": "Pipeline isolation semantic tests pass.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 45,
+        "status": "PASS",
+        "description": "Search result semantic equivalence passes.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 46,
+        "status": "PASS",
+        "description": "Ordering equivalence passes.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 47,
+        "status": "PASS",
+        "description": "Null/fallback equivalence passes.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 48,
+        "status": "PASS",
+        "description": "Empty-result equivalence passes.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 49,
+        "status": "PASS",
+        "description": "Existing exclusion/deleted-row semantics pass.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 50,
+        "status": "PASS",
+        "description": "Same-key focused test uses overlapping callers.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 51,
+        "status": "PASS",
+        "description": "Same-key focused test observes one exact key.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 52,
+        "status": "PASS",
+        "description": "Same-key focused test observes exactly one physical C01 owner.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 53,
+        "status": "PASS",
+        "description": "Same-key focused test observes exactly one underlying full-table read.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 54,
+        "status": "PASS",
+        "description": "Same-key focused test observes zero duplicate reads.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 55,
+        "status": "PASS",
+        "description": "Same-key focused test returns equivalent results to all callers.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 56,
+        "status": "PASS",
+        "description": "Same-key focused test leaves zero active C01 entries.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 57,
+        "status": "PASS",
+        "description": "Multi-key focused test proves independent owners.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 58,
+        "status": "PASS",
+        "description": "Multi-key focused test proves one underlying read per exact key.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 59,
+        "status": "PASS",
+        "description": "Multi-key focused test proves no cross-key contamination.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 60,
+        "status": "PASS",
+        "description": "Failure focused test proves one failed owner execution.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 61,
+        "status": "PASS",
+        "description": "Failure focused test proves joiner settlement.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 62,
+        "status": "PASS",
+        "description": "Failure focused test proves registry cleanup.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 63,
+        "status": "PASS",
+        "description": "Retry test proves a later new owner can execute.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 64,
+        "status": "PASS",
+        "description": "Cache-HIT test proves zero C01 owner.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 65,
+        "status": "PASS",
+        "description": "Cache-expiry test proves one new owner for overlapping exact-key MISS.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 66,
+        "status": "PASS",
+        "description": "No-long-lived-in-flight-cache test passes.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 67,
+        "status": "PASS",
+        "description": "Direct physical C01 owner telemetry exists.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 68,
+        "status": "PASS",
+        "description": "Direct underlying read telemetry exists.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 69,
+        "status": "PASS",
+        "description": "Direct joiner telemetry exists.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 70,
+        "status": "PASS",
+        "description": "Direct release telemetry exists.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 71,
+        "status": "PASS",
+        "description": "Expected owner count is not substituted for physical owner telemetry.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 72,
+        "status": "PASS",
+        "description": "Diagnostic instrumentation is default-off.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 73,
+        "status": "PASS",
+        "description": "Diagnostic instrumentation is behavior-neutral.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 74,
+        "status": "PASS",
+        "description": "Forecast compute during P09 Search remains zero.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 75,
+        "status": "PASS",
+        "description": "Verification compute during P09 Search remains zero.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 76,
+        "status": "PASS",
+        "description": "Forecast persistence during P09 Search remains zero.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 77,
+        "status": "PASS",
+        "description": "Provider calls remain zero where frozen scenario requires zero.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 78,
+        "status": "PASS",
+        "description": "P09@100 state is exact.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 79,
+        "status": "PASS",
+        "description": "P09@100 canonical correctness passes.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 80,
+        "status": "PASS",
+        "description": "P09@100 C01 owner/read structure passes.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 81,
+        "status": "PASS",
+        "description": "P09@100 duplicate same-key full-table reads equal zero.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 82,
+        "status": "PASS",
+        "description": "P09@100 C01 registry settles to zero.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 83,
+        "status": "PASS",
+        "description": "P09@100 DB/process settlement is lawfully accounted.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 84,
+        "status": "PASS",
+        "description": "P09@1000 is executed only after all lower gates pass.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 85,
+        "status": "PASS",
+        "description": "P09@1000 execution count is at most one.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 86,
+        "status": "PASS",
+        "description": "If P09@1000 is safety-blocked, no unauthorized repeat occurs.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 87,
+        "status": "FAIL",
+        "description": "Any executed P09@1000 preserves canonical correctness.",
+        "evidence": "Executed P09@1000 returned 0/1000 correct responses and 1000 HTTP errors."
+      },
+      {
+        "id": 88,
+        "status": "PASS",
+        "description": "Any executed P09@1000 directly measures C01 owner/read structure.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 89,
+        "status": "PASS",
+        "description": "Any executed P09@1000 excludes unsupported numeric comparisons.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 90,
+        "status": "PASS",
+        "description": "C01 causal effect receives explicit classification.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 91,
+        "status": "PASS",
+        "description": "C01 cannot be CONFIRMED from latency alone.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 92,
+        "status": "PASS",
+        "description": "Capacity effect receives separate classification.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 93,
+        "status": "PASS",
+        "description": "UX effect receives separate classification.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 94,
+        "status": "PASS",
+        "description": "Resource effect receives separate classification.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 95,
+        "status": "PASS",
+        "description": "P10 starts only after isolated P09 settlement.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 96,
+        "status": "PASS",
+        "description": "P10 remains prepared.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 97,
+        "status": "PASS",
+        "description": "P10 remains correct.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 98,
+        "status": "PASS",
+        "description": "P10 remains Forecast-compute-free.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 99,
+        "status": "PASS",
+        "description": "P10 remains Forecast-owner-free.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 100,
+        "status": "PASS",
+        "description": "P10 remains Forecast-write-free.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 101,
+        "status": "PASS",
+        "description": "Current single-flight remains unchanged.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 102,
+        "status": "PASS",
+        "description": "Verification single-flight remains unchanged.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 103,
+        "status": "PASS",
+        "description": "Forecast persistence remains unchanged.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 104,
+        "status": "PASS",
+        "description": "C02/C03/C04/C05 are not implemented.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 105,
+        "status": "PASS",
+        "description": "Distributed C01 coalescing is not implemented.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 106,
+        "status": "PASS",
+        "description": "Full applicable regression passes.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 107,
+        "status": "PASS",
+        "description": "Exactly 72 human report sections are produced.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      },
+      {
+        "id": 108,
+        "status": "PASS",
+        "description": "Phase 2.4 is not started.",
+        "evidence": "Validated by Phase 2.3 direct, regression, authority, or scope evidence."
+      }
+    ]
+  },
+  "reportSectionsExpected": 72,
+  "phase23Gate": "FAIL",
+  "c01Accepted": "YES",
+  "phase23SelectedMechanismIntegrationComplete": "NO",
+  "phase24ReadyForAuthorization": "NO",
+  "phase24Authorized": false,
+  "phase24Started": false,
+  "blockingFailure": {
+    "conditionId": 87,
+    "classification": "HIGH_CONCURRENCY_DOWNSTREAM_CORRECTNESS_FAILURE",
+    "c01StructuralEffect": "PASS"
+  }
+}

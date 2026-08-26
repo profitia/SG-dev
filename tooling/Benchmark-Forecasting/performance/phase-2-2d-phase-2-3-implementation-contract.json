@@ -1,0 +1,127 @@
+{
+  "task": "FORECAST_PHASE_2_3_CACHE_MISS_COALESCING_IMPLEMENTATION_CONTRACT",
+  "phase": "2.3",
+  "generatedAt": "2026-08-25T16:12:08.510Z",
+  "nature": "PLAN_ONLY",
+  "authorized": false,
+  "started": false,
+  "selectedMechanism": {
+    "candidateId": "C01",
+    "name": "CACHE_MISS_COALESCING",
+    "scope": "PROCESS_LOCAL_EXACT_KEY_IN_FLIGHT_OWNERSHIP"
+  },
+  "targetRootCause": "CONCURRENT_UNCOALESCED_FULL_TABLE_APPLICATION_READS",
+  "exactCausalMetric": "APPLICATION_FULL_TABLE_READ_OWNER_COUNT_PER_EXACT_ORGANIZATION_PIPELINE_MISS_WINDOW",
+  "expectedSourceSurfaces": [
+    {
+      "path": "apps/dashboard-preview/lib/raw-data/dashboard-record-query.ts",
+      "action": "MODIFY",
+      "purpose": "Add exact-key process-local in-flight owner registry around the unchanged miss read."
+    },
+    {
+      "path": "apps/dashboard-preview/tests/dashboard-record-query.test.ts",
+      "action": "CREATE",
+      "purpose": "Prove ownership, isolation, cleanup, retry, TTL separation, and payload equivalence."
+    },
+    {
+      "path": "apps/dashboard-preview/lib/phase-2-2c/diagnostics.ts",
+      "action": "REUSE_OR_REMOVE_AFTER_VALIDATION",
+      "purpose": "Default-off owner/read-count evidence only; no production promotion without separate decision."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-3-*",
+      "action": "CREATE",
+      "purpose": "Controlled structural and performance validation artifacts."
+    }
+  ],
+  "minimumImplementationScope": [
+    "Add one process-local Map keyed by the existing cacheKeyFromFilters value.",
+    "Consult it only after the existing fresh result-cache hit check fails.",
+    "The first caller creates the unchanged connect/findMany/cache-update operation; overlapping same-key callers await that promise.",
+    "Delete the exact in-flight entry in finally using identity-safe cleanup.",
+    "Do not extend or reinterpret the result-cache TTL."
+  ],
+  "explicitNonGoals": [
+    "DB-side filtering",
+    "Query or schema/index changes",
+    "Cancellation propagation",
+    "Concurrency queue or throttling",
+    "Pool tuning",
+    "Distributed ownership",
+    "Forecast/Verification/persistence changes",
+    "Infrastructure resizing"
+  ],
+  "featureAndDefaultBehavior": {
+    "featureFlagRequired": false,
+    "defaultBehavior": "EXISTING_RESULT_CACHE_SEMANTICS_PLUS_PROCESS_LOCAL_IN_FLIGHT_MISS_OWNERSHIP",
+    "rolloutConstraint": "Single bounded mechanism only; rollback is source-only."
+  },
+  "correctnessInvariants": [
+    "Same organizationId/pipelineId cache key is the only sharing boundary.",
+    "Different organizationId or pipelineId values never share an in-flight owner or result.",
+    "Missing organizationId/pipelineId retains the existing null-key and query behavior; no tenant scope is widened.",
+    "The 30000 ms result-cache TTL, timestamp semantics, invalidation behavior, query predicate, selected columns, and ordering remain unchanged.",
+    "The owner returns the exact current DashboardRecordSource array and all waiters observe the same successful result.",
+    "Owner rejection is shared with current waiters, never inserted into the result cache, and the in-flight entry is removed in finally so retry can acquire a new owner.",
+    "Waiter arrival after owner settlement follows the existing result-cache rules; no long-lived cache extension is introduced.",
+    "Search inclusion, case, null, locale, description fallback, benchmark identity, series identity, frequency/cadence, and Historical response semantics remain unchanged.",
+    "FORECAST_COMPUTE_DURING_P09_SEARCH = 0; VERIFICATION_COMPUTE_DURING_P09_SEARCH = 0; FORECAST_PERSISTENCE_DURING_P09_SEARCH = 0.",
+    "Clean P10 remains prepared, correct, compute-free, owner-free, write-free, and provider-free.",
+    "Current and Verification exact-key single-flight and Forecast persistence semantics remain unchanged.",
+    "CROSS_INSTANCE_MISS_COALESCING = NOT_PROVIDED."
+  ],
+  "unitTestsRequired": [
+    "Ten overlapping same-key misses execute exactly one $connect/findMany owner and resolve equivalent payloads.",
+    "Different organization/pipeline keys execute independent owners and never cross-share.",
+    "A fresh result-cache hit executes no owner.",
+    "Owner failure rejects all joined waiters, leaves no cached result, removes the in-flight entry, and permits one clean retry owner.",
+    "Late arrival before settlement joins; arrival after settlement follows existing result-cache behavior.",
+    "TTL timestamp and expiry behavior remain byte-for-behavior equivalent to the current implementation."
+  ],
+  "integrationTestsRequired": [
+    "Components q search preserves business-safe name/code/description behavior in pl and en.",
+    "Series and component payloads preserve ordering, benchmark identity, and Historical semantics.",
+    "P09 remains Forecast/Verification compute-free and persistence-free.",
+    "Clean P10 remains prepared and compute/owner/write/provider-free."
+  ],
+  "validationSequence": [
+    "A_UNIT_CORRECTNESS",
+    "B_SEMANTIC_EQUIVALENCE",
+    "C_FOCUSED_CONCURRENCY_STRUCTURAL_PROOF",
+    "D_P09_LOWER_CONTROL",
+    "E_P09_HIGH_CONCURRENCY_ONLY_IF_A_TO_D_PASS_AND_SAFETY_GATES_ALLOW",
+    "F_P10_PREPARED_NON_REGRESSION",
+    "G_FULL_NON_STRESS_REGRESSION"
+  ],
+  "performanceValidationRequired": {
+    "primaryQuestion": "Did C01 reduce the proven causal pressure?",
+    "success": [
+      "Exactly one application full-table read owner per exact process-local miss key/window",
+      "Zero same-key duplicate application reads in the controlled wave",
+      "Correctness and settlement guards pass",
+      "Capacity/latency evidence improves relative to accepted authority without invented percentage targets"
+    ],
+    "controls": [
+      "Fresh process/scenario isolation",
+      "P09 lower control before high concurrency",
+      "P10 clean prepared control",
+      "No C02-C05 implementation"
+    ]
+  },
+  "rollbackBoundary": "Remove the in-flight registry and owner/join branch from dashboard-record-query.ts plus its C01 tests/telemetry; no data, schema, index, configuration, or persistence rollback.",
+  "failureConditions": [
+    "More than one owner read for one exact key/window",
+    "Cross-key or cross-tenant sharing",
+    "Failure poisons cache or blocks retry",
+    "TTL/query/result semantics drift",
+    "P09 causes Forecast/Verification compute or persistence",
+    "P10 regression",
+    "No measurable causal-pressure improvement"
+  ],
+  "successConditions": [
+    "All invariants pass",
+    "Direct owner-count metric proves coalescing",
+    "Controlled P09 evidence improves without safety violation",
+    "Rollback remains source-only"
+  ]
+}

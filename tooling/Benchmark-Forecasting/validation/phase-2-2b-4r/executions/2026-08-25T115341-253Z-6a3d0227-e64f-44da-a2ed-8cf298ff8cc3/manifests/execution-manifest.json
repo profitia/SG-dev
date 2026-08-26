@@ -1,0 +1,21 @@
+{
+  "task": "FORECAST_PHASE_2_2B_4R_CONTROLLED_BEFORE_AFTER_COMPARATIVE_STRESS_RERUN",
+  "executionId": "2026-08-25T115341-253Z-6a3d0227-e64f-44da-a2ed-8cf298ff8cc3",
+  "contractVersion": 1,
+  "environmentId": "phase-2-1-local-isolated-v1",
+  "databaseCloneAlias": "phase-2-1-local-clone-v1",
+  "startedAt": "2026-08-25T11:53:41.286Z",
+  "sourceRevision": "9fc9f81b5649140ff46e029f3381873a9fbb60e3",
+  "sourceFingerprint": "110c419e2ba4acc485ec56a19f85ed49262005ff1f22d082fda4e7f2936d8ec0",
+  "measurementControlRevision": 2,
+  "branch": "forecast/generic-period-stage-b",
+  "concurrencyLevels": [
+    10,
+    100,
+    1000
+  ],
+  "cooldownMs": 30000,
+  "authorization": "EXACT_FAIL_CLOSED_TOKEN_ACCEPTED",
+  "credentialsIncluded": false,
+  "resumePlanSourceExecutionId": null
+}

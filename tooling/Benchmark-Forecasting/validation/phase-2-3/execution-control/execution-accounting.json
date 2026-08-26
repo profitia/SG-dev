@@ -1,0 +1,39 @@
+{
+  "task": "FORECAST_PHASE_2_3_C01_CACHE_MISS_COALESCING_INTEGRATION_REGRESSION",
+  "executionLimit": {
+    "p09-100": 1,
+    "p09-1000": 1,
+    "p10-10": 1
+  },
+  "cells": {
+    "p09-100": {
+      "attempts": 1,
+      "status": "VALID_COMPLETED",
+      "startedAt": "2026-08-25T16:36:59.397Z",
+      "completedAt": "2026-08-25T16:38:05.826Z",
+      "evidencePath": "tooling/Benchmark-Forecasting/performance/phase-2-3-p09-lower-control.json",
+      "executionRoot": "tooling/Benchmark-Forecasting/validation/phase-2-3/executions/2026-08-25T163700-821Z-4212d433-b2ad-471f-bc9c-c24cae64c914",
+      "recoveredWithoutReplay": true
+    },
+    "p09-1000": {
+      "attempts": 1,
+      "status": "FAIL",
+      "startedAt": "2026-08-25T16:39:46.375Z",
+      "completedAt": "2026-08-25T16:41:05.579Z",
+      "evidencePath": "tooling/Benchmark-Forecasting/performance/phase-2-3-p09-high-concurrency.json",
+      "executionRoot": "tooling/Benchmark-Forecasting/validation/phase-2-3/executions/2026-08-25T163947-585Z-b6ae6a58-d3f7-4f01-9203-6ed45171e297",
+      "recoveredWithoutReplay": false,
+      "reanalyzedWithoutReplay": true
+    },
+    "p10-10": {
+      "attempts": 1,
+      "status": "VALID_COMPLETED",
+      "startedAt": "2026-08-25T16:42:03.108Z",
+      "completedAt": "2026-08-25T16:42:59.125Z",
+      "evidencePath": "tooling/Benchmark-Forecasting/performance/phase-2-3-p10-non-regression.json",
+      "executionRoot": "tooling/Benchmark-Forecasting/validation/phase-2-3/executions/2026-08-25T164204-235Z-0299dfb4-cca0-42ff-9280-616e6abfde00",
+      "recoveredWithoutReplay": false,
+      "reanalyzedWithoutReplay": true
+    }
+  }
+}

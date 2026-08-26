@@ -1,0 +1,17 @@
+{
+  "task": "FORECAST_PHASE_2_1A_ENVIRONMENT_INSTRUMENTATION_READINESS",
+  "contractVersion": 1,
+  "generatedAt": "2026-08-24T11:45:14.092Z",
+  "classification": "CORRECTNESS_PROBE_NOT_PERFORMANCE_EVIDENCE",
+  "command": "node --import tsx --test --test-reporter=tap tests/forecast-library-service.test.ts",
+  "forecastTests": {
+    "tests": 21,
+    "passed": 21,
+    "failed": 0
+  },
+  "telemetryOffOnDeepEqual": true,
+  "equivalenceTest": "stress telemetry leaves Forecast values and identity unchanged",
+  "loadRequestsExecuted": 0,
+  "phase21BStarted": false,
+  "credentialsIncluded": false
+}

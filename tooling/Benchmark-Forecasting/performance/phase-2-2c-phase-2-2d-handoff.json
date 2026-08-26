@@ -1,0 +1,30 @@
+{
+  "task": "FORECAST_PHASE_2_2C_PHASE_2_2D_HANDOFF",
+  "generatedAt": "2026-08-25T15:40:15.900Z",
+  "status": "READY_FOR_SEPARATE_AUTHORIZATION_DECISION",
+  "phase22dReadyForAuthorization": true,
+  "phase22dAuthorized": false,
+  "phase22dStarted": false,
+  "provenOrStronglySupportedCauses": [
+    {
+      "scenario": "P09",
+      "cause": "CONCURRENT_UNCOALESCED_FULL_TABLE_APPLICATION_READS",
+      "confidence": "STRONGLY_SUPPORTED"
+    },
+    {
+      "scenario": "P10_ACCEPTED_ANOMALY",
+      "cause": "MEASUREMENT_CONTAMINATION_FROM_PRECEDING_P09",
+      "confidence": "PROVEN"
+    }
+  ],
+  "candidateLeverIds": [
+    "C01",
+    "C02",
+    "C03",
+    "C04",
+    "C05",
+    "C06"
+  ],
+  "selectedOptimization": null,
+  "purpose": "Compare candidate mechanisms and select or reject the smallest mechanism without implementing it."
+}

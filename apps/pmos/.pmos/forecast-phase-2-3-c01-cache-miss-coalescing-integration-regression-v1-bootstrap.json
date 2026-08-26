@@ -1,0 +1,115 @@
+{
+  "metadata": {
+    "conversationId": "a220b101-e6f4-4ecb-b9c6-c716b312bd33",
+    "project": "SpendGuru 2.0",
+    "taskId": "forecast-phase-2-3-c01-cache-miss-coalescing-integration-regression-v1",
+    "scope": "implementation",
+    "etap": "Benchmark Forecasting MVP",
+    "subetap": "Phase 2.3 - C01 Cache-Miss Coalescing Integration and Regression",
+    "conversationType": "implementation",
+    "importanceLevel": "high",
+    "timestamp": "2026-08-25T16:54:36.000Z",
+    "compatibility": {
+      "legacyPlanningContext": {
+        "etap": "Benchmark Forecasting MVP",
+        "subetap": "Phase 2.3 - C01 Cache-Miss Coalescing Integration and Regression"
+      }
+    }
+  },
+  "task": {
+    "originalTaskRequest": "Execute only Phase 2.3 C01 Cache-Miss Coalescing Integration and Regression. Implement process-local, exact-key, in-flight-only cache-miss coalescing while preserving the existing query, exact cache key, 30-second TTL, cache timestamp semantics, ordering, and downstream filtering. Complete stages A-G, run P09 at 100, at most one conditional P09 at 1000, isolated P10 at 10, full regression, exactly 72 report sections, exactly 108 acceptance conditions, migration readiness, and PMOS/MEMOROS continuity. Do not authorize or start Phase 2.4."
+  },
+  "analysis": {
+    "executionSummary": "Phase 2.3 implemented only C01 as one process-local Map keyed by the exact JSON organizationId and pipelineId identity and consulted only after a result-cache miss. The owner performs the unchanged connect/read/cache-publication path, joiners await the same promise, and identity-safe finally cleanup releases the entry. Focused proof showed 10 same-key calls producing one owner, nine joiners, one underlying read, zero duplicate reads, and zero active entries after settlement. P09 at 100 passed canonical correctness with one owner, 99 joiners, and one read. The one permitted P09 at 1000 preserved the C01 structural result with one owner, 999 joiners, one read, and clean settlement, but all 1000 HTTP requests failed in the downstream SG Runtime analytics-series path with Failed to convert rust String into napi string. P10 at 10 then passed in a fresh isolated process with 10 direct prepared-current resolve spans, 10 successful functional outcomes, zero Forecast compute, owners, writes, or provider calls, and zero C01 engagement. Full non-stress regression passed 13 of 13 checks. The final governed result is 107 of 108 conditions PASS with exactly 72 report sections: C01_ACCEPTED is YES, PHASE_2_3_GATE is FAIL on condition 87, and Phase 2.4 remains unauthorized and unstarted.",
+    "reasoningSummary": "The evidence separates causal effect from capacity, UX, and resource effects. C01 directly and repeatedly eliminated duplicate same-key application full-table read ownership, so its causal mechanism is confirmed and accepted. The executed high-concurrency wave nevertheless failed canonical response correctness downstream after the single coalesced read, which prevents a Phase 2.3 PASS and prevents Phase 2.4 authorization. The failed wave was preserved exactly and never replayed. P10 and full regression demonstrate that the C01 integration did not introduce a broader functional regression, but they do not override condition 87."
+  },
+  "findings": {
+    "findings": [
+      "C01 is implemented as process-local, exact-key, in-flight-only coalescing and is not a second result cache.",
+      "The existing query, exact cache key, 30-second TTL, pre-owner timestamp semantics, ordering, downstream filtering, database pool, cancellation behavior, schema, and indexes remain unchanged.",
+      "Focused proof passed with 10 requests, one owner, nine joiners, one read, zero duplicate reads, and identity-safe cleanup.",
+      "P09 at 100 passed 100 of 100 canonical responses with one owner, 99 joiners, one read, zero duplicates, and clean settlement.",
+      "The single permitted P09 at 1000 produced zero of 1000 correct HTTP responses because of a downstream SG Runtime analytics-series N-API string conversion failure, despite one owner, 999 joiners, one read, zero duplicates, and clean settlement.",
+      "P10 at 10 passed 10 of 10 responses in isolation with 10 prepared-current resolve spans, functional outcomes SUCCESS_COMPUTED=10, raw prepared hit/miss counters 0/0, and zero Forecast compute, owner, write, provider, or C01 activity.",
+      "Full non-stress regression passed 13 of 13 checks, including Forecast Core 218 of 218, SG Runtime 172 of 172, Dashboard Preview 106 of 106, phase tooling 31 of 31, three typechecks, Dashboard Preview build, and accepted authority gates.",
+      "The independent final validator confirms 107 of 108 conditions PASS, condition 87 FAIL, exactly 72 report sections, 51 migration paths, C01_ACCEPTED=YES, and PHASE_2_3_GATE=FAIL.",
+      "All 22 immutable BEFORE references and accepted Phase 2.2B-1R, B4R, Phase 2.2C, and Phase 2.2D authority chains remain verified.",
+      "No P09 or P10 workload was replayed during evidence recovery, enrichment, finalization, or independent validation."
+    ],
+    "blockers": [
+      "Acceptance condition 87 fails because the executed P09 at 1000 did not preserve canonical correctness.",
+      "Phase 2.4 is not ready for authorization and remains unauthorized and unstarted."
+    ],
+    "residualRisks": [
+      "C01 is process-local and does not coalesce misses across application instances.",
+      "One full-table application read still occurs per exact-key result-cache miss window.",
+      "The P09 at 1000 downstream SG Runtime analytics-series N-API conversion failure remains unresolved and is capacity-significant.",
+      "Resource effect remains not comparable because canonical peak and post-cooldown process-memory measurements were unavailable.",
+      "Historical PMOS estate recovery warnings predate this task and are not active runtime, handoff, archive, or pending-slot blockers."
+    ]
+  },
+  "decisions": {
+    "decisions": [
+      "Accept C01 on direct structural and controlled evidence while recording the overall Phase 2.3 gate as FAIL.",
+      "Classify CAUSAL_EFFECT as CONFIRMED, CAPACITY_EFFECT as MIXED, UX_EFFECT as MIXED, and RESOURCE_EFFECT as NOT_COMPARABLE.",
+      "Preserve the failed P09 at 1000 as canonical evidence and forbid replay under the one-attempt execution limit.",
+      "Do not implement C02 through C05 in this phase.",
+      "Do not authorize or start Phase 2.4.",
+      "Use PARTIAL_SUCCESS for PMOS continuity because implementation and C01 acceptance succeeded while the governed phase gate failed."
+    ]
+  },
+  "actions": {
+    "recommendations": [
+      "Treat the Phase 2.3 handoff as a failed phase gate with an accepted C01 mechanism, not as authorization for Phase 2.4.",
+      "Resolve or separately govern the downstream SG Runtime analytics-series N-API conversion failure before any new high-concurrency acceptance attempt.",
+      "Use the 51-path migration readiness manifest as the authoritative task-attributed transfer inventory.",
+      "Retain the existing C01 exact-key, process-local, in-flight-only contract and 30-second result-cache semantics."
+    ],
+    "validationsExecuted": [
+      "Ran focused Dashboard Preview C01 structural and semantic tests successfully.",
+      "Ran stages A-C deterministic structural, source, semantic, and plan validation successfully.",
+      "Executed P09 at 100 exactly once: 100 of 100 correct, one owner, 99 joiners, one read, zero duplicate reads, settlement PASS.",
+      "Executed the conditionally authorized P09 at 1000 exactly once: zero of 1000 correct, one owner, 999 joiners, one read, zero duplicate reads, settlement PASS; no replay occurred.",
+      "Executed isolated P10 at 10 exactly once after P09 settlement: 10 of 10 correct, 10 prepared-current resolve spans, zero Forecast compute, owners, writes, or provider calls, and zero C01 engagement.",
+      "Ran full non-stress regression: 13 of 13 checks PASS.",
+      "Ran the deterministic finalizer and independent final-gate validator: 107 of 108 PASS, condition 87 FAIL, 72 of 72 report sections, and 51 migration paths.",
+      "Parsed 34 Phase 2.3 JSON files, ran JavaScript syntax checks, git diff whitespace checks, and editor diagnostics successfully.",
+      "Confirmed MEMOROS health at http://localhost:4000/health before canonical PMOS save."
+    ],
+    "validationsNotExecuted": [
+      "No second P09 at 1000 was executed because the one-attempt limit is exhausted.",
+      "No P09 or P10 workload was replayed during evidence recovery or finalization.",
+      "No C02, C03, C04, or C05 implementation was performed.",
+      "No Phase 2.4 work was authorized or started.",
+      "No database schema, index, pool, timeout, cancellation, Node, or infrastructure tuning was performed."
+    ],
+    "artifactsCreated": [
+      "apps/dashboard-preview/lib/phase-2-2c/diagnostics.ts",
+      "apps/dashboard-preview/tests/dashboard-record-query.test.ts",
+      "apps/dashboard-preview/tests/series-query-semantics.test.ts",
+      "tooling/Benchmark-Forecasting/performance/phase-2-3-c01-controlled-validation.mjs",
+      "tooling/Benchmark-Forecasting/performance/phase-2-3-functional-regression.mjs",
+      "tooling/Benchmark-Forecasting/performance/phase-2-3-finalize-evidence.mjs",
+      "tooling/Benchmark-Forecasting/performance/phase-2-3-final-gate.validator.mjs",
+      "tooling/Benchmark-Forecasting/performance/phase-2-3-c01-implementation-evidence.json",
+      "tooling/Benchmark-Forecasting/performance/phase-2-3-c01-structural-proof.json",
+      "tooling/Benchmark-Forecasting/performance/phase-2-3-p09-lower-control.json",
+      "tooling/Benchmark-Forecasting/performance/phase-2-3-p09-high-concurrency.json",
+      "tooling/Benchmark-Forecasting/performance/phase-2-3-p10-non-regression.json",
+      "tooling/Benchmark-Forecasting/performance/phase-2-3-before-after-comparison.json",
+      "tooling/Benchmark-Forecasting/performance/phase-2-3-phase-2-4-handoff.json",
+      "tooling/Benchmark-Forecasting/validation/forecast-phase-2-3-c01-cache-miss-coalescing.json",
+      "tooling/Benchmark-Forecasting/validation/forecast-phase-2-3-migration-readiness.json",
+      "tooling/Benchmark-Forecasting/validation/phase-2-3/",
+      "tooling/Benchmark-Forecasting/FORECAST_PHASE_2_3_C01_CACHE_MISS_COALESCING_INTEGRATION_REGRESSION.md",
+      "apps/pmos/.pmos/forecast-phase-2-3-c01-cache-miss-coalescing-integration-regression-v1-bootstrap.json"
+    ],
+    "artifactsModified": [
+      "apps/dashboard-preview/lib/raw-data/dashboard-record-query.ts",
+      "apps/dashboard-preview/lib/time-series/series-query.ts"
+    ]
+  },
+  "result": {
+    "finalStatus": "PARTIAL_SUCCESS"
+  }
+}

@@ -1,0 +1,786 @@
+{
+  "task": "FORECAST_PHASE_2_2B_4R_ESCALATION_AUDIT",
+  "generatedAt": "2026-08-25T13:52:47.963Z",
+  "strictSequentialEscalation": true,
+  "noHigherLevelAfterMandatoryStop": true,
+  "scenarios": [
+    {
+      "scenario": "P03",
+      "model": "naive",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        },
+        "1000": {
+          "authorization": "DENIED_BY_PRECEDING_MANDATORY_STOP",
+          "executedCells": 0,
+          "terminalStatuses": [
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P03",
+      "model": "damped_holt",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        },
+        "1000": {
+          "authorization": "DENIED_BY_PRECEDING_MANDATORY_STOP",
+          "executedCells": 0,
+          "terminalStatuses": [
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P03",
+      "model": "ets",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        },
+        "1000": {
+          "authorization": "DENIED_BY_PRECEDING_MANDATORY_STOP",
+          "executedCells": 0,
+          "terminalStatuses": [
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P03",
+      "model": "arima",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        },
+        "1000": {
+          "authorization": "DENIED_BY_PRECEDING_MANDATORY_STOP",
+          "executedCells": 0,
+          "terminalStatuses": [
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P04",
+      "model": "naive",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "1000": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P04",
+      "model": "damped_holt",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "1000": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P04",
+      "model": "ets",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "1000": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P04",
+      "model": "arima",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "1000": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P05",
+      "model": "ets",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        },
+        "1000": {
+          "authorization": "DENIED_BY_PRECEDING_MANDATORY_STOP",
+          "executedCells": 0,
+          "terminalStatuses": [
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P08",
+      "model": "naive",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        },
+        "1000": {
+          "authorization": "DENIED_BY_PRECEDING_MANDATORY_STOP",
+          "executedCells": 0,
+          "terminalStatuses": [
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P08",
+      "model": "damped_holt",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        },
+        "1000": {
+          "authorization": "DENIED_BY_PRECEDING_MANDATORY_STOP",
+          "executedCells": 0,
+          "terminalStatuses": [
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P08",
+      "model": "ets",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        },
+        "1000": {
+          "authorization": "DENIED_BY_PRECEDING_MANDATORY_STOP",
+          "executedCells": 0,
+          "terminalStatuses": [
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P08",
+      "model": "arima",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        },
+        "1000": {
+          "authorization": "DENIED_BY_PRECEDING_MANDATORY_STOP",
+          "executedCells": 0,
+          "terminalStatuses": [
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P11",
+      "model": "naive",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED"
+          ],
+          "reasons": [
+            "MANDATORY_SETTLEMENT_FAILED"
+          ]
+        },
+        "1000": {
+          "authorization": "DENIED_BY_PRECEDING_MANDATORY_STOP",
+          "executedCells": 0,
+          "terminalStatuses": [
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "MANDATORY_SETTLEMENT_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P11",
+      "model": "damped_holt",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        },
+        "1000": {
+          "authorization": "DENIED_BY_PRECEDING_MANDATORY_STOP",
+          "executedCells": 0,
+          "terminalStatuses": [
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P11",
+      "model": "ets",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        },
+        "1000": {
+          "authorization": "DENIED_BY_PRECEDING_MANDATORY_STOP",
+          "executedCells": 0,
+          "terminalStatuses": [
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P11",
+      "model": "arima",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        },
+        "1000": {
+          "authorization": "DENIED_BY_PRECEDING_MANDATORY_STOP",
+          "executedCells": 0,
+          "terminalStatuses": [
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P01",
+      "model": "ets",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 3,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 3,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "1000": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED",
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED",
+            "MANDATORY_STOP_AFTER_SAFETY_BLOCKED:CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P02",
+      "model": "ets",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 3,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 3,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "1000": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED",
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED",
+            "MANDATORY_STOP_AFTER_SAFETY_BLOCKED:CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P06",
+      "model": "ets",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 3,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 3,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "1000": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED",
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED",
+            "MANDATORY_STOP_AFTER_SAFETY_BLOCKED:CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P07",
+      "model": "ets",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 3,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 3,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "1000": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED",
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "CORRECTNESS_FAILED",
+            "MANDATORY_STOP_AFTER_SAFETY_BLOCKED:CORRECTNESS_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P09",
+      "model": "mixed",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 3,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "100": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 3,
+          "terminalStatuses": [
+            "VALID_COMPLETED"
+          ],
+          "reasons": []
+        },
+        "1000": {
+          "authorization": "AUTHORIZED_BY_PRECEDING_LEVEL_PASS",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED",
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "MANDATORY_SETTLEMENT_FAILED",
+            "MANDATORY_STOP_AFTER_SAFETY_BLOCKED:MANDATORY_SETTLEMENT_FAILED"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "P10",
+      "model": "ets",
+      "levels": {
+        "10": {
+          "authorization": "AUTHORIZED_BY_PREFLIGHT",
+          "executedCells": 1,
+          "terminalStatuses": [
+            "SAFETY_BLOCKED",
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "MANDATORY_SETTLEMENT_FAILED",
+            "MANDATORY_STOP_AFTER_SAFETY_BLOCKED:MANDATORY_SETTLEMENT_FAILED"
+          ]
+        },
+        "100": {
+          "authorization": "DENIED_BY_PRECEDING_MANDATORY_STOP",
+          "executedCells": 0,
+          "terminalStatuses": [
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "MANDATORY_SETTLEMENT_FAILED"
+          ]
+        },
+        "1000": {
+          "authorization": "DENIED_BY_PRECEDING_MANDATORY_STOP",
+          "executedCells": 0,
+          "terminalStatuses": [
+            "CONTRACT_ABORTED"
+          ],
+          "reasons": [
+            "MANDATORY_SETTLEMENT_FAILED"
+          ]
+        }
+      }
+    }
+  ]
+}

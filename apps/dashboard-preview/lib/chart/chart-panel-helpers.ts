@@ -3,11 +3,18 @@ export type NiceScaleTick = {
   offset: number
 }
 
+import type { TimeSeriesViewerSeries } from '@/lib/time-series-viewer/time-series-viewer-contract'
+
 export type NiceScaleDomain = {
   minimum: number
   maximum: number
   step: number
   ticks: NiceScaleTick[]
+}
+
+export type VisibleRange = {
+  start: string
+  end: string
 }
 
 const MIN_TICK_COUNT = 5
@@ -144,4 +151,29 @@ export function resolveNiceScaleDomain(values: number[]): NiceScaleDomain {
       offset: index / tickDenominator,
     })),
   }
+}
+
+export function filterSeriesToVisibleRange(series: TimeSeriesViewerSeries[], range: VisibleRange | null) {
+  if (!range) {
+    return series
+  }
+
+  const startMs = new Date(range.start).getTime()
+  const endMs = new Date(range.end).getTime()
+
+  return series.map((entry) => ({
+    ...entry,
+    points: entry.points.filter((point) => {
+      const pointMs = new Date(point.date).getTime()
+      return pointMs >= startMs && pointMs <= endMs
+    }),
+    segments: entry.segments
+      ? entry.segments
+          .map((segment) => segment.filter((point) => {
+            const pointMs = new Date(point.date).getTime()
+            return pointMs >= startMs && pointMs <= endMs
+          }))
+          .filter((segment) => segment.length > 0)
+      : undefined,
+  }))
 }

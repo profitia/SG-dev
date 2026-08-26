@@ -1,0 +1,884 @@
+{
+  "arimaFitProvenance": [
+    {
+      "order": "ARIMA(1,1,2)",
+      "selectedOrigins": 9,
+      "share": 0.013215859030837005
+    },
+    {
+      "order": "ARIMA(2,1,0)",
+      "selectedOrigins": 17,
+      "share": 0.024963289280469897
+    },
+    {
+      "order": "ARIMA(2,1,1)",
+      "selectedOrigins": 115,
+      "share": 0.16886930983847284
+    },
+    {
+      "order": "ARIMA(2,1,2)",
+      "selectedOrigins": 540,
+      "share": 0.7929515418502202
+    }
+  ],
+  "comparisonIdentity": {
+    "displayName": "Brent, Spot, FOB North Sea",
+    "forecastMethod": "ROLLING_DAILY_POINT_IN_TIME",
+    "historicalOriginFloor": "2024-01-01",
+    "methodVersion": "rolling-daily-point-in-time-v1",
+    "models": [
+      "naive",
+      "damped_holt",
+      "ets",
+      "arima"
+    ],
+    "seriesId": "wocaes0074",
+    "targetBasis": "POINT_IN_TIME"
+  },
+  "coverageSummary": {
+    "arima": {
+      "available": 681,
+      "completed": 681,
+      "expectedOrigins": 681,
+      "missing": 0,
+      "unavailable": 0
+    },
+    "damped_holt": {
+      "available": 681,
+      "completed": 681,
+      "expectedOrigins": 681,
+      "missing": 0,
+      "unavailable": 0
+    },
+    "ets": {
+      "available": 681,
+      "completed": 681,
+      "expectedOrigins": 681,
+      "missing": 0,
+      "unavailable": 0
+    },
+    "naive": {
+      "available": 681,
+      "completed": 681,
+      "expectedOrigins": 681,
+      "missing": 0,
+      "unavailable": 0
+    }
+  },
+  "crossHorizonPatternSummary": [
+    "Strict common-cohort identity sets equal the native matured identity sets for all four models on all four horizons.",
+    "Naive retains lawful zero or near-zero Directional Accuracy values on multiple horizons, and those zeros remain numeric evidence rather than being collapsed into missing values.",
+    "ARIMA native and strict-common metrics remain numerically identical because identity-set equality passes on 1M, 3M, 6M, and 12M.",
+    "ETS and Damped Holt retain materially higher Directional Accuracy than Naive on the strict common cohort across all four horizons."
+  ],
+  "fourModelComparativeBacktest": "PASS",
+  "generatedAt": "2026-08-21T09:20:20Z",
+  "horizonFindings": {
+    "12M": [
+      "ETS has the lowest MAE on the strict common cohort.",
+      "ETS has the highest Directional Accuracy on the strict common cohort.",
+      "Damped Holt is closest to zero Bias on the strict common cohort.",
+      "ARIMA Bias is 2.191068121796691 at 12M; this remains descriptive only and is not a model ranking."
+    ],
+    "1M": [
+      "Naive has the lowest MAE on the strict common cohort.",
+      "ETS has the highest Directional Accuracy on the strict common cohort.",
+      "ARIMA is closest to zero Bias on the strict common cohort.",
+      "ARIMA Bias is -0.026742784203338126 at 1M; this remains descriptive only and is not a model ranking."
+    ],
+    "3M": [
+      "Naive has the lowest MAE on the strict common cohort.",
+      "ETS has the highest Directional Accuracy on the strict common cohort.",
+      "ARIMA is closest to zero Bias on the strict common cohort.",
+      "ARIMA Bias is -0.07822664964227649 at 3M; this remains descriptive only and is not a model ranking."
+    ],
+    "6M": [
+      "ETS has the lowest MAE on the strict common cohort.",
+      "ETS has the highest Directional Accuracy on the strict common cohort.",
+      "ARIMA is closest to zero Bias on the strict common cohort.",
+      "ARIMA Bias is -1.3935076744303811 at 6M; this remains descriptive only and is not a model ranking."
+    ]
+  },
+  "identitySetEquality": {
+    "12M": {
+      "commonCohortCount": 423,
+      "counts": {
+        "arima": 423,
+        "damped_holt": 423,
+        "ets": 423,
+        "naive": 423
+      },
+      "equal": true,
+      "status": "PASS"
+    },
+    "1M": {
+      "commonCohortCount": 659,
+      "counts": {
+        "arima": 659,
+        "damped_holt": 659,
+        "ets": 659,
+        "naive": 659
+      },
+      "equal": true,
+      "status": "PASS"
+    },
+    "3M": {
+      "commonCohortCount": 615,
+      "counts": {
+        "arima": 615,
+        "damped_holt": 615,
+        "ets": 615,
+        "naive": 615
+      },
+      "equal": true,
+      "status": "PASS"
+    },
+    "6M": {
+      "commonCohortCount": 553,
+      "counts": {
+        "arima": 553,
+        "damped_holt": 553,
+        "ets": 553,
+        "naive": 553
+      },
+      "equal": true,
+      "status": "PASS"
+    }
+  },
+  "methodCompatibility": {
+    "commonActualParity": "PASS",
+    "errorConventionParity": "PASS",
+    "fourModelMethodCompatibility": "PASS",
+    "targetDateParity": "PASS",
+    "verificationObservedAtParity": "PASS"
+  },
+  "metricCompleteness": {
+    "nativeMissingMetricCells": 0,
+    "nativeNumericMetricCells": 96,
+    "nativeRequiredMetricCells": 96,
+    "strictMissingMetricCells": 0,
+    "strictNumericMetricCells": 96,
+    "strictRequiredMetricCells": 96
+  },
+  "metricLeaders": {
+    "12M": {
+      "highestDirectionalAccuracy": "ets",
+      "lowestAbsoluteBias": "damped_holt",
+      "lowestMAE": "ets",
+      "lowestMASE": "ets",
+      "lowestRMSE": "ets",
+      "lowestSMAPE": "ets"
+    },
+    "1M": {
+      "highestDirectionalAccuracy": "ets",
+      "lowestAbsoluteBias": "arima",
+      "lowestMAE": "naive",
+      "lowestMASE": "naive",
+      "lowestRMSE": "naive",
+      "lowestSMAPE": "naive"
+    },
+    "3M": {
+      "highestDirectionalAccuracy": "ets",
+      "lowestAbsoluteBias": "arima",
+      "lowestMAE": "naive",
+      "lowestMASE": "naive",
+      "lowestRMSE": "naive",
+      "lowestSMAPE": "naive"
+    },
+    "6M": {
+      "highestDirectionalAccuracy": "ets",
+      "lowestAbsoluteBias": "arima",
+      "lowestMAE": "ets",
+      "lowestMASE": "ets",
+      "lowestRMSE": "ets",
+      "lowestSMAPE": "ets"
+    }
+  },
+  "nativeMetricParity": {
+    "byHorizonAndModel": {
+      "12M": {
+        "arima": {
+          "metricsMatch": true,
+          "verifiedMatch": true
+        },
+        "damped_holt": {
+          "metricsMatch": true,
+          "verifiedMatch": true
+        },
+        "ets": {
+          "metricsMatch": true,
+          "verifiedMatch": true
+        },
+        "naive": {
+          "metricsMatch": true,
+          "verifiedMatch": true
+        }
+      },
+      "1M": {
+        "arima": {
+          "metricsMatch": true,
+          "verifiedMatch": true
+        },
+        "damped_holt": {
+          "metricsMatch": true,
+          "verifiedMatch": true
+        },
+        "ets": {
+          "metricsMatch": true,
+          "verifiedMatch": true
+        },
+        "naive": {
+          "metricsMatch": true,
+          "verifiedMatch": true
+        }
+      },
+      "3M": {
+        "arima": {
+          "metricsMatch": true,
+          "verifiedMatch": true
+        },
+        "damped_holt": {
+          "metricsMatch": true,
+          "verifiedMatch": true
+        },
+        "ets": {
+          "metricsMatch": true,
+          "verifiedMatch": true
+        },
+        "naive": {
+          "metricsMatch": true,
+          "verifiedMatch": true
+        }
+      },
+      "6M": {
+        "arima": {
+          "metricsMatch": true,
+          "verifiedMatch": true
+        },
+        "damped_holt": {
+          "metricsMatch": true,
+          "verifiedMatch": true
+        },
+        "ets": {
+          "metricsMatch": true,
+          "verifiedMatch": true
+        },
+        "naive": {
+          "metricsMatch": true,
+          "verifiedMatch": true
+        }
+      }
+    },
+    "status": "PASS"
+  },
+  "nativeMetrics": {
+    "12M": {
+      "arima": {
+        "bias": 2.191068121796691,
+        "directionalAccuracy": 0.3049645390070922,
+        "generated": 681,
+        "mae": 16.047546032387707,
+        "mase": 23.01583689055598,
+        "mature": 423,
+        "rmse": 18.960406816558983,
+        "smape": 20.618786946038128,
+        "unavailable": 0,
+        "verified": 423
+      },
+      "damped_holt": {
+        "bias": 0.9365160438770689,
+        "directionalAccuracy": 0.4846335697399527,
+        "generated": 681,
+        "mae": 15.42560822212766,
+        "mase": 22.11625000538226,
+        "mature": 423,
+        "rmse": 18.70800294571145,
+        "smape": 19.903155967566782,
+        "unavailable": 0,
+        "verified": 423
+      },
+      "ets": {
+        "bias": 0.9403098396453886,
+        "directionalAccuracy": 0.5177304964539007,
+        "generated": 681,
+        "mae": 15.425271588770688,
+        "mase": 22.115783657591955,
+        "mature": 423,
+        "rmse": 18.701214283292032,
+        "smape": 19.902790993040757,
+        "unavailable": 0,
+        "verified": 423
+      },
+      "naive": {
+        "bias": 0.940307328605202,
+        "directionalAccuracy": 0.0,
+        "generated": 681,
+        "mae": 15.425271867612292,
+        "mase": 22.115784045972507,
+        "mature": 423,
+        "rmse": 18.7012201660052,
+        "smape": 19.902791151732412,
+        "unavailable": 0,
+        "verified": 423
+      }
+    },
+    "1M": {
+      "arima": {
+        "bias": -0.026742784203338126,
+        "directionalAccuracy": 0.47040971168437024,
+        "generated": 681,
+        "mae": 5.794185554400608,
+        "mase": 8.206393366126747,
+        "mature": 659,
+        "rmse": 8.874769253629276,
+        "smape": 7.210178382606082,
+        "unavailable": 0,
+        "verified": 659
+      },
+      "damped_holt": {
+        "bias": -0.10299126456752644,
+        "directionalAccuracy": 0.4658573596358118,
+        "generated": 681,
+        "mae": 5.862543057101669,
+        "mase": 8.300758503727055,
+        "mature": 659,
+        "rmse": 8.99836400588865,
+        "smape": 7.287733253509776,
+        "unavailable": 0,
+        "verified": 659
+      },
+      "ets": {
+        "bias": -0.10945333242792085,
+        "directionalAccuracy": 0.496206373292868,
+        "generated": 681,
+        "mae": 5.821287630212443,
+        "mase": 8.243422731136768,
+        "mature": 659,
+        "rmse": 8.945305350639753,
+        "smape": 7.240806998904312,
+        "unavailable": 0,
+        "verified": 659
+      },
+      "naive": {
+        "bias": -0.12922610015174502,
+        "directionalAccuracy": 0.0030349013657056147,
+        "generated": 681,
+        "mae": 5.778725341426403,
+        "mase": 8.184333023958382,
+        "mature": 659,
+        "rmse": 8.858194495024614,
+        "smape": 7.194060893720248,
+        "unavailable": 0,
+        "verified": 659
+      }
+    },
+    "3M": {
+      "arima": {
+        "bias": -0.07822664964227649,
+        "directionalAccuracy": 0.4065040650406504,
+        "generated": 681,
+        "mae": 9.731616568699186,
+        "mase": 13.835596779919006,
+        "mature": 615,
+        "rmse": 14.78355455407172,
+        "smape": 12.149204573028225,
+        "unavailable": 0,
+        "verified": 615
+      },
+      "damped_holt": {
+        "bias": -0.23968783944715455,
+        "directionalAccuracy": 0.4634146341463415,
+        "generated": 681,
+        "mae": 9.777763042113822,
+        "mase": 13.897293563808844,
+        "mature": 615,
+        "rmse": 15.01090929435712,
+        "smape": 12.178453523534712,
+        "unavailable": 0,
+        "verified": 615
+      },
+      "ets": {
+        "bias": -0.30578419276422814,
+        "directionalAccuracy": 0.4845528455284553,
+        "generated": 681,
+        "mae": 9.709989494943088,
+        "mase": 13.802448057320992,
+        "mature": 615,
+        "rmse": 14.885922921511115,
+        "smape": 12.115569937531877,
+        "unavailable": 0,
+        "verified": 615
+      },
+      "naive": {
+        "bias": -0.383447154471545,
+        "directionalAccuracy": 0.0,
+        "generated": 681,
+        "mae": 9.632325203252032,
+        "mase": 13.693818883225807,
+        "mature": 615,
+        "rmse": 14.74031400311978,
+        "smape": 12.045951448867363,
+        "unavailable": 0,
+        "verified": 615
+      }
+    },
+    "6M": {
+      "arima": {
+        "bias": -1.3935076744303811,
+        "directionalAccuracy": 0.325497287522604,
+        "generated": 681,
+        "mae": 11.62529182607595,
+        "mase": 16.596548412604523,
+        "mature": 553,
+        "rmse": 15.976483505764302,
+        "smape": 14.971099981223333,
+        "unavailable": 0,
+        "verified": 553
+      },
+      "damped_holt": {
+        "bias": -1.9827886501446668,
+        "directionalAccuracy": 0.4719710669077758,
+        "generated": 681,
+        "mae": 11.350310179258589,
+        "mase": 16.19965057244383,
+        "mature": 553,
+        "rmse": 15.968492899671693,
+        "smape": 14.64211686655022,
+        "unavailable": 0,
+        "verified": 553
+      },
+      "ets": {
+        "bias": -1.9801253342495475,
+        "directionalAccuracy": 0.49909584086799275,
+        "generated": 681,
+        "mae": 11.348263518589514,
+        "mase": 16.19673686957643,
+        "mature": 553,
+        "rmse": 15.962835002685331,
+        "smape": 14.639758668426824,
+        "unavailable": 0,
+        "verified": 553
+      },
+      "naive": {
+        "bias": -1.9801265822784806,
+        "directionalAccuracy": 0.0018083182640144665,
+        "generated": 681,
+        "mae": 11.348264014466546,
+        "mase": 16.19673757878532,
+        "mature": 553,
+        "rmse": 15.9628401156236,
+        "smape": 14.639758989512636,
+        "unavailable": 0,
+        "verified": 553
+      }
+    }
+  },
+  "nativeVerifiedCounts": {
+    "12M": {
+      "arima": 423,
+      "damped_holt": 423,
+      "ets": 423,
+      "naive": 423
+    },
+    "1M": {
+      "arima": 659,
+      "damped_holt": 659,
+      "ets": 659,
+      "naive": 659
+    },
+    "3M": {
+      "arima": 615,
+      "damped_holt": 615,
+      "ets": 615,
+      "naive": 615
+    },
+    "6M": {
+      "arima": 553,
+      "damped_holt": 553,
+      "ets": 553,
+      "naive": 553
+    }
+  },
+  "policy": {
+    "automaticModelSelection": "NOT BUILT",
+    "champion": "NOT DEFINED",
+    "modelRanking": "NOT PERFORMED",
+    "preferredModel": "NOT DEFINED"
+  },
+  "result": "PASS",
+  "runtimePersistenceCoverageProbe": {
+    "rowsByModel": {
+      "arima": 2724,
+      "damped_holt": 2724,
+      "ets": 2724,
+      "naive": 2724
+    }
+  },
+  "stage3PathStructureContext": [
+    {
+      "directionChanges": 0,
+      "forecastRange": 0.0,
+      "model": "naive",
+      "pathVolatility": 0.0
+    },
+    {
+      "directionChanges": 0,
+      "forecastRange": 0.6464096207250947,
+      "model": "damped_holt",
+      "pathVolatility": 0.003884513802541537
+    },
+    {
+      "directionChanges": 0,
+      "forecastRange": 0.0,
+      "model": "ets",
+      "pathVolatility": 0.0
+    },
+    {
+      "directionChanges": 16,
+      "forecastRange": 1.6604047076156405,
+      "model": "arima",
+      "pathVolatility": 0.015522561503376152
+    }
+  ],
+  "stage6Readiness": "READY",
+  "strictCommonCohort": {
+    "12M": {
+      "actualParity": true,
+      "commonCohortCount": 423,
+      "metricsByModel": {
+        "arima": {
+          "bias": 2.191068121796691,
+          "directional_accuracy": 0.3049645390070922,
+          "mae": 16.047546032387707,
+          "mase": 23.01583689055598,
+          "rmse": 18.960406816558983,
+          "smape": 20.618786946038128
+        },
+        "damped_holt": {
+          "bias": 0.9365160438770689,
+          "directional_accuracy": 0.4846335697399527,
+          "mae": 15.42560822212766,
+          "mase": 22.11625000538226,
+          "rmse": 18.70800294571145,
+          "smape": 19.903155967566782
+        },
+        "ets": {
+          "bias": 0.9403098396453886,
+          "directional_accuracy": 0.5177304964539007,
+          "mae": 15.425271588770688,
+          "mase": 22.115783657591955,
+          "rmse": 18.701214283292032,
+          "smape": 19.902790993040757
+        },
+        "naive": {
+          "bias": 0.940307328605202,
+          "directional_accuracy": 0.0,
+          "mae": 15.425271867612292,
+          "mase": 22.115784045972507,
+          "rmse": 18.7012201660052,
+          "smape": 19.902791151732412
+        }
+      },
+      "targetDateParity": true,
+      "verificationObservedAtParity": true,
+      "verifiedCounts": {
+        "arima": 423,
+        "damped_holt": 423,
+        "ets": 423,
+        "naive": 423
+      }
+    },
+    "1M": {
+      "actualParity": true,
+      "commonCohortCount": 659,
+      "metricsByModel": {
+        "arima": {
+          "bias": -0.026742784203338126,
+          "directional_accuracy": 0.47040971168437024,
+          "mae": 5.794185554400608,
+          "mase": 8.206393366126747,
+          "rmse": 8.874769253629276,
+          "smape": 7.210178382606082
+        },
+        "damped_holt": {
+          "bias": -0.10299126456752644,
+          "directional_accuracy": 0.4658573596358118,
+          "mae": 5.862543057101669,
+          "mase": 8.300758503727055,
+          "rmse": 8.99836400588865,
+          "smape": 7.287733253509776
+        },
+        "ets": {
+          "bias": -0.10945333242792085,
+          "directional_accuracy": 0.496206373292868,
+          "mae": 5.821287630212443,
+          "mase": 8.243422731136768,
+          "rmse": 8.945305350639753,
+          "smape": 7.240806998904312
+        },
+        "naive": {
+          "bias": -0.12922610015174502,
+          "directional_accuracy": 0.0030349013657056147,
+          "mae": 5.778725341426403,
+          "mase": 8.184333023958382,
+          "rmse": 8.858194495024614,
+          "smape": 7.194060893720248
+        }
+      },
+      "targetDateParity": true,
+      "verificationObservedAtParity": true,
+      "verifiedCounts": {
+        "arima": 659,
+        "damped_holt": 659,
+        "ets": 659,
+        "naive": 659
+      }
+    },
+    "3M": {
+      "actualParity": true,
+      "commonCohortCount": 615,
+      "metricsByModel": {
+        "arima": {
+          "bias": -0.07822664964227649,
+          "directional_accuracy": 0.4065040650406504,
+          "mae": 9.731616568699186,
+          "mase": 13.835596779919006,
+          "rmse": 14.78355455407172,
+          "smape": 12.149204573028225
+        },
+        "damped_holt": {
+          "bias": -0.23968783944715455,
+          "directional_accuracy": 0.4634146341463415,
+          "mae": 9.777763042113822,
+          "mase": 13.897293563808844,
+          "rmse": 15.01090929435712,
+          "smape": 12.178453523534712
+        },
+        "ets": {
+          "bias": -0.30578419276422814,
+          "directional_accuracy": 0.4845528455284553,
+          "mae": 9.709989494943088,
+          "mase": 13.802448057320992,
+          "rmse": 14.885922921511115,
+          "smape": 12.115569937531877
+        },
+        "naive": {
+          "bias": -0.383447154471545,
+          "directional_accuracy": 0.0,
+          "mae": 9.632325203252032,
+          "mase": 13.693818883225807,
+          "rmse": 14.74031400311978,
+          "smape": 12.045951448867363
+        }
+      },
+      "targetDateParity": true,
+      "verificationObservedAtParity": true,
+      "verifiedCounts": {
+        "arima": 615,
+        "damped_holt": 615,
+        "ets": 615,
+        "naive": 615
+      }
+    },
+    "6M": {
+      "actualParity": true,
+      "commonCohortCount": 553,
+      "metricsByModel": {
+        "arima": {
+          "bias": -1.3935076744303811,
+          "directional_accuracy": 0.325497287522604,
+          "mae": 11.62529182607595,
+          "mase": 16.596548412604523,
+          "rmse": 15.976483505764302,
+          "smape": 14.971099981223333
+        },
+        "damped_holt": {
+          "bias": -1.9827886501446668,
+          "directional_accuracy": 0.4719710669077758,
+          "mae": 11.350310179258589,
+          "mase": 16.19965057244383,
+          "rmse": 15.968492899671693,
+          "smape": 14.64211686655022
+        },
+        "ets": {
+          "bias": -1.9801253342495475,
+          "directional_accuracy": 0.49909584086799275,
+          "mae": 11.348263518589514,
+          "mase": 16.19673686957643,
+          "rmse": 15.962835002685331,
+          "smape": 14.639758668426824
+        },
+        "naive": {
+          "bias": -1.9801265822784806,
+          "directional_accuracy": 0.0018083182640144665,
+          "mae": 11.348264014466546,
+          "mase": 16.19673757878532,
+          "rmse": 15.9628401156236,
+          "smape": 14.639758989512636
+        }
+      },
+      "targetDateParity": true,
+      "verificationObservedAtParity": true,
+      "verifiedCounts": {
+        "arima": 553,
+        "damped_holt": 553,
+        "ets": 553,
+        "naive": 553
+      }
+    }
+  },
+  "strictCommonCohortMetrics": {
+    "12M": {
+      "arima": {
+        "bias": 2.191068121796691,
+        "directionalAccuracy": 0.3049645390070922,
+        "mae": 16.047546032387707,
+        "mase": 23.01583689055598,
+        "rmse": 18.960406816558983,
+        "smape": 20.618786946038128,
+        "verified": 423
+      },
+      "damped_holt": {
+        "bias": 0.9365160438770689,
+        "directionalAccuracy": 0.4846335697399527,
+        "mae": 15.42560822212766,
+        "mase": 22.11625000538226,
+        "rmse": 18.70800294571145,
+        "smape": 19.903155967566782,
+        "verified": 423
+      },
+      "ets": {
+        "bias": 0.9403098396453886,
+        "directionalAccuracy": 0.5177304964539007,
+        "mae": 15.425271588770688,
+        "mase": 22.115783657591955,
+        "rmse": 18.701214283292032,
+        "smape": 19.902790993040757,
+        "verified": 423
+      },
+      "naive": {
+        "bias": 0.940307328605202,
+        "directionalAccuracy": 0.0,
+        "mae": 15.425271867612292,
+        "mase": 22.115784045972507,
+        "rmse": 18.7012201660052,
+        "smape": 19.902791151732412,
+        "verified": 423
+      }
+    },
+    "1M": {
+      "arima": {
+        "bias": -0.026742784203338126,
+        "directionalAccuracy": 0.47040971168437024,
+        "mae": 5.794185554400608,
+        "mase": 8.206393366126747,
+        "rmse": 8.874769253629276,
+        "smape": 7.210178382606082,
+        "verified": 659
+      },
+      "damped_holt": {
+        "bias": -0.10299126456752644,
+        "directionalAccuracy": 0.4658573596358118,
+        "mae": 5.862543057101669,
+        "mase": 8.300758503727055,
+        "rmse": 8.99836400588865,
+        "smape": 7.287733253509776,
+        "verified": 659
+      },
+      "ets": {
+        "bias": -0.10945333242792085,
+        "directionalAccuracy": 0.496206373292868,
+        "mae": 5.821287630212443,
+        "mase": 8.243422731136768,
+        "rmse": 8.945305350639753,
+        "smape": 7.240806998904312,
+        "verified": 659
+      },
+      "naive": {
+        "bias": -0.12922610015174502,
+        "directionalAccuracy": 0.0030349013657056147,
+        "mae": 5.778725341426403,
+        "mase": 8.184333023958382,
+        "rmse": 8.858194495024614,
+        "smape": 7.194060893720248,
+        "verified": 659
+      }
+    },
+    "3M": {
+      "arima": {
+        "bias": -0.07822664964227649,
+        "directionalAccuracy": 0.4065040650406504,
+        "mae": 9.731616568699186,
+        "mase": 13.835596779919006,
+        "rmse": 14.78355455407172,
+        "smape": 12.149204573028225,
+        "verified": 615
+      },
+      "damped_holt": {
+        "bias": -0.23968783944715455,
+        "directionalAccuracy": 0.4634146341463415,
+        "mae": 9.777763042113822,
+        "mase": 13.897293563808844,
+        "rmse": 15.01090929435712,
+        "smape": 12.178453523534712,
+        "verified": 615
+      },
+      "ets": {
+        "bias": -0.30578419276422814,
+        "directionalAccuracy": 0.4845528455284553,
+        "mae": 9.709989494943088,
+        "mase": 13.802448057320992,
+        "rmse": 14.885922921511115,
+        "smape": 12.115569937531877,
+        "verified": 615
+      },
+      "naive": {
+        "bias": -0.383447154471545,
+        "directionalAccuracy": 0.0,
+        "mae": 9.632325203252032,
+        "mase": 13.693818883225807,
+        "rmse": 14.74031400311978,
+        "smape": 12.045951448867363,
+        "verified": 615
+      }
+    },
+    "6M": {
+      "arima": {
+        "bias": -1.3935076744303811,
+        "directionalAccuracy": 0.325497287522604,
+        "mae": 11.62529182607595,
+        "mase": 16.596548412604523,
+        "rmse": 15.976483505764302,
+        "smape": 14.971099981223333,
+        "verified": 553
+      },
+      "damped_holt": {
+        "bias": -1.9827886501446668,
+        "directionalAccuracy": 0.4719710669077758,
+        "mae": 11.350310179258589,
+        "mase": 16.19965057244383,
+        "rmse": 15.968492899671693,
+        "smape": 14.64211686655022,
+        "verified": 553
+      },
+      "ets": {
+        "bias": -1.9801253342495475,
+        "directionalAccuracy": 0.49909584086799275,
+        "mae": 11.348263518589514,
+        "mase": 16.19673686957643,
+        "rmse": 15.962835002685331,
+        "smape": 14.639758668426824,
+        "verified": 553
+      },
+      "naive": {
+        "bias": -1.9801265822784806,
+        "directionalAccuracy": 0.0018083182640144665,
+        "mae": 11.348264014466546,
+        "mase": 16.19673757878532,
+        "rmse": 15.9628401156236,
+        "smape": 14.639758989512636,
+        "verified": 553
+      }
+    }
+  }
+}

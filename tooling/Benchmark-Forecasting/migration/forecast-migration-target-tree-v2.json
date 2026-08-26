@@ -1,0 +1,22 @@
+{
+  "generatedAt": "2026-08-26T10:47:40.164Z",
+  "status": "FROZEN",
+  "version": 2,
+  "historicalBaselineCommit": "9fc9f81b5649140ff46e029f3381873a9fbb60e3",
+  "preservationAuthorityId": "FORECAST_EXECUTABLE_PRESERVATION_AUTHORITY_V2",
+  "preservationPackageIdentity": "ed1b6e4a84837e14d06049f5b7066311495184d99db8b087731c10983fb7e66d",
+  "closureId": "EXECUTABLE_DEPENDENCY_CLOSURE_V2",
+  "closureSha256": "f19d42e1c1a9a84028b17ea834f08789a199c5d3d93bcdf2d4b262c88c8b0665",
+  "architectureId": "FORECAST_PRODUCTION_ARCHITECTURE_V1",
+  "architectureVersion": 1,
+  "targetTreeFingerprint": "8dd703de2b2ea89a334a280bcde340caa1e73473f314041803b0733969bb97e9",
+  "authorityId": "FUTURE_SG_DEV_TARGET_TREE_V2",
+  "fingerprintAlgorithm": "SHA256_SORTED_PATH_HASH_INVENTORY_WITH_AUTHORITY_NORMALIZED_GOVERNANCE_JSON",
+  "baselineFilesRetained": 511,
+  "preservationPaths": 923,
+  "closurePaths": 920,
+  "governanceAdditions": 8,
+  "unauthorizedDeletions": 0,
+  "simulation1Workspace": "/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev-migration-authority/2_5RR_20260826T104740Z/simulation-1/SG-dev",
+  "simulation2Workspace": "/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev-migration-authority/2_5RR_20260826T104740Z/simulation-2/SG-dev"
+}

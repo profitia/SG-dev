@@ -1,0 +1,20 @@
+{
+  "task": "FORECAST_PHASE_2_3_C01_IMPLEMENTATION_EVIDENCE",
+  "generatedAt": "2026-08-25T16:36:38.036Z",
+  "scope": "PROCESS_LOCAL_EXACT_KEY_IN_FLIGHT_ONLY",
+  "exactKey": "JSON.stringify({organizationId: filters.organizationId ?? null, pipelineId: filters.pipelineId ?? null})",
+  "resultCacheTtlMs": 30000,
+  "resultCacheTtlChanged": false,
+  "resultCacheIdentityChanged": false,
+  "queryChanged": false,
+  "filteringChanged": false,
+  "cancellationChanged": false,
+  "dbPoolChanged": false,
+  "sourceHashes": {
+    "apps/dashboard-preview/lib/raw-data/dashboard-record-query.ts": "74c3d20875d0f19e8989e93e0e8b4d7ff49348bd41b33a1664adb7b4a2438d7f",
+    "apps/dashboard-preview/lib/phase-2-2c/diagnostics.ts": "593e3c9afb7c8a5d114e7411352c097b40af2c7b984cd1e097170696c41322e0",
+    "apps/dashboard-preview/lib/time-series/series-query.ts": "d0d0384d59383942fe2c4859031afe3840650a7ea6f92633b62452c490b2e1b1",
+    "apps/dashboard-preview/tests/dashboard-record-query.test.ts": "c322332dcc976c3a185dc9a245c271310f44987706d5d7a8a6b79877aaf4fcb9",
+    "apps/dashboard-preview/tests/series-query-semantics.test.ts": "3856e82a1be90b6969920c874108f6810e20d4926f2c593724a86a0d7bd1c90a"
+  }
+}

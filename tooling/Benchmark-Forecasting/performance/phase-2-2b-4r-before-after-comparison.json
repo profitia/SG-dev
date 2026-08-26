@@ -1,0 +1,1084 @@
+{
+  "task": "FORECAST_PHASE_2_2B_4R_CONTROLLED_BEFORE_AFTER_COMPARATIVE_STRESS_RERUN",
+  "generatedAt": "2026-08-25T14:16:28.114Z",
+  "beforeAuthority": "tooling/Benchmark-Forecasting/performance/phase-2-2b-before-evidence.json",
+  "afterAuthority": "tooling/Benchmark-Forecasting/performance/phase-2-2b-4r-after-aggregate.json",
+  "originalB4Authority": "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2b-4-before-after-comparative-stress.json",
+  "acceptedRepairAuthority": "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2b-1r-p04-small-pool-current-single-flight.json",
+  "comparableCells": [
+    {
+      "scenario": "P03",
+      "modelId": "naive",
+      "concurrency": 10,
+      "beforeAuthority": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T122252-191Z-c490c224-fcfd-4013-b163-70a7faaa8ce2/raw/P03-naive-10-r1-phase-2-1b-p03-10-naive-6f482a33-81a5-4757-8bb1-adad9f439d27.json",
+      "afterStressRunId": "phase-2-2b-4r-p03-10-naive-0675d83c-af85-4f73-bf37-39f9afaf72af",
+      "structuralOwnership": "OWNERSHIP_PASS",
+      "ownership": {
+        "operationFamily": "CURRENT",
+        "logicalKeys": 1,
+        "physicalOwners": 1,
+        "waiters": 9,
+        "currentComputes": 1,
+        "verificationComputes": 0,
+        "duplicateComputes": 0,
+        "duplicateArtifactWrites": 0
+      },
+      "metrics": {
+        "forecastComputeCount": {
+          "before": 10,
+          "after": 1,
+          "difference": -9,
+          "reductionRatio": 0.9
+        },
+        "duplicateComputeCount": {
+          "before": 9,
+          "after": 0,
+          "difference": -9,
+          "reductionRatio": 1
+        },
+        "duplicateArtifactWriteCount": {
+          "before": 9,
+          "after": 0,
+          "difference": -9,
+          "reductionRatio": 1
+        },
+        "latencyP50Ms": {
+          "before": 11083.3905,
+          "after": 6440.290563,
+          "difference": -4643.099937,
+          "reductionRatio": 0.418924
+        },
+        "latencyP95Ms": {
+          "before": 11119.708517,
+          "after": 6442.594392,
+          "difference": -4677.114125,
+          "reductionRatio": 0.420615
+        },
+        "latencyP99Ms": {
+          "before": 11120.101036,
+          "after": 6443.838012,
+          "difference": -4676.263024,
+          "reductionRatio": 0.420523
+        },
+        "throughputRps": {
+          "before": 0.896582,
+          "after": 1.551793,
+          "difference": 0.655211,
+          "reductionRatio": -0.730788
+        },
+        "cpuSeconds": {
+          "before": 2.529759,
+          "after": 2.156525,
+          "difference": -0.373234,
+          "reductionRatio": 0.147537
+        },
+        "peakMemoryMb": {
+          "before": 91.703125,
+          "after": 493.25,
+          "difference": 401.546875,
+          "reductionRatio": -4.37877
+        }
+      }
+    },
+    {
+      "scenario": "P03",
+      "modelId": "damped_holt",
+      "concurrency": 10,
+      "beforeAuthority": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T122252-191Z-c490c224-fcfd-4013-b163-70a7faaa8ce2/raw/P03-damped_holt-10-r1-phase-2-1b-p03-10-damped_holt-f12468c6-5566-4133-8e22-1174f32070ba.json",
+      "afterStressRunId": "phase-2-2b-4r-p03-10-damped_holt-8ef81d10-51bf-4718-b63f-d6cc30d39185",
+      "structuralOwnership": "OWNERSHIP_PASS",
+      "ownership": {
+        "operationFamily": "CURRENT",
+        "logicalKeys": 1,
+        "physicalOwners": 1,
+        "waiters": 9,
+        "currentComputes": 1,
+        "verificationComputes": 0,
+        "duplicateComputes": 0,
+        "duplicateArtifactWrites": 0
+      },
+      "metrics": {
+        "forecastComputeCount": {
+          "before": 10,
+          "after": 1,
+          "difference": -9,
+          "reductionRatio": 0.9
+        },
+        "duplicateComputeCount": {
+          "before": 9,
+          "after": 0,
+          "difference": -9,
+          "reductionRatio": 1
+        },
+        "duplicateArtifactWriteCount": {
+          "before": 9,
+          "after": 0,
+          "difference": -9,
+          "reductionRatio": 1
+        },
+        "latencyP50Ms": {
+          "before": 7566.174604,
+          "after": 5943.849979,
+          "difference": -1622.324625,
+          "reductionRatio": 0.214418
+        },
+        "latencyP95Ms": {
+          "before": 7617.066388,
+          "after": 5946.288987,
+          "difference": -1670.777401,
+          "reductionRatio": 0.219347
+        },
+        "latencyP99Ms": {
+          "before": 7617.733978,
+          "after": 5947.591797,
+          "difference": -1670.142181,
+          "reductionRatio": 0.219244
+        },
+        "throughputRps": {
+          "before": 1.311962,
+          "after": 1.68126,
+          "difference": 0.369298,
+          "reductionRatio": -0.281485
+        },
+        "cpuSeconds": {
+          "before": 2.333059,
+          "after": 2.138173,
+          "difference": -0.194886,
+          "reductionRatio": 0.083532
+        },
+        "peakMemoryMb": {
+          "before": 388.328125,
+          "after": 498.8125,
+          "difference": 110.484375,
+          "reductionRatio": -0.284513
+        }
+      }
+    },
+    {
+      "scenario": "P03",
+      "modelId": "ets",
+      "concurrency": 10,
+      "beforeAuthority": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T122252-191Z-c490c224-fcfd-4013-b163-70a7faaa8ce2/raw/P03-ets-10-r1-phase-2-1b-p03-10-ets-1e29769a-bd43-4449-a0a0-f5284a4044fc.json",
+      "afterStressRunId": "phase-2-2b-4r-p03-10-ets-e94f2b94-6658-471b-aaff-84b424cb62c6",
+      "structuralOwnership": "OWNERSHIP_PASS",
+      "ownership": {
+        "operationFamily": "CURRENT",
+        "logicalKeys": 1,
+        "physicalOwners": 1,
+        "waiters": 9,
+        "currentComputes": 1,
+        "verificationComputes": 0,
+        "duplicateComputes": 0,
+        "duplicateArtifactWrites": 0
+      },
+      "metrics": {
+        "forecastComputeCount": {
+          "before": 10,
+          "after": 1,
+          "difference": -9,
+          "reductionRatio": 0.9
+        },
+        "duplicateComputeCount": {
+          "before": 9,
+          "after": 0,
+          "difference": -9,
+          "reductionRatio": 1
+        },
+        "duplicateArtifactWriteCount": {
+          "before": 9,
+          "after": 0,
+          "difference": -9,
+          "reductionRatio": 1
+        },
+        "latencyP50Ms": {
+          "before": 11335.378917,
+          "after": 6647.937667,
+          "difference": -4687.44125,
+          "reductionRatio": 0.413523
+        },
+        "latencyP95Ms": {
+          "before": 11449.958552,
+          "after": 6650.410046,
+          "difference": -4799.548506,
+          "reductionRatio": 0.419176
+        },
+        "latencyP99Ms": {
+          "before": 11456.834778,
+          "after": 6651.740876,
+          "difference": -4805.093902,
+          "reductionRatio": 0.419409
+        },
+        "throughputRps": {
+          "before": 0.872448,
+          "after": 1.503289,
+          "difference": 0.630841,
+          "reductionRatio": -0.72307
+        },
+        "cpuSeconds": {
+          "before": 2.447941,
+          "after": 2.211965,
+          "difference": -0.235976,
+          "reductionRatio": 0.096398
+        },
+        "peakMemoryMb": {
+          "before": 83.90625,
+          "after": 498.140625,
+          "difference": 414.234375,
+          "reductionRatio": -4.936872
+        }
+      }
+    },
+    {
+      "scenario": "P03",
+      "modelId": "arima",
+      "concurrency": 10,
+      "beforeAuthority": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T122252-191Z-c490c224-fcfd-4013-b163-70a7faaa8ce2/raw/P03-arima-10-r1-phase-2-1b-p03-10-arima-3756f452-e740-451e-b7ed-d357656c4867.json",
+      "afterStressRunId": "phase-2-2b-4r-p03-10-arima-5535c5fe-7d75-4865-a8e2-856f79d37b0c",
+      "structuralOwnership": "OWNERSHIP_PASS",
+      "ownership": {
+        "operationFamily": "CURRENT",
+        "logicalKeys": 1,
+        "physicalOwners": 1,
+        "waiters": 9,
+        "currentComputes": 1,
+        "verificationComputes": 0,
+        "duplicateComputes": 0,
+        "duplicateArtifactWrites": 0
+      },
+      "metrics": {
+        "forecastComputeCount": {
+          "before": 10,
+          "after": 1,
+          "difference": -9,
+          "reductionRatio": 0.9
+        },
+        "duplicateComputeCount": {
+          "before": 9,
+          "after": 0,
+          "difference": -9,
+          "reductionRatio": 1
+        },
+        "duplicateArtifactWriteCount": {
+          "before": 9,
+          "after": 0,
+          "difference": -9,
+          "reductionRatio": 1
+        },
+        "latencyP50Ms": {
+          "before": 15255.37598,
+          "after": 9339.613709,
+          "difference": -5915.762271,
+          "reductionRatio": 0.387782
+        },
+        "latencyP95Ms": {
+          "before": 15299.586373,
+          "after": 9341.554719,
+          "difference": -5958.031654,
+          "reductionRatio": 0.389424
+        },
+        "latencyP99Ms": {
+          "before": 15300.057808,
+          "after": 9342.591444,
+          "difference": -5957.466364,
+          "reductionRatio": 0.389375
+        },
+        "throughputRps": {
+          "before": 0.65341,
+          "after": 1.070336,
+          "difference": 0.416926,
+          "reductionRatio": -0.638077
+        },
+        "cpuSeconds": {
+          "before": 2.433862,
+          "after": 2.172397,
+          "difference": -0.261465,
+          "reductionRatio": 0.107428
+        },
+        "peakMemoryMb": {
+          "before": 88.765625,
+          "after": 497.4375,
+          "difference": 408.671875,
+          "reductionRatio": -4.603943
+        }
+      }
+    },
+    {
+      "scenario": "P04",
+      "modelId": "naive",
+      "concurrency": 10,
+      "beforeAuthority": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/raw/P04-naive-10-r1-phase-2-1b-p04-10-naive-0f670b0b-da7b-4bdb-bcda-184078771b43.json",
+      "afterStressRunId": "phase-2-2b-4r-p04-10-naive-940e139d-b75c-4f22-acf3-b297d0c69f54",
+      "structuralOwnership": "OWNERSHIP_PASS",
+      "ownership": {
+        "operationFamily": "CURRENT",
+        "logicalKeys": 3,
+        "physicalOwners": 3,
+        "waiters": 7,
+        "currentComputes": 3,
+        "verificationComputes": 0,
+        "duplicateComputes": 0,
+        "duplicateArtifactWrites": 0
+      },
+      "metrics": {
+        "forecastComputeCount": {
+          "before": 10,
+          "after": 3,
+          "difference": -7,
+          "reductionRatio": 0.7
+        },
+        "duplicateComputeCount": {
+          "before": 7,
+          "after": 0,
+          "difference": -7,
+          "reductionRatio": 1
+        },
+        "duplicateArtifactWriteCount": {
+          "before": 7,
+          "after": 0,
+          "difference": -7,
+          "reductionRatio": 1
+        },
+        "latencyP50Ms": {
+          "before": 7998.456792,
+          "after": 6972.70075,
+          "difference": -1025.756042,
+          "reductionRatio": 0.128244
+        },
+        "latencyP95Ms": {
+          "before": 8308.7819,
+          "after": 7408.277656,
+          "difference": -900.504244,
+          "reductionRatio": 0.10838
+        },
+        "latencyP99Ms": {
+          "before": 8314.18718,
+          "after": 7410.094831,
+          "difference": -904.092349,
+          "reductionRatio": 0.108741
+        },
+        "throughputRps": {
+          "before": 1.202568,
+          "after": 1.349427,
+          "difference": 0.146859,
+          "reductionRatio": -0.122121
+        },
+        "cpuSeconds": {
+          "before": 2.735395,
+          "after": 1.872104,
+          "difference": -0.863291,
+          "reductionRatio": 0.3156
+        },
+        "peakMemoryMb": {
+          "before": 432.375,
+          "after": 385.1875,
+          "difference": -47.1875,
+          "reductionRatio": 0.109136
+        }
+      }
+    },
+    {
+      "scenario": "P04",
+      "modelId": "damped_holt",
+      "concurrency": 10,
+      "beforeAuthority": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/raw/P04-damped_holt-10-r1-phase-2-1b-p04-10-damped_holt-bcf918c3-8a65-4f8b-a4c7-9c1b42f37464.json",
+      "afterStressRunId": "phase-2-2b-4r-p04-10-damped_holt-bf40d161-220b-423b-8a84-1cbf9db40aa3",
+      "structuralOwnership": "OWNERSHIP_PASS",
+      "ownership": {
+        "operationFamily": "CURRENT",
+        "logicalKeys": 3,
+        "physicalOwners": 3,
+        "waiters": 7,
+        "currentComputes": 3,
+        "verificationComputes": 0,
+        "duplicateComputes": 0,
+        "duplicateArtifactWrites": 0
+      },
+      "metrics": {
+        "forecastComputeCount": {
+          "before": 10,
+          "after": 3,
+          "difference": -7,
+          "reductionRatio": 0.7
+        },
+        "duplicateComputeCount": {
+          "before": 7,
+          "after": 0,
+          "difference": -7,
+          "reductionRatio": 1
+        },
+        "duplicateArtifactWriteCount": {
+          "before": 7,
+          "after": 0,
+          "difference": -7,
+          "reductionRatio": 1
+        },
+        "latencyP50Ms": {
+          "before": 6199.421875,
+          "after": 5961.301916,
+          "difference": -238.119959,
+          "reductionRatio": 0.03841
+        },
+        "latencyP95Ms": {
+          "before": 6524.036168,
+          "after": 6192.64459,
+          "difference": -331.391578,
+          "reductionRatio": 0.050795
+        },
+        "latencyP99Ms": {
+          "before": 6527.204334,
+          "after": 6193.876885,
+          "difference": -333.327449,
+          "reductionRatio": 0.051067
+        },
+        "throughputRps": {
+          "before": 1.530922,
+          "after": 1.614416,
+          "difference": 0.083494,
+          "reductionRatio": -0.054538
+        },
+        "cpuSeconds": {
+          "before": 2.622986,
+          "after": 1.556495,
+          "difference": -1.066491,
+          "reductionRatio": 0.406594
+        },
+        "peakMemoryMb": {
+          "before": 724.546875,
+          "after": 481.125,
+          "difference": -243.421875,
+          "reductionRatio": 0.335964
+        }
+      }
+    },
+    {
+      "scenario": "P04",
+      "modelId": "ets",
+      "concurrency": 10,
+      "beforeAuthority": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/raw/P04-ets-10-r1-phase-2-1b-p04-10-ets-996b210f-e17c-4cc8-bd6d-9d48db10cb38.json",
+      "afterStressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "structuralOwnership": "OWNERSHIP_PASS",
+      "ownership": {
+        "operationFamily": "CURRENT",
+        "logicalKeys": 3,
+        "physicalOwners": 3,
+        "waiters": 7,
+        "currentComputes": 3,
+        "verificationComputes": 0,
+        "duplicateComputes": 0,
+        "duplicateArtifactWrites": 0
+      },
+      "metrics": {
+        "forecastComputeCount": {
+          "before": 10,
+          "after": 3,
+          "difference": -7,
+          "reductionRatio": 0.7
+        },
+        "duplicateComputeCount": {
+          "before": 7,
+          "after": 0,
+          "difference": -7,
+          "reductionRatio": 1
+        },
+        "duplicateArtifactWriteCount": {
+          "before": 7,
+          "after": 0,
+          "difference": -7,
+          "reductionRatio": 1
+        },
+        "latencyP50Ms": {
+          "before": 6684.081562,
+          "after": 6235.129729,
+          "difference": -448.951833,
+          "reductionRatio": 0.067167
+        },
+        "latencyP95Ms": {
+          "before": 6753.860275,
+          "after": 6326.239703,
+          "difference": -427.620572,
+          "reductionRatio": 0.063315
+        },
+        "latencyP99Ms": {
+          "before": 6764.636155,
+          "after": 6327.462908,
+          "difference": -437.173247,
+          "reductionRatio": 0.064626
+        },
+        "throughputRps": {
+          "before": 1.47682,
+          "after": 1.580335,
+          "difference": 0.103515,
+          "reductionRatio": -0.070093
+        },
+        "cpuSeconds": {
+          "before": 2.725313,
+          "after": 1.633654,
+          "difference": -1.091659,
+          "reductionRatio": 0.400563
+        },
+        "peakMemoryMb": {
+          "before": 678.171875,
+          "after": 477.796875,
+          "difference": -200.375,
+          "reductionRatio": 0.295463
+        }
+      }
+    },
+    {
+      "scenario": "P04",
+      "modelId": "arima",
+      "concurrency": 10,
+      "beforeAuthority": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/raw/P04-arima-10-r1-phase-2-1b-p04-10-arima-ac7fc827-25a0-4e20-9ce0-1a8e6502d9bd.json",
+      "afterStressRunId": "phase-2-2b-4r-p04-10-arima-e37febf2-de27-4443-8e9a-5c231b1dfbb8",
+      "structuralOwnership": "OWNERSHIP_PASS",
+      "ownership": {
+        "operationFamily": "CURRENT",
+        "logicalKeys": 3,
+        "physicalOwners": 3,
+        "waiters": 7,
+        "currentComputes": 3,
+        "verificationComputes": 0,
+        "duplicateComputes": 0,
+        "duplicateArtifactWrites": 0
+      },
+      "metrics": {
+        "forecastComputeCount": {
+          "before": 10,
+          "after": 3,
+          "difference": -7,
+          "reductionRatio": 0.7
+        },
+        "duplicateComputeCount": {
+          "before": 7,
+          "after": 0,
+          "difference": -7,
+          "reductionRatio": 1
+        },
+        "duplicateArtifactWriteCount": {
+          "before": 7,
+          "after": 0,
+          "difference": -7,
+          "reductionRatio": 1
+        },
+        "latencyP50Ms": {
+          "before": 11682.324896,
+          "after": 9044.327271,
+          "difference": -2637.997625,
+          "reductionRatio": 0.225811
+        },
+        "latencyP95Ms": {
+          "before": 22954.354036,
+          "after": 19378.73461,
+          "difference": -3575.619426,
+          "reductionRatio": 0.155771
+        },
+        "latencyP99Ms": {
+          "before": 22979.635741,
+          "after": 19380.147956,
+          "difference": -3599.487785,
+          "reductionRatio": 0.156638
+        },
+        "throughputRps": {
+          "before": 0.434983,
+          "after": 0.515982,
+          "difference": 0.080999,
+          "reductionRatio": -0.186212
+        },
+        "cpuSeconds": {
+          "before": 2.905808,
+          "after": 1.676705,
+          "difference": -1.229103,
+          "reductionRatio": 0.422981
+        },
+        "peakMemoryMb": {
+          "before": 680.953125,
+          "after": 523.34375,
+          "difference": -157.609375,
+          "reductionRatio": 0.231454
+        }
+      }
+    },
+    {
+      "scenario": "P04",
+      "modelId": "naive",
+      "concurrency": 100,
+      "beforeAuthority": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/raw/P04-naive-100-r1-phase-2-1b-p04-100-naive-3d86cb61-7102-4917-b590-2fe0189de635.json",
+      "afterStressRunId": "phase-2-2b-4r-p04-100-naive-9dc8f29f-1cb5-4c31-9236-30f407c00d86",
+      "structuralOwnership": "OWNERSHIP_PASS",
+      "ownership": {
+        "operationFamily": "CURRENT",
+        "logicalKeys": 3,
+        "physicalOwners": 3,
+        "waiters": 97,
+        "currentComputes": 3,
+        "verificationComputes": 0,
+        "duplicateComputes": 0,
+        "duplicateArtifactWrites": 0
+      },
+      "metrics": {
+        "forecastComputeCount": {
+          "before": 100,
+          "after": 3,
+          "difference": -97,
+          "reductionRatio": 0.97
+        },
+        "duplicateComputeCount": {
+          "before": 97,
+          "after": 0,
+          "difference": -97,
+          "reductionRatio": 1
+        },
+        "duplicateArtifactWriteCount": {
+          "before": 96,
+          "after": 0,
+          "difference": -96,
+          "reductionRatio": 1
+        },
+        "latencyP50Ms": {
+          "before": 108396.189521,
+          "after": 119061.11252,
+          "difference": 10664.922999,
+          "reductionRatio": -0.098388
+        },
+        "latencyP95Ms": {
+          "before": 114220.932733,
+          "after": 120785.079225,
+          "difference": 6564.146492,
+          "reductionRatio": -0.057469
+        },
+        "latencyP99Ms": {
+          "before": 114272.199497,
+          "after": 120786.022136,
+          "difference": 6513.822639,
+          "reductionRatio": -0.057003
+        },
+        "throughputRps": {
+          "before": 0.874948,
+          "after": 0.827888,
+          "difference": -0.04706,
+          "reductionRatio": 0.053786
+        },
+        "cpuSeconds": {
+          "before": 24.602086,
+          "after": 11.975732,
+          "difference": -12.626354,
+          "reductionRatio": 0.513223
+        },
+        "peakMemoryMb": {
+          "before": 571.34375,
+          "after": 268.4375,
+          "difference": -302.90625,
+          "reductionRatio": 0.530165
+        }
+      }
+    },
+    {
+      "scenario": "P04",
+      "modelId": "damped_holt",
+      "concurrency": 100,
+      "beforeAuthority": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/raw/P04-damped_holt-100-r1-phase-2-1b-p04-100-damped_holt-904d763e-c605-4f95-ab7c-1100dde98295.json",
+      "afterStressRunId": "phase-2-2b-4r-p04-100-damped_holt-5af9e891-48e2-4bd0-83fc-fe673dbd7d55",
+      "structuralOwnership": "OWNERSHIP_PASS",
+      "ownership": {
+        "operationFamily": "CURRENT",
+        "logicalKeys": 3,
+        "physicalOwners": 3,
+        "waiters": 97,
+        "currentComputes": 3,
+        "verificationComputes": 0,
+        "duplicateComputes": 0,
+        "duplicateArtifactWrites": 0
+      },
+      "metrics": {
+        "forecastComputeCount": {
+          "before": 100,
+          "after": 3,
+          "difference": -97,
+          "reductionRatio": 0.97
+        },
+        "duplicateComputeCount": {
+          "before": 97,
+          "after": 0,
+          "difference": -97,
+          "reductionRatio": 1
+        },
+        "duplicateArtifactWriteCount": {
+          "before": 97,
+          "after": 0,
+          "difference": -97,
+          "reductionRatio": 1
+        },
+        "latencyP50Ms": {
+          "before": 90846.382167,
+          "after": 115028.481687,
+          "difference": 24182.09952,
+          "reductionRatio": -0.266187
+        },
+        "latencyP95Ms": {
+          "before": 99069.35559,
+          "after": 115924.697233,
+          "difference": 16855.341643,
+          "reductionRatio": -0.170137
+        },
+        "latencyP99Ms": {
+          "before": 99114.132989,
+          "after": 115925.638885,
+          "difference": 16811.505896,
+          "reductionRatio": -0.169618
+        },
+        "throughputRps": {
+          "before": 1.00876,
+          "after": 0.862595,
+          "difference": -0.146165,
+          "reductionRatio": 0.144896
+        },
+        "cpuSeconds": {
+          "before": 24.267801,
+          "after": 11.604588,
+          "difference": -12.663213,
+          "reductionRatio": 0.521811
+        },
+        "peakMemoryMb": {
+          "before": 815.34375,
+          "after": 268.203125,
+          "difference": -547.140625,
+          "reductionRatio": 0.671055
+        }
+      }
+    },
+    {
+      "scenario": "P04",
+      "modelId": "ets",
+      "concurrency": 100,
+      "beforeAuthority": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/raw/P04-ets-100-r1-phase-2-1b-p04-100-ets-bdeca95d-731e-430d-b0ec-d1690f05dd74.json",
+      "afterStressRunId": "phase-2-2b-4r-p04-100-ets-0a66d126-65a1-46d9-bdbd-6a460a216bc9",
+      "structuralOwnership": "OWNERSHIP_PASS",
+      "ownership": {
+        "operationFamily": "CURRENT",
+        "logicalKeys": 3,
+        "physicalOwners": 3,
+        "waiters": 97,
+        "currentComputes": 3,
+        "verificationComputes": 0,
+        "duplicateComputes": 0,
+        "duplicateArtifactWrites": 0
+      },
+      "metrics": {
+        "forecastComputeCount": {
+          "before": 100,
+          "after": 3,
+          "difference": -97,
+          "reductionRatio": 0.97
+        },
+        "duplicateComputeCount": {
+          "before": 97,
+          "after": 0,
+          "difference": -97,
+          "reductionRatio": 1
+        },
+        "duplicateArtifactWriteCount": {
+          "before": 94,
+          "after": 0,
+          "difference": -94,
+          "reductionRatio": 1
+        },
+        "latencyP50Ms": {
+          "before": 113435.478521,
+          "after": 116845.388708,
+          "difference": 3409.910187,
+          "reductionRatio": -0.03006
+        },
+        "latencyP95Ms": {
+          "before": 119257.101713,
+          "after": 117068.760048,
+          "difference": -2188.341665,
+          "reductionRatio": 0.01835
+        },
+        "latencyP99Ms": {
+          "before": 119298.082152,
+          "after": 117069.698768,
+          "difference": -2228.383384,
+          "reductionRatio": 0.018679
+        },
+        "throughputRps": {
+          "before": 0.838086,
+          "after": 0.854167,
+          "difference": 0.016081,
+          "reductionRatio": -0.019188
+        },
+        "cpuSeconds": {
+          "before": 24.218337,
+          "after": 11.159485,
+          "difference": -13.058852,
+          "reductionRatio": 0.539213
+        },
+        "peakMemoryMb": {
+          "before": 712.828125,
+          "after": 267.90625,
+          "difference": -444.921875,
+          "reductionRatio": 0.624164
+        }
+      }
+    },
+    {
+      "scenario": "P04",
+      "modelId": "arima",
+      "concurrency": 100,
+      "beforeAuthority": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/raw/P04-arima-100-r1-phase-2-1b-p04-100-arima-a32d94ba-2e42-49b0-a708-38215631a279.json",
+      "afterStressRunId": "phase-2-2b-4r-p04-100-arima-3d9ddc92-dbff-4138-ac55-a584fa8341bd",
+      "structuralOwnership": "OWNERSHIP_PASS",
+      "ownership": {
+        "operationFamily": "CURRENT",
+        "logicalKeys": 3,
+        "physicalOwners": 3,
+        "waiters": 97,
+        "currentComputes": 3,
+        "verificationComputes": 0,
+        "duplicateComputes": 0,
+        "duplicateArtifactWrites": 0
+      },
+      "metrics": {
+        "forecastComputeCount": {
+          "before": 100,
+          "after": 3,
+          "difference": -97,
+          "reductionRatio": 0.97
+        },
+        "duplicateComputeCount": {
+          "before": 97,
+          "after": 0,
+          "difference": -97,
+          "reductionRatio": 1
+        },
+        "duplicateArtifactWriteCount": {
+          "before": 97,
+          "after": 0,
+          "difference": -97,
+          "reductionRatio": 1
+        },
+        "latencyP50Ms": {
+          "before": 177126.702813,
+          "after": 60722.685687,
+          "difference": -116404.017126,
+          "reductionRatio": 0.657179
+        },
+        "latencyP95Ms": {
+          "before": 264707.643479,
+          "after": 70393.93989,
+          "difference": -194313.703589,
+          "reductionRatio": 0.734069
+        },
+        "latencyP99Ms": {
+          "before": 264825.447662,
+          "after": 70394.918472,
+          "difference": -194430.52919,
+          "reductionRatio": 0.734184
+        },
+        "throughputRps": {
+          "before": 0.377581,
+          "after": 1.420485,
+          "difference": 1.042904,
+          "reductionRatio": -2.762067
+        },
+        "cpuSeconds": {
+          "before": 26.616905,
+          "after": 10.178744,
+          "difference": -16.438161,
+          "reductionRatio": 0.617583
+        },
+        "peakMemoryMb": {
+          "before": 306.359375,
+          "after": 329.578125,
+          "difference": 23.21875,
+          "reductionRatio": -0.075789
+        }
+      }
+    },
+    {
+      "scenario": "P05",
+      "modelId": "ets",
+      "concurrency": 10,
+      "beforeAuthority": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/raw/P05-ets-10-r1-phase-2-1b-p05-10-ets-0bdd0966-48fd-40e1-b107-c2133b302849.json",
+      "afterStressRunId": "phase-2-2b-4r-p05-10-ets-e1f87559-613d-4aa5-98ff-7866c58a14a8",
+      "structuralOwnership": "OWNERSHIP_PASS",
+      "ownership": {
+        "operationFamily": "CURRENT",
+        "logicalKeys": 1,
+        "physicalOwners": 1,
+        "waiters": 9,
+        "currentComputes": 1,
+        "verificationComputes": 0,
+        "duplicateComputes": 0,
+        "duplicateArtifactWrites": 0
+      },
+      "metrics": {
+        "forecastComputeCount": {
+          "before": 10,
+          "after": 1,
+          "difference": -9,
+          "reductionRatio": 0.9
+        },
+        "duplicateComputeCount": {
+          "before": 9,
+          "after": 0,
+          "difference": -9,
+          "reductionRatio": 1
+        },
+        "duplicateArtifactWriteCount": {
+          "before": 9,
+          "after": 0,
+          "difference": -9,
+          "reductionRatio": 1
+        },
+        "latencyP50Ms": {
+          "before": 7691.163749,
+          "after": 6674.325375,
+          "difference": -1016.838374,
+          "reductionRatio": 0.132209
+        },
+        "latencyP95Ms": {
+          "before": 7779.419492,
+          "after": 6676.325715,
+          "difference": -1103.093777,
+          "reductionRatio": 0.141796
+        },
+        "latencyP99Ms": {
+          "before": 7800.259532,
+          "after": 6677.38791,
+          "difference": -1122.871622,
+          "reductionRatio": 0.143953
+        },
+        "throughputRps": {
+          "before": 1.280632,
+          "after": 1.49753,
+          "difference": 0.216898,
+          "reductionRatio": -0.169368
+        },
+        "cpuSeconds": {
+          "before": 2.184094,
+          "after": 2.166619,
+          "difference": -0.017475,
+          "reductionRatio": 0.008001
+        },
+        "peakMemoryMb": {
+          "before": 664.71875,
+          "after": 668.78125,
+          "difference": 4.0625,
+          "reductionRatio": -0.006112
+        }
+      }
+    }
+  ],
+  "classifications": {
+    "structural": "CONFIRMED_AT_LAWFUL_REACHED_LEVELS_P04_THROUGH_100",
+    "currentStructuralEffect": "CONFIRMED",
+    "verificationStructuralEffect": "CONFIRMED",
+    "persistence": "DUPLICATE_WRITE_ELIMINATION_CONFIRMED_AT_LAWFUL_STRUCTURAL_LEVELS",
+    "ux": "MIXED_WITH_HIGH_CONCURRENCY_DEGRADATION",
+    "resource": "INCONCLUSIVE_DUE_TO_SETTLEMENT_AND_OBSERVABILITY_GAPS",
+    "capability": "PARTIAL_LEVEL_SPECIFIC",
+    "provider": "NOT_MEASURED_AS_SAVINGS",
+    "crossInstanceDuplicatePrevention": "NOT_PROVEN"
+  },
+  "capability": {
+    "P01": 100,
+    "P02": 100,
+    "P03": 10,
+    "P04": 100,
+    "P05": 10,
+    "P06": 100,
+    "P07": 100,
+    "P08": 10,
+    "P09": 100,
+    "P10": "NO_FULLY_ACCEPTED_B4R_LEVEL",
+    "P11": 10
+  },
+  "settlementBlocks": [
+    {
+      "scenario": "P09",
+      "concurrency": 1000,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "MANDATORY_SETTLEMENT_FAILED",
+      "correctnessPassed": false,
+      "successes": 234,
+      "failures": 766,
+      "timeouts": 766,
+      "cooldownDurationMs": 30076,
+      "postCooldownRssMb": 1461.234375,
+      "applicationDbPool": {
+        "activeConnections": 17,
+        "idleConnections": 0,
+        "waitingRequests": 17,
+        "totalConnections": 17
+      },
+      "safetyRules": [
+        "SAFE-COOLDOWN",
+        "SAFE-DATABASE"
+      ],
+      "classification": "DEGRADED_TIMEOUT_AND_DB_POOL_SETTLEMENT_BLOCK"
+    },
+    {
+      "scenario": "P10",
+      "concurrency": 10,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "MANDATORY_SETTLEMENT_FAILED",
+      "correctnessPassed": true,
+      "successes": 10,
+      "failures": 0,
+      "timeouts": 0,
+      "cooldownDurationMs": 30055,
+      "postCooldownRssMb": 2798.078125,
+      "applicationDbPool": {
+        "activeConnections": 15,
+        "idleConnections": 1,
+        "waitingRequests": 14,
+        "totalConnections": 16
+      },
+      "safetyRules": [
+        "SAFE-COOLDOWN",
+        "SAFE-DATABASE"
+      ],
+      "classification": "CORRECT_PRE_SETTLEMENT_DB_POOL_SETTLEMENT_BLOCK"
+    }
+  ],
+  "remainingBottlenecks": [
+    "HTTP_APPLICATION_CAPACITY_BOUND",
+    "DB_POOL_SETTLEMENT_BOUND",
+    "REQUEST_TIMEOUT_BOUND:P09",
+    "PREPARED_READ_LATENCY_BOUND:P10",
+    "VERIFICATION_BACKTEST_BOUND",
+    "RESOURCE_OBSERVABILITY_BOUND",
+    "DISTRIBUTED_OWNERSHIP_NOT_PROVEN"
+  ],
+  "scenarios": {
+    "P03": {
+      "structural": "OWNERSHIP_PASS_AT_10",
+      "beforeComputesPerModel": 10,
+      "afterComputesPerModel": 1
+    },
+    "P04": {
+      "structural": "OWNERSHIP_PASS_AT_10_AND_100",
+      "beforeComputes": {
+        "10": 10,
+        "100": 100
+      },
+      "afterComputes": {
+        "10": 3,
+        "100": 3
+      },
+      "duplicateComputesAfter": 0
+    },
+    "P05": {
+      "structural": "OWNERSHIP_PASS_AT_10",
+      "providerSavings": "NOT_COMPARABLE"
+    },
+    "P08": {
+      "structural": "VERIFICATION_OWNERSHIP_PASS_AT_10",
+      "performance": "STRUCTURALLY_COMPARABLE_ONLY"
+    },
+    "P11": {
+      "structural": "CURRENT_OWNERSHIP_PASS_AT_10",
+      "performance": "STRUCTURALLY_COMPARABLE_ONLY"
+    }
+  }
+}

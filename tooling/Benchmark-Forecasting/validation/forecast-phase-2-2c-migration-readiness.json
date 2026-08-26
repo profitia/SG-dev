@@ -1,0 +1,289 @@
+{
+  "task": "FORECAST_PHASE_2_2C_MIGRATION_READINESS",
+  "generatedAt": "2026-08-25T15:40:15.900Z",
+  "status": "PASS",
+  "taskAttributedPathCount": 31,
+  "newNestedGitRepositories": 0,
+  "newExternalSourceRepositories": 0,
+  "paths": [
+    {
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/current/route.ts",
+      "change": "MODIFIED",
+      "logicalOwner": "Dashboard P10 Route",
+      "tracking": "untracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Default-off request and span observation only."
+    },
+    {
+      "path": "apps/dashboard-preview/app/api/components/route.ts",
+      "change": "MODIFIED",
+      "logicalOwner": "Dashboard P09 Route",
+      "tracking": "tracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Default-off request and span observation only."
+    },
+    {
+      "path": "apps/dashboard-preview/app/api/series/route.ts",
+      "change": "MODIFIED",
+      "logicalOwner": "Dashboard P09 Route",
+      "tracking": "tracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Default-off request and span observation only."
+    },
+    {
+      "path": "apps/dashboard-preview/lib/benchmark-forecast/runtime-query.ts",
+      "change": "MODIFIED",
+      "logicalOwner": "Dashboard Prepared Read",
+      "tracking": "untracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Default-off DB operation timing only."
+    },
+    {
+      "path": "apps/dashboard-preview/lib/phase-2-2c/diagnostics.ts",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Diagnostics",
+      "tracking": "untracked",
+      "classification": "TEST",
+      "includeInFutureSgDev": "NO",
+      "reason": "Diagnostic-only default-off helper."
+    },
+    {
+      "path": "apps/dashboard-preview/lib/raw-data/dashboard-record-query.ts",
+      "change": "MODIFIED",
+      "logicalOwner": "Dashboard Application Read",
+      "tracking": "tracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Default-off DB operation timing only."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/FORECAST_PHASE_2_2C_HTTP_CAPACITY_DIAGNOSIS.md",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Human Report",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Required 60-section report."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-1b-baseline.mjs",
+      "change": "MODIFIED",
+      "logicalOwner": "Stress Evidence Harness",
+      "tracking": "untracked",
+      "classification": "TEST",
+      "includeInFutureSgDev": "YES",
+      "reason": "One-cell command and diagnostic evidence capture; workload semantics unchanged."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2c-candidate-levers.json",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Required machine-readable diagnosis artifact."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2c-capacity-diagnosis.json",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Required machine-readable diagnosis artifact."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2c-db-connection-map.json",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Required machine-readable diagnosis artifact."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2c-final-gate.validator.mjs",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Gate Validator",
+      "tracking": "untracked",
+      "classification": "TEST",
+      "includeInFutureSgDev": "YES",
+      "reason": "Standalone final gate validator."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2c-finalize-evidence.mjs",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Finalizer",
+      "tracking": "untracked",
+      "classification": "TEST",
+      "includeInFutureSgDev": "YES",
+      "reason": "Deterministic evidence and gate finalizer."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2c-functional-regression.mjs",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Regression",
+      "tracking": "untracked",
+      "classification": "TEST",
+      "includeInFutureSgDev": "YES",
+      "reason": "Non-stress regression runner."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2c-p09-diagnosis.json",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Required machine-readable diagnosis artifact."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2c-p10-diagnosis.json",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Required machine-readable diagnosis artifact."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2c-phase-2-2d-handoff.json",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Required machine-readable diagnosis artifact."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2c-timeout-authority-map.json",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Required machine-readable diagnosis artifact."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2c-http-capacity-diagnosis.json",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Gate",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Required 84-condition machine gate."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2c-migration-readiness.json",
+      "change": "CREATED",
+      "logicalOwner": "Migration Readiness",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Required task-path classification."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2c/.DS_Store",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Raw Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Raw replay, state, log, or regression evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2c/diagnostic-analysis.json",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Raw Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Raw replay, state, log, or regression evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2c/execution-control/manifests/P10-ets-10-r1.json",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Raw Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Raw replay, state, log, or regression evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2c/execution-control/state-proofs/P10-ets-10-r1.json",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Raw Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Raw replay, state, log, or regression evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2c/functional-regression.json",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Raw Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Raw replay, state, log, or regression evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2c/replays/2026-08-25T152843-357Z-1641feee-5625-4d70-b0a6-8386b1e4bda1/aggregated/baseline-results.json",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Raw Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Raw replay, state, log, or regression evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2c/replays/2026-08-25T152843-357Z-1641feee-5625-4d70-b0a6-8386b1e4bda1/diagnostics/dashboard-preview.log",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Raw Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Raw replay, state, log, or regression evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2c/replays/2026-08-25T152843-357Z-1641feee-5625-4d70-b0a6-8386b1e4bda1/diagnostics/sg-runtime.log",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Raw Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Raw replay, state, log, or regression evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2c/replays/2026-08-25T152843-357Z-1641feee-5625-4d70-b0a6-8386b1e4bda1/manifests/completion-manifest.json",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Raw Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Raw replay, state, log, or regression evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2c/replays/2026-08-25T152843-357Z-1641feee-5625-4d70-b0a6-8386b1e4bda1/manifests/execution-manifest.json",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Raw Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Raw replay, state, log, or regression evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2c/replays/2026-08-25T152843-357Z-1641feee-5625-4d70-b0a6-8386b1e4bda1/raw/P10-ets-10-r1-phase-2-2c-diagnostic-p10-10-ets-794d1242-0a76-40b4-9612-5b76616b7ccd.json",
+      "change": "CREATED",
+      "logicalOwner": "Phase 2.2C Raw Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Raw replay, state, log, or regression evidence."
+    }
+  ]
+}

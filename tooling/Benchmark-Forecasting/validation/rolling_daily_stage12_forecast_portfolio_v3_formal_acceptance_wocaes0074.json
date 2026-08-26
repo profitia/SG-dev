@@ -1,0 +1,155 @@
+{
+  "generatedAt": "2026-08-22T05:25:18.000Z",
+  "taskId": "rolling-daily-stage12-forecast-portfolio-v3-formal-acceptance",
+  "seriesId": "wocaes0074",
+  "targetBasis": "POINT_IN_TIME",
+  "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+  "methodVersion": "rolling-daily-point-in-time-v1",
+  "result": "PASS",
+  "scope": {
+    "stage12Only": true,
+    "stage13Started": false,
+    "championChosen": false,
+    "defaultModelChosen": false,
+    "automaticModelSelectionBuilt": false,
+    "pointForecastMathChanged": false,
+    "modelFitLogicChanged": false,
+    "arima17CandidatePolicyChanged": false,
+    "rollingDailyPointInTimeSemanticsChanged": false,
+    "benchmarkFinderTouched": false,
+    "appShellTouched": false,
+    "newForecastServiceCreated": false,
+    "newDatabaseObjectCreated": false,
+    "full681OriginReplayPerformed": false,
+    "deploymentPerformed": false
+  },
+  "preSteps": {
+    "presentationFreshnessContract": {
+      "status": "PASS",
+      "finding": "Current snapshots for all four models are aligned to the live lawful source fingerprint and latest source observation date after the repair pass.",
+      "evidence": {
+        "sourceLatestObservationDate": "2026-08-20",
+        "sourceHistoryFingerprint": "d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753",
+        "modelsAligned": ["naive", "damped_holt", "ets", "arima"],
+        "liveMaintenanceStatus": "SUCCEEDED",
+        "dashboardCurrentSnapshotSeam": "persisted snapshot consumer",
+        "note": "dashboard-preview still consumes persisted snapshots directly, but the repaired maintenance and snapshot refresh now keep those snapshots fingerprint-fresh for the accepted controlled series."
+      }
+    },
+    "crossModelPredictionBandParity": {
+      "status": "PASS",
+      "finding": "All four live point-in-time current snapshots now serve lawful pre-1M interpolation and empirical-anchor band coverage from the first forecast path date onward.",
+      "evidence": {
+        "firstPathDate": "2026-08-21",
+        "firstPathBandStatus": "AVAILABLE",
+        "firstPathBandSource": "INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS",
+        "anchorHorizons": ["1M", "3M", "6M", "12M"],
+        "modelsAligned": ["naive", "damped_holt", "ets", "arima"]
+      }
+    }
+  },
+  "repairs": [
+    {
+      "surface": "apps/sg-runtime/lib/forecast/rolling-daily-maintenance.ts",
+      "change": "Added a calibration-only refresh trigger when persisted mature records exist but the maintenance state watermark is missing, and forwarded canonical inputSource to the Python bridge request."
+    },
+    {
+      "surface": "tooling/Benchmark-Forecasting/scripts/export_rolling_daily_incremental_maintenance.py",
+      "change": "Added forced calibration-group rebuild support from existing mature records and normalized ISO timestamp parsing for persisted verificationObservedAt values."
+    },
+    {
+      "surface": "apps/dashboard-preview/lib/dashboard-variants/registry.ts",
+      "change": "Restored ARIMA to Forecast Portfolio v3 supported model metadata."
+    }
+  ],
+  "liveState": {
+    "models": [
+      {
+        "modelId": "naive",
+        "snapshotUpdatedAt": "2026-08-22T05:24:08.758Z",
+        "calibrationFreshnessStatus": "FRESH",
+        "calibrationAvailabilityStatus": "AVAILABLE",
+        "firstPathBandStatus": "AVAILABLE",
+        "firstPathBandSource": "INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS",
+        "calibrationGroups": {
+          "1M": 660,
+          "3M": 617,
+          "6M": 555,
+          "12M": 425
+        }
+      },
+      {
+        "modelId": "damped_holt",
+        "snapshotUpdatedAt": "2026-08-22T05:24:11.168Z",
+        "calibrationFreshnessStatus": "FRESH",
+        "calibrationAvailabilityStatus": "AVAILABLE",
+        "firstPathBandStatus": "AVAILABLE",
+        "firstPathBandSource": "INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS",
+        "calibrationGroups": {
+          "1M": 660,
+          "3M": 617,
+          "6M": 555,
+          "12M": 425
+        }
+      },
+      {
+        "modelId": "ets",
+        "snapshotUpdatedAt": "2026-08-22T05:24:13.357Z",
+        "calibrationFreshnessStatus": "FRESH",
+        "calibrationAvailabilityStatus": "AVAILABLE",
+        "firstPathBandStatus": "AVAILABLE",
+        "firstPathBandSource": "INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS",
+        "calibrationGroups": {
+          "1M": 660,
+          "3M": 617,
+          "6M": 555,
+          "12M": 425
+        }
+      },
+      {
+        "modelId": "arima",
+        "snapshotUpdatedAt": "2026-08-22T05:24:28.964Z",
+        "calibrationFreshnessStatus": "FRESH",
+        "calibrationAvailabilityStatus": "AVAILABLE",
+        "firstPathBandStatus": "AVAILABLE",
+        "firstPathBandSource": "INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS",
+        "calibrationGroups": {
+          "1M": 660,
+          "3M": 617,
+          "6M": 555,
+          "12M": 425
+        }
+      }
+    ]
+  },
+  "validation": {
+    "typescriptFocusedTests": {
+      "status": "PASS",
+      "command": "cd apps/sg-runtime && node --import tsx --test tests/rolling-daily-maintenance.test.ts",
+      "testsPassed": 8
+    },
+    "pythonFocusedTests": {
+      "status": "PASS",
+      "command": "cd tooling/Benchmark-Forecasting && .venv/bin/python -m unittest tests.test_rolling_daily_incremental_maintenance",
+      "testsPassed": 15
+    },
+    "dashboardFocusedTests": {
+      "status": "PASS",
+      "command": "cd apps/dashboard-preview && node --import tsx --test tests/benchmark-forecast-runtime-query.test.ts tests/forecast-portfolio-to-time-series-viewer.test.ts",
+      "testsPassed": 26
+    },
+    "liveMaintenanceRefresh": {
+      "status": "PASS",
+      "models": ["naive", "damped_holt", "ets", "arima"],
+      "newOriginCount": 0,
+      "maturedRecordCountPerModel": 7,
+      "calibrationRefreshCountPerModel": 4
+    },
+    "liveSnapshotRefresh": {
+      "status": "PASS",
+      "models": ["naive", "damped_holt", "ets", "arima"],
+      "parityStatus": "MATCHED"
+    }
+  },
+  "answer": "Yes. Forecast Portfolio v3 now faithfully, consistently, and transparently presents the accepted Forecast truth for all four models on the controlled point-in-time slice without recalculating or distorting that truth."
+}

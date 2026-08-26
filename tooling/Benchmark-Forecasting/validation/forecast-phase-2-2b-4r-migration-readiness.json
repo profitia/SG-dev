@@ -1,0 +1,77 @@
+{
+  "task": "FORECAST_PHASE_2_2B_4R_CONTROLLED_BEFORE_AFTER_COMPARATIVE_STRESS_RERUN",
+  "generatedAt": "2026-08-25T14:16:28.114Z",
+  "status": "PASS",
+  "taskAttributedPathCount": 13,
+  "paths": [
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-1b-baseline.mjs",
+      "classification": "TEST",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-4r-controlled-stress.mjs",
+      "classification": "TEST",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-4r-execution-plan.json",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-4r-functional-regression.mjs",
+      "classification": "TEST",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-4r-finalize-evidence.mjs",
+      "classification": "TEST",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-4r-final-gate.validator.mjs",
+      "classification": "TEST",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-4r-after-aggregate.json",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-4r-before-after-comparison.json",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-4r-phase-2-2c-handoff.json",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/FORECAST_PHASE_2_2B_4R_CONTROLLED_BEFORE_AFTER_COMPARATIVE_STRESS_RERUN.md",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2b-4r-controlled-comparative-stress.json",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2b-4r-migration-readiness.json",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-4r",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES"
+    }
+  ],
+  "originalB4HistoricalEvidenceChanged": false,
+  "runtimeSourceBehaviorChanged": false,
+  "newNestedGitRepositories": 0,
+  "newExternalSourceRepositories": 0
+}

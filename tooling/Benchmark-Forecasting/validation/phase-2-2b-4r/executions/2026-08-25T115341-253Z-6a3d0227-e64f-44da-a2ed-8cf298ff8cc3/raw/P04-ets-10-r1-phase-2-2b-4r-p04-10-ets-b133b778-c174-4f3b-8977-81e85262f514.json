@@ -1,0 +1,1876 @@
+{
+  "result": {
+    "contractVersion": 1,
+    "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+    "scenarioId": "P04",
+    "environmentId": "phase-2-1-local-isolated-v1",
+    "sourceRevision": "9fc9f81b5649140ff46e029f3381873a9fbb60e3",
+    "startedAt": "2026-08-25T12:07:28.760Z",
+    "endedAt": "2026-08-25T12:07:35.273Z",
+    "concurrency": 10,
+    "keyDistribution": "SMALL_POOL",
+    "loadShape": "SYNCHRONIZED_BURST",
+    "releaseSpreadMs": 3.915917,
+    "benchmark": "wocaes0074,wocaes0280,usnaac0169",
+    "datasetFingerprint": {
+      "seriesId": "wocaes0074",
+      "frequency": "DAILY",
+      "lawfulObservationCount": 10659,
+      "historyStart": "1985-10-01T00:00:00Z",
+      "historyEnd": "2026-08-20T00:00:00Z",
+      "historyFingerprint": "ebbcb638ce447e4813eac339ce2b45d7",
+      "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+      "horizon": "CONTRACT_DEFAULT"
+    },
+    "modelId": "ets",
+    "requestsStarted": 10,
+    "requestsCompleted": 10,
+    "successCount": 10,
+    "failureCount": 0,
+    "errorRate": 0,
+    "functionalOutcomes": {
+      "SUCCESS_COMPUTED": 10
+    },
+    "latencyMinMs": 5811.928916,
+    "latencyP50Ms": 6235.129729,
+    "latencyP90Ms": 6324.710696,
+    "latencyP95Ms": 6326.239703,
+    "latencyP99Ms": 6327.462908,
+    "latencyMaxMs": 6327.768709,
+    "latencyMeanMs": 6144.1436,
+    "throughputRps": 1.580335,
+    "successfulThroughputRps": 1.580335,
+    "cpuSeconds": 1.633654,
+    "peakMemoryMb": 477.796875,
+    "memoryDeltaAfterCooldownMb": -75.4375,
+    "dbQueryCount": null,
+    "dbWriteCount": 297,
+    "providerCallCount": 0,
+    "forecastComputeCount": 3,
+    "verificationComputeCount": 0,
+    "computeOwnerCount": 3,
+    "duplicateComputeCount": 0,
+    "duplicateComputeRatio": 0,
+    "duplicateArtifactWriteCount": 0,
+    "preparedHitCount": 0,
+    "preparedMissCount": 6,
+    "wallClockSeconds": 6.327773,
+    "classification": "HEALTHY",
+    "bottleneckAttribution": [],
+    "firstRunAfterStateSetup": true,
+    "repetitionNumber": 1,
+    "excluded": false,
+    "exclusionReason": "NOT_EXCLUDED",
+    "correctnessPassed": true,
+    "notes": []
+  },
+  "control": {
+    "valid": true,
+    "classification": "VALID_COMPLETED",
+    "continueEscalation": true,
+    "reason": null
+  },
+  "events": [
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:28.934Z",
+      "metrics": {
+        "cpuUserMicros": 27768,
+        "cpuSystemMicros": 3248,
+        "rssBytes": 79101952,
+        "heapUsedBytes": 14512760,
+        "heapTotalBytes": 21184512,
+        "externalBytes": 4731709,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:28.936Z",
+      "metrics": {
+        "cpuUserMicros": 2281,
+        "cpuSystemMicros": 377,
+        "rssBytes": 80232448,
+        "heapUsedBytes": 14758512,
+        "heapTotalBytes": 21184512,
+        "externalBytes": 4731749,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-3",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-3",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:28.937Z",
+      "metrics": {
+        "cpuUserMicros": 397,
+        "cpuSystemMicros": 41,
+        "rssBytes": 80265216,
+        "heapUsedBytes": 14797112,
+        "heapTotalBytes": 21184512,
+        "externalBytes": 4731749,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-4",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-4",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:28.937Z",
+      "metrics": {
+        "cpuUserMicros": 95,
+        "cpuSystemMicros": 20,
+        "rssBytes": 80281600,
+        "heapUsedBytes": 14820264,
+        "heapTotalBytes": 21184512,
+        "externalBytes": 4731749,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-5",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:28.937Z",
+      "metrics": {
+        "cpuUserMicros": 139,
+        "cpuSystemMicros": 11,
+        "rssBytes": 80314368,
+        "heapUsedBytes": 14847552,
+        "heapTotalBytes": 21184512,
+        "externalBytes": 4731749,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-6",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:28.937Z",
+      "metrics": {
+        "cpuUserMicros": 133,
+        "cpuSystemMicros": 24,
+        "rssBytes": 80347136,
+        "heapUsedBytes": 14877248,
+        "heapTotalBytes": 21184512,
+        "externalBytes": 4731749,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-7",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-7",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:28.937Z",
+      "metrics": {
+        "cpuUserMicros": 69,
+        "cpuSystemMicros": 18,
+        "rssBytes": 80379904,
+        "heapUsedBytes": 14898592,
+        "heapTotalBytes": 21184512,
+        "externalBytes": 4731749,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-8",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-8",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:28.937Z",
+      "metrics": {
+        "cpuUserMicros": 53,
+        "cpuSystemMicros": 6,
+        "rssBytes": 80396288,
+        "heapUsedBytes": 14916368,
+        "heapTotalBytes": 21184512,
+        "externalBytes": 4731749,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-9",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-9",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:28.937Z",
+      "metrics": {
+        "cpuUserMicros": 76,
+        "cpuSystemMicros": 18,
+        "rssBytes": 80429056,
+        "heapUsedBytes": 15138472,
+        "heapTotalBytes": 21184512,
+        "externalBytes": 4731749,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-10",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-10",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:28.937Z",
+      "metrics": {
+        "cpuUserMicros": 131,
+        "cpuSystemMicros": 17,
+        "rssBytes": 80478208,
+        "heapUsedBytes": 15169520,
+        "heapTotalBytes": 21184512,
+        "externalBytes": 4731749,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "database_read",
+      "timestamp": "2026-08-25T12:07:29.516Z",
+      "metrics": {
+        "operation": "market_history",
+        "queryCount": 1,
+        "durationMs": 581.370292,
+        "failed": false
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "database_read",
+      "timestamp": "2026-08-25T12:07:29.517Z",
+      "metrics": {
+        "operation": "market_history",
+        "queryCount": 1,
+        "durationMs": 580.1004579999999,
+        "failed": false
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-3",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-3",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "database_read",
+      "timestamp": "2026-08-25T12:07:29.517Z",
+      "metrics": {
+        "operation": "market_history",
+        "queryCount": 1,
+        "durationMs": 580.0209580000001,
+        "failed": false
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-4",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-4",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "database_read",
+      "timestamp": "2026-08-25T12:07:29.517Z",
+      "metrics": {
+        "operation": "market_history",
+        "queryCount": 1,
+        "durationMs": 579.975875,
+        "failed": false
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-5",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "database_read",
+      "timestamp": "2026-08-25T12:07:29.517Z",
+      "metrics": {
+        "operation": "market_history",
+        "queryCount": 1,
+        "durationMs": 579.896166,
+        "failed": false
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-6",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "database_read",
+      "timestamp": "2026-08-25T12:07:29.517Z",
+      "metrics": {
+        "operation": "market_history",
+        "queryCount": 1,
+        "durationMs": 579.8307080000001,
+        "failed": false
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-7",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-7",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "database_read",
+      "timestamp": "2026-08-25T12:07:29.517Z",
+      "metrics": {
+        "operation": "market_history",
+        "queryCount": 1,
+        "durationMs": 579.7942499999999,
+        "failed": false
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-8",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-8",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "database_read",
+      "timestamp": "2026-08-25T12:07:29.517Z",
+      "metrics": {
+        "operation": "market_history",
+        "queryCount": 1,
+        "durationMs": 579.741542,
+        "failed": false
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-9",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-9",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "database_read",
+      "timestamp": "2026-08-25T12:07:29.517Z",
+      "metrics": {
+        "operation": "market_history",
+        "queryCount": 1,
+        "durationMs": 579.6900840000001,
+        "failed": false
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-10",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-10",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "database_read",
+      "timestamp": "2026-08-25T12:07:29.517Z",
+      "metrics": {
+        "operation": "market_history",
+        "queryCount": 1,
+        "durationMs": 579.619334,
+        "failed": false
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_lookup",
+      "timestamp": "2026-08-25T12:07:29.815Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0074|11:targetBasis13:POINT_IN_TIME|15:targetSemantics27:ROLLING_DAILY_POINT_IN_TIME|8:methodId27:ROLLING_DAILY_POINT_IN_TIME|13:methodVersion30:rolling-daily-point-in-time-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753|15:sourceFrequency5:DAILY|13:targetCadence5:DAILY|17:frequencyIdentity45:FORECAST_CADENCE_V1|source=DAILY|target=DAILY|14:forecastOrigin10:2026-08-20|22:horizonConfigurationId276:{\"maxHorizonMonths\":12,\"anchorTargetDates\":{\"1M\":\"2026-09-20\",\"3M\":\"2026-11-20\",\"6M\":\"2027-02-20\",\"12M\":\"2027-08-20\"},\"path\":{\"startDate\":\"2026-08-21\",\"endDate\":\"2027-08-20\",\"calendarDateInclusion\":\"EVERY_CALENDAR_DATE\"},\"projectionCalendarStrategy\":\"OBSERVED_WEEKDAY_SET_V1\"}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+        "role": "OWNER",
+        "activeCurrentSingleFlightEntries": 1,
+        "seriesId": "wocaes0074",
+        "modelId": "ets",
+        "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+        "sourceFrequency": "DAILY",
+        "targetCadence": "DAILY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_owner_acquired",
+      "timestamp": "2026-08-25T12:07:29.815Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0074|11:targetBasis13:POINT_IN_TIME|15:targetSemantics27:ROLLING_DAILY_POINT_IN_TIME|8:methodId27:ROLLING_DAILY_POINT_IN_TIME|13:methodVersion30:rolling-daily-point-in-time-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753|15:sourceFrequency5:DAILY|13:targetCadence5:DAILY|17:frequencyIdentity45:FORECAST_CADENCE_V1|source=DAILY|target=DAILY|14:forecastOrigin10:2026-08-20|22:horizonConfigurationId276:{\"maxHorizonMonths\":12,\"anchorTargetDates\":{\"1M\":\"2026-09-20\",\"3M\":\"2026-11-20\",\"6M\":\"2027-02-20\",\"12M\":\"2027-08-20\"},\"path\":{\"startDate\":\"2026-08-21\",\"endDate\":\"2027-08-20\",\"calendarDateInclusion\":\"EVERY_CALENDAR_DATE\"},\"projectionCalendarStrategy\":\"OBSERVED_WEEKDAY_SET_V1\"}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+        "role": "OWNER",
+        "activeCurrentSingleFlightEntries": 1,
+        "seriesId": "wocaes0074",
+        "modelId": "ets",
+        "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+        "sourceFrequency": "DAILY",
+        "targetCadence": "DAILY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-4",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-4",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_lookup",
+      "timestamp": "2026-08-25T12:07:29.815Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0074|11:targetBasis13:POINT_IN_TIME|15:targetSemantics27:ROLLING_DAILY_POINT_IN_TIME|8:methodId27:ROLLING_DAILY_POINT_IN_TIME|13:methodVersion30:rolling-daily-point-in-time-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753|15:sourceFrequency5:DAILY|13:targetCadence5:DAILY|17:frequencyIdentity45:FORECAST_CADENCE_V1|source=DAILY|target=DAILY|14:forecastOrigin10:2026-08-20|22:horizonConfigurationId276:{\"maxHorizonMonths\":12,\"anchorTargetDates\":{\"1M\":\"2026-09-20\",\"3M\":\"2026-11-20\",\"6M\":\"2027-02-20\",\"12M\":\"2027-08-20\"},\"path\":{\"startDate\":\"2026-08-21\",\"endDate\":\"2027-08-20\",\"calendarDateInclusion\":\"EVERY_CALENDAR_DATE\"},\"projectionCalendarStrategy\":\"OBSERVED_WEEKDAY_SET_V1\"}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-4",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 1,
+        "seriesId": "wocaes0074",
+        "modelId": "ets",
+        "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+        "sourceFrequency": "DAILY",
+        "targetCadence": "DAILY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-4",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-4",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_waiter_joined",
+      "timestamp": "2026-08-25T12:07:29.815Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0074|11:targetBasis13:POINT_IN_TIME|15:targetSemantics27:ROLLING_DAILY_POINT_IN_TIME|8:methodId27:ROLLING_DAILY_POINT_IN_TIME|13:methodVersion30:rolling-daily-point-in-time-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753|15:sourceFrequency5:DAILY|13:targetCadence5:DAILY|17:frequencyIdentity45:FORECAST_CADENCE_V1|source=DAILY|target=DAILY|14:forecastOrigin10:2026-08-20|22:horizonConfigurationId276:{\"maxHorizonMonths\":12,\"anchorTargetDates\":{\"1M\":\"2026-09-20\",\"3M\":\"2026-11-20\",\"6M\":\"2027-02-20\",\"12M\":\"2027-08-20\"},\"path\":{\"startDate\":\"2026-08-21\",\"endDate\":\"2027-08-20\",\"calendarDateInclusion\":\"EVERY_CALENDAR_DATE\"},\"projectionCalendarStrategy\":\"OBSERVED_WEEKDAY_SET_V1\"}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-4",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 1,
+        "seriesId": "wocaes0074",
+        "modelId": "ets",
+        "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+        "sourceFrequency": "DAILY",
+        "targetCadence": "DAILY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-7",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-7",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_lookup",
+      "timestamp": "2026-08-25T12:07:29.815Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0074|11:targetBasis13:POINT_IN_TIME|15:targetSemantics27:ROLLING_DAILY_POINT_IN_TIME|8:methodId27:ROLLING_DAILY_POINT_IN_TIME|13:methodVersion30:rolling-daily-point-in-time-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753|15:sourceFrequency5:DAILY|13:targetCadence5:DAILY|17:frequencyIdentity45:FORECAST_CADENCE_V1|source=DAILY|target=DAILY|14:forecastOrigin10:2026-08-20|22:horizonConfigurationId276:{\"maxHorizonMonths\":12,\"anchorTargetDates\":{\"1M\":\"2026-09-20\",\"3M\":\"2026-11-20\",\"6M\":\"2027-02-20\",\"12M\":\"2027-08-20\"},\"path\":{\"startDate\":\"2026-08-21\",\"endDate\":\"2027-08-20\",\"calendarDateInclusion\":\"EVERY_CALENDAR_DATE\"},\"projectionCalendarStrategy\":\"OBSERVED_WEEKDAY_SET_V1\"}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-7",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 1,
+        "seriesId": "wocaes0074",
+        "modelId": "ets",
+        "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+        "sourceFrequency": "DAILY",
+        "targetCadence": "DAILY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-7",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-7",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_waiter_joined",
+      "timestamp": "2026-08-25T12:07:29.815Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0074|11:targetBasis13:POINT_IN_TIME|15:targetSemantics27:ROLLING_DAILY_POINT_IN_TIME|8:methodId27:ROLLING_DAILY_POINT_IN_TIME|13:methodVersion30:rolling-daily-point-in-time-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753|15:sourceFrequency5:DAILY|13:targetCadence5:DAILY|17:frequencyIdentity45:FORECAST_CADENCE_V1|source=DAILY|target=DAILY|14:forecastOrigin10:2026-08-20|22:horizonConfigurationId276:{\"maxHorizonMonths\":12,\"anchorTargetDates\":{\"1M\":\"2026-09-20\",\"3M\":\"2026-11-20\",\"6M\":\"2027-02-20\",\"12M\":\"2027-08-20\"},\"path\":{\"startDate\":\"2026-08-21\",\"endDate\":\"2027-08-20\",\"calendarDateInclusion\":\"EVERY_CALENDAR_DATE\"},\"projectionCalendarStrategy\":\"OBSERVED_WEEKDAY_SET_V1\"}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-7",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 1,
+        "seriesId": "wocaes0074",
+        "modelId": "ets",
+        "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+        "sourceFrequency": "DAILY",
+        "targetCadence": "DAILY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-10",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-10",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_lookup",
+      "timestamp": "2026-08-25T12:07:29.815Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0074|11:targetBasis13:POINT_IN_TIME|15:targetSemantics27:ROLLING_DAILY_POINT_IN_TIME|8:methodId27:ROLLING_DAILY_POINT_IN_TIME|13:methodVersion30:rolling-daily-point-in-time-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753|15:sourceFrequency5:DAILY|13:targetCadence5:DAILY|17:frequencyIdentity45:FORECAST_CADENCE_V1|source=DAILY|target=DAILY|14:forecastOrigin10:2026-08-20|22:horizonConfigurationId276:{\"maxHorizonMonths\":12,\"anchorTargetDates\":{\"1M\":\"2026-09-20\",\"3M\":\"2026-11-20\",\"6M\":\"2027-02-20\",\"12M\":\"2027-08-20\"},\"path\":{\"startDate\":\"2026-08-21\",\"endDate\":\"2027-08-20\",\"calendarDateInclusion\":\"EVERY_CALENDAR_DATE\"},\"projectionCalendarStrategy\":\"OBSERVED_WEEKDAY_SET_V1\"}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-10",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 1,
+        "seriesId": "wocaes0074",
+        "modelId": "ets",
+        "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+        "sourceFrequency": "DAILY",
+        "targetCadence": "DAILY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-10",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-10",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_waiter_joined",
+      "timestamp": "2026-08-25T12:07:29.815Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0074|11:targetBasis13:POINT_IN_TIME|15:targetSemantics27:ROLLING_DAILY_POINT_IN_TIME|8:methodId27:ROLLING_DAILY_POINT_IN_TIME|13:methodVersion30:rolling-daily-point-in-time-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753|15:sourceFrequency5:DAILY|13:targetCadence5:DAILY|17:frequencyIdentity45:FORECAST_CADENCE_V1|source=DAILY|target=DAILY|14:forecastOrigin10:2026-08-20|22:horizonConfigurationId276:{\"maxHorizonMonths\":12,\"anchorTargetDates\":{\"1M\":\"2026-09-20\",\"3M\":\"2026-11-20\",\"6M\":\"2027-02-20\",\"12M\":\"2027-08-20\"},\"path\":{\"startDate\":\"2026-08-21\",\"endDate\":\"2027-08-20\",\"calendarDateInclusion\":\"EVERY_CALENDAR_DATE\"},\"projectionCalendarStrategy\":\"OBSERVED_WEEKDAY_SET_V1\"}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-10",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 1,
+        "seriesId": "wocaes0074",
+        "modelId": "ets",
+        "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+        "sourceFrequency": "DAILY",
+        "targetCadence": "DAILY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "current_compute_start",
+      "timestamp": "2026-08-25T12:07:29.815Z",
+      "metrics": {
+        "operation": "rolling_daily_production_operations",
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0074|11:targetBasis13:POINT_IN_TIME|15:targetSemantics27:ROLLING_DAILY_POINT_IN_TIME|8:methodId27:ROLLING_DAILY_POINT_IN_TIME|13:methodVersion30:rolling-daily-point-in-time-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753|15:sourceFrequency5:DAILY|13:targetCadence5:DAILY|17:frequencyIdentity45:FORECAST_CADENCE_V1|source=DAILY|target=DAILY|14:forecastOrigin10:2026-08-20|22:horizonConfigurationId276:{\"maxHorizonMonths\":12,\"anchorTargetDates\":{\"1M\":\"2026-09-20\",\"3M\":\"2026-11-20\",\"6M\":\"2027-02-20\",\"12M\":\"2027-08-20\"},\"path\":{\"startDate\":\"2026-08-21\",\"endDate\":\"2027-08-20\",\"calendarDateInclusion\":\"EVERY_CALENDAR_DATE\"},\"projectionCalendarStrategy\":\"OBSERVED_WEEKDAY_SET_V1\"}"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-5",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "prepared_read",
+      "timestamp": "2026-08-25T12:07:33.231Z",
+      "metrics": {
+        "kind": "current",
+        "hit": false,
+        "durationMs": 4293.832208
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-5",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_lookup",
+      "timestamp": "2026-08-25T12:07:33.231Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|14:forecastOrigin10:2026-07-01|22:horizonConfigurationId196:{\"horizons\":{\"1M\":1,\"3M\":3,\"6M\":6,\"12M\":12},\"currentTargetDates\":{\"1M\":\"2026-08-01T00:00:00.000Z\",\"3M\":\"2026-10-01T00:00:00.000Z\",\"6M\":\"2027-01-01T00:00:00.000Z\",\"12M\":\"2027-07-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+        "role": "OWNER",
+        "activeCurrentSingleFlightEntries": 2,
+        "durationMs": null,
+        "error": null,
+        "seriesId": "wocaes0280",
+        "modelId": "ets",
+        "targetSemantics": "MONTHLY_AVERAGE",
+        "sourceFrequency": "MONTHLY",
+        "targetCadence": "MONTHLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-5",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_owner_acquired",
+      "timestamp": "2026-08-25T12:07:33.231Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|14:forecastOrigin10:2026-07-01|22:horizonConfigurationId196:{\"horizons\":{\"1M\":1,\"3M\":3,\"6M\":6,\"12M\":12},\"currentTargetDates\":{\"1M\":\"2026-08-01T00:00:00.000Z\",\"3M\":\"2026-10-01T00:00:00.000Z\",\"6M\":\"2027-01-01T00:00:00.000Z\",\"12M\":\"2027-07-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+        "role": "OWNER",
+        "activeCurrentSingleFlightEntries": 2,
+        "durationMs": null,
+        "error": null,
+        "seriesId": "wocaes0280",
+        "modelId": "ets",
+        "targetSemantics": "MONTHLY_AVERAGE",
+        "sourceFrequency": "MONTHLY",
+        "targetCadence": "MONTHLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-5",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "current_compute_start",
+      "timestamp": "2026-08-25T12:07:33.231Z",
+      "metrics": {
+        "modelId": "ets",
+        "count": 1,
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|14:forecastOrigin10:2026-07-01|22:horizonConfigurationId196:{\"horizons\":{\"1M\":1,\"3M\":3,\"6M\":6,\"12M\":12},\"currentTargetDates\":{\"1M\":\"2026-08-01T00:00:00.000Z\",\"3M\":\"2026-10-01T00:00:00.000Z\",\"6M\":\"2027-01-01T00:00:00.000Z\",\"12M\":\"2027-07-01T00:00:00.000Z\"}}"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-6",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "prepared_read",
+      "timestamp": "2026-08-25T12:07:33.231Z",
+      "metrics": {
+        "kind": "current",
+        "hit": false,
+        "durationMs": 4294.3020830000005
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-6",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_lookup",
+      "timestamp": "2026-08-25T12:07:33.231Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:usnaac0169|11:targetBasis13:END_OF_PERIOD|15:targetSemantics13:END_OF_PERIOD|8:methodId13:END_OF_PERIOD|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:c422e8542541af40f72df1b633df729406ff4f9d3459d04cca35a525b9782224|15:sourceFrequency9:QUARTERLY|13:targetCadence9:QUARTERLY|17:frequencyIdentity53:FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY|14:forecastOrigin10:2026-04-01|22:horizonConfigurationId156:{\"horizons\":{\"3M\":1,\"6M\":2,\"12M\":4},\"currentTargetDates\":{\"3M\":\"2026-07-01T00:00:00.000Z\",\"6M\":\"2026-10-01T00:00:00.000Z\",\"12M\":\"2027-04-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+        "role": "OWNER",
+        "activeCurrentSingleFlightEntries": 3,
+        "durationMs": null,
+        "error": null,
+        "seriesId": "usnaac0169",
+        "modelId": "ets",
+        "targetSemantics": "END_OF_PERIOD",
+        "sourceFrequency": "QUARTERLY",
+        "targetCadence": "QUARTERLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-6",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_owner_acquired",
+      "timestamp": "2026-08-25T12:07:33.231Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:usnaac0169|11:targetBasis13:END_OF_PERIOD|15:targetSemantics13:END_OF_PERIOD|8:methodId13:END_OF_PERIOD|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:c422e8542541af40f72df1b633df729406ff4f9d3459d04cca35a525b9782224|15:sourceFrequency9:QUARTERLY|13:targetCadence9:QUARTERLY|17:frequencyIdentity53:FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY|14:forecastOrigin10:2026-04-01|22:horizonConfigurationId156:{\"horizons\":{\"3M\":1,\"6M\":2,\"12M\":4},\"currentTargetDates\":{\"3M\":\"2026-07-01T00:00:00.000Z\",\"6M\":\"2026-10-01T00:00:00.000Z\",\"12M\":\"2027-04-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+        "role": "OWNER",
+        "activeCurrentSingleFlightEntries": 3,
+        "durationMs": null,
+        "error": null,
+        "seriesId": "usnaac0169",
+        "modelId": "ets",
+        "targetSemantics": "END_OF_PERIOD",
+        "sourceFrequency": "QUARTERLY",
+        "targetCadence": "QUARTERLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-6",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "current_compute_start",
+      "timestamp": "2026-08-25T12:07:33.231Z",
+      "metrics": {
+        "modelId": "ets",
+        "count": 1,
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:usnaac0169|11:targetBasis13:END_OF_PERIOD|15:targetSemantics13:END_OF_PERIOD|8:methodId13:END_OF_PERIOD|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:c422e8542541af40f72df1b633df729406ff4f9d3459d04cca35a525b9782224|15:sourceFrequency9:QUARTERLY|13:targetCadence9:QUARTERLY|17:frequencyIdentity53:FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY|14:forecastOrigin10:2026-04-01|22:horizonConfigurationId156:{\"horizons\":{\"3M\":1,\"6M\":2,\"12M\":4},\"currentTargetDates\":{\"3M\":\"2026-07-01T00:00:00.000Z\",\"6M\":\"2026-10-01T00:00:00.000Z\",\"12M\":\"2027-04-01T00:00:00.000Z\"}}"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "prepared_read",
+      "timestamp": "2026-08-25T12:07:33.235Z",
+      "metrics": {
+        "kind": "current",
+        "hit": false,
+        "durationMs": 4298.217250000001
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_lookup",
+      "timestamp": "2026-08-25T12:07:33.235Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|14:forecastOrigin10:2026-07-01|22:horizonConfigurationId196:{\"horizons\":{\"1M\":1,\"3M\":3,\"6M\":6,\"12M\":12},\"currentTargetDates\":{\"1M\":\"2026-08-01T00:00:00.000Z\",\"3M\":\"2026-10-01T00:00:00.000Z\",\"6M\":\"2027-01-01T00:00:00.000Z\",\"12M\":\"2027-07-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-2",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 3,
+        "durationMs": null,
+        "error": null,
+        "seriesId": "wocaes0280",
+        "modelId": "ets",
+        "targetSemantics": "MONTHLY_AVERAGE",
+        "sourceFrequency": "MONTHLY",
+        "targetCadence": "MONTHLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_waiter_joined",
+      "timestamp": "2026-08-25T12:07:33.235Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|14:forecastOrigin10:2026-07-01|22:horizonConfigurationId196:{\"horizons\":{\"1M\":1,\"3M\":3,\"6M\":6,\"12M\":12},\"currentTargetDates\":{\"1M\":\"2026-08-01T00:00:00.000Z\",\"3M\":\"2026-10-01T00:00:00.000Z\",\"6M\":\"2027-01-01T00:00:00.000Z\",\"12M\":\"2027-07-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-2",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 3,
+        "durationMs": null,
+        "error": null,
+        "seriesId": "wocaes0280",
+        "modelId": "ets",
+        "targetSemantics": "MONTHLY_AVERAGE",
+        "sourceFrequency": "MONTHLY",
+        "targetCadence": "MONTHLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-9",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-9",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "prepared_read",
+      "timestamp": "2026-08-25T12:07:33.237Z",
+      "metrics": {
+        "kind": "current",
+        "hit": false,
+        "durationMs": 4299.95525
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-9",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-9",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_lookup",
+      "timestamp": "2026-08-25T12:07:33.238Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:usnaac0169|11:targetBasis13:END_OF_PERIOD|15:targetSemantics13:END_OF_PERIOD|8:methodId13:END_OF_PERIOD|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:c422e8542541af40f72df1b633df729406ff4f9d3459d04cca35a525b9782224|15:sourceFrequency9:QUARTERLY|13:targetCadence9:QUARTERLY|17:frequencyIdentity53:FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY|14:forecastOrigin10:2026-04-01|22:horizonConfigurationId156:{\"horizons\":{\"3M\":1,\"6M\":2,\"12M\":4},\"currentTargetDates\":{\"3M\":\"2026-07-01T00:00:00.000Z\",\"6M\":\"2026-10-01T00:00:00.000Z\",\"12M\":\"2027-04-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-9",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 3,
+        "durationMs": null,
+        "error": null,
+        "seriesId": "usnaac0169",
+        "modelId": "ets",
+        "targetSemantics": "END_OF_PERIOD",
+        "sourceFrequency": "QUARTERLY",
+        "targetCadence": "QUARTERLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-9",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-9",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_waiter_joined",
+      "timestamp": "2026-08-25T12:07:33.238Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:usnaac0169|11:targetBasis13:END_OF_PERIOD|15:targetSemantics13:END_OF_PERIOD|8:methodId13:END_OF_PERIOD|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:c422e8542541af40f72df1b633df729406ff4f9d3459d04cca35a525b9782224|15:sourceFrequency9:QUARTERLY|13:targetCadence9:QUARTERLY|17:frequencyIdentity53:FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY|14:forecastOrigin10:2026-04-01|22:horizonConfigurationId156:{\"horizons\":{\"3M\":1,\"6M\":2,\"12M\":4},\"currentTargetDates\":{\"3M\":\"2026-07-01T00:00:00.000Z\",\"6M\":\"2026-10-01T00:00:00.000Z\",\"12M\":\"2027-04-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-9",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 3,
+        "durationMs": null,
+        "error": null,
+        "seriesId": "usnaac0169",
+        "modelId": "ets",
+        "targetSemantics": "END_OF_PERIOD",
+        "sourceFrequency": "QUARTERLY",
+        "targetCadence": "QUARTERLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-3",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-3",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "prepared_read",
+      "timestamp": "2026-08-25T12:07:33.268Z",
+      "metrics": {
+        "kind": "current",
+        "hit": false,
+        "durationMs": 4331.2509580000005
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-3",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-3",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_lookup",
+      "timestamp": "2026-08-25T12:07:33.268Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:usnaac0169|11:targetBasis13:END_OF_PERIOD|15:targetSemantics13:END_OF_PERIOD|8:methodId13:END_OF_PERIOD|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:c422e8542541af40f72df1b633df729406ff4f9d3459d04cca35a525b9782224|15:sourceFrequency9:QUARTERLY|13:targetCadence9:QUARTERLY|17:frequencyIdentity53:FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY|14:forecastOrigin10:2026-04-01|22:horizonConfigurationId156:{\"horizons\":{\"3M\":1,\"6M\":2,\"12M\":4},\"currentTargetDates\":{\"3M\":\"2026-07-01T00:00:00.000Z\",\"6M\":\"2026-10-01T00:00:00.000Z\",\"12M\":\"2027-04-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-3",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 3,
+        "durationMs": null,
+        "error": null,
+        "seriesId": "usnaac0169",
+        "modelId": "ets",
+        "targetSemantics": "END_OF_PERIOD",
+        "sourceFrequency": "QUARTERLY",
+        "targetCadence": "QUARTERLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-3",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-3",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_waiter_joined",
+      "timestamp": "2026-08-25T12:07:33.268Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:usnaac0169|11:targetBasis13:END_OF_PERIOD|15:targetSemantics13:END_OF_PERIOD|8:methodId13:END_OF_PERIOD|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:c422e8542541af40f72df1b633df729406ff4f9d3459d04cca35a525b9782224|15:sourceFrequency9:QUARTERLY|13:targetCadence9:QUARTERLY|17:frequencyIdentity53:FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY|14:forecastOrigin10:2026-04-01|22:horizonConfigurationId156:{\"horizons\":{\"3M\":1,\"6M\":2,\"12M\":4},\"currentTargetDates\":{\"3M\":\"2026-07-01T00:00:00.000Z\",\"6M\":\"2026-10-01T00:00:00.000Z\",\"12M\":\"2027-04-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-3",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 3,
+        "durationMs": null,
+        "error": null,
+        "seriesId": "usnaac0169",
+        "modelId": "ets",
+        "targetSemantics": "END_OF_PERIOD",
+        "sourceFrequency": "QUARTERLY",
+        "targetCadence": "QUARTERLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-8",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-8",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "prepared_read",
+      "timestamp": "2026-08-25T12:07:33.295Z",
+      "metrics": {
+        "kind": "current",
+        "hit": false,
+        "durationMs": 4357.640375
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-8",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-8",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_lookup",
+      "timestamp": "2026-08-25T12:07:33.295Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|14:forecastOrigin10:2026-07-01|22:horizonConfigurationId196:{\"horizons\":{\"1M\":1,\"3M\":3,\"6M\":6,\"12M\":12},\"currentTargetDates\":{\"1M\":\"2026-08-01T00:00:00.000Z\",\"3M\":\"2026-10-01T00:00:00.000Z\",\"6M\":\"2027-01-01T00:00:00.000Z\",\"12M\":\"2027-07-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-8",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 3,
+        "durationMs": null,
+        "error": null,
+        "seriesId": "wocaes0280",
+        "modelId": "ets",
+        "targetSemantics": "MONTHLY_AVERAGE",
+        "sourceFrequency": "MONTHLY",
+        "targetCadence": "MONTHLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-8",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-8",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_waiter_joined",
+      "timestamp": "2026-08-25T12:07:33.295Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|14:forecastOrigin10:2026-07-01|22:horizonConfigurationId196:{\"horizons\":{\"1M\":1,\"3M\":3,\"6M\":6,\"12M\":12},\"currentTargetDates\":{\"1M\":\"2026-08-01T00:00:00.000Z\",\"3M\":\"2026-10-01T00:00:00.000Z\",\"6M\":\"2027-01-01T00:00:00.000Z\",\"12M\":\"2027-07-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-8",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 3,
+        "durationMs": null,
+        "error": null,
+        "seriesId": "wocaes0280",
+        "modelId": "ets",
+        "targetSemantics": "MONTHLY_AVERAGE",
+        "sourceFrequency": "MONTHLY",
+        "targetCadence": "MONTHLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "database_read",
+      "timestamp": "2026-08-25T12:07:33.506Z",
+      "metrics": {
+        "operation": "market_history",
+        "queryCount": 1,
+        "durationMs": 90.5226249999996,
+        "failed": false
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-6",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "current_compute_end",
+      "timestamp": "2026-08-25T12:07:34.740Z",
+      "metrics": {
+        "modelId": "ets",
+        "count": 1,
+        "durationMs": 1508.9078330000002,
+        "status": "AVAILABLE",
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:usnaac0169|11:targetBasis13:END_OF_PERIOD|15:targetSemantics13:END_OF_PERIOD|8:methodId13:END_OF_PERIOD|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:c422e8542541af40f72df1b633df729406ff4f9d3459d04cca35a525b9782224|15:sourceFrequency9:QUARTERLY|13:targetCadence9:QUARTERLY|17:frequencyIdentity53:FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY|14:forecastOrigin10:2026-04-01|22:horizonConfigurationId156:{\"horizons\":{\"3M\":1,\"6M\":2,\"12M\":4},\"currentTargetDates\":{\"3M\":\"2026-07-01T00:00:00.000Z\",\"6M\":\"2026-10-01T00:00:00.000Z\",\"12M\":\"2027-04-01T00:00:00.000Z\"}}"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-6",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "model_fit",
+      "timestamp": "2026-08-25T12:07:34.740Z",
+      "metrics": {
+        "operation": "current",
+        "modelId": "ets",
+        "count": 1,
+        "durationMs": 1508.9078330000002
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-6",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "persistence",
+      "timestamp": "2026-08-25T12:07:34.748Z",
+      "metrics": {
+        "operation": "current",
+        "artifactWrites": 1,
+        "pointWrites": 3,
+        "verificationRecordWrites": 0,
+        "writeFailures": 0,
+        "durationMs": 5.734875000000102
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-6",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_owner_completed",
+      "timestamp": "2026-08-25T12:07:34.749Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:usnaac0169|11:targetBasis13:END_OF_PERIOD|15:targetSemantics13:END_OF_PERIOD|8:methodId13:END_OF_PERIOD|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:c422e8542541af40f72df1b633df729406ff4f9d3459d04cca35a525b9782224|15:sourceFrequency9:QUARTERLY|13:targetCadence9:QUARTERLY|17:frequencyIdentity53:FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY|14:forecastOrigin10:2026-04-01|22:horizonConfigurationId156:{\"horizons\":{\"3M\":1,\"6M\":2,\"12M\":4},\"currentTargetDates\":{\"3M\":\"2026-07-01T00:00:00.000Z\",\"6M\":\"2026-10-01T00:00:00.000Z\",\"12M\":\"2027-04-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+        "role": "OWNER",
+        "activeCurrentSingleFlightEntries": 3,
+        "durationMs": 1517.4678750000003,
+        "error": null,
+        "seriesId": "usnaac0169",
+        "modelId": "ets",
+        "targetSemantics": "END_OF_PERIOD",
+        "sourceFrequency": "QUARTERLY",
+        "targetCadence": "QUARTERLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-6",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_entry_released",
+      "timestamp": "2026-08-25T12:07:34.749Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:usnaac0169|11:targetBasis13:END_OF_PERIOD|15:targetSemantics13:END_OF_PERIOD|8:methodId13:END_OF_PERIOD|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:c422e8542541af40f72df1b633df729406ff4f9d3459d04cca35a525b9782224|15:sourceFrequency9:QUARTERLY|13:targetCadence9:QUARTERLY|17:frequencyIdentity53:FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY|14:forecastOrigin10:2026-04-01|22:horizonConfigurationId156:{\"horizons\":{\"3M\":1,\"6M\":2,\"12M\":4},\"currentTargetDates\":{\"3M\":\"2026-07-01T00:00:00.000Z\",\"6M\":\"2026-10-01T00:00:00.000Z\",\"12M\":\"2027-04-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+        "role": "OWNER",
+        "activeCurrentSingleFlightEntries": 2,
+        "durationMs": null,
+        "error": null,
+        "seriesId": "usnaac0169",
+        "modelId": "ets",
+        "targetSemantics": "END_OF_PERIOD",
+        "sourceFrequency": "QUARTERLY",
+        "targetCadence": "QUARTERLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-9",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-9",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_waiter_completed",
+      "timestamp": "2026-08-25T12:07:34.749Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:usnaac0169|11:targetBasis13:END_OF_PERIOD|15:targetSemantics13:END_OF_PERIOD|8:methodId13:END_OF_PERIOD|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:c422e8542541af40f72df1b633df729406ff4f9d3459d04cca35a525b9782224|15:sourceFrequency9:QUARTERLY|13:targetCadence9:QUARTERLY|17:frequencyIdentity53:FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY|14:forecastOrigin10:2026-04-01|22:horizonConfigurationId156:{\"horizons\":{\"3M\":1,\"6M\":2,\"12M\":4},\"currentTargetDates\":{\"3M\":\"2026-07-01T00:00:00.000Z\",\"6M\":\"2026-10-01T00:00:00.000Z\",\"12M\":\"2027-04-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-9",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 2,
+        "durationMs": 1511.2856659999998,
+        "error": null,
+        "seriesId": "usnaac0169",
+        "modelId": "ets",
+        "targetSemantics": "END_OF_PERIOD",
+        "sourceFrequency": "QUARTERLY",
+        "targetCadence": "QUARTERLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-3",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-3",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_waiter_completed",
+      "timestamp": "2026-08-25T12:07:34.749Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:usnaac0169|11:targetBasis13:END_OF_PERIOD|15:targetSemantics13:END_OF_PERIOD|8:methodId13:END_OF_PERIOD|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:c422e8542541af40f72df1b633df729406ff4f9d3459d04cca35a525b9782224|15:sourceFrequency9:QUARTERLY|13:targetCadence9:QUARTERLY|17:frequencyIdentity53:FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY|14:forecastOrigin10:2026-04-01|22:horizonConfigurationId156:{\"horizons\":{\"3M\":1,\"6M\":2,\"12M\":4},\"currentTargetDates\":{\"3M\":\"2026-07-01T00:00:00.000Z\",\"6M\":\"2026-10-01T00:00:00.000Z\",\"12M\":\"2027-04-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-3",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 2,
+        "durationMs": 1480.5445829999999,
+        "error": null,
+        "seriesId": "usnaac0169",
+        "modelId": "ets",
+        "targetSemantics": "END_OF_PERIOD",
+        "sourceFrequency": "QUARTERLY",
+        "targetCadence": "QUARTERLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-6",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-6",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:34.749Z",
+      "metrics": {
+        "cpuUserMicros": 1412898,
+        "cpuSystemMicros": 120347,
+        "rssBytes": 499056640,
+        "heapUsedBytes": 20904392,
+        "heapTotalBytes": 195526656,
+        "externalBytes": 5207044,
+        "eventLoopUtilization": 0.17618435806112331,
+        "eventLoopDelayMeanMs": 24.96077682758621,
+        "eventLoopDelayMaxMs": 654.311423
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-9",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-9",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:34.749Z",
+      "metrics": {
+        "cpuUserMicros": 154,
+        "cpuSystemMicros": 11,
+        "rssBytes": 499056640,
+        "heapUsedBytes": 20920760,
+        "heapTotalBytes": 195526656,
+        "externalBytes": 5207044,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-3",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-3",
+      "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+      "logicalArtifactKey": "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:34.749Z",
+      "metrics": {
+        "cpuUserMicros": 21,
+        "cpuSystemMicros": 4,
+        "rssBytes": 499056640,
+        "heapUsedBytes": 20925672,
+        "heapTotalBytes": 195526656,
+        "externalBytes": 5207044,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-5",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "current_compute_end",
+      "timestamp": "2026-08-25T12:07:35.165Z",
+      "metrics": {
+        "modelId": "ets",
+        "count": 1,
+        "durationMs": 1934.2208339999997,
+        "status": "AVAILABLE",
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|14:forecastOrigin10:2026-07-01|22:horizonConfigurationId196:{\"horizons\":{\"1M\":1,\"3M\":3,\"6M\":6,\"12M\":12},\"currentTargetDates\":{\"1M\":\"2026-08-01T00:00:00.000Z\",\"3M\":\"2026-10-01T00:00:00.000Z\",\"6M\":\"2027-01-01T00:00:00.000Z\",\"12M\":\"2027-07-01T00:00:00.000Z\"}}"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-5",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "model_fit",
+      "timestamp": "2026-08-25T12:07:35.165Z",
+      "metrics": {
+        "operation": "current",
+        "modelId": "ets",
+        "count": 1,
+        "durationMs": 1934.2208339999997
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-5",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "persistence",
+      "timestamp": "2026-08-25T12:07:35.171Z",
+      "metrics": {
+        "operation": "current",
+        "artifactWrites": 1,
+        "pointWrites": 4,
+        "verificationRecordWrites": 0,
+        "writeFailures": 0,
+        "durationMs": 4.694875000000138
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-5",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_owner_completed",
+      "timestamp": "2026-08-25T12:07:35.171Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|14:forecastOrigin10:2026-07-01|22:horizonConfigurationId196:{\"horizons\":{\"1M\":1,\"3M\":3,\"6M\":6,\"12M\":12},\"currentTargetDates\":{\"1M\":\"2026-08-01T00:00:00.000Z\",\"3M\":\"2026-10-01T00:00:00.000Z\",\"6M\":\"2027-01-01T00:00:00.000Z\",\"12M\":\"2027-07-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+        "role": "OWNER",
+        "activeCurrentSingleFlightEntries": 2,
+        "durationMs": 1940.4108340000002,
+        "error": null,
+        "seriesId": "wocaes0280",
+        "modelId": "ets",
+        "targetSemantics": "MONTHLY_AVERAGE",
+        "sourceFrequency": "MONTHLY",
+        "targetCadence": "MONTHLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-5",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_entry_released",
+      "timestamp": "2026-08-25T12:07:35.171Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|14:forecastOrigin10:2026-07-01|22:horizonConfigurationId196:{\"horizons\":{\"1M\":1,\"3M\":3,\"6M\":6,\"12M\":12},\"currentTargetDates\":{\"1M\":\"2026-08-01T00:00:00.000Z\",\"3M\":\"2026-10-01T00:00:00.000Z\",\"6M\":\"2027-01-01T00:00:00.000Z\",\"12M\":\"2027-07-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+        "role": "OWNER",
+        "activeCurrentSingleFlightEntries": 1,
+        "durationMs": null,
+        "error": null,
+        "seriesId": "wocaes0280",
+        "modelId": "ets",
+        "targetSemantics": "MONTHLY_AVERAGE",
+        "sourceFrequency": "MONTHLY",
+        "targetCadence": "MONTHLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_waiter_completed",
+      "timestamp": "2026-08-25T12:07:35.171Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|14:forecastOrigin10:2026-07-01|22:horizonConfigurationId196:{\"horizons\":{\"1M\":1,\"3M\":3,\"6M\":6,\"12M\":12},\"currentTargetDates\":{\"1M\":\"2026-08-01T00:00:00.000Z\",\"3M\":\"2026-10-01T00:00:00.000Z\",\"6M\":\"2027-01-01T00:00:00.000Z\",\"12M\":\"2027-07-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-2",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 1,
+        "durationMs": 1936.6650419999996,
+        "error": null,
+        "seriesId": "wocaes0280",
+        "modelId": "ets",
+        "targetSemantics": "MONTHLY_AVERAGE",
+        "sourceFrequency": "MONTHLY",
+        "targetCadence": "MONTHLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-8",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-8",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_waiter_completed",
+      "timestamp": "2026-08-25T12:07:35.171Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|14:forecastOrigin10:2026-07-01|22:horizonConfigurationId196:{\"horizons\":{\"1M\":1,\"3M\":3,\"6M\":6,\"12M\":12},\"currentTargetDates\":{\"1M\":\"2026-08-01T00:00:00.000Z\",\"3M\":\"2026-10-01T00:00:00.000Z\",\"6M\":\"2027-01-01T00:00:00.000Z\",\"12M\":\"2027-07-01T00:00:00.000Z\"}}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-8",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 1,
+        "durationMs": 1876.3995830000003,
+        "error": null,
+        "seriesId": "wocaes0280",
+        "modelId": "ets",
+        "targetSemantics": "MONTHLY_AVERAGE",
+        "sourceFrequency": "MONTHLY",
+        "targetCadence": "MONTHLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-5",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-5",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:35.171Z",
+      "metrics": {
+        "cpuUserMicros": 5752,
+        "cpuSystemMicros": 1174,
+        "rssBytes": 499122176,
+        "heapUsedBytes": 22117536,
+        "heapTotalBytes": 195526656,
+        "externalBytes": 5258270,
+        "eventLoopUtilization": 0.010476501947140629,
+        "eventLoopDelayMeanMs": 20.92452378947368,
+        "eventLoopDelayMaxMs": 21.708799
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:35.172Z",
+      "metrics": {
+        "cpuUserMicros": 80,
+        "cpuSystemMicros": 23,
+        "rssBytes": 499122176,
+        "heapUsedBytes": 22122168,
+        "heapTotalBytes": 195526656,
+        "externalBytes": 5258270,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-8",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-8",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:35.172Z",
+      "metrics": {
+        "cpuUserMicros": 13,
+        "cpuSystemMicros": 2,
+        "rssBytes": 499122176,
+        "heapUsedBytes": 22126656,
+        "heapTotalBytes": 195526656,
+        "externalBytes": 5258270,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "current_compute_end",
+      "timestamp": "2026-08-25T12:07:35.261Z",
+      "metrics": {
+        "operation": "rolling_daily_production_operations",
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0074|11:targetBasis13:POINT_IN_TIME|15:targetSemantics27:ROLLING_DAILY_POINT_IN_TIME|8:methodId27:ROLLING_DAILY_POINT_IN_TIME|13:methodVersion30:rolling-daily-point-in-time-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753|15:sourceFrequency5:DAILY|13:targetCadence5:DAILY|17:frequencyIdentity45:FORECAST_CADENCE_V1|source=DAILY|target=DAILY|14:forecastOrigin10:2026-08-20|22:horizonConfigurationId276:{\"maxHorizonMonths\":12,\"anchorTargetDates\":{\"1M\":\"2026-09-20\",\"3M\":\"2026-11-20\",\"6M\":\"2027-02-20\",\"12M\":\"2027-08-20\"},\"path\":{\"startDate\":\"2026-08-21\",\"endDate\":\"2027-08-20\",\"calendarDateInclusion\":\"EVERY_CALENDAR_DATE\"},\"projectionCalendarStrategy\":\"OBSERVED_WEEKDAY_SET_V1\"}",
+        "failed": false
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "model_fit",
+      "timestamp": "2026-08-25T12:07:35.261Z",
+      "metrics": {
+        "modelId": "ets",
+        "count": 1,
+        "failed": false
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "persistence",
+      "timestamp": "2026-08-25T12:07:35.261Z",
+      "metrics": {
+        "operation": "rolling_daily_current_snapshot",
+        "artifactWrites": 1,
+        "pointWrites": 0,
+        "verificationRecordWrites": 0,
+        "writeFailures": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_owner_completed",
+      "timestamp": "2026-08-25T12:07:35.261Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0074|11:targetBasis13:POINT_IN_TIME|15:targetSemantics27:ROLLING_DAILY_POINT_IN_TIME|8:methodId27:ROLLING_DAILY_POINT_IN_TIME|13:methodVersion30:rolling-daily-point-in-time-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753|15:sourceFrequency5:DAILY|13:targetCadence5:DAILY|17:frequencyIdentity45:FORECAST_CADENCE_V1|source=DAILY|target=DAILY|14:forecastOrigin10:2026-08-20|22:horizonConfigurationId276:{\"maxHorizonMonths\":12,\"anchorTargetDates\":{\"1M\":\"2026-09-20\",\"3M\":\"2026-11-20\",\"6M\":\"2027-02-20\",\"12M\":\"2027-08-20\"},\"path\":{\"startDate\":\"2026-08-21\",\"endDate\":\"2027-08-20\",\"calendarDateInclusion\":\"EVERY_CALENDAR_DATE\"},\"projectionCalendarStrategy\":\"OBSERVED_WEEKDAY_SET_V1\"}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+        "role": "OWNER",
+        "activeCurrentSingleFlightEntries": 1,
+        "durationMs": 5446.120042,
+        "seriesId": "wocaes0074",
+        "modelId": "ets",
+        "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+        "sourceFrequency": "DAILY",
+        "targetCadence": "DAILY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_entry_released",
+      "timestamp": "2026-08-25T12:07:35.261Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0074|11:targetBasis13:POINT_IN_TIME|15:targetSemantics27:ROLLING_DAILY_POINT_IN_TIME|8:methodId27:ROLLING_DAILY_POINT_IN_TIME|13:methodVersion30:rolling-daily-point-in-time-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753|15:sourceFrequency5:DAILY|13:targetCadence5:DAILY|17:frequencyIdentity45:FORECAST_CADENCE_V1|source=DAILY|target=DAILY|14:forecastOrigin10:2026-08-20|22:horizonConfigurationId276:{\"maxHorizonMonths\":12,\"anchorTargetDates\":{\"1M\":\"2026-09-20\",\"3M\":\"2026-11-20\",\"6M\":\"2027-02-20\",\"12M\":\"2027-08-20\"},\"path\":{\"startDate\":\"2026-08-21\",\"endDate\":\"2027-08-20\",\"calendarDateInclusion\":\"EVERY_CALENDAR_DATE\"},\"projectionCalendarStrategy\":\"OBSERVED_WEEKDAY_SET_V1\"}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+        "role": "OWNER",
+        "activeCurrentSingleFlightEntries": 0,
+        "seriesId": "wocaes0074",
+        "modelId": "ets",
+        "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+        "sourceFrequency": "DAILY",
+        "targetCadence": "DAILY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-4",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-4",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_waiter_completed",
+      "timestamp": "2026-08-25T12:07:35.261Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0074|11:targetBasis13:POINT_IN_TIME|15:targetSemantics27:ROLLING_DAILY_POINT_IN_TIME|8:methodId27:ROLLING_DAILY_POINT_IN_TIME|13:methodVersion30:rolling-daily-point-in-time-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753|15:sourceFrequency5:DAILY|13:targetCadence5:DAILY|17:frequencyIdentity45:FORECAST_CADENCE_V1|source=DAILY|target=DAILY|14:forecastOrigin10:2026-08-20|22:horizonConfigurationId276:{\"maxHorizonMonths\":12,\"anchorTargetDates\":{\"1M\":\"2026-09-20\",\"3M\":\"2026-11-20\",\"6M\":\"2027-02-20\",\"12M\":\"2027-08-20\"},\"path\":{\"startDate\":\"2026-08-21\",\"endDate\":\"2027-08-20\",\"calendarDateInclusion\":\"EVERY_CALENDAR_DATE\"},\"projectionCalendarStrategy\":\"OBSERVED_WEEKDAY_SET_V1\"}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-4",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 0,
+        "durationMs": 5446.046917000001,
+        "seriesId": "wocaes0074",
+        "modelId": "ets",
+        "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+        "sourceFrequency": "DAILY",
+        "targetCadence": "DAILY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-7",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-7",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_waiter_completed",
+      "timestamp": "2026-08-25T12:07:35.261Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0074|11:targetBasis13:POINT_IN_TIME|15:targetSemantics27:ROLLING_DAILY_POINT_IN_TIME|8:methodId27:ROLLING_DAILY_POINT_IN_TIME|13:methodVersion30:rolling-daily-point-in-time-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753|15:sourceFrequency5:DAILY|13:targetCadence5:DAILY|17:frequencyIdentity45:FORECAST_CADENCE_V1|source=DAILY|target=DAILY|14:forecastOrigin10:2026-08-20|22:horizonConfigurationId276:{\"maxHorizonMonths\":12,\"anchorTargetDates\":{\"1M\":\"2026-09-20\",\"3M\":\"2026-11-20\",\"6M\":\"2027-02-20\",\"12M\":\"2027-08-20\"},\"path\":{\"startDate\":\"2026-08-21\",\"endDate\":\"2027-08-20\",\"calendarDateInclusion\":\"EVERY_CALENDAR_DATE\"},\"projectionCalendarStrategy\":\"OBSERVED_WEEKDAY_SET_V1\"}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-7",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 0,
+        "durationMs": 5446.0225,
+        "seriesId": "wocaes0074",
+        "modelId": "ets",
+        "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+        "sourceFrequency": "DAILY",
+        "targetCadence": "DAILY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-10",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-10",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "single_flight_waiter_completed",
+      "timestamp": "2026-08-25T12:07:35.261Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0074|11:targetBasis13:POINT_IN_TIME|15:targetSemantics27:ROLLING_DAILY_POINT_IN_TIME|8:methodId27:ROLLING_DAILY_POINT_IN_TIME|13:methodVersion30:rolling-daily-point-in-time-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753|15:sourceFrequency5:DAILY|13:targetCadence5:DAILY|17:frequencyIdentity45:FORECAST_CADENCE_V1|source=DAILY|target=DAILY|14:forecastOrigin10:2026-08-20|22:horizonConfigurationId276:{\"maxHorizonMonths\":12,\"anchorTargetDates\":{\"1M\":\"2026-09-20\",\"3M\":\"2026-11-20\",\"6M\":\"2027-02-20\",\"12M\":\"2027-08-20\"},\"path\":{\"startDate\":\"2026-08-21\",\"endDate\":\"2027-08-20\",\"calendarDateInclusion\":\"EVERY_CALENDAR_DATE\"},\"projectionCalendarStrategy\":\"OBSERVED_WEEKDAY_SET_V1\"}",
+        "operationFamily": "CURRENT",
+        "ownerRequestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+        "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-10",
+        "role": "WAITER",
+        "activeCurrentSingleFlightEntries": 0,
+        "durationMs": 5446.009709,
+        "seriesId": "wocaes0074",
+        "modelId": "ets",
+        "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+        "sourceFrequency": "DAILY",
+        "targetCadence": "DAILY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:35.261Z",
+      "metrics": {
+        "cpuUserMicros": 55995,
+        "cpuSystemMicros": 2137,
+        "rssBytes": 501006336,
+        "heapUsedBytes": 46716760,
+        "heapTotalBytes": 196526080,
+        "externalBytes": 5394743,
+        "eventLoopUtilization": 0.24895167245149144,
+        "eventLoopDelayMeanMs": 21.017941333333333,
+        "eventLoopDelayMaxMs": 21.200895
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-4",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-4",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:35.261Z",
+      "metrics": {
+        "cpuUserMicros": 73,
+        "cpuSystemMicros": 9,
+        "rssBytes": 501006336,
+        "heapUsedBytes": 46721712,
+        "heapTotalBytes": 196526080,
+        "externalBytes": 5394743,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-7",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-7",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:35.261Z",
+      "metrics": {
+        "cpuUserMicros": 14,
+        "cpuSystemMicros": 3,
+        "rssBytes": 501006336,
+        "heapUsedBytes": 46726520,
+        "heapTotalBytes": 196526080,
+        "externalBytes": 5394743,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-10",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-10",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:07:35.261Z",
+      "metrics": {
+        "cpuUserMicros": 16,
+        "cpuSystemMicros": 6,
+        "rssBytes": 501006336,
+        "heapUsedBytes": 46732032,
+        "heapTotalBytes": 196526080,
+        "externalBytes": 5394743,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514",
+      "scenarioId": "P04",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p04-10-ets-b133b778-c174-4f3b-8977-81e85262f514-request-1",
+      "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "logicalArtifactKey": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+      "event": "current_single_flight_registry_settled",
+      "timestamp": "2026-08-25T12:07:35.261Z",
+      "metrics": {
+        "activeEntryCount": 0
+      }
+    }
+  ],
+  "databaseBefore": {
+    "commits": 151,
+    "rollbacks": 0,
+    "read": 2275180,
+    "fetched": 23007,
+    "inserted": 437824,
+    "updated": 73,
+    "deleted": 15,
+    "deadlocks": 0
+  },
+  "databaseAfter": {
+    "commits": 223,
+    "rollbacks": 0,
+    "read": 2329398,
+    "fetched": 75074,
+    "inserted": 438017,
+    "updated": 169,
+    "deleted": 23,
+    "deadlocks": 0
+  },
+  "preloadEvidence": {
+    "requestManifestPath": "tooling/Benchmark-Forecasting/validation/phase-2-2b-4r/manifests/P04-ets-10-r1.json",
+    "requestManifestHash": "9f4b27327c5979a558b292ef915b516678f4de86bdfb1c6194ea3480353c2aac",
+    "stateProofPath": "tooling/Benchmark-Forecasting/validation/phase-2-2b-4r/state-proofs/P04-ets-10-r1.json",
+    "stateProofHash": "89d69cbb53014972705551ef07e17c429823b47376ff512d18c5d64d18d828db"
+  },
+  "settlement": {
+    "cooldownStartedAt": "2026-08-25T12:07:35.298Z",
+    "cooldownCompletedAt": "2026-08-25T12:08:05.337Z",
+    "cooldownDurationMs": 30039,
+    "activeHttpRequests": 0,
+    "activeCurrentSingleFlightEntries": 0,
+    "activeVerificationSingleFlightEntries": 0,
+    "inFlightCurrentCompute": 0,
+    "inFlightVerificationCompute": 0,
+    "cpuCooldown": {
+      "status": "PASS",
+      "requiredDurationMs": 30000,
+      "before": {
+        "rootPid": 2496,
+        "processCount": 3,
+        "rssMb": 26.265625,
+        "cpuTime": [
+          {
+            "pid": 2496,
+            "cpuTime": "0:00.15"
+          },
+          {
+            "pid": 2514,
+            "cpuTime": "0:00.21"
+          },
+          {
+            "pid": 2515,
+            "cpuTime": "0:02.10"
+          }
+        ]
+      },
+      "after": {
+        "rootPid": 2496,
+        "processCount": 3,
+        "rssMb": 29.859375,
+        "cpuTime": [
+          {
+            "pid": 2496,
+            "cpuTime": "0:00.15"
+          },
+          {
+            "pid": 2514,
+            "cpuTime": "0:00.21"
+          },
+          {
+            "pid": 2515,
+            "cpuTime": "0:02.11"
+          }
+        ]
+      }
+    },
+    "memory": {
+      "preWaveRssMb": 75.4375,
+      "peakRssMb": 477.796875,
+      "postWaveRssMb": 477.796875,
+      "postCooldownRssMb": 0,
+      "workloadProcessStateAfterCooldown": "EXITED",
+      "rssPeakDeltaMb": 402.359375,
+      "rssPostCooldownDeltaMb": -75.4375,
+      "memoryRecoveryRatio": 1.1874878645489495
+    },
+    "dbPool": {
+      "application": {
+        "activeConnections": 0,
+        "idleConnections": 0,
+        "waitingRequests": 0,
+        "totalConnections": 0
+      },
+      "marketData": {
+        "activeConnections": 0,
+        "idleConnections": 0,
+        "waitingRequests": 0,
+        "totalConnections": 0
+      },
+      "saturationObserved": false,
+      "poolErrors": 0,
+      "status": "PASS"
+    },
+    "status": "PASS"
+  }
+}

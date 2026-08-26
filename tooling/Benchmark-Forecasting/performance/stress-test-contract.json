@@ -1,0 +1,260 @@
+{
+  "task": "FORECAST_PHASE_2_0_STRESS_TEST_CONTRACT_FREEZE",
+  "phase": "2.0",
+  "contractVersion": 1,
+  "status": "FROZEN",
+  "sourceRevision": {
+    "branch": "forecast/generic-period-stage-b",
+    "head": "9fc9f81b5649140ff46e029f3381873a9fbb60e3"
+  },
+  "principles": {
+    "userExperienceSpeed": "EQUAL",
+    "lowInfrastructureAndComputeCost": "EQUAL",
+    "methodologicalCorrectness": "EQUAL_HARD_GATE"
+  },
+  "states": {
+    "HOT_READY": {
+      "history": "LAWFUL_LOCAL_CURRENT",
+      "currentArtifact": "EXACT_READY",
+      "operation": "PREPARED_READ_ONLY",
+      "providerAllowed": false,
+      "computeAllowed": false,
+      "writesAllowed": false
+    },
+    "WARM_INPUT_READY_ARTIFACT_MISS": {
+      "history": "LAWFUL_LOCAL_CURRENT",
+      "currentArtifact": "EXACT_ABSENT",
+      "operation": "EXISTING_CURRENT_FORECAST_PRODUCTION_OPERATION",
+      "providerAllowed": false,
+      "computeAllowed": true,
+      "writesAllowed": true
+    },
+    "COLD_INPUT_AND_ARTIFACT_MISS": {
+      "history": "LOCAL_ABSENT_OR_INCOMPLETE",
+      "currentArtifact": "EXACT_ABSENT",
+      "operation": "EXISTING_CONTROLLED_HYDRATION_THEN_CURRENT_FORECAST_OPERATION",
+      "providerAllowed": true,
+      "computeAllowed": true,
+      "writesAllowed": true
+    },
+    "VERIFICATION_READY": {
+      "history": "LAWFUL_LOCAL_CURRENT",
+      "verificationArtifact": "EXACT_READY",
+      "operation": "PREPARED_VERIFICATION_READ_ONLY",
+      "providerAllowed": false,
+      "computeAllowed": false,
+      "writesAllowed": false
+    },
+    "VERIFICATION_MISS": {
+      "history": "LAWFUL_LOCAL_CURRENT",
+      "verificationArtifact": "EXACT_ABSENT",
+      "operation": "EXISTING_HISTORICAL_VERIFICATION_OPERATION",
+      "providerAllowed": false,
+      "computeAllowed": true,
+      "writesAllowed": true
+    },
+    "UX_SEARCH_EXPAND_HISTORICAL": {
+      "history": "AS_CONFIGURED_IN_ISOLATED_BASELINE",
+      "operation": "SEARCH_EXPAND_HISTORICAL_CAPABILITY_WITHOUT_SHOW_FORECAST",
+      "providerAllowed": "HISTORICAL_PATH_ONLY_IF_CONTRACTED",
+      "computeAllowed": false,
+      "writesAllowed": "NO_FORECAST_WRITES"
+    }
+  },
+  "concurrencyLevels": [10, 100, 1000],
+  "loadShapes": {
+    "primary": {
+      "id": "SYNCHRONIZED_BURST",
+      "releaseWindowMsMaximum": 250,
+      "startBarrierRequired": true,
+      "rampUpAllowed": false
+    },
+    "secondary": {
+      "id": "CONTROLLED_STEADY_FLOW",
+      "durationSeconds": 300,
+      "targetArrivalRatePerSecond": 5,
+      "classification": "CONTROLLED_ASSUMPTION_NOT_PRODUCTION_TRAFFIC"
+    }
+  },
+  "keyDistributions": {
+    "SAME_KEY": "All virtual users request one exact logical artifact key.",
+    "SMALL_POOL": "Virtual users are assigned round-robin across the three-member primary cohort.",
+    "DISTRIBUTED_KEYS": "Each virtual user receives a distinct canonical identity from a prevalidated no-provider pool."
+  },
+  "cohorts": {
+    "primary": [
+      {
+        "seriesId": "wocaes0074",
+        "frequency": "DAILY",
+        "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+        "methodVersion": "rolling-daily-point-in-time-v1",
+        "role": "PRIMARY_WORST_CASE_DAILY"
+      },
+      {
+        "seriesId": "wocaes0280",
+        "frequency": "MONTHLY",
+        "targetSemantics": "MONTHLY_AVERAGE",
+        "methodVersion": "benchmark-forecasting-mvp-phase2-v1",
+        "role": "ESTABLISHED_NATIVE_MONTHLY"
+      },
+      {
+        "seriesId": "usnaac0169",
+        "frequency": "QUARTERLY",
+        "targetSemantics": "END_OF_PERIOD",
+        "methodVersion": "benchmark-forecasting-mvp-phase2-v1",
+        "role": "ACCEPTED_REAL_QUARTERLY"
+      }
+    ],
+    "compatibility": [
+      { "seriesId": "usnaac0169", "frequency": "QUARTERLY", "expected": "READY" },
+      { "seriesId": "istrad0862", "frequency": "BIMONTHLY", "expected": "READY" },
+      { "seriesId": "chpric0077", "frequency": "SEMIANNUAL", "expected": "READY_LIMITED_VERIFICATION" },
+      { "seriesId": "cndemo0001", "frequency": "ANNUAL", "expected": "READY" },
+      { "seriesId": "trsurv1145", "frequency": "QUADMONTHLY", "expected": "FAIL_CLOSED_HISTORY_GAP_NO_COMPUTE" }
+    ],
+    "models": ["naive", "damped_holt", "ets", "arima"],
+    "immutableDuringBaseline": true
+  },
+  "stateIsolation": {
+    "environment": "PHASE_2_1_ISOLATED_DATABASE_CLONE",
+    "globalDeletionAllowed": false,
+    "acceptedEvidenceMutationAllowed": false,
+    "restoreAfterEachRun": "RESTORE_VERSIONED_SCENARIO_SNAPSHOT",
+    "procedures": {
+      "HOT_READY": [
+        "Restore the versioned HOT snapshot in the isolated database.",
+        "Recompute the canonical history fingerprint and assert exact artifact READY.",
+        "Disable provider access and verify one prepared read produces zero compute and zero writes."
+      ],
+      "WARM_INPUT_READY_ARTIFACT_MISS": [
+        "Restore the versioned WARM snapshot containing complete lawful local history.",
+        "Within an isolated transaction remove only Current rows matching the full canonical identity and dependent points.",
+        "Disable provider access and assert exact Current artifact absent before release."
+      ],
+      "COLD_INPUT_AND_ARTIFACT_MISS": [
+        "Restore the versioned COLD snapshot for a dedicated cohort identity in the isolated database.",
+        "Assert required observations are absent or incomplete and exact Current artifact is absent.",
+        "Permit provider access only for the allow-listed series and enforce staged escalation."
+      ],
+      "VERIFICATION_READY": [
+        "Restore the versioned Verification READY snapshot.",
+        "Assert exact verification identity and history fingerprint are READY.",
+        "Disable provider access and verify one prepared read produces zero backtests and zero writes."
+      ],
+      "VERIFICATION_MISS": [
+        "Restore the versioned Verification MISS snapshot containing complete lawful local history.",
+        "Within an isolated transaction remove only Verification rows matching the full canonical identity and dependent records.",
+        "Disable provider access and assert exact Verification artifact absent before release."
+      ]
+    }
+  },
+  "measurementLayers": {
+    "L1_COMPONENT_RUNTIME": ["capabilityMs", "historyPreparationMs", "modelFitMs", "pathGenerationMs", "verificationMs", "persistenceMs", "preparedReadMs"],
+    "L2_HTTP_SERVICE": ["requestMs", "ttfbMs", "serializationMs", "status", "payloadBytes", "queueWaitMs", "timeouts"],
+    "L3_USER_FLOW": ["searchTtvMs", "historicalChartTtvMs", "showForecastToVisibleMs", "showVerificationToVisibleMs"]
+  },
+  "metrics": {
+    "latencyPercentiles": ["MIN", "P50", "P90", "P95", "P99", "MAX", "MEAN"],
+    "throughput": ["requestsStarted", "requestsCompleted", "requestsPerSecond", "successfulRequestsPerSecond", "activeConcurrency", "wallClockSeconds"],
+    "reliability": ["successCount", "failureCount", "http4xx", "http5xx", "timeouts", "connectionFailures", "applicationExceptions", "forecastUnavailable", "errorRate"],
+    "cpu": ["processCpuPercent", "containerCpuPercent", "cpuSeconds", "cpuSecondsPerRequest", "cpuSecondsPerForecastCompute"],
+    "memory": ["rssMb", "heapUsedMb", "heapTotalMb", "externalMemoryMb", "peakMemoryMb", "memoryBeforeMb", "memoryAfterMb", "memoryAfterCooldownMb", "memoryDeltaAfterCooldownMb"],
+    "database": ["dbQueryCount", "dbQueryDurationP50Ms", "dbQueryDurationP95Ms", "dbConnectionCount", "dbPoolSaturation", "dbWaitMs", "dbRowsRead", "dbRowsWritten", "dbTransactionFailures", "dbLockWaits", "dbErrors"],
+    "provider": ["providerMetadataCalls", "providerHistoryCalls", "providerHydrationCalls", "providerLatencyMs", "providerFailures"],
+    "compute": ["forecastCoreInvocations", "modelFitCount", "fitsPerModel", "currentForecastComputeCount", "verificationComputeCount", "verificationOriginCount", "pathPointsGenerated", "computeDurationMs"],
+    "preparedReads": ["preparedHitCount", "preparedMissCount", "preparedHitRatio", "preparedReadLatencyMs", "cacheStatus"],
+    "persistence": ["artifactWrites", "pointWrites", "verificationRecordWrites", "writeDurationMs", "duplicateArtifactWriteCount", "writeFailures"],
+    "costProxies": ["cpuSecondsPerRequest", "cpuSecondsPerSuccessfulForecast", "peakMemoryMb", "gbSecondsApproximation", "dbQueriesPerRequest", "dbWritesPerForecast", "providerCallsPerForecast", "computeExecutionsPerLogicalArtifact"]
+  },
+  "duplicateWork": {
+    "expectedLogicalComputeCountPerExactIdentity": 1,
+    "duplicateComputeCountFormula": "max(actualComputeCount - expectedLogicalComputeCount, 0)",
+    "duplicateComputeRatioFormula": "duplicateComputeCount / max(expectedLogicalComputeCount, 1)",
+    "duplicateArtifactWriteCount": "equivalent writes after the first successful write for one exact logical artifact key"
+  },
+  "traceContract": {
+    "required": ["stressRunId", "scenarioId", "virtualUserId", "requestId", "forecastIdentity", "logicalArtifactKey"],
+    "logicalArtifactKeyFields": ["seriesId", "targetSemantics", "sourceFrequency", "targetCadence", "modelId", "methodVersion", "forecastOriginOrHistoryFingerprint"],
+    "performanceOnlyIdentityAllowed": false
+  },
+  "timing": {
+    "durations": "MONOTONIC_CLOCK",
+    "correlationTimestamps": "UTC_WALL_CLOCK",
+    "units": ["milliseconds", "seconds", "bytes", "MB", "CPU seconds"]
+  },
+  "runPolicy": {
+    "order": ["HARNESS_SMOKE", "CONCURRENCY_10", "CONCURRENCY_100", "CONCURRENCY_1000"],
+    "hotPreparedRepetitionsMinimum": 3,
+    "coldAndVerificationMissRepetitionsMinimum": 1,
+    "expensiveRunCountMustBeExplicit": true,
+    "cooldownConditions": ["activeRequests=0", "inFlightCompute=0", "cpuSettledFor30Seconds", "memorySampleRecordedAfterCooldown"],
+    "outlierExclusionReasons": ["HARNESS_FAILURE", "ENVIRONMENT_OUTAGE", "PROVIDER_OUTAGE", "INVALID_STATE_SETUP"],
+    "highLatencyIsExclusionReason": false,
+    "orderRecorded": true,
+    "cacheEffectLabels": ["FIRST_RUN_AFTER_STATE_SETUP", "REPEATED_HOT_RUN"]
+  },
+  "safety": {
+    "providerEscalationGuard": "Stop above minimal probe when one logical cold key causes duplicate provider hydration.",
+    "verificationEscalationGuard": "Stop above minimal probe when one logical verification key causes duplicate full backtests.",
+    "memoryAbort": "Abort when RSS exceeds 85% of the environment memory limit or the platform emits memory pressure.",
+    "errorRateAbort": "Abort when failure rate exceeds 10% after at least 10 completed requests, excluding lawful unavailability.",
+    "serviceUnavailableAbort": "Abort after three consecutive connection failures or HTTP 503 responses.",
+    "databaseExhaustionAbort": "Abort on pool timeout, connection exhaustion, or sustained pool saturation at 100% for 10 seconds.",
+    "cleanStopRequired": true
+  },
+  "functionalOutcomes": ["SUCCESS_READY_HIT", "SUCCESS_COMPUTED", "LAWFUL_NOT_AVAILABLE", "TIMEOUT", "HTTP_ERROR", "APPLICATION_ERROR", "PROVIDER_ERROR", "RESOURCE_ERROR", "UNKNOWN_ERROR"],
+  "classificationFramework": ["HEALTHY", "DEGRADED", "SATURATED", "STRUCTURAL_DUPLICATION", "RESOURCE_EXHAUSTED", "PROVIDER_BOUND", "DATABASE_BOUND", "COMPUTE_BOUND", "UNKNOWN_BOUND"],
+  "bottleneckFramework": ["MODEL_COMPUTE_BOUND", "DB_READ_BOUND", "DB_WRITE_BOUND", "SERIALIZATION_BOUND", "NODE_RUNTIME_BOUND", "PYTHON_RUNTIME_BOUND", "MEMORY_BOUND", "PROVIDER_BOUND", "CONCURRENCY_COORDINATION_BOUND", "DUPLICATE_COMPUTE_BOUND"],
+  "financialCost": {
+    "status": "NOT_CALCULATED",
+    "inventCloudPrices": false,
+    "outputs": ["costPer1000HotReads", "costPer1000WarmRequests", "costPer1000ColdRequests", "costPer1000VerificationReads", "costPerNewCurrentForecast", "costPerNewHistoricalVerification"],
+    "fallback": "NORMALIZED_RESOURCE_UNITS"
+  },
+  "environment": {
+    "component": {
+      "id": "LOCAL_COMPONENT_ISOLATED",
+      "network": "NO_EXTERNAL_PROVIDER",
+      "database": "ISOLATED_FIXTURE_OR_CLONE",
+      "writes": "EXACT_CONTROLLED_IDENTITIES_ONLY"
+    },
+    "service": {
+      "id": "PHASE_2_1_NON_PRODUCTION_HTTP",
+      "endpointRole": "SG_RUNTIME_AND_DASHBOARD_TEST_DEPLOYMENT",
+      "database": "DEDICATED_ISOLATED_CLONE",
+      "providerPolicy": "DENY_BY_DEFAULT_EXACT_SERIES_ALLOWLIST_FOR_COLD",
+      "writes": "EXACT_CONTROLLED_IDENTITIES_ONLY"
+    },
+    "requiredRunMetadata": ["environmentId", "serviceConfiguration", "cpuAllocation", "memoryAllocation", "runtimeVersion", "databaseTargetAlias", "configurationFlags"],
+    "productionLoadAllowed": false,
+    "credentialsInArtifactsAllowed": false
+  },
+  "datasetFingerprint": {
+    "required": ["seriesId", "frequency", "lawfulObservationCount", "historyStart", "historyEnd", "historyFingerprint", "targetSemantics", "modelId", "horizon"],
+    "capturedBeforeEveryRun": true
+  },
+  "correctness": {
+    "identityExactMatchRequired": true,
+    "stableResponseChecksumRequired": true,
+    "crossSemanticMatchAllowed": false,
+    "crossModelMatchAllowed": false,
+    "crossCadenceMatchAllowed": false,
+    "persistenceCorruptionAllowed": false,
+    "heavyStatisticalVerificationPerRequest": false
+  },
+  "scopeGuards": {
+    "modelMathChanged": false,
+    "forecastSemanticsChanged": false,
+    "cacheRedesign": false,
+    "warmupRedesign": false,
+    "dedupeImplemented": false,
+    "locksImplemented": false,
+    "queueImplemented": false,
+    "workerImplemented": false,
+    "dbIndexOptimization": false,
+    "infrastructureResized": false,
+    "phase21Started": false,
+    "deployment": false,
+    "fullStressExecuted": false
+  }
+}

@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import {
   DEFAULT_DASHBOARD_VARIANT_ID,
   buildDashboardVariantHref,
+  getDashboardVariantRegistrations,
   getStandaloneSwitcherVariants,
   resolveDashboardVariant,
 } from '@/lib/dashboard-variants/registry'
@@ -18,11 +19,20 @@ test('dashboard variant resolver uses finder embedded v2 as the default selectio
   assert.equal(resolution.fallbackFromVariantId, null)
 })
 
-test('dashboard variant resolver keeps historical-v1 explicit and truthfully non-runnable', () => {
+test('dashboard variant resolver materializes historical-v1 as a standalone runnable reference', () => {
   const resolution = resolveDashboardVariant({ requestedVariantId: 'historical-v1' })
 
   assert.equal(resolution.resolutionReason, 'requested')
   assert.equal(resolution.requestMatchedRegistry, true)
+  assert.equal(resolution.resolvedVariant.id, 'historical-v1')
+  assert.equal(resolution.hostAvailability, 'runnable')
+  assert.equal(resolution.isRunnable, true)
+})
+
+test('dashboard variant resolver keeps historical-v1 embedded-disabled', () => {
+  const resolution = resolveDashboardVariant({ requestedVariantId: 'historical-v1', embedded: true })
+
+  assert.equal(resolution.host, 'embedded')
   assert.equal(resolution.resolvedVariant.id, 'historical-v1')
   assert.equal(resolution.hostAvailability, 'provenance-only')
   assert.equal(resolution.isRunnable, false)
@@ -38,6 +48,17 @@ test('dashboard variant resolver keeps forecast-portfolio-v3 explicit and planne
   assert.equal(resolution.isRunnable, false)
 })
 
+test('dashboard variant resolver materializes forecast-portfolio-v3 as runnable in standalone mode only', () => {
+  const resolution = resolveDashboardVariant({ requestedVariantId: 'forecast-portfolio-v3' })
+
+  assert.equal(resolution.host, 'standalone')
+  assert.equal(resolution.resolutionReason, 'requested')
+  assert.equal(resolution.resolvedVariant.id, 'forecast-portfolio-v3')
+  assert.equal(resolution.resolvedVariant.lifecycle, 'experimental')
+  assert.equal(resolution.hostAvailability, 'runnable')
+  assert.equal(resolution.isRunnable, true)
+})
+
 test('dashboard variant resolver falls back unknown variant ids to the active baseline', () => {
   const resolution = resolveDashboardVariant({ requestedVariantId: 'unknown-variant' })
 
@@ -48,10 +69,14 @@ test('dashboard variant resolver falls back unknown variant ids to the active ba
   assert.equal(resolution.isRunnable, true)
 })
 
-test('standalone switcher only exposes runnable standalone variants', () => {
+test('standalone switcher auto-discovers runnable standalone variants in registry order', () => {
   const variants = getStandaloneSwitcherVariants()
+  const expected = getDashboardVariantRegistrations()
+    .filter((variant) => variant.runtimeStatus === 'runnable' && variant.hostAvailability.standalone === 'runnable')
+    .sort((left, right) => left.standaloneDisplayOrder - right.standaloneDisplayOrder)
 
-  assert.deepEqual(variants.map((variant) => variant.id), ['finder-embedded-v2'])
+  assert.deepEqual(variants.map((variant) => variant.id), expected.map((variant) => variant.id))
+  assert.deepEqual(variants.map((variant) => variant.id), ['historical-v1', 'finder-embedded-v2', 'forecast-portfolio-v3'])
 })
 
 test('dashboard variant href preserves host contract params when switching back to the default variant', () => {

@@ -1,0 +1,180 @@
+{
+  "result": {
+    "contractVersion": 1,
+    "stressRunId": "phase-2-2b-4r-p09-100-ets-4d7e21da-3e96-4173-8593-ee1a8f78768a",
+    "scenarioId": "P09",
+    "environmentId": "phase-2-1-local-isolated-v1",
+    "sourceRevision": "9fc9f81b5649140ff46e029f3381873a9fbb60e3",
+    "startedAt": "2026-08-25T13:44:51.578Z",
+    "endedAt": "2026-08-25T13:45:21.502Z",
+    "concurrency": 100,
+    "keyDistribution": "SMALL_POOL",
+    "loadShape": "SYNCHRONIZED_BURST",
+    "releaseSpreadMs": 5.627541,
+    "benchmark": "wocaes0074,wocaes0280,usnaac0169",
+    "datasetFingerprint": {
+      "seriesId": "wocaes0074",
+      "frequency": "DAILY",
+      "lawfulObservationCount": 10659,
+      "historyStart": "1985-10-01T00:00:00Z",
+      "historyEnd": "2026-08-20T00:00:00Z",
+      "historyFingerprint": "ebbcb638ce447e4813eac339ce2b45d7",
+      "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+      "horizon": "CONTRACT_DEFAULT"
+    },
+    "modelId": "mixed",
+    "requestsStarted": 100,
+    "requestsCompleted": 100,
+    "successCount": 100,
+    "failureCount": 0,
+    "errorRate": 0,
+    "functionalOutcomes": {
+      "SUCCESS_COMPUTED": 100
+    },
+    "latencyMinMs": 13608.108875,
+    "latencyP50Ms": 24825.468021,
+    "latencyP90Ms": 29360.939475,
+    "latencyP95Ms": 29749.784096,
+    "latencyP99Ms": 29760.662101,
+    "latencyMaxMs": 29843.609334,
+    "latencyMeanMs": 23774.656408,
+    "throughputRps": 3.350294,
+    "successfulThroughputRps": 3.350294,
+    "cpuSeconds": null,
+    "peakMemoryMb": null,
+    "memoryDeltaAfterCooldownMb": null,
+    "dbQueryCount": null,
+    "dbWriteCount": 0,
+    "providerCallCount": 0,
+    "forecastComputeCount": 0,
+    "verificationComputeCount": 0,
+    "computeOwnerCount": 0,
+    "duplicateComputeCount": 0,
+    "duplicateComputeRatio": 0,
+    "duplicateArtifactWriteCount": 0,
+    "preparedHitCount": 0,
+    "preparedMissCount": 0,
+    "wallClockSeconds": 29.84813,
+    "classification": "HEALTHY",
+    "bottleneckAttribution": [],
+    "firstRunAfterStateSetup": true,
+    "repetitionNumber": 1,
+    "excluded": false,
+    "exclusionReason": "NOT_EXCLUDED",
+    "correctnessPassed": true,
+    "notes": []
+  },
+  "control": {
+    "valid": true,
+    "classification": "VALID_COMPLETED",
+    "continueEscalation": true,
+    "reason": null
+  },
+  "events": [],
+  "databaseBefore": {
+    "commits": 173,
+    "rollbacks": 0,
+    "read": 2279538,
+    "fetched": 25681,
+    "inserted": 438041,
+    "updated": 133,
+    "deleted": 16,
+    "deadlocks": 0
+  },
+  "databaseAfter": {
+    "commits": 245,
+    "rollbacks": 0,
+    "read": 2546849,
+    "fetched": 289261,
+    "inserted": 438041,
+    "updated": 133,
+    "deleted": 16,
+    "deadlocks": 0
+  },
+  "preloadEvidence": {
+    "requestManifestPath": "tooling/Benchmark-Forecasting/validation/phase-2-2b-4r/manifests/P09-mixed-100-r1.json",
+    "requestManifestHash": "a0ffdb59a036408a5c8e3da48873933cee804cf732390f706f958d76760629b8",
+    "stateProofPath": "tooling/Benchmark-Forecasting/validation/phase-2-2b-4r/state-proofs/P09-mixed-100-r1.json",
+    "stateProofHash": "081bb51c00cf53a5a1a9d579b1004d9efbb49d6a22b580cfbca5c53f84e7e30d"
+  },
+  "settlement": {
+    "cooldownStartedAt": "2026-08-25T13:45:21.544Z",
+    "cooldownCompletedAt": "2026-08-25T13:45:51.590Z",
+    "cooldownDurationMs": 30046,
+    "activeHttpRequests": 0,
+    "activeCurrentSingleFlightEntries": 0,
+    "activeVerificationSingleFlightEntries": 0,
+    "inFlightCurrentCompute": 0,
+    "inFlightVerificationCompute": 0,
+    "cpuCooldown": {
+      "status": "PASS",
+      "requiredDurationMs": 30000,
+      "before": {
+        "rootPid": 2523,
+        "processCount": 3,
+        "rssMb": 517.453125,
+        "cpuTime": [
+          {
+            "pid": 2523,
+            "cpuTime": "0:00.26"
+          },
+          {
+            "pid": 2542,
+            "cpuTime": "0:00.34"
+          },
+          {
+            "pid": 2543,
+            "cpuTime": "1:01.06"
+          }
+        ]
+      },
+      "after": {
+        "rootPid": 2523,
+        "processCount": 3,
+        "rssMb": 40.4375,
+        "cpuTime": [
+          {
+            "pid": 2523,
+            "cpuTime": "0:00.26"
+          },
+          {
+            "pid": 2542,
+            "cpuTime": "0:00.34"
+          },
+          {
+            "pid": 2543,
+            "cpuTime": "1:01.10"
+          }
+        ]
+      }
+    },
+    "memory": {
+      "preWaveRssMb": null,
+      "peakRssMb": null,
+      "postWaveRssMb": null,
+      "postCooldownRssMb": 40.4375,
+      "workloadProcessStateAfterCooldown": "SERVICE_IDLE",
+      "rssPeakDeltaMb": null,
+      "rssPostCooldownDeltaMb": null,
+      "memoryRecoveryRatio": null
+    },
+    "dbPool": {
+      "application": {
+        "activeConnections": 0,
+        "idleConnections": 0,
+        "waitingRequests": 0,
+        "totalConnections": 0
+      },
+      "marketData": {
+        "activeConnections": 0,
+        "idleConnections": 7,
+        "waitingRequests": 0,
+        "totalConnections": 7
+      },
+      "saturationObserved": false,
+      "poolErrors": 0,
+      "status": "PASS"
+    },
+    "status": "PASS"
+  }
+}

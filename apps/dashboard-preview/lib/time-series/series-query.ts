@@ -35,15 +35,14 @@ type BenchmarkAnalyticsSeriesResponse = {
 }
 
 const LOCAL_SG_RUNTIME_BASE_URL = 'http://localhost:3001'
-const PRODUCTION_SG_RUNTIME_BASE_URL = 'https://benchmark-finder-category-builder.onrender.com'
 
 function resolveSgRuntimeBaseUrl() {
   if (process.env.SG_RUNTIME_BASE_URL?.trim()) {
     return process.env.SG_RUNTIME_BASE_URL.trim()
   }
 
-  if (process.env.NODE_ENV === 'production') {
-    return PRODUCTION_SG_RUNTIME_BASE_URL
+  if (process.env.RENDER_EXTERNAL_URL?.trim() || process.env.VERCEL_URL?.trim()) {
+    throw new Error('SG_RUNTIME_BASE_URL is required in deployed dashboard-preview environments.')
   }
 
   return LOCAL_SG_RUNTIME_BASE_URL
@@ -191,7 +190,7 @@ function toIsoString(value: Date | string | null | undefined): string | null {
   return Number.isNaN(date.getTime()) ? null : date.toISOString()
 }
 
-function bySourceDateAsc(locale: 'pl' | 'en') {
+export function bySourceDateAsc(locale: 'pl' | 'en') {
   return (left: DashboardRecordSource, right: DashboardRecordSource) => {
     const leftDate = toBusinessSafeDashboardRecord(left, { locale }).sourceDate
     const rightDate = toBusinessSafeDashboardRecord(right, { locale }).sourceDate
@@ -199,7 +198,7 @@ function bySourceDateAsc(locale: 'pl' | 'en') {
   }
 }
 
-function filterBusinessRecords(records: DashboardRecordSource[], filters: DashboardRecordListFilters, locale: 'pl' | 'en') {
+export function filterBusinessRecords(records: DashboardRecordSource[], filters: DashboardRecordListFilters, locale: 'pl' | 'en') {
   const search = filters.q?.trim().toLowerCase() ?? null
   const scenario = filters.scenarioType?.trim().toLowerCase() ?? null
 
@@ -232,11 +231,11 @@ function filterBusinessRecords(records: DashboardRecordSource[], filters: Dashbo
   })
 }
 
-function filterScenario(records: DashboardRecordSource[], scenario: 'historical' | 'forecast') {
+export function filterScenario(records: DashboardRecordSource[], scenario: 'historical' | 'forecast') {
   return records.filter((record) => toBusinessSafeDashboardRecord(record, { locale: 'pl' }).scenarioType.toLowerCase() === scenario)
 }
 
-function findBenchmarkVariants(records: DashboardRecordSource[]) {
+export function findBenchmarkVariants(records: DashboardRecordSource[]) {
   const variants = new Map<string, DashboardRecordSource[]>()
 
   for (const record of records) {

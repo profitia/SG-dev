@@ -1,0 +1,290 @@
+{
+  "task": "FORECAST_PHASE_2_2B_3_PERSISTENCE_OWNERSHIP_IDEMPOTENCY_EXPERIMENT",
+  "generatedAt": "2026-08-25T05:54:57.499Z",
+  "status": "PASS",
+  "taskAttributedPathCount": 31,
+  "paths": [
+    {
+      "path": "apps/sg-runtime/lib/forecast/service.ts",
+      "change": "MODIFIED",
+      "logicalOwner": "Forecast Runtime",
+      "tracking": "untracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Export-only test seam; persistence behavior is unchanged."
+    },
+    {
+      "path": "apps/sg-runtime/scripts/run-forecast-phase-2-2b-3-persistence-experiment.ts",
+      "change": "CREATED",
+      "logicalOwner": "Forecast Runtime Test Harness",
+      "tracking": "untracked",
+      "classification": "TEST",
+      "includeInFutureSgDev": "YES",
+      "reason": "Bounded production-repository persistence worker."
+    },
+    {
+      "path": "apps/sg-runtime/tests/forecast-library-service.test.ts",
+      "change": "MODIFIED",
+      "logicalOwner": "Forecast Runtime Tests",
+      "tracking": "untracked",
+      "classification": "TEST",
+      "includeInFutureSgDev": "YES",
+      "reason": "Owner lifetime and release-race coverage."
+    },
+    {
+      "path": "apps/sg-runtime/tests/persistence-ownership.test.ts",
+      "change": "CREATED",
+      "logicalOwner": "Forecast Runtime Tests",
+      "tracking": "untracked",
+      "classification": "TEST",
+      "includeInFutureSgDev": "YES",
+      "reason": "Frozen persistence-key contract tests."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-3-persistence-ownership-idempotency-experiment.mjs",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Tooling",
+      "tracking": "untracked",
+      "classification": "TEST",
+      "includeInFutureSgDev": "YES",
+      "reason": "Guarded Stage A runner."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-3-finalize-evidence.mjs",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Tooling",
+      "tracking": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Deterministic B3 evidence finalizer."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-3-final-gate.validator.mjs",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Tooling",
+      "tracking": "untracked",
+      "classification": "TEST",
+      "includeInFutureSgDev": "YES",
+      "reason": "Exact report and gate validator."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/FORECAST_PHASE_2_2B_3_PERSISTENCE_OWNERSHIP_IDEMPOTENCY_EXPERIMENT.md",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Required 64-section human report."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2b-3-persistence-ownership-idempotency.json",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Required 84-condition machine gate."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2b-3-migration-readiness.json",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Required migration readiness delta."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-3/persistence-stage-a.json",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Observed isolated-clone persistence evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-3/prepared-search-regressions.json",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Prepared and search compute-free evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-3/regression.json",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Full applicable regression summary."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-3/implementation-contract.json",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "H0/H1 and key decision contract."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-3/correctness-equivalence.json",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Canonical convergence and cardinality proof."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-3/failure-race.json",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Rollback, retry, lost-ack, and release-race proof."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-3/scope-guards.json",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Scope and methodology guard evidence."
+    },
+    {
+      "path": "apps/pmos/.pmos/forecast-phase-2-2b-3-persistence-ownership-idempotency-experiment-v1-bootstrap.json",
+      "change": "CREATED",
+      "logicalOwner": "PMOS Runtime",
+      "tracking": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "NO",
+      "reason": "Task-scoped canonical PMOS bootstrap."
+    },
+    {
+      "path": "apps/pmos/.pmos/conversations/2026-08-25-07:53_forecast-phase-2-2b-3-persistence-ownership-idempotency-experiment-v1.md",
+      "change": "CREATED",
+      "logicalOwner": "PMOS Runtime",
+      "tracking": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "NO",
+      "reason": "PMOS human flight record."
+    },
+    {
+      "path": "apps/pmos/.pmos/conversations/2026-08-25-07:53_forecast-phase-2-2b-3-persistence-ownership-idempotency-experiment-v1.json",
+      "change": "CREATED",
+      "logicalOwner": "PMOS Runtime",
+      "tracking": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "NO",
+      "reason": "PMOS machine flight record."
+    },
+    {
+      "path": "apps/pmos/.pmos/conversations/2026-08-25-07:53_forecast-phase-2-2b-3-persistence-ownership-idempotency-experiment-v1.integrity.json",
+      "change": "CREATED",
+      "logicalOwner": "PMOS Runtime",
+      "tracking": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "NO",
+      "reason": "PMOS integrity sidecar."
+    },
+    {
+      "path": "apps/pmos/.pmos/conversations/2026-08-25-07:53_forecast-phase-2-2b-3-persistence-ownership-idempotency-experiment-v1.lock.json",
+      "change": "CREATED",
+      "logicalOwner": "PMOS Runtime",
+      "tracking": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "NO",
+      "reason": "PMOS immutable lock sidecar."
+    },
+    {
+      "path": "apps/pmos/.pmos/conversations/logs/2026-08-25-07:53_forecast-phase-2-2b-3-persistence-ownership-idempotency-experiment-v1.execution-trail.jsonl",
+      "change": "CREATED",
+      "logicalOwner": "PMOS Runtime",
+      "tracking": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "NO",
+      "reason": "Canonical execution trail."
+    },
+    {
+      "path": "apps/pmos/.pmos/conversations/logs/2026-08-25-07:53_forecast-phase-2-2b-3-persistence-ownership-idempotency-experiment-v1.execution-trail.md",
+      "change": "CREATED",
+      "logicalOwner": "PMOS Runtime",
+      "tracking": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "NO",
+      "reason": "Human-readable execution trail."
+    },
+    {
+      "path": "apps/pmos/.pmos/recovery/closeouts/2026-08-25-07:53_forecast-phase-2-2b-3-persistence-ownership-idempotency-experiment-v1.closeout.json",
+      "change": "CREATED",
+      "logicalOwner": "PMOS Runtime",
+      "tracking": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "NO",
+      "reason": "CLOSEOUT_COMPLETE evidence."
+    },
+    {
+      "path": "apps/pmos/.pmos/recovery/pending-artifacts/2026-08-25-07:53_forecast-phase-2-2b-3-persistence-ownership-idempotency-experiment-v1__backup_2026-08-25__05-53-02-037Z.json",
+      "change": "CREATED",
+      "logicalOwner": "PMOS Runtime",
+      "tracking": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "NO",
+      "reason": "Immutable pending-artifact backup."
+    },
+    {
+      "path": "apps/pmos/.context/runtime-context.md",
+      "change": "MODIFIED",
+      "logicalOwner": "PMOS Runtime",
+      "tracking": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "NO",
+      "reason": "Rebuilt PMOS runtime context."
+    },
+    {
+      "path": "apps/pmos/.context/runtime-context.integrity.json",
+      "change": "MODIFIED",
+      "logicalOwner": "PMOS Runtime",
+      "tracking": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "NO",
+      "reason": "Verified runtime-context integrity."
+    },
+    {
+      "path": "apps/pmos/.context/runtime-integrity-report.md",
+      "change": "MODIFIED",
+      "logicalOwner": "PMOS Runtime",
+      "tracking": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "NO",
+      "reason": "Post-closeout runtime integrity audit report."
+    },
+    {
+      "path": "apps/pmos/.context/runtime-authenticity-report.md",
+      "change": "MODIFIED",
+      "logicalOwner": "PMOS Runtime",
+      "tracking": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "NO",
+      "reason": "Post-closeout runtime authenticity audit report."
+    },
+    {
+      "path": "apps/pmos/.context/runtime-determinism-report.md",
+      "change": "MODIFIED",
+      "logicalOwner": "PMOS Runtime",
+      "tracking": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "NO",
+      "reason": "Post-closeout runtime determinism audit report."
+    }
+  ],
+  "newNestedGitRepositories": 0,
+  "newExternalSourceRepositories": 0,
+  "persistenceSourceBehaviorChanged": false
+}

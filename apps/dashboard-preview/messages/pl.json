@@ -37,7 +37,33 @@
     "forecastAccuracyInfoLine2": "3M, 6M i 12M wykorzystują starsze migawki prognozy przygotowane odpowiednio 3, 6 lub 12 miesięcy przed miesiącem docelowym.",
     "showForecast": "Pokaż prognozy",
     "showForecastAccuracy": "Pokaż trafność prognoz",
+    "showForecastVerification": "Pokaż sprawdzalność prognozy",
+    "forecastUnavailable": "Prognoza niedostępna",
+    "forecastUnavailableHint": "Dane historyczne pozostają dostępne. Nie udało się teraz załadować bieżącej prognozy dla wybranego modelu.",
+    "verificationUnavailable": "Sprawdzalność prognozy niedostępna",
+    "verificationUnavailableHint": "Dane historyczne i bieżąca prognoza pozostają dostępne. Nie udało się teraz załadować historycznej sprawdzalności prognozy.",
+    "forecastModel": "Model prognozy",
+    "forecastTargetBasis": "Baza celu prognozy",
+    "forecastTargetBasisInfoLabel": "Wyjaśnienie bazy celu prognozy",
+    "forecastTargetBasisInfoLine1": "Baza celu określa, czy prognoza dotyczy średniej miesięcznej, czy odczytu na koniec okresu.",
+    "forecastTargetBasisInfoLine2": "Zmiana bazy zmienia znaczenie Current Forecast, Historical Forecast, Historical Actual i verification delta.",
+    "forecastPortfolioTitle": "Przegląd portfela prognoz",
+    "forecastPortfolioSubtitle": "Standalone surface do oceny jednego benchmarku z historią, bieżącą prognozą i historyczną sprawdzalnością prognozy.",
+    "forecastOrigin": "Forecast Origin",
+    "targetPeriod": "Okres docelowy",
+    "actual": "Actual",
+    "forecast": "Forecast",
+    "delta": "Delta",
+    "model": "Model",
+    "verificationHorizon": "Horyzont sprawdzalności",
+    "verificationHorizonInfoLabel": "Wyjaśnienie horyzontu sprawdzalności",
+    "verificationHorizonInfoLine1": "Horyzont określa, jak wcześnie prognoza została przygotowana względem miesiąca docelowego.",
+    "verificationHorizonInfoLine2": "1M, 3M, 6M i 12M nie zmieniają bazy celu ani modelu. Zmieniają tylko moment przygotowania migawki prognozy.",
     "forecastAccuracy": "Trafność prognozy",
+    "forecastVerificationDelta": "Delta prognoza vs odczyt rzeczywisty",
+    "forecastVerificationDeltaInfoLabel": "Wyjaśnienie delta prognoza vs odczyt rzeczywisty",
+    "forecastVerificationDeltaInfoLine1": "Wstęga pokazuje różnicę między Historyczną prognozą a właściwym odczytem rzeczywistym dla wybranej bazy celu.",
+    "forecastVerificationDeltaInfoLine2": "Dodatnia delta oznacza prognozę powyżej odczytu rzeczywistego. Ujemna delta oznacza prognozę poniżej odczytu rzeczywistego.",
     "accuracyPresentationMode": "Sposób prezentacji",
     "forecastHorizon": "Horyzont prognozy",
     "forecastHorizonInfoButton": "Wyjaśnij horyzont prognozy",
@@ -71,21 +97,21 @@
   },
   "DashboardVariants": {
     "kicker": "Biblioteka doświadczeń dashboardu",
-    "libraryTitle": "Kanoniczny rejestr wariantów",
+    "libraryTitle": "Trwała biblioteka porównawcza dashboardu",
     "currentVariantLabel": "Rozwiązany runtime",
     "lifecycleLabel": "Cykl życia",
     "runtimeLabel": "Runtime hosta",
     "switcherLabel": "Uruchamialne warianty standalone",
-    "switcherHint": "Tryb standalone może przełączać się tylko między uruchamialnymi zarejestrowanymi wariantami. Hosty embedded powinny pozostać przy stabilnym kontrakcie Finder, dopóki kolejny wariant nie zostanie zmaterializowany.",
+    "switcherHint": "Biblioteka standalone pokazuje wszystkie uruchamialne doświadczenia dashboardu z canonical registry w kolejności historycznej i review. Hosty embedded pozostają przy stabilnym kontrakcie Finder.",
     "variantLabels": {
-      "historicalV1": "Historical v1",
+      "historicalV1": "Dashboard Preview v1",
       "finderEmbeddedV2": "Finder Embedded v2",
       "forecastPortfolioV3": "Forecast Portfolio v3"
     },
     "variantSummaries": {
-      "historicalV1": "Odtworzony legacy dashboard-first UX dla historii i trafności prognoz.",
+      "historicalV1": "Odtworzony legacy dashboard-first UX dla historii i trafności prognoz, zachowany jako uruchamialny punkt odniesienia.",
       "finderEmbeddedV2": "Bieżący chart-first UX benchmarku z kompatybilnością embedded hosta.",
-      "forecastPortfolioV3": "Zarezerwowany slot rejestru dla przyszłego Forecast Core UX bez obecnej implementacji runtime."
+      "forecastPortfolioV3": "Pierwsza standalone propozycja Forecast Portfolio łącząca Historical Actual, Current Forecast i Historical Forecast Verification."
     },
     "availability": {
       "runnable": "Uruchamialny",
@@ -95,6 +121,7 @@
     "lifecycle": {
       "legacy": "Legacy lineage",
       "active": "Aktywny baseline",
+      "experimental": "Eksperymentalny standalone",
       "planned": "Planowana lineage"
     },
     "notices": {
@@ -103,8 +130,8 @@
     },
     "unavailable": {
       "title": "{variantLabel} nie jest uruchamialny w tym baseline",
-      "historicalV1Message": "Ten wpis rejestru zachowuje wyłącznie odtworzoną lineage historycznego UX. Kanoniczna aplikacja Dashboard Preview nie materializuje go dziś jako uruchamialnej powierzchni.",
-      "forecastPortfolioV3Message": "Ten wpis rejestru rezerwuje przyszły Forecast Portfolio UX. W Dashboard Preview nie ma jeszcze implementacji runtime tej wersji.",
+      "historicalV1Message": "Historyczny v1 pozostaje standalone-only referencją. Nie jest dostępny jako embedded runtime.",
+      "forecastPortfolioV3Message": "Ten wpis rejestru jest wyłączony w embedded mode w bieżącym baseline. Otwórz go w standalone mode, aby zobaczyć eksperymentalny Forecast Portfolio view.",
       "runtimeStatus": "Runtime hosta: {status}",
       "lifecycleStatus": "Cykl życia: {status}",
       "openActiveBaseline": "Otwórz aktywny baseline"

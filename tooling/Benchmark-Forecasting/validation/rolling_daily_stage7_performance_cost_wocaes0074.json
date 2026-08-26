@@ -1,0 +1,625 @@
+{
+  "identity": {
+    "seriesId": "wocaes0074",
+    "forecastMethod": "ROLLING_DAILY_POINT_IN_TIME",
+    "methodVersion": "rolling-daily-point-in-time-v1",
+    "targetBasis": "POINT_IN_TIME",
+    "currentOrigin": "2026-08-18"
+  },
+  "environment": {
+    "benchmarkTimestamp": "2026-08-21T11:00:17Z",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "system": "Darwin",
+    "architecture": "arm64",
+    "pythonVersion": "3.13.0",
+    "numpyVersion": "2.5.2",
+    "statsmodelsVersion": "0.14.6",
+    "processType": "python-script",
+    "databaseAccessMode": "network-backed-neon-via-runtime-and-snapshot-seams"
+  },
+  "historicalEvidence": {
+    "stage4": {
+      "sourceArtifact": "validation/arima_stage4_historical_verification_wocaes0074.json",
+      "origins": 681,
+      "batches": 36,
+      "totalRuntimeSeconds": 6810.170992082974,
+      "fetchSeconds": 0.8595881250221282,
+      "runtimePerOriginSeconds": 10.000251089695997,
+      "originsPerMinute": 5.999849349965069,
+      "totalVerificationRecords": 2724,
+      "fullHistoricalRerunPerformed": false
+    },
+    "stage5Recomputation": {
+      "sourceArtifact": "validation/stage5_arima_minimal_recomputation_wocaes0074.json",
+      "origins": 681,
+      "batches": 36,
+      "totalRuntimeSeconds": 6957.410418666666,
+      "runtimePerOriginSeconds": 10.216461701419481,
+      "oneOriginRepresentative": {
+        "elapsedSeconds": 9.322419415984768,
+        "newOriginCount": 1,
+        "maturedRecordCount": 0,
+        "newRecordCount": 4,
+        "calibrationGroupCount": 4,
+        "persistenceStatus": "SUCCEEDED"
+      }
+    }
+  },
+  "currentComputeByModel": {
+    "naive": {
+      "originDate": "2026-08-18",
+      "historyCount": 10460,
+      "pathLength": 365,
+      "runs": 5,
+      "timings": {
+        "sampleCount": 5,
+        "minMs": 2.0556250237859786,
+        "medianMs": 2.2200840176083148,
+        "maxMs": 2.5847500073723495,
+        "p95Ms": null,
+        "p95Status": "NOT_MEANINGFUL",
+        "samplesMs": [
+          2.3012079764157534,
+          2.1797919762320817,
+          2.2200840176083148,
+          2.0556250237859786,
+          2.5847500073723495
+        ]
+      },
+      "cpuTimeMs": {
+        "sampleCount": 5,
+        "minMs": 2.056000000000058,
+        "medianMs": 2.2210000000000285,
+        "maxMs": 2.363000000000115,
+        "p95Ms": null,
+        "p95Status": "NOT_MEANINGFUL",
+        "samplesMs": [
+          2.3040000000000838,
+          2.1800000000000708,
+          2.2210000000000285,
+          2.056000000000058,
+          2.363000000000115
+        ]
+      },
+      "selectedVariant": "NAIVE_LAST_VALUE",
+      "selectedParameters": {}
+    },
+    "damped_holt": {
+      "originDate": "2026-08-18",
+      "historyCount": 10460,
+      "pathLength": 365,
+      "runs": 5,
+      "timings": {
+        "sampleCount": 5,
+        "minMs": 92.81362500041723,
+        "medianMs": 94.01499998057261,
+        "maxMs": 96.94295900408179,
+        "p95Ms": null,
+        "p95Status": "NOT_MEANINGFUL",
+        "samplesMs": [
+          94.01499998057261,
+          92.81362500041723,
+          93.25470897601917,
+          94.54383299453184,
+          96.94295900408179
+        ]
+      },
+      "cpuTimeMs": {
+        "sampleCount": 5,
+        "minMs": 90.38499999999993,
+        "medianMs": 92.09900000000016,
+        "maxMs": 92.7690000000001,
+        "p95Ms": null,
+        "p95Status": "NOT_MEANINGFUL",
+        "samplesMs": [
+          92.09900000000016,
+          90.38499999999993,
+          90.924,
+          92.19,
+          92.7690000000001
+        ]
+      },
+      "selectedVariant": "DAMPED_HOLT_ADDITIVE",
+      "selectedParameters": {
+        "alpha": 0.9999999850988388,
+        "beta": 0.005180048166398075,
+        "phi": 0.9687287297289298,
+        "initial_level": 28.34297480424177,
+        "initial_trend": -0.045899811022258034
+      }
+    },
+    "ets": {
+      "originDate": "2026-08-18",
+      "historyCount": 10460,
+      "pathLength": 365,
+      "runs": 5,
+      "timings": {
+        "sampleCount": 5,
+        "minMs": 229.961791948881,
+        "medianMs": 240.91495899483562,
+        "maxMs": 310.37554203066975,
+        "p95Ms": null,
+        "p95Status": "NOT_MEANINGFUL",
+        "samplesMs": [
+          240.91495899483562,
+          237.23949998384342,
+          229.961791948881,
+          310.37554203066975,
+          269.1685839672573
+        ]
+      },
+      "cpuTimeMs": {
+        "sampleCount": 5,
+        "minMs": 224.14799999999957,
+        "medianMs": 230.61299999999994,
+        "maxMs": 257.69000000000017,
+        "p95Ms": null,
+        "p95Status": "NOT_MEANINGFUL",
+        "samplesMs": [
+          230.61299999999994,
+          230.1500000000001,
+          224.14799999999957,
+          257.69000000000017,
+          256.32400000000024
+        ]
+      },
+      "selectedVariant": "ETS(A,N,N)",
+      "selectedParameters": {
+        "smoothing_level": 0.9999,
+        "initial_level": 28.296368828903894
+      }
+    },
+    "arima": {
+      "originDate": "2026-08-18",
+      "historyCount": 10460,
+      "pathLength": 365,
+      "runs": 2,
+      "timings": {
+        "sampleCount": 2,
+        "minMs": 13887.437249999493,
+        "medianMs": 14378.88518749969,
+        "maxMs": 14870.333124999888,
+        "p95Ms": null,
+        "p95Status": "NOT_MEANINGFUL",
+        "samplesMs": [
+          14870.333124999888,
+          13887.437249999493
+        ]
+      },
+      "cpuTimeMs": {
+        "sampleCount": 2,
+        "minMs": 13421.585000000001,
+        "medianMs": 13495.543,
+        "maxMs": 13569.500999999998,
+        "p95Ms": null,
+        "p95Status": "NOT_MEANINGFUL",
+        "samplesMs": [
+          13569.500999999998,
+          13421.585000000001
+        ]
+      },
+      "selectedVariant": "ARIMA(2,1,2)",
+      "selectedParameters": {
+        "order": [
+          2,
+          1,
+          2
+        ],
+        "trend": "t",
+        "seasonal_order": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "policyIdentity": "ARIMA_NON_SEASONAL_BOUNDED_AICC_V1",
+        "candidateCount": 17,
+        "tieBreakPolicy": "LOWER_D_THEN_LOWER_P_PLUS_Q_THEN_P_THEN_Q",
+        "fitImplementation": "STATSMODELS_ARIMA_STATESPACE",
+        "x1": 0.005983409676224728,
+        "ar.L1": -0.11399343436348802,
+        "ar.L2": -0.8307667063551517,
+        "ma.L1": 0.14221748763510847,
+        "ma.L2": 0.8099071982337454,
+        "sigma2": 1.4213312710473487
+      }
+    }
+  },
+  "arimaCurrentCompute": {
+    "historyCount": 10460,
+    "originDate": "2026-08-18",
+    "pathLength": 365,
+    "selectedOrder": "ARIMA(2,1,2)",
+    "candidateAttempts": 17,
+    "candidateSuccesses": 17,
+    "timings": {
+      "sampleCount": 2,
+      "minMs": 13887.437249999493,
+      "medianMs": 14378.88518749969,
+      "maxMs": 14870.333124999888,
+      "p95Ms": null,
+      "p95Status": "NOT_MEANINGFUL",
+      "samplesMs": [
+        14870.333124999888,
+        13887.437249999493
+      ]
+    },
+    "cpuTimeMs": {
+      "sampleCount": 2,
+      "minMs": 13421.585000000001,
+      "medianMs": 13495.543,
+      "maxMs": 13569.500999999998,
+      "p95Ms": null,
+      "p95Status": "NOT_MEANINGFUL",
+      "samplesMs": [
+        13569.500999999998,
+        13421.585000000001
+      ]
+    },
+    "policyIdentity": "ARIMA_NON_SEASONAL_BOUNDED_AICC_V1"
+  },
+  "incrementalMaintenance": {
+    "status": "MEASURED_WITHOUT_PERSISTENCE",
+    "originDate": "2026-08-18",
+    "previousOriginDate": "2026-08-17",
+    "timings": {
+      "dataReadMs": 0.02099998528137803,
+      "modelComputeMs": null,
+      "verificationArtifactCreationMs": null,
+      "persistenceMs": null,
+      "preparedStateUpdateMs": null,
+      "totalMs": 1753.756958001759
+    },
+    "operations": {
+      "newOriginCount": 0,
+      "newOriginDates": [],
+      "newRecordCount": 0,
+      "maturedRecordCount": 0,
+      "calibrationRefreshCount": 0,
+      "affectedCalibrationGroupCount": 0
+    },
+    "persistence": {
+      "status": "NOT_MEASURED_SAFE_READ_ONLY",
+      "reason": "Live maintenance upsert was not timed separately to avoid mutating canonical runtime truth for benchmarking only."
+    },
+    "repairCatchUp": "SEPARATE_NOT_MEASURED",
+    "source": "export_rolling_daily_incremental_maintenance.py on current full history"
+  },
+  "bandCalibration": {
+    "status": "MEASURED",
+    "calibrationRecordsRead": 2724,
+    "maturedRecordCount": 2250,
+    "sampleCountsByHorizon": {
+      "1M": 659,
+      "3M": 615,
+      "6M": 553,
+      "12M": 423
+    },
+    "quantilesByHorizon": {
+      "1M": {
+        "p10": -7.447065428,
+        "p50": -0.38882793,
+        "p90": 7.427345650000007
+      },
+      "3M": {
+        "p10": -12.584608044,
+        "p50": -2.32269084,
+        "p90": 16.89735407600004
+      },
+      "6M": {
+        "p10": -12.408579959999999,
+        "p50": -4.08283176,
+        "p90": 30.986183802000003
+      },
+      "12M": {
+        "p10": -19.512656728,
+        "p50": -9.4377865,
+        "p90": 31.017605450000012
+      }
+    },
+    "timings": {
+      "recordReadMs": {
+        "sampleCount": 3,
+        "minMs": 999.2944999830797,
+        "medianMs": 1295.4033329733647,
+        "maxMs": 1427.3229579557665,
+        "p95Ms": null,
+        "p95Status": "NOT_MEANINGFUL",
+        "samplesMs": [
+          1427.3229579557665,
+          1295.4033329733647,
+          999.2944999830797
+        ]
+      },
+      "quantileComputationMs": {
+        "sampleCount": 3,
+        "minMs": 8.16649995977059,
+        "medianMs": 8.308042015414685,
+        "maxMs": 8.973582996986806,
+        "p95Ms": null,
+        "p95Status": "NOT_MEANINGFUL",
+        "samplesMs": [
+          8.973582996986806,
+          8.308042015414685,
+          8.16649995977059
+        ]
+      },
+      "totalMs": {
+        "sampleCount": 3,
+        "minMs": 1007.4647080036812,
+        "medianMs": 1303.713915986009,
+        "maxMs": 1436.2987910280935,
+        "p95Ms": null,
+        "p95Status": "NOT_MEANINGFUL",
+        "samplesMs": [
+          1436.2987910280935,
+          1303.713915986009,
+          1007.4647080036812
+        ]
+      }
+    },
+    "historicalModelRefits": 0
+  },
+  "bandPathGeneration": {
+    "status": "MEASURED",
+    "pathLength": 365,
+    "anchorCount": 4,
+    "timings": {
+      "sampleCount": 3,
+      "minMs": 0.723165983799845,
+      "medianMs": 0.7248330512084067,
+      "maxMs": 0.8206249913200736,
+      "p95Ms": null,
+      "p95Status": "NOT_MEANINGFUL",
+      "samplesMs": [
+        0.8206249913200736,
+        0.723165983799845,
+        0.7248330512084067
+      ]
+    },
+    "historicalModelRefits": 0
+  },
+  "preparedServing": {
+    "status": "MEASURED",
+    "seam": "DASHBOARD_LIBRARY_PREPARED_SNAPSHOT_DB_READ",
+    "sampleCount": 20,
+    "timings": {
+      "sampleCount": 20,
+      "minMs": 25.351791999999932,
+      "medianMs": 27.162020499999983,
+      "maxMs": 114.81037500000014,
+      "p95Ms": 34.064750000000004,
+      "p95Status": "MEASURED",
+      "samplesMs": [
+        25.778958999999986,
+        26.156166999999982,
+        27.114374999999995,
+        28.643832999999972,
+        26.28358400000002,
+        26.513165999999956,
+        28.363000000000056,
+        26.752291000000014,
+        114.81037500000014,
+        28.159333999999944,
+        27.59870899999987,
+        26.838041000000203,
+        25.351791999999932,
+        26.77041600000007,
+        25.967249999999922,
+        27.20966599999997,
+        31.069083999999975,
+        30.445249999999987,
+        34.064750000000004,
+        28.891832999999906
+      ]
+    },
+    "fitTriggered": false,
+    "historicalCalibrationRecomputed": false,
+    "forecastPersistenceMutation": false,
+    "benchmarkFinderDependency": false,
+    "sourceHistoryFingerprint": "35ecf750e4998799462a2fa9a57758f048695b26892c5fca6436669e32138f82"
+  },
+  "legacyInvalidatedPreparedServing": {
+    "classification": "INVALID_FOR_CANONICAL_FORECAST_SERVING",
+    "reason": "Previous Stage 7 execution ran under a localhost:3001 app context that the follow-up classified as non-canonical for prepared-serving evidence.",
+    "measuredVia": "localhost:3001 execution context",
+    "sampleCount": 20,
+    "timings": {
+      "sampleCount": 20,
+      "minMs": 28.844374999998763,
+      "medianMs": 30.861645500000122,
+      "maxMs": 117.26295899999968,
+      "p95Ms": 54.202290999999605,
+      "p95Status": "MEASURED",
+      "samplesMs": [
+        33.498999999999796,
+        29.7896669999991,
+        31.642750000000888,
+        31.93133300000045,
+        29.056375000000116,
+        30.839083000000755,
+        29.573625000000902,
+        28.844374999998763,
+        29.59916599999997,
+        30.88420799999949,
+        117.26295899999968,
+        54.202290999999605,
+        30.46808299999975,
+        31.73020799999904,
+        30.285749999999098,
+        30.442708000000493,
+        32.83691699999872,
+        30.57945899999868,
+        31.78766699999869,
+        31.71533400000044
+      ]
+    }
+  },
+  "servingTopologyAudit": {
+    "classification": "BENCHMARK_CONFIGURATION_DEFECT",
+    "topologyGate": "PASS",
+    "previousExecutionContext": {
+      "baseUrl": "http://localhost:3001",
+      "appOwner": "apps/sg-runtime",
+      "coLocatedUi": "Benchmark Finder",
+      "historyRoute": "/api/benchmark/analytics-series",
+      "historyRouteOwner": "apps/sg-runtime/app/api/benchmark/analytics-series/route.ts",
+      "historyRouteRole": "raw benchmark history fetch",
+      "preparedServingRole": "NOT_CANONICAL"
+    },
+    "canonicalPreparedServing": {
+      "seam": "DASHBOARD_LIBRARY_PREPARED_SNAPSHOT_DB_READ",
+      "persistenceOwner": "apps/sg-runtime/lib/forecast/rolling-daily-current-forecast-snapshot.ts",
+      "dashboardConsumer": "apps/dashboard-preview/lib/benchmark-forecast/runtime-query.ts",
+      "dashboardConsumerMethod": "getBenchmarkForecastCurrent(seriesId, model, 'POINT_IN_TIME')",
+      "storage": "rollingDailyCurrentForecastSnapshot",
+      "presentationTarget": "Dashboard Library",
+      "presentationCompatibility": "PASS"
+    },
+    "dependencyProof": {
+      "forecastCoreDependsOnBenchmarkFinder": "NO",
+      "sgRuntimePreparedServingDependsOnBenchmarkFinder": "NO",
+      "dashboardLibraryRequiresBenchmarkFinder": "NO"
+    }
+  },
+  "servingBehaviorGate": {
+    "canonicalPreparedReadSeam": "DASHBOARD_LIBRARY_PREPARED_SNAPSHOT_DB_READ",
+    "arimaFitTriggered": "NO",
+    "historicalCalibrationTriggered": "NO",
+    "forecastPersistenceMutation": "NO",
+    "benchmarkFinderDependency": "NO",
+    "pass": true
+  },
+  "snapshotPersistenceEvidence": {
+    "status": "IMPORTED_FROM_STAGE2",
+    "sourceArtifact": "ARIMA_REPRODUCIBILITY_FAST_SERVING_ACCEPTANCE.md",
+    "persistenceMs": 502.11279099999956
+  },
+  "memory": {
+    "status": "NOT_MEASURED",
+    "reason": "Trustworthy peak RSS was not isolated per benchmark slice cheaply enough to treat as canonical evidence."
+  },
+  "cpu": {
+    "status": "MEASURED_PROCESS_CPU_TIME",
+    "arimaCurrentCpuTimeMs": {
+      "sampleCount": 2,
+      "minMs": 13421.585000000001,
+      "medianMs": 13495.543,
+      "maxMs": 13569.500999999998,
+      "p95Ms": null,
+      "p95Status": "NOT_MEANINGFUL",
+      "samplesMs": [
+        13569.500999999998,
+        13421.585000000001
+      ]
+    }
+  },
+  "derivedMetrics": {
+    "historicalRuntimePerOriginSeconds": 10.000251089695997,
+    "historicalOriginsPerMinute": 5.999849349965069,
+    "freshArimaPreparedReadRatio": 529.3746533877957,
+    "arimaToEtsFreshComputeRatio": 59.684484713993726,
+    "bandCalibrationToArimaFreshRatio": 0.09066863661442925,
+    "computeCostRatioDescriptiveOnly": true
+  },
+  "outputParity": {
+    "pointForecastParity": "PASS",
+    "selectedOrderParity": "PASS",
+    "bandQuantileParity": "PASS",
+    "bandPathParity": "PASS",
+    "stage6Pre1MSemantics": "PASS",
+    "expectedSelectedOrder": "ARIMA(2,1,2)",
+    "observedSelectedOrder": "ARIMA(2,1,2)",
+    "expectedAnchorOffsets": {
+      "1M": [
+        -7.447065428,
+        7.427345650000007
+      ],
+      "3M": [
+        -12.584608044,
+        16.89735407600004
+      ],
+      "6M": [
+        -12.408579959999999,
+        30.986183802000003
+      ],
+      "12M": [
+        -19.512656728,
+        31.017605450000012
+      ]
+    }
+  },
+  "scopeGuardrails": {
+    "stage7Only": true,
+    "historicalFullRerunPerformed": false,
+    "historicalModelRefitsPerformed": 0,
+    "pointForecastMutation": "NO",
+    "forecastPersistenceMutation": "NO",
+    "dashboardModified": false,
+    "publicApiModified": false,
+    "publicArimaExposureAdded": false,
+    "deploymentPerformed": false,
+    "renderTouched": false,
+    "benchmarkFinderTouched": false,
+    "appShellTouched": false,
+    "newDatabase": false,
+    "newTable": false,
+    "renderValidation": "NOT_REQUIRED",
+    "modelRanking": "NOT_PERFORMED",
+    "champion": "NOT_DEFINED",
+    "preferredModel": "NOT_DEFINED",
+    "automaticModelSelection": "NOT_BUILT"
+  },
+  "currentComputeContext": {
+    "status": "PASS",
+    "sharedOriginDate": "2026-08-18",
+    "sharedHistoryCount": 10460,
+    "sharedPathLength": 365,
+    "origins": [
+      "2026-08-18"
+    ],
+    "historyCounts": [
+      10460
+    ],
+    "pathLengths": [
+      365
+    ]
+  },
+  "historyAcquisition": {
+    "status": "DIRECT_SG_RUNTIME_MARKET_DATA_SERVICE",
+    "httpBaseUrlUsed": false,
+    "sourceOwner": "apps/sg-runtime/lib/market-data/service.ts",
+    "analyticsPayloadOwner": "apps/sg-runtime/lib/benchmark/service.ts",
+    "fetchSeconds": 0.819793708,
+    "seriesPreparationSeconds": 0.010137624980416149,
+    "sourceStats": {
+      "totalPoints": 10657,
+      "numericObservations": 10460,
+      "nullPlaceholdersExcluded": 197,
+      "duplicateDatesExcluded": 0,
+      "sourceFrequency": "DAILY"
+    }
+  },
+  "directCurrencyCost": {
+    "status": "NOT_CALCULATED",
+    "reason": "no canonical project-specific unit price authority"
+  },
+  "result": "SUCCESS",
+  "stage8Readiness": "READY",
+  "generatedAt": "2026-08-21T11:00:18Z",
+  "sourcePerformance": {
+    "fetchMs": 819.7937079999999,
+    "preparationMs": 10.137624980416149,
+    "sourceStats": {
+      "totalPoints": 10657,
+      "numericObservations": 10460,
+      "nullPlaceholdersExcluded": 197,
+      "duplicateDatesExcluded": 0,
+      "sourceFrequency": "DAILY"
+    },
+    "historyStart": "1985-10-01",
+    "historyEnd": "2026-08-18",
+    "historyCount": 10460
+  },
+  "failures": []
+}

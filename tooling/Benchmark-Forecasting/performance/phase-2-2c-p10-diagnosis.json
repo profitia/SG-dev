@@ -1,0 +1,198 @@
+{
+  "task": "FORECAST_PHASE_2_2C_P10_DIAGNOSIS",
+  "generatedAt": "2026-08-25T15:40:15.900Z",
+  "acceptedAuthority": {
+    "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-4r/executions/2026-08-25T115341-253Z-6a3d0227-e64f-44da-a2ed-8cf298ff8cc3/raw/P10-ets-10-r1-phase-2-2b-4r-p10-10-ets-f59b5af2-f85e-4dad-9e5f-6eb89fb2e2df.json",
+    "sha256": "38f55690334ca3c262eb4d43fbad0cbeafdf9c1a97d532f06c0b00487b2fe1b4"
+  },
+  "replayAuthority": {
+    "path": "tooling/Benchmark-Forecasting/validation/phase-2-2c/replays/2026-08-25T152843-357Z-1641feee-5625-4d70-b0a6-8386b1e4bda1/raw/P10-ets-10-r1-phase-2-2c-diagnostic-p10-10-ets-794d1242-0a76-40b4-9612-5b76616b7ccd.json",
+    "executionId": "2026-08-25T152843-357Z-1641feee-5625-4d70-b0a6-8386b1e4bda1"
+  },
+  "replayCount": 1,
+  "acceptedSymptom": {
+    "concurrency": 10,
+    "responses": "10/10",
+    "prepared": true,
+    "forecastCompute": 0,
+    "verificationCompute": 0,
+    "owners": 0,
+    "applicationSettlement": {
+      "activeConnections": 15,
+      "idleConnections": 1,
+      "waitingRequests": 14,
+      "totalConnections": 16
+    }
+  },
+  "cleanReplay": {
+    "responses": "10/10",
+    "latency": {
+      "p50Ms": 657.97525,
+      "p95Ms": 662.521715,
+      "maxMs": 662.639333
+    },
+    "prepared": true,
+    "forecastCompute": 0,
+    "verificationCompute": 0,
+    "owners": 0,
+    "writes": 0,
+    "providerCalls": 0,
+    "applicationActivityBefore": [],
+    "applicationActivityAfter": [],
+    "dbPoolSettlement": {
+      "application": {
+        "activeConnections": 0,
+        "idleConnections": 0,
+        "waitingRequests": 0,
+        "totalConnections": 0
+      },
+      "marketData": {
+        "activeConnections": 0,
+        "idleConnections": 0,
+        "waitingRequests": 0,
+        "totalConnections": 0
+      },
+      "saturationObserved": false,
+      "poolErrors": 0,
+      "status": "PASS"
+    },
+    "querySpans": {
+      "count": 14,
+      "p50Ms": 132.735,
+      "p95Ms": 142.832,
+      "p99Ms": 143.57,
+      "maxMs": 143.755
+    },
+    "routeSpans": {
+      "count": 10,
+      "p50Ms": 139.762,
+      "p95Ms": 143.19,
+      "p99Ms": 143.695,
+      "maxMs": 143.821
+    },
+    "serializationSpans": {
+      "count": 10,
+      "p50Ms": 0.155,
+      "p95Ms": 0.944,
+      "p99Ms": 1.229,
+      "maxMs": 1.301
+    }
+  },
+  "lifecycle": [
+    {
+      "stage": "CLIENT_REQUEST_CREATED",
+      "observability": "OBSERVABLE_OR_BOUNDED",
+      "evidence": null
+    },
+    {
+      "stage": "CLIENT_REQUEST_SENT",
+      "observability": "OBSERVABLE_OR_BOUNDED",
+      "evidence": null
+    },
+    {
+      "stage": "HTTP_ACCEPTED",
+      "observability": "OBSERVABLE_OR_BOUNDED",
+      "evidence": null
+    },
+    {
+      "stage": "ROUTE_STARTED",
+      "observability": "OBSERVABLE_OR_BOUNDED",
+      "evidence": null
+    },
+    {
+      "stage": "DB_ACQUIRE_STARTED",
+      "observability": "NOT_SEPARATELY_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "DB_ACQUIRED",
+      "observability": "NOT_SEPARATELY_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "DB_QUERY_STARTED",
+      "observability": "OBSERVABLE_OR_BOUNDED",
+      "evidence": null
+    },
+    {
+      "stage": "DB_QUERY_COMPLETED",
+      "observability": "OBSERVABLE_OR_BOUNDED",
+      "evidence": null
+    },
+    {
+      "stage": "RESULT_MAPPING_STARTED",
+      "observability": "NOT_SEPARATELY_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "RESULT_MAPPING_COMPLETED",
+      "observability": "NOT_SEPARATELY_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "RESPONSE_STARTED",
+      "observability": "OBSERVABLE_OR_BOUNDED",
+      "evidence": null
+    },
+    {
+      "stage": "RESPONSE_COMPLETED",
+      "observability": "NOT_SEPARATELY_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "REQUEST_SETTLED",
+      "observability": "OBSERVABLE_OR_BOUNDED",
+      "evidence": null
+    }
+  ],
+  "queryInventory": [
+    {
+      "condition": "POINT_IN_TIME",
+      "process": "dashboard-preview",
+      "authority": "marketData",
+      "operations": [
+        "rollingDailyCurrentForecastSnapshot.findFirst",
+        "rollingDailyMaintenanceState.findUnique"
+      ],
+      "logicalOrmOperationsPerRequest": 2,
+      "forecastCompute": false
+    },
+    {
+      "condition": "GENERIC_PERIOD",
+      "process": "dashboard-preview",
+      "authority": "marketData",
+      "operations": [
+        "forecastCurrentRun.findFirst"
+      ],
+      "logicalOrmOperationsPerHit": 1,
+      "fallbackOnMiss": "one additional findFirst",
+      "forecastCompute": false
+    }
+  ],
+  "logicalOrmOperations": {
+    "total": 14,
+    "perRequestMean": 1.4,
+    "pointInTime": 2,
+    "genericHit": 1
+  },
+  "physicalAcquisitions": "NOT_OBSERVABLE",
+  "firstCapacityBound": "NOT_OBSERVED_THROUGH_10",
+  "primaryCause": "MEASUREMENT_CONTAMINATION_FROM_PRECEDING_P09",
+  "secondaryCauses": [
+    "DEV_COLD_ROUTE_COMPILATION_NOT_CAPACITY_BOUND"
+  ],
+  "confidence": "PROVEN",
+  "causalChain": [
+    "P09_UNSETTLED_APPLICATION_DB_WORK",
+    "P10_MARKET_DATA_ONLY_PREPARED_READS",
+    "10_CORRECT_RESPONSES",
+    "SHARED_PROCESS_APPLICATION_DB_SETTLEMENT_SAMPLE",
+    "FALSE_P10_APPLICATION_DB_ATTRIBUTION",
+    "CLEAN_P10_ZERO_APPLICATION_ACTIVITY_AND_FULL_SETTLEMENT"
+  ],
+  "capacityEnvelope": {
+    "provenThrough": 10,
+    "blockedAt": "NOT_OBSERVED_IN_CLEAN_REPLAY",
+    "unmeasuredMaximumInvented": false
+  }
+}

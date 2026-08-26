@@ -1,0 +1,24 @@
+{
+  "task": "FORECAST_PHASE_2_2D_PHASE_2_3_HANDOFF",
+  "generatedAt": "2026-08-25T16:12:08.510Z",
+  "status": "READY_FOR_SEPARATE_AUTHORIZATION_DECISION",
+  "selectedMechanism": "C01_CACHE_MISS_COALESCING",
+  "selectionConfidence": "STRONGLY_SUPPORTED_DIRECT",
+  "primaryTarget": "CONCURRENT_UNCOALESCED_FULL_TABLE_APPLICATION_READS",
+  "expectedCausalMetric": "APPLICATION_FULL_TABLE_READ_OWNER_COUNT_PER_EXACT_ORGANIZATION_PIPELINE_MISS_WINDOW",
+  "conditionalSecondary": [
+    "C02",
+    "C03"
+  ],
+  "deferred": [
+    "C04",
+    "C05"
+  ],
+  "rejected": [
+    "C06"
+  ],
+  "phase23ReadyForAuthorization": true,
+  "phase23Authorized": false,
+  "phase23Started": false,
+  "implementationContractPath": "tooling/Benchmark-Forecasting/performance/phase-2-2d-phase-2-3-implementation-contract.json"
+}

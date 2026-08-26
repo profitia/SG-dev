@@ -1,0 +1,20 @@
+{
+  "task": "FORECAST_PHASE_2_2B_4R_SOURCE_HASH_GUARD",
+  "capturedBeforeLoadAt": "2026-08-25T11:53:39.987Z",
+  "capturedAfterLoadAt": "2026-08-25T13:52:47.963Z",
+  "before": {
+    "apps/sg-runtime/lib/forecast/current-single-flight.ts": "ceb6c4cbd5c969277eb50c173e6c2c2c26ad9f9b4f03a40216b0e60c4d24be13",
+    "apps/sg-runtime/lib/forecast/rolling-daily-current-ownership.ts": "8f3fdad09c1be88aa606e269f4c494664684320e8ce1b7a8599f225134b191db",
+    "apps/sg-runtime/lib/forecast/rolling-daily-production-operations.ts": "bd68ce4051e56d0498dc3a800a63e472127114b89ee6851120b50e3e9b252e7a",
+    "apps/sg-runtime/lib/forecast/verification-single-flight.ts": "8f81076763f72f435c3e756425d3ff045a3cc89858a6c3580e71ac223fa076dc",
+    "apps/sg-runtime/lib/forecast/service.ts": "c81d3de9db2e27c1d1711af87ebbffcc9c5dcd1fd9497096726948cc8720e582"
+  },
+  "after": {
+    "apps/sg-runtime/lib/forecast/current-single-flight.ts": "ceb6c4cbd5c969277eb50c173e6c2c2c26ad9f9b4f03a40216b0e60c4d24be13",
+    "apps/sg-runtime/lib/forecast/rolling-daily-current-ownership.ts": "8f3fdad09c1be88aa606e269f4c494664684320e8ce1b7a8599f225134b191db",
+    "apps/sg-runtime/lib/forecast/rolling-daily-production-operations.ts": "bd68ce4051e56d0498dc3a800a63e472127114b89ee6851120b50e3e9b252e7a",
+    "apps/sg-runtime/lib/forecast/verification-single-flight.ts": "8f81076763f72f435c3e756425d3ff045a3cc89858a6c3580e71ac223fa076dc",
+    "apps/sg-runtime/lib/forecast/service.ts": "c81d3de9db2e27c1d1711af87ebbffcc9c5dcd1fd9497096726948cc8720e582"
+  },
+  "behaviorSourceHashDrift": false
+}

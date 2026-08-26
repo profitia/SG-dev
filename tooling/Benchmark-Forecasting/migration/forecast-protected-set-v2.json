@@ -1,0 +1,265 @@
+{
+  "generatedAt": "2026-08-26T10:47:40.164Z",
+  "status": "FROZEN",
+  "version": 2,
+  "historicalBaselineCommit": "9fc9f81b5649140ff46e029f3381873a9fbb60e3",
+  "preservationAuthorityId": "FORECAST_EXECUTABLE_PRESERVATION_AUTHORITY_V2",
+  "preservationPackageIdentity": "ed1b6e4a84837e14d06049f5b7066311495184d99db8b087731c10983fb7e66d",
+  "closureId": "EXECUTABLE_DEPENDENCY_CLOSURE_V2",
+  "closureSha256": "f19d42e1c1a9a84028b17ea834f08789a199c5d3d93bcdf2d4b262c88c8b0665",
+  "architectureId": "FORECAST_PRODUCTION_ARCHITECTURE_V1",
+  "architectureVersion": 1,
+  "targetTreeFingerprint": "8dd703de2b2ea89a334a280bcde340caa1e73473f314041803b0733969bb97e9",
+  "authorityId": "FORECAST_PROTECTED_SET_V2",
+  "canonicalPathsProtected": 35,
+  "paths": [
+    {
+      "path": ".github/workflows/forecast-production-operations.yml",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/dashboard-preview/lib/benchmark-forecast/runtime-query.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/dashboard-preview/lib/phase-2-2c/diagnostics.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/dashboard-preview/lib/raw-data/dashboard-record-query.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/dashboard-preview/package-lock.json",
+      "reason": "CRITICAL_REPOSITORY_CONFIGURATION_OR_TOOLCHAIN"
+    },
+    {
+      "path": "apps/dashboard-preview/package.json",
+      "reason": "CRITICAL_REPOSITORY_CONFIGURATION_OR_TOOLCHAIN"
+    },
+    {
+      "path": "apps/dashboard-preview/prisma-market-data/schema.prisma",
+      "reason": "CRITICAL_REPOSITORY_CONFIGURATION_OR_TOOLCHAIN"
+    },
+    {
+      "path": "apps/dashboard-preview/prisma/schema.prisma",
+      "reason": "CRITICAL_REPOSITORY_CONFIGURATION_OR_TOOLCHAIN"
+    },
+    {
+      "path": "apps/dashboard-preview/render.yaml",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/dashboard-preview/runtime/data-runtime/package-lock.json",
+      "reason": "CRITICAL_REPOSITORY_CONFIGURATION_OR_TOOLCHAIN"
+    },
+    {
+      "path": "apps/dashboard-preview/runtime/data-runtime/package.json",
+      "reason": "CRITICAL_REPOSITORY_CONFIGURATION_OR_TOOLCHAIN"
+    },
+    {
+      "path": "apps/dashboard-preview/runtime/data-runtime/prisma/schema.prisma",
+      "reason": "CRITICAL_REPOSITORY_CONFIGURATION_OR_TOOLCHAIN"
+    },
+    {
+      "path": "apps/dashboard-preview/runtime/data-runtime/tsconfig.json",
+      "reason": "CRITICAL_REPOSITORY_CONFIGURATION_OR_TOOLCHAIN"
+    },
+    {
+      "path": "apps/dashboard-preview/src/generated/market-data-prisma/package.json",
+      "reason": "CRITICAL_REPOSITORY_CONFIGURATION_OR_TOOLCHAIN"
+    },
+    {
+      "path": "apps/dashboard-preview/src/generated/market-data-prisma/schema.prisma",
+      "reason": "CRITICAL_REPOSITORY_CONFIGURATION_OR_TOOLCHAIN"
+    },
+    {
+      "path": "apps/dashboard-preview/src/generated/prisma/package.json",
+      "reason": "CRITICAL_REPOSITORY_CONFIGURATION_OR_TOOLCHAIN"
+    },
+    {
+      "path": "apps/dashboard-preview/src/generated/prisma/schema.prisma",
+      "reason": "CRITICAL_REPOSITORY_CONFIGURATION_OR_TOOLCHAIN"
+    },
+    {
+      "path": "apps/dashboard-preview/tsconfig.json",
+      "reason": "CRITICAL_REPOSITORY_CONFIGURATION_OR_TOOLCHAIN"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/contracts.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/current-single-flight.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/identity.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/prepared-state.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/production-routing.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/rolling-daily-current-ownership.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/rolling-daily-policy.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/rolling-daily-production-forecast.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/rolling-daily-production-operations.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/rolling-daily-verification.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/route-handlers.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/service.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/stress-telemetry.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/verification-single-flight.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/market-data/service.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/sg-runtime/package-lock.json",
+      "reason": "CRITICAL_REPOSITORY_CONFIGURATION_OR_TOOLCHAIN"
+    },
+    {
+      "path": "apps/sg-runtime/package.json",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/sg-runtime/prisma-market-data/schema.prisma",
+      "reason": "CRITICAL_REPOSITORY_CONFIGURATION_OR_TOOLCHAIN"
+    },
+    {
+      "path": "apps/sg-runtime/prisma/schema.prisma",
+      "reason": "CRITICAL_REPOSITORY_CONFIGURATION_OR_TOOLCHAIN"
+    },
+    {
+      "path": "apps/sg-runtime/scripts/run-forecast-phase-2-1b-operation.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/sg-runtime/scripts/run-forecast-production-operations.ts",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "apps/sg-runtime/tsconfig.json",
+      "reason": "CRITICAL_REPOSITORY_CONFIGURATION_OR_TOOLCHAIN"
+    },
+    {
+      "path": "render.yaml",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/backtest.py",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/comparative_backtest.py",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/empirical_prediction_band.py",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/metrics.py",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/models/arima.py",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/models/damped_holt.py",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/models/ets.py",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/models/naive.py",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/rolling_daily_point_in_time.py",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/rolling_daily_policy.py",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/service.py",
+      "reason": "ARCHITECTURE_V1_CANONICAL_SOURCE"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/migration/forecast-future-sg-dev-exclude-v2.json",
+      "reason": "MIGRATION_AUTHORITY_V2"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/migration/forecast-future-sg-dev-include-v2.json",
+      "reason": "MIGRATION_AUTHORITY_V2"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/migration/forecast-migration-baseline-overlay-v2.json",
+      "reason": "MIGRATION_AUTHORITY_V2"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/migration/forecast-migration-manifest-v2.json",
+      "reason": "MIGRATION_AUTHORITY_V2"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/migration/forecast-migration-restore-authority-v2.json",
+      "reason": "MIGRATION_AUTHORITY_V2"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/migration/forecast-migration-target-tree-v2.json",
+      "reason": "MIGRATION_AUTHORITY_V2"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/migration/forecast-protected-set-v2.json",
+      "reason": "MIGRATION_AUTHORITY_V2"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/migration/forecast-r2r-handoff-v2.json",
+      "reason": "MIGRATION_AUTHORITY_V2"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/repository/forecast-executable-preservation-authority-v2.json",
+      "reason": "FORECAST_EXECUTABLE_PRESERVATION_AUTHORITY_V2_IDENTITY"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-5rc/executable-dependency-closure-v2.json",
+      "reason": "EXECUTABLE_DEPENDENCY_CLOSURE_V2_IDENTITY"
+    }
+  ]
+}

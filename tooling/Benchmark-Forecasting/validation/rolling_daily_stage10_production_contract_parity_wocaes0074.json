@@ -1,0 +1,258 @@
+{
+  "generatedAt": "2026-08-21T19:35:34Z",
+  "taskId": "rolling-daily-stage-10-production-contract-parity-v1",
+  "seriesId": "wocaes0074",
+  "displayName": "Brent, Spot, FOB North Sea",
+  "forecastMethod": "ROLLING_DAILY_POINT_IN_TIME",
+  "methodVersion": "rolling-daily-point-in-time-v1",
+  "targetBasis": "POINT_IN_TIME",
+  "status": "PASS",
+  "stage9Authority": {
+    "readiness": "READY",
+    "json": "validation/rolling_daily_stage9_incremental_maintenance_parity_wocaes0074.json",
+    "markdown": "ROLLING_DAILY_STAGE9_INCREMENTAL_MAINTENANCE_PARITY.md"
+  },
+  "legacyStage10Authority": {
+    "status": "PASS",
+    "json": "validation/rolling_daily_stage10_wocaes0074_production_contract.json",
+    "gapNowClosed": [
+      "PUBLIC_AND_INTERNAL_ROUTE_MODEL_CATALOG_PARITY",
+      "DEFAULT_SNAPSHOT_PERSISTENCE_MODEL_CATALOG_PARITY"
+    ]
+  },
+  "productionSurfaceInventory": [
+    {
+      "dimension": "MODEL_CATALOG_AND_ROUTE_QUERY_CONTRACT",
+      "owner": "SG_RUNTIME",
+      "file": "apps/sg-runtime/lib/forecast/contracts.ts",
+      "status": "PASS",
+      "models": [
+        "naive",
+        "damped_holt",
+        "ets",
+        "arima"
+      ]
+    },
+    {
+      "dimension": "CURRENT_FORECAST_PREPARED_SNAPSHOT_PERSISTENCE_AND_READ",
+      "owner": "SG_RUNTIME_FORECAST_LIBRARY",
+      "file": "apps/sg-runtime/lib/forecast/rolling-daily-current-forecast-snapshot.ts",
+      "status": "PASS",
+      "identity": [
+        "seriesId",
+        "inputSource",
+        "targetBasis",
+        "methodId",
+        "methodVersion",
+        "modelId"
+      ],
+      "freshnessBehavior": [
+        "MISS",
+        "HIT",
+        "STALE:SOURCE_HISTORY_FINGERPRINT_MISSING",
+        "STALE:SOURCE_HISTORY_FINGERPRINT_MISMATCH"
+      ]
+    },
+    {
+      "dimension": "HISTORICAL_VERIFICATION_PERSISTENCE_AND_MAINTENANCE_IDENTITY",
+      "owner": "SG_RUNTIME_FORECAST_LIBRARY",
+      "file": "apps/sg-runtime/lib/forecast/rolling-daily-maintenance.ts",
+      "status": "PASS",
+      "identity": [
+        "seriesId",
+        "inputSource",
+        "targetBasis",
+        "methodId",
+        "methodVersion",
+        "modelId"
+      ]
+    },
+    {
+      "dimension": "PRODUCTION_FORECAST_ROUTING",
+      "owner": "SG_RUNTIME",
+      "file": "apps/sg-runtime/lib/forecast/production-routing.ts",
+      "status": "PASS",
+      "semantics": [
+        "NO_FALLBACK_ON_UNKNOWN_METHOD",
+        "ROLLING_DAILY_POINT_IN_TIME_ROUTES_TO_SHARED_PRODUCTION_SERVICE",
+        "MONTHLY_PATH_REMAINS_UNCHANGED"
+      ]
+    },
+    {
+      "dimension": "PRODUCTION_FORECAST_PAYLOAD_SCHEMA",
+      "owner": "SG_RUNTIME",
+      "file": "apps/sg-runtime/lib/forecast/rolling-daily-production-forecast.ts",
+      "status": "PASS",
+      "invariants": [
+        "ANCHOR_PATH_PARITY",
+        "PATH_TERMINATES_AT_EXACT_12M_ANCHOR",
+        "EXPLICIT_BAND_STATUS_AND_REASON_CODES",
+        "FRESHNESS_EXPOSED_WITHOUT_REQUEST_TIME_RECALIBRATION"
+      ]
+    },
+    {
+      "dimension": "PRODUCTION_SNAPSHOT_DEFAULT_EXECUTION",
+      "owner": "SG_RUNTIME_OPERATIONS",
+      "file": "apps/sg-runtime/scripts/persist-rolling-daily-current-forecast-snapshot.ts",
+      "status": "PASS",
+      "defaultModels": [
+        "naive",
+        "damped_holt",
+        "ets",
+        "arima"
+      ]
+    }
+  ],
+  "specialCaseAudit": [
+    {
+      "surface": "USER_FACING_FORECAST_MODELS",
+      "file": "apps/sg-runtime/lib/forecast/contracts.ts",
+      "classification": "FIXED_CONTRACT_DEFECT",
+      "status": "PASS",
+      "evidence": [
+        "naive",
+        "damped_holt",
+        "ets",
+        "arima"
+      ],
+      "note": "Shared route contract now exposes all four accepted models through one catalog."
+    },
+    {
+      "surface": "ForecastRouteQuerySchema + ProductionForecastRouteQuerySchema",
+      "file": "apps/sg-runtime/lib/forecast/request-contract.ts",
+      "classification": "NONE",
+      "status": "PASS",
+      "evidence": [
+        "z.enum(USER_FACING_FORECAST_MODELS) used for both public and internal forecast routes"
+      ],
+      "note": "No per-model validation fork remains in active sg-runtime request parsing."
+    },
+    {
+      "surface": "Unsupported production-method response",
+      "file": "apps/sg-runtime/lib/forecast/production-routing.ts",
+      "classification": "FIXED_CONTRACT_DEFECT",
+      "status": "PASS",
+      "evidence": [
+        "supportedModels: [...USER_FACING_FORECAST_MODELS]"
+      ],
+      "note": "Unsupported-method responses no longer regress the visible model catalog to three models."
+    },
+    {
+      "surface": "Prepared rolling-daily snapshot read/write identity",
+      "file": "apps/sg-runtime/lib/forecast/rolling-daily-current-forecast-snapshot.ts",
+      "classification": "NONE",
+      "status": "PASS",
+      "evidence": [
+        "RollingDailyCurrentForecastSnapshotModelId includes arima",
+        "fingerprint-based STALE semantics unchanged"
+      ],
+      "note": "Prepared read contract was already generic and remained unchanged by the fix."
+    },
+    {
+      "surface": "Production snapshot persistence default execution",
+      "file": "apps/sg-runtime/scripts/persist-rolling-daily-current-forecast-snapshot.ts",
+      "classification": "FIXED_CONTRACT_DEFECT",
+      "status": "PASS",
+      "evidence": {
+        "defaultModels": [
+          "naive",
+          "damped_holt",
+          "ets",
+          "arima"
+        ],
+        "supportedModels": [
+          "naive",
+          "damped_holt",
+          "ets",
+          "arima"
+        ]
+      },
+      "note": "The default runtime snapshot persistence script now refreshes the same four-model contract it already claimed to support."
+    },
+    {
+      "surface": "Maintenance state and verification persistence identity",
+      "file": "apps/sg-runtime/lib/forecast/rolling-daily-maintenance.ts",
+      "classification": "LEGITIMATE_INTERNAL_DETAIL",
+      "status": "PASS",
+      "evidence": [
+        "RollingDailyMaintenanceIdentity carries modelId as part of the generic key",
+        "Stage 9 parity already passed for naive/damped_holt/ets/arima"
+      ],
+      "note": "No model-specific maintenance fork was found in the active persistence owner path."
+    },
+    {
+      "surface": "Rolling-daily production contract schema",
+      "file": "apps/sg-runtime/lib/forecast/rolling-daily-production-forecast.ts",
+      "classification": "LEGITIMATE_INTERNAL_DETAIL",
+      "status": "PASS",
+      "evidence": [
+        "model.id remains schema-generic",
+        "contract invariants stay anchor/path/freshness-focused, not model-specific"
+      ],
+      "note": "Production payload semantics stay shared across all accepted model families."
+    }
+  ],
+  "guardrails": {
+    "benchmarkFinderDependency": "NONE",
+    "appShellDependency": "NONE",
+    "requestTimeModelRefitBeyondSingleCurrentFit": "NO",
+    "requestTimeCalibrationRebuild": "NO",
+    "liveCatchUp": "NO",
+    "automaticModelSelection": "NOT_BUILT"
+  },
+  "validations": {
+    "preflight": {
+      "status": "PASS",
+      "checks": [
+        "pmos:verify-runtime PASS",
+        "pending-artifact clear",
+        "MEMOROS_PROJECT_ID present",
+        "http://localhost:4000/health status=ok"
+      ]
+    },
+    "focusedRuntimeContractTests": {
+      "status": "PASS",
+      "command": "cd '/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime' && node --import tsx --test tests/forecast-production-routing.test.ts tests/forecast-route-contract.test.ts tests/rolling-daily-current-forecast-snapshot.test.ts",
+      "assertions": [
+        "ARIMA_ROUTE_QUERY_ACCEPTED",
+        "ARIMA_INTERNAL_PRODUCTION_ROUTE_ACCEPTED",
+        "ROLLING_DAILY_ROUTER_DISPATCHES_ARIMA_WITHOUT_FALLBACK",
+        "UNSUPPORTED_METHOD_RESPONSE_EXPOSES_FOUR_MODEL_CATALOG",
+        "PREPARED_SNAPSHOT_ARIMA_PARITY_REMAINS_HIT_OR_STALE_BY_FINGERPRINT_ONLY"
+      ]
+    },
+    "adjacentRuntimeServiceRegression": {
+      "status": "PASS",
+      "command": "cd '/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime' && node --import tsx --test tests/forecast-library-service.test.ts",
+      "assertions": [
+        "CURRENT_AND_VERIFICATION_BEHAVIOR_UNCHANGED",
+        "TARGET_BASIS_CACHE_ISOLATION_UNCHANGED",
+        "PREPARED_LIVE_HISTORY_REUSE_UNCHANGED"
+      ]
+    }
+  },
+  "overall": {
+    "routeCatalogParity": "PASS",
+    "requestContractParity": "PASS",
+    "unsupportedResponseParity": "PASS",
+    "preparedSnapshotParity": "PASS",
+    "snapshotDefaultExecutionParity": "PASS",
+    "maintenanceIdentityParity": "PASS",
+    "contractPayloadParity": "PASS",
+    "overall": "PASS"
+  },
+  "artifacts": {
+    "json": "validation/rolling_daily_stage10_production_contract_parity_wocaes0074.json",
+    "markdown": "ROLLING_DAILY_STAGE10_PRODUCTION_CONTRACT_PARITY.md"
+  },
+  "deferred": [
+    "NO_STAGE_11_WORK_STARTED",
+    "NO_STAGE_12_WORK_STARTED",
+    "NO_STAGE_13_WORK_STARTED",
+    "NO_FORECAST_METHODOLOGY_CHANGE",
+    "NO_MODEL_FITTING_LOGIC_CHANGE",
+    "NO_DASHBOARD_UX_CHANGE",
+    "NO_BENCHMARK_FINDER_CHANGE",
+    "NO_APPSHELL_CHANGE"
+  ]
+}

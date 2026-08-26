@@ -1,0 +1,202 @@
+{
+  "task": "FORECAST_PHASE_2_1A_ENVIRONMENT_INSTRUMENTATION_READINESS",
+  "contractVersion": 1,
+  "classification": "READINESS_PROBE_NOT_PERFORMANCE_EVIDENCE",
+  "generatedAt": "2026-08-24T11:45:13.334Z",
+  "defaultOff": {
+    "passed": true,
+    "emittedEvents": 0
+  },
+  "onProof": {
+    "passed": true,
+    "eventCount": 8,
+    "eventTypes": [
+      "prepared_read",
+      "current_compute_end",
+      "model_fit",
+      "verification_compute_end",
+      "provider_call",
+      "persistence",
+      "database_read",
+      "resource_sample"
+    ]
+  },
+  "behaviorNeutral": {
+    "passed": true,
+    "outputsDeepEqual": true
+  },
+  "correlation": {
+    "passed": true,
+    "fields": [
+      "stressRunId",
+      "scenarioId",
+      "virtualUserId",
+      "requestId",
+      "forecastIdentity",
+      "logicalArtifactKey"
+    ]
+  },
+  "counters": {
+    "preparedRead": true,
+    "currentCompute": true,
+    "modelFit": true,
+    "verification": true,
+    "provider": true,
+    "persistence": true,
+    "databaseRead": true
+  },
+  "duplicateComputeAggregation": {
+    "passed": true,
+    "stressRunId": "phase-2-1a-readiness-probe-v1",
+    "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|readiness",
+    "expectedLogicalComputeCount": 1,
+    "actualComputeCount": 2,
+    "duplicateComputeCount": 1,
+    "duplicateComputeRatio": 1
+  },
+  "resources": {
+    "cpu": true,
+    "memory": true,
+    "eventLoop": true
+  },
+  "loadRequestsExecuted": 0,
+  "phase21BStarted": false,
+  "credentialsIncluded": false,
+  "sampleEvents": [
+    {
+      "stressRunId": "phase-2-1a-readiness-probe-v1",
+      "scenarioId": "READINESS_TELEMETRY_PROBE",
+      "virtualUserId": "vu-readiness-1",
+      "requestId": "request-readiness-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|readiness",
+      "event": "prepared_read",
+      "timestamp": "2026-08-24T11:45:13.332Z",
+      "metrics": {
+        "kind": "current",
+        "hit": true,
+        "durationMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-1a-readiness-probe-v1",
+      "scenarioId": "READINESS_TELEMETRY_PROBE",
+      "virtualUserId": "vu-readiness-1",
+      "requestId": "request-readiness-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|readiness",
+      "event": "current_compute_end",
+      "timestamp": "2026-08-24T11:45:13.333Z",
+      "metrics": {
+        "modelId": "ets",
+        "count": 1,
+        "durationMs": 0,
+        "status": "AVAILABLE"
+      }
+    },
+    {
+      "stressRunId": "phase-2-1a-readiness-probe-v1",
+      "scenarioId": "READINESS_TELEMETRY_PROBE",
+      "virtualUserId": "vu-readiness-1",
+      "requestId": "request-readiness-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|readiness",
+      "event": "model_fit",
+      "timestamp": "2026-08-24T11:45:13.333Z",
+      "metrics": {
+        "operation": "current",
+        "modelId": "ets",
+        "count": 1,
+        "durationMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-1a-readiness-probe-v1",
+      "scenarioId": "READINESS_TELEMETRY_PROBE",
+      "virtualUserId": "vu-readiness-1",
+      "requestId": "request-readiness-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|readiness",
+      "event": "verification_compute_end",
+      "timestamp": "2026-08-24T11:45:13.333Z",
+      "metrics": {
+        "modelId": "ets",
+        "count": 1,
+        "originCount": 1,
+        "durationMs": 0,
+        "status": "AVAILABLE"
+      }
+    },
+    {
+      "stressRunId": "phase-2-1a-readiness-probe-v1",
+      "scenarioId": "READINESS_TELEMETRY_PROBE",
+      "virtualUserId": "vu-readiness-1",
+      "requestId": "request-readiness-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|readiness",
+      "event": "provider_call",
+      "timestamp": "2026-08-24T11:45:13.333Z",
+      "metrics": {
+        "provider": "macrobond",
+        "operation": "history",
+        "count": 0,
+        "durationMs": 0,
+        "failures": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-1a-readiness-probe-v1",
+      "scenarioId": "READINESS_TELEMETRY_PROBE",
+      "virtualUserId": "vu-readiness-1",
+      "requestId": "request-readiness-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|readiness",
+      "event": "persistence",
+      "timestamp": "2026-08-24T11:45:13.333Z",
+      "metrics": {
+        "operation": "current",
+        "artifactWrites": 0,
+        "pointWrites": 0,
+        "verificationRecordWrites": 0,
+        "writeFailures": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-1a-readiness-probe-v1",
+      "scenarioId": "READINESS_TELEMETRY_PROBE",
+      "virtualUserId": "vu-readiness-1",
+      "requestId": "request-readiness-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|readiness",
+      "event": "database_read",
+      "timestamp": "2026-08-24T11:45:13.333Z",
+      "metrics": {
+        "operation": "readiness_probe",
+        "queryCount": 1,
+        "durationMs": 0,
+        "failed": false
+      }
+    },
+    {
+      "stressRunId": "phase-2-1a-readiness-probe-v1",
+      "scenarioId": "READINESS_TELEMETRY_PROBE",
+      "virtualUserId": "vu-readiness-1",
+      "requestId": "request-readiness-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|readiness",
+      "event": "resource_sample",
+      "timestamp": "2026-08-24T11:45:13.333Z",
+      "metrics": {
+        "cpuUserMicros": 372,
+        "cpuSystemMicros": 266,
+        "rssBytes": 83181568,
+        "heapUsedBytes": 8900000,
+        "heapTotalBytes": 13352960,
+        "externalBytes": 4576082,
+        "eventLoopUtilization": 0,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    }
+  ]
+}

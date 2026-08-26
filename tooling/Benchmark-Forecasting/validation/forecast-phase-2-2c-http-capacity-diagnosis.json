@@ -1,0 +1,738 @@
+{
+  "task": "FORECAST_PHASE_2_2C_HTTP_CAPACITY_DIAGNOSIS",
+  "phase": "2.2C",
+  "generatedAt": "2026-08-25T15:40:15.900Z",
+  "preconditions": {
+    "phase22b4rGate": "PASS",
+    "phase22bSeriesComplete": true,
+    "currentStructuralEffect": "CONFIRMED",
+    "verificationStructuralEffect": "CONFIRMED",
+    "persistenceIdempotency": "PRESERVED"
+  },
+  "immutableEvidence": {
+    "before": {
+      "status": "PASS",
+      "referenceCount": 22
+    },
+    "originalB4": {
+      "status": "PASS",
+      "hashes": {
+        "tooling/Benchmark-Forecasting/performance/phase-2-2b-4-after-aggregate.json": "1e62ef689f27816cb777c711f6e9060627e898c6bb59811b358f137cc6584b8d",
+        "tooling/Benchmark-Forecasting/performance/phase-2-2b-4-before-after-comparison.json": "028ad4fc879810a7819888085e205ac2b3fef5c151dac57ff9b3512dca1dc896",
+        "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2b-4-before-after-comparative-stress.json": "c1d34137b9e279257c91aec2b765c73246534bbab88b590f49a0222fe5a70bbb"
+      }
+    },
+    "b4r": {
+      "status": "PASS",
+      "hashes": {
+        "tooling/Benchmark-Forecasting/performance/phase-2-2b-4r-after-aggregate.json": "30af657fb534f74a14749271401e1121604cd78e275ed972fbac2d79cfe4100c",
+        "tooling/Benchmark-Forecasting/performance/phase-2-2b-4r-before-after-comparison.json": "501e6ef42abd34033ad0d9fc5f4ab739329ee24218f2bed9641b4a3b6b5fa249",
+        "tooling/Benchmark-Forecasting/performance/phase-2-2b-4r-phase-2-2c-handoff.json": "2b10a335771b280c05d78458424468b91ae59f97c4414101763cf0b9c8a0d169",
+        "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2b-4r-controlled-comparative-stress.json": "12ba336e88ce8c09fd9e9dfcd5f95a94e0f64040265362939f00785422190a3d",
+        "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2b-1r-p04-small-pool-current-single-flight.json": "c18059cc04fbba91eea290e5b4b5ffeba145cb5826c71ed10be08dc8c7136bfc",
+        "tooling/Benchmark-Forecasting/validation/phase-2-2b-4r/executions/2026-08-25T115341-253Z-6a3d0227-e64f-44da-a2ed-8cf298ff8cc3/raw/P09-mixed-1000-r1-phase-2-2b-4r-p09-1000-ets-f745411d-2178-40e7-b45e-3d16509fdfb5.json": "53be7fd10434a479e62ae4378ca6423ebb889818caa8befae1d5185f82e8ef49",
+        "tooling/Benchmark-Forecasting/validation/phase-2-2b-4r/executions/2026-08-25T115341-253Z-6a3d0227-e64f-44da-a2ed-8cf298ff8cc3/raw/P10-ets-10-r1-phase-2-2b-4r-p10-10-ets-f59b5af2-f85e-4dad-9e5f-6eb89fb2e2df.json": "38f55690334ca3c262eb4d43fbad0cbeafdf9c1a97d532f06c0b00487b2fe1b4"
+      }
+    }
+  },
+  "replay": {
+    "required": "YES",
+    "p10At10Count": 1,
+    "p09ControlCount": 0,
+    "p09At1000Count": 0
+  },
+  "p09": {
+    "firstCapacityBound": "APPLICATION_DB_READ_FAN_OUT",
+    "primaryCause": "CONCURRENT_UNCOALESCED_FULL_TABLE_APPLICATION_READS",
+    "secondaryCauses": [
+      "SERVER_WORK_CONTINUES_AFTER_CLIENT_ABORT",
+      "CPU_AND_MAPPING_PRESSURE_SUPPORTED",
+      "REQUEST_TIMEOUT_BOUND"
+    ],
+    "timeoutClassification": "DOWNSTREAM_SYMPTOM",
+    "dbPoolEvidence": {
+      "application": {
+        "activeConnections": 17,
+        "idleConnections": 0,
+        "waitingRequests": 17,
+        "totalConnections": 17
+      },
+      "marketData": {
+        "activeConnections": 0,
+        "idleConnections": 4,
+        "waitingRequests": 0,
+        "totalConnections": 4
+      },
+      "saturationObserved": false,
+      "poolErrors": 0,
+      "status": "SAFETY_BLOCKED"
+    },
+    "httpEvidence": {
+      "attempts": 1000,
+      "successes": 234,
+      "timeouts": 766
+    },
+    "eventLoopEvidence": {
+      "status": "NOT_OBSERVABLE"
+    },
+    "cpuEvidence": {
+      "cooldownCpuContinued": true
+    },
+    "memoryEvidence": {
+      "postCooldownRssMb": 1461.234375
+    },
+    "causalChain": [
+      "1000_SYNCHRONIZED_CLIENTS",
+      "CONCURRENT_EXPIRED_CACHE_COMPONENT_READS",
+      "APPLICATION_DB_AND_MAPPING_FAN_OUT",
+      "120000_MS_CLIENT_TIMEOUT",
+      "766_CLIENT_ABORTS",
+      "SERVER_WORK_NOT_CANCELLED",
+      "17_ACTIVE_WAITING_APPLICATION_BACKENDS_AFTER_COOLDOWN"
+    ],
+    "confidence": "STRONGLY_SUPPORTED"
+  },
+  "p10": {
+    "firstCapacityBound": "NOT_OBSERVED_THROUGH_10",
+    "primaryCause": "MEASUREMENT_CONTAMINATION_FROM_PRECEDING_P09",
+    "secondaryCauses": [
+      "DEV_COLD_ROUTE_COMPILATION_NOT_CAPACITY_BOUND"
+    ],
+    "dbPoolEvidence": {
+      "application": {
+        "activeConnections": 0,
+        "idleConnections": 0,
+        "waitingRequests": 0,
+        "totalConnections": 0
+      },
+      "marketData": {
+        "activeConnections": 0,
+        "idleConnections": 0,
+        "waitingRequests": 0,
+        "totalConnections": 0
+      },
+      "saturationObserved": false,
+      "poolErrors": 0,
+      "status": "PASS"
+    },
+    "preparedReadEvidence": {
+      "responses": "10/10",
+      "latency": {
+        "p50Ms": 657.97525,
+        "p95Ms": 662.521715,
+        "maxMs": 662.639333
+      },
+      "prepared": true,
+      "forecastCompute": 0,
+      "verificationCompute": 0,
+      "owners": 0,
+      "writes": 0,
+      "providerCalls": 0,
+      "applicationActivityBefore": [],
+      "applicationActivityAfter": [],
+      "dbPoolSettlement": {
+        "application": {
+          "activeConnections": 0,
+          "idleConnections": 0,
+          "waitingRequests": 0,
+          "totalConnections": 0
+        },
+        "marketData": {
+          "activeConnections": 0,
+          "idleConnections": 0,
+          "waitingRequests": 0,
+          "totalConnections": 0
+        },
+        "saturationObserved": false,
+        "poolErrors": 0,
+        "status": "PASS"
+      },
+      "querySpans": {
+        "count": 14,
+        "p50Ms": 132.735,
+        "p95Ms": 142.832,
+        "p99Ms": 143.57,
+        "maxMs": 143.755
+      },
+      "routeSpans": {
+        "count": 10,
+        "p50Ms": 139.762,
+        "p95Ms": 143.19,
+        "p99Ms": 143.695,
+        "maxMs": 143.821
+      },
+      "serializationSpans": {
+        "count": 10,
+        "p50Ms": 0.155,
+        "p95Ms": 0.944,
+        "p99Ms": 1.229,
+        "maxMs": 1.301
+      }
+    },
+    "eventLoopEvidence": {
+      "meanMs": 28.172288,
+      "maxMs": 28.180479
+    },
+    "causalChain": [
+      "P09_UNSETTLED_APPLICATION_DB_WORK",
+      "P10_MARKET_DATA_ONLY_PREPARED_READS",
+      "10_CORRECT_RESPONSES",
+      "SHARED_PROCESS_APPLICATION_DB_SETTLEMENT_SAMPLE",
+      "FALSE_P10_APPLICATION_DB_ATTRIBUTION",
+      "CLEAN_P10_ZERO_APPLICATION_ACTIVITY_AND_FULL_SETTLEMENT"
+    ],
+    "confidence": "PROVEN"
+  },
+  "candidateLevers": [
+    {
+      "candidateId": "C01",
+      "candidate": "Coalesce concurrent application-table cache misses",
+      "targetRootCause": "P09 repeated full-table application reads",
+      "expectedEffect": "One owner read with shared result during an exact cache-miss window",
+      "correctnessRisk": "Cache key and invalidation identity must remain exact",
+      "implementationComplexity": "MEDIUM",
+      "infrastructureCost": "NONE_EXPECTED",
+      "runtimeCost": "LOW",
+      "maintenanceCost": "MEDIUM",
+      "reproducibilityImpact": "Faster and less burst-sensitive search",
+      "evidenceSupporting": "P09 cache is TTL-only and does not single-flight cold misses",
+      "evidenceAgainst": "Must not serve stale or cross-scope data",
+      "requiresBenchmarkBeforeSelection": true
+    },
+    {
+      "candidateId": "C02",
+      "candidate": "Move component filtering into a bounded database query",
+      "targetRootCause": "P09 full-table read and in-memory filtering",
+      "expectedEffect": "Reduce rows returned, mapping, memory, and query work",
+      "correctnessRisk": "Business-safe mapping and locale search semantics may drift",
+      "implementationComplexity": "MEDIUM",
+      "infrastructureCost": "NONE_EXPECTED",
+      "runtimeCost": "LOWER_EXPECTED",
+      "maintenanceCost": "MEDIUM",
+      "reproducibilityImpact": "More stable component latency",
+      "evidenceSupporting": "Current route reads and orders all matching rows before search",
+      "evidenceAgainst": "Requires query behavior change and is not authorized in 2.2C",
+      "requiresBenchmarkBeforeSelection": true
+    },
+    {
+      "candidateId": "C03",
+      "candidate": "Propagate client cancellation to downstream route and database work",
+      "targetRootCause": "P09 work continues after 120-second client abort",
+      "expectedEffect": "Reduce post-timeout retained work and contamination",
+      "correctnessRisk": "Cancellation boundaries must not interrupt committed writes or shared owners",
+      "implementationComplexity": "HIGH",
+      "infrastructureCost": "NONE_EXPECTED",
+      "runtimeCost": "LOWER_AFTER_ABORT",
+      "maintenanceCost": "HIGH",
+      "reproducibilityImpact": "Faster recovery after overload; timeout semantics become more explicit",
+      "evidenceSupporting": "17 application backends remained active/waiting 30 seconds after clients settled",
+      "evidenceAgainst": "Database-driver cancellation support and exact ownership semantics need proof",
+      "requiresBenchmarkBeforeSelection": true
+    },
+    {
+      "candidateId": "C04",
+      "candidate": "Evaluate bounded request concurrency",
+      "targetRootCause": "P09 synchronized application read fan-out",
+      "expectedEffect": "Bound simultaneous DB and mapping pressure",
+      "correctnessRisk": "Fairness and rejection behavior must be specified",
+      "implementationComplexity": "MEDIUM",
+      "infrastructureCost": "NONE_TO_LOW",
+      "runtimeCost": "QUEUEING_TRADEOFF",
+      "maintenanceCost": "MEDIUM",
+      "reproducibilityImpact": "Predictable overload behavior but possible queued UX",
+      "evidenceSupporting": "P09 is healthy through 100 and capacity-bound at 1000",
+      "evidenceAgainst": "Does not remove redundant work",
+      "requiresBenchmarkBeforeSelection": true
+    },
+    {
+      "candidateId": "C05",
+      "candidate": "Evaluate pool sizing only after query fan-out controls",
+      "targetRootCause": "Potential DB acquisition pressure",
+      "expectedEffect": "May alter concurrency envelope",
+      "correctnessRisk": "Can amplify database overload and hide query inefficiency",
+      "implementationComplexity": "LOW",
+      "infrastructureCost": "POTENTIALLY_HIGHER_DB_LOAD",
+      "runtimeCost": "UNKNOWN",
+      "maintenanceCost": "LOW",
+      "reproducibilityImpact": "Unknown until isolated benchmark",
+      "evidenceSupporting": "Post-cooldown PostgreSQL wait events exist",
+      "evidenceAgainst": "Prisma queue was not measured and pool parameters are implicit",
+      "requiresBenchmarkBeforeSelection": true
+    },
+    {
+      "candidateId": "C06",
+      "candidate": "Separate scenario processes or require full settlement before next scenario",
+      "targetRootCause": "Cross-scenario measurement contamination",
+      "expectedEffect": "Prevent P09 residue from being assigned to P10",
+      "correctnessRisk": "LOW; measurement-only control",
+      "implementationComplexity": "LOW",
+      "infrastructureCost": "LOW_TEST_TIME",
+      "runtimeCost": "TEST_ONLY",
+      "maintenanceCost": "LOW",
+      "reproducibilityImpact": "Improves diagnostic reproducibility",
+      "evidenceSupporting": "Clean P10 fully settled; accepted P10 inherited application activity",
+      "evidenceAgainst": "Does not improve production capacity",
+      "requiresBenchmarkBeforeSelection": false
+    }
+  ],
+  "scopeGuards": {
+    "runtimeOptimizationImplemented": false,
+    "dbPoolChanged": false,
+    "queryChanged": false,
+    "indexChanged": false,
+    "httpChanged": false,
+    "timeoutChanged": false,
+    "nodeChanged": false,
+    "infrastructureChanged": false,
+    "currentSingleFlightChanged": false,
+    "verificationSingleFlightChanged": false,
+    "persistenceChanged": false,
+    "forecastMathChanged": false
+  },
+  "regression": {
+    "status": "PASS",
+    "checksPassed": 12,
+    "checksExpected": 12,
+    "stressExecutionObserved": false
+  },
+  "migrationReadiness": {
+    "status": "PASS",
+    "taskAttributedPathCount": 31,
+    "newNestedGitRepositories": 0,
+    "newExternalSourceRepositories": 0
+  },
+  "acceptanceConditions": {
+    "expected": 84,
+    "passed": 84,
+    "blocked": 0,
+    "failed": 0,
+    "conditions": [
+      {
+        "id": 1,
+        "status": "PASS",
+        "description": "Phase 2.2B-4R remains PASS."
+      },
+      {
+        "id": 2,
+        "status": "PASS",
+        "description": "Phase 2.2B series remains complete."
+      },
+      {
+        "id": 3,
+        "status": "PASS",
+        "description": "Current structural effect remains CONFIRMED."
+      },
+      {
+        "id": 4,
+        "status": "PASS",
+        "description": "Verification structural effect remains CONFIRMED."
+      },
+      {
+        "id": 5,
+        "status": "PASS",
+        "description": "Persistence idempotency remains PRESERVED."
+      },
+      {
+        "id": 6,
+        "status": "PASS",
+        "description": "Immutable BEFORE hashes pass."
+      },
+      {
+        "id": 7,
+        "status": "PASS",
+        "description": "Original B4 hashes pass."
+      },
+      {
+        "id": 8,
+        "status": "PASS",
+        "description": "Accepted B4R hashes pass."
+      },
+      {
+        "id": 9,
+        "status": "PASS",
+        "description": "C0 artifact-only diagnosis is completed before replay decision."
+      },
+      {
+        "id": 10,
+        "status": "PASS",
+        "description": "Diagnostic replay requirement is explicitly classified YES or NO."
+      },
+      {
+        "id": 11,
+        "status": "PASS",
+        "description": "No broad stress matrix rerun occurs."
+      },
+      {
+        "id": 12,
+        "status": "PASS",
+        "description": "P09@1000 accepted evidence is bound exactly."
+      },
+      {
+        "id": 13,
+        "status": "PASS",
+        "description": "P10@10 accepted evidence is bound exactly."
+      },
+      {
+        "id": 14,
+        "status": "PASS",
+        "description": "P09 timeout count is preserved exactly."
+      },
+      {
+        "id": 15,
+        "status": "PASS",
+        "description": "P09 DB-pool settlement evidence is preserved."
+      },
+      {
+        "id": 16,
+        "status": "PASS",
+        "description": "P10 DB-pool settlement evidence is preserved."
+      },
+      {
+        "id": 17,
+        "status": "PASS",
+        "description": "P09 request lifecycle is mapped."
+      },
+      {
+        "id": 18,
+        "status": "PASS",
+        "description": "P10 request lifecycle is mapped."
+      },
+      {
+        "id": 19,
+        "status": "PASS",
+        "description": "Unobservable lifecycle stages are explicitly marked."
+      },
+      {
+        "id": 20,
+        "status": "PASS",
+        "description": "No synthetic timing values are invented."
+      },
+      {
+        "id": 21,
+        "status": "PASS",
+        "description": "Complete relevant timeout authority map is produced."
+      },
+      {
+        "id": 22,
+        "status": "PASS",
+        "description": "Timeout values are not changed."
+      },
+      {
+        "id": 23,
+        "status": "PASS",
+        "description": "P09 timeouts receive evidence-backed classification."
+      },
+      {
+        "id": 24,
+        "status": "PASS",
+        "description": "Relevant Prisma client lifecycle is documented."
+      },
+      {
+        "id": 25,
+        "status": "PASS",
+        "description": "Relevant Prisma client creation sites are counted."
+      },
+      {
+        "id": 26,
+        "status": "PASS",
+        "description": "DB pool waiter measurement source is explicitly defined."
+      },
+      {
+        "id": 27,
+        "status": "PASS",
+        "description": "Task-owned DB activity is distinguished from unrelated activity where possible."
+      },
+      {
+        "id": 28,
+        "status": "PASS",
+        "description": "P09 query inventory is documented."
+      },
+      {
+        "id": 29,
+        "status": "PASS",
+        "description": "P10 query inventory is documented."
+      },
+      {
+        "id": 30,
+        "status": "PASS",
+        "description": "DB acquisitions per P09 request are measured or lawfully marked unavailable."
+      },
+      {
+        "id": 31,
+        "status": "PASS",
+        "description": "DB acquisitions per P10 request are measured or lawfully marked unavailable."
+      },
+      {
+        "id": 32,
+        "status": "PASS",
+        "description": "Query count amplification is evaluated."
+      },
+      {
+        "id": 33,
+        "status": "PASS",
+        "description": "DB acquisition wait is distinguished from DB execution latency."
+      },
+      {
+        "id": 34,
+        "status": "PASS",
+        "description": "P09 acquisition/query latency evidence is captured where observable."
+      },
+      {
+        "id": 35,
+        "status": "PASS",
+        "description": "P10 acquisition/query latency evidence is captured where observable."
+      },
+      {
+        "id": 36,
+        "status": "PASS",
+        "description": "Event-loop evidence is evaluated."
+      },
+      {
+        "id": 37,
+        "status": "PASS",
+        "description": "CPU evidence is evaluated."
+      },
+      {
+        "id": 38,
+        "status": "PASS",
+        "description": "Memory evidence is evaluated."
+      },
+      {
+        "id": 39,
+        "status": "PASS",
+        "description": "HTTP connection evidence is evaluated where observable."
+      },
+      {
+        "id": 40,
+        "status": "PASS",
+        "description": "HTTP admission evidence is evaluated where observable."
+      },
+      {
+        "id": 41,
+        "status": "PASS",
+        "description": "Serialization is evaluated."
+      },
+      {
+        "id": 42,
+        "status": "PASS",
+        "description": "Response drain is evaluated where observable."
+      },
+      {
+        "id": 43,
+        "status": "PASS",
+        "description": "P09 remains Forecast-compute-free during all diagnostics."
+      },
+      {
+        "id": 44,
+        "status": "PASS",
+        "description": "P10 remains prepared and compute-free during all diagnostics."
+      },
+      {
+        "id": 45,
+        "status": "PASS",
+        "description": "Provider calls remain zero for P09/P10 diagnostics."
+      },
+      {
+        "id": 46,
+        "status": "PASS",
+        "description": "Any new diagnostic instrumentation is behavior-neutral."
+      },
+      {
+        "id": 47,
+        "status": "PASS",
+        "description": "Diagnostic instrumentation is default-off."
+      },
+      {
+        "id": 48,
+        "status": "PASS",
+        "description": "No invasive tracing materially changes runtime behavior."
+      },
+      {
+        "id": 49,
+        "status": "PASS",
+        "description": "P10 diagnostic replay count is at most one."
+      },
+      {
+        "id": 50,
+        "status": "PASS",
+        "description": "P09@1000 diagnostic replay count is at most one."
+      },
+      {
+        "id": 51,
+        "status": "PASS",
+        "description": "No diagnostic replay occurs when artifact evidence is sufficient."
+      },
+      {
+        "id": 52,
+        "status": "PASS",
+        "description": "No P09@1000 replay occurs without all preconditions passing."
+      },
+      {
+        "id": 53,
+        "status": "PASS",
+        "description": "No tuning occurs between diagnostic observations."
+      },
+      {
+        "id": 54,
+        "status": "PASS",
+        "description": "P09 first capacity boundary receives explicit classification."
+      },
+      {
+        "id": 55,
+        "status": "PASS",
+        "description": "P10 first capacity boundary receives explicit classification."
+      },
+      {
+        "id": 56,
+        "status": "PASS",
+        "description": "P09 primary cause is explicitly classified."
+      },
+      {
+        "id": 57,
+        "status": "PASS",
+        "description": "P10 primary cause is explicitly classified."
+      },
+      {
+        "id": 58,
+        "status": "PASS",
+        "description": "Primary cause is distinguished from downstream timeout symptoms."
+      },
+      {
+        "id": 59,
+        "status": "PASS",
+        "description": "Secondary causes are explicitly identified where supported."
+      },
+      {
+        "id": 60,
+        "status": "PASS",
+        "description": "P09 causal chain is evidence-backed."
+      },
+      {
+        "id": 61,
+        "status": "PASS",
+        "description": "P10 causal chain is evidence-backed."
+      },
+      {
+        "id": 62,
+        "status": "PASS",
+        "description": "Unsupported causal links are not asserted."
+      },
+      {
+        "id": 63,
+        "status": "PASS",
+        "description": "Root-cause candidate matrix is complete."
+      },
+      {
+        "id": 64,
+        "status": "PASS",
+        "description": "Evidence and counterevidence are shown for material candidates."
+      },
+      {
+        "id": 65,
+        "status": "PASS",
+        "description": "Root-cause confidence uses the frozen qualitative scale."
+      },
+      {
+        "id": 66,
+        "status": "PASS",
+        "description": "P09 observed capacity envelope is documented."
+      },
+      {
+        "id": 67,
+        "status": "PASS",
+        "description": "P10 observed capacity envelope is documented."
+      },
+      {
+        "id": 68,
+        "status": "PASS",
+        "description": "No unmeasured maximum concurrency is invented."
+      },
+      {
+        "id": 69,
+        "status": "PASS",
+        "description": "Candidate optimization levers are evidence-backed."
+      },
+      {
+        "id": 70,
+        "status": "PASS",
+        "description": "Candidate levers are not implemented."
+      },
+      {
+        "id": 71,
+        "status": "PASS",
+        "description": "Candidate levers include correctness risk."
+      },
+      {
+        "id": 72,
+        "status": "PASS",
+        "description": "Candidate levers include infrastructure/runtime cost."
+      },
+      {
+        "id": 73,
+        "status": "PASS",
+        "description": "Candidate levers include UX/reproducibility implications."
+      },
+      {
+        "id": 74,
+        "status": "PASS",
+        "description": "No Champion optimization is selected."
+      },
+      {
+        "id": 75,
+        "status": "PASS",
+        "description": "Cross-instance ownership remains NOT_PROVEN."
+      },
+      {
+        "id": 76,
+        "status": "PASS",
+        "description": "Provider savings remain NOT_MEASURED."
+      },
+      {
+        "id": 77,
+        "status": "PASS",
+        "description": "Current single-flight behavior remains unchanged."
+      },
+      {
+        "id": 78,
+        "status": "PASS",
+        "description": "Verification single-flight behavior remains unchanged."
+      },
+      {
+        "id": 79,
+        "status": "PASS",
+        "description": "Persistence behavior remains unchanged."
+      },
+      {
+        "id": 80,
+        "status": "PASS",
+        "description": "DB/HTTP/Node/timeout/infrastructure configuration remains unchanged."
+      },
+      {
+        "id": 81,
+        "status": "PASS",
+        "description": "Full applicable non-stress regression passes."
+      },
+      {
+        "id": 82,
+        "status": "PASS",
+        "description": "Migration Readiness Delta is complete."
+      },
+      {
+        "id": 83,
+        "status": "PASS",
+        "description": "Exactly 60 human report sections are produced."
+      },
+      {
+        "id": 84,
+        "status": "PASS",
+        "description": "Phase 2.2D is not started."
+      }
+    ]
+  },
+  "reportSectionsExpected": 60,
+  "phase22cGate": "PASS",
+  "capacityDiagnosisComplete": true,
+  "phase22dReadyForAuthorization": true,
+  "phase22dAuthorized": false,
+  "phase22dStarted": false
+}

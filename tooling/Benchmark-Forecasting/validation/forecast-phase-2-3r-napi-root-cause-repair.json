@@ -1,0 +1,1017 @@
+{
+  "task": "FORECAST_PHASE_2_3R_P09_1000_DOWNSTREAM_SG_RUNTIME_NAPI_ROOT_CAUSE_REPAIR",
+  "phase": "2.3R",
+  "generatedAt": "2026-08-25T17:59:43.972Z",
+  "preconditions": {
+    "phase23HistoricalGate": "FAIL",
+    "phase23HistoricalConditions": "107/108",
+    "c01Accepted": true,
+    "c01CausalEffect": "CONFIRMED"
+  },
+  "immutableEvidence": {
+    "status": "PASS",
+    "before": 22,
+    "originalB4": 3,
+    "phase1r": 1,
+    "b4r": 7,
+    "phase22c": 9,
+    "phase22d": 6,
+    "phase23": 9,
+    "historicalP09RawSha256": "97b72dffe9cd369a7d4c6914e459b0ffd848e5c56a55932d3a1cc1cfb889c06b"
+  },
+  "historicalFailure": {
+    "requests": 1000,
+    "correctResponses": 0,
+    "httpFailures": 1000,
+    "c01Owners": 1,
+    "c01Joiners": 999,
+    "underlyingReads": 1,
+    "duplicateReads": 0,
+    "boundary": "DOWNSTREAM_SG_RUNTIME_ANALYTICS_SERIES",
+    "failureClass": "N_API_STRING_CONVERSION_FAILURE"
+  },
+  "rootCause": {
+    "throwSite": {
+      "applicationCall": "apps/sg-runtime/lib/market-data/service.ts readStoredSeriesFromPrisma / prisma.marketSeries.findUnique",
+      "generatedWrapper": "apps/sg-runtime/generated/market-data-client/runtime/library.js:121 handleRequestError",
+      "nativeBinary": "apps/sg-runtime/generated/market-data-client/libquery_engine-darwin-arm64.dylib.node",
+      "package": "@prisma/client",
+      "packageVersion": "5.22.0",
+      "embeddedNapiCrate": "napi 2.16.13",
+      "rustFunction": "ToNapiValue for &String::to_napi_value",
+      "napiFunction": "napi_create_string_utf8",
+      "nativeStatus": "GenericFailure"
+    },
+    "cause": "Concurrent duplicate full-history Prisma reads materialize many multi-megabyte native query-result Strings at once. At the measured large-series boundary, napi_create_string_utf8 cannot create the JavaScript strings and Prisma returns GenericFailure. The individual values are valid; concurrent large-result multiplicity is the unsafe condition.",
+    "confidence": "STRONGLY_SUPPORTED",
+    "minimalReproduction": {
+      "smallestReproducingConcurrency": 75,
+      "concurrencyRequired": true,
+      "dataVolumeRequired": true
+    },
+    "explains100Vs1000": true,
+    "c01Relationship": {
+      "caused": false,
+      "contributed": false,
+      "sharedResultLifetimeRelevant": false,
+      "sharedResultMutation": false,
+      "reason": "C01 shares only the preceding application-record Promise. Each P09 caller independently constructs a primitive seriesId and invokes SG Runtime; no C01 object enters Prisma."
+    }
+  },
+  "repair": {
+    "implemented": true,
+    "scope": [
+      "apps/sg-runtime/lib/market-data/service.ts"
+    ],
+    "exactChange": "Process-local, exact-series, in-flight-only coalescing of MarketDataRepository.readStoredSeries",
+    "dependencyChanged": false,
+    "queryChanged": false,
+    "timeoutChanged": false,
+    "poolChanged": false,
+    "c01Changed": false,
+    "rollback": [
+      "Remove inFlightStoredSeriesReads and readStoredSeries from apps/sg-runtime/lib/market-data/service.ts.",
+      "Restore the resolveHistoricalSeries call to resolvedDependencies.repository.readStoredSeries(seriesId).",
+      "Remove only the Phase 2.3R market-data coalescing tests; C01 rollback remains separate."
+    ]
+  },
+  "validation": {
+    "minimalReproduction": {
+      "before": {
+        "singleCall": "PASS",
+        "concurrency50": "50/50 PASS",
+        "concurrency70": "70/70 PASS",
+        "concurrency71": "71/71 PASS",
+        "concurrency72": "72/72 PASS",
+        "concurrency73": "73/73 PASS",
+        "concurrency74": "74/74 PASS",
+        "concurrency75": "0/75; 75 GenericFailure N-API errors",
+        "concurrency75Repeat": "0/75; 75 GenericFailure N-API errors",
+        "concurrency100": "0/100; 100 N-API errors",
+        "mixedConcurrency1000": "0/1000; 1000 N-API errors",
+        "metadataOnlyConcurrency1000": "1000/1000 PASS",
+        "small318PointSeriesConcurrency1000": "1000/1000 PASS"
+      },
+      "after": {
+        "productionServiceMixedCallers": 1000,
+        "successes": 1000,
+        "failures": 0,
+        "napiFailures": 0,
+        "elapsedMs": 444,
+        "rssMb": 255,
+        "providerEnabled": false,
+        "canonicalObservationCounts": {
+          "wocaes0074": 10659,
+          "wocaes0280": 21718,
+          "usnaac0169": 318
+        }
+      },
+      "status": "PASS"
+    },
+    "sgRuntimeIntegration": {
+      "focusedTests": "11/11 PASS",
+      "fullRegressionTests": "175/175",
+      "status": "PASS"
+    },
+    "c01Regression": {
+      "sourceChanged": false,
+      "focusedTests": "6/6",
+      "owners": 1,
+      "underlyingReads": 1,
+      "duplicateReads": 0,
+      "activeEntriesAfterSettlement": 0,
+      "status": "PASS"
+    },
+    "p09At100": {
+      "result": {
+        "scenario": "P09",
+        "concurrency": 100,
+        "requests": 100,
+        "successes": 100,
+        "failures": 0,
+        "timeouts": 0,
+        "correctness": "PASS",
+        "releaseSpreadMs": 8.051625,
+        "latencyP50Ms": 4604.493541,
+        "latencyP95Ms": 4643.980373,
+        "latencyP99Ms": 4651.303051,
+        "throughputRps": 21.473885,
+        "peakMemoryMb": null,
+        "postCooldownMemoryDeltaMb": null,
+        "forecastCompute": 0,
+        "verificationCompute": 0,
+        "forecastOwners": 0,
+        "forecastWrites": 0,
+        "providerCalls": 0,
+        "functionalOutcomes": {
+          "SUCCESS_COMPUTED": 100
+        },
+        "preparedHitCount": 0,
+        "preparedMissCount": 0,
+        "preparedResolveSpans": 0,
+        "applicationDatabase": {
+          "before": {
+            "commits": 214,
+            "rollbacks": 0,
+            "read": 1442498,
+            "fetched": 32572,
+            "inserted": 107396,
+            "updated": 68,
+            "deleted": 0,
+            "deadlocks": 0
+          },
+          "after": {
+            "commits": 219,
+            "rollbacks": 0,
+            "read": 1443107,
+            "fetched": 33178,
+            "inserted": 107396,
+            "updated": 68,
+            "deleted": 0,
+            "deadlocks": 0
+          },
+          "delta": {
+            "queryCount": null,
+            "writeCount": 0,
+            "transactionCommits": 5,
+            "transactionRollbacks": 0,
+            "rowsReturned": 609,
+            "rowsFetched": 606,
+            "deadlocks": 0
+          }
+        }
+      },
+      "napiFailures": 0,
+      "c01": {
+        "exactKeys": 1,
+        "physicalOwners": 1,
+        "joiners": 99,
+        "cacheHits": 0,
+        "underlyingReads": 1,
+        "completedReads": 1,
+        "failedReads": 0,
+        "duplicateReads": 0,
+        "entryReleases": 1,
+        "activeEntriesAfterSettlement": 0
+      },
+      "settlement": "PASS",
+      "status": "PASS"
+    },
+    "p09At1000": {
+      "authorized": true,
+      "executed": true,
+      "executionCount": 1,
+      "result": {
+        "scenario": "P09",
+        "concurrency": 1000,
+        "requests": 1000,
+        "successes": 1000,
+        "failures": 0,
+        "timeouts": 0,
+        "correctness": "PASS",
+        "releaseSpreadMs": 66.115667,
+        "latencyP50Ms": 18647.730333,
+        "latencyP95Ms": 18984.652882,
+        "latencyP99Ms": 19016.249306,
+        "throughputRps": 52.514729,
+        "peakMemoryMb": null,
+        "postCooldownMemoryDeltaMb": null,
+        "forecastCompute": 0,
+        "verificationCompute": 0,
+        "forecastOwners": 0,
+        "forecastWrites": 0,
+        "providerCalls": 0,
+        "functionalOutcomes": {
+          "SUCCESS_COMPUTED": 1000
+        },
+        "preparedHitCount": 0,
+        "preparedMissCount": 0,
+        "preparedResolveSpans": 0,
+        "applicationDatabase": {
+          "before": {
+            "commits": 214,
+            "rollbacks": 0,
+            "read": 1442498,
+            "fetched": 32572,
+            "inserted": 107396,
+            "updated": 68,
+            "deleted": 0,
+            "deadlocks": 0
+          },
+          "after": {
+            "commits": 243,
+            "rollbacks": 0,
+            "read": 1457004,
+            "fetched": 37556,
+            "inserted": 107539,
+            "updated": 183,
+            "deleted": 1,
+            "deadlocks": 0
+          },
+          "delta": {
+            "queryCount": null,
+            "writeCount": 259,
+            "transactionCommits": 29,
+            "transactionRollbacks": 0,
+            "rowsReturned": 14506,
+            "rowsFetched": 4984,
+            "deadlocks": 0
+          }
+        }
+      },
+      "napiFailures": 0,
+      "otherFailureClasses": [],
+      "c01": {
+        "exactKeys": 1,
+        "physicalOwners": 1,
+        "joiners": 999,
+        "cacheHits": 0,
+        "underlyingReads": 1,
+        "completedReads": 1,
+        "failedReads": 0,
+        "duplicateReads": 0,
+        "entryReleases": 1,
+        "activeEntriesAfterSettlement": 0
+      },
+      "settlement": "PASS",
+      "status": "PASS"
+    },
+    "p10": {
+      "isolated": true,
+      "result": {
+        "scenario": "P10",
+        "concurrency": 10,
+        "requests": 10,
+        "successes": 10,
+        "failures": 0,
+        "timeouts": 0,
+        "correctness": "PASS",
+        "releaseSpreadMs": 2.360083,
+        "latencyP50Ms": 1124.512791,
+        "latencyP95Ms": 1131.03564,
+        "latencyP99Ms": 1132.084694,
+        "throughputRps": 8.831215,
+        "peakMemoryMb": null,
+        "postCooldownMemoryDeltaMb": null,
+        "forecastCompute": 0,
+        "verificationCompute": 0,
+        "forecastOwners": 0,
+        "forecastWrites": 0,
+        "providerCalls": 0,
+        "functionalOutcomes": {
+          "SUCCESS_COMPUTED": 10
+        },
+        "preparedHitCount": 0,
+        "preparedMissCount": 0,
+        "preparedResolveSpans": 10,
+        "applicationDatabase": {
+          "before": {
+            "commits": 214,
+            "rollbacks": 0,
+            "read": 1442498,
+            "fetched": 32572,
+            "inserted": 107396,
+            "updated": 68,
+            "deleted": 0,
+            "deadlocks": 0
+          },
+          "after": {
+            "commits": 218,
+            "rollbacks": 0,
+            "read": 1443091,
+            "fetched": 33163,
+            "inserted": 107396,
+            "updated": 68,
+            "deleted": 0,
+            "deadlocks": 0
+          },
+          "delta": {
+            "queryCount": null,
+            "writeCount": 0,
+            "transactionCommits": 4,
+            "transactionRollbacks": 0,
+            "rowsReturned": 593,
+            "rowsFetched": 591,
+            "deadlocks": 0
+          }
+        }
+      },
+      "c01": {
+        "exactKeys": 0,
+        "physicalOwners": 0,
+        "joiners": 0,
+        "cacheHits": 0,
+        "underlyingReads": 0,
+        "completedReads": 0,
+        "failedReads": 0,
+        "duplicateReads": 0,
+        "entryReleases": 0,
+        "activeEntriesAfterSettlement": 0
+      },
+      "settlement": "PASS",
+      "successComputedLabelSemantics": "Historical harness success label only; direct telemetry proves zero Forecast compute.",
+      "status": "PASS"
+    },
+    "regression": {
+      "status": "PASS",
+      "passed": 15,
+      "expected": 15,
+      "stressExecutionObserved": false
+    }
+  },
+  "conditionalCandidates": {
+    "C02": "NOT_TRIGGERED",
+    "C03": "NOT_TRIGGERED",
+    "C04Changed": false,
+    "C05Changed": false
+  },
+  "effects": {
+    "napiRepairAccepted": "YES",
+    "historicalFailureResolved": "YES",
+    "newDownstreamFailure": "NO",
+    "capacityEffect": "IMPROVED",
+    "uxEffect": "IMPROVED",
+    "resourceEffect": "NOT_COMPARABLE"
+  },
+  "scopeGuards": {
+    "C01Changed": false,
+    "C02Implemented": false,
+    "C03Implemented": false,
+    "C04Implemented": false,
+    "C05Implemented": false,
+    "queryChanged": false,
+    "filteringChanged": false,
+    "indexChanged": false,
+    "poolChanged": false,
+    "timeoutChanged": false,
+    "httpChanged": false,
+    "nodeConfigChanged": false,
+    "infrastructureChanged": false,
+    "currentSingleFlightChanged": false,
+    "verificationSingleFlightChanged": false,
+    "forecastPersistenceChanged": false
+  },
+  "migrationReadiness": {
+    "status": "PASS",
+    "taskAttributedPathCount": 55,
+    "newNestedGitRepositories": 0,
+    "newExternalSourceRepositories": 0
+  },
+  "acceptanceConditions": {
+    "expected": 100,
+    "passed": 100,
+    "blocked": 0,
+    "failed": 0,
+    "conditions": [
+      {
+        "id": 1,
+        "status": "PASS",
+        "description": "Historical Phase 2.3 remains FAIL.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 2,
+        "status": "PASS",
+        "description": "Historical Phase 2.3 remains 107/108.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 3,
+        "status": "PASS",
+        "description": "C01 remains accepted.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 4,
+        "status": "PASS",
+        "description": "C01 causal effect remains CONFIRMED.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 5,
+        "status": "PASS",
+        "description": "Historical P09@1000 artifact remains immutable.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 6,
+        "status": "PASS",
+        "description": "Immutable BEFORE hashes pass.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 7,
+        "status": "PASS",
+        "description": "Original B4 hashes pass.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 8,
+        "status": "PASS",
+        "description": "1R hashes pass.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 9,
+        "status": "PASS",
+        "description": "B4R hashes pass.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 10,
+        "status": "PASS",
+        "description": "Phase 2.2C hashes pass.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 11,
+        "status": "PASS",
+        "description": "Phase 2.2D hashes pass.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 12,
+        "status": "PASS",
+        "description": "Phase 2.3 hashes pass.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 13,
+        "status": "PASS",
+        "description": "Exact P09 request path is documented.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 14,
+        "status": "PASS",
+        "description": "Exact SG Runtime analytics-series path is documented.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 15,
+        "status": "PASS",
+        "description": "Relevant N-API dependency is identified.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 16,
+        "status": "PASS",
+        "description": "Exact native/JS throw site is identified.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 17,
+        "status": "PASS",
+        "description": "Exact original error is preserved.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 18,
+        "status": "PASS",
+        "description": "Runtime/native environment is documented.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 19,
+        "status": "PASS",
+        "description": "Exact value entering the failing boundary is identified.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 20,
+        "status": "PASS",
+        "description": "The value's JS/native type is documented.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 21,
+        "status": "PASS",
+        "description": "Its origin is traced.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 22,
+        "status": "PASS",
+        "description": "Null/undefined status is checked.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 23,
+        "status": "PASS",
+        "description": "Relevant string/encoding characteristics are checked.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 24,
+        "status": "PASS",
+        "description": "Data dependence is evaluated.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 25,
+        "status": "PASS",
+        "description": "Concurrency dependence is evaluated.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 26,
+        "status": "PASS",
+        "description": "A minimal reproduction is created.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 27,
+        "status": "PASS",
+        "description": "Minimal reproduction excludes unnecessary P09 layers where possible.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 28,
+        "status": "PASS",
+        "description": "Root-cause diagnosis occurs before repair.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 29,
+        "status": "PASS",
+        "description": "Root-cause candidate matrix is complete.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 30,
+        "status": "PASS",
+        "description": "Evidence and counterevidence are recorded.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 31,
+        "status": "PASS",
+        "description": "Root cause receives explicit confidence.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 32,
+        "status": "PASS",
+        "description": "Root cause explains P09@100 vs P09@1000.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 33,
+        "status": "PASS",
+        "description": "Throw site is distinguished from root cause.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 34,
+        "status": "PASS",
+        "description": "C01 relationship to the failure is explicitly classified.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 35,
+        "status": "PASS",
+        "description": "Shared C01 result lifetime is inspected.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 36,
+        "status": "PASS",
+        "description": "Shared-result mutation is evaluated.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 37,
+        "status": "PASS",
+        "description": "No speculative clone/copy is introduced.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 38,
+        "status": "PASS",
+        "description": "Root cause is PROVEN or STRONGLY_SUPPORTED before repair.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 39,
+        "status": "PASS",
+        "description": "Repair directly addresses that root cause.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 40,
+        "status": "PASS",
+        "description": "Repair is bounded to the minimum source/dependency surface.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 41,
+        "status": "PASS",
+        "description": "Repair does not suppress the native error without restoring correctness.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 42,
+        "status": "PASS",
+        "description": "Repair does not return fallback/empty canonical data.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 43,
+        "status": "PASS",
+        "description": "Repair does not increase timeout.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 44,
+        "status": "PASS",
+        "description": "Repair does not reduce concurrency.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 45,
+        "status": "PASS",
+        "description": "Repair does not implement request throttling.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 46,
+        "status": "PASS",
+        "description": "C01 behavior remains unchanged.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 47,
+        "status": "PASS",
+        "description": "C01 exact key remains unchanged.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 48,
+        "status": "PASS",
+        "description": "Result-cache TTL remains 30 seconds.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 49,
+        "status": "PASS",
+        "description": "Result-cache timestamp semantics remain unchanged.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 50,
+        "status": "PASS",
+        "description": "Application query remains unchanged.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 51,
+        "status": "PASS",
+        "description": "Business filtering remains unchanged.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 52,
+        "status": "PASS",
+        "description": "Index/schema remains unchanged.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 53,
+        "status": "PASS",
+        "description": "DB pool configuration remains unchanged.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 54,
+        "status": "PASS",
+        "description": "Cancellation behavior remains unchanged unless explicitly blocked by scope.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 55,
+        "status": "PASS",
+        "description": "Forecast methodology remains unchanged.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 56,
+        "status": "PASS",
+        "description": "Current single-flight remains unchanged.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 57,
+        "status": "PASS",
+        "description": "Verification single-flight remains unchanged.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 58,
+        "status": "PASS",
+        "description": "Forecast persistence remains unchanged.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 59,
+        "status": "PASS",
+        "description": "Pre-repair minimal reproduction observes the historical failure class.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 60,
+        "status": "PASS",
+        "description": "Post-repair reproduction no longer observes it.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 61,
+        "status": "PASS",
+        "description": "Failure regression fixture is persisted.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 62,
+        "status": "PASS",
+        "description": "Concurrency repair proof passes if concurrency is causal.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 63,
+        "status": "PASS",
+        "description": "SG Runtime analytics-series integration proof passes.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 64,
+        "status": "PASS",
+        "description": "N-API conversion failure count is zero in deterministic repaired integration.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 65,
+        "status": "PASS",
+        "description": "C01 focused regression passes.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 66,
+        "status": "PASS",
+        "description": "C01 focused regression observes one owner.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 67,
+        "status": "PASS",
+        "description": "C01 focused regression observes one underlying read.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 68,
+        "status": "PASS",
+        "description": "C01 focused regression observes zero duplicate reads.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 69,
+        "status": "PASS",
+        "description": "C01 registry settles to zero.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 70,
+        "status": "PASS",
+        "description": "P09@100 uses exact clean state.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 71,
+        "status": "PASS",
+        "description": "P09@100 returns 100/100 canonical responses.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 72,
+        "status": "PASS",
+        "description": "P09@100 N-API failure count is zero.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 73,
+        "status": "PASS",
+        "description": "P09@100 C01 structure remains correct.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 74,
+        "status": "PASS",
+        "description": "P09@100 Forecast compute remains zero.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 75,
+        "status": "PASS",
+        "description": "P09@100 Verification compute remains zero.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 76,
+        "status": "PASS",
+        "description": "P09@100 Forecast writes remain zero.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 77,
+        "status": "PASS",
+        "description": "P09@100 provider calls remain zero.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 78,
+        "status": "PASS",
+        "description": "P09@100 settlement passes.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 79,
+        "status": "PASS",
+        "description": "Phase 2.3R P09@1000 executes only after all lower gates pass.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 80,
+        "status": "PASS",
+        "description": "Phase 2.3R P09@1000 execution count is at most one.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 81,
+        "status": "PASS",
+        "description": "Historical Phase 2.3 @1000 is not rerun or overwritten.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 82,
+        "status": "PASS",
+        "description": "New Phase 2.3R @1000 uses a separate run/evidence identity.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 83,
+        "status": "PASS",
+        "description": "Executed repaired @1000 has zero historical N-API string-conversion failures.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 84,
+        "status": "PASS",
+        "description": "Executed repaired @1000 preserves C01 structural correctness.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 85,
+        "status": "PASS",
+        "description": "Executed repaired @1000 failure classes are independently classified.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 86,
+        "status": "PASS",
+        "description": "No unauthorized second @1000 occurs.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 87,
+        "status": "PASS",
+        "description": "Historical-vs-repair failure comparison is produced.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 88,
+        "status": "PASS",
+        "description": "Same-cause resolution is explicitly classified.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 89,
+        "status": "PASS",
+        "description": "Any new downstream failure is explicitly classified.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 90,
+        "status": "PASS",
+        "description": "Unsupported performance claims are not made.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 91,
+        "status": "PASS",
+        "description": "P10 starts only after clean P09 settlement.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 92,
+        "status": "PASS",
+        "description": "P10 remains 10/10 canonical correct.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 93,
+        "status": "PASS",
+        "description": "P10 remains Forecast-compute-free.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 94,
+        "status": "PASS",
+        "description": "P10 remains Forecast-owner-free.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 95,
+        "status": "PASS",
+        "description": "P10 remains Forecast-write-free.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 96,
+        "status": "PASS",
+        "description": "C02/C03/C04/C05 are not silently implemented.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 97,
+        "status": "PASS",
+        "description": "Full applicable regression passes.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 98,
+        "status": "PASS",
+        "description": "Migration Readiness Delta is complete.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 99,
+        "status": "PASS",
+        "description": "Exactly 68 human report sections are produced.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      },
+      {
+        "id": 100,
+        "status": "PASS",
+        "description": "Phase 2.4 is not started.",
+        "evidence": "Validated by immutable authority, root-cause, repair, controlled workload, regression, migration, or scope-guard evidence."
+      }
+    ]
+  },
+  "reportSectionsExpected": 68,
+  "phase23rGate": "PASS",
+  "repairComplete": true,
+  "napiRepairAccepted": "YES",
+  "c01CacheMissCoalescingAccepted": "YES",
+  "phase23SeriesComplete": true,
+  "phase24ReadyForAuthorization": true,
+  "phase24Authorized": false,
+  "phase24Started": false
+}

@@ -1,0 +1,60 @@
+{
+  "task": "FORECAST_PHASE_2_2C_DB_CONNECTION_MAP",
+  "generatedAt": "2026-08-25T15:40:15.900Z",
+  "relevantPrismaCreationSiteCount": 4,
+  "clients": [
+    {
+      "process": "dashboard-preview",
+      "authority": "application",
+      "version": "Prisma 7.8.0 + PrismaPg",
+      "lifecycle": "GLOBAL_SINGLETON_PER_SERVICE_PROCESS",
+      "p09": true,
+      "p10": false
+    },
+    {
+      "process": "dashboard-preview",
+      "authority": "marketData",
+      "version": "Prisma 7.8.0 + PrismaPg",
+      "lifecycle": "GLOBAL_SINGLETON_PER_CONNECTION_STRING",
+      "p09": false,
+      "p10": true
+    },
+    {
+      "process": "sg-runtime",
+      "authority": "application",
+      "version": "Prisma 5.22.0",
+      "lifecycle": "GLOBAL_SINGLETON_IN_DEVELOPMENT",
+      "p09": false,
+      "p10": false
+    },
+    {
+      "process": "sg-runtime",
+      "authority": "marketData",
+      "version": "Prisma 5.22.0",
+      "lifecycle": "GLOBAL_SINGLETON_IN_DEVELOPMENT",
+      "p09": true,
+      "p10": false
+    }
+  ],
+  "poolConfiguration": {
+    "connectionLimit": "IMPLICIT_NOT_EXPLICITLY_CONFIGURED",
+    "poolTimeout": "IMPLICIT_NOT_EXPLICITLY_CONFIGURED",
+    "applicationName": "NOT_EXPLICITLY_CONFIGURED",
+    "endpoints": [
+      "127.0.0.1:55421/sg_phase_2_1_app",
+      "127.0.0.1:55421/sg_phase_2_1_market_data"
+    ]
+  },
+  "waiterDefinition": {
+    "source": "PostgreSQL pg_stat_activity",
+    "expression": "wait_event IS NOT NULL AND state <> 'idle'",
+    "meaning": "Non-idle backend with a PostgreSQL wait event",
+    "notEquivalentTo": "Prisma client-side pool acquisition queue"
+  },
+  "connectionReuse": "SERVICE_SINGLETON_CLIENTS_WITH_DRIVER_POOL_REUSE",
+  "taskOwnedIsolation": {
+    "p10ApplicationDb": "ZERO_ROUTE_ACTIVITY; HARNESS_OBSERVATION_COUNTERS_ONLY",
+    "p10MarketDataDb": "14_PREPARED_READ_OPERATIONS",
+    "p09AcceptedAttribution": "APPLICATION_ACTIVITY_PRESENT_BUT_APPLICATION_NAME_UNSET"
+  }
+}

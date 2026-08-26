@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-08-26T10:47:40.164Z",
+  "status": "FROZEN",
+  "version": 2,
+  "historicalBaselineCommit": "9fc9f81b5649140ff46e029f3381873a9fbb60e3",
+  "preservationAuthorityId": "FORECAST_EXECUTABLE_PRESERVATION_AUTHORITY_V2",
+  "preservationPackageIdentity": "ed1b6e4a84837e14d06049f5b7066311495184d99db8b087731c10983fb7e66d",
+  "closureId": "EXECUTABLE_DEPENDENCY_CLOSURE_V2",
+  "closureSha256": "f19d42e1c1a9a84028b17ea834f08789a199c5d3d93bcdf2d4b262c88c8b0665",
+  "architectureId": "FORECAST_PRODUCTION_ARCHITECTURE_V1",
+  "architectureVersion": 1,
+  "targetTreeFingerprint": "8dd703de2b2ea89a334a280bcde340caa1e73473f314041803b0733969bb97e9",
+  "authorityId": "FORECAST_R2R_HANDOFF_V2",
+  "handoff": "R2R_SAFE_MIGRATION_RETRY_TO_PROFITIA_SG_DEV",
+  "manifest": "FORECAST_MIGRATION_MANIFEST_V2",
+  "generatedTreatment": {
+    "sgRuntimePrisma": "FROZEN_EXECUTABLE_BYTE",
+    "dashboardPrisma": "EVIDENCE_BACKED_REPRODUCIBLE_GENERATION"
+  },
+  "vectorBoundary": "INDEPENDENT_REPOSITORY_RESTORED_FROM_VERIFIED_BUNDLE",
+  "canonical": "35/35",
+  "architecture": "28/10/14/8/4",
+  "simulation1": "17/17 PASS",
+  "simulation2": "17/17 PASS",
+  "accessIsolation": "ZERO_UNDECLARED_AND_ZERO_ORIGINAL_READS_TWICE",
+  "security": "PASS",
+  "r2rReadyForAuthorization": true,
+  "r2rAuthorized": false,
+  "r2rStarted": false,
+  "r3ReadyForAuthorization": false,
+  "r3Authorized": false,
+  "r3Started": false
+}

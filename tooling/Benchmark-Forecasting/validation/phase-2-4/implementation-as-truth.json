@@ -1,0 +1,23 @@
+{
+  "architectureId": "FORECAST_PRODUCTION_ARCHITECTURE_V1",
+  "freezeVersion": 1,
+  "status": "PASS",
+  "driftDetected": false,
+  "canonicalRuntimeBehaviorSourceChanges": 0,
+  "inspectedPaths": [
+    "apps/sg-runtime/lib/forecast/current-single-flight.ts",
+    "apps/sg-runtime/lib/forecast/verification-single-flight.ts",
+    "apps/sg-runtime/lib/forecast/rolling-daily-current-ownership.ts",
+    "apps/sg-runtime/scripts/run-forecast-phase-2-1b-operation.ts",
+    "apps/sg-runtime/lib/forecast/route-handlers.ts",
+    "apps/sg-runtime/lib/forecast/service.ts",
+    "apps/dashboard-preview/lib/raw-data/dashboard-record-query.ts",
+    "apps/sg-runtime/lib/market-data/service.ts",
+    "apps/dashboard-preview/lib/phase-2-2c/diagnostics.ts",
+    "apps/sg-runtime/lib/forecast/stress-telemetry.ts"
+  ],
+  "acceptedAnchorHashes": {
+    "apps/dashboard-preview/lib/raw-data/dashboard-record-query.ts": "74c3d20875d0f19e8989e93e0e8b4d7ff49348bd41b33a1664adb7b4a2438d7f",
+    "apps/sg-runtime/lib/market-data/service.ts": "11f4233584a832fba0a0fefac3a5b118c6848d990b8feff02e6b2823c69f7ca2"
+  }
+}

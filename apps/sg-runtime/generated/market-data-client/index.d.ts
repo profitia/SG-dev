@@ -1,0 +1,22644 @@
+
+/**
+ * Client
+**/
+
+import * as runtime from './runtime/library.js';
+import $Types = runtime.Types // general types
+import $Public = runtime.Types.Public
+import $Utils = runtime.Types.Utils
+import $Extensions = runtime.Types.Extensions
+import $Result = runtime.Types.Result
+
+export type PrismaPromise<T> = $Public.PrismaPromise<T>
+
+
+/**
+ * Model MarketSeries
+ * 
+ */
+export type MarketSeries = $Result.DefaultSelection<Prisma.$MarketSeriesPayload>
+/**
+ * Model MarketObservation
+ * 
+ */
+export type MarketObservation = $Result.DefaultSelection<Prisma.$MarketObservationPayload>
+/**
+ * Model MarketHydrationState
+ * 
+ */
+export type MarketHydrationState = $Result.DefaultSelection<Prisma.$MarketHydrationStatePayload>
+/**
+ * Model ForecastCurrentRun
+ * 
+ */
+export type ForecastCurrentRun = $Result.DefaultSelection<Prisma.$ForecastCurrentRunPayload>
+/**
+ * Model ForecastCurrentPoint
+ * 
+ */
+export type ForecastCurrentPoint = $Result.DefaultSelection<Prisma.$ForecastCurrentPointPayload>
+/**
+ * Model ForecastVerificationRun
+ * 
+ */
+export type ForecastVerificationRun = $Result.DefaultSelection<Prisma.$ForecastVerificationRunPayload>
+/**
+ * Model ForecastVerificationMetric
+ * 
+ */
+export type ForecastVerificationMetric = $Result.DefaultSelection<Prisma.$ForecastVerificationMetricPayload>
+/**
+ * Model ForecastVerificationPoint
+ * 
+ */
+export type ForecastVerificationPoint = $Result.DefaultSelection<Prisma.$ForecastVerificationPointPayload>
+/**
+ * Model RollingDailyVerificationRecord
+ * 
+ */
+export type RollingDailyVerificationRecord = $Result.DefaultSelection<Prisma.$RollingDailyVerificationRecordPayload>
+/**
+ * Model RollingDailyCurrentForecastSnapshot
+ * 
+ */
+export type RollingDailyCurrentForecastSnapshot = $Result.DefaultSelection<Prisma.$RollingDailyCurrentForecastSnapshotPayload>
+/**
+ * Model RollingDailyCalibrationGroup
+ * 
+ */
+export type RollingDailyCalibrationGroup = $Result.DefaultSelection<Prisma.$RollingDailyCalibrationGroupPayload>
+/**
+ * Model RollingDailyMaintenanceState
+ * 
+ */
+export type RollingDailyMaintenanceState = $Result.DefaultSelection<Prisma.$RollingDailyMaintenanceStatePayload>
+
+/**
+ * Enums
+ */
+export namespace $Enums {
+  export const ForecastTargetBasis: {
+  MONTHLY_AVERAGE: 'MONTHLY_AVERAGE',
+  POINT_IN_TIME: 'POINT_IN_TIME',
+  END_OF_PERIOD: 'END_OF_PERIOD'
+};
+
+export type ForecastTargetBasis = (typeof ForecastTargetBasis)[keyof typeof ForecastTargetBasis]
+
+
+export const RollingDailyVerificationMaturityStatus: {
+  MATURED: 'MATURED',
+  NOT_YET_MATURED: 'NOT_YET_MATURED'
+};
+
+export type RollingDailyVerificationMaturityStatus = (typeof RollingDailyVerificationMaturityStatus)[keyof typeof RollingDailyVerificationMaturityStatus]
+
+
+export const RollingDailyCalibrationStatus: {
+  AVAILABLE: 'AVAILABLE',
+  INSUFFICIENT_CALIBRATION_HISTORY: 'INSUFFICIENT_CALIBRATION_HISTORY'
+};
+
+export type RollingDailyCalibrationStatus = (typeof RollingDailyCalibrationStatus)[keyof typeof RollingDailyCalibrationStatus]
+
+}
+
+export type ForecastTargetBasis = $Enums.ForecastTargetBasis
+
+export const ForecastTargetBasis: typeof $Enums.ForecastTargetBasis
+
+export type RollingDailyVerificationMaturityStatus = $Enums.RollingDailyVerificationMaturityStatus
+
+export const RollingDailyVerificationMaturityStatus: typeof $Enums.RollingDailyVerificationMaturityStatus
+
+export type RollingDailyCalibrationStatus = $Enums.RollingDailyCalibrationStatus
+
+export const RollingDailyCalibrationStatus: typeof $Enums.RollingDailyCalibrationStatus
+
+/**
+ * ##  Prisma Client ʲˢ
+ * 
+ * Type-safe database client for TypeScript & Node.js
+ * @example
+ * ```
+ * const prisma = new PrismaClient()
+ * // Fetch zero or more MarketSeries
+ * const marketSeries = await prisma.marketSeries.findMany()
+ * ```
+ *
+ * 
+ * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
+ */
+export class PrismaClient<
+  ClientOptions extends Prisma.PrismaClientOptions = Prisma.PrismaClientOptions,
+  U = 'log' extends keyof ClientOptions ? ClientOptions['log'] extends Array<Prisma.LogLevel | Prisma.LogDefinition> ? Prisma.GetEvents<ClientOptions['log']> : never : never,
+  ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs
+> {
+  [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['other'] }
+
+    /**
+   * ##  Prisma Client ʲˢ
+   * 
+   * Type-safe database client for TypeScript & Node.js
+   * @example
+   * ```
+   * const prisma = new PrismaClient()
+   * // Fetch zero or more MarketSeries
+   * const marketSeries = await prisma.marketSeries.findMany()
+   * ```
+   *
+   * 
+   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
+   */
+
+  constructor(optionsArg ?: Prisma.Subset<ClientOptions, Prisma.PrismaClientOptions>);
+  $on<V extends U>(eventType: V, callback: (event: V extends 'query' ? Prisma.QueryEvent : Prisma.LogEvent) => void): void;
+
+  /**
+   * Connect with the database
+   */
+  $connect(): $Utils.JsPromise<void>;
+
+  /**
+   * Disconnect from the database
+   */
+  $disconnect(): $Utils.JsPromise<void>;
+
+  /**
+   * Add a middleware
+   * @deprecated since 4.16.0. For new code, prefer client extensions instead.
+   * @see https://pris.ly/d/extensions
+   */
+  $use(cb: Prisma.Middleware): void
+
+/**
+   * Executes a prepared raw query and returns the number of affected rows.
+   * @example
+   * ```
+   * const result = await prisma.$executeRaw`UPDATE User SET cool = ${true} WHERE email = ${'user@email.com'};`
+   * ```
+   * 
+   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
+   */
+  $executeRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<number>;
+
+  /**
+   * Executes a raw query and returns the number of affected rows.
+   * Susceptible to SQL injections, see documentation.
+   * @example
+   * ```
+   * const result = await prisma.$executeRawUnsafe('UPDATE User SET cool = $1 WHERE email = $2 ;', true, 'user@email.com')
+   * ```
+   * 
+   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
+   */
+  $executeRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<number>;
+
+  /**
+   * Performs a prepared raw query and returns the `SELECT` data.
+   * @example
+   * ```
+   * const result = await prisma.$queryRaw`SELECT * FROM User WHERE id = ${1} OR email = ${'user@email.com'};`
+   * ```
+   * 
+   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
+   */
+  $queryRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<T>;
+
+  /**
+   * Performs a raw query and returns the `SELECT` data.
+   * Susceptible to SQL injections, see documentation.
+   * @example
+   * ```
+   * const result = await prisma.$queryRawUnsafe('SELECT * FROM User WHERE id = $1 OR email = $2;', 1, 'user@email.com')
+   * ```
+   * 
+   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
+   */
+  $queryRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<T>;
+
+
+  /**
+   * Allows the running of a sequence of read/write operations that are guaranteed to either succeed or fail as a whole.
+   * @example
+   * ```
+   * const [george, bob, alice] = await prisma.$transaction([
+   *   prisma.user.create({ data: { name: 'George' } }),
+   *   prisma.user.create({ data: { name: 'Bob' } }),
+   *   prisma.user.create({ data: { name: 'Alice' } }),
+   * ])
+   * ```
+   * 
+   * Read more in our [docs](https://www.prisma.io/docs/concepts/components/prisma-client/transactions).
+   */
+  $transaction<P extends Prisma.PrismaPromise<any>[]>(arg: [...P], options?: { isolationLevel?: Prisma.TransactionIsolationLevel }): $Utils.JsPromise<runtime.Types.Utils.UnwrapTuple<P>>
+
+  $transaction<R>(fn: (prisma: Omit<PrismaClient, runtime.ITXClientDenyList>) => $Utils.JsPromise<R>, options?: { maxWait?: number, timeout?: number, isolationLevel?: Prisma.TransactionIsolationLevel }): $Utils.JsPromise<R>
+
+
+  $extends: $Extensions.ExtendsHook<"extends", Prisma.TypeMapCb, ExtArgs>
+
+      /**
+   * `prisma.marketSeries`: Exposes CRUD operations for the **MarketSeries** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more MarketSeries
+    * const marketSeries = await prisma.marketSeries.findMany()
+    * ```
+    */
+  get marketSeries(): Prisma.MarketSeriesDelegate<ExtArgs>;
+
+  /**
+   * `prisma.marketObservation`: Exposes CRUD operations for the **MarketObservation** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more MarketObservations
+    * const marketObservations = await prisma.marketObservation.findMany()
+    * ```
+    */
+  get marketObservation(): Prisma.MarketObservationDelegate<ExtArgs>;
+
+  /**
+   * `prisma.marketHydrationState`: Exposes CRUD operations for the **MarketHydrationState** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more MarketHydrationStates
+    * const marketHydrationStates = await prisma.marketHydrationState.findMany()
+    * ```
+    */
+  get marketHydrationState(): Prisma.MarketHydrationStateDelegate<ExtArgs>;
+
+  /**
+   * `prisma.forecastCurrentRun`: Exposes CRUD operations for the **ForecastCurrentRun** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ForecastCurrentRuns
+    * const forecastCurrentRuns = await prisma.forecastCurrentRun.findMany()
+    * ```
+    */
+  get forecastCurrentRun(): Prisma.ForecastCurrentRunDelegate<ExtArgs>;
+
+  /**
+   * `prisma.forecastCurrentPoint`: Exposes CRUD operations for the **ForecastCurrentPoint** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ForecastCurrentPoints
+    * const forecastCurrentPoints = await prisma.forecastCurrentPoint.findMany()
+    * ```
+    */
+  get forecastCurrentPoint(): Prisma.ForecastCurrentPointDelegate<ExtArgs>;
+
+  /**
+   * `prisma.forecastVerificationRun`: Exposes CRUD operations for the **ForecastVerificationRun** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ForecastVerificationRuns
+    * const forecastVerificationRuns = await prisma.forecastVerificationRun.findMany()
+    * ```
+    */
+  get forecastVerificationRun(): Prisma.ForecastVerificationRunDelegate<ExtArgs>;
+
+  /**
+   * `prisma.forecastVerificationMetric`: Exposes CRUD operations for the **ForecastVerificationMetric** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ForecastVerificationMetrics
+    * const forecastVerificationMetrics = await prisma.forecastVerificationMetric.findMany()
+    * ```
+    */
+  get forecastVerificationMetric(): Prisma.ForecastVerificationMetricDelegate<ExtArgs>;
+
+  /**
+   * `prisma.forecastVerificationPoint`: Exposes CRUD operations for the **ForecastVerificationPoint** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ForecastVerificationPoints
+    * const forecastVerificationPoints = await prisma.forecastVerificationPoint.findMany()
+    * ```
+    */
+  get forecastVerificationPoint(): Prisma.ForecastVerificationPointDelegate<ExtArgs>;
+
+  /**
+   * `prisma.rollingDailyVerificationRecord`: Exposes CRUD operations for the **RollingDailyVerificationRecord** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more RollingDailyVerificationRecords
+    * const rollingDailyVerificationRecords = await prisma.rollingDailyVerificationRecord.findMany()
+    * ```
+    */
+  get rollingDailyVerificationRecord(): Prisma.RollingDailyVerificationRecordDelegate<ExtArgs>;
+
+  /**
+   * `prisma.rollingDailyCurrentForecastSnapshot`: Exposes CRUD operations for the **RollingDailyCurrentForecastSnapshot** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more RollingDailyCurrentForecastSnapshots
+    * const rollingDailyCurrentForecastSnapshots = await prisma.rollingDailyCurrentForecastSnapshot.findMany()
+    * ```
+    */
+  get rollingDailyCurrentForecastSnapshot(): Prisma.RollingDailyCurrentForecastSnapshotDelegate<ExtArgs>;
+
+  /**
+   * `prisma.rollingDailyCalibrationGroup`: Exposes CRUD operations for the **RollingDailyCalibrationGroup** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more RollingDailyCalibrationGroups
+    * const rollingDailyCalibrationGroups = await prisma.rollingDailyCalibrationGroup.findMany()
+    * ```
+    */
+  get rollingDailyCalibrationGroup(): Prisma.RollingDailyCalibrationGroupDelegate<ExtArgs>;
+
+  /**
+   * `prisma.rollingDailyMaintenanceState`: Exposes CRUD operations for the **RollingDailyMaintenanceState** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more RollingDailyMaintenanceStates
+    * const rollingDailyMaintenanceStates = await prisma.rollingDailyMaintenanceState.findMany()
+    * ```
+    */
+  get rollingDailyMaintenanceState(): Prisma.RollingDailyMaintenanceStateDelegate<ExtArgs>;
+}
+
+export namespace Prisma {
+  export import DMMF = runtime.DMMF
+
+  export type PrismaPromise<T> = $Public.PrismaPromise<T>
+
+  /**
+   * Validator
+   */
+  export import validator = runtime.Public.validator
+
+  /**
+   * Prisma Errors
+   */
+  export import PrismaClientKnownRequestError = runtime.PrismaClientKnownRequestError
+  export import PrismaClientUnknownRequestError = runtime.PrismaClientUnknownRequestError
+  export import PrismaClientRustPanicError = runtime.PrismaClientRustPanicError
+  export import PrismaClientInitializationError = runtime.PrismaClientInitializationError
+  export import PrismaClientValidationError = runtime.PrismaClientValidationError
+  export import NotFoundError = runtime.NotFoundError
+
+  /**
+   * Re-export of sql-template-tag
+   */
+  export import sql = runtime.sqltag
+  export import empty = runtime.empty
+  export import join = runtime.join
+  export import raw = runtime.raw
+  export import Sql = runtime.Sql
+
+
+
+  /**
+   * Decimal.js
+   */
+  export import Decimal = runtime.Decimal
+
+  export type DecimalJsLike = runtime.DecimalJsLike
+
+  /**
+   * Metrics 
+   */
+  export type Metrics = runtime.Metrics
+  export type Metric<T> = runtime.Metric<T>
+  export type MetricHistogram = runtime.MetricHistogram
+  export type MetricHistogramBucket = runtime.MetricHistogramBucket
+
+  /**
+  * Extensions
+  */
+  export import Extension = $Extensions.UserArgs
+  export import getExtensionContext = runtime.Extensions.getExtensionContext
+  export import Args = $Public.Args
+  export import Payload = $Public.Payload
+  export import Result = $Public.Result
+  export import Exact = $Public.Exact
+
+  /**
+   * Prisma Client JS version: 5.22.0
+   * Query Engine version: 605197351a3c8bdd595af2d2a9bc3025bca48ea2
+   */
+  export type PrismaVersion = {
+    client: string
+  }
+
+  export const prismaVersion: PrismaVersion 
+
+  /**
+   * Utility Types
+   */
+
+
+  export import JsonObject = runtime.JsonObject
+  export import JsonArray = runtime.JsonArray
+  export import JsonValue = runtime.JsonValue
+  export import InputJsonObject = runtime.InputJsonObject
+  export import InputJsonArray = runtime.InputJsonArray
+  export import InputJsonValue = runtime.InputJsonValue
+
+  /**
+   * Types of the values used to represent different kinds of `null` values when working with JSON fields.
+   * 
+   * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
+   */
+  namespace NullTypes {
+    /**
+    * Type of `Prisma.DbNull`.
+    * 
+    * You cannot use other instances of this class. Please use the `Prisma.DbNull` value.
+    * 
+    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
+    */
+    class DbNull {
+      private DbNull: never
+      private constructor()
+    }
+
+    /**
+    * Type of `Prisma.JsonNull`.
+    * 
+    * You cannot use other instances of this class. Please use the `Prisma.JsonNull` value.
+    * 
+    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
+    */
+    class JsonNull {
+      private JsonNull: never
+      private constructor()
+    }
+
+    /**
+    * Type of `Prisma.AnyNull`.
+    * 
+    * You cannot use other instances of this class. Please use the `Prisma.AnyNull` value.
+    * 
+    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
+    */
+    class AnyNull {
+      private AnyNull: never
+      private constructor()
+    }
+  }
+
+  /**
+   * Helper for filtering JSON entries that have `null` on the database (empty on the db)
+   * 
+   * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
+   */
+  export const DbNull: NullTypes.DbNull
+
+  /**
+   * Helper for filtering JSON entries that have JSON `null` values (not empty on the db)
+   * 
+   * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
+   */
+  export const JsonNull: NullTypes.JsonNull
+
+  /**
+   * Helper for filtering JSON entries that are `Prisma.DbNull` or `Prisma.JsonNull`
+   * 
+   * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
+   */
+  export const AnyNull: NullTypes.AnyNull
+
+  type SelectAndInclude = {
+    select: any
+    include: any
+  }
+
+  type SelectAndOmit = {
+    select: any
+    omit: any
+  }
+
+  /**
+   * Get the type of the value, that the Promise holds.
+   */
+  export type PromiseType<T extends PromiseLike<any>> = T extends PromiseLike<infer U> ? U : T;
+
+  /**
+   * Get the return type of a function which returns a Promise.
+   */
+  export type PromiseReturnType<T extends (...args: any) => $Utils.JsPromise<any>> = PromiseType<ReturnType<T>>
+
+  /**
+   * From T, pick a set of properties whose keys are in the union K
+   */
+  type Prisma__Pick<T, K extends keyof T> = {
+      [P in K]: T[P];
+  };
+
+
+  export type Enumerable<T> = T | Array<T>;
+
+  export type RequiredKeys<T> = {
+    [K in keyof T]-?: {} extends Prisma__Pick<T, K> ? never : K
+  }[keyof T]
+
+  export type TruthyKeys<T> = keyof {
+    [K in keyof T as T[K] extends false | undefined | null ? never : K]: K
+  }
+
+  export type TrueKeys<T> = TruthyKeys<Prisma__Pick<T, RequiredKeys<T>>>
+
+  /**
+   * Subset
+   * @desc From `T` pick properties that exist in `U`. Simple version of Intersection
+   */
+  export type Subset<T, U> = {
+    [key in keyof T]: key extends keyof U ? T[key] : never;
+  };
+
+  /**
+   * SelectSubset
+   * @desc From `T` pick properties that exist in `U`. Simple version of Intersection.
+   * Additionally, it validates, if both select and include are present. If the case, it errors.
+   */
+  export type SelectSubset<T, U> = {
+    [key in keyof T]: key extends keyof U ? T[key] : never
+  } &
+    (T extends SelectAndInclude
+      ? 'Please either choose `select` or `include`.'
+      : T extends SelectAndOmit
+        ? 'Please either choose `select` or `omit`.'
+        : {})
+
+  /**
+   * Subset + Intersection
+   * @desc From `T` pick properties that exist in `U` and intersect `K`
+   */
+  export type SubsetIntersection<T, U, K> = {
+    [key in keyof T]: key extends keyof U ? T[key] : never
+  } &
+    K
+
+  type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
+
+  /**
+   * XOR is needed to have a real mutually exclusive union type
+   * https://stackoverflow.com/questions/42123407/does-typescript-support-mutually-exclusive-types
+   */
+  type XOR<T, U> =
+    T extends object ?
+    U extends object ?
+      (Without<T, U> & U) | (Without<U, T> & T)
+    : U : T
+
+
+  /**
+   * Is T a Record?
+   */
+  type IsObject<T extends any> = T extends Array<any>
+  ? False
+  : T extends Date
+  ? False
+  : T extends Uint8Array
+  ? False
+  : T extends BigInt
+  ? False
+  : T extends object
+  ? True
+  : False
+
+
+  /**
+   * If it's T[], return T
+   */
+  export type UnEnumerate<T extends unknown> = T extends Array<infer U> ? U : T
+
+  /**
+   * From ts-toolbelt
+   */
+
+  type __Either<O extends object, K extends Key> = Omit<O, K> &
+    {
+      // Merge all but K
+      [P in K]: Prisma__Pick<O, P & keyof O> // With K possibilities
+    }[K]
+
+  type EitherStrict<O extends object, K extends Key> = Strict<__Either<O, K>>
+
+  type EitherLoose<O extends object, K extends Key> = ComputeRaw<__Either<O, K>>
+
+  type _Either<
+    O extends object,
+    K extends Key,
+    strict extends Boolean
+  > = {
+    1: EitherStrict<O, K>
+    0: EitherLoose<O, K>
+  }[strict]
+
+  type Either<
+    O extends object,
+    K extends Key,
+    strict extends Boolean = 1
+  > = O extends unknown ? _Either<O, K, strict> : never
+
+  export type Union = any
+
+  type PatchUndefined<O extends object, O1 extends object> = {
+    [K in keyof O]: O[K] extends undefined ? At<O1, K> : O[K]
+  } & {}
+
+  /** Helper Types for "Merge" **/
+  export type IntersectOf<U extends Union> = (
+    U extends unknown ? (k: U) => void : never
+  ) extends (k: infer I) => void
+    ? I
+    : never
+
+  export type Overwrite<O extends object, O1 extends object> = {
+      [K in keyof O]: K extends keyof O1 ? O1[K] : O[K];
+  } & {};
+
+  type _Merge<U extends object> = IntersectOf<Overwrite<U, {
+      [K in keyof U]-?: At<U, K>;
+  }>>;
+
+  type Key = string | number | symbol;
+  type AtBasic<O extends object, K extends Key> = K extends keyof O ? O[K] : never;
+  type AtStrict<O extends object, K extends Key> = O[K & keyof O];
+  type AtLoose<O extends object, K extends Key> = O extends unknown ? AtStrict<O, K> : never;
+  export type At<O extends object, K extends Key, strict extends Boolean = 1> = {
+      1: AtStrict<O, K>;
+      0: AtLoose<O, K>;
+  }[strict];
+
+  export type ComputeRaw<A extends any> = A extends Function ? A : {
+    [K in keyof A]: A[K];
+  } & {};
+
+  export type OptionalFlat<O> = {
+    [K in keyof O]?: O[K];
+  } & {};
+
+  type _Record<K extends keyof any, T> = {
+    [P in K]: T;
+  };
+
+  // cause typescript not to expand types and preserve names
+  type NoExpand<T> = T extends unknown ? T : never;
+
+  // this type assumes the passed object is entirely optional
+  type AtLeast<O extends object, K extends string> = NoExpand<
+    O extends unknown
+    ? | (K extends keyof O ? { [P in K]: O[P] } & O : O)
+      | {[P in keyof O as P extends K ? K : never]-?: O[P]} & O
+    : never>;
+
+  type _Strict<U, _U = U> = U extends unknown ? U & OptionalFlat<_Record<Exclude<Keys<_U>, keyof U>, never>> : never;
+
+  export type Strict<U extends object> = ComputeRaw<_Strict<U>>;
+  /** End Helper Types for "Merge" **/
+
+  export type Merge<U extends object> = ComputeRaw<_Merge<Strict<U>>>;
+
+  /**
+  A [[Boolean]]
+  */
+  export type Boolean = True | False
+
+  // /**
+  // 1
+  // */
+  export type True = 1
+
+  /**
+  0
+  */
+  export type False = 0
+
+  export type Not<B extends Boolean> = {
+    0: 1
+    1: 0
+  }[B]
+
+  export type Extends<A1 extends any, A2 extends any> = [A1] extends [never]
+    ? 0 // anything `never` is false
+    : A1 extends A2
+    ? 1
+    : 0
+
+  export type Has<U extends Union, U1 extends Union> = Not<
+    Extends<Exclude<U1, U>, U1>
+  >
+
+  export type Or<B1 extends Boolean, B2 extends Boolean> = {
+    0: {
+      0: 0
+      1: 1
+    }
+    1: {
+      0: 1
+      1: 1
+    }
+  }[B1][B2]
+
+  export type Keys<U extends Union> = U extends unknown ? keyof U : never
+
+  type Cast<A, B> = A extends B ? A : B;
+
+  export const type: unique symbol;
+
+
+
+  /**
+   * Used by group by
+   */
+
+  export type GetScalarType<T, O> = O extends object ? {
+    [P in keyof T]: P extends keyof O
+      ? O[P]
+      : never
+  } : never
+
+  type FieldPaths<
+    T,
+    U = Omit<T, '_avg' | '_sum' | '_count' | '_min' | '_max'>
+  > = IsObject<T> extends True ? U : T
+
+  type GetHavingFields<T> = {
+    [K in keyof T]: Or<
+      Or<Extends<'OR', K>, Extends<'AND', K>>,
+      Extends<'NOT', K>
+    > extends True
+      ? // infer is only needed to not hit TS limit
+        // based on the brilliant idea of Pierre-Antoine Mills
+        // https://github.com/microsoft/TypeScript/issues/30188#issuecomment-478938437
+        T[K] extends infer TK
+        ? GetHavingFields<UnEnumerate<TK> extends object ? Merge<UnEnumerate<TK>> : never>
+        : never
+      : {} extends FieldPaths<T[K]>
+      ? never
+      : K
+  }[keyof T]
+
+  /**
+   * Convert tuple to union
+   */
+  type _TupleToUnion<T> = T extends (infer E)[] ? E : never
+  type TupleToUnion<K extends readonly any[]> = _TupleToUnion<K>
+  type MaybeTupleToUnion<T> = T extends any[] ? TupleToUnion<T> : T
+
+  /**
+   * Like `Pick`, but additionally can also accept an array of keys
+   */
+  type PickEnumerable<T, K extends Enumerable<keyof T> | keyof T> = Prisma__Pick<T, MaybeTupleToUnion<K>>
+
+  /**
+   * Exclude all keys with underscores
+   */
+  type ExcludeUnderscoreKeys<T extends string> = T extends `_${string}` ? never : T
+
+
+  export type FieldRef<Model, FieldType> = runtime.FieldRef<Model, FieldType>
+
+  type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRef<Model, FieldType>
+
+
+  export const ModelName: {
+    MarketSeries: 'MarketSeries',
+    MarketObservation: 'MarketObservation',
+    MarketHydrationState: 'MarketHydrationState',
+    ForecastCurrentRun: 'ForecastCurrentRun',
+    ForecastCurrentPoint: 'ForecastCurrentPoint',
+    ForecastVerificationRun: 'ForecastVerificationRun',
+    ForecastVerificationMetric: 'ForecastVerificationMetric',
+    ForecastVerificationPoint: 'ForecastVerificationPoint',
+    RollingDailyVerificationRecord: 'RollingDailyVerificationRecord',
+    RollingDailyCurrentForecastSnapshot: 'RollingDailyCurrentForecastSnapshot',
+    RollingDailyCalibrationGroup: 'RollingDailyCalibrationGroup',
+    RollingDailyMaintenanceState: 'RollingDailyMaintenanceState'
+  };
+
+  export type ModelName = (typeof ModelName)[keyof typeof ModelName]
+
+
+  export type Datasources = {
+    db?: Datasource
+  }
+
+  interface TypeMapCb extends $Utils.Fn<{extArgs: $Extensions.InternalArgs, clientOptions: PrismaClientOptions }, $Utils.Record<string, any>> {
+    returns: Prisma.TypeMap<this['params']['extArgs'], this['params']['clientOptions']>
+  }
+
+  export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
+    meta: {
+      modelProps: "marketSeries" | "marketObservation" | "marketHydrationState" | "forecastCurrentRun" | "forecastCurrentPoint" | "forecastVerificationRun" | "forecastVerificationMetric" | "forecastVerificationPoint" | "rollingDailyVerificationRecord" | "rollingDailyCurrentForecastSnapshot" | "rollingDailyCalibrationGroup" | "rollingDailyMaintenanceState"
+      txIsolationLevel: Prisma.TransactionIsolationLevel
+    }
+    model: {
+      MarketSeries: {
+        payload: Prisma.$MarketSeriesPayload<ExtArgs>
+        fields: Prisma.MarketSeriesFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.MarketSeriesFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketSeriesPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.MarketSeriesFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketSeriesPayload>
+          }
+          findFirst: {
+            args: Prisma.MarketSeriesFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketSeriesPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.MarketSeriesFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketSeriesPayload>
+          }
+          findMany: {
+            args: Prisma.MarketSeriesFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketSeriesPayload>[]
+          }
+          create: {
+            args: Prisma.MarketSeriesCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketSeriesPayload>
+          }
+          createMany: {
+            args: Prisma.MarketSeriesCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.MarketSeriesCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketSeriesPayload>[]
+          }
+          delete: {
+            args: Prisma.MarketSeriesDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketSeriesPayload>
+          }
+          update: {
+            args: Prisma.MarketSeriesUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketSeriesPayload>
+          }
+          deleteMany: {
+            args: Prisma.MarketSeriesDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.MarketSeriesUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.MarketSeriesUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketSeriesPayload>
+          }
+          aggregate: {
+            args: Prisma.MarketSeriesAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateMarketSeries>
+          }
+          groupBy: {
+            args: Prisma.MarketSeriesGroupByArgs<ExtArgs>
+            result: $Utils.Optional<MarketSeriesGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.MarketSeriesCountArgs<ExtArgs>
+            result: $Utils.Optional<MarketSeriesCountAggregateOutputType> | number
+          }
+        }
+      }
+      MarketObservation: {
+        payload: Prisma.$MarketObservationPayload<ExtArgs>
+        fields: Prisma.MarketObservationFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.MarketObservationFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketObservationPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.MarketObservationFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketObservationPayload>
+          }
+          findFirst: {
+            args: Prisma.MarketObservationFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketObservationPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.MarketObservationFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketObservationPayload>
+          }
+          findMany: {
+            args: Prisma.MarketObservationFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketObservationPayload>[]
+          }
+          create: {
+            args: Prisma.MarketObservationCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketObservationPayload>
+          }
+          createMany: {
+            args: Prisma.MarketObservationCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.MarketObservationCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketObservationPayload>[]
+          }
+          delete: {
+            args: Prisma.MarketObservationDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketObservationPayload>
+          }
+          update: {
+            args: Prisma.MarketObservationUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketObservationPayload>
+          }
+          deleteMany: {
+            args: Prisma.MarketObservationDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.MarketObservationUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.MarketObservationUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketObservationPayload>
+          }
+          aggregate: {
+            args: Prisma.MarketObservationAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateMarketObservation>
+          }
+          groupBy: {
+            args: Prisma.MarketObservationGroupByArgs<ExtArgs>
+            result: $Utils.Optional<MarketObservationGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.MarketObservationCountArgs<ExtArgs>
+            result: $Utils.Optional<MarketObservationCountAggregateOutputType> | number
+          }
+        }
+      }
+      MarketHydrationState: {
+        payload: Prisma.$MarketHydrationStatePayload<ExtArgs>
+        fields: Prisma.MarketHydrationStateFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.MarketHydrationStateFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketHydrationStatePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.MarketHydrationStateFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketHydrationStatePayload>
+          }
+          findFirst: {
+            args: Prisma.MarketHydrationStateFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketHydrationStatePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.MarketHydrationStateFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketHydrationStatePayload>
+          }
+          findMany: {
+            args: Prisma.MarketHydrationStateFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketHydrationStatePayload>[]
+          }
+          create: {
+            args: Prisma.MarketHydrationStateCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketHydrationStatePayload>
+          }
+          createMany: {
+            args: Prisma.MarketHydrationStateCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.MarketHydrationStateCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketHydrationStatePayload>[]
+          }
+          delete: {
+            args: Prisma.MarketHydrationStateDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketHydrationStatePayload>
+          }
+          update: {
+            args: Prisma.MarketHydrationStateUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketHydrationStatePayload>
+          }
+          deleteMany: {
+            args: Prisma.MarketHydrationStateDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.MarketHydrationStateUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.MarketHydrationStateUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MarketHydrationStatePayload>
+          }
+          aggregate: {
+            args: Prisma.MarketHydrationStateAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateMarketHydrationState>
+          }
+          groupBy: {
+            args: Prisma.MarketHydrationStateGroupByArgs<ExtArgs>
+            result: $Utils.Optional<MarketHydrationStateGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.MarketHydrationStateCountArgs<ExtArgs>
+            result: $Utils.Optional<MarketHydrationStateCountAggregateOutputType> | number
+          }
+        }
+      }
+      ForecastCurrentRun: {
+        payload: Prisma.$ForecastCurrentRunPayload<ExtArgs>
+        fields: Prisma.ForecastCurrentRunFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ForecastCurrentRunFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentRunPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ForecastCurrentRunFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentRunPayload>
+          }
+          findFirst: {
+            args: Prisma.ForecastCurrentRunFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentRunPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ForecastCurrentRunFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentRunPayload>
+          }
+          findMany: {
+            args: Prisma.ForecastCurrentRunFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentRunPayload>[]
+          }
+          create: {
+            args: Prisma.ForecastCurrentRunCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentRunPayload>
+          }
+          createMany: {
+            args: Prisma.ForecastCurrentRunCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ForecastCurrentRunCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentRunPayload>[]
+          }
+          delete: {
+            args: Prisma.ForecastCurrentRunDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentRunPayload>
+          }
+          update: {
+            args: Prisma.ForecastCurrentRunUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentRunPayload>
+          }
+          deleteMany: {
+            args: Prisma.ForecastCurrentRunDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ForecastCurrentRunUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ForecastCurrentRunUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentRunPayload>
+          }
+          aggregate: {
+            args: Prisma.ForecastCurrentRunAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateForecastCurrentRun>
+          }
+          groupBy: {
+            args: Prisma.ForecastCurrentRunGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ForecastCurrentRunGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ForecastCurrentRunCountArgs<ExtArgs>
+            result: $Utils.Optional<ForecastCurrentRunCountAggregateOutputType> | number
+          }
+        }
+      }
+      ForecastCurrentPoint: {
+        payload: Prisma.$ForecastCurrentPointPayload<ExtArgs>
+        fields: Prisma.ForecastCurrentPointFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ForecastCurrentPointFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentPointPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ForecastCurrentPointFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentPointPayload>
+          }
+          findFirst: {
+            args: Prisma.ForecastCurrentPointFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentPointPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ForecastCurrentPointFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentPointPayload>
+          }
+          findMany: {
+            args: Prisma.ForecastCurrentPointFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentPointPayload>[]
+          }
+          create: {
+            args: Prisma.ForecastCurrentPointCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentPointPayload>
+          }
+          createMany: {
+            args: Prisma.ForecastCurrentPointCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ForecastCurrentPointCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentPointPayload>[]
+          }
+          delete: {
+            args: Prisma.ForecastCurrentPointDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentPointPayload>
+          }
+          update: {
+            args: Prisma.ForecastCurrentPointUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentPointPayload>
+          }
+          deleteMany: {
+            args: Prisma.ForecastCurrentPointDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ForecastCurrentPointUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ForecastCurrentPointUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastCurrentPointPayload>
+          }
+          aggregate: {
+            args: Prisma.ForecastCurrentPointAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateForecastCurrentPoint>
+          }
+          groupBy: {
+            args: Prisma.ForecastCurrentPointGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ForecastCurrentPointGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ForecastCurrentPointCountArgs<ExtArgs>
+            result: $Utils.Optional<ForecastCurrentPointCountAggregateOutputType> | number
+          }
+        }
+      }
+      ForecastVerificationRun: {
+        payload: Prisma.$ForecastVerificationRunPayload<ExtArgs>
+        fields: Prisma.ForecastVerificationRunFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ForecastVerificationRunFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationRunPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ForecastVerificationRunFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationRunPayload>
+          }
+          findFirst: {
+            args: Prisma.ForecastVerificationRunFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationRunPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ForecastVerificationRunFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationRunPayload>
+          }
+          findMany: {
+            args: Prisma.ForecastVerificationRunFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationRunPayload>[]
+          }
+          create: {
+            args: Prisma.ForecastVerificationRunCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationRunPayload>
+          }
+          createMany: {
+            args: Prisma.ForecastVerificationRunCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ForecastVerificationRunCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationRunPayload>[]
+          }
+          delete: {
+            args: Prisma.ForecastVerificationRunDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationRunPayload>
+          }
+          update: {
+            args: Prisma.ForecastVerificationRunUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationRunPayload>
+          }
+          deleteMany: {
+            args: Prisma.ForecastVerificationRunDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ForecastVerificationRunUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ForecastVerificationRunUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationRunPayload>
+          }
+          aggregate: {
+            args: Prisma.ForecastVerificationRunAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateForecastVerificationRun>
+          }
+          groupBy: {
+            args: Prisma.ForecastVerificationRunGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ForecastVerificationRunGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ForecastVerificationRunCountArgs<ExtArgs>
+            result: $Utils.Optional<ForecastVerificationRunCountAggregateOutputType> | number
+          }
+        }
+      }
+      ForecastVerificationMetric: {
+        payload: Prisma.$ForecastVerificationMetricPayload<ExtArgs>
+        fields: Prisma.ForecastVerificationMetricFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ForecastVerificationMetricFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationMetricPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ForecastVerificationMetricFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationMetricPayload>
+          }
+          findFirst: {
+            args: Prisma.ForecastVerificationMetricFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationMetricPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ForecastVerificationMetricFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationMetricPayload>
+          }
+          findMany: {
+            args: Prisma.ForecastVerificationMetricFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationMetricPayload>[]
+          }
+          create: {
+            args: Prisma.ForecastVerificationMetricCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationMetricPayload>
+          }
+          createMany: {
+            args: Prisma.ForecastVerificationMetricCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ForecastVerificationMetricCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationMetricPayload>[]
+          }
+          delete: {
+            args: Prisma.ForecastVerificationMetricDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationMetricPayload>
+          }
+          update: {
+            args: Prisma.ForecastVerificationMetricUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationMetricPayload>
+          }
+          deleteMany: {
+            args: Prisma.ForecastVerificationMetricDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ForecastVerificationMetricUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ForecastVerificationMetricUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationMetricPayload>
+          }
+          aggregate: {
+            args: Prisma.ForecastVerificationMetricAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateForecastVerificationMetric>
+          }
+          groupBy: {
+            args: Prisma.ForecastVerificationMetricGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ForecastVerificationMetricGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ForecastVerificationMetricCountArgs<ExtArgs>
+            result: $Utils.Optional<ForecastVerificationMetricCountAggregateOutputType> | number
+          }
+        }
+      }
+      ForecastVerificationPoint: {
+        payload: Prisma.$ForecastVerificationPointPayload<ExtArgs>
+        fields: Prisma.ForecastVerificationPointFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ForecastVerificationPointFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationPointPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ForecastVerificationPointFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationPointPayload>
+          }
+          findFirst: {
+            args: Prisma.ForecastVerificationPointFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationPointPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ForecastVerificationPointFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationPointPayload>
+          }
+          findMany: {
+            args: Prisma.ForecastVerificationPointFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationPointPayload>[]
+          }
+          create: {
+            args: Prisma.ForecastVerificationPointCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationPointPayload>
+          }
+          createMany: {
+            args: Prisma.ForecastVerificationPointCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ForecastVerificationPointCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationPointPayload>[]
+          }
+          delete: {
+            args: Prisma.ForecastVerificationPointDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationPointPayload>
+          }
+          update: {
+            args: Prisma.ForecastVerificationPointUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationPointPayload>
+          }
+          deleteMany: {
+            args: Prisma.ForecastVerificationPointDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ForecastVerificationPointUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ForecastVerificationPointUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastVerificationPointPayload>
+          }
+          aggregate: {
+            args: Prisma.ForecastVerificationPointAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateForecastVerificationPoint>
+          }
+          groupBy: {
+            args: Prisma.ForecastVerificationPointGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ForecastVerificationPointGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ForecastVerificationPointCountArgs<ExtArgs>
+            result: $Utils.Optional<ForecastVerificationPointCountAggregateOutputType> | number
+          }
+        }
+      }
+      RollingDailyVerificationRecord: {
+        payload: Prisma.$RollingDailyVerificationRecordPayload<ExtArgs>
+        fields: Prisma.RollingDailyVerificationRecordFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.RollingDailyVerificationRecordFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyVerificationRecordPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.RollingDailyVerificationRecordFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyVerificationRecordPayload>
+          }
+          findFirst: {
+            args: Prisma.RollingDailyVerificationRecordFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyVerificationRecordPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.RollingDailyVerificationRecordFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyVerificationRecordPayload>
+          }
+          findMany: {
+            args: Prisma.RollingDailyVerificationRecordFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyVerificationRecordPayload>[]
+          }
+          create: {
+            args: Prisma.RollingDailyVerificationRecordCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyVerificationRecordPayload>
+          }
+          createMany: {
+            args: Prisma.RollingDailyVerificationRecordCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.RollingDailyVerificationRecordCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyVerificationRecordPayload>[]
+          }
+          delete: {
+            args: Prisma.RollingDailyVerificationRecordDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyVerificationRecordPayload>
+          }
+          update: {
+            args: Prisma.RollingDailyVerificationRecordUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyVerificationRecordPayload>
+          }
+          deleteMany: {
+            args: Prisma.RollingDailyVerificationRecordDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.RollingDailyVerificationRecordUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.RollingDailyVerificationRecordUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyVerificationRecordPayload>
+          }
+          aggregate: {
+            args: Prisma.RollingDailyVerificationRecordAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateRollingDailyVerificationRecord>
+          }
+          groupBy: {
+            args: Prisma.RollingDailyVerificationRecordGroupByArgs<ExtArgs>
+            result: $Utils.Optional<RollingDailyVerificationRecordGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.RollingDailyVerificationRecordCountArgs<ExtArgs>
+            result: $Utils.Optional<RollingDailyVerificationRecordCountAggregateOutputType> | number
+          }
+        }
+      }
+      RollingDailyCurrentForecastSnapshot: {
+        payload: Prisma.$RollingDailyCurrentForecastSnapshotPayload<ExtArgs>
+        fields: Prisma.RollingDailyCurrentForecastSnapshotFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.RollingDailyCurrentForecastSnapshotFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.RollingDailyCurrentForecastSnapshotFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload>
+          }
+          findFirst: {
+            args: Prisma.RollingDailyCurrentForecastSnapshotFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.RollingDailyCurrentForecastSnapshotFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload>
+          }
+          findMany: {
+            args: Prisma.RollingDailyCurrentForecastSnapshotFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload>[]
+          }
+          create: {
+            args: Prisma.RollingDailyCurrentForecastSnapshotCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload>
+          }
+          createMany: {
+            args: Prisma.RollingDailyCurrentForecastSnapshotCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.RollingDailyCurrentForecastSnapshotCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload>[]
+          }
+          delete: {
+            args: Prisma.RollingDailyCurrentForecastSnapshotDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload>
+          }
+          update: {
+            args: Prisma.RollingDailyCurrentForecastSnapshotUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload>
+          }
+          deleteMany: {
+            args: Prisma.RollingDailyCurrentForecastSnapshotDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.RollingDailyCurrentForecastSnapshotUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.RollingDailyCurrentForecastSnapshotUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload>
+          }
+          aggregate: {
+            args: Prisma.RollingDailyCurrentForecastSnapshotAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateRollingDailyCurrentForecastSnapshot>
+          }
+          groupBy: {
+            args: Prisma.RollingDailyCurrentForecastSnapshotGroupByArgs<ExtArgs>
+            result: $Utils.Optional<RollingDailyCurrentForecastSnapshotGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.RollingDailyCurrentForecastSnapshotCountArgs<ExtArgs>
+            result: $Utils.Optional<RollingDailyCurrentForecastSnapshotCountAggregateOutputType> | number
+          }
+        }
+      }
+      RollingDailyCalibrationGroup: {
+        payload: Prisma.$RollingDailyCalibrationGroupPayload<ExtArgs>
+        fields: Prisma.RollingDailyCalibrationGroupFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.RollingDailyCalibrationGroupFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCalibrationGroupPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.RollingDailyCalibrationGroupFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCalibrationGroupPayload>
+          }
+          findFirst: {
+            args: Prisma.RollingDailyCalibrationGroupFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCalibrationGroupPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.RollingDailyCalibrationGroupFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCalibrationGroupPayload>
+          }
+          findMany: {
+            args: Prisma.RollingDailyCalibrationGroupFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCalibrationGroupPayload>[]
+          }
+          create: {
+            args: Prisma.RollingDailyCalibrationGroupCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCalibrationGroupPayload>
+          }
+          createMany: {
+            args: Prisma.RollingDailyCalibrationGroupCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.RollingDailyCalibrationGroupCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCalibrationGroupPayload>[]
+          }
+          delete: {
+            args: Prisma.RollingDailyCalibrationGroupDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCalibrationGroupPayload>
+          }
+          update: {
+            args: Prisma.RollingDailyCalibrationGroupUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCalibrationGroupPayload>
+          }
+          deleteMany: {
+            args: Prisma.RollingDailyCalibrationGroupDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.RollingDailyCalibrationGroupUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.RollingDailyCalibrationGroupUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyCalibrationGroupPayload>
+          }
+          aggregate: {
+            args: Prisma.RollingDailyCalibrationGroupAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateRollingDailyCalibrationGroup>
+          }
+          groupBy: {
+            args: Prisma.RollingDailyCalibrationGroupGroupByArgs<ExtArgs>
+            result: $Utils.Optional<RollingDailyCalibrationGroupGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.RollingDailyCalibrationGroupCountArgs<ExtArgs>
+            result: $Utils.Optional<RollingDailyCalibrationGroupCountAggregateOutputType> | number
+          }
+        }
+      }
+      RollingDailyMaintenanceState: {
+        payload: Prisma.$RollingDailyMaintenanceStatePayload<ExtArgs>
+        fields: Prisma.RollingDailyMaintenanceStateFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.RollingDailyMaintenanceStateFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyMaintenanceStatePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.RollingDailyMaintenanceStateFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyMaintenanceStatePayload>
+          }
+          findFirst: {
+            args: Prisma.RollingDailyMaintenanceStateFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyMaintenanceStatePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.RollingDailyMaintenanceStateFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyMaintenanceStatePayload>
+          }
+          findMany: {
+            args: Prisma.RollingDailyMaintenanceStateFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyMaintenanceStatePayload>[]
+          }
+          create: {
+            args: Prisma.RollingDailyMaintenanceStateCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyMaintenanceStatePayload>
+          }
+          createMany: {
+            args: Prisma.RollingDailyMaintenanceStateCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.RollingDailyMaintenanceStateCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyMaintenanceStatePayload>[]
+          }
+          delete: {
+            args: Prisma.RollingDailyMaintenanceStateDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyMaintenanceStatePayload>
+          }
+          update: {
+            args: Prisma.RollingDailyMaintenanceStateUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyMaintenanceStatePayload>
+          }
+          deleteMany: {
+            args: Prisma.RollingDailyMaintenanceStateDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.RollingDailyMaintenanceStateUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.RollingDailyMaintenanceStateUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RollingDailyMaintenanceStatePayload>
+          }
+          aggregate: {
+            args: Prisma.RollingDailyMaintenanceStateAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateRollingDailyMaintenanceState>
+          }
+          groupBy: {
+            args: Prisma.RollingDailyMaintenanceStateGroupByArgs<ExtArgs>
+            result: $Utils.Optional<RollingDailyMaintenanceStateGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.RollingDailyMaintenanceStateCountArgs<ExtArgs>
+            result: $Utils.Optional<RollingDailyMaintenanceStateCountAggregateOutputType> | number
+          }
+        }
+      }
+    }
+  } & {
+    other: {
+      payload: any
+      operations: {
+        $executeRaw: {
+          args: [query: TemplateStringsArray | Prisma.Sql, ...values: any[]],
+          result: any
+        }
+        $executeRawUnsafe: {
+          args: [query: string, ...values: any[]],
+          result: any
+        }
+        $queryRaw: {
+          args: [query: TemplateStringsArray | Prisma.Sql, ...values: any[]],
+          result: any
+        }
+        $queryRawUnsafe: {
+          args: [query: string, ...values: any[]],
+          result: any
+        }
+      }
+    }
+  }
+  export const defineExtension: $Extensions.ExtendsHook<"define", Prisma.TypeMapCb, $Extensions.DefaultArgs>
+  export type DefaultPrismaClient = PrismaClient
+  export type ErrorFormat = 'pretty' | 'colorless' | 'minimal'
+  export interface PrismaClientOptions {
+    /**
+     * Overwrites the datasource url from your schema.prisma file
+     */
+    datasources?: Datasources
+    /**
+     * Overwrites the datasource url from your schema.prisma file
+     */
+    datasourceUrl?: string
+    /**
+     * @default "colorless"
+     */
+    errorFormat?: ErrorFormat
+    /**
+     * @example
+     * ```
+     * // Defaults to stdout
+     * log: ['query', 'info', 'warn', 'error']
+     * 
+     * // Emit as events
+     * log: [
+     *   { emit: 'stdout', level: 'query' },
+     *   { emit: 'stdout', level: 'info' },
+     *   { emit: 'stdout', level: 'warn' }
+     *   { emit: 'stdout', level: 'error' }
+     * ]
+     * ```
+     * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/logging#the-log-option).
+     */
+    log?: (LogLevel | LogDefinition)[]
+    /**
+     * The default values for transactionOptions
+     * maxWait ?= 2000
+     * timeout ?= 5000
+     */
+    transactionOptions?: {
+      maxWait?: number
+      timeout?: number
+      isolationLevel?: Prisma.TransactionIsolationLevel
+    }
+  }
+
+
+  /* Types for Logging */
+  export type LogLevel = 'info' | 'query' | 'warn' | 'error'
+  export type LogDefinition = {
+    level: LogLevel
+    emit: 'stdout' | 'event'
+  }
+
+  export type GetLogType<T extends LogLevel | LogDefinition> = T extends LogDefinition ? T['emit'] extends 'event' ? T['level'] : never : never
+  export type GetEvents<T extends any> = T extends Array<LogLevel | LogDefinition> ?
+    GetLogType<T[0]> | GetLogType<T[1]> | GetLogType<T[2]> | GetLogType<T[3]>
+    : never
+
+  export type QueryEvent = {
+    timestamp: Date
+    query: string
+    params: string
+    duration: number
+    target: string
+  }
+
+  export type LogEvent = {
+    timestamp: Date
+    message: string
+    target: string
+  }
+  /* End Types for Logging */
+
+
+  export type PrismaAction =
+    | 'findUnique'
+    | 'findUniqueOrThrow'
+    | 'findMany'
+    | 'findFirst'
+    | 'findFirstOrThrow'
+    | 'create'
+    | 'createMany'
+    | 'createManyAndReturn'
+    | 'update'
+    | 'updateMany'
+    | 'upsert'
+    | 'delete'
+    | 'deleteMany'
+    | 'executeRaw'
+    | 'queryRaw'
+    | 'aggregate'
+    | 'count'
+    | 'runCommandRaw'
+    | 'findRaw'
+    | 'groupBy'
+
+  /**
+   * These options are being passed into the middleware as "params"
+   */
+  export type MiddlewareParams = {
+    model?: ModelName
+    action: PrismaAction
+    args: any
+    dataPath: string[]
+    runInTransaction: boolean
+  }
+
+  /**
+   * The `T` type makes sure, that the `return proceed` is not forgotten in the middleware implementation
+   */
+  export type Middleware<T = any> = (
+    params: MiddlewareParams,
+    next: (params: MiddlewareParams) => $Utils.JsPromise<T>,
+  ) => $Utils.JsPromise<T>
+
+  // tested in getLogLevel.test.ts
+  export function getLogLevel(log: Array<LogLevel | LogDefinition>): LogLevel | undefined;
+
+  /**
+   * `PrismaClient` proxy available in interactive transactions.
+   */
+  export type TransactionClient = Omit<Prisma.DefaultPrismaClient, runtime.ITXClientDenyList>
+
+  export type Datasource = {
+    url?: string
+  }
+
+  /**
+   * Count Types
+   */
+
+
+  /**
+   * Count Type MarketSeriesCountOutputType
+   */
+
+  export type MarketSeriesCountOutputType = {
+    observations: number
+  }
+
+  export type MarketSeriesCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    observations?: boolean | MarketSeriesCountOutputTypeCountObservationsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * MarketSeriesCountOutputType without action
+   */
+  export type MarketSeriesCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketSeriesCountOutputType
+     */
+    select?: MarketSeriesCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * MarketSeriesCountOutputType without action
+   */
+  export type MarketSeriesCountOutputTypeCountObservationsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: MarketObservationWhereInput
+  }
+
+
+  /**
+   * Count Type ForecastCurrentRunCountOutputType
+   */
+
+  export type ForecastCurrentRunCountOutputType = {
+    points: number
+  }
+
+  export type ForecastCurrentRunCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    points?: boolean | ForecastCurrentRunCountOutputTypeCountPointsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * ForecastCurrentRunCountOutputType without action
+   */
+  export type ForecastCurrentRunCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentRunCountOutputType
+     */
+    select?: ForecastCurrentRunCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * ForecastCurrentRunCountOutputType without action
+   */
+  export type ForecastCurrentRunCountOutputTypeCountPointsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ForecastCurrentPointWhereInput
+  }
+
+
+  /**
+   * Count Type ForecastVerificationRunCountOutputType
+   */
+
+  export type ForecastVerificationRunCountOutputType = {
+    metrics: number
+    points: number
+  }
+
+  export type ForecastVerificationRunCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    metrics?: boolean | ForecastVerificationRunCountOutputTypeCountMetricsArgs
+    points?: boolean | ForecastVerificationRunCountOutputTypeCountPointsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * ForecastVerificationRunCountOutputType without action
+   */
+  export type ForecastVerificationRunCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationRunCountOutputType
+     */
+    select?: ForecastVerificationRunCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * ForecastVerificationRunCountOutputType without action
+   */
+  export type ForecastVerificationRunCountOutputTypeCountMetricsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ForecastVerificationMetricWhereInput
+  }
+
+  /**
+   * ForecastVerificationRunCountOutputType without action
+   */
+  export type ForecastVerificationRunCountOutputTypeCountPointsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ForecastVerificationPointWhereInput
+  }
+
+
+  /**
+   * Models
+   */
+
+  /**
+   * Model MarketSeries
+   */
+
+  export type AggregateMarketSeries = {
+    _count: MarketSeriesCountAggregateOutputType | null
+    _min: MarketSeriesMinAggregateOutputType | null
+    _max: MarketSeriesMaxAggregateOutputType | null
+  }
+
+  export type MarketSeriesMinAggregateOutputType = {
+    id: string | null
+    providerCode: string | null
+    providerSeriesId: string | null
+    providerSeriesKey: string | null
+    displayName: string | null
+    frequency: string | null
+    currency: string | null
+    unit: string | null
+    sourceLabel: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type MarketSeriesMaxAggregateOutputType = {
+    id: string | null
+    providerCode: string | null
+    providerSeriesId: string | null
+    providerSeriesKey: string | null
+    displayName: string | null
+    frequency: string | null
+    currency: string | null
+    unit: string | null
+    sourceLabel: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type MarketSeriesCountAggregateOutputType = {
+    id: number
+    providerCode: number
+    providerSeriesId: number
+    providerSeriesKey: number
+    displayName: number
+    frequency: number
+    currency: number
+    unit: number
+    sourceLabel: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type MarketSeriesMinAggregateInputType = {
+    id?: true
+    providerCode?: true
+    providerSeriesId?: true
+    providerSeriesKey?: true
+    displayName?: true
+    frequency?: true
+    currency?: true
+    unit?: true
+    sourceLabel?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type MarketSeriesMaxAggregateInputType = {
+    id?: true
+    providerCode?: true
+    providerSeriesId?: true
+    providerSeriesKey?: true
+    displayName?: true
+    frequency?: true
+    currency?: true
+    unit?: true
+    sourceLabel?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type MarketSeriesCountAggregateInputType = {
+    id?: true
+    providerCode?: true
+    providerSeriesId?: true
+    providerSeriesKey?: true
+    displayName?: true
+    frequency?: true
+    currency?: true
+    unit?: true
+    sourceLabel?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type MarketSeriesAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which MarketSeries to aggregate.
+     */
+    where?: MarketSeriesWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MarketSeries to fetch.
+     */
+    orderBy?: MarketSeriesOrderByWithRelationInput | MarketSeriesOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: MarketSeriesWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MarketSeries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MarketSeries.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned MarketSeries
+    **/
+    _count?: true | MarketSeriesCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: MarketSeriesMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: MarketSeriesMaxAggregateInputType
+  }
+
+  export type GetMarketSeriesAggregateType<T extends MarketSeriesAggregateArgs> = {
+        [P in keyof T & keyof AggregateMarketSeries]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateMarketSeries[P]>
+      : GetScalarType<T[P], AggregateMarketSeries[P]>
+  }
+
+
+
+
+  export type MarketSeriesGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: MarketSeriesWhereInput
+    orderBy?: MarketSeriesOrderByWithAggregationInput | MarketSeriesOrderByWithAggregationInput[]
+    by: MarketSeriesScalarFieldEnum[] | MarketSeriesScalarFieldEnum
+    having?: MarketSeriesScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: MarketSeriesCountAggregateInputType | true
+    _min?: MarketSeriesMinAggregateInputType
+    _max?: MarketSeriesMaxAggregateInputType
+  }
+
+  export type MarketSeriesGroupByOutputType = {
+    id: string
+    providerCode: string
+    providerSeriesId: string
+    providerSeriesKey: string | null
+    displayName: string
+    frequency: string | null
+    currency: string | null
+    unit: string | null
+    sourceLabel: string | null
+    createdAt: Date
+    updatedAt: Date
+    _count: MarketSeriesCountAggregateOutputType | null
+    _min: MarketSeriesMinAggregateOutputType | null
+    _max: MarketSeriesMaxAggregateOutputType | null
+  }
+
+  type GetMarketSeriesGroupByPayload<T extends MarketSeriesGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<MarketSeriesGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof MarketSeriesGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], MarketSeriesGroupByOutputType[P]>
+            : GetScalarType<T[P], MarketSeriesGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type MarketSeriesSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    providerCode?: boolean
+    providerSeriesId?: boolean
+    providerSeriesKey?: boolean
+    displayName?: boolean
+    frequency?: boolean
+    currency?: boolean
+    unit?: boolean
+    sourceLabel?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    observations?: boolean | MarketSeries$observationsArgs<ExtArgs>
+    hydrationState?: boolean | MarketSeries$hydrationStateArgs<ExtArgs>
+    _count?: boolean | MarketSeriesCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["marketSeries"]>
+
+  export type MarketSeriesSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    providerCode?: boolean
+    providerSeriesId?: boolean
+    providerSeriesKey?: boolean
+    displayName?: boolean
+    frequency?: boolean
+    currency?: boolean
+    unit?: boolean
+    sourceLabel?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["marketSeries"]>
+
+  export type MarketSeriesSelectScalar = {
+    id?: boolean
+    providerCode?: boolean
+    providerSeriesId?: boolean
+    providerSeriesKey?: boolean
+    displayName?: boolean
+    frequency?: boolean
+    currency?: boolean
+    unit?: boolean
+    sourceLabel?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type MarketSeriesInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    observations?: boolean | MarketSeries$observationsArgs<ExtArgs>
+    hydrationState?: boolean | MarketSeries$hydrationStateArgs<ExtArgs>
+    _count?: boolean | MarketSeriesCountOutputTypeDefaultArgs<ExtArgs>
+  }
+  export type MarketSeriesIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
+
+  export type $MarketSeriesPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "MarketSeries"
+    objects: {
+      observations: Prisma.$MarketObservationPayload<ExtArgs>[]
+      hydrationState: Prisma.$MarketHydrationStatePayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      providerCode: string
+      providerSeriesId: string
+      providerSeriesKey: string | null
+      displayName: string
+      frequency: string | null
+      currency: string | null
+      unit: string | null
+      sourceLabel: string | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["marketSeries"]>
+    composites: {}
+  }
+
+  type MarketSeriesGetPayload<S extends boolean | null | undefined | MarketSeriesDefaultArgs> = $Result.GetResult<Prisma.$MarketSeriesPayload, S>
+
+  type MarketSeriesCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<MarketSeriesFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: MarketSeriesCountAggregateInputType | true
+    }
+
+  export interface MarketSeriesDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['MarketSeries'], meta: { name: 'MarketSeries' } }
+    /**
+     * Find zero or one MarketSeries that matches the filter.
+     * @param {MarketSeriesFindUniqueArgs} args - Arguments to find a MarketSeries
+     * @example
+     * // Get one MarketSeries
+     * const marketSeries = await prisma.marketSeries.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends MarketSeriesFindUniqueArgs>(args: SelectSubset<T, MarketSeriesFindUniqueArgs<ExtArgs>>): Prisma__MarketSeriesClient<$Result.GetResult<Prisma.$MarketSeriesPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one MarketSeries that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {MarketSeriesFindUniqueOrThrowArgs} args - Arguments to find a MarketSeries
+     * @example
+     * // Get one MarketSeries
+     * const marketSeries = await prisma.marketSeries.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends MarketSeriesFindUniqueOrThrowArgs>(args: SelectSubset<T, MarketSeriesFindUniqueOrThrowArgs<ExtArgs>>): Prisma__MarketSeriesClient<$Result.GetResult<Prisma.$MarketSeriesPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first MarketSeries that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketSeriesFindFirstArgs} args - Arguments to find a MarketSeries
+     * @example
+     * // Get one MarketSeries
+     * const marketSeries = await prisma.marketSeries.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends MarketSeriesFindFirstArgs>(args?: SelectSubset<T, MarketSeriesFindFirstArgs<ExtArgs>>): Prisma__MarketSeriesClient<$Result.GetResult<Prisma.$MarketSeriesPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first MarketSeries that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketSeriesFindFirstOrThrowArgs} args - Arguments to find a MarketSeries
+     * @example
+     * // Get one MarketSeries
+     * const marketSeries = await prisma.marketSeries.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends MarketSeriesFindFirstOrThrowArgs>(args?: SelectSubset<T, MarketSeriesFindFirstOrThrowArgs<ExtArgs>>): Prisma__MarketSeriesClient<$Result.GetResult<Prisma.$MarketSeriesPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more MarketSeries that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketSeriesFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all MarketSeries
+     * const marketSeries = await prisma.marketSeries.findMany()
+     * 
+     * // Get first 10 MarketSeries
+     * const marketSeries = await prisma.marketSeries.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const marketSeriesWithIdOnly = await prisma.marketSeries.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends MarketSeriesFindManyArgs>(args?: SelectSubset<T, MarketSeriesFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MarketSeriesPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a MarketSeries.
+     * @param {MarketSeriesCreateArgs} args - Arguments to create a MarketSeries.
+     * @example
+     * // Create one MarketSeries
+     * const MarketSeries = await prisma.marketSeries.create({
+     *   data: {
+     *     // ... data to create a MarketSeries
+     *   }
+     * })
+     * 
+     */
+    create<T extends MarketSeriesCreateArgs>(args: SelectSubset<T, MarketSeriesCreateArgs<ExtArgs>>): Prisma__MarketSeriesClient<$Result.GetResult<Prisma.$MarketSeriesPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many MarketSeries.
+     * @param {MarketSeriesCreateManyArgs} args - Arguments to create many MarketSeries.
+     * @example
+     * // Create many MarketSeries
+     * const marketSeries = await prisma.marketSeries.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends MarketSeriesCreateManyArgs>(args?: SelectSubset<T, MarketSeriesCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many MarketSeries and returns the data saved in the database.
+     * @param {MarketSeriesCreateManyAndReturnArgs} args - Arguments to create many MarketSeries.
+     * @example
+     * // Create many MarketSeries
+     * const marketSeries = await prisma.marketSeries.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many MarketSeries and only return the `id`
+     * const marketSeriesWithIdOnly = await prisma.marketSeries.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends MarketSeriesCreateManyAndReturnArgs>(args?: SelectSubset<T, MarketSeriesCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MarketSeriesPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a MarketSeries.
+     * @param {MarketSeriesDeleteArgs} args - Arguments to delete one MarketSeries.
+     * @example
+     * // Delete one MarketSeries
+     * const MarketSeries = await prisma.marketSeries.delete({
+     *   where: {
+     *     // ... filter to delete one MarketSeries
+     *   }
+     * })
+     * 
+     */
+    delete<T extends MarketSeriesDeleteArgs>(args: SelectSubset<T, MarketSeriesDeleteArgs<ExtArgs>>): Prisma__MarketSeriesClient<$Result.GetResult<Prisma.$MarketSeriesPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one MarketSeries.
+     * @param {MarketSeriesUpdateArgs} args - Arguments to update one MarketSeries.
+     * @example
+     * // Update one MarketSeries
+     * const marketSeries = await prisma.marketSeries.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends MarketSeriesUpdateArgs>(args: SelectSubset<T, MarketSeriesUpdateArgs<ExtArgs>>): Prisma__MarketSeriesClient<$Result.GetResult<Prisma.$MarketSeriesPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more MarketSeries.
+     * @param {MarketSeriesDeleteManyArgs} args - Arguments to filter MarketSeries to delete.
+     * @example
+     * // Delete a few MarketSeries
+     * const { count } = await prisma.marketSeries.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends MarketSeriesDeleteManyArgs>(args?: SelectSubset<T, MarketSeriesDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more MarketSeries.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketSeriesUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many MarketSeries
+     * const marketSeries = await prisma.marketSeries.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends MarketSeriesUpdateManyArgs>(args: SelectSubset<T, MarketSeriesUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one MarketSeries.
+     * @param {MarketSeriesUpsertArgs} args - Arguments to update or create a MarketSeries.
+     * @example
+     * // Update or create a MarketSeries
+     * const marketSeries = await prisma.marketSeries.upsert({
+     *   create: {
+     *     // ... data to create a MarketSeries
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the MarketSeries we want to update
+     *   }
+     * })
+     */
+    upsert<T extends MarketSeriesUpsertArgs>(args: SelectSubset<T, MarketSeriesUpsertArgs<ExtArgs>>): Prisma__MarketSeriesClient<$Result.GetResult<Prisma.$MarketSeriesPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of MarketSeries.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketSeriesCountArgs} args - Arguments to filter MarketSeries to count.
+     * @example
+     * // Count the number of MarketSeries
+     * const count = await prisma.marketSeries.count({
+     *   where: {
+     *     // ... the filter for the MarketSeries we want to count
+     *   }
+     * })
+    **/
+    count<T extends MarketSeriesCountArgs>(
+      args?: Subset<T, MarketSeriesCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], MarketSeriesCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a MarketSeries.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketSeriesAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends MarketSeriesAggregateArgs>(args: Subset<T, MarketSeriesAggregateArgs>): Prisma.PrismaPromise<GetMarketSeriesAggregateType<T>>
+
+    /**
+     * Group by MarketSeries.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketSeriesGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends MarketSeriesGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: MarketSeriesGroupByArgs['orderBy'] }
+        : { orderBy?: MarketSeriesGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, MarketSeriesGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetMarketSeriesGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the MarketSeries model
+   */
+  readonly fields: MarketSeriesFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for MarketSeries.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__MarketSeriesClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    observations<T extends MarketSeries$observationsArgs<ExtArgs> = {}>(args?: Subset<T, MarketSeries$observationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MarketObservationPayload<ExtArgs>, T, "findMany"> | Null>
+    hydrationState<T extends MarketSeries$hydrationStateArgs<ExtArgs> = {}>(args?: Subset<T, MarketSeries$hydrationStateArgs<ExtArgs>>): Prisma__MarketHydrationStateClient<$Result.GetResult<Prisma.$MarketHydrationStatePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the MarketSeries model
+   */ 
+  interface MarketSeriesFieldRefs {
+    readonly id: FieldRef<"MarketSeries", 'String'>
+    readonly providerCode: FieldRef<"MarketSeries", 'String'>
+    readonly providerSeriesId: FieldRef<"MarketSeries", 'String'>
+    readonly providerSeriesKey: FieldRef<"MarketSeries", 'String'>
+    readonly displayName: FieldRef<"MarketSeries", 'String'>
+    readonly frequency: FieldRef<"MarketSeries", 'String'>
+    readonly currency: FieldRef<"MarketSeries", 'String'>
+    readonly unit: FieldRef<"MarketSeries", 'String'>
+    readonly sourceLabel: FieldRef<"MarketSeries", 'String'>
+    readonly createdAt: FieldRef<"MarketSeries", 'DateTime'>
+    readonly updatedAt: FieldRef<"MarketSeries", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * MarketSeries findUnique
+   */
+  export type MarketSeriesFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketSeries
+     */
+    select?: MarketSeriesSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketSeriesInclude<ExtArgs> | null
+    /**
+     * Filter, which MarketSeries to fetch.
+     */
+    where: MarketSeriesWhereUniqueInput
+  }
+
+  /**
+   * MarketSeries findUniqueOrThrow
+   */
+  export type MarketSeriesFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketSeries
+     */
+    select?: MarketSeriesSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketSeriesInclude<ExtArgs> | null
+    /**
+     * Filter, which MarketSeries to fetch.
+     */
+    where: MarketSeriesWhereUniqueInput
+  }
+
+  /**
+   * MarketSeries findFirst
+   */
+  export type MarketSeriesFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketSeries
+     */
+    select?: MarketSeriesSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketSeriesInclude<ExtArgs> | null
+    /**
+     * Filter, which MarketSeries to fetch.
+     */
+    where?: MarketSeriesWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MarketSeries to fetch.
+     */
+    orderBy?: MarketSeriesOrderByWithRelationInput | MarketSeriesOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for MarketSeries.
+     */
+    cursor?: MarketSeriesWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MarketSeries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MarketSeries.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of MarketSeries.
+     */
+    distinct?: MarketSeriesScalarFieldEnum | MarketSeriesScalarFieldEnum[]
+  }
+
+  /**
+   * MarketSeries findFirstOrThrow
+   */
+  export type MarketSeriesFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketSeries
+     */
+    select?: MarketSeriesSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketSeriesInclude<ExtArgs> | null
+    /**
+     * Filter, which MarketSeries to fetch.
+     */
+    where?: MarketSeriesWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MarketSeries to fetch.
+     */
+    orderBy?: MarketSeriesOrderByWithRelationInput | MarketSeriesOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for MarketSeries.
+     */
+    cursor?: MarketSeriesWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MarketSeries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MarketSeries.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of MarketSeries.
+     */
+    distinct?: MarketSeriesScalarFieldEnum | MarketSeriesScalarFieldEnum[]
+  }
+
+  /**
+   * MarketSeries findMany
+   */
+  export type MarketSeriesFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketSeries
+     */
+    select?: MarketSeriesSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketSeriesInclude<ExtArgs> | null
+    /**
+     * Filter, which MarketSeries to fetch.
+     */
+    where?: MarketSeriesWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MarketSeries to fetch.
+     */
+    orderBy?: MarketSeriesOrderByWithRelationInput | MarketSeriesOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing MarketSeries.
+     */
+    cursor?: MarketSeriesWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MarketSeries from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MarketSeries.
+     */
+    skip?: number
+    distinct?: MarketSeriesScalarFieldEnum | MarketSeriesScalarFieldEnum[]
+  }
+
+  /**
+   * MarketSeries create
+   */
+  export type MarketSeriesCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketSeries
+     */
+    select?: MarketSeriesSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketSeriesInclude<ExtArgs> | null
+    /**
+     * The data needed to create a MarketSeries.
+     */
+    data: XOR<MarketSeriesCreateInput, MarketSeriesUncheckedCreateInput>
+  }
+
+  /**
+   * MarketSeries createMany
+   */
+  export type MarketSeriesCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many MarketSeries.
+     */
+    data: MarketSeriesCreateManyInput | MarketSeriesCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * MarketSeries createManyAndReturn
+   */
+  export type MarketSeriesCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketSeries
+     */
+    select?: MarketSeriesSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many MarketSeries.
+     */
+    data: MarketSeriesCreateManyInput | MarketSeriesCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * MarketSeries update
+   */
+  export type MarketSeriesUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketSeries
+     */
+    select?: MarketSeriesSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketSeriesInclude<ExtArgs> | null
+    /**
+     * The data needed to update a MarketSeries.
+     */
+    data: XOR<MarketSeriesUpdateInput, MarketSeriesUncheckedUpdateInput>
+    /**
+     * Choose, which MarketSeries to update.
+     */
+    where: MarketSeriesWhereUniqueInput
+  }
+
+  /**
+   * MarketSeries updateMany
+   */
+  export type MarketSeriesUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update MarketSeries.
+     */
+    data: XOR<MarketSeriesUpdateManyMutationInput, MarketSeriesUncheckedUpdateManyInput>
+    /**
+     * Filter which MarketSeries to update
+     */
+    where?: MarketSeriesWhereInput
+  }
+
+  /**
+   * MarketSeries upsert
+   */
+  export type MarketSeriesUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketSeries
+     */
+    select?: MarketSeriesSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketSeriesInclude<ExtArgs> | null
+    /**
+     * The filter to search for the MarketSeries to update in case it exists.
+     */
+    where: MarketSeriesWhereUniqueInput
+    /**
+     * In case the MarketSeries found by the `where` argument doesn't exist, create a new MarketSeries with this data.
+     */
+    create: XOR<MarketSeriesCreateInput, MarketSeriesUncheckedCreateInput>
+    /**
+     * In case the MarketSeries was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<MarketSeriesUpdateInput, MarketSeriesUncheckedUpdateInput>
+  }
+
+  /**
+   * MarketSeries delete
+   */
+  export type MarketSeriesDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketSeries
+     */
+    select?: MarketSeriesSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketSeriesInclude<ExtArgs> | null
+    /**
+     * Filter which MarketSeries to delete.
+     */
+    where: MarketSeriesWhereUniqueInput
+  }
+
+  /**
+   * MarketSeries deleteMany
+   */
+  export type MarketSeriesDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which MarketSeries to delete
+     */
+    where?: MarketSeriesWhereInput
+  }
+
+  /**
+   * MarketSeries.observations
+   */
+  export type MarketSeries$observationsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketObservation
+     */
+    select?: MarketObservationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketObservationInclude<ExtArgs> | null
+    where?: MarketObservationWhereInput
+    orderBy?: MarketObservationOrderByWithRelationInput | MarketObservationOrderByWithRelationInput[]
+    cursor?: MarketObservationWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: MarketObservationScalarFieldEnum | MarketObservationScalarFieldEnum[]
+  }
+
+  /**
+   * MarketSeries.hydrationState
+   */
+  export type MarketSeries$hydrationStateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketHydrationState
+     */
+    select?: MarketHydrationStateSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketHydrationStateInclude<ExtArgs> | null
+    where?: MarketHydrationStateWhereInput
+  }
+
+  /**
+   * MarketSeries without action
+   */
+  export type MarketSeriesDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketSeries
+     */
+    select?: MarketSeriesSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketSeriesInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model MarketObservation
+   */
+
+  export type AggregateMarketObservation = {
+    _count: MarketObservationCountAggregateOutputType | null
+    _avg: MarketObservationAvgAggregateOutputType | null
+    _sum: MarketObservationSumAggregateOutputType | null
+    _min: MarketObservationMinAggregateOutputType | null
+    _max: MarketObservationMaxAggregateOutputType | null
+  }
+
+  export type MarketObservationAvgAggregateOutputType = {
+    value: Decimal | null
+  }
+
+  export type MarketObservationSumAggregateOutputType = {
+    value: Decimal | null
+  }
+
+  export type MarketObservationMinAggregateOutputType = {
+    id: string | null
+    seriesId: string | null
+    observedAt: Date | null
+    value: Decimal | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type MarketObservationMaxAggregateOutputType = {
+    id: string | null
+    seriesId: string | null
+    observedAt: Date | null
+    value: Decimal | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type MarketObservationCountAggregateOutputType = {
+    id: number
+    seriesId: number
+    observedAt: number
+    value: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type MarketObservationAvgAggregateInputType = {
+    value?: true
+  }
+
+  export type MarketObservationSumAggregateInputType = {
+    value?: true
+  }
+
+  export type MarketObservationMinAggregateInputType = {
+    id?: true
+    seriesId?: true
+    observedAt?: true
+    value?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type MarketObservationMaxAggregateInputType = {
+    id?: true
+    seriesId?: true
+    observedAt?: true
+    value?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type MarketObservationCountAggregateInputType = {
+    id?: true
+    seriesId?: true
+    observedAt?: true
+    value?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type MarketObservationAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which MarketObservation to aggregate.
+     */
+    where?: MarketObservationWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MarketObservations to fetch.
+     */
+    orderBy?: MarketObservationOrderByWithRelationInput | MarketObservationOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: MarketObservationWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MarketObservations from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MarketObservations.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned MarketObservations
+    **/
+    _count?: true | MarketObservationCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: MarketObservationAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: MarketObservationSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: MarketObservationMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: MarketObservationMaxAggregateInputType
+  }
+
+  export type GetMarketObservationAggregateType<T extends MarketObservationAggregateArgs> = {
+        [P in keyof T & keyof AggregateMarketObservation]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateMarketObservation[P]>
+      : GetScalarType<T[P], AggregateMarketObservation[P]>
+  }
+
+
+
+
+  export type MarketObservationGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: MarketObservationWhereInput
+    orderBy?: MarketObservationOrderByWithAggregationInput | MarketObservationOrderByWithAggregationInput[]
+    by: MarketObservationScalarFieldEnum[] | MarketObservationScalarFieldEnum
+    having?: MarketObservationScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: MarketObservationCountAggregateInputType | true
+    _avg?: MarketObservationAvgAggregateInputType
+    _sum?: MarketObservationSumAggregateInputType
+    _min?: MarketObservationMinAggregateInputType
+    _max?: MarketObservationMaxAggregateInputType
+  }
+
+  export type MarketObservationGroupByOutputType = {
+    id: string
+    seriesId: string
+    observedAt: Date
+    value: Decimal | null
+    createdAt: Date
+    updatedAt: Date
+    _count: MarketObservationCountAggregateOutputType | null
+    _avg: MarketObservationAvgAggregateOutputType | null
+    _sum: MarketObservationSumAggregateOutputType | null
+    _min: MarketObservationMinAggregateOutputType | null
+    _max: MarketObservationMaxAggregateOutputType | null
+  }
+
+  type GetMarketObservationGroupByPayload<T extends MarketObservationGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<MarketObservationGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof MarketObservationGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], MarketObservationGroupByOutputType[P]>
+            : GetScalarType<T[P], MarketObservationGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type MarketObservationSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    seriesId?: boolean
+    observedAt?: boolean
+    value?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    series?: boolean | MarketSeriesDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["marketObservation"]>
+
+  export type MarketObservationSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    seriesId?: boolean
+    observedAt?: boolean
+    value?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    series?: boolean | MarketSeriesDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["marketObservation"]>
+
+  export type MarketObservationSelectScalar = {
+    id?: boolean
+    seriesId?: boolean
+    observedAt?: boolean
+    value?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type MarketObservationInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    series?: boolean | MarketSeriesDefaultArgs<ExtArgs>
+  }
+  export type MarketObservationIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    series?: boolean | MarketSeriesDefaultArgs<ExtArgs>
+  }
+
+  export type $MarketObservationPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "MarketObservation"
+    objects: {
+      series: Prisma.$MarketSeriesPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      seriesId: string
+      observedAt: Date
+      value: Prisma.Decimal | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["marketObservation"]>
+    composites: {}
+  }
+
+  type MarketObservationGetPayload<S extends boolean | null | undefined | MarketObservationDefaultArgs> = $Result.GetResult<Prisma.$MarketObservationPayload, S>
+
+  type MarketObservationCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<MarketObservationFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: MarketObservationCountAggregateInputType | true
+    }
+
+  export interface MarketObservationDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['MarketObservation'], meta: { name: 'MarketObservation' } }
+    /**
+     * Find zero or one MarketObservation that matches the filter.
+     * @param {MarketObservationFindUniqueArgs} args - Arguments to find a MarketObservation
+     * @example
+     * // Get one MarketObservation
+     * const marketObservation = await prisma.marketObservation.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends MarketObservationFindUniqueArgs>(args: SelectSubset<T, MarketObservationFindUniqueArgs<ExtArgs>>): Prisma__MarketObservationClient<$Result.GetResult<Prisma.$MarketObservationPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one MarketObservation that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {MarketObservationFindUniqueOrThrowArgs} args - Arguments to find a MarketObservation
+     * @example
+     * // Get one MarketObservation
+     * const marketObservation = await prisma.marketObservation.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends MarketObservationFindUniqueOrThrowArgs>(args: SelectSubset<T, MarketObservationFindUniqueOrThrowArgs<ExtArgs>>): Prisma__MarketObservationClient<$Result.GetResult<Prisma.$MarketObservationPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first MarketObservation that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketObservationFindFirstArgs} args - Arguments to find a MarketObservation
+     * @example
+     * // Get one MarketObservation
+     * const marketObservation = await prisma.marketObservation.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends MarketObservationFindFirstArgs>(args?: SelectSubset<T, MarketObservationFindFirstArgs<ExtArgs>>): Prisma__MarketObservationClient<$Result.GetResult<Prisma.$MarketObservationPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first MarketObservation that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketObservationFindFirstOrThrowArgs} args - Arguments to find a MarketObservation
+     * @example
+     * // Get one MarketObservation
+     * const marketObservation = await prisma.marketObservation.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends MarketObservationFindFirstOrThrowArgs>(args?: SelectSubset<T, MarketObservationFindFirstOrThrowArgs<ExtArgs>>): Prisma__MarketObservationClient<$Result.GetResult<Prisma.$MarketObservationPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more MarketObservations that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketObservationFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all MarketObservations
+     * const marketObservations = await prisma.marketObservation.findMany()
+     * 
+     * // Get first 10 MarketObservations
+     * const marketObservations = await prisma.marketObservation.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const marketObservationWithIdOnly = await prisma.marketObservation.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends MarketObservationFindManyArgs>(args?: SelectSubset<T, MarketObservationFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MarketObservationPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a MarketObservation.
+     * @param {MarketObservationCreateArgs} args - Arguments to create a MarketObservation.
+     * @example
+     * // Create one MarketObservation
+     * const MarketObservation = await prisma.marketObservation.create({
+     *   data: {
+     *     // ... data to create a MarketObservation
+     *   }
+     * })
+     * 
+     */
+    create<T extends MarketObservationCreateArgs>(args: SelectSubset<T, MarketObservationCreateArgs<ExtArgs>>): Prisma__MarketObservationClient<$Result.GetResult<Prisma.$MarketObservationPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many MarketObservations.
+     * @param {MarketObservationCreateManyArgs} args - Arguments to create many MarketObservations.
+     * @example
+     * // Create many MarketObservations
+     * const marketObservation = await prisma.marketObservation.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends MarketObservationCreateManyArgs>(args?: SelectSubset<T, MarketObservationCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many MarketObservations and returns the data saved in the database.
+     * @param {MarketObservationCreateManyAndReturnArgs} args - Arguments to create many MarketObservations.
+     * @example
+     * // Create many MarketObservations
+     * const marketObservation = await prisma.marketObservation.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many MarketObservations and only return the `id`
+     * const marketObservationWithIdOnly = await prisma.marketObservation.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends MarketObservationCreateManyAndReturnArgs>(args?: SelectSubset<T, MarketObservationCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MarketObservationPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a MarketObservation.
+     * @param {MarketObservationDeleteArgs} args - Arguments to delete one MarketObservation.
+     * @example
+     * // Delete one MarketObservation
+     * const MarketObservation = await prisma.marketObservation.delete({
+     *   where: {
+     *     // ... filter to delete one MarketObservation
+     *   }
+     * })
+     * 
+     */
+    delete<T extends MarketObservationDeleteArgs>(args: SelectSubset<T, MarketObservationDeleteArgs<ExtArgs>>): Prisma__MarketObservationClient<$Result.GetResult<Prisma.$MarketObservationPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one MarketObservation.
+     * @param {MarketObservationUpdateArgs} args - Arguments to update one MarketObservation.
+     * @example
+     * // Update one MarketObservation
+     * const marketObservation = await prisma.marketObservation.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends MarketObservationUpdateArgs>(args: SelectSubset<T, MarketObservationUpdateArgs<ExtArgs>>): Prisma__MarketObservationClient<$Result.GetResult<Prisma.$MarketObservationPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more MarketObservations.
+     * @param {MarketObservationDeleteManyArgs} args - Arguments to filter MarketObservations to delete.
+     * @example
+     * // Delete a few MarketObservations
+     * const { count } = await prisma.marketObservation.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends MarketObservationDeleteManyArgs>(args?: SelectSubset<T, MarketObservationDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more MarketObservations.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketObservationUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many MarketObservations
+     * const marketObservation = await prisma.marketObservation.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends MarketObservationUpdateManyArgs>(args: SelectSubset<T, MarketObservationUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one MarketObservation.
+     * @param {MarketObservationUpsertArgs} args - Arguments to update or create a MarketObservation.
+     * @example
+     * // Update or create a MarketObservation
+     * const marketObservation = await prisma.marketObservation.upsert({
+     *   create: {
+     *     // ... data to create a MarketObservation
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the MarketObservation we want to update
+     *   }
+     * })
+     */
+    upsert<T extends MarketObservationUpsertArgs>(args: SelectSubset<T, MarketObservationUpsertArgs<ExtArgs>>): Prisma__MarketObservationClient<$Result.GetResult<Prisma.$MarketObservationPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of MarketObservations.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketObservationCountArgs} args - Arguments to filter MarketObservations to count.
+     * @example
+     * // Count the number of MarketObservations
+     * const count = await prisma.marketObservation.count({
+     *   where: {
+     *     // ... the filter for the MarketObservations we want to count
+     *   }
+     * })
+    **/
+    count<T extends MarketObservationCountArgs>(
+      args?: Subset<T, MarketObservationCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], MarketObservationCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a MarketObservation.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketObservationAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends MarketObservationAggregateArgs>(args: Subset<T, MarketObservationAggregateArgs>): Prisma.PrismaPromise<GetMarketObservationAggregateType<T>>
+
+    /**
+     * Group by MarketObservation.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketObservationGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends MarketObservationGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: MarketObservationGroupByArgs['orderBy'] }
+        : { orderBy?: MarketObservationGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, MarketObservationGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetMarketObservationGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the MarketObservation model
+   */
+  readonly fields: MarketObservationFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for MarketObservation.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__MarketObservationClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    series<T extends MarketSeriesDefaultArgs<ExtArgs> = {}>(args?: Subset<T, MarketSeriesDefaultArgs<ExtArgs>>): Prisma__MarketSeriesClient<$Result.GetResult<Prisma.$MarketSeriesPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the MarketObservation model
+   */ 
+  interface MarketObservationFieldRefs {
+    readonly id: FieldRef<"MarketObservation", 'String'>
+    readonly seriesId: FieldRef<"MarketObservation", 'String'>
+    readonly observedAt: FieldRef<"MarketObservation", 'DateTime'>
+    readonly value: FieldRef<"MarketObservation", 'Decimal'>
+    readonly createdAt: FieldRef<"MarketObservation", 'DateTime'>
+    readonly updatedAt: FieldRef<"MarketObservation", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * MarketObservation findUnique
+   */
+  export type MarketObservationFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketObservation
+     */
+    select?: MarketObservationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketObservationInclude<ExtArgs> | null
+    /**
+     * Filter, which MarketObservation to fetch.
+     */
+    where: MarketObservationWhereUniqueInput
+  }
+
+  /**
+   * MarketObservation findUniqueOrThrow
+   */
+  export type MarketObservationFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketObservation
+     */
+    select?: MarketObservationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketObservationInclude<ExtArgs> | null
+    /**
+     * Filter, which MarketObservation to fetch.
+     */
+    where: MarketObservationWhereUniqueInput
+  }
+
+  /**
+   * MarketObservation findFirst
+   */
+  export type MarketObservationFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketObservation
+     */
+    select?: MarketObservationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketObservationInclude<ExtArgs> | null
+    /**
+     * Filter, which MarketObservation to fetch.
+     */
+    where?: MarketObservationWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MarketObservations to fetch.
+     */
+    orderBy?: MarketObservationOrderByWithRelationInput | MarketObservationOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for MarketObservations.
+     */
+    cursor?: MarketObservationWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MarketObservations from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MarketObservations.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of MarketObservations.
+     */
+    distinct?: MarketObservationScalarFieldEnum | MarketObservationScalarFieldEnum[]
+  }
+
+  /**
+   * MarketObservation findFirstOrThrow
+   */
+  export type MarketObservationFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketObservation
+     */
+    select?: MarketObservationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketObservationInclude<ExtArgs> | null
+    /**
+     * Filter, which MarketObservation to fetch.
+     */
+    where?: MarketObservationWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MarketObservations to fetch.
+     */
+    orderBy?: MarketObservationOrderByWithRelationInput | MarketObservationOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for MarketObservations.
+     */
+    cursor?: MarketObservationWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MarketObservations from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MarketObservations.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of MarketObservations.
+     */
+    distinct?: MarketObservationScalarFieldEnum | MarketObservationScalarFieldEnum[]
+  }
+
+  /**
+   * MarketObservation findMany
+   */
+  export type MarketObservationFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketObservation
+     */
+    select?: MarketObservationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketObservationInclude<ExtArgs> | null
+    /**
+     * Filter, which MarketObservations to fetch.
+     */
+    where?: MarketObservationWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MarketObservations to fetch.
+     */
+    orderBy?: MarketObservationOrderByWithRelationInput | MarketObservationOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing MarketObservations.
+     */
+    cursor?: MarketObservationWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MarketObservations from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MarketObservations.
+     */
+    skip?: number
+    distinct?: MarketObservationScalarFieldEnum | MarketObservationScalarFieldEnum[]
+  }
+
+  /**
+   * MarketObservation create
+   */
+  export type MarketObservationCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketObservation
+     */
+    select?: MarketObservationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketObservationInclude<ExtArgs> | null
+    /**
+     * The data needed to create a MarketObservation.
+     */
+    data: XOR<MarketObservationCreateInput, MarketObservationUncheckedCreateInput>
+  }
+
+  /**
+   * MarketObservation createMany
+   */
+  export type MarketObservationCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many MarketObservations.
+     */
+    data: MarketObservationCreateManyInput | MarketObservationCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * MarketObservation createManyAndReturn
+   */
+  export type MarketObservationCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketObservation
+     */
+    select?: MarketObservationSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many MarketObservations.
+     */
+    data: MarketObservationCreateManyInput | MarketObservationCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketObservationIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * MarketObservation update
+   */
+  export type MarketObservationUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketObservation
+     */
+    select?: MarketObservationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketObservationInclude<ExtArgs> | null
+    /**
+     * The data needed to update a MarketObservation.
+     */
+    data: XOR<MarketObservationUpdateInput, MarketObservationUncheckedUpdateInput>
+    /**
+     * Choose, which MarketObservation to update.
+     */
+    where: MarketObservationWhereUniqueInput
+  }
+
+  /**
+   * MarketObservation updateMany
+   */
+  export type MarketObservationUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update MarketObservations.
+     */
+    data: XOR<MarketObservationUpdateManyMutationInput, MarketObservationUncheckedUpdateManyInput>
+    /**
+     * Filter which MarketObservations to update
+     */
+    where?: MarketObservationWhereInput
+  }
+
+  /**
+   * MarketObservation upsert
+   */
+  export type MarketObservationUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketObservation
+     */
+    select?: MarketObservationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketObservationInclude<ExtArgs> | null
+    /**
+     * The filter to search for the MarketObservation to update in case it exists.
+     */
+    where: MarketObservationWhereUniqueInput
+    /**
+     * In case the MarketObservation found by the `where` argument doesn't exist, create a new MarketObservation with this data.
+     */
+    create: XOR<MarketObservationCreateInput, MarketObservationUncheckedCreateInput>
+    /**
+     * In case the MarketObservation was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<MarketObservationUpdateInput, MarketObservationUncheckedUpdateInput>
+  }
+
+  /**
+   * MarketObservation delete
+   */
+  export type MarketObservationDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketObservation
+     */
+    select?: MarketObservationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketObservationInclude<ExtArgs> | null
+    /**
+     * Filter which MarketObservation to delete.
+     */
+    where: MarketObservationWhereUniqueInput
+  }
+
+  /**
+   * MarketObservation deleteMany
+   */
+  export type MarketObservationDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which MarketObservations to delete
+     */
+    where?: MarketObservationWhereInput
+  }
+
+  /**
+   * MarketObservation without action
+   */
+  export type MarketObservationDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketObservation
+     */
+    select?: MarketObservationSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketObservationInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model MarketHydrationState
+   */
+
+  export type AggregateMarketHydrationState = {
+    _count: MarketHydrationStateCountAggregateOutputType | null
+    _avg: MarketHydrationStateAvgAggregateOutputType | null
+    _sum: MarketHydrationStateSumAggregateOutputType | null
+    _min: MarketHydrationStateMinAggregateOutputType | null
+    _max: MarketHydrationStateMaxAggregateOutputType | null
+  }
+
+  export type MarketHydrationStateAvgAggregateOutputType = {
+    lastHydratedObservationCount: number | null
+  }
+
+  export type MarketHydrationStateSumAggregateOutputType = {
+    lastHydratedObservationCount: number | null
+  }
+
+  export type MarketHydrationStateMinAggregateOutputType = {
+    id: string | null
+    seriesId: string | null
+    lastProviderFetchAt: Date | null
+    earliestStoredObservationAt: Date | null
+    latestStoredObservationAt: Date | null
+    lastHydrationStatus: string | null
+    lastHydrationMessage: string | null
+    lastHydratedObservationCount: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type MarketHydrationStateMaxAggregateOutputType = {
+    id: string | null
+    seriesId: string | null
+    lastProviderFetchAt: Date | null
+    earliestStoredObservationAt: Date | null
+    latestStoredObservationAt: Date | null
+    lastHydrationStatus: string | null
+    lastHydrationMessage: string | null
+    lastHydratedObservationCount: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type MarketHydrationStateCountAggregateOutputType = {
+    id: number
+    seriesId: number
+    lastProviderFetchAt: number
+    earliestStoredObservationAt: number
+    latestStoredObservationAt: number
+    lastHydrationStatus: number
+    lastHydrationMessage: number
+    lastHydratedObservationCount: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type MarketHydrationStateAvgAggregateInputType = {
+    lastHydratedObservationCount?: true
+  }
+
+  export type MarketHydrationStateSumAggregateInputType = {
+    lastHydratedObservationCount?: true
+  }
+
+  export type MarketHydrationStateMinAggregateInputType = {
+    id?: true
+    seriesId?: true
+    lastProviderFetchAt?: true
+    earliestStoredObservationAt?: true
+    latestStoredObservationAt?: true
+    lastHydrationStatus?: true
+    lastHydrationMessage?: true
+    lastHydratedObservationCount?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type MarketHydrationStateMaxAggregateInputType = {
+    id?: true
+    seriesId?: true
+    lastProviderFetchAt?: true
+    earliestStoredObservationAt?: true
+    latestStoredObservationAt?: true
+    lastHydrationStatus?: true
+    lastHydrationMessage?: true
+    lastHydratedObservationCount?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type MarketHydrationStateCountAggregateInputType = {
+    id?: true
+    seriesId?: true
+    lastProviderFetchAt?: true
+    earliestStoredObservationAt?: true
+    latestStoredObservationAt?: true
+    lastHydrationStatus?: true
+    lastHydrationMessage?: true
+    lastHydratedObservationCount?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type MarketHydrationStateAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which MarketHydrationState to aggregate.
+     */
+    where?: MarketHydrationStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MarketHydrationStates to fetch.
+     */
+    orderBy?: MarketHydrationStateOrderByWithRelationInput | MarketHydrationStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: MarketHydrationStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MarketHydrationStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MarketHydrationStates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned MarketHydrationStates
+    **/
+    _count?: true | MarketHydrationStateCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: MarketHydrationStateAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: MarketHydrationStateSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: MarketHydrationStateMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: MarketHydrationStateMaxAggregateInputType
+  }
+
+  export type GetMarketHydrationStateAggregateType<T extends MarketHydrationStateAggregateArgs> = {
+        [P in keyof T & keyof AggregateMarketHydrationState]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateMarketHydrationState[P]>
+      : GetScalarType<T[P], AggregateMarketHydrationState[P]>
+  }
+
+
+
+
+  export type MarketHydrationStateGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: MarketHydrationStateWhereInput
+    orderBy?: MarketHydrationStateOrderByWithAggregationInput | MarketHydrationStateOrderByWithAggregationInput[]
+    by: MarketHydrationStateScalarFieldEnum[] | MarketHydrationStateScalarFieldEnum
+    having?: MarketHydrationStateScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: MarketHydrationStateCountAggregateInputType | true
+    _avg?: MarketHydrationStateAvgAggregateInputType
+    _sum?: MarketHydrationStateSumAggregateInputType
+    _min?: MarketHydrationStateMinAggregateInputType
+    _max?: MarketHydrationStateMaxAggregateInputType
+  }
+
+  export type MarketHydrationStateGroupByOutputType = {
+    id: string
+    seriesId: string
+    lastProviderFetchAt: Date | null
+    earliestStoredObservationAt: Date | null
+    latestStoredObservationAt: Date | null
+    lastHydrationStatus: string | null
+    lastHydrationMessage: string | null
+    lastHydratedObservationCount: number | null
+    createdAt: Date
+    updatedAt: Date
+    _count: MarketHydrationStateCountAggregateOutputType | null
+    _avg: MarketHydrationStateAvgAggregateOutputType | null
+    _sum: MarketHydrationStateSumAggregateOutputType | null
+    _min: MarketHydrationStateMinAggregateOutputType | null
+    _max: MarketHydrationStateMaxAggregateOutputType | null
+  }
+
+  type GetMarketHydrationStateGroupByPayload<T extends MarketHydrationStateGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<MarketHydrationStateGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof MarketHydrationStateGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], MarketHydrationStateGroupByOutputType[P]>
+            : GetScalarType<T[P], MarketHydrationStateGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type MarketHydrationStateSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    seriesId?: boolean
+    lastProviderFetchAt?: boolean
+    earliestStoredObservationAt?: boolean
+    latestStoredObservationAt?: boolean
+    lastHydrationStatus?: boolean
+    lastHydrationMessage?: boolean
+    lastHydratedObservationCount?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    series?: boolean | MarketSeriesDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["marketHydrationState"]>
+
+  export type MarketHydrationStateSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    seriesId?: boolean
+    lastProviderFetchAt?: boolean
+    earliestStoredObservationAt?: boolean
+    latestStoredObservationAt?: boolean
+    lastHydrationStatus?: boolean
+    lastHydrationMessage?: boolean
+    lastHydratedObservationCount?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    series?: boolean | MarketSeriesDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["marketHydrationState"]>
+
+  export type MarketHydrationStateSelectScalar = {
+    id?: boolean
+    seriesId?: boolean
+    lastProviderFetchAt?: boolean
+    earliestStoredObservationAt?: boolean
+    latestStoredObservationAt?: boolean
+    lastHydrationStatus?: boolean
+    lastHydrationMessage?: boolean
+    lastHydratedObservationCount?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type MarketHydrationStateInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    series?: boolean | MarketSeriesDefaultArgs<ExtArgs>
+  }
+  export type MarketHydrationStateIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    series?: boolean | MarketSeriesDefaultArgs<ExtArgs>
+  }
+
+  export type $MarketHydrationStatePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "MarketHydrationState"
+    objects: {
+      series: Prisma.$MarketSeriesPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      seriesId: string
+      lastProviderFetchAt: Date | null
+      earliestStoredObservationAt: Date | null
+      latestStoredObservationAt: Date | null
+      lastHydrationStatus: string | null
+      lastHydrationMessage: string | null
+      lastHydratedObservationCount: number | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["marketHydrationState"]>
+    composites: {}
+  }
+
+  type MarketHydrationStateGetPayload<S extends boolean | null | undefined | MarketHydrationStateDefaultArgs> = $Result.GetResult<Prisma.$MarketHydrationStatePayload, S>
+
+  type MarketHydrationStateCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<MarketHydrationStateFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: MarketHydrationStateCountAggregateInputType | true
+    }
+
+  export interface MarketHydrationStateDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['MarketHydrationState'], meta: { name: 'MarketHydrationState' } }
+    /**
+     * Find zero or one MarketHydrationState that matches the filter.
+     * @param {MarketHydrationStateFindUniqueArgs} args - Arguments to find a MarketHydrationState
+     * @example
+     * // Get one MarketHydrationState
+     * const marketHydrationState = await prisma.marketHydrationState.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends MarketHydrationStateFindUniqueArgs>(args: SelectSubset<T, MarketHydrationStateFindUniqueArgs<ExtArgs>>): Prisma__MarketHydrationStateClient<$Result.GetResult<Prisma.$MarketHydrationStatePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one MarketHydrationState that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {MarketHydrationStateFindUniqueOrThrowArgs} args - Arguments to find a MarketHydrationState
+     * @example
+     * // Get one MarketHydrationState
+     * const marketHydrationState = await prisma.marketHydrationState.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends MarketHydrationStateFindUniqueOrThrowArgs>(args: SelectSubset<T, MarketHydrationStateFindUniqueOrThrowArgs<ExtArgs>>): Prisma__MarketHydrationStateClient<$Result.GetResult<Prisma.$MarketHydrationStatePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first MarketHydrationState that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketHydrationStateFindFirstArgs} args - Arguments to find a MarketHydrationState
+     * @example
+     * // Get one MarketHydrationState
+     * const marketHydrationState = await prisma.marketHydrationState.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends MarketHydrationStateFindFirstArgs>(args?: SelectSubset<T, MarketHydrationStateFindFirstArgs<ExtArgs>>): Prisma__MarketHydrationStateClient<$Result.GetResult<Prisma.$MarketHydrationStatePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first MarketHydrationState that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketHydrationStateFindFirstOrThrowArgs} args - Arguments to find a MarketHydrationState
+     * @example
+     * // Get one MarketHydrationState
+     * const marketHydrationState = await prisma.marketHydrationState.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends MarketHydrationStateFindFirstOrThrowArgs>(args?: SelectSubset<T, MarketHydrationStateFindFirstOrThrowArgs<ExtArgs>>): Prisma__MarketHydrationStateClient<$Result.GetResult<Prisma.$MarketHydrationStatePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more MarketHydrationStates that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketHydrationStateFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all MarketHydrationStates
+     * const marketHydrationStates = await prisma.marketHydrationState.findMany()
+     * 
+     * // Get first 10 MarketHydrationStates
+     * const marketHydrationStates = await prisma.marketHydrationState.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const marketHydrationStateWithIdOnly = await prisma.marketHydrationState.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends MarketHydrationStateFindManyArgs>(args?: SelectSubset<T, MarketHydrationStateFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MarketHydrationStatePayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a MarketHydrationState.
+     * @param {MarketHydrationStateCreateArgs} args - Arguments to create a MarketHydrationState.
+     * @example
+     * // Create one MarketHydrationState
+     * const MarketHydrationState = await prisma.marketHydrationState.create({
+     *   data: {
+     *     // ... data to create a MarketHydrationState
+     *   }
+     * })
+     * 
+     */
+    create<T extends MarketHydrationStateCreateArgs>(args: SelectSubset<T, MarketHydrationStateCreateArgs<ExtArgs>>): Prisma__MarketHydrationStateClient<$Result.GetResult<Prisma.$MarketHydrationStatePayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many MarketHydrationStates.
+     * @param {MarketHydrationStateCreateManyArgs} args - Arguments to create many MarketHydrationStates.
+     * @example
+     * // Create many MarketHydrationStates
+     * const marketHydrationState = await prisma.marketHydrationState.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends MarketHydrationStateCreateManyArgs>(args?: SelectSubset<T, MarketHydrationStateCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many MarketHydrationStates and returns the data saved in the database.
+     * @param {MarketHydrationStateCreateManyAndReturnArgs} args - Arguments to create many MarketHydrationStates.
+     * @example
+     * // Create many MarketHydrationStates
+     * const marketHydrationState = await prisma.marketHydrationState.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many MarketHydrationStates and only return the `id`
+     * const marketHydrationStateWithIdOnly = await prisma.marketHydrationState.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends MarketHydrationStateCreateManyAndReturnArgs>(args?: SelectSubset<T, MarketHydrationStateCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MarketHydrationStatePayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a MarketHydrationState.
+     * @param {MarketHydrationStateDeleteArgs} args - Arguments to delete one MarketHydrationState.
+     * @example
+     * // Delete one MarketHydrationState
+     * const MarketHydrationState = await prisma.marketHydrationState.delete({
+     *   where: {
+     *     // ... filter to delete one MarketHydrationState
+     *   }
+     * })
+     * 
+     */
+    delete<T extends MarketHydrationStateDeleteArgs>(args: SelectSubset<T, MarketHydrationStateDeleteArgs<ExtArgs>>): Prisma__MarketHydrationStateClient<$Result.GetResult<Prisma.$MarketHydrationStatePayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one MarketHydrationState.
+     * @param {MarketHydrationStateUpdateArgs} args - Arguments to update one MarketHydrationState.
+     * @example
+     * // Update one MarketHydrationState
+     * const marketHydrationState = await prisma.marketHydrationState.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends MarketHydrationStateUpdateArgs>(args: SelectSubset<T, MarketHydrationStateUpdateArgs<ExtArgs>>): Prisma__MarketHydrationStateClient<$Result.GetResult<Prisma.$MarketHydrationStatePayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more MarketHydrationStates.
+     * @param {MarketHydrationStateDeleteManyArgs} args - Arguments to filter MarketHydrationStates to delete.
+     * @example
+     * // Delete a few MarketHydrationStates
+     * const { count } = await prisma.marketHydrationState.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends MarketHydrationStateDeleteManyArgs>(args?: SelectSubset<T, MarketHydrationStateDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more MarketHydrationStates.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketHydrationStateUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many MarketHydrationStates
+     * const marketHydrationState = await prisma.marketHydrationState.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends MarketHydrationStateUpdateManyArgs>(args: SelectSubset<T, MarketHydrationStateUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one MarketHydrationState.
+     * @param {MarketHydrationStateUpsertArgs} args - Arguments to update or create a MarketHydrationState.
+     * @example
+     * // Update or create a MarketHydrationState
+     * const marketHydrationState = await prisma.marketHydrationState.upsert({
+     *   create: {
+     *     // ... data to create a MarketHydrationState
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the MarketHydrationState we want to update
+     *   }
+     * })
+     */
+    upsert<T extends MarketHydrationStateUpsertArgs>(args: SelectSubset<T, MarketHydrationStateUpsertArgs<ExtArgs>>): Prisma__MarketHydrationStateClient<$Result.GetResult<Prisma.$MarketHydrationStatePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of MarketHydrationStates.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketHydrationStateCountArgs} args - Arguments to filter MarketHydrationStates to count.
+     * @example
+     * // Count the number of MarketHydrationStates
+     * const count = await prisma.marketHydrationState.count({
+     *   where: {
+     *     // ... the filter for the MarketHydrationStates we want to count
+     *   }
+     * })
+    **/
+    count<T extends MarketHydrationStateCountArgs>(
+      args?: Subset<T, MarketHydrationStateCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], MarketHydrationStateCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a MarketHydrationState.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketHydrationStateAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends MarketHydrationStateAggregateArgs>(args: Subset<T, MarketHydrationStateAggregateArgs>): Prisma.PrismaPromise<GetMarketHydrationStateAggregateType<T>>
+
+    /**
+     * Group by MarketHydrationState.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MarketHydrationStateGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends MarketHydrationStateGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: MarketHydrationStateGroupByArgs['orderBy'] }
+        : { orderBy?: MarketHydrationStateGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, MarketHydrationStateGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetMarketHydrationStateGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the MarketHydrationState model
+   */
+  readonly fields: MarketHydrationStateFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for MarketHydrationState.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__MarketHydrationStateClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    series<T extends MarketSeriesDefaultArgs<ExtArgs> = {}>(args?: Subset<T, MarketSeriesDefaultArgs<ExtArgs>>): Prisma__MarketSeriesClient<$Result.GetResult<Prisma.$MarketSeriesPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the MarketHydrationState model
+   */ 
+  interface MarketHydrationStateFieldRefs {
+    readonly id: FieldRef<"MarketHydrationState", 'String'>
+    readonly seriesId: FieldRef<"MarketHydrationState", 'String'>
+    readonly lastProviderFetchAt: FieldRef<"MarketHydrationState", 'DateTime'>
+    readonly earliestStoredObservationAt: FieldRef<"MarketHydrationState", 'DateTime'>
+    readonly latestStoredObservationAt: FieldRef<"MarketHydrationState", 'DateTime'>
+    readonly lastHydrationStatus: FieldRef<"MarketHydrationState", 'String'>
+    readonly lastHydrationMessage: FieldRef<"MarketHydrationState", 'String'>
+    readonly lastHydratedObservationCount: FieldRef<"MarketHydrationState", 'Int'>
+    readonly createdAt: FieldRef<"MarketHydrationState", 'DateTime'>
+    readonly updatedAt: FieldRef<"MarketHydrationState", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * MarketHydrationState findUnique
+   */
+  export type MarketHydrationStateFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketHydrationState
+     */
+    select?: MarketHydrationStateSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketHydrationStateInclude<ExtArgs> | null
+    /**
+     * Filter, which MarketHydrationState to fetch.
+     */
+    where: MarketHydrationStateWhereUniqueInput
+  }
+
+  /**
+   * MarketHydrationState findUniqueOrThrow
+   */
+  export type MarketHydrationStateFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketHydrationState
+     */
+    select?: MarketHydrationStateSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketHydrationStateInclude<ExtArgs> | null
+    /**
+     * Filter, which MarketHydrationState to fetch.
+     */
+    where: MarketHydrationStateWhereUniqueInput
+  }
+
+  /**
+   * MarketHydrationState findFirst
+   */
+  export type MarketHydrationStateFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketHydrationState
+     */
+    select?: MarketHydrationStateSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketHydrationStateInclude<ExtArgs> | null
+    /**
+     * Filter, which MarketHydrationState to fetch.
+     */
+    where?: MarketHydrationStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MarketHydrationStates to fetch.
+     */
+    orderBy?: MarketHydrationStateOrderByWithRelationInput | MarketHydrationStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for MarketHydrationStates.
+     */
+    cursor?: MarketHydrationStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MarketHydrationStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MarketHydrationStates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of MarketHydrationStates.
+     */
+    distinct?: MarketHydrationStateScalarFieldEnum | MarketHydrationStateScalarFieldEnum[]
+  }
+
+  /**
+   * MarketHydrationState findFirstOrThrow
+   */
+  export type MarketHydrationStateFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketHydrationState
+     */
+    select?: MarketHydrationStateSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketHydrationStateInclude<ExtArgs> | null
+    /**
+     * Filter, which MarketHydrationState to fetch.
+     */
+    where?: MarketHydrationStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MarketHydrationStates to fetch.
+     */
+    orderBy?: MarketHydrationStateOrderByWithRelationInput | MarketHydrationStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for MarketHydrationStates.
+     */
+    cursor?: MarketHydrationStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MarketHydrationStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MarketHydrationStates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of MarketHydrationStates.
+     */
+    distinct?: MarketHydrationStateScalarFieldEnum | MarketHydrationStateScalarFieldEnum[]
+  }
+
+  /**
+   * MarketHydrationState findMany
+   */
+  export type MarketHydrationStateFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketHydrationState
+     */
+    select?: MarketHydrationStateSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketHydrationStateInclude<ExtArgs> | null
+    /**
+     * Filter, which MarketHydrationStates to fetch.
+     */
+    where?: MarketHydrationStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MarketHydrationStates to fetch.
+     */
+    orderBy?: MarketHydrationStateOrderByWithRelationInput | MarketHydrationStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing MarketHydrationStates.
+     */
+    cursor?: MarketHydrationStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MarketHydrationStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MarketHydrationStates.
+     */
+    skip?: number
+    distinct?: MarketHydrationStateScalarFieldEnum | MarketHydrationStateScalarFieldEnum[]
+  }
+
+  /**
+   * MarketHydrationState create
+   */
+  export type MarketHydrationStateCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketHydrationState
+     */
+    select?: MarketHydrationStateSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketHydrationStateInclude<ExtArgs> | null
+    /**
+     * The data needed to create a MarketHydrationState.
+     */
+    data: XOR<MarketHydrationStateCreateInput, MarketHydrationStateUncheckedCreateInput>
+  }
+
+  /**
+   * MarketHydrationState createMany
+   */
+  export type MarketHydrationStateCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many MarketHydrationStates.
+     */
+    data: MarketHydrationStateCreateManyInput | MarketHydrationStateCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * MarketHydrationState createManyAndReturn
+   */
+  export type MarketHydrationStateCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketHydrationState
+     */
+    select?: MarketHydrationStateSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many MarketHydrationStates.
+     */
+    data: MarketHydrationStateCreateManyInput | MarketHydrationStateCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketHydrationStateIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * MarketHydrationState update
+   */
+  export type MarketHydrationStateUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketHydrationState
+     */
+    select?: MarketHydrationStateSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketHydrationStateInclude<ExtArgs> | null
+    /**
+     * The data needed to update a MarketHydrationState.
+     */
+    data: XOR<MarketHydrationStateUpdateInput, MarketHydrationStateUncheckedUpdateInput>
+    /**
+     * Choose, which MarketHydrationState to update.
+     */
+    where: MarketHydrationStateWhereUniqueInput
+  }
+
+  /**
+   * MarketHydrationState updateMany
+   */
+  export type MarketHydrationStateUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update MarketHydrationStates.
+     */
+    data: XOR<MarketHydrationStateUpdateManyMutationInput, MarketHydrationStateUncheckedUpdateManyInput>
+    /**
+     * Filter which MarketHydrationStates to update
+     */
+    where?: MarketHydrationStateWhereInput
+  }
+
+  /**
+   * MarketHydrationState upsert
+   */
+  export type MarketHydrationStateUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketHydrationState
+     */
+    select?: MarketHydrationStateSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketHydrationStateInclude<ExtArgs> | null
+    /**
+     * The filter to search for the MarketHydrationState to update in case it exists.
+     */
+    where: MarketHydrationStateWhereUniqueInput
+    /**
+     * In case the MarketHydrationState found by the `where` argument doesn't exist, create a new MarketHydrationState with this data.
+     */
+    create: XOR<MarketHydrationStateCreateInput, MarketHydrationStateUncheckedCreateInput>
+    /**
+     * In case the MarketHydrationState was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<MarketHydrationStateUpdateInput, MarketHydrationStateUncheckedUpdateInput>
+  }
+
+  /**
+   * MarketHydrationState delete
+   */
+  export type MarketHydrationStateDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketHydrationState
+     */
+    select?: MarketHydrationStateSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketHydrationStateInclude<ExtArgs> | null
+    /**
+     * Filter which MarketHydrationState to delete.
+     */
+    where: MarketHydrationStateWhereUniqueInput
+  }
+
+  /**
+   * MarketHydrationState deleteMany
+   */
+  export type MarketHydrationStateDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which MarketHydrationStates to delete
+     */
+    where?: MarketHydrationStateWhereInput
+  }
+
+  /**
+   * MarketHydrationState without action
+   */
+  export type MarketHydrationStateDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MarketHydrationState
+     */
+    select?: MarketHydrationStateSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MarketHydrationStateInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ForecastCurrentRun
+   */
+
+  export type AggregateForecastCurrentRun = {
+    _count: ForecastCurrentRunCountAggregateOutputType | null
+    _avg: ForecastCurrentRunAvgAggregateOutputType | null
+    _sum: ForecastCurrentRunSumAggregateOutputType | null
+    _min: ForecastCurrentRunMinAggregateOutputType | null
+    _max: ForecastCurrentRunMaxAggregateOutputType | null
+  }
+
+  export type ForecastCurrentRunAvgAggregateOutputType = {
+    observationCount: number | null
+    runtimeSeconds: number | null
+  }
+
+  export type ForecastCurrentRunSumAggregateOutputType = {
+    observationCount: number | null
+    runtimeSeconds: number | null
+  }
+
+  export type ForecastCurrentRunMinAggregateOutputType = {
+    id: string | null
+    seriesId: string | null
+    displayName: string | null
+    description: string | null
+    frequency: string | null
+    currency: string | null
+    unit: string | null
+    sourceLabel: string | null
+    inputSource: string | null
+    inputRunId: string | null
+    historyFingerprint: string | null
+    targetBasis: $Enums.ForecastTargetBasis | null
+    methodId: string | null
+    historyStartAt: Date | null
+    historyEndAt: Date | null
+    observationCount: number | null
+    forecastOriginAt: Date | null
+    modelId: string | null
+    methodVersion: string | null
+    status: string | null
+    failureReason: string | null
+    runtimeSeconds: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ForecastCurrentRunMaxAggregateOutputType = {
+    id: string | null
+    seriesId: string | null
+    displayName: string | null
+    description: string | null
+    frequency: string | null
+    currency: string | null
+    unit: string | null
+    sourceLabel: string | null
+    inputSource: string | null
+    inputRunId: string | null
+    historyFingerprint: string | null
+    targetBasis: $Enums.ForecastTargetBasis | null
+    methodId: string | null
+    historyStartAt: Date | null
+    historyEndAt: Date | null
+    observationCount: number | null
+    forecastOriginAt: Date | null
+    modelId: string | null
+    methodVersion: string | null
+    status: string | null
+    failureReason: string | null
+    runtimeSeconds: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ForecastCurrentRunCountAggregateOutputType = {
+    id: number
+    seriesId: number
+    displayName: number
+    description: number
+    frequency: number
+    currency: number
+    unit: number
+    sourceLabel: number
+    inputSource: number
+    inputRunId: number
+    historyFingerprint: number
+    targetBasis: number
+    methodId: number
+    historyStartAt: number
+    historyEndAt: number
+    observationCount: number
+    forecastOriginAt: number
+    modelId: number
+    methodVersion: number
+    status: number
+    failureReason: number
+    runtimeSeconds: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type ForecastCurrentRunAvgAggregateInputType = {
+    observationCount?: true
+    runtimeSeconds?: true
+  }
+
+  export type ForecastCurrentRunSumAggregateInputType = {
+    observationCount?: true
+    runtimeSeconds?: true
+  }
+
+  export type ForecastCurrentRunMinAggregateInputType = {
+    id?: true
+    seriesId?: true
+    displayName?: true
+    description?: true
+    frequency?: true
+    currency?: true
+    unit?: true
+    sourceLabel?: true
+    inputSource?: true
+    inputRunId?: true
+    historyFingerprint?: true
+    targetBasis?: true
+    methodId?: true
+    historyStartAt?: true
+    historyEndAt?: true
+    observationCount?: true
+    forecastOriginAt?: true
+    modelId?: true
+    methodVersion?: true
+    status?: true
+    failureReason?: true
+    runtimeSeconds?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ForecastCurrentRunMaxAggregateInputType = {
+    id?: true
+    seriesId?: true
+    displayName?: true
+    description?: true
+    frequency?: true
+    currency?: true
+    unit?: true
+    sourceLabel?: true
+    inputSource?: true
+    inputRunId?: true
+    historyFingerprint?: true
+    targetBasis?: true
+    methodId?: true
+    historyStartAt?: true
+    historyEndAt?: true
+    observationCount?: true
+    forecastOriginAt?: true
+    modelId?: true
+    methodVersion?: true
+    status?: true
+    failureReason?: true
+    runtimeSeconds?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ForecastCurrentRunCountAggregateInputType = {
+    id?: true
+    seriesId?: true
+    displayName?: true
+    description?: true
+    frequency?: true
+    currency?: true
+    unit?: true
+    sourceLabel?: true
+    inputSource?: true
+    inputRunId?: true
+    historyFingerprint?: true
+    targetBasis?: true
+    methodId?: true
+    historyStartAt?: true
+    historyEndAt?: true
+    observationCount?: true
+    forecastOriginAt?: true
+    modelId?: true
+    methodVersion?: true
+    status?: true
+    failureReason?: true
+    runtimeSeconds?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type ForecastCurrentRunAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ForecastCurrentRun to aggregate.
+     */
+    where?: ForecastCurrentRunWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastCurrentRuns to fetch.
+     */
+    orderBy?: ForecastCurrentRunOrderByWithRelationInput | ForecastCurrentRunOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ForecastCurrentRunWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastCurrentRuns from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastCurrentRuns.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ForecastCurrentRuns
+    **/
+    _count?: true | ForecastCurrentRunCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ForecastCurrentRunAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ForecastCurrentRunSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ForecastCurrentRunMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ForecastCurrentRunMaxAggregateInputType
+  }
+
+  export type GetForecastCurrentRunAggregateType<T extends ForecastCurrentRunAggregateArgs> = {
+        [P in keyof T & keyof AggregateForecastCurrentRun]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateForecastCurrentRun[P]>
+      : GetScalarType<T[P], AggregateForecastCurrentRun[P]>
+  }
+
+
+
+
+  export type ForecastCurrentRunGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ForecastCurrentRunWhereInput
+    orderBy?: ForecastCurrentRunOrderByWithAggregationInput | ForecastCurrentRunOrderByWithAggregationInput[]
+    by: ForecastCurrentRunScalarFieldEnum[] | ForecastCurrentRunScalarFieldEnum
+    having?: ForecastCurrentRunScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ForecastCurrentRunCountAggregateInputType | true
+    _avg?: ForecastCurrentRunAvgAggregateInputType
+    _sum?: ForecastCurrentRunSumAggregateInputType
+    _min?: ForecastCurrentRunMinAggregateInputType
+    _max?: ForecastCurrentRunMaxAggregateInputType
+  }
+
+  export type ForecastCurrentRunGroupByOutputType = {
+    id: string
+    seriesId: string
+    displayName: string
+    description: string | null
+    frequency: string | null
+    currency: string | null
+    unit: string | null
+    sourceLabel: string | null
+    inputSource: string
+    inputRunId: string | null
+    historyFingerprint: string
+    targetBasis: $Enums.ForecastTargetBasis
+    methodId: string
+    historyStartAt: Date | null
+    historyEndAt: Date | null
+    observationCount: number
+    forecastOriginAt: Date | null
+    modelId: string
+    methodVersion: string
+    status: string
+    failureReason: string | null
+    runtimeSeconds: number | null
+    createdAt: Date
+    updatedAt: Date
+    _count: ForecastCurrentRunCountAggregateOutputType | null
+    _avg: ForecastCurrentRunAvgAggregateOutputType | null
+    _sum: ForecastCurrentRunSumAggregateOutputType | null
+    _min: ForecastCurrentRunMinAggregateOutputType | null
+    _max: ForecastCurrentRunMaxAggregateOutputType | null
+  }
+
+  type GetForecastCurrentRunGroupByPayload<T extends ForecastCurrentRunGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ForecastCurrentRunGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ForecastCurrentRunGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ForecastCurrentRunGroupByOutputType[P]>
+            : GetScalarType<T[P], ForecastCurrentRunGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ForecastCurrentRunSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    seriesId?: boolean
+    displayName?: boolean
+    description?: boolean
+    frequency?: boolean
+    currency?: boolean
+    unit?: boolean
+    sourceLabel?: boolean
+    inputSource?: boolean
+    inputRunId?: boolean
+    historyFingerprint?: boolean
+    targetBasis?: boolean
+    methodId?: boolean
+    historyStartAt?: boolean
+    historyEndAt?: boolean
+    observationCount?: boolean
+    forecastOriginAt?: boolean
+    modelId?: boolean
+    methodVersion?: boolean
+    status?: boolean
+    failureReason?: boolean
+    runtimeSeconds?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    points?: boolean | ForecastCurrentRun$pointsArgs<ExtArgs>
+    _count?: boolean | ForecastCurrentRunCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["forecastCurrentRun"]>
+
+  export type ForecastCurrentRunSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    seriesId?: boolean
+    displayName?: boolean
+    description?: boolean
+    frequency?: boolean
+    currency?: boolean
+    unit?: boolean
+    sourceLabel?: boolean
+    inputSource?: boolean
+    inputRunId?: boolean
+    historyFingerprint?: boolean
+    targetBasis?: boolean
+    methodId?: boolean
+    historyStartAt?: boolean
+    historyEndAt?: boolean
+    observationCount?: boolean
+    forecastOriginAt?: boolean
+    modelId?: boolean
+    methodVersion?: boolean
+    status?: boolean
+    failureReason?: boolean
+    runtimeSeconds?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["forecastCurrentRun"]>
+
+  export type ForecastCurrentRunSelectScalar = {
+    id?: boolean
+    seriesId?: boolean
+    displayName?: boolean
+    description?: boolean
+    frequency?: boolean
+    currency?: boolean
+    unit?: boolean
+    sourceLabel?: boolean
+    inputSource?: boolean
+    inputRunId?: boolean
+    historyFingerprint?: boolean
+    targetBasis?: boolean
+    methodId?: boolean
+    historyStartAt?: boolean
+    historyEndAt?: boolean
+    observationCount?: boolean
+    forecastOriginAt?: boolean
+    modelId?: boolean
+    methodVersion?: boolean
+    status?: boolean
+    failureReason?: boolean
+    runtimeSeconds?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type ForecastCurrentRunInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    points?: boolean | ForecastCurrentRun$pointsArgs<ExtArgs>
+    _count?: boolean | ForecastCurrentRunCountOutputTypeDefaultArgs<ExtArgs>
+  }
+  export type ForecastCurrentRunIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
+
+  export type $ForecastCurrentRunPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ForecastCurrentRun"
+    objects: {
+      points: Prisma.$ForecastCurrentPointPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      seriesId: string
+      displayName: string
+      description: string | null
+      frequency: string | null
+      currency: string | null
+      unit: string | null
+      sourceLabel: string | null
+      inputSource: string
+      inputRunId: string | null
+      historyFingerprint: string
+      targetBasis: $Enums.ForecastTargetBasis
+      methodId: string
+      historyStartAt: Date | null
+      historyEndAt: Date | null
+      observationCount: number
+      forecastOriginAt: Date | null
+      modelId: string
+      methodVersion: string
+      status: string
+      failureReason: string | null
+      runtimeSeconds: number | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["forecastCurrentRun"]>
+    composites: {}
+  }
+
+  type ForecastCurrentRunGetPayload<S extends boolean | null | undefined | ForecastCurrentRunDefaultArgs> = $Result.GetResult<Prisma.$ForecastCurrentRunPayload, S>
+
+  type ForecastCurrentRunCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ForecastCurrentRunFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: ForecastCurrentRunCountAggregateInputType | true
+    }
+
+  export interface ForecastCurrentRunDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ForecastCurrentRun'], meta: { name: 'ForecastCurrentRun' } }
+    /**
+     * Find zero or one ForecastCurrentRun that matches the filter.
+     * @param {ForecastCurrentRunFindUniqueArgs} args - Arguments to find a ForecastCurrentRun
+     * @example
+     * // Get one ForecastCurrentRun
+     * const forecastCurrentRun = await prisma.forecastCurrentRun.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ForecastCurrentRunFindUniqueArgs>(args: SelectSubset<T, ForecastCurrentRunFindUniqueArgs<ExtArgs>>): Prisma__ForecastCurrentRunClient<$Result.GetResult<Prisma.$ForecastCurrentRunPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ForecastCurrentRun that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ForecastCurrentRunFindUniqueOrThrowArgs} args - Arguments to find a ForecastCurrentRun
+     * @example
+     * // Get one ForecastCurrentRun
+     * const forecastCurrentRun = await prisma.forecastCurrentRun.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ForecastCurrentRunFindUniqueOrThrowArgs>(args: SelectSubset<T, ForecastCurrentRunFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ForecastCurrentRunClient<$Result.GetResult<Prisma.$ForecastCurrentRunPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ForecastCurrentRun that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastCurrentRunFindFirstArgs} args - Arguments to find a ForecastCurrentRun
+     * @example
+     * // Get one ForecastCurrentRun
+     * const forecastCurrentRun = await prisma.forecastCurrentRun.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ForecastCurrentRunFindFirstArgs>(args?: SelectSubset<T, ForecastCurrentRunFindFirstArgs<ExtArgs>>): Prisma__ForecastCurrentRunClient<$Result.GetResult<Prisma.$ForecastCurrentRunPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ForecastCurrentRun that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastCurrentRunFindFirstOrThrowArgs} args - Arguments to find a ForecastCurrentRun
+     * @example
+     * // Get one ForecastCurrentRun
+     * const forecastCurrentRun = await prisma.forecastCurrentRun.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ForecastCurrentRunFindFirstOrThrowArgs>(args?: SelectSubset<T, ForecastCurrentRunFindFirstOrThrowArgs<ExtArgs>>): Prisma__ForecastCurrentRunClient<$Result.GetResult<Prisma.$ForecastCurrentRunPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ForecastCurrentRuns that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastCurrentRunFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ForecastCurrentRuns
+     * const forecastCurrentRuns = await prisma.forecastCurrentRun.findMany()
+     * 
+     * // Get first 10 ForecastCurrentRuns
+     * const forecastCurrentRuns = await prisma.forecastCurrentRun.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const forecastCurrentRunWithIdOnly = await prisma.forecastCurrentRun.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ForecastCurrentRunFindManyArgs>(args?: SelectSubset<T, ForecastCurrentRunFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastCurrentRunPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ForecastCurrentRun.
+     * @param {ForecastCurrentRunCreateArgs} args - Arguments to create a ForecastCurrentRun.
+     * @example
+     * // Create one ForecastCurrentRun
+     * const ForecastCurrentRun = await prisma.forecastCurrentRun.create({
+     *   data: {
+     *     // ... data to create a ForecastCurrentRun
+     *   }
+     * })
+     * 
+     */
+    create<T extends ForecastCurrentRunCreateArgs>(args: SelectSubset<T, ForecastCurrentRunCreateArgs<ExtArgs>>): Prisma__ForecastCurrentRunClient<$Result.GetResult<Prisma.$ForecastCurrentRunPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ForecastCurrentRuns.
+     * @param {ForecastCurrentRunCreateManyArgs} args - Arguments to create many ForecastCurrentRuns.
+     * @example
+     * // Create many ForecastCurrentRuns
+     * const forecastCurrentRun = await prisma.forecastCurrentRun.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ForecastCurrentRunCreateManyArgs>(args?: SelectSubset<T, ForecastCurrentRunCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ForecastCurrentRuns and returns the data saved in the database.
+     * @param {ForecastCurrentRunCreateManyAndReturnArgs} args - Arguments to create many ForecastCurrentRuns.
+     * @example
+     * // Create many ForecastCurrentRuns
+     * const forecastCurrentRun = await prisma.forecastCurrentRun.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ForecastCurrentRuns and only return the `id`
+     * const forecastCurrentRunWithIdOnly = await prisma.forecastCurrentRun.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ForecastCurrentRunCreateManyAndReturnArgs>(args?: SelectSubset<T, ForecastCurrentRunCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastCurrentRunPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a ForecastCurrentRun.
+     * @param {ForecastCurrentRunDeleteArgs} args - Arguments to delete one ForecastCurrentRun.
+     * @example
+     * // Delete one ForecastCurrentRun
+     * const ForecastCurrentRun = await prisma.forecastCurrentRun.delete({
+     *   where: {
+     *     // ... filter to delete one ForecastCurrentRun
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ForecastCurrentRunDeleteArgs>(args: SelectSubset<T, ForecastCurrentRunDeleteArgs<ExtArgs>>): Prisma__ForecastCurrentRunClient<$Result.GetResult<Prisma.$ForecastCurrentRunPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ForecastCurrentRun.
+     * @param {ForecastCurrentRunUpdateArgs} args - Arguments to update one ForecastCurrentRun.
+     * @example
+     * // Update one ForecastCurrentRun
+     * const forecastCurrentRun = await prisma.forecastCurrentRun.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ForecastCurrentRunUpdateArgs>(args: SelectSubset<T, ForecastCurrentRunUpdateArgs<ExtArgs>>): Prisma__ForecastCurrentRunClient<$Result.GetResult<Prisma.$ForecastCurrentRunPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ForecastCurrentRuns.
+     * @param {ForecastCurrentRunDeleteManyArgs} args - Arguments to filter ForecastCurrentRuns to delete.
+     * @example
+     * // Delete a few ForecastCurrentRuns
+     * const { count } = await prisma.forecastCurrentRun.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ForecastCurrentRunDeleteManyArgs>(args?: SelectSubset<T, ForecastCurrentRunDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ForecastCurrentRuns.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastCurrentRunUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ForecastCurrentRuns
+     * const forecastCurrentRun = await prisma.forecastCurrentRun.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ForecastCurrentRunUpdateManyArgs>(args: SelectSubset<T, ForecastCurrentRunUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ForecastCurrentRun.
+     * @param {ForecastCurrentRunUpsertArgs} args - Arguments to update or create a ForecastCurrentRun.
+     * @example
+     * // Update or create a ForecastCurrentRun
+     * const forecastCurrentRun = await prisma.forecastCurrentRun.upsert({
+     *   create: {
+     *     // ... data to create a ForecastCurrentRun
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ForecastCurrentRun we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ForecastCurrentRunUpsertArgs>(args: SelectSubset<T, ForecastCurrentRunUpsertArgs<ExtArgs>>): Prisma__ForecastCurrentRunClient<$Result.GetResult<Prisma.$ForecastCurrentRunPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ForecastCurrentRuns.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastCurrentRunCountArgs} args - Arguments to filter ForecastCurrentRuns to count.
+     * @example
+     * // Count the number of ForecastCurrentRuns
+     * const count = await prisma.forecastCurrentRun.count({
+     *   where: {
+     *     // ... the filter for the ForecastCurrentRuns we want to count
+     *   }
+     * })
+    **/
+    count<T extends ForecastCurrentRunCountArgs>(
+      args?: Subset<T, ForecastCurrentRunCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ForecastCurrentRunCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ForecastCurrentRun.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastCurrentRunAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ForecastCurrentRunAggregateArgs>(args: Subset<T, ForecastCurrentRunAggregateArgs>): Prisma.PrismaPromise<GetForecastCurrentRunAggregateType<T>>
+
+    /**
+     * Group by ForecastCurrentRun.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastCurrentRunGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ForecastCurrentRunGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ForecastCurrentRunGroupByArgs['orderBy'] }
+        : { orderBy?: ForecastCurrentRunGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ForecastCurrentRunGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetForecastCurrentRunGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ForecastCurrentRun model
+   */
+  readonly fields: ForecastCurrentRunFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ForecastCurrentRun.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ForecastCurrentRunClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    points<T extends ForecastCurrentRun$pointsArgs<ExtArgs> = {}>(args?: Subset<T, ForecastCurrentRun$pointsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastCurrentPointPayload<ExtArgs>, T, "findMany"> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ForecastCurrentRun model
+   */ 
+  interface ForecastCurrentRunFieldRefs {
+    readonly id: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly seriesId: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly displayName: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly description: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly frequency: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly currency: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly unit: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly sourceLabel: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly inputSource: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly inputRunId: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly historyFingerprint: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly targetBasis: FieldRef<"ForecastCurrentRun", 'ForecastTargetBasis'>
+    readonly methodId: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly historyStartAt: FieldRef<"ForecastCurrentRun", 'DateTime'>
+    readonly historyEndAt: FieldRef<"ForecastCurrentRun", 'DateTime'>
+    readonly observationCount: FieldRef<"ForecastCurrentRun", 'Int'>
+    readonly forecastOriginAt: FieldRef<"ForecastCurrentRun", 'DateTime'>
+    readonly modelId: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly methodVersion: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly status: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly failureReason: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly runtimeSeconds: FieldRef<"ForecastCurrentRun", 'Float'>
+    readonly createdAt: FieldRef<"ForecastCurrentRun", 'DateTime'>
+    readonly updatedAt: FieldRef<"ForecastCurrentRun", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ForecastCurrentRun findUnique
+   */
+  export type ForecastCurrentRunFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentRun
+     */
+    select?: ForecastCurrentRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentRunInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastCurrentRun to fetch.
+     */
+    where: ForecastCurrentRunWhereUniqueInput
+  }
+
+  /**
+   * ForecastCurrentRun findUniqueOrThrow
+   */
+  export type ForecastCurrentRunFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentRun
+     */
+    select?: ForecastCurrentRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentRunInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastCurrentRun to fetch.
+     */
+    where: ForecastCurrentRunWhereUniqueInput
+  }
+
+  /**
+   * ForecastCurrentRun findFirst
+   */
+  export type ForecastCurrentRunFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentRun
+     */
+    select?: ForecastCurrentRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentRunInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastCurrentRun to fetch.
+     */
+    where?: ForecastCurrentRunWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastCurrentRuns to fetch.
+     */
+    orderBy?: ForecastCurrentRunOrderByWithRelationInput | ForecastCurrentRunOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ForecastCurrentRuns.
+     */
+    cursor?: ForecastCurrentRunWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastCurrentRuns from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastCurrentRuns.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ForecastCurrentRuns.
+     */
+    distinct?: ForecastCurrentRunScalarFieldEnum | ForecastCurrentRunScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastCurrentRun findFirstOrThrow
+   */
+  export type ForecastCurrentRunFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentRun
+     */
+    select?: ForecastCurrentRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentRunInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastCurrentRun to fetch.
+     */
+    where?: ForecastCurrentRunWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastCurrentRuns to fetch.
+     */
+    orderBy?: ForecastCurrentRunOrderByWithRelationInput | ForecastCurrentRunOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ForecastCurrentRuns.
+     */
+    cursor?: ForecastCurrentRunWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastCurrentRuns from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastCurrentRuns.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ForecastCurrentRuns.
+     */
+    distinct?: ForecastCurrentRunScalarFieldEnum | ForecastCurrentRunScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastCurrentRun findMany
+   */
+  export type ForecastCurrentRunFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentRun
+     */
+    select?: ForecastCurrentRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentRunInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastCurrentRuns to fetch.
+     */
+    where?: ForecastCurrentRunWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastCurrentRuns to fetch.
+     */
+    orderBy?: ForecastCurrentRunOrderByWithRelationInput | ForecastCurrentRunOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ForecastCurrentRuns.
+     */
+    cursor?: ForecastCurrentRunWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastCurrentRuns from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastCurrentRuns.
+     */
+    skip?: number
+    distinct?: ForecastCurrentRunScalarFieldEnum | ForecastCurrentRunScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastCurrentRun create
+   */
+  export type ForecastCurrentRunCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentRun
+     */
+    select?: ForecastCurrentRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentRunInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ForecastCurrentRun.
+     */
+    data: XOR<ForecastCurrentRunCreateInput, ForecastCurrentRunUncheckedCreateInput>
+  }
+
+  /**
+   * ForecastCurrentRun createMany
+   */
+  export type ForecastCurrentRunCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ForecastCurrentRuns.
+     */
+    data: ForecastCurrentRunCreateManyInput | ForecastCurrentRunCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ForecastCurrentRun createManyAndReturn
+   */
+  export type ForecastCurrentRunCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentRun
+     */
+    select?: ForecastCurrentRunSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many ForecastCurrentRuns.
+     */
+    data: ForecastCurrentRunCreateManyInput | ForecastCurrentRunCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ForecastCurrentRun update
+   */
+  export type ForecastCurrentRunUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentRun
+     */
+    select?: ForecastCurrentRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentRunInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ForecastCurrentRun.
+     */
+    data: XOR<ForecastCurrentRunUpdateInput, ForecastCurrentRunUncheckedUpdateInput>
+    /**
+     * Choose, which ForecastCurrentRun to update.
+     */
+    where: ForecastCurrentRunWhereUniqueInput
+  }
+
+  /**
+   * ForecastCurrentRun updateMany
+   */
+  export type ForecastCurrentRunUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ForecastCurrentRuns.
+     */
+    data: XOR<ForecastCurrentRunUpdateManyMutationInput, ForecastCurrentRunUncheckedUpdateManyInput>
+    /**
+     * Filter which ForecastCurrentRuns to update
+     */
+    where?: ForecastCurrentRunWhereInput
+  }
+
+  /**
+   * ForecastCurrentRun upsert
+   */
+  export type ForecastCurrentRunUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentRun
+     */
+    select?: ForecastCurrentRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentRunInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ForecastCurrentRun to update in case it exists.
+     */
+    where: ForecastCurrentRunWhereUniqueInput
+    /**
+     * In case the ForecastCurrentRun found by the `where` argument doesn't exist, create a new ForecastCurrentRun with this data.
+     */
+    create: XOR<ForecastCurrentRunCreateInput, ForecastCurrentRunUncheckedCreateInput>
+    /**
+     * In case the ForecastCurrentRun was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ForecastCurrentRunUpdateInput, ForecastCurrentRunUncheckedUpdateInput>
+  }
+
+  /**
+   * ForecastCurrentRun delete
+   */
+  export type ForecastCurrentRunDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentRun
+     */
+    select?: ForecastCurrentRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentRunInclude<ExtArgs> | null
+    /**
+     * Filter which ForecastCurrentRun to delete.
+     */
+    where: ForecastCurrentRunWhereUniqueInput
+  }
+
+  /**
+   * ForecastCurrentRun deleteMany
+   */
+  export type ForecastCurrentRunDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ForecastCurrentRuns to delete
+     */
+    where?: ForecastCurrentRunWhereInput
+  }
+
+  /**
+   * ForecastCurrentRun.points
+   */
+  export type ForecastCurrentRun$pointsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentPoint
+     */
+    select?: ForecastCurrentPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentPointInclude<ExtArgs> | null
+    where?: ForecastCurrentPointWhereInput
+    orderBy?: ForecastCurrentPointOrderByWithRelationInput | ForecastCurrentPointOrderByWithRelationInput[]
+    cursor?: ForecastCurrentPointWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ForecastCurrentPointScalarFieldEnum | ForecastCurrentPointScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastCurrentRun without action
+   */
+  export type ForecastCurrentRunDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentRun
+     */
+    select?: ForecastCurrentRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentRunInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ForecastCurrentPoint
+   */
+
+  export type AggregateForecastCurrentPoint = {
+    _count: ForecastCurrentPointCountAggregateOutputType | null
+    _avg: ForecastCurrentPointAvgAggregateOutputType | null
+    _sum: ForecastCurrentPointSumAggregateOutputType | null
+    _min: ForecastCurrentPointMinAggregateOutputType | null
+    _max: ForecastCurrentPointMaxAggregateOutputType | null
+  }
+
+  export type ForecastCurrentPointAvgAggregateOutputType = {
+    horizonSteps: number | null
+    forecastValue: Decimal | null
+    selectionScore: number | null
+  }
+
+  export type ForecastCurrentPointSumAggregateOutputType = {
+    horizonSteps: number | null
+    forecastValue: Decimal | null
+    selectionScore: number | null
+  }
+
+  export type ForecastCurrentPointMinAggregateOutputType = {
+    id: string | null
+    runId: string | null
+    horizonLabel: string | null
+    horizonSteps: number | null
+    forecastDate: Date | null
+    forecastValue: Decimal | null
+    fitStatus: string | null
+    failureReason: string | null
+    selectedVariant: string | null
+    selectionMetric: string | null
+    selectionScore: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ForecastCurrentPointMaxAggregateOutputType = {
+    id: string | null
+    runId: string | null
+    horizonLabel: string | null
+    horizonSteps: number | null
+    forecastDate: Date | null
+    forecastValue: Decimal | null
+    fitStatus: string | null
+    failureReason: string | null
+    selectedVariant: string | null
+    selectionMetric: string | null
+    selectionScore: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ForecastCurrentPointCountAggregateOutputType = {
+    id: number
+    runId: number
+    horizonLabel: number
+    horizonSteps: number
+    forecastDate: number
+    forecastValue: number
+    fitStatus: number
+    failureReason: number
+    selectedVariant: number
+    selectionMetric: number
+    selectionScore: number
+    metadataJson: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type ForecastCurrentPointAvgAggregateInputType = {
+    horizonSteps?: true
+    forecastValue?: true
+    selectionScore?: true
+  }
+
+  export type ForecastCurrentPointSumAggregateInputType = {
+    horizonSteps?: true
+    forecastValue?: true
+    selectionScore?: true
+  }
+
+  export type ForecastCurrentPointMinAggregateInputType = {
+    id?: true
+    runId?: true
+    horizonLabel?: true
+    horizonSteps?: true
+    forecastDate?: true
+    forecastValue?: true
+    fitStatus?: true
+    failureReason?: true
+    selectedVariant?: true
+    selectionMetric?: true
+    selectionScore?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ForecastCurrentPointMaxAggregateInputType = {
+    id?: true
+    runId?: true
+    horizonLabel?: true
+    horizonSteps?: true
+    forecastDate?: true
+    forecastValue?: true
+    fitStatus?: true
+    failureReason?: true
+    selectedVariant?: true
+    selectionMetric?: true
+    selectionScore?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ForecastCurrentPointCountAggregateInputType = {
+    id?: true
+    runId?: true
+    horizonLabel?: true
+    horizonSteps?: true
+    forecastDate?: true
+    forecastValue?: true
+    fitStatus?: true
+    failureReason?: true
+    selectedVariant?: true
+    selectionMetric?: true
+    selectionScore?: true
+    metadataJson?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type ForecastCurrentPointAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ForecastCurrentPoint to aggregate.
+     */
+    where?: ForecastCurrentPointWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastCurrentPoints to fetch.
+     */
+    orderBy?: ForecastCurrentPointOrderByWithRelationInput | ForecastCurrentPointOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ForecastCurrentPointWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastCurrentPoints from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastCurrentPoints.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ForecastCurrentPoints
+    **/
+    _count?: true | ForecastCurrentPointCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ForecastCurrentPointAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ForecastCurrentPointSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ForecastCurrentPointMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ForecastCurrentPointMaxAggregateInputType
+  }
+
+  export type GetForecastCurrentPointAggregateType<T extends ForecastCurrentPointAggregateArgs> = {
+        [P in keyof T & keyof AggregateForecastCurrentPoint]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateForecastCurrentPoint[P]>
+      : GetScalarType<T[P], AggregateForecastCurrentPoint[P]>
+  }
+
+
+
+
+  export type ForecastCurrentPointGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ForecastCurrentPointWhereInput
+    orderBy?: ForecastCurrentPointOrderByWithAggregationInput | ForecastCurrentPointOrderByWithAggregationInput[]
+    by: ForecastCurrentPointScalarFieldEnum[] | ForecastCurrentPointScalarFieldEnum
+    having?: ForecastCurrentPointScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ForecastCurrentPointCountAggregateInputType | true
+    _avg?: ForecastCurrentPointAvgAggregateInputType
+    _sum?: ForecastCurrentPointSumAggregateInputType
+    _min?: ForecastCurrentPointMinAggregateInputType
+    _max?: ForecastCurrentPointMaxAggregateInputType
+  }
+
+  export type ForecastCurrentPointGroupByOutputType = {
+    id: string
+    runId: string
+    horizonLabel: string
+    horizonSteps: number
+    forecastDate: Date
+    forecastValue: Decimal | null
+    fitStatus: string | null
+    failureReason: string | null
+    selectedVariant: string | null
+    selectionMetric: string | null
+    selectionScore: number | null
+    metadataJson: JsonValue | null
+    createdAt: Date
+    updatedAt: Date
+    _count: ForecastCurrentPointCountAggregateOutputType | null
+    _avg: ForecastCurrentPointAvgAggregateOutputType | null
+    _sum: ForecastCurrentPointSumAggregateOutputType | null
+    _min: ForecastCurrentPointMinAggregateOutputType | null
+    _max: ForecastCurrentPointMaxAggregateOutputType | null
+  }
+
+  type GetForecastCurrentPointGroupByPayload<T extends ForecastCurrentPointGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ForecastCurrentPointGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ForecastCurrentPointGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ForecastCurrentPointGroupByOutputType[P]>
+            : GetScalarType<T[P], ForecastCurrentPointGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ForecastCurrentPointSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    runId?: boolean
+    horizonLabel?: boolean
+    horizonSteps?: boolean
+    forecastDate?: boolean
+    forecastValue?: boolean
+    fitStatus?: boolean
+    failureReason?: boolean
+    selectedVariant?: boolean
+    selectionMetric?: boolean
+    selectionScore?: boolean
+    metadataJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    run?: boolean | ForecastCurrentRunDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["forecastCurrentPoint"]>
+
+  export type ForecastCurrentPointSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    runId?: boolean
+    horizonLabel?: boolean
+    horizonSteps?: boolean
+    forecastDate?: boolean
+    forecastValue?: boolean
+    fitStatus?: boolean
+    failureReason?: boolean
+    selectedVariant?: boolean
+    selectionMetric?: boolean
+    selectionScore?: boolean
+    metadataJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    run?: boolean | ForecastCurrentRunDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["forecastCurrentPoint"]>
+
+  export type ForecastCurrentPointSelectScalar = {
+    id?: boolean
+    runId?: boolean
+    horizonLabel?: boolean
+    horizonSteps?: boolean
+    forecastDate?: boolean
+    forecastValue?: boolean
+    fitStatus?: boolean
+    failureReason?: boolean
+    selectedVariant?: boolean
+    selectionMetric?: boolean
+    selectionScore?: boolean
+    metadataJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type ForecastCurrentPointInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    run?: boolean | ForecastCurrentRunDefaultArgs<ExtArgs>
+  }
+  export type ForecastCurrentPointIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    run?: boolean | ForecastCurrentRunDefaultArgs<ExtArgs>
+  }
+
+  export type $ForecastCurrentPointPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ForecastCurrentPoint"
+    objects: {
+      run: Prisma.$ForecastCurrentRunPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      runId: string
+      horizonLabel: string
+      horizonSteps: number
+      forecastDate: Date
+      forecastValue: Prisma.Decimal | null
+      fitStatus: string | null
+      failureReason: string | null
+      selectedVariant: string | null
+      selectionMetric: string | null
+      selectionScore: number | null
+      metadataJson: Prisma.JsonValue | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["forecastCurrentPoint"]>
+    composites: {}
+  }
+
+  type ForecastCurrentPointGetPayload<S extends boolean | null | undefined | ForecastCurrentPointDefaultArgs> = $Result.GetResult<Prisma.$ForecastCurrentPointPayload, S>
+
+  type ForecastCurrentPointCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ForecastCurrentPointFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: ForecastCurrentPointCountAggregateInputType | true
+    }
+
+  export interface ForecastCurrentPointDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ForecastCurrentPoint'], meta: { name: 'ForecastCurrentPoint' } }
+    /**
+     * Find zero or one ForecastCurrentPoint that matches the filter.
+     * @param {ForecastCurrentPointFindUniqueArgs} args - Arguments to find a ForecastCurrentPoint
+     * @example
+     * // Get one ForecastCurrentPoint
+     * const forecastCurrentPoint = await prisma.forecastCurrentPoint.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ForecastCurrentPointFindUniqueArgs>(args: SelectSubset<T, ForecastCurrentPointFindUniqueArgs<ExtArgs>>): Prisma__ForecastCurrentPointClient<$Result.GetResult<Prisma.$ForecastCurrentPointPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ForecastCurrentPoint that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ForecastCurrentPointFindUniqueOrThrowArgs} args - Arguments to find a ForecastCurrentPoint
+     * @example
+     * // Get one ForecastCurrentPoint
+     * const forecastCurrentPoint = await prisma.forecastCurrentPoint.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ForecastCurrentPointFindUniqueOrThrowArgs>(args: SelectSubset<T, ForecastCurrentPointFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ForecastCurrentPointClient<$Result.GetResult<Prisma.$ForecastCurrentPointPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ForecastCurrentPoint that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastCurrentPointFindFirstArgs} args - Arguments to find a ForecastCurrentPoint
+     * @example
+     * // Get one ForecastCurrentPoint
+     * const forecastCurrentPoint = await prisma.forecastCurrentPoint.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ForecastCurrentPointFindFirstArgs>(args?: SelectSubset<T, ForecastCurrentPointFindFirstArgs<ExtArgs>>): Prisma__ForecastCurrentPointClient<$Result.GetResult<Prisma.$ForecastCurrentPointPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ForecastCurrentPoint that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastCurrentPointFindFirstOrThrowArgs} args - Arguments to find a ForecastCurrentPoint
+     * @example
+     * // Get one ForecastCurrentPoint
+     * const forecastCurrentPoint = await prisma.forecastCurrentPoint.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ForecastCurrentPointFindFirstOrThrowArgs>(args?: SelectSubset<T, ForecastCurrentPointFindFirstOrThrowArgs<ExtArgs>>): Prisma__ForecastCurrentPointClient<$Result.GetResult<Prisma.$ForecastCurrentPointPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ForecastCurrentPoints that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastCurrentPointFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ForecastCurrentPoints
+     * const forecastCurrentPoints = await prisma.forecastCurrentPoint.findMany()
+     * 
+     * // Get first 10 ForecastCurrentPoints
+     * const forecastCurrentPoints = await prisma.forecastCurrentPoint.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const forecastCurrentPointWithIdOnly = await prisma.forecastCurrentPoint.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ForecastCurrentPointFindManyArgs>(args?: SelectSubset<T, ForecastCurrentPointFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastCurrentPointPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ForecastCurrentPoint.
+     * @param {ForecastCurrentPointCreateArgs} args - Arguments to create a ForecastCurrentPoint.
+     * @example
+     * // Create one ForecastCurrentPoint
+     * const ForecastCurrentPoint = await prisma.forecastCurrentPoint.create({
+     *   data: {
+     *     // ... data to create a ForecastCurrentPoint
+     *   }
+     * })
+     * 
+     */
+    create<T extends ForecastCurrentPointCreateArgs>(args: SelectSubset<T, ForecastCurrentPointCreateArgs<ExtArgs>>): Prisma__ForecastCurrentPointClient<$Result.GetResult<Prisma.$ForecastCurrentPointPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ForecastCurrentPoints.
+     * @param {ForecastCurrentPointCreateManyArgs} args - Arguments to create many ForecastCurrentPoints.
+     * @example
+     * // Create many ForecastCurrentPoints
+     * const forecastCurrentPoint = await prisma.forecastCurrentPoint.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ForecastCurrentPointCreateManyArgs>(args?: SelectSubset<T, ForecastCurrentPointCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ForecastCurrentPoints and returns the data saved in the database.
+     * @param {ForecastCurrentPointCreateManyAndReturnArgs} args - Arguments to create many ForecastCurrentPoints.
+     * @example
+     * // Create many ForecastCurrentPoints
+     * const forecastCurrentPoint = await prisma.forecastCurrentPoint.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ForecastCurrentPoints and only return the `id`
+     * const forecastCurrentPointWithIdOnly = await prisma.forecastCurrentPoint.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ForecastCurrentPointCreateManyAndReturnArgs>(args?: SelectSubset<T, ForecastCurrentPointCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastCurrentPointPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a ForecastCurrentPoint.
+     * @param {ForecastCurrentPointDeleteArgs} args - Arguments to delete one ForecastCurrentPoint.
+     * @example
+     * // Delete one ForecastCurrentPoint
+     * const ForecastCurrentPoint = await prisma.forecastCurrentPoint.delete({
+     *   where: {
+     *     // ... filter to delete one ForecastCurrentPoint
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ForecastCurrentPointDeleteArgs>(args: SelectSubset<T, ForecastCurrentPointDeleteArgs<ExtArgs>>): Prisma__ForecastCurrentPointClient<$Result.GetResult<Prisma.$ForecastCurrentPointPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ForecastCurrentPoint.
+     * @param {ForecastCurrentPointUpdateArgs} args - Arguments to update one ForecastCurrentPoint.
+     * @example
+     * // Update one ForecastCurrentPoint
+     * const forecastCurrentPoint = await prisma.forecastCurrentPoint.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ForecastCurrentPointUpdateArgs>(args: SelectSubset<T, ForecastCurrentPointUpdateArgs<ExtArgs>>): Prisma__ForecastCurrentPointClient<$Result.GetResult<Prisma.$ForecastCurrentPointPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ForecastCurrentPoints.
+     * @param {ForecastCurrentPointDeleteManyArgs} args - Arguments to filter ForecastCurrentPoints to delete.
+     * @example
+     * // Delete a few ForecastCurrentPoints
+     * const { count } = await prisma.forecastCurrentPoint.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ForecastCurrentPointDeleteManyArgs>(args?: SelectSubset<T, ForecastCurrentPointDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ForecastCurrentPoints.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastCurrentPointUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ForecastCurrentPoints
+     * const forecastCurrentPoint = await prisma.forecastCurrentPoint.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ForecastCurrentPointUpdateManyArgs>(args: SelectSubset<T, ForecastCurrentPointUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ForecastCurrentPoint.
+     * @param {ForecastCurrentPointUpsertArgs} args - Arguments to update or create a ForecastCurrentPoint.
+     * @example
+     * // Update or create a ForecastCurrentPoint
+     * const forecastCurrentPoint = await prisma.forecastCurrentPoint.upsert({
+     *   create: {
+     *     // ... data to create a ForecastCurrentPoint
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ForecastCurrentPoint we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ForecastCurrentPointUpsertArgs>(args: SelectSubset<T, ForecastCurrentPointUpsertArgs<ExtArgs>>): Prisma__ForecastCurrentPointClient<$Result.GetResult<Prisma.$ForecastCurrentPointPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ForecastCurrentPoints.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastCurrentPointCountArgs} args - Arguments to filter ForecastCurrentPoints to count.
+     * @example
+     * // Count the number of ForecastCurrentPoints
+     * const count = await prisma.forecastCurrentPoint.count({
+     *   where: {
+     *     // ... the filter for the ForecastCurrentPoints we want to count
+     *   }
+     * })
+    **/
+    count<T extends ForecastCurrentPointCountArgs>(
+      args?: Subset<T, ForecastCurrentPointCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ForecastCurrentPointCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ForecastCurrentPoint.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastCurrentPointAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ForecastCurrentPointAggregateArgs>(args: Subset<T, ForecastCurrentPointAggregateArgs>): Prisma.PrismaPromise<GetForecastCurrentPointAggregateType<T>>
+
+    /**
+     * Group by ForecastCurrentPoint.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastCurrentPointGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ForecastCurrentPointGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ForecastCurrentPointGroupByArgs['orderBy'] }
+        : { orderBy?: ForecastCurrentPointGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ForecastCurrentPointGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetForecastCurrentPointGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ForecastCurrentPoint model
+   */
+  readonly fields: ForecastCurrentPointFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ForecastCurrentPoint.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ForecastCurrentPointClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    run<T extends ForecastCurrentRunDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ForecastCurrentRunDefaultArgs<ExtArgs>>): Prisma__ForecastCurrentRunClient<$Result.GetResult<Prisma.$ForecastCurrentRunPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ForecastCurrentPoint model
+   */ 
+  interface ForecastCurrentPointFieldRefs {
+    readonly id: FieldRef<"ForecastCurrentPoint", 'String'>
+    readonly runId: FieldRef<"ForecastCurrentPoint", 'String'>
+    readonly horizonLabel: FieldRef<"ForecastCurrentPoint", 'String'>
+    readonly horizonSteps: FieldRef<"ForecastCurrentPoint", 'Int'>
+    readonly forecastDate: FieldRef<"ForecastCurrentPoint", 'DateTime'>
+    readonly forecastValue: FieldRef<"ForecastCurrentPoint", 'Decimal'>
+    readonly fitStatus: FieldRef<"ForecastCurrentPoint", 'String'>
+    readonly failureReason: FieldRef<"ForecastCurrentPoint", 'String'>
+    readonly selectedVariant: FieldRef<"ForecastCurrentPoint", 'String'>
+    readonly selectionMetric: FieldRef<"ForecastCurrentPoint", 'String'>
+    readonly selectionScore: FieldRef<"ForecastCurrentPoint", 'Float'>
+    readonly metadataJson: FieldRef<"ForecastCurrentPoint", 'Json'>
+    readonly createdAt: FieldRef<"ForecastCurrentPoint", 'DateTime'>
+    readonly updatedAt: FieldRef<"ForecastCurrentPoint", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ForecastCurrentPoint findUnique
+   */
+  export type ForecastCurrentPointFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentPoint
+     */
+    select?: ForecastCurrentPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentPointInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastCurrentPoint to fetch.
+     */
+    where: ForecastCurrentPointWhereUniqueInput
+  }
+
+  /**
+   * ForecastCurrentPoint findUniqueOrThrow
+   */
+  export type ForecastCurrentPointFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentPoint
+     */
+    select?: ForecastCurrentPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentPointInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastCurrentPoint to fetch.
+     */
+    where: ForecastCurrentPointWhereUniqueInput
+  }
+
+  /**
+   * ForecastCurrentPoint findFirst
+   */
+  export type ForecastCurrentPointFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentPoint
+     */
+    select?: ForecastCurrentPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentPointInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastCurrentPoint to fetch.
+     */
+    where?: ForecastCurrentPointWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastCurrentPoints to fetch.
+     */
+    orderBy?: ForecastCurrentPointOrderByWithRelationInput | ForecastCurrentPointOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ForecastCurrentPoints.
+     */
+    cursor?: ForecastCurrentPointWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastCurrentPoints from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastCurrentPoints.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ForecastCurrentPoints.
+     */
+    distinct?: ForecastCurrentPointScalarFieldEnum | ForecastCurrentPointScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastCurrentPoint findFirstOrThrow
+   */
+  export type ForecastCurrentPointFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentPoint
+     */
+    select?: ForecastCurrentPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentPointInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastCurrentPoint to fetch.
+     */
+    where?: ForecastCurrentPointWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastCurrentPoints to fetch.
+     */
+    orderBy?: ForecastCurrentPointOrderByWithRelationInput | ForecastCurrentPointOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ForecastCurrentPoints.
+     */
+    cursor?: ForecastCurrentPointWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastCurrentPoints from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastCurrentPoints.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ForecastCurrentPoints.
+     */
+    distinct?: ForecastCurrentPointScalarFieldEnum | ForecastCurrentPointScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastCurrentPoint findMany
+   */
+  export type ForecastCurrentPointFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentPoint
+     */
+    select?: ForecastCurrentPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentPointInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastCurrentPoints to fetch.
+     */
+    where?: ForecastCurrentPointWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastCurrentPoints to fetch.
+     */
+    orderBy?: ForecastCurrentPointOrderByWithRelationInput | ForecastCurrentPointOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ForecastCurrentPoints.
+     */
+    cursor?: ForecastCurrentPointWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastCurrentPoints from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastCurrentPoints.
+     */
+    skip?: number
+    distinct?: ForecastCurrentPointScalarFieldEnum | ForecastCurrentPointScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastCurrentPoint create
+   */
+  export type ForecastCurrentPointCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentPoint
+     */
+    select?: ForecastCurrentPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentPointInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ForecastCurrentPoint.
+     */
+    data: XOR<ForecastCurrentPointCreateInput, ForecastCurrentPointUncheckedCreateInput>
+  }
+
+  /**
+   * ForecastCurrentPoint createMany
+   */
+  export type ForecastCurrentPointCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ForecastCurrentPoints.
+     */
+    data: ForecastCurrentPointCreateManyInput | ForecastCurrentPointCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ForecastCurrentPoint createManyAndReturn
+   */
+  export type ForecastCurrentPointCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentPoint
+     */
+    select?: ForecastCurrentPointSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many ForecastCurrentPoints.
+     */
+    data: ForecastCurrentPointCreateManyInput | ForecastCurrentPointCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentPointIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * ForecastCurrentPoint update
+   */
+  export type ForecastCurrentPointUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentPoint
+     */
+    select?: ForecastCurrentPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentPointInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ForecastCurrentPoint.
+     */
+    data: XOR<ForecastCurrentPointUpdateInput, ForecastCurrentPointUncheckedUpdateInput>
+    /**
+     * Choose, which ForecastCurrentPoint to update.
+     */
+    where: ForecastCurrentPointWhereUniqueInput
+  }
+
+  /**
+   * ForecastCurrentPoint updateMany
+   */
+  export type ForecastCurrentPointUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ForecastCurrentPoints.
+     */
+    data: XOR<ForecastCurrentPointUpdateManyMutationInput, ForecastCurrentPointUncheckedUpdateManyInput>
+    /**
+     * Filter which ForecastCurrentPoints to update
+     */
+    where?: ForecastCurrentPointWhereInput
+  }
+
+  /**
+   * ForecastCurrentPoint upsert
+   */
+  export type ForecastCurrentPointUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentPoint
+     */
+    select?: ForecastCurrentPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentPointInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ForecastCurrentPoint to update in case it exists.
+     */
+    where: ForecastCurrentPointWhereUniqueInput
+    /**
+     * In case the ForecastCurrentPoint found by the `where` argument doesn't exist, create a new ForecastCurrentPoint with this data.
+     */
+    create: XOR<ForecastCurrentPointCreateInput, ForecastCurrentPointUncheckedCreateInput>
+    /**
+     * In case the ForecastCurrentPoint was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ForecastCurrentPointUpdateInput, ForecastCurrentPointUncheckedUpdateInput>
+  }
+
+  /**
+   * ForecastCurrentPoint delete
+   */
+  export type ForecastCurrentPointDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentPoint
+     */
+    select?: ForecastCurrentPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentPointInclude<ExtArgs> | null
+    /**
+     * Filter which ForecastCurrentPoint to delete.
+     */
+    where: ForecastCurrentPointWhereUniqueInput
+  }
+
+  /**
+   * ForecastCurrentPoint deleteMany
+   */
+  export type ForecastCurrentPointDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ForecastCurrentPoints to delete
+     */
+    where?: ForecastCurrentPointWhereInput
+  }
+
+  /**
+   * ForecastCurrentPoint without action
+   */
+  export type ForecastCurrentPointDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastCurrentPoint
+     */
+    select?: ForecastCurrentPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastCurrentPointInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ForecastVerificationRun
+   */
+
+  export type AggregateForecastVerificationRun = {
+    _count: ForecastVerificationRunCountAggregateOutputType | null
+    _avg: ForecastVerificationRunAvgAggregateOutputType | null
+    _sum: ForecastVerificationRunSumAggregateOutputType | null
+    _min: ForecastVerificationRunMinAggregateOutputType | null
+    _max: ForecastVerificationRunMaxAggregateOutputType | null
+  }
+
+  export type ForecastVerificationRunAvgAggregateOutputType = {
+    observationCount: number | null
+    runtimeSeconds: number | null
+  }
+
+  export type ForecastVerificationRunSumAggregateOutputType = {
+    observationCount: number | null
+    runtimeSeconds: number | null
+  }
+
+  export type ForecastVerificationRunMinAggregateOutputType = {
+    id: string | null
+    seriesId: string | null
+    displayName: string | null
+    description: string | null
+    frequency: string | null
+    currency: string | null
+    unit: string | null
+    sourceLabel: string | null
+    inputSource: string | null
+    inputRunId: string | null
+    historyFingerprint: string | null
+    targetBasis: $Enums.ForecastTargetBasis | null
+    methodId: string | null
+    historyStartAt: Date | null
+    historyEndAt: Date | null
+    observationCount: number | null
+    forecastOriginAt: Date | null
+    modelId: string | null
+    methodVersion: string | null
+    status: string | null
+    failureReason: string | null
+    runtimeSeconds: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ForecastVerificationRunMaxAggregateOutputType = {
+    id: string | null
+    seriesId: string | null
+    displayName: string | null
+    description: string | null
+    frequency: string | null
+    currency: string | null
+    unit: string | null
+    sourceLabel: string | null
+    inputSource: string | null
+    inputRunId: string | null
+    historyFingerprint: string | null
+    targetBasis: $Enums.ForecastTargetBasis | null
+    methodId: string | null
+    historyStartAt: Date | null
+    historyEndAt: Date | null
+    observationCount: number | null
+    forecastOriginAt: Date | null
+    modelId: string | null
+    methodVersion: string | null
+    status: string | null
+    failureReason: string | null
+    runtimeSeconds: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ForecastVerificationRunCountAggregateOutputType = {
+    id: number
+    seriesId: number
+    displayName: number
+    description: number
+    frequency: number
+    currency: number
+    unit: number
+    sourceLabel: number
+    inputSource: number
+    inputRunId: number
+    historyFingerprint: number
+    targetBasis: number
+    methodId: number
+    historyStartAt: number
+    historyEndAt: number
+    observationCount: number
+    forecastOriginAt: number
+    modelId: number
+    methodVersion: number
+    status: number
+    failureReason: number
+    runtimeSeconds: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type ForecastVerificationRunAvgAggregateInputType = {
+    observationCount?: true
+    runtimeSeconds?: true
+  }
+
+  export type ForecastVerificationRunSumAggregateInputType = {
+    observationCount?: true
+    runtimeSeconds?: true
+  }
+
+  export type ForecastVerificationRunMinAggregateInputType = {
+    id?: true
+    seriesId?: true
+    displayName?: true
+    description?: true
+    frequency?: true
+    currency?: true
+    unit?: true
+    sourceLabel?: true
+    inputSource?: true
+    inputRunId?: true
+    historyFingerprint?: true
+    targetBasis?: true
+    methodId?: true
+    historyStartAt?: true
+    historyEndAt?: true
+    observationCount?: true
+    forecastOriginAt?: true
+    modelId?: true
+    methodVersion?: true
+    status?: true
+    failureReason?: true
+    runtimeSeconds?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ForecastVerificationRunMaxAggregateInputType = {
+    id?: true
+    seriesId?: true
+    displayName?: true
+    description?: true
+    frequency?: true
+    currency?: true
+    unit?: true
+    sourceLabel?: true
+    inputSource?: true
+    inputRunId?: true
+    historyFingerprint?: true
+    targetBasis?: true
+    methodId?: true
+    historyStartAt?: true
+    historyEndAt?: true
+    observationCount?: true
+    forecastOriginAt?: true
+    modelId?: true
+    methodVersion?: true
+    status?: true
+    failureReason?: true
+    runtimeSeconds?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ForecastVerificationRunCountAggregateInputType = {
+    id?: true
+    seriesId?: true
+    displayName?: true
+    description?: true
+    frequency?: true
+    currency?: true
+    unit?: true
+    sourceLabel?: true
+    inputSource?: true
+    inputRunId?: true
+    historyFingerprint?: true
+    targetBasis?: true
+    methodId?: true
+    historyStartAt?: true
+    historyEndAt?: true
+    observationCount?: true
+    forecastOriginAt?: true
+    modelId?: true
+    methodVersion?: true
+    status?: true
+    failureReason?: true
+    runtimeSeconds?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type ForecastVerificationRunAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ForecastVerificationRun to aggregate.
+     */
+    where?: ForecastVerificationRunWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastVerificationRuns to fetch.
+     */
+    orderBy?: ForecastVerificationRunOrderByWithRelationInput | ForecastVerificationRunOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ForecastVerificationRunWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastVerificationRuns from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastVerificationRuns.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ForecastVerificationRuns
+    **/
+    _count?: true | ForecastVerificationRunCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ForecastVerificationRunAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ForecastVerificationRunSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ForecastVerificationRunMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ForecastVerificationRunMaxAggregateInputType
+  }
+
+  export type GetForecastVerificationRunAggregateType<T extends ForecastVerificationRunAggregateArgs> = {
+        [P in keyof T & keyof AggregateForecastVerificationRun]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateForecastVerificationRun[P]>
+      : GetScalarType<T[P], AggregateForecastVerificationRun[P]>
+  }
+
+
+
+
+  export type ForecastVerificationRunGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ForecastVerificationRunWhereInput
+    orderBy?: ForecastVerificationRunOrderByWithAggregationInput | ForecastVerificationRunOrderByWithAggregationInput[]
+    by: ForecastVerificationRunScalarFieldEnum[] | ForecastVerificationRunScalarFieldEnum
+    having?: ForecastVerificationRunScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ForecastVerificationRunCountAggregateInputType | true
+    _avg?: ForecastVerificationRunAvgAggregateInputType
+    _sum?: ForecastVerificationRunSumAggregateInputType
+    _min?: ForecastVerificationRunMinAggregateInputType
+    _max?: ForecastVerificationRunMaxAggregateInputType
+  }
+
+  export type ForecastVerificationRunGroupByOutputType = {
+    id: string
+    seriesId: string
+    displayName: string
+    description: string | null
+    frequency: string | null
+    currency: string | null
+    unit: string | null
+    sourceLabel: string | null
+    inputSource: string
+    inputRunId: string | null
+    historyFingerprint: string
+    targetBasis: $Enums.ForecastTargetBasis
+    methodId: string
+    historyStartAt: Date | null
+    historyEndAt: Date | null
+    observationCount: number
+    forecastOriginAt: Date | null
+    modelId: string
+    methodVersion: string
+    status: string
+    failureReason: string | null
+    runtimeSeconds: number | null
+    createdAt: Date
+    updatedAt: Date
+    _count: ForecastVerificationRunCountAggregateOutputType | null
+    _avg: ForecastVerificationRunAvgAggregateOutputType | null
+    _sum: ForecastVerificationRunSumAggregateOutputType | null
+    _min: ForecastVerificationRunMinAggregateOutputType | null
+    _max: ForecastVerificationRunMaxAggregateOutputType | null
+  }
+
+  type GetForecastVerificationRunGroupByPayload<T extends ForecastVerificationRunGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ForecastVerificationRunGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ForecastVerificationRunGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ForecastVerificationRunGroupByOutputType[P]>
+            : GetScalarType<T[P], ForecastVerificationRunGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ForecastVerificationRunSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    seriesId?: boolean
+    displayName?: boolean
+    description?: boolean
+    frequency?: boolean
+    currency?: boolean
+    unit?: boolean
+    sourceLabel?: boolean
+    inputSource?: boolean
+    inputRunId?: boolean
+    historyFingerprint?: boolean
+    targetBasis?: boolean
+    methodId?: boolean
+    historyStartAt?: boolean
+    historyEndAt?: boolean
+    observationCount?: boolean
+    forecastOriginAt?: boolean
+    modelId?: boolean
+    methodVersion?: boolean
+    status?: boolean
+    failureReason?: boolean
+    runtimeSeconds?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    metrics?: boolean | ForecastVerificationRun$metricsArgs<ExtArgs>
+    points?: boolean | ForecastVerificationRun$pointsArgs<ExtArgs>
+    _count?: boolean | ForecastVerificationRunCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["forecastVerificationRun"]>
+
+  export type ForecastVerificationRunSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    seriesId?: boolean
+    displayName?: boolean
+    description?: boolean
+    frequency?: boolean
+    currency?: boolean
+    unit?: boolean
+    sourceLabel?: boolean
+    inputSource?: boolean
+    inputRunId?: boolean
+    historyFingerprint?: boolean
+    targetBasis?: boolean
+    methodId?: boolean
+    historyStartAt?: boolean
+    historyEndAt?: boolean
+    observationCount?: boolean
+    forecastOriginAt?: boolean
+    modelId?: boolean
+    methodVersion?: boolean
+    status?: boolean
+    failureReason?: boolean
+    runtimeSeconds?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["forecastVerificationRun"]>
+
+  export type ForecastVerificationRunSelectScalar = {
+    id?: boolean
+    seriesId?: boolean
+    displayName?: boolean
+    description?: boolean
+    frequency?: boolean
+    currency?: boolean
+    unit?: boolean
+    sourceLabel?: boolean
+    inputSource?: boolean
+    inputRunId?: boolean
+    historyFingerprint?: boolean
+    targetBasis?: boolean
+    methodId?: boolean
+    historyStartAt?: boolean
+    historyEndAt?: boolean
+    observationCount?: boolean
+    forecastOriginAt?: boolean
+    modelId?: boolean
+    methodVersion?: boolean
+    status?: boolean
+    failureReason?: boolean
+    runtimeSeconds?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type ForecastVerificationRunInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    metrics?: boolean | ForecastVerificationRun$metricsArgs<ExtArgs>
+    points?: boolean | ForecastVerificationRun$pointsArgs<ExtArgs>
+    _count?: boolean | ForecastVerificationRunCountOutputTypeDefaultArgs<ExtArgs>
+  }
+  export type ForecastVerificationRunIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
+
+  export type $ForecastVerificationRunPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ForecastVerificationRun"
+    objects: {
+      metrics: Prisma.$ForecastVerificationMetricPayload<ExtArgs>[]
+      points: Prisma.$ForecastVerificationPointPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      seriesId: string
+      displayName: string
+      description: string | null
+      frequency: string | null
+      currency: string | null
+      unit: string | null
+      sourceLabel: string | null
+      inputSource: string
+      inputRunId: string | null
+      historyFingerprint: string
+      targetBasis: $Enums.ForecastTargetBasis
+      methodId: string
+      historyStartAt: Date | null
+      historyEndAt: Date | null
+      observationCount: number
+      forecastOriginAt: Date | null
+      modelId: string
+      methodVersion: string
+      status: string
+      failureReason: string | null
+      runtimeSeconds: number | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["forecastVerificationRun"]>
+    composites: {}
+  }
+
+  type ForecastVerificationRunGetPayload<S extends boolean | null | undefined | ForecastVerificationRunDefaultArgs> = $Result.GetResult<Prisma.$ForecastVerificationRunPayload, S>
+
+  type ForecastVerificationRunCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ForecastVerificationRunFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: ForecastVerificationRunCountAggregateInputType | true
+    }
+
+  export interface ForecastVerificationRunDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ForecastVerificationRun'], meta: { name: 'ForecastVerificationRun' } }
+    /**
+     * Find zero or one ForecastVerificationRun that matches the filter.
+     * @param {ForecastVerificationRunFindUniqueArgs} args - Arguments to find a ForecastVerificationRun
+     * @example
+     * // Get one ForecastVerificationRun
+     * const forecastVerificationRun = await prisma.forecastVerificationRun.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ForecastVerificationRunFindUniqueArgs>(args: SelectSubset<T, ForecastVerificationRunFindUniqueArgs<ExtArgs>>): Prisma__ForecastVerificationRunClient<$Result.GetResult<Prisma.$ForecastVerificationRunPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ForecastVerificationRun that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ForecastVerificationRunFindUniqueOrThrowArgs} args - Arguments to find a ForecastVerificationRun
+     * @example
+     * // Get one ForecastVerificationRun
+     * const forecastVerificationRun = await prisma.forecastVerificationRun.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ForecastVerificationRunFindUniqueOrThrowArgs>(args: SelectSubset<T, ForecastVerificationRunFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ForecastVerificationRunClient<$Result.GetResult<Prisma.$ForecastVerificationRunPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ForecastVerificationRun that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationRunFindFirstArgs} args - Arguments to find a ForecastVerificationRun
+     * @example
+     * // Get one ForecastVerificationRun
+     * const forecastVerificationRun = await prisma.forecastVerificationRun.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ForecastVerificationRunFindFirstArgs>(args?: SelectSubset<T, ForecastVerificationRunFindFirstArgs<ExtArgs>>): Prisma__ForecastVerificationRunClient<$Result.GetResult<Prisma.$ForecastVerificationRunPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ForecastVerificationRun that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationRunFindFirstOrThrowArgs} args - Arguments to find a ForecastVerificationRun
+     * @example
+     * // Get one ForecastVerificationRun
+     * const forecastVerificationRun = await prisma.forecastVerificationRun.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ForecastVerificationRunFindFirstOrThrowArgs>(args?: SelectSubset<T, ForecastVerificationRunFindFirstOrThrowArgs<ExtArgs>>): Prisma__ForecastVerificationRunClient<$Result.GetResult<Prisma.$ForecastVerificationRunPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ForecastVerificationRuns that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationRunFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ForecastVerificationRuns
+     * const forecastVerificationRuns = await prisma.forecastVerificationRun.findMany()
+     * 
+     * // Get first 10 ForecastVerificationRuns
+     * const forecastVerificationRuns = await prisma.forecastVerificationRun.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const forecastVerificationRunWithIdOnly = await prisma.forecastVerificationRun.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ForecastVerificationRunFindManyArgs>(args?: SelectSubset<T, ForecastVerificationRunFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastVerificationRunPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ForecastVerificationRun.
+     * @param {ForecastVerificationRunCreateArgs} args - Arguments to create a ForecastVerificationRun.
+     * @example
+     * // Create one ForecastVerificationRun
+     * const ForecastVerificationRun = await prisma.forecastVerificationRun.create({
+     *   data: {
+     *     // ... data to create a ForecastVerificationRun
+     *   }
+     * })
+     * 
+     */
+    create<T extends ForecastVerificationRunCreateArgs>(args: SelectSubset<T, ForecastVerificationRunCreateArgs<ExtArgs>>): Prisma__ForecastVerificationRunClient<$Result.GetResult<Prisma.$ForecastVerificationRunPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ForecastVerificationRuns.
+     * @param {ForecastVerificationRunCreateManyArgs} args - Arguments to create many ForecastVerificationRuns.
+     * @example
+     * // Create many ForecastVerificationRuns
+     * const forecastVerificationRun = await prisma.forecastVerificationRun.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ForecastVerificationRunCreateManyArgs>(args?: SelectSubset<T, ForecastVerificationRunCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ForecastVerificationRuns and returns the data saved in the database.
+     * @param {ForecastVerificationRunCreateManyAndReturnArgs} args - Arguments to create many ForecastVerificationRuns.
+     * @example
+     * // Create many ForecastVerificationRuns
+     * const forecastVerificationRun = await prisma.forecastVerificationRun.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ForecastVerificationRuns and only return the `id`
+     * const forecastVerificationRunWithIdOnly = await prisma.forecastVerificationRun.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ForecastVerificationRunCreateManyAndReturnArgs>(args?: SelectSubset<T, ForecastVerificationRunCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastVerificationRunPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a ForecastVerificationRun.
+     * @param {ForecastVerificationRunDeleteArgs} args - Arguments to delete one ForecastVerificationRun.
+     * @example
+     * // Delete one ForecastVerificationRun
+     * const ForecastVerificationRun = await prisma.forecastVerificationRun.delete({
+     *   where: {
+     *     // ... filter to delete one ForecastVerificationRun
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ForecastVerificationRunDeleteArgs>(args: SelectSubset<T, ForecastVerificationRunDeleteArgs<ExtArgs>>): Prisma__ForecastVerificationRunClient<$Result.GetResult<Prisma.$ForecastVerificationRunPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ForecastVerificationRun.
+     * @param {ForecastVerificationRunUpdateArgs} args - Arguments to update one ForecastVerificationRun.
+     * @example
+     * // Update one ForecastVerificationRun
+     * const forecastVerificationRun = await prisma.forecastVerificationRun.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ForecastVerificationRunUpdateArgs>(args: SelectSubset<T, ForecastVerificationRunUpdateArgs<ExtArgs>>): Prisma__ForecastVerificationRunClient<$Result.GetResult<Prisma.$ForecastVerificationRunPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ForecastVerificationRuns.
+     * @param {ForecastVerificationRunDeleteManyArgs} args - Arguments to filter ForecastVerificationRuns to delete.
+     * @example
+     * // Delete a few ForecastVerificationRuns
+     * const { count } = await prisma.forecastVerificationRun.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ForecastVerificationRunDeleteManyArgs>(args?: SelectSubset<T, ForecastVerificationRunDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ForecastVerificationRuns.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationRunUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ForecastVerificationRuns
+     * const forecastVerificationRun = await prisma.forecastVerificationRun.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ForecastVerificationRunUpdateManyArgs>(args: SelectSubset<T, ForecastVerificationRunUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ForecastVerificationRun.
+     * @param {ForecastVerificationRunUpsertArgs} args - Arguments to update or create a ForecastVerificationRun.
+     * @example
+     * // Update or create a ForecastVerificationRun
+     * const forecastVerificationRun = await prisma.forecastVerificationRun.upsert({
+     *   create: {
+     *     // ... data to create a ForecastVerificationRun
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ForecastVerificationRun we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ForecastVerificationRunUpsertArgs>(args: SelectSubset<T, ForecastVerificationRunUpsertArgs<ExtArgs>>): Prisma__ForecastVerificationRunClient<$Result.GetResult<Prisma.$ForecastVerificationRunPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ForecastVerificationRuns.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationRunCountArgs} args - Arguments to filter ForecastVerificationRuns to count.
+     * @example
+     * // Count the number of ForecastVerificationRuns
+     * const count = await prisma.forecastVerificationRun.count({
+     *   where: {
+     *     // ... the filter for the ForecastVerificationRuns we want to count
+     *   }
+     * })
+    **/
+    count<T extends ForecastVerificationRunCountArgs>(
+      args?: Subset<T, ForecastVerificationRunCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ForecastVerificationRunCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ForecastVerificationRun.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationRunAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ForecastVerificationRunAggregateArgs>(args: Subset<T, ForecastVerificationRunAggregateArgs>): Prisma.PrismaPromise<GetForecastVerificationRunAggregateType<T>>
+
+    /**
+     * Group by ForecastVerificationRun.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationRunGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ForecastVerificationRunGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ForecastVerificationRunGroupByArgs['orderBy'] }
+        : { orderBy?: ForecastVerificationRunGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ForecastVerificationRunGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetForecastVerificationRunGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ForecastVerificationRun model
+   */
+  readonly fields: ForecastVerificationRunFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ForecastVerificationRun.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ForecastVerificationRunClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    metrics<T extends ForecastVerificationRun$metricsArgs<ExtArgs> = {}>(args?: Subset<T, ForecastVerificationRun$metricsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastVerificationMetricPayload<ExtArgs>, T, "findMany"> | Null>
+    points<T extends ForecastVerificationRun$pointsArgs<ExtArgs> = {}>(args?: Subset<T, ForecastVerificationRun$pointsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastVerificationPointPayload<ExtArgs>, T, "findMany"> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ForecastVerificationRun model
+   */ 
+  interface ForecastVerificationRunFieldRefs {
+    readonly id: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly seriesId: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly displayName: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly description: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly frequency: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly currency: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly unit: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly sourceLabel: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly inputSource: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly inputRunId: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly historyFingerprint: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly targetBasis: FieldRef<"ForecastVerificationRun", 'ForecastTargetBasis'>
+    readonly methodId: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly historyStartAt: FieldRef<"ForecastVerificationRun", 'DateTime'>
+    readonly historyEndAt: FieldRef<"ForecastVerificationRun", 'DateTime'>
+    readonly observationCount: FieldRef<"ForecastVerificationRun", 'Int'>
+    readonly forecastOriginAt: FieldRef<"ForecastVerificationRun", 'DateTime'>
+    readonly modelId: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly methodVersion: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly status: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly failureReason: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly runtimeSeconds: FieldRef<"ForecastVerificationRun", 'Float'>
+    readonly createdAt: FieldRef<"ForecastVerificationRun", 'DateTime'>
+    readonly updatedAt: FieldRef<"ForecastVerificationRun", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ForecastVerificationRun findUnique
+   */
+  export type ForecastVerificationRunFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationRun
+     */
+    select?: ForecastVerificationRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationRunInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastVerificationRun to fetch.
+     */
+    where: ForecastVerificationRunWhereUniqueInput
+  }
+
+  /**
+   * ForecastVerificationRun findUniqueOrThrow
+   */
+  export type ForecastVerificationRunFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationRun
+     */
+    select?: ForecastVerificationRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationRunInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastVerificationRun to fetch.
+     */
+    where: ForecastVerificationRunWhereUniqueInput
+  }
+
+  /**
+   * ForecastVerificationRun findFirst
+   */
+  export type ForecastVerificationRunFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationRun
+     */
+    select?: ForecastVerificationRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationRunInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastVerificationRun to fetch.
+     */
+    where?: ForecastVerificationRunWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastVerificationRuns to fetch.
+     */
+    orderBy?: ForecastVerificationRunOrderByWithRelationInput | ForecastVerificationRunOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ForecastVerificationRuns.
+     */
+    cursor?: ForecastVerificationRunWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastVerificationRuns from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastVerificationRuns.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ForecastVerificationRuns.
+     */
+    distinct?: ForecastVerificationRunScalarFieldEnum | ForecastVerificationRunScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastVerificationRun findFirstOrThrow
+   */
+  export type ForecastVerificationRunFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationRun
+     */
+    select?: ForecastVerificationRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationRunInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastVerificationRun to fetch.
+     */
+    where?: ForecastVerificationRunWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastVerificationRuns to fetch.
+     */
+    orderBy?: ForecastVerificationRunOrderByWithRelationInput | ForecastVerificationRunOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ForecastVerificationRuns.
+     */
+    cursor?: ForecastVerificationRunWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastVerificationRuns from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastVerificationRuns.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ForecastVerificationRuns.
+     */
+    distinct?: ForecastVerificationRunScalarFieldEnum | ForecastVerificationRunScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastVerificationRun findMany
+   */
+  export type ForecastVerificationRunFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationRun
+     */
+    select?: ForecastVerificationRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationRunInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastVerificationRuns to fetch.
+     */
+    where?: ForecastVerificationRunWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastVerificationRuns to fetch.
+     */
+    orderBy?: ForecastVerificationRunOrderByWithRelationInput | ForecastVerificationRunOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ForecastVerificationRuns.
+     */
+    cursor?: ForecastVerificationRunWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastVerificationRuns from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastVerificationRuns.
+     */
+    skip?: number
+    distinct?: ForecastVerificationRunScalarFieldEnum | ForecastVerificationRunScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastVerificationRun create
+   */
+  export type ForecastVerificationRunCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationRun
+     */
+    select?: ForecastVerificationRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationRunInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ForecastVerificationRun.
+     */
+    data: XOR<ForecastVerificationRunCreateInput, ForecastVerificationRunUncheckedCreateInput>
+  }
+
+  /**
+   * ForecastVerificationRun createMany
+   */
+  export type ForecastVerificationRunCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ForecastVerificationRuns.
+     */
+    data: ForecastVerificationRunCreateManyInput | ForecastVerificationRunCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ForecastVerificationRun createManyAndReturn
+   */
+  export type ForecastVerificationRunCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationRun
+     */
+    select?: ForecastVerificationRunSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many ForecastVerificationRuns.
+     */
+    data: ForecastVerificationRunCreateManyInput | ForecastVerificationRunCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ForecastVerificationRun update
+   */
+  export type ForecastVerificationRunUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationRun
+     */
+    select?: ForecastVerificationRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationRunInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ForecastVerificationRun.
+     */
+    data: XOR<ForecastVerificationRunUpdateInput, ForecastVerificationRunUncheckedUpdateInput>
+    /**
+     * Choose, which ForecastVerificationRun to update.
+     */
+    where: ForecastVerificationRunWhereUniqueInput
+  }
+
+  /**
+   * ForecastVerificationRun updateMany
+   */
+  export type ForecastVerificationRunUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ForecastVerificationRuns.
+     */
+    data: XOR<ForecastVerificationRunUpdateManyMutationInput, ForecastVerificationRunUncheckedUpdateManyInput>
+    /**
+     * Filter which ForecastVerificationRuns to update
+     */
+    where?: ForecastVerificationRunWhereInput
+  }
+
+  /**
+   * ForecastVerificationRun upsert
+   */
+  export type ForecastVerificationRunUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationRun
+     */
+    select?: ForecastVerificationRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationRunInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ForecastVerificationRun to update in case it exists.
+     */
+    where: ForecastVerificationRunWhereUniqueInput
+    /**
+     * In case the ForecastVerificationRun found by the `where` argument doesn't exist, create a new ForecastVerificationRun with this data.
+     */
+    create: XOR<ForecastVerificationRunCreateInput, ForecastVerificationRunUncheckedCreateInput>
+    /**
+     * In case the ForecastVerificationRun was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ForecastVerificationRunUpdateInput, ForecastVerificationRunUncheckedUpdateInput>
+  }
+
+  /**
+   * ForecastVerificationRun delete
+   */
+  export type ForecastVerificationRunDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationRun
+     */
+    select?: ForecastVerificationRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationRunInclude<ExtArgs> | null
+    /**
+     * Filter which ForecastVerificationRun to delete.
+     */
+    where: ForecastVerificationRunWhereUniqueInput
+  }
+
+  /**
+   * ForecastVerificationRun deleteMany
+   */
+  export type ForecastVerificationRunDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ForecastVerificationRuns to delete
+     */
+    where?: ForecastVerificationRunWhereInput
+  }
+
+  /**
+   * ForecastVerificationRun.metrics
+   */
+  export type ForecastVerificationRun$metricsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationMetric
+     */
+    select?: ForecastVerificationMetricSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationMetricInclude<ExtArgs> | null
+    where?: ForecastVerificationMetricWhereInput
+    orderBy?: ForecastVerificationMetricOrderByWithRelationInput | ForecastVerificationMetricOrderByWithRelationInput[]
+    cursor?: ForecastVerificationMetricWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ForecastVerificationMetricScalarFieldEnum | ForecastVerificationMetricScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastVerificationRun.points
+   */
+  export type ForecastVerificationRun$pointsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationPoint
+     */
+    select?: ForecastVerificationPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationPointInclude<ExtArgs> | null
+    where?: ForecastVerificationPointWhereInput
+    orderBy?: ForecastVerificationPointOrderByWithRelationInput | ForecastVerificationPointOrderByWithRelationInput[]
+    cursor?: ForecastVerificationPointWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ForecastVerificationPointScalarFieldEnum | ForecastVerificationPointScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastVerificationRun without action
+   */
+  export type ForecastVerificationRunDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationRun
+     */
+    select?: ForecastVerificationRunSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationRunInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ForecastVerificationMetric
+   */
+
+  export type AggregateForecastVerificationMetric = {
+    _count: ForecastVerificationMetricCountAggregateOutputType | null
+    _avg: ForecastVerificationMetricAvgAggregateOutputType | null
+    _sum: ForecastVerificationMetricSumAggregateOutputType | null
+    _min: ForecastVerificationMetricMinAggregateOutputType | null
+    _max: ForecastVerificationMetricMaxAggregateOutputType | null
+  }
+
+  export type ForecastVerificationMetricAvgAggregateOutputType = {
+    horizonSteps: number | null
+    origins: number | null
+    expectedOrigins: number | null
+    failedOrigins: number | null
+    coverage: number | null
+    mae: number | null
+    rmse: number | null
+    mase: number | null
+    smape: number | null
+    directionalAccuracy: number | null
+    bias: number | null
+  }
+
+  export type ForecastVerificationMetricSumAggregateOutputType = {
+    horizonSteps: number | null
+    origins: number | null
+    expectedOrigins: number | null
+    failedOrigins: number | null
+    coverage: number | null
+    mae: number | null
+    rmse: number | null
+    mase: number | null
+    smape: number | null
+    directionalAccuracy: number | null
+    bias: number | null
+  }
+
+  export type ForecastVerificationMetricMinAggregateOutputType = {
+    id: string | null
+    runId: string | null
+    horizonLabel: string | null
+    horizonSteps: number | null
+    origins: number | null
+    expectedOrigins: number | null
+    failedOrigins: number | null
+    coverage: number | null
+    mae: number | null
+    rmse: number | null
+    mase: number | null
+    smape: number | null
+    directionalAccuracy: number | null
+    bias: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ForecastVerificationMetricMaxAggregateOutputType = {
+    id: string | null
+    runId: string | null
+    horizonLabel: string | null
+    horizonSteps: number | null
+    origins: number | null
+    expectedOrigins: number | null
+    failedOrigins: number | null
+    coverage: number | null
+    mae: number | null
+    rmse: number | null
+    mase: number | null
+    smape: number | null
+    directionalAccuracy: number | null
+    bias: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ForecastVerificationMetricCountAggregateOutputType = {
+    id: number
+    runId: number
+    horizonLabel: number
+    horizonSteps: number
+    origins: number
+    expectedOrigins: number
+    failedOrigins: number
+    coverage: number
+    mae: number
+    rmse: number
+    mase: number
+    smape: number
+    directionalAccuracy: number
+    bias: number
+    failureSummaryJson: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type ForecastVerificationMetricAvgAggregateInputType = {
+    horizonSteps?: true
+    origins?: true
+    expectedOrigins?: true
+    failedOrigins?: true
+    coverage?: true
+    mae?: true
+    rmse?: true
+    mase?: true
+    smape?: true
+    directionalAccuracy?: true
+    bias?: true
+  }
+
+  export type ForecastVerificationMetricSumAggregateInputType = {
+    horizonSteps?: true
+    origins?: true
+    expectedOrigins?: true
+    failedOrigins?: true
+    coverage?: true
+    mae?: true
+    rmse?: true
+    mase?: true
+    smape?: true
+    directionalAccuracy?: true
+    bias?: true
+  }
+
+  export type ForecastVerificationMetricMinAggregateInputType = {
+    id?: true
+    runId?: true
+    horizonLabel?: true
+    horizonSteps?: true
+    origins?: true
+    expectedOrigins?: true
+    failedOrigins?: true
+    coverage?: true
+    mae?: true
+    rmse?: true
+    mase?: true
+    smape?: true
+    directionalAccuracy?: true
+    bias?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ForecastVerificationMetricMaxAggregateInputType = {
+    id?: true
+    runId?: true
+    horizonLabel?: true
+    horizonSteps?: true
+    origins?: true
+    expectedOrigins?: true
+    failedOrigins?: true
+    coverage?: true
+    mae?: true
+    rmse?: true
+    mase?: true
+    smape?: true
+    directionalAccuracy?: true
+    bias?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ForecastVerificationMetricCountAggregateInputType = {
+    id?: true
+    runId?: true
+    horizonLabel?: true
+    horizonSteps?: true
+    origins?: true
+    expectedOrigins?: true
+    failedOrigins?: true
+    coverage?: true
+    mae?: true
+    rmse?: true
+    mase?: true
+    smape?: true
+    directionalAccuracy?: true
+    bias?: true
+    failureSummaryJson?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type ForecastVerificationMetricAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ForecastVerificationMetric to aggregate.
+     */
+    where?: ForecastVerificationMetricWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastVerificationMetrics to fetch.
+     */
+    orderBy?: ForecastVerificationMetricOrderByWithRelationInput | ForecastVerificationMetricOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ForecastVerificationMetricWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastVerificationMetrics from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastVerificationMetrics.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ForecastVerificationMetrics
+    **/
+    _count?: true | ForecastVerificationMetricCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ForecastVerificationMetricAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ForecastVerificationMetricSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ForecastVerificationMetricMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ForecastVerificationMetricMaxAggregateInputType
+  }
+
+  export type GetForecastVerificationMetricAggregateType<T extends ForecastVerificationMetricAggregateArgs> = {
+        [P in keyof T & keyof AggregateForecastVerificationMetric]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateForecastVerificationMetric[P]>
+      : GetScalarType<T[P], AggregateForecastVerificationMetric[P]>
+  }
+
+
+
+
+  export type ForecastVerificationMetricGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ForecastVerificationMetricWhereInput
+    orderBy?: ForecastVerificationMetricOrderByWithAggregationInput | ForecastVerificationMetricOrderByWithAggregationInput[]
+    by: ForecastVerificationMetricScalarFieldEnum[] | ForecastVerificationMetricScalarFieldEnum
+    having?: ForecastVerificationMetricScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ForecastVerificationMetricCountAggregateInputType | true
+    _avg?: ForecastVerificationMetricAvgAggregateInputType
+    _sum?: ForecastVerificationMetricSumAggregateInputType
+    _min?: ForecastVerificationMetricMinAggregateInputType
+    _max?: ForecastVerificationMetricMaxAggregateInputType
+  }
+
+  export type ForecastVerificationMetricGroupByOutputType = {
+    id: string
+    runId: string
+    horizonLabel: string
+    horizonSteps: number
+    origins: number
+    expectedOrigins: number
+    failedOrigins: number
+    coverage: number
+    mae: number | null
+    rmse: number | null
+    mase: number | null
+    smape: number | null
+    directionalAccuracy: number | null
+    bias: number | null
+    failureSummaryJson: JsonValue | null
+    createdAt: Date
+    updatedAt: Date
+    _count: ForecastVerificationMetricCountAggregateOutputType | null
+    _avg: ForecastVerificationMetricAvgAggregateOutputType | null
+    _sum: ForecastVerificationMetricSumAggregateOutputType | null
+    _min: ForecastVerificationMetricMinAggregateOutputType | null
+    _max: ForecastVerificationMetricMaxAggregateOutputType | null
+  }
+
+  type GetForecastVerificationMetricGroupByPayload<T extends ForecastVerificationMetricGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ForecastVerificationMetricGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ForecastVerificationMetricGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ForecastVerificationMetricGroupByOutputType[P]>
+            : GetScalarType<T[P], ForecastVerificationMetricGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ForecastVerificationMetricSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    runId?: boolean
+    horizonLabel?: boolean
+    horizonSteps?: boolean
+    origins?: boolean
+    expectedOrigins?: boolean
+    failedOrigins?: boolean
+    coverage?: boolean
+    mae?: boolean
+    rmse?: boolean
+    mase?: boolean
+    smape?: boolean
+    directionalAccuracy?: boolean
+    bias?: boolean
+    failureSummaryJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    run?: boolean | ForecastVerificationRunDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["forecastVerificationMetric"]>
+
+  export type ForecastVerificationMetricSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    runId?: boolean
+    horizonLabel?: boolean
+    horizonSteps?: boolean
+    origins?: boolean
+    expectedOrigins?: boolean
+    failedOrigins?: boolean
+    coverage?: boolean
+    mae?: boolean
+    rmse?: boolean
+    mase?: boolean
+    smape?: boolean
+    directionalAccuracy?: boolean
+    bias?: boolean
+    failureSummaryJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    run?: boolean | ForecastVerificationRunDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["forecastVerificationMetric"]>
+
+  export type ForecastVerificationMetricSelectScalar = {
+    id?: boolean
+    runId?: boolean
+    horizonLabel?: boolean
+    horizonSteps?: boolean
+    origins?: boolean
+    expectedOrigins?: boolean
+    failedOrigins?: boolean
+    coverage?: boolean
+    mae?: boolean
+    rmse?: boolean
+    mase?: boolean
+    smape?: boolean
+    directionalAccuracy?: boolean
+    bias?: boolean
+    failureSummaryJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type ForecastVerificationMetricInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    run?: boolean | ForecastVerificationRunDefaultArgs<ExtArgs>
+  }
+  export type ForecastVerificationMetricIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    run?: boolean | ForecastVerificationRunDefaultArgs<ExtArgs>
+  }
+
+  export type $ForecastVerificationMetricPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ForecastVerificationMetric"
+    objects: {
+      run: Prisma.$ForecastVerificationRunPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      runId: string
+      horizonLabel: string
+      horizonSteps: number
+      origins: number
+      expectedOrigins: number
+      failedOrigins: number
+      coverage: number
+      mae: number | null
+      rmse: number | null
+      mase: number | null
+      smape: number | null
+      directionalAccuracy: number | null
+      bias: number | null
+      failureSummaryJson: Prisma.JsonValue | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["forecastVerificationMetric"]>
+    composites: {}
+  }
+
+  type ForecastVerificationMetricGetPayload<S extends boolean | null | undefined | ForecastVerificationMetricDefaultArgs> = $Result.GetResult<Prisma.$ForecastVerificationMetricPayload, S>
+
+  type ForecastVerificationMetricCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ForecastVerificationMetricFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: ForecastVerificationMetricCountAggregateInputType | true
+    }
+
+  export interface ForecastVerificationMetricDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ForecastVerificationMetric'], meta: { name: 'ForecastVerificationMetric' } }
+    /**
+     * Find zero or one ForecastVerificationMetric that matches the filter.
+     * @param {ForecastVerificationMetricFindUniqueArgs} args - Arguments to find a ForecastVerificationMetric
+     * @example
+     * // Get one ForecastVerificationMetric
+     * const forecastVerificationMetric = await prisma.forecastVerificationMetric.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ForecastVerificationMetricFindUniqueArgs>(args: SelectSubset<T, ForecastVerificationMetricFindUniqueArgs<ExtArgs>>): Prisma__ForecastVerificationMetricClient<$Result.GetResult<Prisma.$ForecastVerificationMetricPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ForecastVerificationMetric that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ForecastVerificationMetricFindUniqueOrThrowArgs} args - Arguments to find a ForecastVerificationMetric
+     * @example
+     * // Get one ForecastVerificationMetric
+     * const forecastVerificationMetric = await prisma.forecastVerificationMetric.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ForecastVerificationMetricFindUniqueOrThrowArgs>(args: SelectSubset<T, ForecastVerificationMetricFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ForecastVerificationMetricClient<$Result.GetResult<Prisma.$ForecastVerificationMetricPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ForecastVerificationMetric that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationMetricFindFirstArgs} args - Arguments to find a ForecastVerificationMetric
+     * @example
+     * // Get one ForecastVerificationMetric
+     * const forecastVerificationMetric = await prisma.forecastVerificationMetric.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ForecastVerificationMetricFindFirstArgs>(args?: SelectSubset<T, ForecastVerificationMetricFindFirstArgs<ExtArgs>>): Prisma__ForecastVerificationMetricClient<$Result.GetResult<Prisma.$ForecastVerificationMetricPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ForecastVerificationMetric that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationMetricFindFirstOrThrowArgs} args - Arguments to find a ForecastVerificationMetric
+     * @example
+     * // Get one ForecastVerificationMetric
+     * const forecastVerificationMetric = await prisma.forecastVerificationMetric.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ForecastVerificationMetricFindFirstOrThrowArgs>(args?: SelectSubset<T, ForecastVerificationMetricFindFirstOrThrowArgs<ExtArgs>>): Prisma__ForecastVerificationMetricClient<$Result.GetResult<Prisma.$ForecastVerificationMetricPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ForecastVerificationMetrics that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationMetricFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ForecastVerificationMetrics
+     * const forecastVerificationMetrics = await prisma.forecastVerificationMetric.findMany()
+     * 
+     * // Get first 10 ForecastVerificationMetrics
+     * const forecastVerificationMetrics = await prisma.forecastVerificationMetric.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const forecastVerificationMetricWithIdOnly = await prisma.forecastVerificationMetric.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ForecastVerificationMetricFindManyArgs>(args?: SelectSubset<T, ForecastVerificationMetricFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastVerificationMetricPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ForecastVerificationMetric.
+     * @param {ForecastVerificationMetricCreateArgs} args - Arguments to create a ForecastVerificationMetric.
+     * @example
+     * // Create one ForecastVerificationMetric
+     * const ForecastVerificationMetric = await prisma.forecastVerificationMetric.create({
+     *   data: {
+     *     // ... data to create a ForecastVerificationMetric
+     *   }
+     * })
+     * 
+     */
+    create<T extends ForecastVerificationMetricCreateArgs>(args: SelectSubset<T, ForecastVerificationMetricCreateArgs<ExtArgs>>): Prisma__ForecastVerificationMetricClient<$Result.GetResult<Prisma.$ForecastVerificationMetricPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ForecastVerificationMetrics.
+     * @param {ForecastVerificationMetricCreateManyArgs} args - Arguments to create many ForecastVerificationMetrics.
+     * @example
+     * // Create many ForecastVerificationMetrics
+     * const forecastVerificationMetric = await prisma.forecastVerificationMetric.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ForecastVerificationMetricCreateManyArgs>(args?: SelectSubset<T, ForecastVerificationMetricCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ForecastVerificationMetrics and returns the data saved in the database.
+     * @param {ForecastVerificationMetricCreateManyAndReturnArgs} args - Arguments to create many ForecastVerificationMetrics.
+     * @example
+     * // Create many ForecastVerificationMetrics
+     * const forecastVerificationMetric = await prisma.forecastVerificationMetric.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ForecastVerificationMetrics and only return the `id`
+     * const forecastVerificationMetricWithIdOnly = await prisma.forecastVerificationMetric.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ForecastVerificationMetricCreateManyAndReturnArgs>(args?: SelectSubset<T, ForecastVerificationMetricCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastVerificationMetricPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a ForecastVerificationMetric.
+     * @param {ForecastVerificationMetricDeleteArgs} args - Arguments to delete one ForecastVerificationMetric.
+     * @example
+     * // Delete one ForecastVerificationMetric
+     * const ForecastVerificationMetric = await prisma.forecastVerificationMetric.delete({
+     *   where: {
+     *     // ... filter to delete one ForecastVerificationMetric
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ForecastVerificationMetricDeleteArgs>(args: SelectSubset<T, ForecastVerificationMetricDeleteArgs<ExtArgs>>): Prisma__ForecastVerificationMetricClient<$Result.GetResult<Prisma.$ForecastVerificationMetricPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ForecastVerificationMetric.
+     * @param {ForecastVerificationMetricUpdateArgs} args - Arguments to update one ForecastVerificationMetric.
+     * @example
+     * // Update one ForecastVerificationMetric
+     * const forecastVerificationMetric = await prisma.forecastVerificationMetric.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ForecastVerificationMetricUpdateArgs>(args: SelectSubset<T, ForecastVerificationMetricUpdateArgs<ExtArgs>>): Prisma__ForecastVerificationMetricClient<$Result.GetResult<Prisma.$ForecastVerificationMetricPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ForecastVerificationMetrics.
+     * @param {ForecastVerificationMetricDeleteManyArgs} args - Arguments to filter ForecastVerificationMetrics to delete.
+     * @example
+     * // Delete a few ForecastVerificationMetrics
+     * const { count } = await prisma.forecastVerificationMetric.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ForecastVerificationMetricDeleteManyArgs>(args?: SelectSubset<T, ForecastVerificationMetricDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ForecastVerificationMetrics.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationMetricUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ForecastVerificationMetrics
+     * const forecastVerificationMetric = await prisma.forecastVerificationMetric.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ForecastVerificationMetricUpdateManyArgs>(args: SelectSubset<T, ForecastVerificationMetricUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ForecastVerificationMetric.
+     * @param {ForecastVerificationMetricUpsertArgs} args - Arguments to update or create a ForecastVerificationMetric.
+     * @example
+     * // Update or create a ForecastVerificationMetric
+     * const forecastVerificationMetric = await prisma.forecastVerificationMetric.upsert({
+     *   create: {
+     *     // ... data to create a ForecastVerificationMetric
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ForecastVerificationMetric we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ForecastVerificationMetricUpsertArgs>(args: SelectSubset<T, ForecastVerificationMetricUpsertArgs<ExtArgs>>): Prisma__ForecastVerificationMetricClient<$Result.GetResult<Prisma.$ForecastVerificationMetricPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ForecastVerificationMetrics.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationMetricCountArgs} args - Arguments to filter ForecastVerificationMetrics to count.
+     * @example
+     * // Count the number of ForecastVerificationMetrics
+     * const count = await prisma.forecastVerificationMetric.count({
+     *   where: {
+     *     // ... the filter for the ForecastVerificationMetrics we want to count
+     *   }
+     * })
+    **/
+    count<T extends ForecastVerificationMetricCountArgs>(
+      args?: Subset<T, ForecastVerificationMetricCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ForecastVerificationMetricCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ForecastVerificationMetric.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationMetricAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ForecastVerificationMetricAggregateArgs>(args: Subset<T, ForecastVerificationMetricAggregateArgs>): Prisma.PrismaPromise<GetForecastVerificationMetricAggregateType<T>>
+
+    /**
+     * Group by ForecastVerificationMetric.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationMetricGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ForecastVerificationMetricGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ForecastVerificationMetricGroupByArgs['orderBy'] }
+        : { orderBy?: ForecastVerificationMetricGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ForecastVerificationMetricGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetForecastVerificationMetricGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ForecastVerificationMetric model
+   */
+  readonly fields: ForecastVerificationMetricFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ForecastVerificationMetric.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ForecastVerificationMetricClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    run<T extends ForecastVerificationRunDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ForecastVerificationRunDefaultArgs<ExtArgs>>): Prisma__ForecastVerificationRunClient<$Result.GetResult<Prisma.$ForecastVerificationRunPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ForecastVerificationMetric model
+   */ 
+  interface ForecastVerificationMetricFieldRefs {
+    readonly id: FieldRef<"ForecastVerificationMetric", 'String'>
+    readonly runId: FieldRef<"ForecastVerificationMetric", 'String'>
+    readonly horizonLabel: FieldRef<"ForecastVerificationMetric", 'String'>
+    readonly horizonSteps: FieldRef<"ForecastVerificationMetric", 'Int'>
+    readonly origins: FieldRef<"ForecastVerificationMetric", 'Int'>
+    readonly expectedOrigins: FieldRef<"ForecastVerificationMetric", 'Int'>
+    readonly failedOrigins: FieldRef<"ForecastVerificationMetric", 'Int'>
+    readonly coverage: FieldRef<"ForecastVerificationMetric", 'Float'>
+    readonly mae: FieldRef<"ForecastVerificationMetric", 'Float'>
+    readonly rmse: FieldRef<"ForecastVerificationMetric", 'Float'>
+    readonly mase: FieldRef<"ForecastVerificationMetric", 'Float'>
+    readonly smape: FieldRef<"ForecastVerificationMetric", 'Float'>
+    readonly directionalAccuracy: FieldRef<"ForecastVerificationMetric", 'Float'>
+    readonly bias: FieldRef<"ForecastVerificationMetric", 'Float'>
+    readonly failureSummaryJson: FieldRef<"ForecastVerificationMetric", 'Json'>
+    readonly createdAt: FieldRef<"ForecastVerificationMetric", 'DateTime'>
+    readonly updatedAt: FieldRef<"ForecastVerificationMetric", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ForecastVerificationMetric findUnique
+   */
+  export type ForecastVerificationMetricFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationMetric
+     */
+    select?: ForecastVerificationMetricSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationMetricInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastVerificationMetric to fetch.
+     */
+    where: ForecastVerificationMetricWhereUniqueInput
+  }
+
+  /**
+   * ForecastVerificationMetric findUniqueOrThrow
+   */
+  export type ForecastVerificationMetricFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationMetric
+     */
+    select?: ForecastVerificationMetricSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationMetricInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastVerificationMetric to fetch.
+     */
+    where: ForecastVerificationMetricWhereUniqueInput
+  }
+
+  /**
+   * ForecastVerificationMetric findFirst
+   */
+  export type ForecastVerificationMetricFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationMetric
+     */
+    select?: ForecastVerificationMetricSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationMetricInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastVerificationMetric to fetch.
+     */
+    where?: ForecastVerificationMetricWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastVerificationMetrics to fetch.
+     */
+    orderBy?: ForecastVerificationMetricOrderByWithRelationInput | ForecastVerificationMetricOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ForecastVerificationMetrics.
+     */
+    cursor?: ForecastVerificationMetricWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastVerificationMetrics from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastVerificationMetrics.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ForecastVerificationMetrics.
+     */
+    distinct?: ForecastVerificationMetricScalarFieldEnum | ForecastVerificationMetricScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastVerificationMetric findFirstOrThrow
+   */
+  export type ForecastVerificationMetricFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationMetric
+     */
+    select?: ForecastVerificationMetricSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationMetricInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastVerificationMetric to fetch.
+     */
+    where?: ForecastVerificationMetricWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastVerificationMetrics to fetch.
+     */
+    orderBy?: ForecastVerificationMetricOrderByWithRelationInput | ForecastVerificationMetricOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ForecastVerificationMetrics.
+     */
+    cursor?: ForecastVerificationMetricWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastVerificationMetrics from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastVerificationMetrics.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ForecastVerificationMetrics.
+     */
+    distinct?: ForecastVerificationMetricScalarFieldEnum | ForecastVerificationMetricScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastVerificationMetric findMany
+   */
+  export type ForecastVerificationMetricFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationMetric
+     */
+    select?: ForecastVerificationMetricSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationMetricInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastVerificationMetrics to fetch.
+     */
+    where?: ForecastVerificationMetricWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastVerificationMetrics to fetch.
+     */
+    orderBy?: ForecastVerificationMetricOrderByWithRelationInput | ForecastVerificationMetricOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ForecastVerificationMetrics.
+     */
+    cursor?: ForecastVerificationMetricWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastVerificationMetrics from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastVerificationMetrics.
+     */
+    skip?: number
+    distinct?: ForecastVerificationMetricScalarFieldEnum | ForecastVerificationMetricScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastVerificationMetric create
+   */
+  export type ForecastVerificationMetricCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationMetric
+     */
+    select?: ForecastVerificationMetricSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationMetricInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ForecastVerificationMetric.
+     */
+    data: XOR<ForecastVerificationMetricCreateInput, ForecastVerificationMetricUncheckedCreateInput>
+  }
+
+  /**
+   * ForecastVerificationMetric createMany
+   */
+  export type ForecastVerificationMetricCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ForecastVerificationMetrics.
+     */
+    data: ForecastVerificationMetricCreateManyInput | ForecastVerificationMetricCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ForecastVerificationMetric createManyAndReturn
+   */
+  export type ForecastVerificationMetricCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationMetric
+     */
+    select?: ForecastVerificationMetricSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many ForecastVerificationMetrics.
+     */
+    data: ForecastVerificationMetricCreateManyInput | ForecastVerificationMetricCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationMetricIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * ForecastVerificationMetric update
+   */
+  export type ForecastVerificationMetricUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationMetric
+     */
+    select?: ForecastVerificationMetricSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationMetricInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ForecastVerificationMetric.
+     */
+    data: XOR<ForecastVerificationMetricUpdateInput, ForecastVerificationMetricUncheckedUpdateInput>
+    /**
+     * Choose, which ForecastVerificationMetric to update.
+     */
+    where: ForecastVerificationMetricWhereUniqueInput
+  }
+
+  /**
+   * ForecastVerificationMetric updateMany
+   */
+  export type ForecastVerificationMetricUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ForecastVerificationMetrics.
+     */
+    data: XOR<ForecastVerificationMetricUpdateManyMutationInput, ForecastVerificationMetricUncheckedUpdateManyInput>
+    /**
+     * Filter which ForecastVerificationMetrics to update
+     */
+    where?: ForecastVerificationMetricWhereInput
+  }
+
+  /**
+   * ForecastVerificationMetric upsert
+   */
+  export type ForecastVerificationMetricUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationMetric
+     */
+    select?: ForecastVerificationMetricSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationMetricInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ForecastVerificationMetric to update in case it exists.
+     */
+    where: ForecastVerificationMetricWhereUniqueInput
+    /**
+     * In case the ForecastVerificationMetric found by the `where` argument doesn't exist, create a new ForecastVerificationMetric with this data.
+     */
+    create: XOR<ForecastVerificationMetricCreateInput, ForecastVerificationMetricUncheckedCreateInput>
+    /**
+     * In case the ForecastVerificationMetric was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ForecastVerificationMetricUpdateInput, ForecastVerificationMetricUncheckedUpdateInput>
+  }
+
+  /**
+   * ForecastVerificationMetric delete
+   */
+  export type ForecastVerificationMetricDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationMetric
+     */
+    select?: ForecastVerificationMetricSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationMetricInclude<ExtArgs> | null
+    /**
+     * Filter which ForecastVerificationMetric to delete.
+     */
+    where: ForecastVerificationMetricWhereUniqueInput
+  }
+
+  /**
+   * ForecastVerificationMetric deleteMany
+   */
+  export type ForecastVerificationMetricDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ForecastVerificationMetrics to delete
+     */
+    where?: ForecastVerificationMetricWhereInput
+  }
+
+  /**
+   * ForecastVerificationMetric without action
+   */
+  export type ForecastVerificationMetricDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationMetric
+     */
+    select?: ForecastVerificationMetricSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationMetricInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ForecastVerificationPoint
+   */
+
+  export type AggregateForecastVerificationPoint = {
+    _count: ForecastVerificationPointCountAggregateOutputType | null
+    _avg: ForecastVerificationPointAvgAggregateOutputType | null
+    _sum: ForecastVerificationPointSumAggregateOutputType | null
+    _min: ForecastVerificationPointMinAggregateOutputType | null
+    _max: ForecastVerificationPointMaxAggregateOutputType | null
+  }
+
+  export type ForecastVerificationPointAvgAggregateOutputType = {
+    horizonSteps: number | null
+    originValue: Decimal | null
+    forecastValue: Decimal | null
+    actualValue: Decimal | null
+    errorValue: Decimal | null
+    absoluteErrorValue: Decimal | null
+    deltaValue: Decimal | null
+    deltaPct: number | null
+    maseScale: number | null
+    selectionScore: number | null
+  }
+
+  export type ForecastVerificationPointSumAggregateOutputType = {
+    horizonSteps: number | null
+    originValue: Decimal | null
+    forecastValue: Decimal | null
+    actualValue: Decimal | null
+    errorValue: Decimal | null
+    absoluteErrorValue: Decimal | null
+    deltaValue: Decimal | null
+    deltaPct: number | null
+    maseScale: number | null
+    selectionScore: number | null
+  }
+
+  export type ForecastVerificationPointMinAggregateOutputType = {
+    id: string | null
+    runId: string | null
+    horizonLabel: string | null
+    horizonSteps: number | null
+    forecastOriginAt: Date | null
+    targetDate: Date | null
+    actualObservedAt: Date | null
+    originValue: Decimal | null
+    forecastValue: Decimal | null
+    actualValue: Decimal | null
+    errorValue: Decimal | null
+    absoluteErrorValue: Decimal | null
+    deltaValue: Decimal | null
+    deltaPct: number | null
+    maseScale: number | null
+    selectedVariant: string | null
+    selectionMetric: string | null
+    selectionScore: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ForecastVerificationPointMaxAggregateOutputType = {
+    id: string | null
+    runId: string | null
+    horizonLabel: string | null
+    horizonSteps: number | null
+    forecastOriginAt: Date | null
+    targetDate: Date | null
+    actualObservedAt: Date | null
+    originValue: Decimal | null
+    forecastValue: Decimal | null
+    actualValue: Decimal | null
+    errorValue: Decimal | null
+    absoluteErrorValue: Decimal | null
+    deltaValue: Decimal | null
+    deltaPct: number | null
+    maseScale: number | null
+    selectedVariant: string | null
+    selectionMetric: string | null
+    selectionScore: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ForecastVerificationPointCountAggregateOutputType = {
+    id: number
+    runId: number
+    horizonLabel: number
+    horizonSteps: number
+    forecastOriginAt: number
+    targetDate: number
+    actualObservedAt: number
+    originValue: number
+    forecastValue: number
+    actualValue: number
+    errorValue: number
+    absoluteErrorValue: number
+    deltaValue: number
+    deltaPct: number
+    maseScale: number
+    selectedVariant: number
+    selectionMetric: number
+    selectionScore: number
+    metadataJson: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type ForecastVerificationPointAvgAggregateInputType = {
+    horizonSteps?: true
+    originValue?: true
+    forecastValue?: true
+    actualValue?: true
+    errorValue?: true
+    absoluteErrorValue?: true
+    deltaValue?: true
+    deltaPct?: true
+    maseScale?: true
+    selectionScore?: true
+  }
+
+  export type ForecastVerificationPointSumAggregateInputType = {
+    horizonSteps?: true
+    originValue?: true
+    forecastValue?: true
+    actualValue?: true
+    errorValue?: true
+    absoluteErrorValue?: true
+    deltaValue?: true
+    deltaPct?: true
+    maseScale?: true
+    selectionScore?: true
+  }
+
+  export type ForecastVerificationPointMinAggregateInputType = {
+    id?: true
+    runId?: true
+    horizonLabel?: true
+    horizonSteps?: true
+    forecastOriginAt?: true
+    targetDate?: true
+    actualObservedAt?: true
+    originValue?: true
+    forecastValue?: true
+    actualValue?: true
+    errorValue?: true
+    absoluteErrorValue?: true
+    deltaValue?: true
+    deltaPct?: true
+    maseScale?: true
+    selectedVariant?: true
+    selectionMetric?: true
+    selectionScore?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ForecastVerificationPointMaxAggregateInputType = {
+    id?: true
+    runId?: true
+    horizonLabel?: true
+    horizonSteps?: true
+    forecastOriginAt?: true
+    targetDate?: true
+    actualObservedAt?: true
+    originValue?: true
+    forecastValue?: true
+    actualValue?: true
+    errorValue?: true
+    absoluteErrorValue?: true
+    deltaValue?: true
+    deltaPct?: true
+    maseScale?: true
+    selectedVariant?: true
+    selectionMetric?: true
+    selectionScore?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ForecastVerificationPointCountAggregateInputType = {
+    id?: true
+    runId?: true
+    horizonLabel?: true
+    horizonSteps?: true
+    forecastOriginAt?: true
+    targetDate?: true
+    actualObservedAt?: true
+    originValue?: true
+    forecastValue?: true
+    actualValue?: true
+    errorValue?: true
+    absoluteErrorValue?: true
+    deltaValue?: true
+    deltaPct?: true
+    maseScale?: true
+    selectedVariant?: true
+    selectionMetric?: true
+    selectionScore?: true
+    metadataJson?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type ForecastVerificationPointAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ForecastVerificationPoint to aggregate.
+     */
+    where?: ForecastVerificationPointWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastVerificationPoints to fetch.
+     */
+    orderBy?: ForecastVerificationPointOrderByWithRelationInput | ForecastVerificationPointOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ForecastVerificationPointWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastVerificationPoints from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastVerificationPoints.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ForecastVerificationPoints
+    **/
+    _count?: true | ForecastVerificationPointCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ForecastVerificationPointAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ForecastVerificationPointSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ForecastVerificationPointMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ForecastVerificationPointMaxAggregateInputType
+  }
+
+  export type GetForecastVerificationPointAggregateType<T extends ForecastVerificationPointAggregateArgs> = {
+        [P in keyof T & keyof AggregateForecastVerificationPoint]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateForecastVerificationPoint[P]>
+      : GetScalarType<T[P], AggregateForecastVerificationPoint[P]>
+  }
+
+
+
+
+  export type ForecastVerificationPointGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ForecastVerificationPointWhereInput
+    orderBy?: ForecastVerificationPointOrderByWithAggregationInput | ForecastVerificationPointOrderByWithAggregationInput[]
+    by: ForecastVerificationPointScalarFieldEnum[] | ForecastVerificationPointScalarFieldEnum
+    having?: ForecastVerificationPointScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ForecastVerificationPointCountAggregateInputType | true
+    _avg?: ForecastVerificationPointAvgAggregateInputType
+    _sum?: ForecastVerificationPointSumAggregateInputType
+    _min?: ForecastVerificationPointMinAggregateInputType
+    _max?: ForecastVerificationPointMaxAggregateInputType
+  }
+
+  export type ForecastVerificationPointGroupByOutputType = {
+    id: string
+    runId: string
+    horizonLabel: string
+    horizonSteps: number
+    forecastOriginAt: Date
+    targetDate: Date
+    actualObservedAt: Date | null
+    originValue: Decimal
+    forecastValue: Decimal
+    actualValue: Decimal
+    errorValue: Decimal
+    absoluteErrorValue: Decimal
+    deltaValue: Decimal
+    deltaPct: number | null
+    maseScale: number
+    selectedVariant: string | null
+    selectionMetric: string | null
+    selectionScore: number | null
+    metadataJson: JsonValue | null
+    createdAt: Date
+    updatedAt: Date
+    _count: ForecastVerificationPointCountAggregateOutputType | null
+    _avg: ForecastVerificationPointAvgAggregateOutputType | null
+    _sum: ForecastVerificationPointSumAggregateOutputType | null
+    _min: ForecastVerificationPointMinAggregateOutputType | null
+    _max: ForecastVerificationPointMaxAggregateOutputType | null
+  }
+
+  type GetForecastVerificationPointGroupByPayload<T extends ForecastVerificationPointGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ForecastVerificationPointGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ForecastVerificationPointGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ForecastVerificationPointGroupByOutputType[P]>
+            : GetScalarType<T[P], ForecastVerificationPointGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ForecastVerificationPointSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    runId?: boolean
+    horizonLabel?: boolean
+    horizonSteps?: boolean
+    forecastOriginAt?: boolean
+    targetDate?: boolean
+    actualObservedAt?: boolean
+    originValue?: boolean
+    forecastValue?: boolean
+    actualValue?: boolean
+    errorValue?: boolean
+    absoluteErrorValue?: boolean
+    deltaValue?: boolean
+    deltaPct?: boolean
+    maseScale?: boolean
+    selectedVariant?: boolean
+    selectionMetric?: boolean
+    selectionScore?: boolean
+    metadataJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    run?: boolean | ForecastVerificationRunDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["forecastVerificationPoint"]>
+
+  export type ForecastVerificationPointSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    runId?: boolean
+    horizonLabel?: boolean
+    horizonSteps?: boolean
+    forecastOriginAt?: boolean
+    targetDate?: boolean
+    actualObservedAt?: boolean
+    originValue?: boolean
+    forecastValue?: boolean
+    actualValue?: boolean
+    errorValue?: boolean
+    absoluteErrorValue?: boolean
+    deltaValue?: boolean
+    deltaPct?: boolean
+    maseScale?: boolean
+    selectedVariant?: boolean
+    selectionMetric?: boolean
+    selectionScore?: boolean
+    metadataJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    run?: boolean | ForecastVerificationRunDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["forecastVerificationPoint"]>
+
+  export type ForecastVerificationPointSelectScalar = {
+    id?: boolean
+    runId?: boolean
+    horizonLabel?: boolean
+    horizonSteps?: boolean
+    forecastOriginAt?: boolean
+    targetDate?: boolean
+    actualObservedAt?: boolean
+    originValue?: boolean
+    forecastValue?: boolean
+    actualValue?: boolean
+    errorValue?: boolean
+    absoluteErrorValue?: boolean
+    deltaValue?: boolean
+    deltaPct?: boolean
+    maseScale?: boolean
+    selectedVariant?: boolean
+    selectionMetric?: boolean
+    selectionScore?: boolean
+    metadataJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type ForecastVerificationPointInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    run?: boolean | ForecastVerificationRunDefaultArgs<ExtArgs>
+  }
+  export type ForecastVerificationPointIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    run?: boolean | ForecastVerificationRunDefaultArgs<ExtArgs>
+  }
+
+  export type $ForecastVerificationPointPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ForecastVerificationPoint"
+    objects: {
+      run: Prisma.$ForecastVerificationRunPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      runId: string
+      horizonLabel: string
+      horizonSteps: number
+      forecastOriginAt: Date
+      targetDate: Date
+      actualObservedAt: Date | null
+      originValue: Prisma.Decimal
+      forecastValue: Prisma.Decimal
+      actualValue: Prisma.Decimal
+      errorValue: Prisma.Decimal
+      absoluteErrorValue: Prisma.Decimal
+      deltaValue: Prisma.Decimal
+      deltaPct: number | null
+      maseScale: number
+      selectedVariant: string | null
+      selectionMetric: string | null
+      selectionScore: number | null
+      metadataJson: Prisma.JsonValue | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["forecastVerificationPoint"]>
+    composites: {}
+  }
+
+  type ForecastVerificationPointGetPayload<S extends boolean | null | undefined | ForecastVerificationPointDefaultArgs> = $Result.GetResult<Prisma.$ForecastVerificationPointPayload, S>
+
+  type ForecastVerificationPointCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ForecastVerificationPointFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: ForecastVerificationPointCountAggregateInputType | true
+    }
+
+  export interface ForecastVerificationPointDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ForecastVerificationPoint'], meta: { name: 'ForecastVerificationPoint' } }
+    /**
+     * Find zero or one ForecastVerificationPoint that matches the filter.
+     * @param {ForecastVerificationPointFindUniqueArgs} args - Arguments to find a ForecastVerificationPoint
+     * @example
+     * // Get one ForecastVerificationPoint
+     * const forecastVerificationPoint = await prisma.forecastVerificationPoint.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ForecastVerificationPointFindUniqueArgs>(args: SelectSubset<T, ForecastVerificationPointFindUniqueArgs<ExtArgs>>): Prisma__ForecastVerificationPointClient<$Result.GetResult<Prisma.$ForecastVerificationPointPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ForecastVerificationPoint that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ForecastVerificationPointFindUniqueOrThrowArgs} args - Arguments to find a ForecastVerificationPoint
+     * @example
+     * // Get one ForecastVerificationPoint
+     * const forecastVerificationPoint = await prisma.forecastVerificationPoint.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ForecastVerificationPointFindUniqueOrThrowArgs>(args: SelectSubset<T, ForecastVerificationPointFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ForecastVerificationPointClient<$Result.GetResult<Prisma.$ForecastVerificationPointPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ForecastVerificationPoint that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationPointFindFirstArgs} args - Arguments to find a ForecastVerificationPoint
+     * @example
+     * // Get one ForecastVerificationPoint
+     * const forecastVerificationPoint = await prisma.forecastVerificationPoint.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ForecastVerificationPointFindFirstArgs>(args?: SelectSubset<T, ForecastVerificationPointFindFirstArgs<ExtArgs>>): Prisma__ForecastVerificationPointClient<$Result.GetResult<Prisma.$ForecastVerificationPointPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ForecastVerificationPoint that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationPointFindFirstOrThrowArgs} args - Arguments to find a ForecastVerificationPoint
+     * @example
+     * // Get one ForecastVerificationPoint
+     * const forecastVerificationPoint = await prisma.forecastVerificationPoint.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ForecastVerificationPointFindFirstOrThrowArgs>(args?: SelectSubset<T, ForecastVerificationPointFindFirstOrThrowArgs<ExtArgs>>): Prisma__ForecastVerificationPointClient<$Result.GetResult<Prisma.$ForecastVerificationPointPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ForecastVerificationPoints that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationPointFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ForecastVerificationPoints
+     * const forecastVerificationPoints = await prisma.forecastVerificationPoint.findMany()
+     * 
+     * // Get first 10 ForecastVerificationPoints
+     * const forecastVerificationPoints = await prisma.forecastVerificationPoint.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const forecastVerificationPointWithIdOnly = await prisma.forecastVerificationPoint.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ForecastVerificationPointFindManyArgs>(args?: SelectSubset<T, ForecastVerificationPointFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastVerificationPointPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ForecastVerificationPoint.
+     * @param {ForecastVerificationPointCreateArgs} args - Arguments to create a ForecastVerificationPoint.
+     * @example
+     * // Create one ForecastVerificationPoint
+     * const ForecastVerificationPoint = await prisma.forecastVerificationPoint.create({
+     *   data: {
+     *     // ... data to create a ForecastVerificationPoint
+     *   }
+     * })
+     * 
+     */
+    create<T extends ForecastVerificationPointCreateArgs>(args: SelectSubset<T, ForecastVerificationPointCreateArgs<ExtArgs>>): Prisma__ForecastVerificationPointClient<$Result.GetResult<Prisma.$ForecastVerificationPointPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ForecastVerificationPoints.
+     * @param {ForecastVerificationPointCreateManyArgs} args - Arguments to create many ForecastVerificationPoints.
+     * @example
+     * // Create many ForecastVerificationPoints
+     * const forecastVerificationPoint = await prisma.forecastVerificationPoint.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ForecastVerificationPointCreateManyArgs>(args?: SelectSubset<T, ForecastVerificationPointCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ForecastVerificationPoints and returns the data saved in the database.
+     * @param {ForecastVerificationPointCreateManyAndReturnArgs} args - Arguments to create many ForecastVerificationPoints.
+     * @example
+     * // Create many ForecastVerificationPoints
+     * const forecastVerificationPoint = await prisma.forecastVerificationPoint.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ForecastVerificationPoints and only return the `id`
+     * const forecastVerificationPointWithIdOnly = await prisma.forecastVerificationPoint.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ForecastVerificationPointCreateManyAndReturnArgs>(args?: SelectSubset<T, ForecastVerificationPointCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastVerificationPointPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a ForecastVerificationPoint.
+     * @param {ForecastVerificationPointDeleteArgs} args - Arguments to delete one ForecastVerificationPoint.
+     * @example
+     * // Delete one ForecastVerificationPoint
+     * const ForecastVerificationPoint = await prisma.forecastVerificationPoint.delete({
+     *   where: {
+     *     // ... filter to delete one ForecastVerificationPoint
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ForecastVerificationPointDeleteArgs>(args: SelectSubset<T, ForecastVerificationPointDeleteArgs<ExtArgs>>): Prisma__ForecastVerificationPointClient<$Result.GetResult<Prisma.$ForecastVerificationPointPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ForecastVerificationPoint.
+     * @param {ForecastVerificationPointUpdateArgs} args - Arguments to update one ForecastVerificationPoint.
+     * @example
+     * // Update one ForecastVerificationPoint
+     * const forecastVerificationPoint = await prisma.forecastVerificationPoint.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ForecastVerificationPointUpdateArgs>(args: SelectSubset<T, ForecastVerificationPointUpdateArgs<ExtArgs>>): Prisma__ForecastVerificationPointClient<$Result.GetResult<Prisma.$ForecastVerificationPointPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ForecastVerificationPoints.
+     * @param {ForecastVerificationPointDeleteManyArgs} args - Arguments to filter ForecastVerificationPoints to delete.
+     * @example
+     * // Delete a few ForecastVerificationPoints
+     * const { count } = await prisma.forecastVerificationPoint.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ForecastVerificationPointDeleteManyArgs>(args?: SelectSubset<T, ForecastVerificationPointDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ForecastVerificationPoints.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationPointUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ForecastVerificationPoints
+     * const forecastVerificationPoint = await prisma.forecastVerificationPoint.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ForecastVerificationPointUpdateManyArgs>(args: SelectSubset<T, ForecastVerificationPointUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ForecastVerificationPoint.
+     * @param {ForecastVerificationPointUpsertArgs} args - Arguments to update or create a ForecastVerificationPoint.
+     * @example
+     * // Update or create a ForecastVerificationPoint
+     * const forecastVerificationPoint = await prisma.forecastVerificationPoint.upsert({
+     *   create: {
+     *     // ... data to create a ForecastVerificationPoint
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ForecastVerificationPoint we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ForecastVerificationPointUpsertArgs>(args: SelectSubset<T, ForecastVerificationPointUpsertArgs<ExtArgs>>): Prisma__ForecastVerificationPointClient<$Result.GetResult<Prisma.$ForecastVerificationPointPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ForecastVerificationPoints.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationPointCountArgs} args - Arguments to filter ForecastVerificationPoints to count.
+     * @example
+     * // Count the number of ForecastVerificationPoints
+     * const count = await prisma.forecastVerificationPoint.count({
+     *   where: {
+     *     // ... the filter for the ForecastVerificationPoints we want to count
+     *   }
+     * })
+    **/
+    count<T extends ForecastVerificationPointCountArgs>(
+      args?: Subset<T, ForecastVerificationPointCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ForecastVerificationPointCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ForecastVerificationPoint.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationPointAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ForecastVerificationPointAggregateArgs>(args: Subset<T, ForecastVerificationPointAggregateArgs>): Prisma.PrismaPromise<GetForecastVerificationPointAggregateType<T>>
+
+    /**
+     * Group by ForecastVerificationPoint.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastVerificationPointGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ForecastVerificationPointGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ForecastVerificationPointGroupByArgs['orderBy'] }
+        : { orderBy?: ForecastVerificationPointGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ForecastVerificationPointGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetForecastVerificationPointGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ForecastVerificationPoint model
+   */
+  readonly fields: ForecastVerificationPointFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ForecastVerificationPoint.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ForecastVerificationPointClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    run<T extends ForecastVerificationRunDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ForecastVerificationRunDefaultArgs<ExtArgs>>): Prisma__ForecastVerificationRunClient<$Result.GetResult<Prisma.$ForecastVerificationRunPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ForecastVerificationPoint model
+   */ 
+  interface ForecastVerificationPointFieldRefs {
+    readonly id: FieldRef<"ForecastVerificationPoint", 'String'>
+    readonly runId: FieldRef<"ForecastVerificationPoint", 'String'>
+    readonly horizonLabel: FieldRef<"ForecastVerificationPoint", 'String'>
+    readonly horizonSteps: FieldRef<"ForecastVerificationPoint", 'Int'>
+    readonly forecastOriginAt: FieldRef<"ForecastVerificationPoint", 'DateTime'>
+    readonly targetDate: FieldRef<"ForecastVerificationPoint", 'DateTime'>
+    readonly actualObservedAt: FieldRef<"ForecastVerificationPoint", 'DateTime'>
+    readonly originValue: FieldRef<"ForecastVerificationPoint", 'Decimal'>
+    readonly forecastValue: FieldRef<"ForecastVerificationPoint", 'Decimal'>
+    readonly actualValue: FieldRef<"ForecastVerificationPoint", 'Decimal'>
+    readonly errorValue: FieldRef<"ForecastVerificationPoint", 'Decimal'>
+    readonly absoluteErrorValue: FieldRef<"ForecastVerificationPoint", 'Decimal'>
+    readonly deltaValue: FieldRef<"ForecastVerificationPoint", 'Decimal'>
+    readonly deltaPct: FieldRef<"ForecastVerificationPoint", 'Float'>
+    readonly maseScale: FieldRef<"ForecastVerificationPoint", 'Float'>
+    readonly selectedVariant: FieldRef<"ForecastVerificationPoint", 'String'>
+    readonly selectionMetric: FieldRef<"ForecastVerificationPoint", 'String'>
+    readonly selectionScore: FieldRef<"ForecastVerificationPoint", 'Float'>
+    readonly metadataJson: FieldRef<"ForecastVerificationPoint", 'Json'>
+    readonly createdAt: FieldRef<"ForecastVerificationPoint", 'DateTime'>
+    readonly updatedAt: FieldRef<"ForecastVerificationPoint", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ForecastVerificationPoint findUnique
+   */
+  export type ForecastVerificationPointFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationPoint
+     */
+    select?: ForecastVerificationPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationPointInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastVerificationPoint to fetch.
+     */
+    where: ForecastVerificationPointWhereUniqueInput
+  }
+
+  /**
+   * ForecastVerificationPoint findUniqueOrThrow
+   */
+  export type ForecastVerificationPointFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationPoint
+     */
+    select?: ForecastVerificationPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationPointInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastVerificationPoint to fetch.
+     */
+    where: ForecastVerificationPointWhereUniqueInput
+  }
+
+  /**
+   * ForecastVerificationPoint findFirst
+   */
+  export type ForecastVerificationPointFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationPoint
+     */
+    select?: ForecastVerificationPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationPointInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastVerificationPoint to fetch.
+     */
+    where?: ForecastVerificationPointWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastVerificationPoints to fetch.
+     */
+    orderBy?: ForecastVerificationPointOrderByWithRelationInput | ForecastVerificationPointOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ForecastVerificationPoints.
+     */
+    cursor?: ForecastVerificationPointWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastVerificationPoints from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastVerificationPoints.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ForecastVerificationPoints.
+     */
+    distinct?: ForecastVerificationPointScalarFieldEnum | ForecastVerificationPointScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastVerificationPoint findFirstOrThrow
+   */
+  export type ForecastVerificationPointFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationPoint
+     */
+    select?: ForecastVerificationPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationPointInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastVerificationPoint to fetch.
+     */
+    where?: ForecastVerificationPointWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastVerificationPoints to fetch.
+     */
+    orderBy?: ForecastVerificationPointOrderByWithRelationInput | ForecastVerificationPointOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ForecastVerificationPoints.
+     */
+    cursor?: ForecastVerificationPointWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastVerificationPoints from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastVerificationPoints.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ForecastVerificationPoints.
+     */
+    distinct?: ForecastVerificationPointScalarFieldEnum | ForecastVerificationPointScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastVerificationPoint findMany
+   */
+  export type ForecastVerificationPointFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationPoint
+     */
+    select?: ForecastVerificationPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationPointInclude<ExtArgs> | null
+    /**
+     * Filter, which ForecastVerificationPoints to fetch.
+     */
+    where?: ForecastVerificationPointWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastVerificationPoints to fetch.
+     */
+    orderBy?: ForecastVerificationPointOrderByWithRelationInput | ForecastVerificationPointOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ForecastVerificationPoints.
+     */
+    cursor?: ForecastVerificationPointWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastVerificationPoints from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastVerificationPoints.
+     */
+    skip?: number
+    distinct?: ForecastVerificationPointScalarFieldEnum | ForecastVerificationPointScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastVerificationPoint create
+   */
+  export type ForecastVerificationPointCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationPoint
+     */
+    select?: ForecastVerificationPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationPointInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ForecastVerificationPoint.
+     */
+    data: XOR<ForecastVerificationPointCreateInput, ForecastVerificationPointUncheckedCreateInput>
+  }
+
+  /**
+   * ForecastVerificationPoint createMany
+   */
+  export type ForecastVerificationPointCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ForecastVerificationPoints.
+     */
+    data: ForecastVerificationPointCreateManyInput | ForecastVerificationPointCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ForecastVerificationPoint createManyAndReturn
+   */
+  export type ForecastVerificationPointCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationPoint
+     */
+    select?: ForecastVerificationPointSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many ForecastVerificationPoints.
+     */
+    data: ForecastVerificationPointCreateManyInput | ForecastVerificationPointCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationPointIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * ForecastVerificationPoint update
+   */
+  export type ForecastVerificationPointUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationPoint
+     */
+    select?: ForecastVerificationPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationPointInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ForecastVerificationPoint.
+     */
+    data: XOR<ForecastVerificationPointUpdateInput, ForecastVerificationPointUncheckedUpdateInput>
+    /**
+     * Choose, which ForecastVerificationPoint to update.
+     */
+    where: ForecastVerificationPointWhereUniqueInput
+  }
+
+  /**
+   * ForecastVerificationPoint updateMany
+   */
+  export type ForecastVerificationPointUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ForecastVerificationPoints.
+     */
+    data: XOR<ForecastVerificationPointUpdateManyMutationInput, ForecastVerificationPointUncheckedUpdateManyInput>
+    /**
+     * Filter which ForecastVerificationPoints to update
+     */
+    where?: ForecastVerificationPointWhereInput
+  }
+
+  /**
+   * ForecastVerificationPoint upsert
+   */
+  export type ForecastVerificationPointUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationPoint
+     */
+    select?: ForecastVerificationPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationPointInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ForecastVerificationPoint to update in case it exists.
+     */
+    where: ForecastVerificationPointWhereUniqueInput
+    /**
+     * In case the ForecastVerificationPoint found by the `where` argument doesn't exist, create a new ForecastVerificationPoint with this data.
+     */
+    create: XOR<ForecastVerificationPointCreateInput, ForecastVerificationPointUncheckedCreateInput>
+    /**
+     * In case the ForecastVerificationPoint was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ForecastVerificationPointUpdateInput, ForecastVerificationPointUncheckedUpdateInput>
+  }
+
+  /**
+   * ForecastVerificationPoint delete
+   */
+  export type ForecastVerificationPointDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationPoint
+     */
+    select?: ForecastVerificationPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationPointInclude<ExtArgs> | null
+    /**
+     * Filter which ForecastVerificationPoint to delete.
+     */
+    where: ForecastVerificationPointWhereUniqueInput
+  }
+
+  /**
+   * ForecastVerificationPoint deleteMany
+   */
+  export type ForecastVerificationPointDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ForecastVerificationPoints to delete
+     */
+    where?: ForecastVerificationPointWhereInput
+  }
+
+  /**
+   * ForecastVerificationPoint without action
+   */
+  export type ForecastVerificationPointDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastVerificationPoint
+     */
+    select?: ForecastVerificationPointSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ForecastVerificationPointInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model RollingDailyVerificationRecord
+   */
+
+  export type AggregateRollingDailyVerificationRecord = {
+    _count: RollingDailyVerificationRecordCountAggregateOutputType | null
+    _avg: RollingDailyVerificationRecordAvgAggregateOutputType | null
+    _sum: RollingDailyVerificationRecordSumAggregateOutputType | null
+    _min: RollingDailyVerificationRecordMinAggregateOutputType | null
+    _max: RollingDailyVerificationRecordMaxAggregateOutputType | null
+  }
+
+  export type RollingDailyVerificationRecordAvgAggregateOutputType = {
+    horizonMonths: number | null
+    horizonSteps: number | null
+    originValue: Decimal | null
+    forecastValue: Decimal | null
+    actualValue: Decimal | null
+    errorValue: Decimal | null
+    absoluteErrorValue: Decimal | null
+    deltaValue: Decimal | null
+    deltaPct: number | null
+    residualValue: Decimal | null
+    maseScale: number | null
+    trainingObservationCount: number | null
+    selectionScore: number | null
+  }
+
+  export type RollingDailyVerificationRecordSumAggregateOutputType = {
+    horizonMonths: number | null
+    horizonSteps: number | null
+    originValue: Decimal | null
+    forecastValue: Decimal | null
+    actualValue: Decimal | null
+    errorValue: Decimal | null
+    absoluteErrorValue: Decimal | null
+    deltaValue: Decimal | null
+    deltaPct: number | null
+    residualValue: Decimal | null
+    maseScale: number | null
+    trainingObservationCount: number | null
+    selectionScore: number | null
+  }
+
+  export type RollingDailyVerificationRecordMinAggregateOutputType = {
+    id: string | null
+    seriesId: string | null
+    inputSource: string | null
+    inputRunId: string | null
+    targetBasis: $Enums.ForecastTargetBasis | null
+    methodId: string | null
+    methodVersion: string | null
+    modelId: string | null
+    forecastOriginAt: Date | null
+    horizonLabel: string | null
+    horizonMonths: number | null
+    horizonSteps: number | null
+    targetCalendarDate: Date | null
+    verificationObservedAt: Date | null
+    maturityStatus: $Enums.RollingDailyVerificationMaturityStatus | null
+    originValue: Decimal | null
+    forecastValue: Decimal | null
+    actualValue: Decimal | null
+    errorValue: Decimal | null
+    absoluteErrorValue: Decimal | null
+    deltaValue: Decimal | null
+    deltaPct: number | null
+    residualValue: Decimal | null
+    maseScale: number | null
+    trainingHistoryStartAt: Date | null
+    trainingHistoryEndAt: Date | null
+    trainingObservationCount: number | null
+    sourceHistoryFingerprint: string | null
+    selectedVariant: string | null
+    selectionMetric: string | null
+    selectionScore: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type RollingDailyVerificationRecordMaxAggregateOutputType = {
+    id: string | null
+    seriesId: string | null
+    inputSource: string | null
+    inputRunId: string | null
+    targetBasis: $Enums.ForecastTargetBasis | null
+    methodId: string | null
+    methodVersion: string | null
+    modelId: string | null
+    forecastOriginAt: Date | null
+    horizonLabel: string | null
+    horizonMonths: number | null
+    horizonSteps: number | null
+    targetCalendarDate: Date | null
+    verificationObservedAt: Date | null
+    maturityStatus: $Enums.RollingDailyVerificationMaturityStatus | null
+    originValue: Decimal | null
+    forecastValue: Decimal | null
+    actualValue: Decimal | null
+    errorValue: Decimal | null
+    absoluteErrorValue: Decimal | null
+    deltaValue: Decimal | null
+    deltaPct: number | null
+    residualValue: Decimal | null
+    maseScale: number | null
+    trainingHistoryStartAt: Date | null
+    trainingHistoryEndAt: Date | null
+    trainingObservationCount: number | null
+    sourceHistoryFingerprint: string | null
+    selectedVariant: string | null
+    selectionMetric: string | null
+    selectionScore: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type RollingDailyVerificationRecordCountAggregateOutputType = {
+    id: number
+    seriesId: number
+    inputSource: number
+    inputRunId: number
+    targetBasis: number
+    methodId: number
+    methodVersion: number
+    modelId: number
+    forecastOriginAt: number
+    horizonLabel: number
+    horizonMonths: number
+    horizonSteps: number
+    targetCalendarDate: number
+    verificationObservedAt: number
+    maturityStatus: number
+    originValue: number
+    forecastValue: number
+    actualValue: number
+    errorValue: number
+    absoluteErrorValue: number
+    deltaValue: number
+    deltaPct: number
+    residualValue: number
+    maseScale: number
+    trainingHistoryStartAt: number
+    trainingHistoryEndAt: number
+    trainingObservationCount: number
+    sourceHistoryFingerprint: number
+    selectedVariant: number
+    selectionMetric: number
+    selectionScore: number
+    metadataJson: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type RollingDailyVerificationRecordAvgAggregateInputType = {
+    horizonMonths?: true
+    horizonSteps?: true
+    originValue?: true
+    forecastValue?: true
+    actualValue?: true
+    errorValue?: true
+    absoluteErrorValue?: true
+    deltaValue?: true
+    deltaPct?: true
+    residualValue?: true
+    maseScale?: true
+    trainingObservationCount?: true
+    selectionScore?: true
+  }
+
+  export type RollingDailyVerificationRecordSumAggregateInputType = {
+    horizonMonths?: true
+    horizonSteps?: true
+    originValue?: true
+    forecastValue?: true
+    actualValue?: true
+    errorValue?: true
+    absoluteErrorValue?: true
+    deltaValue?: true
+    deltaPct?: true
+    residualValue?: true
+    maseScale?: true
+    trainingObservationCount?: true
+    selectionScore?: true
+  }
+
+  export type RollingDailyVerificationRecordMinAggregateInputType = {
+    id?: true
+    seriesId?: true
+    inputSource?: true
+    inputRunId?: true
+    targetBasis?: true
+    methodId?: true
+    methodVersion?: true
+    modelId?: true
+    forecastOriginAt?: true
+    horizonLabel?: true
+    horizonMonths?: true
+    horizonSteps?: true
+    targetCalendarDate?: true
+    verificationObservedAt?: true
+    maturityStatus?: true
+    originValue?: true
+    forecastValue?: true
+    actualValue?: true
+    errorValue?: true
+    absoluteErrorValue?: true
+    deltaValue?: true
+    deltaPct?: true
+    residualValue?: true
+    maseScale?: true
+    trainingHistoryStartAt?: true
+    trainingHistoryEndAt?: true
+    trainingObservationCount?: true
+    sourceHistoryFingerprint?: true
+    selectedVariant?: true
+    selectionMetric?: true
+    selectionScore?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type RollingDailyVerificationRecordMaxAggregateInputType = {
+    id?: true
+    seriesId?: true
+    inputSource?: true
+    inputRunId?: true
+    targetBasis?: true
+    methodId?: true
+    methodVersion?: true
+    modelId?: true
+    forecastOriginAt?: true
+    horizonLabel?: true
+    horizonMonths?: true
+    horizonSteps?: true
+    targetCalendarDate?: true
+    verificationObservedAt?: true
+    maturityStatus?: true
+    originValue?: true
+    forecastValue?: true
+    actualValue?: true
+    errorValue?: true
+    absoluteErrorValue?: true
+    deltaValue?: true
+    deltaPct?: true
+    residualValue?: true
+    maseScale?: true
+    trainingHistoryStartAt?: true
+    trainingHistoryEndAt?: true
+    trainingObservationCount?: true
+    sourceHistoryFingerprint?: true
+    selectedVariant?: true
+    selectionMetric?: true
+    selectionScore?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type RollingDailyVerificationRecordCountAggregateInputType = {
+    id?: true
+    seriesId?: true
+    inputSource?: true
+    inputRunId?: true
+    targetBasis?: true
+    methodId?: true
+    methodVersion?: true
+    modelId?: true
+    forecastOriginAt?: true
+    horizonLabel?: true
+    horizonMonths?: true
+    horizonSteps?: true
+    targetCalendarDate?: true
+    verificationObservedAt?: true
+    maturityStatus?: true
+    originValue?: true
+    forecastValue?: true
+    actualValue?: true
+    errorValue?: true
+    absoluteErrorValue?: true
+    deltaValue?: true
+    deltaPct?: true
+    residualValue?: true
+    maseScale?: true
+    trainingHistoryStartAt?: true
+    trainingHistoryEndAt?: true
+    trainingObservationCount?: true
+    sourceHistoryFingerprint?: true
+    selectedVariant?: true
+    selectionMetric?: true
+    selectionScore?: true
+    metadataJson?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type RollingDailyVerificationRecordAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RollingDailyVerificationRecord to aggregate.
+     */
+    where?: RollingDailyVerificationRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RollingDailyVerificationRecords to fetch.
+     */
+    orderBy?: RollingDailyVerificationRecordOrderByWithRelationInput | RollingDailyVerificationRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: RollingDailyVerificationRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RollingDailyVerificationRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RollingDailyVerificationRecords.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned RollingDailyVerificationRecords
+    **/
+    _count?: true | RollingDailyVerificationRecordCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: RollingDailyVerificationRecordAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: RollingDailyVerificationRecordSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: RollingDailyVerificationRecordMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: RollingDailyVerificationRecordMaxAggregateInputType
+  }
+
+  export type GetRollingDailyVerificationRecordAggregateType<T extends RollingDailyVerificationRecordAggregateArgs> = {
+        [P in keyof T & keyof AggregateRollingDailyVerificationRecord]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateRollingDailyVerificationRecord[P]>
+      : GetScalarType<T[P], AggregateRollingDailyVerificationRecord[P]>
+  }
+
+
+
+
+  export type RollingDailyVerificationRecordGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RollingDailyVerificationRecordWhereInput
+    orderBy?: RollingDailyVerificationRecordOrderByWithAggregationInput | RollingDailyVerificationRecordOrderByWithAggregationInput[]
+    by: RollingDailyVerificationRecordScalarFieldEnum[] | RollingDailyVerificationRecordScalarFieldEnum
+    having?: RollingDailyVerificationRecordScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: RollingDailyVerificationRecordCountAggregateInputType | true
+    _avg?: RollingDailyVerificationRecordAvgAggregateInputType
+    _sum?: RollingDailyVerificationRecordSumAggregateInputType
+    _min?: RollingDailyVerificationRecordMinAggregateInputType
+    _max?: RollingDailyVerificationRecordMaxAggregateInputType
+  }
+
+  export type RollingDailyVerificationRecordGroupByOutputType = {
+    id: string
+    seriesId: string
+    inputSource: string
+    inputRunId: string | null
+    targetBasis: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+    forecastOriginAt: Date
+    horizonLabel: string
+    horizonMonths: number
+    horizonSteps: number
+    targetCalendarDate: Date
+    verificationObservedAt: Date | null
+    maturityStatus: $Enums.RollingDailyVerificationMaturityStatus
+    originValue: Decimal
+    forecastValue: Decimal
+    actualValue: Decimal | null
+    errorValue: Decimal | null
+    absoluteErrorValue: Decimal | null
+    deltaValue: Decimal | null
+    deltaPct: number | null
+    residualValue: Decimal | null
+    maseScale: number
+    trainingHistoryStartAt: Date | null
+    trainingHistoryEndAt: Date
+    trainingObservationCount: number
+    sourceHistoryFingerprint: string
+    selectedVariant: string | null
+    selectionMetric: string | null
+    selectionScore: number | null
+    metadataJson: JsonValue | null
+    createdAt: Date
+    updatedAt: Date
+    _count: RollingDailyVerificationRecordCountAggregateOutputType | null
+    _avg: RollingDailyVerificationRecordAvgAggregateOutputType | null
+    _sum: RollingDailyVerificationRecordSumAggregateOutputType | null
+    _min: RollingDailyVerificationRecordMinAggregateOutputType | null
+    _max: RollingDailyVerificationRecordMaxAggregateOutputType | null
+  }
+
+  type GetRollingDailyVerificationRecordGroupByPayload<T extends RollingDailyVerificationRecordGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<RollingDailyVerificationRecordGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof RollingDailyVerificationRecordGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], RollingDailyVerificationRecordGroupByOutputType[P]>
+            : GetScalarType<T[P], RollingDailyVerificationRecordGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type RollingDailyVerificationRecordSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    seriesId?: boolean
+    inputSource?: boolean
+    inputRunId?: boolean
+    targetBasis?: boolean
+    methodId?: boolean
+    methodVersion?: boolean
+    modelId?: boolean
+    forecastOriginAt?: boolean
+    horizonLabel?: boolean
+    horizonMonths?: boolean
+    horizonSteps?: boolean
+    targetCalendarDate?: boolean
+    verificationObservedAt?: boolean
+    maturityStatus?: boolean
+    originValue?: boolean
+    forecastValue?: boolean
+    actualValue?: boolean
+    errorValue?: boolean
+    absoluteErrorValue?: boolean
+    deltaValue?: boolean
+    deltaPct?: boolean
+    residualValue?: boolean
+    maseScale?: boolean
+    trainingHistoryStartAt?: boolean
+    trainingHistoryEndAt?: boolean
+    trainingObservationCount?: boolean
+    sourceHistoryFingerprint?: boolean
+    selectedVariant?: boolean
+    selectionMetric?: boolean
+    selectionScore?: boolean
+    metadataJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["rollingDailyVerificationRecord"]>
+
+  export type RollingDailyVerificationRecordSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    seriesId?: boolean
+    inputSource?: boolean
+    inputRunId?: boolean
+    targetBasis?: boolean
+    methodId?: boolean
+    methodVersion?: boolean
+    modelId?: boolean
+    forecastOriginAt?: boolean
+    horizonLabel?: boolean
+    horizonMonths?: boolean
+    horizonSteps?: boolean
+    targetCalendarDate?: boolean
+    verificationObservedAt?: boolean
+    maturityStatus?: boolean
+    originValue?: boolean
+    forecastValue?: boolean
+    actualValue?: boolean
+    errorValue?: boolean
+    absoluteErrorValue?: boolean
+    deltaValue?: boolean
+    deltaPct?: boolean
+    residualValue?: boolean
+    maseScale?: boolean
+    trainingHistoryStartAt?: boolean
+    trainingHistoryEndAt?: boolean
+    trainingObservationCount?: boolean
+    sourceHistoryFingerprint?: boolean
+    selectedVariant?: boolean
+    selectionMetric?: boolean
+    selectionScore?: boolean
+    metadataJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["rollingDailyVerificationRecord"]>
+
+  export type RollingDailyVerificationRecordSelectScalar = {
+    id?: boolean
+    seriesId?: boolean
+    inputSource?: boolean
+    inputRunId?: boolean
+    targetBasis?: boolean
+    methodId?: boolean
+    methodVersion?: boolean
+    modelId?: boolean
+    forecastOriginAt?: boolean
+    horizonLabel?: boolean
+    horizonMonths?: boolean
+    horizonSteps?: boolean
+    targetCalendarDate?: boolean
+    verificationObservedAt?: boolean
+    maturityStatus?: boolean
+    originValue?: boolean
+    forecastValue?: boolean
+    actualValue?: boolean
+    errorValue?: boolean
+    absoluteErrorValue?: boolean
+    deltaValue?: boolean
+    deltaPct?: boolean
+    residualValue?: boolean
+    maseScale?: boolean
+    trainingHistoryStartAt?: boolean
+    trainingHistoryEndAt?: boolean
+    trainingObservationCount?: boolean
+    sourceHistoryFingerprint?: boolean
+    selectedVariant?: boolean
+    selectionMetric?: boolean
+    selectionScore?: boolean
+    metadataJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+
+  export type $RollingDailyVerificationRecordPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "RollingDailyVerificationRecord"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      /**
+       * Forecast-derived verification state owned logically by Forecast Runtime, not by raw Market Data SoT.
+       */
+      id: string
+      seriesId: string
+      inputSource: string
+      inputRunId: string | null
+      targetBasis: $Enums.ForecastTargetBasis
+      methodId: string
+      methodVersion: string
+      modelId: string
+      forecastOriginAt: Date
+      horizonLabel: string
+      horizonMonths: number
+      horizonSteps: number
+      targetCalendarDate: Date
+      verificationObservedAt: Date | null
+      maturityStatus: $Enums.RollingDailyVerificationMaturityStatus
+      originValue: Prisma.Decimal
+      forecastValue: Prisma.Decimal
+      actualValue: Prisma.Decimal | null
+      errorValue: Prisma.Decimal | null
+      absoluteErrorValue: Prisma.Decimal | null
+      deltaValue: Prisma.Decimal | null
+      deltaPct: number | null
+      residualValue: Prisma.Decimal | null
+      maseScale: number
+      trainingHistoryStartAt: Date | null
+      trainingHistoryEndAt: Date
+      trainingObservationCount: number
+      sourceHistoryFingerprint: string
+      selectedVariant: string | null
+      selectionMetric: string | null
+      selectionScore: number | null
+      metadataJson: Prisma.JsonValue | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["rollingDailyVerificationRecord"]>
+    composites: {}
+  }
+
+  type RollingDailyVerificationRecordGetPayload<S extends boolean | null | undefined | RollingDailyVerificationRecordDefaultArgs> = $Result.GetResult<Prisma.$RollingDailyVerificationRecordPayload, S>
+
+  type RollingDailyVerificationRecordCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<RollingDailyVerificationRecordFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: RollingDailyVerificationRecordCountAggregateInputType | true
+    }
+
+  export interface RollingDailyVerificationRecordDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['RollingDailyVerificationRecord'], meta: { name: 'RollingDailyVerificationRecord' } }
+    /**
+     * Find zero or one RollingDailyVerificationRecord that matches the filter.
+     * @param {RollingDailyVerificationRecordFindUniqueArgs} args - Arguments to find a RollingDailyVerificationRecord
+     * @example
+     * // Get one RollingDailyVerificationRecord
+     * const rollingDailyVerificationRecord = await prisma.rollingDailyVerificationRecord.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends RollingDailyVerificationRecordFindUniqueArgs>(args: SelectSubset<T, RollingDailyVerificationRecordFindUniqueArgs<ExtArgs>>): Prisma__RollingDailyVerificationRecordClient<$Result.GetResult<Prisma.$RollingDailyVerificationRecordPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one RollingDailyVerificationRecord that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {RollingDailyVerificationRecordFindUniqueOrThrowArgs} args - Arguments to find a RollingDailyVerificationRecord
+     * @example
+     * // Get one RollingDailyVerificationRecord
+     * const rollingDailyVerificationRecord = await prisma.rollingDailyVerificationRecord.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends RollingDailyVerificationRecordFindUniqueOrThrowArgs>(args: SelectSubset<T, RollingDailyVerificationRecordFindUniqueOrThrowArgs<ExtArgs>>): Prisma__RollingDailyVerificationRecordClient<$Result.GetResult<Prisma.$RollingDailyVerificationRecordPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first RollingDailyVerificationRecord that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyVerificationRecordFindFirstArgs} args - Arguments to find a RollingDailyVerificationRecord
+     * @example
+     * // Get one RollingDailyVerificationRecord
+     * const rollingDailyVerificationRecord = await prisma.rollingDailyVerificationRecord.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends RollingDailyVerificationRecordFindFirstArgs>(args?: SelectSubset<T, RollingDailyVerificationRecordFindFirstArgs<ExtArgs>>): Prisma__RollingDailyVerificationRecordClient<$Result.GetResult<Prisma.$RollingDailyVerificationRecordPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first RollingDailyVerificationRecord that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyVerificationRecordFindFirstOrThrowArgs} args - Arguments to find a RollingDailyVerificationRecord
+     * @example
+     * // Get one RollingDailyVerificationRecord
+     * const rollingDailyVerificationRecord = await prisma.rollingDailyVerificationRecord.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends RollingDailyVerificationRecordFindFirstOrThrowArgs>(args?: SelectSubset<T, RollingDailyVerificationRecordFindFirstOrThrowArgs<ExtArgs>>): Prisma__RollingDailyVerificationRecordClient<$Result.GetResult<Prisma.$RollingDailyVerificationRecordPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more RollingDailyVerificationRecords that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyVerificationRecordFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all RollingDailyVerificationRecords
+     * const rollingDailyVerificationRecords = await prisma.rollingDailyVerificationRecord.findMany()
+     * 
+     * // Get first 10 RollingDailyVerificationRecords
+     * const rollingDailyVerificationRecords = await prisma.rollingDailyVerificationRecord.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const rollingDailyVerificationRecordWithIdOnly = await prisma.rollingDailyVerificationRecord.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends RollingDailyVerificationRecordFindManyArgs>(args?: SelectSubset<T, RollingDailyVerificationRecordFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RollingDailyVerificationRecordPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a RollingDailyVerificationRecord.
+     * @param {RollingDailyVerificationRecordCreateArgs} args - Arguments to create a RollingDailyVerificationRecord.
+     * @example
+     * // Create one RollingDailyVerificationRecord
+     * const RollingDailyVerificationRecord = await prisma.rollingDailyVerificationRecord.create({
+     *   data: {
+     *     // ... data to create a RollingDailyVerificationRecord
+     *   }
+     * })
+     * 
+     */
+    create<T extends RollingDailyVerificationRecordCreateArgs>(args: SelectSubset<T, RollingDailyVerificationRecordCreateArgs<ExtArgs>>): Prisma__RollingDailyVerificationRecordClient<$Result.GetResult<Prisma.$RollingDailyVerificationRecordPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many RollingDailyVerificationRecords.
+     * @param {RollingDailyVerificationRecordCreateManyArgs} args - Arguments to create many RollingDailyVerificationRecords.
+     * @example
+     * // Create many RollingDailyVerificationRecords
+     * const rollingDailyVerificationRecord = await prisma.rollingDailyVerificationRecord.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends RollingDailyVerificationRecordCreateManyArgs>(args?: SelectSubset<T, RollingDailyVerificationRecordCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many RollingDailyVerificationRecords and returns the data saved in the database.
+     * @param {RollingDailyVerificationRecordCreateManyAndReturnArgs} args - Arguments to create many RollingDailyVerificationRecords.
+     * @example
+     * // Create many RollingDailyVerificationRecords
+     * const rollingDailyVerificationRecord = await prisma.rollingDailyVerificationRecord.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many RollingDailyVerificationRecords and only return the `id`
+     * const rollingDailyVerificationRecordWithIdOnly = await prisma.rollingDailyVerificationRecord.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends RollingDailyVerificationRecordCreateManyAndReturnArgs>(args?: SelectSubset<T, RollingDailyVerificationRecordCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RollingDailyVerificationRecordPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a RollingDailyVerificationRecord.
+     * @param {RollingDailyVerificationRecordDeleteArgs} args - Arguments to delete one RollingDailyVerificationRecord.
+     * @example
+     * // Delete one RollingDailyVerificationRecord
+     * const RollingDailyVerificationRecord = await prisma.rollingDailyVerificationRecord.delete({
+     *   where: {
+     *     // ... filter to delete one RollingDailyVerificationRecord
+     *   }
+     * })
+     * 
+     */
+    delete<T extends RollingDailyVerificationRecordDeleteArgs>(args: SelectSubset<T, RollingDailyVerificationRecordDeleteArgs<ExtArgs>>): Prisma__RollingDailyVerificationRecordClient<$Result.GetResult<Prisma.$RollingDailyVerificationRecordPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one RollingDailyVerificationRecord.
+     * @param {RollingDailyVerificationRecordUpdateArgs} args - Arguments to update one RollingDailyVerificationRecord.
+     * @example
+     * // Update one RollingDailyVerificationRecord
+     * const rollingDailyVerificationRecord = await prisma.rollingDailyVerificationRecord.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends RollingDailyVerificationRecordUpdateArgs>(args: SelectSubset<T, RollingDailyVerificationRecordUpdateArgs<ExtArgs>>): Prisma__RollingDailyVerificationRecordClient<$Result.GetResult<Prisma.$RollingDailyVerificationRecordPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more RollingDailyVerificationRecords.
+     * @param {RollingDailyVerificationRecordDeleteManyArgs} args - Arguments to filter RollingDailyVerificationRecords to delete.
+     * @example
+     * // Delete a few RollingDailyVerificationRecords
+     * const { count } = await prisma.rollingDailyVerificationRecord.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends RollingDailyVerificationRecordDeleteManyArgs>(args?: SelectSubset<T, RollingDailyVerificationRecordDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more RollingDailyVerificationRecords.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyVerificationRecordUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many RollingDailyVerificationRecords
+     * const rollingDailyVerificationRecord = await prisma.rollingDailyVerificationRecord.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends RollingDailyVerificationRecordUpdateManyArgs>(args: SelectSubset<T, RollingDailyVerificationRecordUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one RollingDailyVerificationRecord.
+     * @param {RollingDailyVerificationRecordUpsertArgs} args - Arguments to update or create a RollingDailyVerificationRecord.
+     * @example
+     * // Update or create a RollingDailyVerificationRecord
+     * const rollingDailyVerificationRecord = await prisma.rollingDailyVerificationRecord.upsert({
+     *   create: {
+     *     // ... data to create a RollingDailyVerificationRecord
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the RollingDailyVerificationRecord we want to update
+     *   }
+     * })
+     */
+    upsert<T extends RollingDailyVerificationRecordUpsertArgs>(args: SelectSubset<T, RollingDailyVerificationRecordUpsertArgs<ExtArgs>>): Prisma__RollingDailyVerificationRecordClient<$Result.GetResult<Prisma.$RollingDailyVerificationRecordPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of RollingDailyVerificationRecords.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyVerificationRecordCountArgs} args - Arguments to filter RollingDailyVerificationRecords to count.
+     * @example
+     * // Count the number of RollingDailyVerificationRecords
+     * const count = await prisma.rollingDailyVerificationRecord.count({
+     *   where: {
+     *     // ... the filter for the RollingDailyVerificationRecords we want to count
+     *   }
+     * })
+    **/
+    count<T extends RollingDailyVerificationRecordCountArgs>(
+      args?: Subset<T, RollingDailyVerificationRecordCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], RollingDailyVerificationRecordCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a RollingDailyVerificationRecord.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyVerificationRecordAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends RollingDailyVerificationRecordAggregateArgs>(args: Subset<T, RollingDailyVerificationRecordAggregateArgs>): Prisma.PrismaPromise<GetRollingDailyVerificationRecordAggregateType<T>>
+
+    /**
+     * Group by RollingDailyVerificationRecord.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyVerificationRecordGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends RollingDailyVerificationRecordGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: RollingDailyVerificationRecordGroupByArgs['orderBy'] }
+        : { orderBy?: RollingDailyVerificationRecordGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, RollingDailyVerificationRecordGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRollingDailyVerificationRecordGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the RollingDailyVerificationRecord model
+   */
+  readonly fields: RollingDailyVerificationRecordFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for RollingDailyVerificationRecord.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__RollingDailyVerificationRecordClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the RollingDailyVerificationRecord model
+   */ 
+  interface RollingDailyVerificationRecordFieldRefs {
+    readonly id: FieldRef<"RollingDailyVerificationRecord", 'String'>
+    readonly seriesId: FieldRef<"RollingDailyVerificationRecord", 'String'>
+    readonly inputSource: FieldRef<"RollingDailyVerificationRecord", 'String'>
+    readonly inputRunId: FieldRef<"RollingDailyVerificationRecord", 'String'>
+    readonly targetBasis: FieldRef<"RollingDailyVerificationRecord", 'ForecastTargetBasis'>
+    readonly methodId: FieldRef<"RollingDailyVerificationRecord", 'String'>
+    readonly methodVersion: FieldRef<"RollingDailyVerificationRecord", 'String'>
+    readonly modelId: FieldRef<"RollingDailyVerificationRecord", 'String'>
+    readonly forecastOriginAt: FieldRef<"RollingDailyVerificationRecord", 'DateTime'>
+    readonly horizonLabel: FieldRef<"RollingDailyVerificationRecord", 'String'>
+    readonly horizonMonths: FieldRef<"RollingDailyVerificationRecord", 'Int'>
+    readonly horizonSteps: FieldRef<"RollingDailyVerificationRecord", 'Int'>
+    readonly targetCalendarDate: FieldRef<"RollingDailyVerificationRecord", 'DateTime'>
+    readonly verificationObservedAt: FieldRef<"RollingDailyVerificationRecord", 'DateTime'>
+    readonly maturityStatus: FieldRef<"RollingDailyVerificationRecord", 'RollingDailyVerificationMaturityStatus'>
+    readonly originValue: FieldRef<"RollingDailyVerificationRecord", 'Decimal'>
+    readonly forecastValue: FieldRef<"RollingDailyVerificationRecord", 'Decimal'>
+    readonly actualValue: FieldRef<"RollingDailyVerificationRecord", 'Decimal'>
+    readonly errorValue: FieldRef<"RollingDailyVerificationRecord", 'Decimal'>
+    readonly absoluteErrorValue: FieldRef<"RollingDailyVerificationRecord", 'Decimal'>
+    readonly deltaValue: FieldRef<"RollingDailyVerificationRecord", 'Decimal'>
+    readonly deltaPct: FieldRef<"RollingDailyVerificationRecord", 'Float'>
+    readonly residualValue: FieldRef<"RollingDailyVerificationRecord", 'Decimal'>
+    readonly maseScale: FieldRef<"RollingDailyVerificationRecord", 'Float'>
+    readonly trainingHistoryStartAt: FieldRef<"RollingDailyVerificationRecord", 'DateTime'>
+    readonly trainingHistoryEndAt: FieldRef<"RollingDailyVerificationRecord", 'DateTime'>
+    readonly trainingObservationCount: FieldRef<"RollingDailyVerificationRecord", 'Int'>
+    readonly sourceHistoryFingerprint: FieldRef<"RollingDailyVerificationRecord", 'String'>
+    readonly selectedVariant: FieldRef<"RollingDailyVerificationRecord", 'String'>
+    readonly selectionMetric: FieldRef<"RollingDailyVerificationRecord", 'String'>
+    readonly selectionScore: FieldRef<"RollingDailyVerificationRecord", 'Float'>
+    readonly metadataJson: FieldRef<"RollingDailyVerificationRecord", 'Json'>
+    readonly createdAt: FieldRef<"RollingDailyVerificationRecord", 'DateTime'>
+    readonly updatedAt: FieldRef<"RollingDailyVerificationRecord", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * RollingDailyVerificationRecord findUnique
+   */
+  export type RollingDailyVerificationRecordFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyVerificationRecord
+     */
+    select?: RollingDailyVerificationRecordSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyVerificationRecord to fetch.
+     */
+    where: RollingDailyVerificationRecordWhereUniqueInput
+  }
+
+  /**
+   * RollingDailyVerificationRecord findUniqueOrThrow
+   */
+  export type RollingDailyVerificationRecordFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyVerificationRecord
+     */
+    select?: RollingDailyVerificationRecordSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyVerificationRecord to fetch.
+     */
+    where: RollingDailyVerificationRecordWhereUniqueInput
+  }
+
+  /**
+   * RollingDailyVerificationRecord findFirst
+   */
+  export type RollingDailyVerificationRecordFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyVerificationRecord
+     */
+    select?: RollingDailyVerificationRecordSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyVerificationRecord to fetch.
+     */
+    where?: RollingDailyVerificationRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RollingDailyVerificationRecords to fetch.
+     */
+    orderBy?: RollingDailyVerificationRecordOrderByWithRelationInput | RollingDailyVerificationRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RollingDailyVerificationRecords.
+     */
+    cursor?: RollingDailyVerificationRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RollingDailyVerificationRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RollingDailyVerificationRecords.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RollingDailyVerificationRecords.
+     */
+    distinct?: RollingDailyVerificationRecordScalarFieldEnum | RollingDailyVerificationRecordScalarFieldEnum[]
+  }
+
+  /**
+   * RollingDailyVerificationRecord findFirstOrThrow
+   */
+  export type RollingDailyVerificationRecordFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyVerificationRecord
+     */
+    select?: RollingDailyVerificationRecordSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyVerificationRecord to fetch.
+     */
+    where?: RollingDailyVerificationRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RollingDailyVerificationRecords to fetch.
+     */
+    orderBy?: RollingDailyVerificationRecordOrderByWithRelationInput | RollingDailyVerificationRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RollingDailyVerificationRecords.
+     */
+    cursor?: RollingDailyVerificationRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RollingDailyVerificationRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RollingDailyVerificationRecords.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RollingDailyVerificationRecords.
+     */
+    distinct?: RollingDailyVerificationRecordScalarFieldEnum | RollingDailyVerificationRecordScalarFieldEnum[]
+  }
+
+  /**
+   * RollingDailyVerificationRecord findMany
+   */
+  export type RollingDailyVerificationRecordFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyVerificationRecord
+     */
+    select?: RollingDailyVerificationRecordSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyVerificationRecords to fetch.
+     */
+    where?: RollingDailyVerificationRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RollingDailyVerificationRecords to fetch.
+     */
+    orderBy?: RollingDailyVerificationRecordOrderByWithRelationInput | RollingDailyVerificationRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing RollingDailyVerificationRecords.
+     */
+    cursor?: RollingDailyVerificationRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RollingDailyVerificationRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RollingDailyVerificationRecords.
+     */
+    skip?: number
+    distinct?: RollingDailyVerificationRecordScalarFieldEnum | RollingDailyVerificationRecordScalarFieldEnum[]
+  }
+
+  /**
+   * RollingDailyVerificationRecord create
+   */
+  export type RollingDailyVerificationRecordCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyVerificationRecord
+     */
+    select?: RollingDailyVerificationRecordSelect<ExtArgs> | null
+    /**
+     * The data needed to create a RollingDailyVerificationRecord.
+     */
+    data: XOR<RollingDailyVerificationRecordCreateInput, RollingDailyVerificationRecordUncheckedCreateInput>
+  }
+
+  /**
+   * RollingDailyVerificationRecord createMany
+   */
+  export type RollingDailyVerificationRecordCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many RollingDailyVerificationRecords.
+     */
+    data: RollingDailyVerificationRecordCreateManyInput | RollingDailyVerificationRecordCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RollingDailyVerificationRecord createManyAndReturn
+   */
+  export type RollingDailyVerificationRecordCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyVerificationRecord
+     */
+    select?: RollingDailyVerificationRecordSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many RollingDailyVerificationRecords.
+     */
+    data: RollingDailyVerificationRecordCreateManyInput | RollingDailyVerificationRecordCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RollingDailyVerificationRecord update
+   */
+  export type RollingDailyVerificationRecordUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyVerificationRecord
+     */
+    select?: RollingDailyVerificationRecordSelect<ExtArgs> | null
+    /**
+     * The data needed to update a RollingDailyVerificationRecord.
+     */
+    data: XOR<RollingDailyVerificationRecordUpdateInput, RollingDailyVerificationRecordUncheckedUpdateInput>
+    /**
+     * Choose, which RollingDailyVerificationRecord to update.
+     */
+    where: RollingDailyVerificationRecordWhereUniqueInput
+  }
+
+  /**
+   * RollingDailyVerificationRecord updateMany
+   */
+  export type RollingDailyVerificationRecordUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update RollingDailyVerificationRecords.
+     */
+    data: XOR<RollingDailyVerificationRecordUpdateManyMutationInput, RollingDailyVerificationRecordUncheckedUpdateManyInput>
+    /**
+     * Filter which RollingDailyVerificationRecords to update
+     */
+    where?: RollingDailyVerificationRecordWhereInput
+  }
+
+  /**
+   * RollingDailyVerificationRecord upsert
+   */
+  export type RollingDailyVerificationRecordUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyVerificationRecord
+     */
+    select?: RollingDailyVerificationRecordSelect<ExtArgs> | null
+    /**
+     * The filter to search for the RollingDailyVerificationRecord to update in case it exists.
+     */
+    where: RollingDailyVerificationRecordWhereUniqueInput
+    /**
+     * In case the RollingDailyVerificationRecord found by the `where` argument doesn't exist, create a new RollingDailyVerificationRecord with this data.
+     */
+    create: XOR<RollingDailyVerificationRecordCreateInput, RollingDailyVerificationRecordUncheckedCreateInput>
+    /**
+     * In case the RollingDailyVerificationRecord was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<RollingDailyVerificationRecordUpdateInput, RollingDailyVerificationRecordUncheckedUpdateInput>
+  }
+
+  /**
+   * RollingDailyVerificationRecord delete
+   */
+  export type RollingDailyVerificationRecordDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyVerificationRecord
+     */
+    select?: RollingDailyVerificationRecordSelect<ExtArgs> | null
+    /**
+     * Filter which RollingDailyVerificationRecord to delete.
+     */
+    where: RollingDailyVerificationRecordWhereUniqueInput
+  }
+
+  /**
+   * RollingDailyVerificationRecord deleteMany
+   */
+  export type RollingDailyVerificationRecordDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RollingDailyVerificationRecords to delete
+     */
+    where?: RollingDailyVerificationRecordWhereInput
+  }
+
+  /**
+   * RollingDailyVerificationRecord without action
+   */
+  export type RollingDailyVerificationRecordDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyVerificationRecord
+     */
+    select?: RollingDailyVerificationRecordSelect<ExtArgs> | null
+  }
+
+
+  /**
+   * Model RollingDailyCurrentForecastSnapshot
+   */
+
+  export type AggregateRollingDailyCurrentForecastSnapshot = {
+    _count: RollingDailyCurrentForecastSnapshotCountAggregateOutputType | null
+    _min: RollingDailyCurrentForecastSnapshotMinAggregateOutputType | null
+    _max: RollingDailyCurrentForecastSnapshotMaxAggregateOutputType | null
+  }
+
+  export type RollingDailyCurrentForecastSnapshotMinAggregateOutputType = {
+    id: string | null
+    seriesId: string | null
+    inputSource: string | null
+    inputRunId: string | null
+    targetBasis: $Enums.ForecastTargetBasis | null
+    methodId: string | null
+    methodVersion: string | null
+    modelId: string | null
+    contractVersion: string | null
+    status: string | null
+    reasonCode: string | null
+    message: string | null
+    forecastOriginAt: Date | null
+    sourceLatestObservationAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type RollingDailyCurrentForecastSnapshotMaxAggregateOutputType = {
+    id: string | null
+    seriesId: string | null
+    inputSource: string | null
+    inputRunId: string | null
+    targetBasis: $Enums.ForecastTargetBasis | null
+    methodId: string | null
+    methodVersion: string | null
+    modelId: string | null
+    contractVersion: string | null
+    status: string | null
+    reasonCode: string | null
+    message: string | null
+    forecastOriginAt: Date | null
+    sourceLatestObservationAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type RollingDailyCurrentForecastSnapshotCountAggregateOutputType = {
+    id: number
+    seriesId: number
+    inputSource: number
+    inputRunId: number
+    targetBasis: number
+    methodId: number
+    methodVersion: number
+    modelId: number
+    contractVersion: number
+    status: number
+    reasonCode: number
+    message: number
+    forecastOriginAt: number
+    sourceLatestObservationAt: number
+    payloadJson: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type RollingDailyCurrentForecastSnapshotMinAggregateInputType = {
+    id?: true
+    seriesId?: true
+    inputSource?: true
+    inputRunId?: true
+    targetBasis?: true
+    methodId?: true
+    methodVersion?: true
+    modelId?: true
+    contractVersion?: true
+    status?: true
+    reasonCode?: true
+    message?: true
+    forecastOriginAt?: true
+    sourceLatestObservationAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type RollingDailyCurrentForecastSnapshotMaxAggregateInputType = {
+    id?: true
+    seriesId?: true
+    inputSource?: true
+    inputRunId?: true
+    targetBasis?: true
+    methodId?: true
+    methodVersion?: true
+    modelId?: true
+    contractVersion?: true
+    status?: true
+    reasonCode?: true
+    message?: true
+    forecastOriginAt?: true
+    sourceLatestObservationAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type RollingDailyCurrentForecastSnapshotCountAggregateInputType = {
+    id?: true
+    seriesId?: true
+    inputSource?: true
+    inputRunId?: true
+    targetBasis?: true
+    methodId?: true
+    methodVersion?: true
+    modelId?: true
+    contractVersion?: true
+    status?: true
+    reasonCode?: true
+    message?: true
+    forecastOriginAt?: true
+    sourceLatestObservationAt?: true
+    payloadJson?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type RollingDailyCurrentForecastSnapshotAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RollingDailyCurrentForecastSnapshot to aggregate.
+     */
+    where?: RollingDailyCurrentForecastSnapshotWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RollingDailyCurrentForecastSnapshots to fetch.
+     */
+    orderBy?: RollingDailyCurrentForecastSnapshotOrderByWithRelationInput | RollingDailyCurrentForecastSnapshotOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: RollingDailyCurrentForecastSnapshotWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RollingDailyCurrentForecastSnapshots from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RollingDailyCurrentForecastSnapshots.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned RollingDailyCurrentForecastSnapshots
+    **/
+    _count?: true | RollingDailyCurrentForecastSnapshotCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: RollingDailyCurrentForecastSnapshotMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: RollingDailyCurrentForecastSnapshotMaxAggregateInputType
+  }
+
+  export type GetRollingDailyCurrentForecastSnapshotAggregateType<T extends RollingDailyCurrentForecastSnapshotAggregateArgs> = {
+        [P in keyof T & keyof AggregateRollingDailyCurrentForecastSnapshot]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateRollingDailyCurrentForecastSnapshot[P]>
+      : GetScalarType<T[P], AggregateRollingDailyCurrentForecastSnapshot[P]>
+  }
+
+
+
+
+  export type RollingDailyCurrentForecastSnapshotGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RollingDailyCurrentForecastSnapshotWhereInput
+    orderBy?: RollingDailyCurrentForecastSnapshotOrderByWithAggregationInput | RollingDailyCurrentForecastSnapshotOrderByWithAggregationInput[]
+    by: RollingDailyCurrentForecastSnapshotScalarFieldEnum[] | RollingDailyCurrentForecastSnapshotScalarFieldEnum
+    having?: RollingDailyCurrentForecastSnapshotScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: RollingDailyCurrentForecastSnapshotCountAggregateInputType | true
+    _min?: RollingDailyCurrentForecastSnapshotMinAggregateInputType
+    _max?: RollingDailyCurrentForecastSnapshotMaxAggregateInputType
+  }
+
+  export type RollingDailyCurrentForecastSnapshotGroupByOutputType = {
+    id: string
+    seriesId: string
+    inputSource: string
+    inputRunId: string | null
+    targetBasis: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+    contractVersion: string
+    status: string
+    reasonCode: string | null
+    message: string | null
+    forecastOriginAt: Date | null
+    sourceLatestObservationAt: Date | null
+    payloadJson: JsonValue
+    createdAt: Date
+    updatedAt: Date
+    _count: RollingDailyCurrentForecastSnapshotCountAggregateOutputType | null
+    _min: RollingDailyCurrentForecastSnapshotMinAggregateOutputType | null
+    _max: RollingDailyCurrentForecastSnapshotMaxAggregateOutputType | null
+  }
+
+  type GetRollingDailyCurrentForecastSnapshotGroupByPayload<T extends RollingDailyCurrentForecastSnapshotGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<RollingDailyCurrentForecastSnapshotGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof RollingDailyCurrentForecastSnapshotGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], RollingDailyCurrentForecastSnapshotGroupByOutputType[P]>
+            : GetScalarType<T[P], RollingDailyCurrentForecastSnapshotGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type RollingDailyCurrentForecastSnapshotSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    seriesId?: boolean
+    inputSource?: boolean
+    inputRunId?: boolean
+    targetBasis?: boolean
+    methodId?: boolean
+    methodVersion?: boolean
+    modelId?: boolean
+    contractVersion?: boolean
+    status?: boolean
+    reasonCode?: boolean
+    message?: boolean
+    forecastOriginAt?: boolean
+    sourceLatestObservationAt?: boolean
+    payloadJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["rollingDailyCurrentForecastSnapshot"]>
+
+  export type RollingDailyCurrentForecastSnapshotSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    seriesId?: boolean
+    inputSource?: boolean
+    inputRunId?: boolean
+    targetBasis?: boolean
+    methodId?: boolean
+    methodVersion?: boolean
+    modelId?: boolean
+    contractVersion?: boolean
+    status?: boolean
+    reasonCode?: boolean
+    message?: boolean
+    forecastOriginAt?: boolean
+    sourceLatestObservationAt?: boolean
+    payloadJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["rollingDailyCurrentForecastSnapshot"]>
+
+  export type RollingDailyCurrentForecastSnapshotSelectScalar = {
+    id?: boolean
+    seriesId?: boolean
+    inputSource?: boolean
+    inputRunId?: boolean
+    targetBasis?: boolean
+    methodId?: boolean
+    methodVersion?: boolean
+    modelId?: boolean
+    contractVersion?: boolean
+    status?: boolean
+    reasonCode?: boolean
+    message?: boolean
+    forecastOriginAt?: boolean
+    sourceLatestObservationAt?: boolean
+    payloadJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+
+  export type $RollingDailyCurrentForecastSnapshotPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "RollingDailyCurrentForecastSnapshot"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      seriesId: string
+      inputSource: string
+      inputRunId: string | null
+      targetBasis: $Enums.ForecastTargetBasis
+      methodId: string
+      methodVersion: string
+      modelId: string
+      contractVersion: string
+      status: string
+      reasonCode: string | null
+      message: string | null
+      forecastOriginAt: Date | null
+      sourceLatestObservationAt: Date | null
+      payloadJson: Prisma.JsonValue
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["rollingDailyCurrentForecastSnapshot"]>
+    composites: {}
+  }
+
+  type RollingDailyCurrentForecastSnapshotGetPayload<S extends boolean | null | undefined | RollingDailyCurrentForecastSnapshotDefaultArgs> = $Result.GetResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload, S>
+
+  type RollingDailyCurrentForecastSnapshotCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<RollingDailyCurrentForecastSnapshotFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: RollingDailyCurrentForecastSnapshotCountAggregateInputType | true
+    }
+
+  export interface RollingDailyCurrentForecastSnapshotDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['RollingDailyCurrentForecastSnapshot'], meta: { name: 'RollingDailyCurrentForecastSnapshot' } }
+    /**
+     * Find zero or one RollingDailyCurrentForecastSnapshot that matches the filter.
+     * @param {RollingDailyCurrentForecastSnapshotFindUniqueArgs} args - Arguments to find a RollingDailyCurrentForecastSnapshot
+     * @example
+     * // Get one RollingDailyCurrentForecastSnapshot
+     * const rollingDailyCurrentForecastSnapshot = await prisma.rollingDailyCurrentForecastSnapshot.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends RollingDailyCurrentForecastSnapshotFindUniqueArgs>(args: SelectSubset<T, RollingDailyCurrentForecastSnapshotFindUniqueArgs<ExtArgs>>): Prisma__RollingDailyCurrentForecastSnapshotClient<$Result.GetResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one RollingDailyCurrentForecastSnapshot that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {RollingDailyCurrentForecastSnapshotFindUniqueOrThrowArgs} args - Arguments to find a RollingDailyCurrentForecastSnapshot
+     * @example
+     * // Get one RollingDailyCurrentForecastSnapshot
+     * const rollingDailyCurrentForecastSnapshot = await prisma.rollingDailyCurrentForecastSnapshot.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends RollingDailyCurrentForecastSnapshotFindUniqueOrThrowArgs>(args: SelectSubset<T, RollingDailyCurrentForecastSnapshotFindUniqueOrThrowArgs<ExtArgs>>): Prisma__RollingDailyCurrentForecastSnapshotClient<$Result.GetResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first RollingDailyCurrentForecastSnapshot that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyCurrentForecastSnapshotFindFirstArgs} args - Arguments to find a RollingDailyCurrentForecastSnapshot
+     * @example
+     * // Get one RollingDailyCurrentForecastSnapshot
+     * const rollingDailyCurrentForecastSnapshot = await prisma.rollingDailyCurrentForecastSnapshot.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends RollingDailyCurrentForecastSnapshotFindFirstArgs>(args?: SelectSubset<T, RollingDailyCurrentForecastSnapshotFindFirstArgs<ExtArgs>>): Prisma__RollingDailyCurrentForecastSnapshotClient<$Result.GetResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first RollingDailyCurrentForecastSnapshot that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyCurrentForecastSnapshotFindFirstOrThrowArgs} args - Arguments to find a RollingDailyCurrentForecastSnapshot
+     * @example
+     * // Get one RollingDailyCurrentForecastSnapshot
+     * const rollingDailyCurrentForecastSnapshot = await prisma.rollingDailyCurrentForecastSnapshot.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends RollingDailyCurrentForecastSnapshotFindFirstOrThrowArgs>(args?: SelectSubset<T, RollingDailyCurrentForecastSnapshotFindFirstOrThrowArgs<ExtArgs>>): Prisma__RollingDailyCurrentForecastSnapshotClient<$Result.GetResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more RollingDailyCurrentForecastSnapshots that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyCurrentForecastSnapshotFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all RollingDailyCurrentForecastSnapshots
+     * const rollingDailyCurrentForecastSnapshots = await prisma.rollingDailyCurrentForecastSnapshot.findMany()
+     * 
+     * // Get first 10 RollingDailyCurrentForecastSnapshots
+     * const rollingDailyCurrentForecastSnapshots = await prisma.rollingDailyCurrentForecastSnapshot.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const rollingDailyCurrentForecastSnapshotWithIdOnly = await prisma.rollingDailyCurrentForecastSnapshot.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends RollingDailyCurrentForecastSnapshotFindManyArgs>(args?: SelectSubset<T, RollingDailyCurrentForecastSnapshotFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a RollingDailyCurrentForecastSnapshot.
+     * @param {RollingDailyCurrentForecastSnapshotCreateArgs} args - Arguments to create a RollingDailyCurrentForecastSnapshot.
+     * @example
+     * // Create one RollingDailyCurrentForecastSnapshot
+     * const RollingDailyCurrentForecastSnapshot = await prisma.rollingDailyCurrentForecastSnapshot.create({
+     *   data: {
+     *     // ... data to create a RollingDailyCurrentForecastSnapshot
+     *   }
+     * })
+     * 
+     */
+    create<T extends RollingDailyCurrentForecastSnapshotCreateArgs>(args: SelectSubset<T, RollingDailyCurrentForecastSnapshotCreateArgs<ExtArgs>>): Prisma__RollingDailyCurrentForecastSnapshotClient<$Result.GetResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many RollingDailyCurrentForecastSnapshots.
+     * @param {RollingDailyCurrentForecastSnapshotCreateManyArgs} args - Arguments to create many RollingDailyCurrentForecastSnapshots.
+     * @example
+     * // Create many RollingDailyCurrentForecastSnapshots
+     * const rollingDailyCurrentForecastSnapshot = await prisma.rollingDailyCurrentForecastSnapshot.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends RollingDailyCurrentForecastSnapshotCreateManyArgs>(args?: SelectSubset<T, RollingDailyCurrentForecastSnapshotCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many RollingDailyCurrentForecastSnapshots and returns the data saved in the database.
+     * @param {RollingDailyCurrentForecastSnapshotCreateManyAndReturnArgs} args - Arguments to create many RollingDailyCurrentForecastSnapshots.
+     * @example
+     * // Create many RollingDailyCurrentForecastSnapshots
+     * const rollingDailyCurrentForecastSnapshot = await prisma.rollingDailyCurrentForecastSnapshot.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many RollingDailyCurrentForecastSnapshots and only return the `id`
+     * const rollingDailyCurrentForecastSnapshotWithIdOnly = await prisma.rollingDailyCurrentForecastSnapshot.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends RollingDailyCurrentForecastSnapshotCreateManyAndReturnArgs>(args?: SelectSubset<T, RollingDailyCurrentForecastSnapshotCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a RollingDailyCurrentForecastSnapshot.
+     * @param {RollingDailyCurrentForecastSnapshotDeleteArgs} args - Arguments to delete one RollingDailyCurrentForecastSnapshot.
+     * @example
+     * // Delete one RollingDailyCurrentForecastSnapshot
+     * const RollingDailyCurrentForecastSnapshot = await prisma.rollingDailyCurrentForecastSnapshot.delete({
+     *   where: {
+     *     // ... filter to delete one RollingDailyCurrentForecastSnapshot
+     *   }
+     * })
+     * 
+     */
+    delete<T extends RollingDailyCurrentForecastSnapshotDeleteArgs>(args: SelectSubset<T, RollingDailyCurrentForecastSnapshotDeleteArgs<ExtArgs>>): Prisma__RollingDailyCurrentForecastSnapshotClient<$Result.GetResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one RollingDailyCurrentForecastSnapshot.
+     * @param {RollingDailyCurrentForecastSnapshotUpdateArgs} args - Arguments to update one RollingDailyCurrentForecastSnapshot.
+     * @example
+     * // Update one RollingDailyCurrentForecastSnapshot
+     * const rollingDailyCurrentForecastSnapshot = await prisma.rollingDailyCurrentForecastSnapshot.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends RollingDailyCurrentForecastSnapshotUpdateArgs>(args: SelectSubset<T, RollingDailyCurrentForecastSnapshotUpdateArgs<ExtArgs>>): Prisma__RollingDailyCurrentForecastSnapshotClient<$Result.GetResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more RollingDailyCurrentForecastSnapshots.
+     * @param {RollingDailyCurrentForecastSnapshotDeleteManyArgs} args - Arguments to filter RollingDailyCurrentForecastSnapshots to delete.
+     * @example
+     * // Delete a few RollingDailyCurrentForecastSnapshots
+     * const { count } = await prisma.rollingDailyCurrentForecastSnapshot.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends RollingDailyCurrentForecastSnapshotDeleteManyArgs>(args?: SelectSubset<T, RollingDailyCurrentForecastSnapshotDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more RollingDailyCurrentForecastSnapshots.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyCurrentForecastSnapshotUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many RollingDailyCurrentForecastSnapshots
+     * const rollingDailyCurrentForecastSnapshot = await prisma.rollingDailyCurrentForecastSnapshot.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends RollingDailyCurrentForecastSnapshotUpdateManyArgs>(args: SelectSubset<T, RollingDailyCurrentForecastSnapshotUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one RollingDailyCurrentForecastSnapshot.
+     * @param {RollingDailyCurrentForecastSnapshotUpsertArgs} args - Arguments to update or create a RollingDailyCurrentForecastSnapshot.
+     * @example
+     * // Update or create a RollingDailyCurrentForecastSnapshot
+     * const rollingDailyCurrentForecastSnapshot = await prisma.rollingDailyCurrentForecastSnapshot.upsert({
+     *   create: {
+     *     // ... data to create a RollingDailyCurrentForecastSnapshot
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the RollingDailyCurrentForecastSnapshot we want to update
+     *   }
+     * })
+     */
+    upsert<T extends RollingDailyCurrentForecastSnapshotUpsertArgs>(args: SelectSubset<T, RollingDailyCurrentForecastSnapshotUpsertArgs<ExtArgs>>): Prisma__RollingDailyCurrentForecastSnapshotClient<$Result.GetResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of RollingDailyCurrentForecastSnapshots.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyCurrentForecastSnapshotCountArgs} args - Arguments to filter RollingDailyCurrentForecastSnapshots to count.
+     * @example
+     * // Count the number of RollingDailyCurrentForecastSnapshots
+     * const count = await prisma.rollingDailyCurrentForecastSnapshot.count({
+     *   where: {
+     *     // ... the filter for the RollingDailyCurrentForecastSnapshots we want to count
+     *   }
+     * })
+    **/
+    count<T extends RollingDailyCurrentForecastSnapshotCountArgs>(
+      args?: Subset<T, RollingDailyCurrentForecastSnapshotCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], RollingDailyCurrentForecastSnapshotCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a RollingDailyCurrentForecastSnapshot.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyCurrentForecastSnapshotAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends RollingDailyCurrentForecastSnapshotAggregateArgs>(args: Subset<T, RollingDailyCurrentForecastSnapshotAggregateArgs>): Prisma.PrismaPromise<GetRollingDailyCurrentForecastSnapshotAggregateType<T>>
+
+    /**
+     * Group by RollingDailyCurrentForecastSnapshot.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyCurrentForecastSnapshotGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends RollingDailyCurrentForecastSnapshotGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: RollingDailyCurrentForecastSnapshotGroupByArgs['orderBy'] }
+        : { orderBy?: RollingDailyCurrentForecastSnapshotGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, RollingDailyCurrentForecastSnapshotGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRollingDailyCurrentForecastSnapshotGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the RollingDailyCurrentForecastSnapshot model
+   */
+  readonly fields: RollingDailyCurrentForecastSnapshotFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for RollingDailyCurrentForecastSnapshot.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__RollingDailyCurrentForecastSnapshotClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the RollingDailyCurrentForecastSnapshot model
+   */ 
+  interface RollingDailyCurrentForecastSnapshotFieldRefs {
+    readonly id: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
+    readonly seriesId: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
+    readonly inputSource: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
+    readonly inputRunId: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
+    readonly targetBasis: FieldRef<"RollingDailyCurrentForecastSnapshot", 'ForecastTargetBasis'>
+    readonly methodId: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
+    readonly methodVersion: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
+    readonly modelId: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
+    readonly contractVersion: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
+    readonly status: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
+    readonly reasonCode: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
+    readonly message: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
+    readonly forecastOriginAt: FieldRef<"RollingDailyCurrentForecastSnapshot", 'DateTime'>
+    readonly sourceLatestObservationAt: FieldRef<"RollingDailyCurrentForecastSnapshot", 'DateTime'>
+    readonly payloadJson: FieldRef<"RollingDailyCurrentForecastSnapshot", 'Json'>
+    readonly createdAt: FieldRef<"RollingDailyCurrentForecastSnapshot", 'DateTime'>
+    readonly updatedAt: FieldRef<"RollingDailyCurrentForecastSnapshot", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * RollingDailyCurrentForecastSnapshot findUnique
+   */
+  export type RollingDailyCurrentForecastSnapshotFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCurrentForecastSnapshot
+     */
+    select?: RollingDailyCurrentForecastSnapshotSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyCurrentForecastSnapshot to fetch.
+     */
+    where: RollingDailyCurrentForecastSnapshotWhereUniqueInput
+  }
+
+  /**
+   * RollingDailyCurrentForecastSnapshot findUniqueOrThrow
+   */
+  export type RollingDailyCurrentForecastSnapshotFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCurrentForecastSnapshot
+     */
+    select?: RollingDailyCurrentForecastSnapshotSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyCurrentForecastSnapshot to fetch.
+     */
+    where: RollingDailyCurrentForecastSnapshotWhereUniqueInput
+  }
+
+  /**
+   * RollingDailyCurrentForecastSnapshot findFirst
+   */
+  export type RollingDailyCurrentForecastSnapshotFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCurrentForecastSnapshot
+     */
+    select?: RollingDailyCurrentForecastSnapshotSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyCurrentForecastSnapshot to fetch.
+     */
+    where?: RollingDailyCurrentForecastSnapshotWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RollingDailyCurrentForecastSnapshots to fetch.
+     */
+    orderBy?: RollingDailyCurrentForecastSnapshotOrderByWithRelationInput | RollingDailyCurrentForecastSnapshotOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RollingDailyCurrentForecastSnapshots.
+     */
+    cursor?: RollingDailyCurrentForecastSnapshotWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RollingDailyCurrentForecastSnapshots from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RollingDailyCurrentForecastSnapshots.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RollingDailyCurrentForecastSnapshots.
+     */
+    distinct?: RollingDailyCurrentForecastSnapshotScalarFieldEnum | RollingDailyCurrentForecastSnapshotScalarFieldEnum[]
+  }
+
+  /**
+   * RollingDailyCurrentForecastSnapshot findFirstOrThrow
+   */
+  export type RollingDailyCurrentForecastSnapshotFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCurrentForecastSnapshot
+     */
+    select?: RollingDailyCurrentForecastSnapshotSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyCurrentForecastSnapshot to fetch.
+     */
+    where?: RollingDailyCurrentForecastSnapshotWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RollingDailyCurrentForecastSnapshots to fetch.
+     */
+    orderBy?: RollingDailyCurrentForecastSnapshotOrderByWithRelationInput | RollingDailyCurrentForecastSnapshotOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RollingDailyCurrentForecastSnapshots.
+     */
+    cursor?: RollingDailyCurrentForecastSnapshotWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RollingDailyCurrentForecastSnapshots from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RollingDailyCurrentForecastSnapshots.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RollingDailyCurrentForecastSnapshots.
+     */
+    distinct?: RollingDailyCurrentForecastSnapshotScalarFieldEnum | RollingDailyCurrentForecastSnapshotScalarFieldEnum[]
+  }
+
+  /**
+   * RollingDailyCurrentForecastSnapshot findMany
+   */
+  export type RollingDailyCurrentForecastSnapshotFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCurrentForecastSnapshot
+     */
+    select?: RollingDailyCurrentForecastSnapshotSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyCurrentForecastSnapshots to fetch.
+     */
+    where?: RollingDailyCurrentForecastSnapshotWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RollingDailyCurrentForecastSnapshots to fetch.
+     */
+    orderBy?: RollingDailyCurrentForecastSnapshotOrderByWithRelationInput | RollingDailyCurrentForecastSnapshotOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing RollingDailyCurrentForecastSnapshots.
+     */
+    cursor?: RollingDailyCurrentForecastSnapshotWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RollingDailyCurrentForecastSnapshots from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RollingDailyCurrentForecastSnapshots.
+     */
+    skip?: number
+    distinct?: RollingDailyCurrentForecastSnapshotScalarFieldEnum | RollingDailyCurrentForecastSnapshotScalarFieldEnum[]
+  }
+
+  /**
+   * RollingDailyCurrentForecastSnapshot create
+   */
+  export type RollingDailyCurrentForecastSnapshotCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCurrentForecastSnapshot
+     */
+    select?: RollingDailyCurrentForecastSnapshotSelect<ExtArgs> | null
+    /**
+     * The data needed to create a RollingDailyCurrentForecastSnapshot.
+     */
+    data: XOR<RollingDailyCurrentForecastSnapshotCreateInput, RollingDailyCurrentForecastSnapshotUncheckedCreateInput>
+  }
+
+  /**
+   * RollingDailyCurrentForecastSnapshot createMany
+   */
+  export type RollingDailyCurrentForecastSnapshotCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many RollingDailyCurrentForecastSnapshots.
+     */
+    data: RollingDailyCurrentForecastSnapshotCreateManyInput | RollingDailyCurrentForecastSnapshotCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RollingDailyCurrentForecastSnapshot createManyAndReturn
+   */
+  export type RollingDailyCurrentForecastSnapshotCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCurrentForecastSnapshot
+     */
+    select?: RollingDailyCurrentForecastSnapshotSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many RollingDailyCurrentForecastSnapshots.
+     */
+    data: RollingDailyCurrentForecastSnapshotCreateManyInput | RollingDailyCurrentForecastSnapshotCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RollingDailyCurrentForecastSnapshot update
+   */
+  export type RollingDailyCurrentForecastSnapshotUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCurrentForecastSnapshot
+     */
+    select?: RollingDailyCurrentForecastSnapshotSelect<ExtArgs> | null
+    /**
+     * The data needed to update a RollingDailyCurrentForecastSnapshot.
+     */
+    data: XOR<RollingDailyCurrentForecastSnapshotUpdateInput, RollingDailyCurrentForecastSnapshotUncheckedUpdateInput>
+    /**
+     * Choose, which RollingDailyCurrentForecastSnapshot to update.
+     */
+    where: RollingDailyCurrentForecastSnapshotWhereUniqueInput
+  }
+
+  /**
+   * RollingDailyCurrentForecastSnapshot updateMany
+   */
+  export type RollingDailyCurrentForecastSnapshotUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update RollingDailyCurrentForecastSnapshots.
+     */
+    data: XOR<RollingDailyCurrentForecastSnapshotUpdateManyMutationInput, RollingDailyCurrentForecastSnapshotUncheckedUpdateManyInput>
+    /**
+     * Filter which RollingDailyCurrentForecastSnapshots to update
+     */
+    where?: RollingDailyCurrentForecastSnapshotWhereInput
+  }
+
+  /**
+   * RollingDailyCurrentForecastSnapshot upsert
+   */
+  export type RollingDailyCurrentForecastSnapshotUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCurrentForecastSnapshot
+     */
+    select?: RollingDailyCurrentForecastSnapshotSelect<ExtArgs> | null
+    /**
+     * The filter to search for the RollingDailyCurrentForecastSnapshot to update in case it exists.
+     */
+    where: RollingDailyCurrentForecastSnapshotWhereUniqueInput
+    /**
+     * In case the RollingDailyCurrentForecastSnapshot found by the `where` argument doesn't exist, create a new RollingDailyCurrentForecastSnapshot with this data.
+     */
+    create: XOR<RollingDailyCurrentForecastSnapshotCreateInput, RollingDailyCurrentForecastSnapshotUncheckedCreateInput>
+    /**
+     * In case the RollingDailyCurrentForecastSnapshot was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<RollingDailyCurrentForecastSnapshotUpdateInput, RollingDailyCurrentForecastSnapshotUncheckedUpdateInput>
+  }
+
+  /**
+   * RollingDailyCurrentForecastSnapshot delete
+   */
+  export type RollingDailyCurrentForecastSnapshotDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCurrentForecastSnapshot
+     */
+    select?: RollingDailyCurrentForecastSnapshotSelect<ExtArgs> | null
+    /**
+     * Filter which RollingDailyCurrentForecastSnapshot to delete.
+     */
+    where: RollingDailyCurrentForecastSnapshotWhereUniqueInput
+  }
+
+  /**
+   * RollingDailyCurrentForecastSnapshot deleteMany
+   */
+  export type RollingDailyCurrentForecastSnapshotDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RollingDailyCurrentForecastSnapshots to delete
+     */
+    where?: RollingDailyCurrentForecastSnapshotWhereInput
+  }
+
+  /**
+   * RollingDailyCurrentForecastSnapshot without action
+   */
+  export type RollingDailyCurrentForecastSnapshotDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCurrentForecastSnapshot
+     */
+    select?: RollingDailyCurrentForecastSnapshotSelect<ExtArgs> | null
+  }
+
+
+  /**
+   * Model RollingDailyCalibrationGroup
+   */
+
+  export type AggregateRollingDailyCalibrationGroup = {
+    _count: RollingDailyCalibrationGroupCountAggregateOutputType | null
+    _avg: RollingDailyCalibrationGroupAvgAggregateOutputType | null
+    _sum: RollingDailyCalibrationGroupSumAggregateOutputType | null
+    _min: RollingDailyCalibrationGroupMinAggregateOutputType | null
+    _max: RollingDailyCalibrationGroupMaxAggregateOutputType | null
+  }
+
+  export type RollingDailyCalibrationGroupAvgAggregateOutputType = {
+    horizonMonths: number | null
+    sampleCount: number | null
+    residualP10: Decimal | null
+    residualP90: Decimal | null
+  }
+
+  export type RollingDailyCalibrationGroupSumAggregateOutputType = {
+    horizonMonths: number | null
+    sampleCount: number | null
+    residualP10: Decimal | null
+    residualP90: Decimal | null
+  }
+
+  export type RollingDailyCalibrationGroupMinAggregateOutputType = {
+    id: string | null
+    seriesId: string | null
+    inputSource: string | null
+    inputRunId: string | null
+    targetBasis: $Enums.ForecastTargetBasis | null
+    methodId: string | null
+    methodVersion: string | null
+    modelId: string | null
+    horizonLabel: string | null
+    horizonMonths: number | null
+    calibrationOriginAt: Date | null
+    sampleCount: number | null
+    residualP10: Decimal | null
+    residualP90: Decimal | null
+    quantileMethod: string | null
+    status: $Enums.RollingDailyCalibrationStatus | null
+    lastResidualObservedAt: Date | null
+    refreshedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type RollingDailyCalibrationGroupMaxAggregateOutputType = {
+    id: string | null
+    seriesId: string | null
+    inputSource: string | null
+    inputRunId: string | null
+    targetBasis: $Enums.ForecastTargetBasis | null
+    methodId: string | null
+    methodVersion: string | null
+    modelId: string | null
+    horizonLabel: string | null
+    horizonMonths: number | null
+    calibrationOriginAt: Date | null
+    sampleCount: number | null
+    residualP10: Decimal | null
+    residualP90: Decimal | null
+    quantileMethod: string | null
+    status: $Enums.RollingDailyCalibrationStatus | null
+    lastResidualObservedAt: Date | null
+    refreshedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type RollingDailyCalibrationGroupCountAggregateOutputType = {
+    id: number
+    seriesId: number
+    inputSource: number
+    inputRunId: number
+    targetBasis: number
+    methodId: number
+    methodVersion: number
+    modelId: number
+    horizonLabel: number
+    horizonMonths: number
+    calibrationOriginAt: number
+    sampleCount: number
+    residualP10: number
+    residualP90: number
+    quantileMethod: number
+    status: number
+    lastResidualObservedAt: number
+    refreshedAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type RollingDailyCalibrationGroupAvgAggregateInputType = {
+    horizonMonths?: true
+    sampleCount?: true
+    residualP10?: true
+    residualP90?: true
+  }
+
+  export type RollingDailyCalibrationGroupSumAggregateInputType = {
+    horizonMonths?: true
+    sampleCount?: true
+    residualP10?: true
+    residualP90?: true
+  }
+
+  export type RollingDailyCalibrationGroupMinAggregateInputType = {
+    id?: true
+    seriesId?: true
+    inputSource?: true
+    inputRunId?: true
+    targetBasis?: true
+    methodId?: true
+    methodVersion?: true
+    modelId?: true
+    horizonLabel?: true
+    horizonMonths?: true
+    calibrationOriginAt?: true
+    sampleCount?: true
+    residualP10?: true
+    residualP90?: true
+    quantileMethod?: true
+    status?: true
+    lastResidualObservedAt?: true
+    refreshedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type RollingDailyCalibrationGroupMaxAggregateInputType = {
+    id?: true
+    seriesId?: true
+    inputSource?: true
+    inputRunId?: true
+    targetBasis?: true
+    methodId?: true
+    methodVersion?: true
+    modelId?: true
+    horizonLabel?: true
+    horizonMonths?: true
+    calibrationOriginAt?: true
+    sampleCount?: true
+    residualP10?: true
+    residualP90?: true
+    quantileMethod?: true
+    status?: true
+    lastResidualObservedAt?: true
+    refreshedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type RollingDailyCalibrationGroupCountAggregateInputType = {
+    id?: true
+    seriesId?: true
+    inputSource?: true
+    inputRunId?: true
+    targetBasis?: true
+    methodId?: true
+    methodVersion?: true
+    modelId?: true
+    horizonLabel?: true
+    horizonMonths?: true
+    calibrationOriginAt?: true
+    sampleCount?: true
+    residualP10?: true
+    residualP90?: true
+    quantileMethod?: true
+    status?: true
+    lastResidualObservedAt?: true
+    refreshedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type RollingDailyCalibrationGroupAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RollingDailyCalibrationGroup to aggregate.
+     */
+    where?: RollingDailyCalibrationGroupWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RollingDailyCalibrationGroups to fetch.
+     */
+    orderBy?: RollingDailyCalibrationGroupOrderByWithRelationInput | RollingDailyCalibrationGroupOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: RollingDailyCalibrationGroupWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RollingDailyCalibrationGroups from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RollingDailyCalibrationGroups.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned RollingDailyCalibrationGroups
+    **/
+    _count?: true | RollingDailyCalibrationGroupCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: RollingDailyCalibrationGroupAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: RollingDailyCalibrationGroupSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: RollingDailyCalibrationGroupMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: RollingDailyCalibrationGroupMaxAggregateInputType
+  }
+
+  export type GetRollingDailyCalibrationGroupAggregateType<T extends RollingDailyCalibrationGroupAggregateArgs> = {
+        [P in keyof T & keyof AggregateRollingDailyCalibrationGroup]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateRollingDailyCalibrationGroup[P]>
+      : GetScalarType<T[P], AggregateRollingDailyCalibrationGroup[P]>
+  }
+
+
+
+
+  export type RollingDailyCalibrationGroupGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RollingDailyCalibrationGroupWhereInput
+    orderBy?: RollingDailyCalibrationGroupOrderByWithAggregationInput | RollingDailyCalibrationGroupOrderByWithAggregationInput[]
+    by: RollingDailyCalibrationGroupScalarFieldEnum[] | RollingDailyCalibrationGroupScalarFieldEnum
+    having?: RollingDailyCalibrationGroupScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: RollingDailyCalibrationGroupCountAggregateInputType | true
+    _avg?: RollingDailyCalibrationGroupAvgAggregateInputType
+    _sum?: RollingDailyCalibrationGroupSumAggregateInputType
+    _min?: RollingDailyCalibrationGroupMinAggregateInputType
+    _max?: RollingDailyCalibrationGroupMaxAggregateInputType
+  }
+
+  export type RollingDailyCalibrationGroupGroupByOutputType = {
+    id: string
+    seriesId: string
+    inputSource: string
+    inputRunId: string | null
+    targetBasis: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+    horizonLabel: string
+    horizonMonths: number
+    calibrationOriginAt: Date
+    sampleCount: number
+    residualP10: Decimal | null
+    residualP90: Decimal | null
+    quantileMethod: string
+    status: $Enums.RollingDailyCalibrationStatus
+    lastResidualObservedAt: Date | null
+    refreshedAt: Date
+    createdAt: Date
+    updatedAt: Date
+    _count: RollingDailyCalibrationGroupCountAggregateOutputType | null
+    _avg: RollingDailyCalibrationGroupAvgAggregateOutputType | null
+    _sum: RollingDailyCalibrationGroupSumAggregateOutputType | null
+    _min: RollingDailyCalibrationGroupMinAggregateOutputType | null
+    _max: RollingDailyCalibrationGroupMaxAggregateOutputType | null
+  }
+
+  type GetRollingDailyCalibrationGroupGroupByPayload<T extends RollingDailyCalibrationGroupGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<RollingDailyCalibrationGroupGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof RollingDailyCalibrationGroupGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], RollingDailyCalibrationGroupGroupByOutputType[P]>
+            : GetScalarType<T[P], RollingDailyCalibrationGroupGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type RollingDailyCalibrationGroupSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    seriesId?: boolean
+    inputSource?: boolean
+    inputRunId?: boolean
+    targetBasis?: boolean
+    methodId?: boolean
+    methodVersion?: boolean
+    modelId?: boolean
+    horizonLabel?: boolean
+    horizonMonths?: boolean
+    calibrationOriginAt?: boolean
+    sampleCount?: boolean
+    residualP10?: boolean
+    residualP90?: boolean
+    quantileMethod?: boolean
+    status?: boolean
+    lastResidualObservedAt?: boolean
+    refreshedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["rollingDailyCalibrationGroup"]>
+
+  export type RollingDailyCalibrationGroupSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    seriesId?: boolean
+    inputSource?: boolean
+    inputRunId?: boolean
+    targetBasis?: boolean
+    methodId?: boolean
+    methodVersion?: boolean
+    modelId?: boolean
+    horizonLabel?: boolean
+    horizonMonths?: boolean
+    calibrationOriginAt?: boolean
+    sampleCount?: boolean
+    residualP10?: boolean
+    residualP90?: boolean
+    quantileMethod?: boolean
+    status?: boolean
+    lastResidualObservedAt?: boolean
+    refreshedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["rollingDailyCalibrationGroup"]>
+
+  export type RollingDailyCalibrationGroupSelectScalar = {
+    id?: boolean
+    seriesId?: boolean
+    inputSource?: boolean
+    inputRunId?: boolean
+    targetBasis?: boolean
+    methodId?: boolean
+    methodVersion?: boolean
+    modelId?: boolean
+    horizonLabel?: boolean
+    horizonMonths?: boolean
+    calibrationOriginAt?: boolean
+    sampleCount?: boolean
+    residualP10?: boolean
+    residualP90?: boolean
+    quantileMethod?: boolean
+    status?: boolean
+    lastResidualObservedAt?: boolean
+    refreshedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+
+  export type $RollingDailyCalibrationGroupPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "RollingDailyCalibrationGroup"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      /**
+       * Forecast-derived calibration authority owned logically by Forecast Runtime, even though it shares the market-data schema.
+       */
+      id: string
+      seriesId: string
+      inputSource: string
+      inputRunId: string | null
+      targetBasis: $Enums.ForecastTargetBasis
+      methodId: string
+      methodVersion: string
+      modelId: string
+      horizonLabel: string
+      horizonMonths: number
+      calibrationOriginAt: Date
+      sampleCount: number
+      residualP10: Prisma.Decimal | null
+      residualP90: Prisma.Decimal | null
+      quantileMethod: string
+      status: $Enums.RollingDailyCalibrationStatus
+      lastResidualObservedAt: Date | null
+      refreshedAt: Date
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["rollingDailyCalibrationGroup"]>
+    composites: {}
+  }
+
+  type RollingDailyCalibrationGroupGetPayload<S extends boolean | null | undefined | RollingDailyCalibrationGroupDefaultArgs> = $Result.GetResult<Prisma.$RollingDailyCalibrationGroupPayload, S>
+
+  type RollingDailyCalibrationGroupCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<RollingDailyCalibrationGroupFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: RollingDailyCalibrationGroupCountAggregateInputType | true
+    }
+
+  export interface RollingDailyCalibrationGroupDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['RollingDailyCalibrationGroup'], meta: { name: 'RollingDailyCalibrationGroup' } }
+    /**
+     * Find zero or one RollingDailyCalibrationGroup that matches the filter.
+     * @param {RollingDailyCalibrationGroupFindUniqueArgs} args - Arguments to find a RollingDailyCalibrationGroup
+     * @example
+     * // Get one RollingDailyCalibrationGroup
+     * const rollingDailyCalibrationGroup = await prisma.rollingDailyCalibrationGroup.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends RollingDailyCalibrationGroupFindUniqueArgs>(args: SelectSubset<T, RollingDailyCalibrationGroupFindUniqueArgs<ExtArgs>>): Prisma__RollingDailyCalibrationGroupClient<$Result.GetResult<Prisma.$RollingDailyCalibrationGroupPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one RollingDailyCalibrationGroup that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {RollingDailyCalibrationGroupFindUniqueOrThrowArgs} args - Arguments to find a RollingDailyCalibrationGroup
+     * @example
+     * // Get one RollingDailyCalibrationGroup
+     * const rollingDailyCalibrationGroup = await prisma.rollingDailyCalibrationGroup.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends RollingDailyCalibrationGroupFindUniqueOrThrowArgs>(args: SelectSubset<T, RollingDailyCalibrationGroupFindUniqueOrThrowArgs<ExtArgs>>): Prisma__RollingDailyCalibrationGroupClient<$Result.GetResult<Prisma.$RollingDailyCalibrationGroupPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first RollingDailyCalibrationGroup that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyCalibrationGroupFindFirstArgs} args - Arguments to find a RollingDailyCalibrationGroup
+     * @example
+     * // Get one RollingDailyCalibrationGroup
+     * const rollingDailyCalibrationGroup = await prisma.rollingDailyCalibrationGroup.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends RollingDailyCalibrationGroupFindFirstArgs>(args?: SelectSubset<T, RollingDailyCalibrationGroupFindFirstArgs<ExtArgs>>): Prisma__RollingDailyCalibrationGroupClient<$Result.GetResult<Prisma.$RollingDailyCalibrationGroupPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first RollingDailyCalibrationGroup that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyCalibrationGroupFindFirstOrThrowArgs} args - Arguments to find a RollingDailyCalibrationGroup
+     * @example
+     * // Get one RollingDailyCalibrationGroup
+     * const rollingDailyCalibrationGroup = await prisma.rollingDailyCalibrationGroup.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends RollingDailyCalibrationGroupFindFirstOrThrowArgs>(args?: SelectSubset<T, RollingDailyCalibrationGroupFindFirstOrThrowArgs<ExtArgs>>): Prisma__RollingDailyCalibrationGroupClient<$Result.GetResult<Prisma.$RollingDailyCalibrationGroupPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more RollingDailyCalibrationGroups that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyCalibrationGroupFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all RollingDailyCalibrationGroups
+     * const rollingDailyCalibrationGroups = await prisma.rollingDailyCalibrationGroup.findMany()
+     * 
+     * // Get first 10 RollingDailyCalibrationGroups
+     * const rollingDailyCalibrationGroups = await prisma.rollingDailyCalibrationGroup.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const rollingDailyCalibrationGroupWithIdOnly = await prisma.rollingDailyCalibrationGroup.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends RollingDailyCalibrationGroupFindManyArgs>(args?: SelectSubset<T, RollingDailyCalibrationGroupFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RollingDailyCalibrationGroupPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a RollingDailyCalibrationGroup.
+     * @param {RollingDailyCalibrationGroupCreateArgs} args - Arguments to create a RollingDailyCalibrationGroup.
+     * @example
+     * // Create one RollingDailyCalibrationGroup
+     * const RollingDailyCalibrationGroup = await prisma.rollingDailyCalibrationGroup.create({
+     *   data: {
+     *     // ... data to create a RollingDailyCalibrationGroup
+     *   }
+     * })
+     * 
+     */
+    create<T extends RollingDailyCalibrationGroupCreateArgs>(args: SelectSubset<T, RollingDailyCalibrationGroupCreateArgs<ExtArgs>>): Prisma__RollingDailyCalibrationGroupClient<$Result.GetResult<Prisma.$RollingDailyCalibrationGroupPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many RollingDailyCalibrationGroups.
+     * @param {RollingDailyCalibrationGroupCreateManyArgs} args - Arguments to create many RollingDailyCalibrationGroups.
+     * @example
+     * // Create many RollingDailyCalibrationGroups
+     * const rollingDailyCalibrationGroup = await prisma.rollingDailyCalibrationGroup.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends RollingDailyCalibrationGroupCreateManyArgs>(args?: SelectSubset<T, RollingDailyCalibrationGroupCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many RollingDailyCalibrationGroups and returns the data saved in the database.
+     * @param {RollingDailyCalibrationGroupCreateManyAndReturnArgs} args - Arguments to create many RollingDailyCalibrationGroups.
+     * @example
+     * // Create many RollingDailyCalibrationGroups
+     * const rollingDailyCalibrationGroup = await prisma.rollingDailyCalibrationGroup.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many RollingDailyCalibrationGroups and only return the `id`
+     * const rollingDailyCalibrationGroupWithIdOnly = await prisma.rollingDailyCalibrationGroup.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends RollingDailyCalibrationGroupCreateManyAndReturnArgs>(args?: SelectSubset<T, RollingDailyCalibrationGroupCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RollingDailyCalibrationGroupPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a RollingDailyCalibrationGroup.
+     * @param {RollingDailyCalibrationGroupDeleteArgs} args - Arguments to delete one RollingDailyCalibrationGroup.
+     * @example
+     * // Delete one RollingDailyCalibrationGroup
+     * const RollingDailyCalibrationGroup = await prisma.rollingDailyCalibrationGroup.delete({
+     *   where: {
+     *     // ... filter to delete one RollingDailyCalibrationGroup
+     *   }
+     * })
+     * 
+     */
+    delete<T extends RollingDailyCalibrationGroupDeleteArgs>(args: SelectSubset<T, RollingDailyCalibrationGroupDeleteArgs<ExtArgs>>): Prisma__RollingDailyCalibrationGroupClient<$Result.GetResult<Prisma.$RollingDailyCalibrationGroupPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one RollingDailyCalibrationGroup.
+     * @param {RollingDailyCalibrationGroupUpdateArgs} args - Arguments to update one RollingDailyCalibrationGroup.
+     * @example
+     * // Update one RollingDailyCalibrationGroup
+     * const rollingDailyCalibrationGroup = await prisma.rollingDailyCalibrationGroup.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends RollingDailyCalibrationGroupUpdateArgs>(args: SelectSubset<T, RollingDailyCalibrationGroupUpdateArgs<ExtArgs>>): Prisma__RollingDailyCalibrationGroupClient<$Result.GetResult<Prisma.$RollingDailyCalibrationGroupPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more RollingDailyCalibrationGroups.
+     * @param {RollingDailyCalibrationGroupDeleteManyArgs} args - Arguments to filter RollingDailyCalibrationGroups to delete.
+     * @example
+     * // Delete a few RollingDailyCalibrationGroups
+     * const { count } = await prisma.rollingDailyCalibrationGroup.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends RollingDailyCalibrationGroupDeleteManyArgs>(args?: SelectSubset<T, RollingDailyCalibrationGroupDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more RollingDailyCalibrationGroups.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyCalibrationGroupUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many RollingDailyCalibrationGroups
+     * const rollingDailyCalibrationGroup = await prisma.rollingDailyCalibrationGroup.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends RollingDailyCalibrationGroupUpdateManyArgs>(args: SelectSubset<T, RollingDailyCalibrationGroupUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one RollingDailyCalibrationGroup.
+     * @param {RollingDailyCalibrationGroupUpsertArgs} args - Arguments to update or create a RollingDailyCalibrationGroup.
+     * @example
+     * // Update or create a RollingDailyCalibrationGroup
+     * const rollingDailyCalibrationGroup = await prisma.rollingDailyCalibrationGroup.upsert({
+     *   create: {
+     *     // ... data to create a RollingDailyCalibrationGroup
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the RollingDailyCalibrationGroup we want to update
+     *   }
+     * })
+     */
+    upsert<T extends RollingDailyCalibrationGroupUpsertArgs>(args: SelectSubset<T, RollingDailyCalibrationGroupUpsertArgs<ExtArgs>>): Prisma__RollingDailyCalibrationGroupClient<$Result.GetResult<Prisma.$RollingDailyCalibrationGroupPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of RollingDailyCalibrationGroups.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyCalibrationGroupCountArgs} args - Arguments to filter RollingDailyCalibrationGroups to count.
+     * @example
+     * // Count the number of RollingDailyCalibrationGroups
+     * const count = await prisma.rollingDailyCalibrationGroup.count({
+     *   where: {
+     *     // ... the filter for the RollingDailyCalibrationGroups we want to count
+     *   }
+     * })
+    **/
+    count<T extends RollingDailyCalibrationGroupCountArgs>(
+      args?: Subset<T, RollingDailyCalibrationGroupCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], RollingDailyCalibrationGroupCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a RollingDailyCalibrationGroup.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyCalibrationGroupAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends RollingDailyCalibrationGroupAggregateArgs>(args: Subset<T, RollingDailyCalibrationGroupAggregateArgs>): Prisma.PrismaPromise<GetRollingDailyCalibrationGroupAggregateType<T>>
+
+    /**
+     * Group by RollingDailyCalibrationGroup.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyCalibrationGroupGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends RollingDailyCalibrationGroupGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: RollingDailyCalibrationGroupGroupByArgs['orderBy'] }
+        : { orderBy?: RollingDailyCalibrationGroupGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, RollingDailyCalibrationGroupGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRollingDailyCalibrationGroupGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the RollingDailyCalibrationGroup model
+   */
+  readonly fields: RollingDailyCalibrationGroupFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for RollingDailyCalibrationGroup.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__RollingDailyCalibrationGroupClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the RollingDailyCalibrationGroup model
+   */ 
+  interface RollingDailyCalibrationGroupFieldRefs {
+    readonly id: FieldRef<"RollingDailyCalibrationGroup", 'String'>
+    readonly seriesId: FieldRef<"RollingDailyCalibrationGroup", 'String'>
+    readonly inputSource: FieldRef<"RollingDailyCalibrationGroup", 'String'>
+    readonly inputRunId: FieldRef<"RollingDailyCalibrationGroup", 'String'>
+    readonly targetBasis: FieldRef<"RollingDailyCalibrationGroup", 'ForecastTargetBasis'>
+    readonly methodId: FieldRef<"RollingDailyCalibrationGroup", 'String'>
+    readonly methodVersion: FieldRef<"RollingDailyCalibrationGroup", 'String'>
+    readonly modelId: FieldRef<"RollingDailyCalibrationGroup", 'String'>
+    readonly horizonLabel: FieldRef<"RollingDailyCalibrationGroup", 'String'>
+    readonly horizonMonths: FieldRef<"RollingDailyCalibrationGroup", 'Int'>
+    readonly calibrationOriginAt: FieldRef<"RollingDailyCalibrationGroup", 'DateTime'>
+    readonly sampleCount: FieldRef<"RollingDailyCalibrationGroup", 'Int'>
+    readonly residualP10: FieldRef<"RollingDailyCalibrationGroup", 'Decimal'>
+    readonly residualP90: FieldRef<"RollingDailyCalibrationGroup", 'Decimal'>
+    readonly quantileMethod: FieldRef<"RollingDailyCalibrationGroup", 'String'>
+    readonly status: FieldRef<"RollingDailyCalibrationGroup", 'RollingDailyCalibrationStatus'>
+    readonly lastResidualObservedAt: FieldRef<"RollingDailyCalibrationGroup", 'DateTime'>
+    readonly refreshedAt: FieldRef<"RollingDailyCalibrationGroup", 'DateTime'>
+    readonly createdAt: FieldRef<"RollingDailyCalibrationGroup", 'DateTime'>
+    readonly updatedAt: FieldRef<"RollingDailyCalibrationGroup", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * RollingDailyCalibrationGroup findUnique
+   */
+  export type RollingDailyCalibrationGroupFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCalibrationGroup
+     */
+    select?: RollingDailyCalibrationGroupSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyCalibrationGroup to fetch.
+     */
+    where: RollingDailyCalibrationGroupWhereUniqueInput
+  }
+
+  /**
+   * RollingDailyCalibrationGroup findUniqueOrThrow
+   */
+  export type RollingDailyCalibrationGroupFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCalibrationGroup
+     */
+    select?: RollingDailyCalibrationGroupSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyCalibrationGroup to fetch.
+     */
+    where: RollingDailyCalibrationGroupWhereUniqueInput
+  }
+
+  /**
+   * RollingDailyCalibrationGroup findFirst
+   */
+  export type RollingDailyCalibrationGroupFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCalibrationGroup
+     */
+    select?: RollingDailyCalibrationGroupSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyCalibrationGroup to fetch.
+     */
+    where?: RollingDailyCalibrationGroupWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RollingDailyCalibrationGroups to fetch.
+     */
+    orderBy?: RollingDailyCalibrationGroupOrderByWithRelationInput | RollingDailyCalibrationGroupOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RollingDailyCalibrationGroups.
+     */
+    cursor?: RollingDailyCalibrationGroupWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RollingDailyCalibrationGroups from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RollingDailyCalibrationGroups.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RollingDailyCalibrationGroups.
+     */
+    distinct?: RollingDailyCalibrationGroupScalarFieldEnum | RollingDailyCalibrationGroupScalarFieldEnum[]
+  }
+
+  /**
+   * RollingDailyCalibrationGroup findFirstOrThrow
+   */
+  export type RollingDailyCalibrationGroupFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCalibrationGroup
+     */
+    select?: RollingDailyCalibrationGroupSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyCalibrationGroup to fetch.
+     */
+    where?: RollingDailyCalibrationGroupWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RollingDailyCalibrationGroups to fetch.
+     */
+    orderBy?: RollingDailyCalibrationGroupOrderByWithRelationInput | RollingDailyCalibrationGroupOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RollingDailyCalibrationGroups.
+     */
+    cursor?: RollingDailyCalibrationGroupWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RollingDailyCalibrationGroups from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RollingDailyCalibrationGroups.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RollingDailyCalibrationGroups.
+     */
+    distinct?: RollingDailyCalibrationGroupScalarFieldEnum | RollingDailyCalibrationGroupScalarFieldEnum[]
+  }
+
+  /**
+   * RollingDailyCalibrationGroup findMany
+   */
+  export type RollingDailyCalibrationGroupFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCalibrationGroup
+     */
+    select?: RollingDailyCalibrationGroupSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyCalibrationGroups to fetch.
+     */
+    where?: RollingDailyCalibrationGroupWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RollingDailyCalibrationGroups to fetch.
+     */
+    orderBy?: RollingDailyCalibrationGroupOrderByWithRelationInput | RollingDailyCalibrationGroupOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing RollingDailyCalibrationGroups.
+     */
+    cursor?: RollingDailyCalibrationGroupWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RollingDailyCalibrationGroups from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RollingDailyCalibrationGroups.
+     */
+    skip?: number
+    distinct?: RollingDailyCalibrationGroupScalarFieldEnum | RollingDailyCalibrationGroupScalarFieldEnum[]
+  }
+
+  /**
+   * RollingDailyCalibrationGroup create
+   */
+  export type RollingDailyCalibrationGroupCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCalibrationGroup
+     */
+    select?: RollingDailyCalibrationGroupSelect<ExtArgs> | null
+    /**
+     * The data needed to create a RollingDailyCalibrationGroup.
+     */
+    data: XOR<RollingDailyCalibrationGroupCreateInput, RollingDailyCalibrationGroupUncheckedCreateInput>
+  }
+
+  /**
+   * RollingDailyCalibrationGroup createMany
+   */
+  export type RollingDailyCalibrationGroupCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many RollingDailyCalibrationGroups.
+     */
+    data: RollingDailyCalibrationGroupCreateManyInput | RollingDailyCalibrationGroupCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RollingDailyCalibrationGroup createManyAndReturn
+   */
+  export type RollingDailyCalibrationGroupCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCalibrationGroup
+     */
+    select?: RollingDailyCalibrationGroupSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many RollingDailyCalibrationGroups.
+     */
+    data: RollingDailyCalibrationGroupCreateManyInput | RollingDailyCalibrationGroupCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RollingDailyCalibrationGroup update
+   */
+  export type RollingDailyCalibrationGroupUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCalibrationGroup
+     */
+    select?: RollingDailyCalibrationGroupSelect<ExtArgs> | null
+    /**
+     * The data needed to update a RollingDailyCalibrationGroup.
+     */
+    data: XOR<RollingDailyCalibrationGroupUpdateInput, RollingDailyCalibrationGroupUncheckedUpdateInput>
+    /**
+     * Choose, which RollingDailyCalibrationGroup to update.
+     */
+    where: RollingDailyCalibrationGroupWhereUniqueInput
+  }
+
+  /**
+   * RollingDailyCalibrationGroup updateMany
+   */
+  export type RollingDailyCalibrationGroupUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update RollingDailyCalibrationGroups.
+     */
+    data: XOR<RollingDailyCalibrationGroupUpdateManyMutationInput, RollingDailyCalibrationGroupUncheckedUpdateManyInput>
+    /**
+     * Filter which RollingDailyCalibrationGroups to update
+     */
+    where?: RollingDailyCalibrationGroupWhereInput
+  }
+
+  /**
+   * RollingDailyCalibrationGroup upsert
+   */
+  export type RollingDailyCalibrationGroupUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCalibrationGroup
+     */
+    select?: RollingDailyCalibrationGroupSelect<ExtArgs> | null
+    /**
+     * The filter to search for the RollingDailyCalibrationGroup to update in case it exists.
+     */
+    where: RollingDailyCalibrationGroupWhereUniqueInput
+    /**
+     * In case the RollingDailyCalibrationGroup found by the `where` argument doesn't exist, create a new RollingDailyCalibrationGroup with this data.
+     */
+    create: XOR<RollingDailyCalibrationGroupCreateInput, RollingDailyCalibrationGroupUncheckedCreateInput>
+    /**
+     * In case the RollingDailyCalibrationGroup was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<RollingDailyCalibrationGroupUpdateInput, RollingDailyCalibrationGroupUncheckedUpdateInput>
+  }
+
+  /**
+   * RollingDailyCalibrationGroup delete
+   */
+  export type RollingDailyCalibrationGroupDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCalibrationGroup
+     */
+    select?: RollingDailyCalibrationGroupSelect<ExtArgs> | null
+    /**
+     * Filter which RollingDailyCalibrationGroup to delete.
+     */
+    where: RollingDailyCalibrationGroupWhereUniqueInput
+  }
+
+  /**
+   * RollingDailyCalibrationGroup deleteMany
+   */
+  export type RollingDailyCalibrationGroupDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RollingDailyCalibrationGroups to delete
+     */
+    where?: RollingDailyCalibrationGroupWhereInput
+  }
+
+  /**
+   * RollingDailyCalibrationGroup without action
+   */
+  export type RollingDailyCalibrationGroupDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyCalibrationGroup
+     */
+    select?: RollingDailyCalibrationGroupSelect<ExtArgs> | null
+  }
+
+
+  /**
+   * Model RollingDailyMaintenanceState
+   */
+
+  export type AggregateRollingDailyMaintenanceState = {
+    _count: RollingDailyMaintenanceStateCountAggregateOutputType | null
+    _avg: RollingDailyMaintenanceStateAvgAggregateOutputType | null
+    _sum: RollingDailyMaintenanceStateSumAggregateOutputType | null
+    _min: RollingDailyMaintenanceStateMinAggregateOutputType | null
+    _max: RollingDailyMaintenanceStateMaxAggregateOutputType | null
+  }
+
+  export type RollingDailyMaintenanceStateAvgAggregateOutputType = {
+    minimumTrainingObservations: number | null
+    minimumCalibrationSamples: number | null
+    latestSourceObservationCount: number | null
+  }
+
+  export type RollingDailyMaintenanceStateSumAggregateOutputType = {
+    minimumTrainingObservations: number | null
+    minimumCalibrationSamples: number | null
+    latestSourceObservationCount: number | null
+  }
+
+  export type RollingDailyMaintenanceStateMinAggregateOutputType = {
+    id: string | null
+    seriesId: string | null
+    inputSource: string | null
+    inputRunId: string | null
+    targetBasis: $Enums.ForecastTargetBasis | null
+    methodId: string | null
+    methodVersion: string | null
+    modelId: string | null
+    historicalOriginStartAt: Date | null
+    minimumTrainingObservations: number | null
+    minimumCalibrationSamples: number | null
+    latestSourceObservationAt: Date | null
+    latestSourceHistoryStartAt: Date | null
+    latestSourceObservationCount: number | null
+    latestSourceHistoryFingerprint: string | null
+    lastProcessedOriginAt: Date | null
+    lastMaturedObservedAt: Date | null
+    lastMaintenanceAt: Date | null
+    lastMaintenanceStatus: string | null
+    lastFailureReason: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type RollingDailyMaintenanceStateMaxAggregateOutputType = {
+    id: string | null
+    seriesId: string | null
+    inputSource: string | null
+    inputRunId: string | null
+    targetBasis: $Enums.ForecastTargetBasis | null
+    methodId: string | null
+    methodVersion: string | null
+    modelId: string | null
+    historicalOriginStartAt: Date | null
+    minimumTrainingObservations: number | null
+    minimumCalibrationSamples: number | null
+    latestSourceObservationAt: Date | null
+    latestSourceHistoryStartAt: Date | null
+    latestSourceObservationCount: number | null
+    latestSourceHistoryFingerprint: string | null
+    lastProcessedOriginAt: Date | null
+    lastMaturedObservedAt: Date | null
+    lastMaintenanceAt: Date | null
+    lastMaintenanceStatus: string | null
+    lastFailureReason: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type RollingDailyMaintenanceStateCountAggregateOutputType = {
+    id: number
+    seriesId: number
+    inputSource: number
+    inputRunId: number
+    targetBasis: number
+    methodId: number
+    methodVersion: number
+    modelId: number
+    historicalOriginStartAt: number
+    minimumTrainingObservations: number
+    minimumCalibrationSamples: number
+    latestSourceObservationAt: number
+    latestSourceHistoryStartAt: number
+    latestSourceObservationCount: number
+    latestSourceHistoryFingerprint: number
+    lastProcessedOriginAt: number
+    lastMaturedObservedAt: number
+    lastMaintenanceAt: number
+    lastMaintenanceStatus: number
+    lastFailureReason: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type RollingDailyMaintenanceStateAvgAggregateInputType = {
+    minimumTrainingObservations?: true
+    minimumCalibrationSamples?: true
+    latestSourceObservationCount?: true
+  }
+
+  export type RollingDailyMaintenanceStateSumAggregateInputType = {
+    minimumTrainingObservations?: true
+    minimumCalibrationSamples?: true
+    latestSourceObservationCount?: true
+  }
+
+  export type RollingDailyMaintenanceStateMinAggregateInputType = {
+    id?: true
+    seriesId?: true
+    inputSource?: true
+    inputRunId?: true
+    targetBasis?: true
+    methodId?: true
+    methodVersion?: true
+    modelId?: true
+    historicalOriginStartAt?: true
+    minimumTrainingObservations?: true
+    minimumCalibrationSamples?: true
+    latestSourceObservationAt?: true
+    latestSourceHistoryStartAt?: true
+    latestSourceObservationCount?: true
+    latestSourceHistoryFingerprint?: true
+    lastProcessedOriginAt?: true
+    lastMaturedObservedAt?: true
+    lastMaintenanceAt?: true
+    lastMaintenanceStatus?: true
+    lastFailureReason?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type RollingDailyMaintenanceStateMaxAggregateInputType = {
+    id?: true
+    seriesId?: true
+    inputSource?: true
+    inputRunId?: true
+    targetBasis?: true
+    methodId?: true
+    methodVersion?: true
+    modelId?: true
+    historicalOriginStartAt?: true
+    minimumTrainingObservations?: true
+    minimumCalibrationSamples?: true
+    latestSourceObservationAt?: true
+    latestSourceHistoryStartAt?: true
+    latestSourceObservationCount?: true
+    latestSourceHistoryFingerprint?: true
+    lastProcessedOriginAt?: true
+    lastMaturedObservedAt?: true
+    lastMaintenanceAt?: true
+    lastMaintenanceStatus?: true
+    lastFailureReason?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type RollingDailyMaintenanceStateCountAggregateInputType = {
+    id?: true
+    seriesId?: true
+    inputSource?: true
+    inputRunId?: true
+    targetBasis?: true
+    methodId?: true
+    methodVersion?: true
+    modelId?: true
+    historicalOriginStartAt?: true
+    minimumTrainingObservations?: true
+    minimumCalibrationSamples?: true
+    latestSourceObservationAt?: true
+    latestSourceHistoryStartAt?: true
+    latestSourceObservationCount?: true
+    latestSourceHistoryFingerprint?: true
+    lastProcessedOriginAt?: true
+    lastMaturedObservedAt?: true
+    lastMaintenanceAt?: true
+    lastMaintenanceStatus?: true
+    lastFailureReason?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type RollingDailyMaintenanceStateAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RollingDailyMaintenanceState to aggregate.
+     */
+    where?: RollingDailyMaintenanceStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RollingDailyMaintenanceStates to fetch.
+     */
+    orderBy?: RollingDailyMaintenanceStateOrderByWithRelationInput | RollingDailyMaintenanceStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: RollingDailyMaintenanceStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RollingDailyMaintenanceStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RollingDailyMaintenanceStates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned RollingDailyMaintenanceStates
+    **/
+    _count?: true | RollingDailyMaintenanceStateCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: RollingDailyMaintenanceStateAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: RollingDailyMaintenanceStateSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: RollingDailyMaintenanceStateMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: RollingDailyMaintenanceStateMaxAggregateInputType
+  }
+
+  export type GetRollingDailyMaintenanceStateAggregateType<T extends RollingDailyMaintenanceStateAggregateArgs> = {
+        [P in keyof T & keyof AggregateRollingDailyMaintenanceState]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateRollingDailyMaintenanceState[P]>
+      : GetScalarType<T[P], AggregateRollingDailyMaintenanceState[P]>
+  }
+
+
+
+
+  export type RollingDailyMaintenanceStateGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RollingDailyMaintenanceStateWhereInput
+    orderBy?: RollingDailyMaintenanceStateOrderByWithAggregationInput | RollingDailyMaintenanceStateOrderByWithAggregationInput[]
+    by: RollingDailyMaintenanceStateScalarFieldEnum[] | RollingDailyMaintenanceStateScalarFieldEnum
+    having?: RollingDailyMaintenanceStateScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: RollingDailyMaintenanceStateCountAggregateInputType | true
+    _avg?: RollingDailyMaintenanceStateAvgAggregateInputType
+    _sum?: RollingDailyMaintenanceStateSumAggregateInputType
+    _min?: RollingDailyMaintenanceStateMinAggregateInputType
+    _max?: RollingDailyMaintenanceStateMaxAggregateInputType
+  }
+
+  export type RollingDailyMaintenanceStateGroupByOutputType = {
+    id: string
+    seriesId: string
+    inputSource: string
+    inputRunId: string | null
+    targetBasis: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+    historicalOriginStartAt: Date
+    minimumTrainingObservations: number
+    minimumCalibrationSamples: number
+    latestSourceObservationAt: Date | null
+    latestSourceHistoryStartAt: Date | null
+    latestSourceObservationCount: number | null
+    latestSourceHistoryFingerprint: string | null
+    lastProcessedOriginAt: Date | null
+    lastMaturedObservedAt: Date | null
+    lastMaintenanceAt: Date | null
+    lastMaintenanceStatus: string | null
+    lastFailureReason: string | null
+    createdAt: Date
+    updatedAt: Date
+    _count: RollingDailyMaintenanceStateCountAggregateOutputType | null
+    _avg: RollingDailyMaintenanceStateAvgAggregateOutputType | null
+    _sum: RollingDailyMaintenanceStateSumAggregateOutputType | null
+    _min: RollingDailyMaintenanceStateMinAggregateOutputType | null
+    _max: RollingDailyMaintenanceStateMaxAggregateOutputType | null
+  }
+
+  type GetRollingDailyMaintenanceStateGroupByPayload<T extends RollingDailyMaintenanceStateGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<RollingDailyMaintenanceStateGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof RollingDailyMaintenanceStateGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], RollingDailyMaintenanceStateGroupByOutputType[P]>
+            : GetScalarType<T[P], RollingDailyMaintenanceStateGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type RollingDailyMaintenanceStateSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    seriesId?: boolean
+    inputSource?: boolean
+    inputRunId?: boolean
+    targetBasis?: boolean
+    methodId?: boolean
+    methodVersion?: boolean
+    modelId?: boolean
+    historicalOriginStartAt?: boolean
+    minimumTrainingObservations?: boolean
+    minimumCalibrationSamples?: boolean
+    latestSourceObservationAt?: boolean
+    latestSourceHistoryStartAt?: boolean
+    latestSourceObservationCount?: boolean
+    latestSourceHistoryFingerprint?: boolean
+    lastProcessedOriginAt?: boolean
+    lastMaturedObservedAt?: boolean
+    lastMaintenanceAt?: boolean
+    lastMaintenanceStatus?: boolean
+    lastFailureReason?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["rollingDailyMaintenanceState"]>
+
+  export type RollingDailyMaintenanceStateSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    seriesId?: boolean
+    inputSource?: boolean
+    inputRunId?: boolean
+    targetBasis?: boolean
+    methodId?: boolean
+    methodVersion?: boolean
+    modelId?: boolean
+    historicalOriginStartAt?: boolean
+    minimumTrainingObservations?: boolean
+    minimumCalibrationSamples?: boolean
+    latestSourceObservationAt?: boolean
+    latestSourceHistoryStartAt?: boolean
+    latestSourceObservationCount?: boolean
+    latestSourceHistoryFingerprint?: boolean
+    lastProcessedOriginAt?: boolean
+    lastMaturedObservedAt?: boolean
+    lastMaintenanceAt?: boolean
+    lastMaintenanceStatus?: boolean
+    lastFailureReason?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["rollingDailyMaintenanceState"]>
+
+  export type RollingDailyMaintenanceStateSelectScalar = {
+    id?: boolean
+    seriesId?: boolean
+    inputSource?: boolean
+    inputRunId?: boolean
+    targetBasis?: boolean
+    methodId?: boolean
+    methodVersion?: boolean
+    modelId?: boolean
+    historicalOriginStartAt?: boolean
+    minimumTrainingObservations?: boolean
+    minimumCalibrationSamples?: boolean
+    latestSourceObservationAt?: boolean
+    latestSourceHistoryStartAt?: boolean
+    latestSourceObservationCount?: boolean
+    latestSourceHistoryFingerprint?: boolean
+    lastProcessedOriginAt?: boolean
+    lastMaturedObservedAt?: boolean
+    lastMaintenanceAt?: boolean
+    lastMaintenanceStatus?: boolean
+    lastFailureReason?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+
+  export type $RollingDailyMaintenanceStatePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "RollingDailyMaintenanceState"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      /**
+       * Forecast-derived maintenance lifecycle state owned logically by Forecast Runtime, not by the Dynamic Market Data Store.
+       */
+      id: string
+      seriesId: string
+      inputSource: string
+      inputRunId: string | null
+      targetBasis: $Enums.ForecastTargetBasis
+      methodId: string
+      methodVersion: string
+      modelId: string
+      historicalOriginStartAt: Date
+      minimumTrainingObservations: number
+      minimumCalibrationSamples: number
+      latestSourceObservationAt: Date | null
+      latestSourceHistoryStartAt: Date | null
+      latestSourceObservationCount: number | null
+      latestSourceHistoryFingerprint: string | null
+      lastProcessedOriginAt: Date | null
+      lastMaturedObservedAt: Date | null
+      lastMaintenanceAt: Date | null
+      lastMaintenanceStatus: string | null
+      lastFailureReason: string | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["rollingDailyMaintenanceState"]>
+    composites: {}
+  }
+
+  type RollingDailyMaintenanceStateGetPayload<S extends boolean | null | undefined | RollingDailyMaintenanceStateDefaultArgs> = $Result.GetResult<Prisma.$RollingDailyMaintenanceStatePayload, S>
+
+  type RollingDailyMaintenanceStateCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<RollingDailyMaintenanceStateFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: RollingDailyMaintenanceStateCountAggregateInputType | true
+    }
+
+  export interface RollingDailyMaintenanceStateDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['RollingDailyMaintenanceState'], meta: { name: 'RollingDailyMaintenanceState' } }
+    /**
+     * Find zero or one RollingDailyMaintenanceState that matches the filter.
+     * @param {RollingDailyMaintenanceStateFindUniqueArgs} args - Arguments to find a RollingDailyMaintenanceState
+     * @example
+     * // Get one RollingDailyMaintenanceState
+     * const rollingDailyMaintenanceState = await prisma.rollingDailyMaintenanceState.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends RollingDailyMaintenanceStateFindUniqueArgs>(args: SelectSubset<T, RollingDailyMaintenanceStateFindUniqueArgs<ExtArgs>>): Prisma__RollingDailyMaintenanceStateClient<$Result.GetResult<Prisma.$RollingDailyMaintenanceStatePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one RollingDailyMaintenanceState that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {RollingDailyMaintenanceStateFindUniqueOrThrowArgs} args - Arguments to find a RollingDailyMaintenanceState
+     * @example
+     * // Get one RollingDailyMaintenanceState
+     * const rollingDailyMaintenanceState = await prisma.rollingDailyMaintenanceState.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends RollingDailyMaintenanceStateFindUniqueOrThrowArgs>(args: SelectSubset<T, RollingDailyMaintenanceStateFindUniqueOrThrowArgs<ExtArgs>>): Prisma__RollingDailyMaintenanceStateClient<$Result.GetResult<Prisma.$RollingDailyMaintenanceStatePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first RollingDailyMaintenanceState that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyMaintenanceStateFindFirstArgs} args - Arguments to find a RollingDailyMaintenanceState
+     * @example
+     * // Get one RollingDailyMaintenanceState
+     * const rollingDailyMaintenanceState = await prisma.rollingDailyMaintenanceState.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends RollingDailyMaintenanceStateFindFirstArgs>(args?: SelectSubset<T, RollingDailyMaintenanceStateFindFirstArgs<ExtArgs>>): Prisma__RollingDailyMaintenanceStateClient<$Result.GetResult<Prisma.$RollingDailyMaintenanceStatePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first RollingDailyMaintenanceState that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyMaintenanceStateFindFirstOrThrowArgs} args - Arguments to find a RollingDailyMaintenanceState
+     * @example
+     * // Get one RollingDailyMaintenanceState
+     * const rollingDailyMaintenanceState = await prisma.rollingDailyMaintenanceState.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends RollingDailyMaintenanceStateFindFirstOrThrowArgs>(args?: SelectSubset<T, RollingDailyMaintenanceStateFindFirstOrThrowArgs<ExtArgs>>): Prisma__RollingDailyMaintenanceStateClient<$Result.GetResult<Prisma.$RollingDailyMaintenanceStatePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more RollingDailyMaintenanceStates that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyMaintenanceStateFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all RollingDailyMaintenanceStates
+     * const rollingDailyMaintenanceStates = await prisma.rollingDailyMaintenanceState.findMany()
+     * 
+     * // Get first 10 RollingDailyMaintenanceStates
+     * const rollingDailyMaintenanceStates = await prisma.rollingDailyMaintenanceState.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const rollingDailyMaintenanceStateWithIdOnly = await prisma.rollingDailyMaintenanceState.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends RollingDailyMaintenanceStateFindManyArgs>(args?: SelectSubset<T, RollingDailyMaintenanceStateFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RollingDailyMaintenanceStatePayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a RollingDailyMaintenanceState.
+     * @param {RollingDailyMaintenanceStateCreateArgs} args - Arguments to create a RollingDailyMaintenanceState.
+     * @example
+     * // Create one RollingDailyMaintenanceState
+     * const RollingDailyMaintenanceState = await prisma.rollingDailyMaintenanceState.create({
+     *   data: {
+     *     // ... data to create a RollingDailyMaintenanceState
+     *   }
+     * })
+     * 
+     */
+    create<T extends RollingDailyMaintenanceStateCreateArgs>(args: SelectSubset<T, RollingDailyMaintenanceStateCreateArgs<ExtArgs>>): Prisma__RollingDailyMaintenanceStateClient<$Result.GetResult<Prisma.$RollingDailyMaintenanceStatePayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many RollingDailyMaintenanceStates.
+     * @param {RollingDailyMaintenanceStateCreateManyArgs} args - Arguments to create many RollingDailyMaintenanceStates.
+     * @example
+     * // Create many RollingDailyMaintenanceStates
+     * const rollingDailyMaintenanceState = await prisma.rollingDailyMaintenanceState.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends RollingDailyMaintenanceStateCreateManyArgs>(args?: SelectSubset<T, RollingDailyMaintenanceStateCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many RollingDailyMaintenanceStates and returns the data saved in the database.
+     * @param {RollingDailyMaintenanceStateCreateManyAndReturnArgs} args - Arguments to create many RollingDailyMaintenanceStates.
+     * @example
+     * // Create many RollingDailyMaintenanceStates
+     * const rollingDailyMaintenanceState = await prisma.rollingDailyMaintenanceState.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many RollingDailyMaintenanceStates and only return the `id`
+     * const rollingDailyMaintenanceStateWithIdOnly = await prisma.rollingDailyMaintenanceState.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends RollingDailyMaintenanceStateCreateManyAndReturnArgs>(args?: SelectSubset<T, RollingDailyMaintenanceStateCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RollingDailyMaintenanceStatePayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a RollingDailyMaintenanceState.
+     * @param {RollingDailyMaintenanceStateDeleteArgs} args - Arguments to delete one RollingDailyMaintenanceState.
+     * @example
+     * // Delete one RollingDailyMaintenanceState
+     * const RollingDailyMaintenanceState = await prisma.rollingDailyMaintenanceState.delete({
+     *   where: {
+     *     // ... filter to delete one RollingDailyMaintenanceState
+     *   }
+     * })
+     * 
+     */
+    delete<T extends RollingDailyMaintenanceStateDeleteArgs>(args: SelectSubset<T, RollingDailyMaintenanceStateDeleteArgs<ExtArgs>>): Prisma__RollingDailyMaintenanceStateClient<$Result.GetResult<Prisma.$RollingDailyMaintenanceStatePayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one RollingDailyMaintenanceState.
+     * @param {RollingDailyMaintenanceStateUpdateArgs} args - Arguments to update one RollingDailyMaintenanceState.
+     * @example
+     * // Update one RollingDailyMaintenanceState
+     * const rollingDailyMaintenanceState = await prisma.rollingDailyMaintenanceState.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends RollingDailyMaintenanceStateUpdateArgs>(args: SelectSubset<T, RollingDailyMaintenanceStateUpdateArgs<ExtArgs>>): Prisma__RollingDailyMaintenanceStateClient<$Result.GetResult<Prisma.$RollingDailyMaintenanceStatePayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more RollingDailyMaintenanceStates.
+     * @param {RollingDailyMaintenanceStateDeleteManyArgs} args - Arguments to filter RollingDailyMaintenanceStates to delete.
+     * @example
+     * // Delete a few RollingDailyMaintenanceStates
+     * const { count } = await prisma.rollingDailyMaintenanceState.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends RollingDailyMaintenanceStateDeleteManyArgs>(args?: SelectSubset<T, RollingDailyMaintenanceStateDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more RollingDailyMaintenanceStates.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyMaintenanceStateUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many RollingDailyMaintenanceStates
+     * const rollingDailyMaintenanceState = await prisma.rollingDailyMaintenanceState.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends RollingDailyMaintenanceStateUpdateManyArgs>(args: SelectSubset<T, RollingDailyMaintenanceStateUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one RollingDailyMaintenanceState.
+     * @param {RollingDailyMaintenanceStateUpsertArgs} args - Arguments to update or create a RollingDailyMaintenanceState.
+     * @example
+     * // Update or create a RollingDailyMaintenanceState
+     * const rollingDailyMaintenanceState = await prisma.rollingDailyMaintenanceState.upsert({
+     *   create: {
+     *     // ... data to create a RollingDailyMaintenanceState
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the RollingDailyMaintenanceState we want to update
+     *   }
+     * })
+     */
+    upsert<T extends RollingDailyMaintenanceStateUpsertArgs>(args: SelectSubset<T, RollingDailyMaintenanceStateUpsertArgs<ExtArgs>>): Prisma__RollingDailyMaintenanceStateClient<$Result.GetResult<Prisma.$RollingDailyMaintenanceStatePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of RollingDailyMaintenanceStates.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyMaintenanceStateCountArgs} args - Arguments to filter RollingDailyMaintenanceStates to count.
+     * @example
+     * // Count the number of RollingDailyMaintenanceStates
+     * const count = await prisma.rollingDailyMaintenanceState.count({
+     *   where: {
+     *     // ... the filter for the RollingDailyMaintenanceStates we want to count
+     *   }
+     * })
+    **/
+    count<T extends RollingDailyMaintenanceStateCountArgs>(
+      args?: Subset<T, RollingDailyMaintenanceStateCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], RollingDailyMaintenanceStateCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a RollingDailyMaintenanceState.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyMaintenanceStateAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends RollingDailyMaintenanceStateAggregateArgs>(args: Subset<T, RollingDailyMaintenanceStateAggregateArgs>): Prisma.PrismaPromise<GetRollingDailyMaintenanceStateAggregateType<T>>
+
+    /**
+     * Group by RollingDailyMaintenanceState.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RollingDailyMaintenanceStateGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends RollingDailyMaintenanceStateGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: RollingDailyMaintenanceStateGroupByArgs['orderBy'] }
+        : { orderBy?: RollingDailyMaintenanceStateGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, RollingDailyMaintenanceStateGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRollingDailyMaintenanceStateGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the RollingDailyMaintenanceState model
+   */
+  readonly fields: RollingDailyMaintenanceStateFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for RollingDailyMaintenanceState.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__RollingDailyMaintenanceStateClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the RollingDailyMaintenanceState model
+   */ 
+  interface RollingDailyMaintenanceStateFieldRefs {
+    readonly id: FieldRef<"RollingDailyMaintenanceState", 'String'>
+    readonly seriesId: FieldRef<"RollingDailyMaintenanceState", 'String'>
+    readonly inputSource: FieldRef<"RollingDailyMaintenanceState", 'String'>
+    readonly inputRunId: FieldRef<"RollingDailyMaintenanceState", 'String'>
+    readonly targetBasis: FieldRef<"RollingDailyMaintenanceState", 'ForecastTargetBasis'>
+    readonly methodId: FieldRef<"RollingDailyMaintenanceState", 'String'>
+    readonly methodVersion: FieldRef<"RollingDailyMaintenanceState", 'String'>
+    readonly modelId: FieldRef<"RollingDailyMaintenanceState", 'String'>
+    readonly historicalOriginStartAt: FieldRef<"RollingDailyMaintenanceState", 'DateTime'>
+    readonly minimumTrainingObservations: FieldRef<"RollingDailyMaintenanceState", 'Int'>
+    readonly minimumCalibrationSamples: FieldRef<"RollingDailyMaintenanceState", 'Int'>
+    readonly latestSourceObservationAt: FieldRef<"RollingDailyMaintenanceState", 'DateTime'>
+    readonly latestSourceHistoryStartAt: FieldRef<"RollingDailyMaintenanceState", 'DateTime'>
+    readonly latestSourceObservationCount: FieldRef<"RollingDailyMaintenanceState", 'Int'>
+    readonly latestSourceHistoryFingerprint: FieldRef<"RollingDailyMaintenanceState", 'String'>
+    readonly lastProcessedOriginAt: FieldRef<"RollingDailyMaintenanceState", 'DateTime'>
+    readonly lastMaturedObservedAt: FieldRef<"RollingDailyMaintenanceState", 'DateTime'>
+    readonly lastMaintenanceAt: FieldRef<"RollingDailyMaintenanceState", 'DateTime'>
+    readonly lastMaintenanceStatus: FieldRef<"RollingDailyMaintenanceState", 'String'>
+    readonly lastFailureReason: FieldRef<"RollingDailyMaintenanceState", 'String'>
+    readonly createdAt: FieldRef<"RollingDailyMaintenanceState", 'DateTime'>
+    readonly updatedAt: FieldRef<"RollingDailyMaintenanceState", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * RollingDailyMaintenanceState findUnique
+   */
+  export type RollingDailyMaintenanceStateFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyMaintenanceState
+     */
+    select?: RollingDailyMaintenanceStateSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyMaintenanceState to fetch.
+     */
+    where: RollingDailyMaintenanceStateWhereUniqueInput
+  }
+
+  /**
+   * RollingDailyMaintenanceState findUniqueOrThrow
+   */
+  export type RollingDailyMaintenanceStateFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyMaintenanceState
+     */
+    select?: RollingDailyMaintenanceStateSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyMaintenanceState to fetch.
+     */
+    where: RollingDailyMaintenanceStateWhereUniqueInput
+  }
+
+  /**
+   * RollingDailyMaintenanceState findFirst
+   */
+  export type RollingDailyMaintenanceStateFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyMaintenanceState
+     */
+    select?: RollingDailyMaintenanceStateSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyMaintenanceState to fetch.
+     */
+    where?: RollingDailyMaintenanceStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RollingDailyMaintenanceStates to fetch.
+     */
+    orderBy?: RollingDailyMaintenanceStateOrderByWithRelationInput | RollingDailyMaintenanceStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RollingDailyMaintenanceStates.
+     */
+    cursor?: RollingDailyMaintenanceStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RollingDailyMaintenanceStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RollingDailyMaintenanceStates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RollingDailyMaintenanceStates.
+     */
+    distinct?: RollingDailyMaintenanceStateScalarFieldEnum | RollingDailyMaintenanceStateScalarFieldEnum[]
+  }
+
+  /**
+   * RollingDailyMaintenanceState findFirstOrThrow
+   */
+  export type RollingDailyMaintenanceStateFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyMaintenanceState
+     */
+    select?: RollingDailyMaintenanceStateSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyMaintenanceState to fetch.
+     */
+    where?: RollingDailyMaintenanceStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RollingDailyMaintenanceStates to fetch.
+     */
+    orderBy?: RollingDailyMaintenanceStateOrderByWithRelationInput | RollingDailyMaintenanceStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RollingDailyMaintenanceStates.
+     */
+    cursor?: RollingDailyMaintenanceStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RollingDailyMaintenanceStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RollingDailyMaintenanceStates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RollingDailyMaintenanceStates.
+     */
+    distinct?: RollingDailyMaintenanceStateScalarFieldEnum | RollingDailyMaintenanceStateScalarFieldEnum[]
+  }
+
+  /**
+   * RollingDailyMaintenanceState findMany
+   */
+  export type RollingDailyMaintenanceStateFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyMaintenanceState
+     */
+    select?: RollingDailyMaintenanceStateSelect<ExtArgs> | null
+    /**
+     * Filter, which RollingDailyMaintenanceStates to fetch.
+     */
+    where?: RollingDailyMaintenanceStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RollingDailyMaintenanceStates to fetch.
+     */
+    orderBy?: RollingDailyMaintenanceStateOrderByWithRelationInput | RollingDailyMaintenanceStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing RollingDailyMaintenanceStates.
+     */
+    cursor?: RollingDailyMaintenanceStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RollingDailyMaintenanceStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RollingDailyMaintenanceStates.
+     */
+    skip?: number
+    distinct?: RollingDailyMaintenanceStateScalarFieldEnum | RollingDailyMaintenanceStateScalarFieldEnum[]
+  }
+
+  /**
+   * RollingDailyMaintenanceState create
+   */
+  export type RollingDailyMaintenanceStateCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyMaintenanceState
+     */
+    select?: RollingDailyMaintenanceStateSelect<ExtArgs> | null
+    /**
+     * The data needed to create a RollingDailyMaintenanceState.
+     */
+    data: XOR<RollingDailyMaintenanceStateCreateInput, RollingDailyMaintenanceStateUncheckedCreateInput>
+  }
+
+  /**
+   * RollingDailyMaintenanceState createMany
+   */
+  export type RollingDailyMaintenanceStateCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many RollingDailyMaintenanceStates.
+     */
+    data: RollingDailyMaintenanceStateCreateManyInput | RollingDailyMaintenanceStateCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RollingDailyMaintenanceState createManyAndReturn
+   */
+  export type RollingDailyMaintenanceStateCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyMaintenanceState
+     */
+    select?: RollingDailyMaintenanceStateSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many RollingDailyMaintenanceStates.
+     */
+    data: RollingDailyMaintenanceStateCreateManyInput | RollingDailyMaintenanceStateCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RollingDailyMaintenanceState update
+   */
+  export type RollingDailyMaintenanceStateUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyMaintenanceState
+     */
+    select?: RollingDailyMaintenanceStateSelect<ExtArgs> | null
+    /**
+     * The data needed to update a RollingDailyMaintenanceState.
+     */
+    data: XOR<RollingDailyMaintenanceStateUpdateInput, RollingDailyMaintenanceStateUncheckedUpdateInput>
+    /**
+     * Choose, which RollingDailyMaintenanceState to update.
+     */
+    where: RollingDailyMaintenanceStateWhereUniqueInput
+  }
+
+  /**
+   * RollingDailyMaintenanceState updateMany
+   */
+  export type RollingDailyMaintenanceStateUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update RollingDailyMaintenanceStates.
+     */
+    data: XOR<RollingDailyMaintenanceStateUpdateManyMutationInput, RollingDailyMaintenanceStateUncheckedUpdateManyInput>
+    /**
+     * Filter which RollingDailyMaintenanceStates to update
+     */
+    where?: RollingDailyMaintenanceStateWhereInput
+  }
+
+  /**
+   * RollingDailyMaintenanceState upsert
+   */
+  export type RollingDailyMaintenanceStateUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyMaintenanceState
+     */
+    select?: RollingDailyMaintenanceStateSelect<ExtArgs> | null
+    /**
+     * The filter to search for the RollingDailyMaintenanceState to update in case it exists.
+     */
+    where: RollingDailyMaintenanceStateWhereUniqueInput
+    /**
+     * In case the RollingDailyMaintenanceState found by the `where` argument doesn't exist, create a new RollingDailyMaintenanceState with this data.
+     */
+    create: XOR<RollingDailyMaintenanceStateCreateInput, RollingDailyMaintenanceStateUncheckedCreateInput>
+    /**
+     * In case the RollingDailyMaintenanceState was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<RollingDailyMaintenanceStateUpdateInput, RollingDailyMaintenanceStateUncheckedUpdateInput>
+  }
+
+  /**
+   * RollingDailyMaintenanceState delete
+   */
+  export type RollingDailyMaintenanceStateDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyMaintenanceState
+     */
+    select?: RollingDailyMaintenanceStateSelect<ExtArgs> | null
+    /**
+     * Filter which RollingDailyMaintenanceState to delete.
+     */
+    where: RollingDailyMaintenanceStateWhereUniqueInput
+  }
+
+  /**
+   * RollingDailyMaintenanceState deleteMany
+   */
+  export type RollingDailyMaintenanceStateDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RollingDailyMaintenanceStates to delete
+     */
+    where?: RollingDailyMaintenanceStateWhereInput
+  }
+
+  /**
+   * RollingDailyMaintenanceState without action
+   */
+  export type RollingDailyMaintenanceStateDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RollingDailyMaintenanceState
+     */
+    select?: RollingDailyMaintenanceStateSelect<ExtArgs> | null
+  }
+
+
+  /**
+   * Enums
+   */
+
+  export const TransactionIsolationLevel: {
+    ReadUncommitted: 'ReadUncommitted',
+    ReadCommitted: 'ReadCommitted',
+    RepeatableRead: 'RepeatableRead',
+    Serializable: 'Serializable'
+  };
+
+  export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
+
+
+  export const MarketSeriesScalarFieldEnum: {
+    id: 'id',
+    providerCode: 'providerCode',
+    providerSeriesId: 'providerSeriesId',
+    providerSeriesKey: 'providerSeriesKey',
+    displayName: 'displayName',
+    frequency: 'frequency',
+    currency: 'currency',
+    unit: 'unit',
+    sourceLabel: 'sourceLabel',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type MarketSeriesScalarFieldEnum = (typeof MarketSeriesScalarFieldEnum)[keyof typeof MarketSeriesScalarFieldEnum]
+
+
+  export const MarketObservationScalarFieldEnum: {
+    id: 'id',
+    seriesId: 'seriesId',
+    observedAt: 'observedAt',
+    value: 'value',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type MarketObservationScalarFieldEnum = (typeof MarketObservationScalarFieldEnum)[keyof typeof MarketObservationScalarFieldEnum]
+
+
+  export const MarketHydrationStateScalarFieldEnum: {
+    id: 'id',
+    seriesId: 'seriesId',
+    lastProviderFetchAt: 'lastProviderFetchAt',
+    earliestStoredObservationAt: 'earliestStoredObservationAt',
+    latestStoredObservationAt: 'latestStoredObservationAt',
+    lastHydrationStatus: 'lastHydrationStatus',
+    lastHydrationMessage: 'lastHydrationMessage',
+    lastHydratedObservationCount: 'lastHydratedObservationCount',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type MarketHydrationStateScalarFieldEnum = (typeof MarketHydrationStateScalarFieldEnum)[keyof typeof MarketHydrationStateScalarFieldEnum]
+
+
+  export const ForecastCurrentRunScalarFieldEnum: {
+    id: 'id',
+    seriesId: 'seriesId',
+    displayName: 'displayName',
+    description: 'description',
+    frequency: 'frequency',
+    currency: 'currency',
+    unit: 'unit',
+    sourceLabel: 'sourceLabel',
+    inputSource: 'inputSource',
+    inputRunId: 'inputRunId',
+    historyFingerprint: 'historyFingerprint',
+    targetBasis: 'targetBasis',
+    methodId: 'methodId',
+    historyStartAt: 'historyStartAt',
+    historyEndAt: 'historyEndAt',
+    observationCount: 'observationCount',
+    forecastOriginAt: 'forecastOriginAt',
+    modelId: 'modelId',
+    methodVersion: 'methodVersion',
+    status: 'status',
+    failureReason: 'failureReason',
+    runtimeSeconds: 'runtimeSeconds',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type ForecastCurrentRunScalarFieldEnum = (typeof ForecastCurrentRunScalarFieldEnum)[keyof typeof ForecastCurrentRunScalarFieldEnum]
+
+
+  export const ForecastCurrentPointScalarFieldEnum: {
+    id: 'id',
+    runId: 'runId',
+    horizonLabel: 'horizonLabel',
+    horizonSteps: 'horizonSteps',
+    forecastDate: 'forecastDate',
+    forecastValue: 'forecastValue',
+    fitStatus: 'fitStatus',
+    failureReason: 'failureReason',
+    selectedVariant: 'selectedVariant',
+    selectionMetric: 'selectionMetric',
+    selectionScore: 'selectionScore',
+    metadataJson: 'metadataJson',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type ForecastCurrentPointScalarFieldEnum = (typeof ForecastCurrentPointScalarFieldEnum)[keyof typeof ForecastCurrentPointScalarFieldEnum]
+
+
+  export const ForecastVerificationRunScalarFieldEnum: {
+    id: 'id',
+    seriesId: 'seriesId',
+    displayName: 'displayName',
+    description: 'description',
+    frequency: 'frequency',
+    currency: 'currency',
+    unit: 'unit',
+    sourceLabel: 'sourceLabel',
+    inputSource: 'inputSource',
+    inputRunId: 'inputRunId',
+    historyFingerprint: 'historyFingerprint',
+    targetBasis: 'targetBasis',
+    methodId: 'methodId',
+    historyStartAt: 'historyStartAt',
+    historyEndAt: 'historyEndAt',
+    observationCount: 'observationCount',
+    forecastOriginAt: 'forecastOriginAt',
+    modelId: 'modelId',
+    methodVersion: 'methodVersion',
+    status: 'status',
+    failureReason: 'failureReason',
+    runtimeSeconds: 'runtimeSeconds',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type ForecastVerificationRunScalarFieldEnum = (typeof ForecastVerificationRunScalarFieldEnum)[keyof typeof ForecastVerificationRunScalarFieldEnum]
+
+
+  export const ForecastVerificationMetricScalarFieldEnum: {
+    id: 'id',
+    runId: 'runId',
+    horizonLabel: 'horizonLabel',
+    horizonSteps: 'horizonSteps',
+    origins: 'origins',
+    expectedOrigins: 'expectedOrigins',
+    failedOrigins: 'failedOrigins',
+    coverage: 'coverage',
+    mae: 'mae',
+    rmse: 'rmse',
+    mase: 'mase',
+    smape: 'smape',
+    directionalAccuracy: 'directionalAccuracy',
+    bias: 'bias',
+    failureSummaryJson: 'failureSummaryJson',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type ForecastVerificationMetricScalarFieldEnum = (typeof ForecastVerificationMetricScalarFieldEnum)[keyof typeof ForecastVerificationMetricScalarFieldEnum]
+
+
+  export const ForecastVerificationPointScalarFieldEnum: {
+    id: 'id',
+    runId: 'runId',
+    horizonLabel: 'horizonLabel',
+    horizonSteps: 'horizonSteps',
+    forecastOriginAt: 'forecastOriginAt',
+    targetDate: 'targetDate',
+    actualObservedAt: 'actualObservedAt',
+    originValue: 'originValue',
+    forecastValue: 'forecastValue',
+    actualValue: 'actualValue',
+    errorValue: 'errorValue',
+    absoluteErrorValue: 'absoluteErrorValue',
+    deltaValue: 'deltaValue',
+    deltaPct: 'deltaPct',
+    maseScale: 'maseScale',
+    selectedVariant: 'selectedVariant',
+    selectionMetric: 'selectionMetric',
+    selectionScore: 'selectionScore',
+    metadataJson: 'metadataJson',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type ForecastVerificationPointScalarFieldEnum = (typeof ForecastVerificationPointScalarFieldEnum)[keyof typeof ForecastVerificationPointScalarFieldEnum]
+
+
+  export const RollingDailyVerificationRecordScalarFieldEnum: {
+    id: 'id',
+    seriesId: 'seriesId',
+    inputSource: 'inputSource',
+    inputRunId: 'inputRunId',
+    targetBasis: 'targetBasis',
+    methodId: 'methodId',
+    methodVersion: 'methodVersion',
+    modelId: 'modelId',
+    forecastOriginAt: 'forecastOriginAt',
+    horizonLabel: 'horizonLabel',
+    horizonMonths: 'horizonMonths',
+    horizonSteps: 'horizonSteps',
+    targetCalendarDate: 'targetCalendarDate',
+    verificationObservedAt: 'verificationObservedAt',
+    maturityStatus: 'maturityStatus',
+    originValue: 'originValue',
+    forecastValue: 'forecastValue',
+    actualValue: 'actualValue',
+    errorValue: 'errorValue',
+    absoluteErrorValue: 'absoluteErrorValue',
+    deltaValue: 'deltaValue',
+    deltaPct: 'deltaPct',
+    residualValue: 'residualValue',
+    maseScale: 'maseScale',
+    trainingHistoryStartAt: 'trainingHistoryStartAt',
+    trainingHistoryEndAt: 'trainingHistoryEndAt',
+    trainingObservationCount: 'trainingObservationCount',
+    sourceHistoryFingerprint: 'sourceHistoryFingerprint',
+    selectedVariant: 'selectedVariant',
+    selectionMetric: 'selectionMetric',
+    selectionScore: 'selectionScore',
+    metadataJson: 'metadataJson',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type RollingDailyVerificationRecordScalarFieldEnum = (typeof RollingDailyVerificationRecordScalarFieldEnum)[keyof typeof RollingDailyVerificationRecordScalarFieldEnum]
+
+
+  export const RollingDailyCurrentForecastSnapshotScalarFieldEnum: {
+    id: 'id',
+    seriesId: 'seriesId',
+    inputSource: 'inputSource',
+    inputRunId: 'inputRunId',
+    targetBasis: 'targetBasis',
+    methodId: 'methodId',
+    methodVersion: 'methodVersion',
+    modelId: 'modelId',
+    contractVersion: 'contractVersion',
+    status: 'status',
+    reasonCode: 'reasonCode',
+    message: 'message',
+    forecastOriginAt: 'forecastOriginAt',
+    sourceLatestObservationAt: 'sourceLatestObservationAt',
+    payloadJson: 'payloadJson',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type RollingDailyCurrentForecastSnapshotScalarFieldEnum = (typeof RollingDailyCurrentForecastSnapshotScalarFieldEnum)[keyof typeof RollingDailyCurrentForecastSnapshotScalarFieldEnum]
+
+
+  export const RollingDailyCalibrationGroupScalarFieldEnum: {
+    id: 'id',
+    seriesId: 'seriesId',
+    inputSource: 'inputSource',
+    inputRunId: 'inputRunId',
+    targetBasis: 'targetBasis',
+    methodId: 'methodId',
+    methodVersion: 'methodVersion',
+    modelId: 'modelId',
+    horizonLabel: 'horizonLabel',
+    horizonMonths: 'horizonMonths',
+    calibrationOriginAt: 'calibrationOriginAt',
+    sampleCount: 'sampleCount',
+    residualP10: 'residualP10',
+    residualP90: 'residualP90',
+    quantileMethod: 'quantileMethod',
+    status: 'status',
+    lastResidualObservedAt: 'lastResidualObservedAt',
+    refreshedAt: 'refreshedAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type RollingDailyCalibrationGroupScalarFieldEnum = (typeof RollingDailyCalibrationGroupScalarFieldEnum)[keyof typeof RollingDailyCalibrationGroupScalarFieldEnum]
+
+
+  export const RollingDailyMaintenanceStateScalarFieldEnum: {
+    id: 'id',
+    seriesId: 'seriesId',
+    inputSource: 'inputSource',
+    inputRunId: 'inputRunId',
+    targetBasis: 'targetBasis',
+    methodId: 'methodId',
+    methodVersion: 'methodVersion',
+    modelId: 'modelId',
+    historicalOriginStartAt: 'historicalOriginStartAt',
+    minimumTrainingObservations: 'minimumTrainingObservations',
+    minimumCalibrationSamples: 'minimumCalibrationSamples',
+    latestSourceObservationAt: 'latestSourceObservationAt',
+    latestSourceHistoryStartAt: 'latestSourceHistoryStartAt',
+    latestSourceObservationCount: 'latestSourceObservationCount',
+    latestSourceHistoryFingerprint: 'latestSourceHistoryFingerprint',
+    lastProcessedOriginAt: 'lastProcessedOriginAt',
+    lastMaturedObservedAt: 'lastMaturedObservedAt',
+    lastMaintenanceAt: 'lastMaintenanceAt',
+    lastMaintenanceStatus: 'lastMaintenanceStatus',
+    lastFailureReason: 'lastFailureReason',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type RollingDailyMaintenanceStateScalarFieldEnum = (typeof RollingDailyMaintenanceStateScalarFieldEnum)[keyof typeof RollingDailyMaintenanceStateScalarFieldEnum]
+
+
+  export const SortOrder: {
+    asc: 'asc',
+    desc: 'desc'
+  };
+
+  export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+  export const NullableJsonNullValueInput: {
+    DbNull: typeof DbNull,
+    JsonNull: typeof JsonNull
+  };
+
+  export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+  export const JsonNullValueInput: {
+    JsonNull: typeof JsonNull
+  };
+
+  export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
+  export const QueryMode: {
+    default: 'default',
+    insensitive: 'insensitive'
+  };
+
+  export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
+  export const NullsOrder: {
+    first: 'first',
+    last: 'last'
+  };
+
+  export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+  export const JsonNullValueFilter: {
+    DbNull: typeof DbNull,
+    JsonNull: typeof JsonNull,
+    AnyNull: typeof AnyNull
+  };
+
+  export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
+
+
+  /**
+   * Field references 
+   */
+
+
+  /**
+   * Reference to a field of type 'String'
+   */
+  export type StringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'String'>
+    
+
+
+  /**
+   * Reference to a field of type 'String[]'
+   */
+  export type ListStringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'String[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'DateTime'
+   */
+  export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
+    
+
+
+  /**
+   * Reference to a field of type 'DateTime[]'
+   */
+  export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'Decimal'
+   */
+  export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
+    
+
+
+  /**
+   * Reference to a field of type 'Decimal[]'
+   */
+  export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'Int'
+   */
+  export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+    
+
+
+  /**
+   * Reference to a field of type 'Int[]'
+   */
+  export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'ForecastTargetBasis'
+   */
+  export type EnumForecastTargetBasisFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ForecastTargetBasis'>
+    
+
+
+  /**
+   * Reference to a field of type 'ForecastTargetBasis[]'
+   */
+  export type ListEnumForecastTargetBasisFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ForecastTargetBasis[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'Float'
+   */
+  export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+    
+
+
+  /**
+   * Reference to a field of type 'Float[]'
+   */
+  export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'Json'
+   */
+  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+  /**
+   * Reference to a field of type 'RollingDailyVerificationMaturityStatus'
+   */
+  export type EnumRollingDailyVerificationMaturityStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RollingDailyVerificationMaturityStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'RollingDailyVerificationMaturityStatus[]'
+   */
+  export type ListEnumRollingDailyVerificationMaturityStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RollingDailyVerificationMaturityStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'RollingDailyCalibrationStatus'
+   */
+  export type EnumRollingDailyCalibrationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RollingDailyCalibrationStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'RollingDailyCalibrationStatus[]'
+   */
+  export type ListEnumRollingDailyCalibrationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RollingDailyCalibrationStatus[]'>
+    
+  /**
+   * Deep Input Types
+   */
+
+
+  export type MarketSeriesWhereInput = {
+    AND?: MarketSeriesWhereInput | MarketSeriesWhereInput[]
+    OR?: MarketSeriesWhereInput[]
+    NOT?: MarketSeriesWhereInput | MarketSeriesWhereInput[]
+    id?: StringFilter<"MarketSeries"> | string
+    providerCode?: StringFilter<"MarketSeries"> | string
+    providerSeriesId?: StringFilter<"MarketSeries"> | string
+    providerSeriesKey?: StringNullableFilter<"MarketSeries"> | string | null
+    displayName?: StringFilter<"MarketSeries"> | string
+    frequency?: StringNullableFilter<"MarketSeries"> | string | null
+    currency?: StringNullableFilter<"MarketSeries"> | string | null
+    unit?: StringNullableFilter<"MarketSeries"> | string | null
+    sourceLabel?: StringNullableFilter<"MarketSeries"> | string | null
+    createdAt?: DateTimeFilter<"MarketSeries"> | Date | string
+    updatedAt?: DateTimeFilter<"MarketSeries"> | Date | string
+    observations?: MarketObservationListRelationFilter
+    hydrationState?: XOR<MarketHydrationStateNullableRelationFilter, MarketHydrationStateWhereInput> | null
+  }
+
+  export type MarketSeriesOrderByWithRelationInput = {
+    id?: SortOrder
+    providerCode?: SortOrder
+    providerSeriesId?: SortOrder
+    providerSeriesKey?: SortOrderInput | SortOrder
+    displayName?: SortOrder
+    frequency?: SortOrderInput | SortOrder
+    currency?: SortOrderInput | SortOrder
+    unit?: SortOrderInput | SortOrder
+    sourceLabel?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    observations?: MarketObservationOrderByRelationAggregateInput
+    hydrationState?: MarketHydrationStateOrderByWithRelationInput
+  }
+
+  export type MarketSeriesWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    providerCode_providerSeriesId?: MarketSeriesProviderCodeProviderSeriesIdCompoundUniqueInput
+    AND?: MarketSeriesWhereInput | MarketSeriesWhereInput[]
+    OR?: MarketSeriesWhereInput[]
+    NOT?: MarketSeriesWhereInput | MarketSeriesWhereInput[]
+    providerCode?: StringFilter<"MarketSeries"> | string
+    providerSeriesId?: StringFilter<"MarketSeries"> | string
+    providerSeriesKey?: StringNullableFilter<"MarketSeries"> | string | null
+    displayName?: StringFilter<"MarketSeries"> | string
+    frequency?: StringNullableFilter<"MarketSeries"> | string | null
+    currency?: StringNullableFilter<"MarketSeries"> | string | null
+    unit?: StringNullableFilter<"MarketSeries"> | string | null
+    sourceLabel?: StringNullableFilter<"MarketSeries"> | string | null
+    createdAt?: DateTimeFilter<"MarketSeries"> | Date | string
+    updatedAt?: DateTimeFilter<"MarketSeries"> | Date | string
+    observations?: MarketObservationListRelationFilter
+    hydrationState?: XOR<MarketHydrationStateNullableRelationFilter, MarketHydrationStateWhereInput> | null
+  }, "id" | "providerCode_providerSeriesId">
+
+  export type MarketSeriesOrderByWithAggregationInput = {
+    id?: SortOrder
+    providerCode?: SortOrder
+    providerSeriesId?: SortOrder
+    providerSeriesKey?: SortOrderInput | SortOrder
+    displayName?: SortOrder
+    frequency?: SortOrderInput | SortOrder
+    currency?: SortOrderInput | SortOrder
+    unit?: SortOrderInput | SortOrder
+    sourceLabel?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: MarketSeriesCountOrderByAggregateInput
+    _max?: MarketSeriesMaxOrderByAggregateInput
+    _min?: MarketSeriesMinOrderByAggregateInput
+  }
+
+  export type MarketSeriesScalarWhereWithAggregatesInput = {
+    AND?: MarketSeriesScalarWhereWithAggregatesInput | MarketSeriesScalarWhereWithAggregatesInput[]
+    OR?: MarketSeriesScalarWhereWithAggregatesInput[]
+    NOT?: MarketSeriesScalarWhereWithAggregatesInput | MarketSeriesScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"MarketSeries"> | string
+    providerCode?: StringWithAggregatesFilter<"MarketSeries"> | string
+    providerSeriesId?: StringWithAggregatesFilter<"MarketSeries"> | string
+    providerSeriesKey?: StringNullableWithAggregatesFilter<"MarketSeries"> | string | null
+    displayName?: StringWithAggregatesFilter<"MarketSeries"> | string
+    frequency?: StringNullableWithAggregatesFilter<"MarketSeries"> | string | null
+    currency?: StringNullableWithAggregatesFilter<"MarketSeries"> | string | null
+    unit?: StringNullableWithAggregatesFilter<"MarketSeries"> | string | null
+    sourceLabel?: StringNullableWithAggregatesFilter<"MarketSeries"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"MarketSeries"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"MarketSeries"> | Date | string
+  }
+
+  export type MarketObservationWhereInput = {
+    AND?: MarketObservationWhereInput | MarketObservationWhereInput[]
+    OR?: MarketObservationWhereInput[]
+    NOT?: MarketObservationWhereInput | MarketObservationWhereInput[]
+    id?: StringFilter<"MarketObservation"> | string
+    seriesId?: StringFilter<"MarketObservation"> | string
+    observedAt?: DateTimeFilter<"MarketObservation"> | Date | string
+    value?: DecimalNullableFilter<"MarketObservation"> | Decimal | DecimalJsLike | number | string | null
+    createdAt?: DateTimeFilter<"MarketObservation"> | Date | string
+    updatedAt?: DateTimeFilter<"MarketObservation"> | Date | string
+    series?: XOR<MarketSeriesRelationFilter, MarketSeriesWhereInput>
+  }
+
+  export type MarketObservationOrderByWithRelationInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    observedAt?: SortOrder
+    value?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    series?: MarketSeriesOrderByWithRelationInput
+  }
+
+  export type MarketObservationWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    seriesId_observedAt?: MarketObservationSeriesIdObservedAtCompoundUniqueInput
+    AND?: MarketObservationWhereInput | MarketObservationWhereInput[]
+    OR?: MarketObservationWhereInput[]
+    NOT?: MarketObservationWhereInput | MarketObservationWhereInput[]
+    seriesId?: StringFilter<"MarketObservation"> | string
+    observedAt?: DateTimeFilter<"MarketObservation"> | Date | string
+    value?: DecimalNullableFilter<"MarketObservation"> | Decimal | DecimalJsLike | number | string | null
+    createdAt?: DateTimeFilter<"MarketObservation"> | Date | string
+    updatedAt?: DateTimeFilter<"MarketObservation"> | Date | string
+    series?: XOR<MarketSeriesRelationFilter, MarketSeriesWhereInput>
+  }, "id" | "seriesId_observedAt">
+
+  export type MarketObservationOrderByWithAggregationInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    observedAt?: SortOrder
+    value?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: MarketObservationCountOrderByAggregateInput
+    _avg?: MarketObservationAvgOrderByAggregateInput
+    _max?: MarketObservationMaxOrderByAggregateInput
+    _min?: MarketObservationMinOrderByAggregateInput
+    _sum?: MarketObservationSumOrderByAggregateInput
+  }
+
+  export type MarketObservationScalarWhereWithAggregatesInput = {
+    AND?: MarketObservationScalarWhereWithAggregatesInput | MarketObservationScalarWhereWithAggregatesInput[]
+    OR?: MarketObservationScalarWhereWithAggregatesInput[]
+    NOT?: MarketObservationScalarWhereWithAggregatesInput | MarketObservationScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"MarketObservation"> | string
+    seriesId?: StringWithAggregatesFilter<"MarketObservation"> | string
+    observedAt?: DateTimeWithAggregatesFilter<"MarketObservation"> | Date | string
+    value?: DecimalNullableWithAggregatesFilter<"MarketObservation"> | Decimal | DecimalJsLike | number | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"MarketObservation"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"MarketObservation"> | Date | string
+  }
+
+  export type MarketHydrationStateWhereInput = {
+    AND?: MarketHydrationStateWhereInput | MarketHydrationStateWhereInput[]
+    OR?: MarketHydrationStateWhereInput[]
+    NOT?: MarketHydrationStateWhereInput | MarketHydrationStateWhereInput[]
+    id?: StringFilter<"MarketHydrationState"> | string
+    seriesId?: StringFilter<"MarketHydrationState"> | string
+    lastProviderFetchAt?: DateTimeNullableFilter<"MarketHydrationState"> | Date | string | null
+    earliestStoredObservationAt?: DateTimeNullableFilter<"MarketHydrationState"> | Date | string | null
+    latestStoredObservationAt?: DateTimeNullableFilter<"MarketHydrationState"> | Date | string | null
+    lastHydrationStatus?: StringNullableFilter<"MarketHydrationState"> | string | null
+    lastHydrationMessage?: StringNullableFilter<"MarketHydrationState"> | string | null
+    lastHydratedObservationCount?: IntNullableFilter<"MarketHydrationState"> | number | null
+    createdAt?: DateTimeFilter<"MarketHydrationState"> | Date | string
+    updatedAt?: DateTimeFilter<"MarketHydrationState"> | Date | string
+    series?: XOR<MarketSeriesRelationFilter, MarketSeriesWhereInput>
+  }
+
+  export type MarketHydrationStateOrderByWithRelationInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    lastProviderFetchAt?: SortOrderInput | SortOrder
+    earliestStoredObservationAt?: SortOrderInput | SortOrder
+    latestStoredObservationAt?: SortOrderInput | SortOrder
+    lastHydrationStatus?: SortOrderInput | SortOrder
+    lastHydrationMessage?: SortOrderInput | SortOrder
+    lastHydratedObservationCount?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    series?: MarketSeriesOrderByWithRelationInput
+  }
+
+  export type MarketHydrationStateWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    seriesId?: string
+    AND?: MarketHydrationStateWhereInput | MarketHydrationStateWhereInput[]
+    OR?: MarketHydrationStateWhereInput[]
+    NOT?: MarketHydrationStateWhereInput | MarketHydrationStateWhereInput[]
+    lastProviderFetchAt?: DateTimeNullableFilter<"MarketHydrationState"> | Date | string | null
+    earliestStoredObservationAt?: DateTimeNullableFilter<"MarketHydrationState"> | Date | string | null
+    latestStoredObservationAt?: DateTimeNullableFilter<"MarketHydrationState"> | Date | string | null
+    lastHydrationStatus?: StringNullableFilter<"MarketHydrationState"> | string | null
+    lastHydrationMessage?: StringNullableFilter<"MarketHydrationState"> | string | null
+    lastHydratedObservationCount?: IntNullableFilter<"MarketHydrationState"> | number | null
+    createdAt?: DateTimeFilter<"MarketHydrationState"> | Date | string
+    updatedAt?: DateTimeFilter<"MarketHydrationState"> | Date | string
+    series?: XOR<MarketSeriesRelationFilter, MarketSeriesWhereInput>
+  }, "id" | "seriesId">
+
+  export type MarketHydrationStateOrderByWithAggregationInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    lastProviderFetchAt?: SortOrderInput | SortOrder
+    earliestStoredObservationAt?: SortOrderInput | SortOrder
+    latestStoredObservationAt?: SortOrderInput | SortOrder
+    lastHydrationStatus?: SortOrderInput | SortOrder
+    lastHydrationMessage?: SortOrderInput | SortOrder
+    lastHydratedObservationCount?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: MarketHydrationStateCountOrderByAggregateInput
+    _avg?: MarketHydrationStateAvgOrderByAggregateInput
+    _max?: MarketHydrationStateMaxOrderByAggregateInput
+    _min?: MarketHydrationStateMinOrderByAggregateInput
+    _sum?: MarketHydrationStateSumOrderByAggregateInput
+  }
+
+  export type MarketHydrationStateScalarWhereWithAggregatesInput = {
+    AND?: MarketHydrationStateScalarWhereWithAggregatesInput | MarketHydrationStateScalarWhereWithAggregatesInput[]
+    OR?: MarketHydrationStateScalarWhereWithAggregatesInput[]
+    NOT?: MarketHydrationStateScalarWhereWithAggregatesInput | MarketHydrationStateScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"MarketHydrationState"> | string
+    seriesId?: StringWithAggregatesFilter<"MarketHydrationState"> | string
+    lastProviderFetchAt?: DateTimeNullableWithAggregatesFilter<"MarketHydrationState"> | Date | string | null
+    earliestStoredObservationAt?: DateTimeNullableWithAggregatesFilter<"MarketHydrationState"> | Date | string | null
+    latestStoredObservationAt?: DateTimeNullableWithAggregatesFilter<"MarketHydrationState"> | Date | string | null
+    lastHydrationStatus?: StringNullableWithAggregatesFilter<"MarketHydrationState"> | string | null
+    lastHydrationMessage?: StringNullableWithAggregatesFilter<"MarketHydrationState"> | string | null
+    lastHydratedObservationCount?: IntNullableWithAggregatesFilter<"MarketHydrationState"> | number | null
+    createdAt?: DateTimeWithAggregatesFilter<"MarketHydrationState"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"MarketHydrationState"> | Date | string
+  }
+
+  export type ForecastCurrentRunWhereInput = {
+    AND?: ForecastCurrentRunWhereInput | ForecastCurrentRunWhereInput[]
+    OR?: ForecastCurrentRunWhereInput[]
+    NOT?: ForecastCurrentRunWhereInput | ForecastCurrentRunWhereInput[]
+    id?: StringFilter<"ForecastCurrentRun"> | string
+    seriesId?: StringFilter<"ForecastCurrentRun"> | string
+    displayName?: StringFilter<"ForecastCurrentRun"> | string
+    description?: StringNullableFilter<"ForecastCurrentRun"> | string | null
+    frequency?: StringNullableFilter<"ForecastCurrentRun"> | string | null
+    currency?: StringNullableFilter<"ForecastCurrentRun"> | string | null
+    unit?: StringNullableFilter<"ForecastCurrentRun"> | string | null
+    sourceLabel?: StringNullableFilter<"ForecastCurrentRun"> | string | null
+    inputSource?: StringFilter<"ForecastCurrentRun"> | string
+    inputRunId?: StringNullableFilter<"ForecastCurrentRun"> | string | null
+    historyFingerprint?: StringFilter<"ForecastCurrentRun"> | string
+    targetBasis?: EnumForecastTargetBasisFilter<"ForecastCurrentRun"> | $Enums.ForecastTargetBasis
+    methodId?: StringFilter<"ForecastCurrentRun"> | string
+    historyStartAt?: DateTimeNullableFilter<"ForecastCurrentRun"> | Date | string | null
+    historyEndAt?: DateTimeNullableFilter<"ForecastCurrentRun"> | Date | string | null
+    observationCount?: IntFilter<"ForecastCurrentRun"> | number
+    forecastOriginAt?: DateTimeNullableFilter<"ForecastCurrentRun"> | Date | string | null
+    modelId?: StringFilter<"ForecastCurrentRun"> | string
+    methodVersion?: StringFilter<"ForecastCurrentRun"> | string
+    status?: StringFilter<"ForecastCurrentRun"> | string
+    failureReason?: StringNullableFilter<"ForecastCurrentRun"> | string | null
+    runtimeSeconds?: FloatNullableFilter<"ForecastCurrentRun"> | number | null
+    createdAt?: DateTimeFilter<"ForecastCurrentRun"> | Date | string
+    updatedAt?: DateTimeFilter<"ForecastCurrentRun"> | Date | string
+    points?: ForecastCurrentPointListRelationFilter
+  }
+
+  export type ForecastCurrentRunOrderByWithRelationInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    displayName?: SortOrder
+    description?: SortOrderInput | SortOrder
+    frequency?: SortOrderInput | SortOrder
+    currency?: SortOrderInput | SortOrder
+    unit?: SortOrderInput | SortOrder
+    sourceLabel?: SortOrderInput | SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrderInput | SortOrder
+    historyFingerprint?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    historyStartAt?: SortOrderInput | SortOrder
+    historyEndAt?: SortOrderInput | SortOrder
+    observationCount?: SortOrder
+    forecastOriginAt?: SortOrderInput | SortOrder
+    modelId?: SortOrder
+    methodVersion?: SortOrder
+    status?: SortOrder
+    failureReason?: SortOrderInput | SortOrder
+    runtimeSeconds?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    points?: ForecastCurrentPointOrderByRelationAggregateInput
+  }
+
+  export type ForecastCurrentRunWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion?: ForecastCurrentRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionCompoundUniqueInput
+    AND?: ForecastCurrentRunWhereInput | ForecastCurrentRunWhereInput[]
+    OR?: ForecastCurrentRunWhereInput[]
+    NOT?: ForecastCurrentRunWhereInput | ForecastCurrentRunWhereInput[]
+    seriesId?: StringFilter<"ForecastCurrentRun"> | string
+    displayName?: StringFilter<"ForecastCurrentRun"> | string
+    description?: StringNullableFilter<"ForecastCurrentRun"> | string | null
+    frequency?: StringNullableFilter<"ForecastCurrentRun"> | string | null
+    currency?: StringNullableFilter<"ForecastCurrentRun"> | string | null
+    unit?: StringNullableFilter<"ForecastCurrentRun"> | string | null
+    sourceLabel?: StringNullableFilter<"ForecastCurrentRun"> | string | null
+    inputSource?: StringFilter<"ForecastCurrentRun"> | string
+    inputRunId?: StringNullableFilter<"ForecastCurrentRun"> | string | null
+    historyFingerprint?: StringFilter<"ForecastCurrentRun"> | string
+    targetBasis?: EnumForecastTargetBasisFilter<"ForecastCurrentRun"> | $Enums.ForecastTargetBasis
+    methodId?: StringFilter<"ForecastCurrentRun"> | string
+    historyStartAt?: DateTimeNullableFilter<"ForecastCurrentRun"> | Date | string | null
+    historyEndAt?: DateTimeNullableFilter<"ForecastCurrentRun"> | Date | string | null
+    observationCount?: IntFilter<"ForecastCurrentRun"> | number
+    forecastOriginAt?: DateTimeNullableFilter<"ForecastCurrentRun"> | Date | string | null
+    modelId?: StringFilter<"ForecastCurrentRun"> | string
+    methodVersion?: StringFilter<"ForecastCurrentRun"> | string
+    status?: StringFilter<"ForecastCurrentRun"> | string
+    failureReason?: StringNullableFilter<"ForecastCurrentRun"> | string | null
+    runtimeSeconds?: FloatNullableFilter<"ForecastCurrentRun"> | number | null
+    createdAt?: DateTimeFilter<"ForecastCurrentRun"> | Date | string
+    updatedAt?: DateTimeFilter<"ForecastCurrentRun"> | Date | string
+    points?: ForecastCurrentPointListRelationFilter
+  }, "id" | "seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion">
+
+  export type ForecastCurrentRunOrderByWithAggregationInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    displayName?: SortOrder
+    description?: SortOrderInput | SortOrder
+    frequency?: SortOrderInput | SortOrder
+    currency?: SortOrderInput | SortOrder
+    unit?: SortOrderInput | SortOrder
+    sourceLabel?: SortOrderInput | SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrderInput | SortOrder
+    historyFingerprint?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    historyStartAt?: SortOrderInput | SortOrder
+    historyEndAt?: SortOrderInput | SortOrder
+    observationCount?: SortOrder
+    forecastOriginAt?: SortOrderInput | SortOrder
+    modelId?: SortOrder
+    methodVersion?: SortOrder
+    status?: SortOrder
+    failureReason?: SortOrderInput | SortOrder
+    runtimeSeconds?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: ForecastCurrentRunCountOrderByAggregateInput
+    _avg?: ForecastCurrentRunAvgOrderByAggregateInput
+    _max?: ForecastCurrentRunMaxOrderByAggregateInput
+    _min?: ForecastCurrentRunMinOrderByAggregateInput
+    _sum?: ForecastCurrentRunSumOrderByAggregateInput
+  }
+
+  export type ForecastCurrentRunScalarWhereWithAggregatesInput = {
+    AND?: ForecastCurrentRunScalarWhereWithAggregatesInput | ForecastCurrentRunScalarWhereWithAggregatesInput[]
+    OR?: ForecastCurrentRunScalarWhereWithAggregatesInput[]
+    NOT?: ForecastCurrentRunScalarWhereWithAggregatesInput | ForecastCurrentRunScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ForecastCurrentRun"> | string
+    seriesId?: StringWithAggregatesFilter<"ForecastCurrentRun"> | string
+    displayName?: StringWithAggregatesFilter<"ForecastCurrentRun"> | string
+    description?: StringNullableWithAggregatesFilter<"ForecastCurrentRun"> | string | null
+    frequency?: StringNullableWithAggregatesFilter<"ForecastCurrentRun"> | string | null
+    currency?: StringNullableWithAggregatesFilter<"ForecastCurrentRun"> | string | null
+    unit?: StringNullableWithAggregatesFilter<"ForecastCurrentRun"> | string | null
+    sourceLabel?: StringNullableWithAggregatesFilter<"ForecastCurrentRun"> | string | null
+    inputSource?: StringWithAggregatesFilter<"ForecastCurrentRun"> | string
+    inputRunId?: StringNullableWithAggregatesFilter<"ForecastCurrentRun"> | string | null
+    historyFingerprint?: StringWithAggregatesFilter<"ForecastCurrentRun"> | string
+    targetBasis?: EnumForecastTargetBasisWithAggregatesFilter<"ForecastCurrentRun"> | $Enums.ForecastTargetBasis
+    methodId?: StringWithAggregatesFilter<"ForecastCurrentRun"> | string
+    historyStartAt?: DateTimeNullableWithAggregatesFilter<"ForecastCurrentRun"> | Date | string | null
+    historyEndAt?: DateTimeNullableWithAggregatesFilter<"ForecastCurrentRun"> | Date | string | null
+    observationCount?: IntWithAggregatesFilter<"ForecastCurrentRun"> | number
+    forecastOriginAt?: DateTimeNullableWithAggregatesFilter<"ForecastCurrentRun"> | Date | string | null
+    modelId?: StringWithAggregatesFilter<"ForecastCurrentRun"> | string
+    methodVersion?: StringWithAggregatesFilter<"ForecastCurrentRun"> | string
+    status?: StringWithAggregatesFilter<"ForecastCurrentRun"> | string
+    failureReason?: StringNullableWithAggregatesFilter<"ForecastCurrentRun"> | string | null
+    runtimeSeconds?: FloatNullableWithAggregatesFilter<"ForecastCurrentRun"> | number | null
+    createdAt?: DateTimeWithAggregatesFilter<"ForecastCurrentRun"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"ForecastCurrentRun"> | Date | string
+  }
+
+  export type ForecastCurrentPointWhereInput = {
+    AND?: ForecastCurrentPointWhereInput | ForecastCurrentPointWhereInput[]
+    OR?: ForecastCurrentPointWhereInput[]
+    NOT?: ForecastCurrentPointWhereInput | ForecastCurrentPointWhereInput[]
+    id?: StringFilter<"ForecastCurrentPoint"> | string
+    runId?: StringFilter<"ForecastCurrentPoint"> | string
+    horizonLabel?: StringFilter<"ForecastCurrentPoint"> | string
+    horizonSteps?: IntFilter<"ForecastCurrentPoint"> | number
+    forecastDate?: DateTimeFilter<"ForecastCurrentPoint"> | Date | string
+    forecastValue?: DecimalNullableFilter<"ForecastCurrentPoint"> | Decimal | DecimalJsLike | number | string | null
+    fitStatus?: StringNullableFilter<"ForecastCurrentPoint"> | string | null
+    failureReason?: StringNullableFilter<"ForecastCurrentPoint"> | string | null
+    selectedVariant?: StringNullableFilter<"ForecastCurrentPoint"> | string | null
+    selectionMetric?: StringNullableFilter<"ForecastCurrentPoint"> | string | null
+    selectionScore?: FloatNullableFilter<"ForecastCurrentPoint"> | number | null
+    metadataJson?: JsonNullableFilter<"ForecastCurrentPoint">
+    createdAt?: DateTimeFilter<"ForecastCurrentPoint"> | Date | string
+    updatedAt?: DateTimeFilter<"ForecastCurrentPoint"> | Date | string
+    run?: XOR<ForecastCurrentRunRelationFilter, ForecastCurrentRunWhereInput>
+  }
+
+  export type ForecastCurrentPointOrderByWithRelationInput = {
+    id?: SortOrder
+    runId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonSteps?: SortOrder
+    forecastDate?: SortOrder
+    forecastValue?: SortOrderInput | SortOrder
+    fitStatus?: SortOrderInput | SortOrder
+    failureReason?: SortOrderInput | SortOrder
+    selectedVariant?: SortOrderInput | SortOrder
+    selectionMetric?: SortOrderInput | SortOrder
+    selectionScore?: SortOrderInput | SortOrder
+    metadataJson?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    run?: ForecastCurrentRunOrderByWithRelationInput
+  }
+
+  export type ForecastCurrentPointWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    runId_horizonLabel?: ForecastCurrentPointRunIdHorizonLabelCompoundUniqueInput
+    AND?: ForecastCurrentPointWhereInput | ForecastCurrentPointWhereInput[]
+    OR?: ForecastCurrentPointWhereInput[]
+    NOT?: ForecastCurrentPointWhereInput | ForecastCurrentPointWhereInput[]
+    runId?: StringFilter<"ForecastCurrentPoint"> | string
+    horizonLabel?: StringFilter<"ForecastCurrentPoint"> | string
+    horizonSteps?: IntFilter<"ForecastCurrentPoint"> | number
+    forecastDate?: DateTimeFilter<"ForecastCurrentPoint"> | Date | string
+    forecastValue?: DecimalNullableFilter<"ForecastCurrentPoint"> | Decimal | DecimalJsLike | number | string | null
+    fitStatus?: StringNullableFilter<"ForecastCurrentPoint"> | string | null
+    failureReason?: StringNullableFilter<"ForecastCurrentPoint"> | string | null
+    selectedVariant?: StringNullableFilter<"ForecastCurrentPoint"> | string | null
+    selectionMetric?: StringNullableFilter<"ForecastCurrentPoint"> | string | null
+    selectionScore?: FloatNullableFilter<"ForecastCurrentPoint"> | number | null
+    metadataJson?: JsonNullableFilter<"ForecastCurrentPoint">
+    createdAt?: DateTimeFilter<"ForecastCurrentPoint"> | Date | string
+    updatedAt?: DateTimeFilter<"ForecastCurrentPoint"> | Date | string
+    run?: XOR<ForecastCurrentRunRelationFilter, ForecastCurrentRunWhereInput>
+  }, "id" | "runId_horizonLabel">
+
+  export type ForecastCurrentPointOrderByWithAggregationInput = {
+    id?: SortOrder
+    runId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonSteps?: SortOrder
+    forecastDate?: SortOrder
+    forecastValue?: SortOrderInput | SortOrder
+    fitStatus?: SortOrderInput | SortOrder
+    failureReason?: SortOrderInput | SortOrder
+    selectedVariant?: SortOrderInput | SortOrder
+    selectionMetric?: SortOrderInput | SortOrder
+    selectionScore?: SortOrderInput | SortOrder
+    metadataJson?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: ForecastCurrentPointCountOrderByAggregateInput
+    _avg?: ForecastCurrentPointAvgOrderByAggregateInput
+    _max?: ForecastCurrentPointMaxOrderByAggregateInput
+    _min?: ForecastCurrentPointMinOrderByAggregateInput
+    _sum?: ForecastCurrentPointSumOrderByAggregateInput
+  }
+
+  export type ForecastCurrentPointScalarWhereWithAggregatesInput = {
+    AND?: ForecastCurrentPointScalarWhereWithAggregatesInput | ForecastCurrentPointScalarWhereWithAggregatesInput[]
+    OR?: ForecastCurrentPointScalarWhereWithAggregatesInput[]
+    NOT?: ForecastCurrentPointScalarWhereWithAggregatesInput | ForecastCurrentPointScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ForecastCurrentPoint"> | string
+    runId?: StringWithAggregatesFilter<"ForecastCurrentPoint"> | string
+    horizonLabel?: StringWithAggregatesFilter<"ForecastCurrentPoint"> | string
+    horizonSteps?: IntWithAggregatesFilter<"ForecastCurrentPoint"> | number
+    forecastDate?: DateTimeWithAggregatesFilter<"ForecastCurrentPoint"> | Date | string
+    forecastValue?: DecimalNullableWithAggregatesFilter<"ForecastCurrentPoint"> | Decimal | DecimalJsLike | number | string | null
+    fitStatus?: StringNullableWithAggregatesFilter<"ForecastCurrentPoint"> | string | null
+    failureReason?: StringNullableWithAggregatesFilter<"ForecastCurrentPoint"> | string | null
+    selectedVariant?: StringNullableWithAggregatesFilter<"ForecastCurrentPoint"> | string | null
+    selectionMetric?: StringNullableWithAggregatesFilter<"ForecastCurrentPoint"> | string | null
+    selectionScore?: FloatNullableWithAggregatesFilter<"ForecastCurrentPoint"> | number | null
+    metadataJson?: JsonNullableWithAggregatesFilter<"ForecastCurrentPoint">
+    createdAt?: DateTimeWithAggregatesFilter<"ForecastCurrentPoint"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"ForecastCurrentPoint"> | Date | string
+  }
+
+  export type ForecastVerificationRunWhereInput = {
+    AND?: ForecastVerificationRunWhereInput | ForecastVerificationRunWhereInput[]
+    OR?: ForecastVerificationRunWhereInput[]
+    NOT?: ForecastVerificationRunWhereInput | ForecastVerificationRunWhereInput[]
+    id?: StringFilter<"ForecastVerificationRun"> | string
+    seriesId?: StringFilter<"ForecastVerificationRun"> | string
+    displayName?: StringFilter<"ForecastVerificationRun"> | string
+    description?: StringNullableFilter<"ForecastVerificationRun"> | string | null
+    frequency?: StringNullableFilter<"ForecastVerificationRun"> | string | null
+    currency?: StringNullableFilter<"ForecastVerificationRun"> | string | null
+    unit?: StringNullableFilter<"ForecastVerificationRun"> | string | null
+    sourceLabel?: StringNullableFilter<"ForecastVerificationRun"> | string | null
+    inputSource?: StringFilter<"ForecastVerificationRun"> | string
+    inputRunId?: StringNullableFilter<"ForecastVerificationRun"> | string | null
+    historyFingerprint?: StringFilter<"ForecastVerificationRun"> | string
+    targetBasis?: EnumForecastTargetBasisFilter<"ForecastVerificationRun"> | $Enums.ForecastTargetBasis
+    methodId?: StringFilter<"ForecastVerificationRun"> | string
+    historyStartAt?: DateTimeNullableFilter<"ForecastVerificationRun"> | Date | string | null
+    historyEndAt?: DateTimeNullableFilter<"ForecastVerificationRun"> | Date | string | null
+    observationCount?: IntFilter<"ForecastVerificationRun"> | number
+    forecastOriginAt?: DateTimeNullableFilter<"ForecastVerificationRun"> | Date | string | null
+    modelId?: StringFilter<"ForecastVerificationRun"> | string
+    methodVersion?: StringFilter<"ForecastVerificationRun"> | string
+    status?: StringFilter<"ForecastVerificationRun"> | string
+    failureReason?: StringNullableFilter<"ForecastVerificationRun"> | string | null
+    runtimeSeconds?: FloatNullableFilter<"ForecastVerificationRun"> | number | null
+    createdAt?: DateTimeFilter<"ForecastVerificationRun"> | Date | string
+    updatedAt?: DateTimeFilter<"ForecastVerificationRun"> | Date | string
+    metrics?: ForecastVerificationMetricListRelationFilter
+    points?: ForecastVerificationPointListRelationFilter
+  }
+
+  export type ForecastVerificationRunOrderByWithRelationInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    displayName?: SortOrder
+    description?: SortOrderInput | SortOrder
+    frequency?: SortOrderInput | SortOrder
+    currency?: SortOrderInput | SortOrder
+    unit?: SortOrderInput | SortOrder
+    sourceLabel?: SortOrderInput | SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrderInput | SortOrder
+    historyFingerprint?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    historyStartAt?: SortOrderInput | SortOrder
+    historyEndAt?: SortOrderInput | SortOrder
+    observationCount?: SortOrder
+    forecastOriginAt?: SortOrderInput | SortOrder
+    modelId?: SortOrder
+    methodVersion?: SortOrder
+    status?: SortOrder
+    failureReason?: SortOrderInput | SortOrder
+    runtimeSeconds?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    metrics?: ForecastVerificationMetricOrderByRelationAggregateInput
+    points?: ForecastVerificationPointOrderByRelationAggregateInput
+  }
+
+  export type ForecastVerificationRunWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion?: ForecastVerificationRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionCompoundUniqueInput
+    AND?: ForecastVerificationRunWhereInput | ForecastVerificationRunWhereInput[]
+    OR?: ForecastVerificationRunWhereInput[]
+    NOT?: ForecastVerificationRunWhereInput | ForecastVerificationRunWhereInput[]
+    seriesId?: StringFilter<"ForecastVerificationRun"> | string
+    displayName?: StringFilter<"ForecastVerificationRun"> | string
+    description?: StringNullableFilter<"ForecastVerificationRun"> | string | null
+    frequency?: StringNullableFilter<"ForecastVerificationRun"> | string | null
+    currency?: StringNullableFilter<"ForecastVerificationRun"> | string | null
+    unit?: StringNullableFilter<"ForecastVerificationRun"> | string | null
+    sourceLabel?: StringNullableFilter<"ForecastVerificationRun"> | string | null
+    inputSource?: StringFilter<"ForecastVerificationRun"> | string
+    inputRunId?: StringNullableFilter<"ForecastVerificationRun"> | string | null
+    historyFingerprint?: StringFilter<"ForecastVerificationRun"> | string
+    targetBasis?: EnumForecastTargetBasisFilter<"ForecastVerificationRun"> | $Enums.ForecastTargetBasis
+    methodId?: StringFilter<"ForecastVerificationRun"> | string
+    historyStartAt?: DateTimeNullableFilter<"ForecastVerificationRun"> | Date | string | null
+    historyEndAt?: DateTimeNullableFilter<"ForecastVerificationRun"> | Date | string | null
+    observationCount?: IntFilter<"ForecastVerificationRun"> | number
+    forecastOriginAt?: DateTimeNullableFilter<"ForecastVerificationRun"> | Date | string | null
+    modelId?: StringFilter<"ForecastVerificationRun"> | string
+    methodVersion?: StringFilter<"ForecastVerificationRun"> | string
+    status?: StringFilter<"ForecastVerificationRun"> | string
+    failureReason?: StringNullableFilter<"ForecastVerificationRun"> | string | null
+    runtimeSeconds?: FloatNullableFilter<"ForecastVerificationRun"> | number | null
+    createdAt?: DateTimeFilter<"ForecastVerificationRun"> | Date | string
+    updatedAt?: DateTimeFilter<"ForecastVerificationRun"> | Date | string
+    metrics?: ForecastVerificationMetricListRelationFilter
+    points?: ForecastVerificationPointListRelationFilter
+  }, "id" | "seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion">
+
+  export type ForecastVerificationRunOrderByWithAggregationInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    displayName?: SortOrder
+    description?: SortOrderInput | SortOrder
+    frequency?: SortOrderInput | SortOrder
+    currency?: SortOrderInput | SortOrder
+    unit?: SortOrderInput | SortOrder
+    sourceLabel?: SortOrderInput | SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrderInput | SortOrder
+    historyFingerprint?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    historyStartAt?: SortOrderInput | SortOrder
+    historyEndAt?: SortOrderInput | SortOrder
+    observationCount?: SortOrder
+    forecastOriginAt?: SortOrderInput | SortOrder
+    modelId?: SortOrder
+    methodVersion?: SortOrder
+    status?: SortOrder
+    failureReason?: SortOrderInput | SortOrder
+    runtimeSeconds?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: ForecastVerificationRunCountOrderByAggregateInput
+    _avg?: ForecastVerificationRunAvgOrderByAggregateInput
+    _max?: ForecastVerificationRunMaxOrderByAggregateInput
+    _min?: ForecastVerificationRunMinOrderByAggregateInput
+    _sum?: ForecastVerificationRunSumOrderByAggregateInput
+  }
+
+  export type ForecastVerificationRunScalarWhereWithAggregatesInput = {
+    AND?: ForecastVerificationRunScalarWhereWithAggregatesInput | ForecastVerificationRunScalarWhereWithAggregatesInput[]
+    OR?: ForecastVerificationRunScalarWhereWithAggregatesInput[]
+    NOT?: ForecastVerificationRunScalarWhereWithAggregatesInput | ForecastVerificationRunScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ForecastVerificationRun"> | string
+    seriesId?: StringWithAggregatesFilter<"ForecastVerificationRun"> | string
+    displayName?: StringWithAggregatesFilter<"ForecastVerificationRun"> | string
+    description?: StringNullableWithAggregatesFilter<"ForecastVerificationRun"> | string | null
+    frequency?: StringNullableWithAggregatesFilter<"ForecastVerificationRun"> | string | null
+    currency?: StringNullableWithAggregatesFilter<"ForecastVerificationRun"> | string | null
+    unit?: StringNullableWithAggregatesFilter<"ForecastVerificationRun"> | string | null
+    sourceLabel?: StringNullableWithAggregatesFilter<"ForecastVerificationRun"> | string | null
+    inputSource?: StringWithAggregatesFilter<"ForecastVerificationRun"> | string
+    inputRunId?: StringNullableWithAggregatesFilter<"ForecastVerificationRun"> | string | null
+    historyFingerprint?: StringWithAggregatesFilter<"ForecastVerificationRun"> | string
+    targetBasis?: EnumForecastTargetBasisWithAggregatesFilter<"ForecastVerificationRun"> | $Enums.ForecastTargetBasis
+    methodId?: StringWithAggregatesFilter<"ForecastVerificationRun"> | string
+    historyStartAt?: DateTimeNullableWithAggregatesFilter<"ForecastVerificationRun"> | Date | string | null
+    historyEndAt?: DateTimeNullableWithAggregatesFilter<"ForecastVerificationRun"> | Date | string | null
+    observationCount?: IntWithAggregatesFilter<"ForecastVerificationRun"> | number
+    forecastOriginAt?: DateTimeNullableWithAggregatesFilter<"ForecastVerificationRun"> | Date | string | null
+    modelId?: StringWithAggregatesFilter<"ForecastVerificationRun"> | string
+    methodVersion?: StringWithAggregatesFilter<"ForecastVerificationRun"> | string
+    status?: StringWithAggregatesFilter<"ForecastVerificationRun"> | string
+    failureReason?: StringNullableWithAggregatesFilter<"ForecastVerificationRun"> | string | null
+    runtimeSeconds?: FloatNullableWithAggregatesFilter<"ForecastVerificationRun"> | number | null
+    createdAt?: DateTimeWithAggregatesFilter<"ForecastVerificationRun"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"ForecastVerificationRun"> | Date | string
+  }
+
+  export type ForecastVerificationMetricWhereInput = {
+    AND?: ForecastVerificationMetricWhereInput | ForecastVerificationMetricWhereInput[]
+    OR?: ForecastVerificationMetricWhereInput[]
+    NOT?: ForecastVerificationMetricWhereInput | ForecastVerificationMetricWhereInput[]
+    id?: StringFilter<"ForecastVerificationMetric"> | string
+    runId?: StringFilter<"ForecastVerificationMetric"> | string
+    horizonLabel?: StringFilter<"ForecastVerificationMetric"> | string
+    horizonSteps?: IntFilter<"ForecastVerificationMetric"> | number
+    origins?: IntFilter<"ForecastVerificationMetric"> | number
+    expectedOrigins?: IntFilter<"ForecastVerificationMetric"> | number
+    failedOrigins?: IntFilter<"ForecastVerificationMetric"> | number
+    coverage?: FloatFilter<"ForecastVerificationMetric"> | number
+    mae?: FloatNullableFilter<"ForecastVerificationMetric"> | number | null
+    rmse?: FloatNullableFilter<"ForecastVerificationMetric"> | number | null
+    mase?: FloatNullableFilter<"ForecastVerificationMetric"> | number | null
+    smape?: FloatNullableFilter<"ForecastVerificationMetric"> | number | null
+    directionalAccuracy?: FloatNullableFilter<"ForecastVerificationMetric"> | number | null
+    bias?: FloatNullableFilter<"ForecastVerificationMetric"> | number | null
+    failureSummaryJson?: JsonNullableFilter<"ForecastVerificationMetric">
+    createdAt?: DateTimeFilter<"ForecastVerificationMetric"> | Date | string
+    updatedAt?: DateTimeFilter<"ForecastVerificationMetric"> | Date | string
+    run?: XOR<ForecastVerificationRunRelationFilter, ForecastVerificationRunWhereInput>
+  }
+
+  export type ForecastVerificationMetricOrderByWithRelationInput = {
+    id?: SortOrder
+    runId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonSteps?: SortOrder
+    origins?: SortOrder
+    expectedOrigins?: SortOrder
+    failedOrigins?: SortOrder
+    coverage?: SortOrder
+    mae?: SortOrderInput | SortOrder
+    rmse?: SortOrderInput | SortOrder
+    mase?: SortOrderInput | SortOrder
+    smape?: SortOrderInput | SortOrder
+    directionalAccuracy?: SortOrderInput | SortOrder
+    bias?: SortOrderInput | SortOrder
+    failureSummaryJson?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    run?: ForecastVerificationRunOrderByWithRelationInput
+  }
+
+  export type ForecastVerificationMetricWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    runId_horizonLabel?: ForecastVerificationMetricRunIdHorizonLabelCompoundUniqueInput
+    AND?: ForecastVerificationMetricWhereInput | ForecastVerificationMetricWhereInput[]
+    OR?: ForecastVerificationMetricWhereInput[]
+    NOT?: ForecastVerificationMetricWhereInput | ForecastVerificationMetricWhereInput[]
+    runId?: StringFilter<"ForecastVerificationMetric"> | string
+    horizonLabel?: StringFilter<"ForecastVerificationMetric"> | string
+    horizonSteps?: IntFilter<"ForecastVerificationMetric"> | number
+    origins?: IntFilter<"ForecastVerificationMetric"> | number
+    expectedOrigins?: IntFilter<"ForecastVerificationMetric"> | number
+    failedOrigins?: IntFilter<"ForecastVerificationMetric"> | number
+    coverage?: FloatFilter<"ForecastVerificationMetric"> | number
+    mae?: FloatNullableFilter<"ForecastVerificationMetric"> | number | null
+    rmse?: FloatNullableFilter<"ForecastVerificationMetric"> | number | null
+    mase?: FloatNullableFilter<"ForecastVerificationMetric"> | number | null
+    smape?: FloatNullableFilter<"ForecastVerificationMetric"> | number | null
+    directionalAccuracy?: FloatNullableFilter<"ForecastVerificationMetric"> | number | null
+    bias?: FloatNullableFilter<"ForecastVerificationMetric"> | number | null
+    failureSummaryJson?: JsonNullableFilter<"ForecastVerificationMetric">
+    createdAt?: DateTimeFilter<"ForecastVerificationMetric"> | Date | string
+    updatedAt?: DateTimeFilter<"ForecastVerificationMetric"> | Date | string
+    run?: XOR<ForecastVerificationRunRelationFilter, ForecastVerificationRunWhereInput>
+  }, "id" | "runId_horizonLabel">
+
+  export type ForecastVerificationMetricOrderByWithAggregationInput = {
+    id?: SortOrder
+    runId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonSteps?: SortOrder
+    origins?: SortOrder
+    expectedOrigins?: SortOrder
+    failedOrigins?: SortOrder
+    coverage?: SortOrder
+    mae?: SortOrderInput | SortOrder
+    rmse?: SortOrderInput | SortOrder
+    mase?: SortOrderInput | SortOrder
+    smape?: SortOrderInput | SortOrder
+    directionalAccuracy?: SortOrderInput | SortOrder
+    bias?: SortOrderInput | SortOrder
+    failureSummaryJson?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: ForecastVerificationMetricCountOrderByAggregateInput
+    _avg?: ForecastVerificationMetricAvgOrderByAggregateInput
+    _max?: ForecastVerificationMetricMaxOrderByAggregateInput
+    _min?: ForecastVerificationMetricMinOrderByAggregateInput
+    _sum?: ForecastVerificationMetricSumOrderByAggregateInput
+  }
+
+  export type ForecastVerificationMetricScalarWhereWithAggregatesInput = {
+    AND?: ForecastVerificationMetricScalarWhereWithAggregatesInput | ForecastVerificationMetricScalarWhereWithAggregatesInput[]
+    OR?: ForecastVerificationMetricScalarWhereWithAggregatesInput[]
+    NOT?: ForecastVerificationMetricScalarWhereWithAggregatesInput | ForecastVerificationMetricScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ForecastVerificationMetric"> | string
+    runId?: StringWithAggregatesFilter<"ForecastVerificationMetric"> | string
+    horizonLabel?: StringWithAggregatesFilter<"ForecastVerificationMetric"> | string
+    horizonSteps?: IntWithAggregatesFilter<"ForecastVerificationMetric"> | number
+    origins?: IntWithAggregatesFilter<"ForecastVerificationMetric"> | number
+    expectedOrigins?: IntWithAggregatesFilter<"ForecastVerificationMetric"> | number
+    failedOrigins?: IntWithAggregatesFilter<"ForecastVerificationMetric"> | number
+    coverage?: FloatWithAggregatesFilter<"ForecastVerificationMetric"> | number
+    mae?: FloatNullableWithAggregatesFilter<"ForecastVerificationMetric"> | number | null
+    rmse?: FloatNullableWithAggregatesFilter<"ForecastVerificationMetric"> | number | null
+    mase?: FloatNullableWithAggregatesFilter<"ForecastVerificationMetric"> | number | null
+    smape?: FloatNullableWithAggregatesFilter<"ForecastVerificationMetric"> | number | null
+    directionalAccuracy?: FloatNullableWithAggregatesFilter<"ForecastVerificationMetric"> | number | null
+    bias?: FloatNullableWithAggregatesFilter<"ForecastVerificationMetric"> | number | null
+    failureSummaryJson?: JsonNullableWithAggregatesFilter<"ForecastVerificationMetric">
+    createdAt?: DateTimeWithAggregatesFilter<"ForecastVerificationMetric"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"ForecastVerificationMetric"> | Date | string
+  }
+
+  export type ForecastVerificationPointWhereInput = {
+    AND?: ForecastVerificationPointWhereInput | ForecastVerificationPointWhereInput[]
+    OR?: ForecastVerificationPointWhereInput[]
+    NOT?: ForecastVerificationPointWhereInput | ForecastVerificationPointWhereInput[]
+    id?: StringFilter<"ForecastVerificationPoint"> | string
+    runId?: StringFilter<"ForecastVerificationPoint"> | string
+    horizonLabel?: StringFilter<"ForecastVerificationPoint"> | string
+    horizonSteps?: IntFilter<"ForecastVerificationPoint"> | number
+    forecastOriginAt?: DateTimeFilter<"ForecastVerificationPoint"> | Date | string
+    targetDate?: DateTimeFilter<"ForecastVerificationPoint"> | Date | string
+    actualObservedAt?: DateTimeNullableFilter<"ForecastVerificationPoint"> | Date | string | null
+    originValue?: DecimalFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    forecastValue?: DecimalFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    actualValue?: DecimalFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    errorValue?: DecimalFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    absoluteErrorValue?: DecimalFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    deltaValue?: DecimalFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    deltaPct?: FloatNullableFilter<"ForecastVerificationPoint"> | number | null
+    maseScale?: FloatFilter<"ForecastVerificationPoint"> | number
+    selectedVariant?: StringNullableFilter<"ForecastVerificationPoint"> | string | null
+    selectionMetric?: StringNullableFilter<"ForecastVerificationPoint"> | string | null
+    selectionScore?: FloatNullableFilter<"ForecastVerificationPoint"> | number | null
+    metadataJson?: JsonNullableFilter<"ForecastVerificationPoint">
+    createdAt?: DateTimeFilter<"ForecastVerificationPoint"> | Date | string
+    updatedAt?: DateTimeFilter<"ForecastVerificationPoint"> | Date | string
+    run?: XOR<ForecastVerificationRunRelationFilter, ForecastVerificationRunWhereInput>
+  }
+
+  export type ForecastVerificationPointOrderByWithRelationInput = {
+    id?: SortOrder
+    runId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonSteps?: SortOrder
+    forecastOriginAt?: SortOrder
+    targetDate?: SortOrder
+    actualObservedAt?: SortOrderInput | SortOrder
+    originValue?: SortOrder
+    forecastValue?: SortOrder
+    actualValue?: SortOrder
+    errorValue?: SortOrder
+    absoluteErrorValue?: SortOrder
+    deltaValue?: SortOrder
+    deltaPct?: SortOrderInput | SortOrder
+    maseScale?: SortOrder
+    selectedVariant?: SortOrderInput | SortOrder
+    selectionMetric?: SortOrderInput | SortOrder
+    selectionScore?: SortOrderInput | SortOrder
+    metadataJson?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    run?: ForecastVerificationRunOrderByWithRelationInput
+  }
+
+  export type ForecastVerificationPointWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    runId_horizonLabel_forecastOriginAt_targetDate?: ForecastVerificationPointRunIdHorizonLabelForecastOriginAtTargetDateCompoundUniqueInput
+    AND?: ForecastVerificationPointWhereInput | ForecastVerificationPointWhereInput[]
+    OR?: ForecastVerificationPointWhereInput[]
+    NOT?: ForecastVerificationPointWhereInput | ForecastVerificationPointWhereInput[]
+    runId?: StringFilter<"ForecastVerificationPoint"> | string
+    horizonLabel?: StringFilter<"ForecastVerificationPoint"> | string
+    horizonSteps?: IntFilter<"ForecastVerificationPoint"> | number
+    forecastOriginAt?: DateTimeFilter<"ForecastVerificationPoint"> | Date | string
+    targetDate?: DateTimeFilter<"ForecastVerificationPoint"> | Date | string
+    actualObservedAt?: DateTimeNullableFilter<"ForecastVerificationPoint"> | Date | string | null
+    originValue?: DecimalFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    forecastValue?: DecimalFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    actualValue?: DecimalFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    errorValue?: DecimalFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    absoluteErrorValue?: DecimalFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    deltaValue?: DecimalFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    deltaPct?: FloatNullableFilter<"ForecastVerificationPoint"> | number | null
+    maseScale?: FloatFilter<"ForecastVerificationPoint"> | number
+    selectedVariant?: StringNullableFilter<"ForecastVerificationPoint"> | string | null
+    selectionMetric?: StringNullableFilter<"ForecastVerificationPoint"> | string | null
+    selectionScore?: FloatNullableFilter<"ForecastVerificationPoint"> | number | null
+    metadataJson?: JsonNullableFilter<"ForecastVerificationPoint">
+    createdAt?: DateTimeFilter<"ForecastVerificationPoint"> | Date | string
+    updatedAt?: DateTimeFilter<"ForecastVerificationPoint"> | Date | string
+    run?: XOR<ForecastVerificationRunRelationFilter, ForecastVerificationRunWhereInput>
+  }, "id" | "runId_horizonLabel_forecastOriginAt_targetDate">
+
+  export type ForecastVerificationPointOrderByWithAggregationInput = {
+    id?: SortOrder
+    runId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonSteps?: SortOrder
+    forecastOriginAt?: SortOrder
+    targetDate?: SortOrder
+    actualObservedAt?: SortOrderInput | SortOrder
+    originValue?: SortOrder
+    forecastValue?: SortOrder
+    actualValue?: SortOrder
+    errorValue?: SortOrder
+    absoluteErrorValue?: SortOrder
+    deltaValue?: SortOrder
+    deltaPct?: SortOrderInput | SortOrder
+    maseScale?: SortOrder
+    selectedVariant?: SortOrderInput | SortOrder
+    selectionMetric?: SortOrderInput | SortOrder
+    selectionScore?: SortOrderInput | SortOrder
+    metadataJson?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: ForecastVerificationPointCountOrderByAggregateInput
+    _avg?: ForecastVerificationPointAvgOrderByAggregateInput
+    _max?: ForecastVerificationPointMaxOrderByAggregateInput
+    _min?: ForecastVerificationPointMinOrderByAggregateInput
+    _sum?: ForecastVerificationPointSumOrderByAggregateInput
+  }
+
+  export type ForecastVerificationPointScalarWhereWithAggregatesInput = {
+    AND?: ForecastVerificationPointScalarWhereWithAggregatesInput | ForecastVerificationPointScalarWhereWithAggregatesInput[]
+    OR?: ForecastVerificationPointScalarWhereWithAggregatesInput[]
+    NOT?: ForecastVerificationPointScalarWhereWithAggregatesInput | ForecastVerificationPointScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ForecastVerificationPoint"> | string
+    runId?: StringWithAggregatesFilter<"ForecastVerificationPoint"> | string
+    horizonLabel?: StringWithAggregatesFilter<"ForecastVerificationPoint"> | string
+    horizonSteps?: IntWithAggregatesFilter<"ForecastVerificationPoint"> | number
+    forecastOriginAt?: DateTimeWithAggregatesFilter<"ForecastVerificationPoint"> | Date | string
+    targetDate?: DateTimeWithAggregatesFilter<"ForecastVerificationPoint"> | Date | string
+    actualObservedAt?: DateTimeNullableWithAggregatesFilter<"ForecastVerificationPoint"> | Date | string | null
+    originValue?: DecimalWithAggregatesFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    forecastValue?: DecimalWithAggregatesFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    actualValue?: DecimalWithAggregatesFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    errorValue?: DecimalWithAggregatesFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    absoluteErrorValue?: DecimalWithAggregatesFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    deltaValue?: DecimalWithAggregatesFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    deltaPct?: FloatNullableWithAggregatesFilter<"ForecastVerificationPoint"> | number | null
+    maseScale?: FloatWithAggregatesFilter<"ForecastVerificationPoint"> | number
+    selectedVariant?: StringNullableWithAggregatesFilter<"ForecastVerificationPoint"> | string | null
+    selectionMetric?: StringNullableWithAggregatesFilter<"ForecastVerificationPoint"> | string | null
+    selectionScore?: FloatNullableWithAggregatesFilter<"ForecastVerificationPoint"> | number | null
+    metadataJson?: JsonNullableWithAggregatesFilter<"ForecastVerificationPoint">
+    createdAt?: DateTimeWithAggregatesFilter<"ForecastVerificationPoint"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"ForecastVerificationPoint"> | Date | string
+  }
+
+  export type RollingDailyVerificationRecordWhereInput = {
+    AND?: RollingDailyVerificationRecordWhereInput | RollingDailyVerificationRecordWhereInput[]
+    OR?: RollingDailyVerificationRecordWhereInput[]
+    NOT?: RollingDailyVerificationRecordWhereInput | RollingDailyVerificationRecordWhereInput[]
+    id?: StringFilter<"RollingDailyVerificationRecord"> | string
+    seriesId?: StringFilter<"RollingDailyVerificationRecord"> | string
+    inputSource?: StringFilter<"RollingDailyVerificationRecord"> | string
+    inputRunId?: StringNullableFilter<"RollingDailyVerificationRecord"> | string | null
+    targetBasis?: EnumForecastTargetBasisFilter<"RollingDailyVerificationRecord"> | $Enums.ForecastTargetBasis
+    methodId?: StringFilter<"RollingDailyVerificationRecord"> | string
+    methodVersion?: StringFilter<"RollingDailyVerificationRecord"> | string
+    modelId?: StringFilter<"RollingDailyVerificationRecord"> | string
+    forecastOriginAt?: DateTimeFilter<"RollingDailyVerificationRecord"> | Date | string
+    horizonLabel?: StringFilter<"RollingDailyVerificationRecord"> | string
+    horizonMonths?: IntFilter<"RollingDailyVerificationRecord"> | number
+    horizonSteps?: IntFilter<"RollingDailyVerificationRecord"> | number
+    targetCalendarDate?: DateTimeFilter<"RollingDailyVerificationRecord"> | Date | string
+    verificationObservedAt?: DateTimeNullableFilter<"RollingDailyVerificationRecord"> | Date | string | null
+    maturityStatus?: EnumRollingDailyVerificationMaturityStatusFilter<"RollingDailyVerificationRecord"> | $Enums.RollingDailyVerificationMaturityStatus
+    originValue?: DecimalFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string
+    forecastValue?: DecimalFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string
+    actualValue?: DecimalNullableFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string | null
+    errorValue?: DecimalNullableFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string | null
+    absoluteErrorValue?: DecimalNullableFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string | null
+    deltaValue?: DecimalNullableFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string | null
+    deltaPct?: FloatNullableFilter<"RollingDailyVerificationRecord"> | number | null
+    residualValue?: DecimalNullableFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string | null
+    maseScale?: FloatFilter<"RollingDailyVerificationRecord"> | number
+    trainingHistoryStartAt?: DateTimeNullableFilter<"RollingDailyVerificationRecord"> | Date | string | null
+    trainingHistoryEndAt?: DateTimeFilter<"RollingDailyVerificationRecord"> | Date | string
+    trainingObservationCount?: IntFilter<"RollingDailyVerificationRecord"> | number
+    sourceHistoryFingerprint?: StringFilter<"RollingDailyVerificationRecord"> | string
+    selectedVariant?: StringNullableFilter<"RollingDailyVerificationRecord"> | string | null
+    selectionMetric?: StringNullableFilter<"RollingDailyVerificationRecord"> | string | null
+    selectionScore?: FloatNullableFilter<"RollingDailyVerificationRecord"> | number | null
+    metadataJson?: JsonNullableFilter<"RollingDailyVerificationRecord">
+    createdAt?: DateTimeFilter<"RollingDailyVerificationRecord"> | Date | string
+    updatedAt?: DateTimeFilter<"RollingDailyVerificationRecord"> | Date | string
+  }
+
+  export type RollingDailyVerificationRecordOrderByWithRelationInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrderInput | SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    forecastOriginAt?: SortOrder
+    horizonLabel?: SortOrder
+    horizonMonths?: SortOrder
+    horizonSteps?: SortOrder
+    targetCalendarDate?: SortOrder
+    verificationObservedAt?: SortOrderInput | SortOrder
+    maturityStatus?: SortOrder
+    originValue?: SortOrder
+    forecastValue?: SortOrder
+    actualValue?: SortOrderInput | SortOrder
+    errorValue?: SortOrderInput | SortOrder
+    absoluteErrorValue?: SortOrderInput | SortOrder
+    deltaValue?: SortOrderInput | SortOrder
+    deltaPct?: SortOrderInput | SortOrder
+    residualValue?: SortOrderInput | SortOrder
+    maseScale?: SortOrder
+    trainingHistoryStartAt?: SortOrderInput | SortOrder
+    trainingHistoryEndAt?: SortOrder
+    trainingObservationCount?: SortOrder
+    sourceHistoryFingerprint?: SortOrder
+    selectedVariant?: SortOrderInput | SortOrder
+    selectionMetric?: SortOrderInput | SortOrder
+    selectionScore?: SortOrderInput | SortOrder
+    metadataJson?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RollingDailyVerificationRecordWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_forecastOriginAt_horizonLabel?: RollingDailyVerificationRecordSeriesIdInputSourceTargetBasisMethodIdMethodVersionModelIdForecastOriginAtHorizonLabelCompoundUniqueInput
+    AND?: RollingDailyVerificationRecordWhereInput | RollingDailyVerificationRecordWhereInput[]
+    OR?: RollingDailyVerificationRecordWhereInput[]
+    NOT?: RollingDailyVerificationRecordWhereInput | RollingDailyVerificationRecordWhereInput[]
+    seriesId?: StringFilter<"RollingDailyVerificationRecord"> | string
+    inputSource?: StringFilter<"RollingDailyVerificationRecord"> | string
+    inputRunId?: StringNullableFilter<"RollingDailyVerificationRecord"> | string | null
+    targetBasis?: EnumForecastTargetBasisFilter<"RollingDailyVerificationRecord"> | $Enums.ForecastTargetBasis
+    methodId?: StringFilter<"RollingDailyVerificationRecord"> | string
+    methodVersion?: StringFilter<"RollingDailyVerificationRecord"> | string
+    modelId?: StringFilter<"RollingDailyVerificationRecord"> | string
+    forecastOriginAt?: DateTimeFilter<"RollingDailyVerificationRecord"> | Date | string
+    horizonLabel?: StringFilter<"RollingDailyVerificationRecord"> | string
+    horizonMonths?: IntFilter<"RollingDailyVerificationRecord"> | number
+    horizonSteps?: IntFilter<"RollingDailyVerificationRecord"> | number
+    targetCalendarDate?: DateTimeFilter<"RollingDailyVerificationRecord"> | Date | string
+    verificationObservedAt?: DateTimeNullableFilter<"RollingDailyVerificationRecord"> | Date | string | null
+    maturityStatus?: EnumRollingDailyVerificationMaturityStatusFilter<"RollingDailyVerificationRecord"> | $Enums.RollingDailyVerificationMaturityStatus
+    originValue?: DecimalFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string
+    forecastValue?: DecimalFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string
+    actualValue?: DecimalNullableFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string | null
+    errorValue?: DecimalNullableFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string | null
+    absoluteErrorValue?: DecimalNullableFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string | null
+    deltaValue?: DecimalNullableFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string | null
+    deltaPct?: FloatNullableFilter<"RollingDailyVerificationRecord"> | number | null
+    residualValue?: DecimalNullableFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string | null
+    maseScale?: FloatFilter<"RollingDailyVerificationRecord"> | number
+    trainingHistoryStartAt?: DateTimeNullableFilter<"RollingDailyVerificationRecord"> | Date | string | null
+    trainingHistoryEndAt?: DateTimeFilter<"RollingDailyVerificationRecord"> | Date | string
+    trainingObservationCount?: IntFilter<"RollingDailyVerificationRecord"> | number
+    sourceHistoryFingerprint?: StringFilter<"RollingDailyVerificationRecord"> | string
+    selectedVariant?: StringNullableFilter<"RollingDailyVerificationRecord"> | string | null
+    selectionMetric?: StringNullableFilter<"RollingDailyVerificationRecord"> | string | null
+    selectionScore?: FloatNullableFilter<"RollingDailyVerificationRecord"> | number | null
+    metadataJson?: JsonNullableFilter<"RollingDailyVerificationRecord">
+    createdAt?: DateTimeFilter<"RollingDailyVerificationRecord"> | Date | string
+    updatedAt?: DateTimeFilter<"RollingDailyVerificationRecord"> | Date | string
+  }, "id" | "seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_forecastOriginAt_horizonLabel">
+
+  export type RollingDailyVerificationRecordOrderByWithAggregationInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrderInput | SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    forecastOriginAt?: SortOrder
+    horizonLabel?: SortOrder
+    horizonMonths?: SortOrder
+    horizonSteps?: SortOrder
+    targetCalendarDate?: SortOrder
+    verificationObservedAt?: SortOrderInput | SortOrder
+    maturityStatus?: SortOrder
+    originValue?: SortOrder
+    forecastValue?: SortOrder
+    actualValue?: SortOrderInput | SortOrder
+    errorValue?: SortOrderInput | SortOrder
+    absoluteErrorValue?: SortOrderInput | SortOrder
+    deltaValue?: SortOrderInput | SortOrder
+    deltaPct?: SortOrderInput | SortOrder
+    residualValue?: SortOrderInput | SortOrder
+    maseScale?: SortOrder
+    trainingHistoryStartAt?: SortOrderInput | SortOrder
+    trainingHistoryEndAt?: SortOrder
+    trainingObservationCount?: SortOrder
+    sourceHistoryFingerprint?: SortOrder
+    selectedVariant?: SortOrderInput | SortOrder
+    selectionMetric?: SortOrderInput | SortOrder
+    selectionScore?: SortOrderInput | SortOrder
+    metadataJson?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: RollingDailyVerificationRecordCountOrderByAggregateInput
+    _avg?: RollingDailyVerificationRecordAvgOrderByAggregateInput
+    _max?: RollingDailyVerificationRecordMaxOrderByAggregateInput
+    _min?: RollingDailyVerificationRecordMinOrderByAggregateInput
+    _sum?: RollingDailyVerificationRecordSumOrderByAggregateInput
+  }
+
+  export type RollingDailyVerificationRecordScalarWhereWithAggregatesInput = {
+    AND?: RollingDailyVerificationRecordScalarWhereWithAggregatesInput | RollingDailyVerificationRecordScalarWhereWithAggregatesInput[]
+    OR?: RollingDailyVerificationRecordScalarWhereWithAggregatesInput[]
+    NOT?: RollingDailyVerificationRecordScalarWhereWithAggregatesInput | RollingDailyVerificationRecordScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"RollingDailyVerificationRecord"> | string
+    seriesId?: StringWithAggregatesFilter<"RollingDailyVerificationRecord"> | string
+    inputSource?: StringWithAggregatesFilter<"RollingDailyVerificationRecord"> | string
+    inputRunId?: StringNullableWithAggregatesFilter<"RollingDailyVerificationRecord"> | string | null
+    targetBasis?: EnumForecastTargetBasisWithAggregatesFilter<"RollingDailyVerificationRecord"> | $Enums.ForecastTargetBasis
+    methodId?: StringWithAggregatesFilter<"RollingDailyVerificationRecord"> | string
+    methodVersion?: StringWithAggregatesFilter<"RollingDailyVerificationRecord"> | string
+    modelId?: StringWithAggregatesFilter<"RollingDailyVerificationRecord"> | string
+    forecastOriginAt?: DateTimeWithAggregatesFilter<"RollingDailyVerificationRecord"> | Date | string
+    horizonLabel?: StringWithAggregatesFilter<"RollingDailyVerificationRecord"> | string
+    horizonMonths?: IntWithAggregatesFilter<"RollingDailyVerificationRecord"> | number
+    horizonSteps?: IntWithAggregatesFilter<"RollingDailyVerificationRecord"> | number
+    targetCalendarDate?: DateTimeWithAggregatesFilter<"RollingDailyVerificationRecord"> | Date | string
+    verificationObservedAt?: DateTimeNullableWithAggregatesFilter<"RollingDailyVerificationRecord"> | Date | string | null
+    maturityStatus?: EnumRollingDailyVerificationMaturityStatusWithAggregatesFilter<"RollingDailyVerificationRecord"> | $Enums.RollingDailyVerificationMaturityStatus
+    originValue?: DecimalWithAggregatesFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string
+    forecastValue?: DecimalWithAggregatesFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string
+    actualValue?: DecimalNullableWithAggregatesFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string | null
+    errorValue?: DecimalNullableWithAggregatesFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string | null
+    absoluteErrorValue?: DecimalNullableWithAggregatesFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string | null
+    deltaValue?: DecimalNullableWithAggregatesFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string | null
+    deltaPct?: FloatNullableWithAggregatesFilter<"RollingDailyVerificationRecord"> | number | null
+    residualValue?: DecimalNullableWithAggregatesFilter<"RollingDailyVerificationRecord"> | Decimal | DecimalJsLike | number | string | null
+    maseScale?: FloatWithAggregatesFilter<"RollingDailyVerificationRecord"> | number
+    trainingHistoryStartAt?: DateTimeNullableWithAggregatesFilter<"RollingDailyVerificationRecord"> | Date | string | null
+    trainingHistoryEndAt?: DateTimeWithAggregatesFilter<"RollingDailyVerificationRecord"> | Date | string
+    trainingObservationCount?: IntWithAggregatesFilter<"RollingDailyVerificationRecord"> | number
+    sourceHistoryFingerprint?: StringWithAggregatesFilter<"RollingDailyVerificationRecord"> | string
+    selectedVariant?: StringNullableWithAggregatesFilter<"RollingDailyVerificationRecord"> | string | null
+    selectionMetric?: StringNullableWithAggregatesFilter<"RollingDailyVerificationRecord"> | string | null
+    selectionScore?: FloatNullableWithAggregatesFilter<"RollingDailyVerificationRecord"> | number | null
+    metadataJson?: JsonNullableWithAggregatesFilter<"RollingDailyVerificationRecord">
+    createdAt?: DateTimeWithAggregatesFilter<"RollingDailyVerificationRecord"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"RollingDailyVerificationRecord"> | Date | string
+  }
+
+  export type RollingDailyCurrentForecastSnapshotWhereInput = {
+    AND?: RollingDailyCurrentForecastSnapshotWhereInput | RollingDailyCurrentForecastSnapshotWhereInput[]
+    OR?: RollingDailyCurrentForecastSnapshotWhereInput[]
+    NOT?: RollingDailyCurrentForecastSnapshotWhereInput | RollingDailyCurrentForecastSnapshotWhereInput[]
+    id?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    seriesId?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    inputSource?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    inputRunId?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    targetBasis?: EnumForecastTargetBasisFilter<"RollingDailyCurrentForecastSnapshot"> | $Enums.ForecastTargetBasis
+    methodId?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    methodVersion?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    modelId?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    contractVersion?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    status?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    reasonCode?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    message?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    forecastOriginAt?: DateTimeNullableFilter<"RollingDailyCurrentForecastSnapshot"> | Date | string | null
+    sourceLatestObservationAt?: DateTimeNullableFilter<"RollingDailyCurrentForecastSnapshot"> | Date | string | null
+    payloadJson?: JsonFilter<"RollingDailyCurrentForecastSnapshot">
+    createdAt?: DateTimeFilter<"RollingDailyCurrentForecastSnapshot"> | Date | string
+    updatedAt?: DateTimeFilter<"RollingDailyCurrentForecastSnapshot"> | Date | string
+  }
+
+  export type RollingDailyCurrentForecastSnapshotOrderByWithRelationInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrderInput | SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    contractVersion?: SortOrder
+    status?: SortOrder
+    reasonCode?: SortOrderInput | SortOrder
+    message?: SortOrderInput | SortOrder
+    forecastOriginAt?: SortOrderInput | SortOrder
+    sourceLatestObservationAt?: SortOrderInput | SortOrder
+    payloadJson?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RollingDailyCurrentForecastSnapshotWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    seriesId_inputSource_targetBasis_methodId_methodVersion_modelId?: RollingDailyCurrentForecastSnapshotSeriesIdInputSourceTargetBasisMethodIdMethodVersionModelIdCompoundUniqueInput
+    AND?: RollingDailyCurrentForecastSnapshotWhereInput | RollingDailyCurrentForecastSnapshotWhereInput[]
+    OR?: RollingDailyCurrentForecastSnapshotWhereInput[]
+    NOT?: RollingDailyCurrentForecastSnapshotWhereInput | RollingDailyCurrentForecastSnapshotWhereInput[]
+    seriesId?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    inputSource?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    inputRunId?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    targetBasis?: EnumForecastTargetBasisFilter<"RollingDailyCurrentForecastSnapshot"> | $Enums.ForecastTargetBasis
+    methodId?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    methodVersion?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    modelId?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    contractVersion?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    status?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    reasonCode?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    message?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    forecastOriginAt?: DateTimeNullableFilter<"RollingDailyCurrentForecastSnapshot"> | Date | string | null
+    sourceLatestObservationAt?: DateTimeNullableFilter<"RollingDailyCurrentForecastSnapshot"> | Date | string | null
+    payloadJson?: JsonFilter<"RollingDailyCurrentForecastSnapshot">
+    createdAt?: DateTimeFilter<"RollingDailyCurrentForecastSnapshot"> | Date | string
+    updatedAt?: DateTimeFilter<"RollingDailyCurrentForecastSnapshot"> | Date | string
+  }, "id" | "seriesId_inputSource_targetBasis_methodId_methodVersion_modelId">
+
+  export type RollingDailyCurrentForecastSnapshotOrderByWithAggregationInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrderInput | SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    contractVersion?: SortOrder
+    status?: SortOrder
+    reasonCode?: SortOrderInput | SortOrder
+    message?: SortOrderInput | SortOrder
+    forecastOriginAt?: SortOrderInput | SortOrder
+    sourceLatestObservationAt?: SortOrderInput | SortOrder
+    payloadJson?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: RollingDailyCurrentForecastSnapshotCountOrderByAggregateInput
+    _max?: RollingDailyCurrentForecastSnapshotMaxOrderByAggregateInput
+    _min?: RollingDailyCurrentForecastSnapshotMinOrderByAggregateInput
+  }
+
+  export type RollingDailyCurrentForecastSnapshotScalarWhereWithAggregatesInput = {
+    AND?: RollingDailyCurrentForecastSnapshotScalarWhereWithAggregatesInput | RollingDailyCurrentForecastSnapshotScalarWhereWithAggregatesInput[]
+    OR?: RollingDailyCurrentForecastSnapshotScalarWhereWithAggregatesInput[]
+    NOT?: RollingDailyCurrentForecastSnapshotScalarWhereWithAggregatesInput | RollingDailyCurrentForecastSnapshotScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    seriesId?: StringWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    inputSource?: StringWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    inputRunId?: StringNullableWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    targetBasis?: EnumForecastTargetBasisWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | $Enums.ForecastTargetBasis
+    methodId?: StringWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    methodVersion?: StringWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    modelId?: StringWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    contractVersion?: StringWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    status?: StringWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    reasonCode?: StringNullableWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    message?: StringNullableWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    forecastOriginAt?: DateTimeNullableWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | Date | string | null
+    sourceLatestObservationAt?: DateTimeNullableWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | Date | string | null
+    payloadJson?: JsonWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot">
+    createdAt?: DateTimeWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | Date | string
+  }
+
+  export type RollingDailyCalibrationGroupWhereInput = {
+    AND?: RollingDailyCalibrationGroupWhereInput | RollingDailyCalibrationGroupWhereInput[]
+    OR?: RollingDailyCalibrationGroupWhereInput[]
+    NOT?: RollingDailyCalibrationGroupWhereInput | RollingDailyCalibrationGroupWhereInput[]
+    id?: StringFilter<"RollingDailyCalibrationGroup"> | string
+    seriesId?: StringFilter<"RollingDailyCalibrationGroup"> | string
+    inputSource?: StringFilter<"RollingDailyCalibrationGroup"> | string
+    inputRunId?: StringNullableFilter<"RollingDailyCalibrationGroup"> | string | null
+    targetBasis?: EnumForecastTargetBasisFilter<"RollingDailyCalibrationGroup"> | $Enums.ForecastTargetBasis
+    methodId?: StringFilter<"RollingDailyCalibrationGroup"> | string
+    methodVersion?: StringFilter<"RollingDailyCalibrationGroup"> | string
+    modelId?: StringFilter<"RollingDailyCalibrationGroup"> | string
+    horizonLabel?: StringFilter<"RollingDailyCalibrationGroup"> | string
+    horizonMonths?: IntFilter<"RollingDailyCalibrationGroup"> | number
+    calibrationOriginAt?: DateTimeFilter<"RollingDailyCalibrationGroup"> | Date | string
+    sampleCount?: IntFilter<"RollingDailyCalibrationGroup"> | number
+    residualP10?: DecimalNullableFilter<"RollingDailyCalibrationGroup"> | Decimal | DecimalJsLike | number | string | null
+    residualP90?: DecimalNullableFilter<"RollingDailyCalibrationGroup"> | Decimal | DecimalJsLike | number | string | null
+    quantileMethod?: StringFilter<"RollingDailyCalibrationGroup"> | string
+    status?: EnumRollingDailyCalibrationStatusFilter<"RollingDailyCalibrationGroup"> | $Enums.RollingDailyCalibrationStatus
+    lastResidualObservedAt?: DateTimeNullableFilter<"RollingDailyCalibrationGroup"> | Date | string | null
+    refreshedAt?: DateTimeFilter<"RollingDailyCalibrationGroup"> | Date | string
+    createdAt?: DateTimeFilter<"RollingDailyCalibrationGroup"> | Date | string
+    updatedAt?: DateTimeFilter<"RollingDailyCalibrationGroup"> | Date | string
+  }
+
+  export type RollingDailyCalibrationGroupOrderByWithRelationInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrderInput | SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonMonths?: SortOrder
+    calibrationOriginAt?: SortOrder
+    sampleCount?: SortOrder
+    residualP10?: SortOrderInput | SortOrder
+    residualP90?: SortOrderInput | SortOrder
+    quantileMethod?: SortOrder
+    status?: SortOrder
+    lastResidualObservedAt?: SortOrderInput | SortOrder
+    refreshedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RollingDailyCalibrationGroupWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_horizonLabel?: RollingDailyCalibrationGroupSeriesIdInputSourceTargetBasisMethodIdMethodVersionModelIdHorizonLabelCompoundUniqueInput
+    AND?: RollingDailyCalibrationGroupWhereInput | RollingDailyCalibrationGroupWhereInput[]
+    OR?: RollingDailyCalibrationGroupWhereInput[]
+    NOT?: RollingDailyCalibrationGroupWhereInput | RollingDailyCalibrationGroupWhereInput[]
+    seriesId?: StringFilter<"RollingDailyCalibrationGroup"> | string
+    inputSource?: StringFilter<"RollingDailyCalibrationGroup"> | string
+    inputRunId?: StringNullableFilter<"RollingDailyCalibrationGroup"> | string | null
+    targetBasis?: EnumForecastTargetBasisFilter<"RollingDailyCalibrationGroup"> | $Enums.ForecastTargetBasis
+    methodId?: StringFilter<"RollingDailyCalibrationGroup"> | string
+    methodVersion?: StringFilter<"RollingDailyCalibrationGroup"> | string
+    modelId?: StringFilter<"RollingDailyCalibrationGroup"> | string
+    horizonLabel?: StringFilter<"RollingDailyCalibrationGroup"> | string
+    horizonMonths?: IntFilter<"RollingDailyCalibrationGroup"> | number
+    calibrationOriginAt?: DateTimeFilter<"RollingDailyCalibrationGroup"> | Date | string
+    sampleCount?: IntFilter<"RollingDailyCalibrationGroup"> | number
+    residualP10?: DecimalNullableFilter<"RollingDailyCalibrationGroup"> | Decimal | DecimalJsLike | number | string | null
+    residualP90?: DecimalNullableFilter<"RollingDailyCalibrationGroup"> | Decimal | DecimalJsLike | number | string | null
+    quantileMethod?: StringFilter<"RollingDailyCalibrationGroup"> | string
+    status?: EnumRollingDailyCalibrationStatusFilter<"RollingDailyCalibrationGroup"> | $Enums.RollingDailyCalibrationStatus
+    lastResidualObservedAt?: DateTimeNullableFilter<"RollingDailyCalibrationGroup"> | Date | string | null
+    refreshedAt?: DateTimeFilter<"RollingDailyCalibrationGroup"> | Date | string
+    createdAt?: DateTimeFilter<"RollingDailyCalibrationGroup"> | Date | string
+    updatedAt?: DateTimeFilter<"RollingDailyCalibrationGroup"> | Date | string
+  }, "id" | "seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_horizonLabel">
+
+  export type RollingDailyCalibrationGroupOrderByWithAggregationInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrderInput | SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonMonths?: SortOrder
+    calibrationOriginAt?: SortOrder
+    sampleCount?: SortOrder
+    residualP10?: SortOrderInput | SortOrder
+    residualP90?: SortOrderInput | SortOrder
+    quantileMethod?: SortOrder
+    status?: SortOrder
+    lastResidualObservedAt?: SortOrderInput | SortOrder
+    refreshedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: RollingDailyCalibrationGroupCountOrderByAggregateInput
+    _avg?: RollingDailyCalibrationGroupAvgOrderByAggregateInput
+    _max?: RollingDailyCalibrationGroupMaxOrderByAggregateInput
+    _min?: RollingDailyCalibrationGroupMinOrderByAggregateInput
+    _sum?: RollingDailyCalibrationGroupSumOrderByAggregateInput
+  }
+
+  export type RollingDailyCalibrationGroupScalarWhereWithAggregatesInput = {
+    AND?: RollingDailyCalibrationGroupScalarWhereWithAggregatesInput | RollingDailyCalibrationGroupScalarWhereWithAggregatesInput[]
+    OR?: RollingDailyCalibrationGroupScalarWhereWithAggregatesInput[]
+    NOT?: RollingDailyCalibrationGroupScalarWhereWithAggregatesInput | RollingDailyCalibrationGroupScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"RollingDailyCalibrationGroup"> | string
+    seriesId?: StringWithAggregatesFilter<"RollingDailyCalibrationGroup"> | string
+    inputSource?: StringWithAggregatesFilter<"RollingDailyCalibrationGroup"> | string
+    inputRunId?: StringNullableWithAggregatesFilter<"RollingDailyCalibrationGroup"> | string | null
+    targetBasis?: EnumForecastTargetBasisWithAggregatesFilter<"RollingDailyCalibrationGroup"> | $Enums.ForecastTargetBasis
+    methodId?: StringWithAggregatesFilter<"RollingDailyCalibrationGroup"> | string
+    methodVersion?: StringWithAggregatesFilter<"RollingDailyCalibrationGroup"> | string
+    modelId?: StringWithAggregatesFilter<"RollingDailyCalibrationGroup"> | string
+    horizonLabel?: StringWithAggregatesFilter<"RollingDailyCalibrationGroup"> | string
+    horizonMonths?: IntWithAggregatesFilter<"RollingDailyCalibrationGroup"> | number
+    calibrationOriginAt?: DateTimeWithAggregatesFilter<"RollingDailyCalibrationGroup"> | Date | string
+    sampleCount?: IntWithAggregatesFilter<"RollingDailyCalibrationGroup"> | number
+    residualP10?: DecimalNullableWithAggregatesFilter<"RollingDailyCalibrationGroup"> | Decimal | DecimalJsLike | number | string | null
+    residualP90?: DecimalNullableWithAggregatesFilter<"RollingDailyCalibrationGroup"> | Decimal | DecimalJsLike | number | string | null
+    quantileMethod?: StringWithAggregatesFilter<"RollingDailyCalibrationGroup"> | string
+    status?: EnumRollingDailyCalibrationStatusWithAggregatesFilter<"RollingDailyCalibrationGroup"> | $Enums.RollingDailyCalibrationStatus
+    lastResidualObservedAt?: DateTimeNullableWithAggregatesFilter<"RollingDailyCalibrationGroup"> | Date | string | null
+    refreshedAt?: DateTimeWithAggregatesFilter<"RollingDailyCalibrationGroup"> | Date | string
+    createdAt?: DateTimeWithAggregatesFilter<"RollingDailyCalibrationGroup"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"RollingDailyCalibrationGroup"> | Date | string
+  }
+
+  export type RollingDailyMaintenanceStateWhereInput = {
+    AND?: RollingDailyMaintenanceStateWhereInput | RollingDailyMaintenanceStateWhereInput[]
+    OR?: RollingDailyMaintenanceStateWhereInput[]
+    NOT?: RollingDailyMaintenanceStateWhereInput | RollingDailyMaintenanceStateWhereInput[]
+    id?: StringFilter<"RollingDailyMaintenanceState"> | string
+    seriesId?: StringFilter<"RollingDailyMaintenanceState"> | string
+    inputSource?: StringFilter<"RollingDailyMaintenanceState"> | string
+    inputRunId?: StringNullableFilter<"RollingDailyMaintenanceState"> | string | null
+    targetBasis?: EnumForecastTargetBasisFilter<"RollingDailyMaintenanceState"> | $Enums.ForecastTargetBasis
+    methodId?: StringFilter<"RollingDailyMaintenanceState"> | string
+    methodVersion?: StringFilter<"RollingDailyMaintenanceState"> | string
+    modelId?: StringFilter<"RollingDailyMaintenanceState"> | string
+    historicalOriginStartAt?: DateTimeFilter<"RollingDailyMaintenanceState"> | Date | string
+    minimumTrainingObservations?: IntFilter<"RollingDailyMaintenanceState"> | number
+    minimumCalibrationSamples?: IntFilter<"RollingDailyMaintenanceState"> | number
+    latestSourceObservationAt?: DateTimeNullableFilter<"RollingDailyMaintenanceState"> | Date | string | null
+    latestSourceHistoryStartAt?: DateTimeNullableFilter<"RollingDailyMaintenanceState"> | Date | string | null
+    latestSourceObservationCount?: IntNullableFilter<"RollingDailyMaintenanceState"> | number | null
+    latestSourceHistoryFingerprint?: StringNullableFilter<"RollingDailyMaintenanceState"> | string | null
+    lastProcessedOriginAt?: DateTimeNullableFilter<"RollingDailyMaintenanceState"> | Date | string | null
+    lastMaturedObservedAt?: DateTimeNullableFilter<"RollingDailyMaintenanceState"> | Date | string | null
+    lastMaintenanceAt?: DateTimeNullableFilter<"RollingDailyMaintenanceState"> | Date | string | null
+    lastMaintenanceStatus?: StringNullableFilter<"RollingDailyMaintenanceState"> | string | null
+    lastFailureReason?: StringNullableFilter<"RollingDailyMaintenanceState"> | string | null
+    createdAt?: DateTimeFilter<"RollingDailyMaintenanceState"> | Date | string
+    updatedAt?: DateTimeFilter<"RollingDailyMaintenanceState"> | Date | string
+  }
+
+  export type RollingDailyMaintenanceStateOrderByWithRelationInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrderInput | SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    historicalOriginStartAt?: SortOrder
+    minimumTrainingObservations?: SortOrder
+    minimumCalibrationSamples?: SortOrder
+    latestSourceObservationAt?: SortOrderInput | SortOrder
+    latestSourceHistoryStartAt?: SortOrderInput | SortOrder
+    latestSourceObservationCount?: SortOrderInput | SortOrder
+    latestSourceHistoryFingerprint?: SortOrderInput | SortOrder
+    lastProcessedOriginAt?: SortOrderInput | SortOrder
+    lastMaturedObservedAt?: SortOrderInput | SortOrder
+    lastMaintenanceAt?: SortOrderInput | SortOrder
+    lastMaintenanceStatus?: SortOrderInput | SortOrder
+    lastFailureReason?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RollingDailyMaintenanceStateWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    seriesId_inputSource_targetBasis_methodId_methodVersion_modelId?: RollingDailyMaintenanceStateSeriesIdInputSourceTargetBasisMethodIdMethodVersionModelIdCompoundUniqueInput
+    AND?: RollingDailyMaintenanceStateWhereInput | RollingDailyMaintenanceStateWhereInput[]
+    OR?: RollingDailyMaintenanceStateWhereInput[]
+    NOT?: RollingDailyMaintenanceStateWhereInput | RollingDailyMaintenanceStateWhereInput[]
+    seriesId?: StringFilter<"RollingDailyMaintenanceState"> | string
+    inputSource?: StringFilter<"RollingDailyMaintenanceState"> | string
+    inputRunId?: StringNullableFilter<"RollingDailyMaintenanceState"> | string | null
+    targetBasis?: EnumForecastTargetBasisFilter<"RollingDailyMaintenanceState"> | $Enums.ForecastTargetBasis
+    methodId?: StringFilter<"RollingDailyMaintenanceState"> | string
+    methodVersion?: StringFilter<"RollingDailyMaintenanceState"> | string
+    modelId?: StringFilter<"RollingDailyMaintenanceState"> | string
+    historicalOriginStartAt?: DateTimeFilter<"RollingDailyMaintenanceState"> | Date | string
+    minimumTrainingObservations?: IntFilter<"RollingDailyMaintenanceState"> | number
+    minimumCalibrationSamples?: IntFilter<"RollingDailyMaintenanceState"> | number
+    latestSourceObservationAt?: DateTimeNullableFilter<"RollingDailyMaintenanceState"> | Date | string | null
+    latestSourceHistoryStartAt?: DateTimeNullableFilter<"RollingDailyMaintenanceState"> | Date | string | null
+    latestSourceObservationCount?: IntNullableFilter<"RollingDailyMaintenanceState"> | number | null
+    latestSourceHistoryFingerprint?: StringNullableFilter<"RollingDailyMaintenanceState"> | string | null
+    lastProcessedOriginAt?: DateTimeNullableFilter<"RollingDailyMaintenanceState"> | Date | string | null
+    lastMaturedObservedAt?: DateTimeNullableFilter<"RollingDailyMaintenanceState"> | Date | string | null
+    lastMaintenanceAt?: DateTimeNullableFilter<"RollingDailyMaintenanceState"> | Date | string | null
+    lastMaintenanceStatus?: StringNullableFilter<"RollingDailyMaintenanceState"> | string | null
+    lastFailureReason?: StringNullableFilter<"RollingDailyMaintenanceState"> | string | null
+    createdAt?: DateTimeFilter<"RollingDailyMaintenanceState"> | Date | string
+    updatedAt?: DateTimeFilter<"RollingDailyMaintenanceState"> | Date | string
+  }, "id" | "seriesId_inputSource_targetBasis_methodId_methodVersion_modelId">
+
+  export type RollingDailyMaintenanceStateOrderByWithAggregationInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrderInput | SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    historicalOriginStartAt?: SortOrder
+    minimumTrainingObservations?: SortOrder
+    minimumCalibrationSamples?: SortOrder
+    latestSourceObservationAt?: SortOrderInput | SortOrder
+    latestSourceHistoryStartAt?: SortOrderInput | SortOrder
+    latestSourceObservationCount?: SortOrderInput | SortOrder
+    latestSourceHistoryFingerprint?: SortOrderInput | SortOrder
+    lastProcessedOriginAt?: SortOrderInput | SortOrder
+    lastMaturedObservedAt?: SortOrderInput | SortOrder
+    lastMaintenanceAt?: SortOrderInput | SortOrder
+    lastMaintenanceStatus?: SortOrderInput | SortOrder
+    lastFailureReason?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: RollingDailyMaintenanceStateCountOrderByAggregateInput
+    _avg?: RollingDailyMaintenanceStateAvgOrderByAggregateInput
+    _max?: RollingDailyMaintenanceStateMaxOrderByAggregateInput
+    _min?: RollingDailyMaintenanceStateMinOrderByAggregateInput
+    _sum?: RollingDailyMaintenanceStateSumOrderByAggregateInput
+  }
+
+  export type RollingDailyMaintenanceStateScalarWhereWithAggregatesInput = {
+    AND?: RollingDailyMaintenanceStateScalarWhereWithAggregatesInput | RollingDailyMaintenanceStateScalarWhereWithAggregatesInput[]
+    OR?: RollingDailyMaintenanceStateScalarWhereWithAggregatesInput[]
+    NOT?: RollingDailyMaintenanceStateScalarWhereWithAggregatesInput | RollingDailyMaintenanceStateScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"RollingDailyMaintenanceState"> | string
+    seriesId?: StringWithAggregatesFilter<"RollingDailyMaintenanceState"> | string
+    inputSource?: StringWithAggregatesFilter<"RollingDailyMaintenanceState"> | string
+    inputRunId?: StringNullableWithAggregatesFilter<"RollingDailyMaintenanceState"> | string | null
+    targetBasis?: EnumForecastTargetBasisWithAggregatesFilter<"RollingDailyMaintenanceState"> | $Enums.ForecastTargetBasis
+    methodId?: StringWithAggregatesFilter<"RollingDailyMaintenanceState"> | string
+    methodVersion?: StringWithAggregatesFilter<"RollingDailyMaintenanceState"> | string
+    modelId?: StringWithAggregatesFilter<"RollingDailyMaintenanceState"> | string
+    historicalOriginStartAt?: DateTimeWithAggregatesFilter<"RollingDailyMaintenanceState"> | Date | string
+    minimumTrainingObservations?: IntWithAggregatesFilter<"RollingDailyMaintenanceState"> | number
+    minimumCalibrationSamples?: IntWithAggregatesFilter<"RollingDailyMaintenanceState"> | number
+    latestSourceObservationAt?: DateTimeNullableWithAggregatesFilter<"RollingDailyMaintenanceState"> | Date | string | null
+    latestSourceHistoryStartAt?: DateTimeNullableWithAggregatesFilter<"RollingDailyMaintenanceState"> | Date | string | null
+    latestSourceObservationCount?: IntNullableWithAggregatesFilter<"RollingDailyMaintenanceState"> | number | null
+    latestSourceHistoryFingerprint?: StringNullableWithAggregatesFilter<"RollingDailyMaintenanceState"> | string | null
+    lastProcessedOriginAt?: DateTimeNullableWithAggregatesFilter<"RollingDailyMaintenanceState"> | Date | string | null
+    lastMaturedObservedAt?: DateTimeNullableWithAggregatesFilter<"RollingDailyMaintenanceState"> | Date | string | null
+    lastMaintenanceAt?: DateTimeNullableWithAggregatesFilter<"RollingDailyMaintenanceState"> | Date | string | null
+    lastMaintenanceStatus?: StringNullableWithAggregatesFilter<"RollingDailyMaintenanceState"> | string | null
+    lastFailureReason?: StringNullableWithAggregatesFilter<"RollingDailyMaintenanceState"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"RollingDailyMaintenanceState"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"RollingDailyMaintenanceState"> | Date | string
+  }
+
+  export type MarketSeriesCreateInput = {
+    id?: string
+    providerCode: string
+    providerSeriesId: string
+    providerSeriesKey?: string | null
+    displayName: string
+    frequency?: string | null
+    currency?: string | null
+    unit?: string | null
+    sourceLabel?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    observations?: MarketObservationCreateNestedManyWithoutSeriesInput
+    hydrationState?: MarketHydrationStateCreateNestedOneWithoutSeriesInput
+  }
+
+  export type MarketSeriesUncheckedCreateInput = {
+    id?: string
+    providerCode: string
+    providerSeriesId: string
+    providerSeriesKey?: string | null
+    displayName: string
+    frequency?: string | null
+    currency?: string | null
+    unit?: string | null
+    sourceLabel?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    observations?: MarketObservationUncheckedCreateNestedManyWithoutSeriesInput
+    hydrationState?: MarketHydrationStateUncheckedCreateNestedOneWithoutSeriesInput
+  }
+
+  export type MarketSeriesUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    providerCode?: StringFieldUpdateOperationsInput | string
+    providerSeriesId?: StringFieldUpdateOperationsInput | string
+    providerSeriesKey?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: StringFieldUpdateOperationsInput | string
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    observations?: MarketObservationUpdateManyWithoutSeriesNestedInput
+    hydrationState?: MarketHydrationStateUpdateOneWithoutSeriesNestedInput
+  }
+
+  export type MarketSeriesUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    providerCode?: StringFieldUpdateOperationsInput | string
+    providerSeriesId?: StringFieldUpdateOperationsInput | string
+    providerSeriesKey?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: StringFieldUpdateOperationsInput | string
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    observations?: MarketObservationUncheckedUpdateManyWithoutSeriesNestedInput
+    hydrationState?: MarketHydrationStateUncheckedUpdateOneWithoutSeriesNestedInput
+  }
+
+  export type MarketSeriesCreateManyInput = {
+    id?: string
+    providerCode: string
+    providerSeriesId: string
+    providerSeriesKey?: string | null
+    displayName: string
+    frequency?: string | null
+    currency?: string | null
+    unit?: string | null
+    sourceLabel?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type MarketSeriesUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    providerCode?: StringFieldUpdateOperationsInput | string
+    providerSeriesId?: StringFieldUpdateOperationsInput | string
+    providerSeriesKey?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: StringFieldUpdateOperationsInput | string
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MarketSeriesUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    providerCode?: StringFieldUpdateOperationsInput | string
+    providerSeriesId?: StringFieldUpdateOperationsInput | string
+    providerSeriesKey?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: StringFieldUpdateOperationsInput | string
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MarketObservationCreateInput = {
+    id?: string
+    observedAt: Date | string
+    value?: Decimal | DecimalJsLike | number | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    series: MarketSeriesCreateNestedOneWithoutObservationsInput
+  }
+
+  export type MarketObservationUncheckedCreateInput = {
+    id?: string
+    seriesId: string
+    observedAt: Date | string
+    value?: Decimal | DecimalJsLike | number | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type MarketObservationUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    observedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    value?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    series?: MarketSeriesUpdateOneRequiredWithoutObservationsNestedInput
+  }
+
+  export type MarketObservationUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    observedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    value?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MarketObservationCreateManyInput = {
+    id?: string
+    seriesId: string
+    observedAt: Date | string
+    value?: Decimal | DecimalJsLike | number | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type MarketObservationUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    observedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    value?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MarketObservationUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    observedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    value?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MarketHydrationStateCreateInput = {
+    id?: string
+    lastProviderFetchAt?: Date | string | null
+    earliestStoredObservationAt?: Date | string | null
+    latestStoredObservationAt?: Date | string | null
+    lastHydrationStatus?: string | null
+    lastHydrationMessage?: string | null
+    lastHydratedObservationCount?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    series: MarketSeriesCreateNestedOneWithoutHydrationStateInput
+  }
+
+  export type MarketHydrationStateUncheckedCreateInput = {
+    id?: string
+    seriesId: string
+    lastProviderFetchAt?: Date | string | null
+    earliestStoredObservationAt?: Date | string | null
+    latestStoredObservationAt?: Date | string | null
+    lastHydrationStatus?: string | null
+    lastHydrationMessage?: string | null
+    lastHydratedObservationCount?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type MarketHydrationStateUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    lastProviderFetchAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    earliestStoredObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    latestStoredObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastHydrationStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastHydrationMessage?: NullableStringFieldUpdateOperationsInput | string | null
+    lastHydratedObservationCount?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    series?: MarketSeriesUpdateOneRequiredWithoutHydrationStateNestedInput
+  }
+
+  export type MarketHydrationStateUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    lastProviderFetchAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    earliestStoredObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    latestStoredObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastHydrationStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastHydrationMessage?: NullableStringFieldUpdateOperationsInput | string | null
+    lastHydratedObservationCount?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MarketHydrationStateCreateManyInput = {
+    id?: string
+    seriesId: string
+    lastProviderFetchAt?: Date | string | null
+    earliestStoredObservationAt?: Date | string | null
+    latestStoredObservationAt?: Date | string | null
+    lastHydrationStatus?: string | null
+    lastHydrationMessage?: string | null
+    lastHydratedObservationCount?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type MarketHydrationStateUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    lastProviderFetchAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    earliestStoredObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    latestStoredObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastHydrationStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastHydrationMessage?: NullableStringFieldUpdateOperationsInput | string | null
+    lastHydratedObservationCount?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MarketHydrationStateUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    lastProviderFetchAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    earliestStoredObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    latestStoredObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastHydrationStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastHydrationMessage?: NullableStringFieldUpdateOperationsInput | string | null
+    lastHydratedObservationCount?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastCurrentRunCreateInput = {
+    id?: string
+    seriesId: string
+    displayName: string
+    description?: string | null
+    frequency?: string | null
+    currency?: string | null
+    unit?: string | null
+    sourceLabel?: string | null
+    inputSource: string
+    inputRunId?: string | null
+    historyFingerprint: string
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    historyStartAt?: Date | string | null
+    historyEndAt?: Date | string | null
+    observationCount: number
+    forecastOriginAt?: Date | string | null
+    modelId: string
+    methodVersion: string
+    status: string
+    failureReason?: string | null
+    runtimeSeconds?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    points?: ForecastCurrentPointCreateNestedManyWithoutRunInput
+  }
+
+  export type ForecastCurrentRunUncheckedCreateInput = {
+    id?: string
+    seriesId: string
+    displayName: string
+    description?: string | null
+    frequency?: string | null
+    currency?: string | null
+    unit?: string | null
+    sourceLabel?: string | null
+    inputSource: string
+    inputRunId?: string | null
+    historyFingerprint: string
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    historyStartAt?: Date | string | null
+    historyEndAt?: Date | string | null
+    observationCount: number
+    forecastOriginAt?: Date | string | null
+    modelId: string
+    methodVersion: string
+    status: string
+    failureReason?: string | null
+    runtimeSeconds?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    points?: ForecastCurrentPointUncheckedCreateNestedManyWithoutRunInput
+  }
+
+  export type ForecastCurrentRunUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    displayName?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    historyStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    historyEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    observationCount?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    modelId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    points?: ForecastCurrentPointUpdateManyWithoutRunNestedInput
+  }
+
+  export type ForecastCurrentRunUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    displayName?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    historyStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    historyEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    observationCount?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    modelId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    points?: ForecastCurrentPointUncheckedUpdateManyWithoutRunNestedInput
+  }
+
+  export type ForecastCurrentRunCreateManyInput = {
+    id?: string
+    seriesId: string
+    displayName: string
+    description?: string | null
+    frequency?: string | null
+    currency?: string | null
+    unit?: string | null
+    sourceLabel?: string | null
+    inputSource: string
+    inputRunId?: string | null
+    historyFingerprint: string
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    historyStartAt?: Date | string | null
+    historyEndAt?: Date | string | null
+    observationCount: number
+    forecastOriginAt?: Date | string | null
+    modelId: string
+    methodVersion: string
+    status: string
+    failureReason?: string | null
+    runtimeSeconds?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastCurrentRunUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    displayName?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    historyStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    historyEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    observationCount?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    modelId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastCurrentRunUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    displayName?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    historyStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    historyEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    observationCount?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    modelId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastCurrentPointCreateInput = {
+    id?: string
+    horizonLabel: string
+    horizonSteps: number
+    forecastDate: Date | string
+    forecastValue?: Decimal | DecimalJsLike | number | string | null
+    fitStatus?: string | null
+    failureReason?: string | null
+    selectedVariant?: string | null
+    selectionMetric?: string | null
+    selectionScore?: number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    run: ForecastCurrentRunCreateNestedOneWithoutPointsInput
+  }
+
+  export type ForecastCurrentPointUncheckedCreateInput = {
+    id?: string
+    runId: string
+    horizonLabel: string
+    horizonSteps: number
+    forecastDate: Date | string
+    forecastValue?: Decimal | DecimalJsLike | number | string | null
+    fitStatus?: string | null
+    failureReason?: string | null
+    selectedVariant?: string | null
+    selectionMetric?: string | null
+    selectionScore?: number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastCurrentPointUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    forecastDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    forecastValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    fitStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    selectedVariant?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionMetric?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    run?: ForecastCurrentRunUpdateOneRequiredWithoutPointsNestedInput
+  }
+
+  export type ForecastCurrentPointUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    runId?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    forecastDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    forecastValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    fitStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    selectedVariant?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionMetric?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastCurrentPointCreateManyInput = {
+    id?: string
+    runId: string
+    horizonLabel: string
+    horizonSteps: number
+    forecastDate: Date | string
+    forecastValue?: Decimal | DecimalJsLike | number | string | null
+    fitStatus?: string | null
+    failureReason?: string | null
+    selectedVariant?: string | null
+    selectionMetric?: string | null
+    selectionScore?: number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastCurrentPointUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    forecastDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    forecastValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    fitStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    selectedVariant?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionMetric?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastCurrentPointUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    runId?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    forecastDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    forecastValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    fitStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    selectedVariant?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionMetric?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastVerificationRunCreateInput = {
+    id?: string
+    seriesId: string
+    displayName: string
+    description?: string | null
+    frequency?: string | null
+    currency?: string | null
+    unit?: string | null
+    sourceLabel?: string | null
+    inputSource: string
+    inputRunId?: string | null
+    historyFingerprint: string
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    historyStartAt?: Date | string | null
+    historyEndAt?: Date | string | null
+    observationCount: number
+    forecastOriginAt?: Date | string | null
+    modelId: string
+    methodVersion: string
+    status: string
+    failureReason?: string | null
+    runtimeSeconds?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    metrics?: ForecastVerificationMetricCreateNestedManyWithoutRunInput
+    points?: ForecastVerificationPointCreateNestedManyWithoutRunInput
+  }
+
+  export type ForecastVerificationRunUncheckedCreateInput = {
+    id?: string
+    seriesId: string
+    displayName: string
+    description?: string | null
+    frequency?: string | null
+    currency?: string | null
+    unit?: string | null
+    sourceLabel?: string | null
+    inputSource: string
+    inputRunId?: string | null
+    historyFingerprint: string
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    historyStartAt?: Date | string | null
+    historyEndAt?: Date | string | null
+    observationCount: number
+    forecastOriginAt?: Date | string | null
+    modelId: string
+    methodVersion: string
+    status: string
+    failureReason?: string | null
+    runtimeSeconds?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    metrics?: ForecastVerificationMetricUncheckedCreateNestedManyWithoutRunInput
+    points?: ForecastVerificationPointUncheckedCreateNestedManyWithoutRunInput
+  }
+
+  export type ForecastVerificationRunUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    displayName?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    historyStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    historyEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    observationCount?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    modelId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    metrics?: ForecastVerificationMetricUpdateManyWithoutRunNestedInput
+    points?: ForecastVerificationPointUpdateManyWithoutRunNestedInput
+  }
+
+  export type ForecastVerificationRunUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    displayName?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    historyStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    historyEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    observationCount?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    modelId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    metrics?: ForecastVerificationMetricUncheckedUpdateManyWithoutRunNestedInput
+    points?: ForecastVerificationPointUncheckedUpdateManyWithoutRunNestedInput
+  }
+
+  export type ForecastVerificationRunCreateManyInput = {
+    id?: string
+    seriesId: string
+    displayName: string
+    description?: string | null
+    frequency?: string | null
+    currency?: string | null
+    unit?: string | null
+    sourceLabel?: string | null
+    inputSource: string
+    inputRunId?: string | null
+    historyFingerprint: string
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    historyStartAt?: Date | string | null
+    historyEndAt?: Date | string | null
+    observationCount: number
+    forecastOriginAt?: Date | string | null
+    modelId: string
+    methodVersion: string
+    status: string
+    failureReason?: string | null
+    runtimeSeconds?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastVerificationRunUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    displayName?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    historyStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    historyEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    observationCount?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    modelId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastVerificationRunUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    displayName?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    historyStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    historyEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    observationCount?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    modelId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastVerificationMetricCreateInput = {
+    id?: string
+    horizonLabel: string
+    horizonSteps: number
+    origins: number
+    expectedOrigins: number
+    failedOrigins: number
+    coverage: number
+    mae?: number | null
+    rmse?: number | null
+    mase?: number | null
+    smape?: number | null
+    directionalAccuracy?: number | null
+    bias?: number | null
+    failureSummaryJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    run: ForecastVerificationRunCreateNestedOneWithoutMetricsInput
+  }
+
+  export type ForecastVerificationMetricUncheckedCreateInput = {
+    id?: string
+    runId: string
+    horizonLabel: string
+    horizonSteps: number
+    origins: number
+    expectedOrigins: number
+    failedOrigins: number
+    coverage: number
+    mae?: number | null
+    rmse?: number | null
+    mase?: number | null
+    smape?: number | null
+    directionalAccuracy?: number | null
+    bias?: number | null
+    failureSummaryJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastVerificationMetricUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    origins?: IntFieldUpdateOperationsInput | number
+    expectedOrigins?: IntFieldUpdateOperationsInput | number
+    failedOrigins?: IntFieldUpdateOperationsInput | number
+    coverage?: FloatFieldUpdateOperationsInput | number
+    mae?: NullableFloatFieldUpdateOperationsInput | number | null
+    rmse?: NullableFloatFieldUpdateOperationsInput | number | null
+    mase?: NullableFloatFieldUpdateOperationsInput | number | null
+    smape?: NullableFloatFieldUpdateOperationsInput | number | null
+    directionalAccuracy?: NullableFloatFieldUpdateOperationsInput | number | null
+    bias?: NullableFloatFieldUpdateOperationsInput | number | null
+    failureSummaryJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    run?: ForecastVerificationRunUpdateOneRequiredWithoutMetricsNestedInput
+  }
+
+  export type ForecastVerificationMetricUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    runId?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    origins?: IntFieldUpdateOperationsInput | number
+    expectedOrigins?: IntFieldUpdateOperationsInput | number
+    failedOrigins?: IntFieldUpdateOperationsInput | number
+    coverage?: FloatFieldUpdateOperationsInput | number
+    mae?: NullableFloatFieldUpdateOperationsInput | number | null
+    rmse?: NullableFloatFieldUpdateOperationsInput | number | null
+    mase?: NullableFloatFieldUpdateOperationsInput | number | null
+    smape?: NullableFloatFieldUpdateOperationsInput | number | null
+    directionalAccuracy?: NullableFloatFieldUpdateOperationsInput | number | null
+    bias?: NullableFloatFieldUpdateOperationsInput | number | null
+    failureSummaryJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastVerificationMetricCreateManyInput = {
+    id?: string
+    runId: string
+    horizonLabel: string
+    horizonSteps: number
+    origins: number
+    expectedOrigins: number
+    failedOrigins: number
+    coverage: number
+    mae?: number | null
+    rmse?: number | null
+    mase?: number | null
+    smape?: number | null
+    directionalAccuracy?: number | null
+    bias?: number | null
+    failureSummaryJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastVerificationMetricUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    origins?: IntFieldUpdateOperationsInput | number
+    expectedOrigins?: IntFieldUpdateOperationsInput | number
+    failedOrigins?: IntFieldUpdateOperationsInput | number
+    coverage?: FloatFieldUpdateOperationsInput | number
+    mae?: NullableFloatFieldUpdateOperationsInput | number | null
+    rmse?: NullableFloatFieldUpdateOperationsInput | number | null
+    mase?: NullableFloatFieldUpdateOperationsInput | number | null
+    smape?: NullableFloatFieldUpdateOperationsInput | number | null
+    directionalAccuracy?: NullableFloatFieldUpdateOperationsInput | number | null
+    bias?: NullableFloatFieldUpdateOperationsInput | number | null
+    failureSummaryJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastVerificationMetricUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    runId?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    origins?: IntFieldUpdateOperationsInput | number
+    expectedOrigins?: IntFieldUpdateOperationsInput | number
+    failedOrigins?: IntFieldUpdateOperationsInput | number
+    coverage?: FloatFieldUpdateOperationsInput | number
+    mae?: NullableFloatFieldUpdateOperationsInput | number | null
+    rmse?: NullableFloatFieldUpdateOperationsInput | number | null
+    mase?: NullableFloatFieldUpdateOperationsInput | number | null
+    smape?: NullableFloatFieldUpdateOperationsInput | number | null
+    directionalAccuracy?: NullableFloatFieldUpdateOperationsInput | number | null
+    bias?: NullableFloatFieldUpdateOperationsInput | number | null
+    failureSummaryJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastVerificationPointCreateInput = {
+    id?: string
+    horizonLabel: string
+    horizonSteps: number
+    forecastOriginAt: Date | string
+    targetDate: Date | string
+    actualObservedAt?: Date | string | null
+    originValue: Decimal | DecimalJsLike | number | string
+    forecastValue: Decimal | DecimalJsLike | number | string
+    actualValue: Decimal | DecimalJsLike | number | string
+    errorValue: Decimal | DecimalJsLike | number | string
+    absoluteErrorValue: Decimal | DecimalJsLike | number | string
+    deltaValue: Decimal | DecimalJsLike | number | string
+    deltaPct?: number | null
+    maseScale: number
+    selectedVariant?: string | null
+    selectionMetric?: string | null
+    selectionScore?: number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    run: ForecastVerificationRunCreateNestedOneWithoutPointsInput
+  }
+
+  export type ForecastVerificationPointUncheckedCreateInput = {
+    id?: string
+    runId: string
+    horizonLabel: string
+    horizonSteps: number
+    forecastOriginAt: Date | string
+    targetDate: Date | string
+    actualObservedAt?: Date | string | null
+    originValue: Decimal | DecimalJsLike | number | string
+    forecastValue: Decimal | DecimalJsLike | number | string
+    actualValue: Decimal | DecimalJsLike | number | string
+    errorValue: Decimal | DecimalJsLike | number | string
+    absoluteErrorValue: Decimal | DecimalJsLike | number | string
+    deltaValue: Decimal | DecimalJsLike | number | string
+    deltaPct?: number | null
+    maseScale: number
+    selectedVariant?: string | null
+    selectionMetric?: string | null
+    selectionScore?: number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastVerificationPointUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    targetDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    originValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    forecastValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    errorValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    absoluteErrorValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deltaValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deltaPct?: NullableFloatFieldUpdateOperationsInput | number | null
+    maseScale?: FloatFieldUpdateOperationsInput | number
+    selectedVariant?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionMetric?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    run?: ForecastVerificationRunUpdateOneRequiredWithoutPointsNestedInput
+  }
+
+  export type ForecastVerificationPointUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    runId?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    targetDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    originValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    forecastValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    errorValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    absoluteErrorValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deltaValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deltaPct?: NullableFloatFieldUpdateOperationsInput | number | null
+    maseScale?: FloatFieldUpdateOperationsInput | number
+    selectedVariant?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionMetric?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastVerificationPointCreateManyInput = {
+    id?: string
+    runId: string
+    horizonLabel: string
+    horizonSteps: number
+    forecastOriginAt: Date | string
+    targetDate: Date | string
+    actualObservedAt?: Date | string | null
+    originValue: Decimal | DecimalJsLike | number | string
+    forecastValue: Decimal | DecimalJsLike | number | string
+    actualValue: Decimal | DecimalJsLike | number | string
+    errorValue: Decimal | DecimalJsLike | number | string
+    absoluteErrorValue: Decimal | DecimalJsLike | number | string
+    deltaValue: Decimal | DecimalJsLike | number | string
+    deltaPct?: number | null
+    maseScale: number
+    selectedVariant?: string | null
+    selectionMetric?: string | null
+    selectionScore?: number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastVerificationPointUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    targetDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    originValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    forecastValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    errorValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    absoluteErrorValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deltaValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deltaPct?: NullableFloatFieldUpdateOperationsInput | number | null
+    maseScale?: FloatFieldUpdateOperationsInput | number
+    selectedVariant?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionMetric?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastVerificationPointUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    runId?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    targetDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    originValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    forecastValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    errorValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    absoluteErrorValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deltaValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deltaPct?: NullableFloatFieldUpdateOperationsInput | number | null
+    maseScale?: FloatFieldUpdateOperationsInput | number
+    selectedVariant?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionMetric?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RollingDailyVerificationRecordCreateInput = {
+    id?: string
+    seriesId: string
+    inputSource: string
+    inputRunId?: string | null
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+    forecastOriginAt: Date | string
+    horizonLabel: string
+    horizonMonths: number
+    horizonSteps: number
+    targetCalendarDate: Date | string
+    verificationObservedAt?: Date | string | null
+    maturityStatus: $Enums.RollingDailyVerificationMaturityStatus
+    originValue: Decimal | DecimalJsLike | number | string
+    forecastValue: Decimal | DecimalJsLike | number | string
+    actualValue?: Decimal | DecimalJsLike | number | string | null
+    errorValue?: Decimal | DecimalJsLike | number | string | null
+    absoluteErrorValue?: Decimal | DecimalJsLike | number | string | null
+    deltaValue?: Decimal | DecimalJsLike | number | string | null
+    deltaPct?: number | null
+    residualValue?: Decimal | DecimalJsLike | number | string | null
+    maseScale: number
+    trainingHistoryStartAt?: Date | string | null
+    trainingHistoryEndAt: Date | string
+    trainingObservationCount: number
+    sourceHistoryFingerprint: string
+    selectedVariant?: string | null
+    selectionMetric?: string | null
+    selectionScore?: number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RollingDailyVerificationRecordUncheckedCreateInput = {
+    id?: string
+    seriesId: string
+    inputSource: string
+    inputRunId?: string | null
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+    forecastOriginAt: Date | string
+    horizonLabel: string
+    horizonMonths: number
+    horizonSteps: number
+    targetCalendarDate: Date | string
+    verificationObservedAt?: Date | string | null
+    maturityStatus: $Enums.RollingDailyVerificationMaturityStatus
+    originValue: Decimal | DecimalJsLike | number | string
+    forecastValue: Decimal | DecimalJsLike | number | string
+    actualValue?: Decimal | DecimalJsLike | number | string | null
+    errorValue?: Decimal | DecimalJsLike | number | string | null
+    absoluteErrorValue?: Decimal | DecimalJsLike | number | string | null
+    deltaValue?: Decimal | DecimalJsLike | number | string | null
+    deltaPct?: number | null
+    residualValue?: Decimal | DecimalJsLike | number | string | null
+    maseScale: number
+    trainingHistoryStartAt?: Date | string | null
+    trainingHistoryEndAt: Date | string
+    trainingObservationCount: number
+    sourceHistoryFingerprint: string
+    selectedVariant?: string | null
+    selectionMetric?: string | null
+    selectionScore?: number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RollingDailyVerificationRecordUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    forecastOriginAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonMonths?: IntFieldUpdateOperationsInput | number
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    targetCalendarDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    verificationObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    maturityStatus?: EnumRollingDailyVerificationMaturityStatusFieldUpdateOperationsInput | $Enums.RollingDailyVerificationMaturityStatus
+    originValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    forecastValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    errorValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    absoluteErrorValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deltaValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deltaPct?: NullableFloatFieldUpdateOperationsInput | number | null
+    residualValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    maseScale?: FloatFieldUpdateOperationsInput | number
+    trainingHistoryStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trainingHistoryEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    trainingObservationCount?: IntFieldUpdateOperationsInput | number
+    sourceHistoryFingerprint?: StringFieldUpdateOperationsInput | string
+    selectedVariant?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionMetric?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RollingDailyVerificationRecordUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    forecastOriginAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonMonths?: IntFieldUpdateOperationsInput | number
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    targetCalendarDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    verificationObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    maturityStatus?: EnumRollingDailyVerificationMaturityStatusFieldUpdateOperationsInput | $Enums.RollingDailyVerificationMaturityStatus
+    originValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    forecastValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    errorValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    absoluteErrorValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deltaValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deltaPct?: NullableFloatFieldUpdateOperationsInput | number | null
+    residualValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    maseScale?: FloatFieldUpdateOperationsInput | number
+    trainingHistoryStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trainingHistoryEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    trainingObservationCount?: IntFieldUpdateOperationsInput | number
+    sourceHistoryFingerprint?: StringFieldUpdateOperationsInput | string
+    selectedVariant?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionMetric?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RollingDailyVerificationRecordCreateManyInput = {
+    id?: string
+    seriesId: string
+    inputSource: string
+    inputRunId?: string | null
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+    forecastOriginAt: Date | string
+    horizonLabel: string
+    horizonMonths: number
+    horizonSteps: number
+    targetCalendarDate: Date | string
+    verificationObservedAt?: Date | string | null
+    maturityStatus: $Enums.RollingDailyVerificationMaturityStatus
+    originValue: Decimal | DecimalJsLike | number | string
+    forecastValue: Decimal | DecimalJsLike | number | string
+    actualValue?: Decimal | DecimalJsLike | number | string | null
+    errorValue?: Decimal | DecimalJsLike | number | string | null
+    absoluteErrorValue?: Decimal | DecimalJsLike | number | string | null
+    deltaValue?: Decimal | DecimalJsLike | number | string | null
+    deltaPct?: number | null
+    residualValue?: Decimal | DecimalJsLike | number | string | null
+    maseScale: number
+    trainingHistoryStartAt?: Date | string | null
+    trainingHistoryEndAt: Date | string
+    trainingObservationCount: number
+    sourceHistoryFingerprint: string
+    selectedVariant?: string | null
+    selectionMetric?: string | null
+    selectionScore?: number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RollingDailyVerificationRecordUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    forecastOriginAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonMonths?: IntFieldUpdateOperationsInput | number
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    targetCalendarDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    verificationObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    maturityStatus?: EnumRollingDailyVerificationMaturityStatusFieldUpdateOperationsInput | $Enums.RollingDailyVerificationMaturityStatus
+    originValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    forecastValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    errorValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    absoluteErrorValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deltaValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deltaPct?: NullableFloatFieldUpdateOperationsInput | number | null
+    residualValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    maseScale?: FloatFieldUpdateOperationsInput | number
+    trainingHistoryStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trainingHistoryEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    trainingObservationCount?: IntFieldUpdateOperationsInput | number
+    sourceHistoryFingerprint?: StringFieldUpdateOperationsInput | string
+    selectedVariant?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionMetric?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RollingDailyVerificationRecordUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    forecastOriginAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonMonths?: IntFieldUpdateOperationsInput | number
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    targetCalendarDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    verificationObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    maturityStatus?: EnumRollingDailyVerificationMaturityStatusFieldUpdateOperationsInput | $Enums.RollingDailyVerificationMaturityStatus
+    originValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    forecastValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    errorValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    absoluteErrorValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deltaValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deltaPct?: NullableFloatFieldUpdateOperationsInput | number | null
+    residualValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    maseScale?: FloatFieldUpdateOperationsInput | number
+    trainingHistoryStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trainingHistoryEndAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    trainingObservationCount?: IntFieldUpdateOperationsInput | number
+    sourceHistoryFingerprint?: StringFieldUpdateOperationsInput | string
+    selectedVariant?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionMetric?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RollingDailyCurrentForecastSnapshotCreateInput = {
+    id?: string
+    seriesId: string
+    inputSource: string
+    inputRunId?: string | null
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+    contractVersion: string
+    status: string
+    reasonCode?: string | null
+    message?: string | null
+    forecastOriginAt?: Date | string | null
+    sourceLatestObservationAt?: Date | string | null
+    payloadJson: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RollingDailyCurrentForecastSnapshotUncheckedCreateInput = {
+    id?: string
+    seriesId: string
+    inputSource: string
+    inputRunId?: string | null
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+    contractVersion: string
+    status: string
+    reasonCode?: string | null
+    message?: string | null
+    forecastOriginAt?: Date | string | null
+    sourceLatestObservationAt?: Date | string | null
+    payloadJson: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RollingDailyCurrentForecastSnapshotUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    contractVersion?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    reasonCode?: NullableStringFieldUpdateOperationsInput | string | null
+    message?: NullableStringFieldUpdateOperationsInput | string | null
+    forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sourceLatestObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    payloadJson?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RollingDailyCurrentForecastSnapshotUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    contractVersion?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    reasonCode?: NullableStringFieldUpdateOperationsInput | string | null
+    message?: NullableStringFieldUpdateOperationsInput | string | null
+    forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sourceLatestObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    payloadJson?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RollingDailyCurrentForecastSnapshotCreateManyInput = {
+    id?: string
+    seriesId: string
+    inputSource: string
+    inputRunId?: string | null
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+    contractVersion: string
+    status: string
+    reasonCode?: string | null
+    message?: string | null
+    forecastOriginAt?: Date | string | null
+    sourceLatestObservationAt?: Date | string | null
+    payloadJson: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RollingDailyCurrentForecastSnapshotUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    contractVersion?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    reasonCode?: NullableStringFieldUpdateOperationsInput | string | null
+    message?: NullableStringFieldUpdateOperationsInput | string | null
+    forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sourceLatestObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    payloadJson?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RollingDailyCurrentForecastSnapshotUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    contractVersion?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    reasonCode?: NullableStringFieldUpdateOperationsInput | string | null
+    message?: NullableStringFieldUpdateOperationsInput | string | null
+    forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sourceLatestObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    payloadJson?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RollingDailyCalibrationGroupCreateInput = {
+    id?: string
+    seriesId: string
+    inputSource: string
+    inputRunId?: string | null
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+    horizonLabel: string
+    horizonMonths: number
+    calibrationOriginAt: Date | string
+    sampleCount: number
+    residualP10?: Decimal | DecimalJsLike | number | string | null
+    residualP90?: Decimal | DecimalJsLike | number | string | null
+    quantileMethod: string
+    status: $Enums.RollingDailyCalibrationStatus
+    lastResidualObservedAt?: Date | string | null
+    refreshedAt: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RollingDailyCalibrationGroupUncheckedCreateInput = {
+    id?: string
+    seriesId: string
+    inputSource: string
+    inputRunId?: string | null
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+    horizonLabel: string
+    horizonMonths: number
+    calibrationOriginAt: Date | string
+    sampleCount: number
+    residualP10?: Decimal | DecimalJsLike | number | string | null
+    residualP90?: Decimal | DecimalJsLike | number | string | null
+    quantileMethod: string
+    status: $Enums.RollingDailyCalibrationStatus
+    lastResidualObservedAt?: Date | string | null
+    refreshedAt: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RollingDailyCalibrationGroupUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonMonths?: IntFieldUpdateOperationsInput | number
+    calibrationOriginAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    sampleCount?: IntFieldUpdateOperationsInput | number
+    residualP10?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    residualP90?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    quantileMethod?: StringFieldUpdateOperationsInput | string
+    status?: EnumRollingDailyCalibrationStatusFieldUpdateOperationsInput | $Enums.RollingDailyCalibrationStatus
+    lastResidualObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    refreshedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RollingDailyCalibrationGroupUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonMonths?: IntFieldUpdateOperationsInput | number
+    calibrationOriginAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    sampleCount?: IntFieldUpdateOperationsInput | number
+    residualP10?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    residualP90?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    quantileMethod?: StringFieldUpdateOperationsInput | string
+    status?: EnumRollingDailyCalibrationStatusFieldUpdateOperationsInput | $Enums.RollingDailyCalibrationStatus
+    lastResidualObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    refreshedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RollingDailyCalibrationGroupCreateManyInput = {
+    id?: string
+    seriesId: string
+    inputSource: string
+    inputRunId?: string | null
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+    horizonLabel: string
+    horizonMonths: number
+    calibrationOriginAt: Date | string
+    sampleCount: number
+    residualP10?: Decimal | DecimalJsLike | number | string | null
+    residualP90?: Decimal | DecimalJsLike | number | string | null
+    quantileMethod: string
+    status: $Enums.RollingDailyCalibrationStatus
+    lastResidualObservedAt?: Date | string | null
+    refreshedAt: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RollingDailyCalibrationGroupUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonMonths?: IntFieldUpdateOperationsInput | number
+    calibrationOriginAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    sampleCount?: IntFieldUpdateOperationsInput | number
+    residualP10?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    residualP90?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    quantileMethod?: StringFieldUpdateOperationsInput | string
+    status?: EnumRollingDailyCalibrationStatusFieldUpdateOperationsInput | $Enums.RollingDailyCalibrationStatus
+    lastResidualObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    refreshedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RollingDailyCalibrationGroupUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonMonths?: IntFieldUpdateOperationsInput | number
+    calibrationOriginAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    sampleCount?: IntFieldUpdateOperationsInput | number
+    residualP10?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    residualP90?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    quantileMethod?: StringFieldUpdateOperationsInput | string
+    status?: EnumRollingDailyCalibrationStatusFieldUpdateOperationsInput | $Enums.RollingDailyCalibrationStatus
+    lastResidualObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    refreshedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RollingDailyMaintenanceStateCreateInput = {
+    id?: string
+    seriesId: string
+    inputSource: string
+    inputRunId?: string | null
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+    historicalOriginStartAt: Date | string
+    minimumTrainingObservations: number
+    minimumCalibrationSamples: number
+    latestSourceObservationAt?: Date | string | null
+    latestSourceHistoryStartAt?: Date | string | null
+    latestSourceObservationCount?: number | null
+    latestSourceHistoryFingerprint?: string | null
+    lastProcessedOriginAt?: Date | string | null
+    lastMaturedObservedAt?: Date | string | null
+    lastMaintenanceAt?: Date | string | null
+    lastMaintenanceStatus?: string | null
+    lastFailureReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RollingDailyMaintenanceStateUncheckedCreateInput = {
+    id?: string
+    seriesId: string
+    inputSource: string
+    inputRunId?: string | null
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+    historicalOriginStartAt: Date | string
+    minimumTrainingObservations: number
+    minimumCalibrationSamples: number
+    latestSourceObservationAt?: Date | string | null
+    latestSourceHistoryStartAt?: Date | string | null
+    latestSourceObservationCount?: number | null
+    latestSourceHistoryFingerprint?: string | null
+    lastProcessedOriginAt?: Date | string | null
+    lastMaturedObservedAt?: Date | string | null
+    lastMaintenanceAt?: Date | string | null
+    lastMaintenanceStatus?: string | null
+    lastFailureReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RollingDailyMaintenanceStateUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    historicalOriginStartAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    minimumTrainingObservations?: IntFieldUpdateOperationsInput | number
+    minimumCalibrationSamples?: IntFieldUpdateOperationsInput | number
+    latestSourceObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    latestSourceHistoryStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    latestSourceObservationCount?: NullableIntFieldUpdateOperationsInput | number | null
+    latestSourceHistoryFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
+    lastProcessedOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastMaturedObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastMaintenanceAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastMaintenanceStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastFailureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RollingDailyMaintenanceStateUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    historicalOriginStartAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    minimumTrainingObservations?: IntFieldUpdateOperationsInput | number
+    minimumCalibrationSamples?: IntFieldUpdateOperationsInput | number
+    latestSourceObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    latestSourceHistoryStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    latestSourceObservationCount?: NullableIntFieldUpdateOperationsInput | number | null
+    latestSourceHistoryFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
+    lastProcessedOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastMaturedObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastMaintenanceAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastMaintenanceStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastFailureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RollingDailyMaintenanceStateCreateManyInput = {
+    id?: string
+    seriesId: string
+    inputSource: string
+    inputRunId?: string | null
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+    historicalOriginStartAt: Date | string
+    minimumTrainingObservations: number
+    minimumCalibrationSamples: number
+    latestSourceObservationAt?: Date | string | null
+    latestSourceHistoryStartAt?: Date | string | null
+    latestSourceObservationCount?: number | null
+    latestSourceHistoryFingerprint?: string | null
+    lastProcessedOriginAt?: Date | string | null
+    lastMaturedObservedAt?: Date | string | null
+    lastMaintenanceAt?: Date | string | null
+    lastMaintenanceStatus?: string | null
+    lastFailureReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RollingDailyMaintenanceStateUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    historicalOriginStartAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    minimumTrainingObservations?: IntFieldUpdateOperationsInput | number
+    minimumCalibrationSamples?: IntFieldUpdateOperationsInput | number
+    latestSourceObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    latestSourceHistoryStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    latestSourceObservationCount?: NullableIntFieldUpdateOperationsInput | number | null
+    latestSourceHistoryFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
+    lastProcessedOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastMaturedObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastMaintenanceAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastMaintenanceStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastFailureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RollingDailyMaintenanceStateUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    historicalOriginStartAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    minimumTrainingObservations?: IntFieldUpdateOperationsInput | number
+    minimumCalibrationSamples?: IntFieldUpdateOperationsInput | number
+    latestSourceObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    latestSourceHistoryStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    latestSourceObservationCount?: NullableIntFieldUpdateOperationsInput | number | null
+    latestSourceHistoryFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
+    lastProcessedOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastMaturedObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastMaintenanceAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastMaintenanceStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastFailureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type StringFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel>
+    in?: string[] | ListStringFieldRefInput<$PrismaModel>
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel>
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedStringFilter<$PrismaModel> | string
+  }
+
+  export type StringNullableFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
+  export type DateTimeFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeFilter<$PrismaModel> | Date | string
+  }
+
+  export type MarketObservationListRelationFilter = {
+    every?: MarketObservationWhereInput
+    some?: MarketObservationWhereInput
+    none?: MarketObservationWhereInput
+  }
+
+  export type MarketHydrationStateNullableRelationFilter = {
+    is?: MarketHydrationStateWhereInput | null
+    isNot?: MarketHydrationStateWhereInput | null
+  }
+
+  export type SortOrderInput = {
+    sort: SortOrder
+    nulls?: NullsOrder
+  }
+
+  export type MarketObservationOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type MarketSeriesProviderCodeProviderSeriesIdCompoundUniqueInput = {
+    providerCode: string
+    providerSeriesId: string
+  }
+
+  export type MarketSeriesCountOrderByAggregateInput = {
+    id?: SortOrder
+    providerCode?: SortOrder
+    providerSeriesId?: SortOrder
+    providerSeriesKey?: SortOrder
+    displayName?: SortOrder
+    frequency?: SortOrder
+    currency?: SortOrder
+    unit?: SortOrder
+    sourceLabel?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type MarketSeriesMaxOrderByAggregateInput = {
+    id?: SortOrder
+    providerCode?: SortOrder
+    providerSeriesId?: SortOrder
+    providerSeriesKey?: SortOrder
+    displayName?: SortOrder
+    frequency?: SortOrder
+    currency?: SortOrder
+    unit?: SortOrder
+    sourceLabel?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type MarketSeriesMinOrderByAggregateInput = {
+    id?: SortOrder
+    providerCode?: SortOrder
+    providerSeriesId?: SortOrder
+    providerSeriesKey?: SortOrder
+    displayName?: SortOrder
+    frequency?: SortOrder
+    currency?: SortOrder
+    unit?: SortOrder
+    sourceLabel?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type StringWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel>
+    in?: string[] | ListStringFieldRefInput<$PrismaModel>
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel>
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedStringWithAggregatesFilter<$PrismaModel> | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedStringFilter<$PrismaModel>
+    _max?: NestedStringFilter<$PrismaModel>
+  }
+
+  export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedStringNullableFilter<$PrismaModel>
+    _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
+  export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedDateTimeFilter<$PrismaModel>
+    _max?: NestedDateTimeFilter<$PrismaModel>
+  }
+
+  export type DecimalNullableFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type MarketSeriesRelationFilter = {
+    is?: MarketSeriesWhereInput
+    isNot?: MarketSeriesWhereInput
+  }
+
+  export type MarketObservationSeriesIdObservedAtCompoundUniqueInput = {
+    seriesId: string
+    observedAt: Date | string
+  }
+
+  export type MarketObservationCountOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    observedAt?: SortOrder
+    value?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type MarketObservationAvgOrderByAggregateInput = {
+    value?: SortOrder
+  }
+
+  export type MarketObservationMaxOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    observedAt?: SortOrder
+    value?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type MarketObservationMinOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    observedAt?: SortOrder
+    value?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type MarketObservationSumOrderByAggregateInput = {
+    value?: SortOrder
+  }
+
+  export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedDecimalNullableFilter<$PrismaModel>
+    _sum?: NestedDecimalNullableFilter<$PrismaModel>
+    _min?: NestedDecimalNullableFilter<$PrismaModel>
+    _max?: NestedDecimalNullableFilter<$PrismaModel>
+  }
+
+  export type DateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
+  export type IntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type MarketHydrationStateCountOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    lastProviderFetchAt?: SortOrder
+    earliestStoredObservationAt?: SortOrder
+    latestStoredObservationAt?: SortOrder
+    lastHydrationStatus?: SortOrder
+    lastHydrationMessage?: SortOrder
+    lastHydratedObservationCount?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type MarketHydrationStateAvgOrderByAggregateInput = {
+    lastHydratedObservationCount?: SortOrder
+  }
+
+  export type MarketHydrationStateMaxOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    lastProviderFetchAt?: SortOrder
+    earliestStoredObservationAt?: SortOrder
+    latestStoredObservationAt?: SortOrder
+    lastHydrationStatus?: SortOrder
+    lastHydrationMessage?: SortOrder
+    lastHydratedObservationCount?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type MarketHydrationStateMinOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    lastProviderFetchAt?: SortOrder
+    earliestStoredObservationAt?: SortOrder
+    latestStoredObservationAt?: SortOrder
+    lastHydrationStatus?: SortOrder
+    lastHydrationMessage?: SortOrder
+    lastHydratedObservationCount?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type MarketHydrationStateSumOrderByAggregateInput = {
+    lastHydratedObservationCount?: SortOrder
+  }
+
+  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
+  }
+
+  export type EnumForecastTargetBasisFilter<$PrismaModel = never> = {
+    equals?: $Enums.ForecastTargetBasis | EnumForecastTargetBasisFieldRefInput<$PrismaModel>
+    in?: $Enums.ForecastTargetBasis[] | ListEnumForecastTargetBasisFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ForecastTargetBasis[] | ListEnumForecastTargetBasisFieldRefInput<$PrismaModel>
+    not?: NestedEnumForecastTargetBasisFilter<$PrismaModel> | $Enums.ForecastTargetBasis
+  }
+
+  export type IntFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntFilter<$PrismaModel> | number
+  }
+
+  export type FloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type ForecastCurrentPointListRelationFilter = {
+    every?: ForecastCurrentPointWhereInput
+    some?: ForecastCurrentPointWhereInput
+    none?: ForecastCurrentPointWhereInput
+  }
+
+  export type ForecastCurrentPointOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type ForecastCurrentRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionCompoundUniqueInput = {
+    seriesId: string
+    inputSource: string
+    historyFingerprint: string
+    targetBasis: $Enums.ForecastTargetBasis
+    methodId: string
+    modelId: string
+    methodVersion: string
+  }
+
+  export type ForecastCurrentRunCountOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    displayName?: SortOrder
+    description?: SortOrder
+    frequency?: SortOrder
+    currency?: SortOrder
+    unit?: SortOrder
+    sourceLabel?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrder
+    historyFingerprint?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    historyStartAt?: SortOrder
+    historyEndAt?: SortOrder
+    observationCount?: SortOrder
+    forecastOriginAt?: SortOrder
+    modelId?: SortOrder
+    methodVersion?: SortOrder
+    status?: SortOrder
+    failureReason?: SortOrder
+    runtimeSeconds?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastCurrentRunAvgOrderByAggregateInput = {
+    observationCount?: SortOrder
+    runtimeSeconds?: SortOrder
+  }
+
+  export type ForecastCurrentRunMaxOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    displayName?: SortOrder
+    description?: SortOrder
+    frequency?: SortOrder
+    currency?: SortOrder
+    unit?: SortOrder
+    sourceLabel?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrder
+    historyFingerprint?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    historyStartAt?: SortOrder
+    historyEndAt?: SortOrder
+    observationCount?: SortOrder
+    forecastOriginAt?: SortOrder
+    modelId?: SortOrder
+    methodVersion?: SortOrder
+    status?: SortOrder
+    failureReason?: SortOrder
+    runtimeSeconds?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastCurrentRunMinOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    displayName?: SortOrder
+    description?: SortOrder
+    frequency?: SortOrder
+    currency?: SortOrder
+    unit?: SortOrder
+    sourceLabel?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrder
+    historyFingerprint?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    historyStartAt?: SortOrder
+    historyEndAt?: SortOrder
+    observationCount?: SortOrder
+    forecastOriginAt?: SortOrder
+    modelId?: SortOrder
+    methodVersion?: SortOrder
+    status?: SortOrder
+    failureReason?: SortOrder
+    runtimeSeconds?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastCurrentRunSumOrderByAggregateInput = {
+    observationCount?: SortOrder
+    runtimeSeconds?: SortOrder
+  }
+
+  export type EnumForecastTargetBasisWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ForecastTargetBasis | EnumForecastTargetBasisFieldRefInput<$PrismaModel>
+    in?: $Enums.ForecastTargetBasis[] | ListEnumForecastTargetBasisFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ForecastTargetBasis[] | ListEnumForecastTargetBasisFieldRefInput<$PrismaModel>
+    not?: NestedEnumForecastTargetBasisWithAggregatesFilter<$PrismaModel> | $Enums.ForecastTargetBasis
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumForecastTargetBasisFilter<$PrismaModel>
+    _max?: NestedEnumForecastTargetBasisFilter<$PrismaModel>
+  }
+
+  export type IntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
+  }
+
+  export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
+  }
+  export type JsonNullableFilter<$PrismaModel = never> = 
+    | PatchUndefined<
+        Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonNullableFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
+
+  export type ForecastCurrentRunRelationFilter = {
+    is?: ForecastCurrentRunWhereInput
+    isNot?: ForecastCurrentRunWhereInput
+  }
+
+  export type ForecastCurrentPointRunIdHorizonLabelCompoundUniqueInput = {
+    runId: string
+    horizonLabel: string
+  }
+
+  export type ForecastCurrentPointCountOrderByAggregateInput = {
+    id?: SortOrder
+    runId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonSteps?: SortOrder
+    forecastDate?: SortOrder
+    forecastValue?: SortOrder
+    fitStatus?: SortOrder
+    failureReason?: SortOrder
+    selectedVariant?: SortOrder
+    selectionMetric?: SortOrder
+    selectionScore?: SortOrder
+    metadataJson?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastCurrentPointAvgOrderByAggregateInput = {
+    horizonSteps?: SortOrder
+    forecastValue?: SortOrder
+    selectionScore?: SortOrder
+  }
+
+  export type ForecastCurrentPointMaxOrderByAggregateInput = {
+    id?: SortOrder
+    runId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonSteps?: SortOrder
+    forecastDate?: SortOrder
+    forecastValue?: SortOrder
+    fitStatus?: SortOrder
+    failureReason?: SortOrder
+    selectedVariant?: SortOrder
+    selectionMetric?: SortOrder
+    selectionScore?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastCurrentPointMinOrderByAggregateInput = {
+    id?: SortOrder
+    runId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonSteps?: SortOrder
+    forecastDate?: SortOrder
+    forecastValue?: SortOrder
+    fitStatus?: SortOrder
+    failureReason?: SortOrder
+    selectedVariant?: SortOrder
+    selectionMetric?: SortOrder
+    selectionScore?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastCurrentPointSumOrderByAggregateInput = {
+    horizonSteps?: SortOrder
+    forecastValue?: SortOrder
+    selectionScore?: SortOrder
+  }
+  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> = 
+    | PatchUndefined<
+        Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedJsonNullableFilter<$PrismaModel>
+    _max?: NestedJsonNullableFilter<$PrismaModel>
+  }
+
+  export type ForecastVerificationMetricListRelationFilter = {
+    every?: ForecastVerificationMetricWhereInput
+    some?: ForecastVerificationMetricWhereInput
+    none?: ForecastVerificationMetricWhereInput
+  }
+
+  export type ForecastVerificationPointListRelationFilter = {
+    every?: ForecastVerificationPointWhereInput
+    some?: ForecastVerificationPointWhereInput
+    none?: ForecastVerificationPointWhereInput
+  }
+
+  export type ForecastVerificationMetricOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type ForecastVerificationPointOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type ForecastVerificationRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionCompoundUniqueInput = {
+    seriesId: string
+    inputSource: string
+    historyFingerprint: string
+    targetBasis: $Enums.ForecastTargetBasis
+    methodId: string
+    modelId: string
+    methodVersion: string
+  }
+
+  export type ForecastVerificationRunCountOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    displayName?: SortOrder
+    description?: SortOrder
+    frequency?: SortOrder
+    currency?: SortOrder
+    unit?: SortOrder
+    sourceLabel?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrder
+    historyFingerprint?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    historyStartAt?: SortOrder
+    historyEndAt?: SortOrder
+    observationCount?: SortOrder
+    forecastOriginAt?: SortOrder
+    modelId?: SortOrder
+    methodVersion?: SortOrder
+    status?: SortOrder
+    failureReason?: SortOrder
+    runtimeSeconds?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastVerificationRunAvgOrderByAggregateInput = {
+    observationCount?: SortOrder
+    runtimeSeconds?: SortOrder
+  }
+
+  export type ForecastVerificationRunMaxOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    displayName?: SortOrder
+    description?: SortOrder
+    frequency?: SortOrder
+    currency?: SortOrder
+    unit?: SortOrder
+    sourceLabel?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrder
+    historyFingerprint?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    historyStartAt?: SortOrder
+    historyEndAt?: SortOrder
+    observationCount?: SortOrder
+    forecastOriginAt?: SortOrder
+    modelId?: SortOrder
+    methodVersion?: SortOrder
+    status?: SortOrder
+    failureReason?: SortOrder
+    runtimeSeconds?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastVerificationRunMinOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    displayName?: SortOrder
+    description?: SortOrder
+    frequency?: SortOrder
+    currency?: SortOrder
+    unit?: SortOrder
+    sourceLabel?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrder
+    historyFingerprint?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    historyStartAt?: SortOrder
+    historyEndAt?: SortOrder
+    observationCount?: SortOrder
+    forecastOriginAt?: SortOrder
+    modelId?: SortOrder
+    methodVersion?: SortOrder
+    status?: SortOrder
+    failureReason?: SortOrder
+    runtimeSeconds?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastVerificationRunSumOrderByAggregateInput = {
+    observationCount?: SortOrder
+    runtimeSeconds?: SortOrder
+  }
+
+  export type FloatFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatFilter<$PrismaModel> | number
+  }
+
+  export type ForecastVerificationRunRelationFilter = {
+    is?: ForecastVerificationRunWhereInput
+    isNot?: ForecastVerificationRunWhereInput
+  }
+
+  export type ForecastVerificationMetricRunIdHorizonLabelCompoundUniqueInput = {
+    runId: string
+    horizonLabel: string
+  }
+
+  export type ForecastVerificationMetricCountOrderByAggregateInput = {
+    id?: SortOrder
+    runId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonSteps?: SortOrder
+    origins?: SortOrder
+    expectedOrigins?: SortOrder
+    failedOrigins?: SortOrder
+    coverage?: SortOrder
+    mae?: SortOrder
+    rmse?: SortOrder
+    mase?: SortOrder
+    smape?: SortOrder
+    directionalAccuracy?: SortOrder
+    bias?: SortOrder
+    failureSummaryJson?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastVerificationMetricAvgOrderByAggregateInput = {
+    horizonSteps?: SortOrder
+    origins?: SortOrder
+    expectedOrigins?: SortOrder
+    failedOrigins?: SortOrder
+    coverage?: SortOrder
+    mae?: SortOrder
+    rmse?: SortOrder
+    mase?: SortOrder
+    smape?: SortOrder
+    directionalAccuracy?: SortOrder
+    bias?: SortOrder
+  }
+
+  export type ForecastVerificationMetricMaxOrderByAggregateInput = {
+    id?: SortOrder
+    runId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonSteps?: SortOrder
+    origins?: SortOrder
+    expectedOrigins?: SortOrder
+    failedOrigins?: SortOrder
+    coverage?: SortOrder
+    mae?: SortOrder
+    rmse?: SortOrder
+    mase?: SortOrder
+    smape?: SortOrder
+    directionalAccuracy?: SortOrder
+    bias?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastVerificationMetricMinOrderByAggregateInput = {
+    id?: SortOrder
+    runId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonSteps?: SortOrder
+    origins?: SortOrder
+    expectedOrigins?: SortOrder
+    failedOrigins?: SortOrder
+    coverage?: SortOrder
+    mae?: SortOrder
+    rmse?: SortOrder
+    mase?: SortOrder
+    smape?: SortOrder
+    directionalAccuracy?: SortOrder
+    bias?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastVerificationMetricSumOrderByAggregateInput = {
+    horizonSteps?: SortOrder
+    origins?: SortOrder
+    expectedOrigins?: SortOrder
+    failedOrigins?: SortOrder
+    coverage?: SortOrder
+    mae?: SortOrder
+    rmse?: SortOrder
+    mase?: SortOrder
+    smape?: SortOrder
+    directionalAccuracy?: SortOrder
+    bias?: SortOrder
+  }
+
+  export type FloatWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedFloatFilter<$PrismaModel>
+    _min?: NestedFloatFilter<$PrismaModel>
+    _max?: NestedFloatFilter<$PrismaModel>
+  }
+
+  export type DecimalFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
+  }
+
+  export type ForecastVerificationPointRunIdHorizonLabelForecastOriginAtTargetDateCompoundUniqueInput = {
+    runId: string
+    horizonLabel: string
+    forecastOriginAt: Date | string
+    targetDate: Date | string
+  }
+
+  export type ForecastVerificationPointCountOrderByAggregateInput = {
+    id?: SortOrder
+    runId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonSteps?: SortOrder
+    forecastOriginAt?: SortOrder
+    targetDate?: SortOrder
+    actualObservedAt?: SortOrder
+    originValue?: SortOrder
+    forecastValue?: SortOrder
+    actualValue?: SortOrder
+    errorValue?: SortOrder
+    absoluteErrorValue?: SortOrder
+    deltaValue?: SortOrder
+    deltaPct?: SortOrder
+    maseScale?: SortOrder
+    selectedVariant?: SortOrder
+    selectionMetric?: SortOrder
+    selectionScore?: SortOrder
+    metadataJson?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastVerificationPointAvgOrderByAggregateInput = {
+    horizonSteps?: SortOrder
+    originValue?: SortOrder
+    forecastValue?: SortOrder
+    actualValue?: SortOrder
+    errorValue?: SortOrder
+    absoluteErrorValue?: SortOrder
+    deltaValue?: SortOrder
+    deltaPct?: SortOrder
+    maseScale?: SortOrder
+    selectionScore?: SortOrder
+  }
+
+  export type ForecastVerificationPointMaxOrderByAggregateInput = {
+    id?: SortOrder
+    runId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonSteps?: SortOrder
+    forecastOriginAt?: SortOrder
+    targetDate?: SortOrder
+    actualObservedAt?: SortOrder
+    originValue?: SortOrder
+    forecastValue?: SortOrder
+    actualValue?: SortOrder
+    errorValue?: SortOrder
+    absoluteErrorValue?: SortOrder
+    deltaValue?: SortOrder
+    deltaPct?: SortOrder
+    maseScale?: SortOrder
+    selectedVariant?: SortOrder
+    selectionMetric?: SortOrder
+    selectionScore?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastVerificationPointMinOrderByAggregateInput = {
+    id?: SortOrder
+    runId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonSteps?: SortOrder
+    forecastOriginAt?: SortOrder
+    targetDate?: SortOrder
+    actualObservedAt?: SortOrder
+    originValue?: SortOrder
+    forecastValue?: SortOrder
+    actualValue?: SortOrder
+    errorValue?: SortOrder
+    absoluteErrorValue?: SortOrder
+    deltaValue?: SortOrder
+    deltaPct?: SortOrder
+    maseScale?: SortOrder
+    selectedVariant?: SortOrder
+    selectionMetric?: SortOrder
+    selectionScore?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastVerificationPointSumOrderByAggregateInput = {
+    horizonSteps?: SortOrder
+    originValue?: SortOrder
+    forecastValue?: SortOrder
+    actualValue?: SortOrder
+    errorValue?: SortOrder
+    absoluteErrorValue?: SortOrder
+    deltaValue?: SortOrder
+    deltaPct?: SortOrder
+    maseScale?: SortOrder
+    selectionScore?: SortOrder
+  }
+
+  export type DecimalWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedDecimalFilter<$PrismaModel>
+    _sum?: NestedDecimalFilter<$PrismaModel>
+    _min?: NestedDecimalFilter<$PrismaModel>
+    _max?: NestedDecimalFilter<$PrismaModel>
+  }
+
+  export type EnumRollingDailyVerificationMaturityStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.RollingDailyVerificationMaturityStatus | EnumRollingDailyVerificationMaturityStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.RollingDailyVerificationMaturityStatus[] | ListEnumRollingDailyVerificationMaturityStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RollingDailyVerificationMaturityStatus[] | ListEnumRollingDailyVerificationMaturityStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumRollingDailyVerificationMaturityStatusFilter<$PrismaModel> | $Enums.RollingDailyVerificationMaturityStatus
+  }
+
+  export type RollingDailyVerificationRecordSeriesIdInputSourceTargetBasisMethodIdMethodVersionModelIdForecastOriginAtHorizonLabelCompoundUniqueInput = {
+    seriesId: string
+    inputSource: string
+    targetBasis: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+    forecastOriginAt: Date | string
+    horizonLabel: string
+  }
+
+  export type RollingDailyVerificationRecordCountOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    forecastOriginAt?: SortOrder
+    horizonLabel?: SortOrder
+    horizonMonths?: SortOrder
+    horizonSteps?: SortOrder
+    targetCalendarDate?: SortOrder
+    verificationObservedAt?: SortOrder
+    maturityStatus?: SortOrder
+    originValue?: SortOrder
+    forecastValue?: SortOrder
+    actualValue?: SortOrder
+    errorValue?: SortOrder
+    absoluteErrorValue?: SortOrder
+    deltaValue?: SortOrder
+    deltaPct?: SortOrder
+    residualValue?: SortOrder
+    maseScale?: SortOrder
+    trainingHistoryStartAt?: SortOrder
+    trainingHistoryEndAt?: SortOrder
+    trainingObservationCount?: SortOrder
+    sourceHistoryFingerprint?: SortOrder
+    selectedVariant?: SortOrder
+    selectionMetric?: SortOrder
+    selectionScore?: SortOrder
+    metadataJson?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RollingDailyVerificationRecordAvgOrderByAggregateInput = {
+    horizonMonths?: SortOrder
+    horizonSteps?: SortOrder
+    originValue?: SortOrder
+    forecastValue?: SortOrder
+    actualValue?: SortOrder
+    errorValue?: SortOrder
+    absoluteErrorValue?: SortOrder
+    deltaValue?: SortOrder
+    deltaPct?: SortOrder
+    residualValue?: SortOrder
+    maseScale?: SortOrder
+    trainingObservationCount?: SortOrder
+    selectionScore?: SortOrder
+  }
+
+  export type RollingDailyVerificationRecordMaxOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    forecastOriginAt?: SortOrder
+    horizonLabel?: SortOrder
+    horizonMonths?: SortOrder
+    horizonSteps?: SortOrder
+    targetCalendarDate?: SortOrder
+    verificationObservedAt?: SortOrder
+    maturityStatus?: SortOrder
+    originValue?: SortOrder
+    forecastValue?: SortOrder
+    actualValue?: SortOrder
+    errorValue?: SortOrder
+    absoluteErrorValue?: SortOrder
+    deltaValue?: SortOrder
+    deltaPct?: SortOrder
+    residualValue?: SortOrder
+    maseScale?: SortOrder
+    trainingHistoryStartAt?: SortOrder
+    trainingHistoryEndAt?: SortOrder
+    trainingObservationCount?: SortOrder
+    sourceHistoryFingerprint?: SortOrder
+    selectedVariant?: SortOrder
+    selectionMetric?: SortOrder
+    selectionScore?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RollingDailyVerificationRecordMinOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    forecastOriginAt?: SortOrder
+    horizonLabel?: SortOrder
+    horizonMonths?: SortOrder
+    horizonSteps?: SortOrder
+    targetCalendarDate?: SortOrder
+    verificationObservedAt?: SortOrder
+    maturityStatus?: SortOrder
+    originValue?: SortOrder
+    forecastValue?: SortOrder
+    actualValue?: SortOrder
+    errorValue?: SortOrder
+    absoluteErrorValue?: SortOrder
+    deltaValue?: SortOrder
+    deltaPct?: SortOrder
+    residualValue?: SortOrder
+    maseScale?: SortOrder
+    trainingHistoryStartAt?: SortOrder
+    trainingHistoryEndAt?: SortOrder
+    trainingObservationCount?: SortOrder
+    sourceHistoryFingerprint?: SortOrder
+    selectedVariant?: SortOrder
+    selectionMetric?: SortOrder
+    selectionScore?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RollingDailyVerificationRecordSumOrderByAggregateInput = {
+    horizonMonths?: SortOrder
+    horizonSteps?: SortOrder
+    originValue?: SortOrder
+    forecastValue?: SortOrder
+    actualValue?: SortOrder
+    errorValue?: SortOrder
+    absoluteErrorValue?: SortOrder
+    deltaValue?: SortOrder
+    deltaPct?: SortOrder
+    residualValue?: SortOrder
+    maseScale?: SortOrder
+    trainingObservationCount?: SortOrder
+    selectionScore?: SortOrder
+  }
+
+  export type EnumRollingDailyVerificationMaturityStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.RollingDailyVerificationMaturityStatus | EnumRollingDailyVerificationMaturityStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.RollingDailyVerificationMaturityStatus[] | ListEnumRollingDailyVerificationMaturityStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RollingDailyVerificationMaturityStatus[] | ListEnumRollingDailyVerificationMaturityStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumRollingDailyVerificationMaturityStatusWithAggregatesFilter<$PrismaModel> | $Enums.RollingDailyVerificationMaturityStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumRollingDailyVerificationMaturityStatusFilter<$PrismaModel>
+    _max?: NestedEnumRollingDailyVerificationMaturityStatusFilter<$PrismaModel>
+  }
+  export type JsonFilter<$PrismaModel = never> = 
+    | PatchUndefined<
+        Either<Required<JsonFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
+
+  export type RollingDailyCurrentForecastSnapshotSeriesIdInputSourceTargetBasisMethodIdMethodVersionModelIdCompoundUniqueInput = {
+    seriesId: string
+    inputSource: string
+    targetBasis: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+  }
+
+  export type RollingDailyCurrentForecastSnapshotCountOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    contractVersion?: SortOrder
+    status?: SortOrder
+    reasonCode?: SortOrder
+    message?: SortOrder
+    forecastOriginAt?: SortOrder
+    sourceLatestObservationAt?: SortOrder
+    payloadJson?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RollingDailyCurrentForecastSnapshotMaxOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    contractVersion?: SortOrder
+    status?: SortOrder
+    reasonCode?: SortOrder
+    message?: SortOrder
+    forecastOriginAt?: SortOrder
+    sourceLatestObservationAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RollingDailyCurrentForecastSnapshotMinOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    contractVersion?: SortOrder
+    status?: SortOrder
+    reasonCode?: SortOrder
+    message?: SortOrder
+    forecastOriginAt?: SortOrder
+    sourceLatestObservationAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+  export type JsonWithAggregatesFilter<$PrismaModel = never> = 
+    | PatchUndefined<
+        Either<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonWithAggregatesFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonWithAggregatesFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedJsonFilter<$PrismaModel>
+    _max?: NestedJsonFilter<$PrismaModel>
+  }
+
+  export type EnumRollingDailyCalibrationStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.RollingDailyCalibrationStatus | EnumRollingDailyCalibrationStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.RollingDailyCalibrationStatus[] | ListEnumRollingDailyCalibrationStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RollingDailyCalibrationStatus[] | ListEnumRollingDailyCalibrationStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumRollingDailyCalibrationStatusFilter<$PrismaModel> | $Enums.RollingDailyCalibrationStatus
+  }
+
+  export type RollingDailyCalibrationGroupSeriesIdInputSourceTargetBasisMethodIdMethodVersionModelIdHorizonLabelCompoundUniqueInput = {
+    seriesId: string
+    inputSource: string
+    targetBasis: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+    horizonLabel: string
+  }
+
+  export type RollingDailyCalibrationGroupCountOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonMonths?: SortOrder
+    calibrationOriginAt?: SortOrder
+    sampleCount?: SortOrder
+    residualP10?: SortOrder
+    residualP90?: SortOrder
+    quantileMethod?: SortOrder
+    status?: SortOrder
+    lastResidualObservedAt?: SortOrder
+    refreshedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RollingDailyCalibrationGroupAvgOrderByAggregateInput = {
+    horizonMonths?: SortOrder
+    sampleCount?: SortOrder
+    residualP10?: SortOrder
+    residualP90?: SortOrder
+  }
+
+  export type RollingDailyCalibrationGroupMaxOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonMonths?: SortOrder
+    calibrationOriginAt?: SortOrder
+    sampleCount?: SortOrder
+    residualP10?: SortOrder
+    residualP90?: SortOrder
+    quantileMethod?: SortOrder
+    status?: SortOrder
+    lastResidualObservedAt?: SortOrder
+    refreshedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RollingDailyCalibrationGroupMinOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    horizonLabel?: SortOrder
+    horizonMonths?: SortOrder
+    calibrationOriginAt?: SortOrder
+    sampleCount?: SortOrder
+    residualP10?: SortOrder
+    residualP90?: SortOrder
+    quantileMethod?: SortOrder
+    status?: SortOrder
+    lastResidualObservedAt?: SortOrder
+    refreshedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RollingDailyCalibrationGroupSumOrderByAggregateInput = {
+    horizonMonths?: SortOrder
+    sampleCount?: SortOrder
+    residualP10?: SortOrder
+    residualP90?: SortOrder
+  }
+
+  export type EnumRollingDailyCalibrationStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.RollingDailyCalibrationStatus | EnumRollingDailyCalibrationStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.RollingDailyCalibrationStatus[] | ListEnumRollingDailyCalibrationStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RollingDailyCalibrationStatus[] | ListEnumRollingDailyCalibrationStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumRollingDailyCalibrationStatusWithAggregatesFilter<$PrismaModel> | $Enums.RollingDailyCalibrationStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumRollingDailyCalibrationStatusFilter<$PrismaModel>
+    _max?: NestedEnumRollingDailyCalibrationStatusFilter<$PrismaModel>
+  }
+
+  export type RollingDailyMaintenanceStateSeriesIdInputSourceTargetBasisMethodIdMethodVersionModelIdCompoundUniqueInput = {
+    seriesId: string
+    inputSource: string
+    targetBasis: $Enums.ForecastTargetBasis
+    methodId: string
+    methodVersion: string
+    modelId: string
+  }
+
+  export type RollingDailyMaintenanceStateCountOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    historicalOriginStartAt?: SortOrder
+    minimumTrainingObservations?: SortOrder
+    minimumCalibrationSamples?: SortOrder
+    latestSourceObservationAt?: SortOrder
+    latestSourceHistoryStartAt?: SortOrder
+    latestSourceObservationCount?: SortOrder
+    latestSourceHistoryFingerprint?: SortOrder
+    lastProcessedOriginAt?: SortOrder
+    lastMaturedObservedAt?: SortOrder
+    lastMaintenanceAt?: SortOrder
+    lastMaintenanceStatus?: SortOrder
+    lastFailureReason?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RollingDailyMaintenanceStateAvgOrderByAggregateInput = {
+    minimumTrainingObservations?: SortOrder
+    minimumCalibrationSamples?: SortOrder
+    latestSourceObservationCount?: SortOrder
+  }
+
+  export type RollingDailyMaintenanceStateMaxOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    historicalOriginStartAt?: SortOrder
+    minimumTrainingObservations?: SortOrder
+    minimumCalibrationSamples?: SortOrder
+    latestSourceObservationAt?: SortOrder
+    latestSourceHistoryStartAt?: SortOrder
+    latestSourceObservationCount?: SortOrder
+    latestSourceHistoryFingerprint?: SortOrder
+    lastProcessedOriginAt?: SortOrder
+    lastMaturedObservedAt?: SortOrder
+    lastMaintenanceAt?: SortOrder
+    lastMaintenanceStatus?: SortOrder
+    lastFailureReason?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RollingDailyMaintenanceStateMinOrderByAggregateInput = {
+    id?: SortOrder
+    seriesId?: SortOrder
+    inputSource?: SortOrder
+    inputRunId?: SortOrder
+    targetBasis?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    historicalOriginStartAt?: SortOrder
+    minimumTrainingObservations?: SortOrder
+    minimumCalibrationSamples?: SortOrder
+    latestSourceObservationAt?: SortOrder
+    latestSourceHistoryStartAt?: SortOrder
+    latestSourceObservationCount?: SortOrder
+    latestSourceHistoryFingerprint?: SortOrder
+    lastProcessedOriginAt?: SortOrder
+    lastMaturedObservedAt?: SortOrder
+    lastMaintenanceAt?: SortOrder
+    lastMaintenanceStatus?: SortOrder
+    lastFailureReason?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RollingDailyMaintenanceStateSumOrderByAggregateInput = {
+    minimumTrainingObservations?: SortOrder
+    minimumCalibrationSamples?: SortOrder
+    latestSourceObservationCount?: SortOrder
+  }
+
+  export type MarketObservationCreateNestedManyWithoutSeriesInput = {
+    create?: XOR<MarketObservationCreateWithoutSeriesInput, MarketObservationUncheckedCreateWithoutSeriesInput> | MarketObservationCreateWithoutSeriesInput[] | MarketObservationUncheckedCreateWithoutSeriesInput[]
+    connectOrCreate?: MarketObservationCreateOrConnectWithoutSeriesInput | MarketObservationCreateOrConnectWithoutSeriesInput[]
+    createMany?: MarketObservationCreateManySeriesInputEnvelope
+    connect?: MarketObservationWhereUniqueInput | MarketObservationWhereUniqueInput[]
+  }
+
+  export type MarketHydrationStateCreateNestedOneWithoutSeriesInput = {
+    create?: XOR<MarketHydrationStateCreateWithoutSeriesInput, MarketHydrationStateUncheckedCreateWithoutSeriesInput>
+    connectOrCreate?: MarketHydrationStateCreateOrConnectWithoutSeriesInput
+    connect?: MarketHydrationStateWhereUniqueInput
+  }
+
+  export type MarketObservationUncheckedCreateNestedManyWithoutSeriesInput = {
+    create?: XOR<MarketObservationCreateWithoutSeriesInput, MarketObservationUncheckedCreateWithoutSeriesInput> | MarketObservationCreateWithoutSeriesInput[] | MarketObservationUncheckedCreateWithoutSeriesInput[]
+    connectOrCreate?: MarketObservationCreateOrConnectWithoutSeriesInput | MarketObservationCreateOrConnectWithoutSeriesInput[]
+    createMany?: MarketObservationCreateManySeriesInputEnvelope
+    connect?: MarketObservationWhereUniqueInput | MarketObservationWhereUniqueInput[]
+  }
+
+  export type MarketHydrationStateUncheckedCreateNestedOneWithoutSeriesInput = {
+    create?: XOR<MarketHydrationStateCreateWithoutSeriesInput, MarketHydrationStateUncheckedCreateWithoutSeriesInput>
+    connectOrCreate?: MarketHydrationStateCreateOrConnectWithoutSeriesInput
+    connect?: MarketHydrationStateWhereUniqueInput
+  }
+
+  export type StringFieldUpdateOperationsInput = {
+    set?: string
+  }
+
+  export type NullableStringFieldUpdateOperationsInput = {
+    set?: string | null
+  }
+
+  export type DateTimeFieldUpdateOperationsInput = {
+    set?: Date | string
+  }
+
+  export type MarketObservationUpdateManyWithoutSeriesNestedInput = {
+    create?: XOR<MarketObservationCreateWithoutSeriesInput, MarketObservationUncheckedCreateWithoutSeriesInput> | MarketObservationCreateWithoutSeriesInput[] | MarketObservationUncheckedCreateWithoutSeriesInput[]
+    connectOrCreate?: MarketObservationCreateOrConnectWithoutSeriesInput | MarketObservationCreateOrConnectWithoutSeriesInput[]
+    upsert?: MarketObservationUpsertWithWhereUniqueWithoutSeriesInput | MarketObservationUpsertWithWhereUniqueWithoutSeriesInput[]
+    createMany?: MarketObservationCreateManySeriesInputEnvelope
+    set?: MarketObservationWhereUniqueInput | MarketObservationWhereUniqueInput[]
+    disconnect?: MarketObservationWhereUniqueInput | MarketObservationWhereUniqueInput[]
+    delete?: MarketObservationWhereUniqueInput | MarketObservationWhereUniqueInput[]
+    connect?: MarketObservationWhereUniqueInput | MarketObservationWhereUniqueInput[]
+    update?: MarketObservationUpdateWithWhereUniqueWithoutSeriesInput | MarketObservationUpdateWithWhereUniqueWithoutSeriesInput[]
+    updateMany?: MarketObservationUpdateManyWithWhereWithoutSeriesInput | MarketObservationUpdateManyWithWhereWithoutSeriesInput[]
+    deleteMany?: MarketObservationScalarWhereInput | MarketObservationScalarWhereInput[]
+  }
+
+  export type MarketHydrationStateUpdateOneWithoutSeriesNestedInput = {
+    create?: XOR<MarketHydrationStateCreateWithoutSeriesInput, MarketHydrationStateUncheckedCreateWithoutSeriesInput>
+    connectOrCreate?: MarketHydrationStateCreateOrConnectWithoutSeriesInput
+    upsert?: MarketHydrationStateUpsertWithoutSeriesInput
+    disconnect?: MarketHydrationStateWhereInput | boolean
+    delete?: MarketHydrationStateWhereInput | boolean
+    connect?: MarketHydrationStateWhereUniqueInput
+    update?: XOR<XOR<MarketHydrationStateUpdateToOneWithWhereWithoutSeriesInput, MarketHydrationStateUpdateWithoutSeriesInput>, MarketHydrationStateUncheckedUpdateWithoutSeriesInput>
+  }
+
+  export type MarketObservationUncheckedUpdateManyWithoutSeriesNestedInput = {
+    create?: XOR<MarketObservationCreateWithoutSeriesInput, MarketObservationUncheckedCreateWithoutSeriesInput> | MarketObservationCreateWithoutSeriesInput[] | MarketObservationUncheckedCreateWithoutSeriesInput[]
+    connectOrCreate?: MarketObservationCreateOrConnectWithoutSeriesInput | MarketObservationCreateOrConnectWithoutSeriesInput[]
+    upsert?: MarketObservationUpsertWithWhereUniqueWithoutSeriesInput | MarketObservationUpsertWithWhereUniqueWithoutSeriesInput[]
+    createMany?: MarketObservationCreateManySeriesInputEnvelope
+    set?: MarketObservationWhereUniqueInput | MarketObservationWhereUniqueInput[]
+    disconnect?: MarketObservationWhereUniqueInput | MarketObservationWhereUniqueInput[]
+    delete?: MarketObservationWhereUniqueInput | MarketObservationWhereUniqueInput[]
+    connect?: MarketObservationWhereUniqueInput | MarketObservationWhereUniqueInput[]
+    update?: MarketObservationUpdateWithWhereUniqueWithoutSeriesInput | MarketObservationUpdateWithWhereUniqueWithoutSeriesInput[]
+    updateMany?: MarketObservationUpdateManyWithWhereWithoutSeriesInput | MarketObservationUpdateManyWithWhereWithoutSeriesInput[]
+    deleteMany?: MarketObservationScalarWhereInput | MarketObservationScalarWhereInput[]
+  }
+
+  export type MarketHydrationStateUncheckedUpdateOneWithoutSeriesNestedInput = {
+    create?: XOR<MarketHydrationStateCreateWithoutSeriesInput, MarketHydrationStateUncheckedCreateWithoutSeriesInput>
+    connectOrCreate?: MarketHydrationStateCreateOrConnectWithoutSeriesInput
+    upsert?: MarketHydrationStateUpsertWithoutSeriesInput
+    disconnect?: MarketHydrationStateWhereInput | boolean
+    delete?: MarketHydrationStateWhereInput | boolean
+    connect?: MarketHydrationStateWhereUniqueInput
+    update?: XOR<XOR<MarketHydrationStateUpdateToOneWithWhereWithoutSeriesInput, MarketHydrationStateUpdateWithoutSeriesInput>, MarketHydrationStateUncheckedUpdateWithoutSeriesInput>
+  }
+
+  export type MarketSeriesCreateNestedOneWithoutObservationsInput = {
+    create?: XOR<MarketSeriesCreateWithoutObservationsInput, MarketSeriesUncheckedCreateWithoutObservationsInput>
+    connectOrCreate?: MarketSeriesCreateOrConnectWithoutObservationsInput
+    connect?: MarketSeriesWhereUniqueInput
+  }
+
+  export type NullableDecimalFieldUpdateOperationsInput = {
+    set?: Decimal | DecimalJsLike | number | string | null
+    increment?: Decimal | DecimalJsLike | number | string
+    decrement?: Decimal | DecimalJsLike | number | string
+    multiply?: Decimal | DecimalJsLike | number | string
+    divide?: Decimal | DecimalJsLike | number | string
+  }
+
+  export type MarketSeriesUpdateOneRequiredWithoutObservationsNestedInput = {
+    create?: XOR<MarketSeriesCreateWithoutObservationsInput, MarketSeriesUncheckedCreateWithoutObservationsInput>
+    connectOrCreate?: MarketSeriesCreateOrConnectWithoutObservationsInput
+    upsert?: MarketSeriesUpsertWithoutObservationsInput
+    connect?: MarketSeriesWhereUniqueInput
+    update?: XOR<XOR<MarketSeriesUpdateToOneWithWhereWithoutObservationsInput, MarketSeriesUpdateWithoutObservationsInput>, MarketSeriesUncheckedUpdateWithoutObservationsInput>
+  }
+
+  export type MarketSeriesCreateNestedOneWithoutHydrationStateInput = {
+    create?: XOR<MarketSeriesCreateWithoutHydrationStateInput, MarketSeriesUncheckedCreateWithoutHydrationStateInput>
+    connectOrCreate?: MarketSeriesCreateOrConnectWithoutHydrationStateInput
+    connect?: MarketSeriesWhereUniqueInput
+  }
+
+  export type NullableDateTimeFieldUpdateOperationsInput = {
+    set?: Date | string | null
+  }
+
+  export type NullableIntFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
+  export type MarketSeriesUpdateOneRequiredWithoutHydrationStateNestedInput = {
+    create?: XOR<MarketSeriesCreateWithoutHydrationStateInput, MarketSeriesUncheckedCreateWithoutHydrationStateInput>
+    connectOrCreate?: MarketSeriesCreateOrConnectWithoutHydrationStateInput
+    upsert?: MarketSeriesUpsertWithoutHydrationStateInput
+    connect?: MarketSeriesWhereUniqueInput
+    update?: XOR<XOR<MarketSeriesUpdateToOneWithWhereWithoutHydrationStateInput, MarketSeriesUpdateWithoutHydrationStateInput>, MarketSeriesUncheckedUpdateWithoutHydrationStateInput>
+  }
+
+  export type ForecastCurrentPointCreateNestedManyWithoutRunInput = {
+    create?: XOR<ForecastCurrentPointCreateWithoutRunInput, ForecastCurrentPointUncheckedCreateWithoutRunInput> | ForecastCurrentPointCreateWithoutRunInput[] | ForecastCurrentPointUncheckedCreateWithoutRunInput[]
+    connectOrCreate?: ForecastCurrentPointCreateOrConnectWithoutRunInput | ForecastCurrentPointCreateOrConnectWithoutRunInput[]
+    createMany?: ForecastCurrentPointCreateManyRunInputEnvelope
+    connect?: ForecastCurrentPointWhereUniqueInput | ForecastCurrentPointWhereUniqueInput[]
+  }
+
+  export type ForecastCurrentPointUncheckedCreateNestedManyWithoutRunInput = {
+    create?: XOR<ForecastCurrentPointCreateWithoutRunInput, ForecastCurrentPointUncheckedCreateWithoutRunInput> | ForecastCurrentPointCreateWithoutRunInput[] | ForecastCurrentPointUncheckedCreateWithoutRunInput[]
+    connectOrCreate?: ForecastCurrentPointCreateOrConnectWithoutRunInput | ForecastCurrentPointCreateOrConnectWithoutRunInput[]
+    createMany?: ForecastCurrentPointCreateManyRunInputEnvelope
+    connect?: ForecastCurrentPointWhereUniqueInput | ForecastCurrentPointWhereUniqueInput[]
+  }
+
+  export type EnumForecastTargetBasisFieldUpdateOperationsInput = {
+    set?: $Enums.ForecastTargetBasis
+  }
+
+  export type IntFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
+  export type NullableFloatFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
+  export type ForecastCurrentPointUpdateManyWithoutRunNestedInput = {
+    create?: XOR<ForecastCurrentPointCreateWithoutRunInput, ForecastCurrentPointUncheckedCreateWithoutRunInput> | ForecastCurrentPointCreateWithoutRunInput[] | ForecastCurrentPointUncheckedCreateWithoutRunInput[]
+    connectOrCreate?: ForecastCurrentPointCreateOrConnectWithoutRunInput | ForecastCurrentPointCreateOrConnectWithoutRunInput[]
+    upsert?: ForecastCurrentPointUpsertWithWhereUniqueWithoutRunInput | ForecastCurrentPointUpsertWithWhereUniqueWithoutRunInput[]
+    createMany?: ForecastCurrentPointCreateManyRunInputEnvelope
+    set?: ForecastCurrentPointWhereUniqueInput | ForecastCurrentPointWhereUniqueInput[]
+    disconnect?: ForecastCurrentPointWhereUniqueInput | ForecastCurrentPointWhereUniqueInput[]
+    delete?: ForecastCurrentPointWhereUniqueInput | ForecastCurrentPointWhereUniqueInput[]
+    connect?: ForecastCurrentPointWhereUniqueInput | ForecastCurrentPointWhereUniqueInput[]
+    update?: ForecastCurrentPointUpdateWithWhereUniqueWithoutRunInput | ForecastCurrentPointUpdateWithWhereUniqueWithoutRunInput[]
+    updateMany?: ForecastCurrentPointUpdateManyWithWhereWithoutRunInput | ForecastCurrentPointUpdateManyWithWhereWithoutRunInput[]
+    deleteMany?: ForecastCurrentPointScalarWhereInput | ForecastCurrentPointScalarWhereInput[]
+  }
+
+  export type ForecastCurrentPointUncheckedUpdateManyWithoutRunNestedInput = {
+    create?: XOR<ForecastCurrentPointCreateWithoutRunInput, ForecastCurrentPointUncheckedCreateWithoutRunInput> | ForecastCurrentPointCreateWithoutRunInput[] | ForecastCurrentPointUncheckedCreateWithoutRunInput[]
+    connectOrCreate?: ForecastCurrentPointCreateOrConnectWithoutRunInput | ForecastCurrentPointCreateOrConnectWithoutRunInput[]
+    upsert?: ForecastCurrentPointUpsertWithWhereUniqueWithoutRunInput | ForecastCurrentPointUpsertWithWhereUniqueWithoutRunInput[]
+    createMany?: ForecastCurrentPointCreateManyRunInputEnvelope
+    set?: ForecastCurrentPointWhereUniqueInput | ForecastCurrentPointWhereUniqueInput[]
+    disconnect?: ForecastCurrentPointWhereUniqueInput | ForecastCurrentPointWhereUniqueInput[]
+    delete?: ForecastCurrentPointWhereUniqueInput | ForecastCurrentPointWhereUniqueInput[]
+    connect?: ForecastCurrentPointWhereUniqueInput | ForecastCurrentPointWhereUniqueInput[]
+    update?: ForecastCurrentPointUpdateWithWhereUniqueWithoutRunInput | ForecastCurrentPointUpdateWithWhereUniqueWithoutRunInput[]
+    updateMany?: ForecastCurrentPointUpdateManyWithWhereWithoutRunInput | ForecastCurrentPointUpdateManyWithWhereWithoutRunInput[]
+    deleteMany?: ForecastCurrentPointScalarWhereInput | ForecastCurrentPointScalarWhereInput[]
+  }
+
+  export type ForecastCurrentRunCreateNestedOneWithoutPointsInput = {
+    create?: XOR<ForecastCurrentRunCreateWithoutPointsInput, ForecastCurrentRunUncheckedCreateWithoutPointsInput>
+    connectOrCreate?: ForecastCurrentRunCreateOrConnectWithoutPointsInput
+    connect?: ForecastCurrentRunWhereUniqueInput
+  }
+
+  export type ForecastCurrentRunUpdateOneRequiredWithoutPointsNestedInput = {
+    create?: XOR<ForecastCurrentRunCreateWithoutPointsInput, ForecastCurrentRunUncheckedCreateWithoutPointsInput>
+    connectOrCreate?: ForecastCurrentRunCreateOrConnectWithoutPointsInput
+    upsert?: ForecastCurrentRunUpsertWithoutPointsInput
+    connect?: ForecastCurrentRunWhereUniqueInput
+    update?: XOR<XOR<ForecastCurrentRunUpdateToOneWithWhereWithoutPointsInput, ForecastCurrentRunUpdateWithoutPointsInput>, ForecastCurrentRunUncheckedUpdateWithoutPointsInput>
+  }
+
+  export type ForecastVerificationMetricCreateNestedManyWithoutRunInput = {
+    create?: XOR<ForecastVerificationMetricCreateWithoutRunInput, ForecastVerificationMetricUncheckedCreateWithoutRunInput> | ForecastVerificationMetricCreateWithoutRunInput[] | ForecastVerificationMetricUncheckedCreateWithoutRunInput[]
+    connectOrCreate?: ForecastVerificationMetricCreateOrConnectWithoutRunInput | ForecastVerificationMetricCreateOrConnectWithoutRunInput[]
+    createMany?: ForecastVerificationMetricCreateManyRunInputEnvelope
+    connect?: ForecastVerificationMetricWhereUniqueInput | ForecastVerificationMetricWhereUniqueInput[]
+  }
+
+  export type ForecastVerificationPointCreateNestedManyWithoutRunInput = {
+    create?: XOR<ForecastVerificationPointCreateWithoutRunInput, ForecastVerificationPointUncheckedCreateWithoutRunInput> | ForecastVerificationPointCreateWithoutRunInput[] | ForecastVerificationPointUncheckedCreateWithoutRunInput[]
+    connectOrCreate?: ForecastVerificationPointCreateOrConnectWithoutRunInput | ForecastVerificationPointCreateOrConnectWithoutRunInput[]
+    createMany?: ForecastVerificationPointCreateManyRunInputEnvelope
+    connect?: ForecastVerificationPointWhereUniqueInput | ForecastVerificationPointWhereUniqueInput[]
+  }
+
+  export type ForecastVerificationMetricUncheckedCreateNestedManyWithoutRunInput = {
+    create?: XOR<ForecastVerificationMetricCreateWithoutRunInput, ForecastVerificationMetricUncheckedCreateWithoutRunInput> | ForecastVerificationMetricCreateWithoutRunInput[] | ForecastVerificationMetricUncheckedCreateWithoutRunInput[]
+    connectOrCreate?: ForecastVerificationMetricCreateOrConnectWithoutRunInput | ForecastVerificationMetricCreateOrConnectWithoutRunInput[]
+    createMany?: ForecastVerificationMetricCreateManyRunInputEnvelope
+    connect?: ForecastVerificationMetricWhereUniqueInput | ForecastVerificationMetricWhereUniqueInput[]
+  }
+
+  export type ForecastVerificationPointUncheckedCreateNestedManyWithoutRunInput = {
+    create?: XOR<ForecastVerificationPointCreateWithoutRunInput, ForecastVerificationPointUncheckedCreateWithoutRunInput> | ForecastVerificationPointCreateWithoutRunInput[] | ForecastVerificationPointUncheckedCreateWithoutRunInput[]
+    connectOrCreate?: ForecastVerificationPointCreateOrConnectWithoutRunInput | ForecastVerificationPointCreateOrConnectWithoutRunInput[]
+    createMany?: ForecastVerificationPointCreateManyRunInputEnvelope
+    connect?: ForecastVerificationPointWhereUniqueInput | ForecastVerificationPointWhereUniqueInput[]
+  }
+
+  export type ForecastVerificationMetricUpdateManyWithoutRunNestedInput = {
+    create?: XOR<ForecastVerificationMetricCreateWithoutRunInput, ForecastVerificationMetricUncheckedCreateWithoutRunInput> | ForecastVerificationMetricCreateWithoutRunInput[] | ForecastVerificationMetricUncheckedCreateWithoutRunInput[]
+    connectOrCreate?: ForecastVerificationMetricCreateOrConnectWithoutRunInput | ForecastVerificationMetricCreateOrConnectWithoutRunInput[]
+    upsert?: ForecastVerificationMetricUpsertWithWhereUniqueWithoutRunInput | ForecastVerificationMetricUpsertWithWhereUniqueWithoutRunInput[]
+    createMany?: ForecastVerificationMetricCreateManyRunInputEnvelope
+    set?: ForecastVerificationMetricWhereUniqueInput | ForecastVerificationMetricWhereUniqueInput[]
+    disconnect?: ForecastVerificationMetricWhereUniqueInput | ForecastVerificationMetricWhereUniqueInput[]
+    delete?: ForecastVerificationMetricWhereUniqueInput | ForecastVerificationMetricWhereUniqueInput[]
+    connect?: ForecastVerificationMetricWhereUniqueInput | ForecastVerificationMetricWhereUniqueInput[]
+    update?: ForecastVerificationMetricUpdateWithWhereUniqueWithoutRunInput | ForecastVerificationMetricUpdateWithWhereUniqueWithoutRunInput[]
+    updateMany?: ForecastVerificationMetricUpdateManyWithWhereWithoutRunInput | ForecastVerificationMetricUpdateManyWithWhereWithoutRunInput[]
+    deleteMany?: ForecastVerificationMetricScalarWhereInput | ForecastVerificationMetricScalarWhereInput[]
+  }
+
+  export type ForecastVerificationPointUpdateManyWithoutRunNestedInput = {
+    create?: XOR<ForecastVerificationPointCreateWithoutRunInput, ForecastVerificationPointUncheckedCreateWithoutRunInput> | ForecastVerificationPointCreateWithoutRunInput[] | ForecastVerificationPointUncheckedCreateWithoutRunInput[]
+    connectOrCreate?: ForecastVerificationPointCreateOrConnectWithoutRunInput | ForecastVerificationPointCreateOrConnectWithoutRunInput[]
+    upsert?: ForecastVerificationPointUpsertWithWhereUniqueWithoutRunInput | ForecastVerificationPointUpsertWithWhereUniqueWithoutRunInput[]
+    createMany?: ForecastVerificationPointCreateManyRunInputEnvelope
+    set?: ForecastVerificationPointWhereUniqueInput | ForecastVerificationPointWhereUniqueInput[]
+    disconnect?: ForecastVerificationPointWhereUniqueInput | ForecastVerificationPointWhereUniqueInput[]
+    delete?: ForecastVerificationPointWhereUniqueInput | ForecastVerificationPointWhereUniqueInput[]
+    connect?: ForecastVerificationPointWhereUniqueInput | ForecastVerificationPointWhereUniqueInput[]
+    update?: ForecastVerificationPointUpdateWithWhereUniqueWithoutRunInput | ForecastVerificationPointUpdateWithWhereUniqueWithoutRunInput[]
+    updateMany?: ForecastVerificationPointUpdateManyWithWhereWithoutRunInput | ForecastVerificationPointUpdateManyWithWhereWithoutRunInput[]
+    deleteMany?: ForecastVerificationPointScalarWhereInput | ForecastVerificationPointScalarWhereInput[]
+  }
+
+  export type ForecastVerificationMetricUncheckedUpdateManyWithoutRunNestedInput = {
+    create?: XOR<ForecastVerificationMetricCreateWithoutRunInput, ForecastVerificationMetricUncheckedCreateWithoutRunInput> | ForecastVerificationMetricCreateWithoutRunInput[] | ForecastVerificationMetricUncheckedCreateWithoutRunInput[]
+    connectOrCreate?: ForecastVerificationMetricCreateOrConnectWithoutRunInput | ForecastVerificationMetricCreateOrConnectWithoutRunInput[]
+    upsert?: ForecastVerificationMetricUpsertWithWhereUniqueWithoutRunInput | ForecastVerificationMetricUpsertWithWhereUniqueWithoutRunInput[]
+    createMany?: ForecastVerificationMetricCreateManyRunInputEnvelope
+    set?: ForecastVerificationMetricWhereUniqueInput | ForecastVerificationMetricWhereUniqueInput[]
+    disconnect?: ForecastVerificationMetricWhereUniqueInput | ForecastVerificationMetricWhereUniqueInput[]
+    delete?: ForecastVerificationMetricWhereUniqueInput | ForecastVerificationMetricWhereUniqueInput[]
+    connect?: ForecastVerificationMetricWhereUniqueInput | ForecastVerificationMetricWhereUniqueInput[]
+    update?: ForecastVerificationMetricUpdateWithWhereUniqueWithoutRunInput | ForecastVerificationMetricUpdateWithWhereUniqueWithoutRunInput[]
+    updateMany?: ForecastVerificationMetricUpdateManyWithWhereWithoutRunInput | ForecastVerificationMetricUpdateManyWithWhereWithoutRunInput[]
+    deleteMany?: ForecastVerificationMetricScalarWhereInput | ForecastVerificationMetricScalarWhereInput[]
+  }
+
+  export type ForecastVerificationPointUncheckedUpdateManyWithoutRunNestedInput = {
+    create?: XOR<ForecastVerificationPointCreateWithoutRunInput, ForecastVerificationPointUncheckedCreateWithoutRunInput> | ForecastVerificationPointCreateWithoutRunInput[] | ForecastVerificationPointUncheckedCreateWithoutRunInput[]
+    connectOrCreate?: ForecastVerificationPointCreateOrConnectWithoutRunInput | ForecastVerificationPointCreateOrConnectWithoutRunInput[]
+    upsert?: ForecastVerificationPointUpsertWithWhereUniqueWithoutRunInput | ForecastVerificationPointUpsertWithWhereUniqueWithoutRunInput[]
+    createMany?: ForecastVerificationPointCreateManyRunInputEnvelope
+    set?: ForecastVerificationPointWhereUniqueInput | ForecastVerificationPointWhereUniqueInput[]
+    disconnect?: ForecastVerificationPointWhereUniqueInput | ForecastVerificationPointWhereUniqueInput[]
+    delete?: ForecastVerificationPointWhereUniqueInput | ForecastVerificationPointWhereUniqueInput[]
+    connect?: ForecastVerificationPointWhereUniqueInput | ForecastVerificationPointWhereUniqueInput[]
+    update?: ForecastVerificationPointUpdateWithWhereUniqueWithoutRunInput | ForecastVerificationPointUpdateWithWhereUniqueWithoutRunInput[]
+    updateMany?: ForecastVerificationPointUpdateManyWithWhereWithoutRunInput | ForecastVerificationPointUpdateManyWithWhereWithoutRunInput[]
+    deleteMany?: ForecastVerificationPointScalarWhereInput | ForecastVerificationPointScalarWhereInput[]
+  }
+
+  export type ForecastVerificationRunCreateNestedOneWithoutMetricsInput = {
+    create?: XOR<ForecastVerificationRunCreateWithoutMetricsInput, ForecastVerificationRunUncheckedCreateWithoutMetricsInput>
+    connectOrCreate?: ForecastVerificationRunCreateOrConnectWithoutMetricsInput
+    connect?: ForecastVerificationRunWhereUniqueInput
+  }
+
+  export type FloatFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
+  export type ForecastVerificationRunUpdateOneRequiredWithoutMetricsNestedInput = {
+    create?: XOR<ForecastVerificationRunCreateWithoutMetricsInput, ForecastVerificationRunUncheckedCreateWithoutMetricsInput>
+    connectOrCreate?: ForecastVerificationRunCreateOrConnectWithoutMetricsInput
+    upsert?: ForecastVerificationRunUpsertWithoutMetricsInput
+    connect?: ForecastVerificationRunWhereUniqueInput
+    update?: XOR<XOR<ForecastVerificationRunUpdateToOneWithWhereWithoutMetricsInput, ForecastVerificationRunUpdateWithoutMetricsInput>, ForecastVerificationRunUncheckedUpdateWithoutMetricsInput>
+  }
+
+  export type ForecastVerificationRunCreateNestedOneWithoutPointsInput = {
+    create?: XOR<ForecastVerificationRunCreateWithoutPointsInput, ForecastVerificationRunUncheckedCreateWithoutPointsInput>
+    connectOrCreate?: ForecastVerificationRunCreateOrConnectWithoutPointsInput
+    connect?: ForecastVerificationRunWhereUniqueInput
+  }
+
+  export type DecimalFieldUpdateOperationsInput = {
+    set?: Decimal | DecimalJsLike | number | string
+    increment?: Decimal | DecimalJsLike | number | string
+    decrement?: Decimal | DecimalJsLike | number | string
+    multiply?: Decimal | DecimalJsLike | number | string
+    divide?: Decimal | DecimalJsLike | number | string
+  }
+
+  export type ForecastVerificationRunUpdateOneRequiredWithoutPointsNestedInput = {
+    create?: XOR<ForecastVerificationRunCreateWithoutPointsInput, ForecastVerificationRunUncheckedCreateWithoutPointsInput>
+    connectOrCreate?: ForecastVerificationRunCreateOrConnectWithoutPointsInput
+    upsert?: ForecastVerificationRunUpsertWithoutPointsInput
+    connect?: ForecastVerificationRunWhereUniqueInput
+    update?: XOR<XOR<ForecastVerificationRunUpdateToOneWithWhereWithoutPointsInput, ForecastVerificationRunUpdateWithoutPointsInput>, ForecastVerificationRunUncheckedUpdateWithoutPointsInput>
+  }
+
+  export type EnumRollingDailyVerificationMaturityStatusFieldUpdateOperationsInput = {
+    set?: $Enums.RollingDailyVerificationMaturityStatus
+  }
+
+  export type EnumRollingDailyCalibrationStatusFieldUpdateOperationsInput = {
+    set?: $Enums.RollingDailyCalibrationStatus
+  }
+
+  export type NestedStringFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel>
+    in?: string[] | ListStringFieldRefInput<$PrismaModel>
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel>
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedStringFilter<$PrismaModel> | string
+  }
+
+  export type NestedStringNullableFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
+  export type NestedDateTimeFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeFilter<$PrismaModel> | Date | string
+  }
+
+  export type NestedStringWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel>
+    in?: string[] | ListStringFieldRefInput<$PrismaModel>
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel>
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedStringWithAggregatesFilter<$PrismaModel> | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedStringFilter<$PrismaModel>
+    _max?: NestedStringFilter<$PrismaModel>
+  }
+
+  export type NestedIntFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntFilter<$PrismaModel> | number
+  }
+
+  export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedStringNullableFilter<$PrismaModel>
+    _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
+  export type NestedIntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedDateTimeFilter<$PrismaModel>
+    _max?: NestedDateTimeFilter<$PrismaModel>
+  }
+
+  export type NestedDecimalNullableFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedDecimalNullableFilter<$PrismaModel>
+    _sum?: NestedDecimalNullableFilter<$PrismaModel>
+    _min?: NestedDecimalNullableFilter<$PrismaModel>
+    _max?: NestedDecimalNullableFilter<$PrismaModel>
+  }
+
+  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
+  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
+  }
+
+  export type NestedFloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type NestedEnumForecastTargetBasisFilter<$PrismaModel = never> = {
+    equals?: $Enums.ForecastTargetBasis | EnumForecastTargetBasisFieldRefInput<$PrismaModel>
+    in?: $Enums.ForecastTargetBasis[] | ListEnumForecastTargetBasisFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ForecastTargetBasis[] | ListEnumForecastTargetBasisFieldRefInput<$PrismaModel>
+    not?: NestedEnumForecastTargetBasisFilter<$PrismaModel> | $Enums.ForecastTargetBasis
+  }
+
+  export type NestedEnumForecastTargetBasisWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ForecastTargetBasis | EnumForecastTargetBasisFieldRefInput<$PrismaModel>
+    in?: $Enums.ForecastTargetBasis[] | ListEnumForecastTargetBasisFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ForecastTargetBasis[] | ListEnumForecastTargetBasisFieldRefInput<$PrismaModel>
+    not?: NestedEnumForecastTargetBasisWithAggregatesFilter<$PrismaModel> | $Enums.ForecastTargetBasis
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumForecastTargetBasisFilter<$PrismaModel>
+    _max?: NestedEnumForecastTargetBasisFilter<$PrismaModel>
+  }
+
+  export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
+  }
+
+  export type NestedFloatFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatFilter<$PrismaModel> | number
+  }
+
+  export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
+  }
+  export type NestedJsonNullableFilter<$PrismaModel = never> = 
+    | PatchUndefined<
+        Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
+        Required<NestedJsonNullableFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>
+
+  export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
+
+  export type NestedFloatWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedFloatFilter<$PrismaModel>
+    _min?: NestedFloatFilter<$PrismaModel>
+    _max?: NestedFloatFilter<$PrismaModel>
+  }
+
+  export type NestedDecimalFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
+  }
+
+  export type NestedDecimalWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedDecimalFilter<$PrismaModel>
+    _sum?: NestedDecimalFilter<$PrismaModel>
+    _min?: NestedDecimalFilter<$PrismaModel>
+    _max?: NestedDecimalFilter<$PrismaModel>
+  }
+
+  export type NestedEnumRollingDailyVerificationMaturityStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.RollingDailyVerificationMaturityStatus | EnumRollingDailyVerificationMaturityStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.RollingDailyVerificationMaturityStatus[] | ListEnumRollingDailyVerificationMaturityStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RollingDailyVerificationMaturityStatus[] | ListEnumRollingDailyVerificationMaturityStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumRollingDailyVerificationMaturityStatusFilter<$PrismaModel> | $Enums.RollingDailyVerificationMaturityStatus
+  }
+
+  export type NestedEnumRollingDailyVerificationMaturityStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.RollingDailyVerificationMaturityStatus | EnumRollingDailyVerificationMaturityStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.RollingDailyVerificationMaturityStatus[] | ListEnumRollingDailyVerificationMaturityStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RollingDailyVerificationMaturityStatus[] | ListEnumRollingDailyVerificationMaturityStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumRollingDailyVerificationMaturityStatusWithAggregatesFilter<$PrismaModel> | $Enums.RollingDailyVerificationMaturityStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumRollingDailyVerificationMaturityStatusFilter<$PrismaModel>
+    _max?: NestedEnumRollingDailyVerificationMaturityStatusFilter<$PrismaModel>
+  }
+  export type NestedJsonFilter<$PrismaModel = never> = 
+    | PatchUndefined<
+        Either<Required<NestedJsonFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>,
+        Required<NestedJsonFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>
+
+  export type NestedJsonFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
+
+  export type NestedEnumRollingDailyCalibrationStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.RollingDailyCalibrationStatus | EnumRollingDailyCalibrationStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.RollingDailyCalibrationStatus[] | ListEnumRollingDailyCalibrationStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RollingDailyCalibrationStatus[] | ListEnumRollingDailyCalibrationStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumRollingDailyCalibrationStatusFilter<$PrismaModel> | $Enums.RollingDailyCalibrationStatus
+  }
+
+  export type NestedEnumRollingDailyCalibrationStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.RollingDailyCalibrationStatus | EnumRollingDailyCalibrationStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.RollingDailyCalibrationStatus[] | ListEnumRollingDailyCalibrationStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RollingDailyCalibrationStatus[] | ListEnumRollingDailyCalibrationStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumRollingDailyCalibrationStatusWithAggregatesFilter<$PrismaModel> | $Enums.RollingDailyCalibrationStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumRollingDailyCalibrationStatusFilter<$PrismaModel>
+    _max?: NestedEnumRollingDailyCalibrationStatusFilter<$PrismaModel>
+  }
+
+  export type MarketObservationCreateWithoutSeriesInput = {
+    id?: string
+    observedAt: Date | string
+    value?: Decimal | DecimalJsLike | number | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type MarketObservationUncheckedCreateWithoutSeriesInput = {
+    id?: string
+    observedAt: Date | string
+    value?: Decimal | DecimalJsLike | number | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type MarketObservationCreateOrConnectWithoutSeriesInput = {
+    where: MarketObservationWhereUniqueInput
+    create: XOR<MarketObservationCreateWithoutSeriesInput, MarketObservationUncheckedCreateWithoutSeriesInput>
+  }
+
+  export type MarketObservationCreateManySeriesInputEnvelope = {
+    data: MarketObservationCreateManySeriesInput | MarketObservationCreateManySeriesInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type MarketHydrationStateCreateWithoutSeriesInput = {
+    id?: string
+    lastProviderFetchAt?: Date | string | null
+    earliestStoredObservationAt?: Date | string | null
+    latestStoredObservationAt?: Date | string | null
+    lastHydrationStatus?: string | null
+    lastHydrationMessage?: string | null
+    lastHydratedObservationCount?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type MarketHydrationStateUncheckedCreateWithoutSeriesInput = {
+    id?: string
+    lastProviderFetchAt?: Date | string | null
+    earliestStoredObservationAt?: Date | string | null
+    latestStoredObservationAt?: Date | string | null
+    lastHydrationStatus?: string | null
+    lastHydrationMessage?: string | null
+    lastHydratedObservationCount?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type MarketHydrationStateCreateOrConnectWithoutSeriesInput = {
+    where: MarketHydrationStateWhereUniqueInput
+    create: XOR<MarketHydrationStateCreateWithoutSeriesInput, MarketHydrationStateUncheckedCreateWithoutSeriesInput>
+  }
+
+  export type MarketObservationUpsertWithWhereUniqueWithoutSeriesInput = {
+    where: MarketObservationWhereUniqueInput
+    update: XOR<MarketObservationUpdateWithoutSeriesInput, MarketObservationUncheckedUpdateWithoutSeriesInput>
+    create: XOR<MarketObservationCreateWithoutSeriesInput, MarketObservationUncheckedCreateWithoutSeriesInput>
+  }
+
+  export type MarketObservationUpdateWithWhereUniqueWithoutSeriesInput = {
+    where: MarketObservationWhereUniqueInput
+    data: XOR<MarketObservationUpdateWithoutSeriesInput, MarketObservationUncheckedUpdateWithoutSeriesInput>
+  }
+
+  export type MarketObservationUpdateManyWithWhereWithoutSeriesInput = {
+    where: MarketObservationScalarWhereInput
+    data: XOR<MarketObservationUpdateManyMutationInput, MarketObservationUncheckedUpdateManyWithoutSeriesInput>
+  }
+
+  export type MarketObservationScalarWhereInput = {
+    AND?: MarketObservationScalarWhereInput | MarketObservationScalarWhereInput[]
+    OR?: MarketObservationScalarWhereInput[]
+    NOT?: MarketObservationScalarWhereInput | MarketObservationScalarWhereInput[]
+    id?: StringFilter<"MarketObservation"> | string
+    seriesId?: StringFilter<"MarketObservation"> | string
+    observedAt?: DateTimeFilter<"MarketObservation"> | Date | string
+    value?: DecimalNullableFilter<"MarketObservation"> | Decimal | DecimalJsLike | number | string | null
+    createdAt?: DateTimeFilter<"MarketObservation"> | Date | string
+    updatedAt?: DateTimeFilter<"MarketObservation"> | Date | string
+  }
+
+  export type MarketHydrationStateUpsertWithoutSeriesInput = {
+    update: XOR<MarketHydrationStateUpdateWithoutSeriesInput, MarketHydrationStateUncheckedUpdateWithoutSeriesInput>
+    create: XOR<MarketHydrationStateCreateWithoutSeriesInput, MarketHydrationStateUncheckedCreateWithoutSeriesInput>
+    where?: MarketHydrationStateWhereInput
+  }
+
+  export type MarketHydrationStateUpdateToOneWithWhereWithoutSeriesInput = {
+    where?: MarketHydrationStateWhereInput
+    data: XOR<MarketHydrationStateUpdateWithoutSeriesInput, MarketHydrationStateUncheckedUpdateWithoutSeriesInput>
+  }
+
+  export type MarketHydrationStateUpdateWithoutSeriesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    lastProviderFetchAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    earliestStoredObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    latestStoredObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastHydrationStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastHydrationMessage?: NullableStringFieldUpdateOperationsInput | string | null
+    lastHydratedObservationCount?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MarketHydrationStateUncheckedUpdateWithoutSeriesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    lastProviderFetchAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    earliestStoredObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    latestStoredObservationAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastHydrationStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastHydrationMessage?: NullableStringFieldUpdateOperationsInput | string | null
+    lastHydratedObservationCount?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MarketSeriesCreateWithoutObservationsInput = {
+    id?: string
+    providerCode: string
+    providerSeriesId: string
+    providerSeriesKey?: string | null
+    displayName: string
+    frequency?: string | null
+    currency?: string | null
+    unit?: string | null
+    sourceLabel?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    hydrationState?: MarketHydrationStateCreateNestedOneWithoutSeriesInput
+  }
+
+  export type MarketSeriesUncheckedCreateWithoutObservationsInput = {
+    id?: string
+    providerCode: string
+    providerSeriesId: string
+    providerSeriesKey?: string | null
+    displayName: string
+    frequency?: string | null
+    currency?: string | null
+    unit?: string | null
+    sourceLabel?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    hydrationState?: MarketHydrationStateUncheckedCreateNestedOneWithoutSeriesInput
+  }
+
+  export type MarketSeriesCreateOrConnectWithoutObservationsInput = {
+    where: MarketSeriesWhereUniqueInput
+    create: XOR<MarketSeriesCreateWithoutObservationsInput, MarketSeriesUncheckedCreateWithoutObservationsInput>
+  }
+
+  export type MarketSeriesUpsertWithoutObservationsInput = {
+    update: XOR<MarketSeriesUpdateWithoutObservationsInput, MarketSeriesUncheckedUpdateWithoutObservationsInput>
+    create: XOR<MarketSeriesCreateWithoutObservationsInput, MarketSeriesUncheckedCreateWithoutObservationsInput>
+    where?: MarketSeriesWhereInput
+  }
+
+  export type MarketSeriesUpdateToOneWithWhereWithoutObservationsInput = {
+    where?: MarketSeriesWhereInput
+    data: XOR<MarketSeriesUpdateWithoutObservationsInput, MarketSeriesUncheckedUpdateWithoutObservationsInput>
+  }
+
+  export type MarketSeriesUpdateWithoutObservationsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    providerCode?: StringFieldUpdateOperationsInput | string
+    providerSeriesId?: StringFieldUpdateOperationsInput | string
+    providerSeriesKey?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: StringFieldUpdateOperationsInput | string
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    hydrationState?: MarketHydrationStateUpdateOneWithoutSeriesNestedInput
+  }
+
+  export type MarketSeriesUncheckedUpdateWithoutObservationsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    providerCode?: StringFieldUpdateOperationsInput | string
+    providerSeriesId?: StringFieldUpdateOperationsInput | string
+    providerSeriesKey?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: StringFieldUpdateOperationsInput | string
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    hydrationState?: MarketHydrationStateUncheckedUpdateOneWithoutSeriesNestedInput
+  }
+
+  export type MarketSeriesCreateWithoutHydrationStateInput = {
+    id?: string
+    providerCode: string
+    providerSeriesId: string
+    providerSeriesKey?: string | null
+    displayName: string
+    frequency?: string | null
+    currency?: string | null
+    unit?: string | null
+    sourceLabel?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    observations?: MarketObservationCreateNestedManyWithoutSeriesInput
+  }
+
+  export type MarketSeriesUncheckedCreateWithoutHydrationStateInput = {
+    id?: string
+    providerCode: string
+    providerSeriesId: string
+    providerSeriesKey?: string | null
+    displayName: string
+    frequency?: string | null
+    currency?: string | null
+    unit?: string | null
+    sourceLabel?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    observations?: MarketObservationUncheckedCreateNestedManyWithoutSeriesInput
+  }
+
+  export type MarketSeriesCreateOrConnectWithoutHydrationStateInput = {
+    where: MarketSeriesWhereUniqueInput
+    create: XOR<MarketSeriesCreateWithoutHydrationStateInput, MarketSeriesUncheckedCreateWithoutHydrationStateInput>
+  }
+
+  export type MarketSeriesUpsertWithoutHydrationStateInput = {
+    update: XOR<MarketSeriesUpdateWithoutHydrationStateInput, MarketSeriesUncheckedUpdateWithoutHydrationStateInput>
+    create: XOR<MarketSeriesCreateWithoutHydrationStateInput, MarketSeriesUncheckedCreateWithoutHydrationStateInput>
+    where?: MarketSeriesWhereInput
+  }
+
+  export type MarketSeriesUpdateToOneWithWhereWithoutHydrationStateInput = {
+    where?: MarketSeriesWhereInput
+    data: XOR<MarketSeriesUpdateWithoutHydrationStateInput, MarketSeriesUncheckedUpdateWithoutHydrationStateInput>
+  }
+
+  export type MarketSeriesUpdateWithoutHydrationStateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    providerCode?: StringFieldUpdateOperationsInput | string
+    providerSeriesId?: StringFieldUpdateOperationsInput | string
+    providerSeriesKey?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: StringFieldUpdateOperationsInput | string
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    observations?: MarketObservationUpdateManyWithoutSeriesNestedInput
+  }
+
+  export type MarketSeriesUncheckedUpdateWithoutHydrationStateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    providerCode?: StringFieldUpdateOperationsInput | string
+    providerSeriesId?: StringFieldUpdateOperationsInput | string
+    providerSeriesKey?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: StringFieldUpdateOperationsInput | string
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    observations?: MarketObservationUncheckedUpdateManyWithoutSeriesNestedInput
+  }
+
+  export type ForecastCurrentPointCreateWithoutRunInput = {
+    id?: string
+    horizonLabel: string
+    horizonSteps: number
+    forecastDate: Date | string
+    forecastValue?: Decimal | DecimalJsLike | number | string | null
+    fitStatus?: string | null
+    failureReason?: string | null
+    selectedVariant?: string | null
+    selectionMetric?: string | null
+    selectionScore?: number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastCurrentPointUncheckedCreateWithoutRunInput = {
+    id?: string
+    horizonLabel: string
+    horizonSteps: number
+    forecastDate: Date | string
+    forecastValue?: Decimal | DecimalJsLike | number | string | null
+    fitStatus?: string | null
+    failureReason?: string | null
+    selectedVariant?: string | null
+    selectionMetric?: string | null
+    selectionScore?: number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastCurrentPointCreateOrConnectWithoutRunInput = {
+    where: ForecastCurrentPointWhereUniqueInput
+    create: XOR<ForecastCurrentPointCreateWithoutRunInput, ForecastCurrentPointUncheckedCreateWithoutRunInput>
+  }
+
+  export type ForecastCurrentPointCreateManyRunInputEnvelope = {
+    data: ForecastCurrentPointCreateManyRunInput | ForecastCurrentPointCreateManyRunInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type ForecastCurrentPointUpsertWithWhereUniqueWithoutRunInput = {
+    where: ForecastCurrentPointWhereUniqueInput
+    update: XOR<ForecastCurrentPointUpdateWithoutRunInput, ForecastCurrentPointUncheckedUpdateWithoutRunInput>
+    create: XOR<ForecastCurrentPointCreateWithoutRunInput, ForecastCurrentPointUncheckedCreateWithoutRunInput>
+  }
+
+  export type ForecastCurrentPointUpdateWithWhereUniqueWithoutRunInput = {
+    where: ForecastCurrentPointWhereUniqueInput
+    data: XOR<ForecastCurrentPointUpdateWithoutRunInput, ForecastCurrentPointUncheckedUpdateWithoutRunInput>
+  }
+
+  export type ForecastCurrentPointUpdateManyWithWhereWithoutRunInput = {
+    where: ForecastCurrentPointScalarWhereInput
+    data: XOR<ForecastCurrentPointUpdateManyMutationInput, ForecastCurrentPointUncheckedUpdateManyWithoutRunInput>
+  }
+
+  export type ForecastCurrentPointScalarWhereInput = {
+    AND?: ForecastCurrentPointScalarWhereInput | ForecastCurrentPointScalarWhereInput[]
+    OR?: ForecastCurrentPointScalarWhereInput[]
+    NOT?: ForecastCurrentPointScalarWhereInput | ForecastCurrentPointScalarWhereInput[]
+    id?: StringFilter<"ForecastCurrentPoint"> | string
+    runId?: StringFilter<"ForecastCurrentPoint"> | string
+    horizonLabel?: StringFilter<"ForecastCurrentPoint"> | string
+    horizonSteps?: IntFilter<"ForecastCurrentPoint"> | number
+    forecastDate?: DateTimeFilter<"ForecastCurrentPoint"> | Date | string
+    forecastValue?: DecimalNullableFilter<"ForecastCurrentPoint"> | Decimal | DecimalJsLike | number | string | null
+    fitStatus?: StringNullableFilter<"ForecastCurrentPoint"> | string | null
+    failureReason?: StringNullableFilter<"ForecastCurrentPoint"> | string | null
+    selectedVariant?: StringNullableFilter<"ForecastCurrentPoint"> | string | null
+    selectionMetric?: StringNullableFilter<"ForecastCurrentPoint"> | string | null
+    selectionScore?: FloatNullableFilter<"ForecastCurrentPoint"> | number | null
+    metadataJson?: JsonNullableFilter<"ForecastCurrentPoint">
+    createdAt?: DateTimeFilter<"ForecastCurrentPoint"> | Date | string
+    updatedAt?: DateTimeFilter<"ForecastCurrentPoint"> | Date | string
+  }
+
+  export type ForecastCurrentRunCreateWithoutPointsInput = {
+    id?: string
+    seriesId: string
+    displayName: string
+    description?: string | null
+    frequency?: string | null
+    currency?: string | null
+    unit?: string | null
+    sourceLabel?: string | null
+    inputSource: string
+    inputRunId?: string | null
+    historyFingerprint: string
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    historyStartAt?: Date | string | null
+    historyEndAt?: Date | string | null
+    observationCount: number
+    forecastOriginAt?: Date | string | null
+    modelId: string
+    methodVersion: string
+    status: string
+    failureReason?: string | null
+    runtimeSeconds?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastCurrentRunUncheckedCreateWithoutPointsInput = {
+    id?: string
+    seriesId: string
+    displayName: string
+    description?: string | null
+    frequency?: string | null
+    currency?: string | null
+    unit?: string | null
+    sourceLabel?: string | null
+    inputSource: string
+    inputRunId?: string | null
+    historyFingerprint: string
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    historyStartAt?: Date | string | null
+    historyEndAt?: Date | string | null
+    observationCount: number
+    forecastOriginAt?: Date | string | null
+    modelId: string
+    methodVersion: string
+    status: string
+    failureReason?: string | null
+    runtimeSeconds?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastCurrentRunCreateOrConnectWithoutPointsInput = {
+    where: ForecastCurrentRunWhereUniqueInput
+    create: XOR<ForecastCurrentRunCreateWithoutPointsInput, ForecastCurrentRunUncheckedCreateWithoutPointsInput>
+  }
+
+  export type ForecastCurrentRunUpsertWithoutPointsInput = {
+    update: XOR<ForecastCurrentRunUpdateWithoutPointsInput, ForecastCurrentRunUncheckedUpdateWithoutPointsInput>
+    create: XOR<ForecastCurrentRunCreateWithoutPointsInput, ForecastCurrentRunUncheckedCreateWithoutPointsInput>
+    where?: ForecastCurrentRunWhereInput
+  }
+
+  export type ForecastCurrentRunUpdateToOneWithWhereWithoutPointsInput = {
+    where?: ForecastCurrentRunWhereInput
+    data: XOR<ForecastCurrentRunUpdateWithoutPointsInput, ForecastCurrentRunUncheckedUpdateWithoutPointsInput>
+  }
+
+  export type ForecastCurrentRunUpdateWithoutPointsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    displayName?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    historyStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    historyEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    observationCount?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    modelId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastCurrentRunUncheckedUpdateWithoutPointsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    displayName?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    historyStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    historyEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    observationCount?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    modelId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastVerificationMetricCreateWithoutRunInput = {
+    id?: string
+    horizonLabel: string
+    horizonSteps: number
+    origins: number
+    expectedOrigins: number
+    failedOrigins: number
+    coverage: number
+    mae?: number | null
+    rmse?: number | null
+    mase?: number | null
+    smape?: number | null
+    directionalAccuracy?: number | null
+    bias?: number | null
+    failureSummaryJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastVerificationMetricUncheckedCreateWithoutRunInput = {
+    id?: string
+    horizonLabel: string
+    horizonSteps: number
+    origins: number
+    expectedOrigins: number
+    failedOrigins: number
+    coverage: number
+    mae?: number | null
+    rmse?: number | null
+    mase?: number | null
+    smape?: number | null
+    directionalAccuracy?: number | null
+    bias?: number | null
+    failureSummaryJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastVerificationMetricCreateOrConnectWithoutRunInput = {
+    where: ForecastVerificationMetricWhereUniqueInput
+    create: XOR<ForecastVerificationMetricCreateWithoutRunInput, ForecastVerificationMetricUncheckedCreateWithoutRunInput>
+  }
+
+  export type ForecastVerificationMetricCreateManyRunInputEnvelope = {
+    data: ForecastVerificationMetricCreateManyRunInput | ForecastVerificationMetricCreateManyRunInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type ForecastVerificationPointCreateWithoutRunInput = {
+    id?: string
+    horizonLabel: string
+    horizonSteps: number
+    forecastOriginAt: Date | string
+    targetDate: Date | string
+    actualObservedAt?: Date | string | null
+    originValue: Decimal | DecimalJsLike | number | string
+    forecastValue: Decimal | DecimalJsLike | number | string
+    actualValue: Decimal | DecimalJsLike | number | string
+    errorValue: Decimal | DecimalJsLike | number | string
+    absoluteErrorValue: Decimal | DecimalJsLike | number | string
+    deltaValue: Decimal | DecimalJsLike | number | string
+    deltaPct?: number | null
+    maseScale: number
+    selectedVariant?: string | null
+    selectionMetric?: string | null
+    selectionScore?: number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastVerificationPointUncheckedCreateWithoutRunInput = {
+    id?: string
+    horizonLabel: string
+    horizonSteps: number
+    forecastOriginAt: Date | string
+    targetDate: Date | string
+    actualObservedAt?: Date | string | null
+    originValue: Decimal | DecimalJsLike | number | string
+    forecastValue: Decimal | DecimalJsLike | number | string
+    actualValue: Decimal | DecimalJsLike | number | string
+    errorValue: Decimal | DecimalJsLike | number | string
+    absoluteErrorValue: Decimal | DecimalJsLike | number | string
+    deltaValue: Decimal | DecimalJsLike | number | string
+    deltaPct?: number | null
+    maseScale: number
+    selectedVariant?: string | null
+    selectionMetric?: string | null
+    selectionScore?: number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastVerificationPointCreateOrConnectWithoutRunInput = {
+    where: ForecastVerificationPointWhereUniqueInput
+    create: XOR<ForecastVerificationPointCreateWithoutRunInput, ForecastVerificationPointUncheckedCreateWithoutRunInput>
+  }
+
+  export type ForecastVerificationPointCreateManyRunInputEnvelope = {
+    data: ForecastVerificationPointCreateManyRunInput | ForecastVerificationPointCreateManyRunInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type ForecastVerificationMetricUpsertWithWhereUniqueWithoutRunInput = {
+    where: ForecastVerificationMetricWhereUniqueInput
+    update: XOR<ForecastVerificationMetricUpdateWithoutRunInput, ForecastVerificationMetricUncheckedUpdateWithoutRunInput>
+    create: XOR<ForecastVerificationMetricCreateWithoutRunInput, ForecastVerificationMetricUncheckedCreateWithoutRunInput>
+  }
+
+  export type ForecastVerificationMetricUpdateWithWhereUniqueWithoutRunInput = {
+    where: ForecastVerificationMetricWhereUniqueInput
+    data: XOR<ForecastVerificationMetricUpdateWithoutRunInput, ForecastVerificationMetricUncheckedUpdateWithoutRunInput>
+  }
+
+  export type ForecastVerificationMetricUpdateManyWithWhereWithoutRunInput = {
+    where: ForecastVerificationMetricScalarWhereInput
+    data: XOR<ForecastVerificationMetricUpdateManyMutationInput, ForecastVerificationMetricUncheckedUpdateManyWithoutRunInput>
+  }
+
+  export type ForecastVerificationMetricScalarWhereInput = {
+    AND?: ForecastVerificationMetricScalarWhereInput | ForecastVerificationMetricScalarWhereInput[]
+    OR?: ForecastVerificationMetricScalarWhereInput[]
+    NOT?: ForecastVerificationMetricScalarWhereInput | ForecastVerificationMetricScalarWhereInput[]
+    id?: StringFilter<"ForecastVerificationMetric"> | string
+    runId?: StringFilter<"ForecastVerificationMetric"> | string
+    horizonLabel?: StringFilter<"ForecastVerificationMetric"> | string
+    horizonSteps?: IntFilter<"ForecastVerificationMetric"> | number
+    origins?: IntFilter<"ForecastVerificationMetric"> | number
+    expectedOrigins?: IntFilter<"ForecastVerificationMetric"> | number
+    failedOrigins?: IntFilter<"ForecastVerificationMetric"> | number
+    coverage?: FloatFilter<"ForecastVerificationMetric"> | number
+    mae?: FloatNullableFilter<"ForecastVerificationMetric"> | number | null
+    rmse?: FloatNullableFilter<"ForecastVerificationMetric"> | number | null
+    mase?: FloatNullableFilter<"ForecastVerificationMetric"> | number | null
+    smape?: FloatNullableFilter<"ForecastVerificationMetric"> | number | null
+    directionalAccuracy?: FloatNullableFilter<"ForecastVerificationMetric"> | number | null
+    bias?: FloatNullableFilter<"ForecastVerificationMetric"> | number | null
+    failureSummaryJson?: JsonNullableFilter<"ForecastVerificationMetric">
+    createdAt?: DateTimeFilter<"ForecastVerificationMetric"> | Date | string
+    updatedAt?: DateTimeFilter<"ForecastVerificationMetric"> | Date | string
+  }
+
+  export type ForecastVerificationPointUpsertWithWhereUniqueWithoutRunInput = {
+    where: ForecastVerificationPointWhereUniqueInput
+    update: XOR<ForecastVerificationPointUpdateWithoutRunInput, ForecastVerificationPointUncheckedUpdateWithoutRunInput>
+    create: XOR<ForecastVerificationPointCreateWithoutRunInput, ForecastVerificationPointUncheckedCreateWithoutRunInput>
+  }
+
+  export type ForecastVerificationPointUpdateWithWhereUniqueWithoutRunInput = {
+    where: ForecastVerificationPointWhereUniqueInput
+    data: XOR<ForecastVerificationPointUpdateWithoutRunInput, ForecastVerificationPointUncheckedUpdateWithoutRunInput>
+  }
+
+  export type ForecastVerificationPointUpdateManyWithWhereWithoutRunInput = {
+    where: ForecastVerificationPointScalarWhereInput
+    data: XOR<ForecastVerificationPointUpdateManyMutationInput, ForecastVerificationPointUncheckedUpdateManyWithoutRunInput>
+  }
+
+  export type ForecastVerificationPointScalarWhereInput = {
+    AND?: ForecastVerificationPointScalarWhereInput | ForecastVerificationPointScalarWhereInput[]
+    OR?: ForecastVerificationPointScalarWhereInput[]
+    NOT?: ForecastVerificationPointScalarWhereInput | ForecastVerificationPointScalarWhereInput[]
+    id?: StringFilter<"ForecastVerificationPoint"> | string
+    runId?: StringFilter<"ForecastVerificationPoint"> | string
+    horizonLabel?: StringFilter<"ForecastVerificationPoint"> | string
+    horizonSteps?: IntFilter<"ForecastVerificationPoint"> | number
+    forecastOriginAt?: DateTimeFilter<"ForecastVerificationPoint"> | Date | string
+    targetDate?: DateTimeFilter<"ForecastVerificationPoint"> | Date | string
+    actualObservedAt?: DateTimeNullableFilter<"ForecastVerificationPoint"> | Date | string | null
+    originValue?: DecimalFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    forecastValue?: DecimalFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    actualValue?: DecimalFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    errorValue?: DecimalFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    absoluteErrorValue?: DecimalFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    deltaValue?: DecimalFilter<"ForecastVerificationPoint"> | Decimal | DecimalJsLike | number | string
+    deltaPct?: FloatNullableFilter<"ForecastVerificationPoint"> | number | null
+    maseScale?: FloatFilter<"ForecastVerificationPoint"> | number
+    selectedVariant?: StringNullableFilter<"ForecastVerificationPoint"> | string | null
+    selectionMetric?: StringNullableFilter<"ForecastVerificationPoint"> | string | null
+    selectionScore?: FloatNullableFilter<"ForecastVerificationPoint"> | number | null
+    metadataJson?: JsonNullableFilter<"ForecastVerificationPoint">
+    createdAt?: DateTimeFilter<"ForecastVerificationPoint"> | Date | string
+    updatedAt?: DateTimeFilter<"ForecastVerificationPoint"> | Date | string
+  }
+
+  export type ForecastVerificationRunCreateWithoutMetricsInput = {
+    id?: string
+    seriesId: string
+    displayName: string
+    description?: string | null
+    frequency?: string | null
+    currency?: string | null
+    unit?: string | null
+    sourceLabel?: string | null
+    inputSource: string
+    inputRunId?: string | null
+    historyFingerprint: string
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    historyStartAt?: Date | string | null
+    historyEndAt?: Date | string | null
+    observationCount: number
+    forecastOriginAt?: Date | string | null
+    modelId: string
+    methodVersion: string
+    status: string
+    failureReason?: string | null
+    runtimeSeconds?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    points?: ForecastVerificationPointCreateNestedManyWithoutRunInput
+  }
+
+  export type ForecastVerificationRunUncheckedCreateWithoutMetricsInput = {
+    id?: string
+    seriesId: string
+    displayName: string
+    description?: string | null
+    frequency?: string | null
+    currency?: string | null
+    unit?: string | null
+    sourceLabel?: string | null
+    inputSource: string
+    inputRunId?: string | null
+    historyFingerprint: string
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    historyStartAt?: Date | string | null
+    historyEndAt?: Date | string | null
+    observationCount: number
+    forecastOriginAt?: Date | string | null
+    modelId: string
+    methodVersion: string
+    status: string
+    failureReason?: string | null
+    runtimeSeconds?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    points?: ForecastVerificationPointUncheckedCreateNestedManyWithoutRunInput
+  }
+
+  export type ForecastVerificationRunCreateOrConnectWithoutMetricsInput = {
+    where: ForecastVerificationRunWhereUniqueInput
+    create: XOR<ForecastVerificationRunCreateWithoutMetricsInput, ForecastVerificationRunUncheckedCreateWithoutMetricsInput>
+  }
+
+  export type ForecastVerificationRunUpsertWithoutMetricsInput = {
+    update: XOR<ForecastVerificationRunUpdateWithoutMetricsInput, ForecastVerificationRunUncheckedUpdateWithoutMetricsInput>
+    create: XOR<ForecastVerificationRunCreateWithoutMetricsInput, ForecastVerificationRunUncheckedCreateWithoutMetricsInput>
+    where?: ForecastVerificationRunWhereInput
+  }
+
+  export type ForecastVerificationRunUpdateToOneWithWhereWithoutMetricsInput = {
+    where?: ForecastVerificationRunWhereInput
+    data: XOR<ForecastVerificationRunUpdateWithoutMetricsInput, ForecastVerificationRunUncheckedUpdateWithoutMetricsInput>
+  }
+
+  export type ForecastVerificationRunUpdateWithoutMetricsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    displayName?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    historyStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    historyEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    observationCount?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    modelId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    points?: ForecastVerificationPointUpdateManyWithoutRunNestedInput
+  }
+
+  export type ForecastVerificationRunUncheckedUpdateWithoutMetricsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    displayName?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    historyStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    historyEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    observationCount?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    modelId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    points?: ForecastVerificationPointUncheckedUpdateManyWithoutRunNestedInput
+  }
+
+  export type ForecastVerificationRunCreateWithoutPointsInput = {
+    id?: string
+    seriesId: string
+    displayName: string
+    description?: string | null
+    frequency?: string | null
+    currency?: string | null
+    unit?: string | null
+    sourceLabel?: string | null
+    inputSource: string
+    inputRunId?: string | null
+    historyFingerprint: string
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    historyStartAt?: Date | string | null
+    historyEndAt?: Date | string | null
+    observationCount: number
+    forecastOriginAt?: Date | string | null
+    modelId: string
+    methodVersion: string
+    status: string
+    failureReason?: string | null
+    runtimeSeconds?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    metrics?: ForecastVerificationMetricCreateNestedManyWithoutRunInput
+  }
+
+  export type ForecastVerificationRunUncheckedCreateWithoutPointsInput = {
+    id?: string
+    seriesId: string
+    displayName: string
+    description?: string | null
+    frequency?: string | null
+    currency?: string | null
+    unit?: string | null
+    sourceLabel?: string | null
+    inputSource: string
+    inputRunId?: string | null
+    historyFingerprint: string
+    targetBasis?: $Enums.ForecastTargetBasis
+    methodId: string
+    historyStartAt?: Date | string | null
+    historyEndAt?: Date | string | null
+    observationCount: number
+    forecastOriginAt?: Date | string | null
+    modelId: string
+    methodVersion: string
+    status: string
+    failureReason?: string | null
+    runtimeSeconds?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    metrics?: ForecastVerificationMetricUncheckedCreateNestedManyWithoutRunInput
+  }
+
+  export type ForecastVerificationRunCreateOrConnectWithoutPointsInput = {
+    where: ForecastVerificationRunWhereUniqueInput
+    create: XOR<ForecastVerificationRunCreateWithoutPointsInput, ForecastVerificationRunUncheckedCreateWithoutPointsInput>
+  }
+
+  export type ForecastVerificationRunUpsertWithoutPointsInput = {
+    update: XOR<ForecastVerificationRunUpdateWithoutPointsInput, ForecastVerificationRunUncheckedUpdateWithoutPointsInput>
+    create: XOR<ForecastVerificationRunCreateWithoutPointsInput, ForecastVerificationRunUncheckedCreateWithoutPointsInput>
+    where?: ForecastVerificationRunWhereInput
+  }
+
+  export type ForecastVerificationRunUpdateToOneWithWhereWithoutPointsInput = {
+    where?: ForecastVerificationRunWhereInput
+    data: XOR<ForecastVerificationRunUpdateWithoutPointsInput, ForecastVerificationRunUncheckedUpdateWithoutPointsInput>
+  }
+
+  export type ForecastVerificationRunUpdateWithoutPointsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    displayName?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    historyStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    historyEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    observationCount?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    modelId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    metrics?: ForecastVerificationMetricUpdateManyWithoutRunNestedInput
+  }
+
+  export type ForecastVerificationRunUncheckedUpdateWithoutPointsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    displayName?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    frequency?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: NullableStringFieldUpdateOperationsInput | string | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceLabel?: NullableStringFieldUpdateOperationsInput | string | null
+    inputSource?: StringFieldUpdateOperationsInput | string
+    inputRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    methodId?: StringFieldUpdateOperationsInput | string
+    historyStartAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    historyEndAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    observationCount?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    modelId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    metrics?: ForecastVerificationMetricUncheckedUpdateManyWithoutRunNestedInput
+  }
+
+  export type MarketObservationCreateManySeriesInput = {
+    id?: string
+    observedAt: Date | string
+    value?: Decimal | DecimalJsLike | number | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type MarketObservationUpdateWithoutSeriesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    observedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    value?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MarketObservationUncheckedUpdateWithoutSeriesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    observedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    value?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MarketObservationUncheckedUpdateManyWithoutSeriesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    observedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    value?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastCurrentPointCreateManyRunInput = {
+    id?: string
+    horizonLabel: string
+    horizonSteps: number
+    forecastDate: Date | string
+    forecastValue?: Decimal | DecimalJsLike | number | string | null
+    fitStatus?: string | null
+    failureReason?: string | null
+    selectedVariant?: string | null
+    selectionMetric?: string | null
+    selectionScore?: number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastCurrentPointUpdateWithoutRunInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    forecastDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    forecastValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    fitStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    selectedVariant?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionMetric?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastCurrentPointUncheckedUpdateWithoutRunInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    forecastDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    forecastValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    fitStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    selectedVariant?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionMetric?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastCurrentPointUncheckedUpdateManyWithoutRunInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    forecastDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    forecastValue?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    fitStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    selectedVariant?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionMetric?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastVerificationMetricCreateManyRunInput = {
+    id?: string
+    horizonLabel: string
+    horizonSteps: number
+    origins: number
+    expectedOrigins: number
+    failedOrigins: number
+    coverage: number
+    mae?: number | null
+    rmse?: number | null
+    mase?: number | null
+    smape?: number | null
+    directionalAccuracy?: number | null
+    bias?: number | null
+    failureSummaryJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastVerificationPointCreateManyRunInput = {
+    id?: string
+    horizonLabel: string
+    horizonSteps: number
+    forecastOriginAt: Date | string
+    targetDate: Date | string
+    actualObservedAt?: Date | string | null
+    originValue: Decimal | DecimalJsLike | number | string
+    forecastValue: Decimal | DecimalJsLike | number | string
+    actualValue: Decimal | DecimalJsLike | number | string
+    errorValue: Decimal | DecimalJsLike | number | string
+    absoluteErrorValue: Decimal | DecimalJsLike | number | string
+    deltaValue: Decimal | DecimalJsLike | number | string
+    deltaPct?: number | null
+    maseScale: number
+    selectedVariant?: string | null
+    selectionMetric?: string | null
+    selectionScore?: number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastVerificationMetricUpdateWithoutRunInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    origins?: IntFieldUpdateOperationsInput | number
+    expectedOrigins?: IntFieldUpdateOperationsInput | number
+    failedOrigins?: IntFieldUpdateOperationsInput | number
+    coverage?: FloatFieldUpdateOperationsInput | number
+    mae?: NullableFloatFieldUpdateOperationsInput | number | null
+    rmse?: NullableFloatFieldUpdateOperationsInput | number | null
+    mase?: NullableFloatFieldUpdateOperationsInput | number | null
+    smape?: NullableFloatFieldUpdateOperationsInput | number | null
+    directionalAccuracy?: NullableFloatFieldUpdateOperationsInput | number | null
+    bias?: NullableFloatFieldUpdateOperationsInput | number | null
+    failureSummaryJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastVerificationMetricUncheckedUpdateWithoutRunInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    origins?: IntFieldUpdateOperationsInput | number
+    expectedOrigins?: IntFieldUpdateOperationsInput | number
+    failedOrigins?: IntFieldUpdateOperationsInput | number
+    coverage?: FloatFieldUpdateOperationsInput | number
+    mae?: NullableFloatFieldUpdateOperationsInput | number | null
+    rmse?: NullableFloatFieldUpdateOperationsInput | number | null
+    mase?: NullableFloatFieldUpdateOperationsInput | number | null
+    smape?: NullableFloatFieldUpdateOperationsInput | number | null
+    directionalAccuracy?: NullableFloatFieldUpdateOperationsInput | number | null
+    bias?: NullableFloatFieldUpdateOperationsInput | number | null
+    failureSummaryJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastVerificationMetricUncheckedUpdateManyWithoutRunInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    origins?: IntFieldUpdateOperationsInput | number
+    expectedOrigins?: IntFieldUpdateOperationsInput | number
+    failedOrigins?: IntFieldUpdateOperationsInput | number
+    coverage?: FloatFieldUpdateOperationsInput | number
+    mae?: NullableFloatFieldUpdateOperationsInput | number | null
+    rmse?: NullableFloatFieldUpdateOperationsInput | number | null
+    mase?: NullableFloatFieldUpdateOperationsInput | number | null
+    smape?: NullableFloatFieldUpdateOperationsInput | number | null
+    directionalAccuracy?: NullableFloatFieldUpdateOperationsInput | number | null
+    bias?: NullableFloatFieldUpdateOperationsInput | number | null
+    failureSummaryJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastVerificationPointUpdateWithoutRunInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    targetDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    originValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    forecastValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    errorValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    absoluteErrorValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deltaValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deltaPct?: NullableFloatFieldUpdateOperationsInput | number | null
+    maseScale?: FloatFieldUpdateOperationsInput | number
+    selectedVariant?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionMetric?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastVerificationPointUncheckedUpdateWithoutRunInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    targetDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    originValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    forecastValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    errorValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    absoluteErrorValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deltaValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deltaPct?: NullableFloatFieldUpdateOperationsInput | number | null
+    maseScale?: FloatFieldUpdateOperationsInput | number
+    selectedVariant?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionMetric?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastVerificationPointUncheckedUpdateManyWithoutRunInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    horizonLabel?: StringFieldUpdateOperationsInput | string
+    horizonSteps?: IntFieldUpdateOperationsInput | number
+    forecastOriginAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    targetDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    originValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    forecastValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    actualValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    errorValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    absoluteErrorValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deltaValue?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deltaPct?: NullableFloatFieldUpdateOperationsInput | number | null
+    maseScale?: FloatFieldUpdateOperationsInput | number
+    selectedVariant?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionMetric?: NullableStringFieldUpdateOperationsInput | string | null
+    selectionScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+
+
+  /**
+   * Aliases for legacy arg types
+   */
+    /**
+     * @deprecated Use MarketSeriesCountOutputTypeDefaultArgs instead
+     */
+    export type MarketSeriesCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = MarketSeriesCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ForecastCurrentRunCountOutputTypeDefaultArgs instead
+     */
+    export type ForecastCurrentRunCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ForecastCurrentRunCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ForecastVerificationRunCountOutputTypeDefaultArgs instead
+     */
+    export type ForecastVerificationRunCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ForecastVerificationRunCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use MarketSeriesDefaultArgs instead
+     */
+    export type MarketSeriesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = MarketSeriesDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use MarketObservationDefaultArgs instead
+     */
+    export type MarketObservationArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = MarketObservationDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use MarketHydrationStateDefaultArgs instead
+     */
+    export type MarketHydrationStateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = MarketHydrationStateDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ForecastCurrentRunDefaultArgs instead
+     */
+    export type ForecastCurrentRunArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ForecastCurrentRunDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ForecastCurrentPointDefaultArgs instead
+     */
+    export type ForecastCurrentPointArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ForecastCurrentPointDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ForecastVerificationRunDefaultArgs instead
+     */
+    export type ForecastVerificationRunArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ForecastVerificationRunDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ForecastVerificationMetricDefaultArgs instead
+     */
+    export type ForecastVerificationMetricArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ForecastVerificationMetricDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ForecastVerificationPointDefaultArgs instead
+     */
+    export type ForecastVerificationPointArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ForecastVerificationPointDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use RollingDailyVerificationRecordDefaultArgs instead
+     */
+    export type RollingDailyVerificationRecordArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RollingDailyVerificationRecordDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use RollingDailyCurrentForecastSnapshotDefaultArgs instead
+     */
+    export type RollingDailyCurrentForecastSnapshotArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RollingDailyCurrentForecastSnapshotDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use RollingDailyCalibrationGroupDefaultArgs instead
+     */
+    export type RollingDailyCalibrationGroupArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RollingDailyCalibrationGroupDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use RollingDailyMaintenanceStateDefaultArgs instead
+     */
+    export type RollingDailyMaintenanceStateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RollingDailyMaintenanceStateDefaultArgs<ExtArgs>
+
+  /**
+   * Batch Payload for updateMany & deleteMany & createMany
+   */
+
+  export type BatchPayload = {
+    count: number
+  }
+
+  /**
+   * DMMF
+   */
+  export const dmmf: runtime.BaseDMMF
+}

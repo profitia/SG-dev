@@ -1,0 +1,970 @@
+{
+  "task": "FORECAST_PHASE_2_2B_4R_CONTROLLED_BEFORE_AFTER_COMPARATIVE_STRESS_RERUN",
+  "phase": "2.2B-4R",
+  "generatedAt": "2026-08-25T14:16:28.114Z",
+  "preconditions": {
+    "phase21Gate": "PASS",
+    "phase22aGate": "PASS",
+    "phase22b0Gate": "PASS",
+    "phase22b1Gate": "PASS",
+    "phase22b2Gate": "PASS",
+    "phase22b3Gate": "PASS",
+    "phase22b1rGate": "PASS",
+    "originalPhase22b4Gate": "FAIL"
+  },
+  "contracts": {
+    "stressTestContractVersion": 1,
+    "measurementControlRevision": 2,
+    "singleFlightExperimentContractVersion": 1,
+    "contractDrift": false
+  },
+  "execution": {
+    "plannedCells": 105,
+    "validCompleted": 51,
+    "safetyBlocked": 23,
+    "invalidState": 0,
+    "contractAborted": 31,
+    "allTerminal": true
+  },
+  "classifications": {
+    "structural": "CONFIRMED_AT_LAWFUL_REACHED_LEVELS_P04_THROUGH_100",
+    "currentStructuralEffect": "CONFIRMED",
+    "verificationStructuralEffect": "CONFIRMED",
+    "persistence": "DUPLICATE_WRITE_ELIMINATION_CONFIRMED_AT_LAWFUL_STRUCTURAL_LEVELS",
+    "ux": "MIXED_WITH_HIGH_CONCURRENCY_DEGRADATION",
+    "resource": "INCONCLUSIVE_DUE_TO_SETTLEMENT_AND_OBSERVABILITY_GAPS",
+    "capability": "PARTIAL_LEVEL_SPECIFIC",
+    "provider": "NOT_MEASURED_AS_SAVINGS",
+    "crossInstanceDuplicatePrevention": "NOT_PROVEN"
+  },
+  "capability": {
+    "P01": 100,
+    "P02": 100,
+    "P03": 10,
+    "P04": 100,
+    "P05": 10,
+    "P06": 100,
+    "P07": 100,
+    "P08": 10,
+    "P09": 100,
+    "P10": "NO_FULLY_ACCEPTED_B4R_LEVEL",
+    "P11": 10
+  },
+  "remainingBottlenecks": [
+    "HTTP_APPLICATION_CAPACITY_BOUND",
+    "DB_POOL_SETTLEMENT_BOUND",
+    "REQUEST_TIMEOUT_BOUND:P09",
+    "PREPARED_READ_LATENCY_BOUND:P10",
+    "VERIFICATION_BACKTEST_BOUND",
+    "RESOURCE_OBSERVABILITY_BOUND",
+    "DISTRIBUTED_OWNERSHIP_NOT_PROVEN"
+  ],
+  "settlementBlocks": [
+    {
+      "scenario": "P09",
+      "concurrency": 1000,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "MANDATORY_SETTLEMENT_FAILED",
+      "correctnessPassed": false,
+      "successes": 234,
+      "failures": 766,
+      "timeouts": 766,
+      "cooldownDurationMs": 30076,
+      "postCooldownRssMb": 1461.234375,
+      "applicationDbPool": {
+        "activeConnections": 17,
+        "idleConnections": 0,
+        "waitingRequests": 17,
+        "totalConnections": 17
+      },
+      "safetyRules": [
+        "SAFE-COOLDOWN",
+        "SAFE-DATABASE"
+      ],
+      "classification": "DEGRADED_TIMEOUT_AND_DB_POOL_SETTLEMENT_BLOCK"
+    },
+    {
+      "scenario": "P10",
+      "concurrency": 10,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "MANDATORY_SETTLEMENT_FAILED",
+      "correctnessPassed": true,
+      "successes": 10,
+      "failures": 0,
+      "timeouts": 0,
+      "cooldownDurationMs": 30055,
+      "postCooldownRssMb": 2798.078125,
+      "applicationDbPool": {
+        "activeConnections": 15,
+        "idleConnections": 1,
+        "waitingRequests": 14,
+        "totalConnections": 16
+      },
+      "safetyRules": [
+        "SAFE-COOLDOWN",
+        "SAFE-DATABASE"
+      ],
+      "classification": "CORRECT_PRE_SETTLEMENT_DB_POOL_SETTLEMENT_BLOCK"
+    }
+  ],
+  "functionalRegression": {
+    "task": "FORECAST_PHASE_2_2B_4R_FUNCTIONAL_REGRESSION",
+    "generatedAt": "2026-08-25T14:07:27.484Z",
+    "stressExecutionPermitted": false,
+    "stressExecutionObserved": false,
+    "checksExpected": 11,
+    "checksPassed": 11,
+    "checksFailed": 0,
+    "status": "PASS",
+    "results": [
+      {
+        "id": "forecast-core",
+        "category": "FUNCTIONAL_TEST",
+        "command": "/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/tooling/Benchmark-Forecasting/.venv/bin/python -m unittest discover -s /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/tooling/Benchmark-Forecasting/tests",
+        "cwd": "tooling/Benchmark-Forecasting",
+        "startedAt": "2026-08-25T14:07:27.491Z",
+        "endedAt": "2026-08-25T14:13:20.626Z",
+        "durationMs": 353135,
+        "exitCode": 0,
+        "status": "PASS",
+        "tests": 218,
+        "passed": 218,
+        "failed": 0,
+        "outputTail": [
+          "..........................................................................................................................................................................................................................",
+          "----------------------------------------------------------------------",
+          "Ran 218 tests in 350.882s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "id": "sg-runtime",
+        "category": "FUNCTIONAL_TEST",
+        "command": "/usr/local/bin/node --import tsx --test /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/benchmark-presentation.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/cost-scan-math.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/current-single-flight.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/forecast-cadence.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/forecast-canonical-history.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/forecast-capability-resolver.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/forecast-history-fingerprint.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/forecast-identity.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/forecast-library-service.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/forecast-live-input.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/forecast-persistence-decimal.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/forecast-phase-2-1b-operation.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/forecast-prepared-state.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/forecast-production-operations.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/forecast-production-routing.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/forecast-provider-provenance.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/forecast-route-contract.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/forecast-stress-telemetry.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/market-data-service.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/persistence-ownership.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/rolling-daily-current-forecast-snapshot.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/rolling-daily-current-ownership.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/rolling-daily-maintenance.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/rolling-daily-production-forecast.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/rolling-daily-production-operations.test.ts /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime/tests/verification-single-flight.test.ts",
+        "cwd": "apps/sg-runtime",
+        "startedAt": "2026-08-25T14:13:20.627Z",
+        "endedAt": "2026-08-25T14:13:21.746Z",
+        "durationMs": 1119,
+        "exitCode": 0,
+        "status": "PASS",
+        "tests": null,
+        "passed": null,
+        "failed": null,
+        "outputTail": [
+          "✔ rolling daily production forecast maps unavailable bridge states without fabricating bands (0.421375ms)",
+          "✔ production operations refreshes snapshots for the canonical four-model maintenance pass (1.414334ms)",
+          "✔ production operations returns NO_OP when maintenance is idle and snapshots are already fresh (0.185084ms)",
+          "✔ production operations recovers a stale prepared snapshot after maintenance NO_OP (0.16875ms)",
+          "✔ production operations supports safe retry when a prior snapshot refresh failed after maintenance success (0.232708ms)",
+          "✔ production operations fails closed on rebuild required and preserves the last good snapshot (0.146958ms)",
+          "✔ Verification logical key is deterministic, exact-field isolated, and fail-closed (0.782084ms)",
+          "✔ ten exact-key Verification callers share one owner and release the entry (3.338667ms)",
+          "✔ different Verification keys run independently (1.325458ms)",
+          "✔ Verification owner failure is shared, cleaned up, and permits retry (0.275292ms)",
+          "✔ late arrivals join before settlement and become new owners after release (0.464667ms)",
+          "✔ local waiter cancellation does not cancel Verification owner work (0.190041ms)",
+          "ℹ tests 172",
+          "ℹ suites 0",
+          "ℹ pass 172",
+          "ℹ fail 0",
+          "ℹ cancelled 0",
+          "ℹ skipped 0",
+          "ℹ todo 0",
+          "ℹ duration_ms 1074.636167"
+        ]
+      },
+      {
+        "id": "dashboard-preview",
+        "category": "FUNCTIONAL_TEST",
+        "command": "npm test",
+        "cwd": "apps/dashboard-preview",
+        "startedAt": "2026-08-25T14:13:21.746Z",
+        "endedAt": "2026-08-25T14:13:22.418Z",
+        "durationMs": 672,
+        "exitCode": 0,
+        "status": "PASS",
+        "tests": null,
+        "passed": null,
+        "failed": null,
+        "outputTail": [
+          "✔ splits crossing from plus to minus into two local polygons (0.390916ms)",
+          "✔ splits crossing from minus to plus into two local polygons (0.268166ms)",
+          "✔ builds a local polygon when delta is zero at the start (0.149ms)",
+          "✔ builds a local polygon when delta is zero at the end (0.142125ms)",
+          "✔ does not build a polygon when delta is zero at both points (0.139584ms)",
+          "✔ normalizes duplicate month keys before building polygons (0.184125ms)",
+          "✔ normalizes unsorted input before building polygons (0.486042ms)",
+          "✔ prevents self-intersection by keeping winding order actual-start actual-end forecast-end forecast-start (0.183334ms)",
+          "✔ does not build polygons for a single point (0.105375ms)",
+          "✔ builds several local polygons instead of one broad polygon for a continuous run (0.138333ms)",
+          "✔ forecast-portfolio-v3 defaults target basis to point in time (0.651458ms)",
+          "✔ non-forecast variants keep the monthly-average default target basis (0.101667ms)",
+          "ℹ tests 100",
+          "ℹ suites 0",
+          "ℹ pass 100",
+          "ℹ fail 0",
+          "ℹ cancelled 0",
+          "ℹ skipped 0",
+          "ℹ todo 0",
+          "ℹ duration_ms 464.22475"
+        ]
+      },
+      {
+        "id": "phase-tooling",
+        "category": "FUNCTIONAL_TEST",
+        "command": "/usr/local/bin/node --test /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/tooling/Benchmark-Forecasting/performance/phase-2-1-database-guard.test.mjs /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/tooling/Benchmark-Forecasting/performance/phase-2-1-environment.test.mjs /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/tooling/Benchmark-Forecasting/performance/phase-2-1-readiness.test.mjs /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/tooling/Benchmark-Forecasting/performance/phase-2-1b-measurement-control.test.mjs /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/tooling/Benchmark-Forecasting/performance/phase-2-1b-result.test.mjs /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/tooling/Benchmark-Forecasting/performance/phase-2-2b-single-flight-contract.test.mjs /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/tooling/Benchmark-Forecasting/performance/stress-test-harness.test.mjs",
+        "cwd": "",
+        "startedAt": "2026-08-25T14:13:22.418Z",
+        "endedAt": "2026-08-25T14:13:23.544Z",
+        "durationMs": 1126,
+        "exitCode": 0,
+        "status": "PASS",
+        "tests": null,
+        "passed": null,
+        "failed": null,
+        "outputTail": [
+          "✔ Current logical key isolates source and target cadence identity (0.083167ms)",
+          "✔ Current logical key isolates forecast origin and horizon configuration (0.077375ms)",
+          "✔ Verification logical key isolates horizon and origin policy configuration (0.162709ms)",
+          "✔ Current and Verification namespaces cannot collide (0.101625ms)",
+          "✔ incomplete identity is rejected instead of weakened (0.294916ms)",
+          "✔ experiment contract cannot enable implementation or load (0.702417ms)",
+          "✔ frozen contract and P01-P11 manifest remain complete (7.50475ms)",
+          "✔ human report and machine acceptance gate have exact required counts (14.072541ms)",
+          "✔ barrier dry run uses no load level and meets release window (0.304583ms)",
+          "✔ dry-run guard rejects mandatory stress concurrency (0.267417ms)",
+          "✔ synchronized burst releases exact mandatory concurrency with correlated results (0.301417ms)",
+          "✔ synchronized burst preserves request failures and rejects non-contract levels (0.201292ms)",
+          "ℹ tests 31",
+          "ℹ suites 0",
+          "ℹ pass 31",
+          "ℹ fail 0",
+          "ℹ cancelled 0",
+          "ℹ skipped 0",
+          "ℹ todo 0",
+          "ℹ duration_ms 1091.651625"
+        ]
+      },
+      {
+        "id": "sg-runtime-typecheck",
+        "category": "TYPECHECK",
+        "command": "npm run typecheck",
+        "cwd": "apps/sg-runtime",
+        "startedAt": "2026-08-25T14:13:23.544Z",
+        "endedAt": "2026-08-25T14:13:25.106Z",
+        "durationMs": 1562,
+        "exitCode": 0,
+        "status": "PASS",
+        "tests": null,
+        "passed": null,
+        "failed": null,
+        "outputTail": [
+          "> @sg/runtime@0.1.0 typecheck",
+          "> tsc --noEmit"
+        ]
+      },
+      {
+        "id": "dashboard-preview-typecheck",
+        "category": "TYPECHECK",
+        "command": "npm run typecheck",
+        "cwd": "apps/dashboard-preview",
+        "startedAt": "2026-08-25T14:13:25.106Z",
+        "endedAt": "2026-08-25T14:13:26.231Z",
+        "durationMs": 1125,
+        "exitCode": 0,
+        "status": "PASS",
+        "tests": null,
+        "passed": null,
+        "failed": null,
+        "outputTail": [
+          "> @sg/dashboard-preview@0.1.0 typecheck",
+          "> tsc --noEmit"
+        ]
+      },
+      {
+        "id": "data-runtime-typecheck",
+        "category": "TYPECHECK",
+        "command": "npm run typecheck",
+        "cwd": "apps/data-runtime",
+        "startedAt": "2026-08-25T14:13:26.231Z",
+        "endedAt": "2026-08-25T14:13:27.726Z",
+        "durationMs": 1495,
+        "exitCode": 0,
+        "status": "PASS",
+        "tests": null,
+        "passed": null,
+        "failed": null,
+        "outputTail": [
+          "> @sg/data-runtime@0.1.0 typecheck",
+          "> tsc --noEmit"
+        ]
+      },
+      {
+        "id": "phase-2-2b-0-gate",
+        "category": "ACCEPTED_GATE_REGRESSION",
+        "command": "/usr/local/bin/node /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/tooling/Benchmark-Forecasting/performance/phase-2-2b-single-flight-design-freeze.validator.mjs",
+        "cwd": "",
+        "startedAt": "2026-08-25T14:13:27.726Z",
+        "endedAt": "2026-08-25T14:13:27.780Z",
+        "durationMs": 54,
+        "exitCode": 0,
+        "status": "PASS",
+        "tests": null,
+        "passed": null,
+        "failed": null,
+        "outputTail": [
+          "{",
+          "  \"phase22b0Gate\": \"PASS\",",
+          "  \"acceptance\": \"64 / 64 PASS\",",
+          "  \"reportSections\": \"56 / 56\",",
+          "  \"immutableEvidenceReferences\": 22,",
+          "  \"experimentRows\": 15,",
+          "  \"safetyRules\": 11,",
+          "  \"taskAttributedPaths\": 12,",
+          "  \"phase22b1Authorized\": false,",
+          "  \"phase22b1Started\": false",
+          "}"
+        ]
+      },
+      {
+        "id": "phase-2-2b-1-gate",
+        "category": "ACCEPTED_GATE_REGRESSION",
+        "command": "/usr/local/bin/node /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/tooling/Benchmark-Forecasting/performance/phase-2-2b-1-final-gate.validator.mjs",
+        "cwd": "",
+        "startedAt": "2026-08-25T14:13:27.780Z",
+        "endedAt": "2026-08-25T14:13:27.823Z",
+        "durationMs": 43,
+        "exitCode": 0,
+        "status": "PASS",
+        "tests": null,
+        "passed": null,
+        "failed": null,
+        "outputTail": [
+          "{",
+          "  \"phase22b1Gate\": \"PASS\",",
+          "  \"acceptance\": \"72 / 72 PASS\",",
+          "  \"reportSections\": \"60 / 60\",",
+          "  \"immutableEvidenceReferences\": 22,",
+          "  \"migrationPaths\": 32,",
+          "  \"phase22b2ReadyForAuthorization\": true,",
+          "  \"phase22b2Authorized\": false,",
+          "  \"phase22b2Started\": false",
+          "}"
+        ]
+      },
+      {
+        "id": "phase-2-2b-3-gate",
+        "category": "ACCEPTED_GATE_REGRESSION",
+        "command": "/usr/local/bin/node /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/tooling/Benchmark-Forecasting/performance/phase-2-2b-3-final-gate.validator.mjs",
+        "cwd": "",
+        "startedAt": "2026-08-25T14:13:27.823Z",
+        "endedAt": "2026-08-25T14:13:27.860Z",
+        "durationMs": 37,
+        "exitCode": 0,
+        "status": "PASS",
+        "tests": null,
+        "passed": null,
+        "failed": null,
+        "outputTail": [
+          "{",
+          "  \"phase22b3Gate\": \"PASS\",",
+          "  \"h0\": \"PASS\",",
+          "  \"acceptance\": \"84 / 84 PASS\",",
+          "  \"reportSections\": \"64 / 64\",",
+          "  \"persistenceScenarios\": 10,",
+          "  \"migrationPaths\": 31,",
+          "  \"phase22b4Authorized\": false,",
+          "  \"phase22b4Started\": false",
+          "}"
+        ]
+      },
+      {
+        "id": "original-phase-2-2b-4-gate",
+        "category": "ACCEPTED_GATE_REGRESSION",
+        "command": "/usr/local/bin/node /Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/tooling/Benchmark-Forecasting/performance/phase-2-2b-4-final-gate.validator.mjs",
+        "cwd": "",
+        "startedAt": "2026-08-25T14:13:27.860Z",
+        "endedAt": "2026-08-25T14:13:27.899Z",
+        "durationMs": 39,
+        "exitCode": 0,
+        "status": "PASS",
+        "tests": null,
+        "passed": null,
+        "failed": null,
+        "outputTail": [
+          "{",
+          "  \"phase22b4Gate\": \"FAIL\",",
+          "  \"acceptance\": \"92 / 96 PASS; 4 FAIL\",",
+          "  \"failedConditions\": [",
+          "    35,",
+          "    36,",
+          "    47,",
+          "    75",
+          "  ],",
+          "  \"reportSections\": \"68 / 68\",",
+          "  \"plannedRows\": 6,",
+          "  \"phase22cAuthorized\": false,",
+          "  \"phase22cStarted\": false",
+          "}"
+        ]
+      }
+    ]
+  },
+  "sourceBehaviorEvidence": {
+    "task": "FORECAST_PHASE_2_2B_4R_SOURCE_HASH_GUARD",
+    "capturedBeforeLoadAt": "2026-08-25T11:53:39.987Z",
+    "capturedAfterLoadAt": "2026-08-25T13:52:47.963Z",
+    "before": {
+      "apps/sg-runtime/lib/forecast/current-single-flight.ts": "ceb6c4cbd5c969277eb50c173e6c2c2c26ad9f9b4f03a40216b0e60c4d24be13",
+      "apps/sg-runtime/lib/forecast/rolling-daily-current-ownership.ts": "8f3fdad09c1be88aa606e269f4c494664684320e8ce1b7a8599f225134b191db",
+      "apps/sg-runtime/lib/forecast/rolling-daily-production-operations.ts": "bd68ce4051e56d0498dc3a800a63e472127114b89ee6851120b50e3e9b252e7a",
+      "apps/sg-runtime/lib/forecast/verification-single-flight.ts": "8f81076763f72f435c3e756425d3ff045a3cc89858a6c3580e71ac223fa076dc",
+      "apps/sg-runtime/lib/forecast/service.ts": "c81d3de9db2e27c1d1711af87ebbffcc9c5dcd1fd9497096726948cc8720e582"
+    },
+    "after": {
+      "apps/sg-runtime/lib/forecast/current-single-flight.ts": "ceb6c4cbd5c969277eb50c173e6c2c2c26ad9f9b4f03a40216b0e60c4d24be13",
+      "apps/sg-runtime/lib/forecast/rolling-daily-current-ownership.ts": "8f3fdad09c1be88aa606e269f4c494664684320e8ce1b7a8599f225134b191db",
+      "apps/sg-runtime/lib/forecast/rolling-daily-production-operations.ts": "bd68ce4051e56d0498dc3a800a63e472127114b89ee6851120b50e3e9b252e7a",
+      "apps/sg-runtime/lib/forecast/verification-single-flight.ts": "8f81076763f72f435c3e756425d3ff045a3cc89858a6c3580e71ac223fa076dc",
+      "apps/sg-runtime/lib/forecast/service.ts": "c81d3de9db2e27c1d1711af87ebbffcc9c5dcd1fd9497096726948cc8720e582"
+    },
+    "behaviorSourceHashDrift": false
+  },
+  "acceptanceConditions": {
+    "expected": 104,
+    "passed": 104,
+    "blocked": 0,
+    "failed": 0,
+    "conditions": [
+      {
+        "id": 1,
+        "status": "PASS",
+        "description": "Phase 2.1 PASS"
+      },
+      {
+        "id": 2,
+        "status": "PASS",
+        "description": "Phase 2.2A PASS"
+      },
+      {
+        "id": 3,
+        "status": "PASS",
+        "description": "Phase 2.2B-0 PASS"
+      },
+      {
+        "id": 4,
+        "status": "PASS",
+        "description": "Phase 2.2B-1 PASS"
+      },
+      {
+        "id": 5,
+        "status": "PASS",
+        "description": "Phase 2.2B-2 PASS"
+      },
+      {
+        "id": 6,
+        "status": "PASS",
+        "description": "Phase 2.2B-3 PASS"
+      },
+      {
+        "id": 7,
+        "status": "PASS",
+        "description": "Phase 2.2B-1R PASS"
+      },
+      {
+        "id": 8,
+        "status": "PASS",
+        "description": "Original B4 immutable FAIL"
+      },
+      {
+        "id": 9,
+        "status": "PASS",
+        "description": "Stress Contract v1"
+      },
+      {
+        "id": 10,
+        "status": "PASS",
+        "description": "Measurement Control revision 2"
+      },
+      {
+        "id": 11,
+        "status": "PASS",
+        "description": "Single-Flight Contract v1"
+      },
+      {
+        "id": 12,
+        "status": "PASS",
+        "description": "No contract drift"
+      },
+      {
+        "id": 13,
+        "status": "PASS",
+        "description": "22 immutable BEFORE references"
+      },
+      {
+        "id": 14,
+        "status": "PASS",
+        "description": "Original B4 AFTER hash"
+      },
+      {
+        "id": 15,
+        "status": "PASS",
+        "description": "Original B4 comparison hash"
+      },
+      {
+        "id": 16,
+        "status": "PASS",
+        "description": "Original B4 gate hash"
+      },
+      {
+        "id": 17,
+        "status": "PASS",
+        "description": "Measurement-only plan"
+      },
+      {
+        "id": 18,
+        "status": "PASS",
+        "description": "105 unique planned cells"
+      },
+      {
+        "id": 19,
+        "status": "PASS",
+        "description": "Plan persisted before load"
+      },
+      {
+        "id": 20,
+        "status": "PASS",
+        "description": "Execution ID recorded"
+      },
+      {
+        "id": 21,
+        "status": "PASS",
+        "description": "51 valid cells"
+      },
+      {
+        "id": 22,
+        "status": "PASS",
+        "description": "23 safety-blocked cells"
+      },
+      {
+        "id": 23,
+        "status": "PASS",
+        "description": "31 contract-aborted cells"
+      },
+      {
+        "id": 24,
+        "status": "PASS",
+        "description": "Zero invalid-state cells"
+      },
+      {
+        "id": 25,
+        "status": "PASS",
+        "description": "All cells terminal"
+      },
+      {
+        "id": 26,
+        "status": "PASS",
+        "description": "74 raw wrappers"
+      },
+      {
+        "id": 27,
+        "status": "PASS",
+        "description": "Request manifest binding"
+      },
+      {
+        "id": 28,
+        "status": "PASS",
+        "description": "State proof binding"
+      },
+      {
+        "id": 29,
+        "status": "PASS",
+        "description": "148 canonical preload hashes"
+      },
+      {
+        "id": 30,
+        "status": "PASS",
+        "description": "Restored state evidence"
+      },
+      {
+        "id": 31,
+        "status": "PASS",
+        "description": "Provider permission evidence"
+      },
+      {
+        "id": 32,
+        "status": "PASS",
+        "description": "Logical-key expectation evidence"
+      },
+      {
+        "id": 33,
+        "status": "PASS",
+        "description": "Strict sequential escalation"
+      },
+      {
+        "id": 34,
+        "status": "PASS",
+        "description": "No execution after mandatory stop"
+      },
+      {
+        "id": 35,
+        "status": "PASS",
+        "description": "Persisted safety-block reasons"
+      },
+      {
+        "id": 36,
+        "status": "PASS",
+        "description": "Preceding stop for every abort"
+      },
+      {
+        "id": 37,
+        "status": "PASS",
+        "description": "Thirty-second cooldown"
+      },
+      {
+        "id": 38,
+        "status": "PASS",
+        "description": "Post-cooldown RSS"
+      },
+      {
+        "id": 39,
+        "status": "PASS",
+        "description": "Zero active HTTP before escalation"
+      },
+      {
+        "id": 40,
+        "status": "PASS",
+        "description": "Zero active Current registry before escalation"
+      },
+      {
+        "id": 41,
+        "status": "PASS",
+        "description": "Zero active Verification registry before escalation"
+      },
+      {
+        "id": 42,
+        "status": "PASS",
+        "description": "Zero in-flight Current compute"
+      },
+      {
+        "id": 43,
+        "status": "PASS",
+        "description": "Zero in-flight Verification compute"
+      },
+      {
+        "id": 44,
+        "status": "PASS",
+        "description": "DB-pool settlement evaluated"
+      },
+      {
+        "id": 45,
+        "status": "PASS",
+        "description": "P09@1000 settlement block"
+      },
+      {
+        "id": 46,
+        "status": "PASS",
+        "description": "P09 successors aborted"
+      },
+      {
+        "id": 47,
+        "status": "PASS",
+        "description": "P10@10 settlement block"
+      },
+      {
+        "id": 48,
+        "status": "PASS",
+        "description": "P10 successors aborted"
+      },
+      {
+        "id": 49,
+        "status": "PASS",
+        "description": "P09 timeout evidence retained"
+      },
+      {
+        "id": 50,
+        "status": "PASS",
+        "description": "P10 correctness retained"
+      },
+      {
+        "id": 51,
+        "status": "PASS",
+        "description": "Blocked cells excluded from numeric comparison"
+      },
+      {
+        "id": 52,
+        "status": "PASS",
+        "description": "Aborted cells excluded from numeric comparison"
+      },
+      {
+        "id": 53,
+        "status": "PASS",
+        "description": "Physical owner events are primary"
+      },
+      {
+        "id": 54,
+        "status": "PASS",
+        "description": "Derived owners are secondary"
+      },
+      {
+        "id": 55,
+        "status": "PASS",
+        "description": "P03 exact ownership"
+      },
+      {
+        "id": 56,
+        "status": "PASS",
+        "description": "P04 three-key ownership"
+      },
+      {
+        "id": 57,
+        "status": "PASS",
+        "description": "P04 zero duplicate compute"
+      },
+      {
+        "id": 58,
+        "status": "PASS",
+        "description": "P04 zero duplicate write-sets"
+      },
+      {
+        "id": 59,
+        "status": "PASS",
+        "description": "P04 repair at 10"
+      },
+      {
+        "id": 60,
+        "status": "PASS",
+        "description": "P04 repair at 100"
+      },
+      {
+        "id": 61,
+        "status": "PASS",
+        "description": "P05 exact ownership"
+      },
+      {
+        "id": 62,
+        "status": "PASS",
+        "description": "P08 Verification ownership"
+      },
+      {
+        "id": 63,
+        "status": "PASS",
+        "description": "P11 Current ownership"
+      },
+      {
+        "id": 64,
+        "status": "PASS",
+        "description": "Correctness for admitted structural cells"
+      },
+      {
+        "id": 65,
+        "status": "PASS",
+        "description": "P01 compute-free"
+      },
+      {
+        "id": 66,
+        "status": "PASS",
+        "description": "P02 compute-free"
+      },
+      {
+        "id": 67,
+        "status": "PASS",
+        "description": "P06 Verification READY compute-free"
+      },
+      {
+        "id": 68,
+        "status": "PASS",
+        "description": "P07 Verification READY compute-free"
+      },
+      {
+        "id": 69,
+        "status": "PASS",
+        "description": "P09 Search compute-free"
+      },
+      {
+        "id": 70,
+        "status": "PASS",
+        "description": "P10 HOT compute-free"
+      },
+      {
+        "id": 71,
+        "status": "PASS",
+        "description": "Prepared readers distinct from waiters"
+      },
+      {
+        "id": 72,
+        "status": "PASS",
+        "description": "Provider calls separately reported"
+      },
+      {
+        "id": 73,
+        "status": "PASS",
+        "description": "Absolute values retained"
+      },
+      {
+        "id": 74,
+        "status": "PASS",
+        "description": "Only lawful ratios emitted"
+      },
+      {
+        "id": 75,
+        "status": "PASS",
+        "description": "Zero denominators not comparable"
+      },
+      {
+        "id": 76,
+        "status": "PASS",
+        "description": "P03 model-specific comparison"
+      },
+      {
+        "id": 77,
+        "status": "PASS",
+        "description": "P04 model-specific comparison"
+      },
+      {
+        "id": 78,
+        "status": "PASS",
+        "description": "P05 provider claim bounded"
+      },
+      {
+        "id": 79,
+        "status": "PASS",
+        "description": "P08 structural-only comparison"
+      },
+      {
+        "id": 80,
+        "status": "PASS",
+        "description": "P11 timing not promoted"
+      },
+      {
+        "id": 81,
+        "status": "PASS",
+        "description": "UX separated from structure"
+      },
+      {
+        "id": 82,
+        "status": "PASS",
+        "description": "Resources separated from structure"
+      },
+      {
+        "id": 83,
+        "status": "PASS",
+        "description": "Capability classified by lawful level"
+      },
+      {
+        "id": 84,
+        "status": "PASS",
+        "description": "Evidence-based bottlenecks"
+      },
+      {
+        "id": 85,
+        "status": "PASS",
+        "description": "Cross-instance ownership not proven"
+      },
+      {
+        "id": 86,
+        "status": "PASS",
+        "description": "No model-selection decision"
+      },
+      {
+        "id": 87,
+        "status": "PASS",
+        "description": "No Forecast methodology change"
+      },
+      {
+        "id": 88,
+        "status": "PASS",
+        "description": "No Verification methodology change"
+      },
+      {
+        "id": 89,
+        "status": "PASS",
+        "description": "No B4R runtime behavior change"
+      },
+      {
+        "id": 90,
+        "status": "PASS",
+        "description": "No source hash drift"
+      },
+      {
+        "id": 91,
+        "status": "PASS",
+        "description": "No HTTP tuning"
+      },
+      {
+        "id": 92,
+        "status": "PASS",
+        "description": "No DB or pool tuning"
+      },
+      {
+        "id": 93,
+        "status": "PASS",
+        "description": "No Node/memory/timeout/infrastructure tuning"
+      },
+      {
+        "id": 94,
+        "status": "PASS",
+        "description": "No production or remote DB mutation"
+      },
+      {
+        "id": 95,
+        "status": "PASS",
+        "description": "Full functional regression"
+      },
+      {
+        "id": 96,
+        "status": "PASS",
+        "description": "Three typechecks"
+      },
+      {
+        "id": 97,
+        "status": "PASS",
+        "description": "All B4R JSON parses"
+      },
+      {
+        "id": 98,
+        "status": "PASS",
+        "description": "Migration Readiness complete"
+      },
+      {
+        "id": 99,
+        "status": "PASS",
+        "description": "Exactly 72 report sections"
+      },
+      {
+        "id": 100,
+        "status": "PASS",
+        "description": "Exactly 104 acceptance conditions"
+      },
+      {
+        "id": 101,
+        "status": "PASS",
+        "description": "Phase 2.2C handoff produced"
+      },
+      {
+        "id": 102,
+        "status": "PASS",
+        "description": "Phase 2.2C unauthorized"
+      },
+      {
+        "id": 103,
+        "status": "PASS",
+        "description": "Phase 2.2C unstarted"
+      },
+      {
+        "id": 104,
+        "status": "PASS",
+        "description": "B4R fully documented"
+      }
+    ]
+  },
+  "reportSectionsExpected": 72,
+  "originalPhase22b4HistoricalFailPreserved": true,
+  "phase22b4rGate": "PASS",
+  "comparativeExperimentComplete": true,
+  "phase22bSeriesComplete": true,
+  "phase22cReadyForAuthorizationDecision": true,
+  "phase22cAuthorized": false,
+  "phase22cStarted": false
+}

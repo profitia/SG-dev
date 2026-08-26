@@ -1,0 +1,26 @@
+{
+  "generatedAt": "2026-08-26T10:47:40.164Z",
+  "status": "FROZEN",
+  "version": 2,
+  "historicalBaselineCommit": "9fc9f81b5649140ff46e029f3381873a9fbb60e3",
+  "preservationAuthorityId": "FORECAST_EXECUTABLE_PRESERVATION_AUTHORITY_V2",
+  "preservationPackageIdentity": "ed1b6e4a84837e14d06049f5b7066311495184d99db8b087731c10983fb7e66d",
+  "closureId": "EXECUTABLE_DEPENDENCY_CLOSURE_V2",
+  "closureSha256": "f19d42e1c1a9a84028b17ea834f08789a199c5d3d93bcdf2d4b262c88c8b0665",
+  "architectureId": "FORECAST_PRODUCTION_ARCHITECTURE_V1",
+  "architectureVersion": 1,
+  "targetTreeFingerprint": "8dd703de2b2ea89a334a280bcde340caa1e73473f314041803b0733969bb97e9",
+  "authorityId": "FORECAST_MIGRATION_RESTORE_AUTHORITY_V2",
+  "transformation": [
+    "bundles/root-history.bundle",
+    "bundles/vector-history.bundle",
+    "preservation package payload",
+    "forecast-future-sg-dev-include-v2.json",
+    "forecast-future-sg-dev-exclude-v2.json",
+    "migration governance additions"
+  ],
+  "rootBundleSha256": "1025e1b432aa52b81e14bd7ba3cc30d421cc00cd9b846f624e1283831d365fd1",
+  "vectorBundleSha256": "2bde509dabd099e40f0ec03c2da5d04c33c467a78c2fb130d3971faa002dc242",
+  "targetReconstructionAlgorithm": "CLONE_BASELINE_DETACHED_HEAD__RESTORE_VECTOR_BOUNDARY__APPLY_PRESERVATION_OVERLAY__APPLY_GOVERNANCE_ADDITIONS__NO_INFERRED_DELETION",
+  "r2rCanReconstructExclusively": true
+}

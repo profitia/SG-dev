@@ -1,0 +1,114 @@
+{
+  "task": "FORECAST_PHASE_2_2D_CANDIDATE_INTERACTION_MAP",
+  "generatedAt": "2026-08-25T16:12:08.510Z",
+  "candidateCount": 6,
+  "expectedUnorderedPairs": 15,
+  "actualUnorderedPairs": 15,
+  "pairs": [
+    {
+      "left": "C01",
+      "right": "C02",
+      "interaction": "COMPLEMENTARY",
+      "rationale": "C01 reduces read count; C02 can later reduce the remaining owner-read cost.",
+      "dependency": "C02 follows only if one owner read remains materially costly."
+    },
+    {
+      "left": "C01",
+      "right": "C03",
+      "interaction": "COMPLEMENTARY",
+      "rationale": "C01 prevents duplicate starts; C03 can limit residual work after abort.",
+      "dependency": "C03 follows only if post-C01 abort retention remains material."
+    },
+    {
+      "left": "C01",
+      "right": "C04",
+      "interaction": "COMPLEMENTARY",
+      "rationale": "C01 removes same-key duplication; C04 could bound remaining distinct-key owners.",
+      "dependency": "Measure post-C01 distinct-key capacity before C04."
+    },
+    {
+      "left": "C01",
+      "right": "C05",
+      "interaction": "COMPLEMENTARY",
+      "rationale": "C01 reduces pool demand; only then can residual acquisition pressure be interpreted.",
+      "dependency": "C05 evidence collection follows query fan-out controls."
+    },
+    {
+      "left": "C01",
+      "right": "C06",
+      "interaction": "INDEPENDENT",
+      "rationale": "C06 improves measurement hygiene but does not alter C01 runtime ownership.",
+      "dependency": "Use isolation in validation without treating it as the optimization."
+    },
+    {
+      "left": "C02",
+      "right": "C03",
+      "interaction": "COMPLEMENTARY",
+      "rationale": "C02 lowers pre-abort read cost; C03 limits work after abort.",
+      "dependency": "Neither substitutes for the other."
+    },
+    {
+      "left": "C02",
+      "right": "C04",
+      "interaction": "COMPLEMENTARY",
+      "rationale": "C02 lowers operation cost; C04 bounds operation concurrency.",
+      "dependency": "Concurrency limits require post-query evidence."
+    },
+    {
+      "left": "C02",
+      "right": "C05",
+      "interaction": "COMPLEMENTARY",
+      "rationale": "Query cost and pool capacity interact.",
+      "dependency": "Evaluate pool behavior only after query shape is accepted."
+    },
+    {
+      "left": "C02",
+      "right": "C06",
+      "interaction": "INDEPENDENT",
+      "rationale": "Test isolation does not determine query semantics or indexes.",
+      "dependency": "Use C06 only as evidence hygiene."
+    },
+    {
+      "left": "C03",
+      "right": "C04",
+      "interaction": "COMPLEMENTARY",
+      "rationale": "Admission control acts before work; cancellation acts after a requester leaves.",
+      "dependency": "Both require explicit queue/owner semantics."
+    },
+    {
+      "left": "C03",
+      "right": "C05",
+      "interaction": "INDEPENDENT",
+      "rationale": "Cancellation feasibility and pool sizing are separate unknown boundaries.",
+      "dependency": "Neither supplies evidence for the other."
+    },
+    {
+      "left": "C03",
+      "right": "C06",
+      "interaction": "COMPLEMENTARY",
+      "rationale": "Scenario isolation can make post-abort cleanup evidence attributable.",
+      "dependency": "C06 is validation hygiene only."
+    },
+    {
+      "left": "C04",
+      "right": "C05",
+      "interaction": "UNKNOWN",
+      "rationale": "Pool capacity and application concurrency could reinforce or oppose each other.",
+      "dependency": "Both bounds require direct evidence before combination."
+    },
+    {
+      "left": "C04",
+      "right": "C06",
+      "interaction": "COMPLEMENTARY",
+      "rationale": "Isolated scenarios are needed to attribute queue/fairness behavior.",
+      "dependency": "C06 remains a harness discipline."
+    },
+    {
+      "left": "C05",
+      "right": "C06",
+      "interaction": "COMPLEMENTARY",
+      "rationale": "Isolated measurement is required for any future pool experiment.",
+      "dependency": "No pool experiment is authorized now."
+    }
+  ]
+}

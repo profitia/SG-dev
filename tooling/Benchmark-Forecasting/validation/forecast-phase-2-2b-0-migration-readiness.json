@@ -1,0 +1,23 @@
+{
+  "task": "FORECAST_PHASE_2_2B_0_SINGLE_FLIGHT_EXPERIMENT_DESIGN_FREEZE",
+  "status": "PASS",
+  "taskAttributedPathCount": 12,
+  "paths": [
+    {"path":"tooling/Benchmark-Forecasting/FORECAST_PHASE_2_2B_SINGLE_FLIGHT_EXPERIMENT_CONTRACT.md","change":"CREATED","logicalOwner":"Single-Flight Experiment Contract","tracking":"untracked","classification":"CANONICAL_SOURCE","includeInFutureSgDev":true,"reason":"Human experiment authority."},
+    {"path":"tooling/Benchmark-Forecasting/FORECAST_PHASE_2_2B_0_SINGLE_FLIGHT_EXPERIMENT_DESIGN_FREEZE.md","change":"CREATED","logicalOwner":"Phase 2.2B-0 Design Freeze","tracking":"untracked","classification":"EVIDENCE","includeInFutureSgDev":true,"reason":"Required 56-section final report."},
+    {"path":"tooling/Benchmark-Forecasting/performance/phase-2-2b-single-flight-experiment-contract.json","change":"CREATED","logicalOwner":"Single-Flight Experiment Contract","tracking":"untracked","classification":"CANONICAL_SOURCE","includeInFutureSgDev":true,"reason":"Machine-readable key, ownership, failure, telemetry, metric, and authorization contract."},
+    {"path":"tooling/Benchmark-Forecasting/performance/phase-2-2b-before-evidence.json","change":"CREATED","logicalOwner":"BEFORE Evidence Manifest","tracking":"untracked","classification":"EVIDENCE","includeInFutureSgDev":true,"reason":"Immutable P03/P04/P05/P08/P11 path and hash bindings."},
+    {"path":"tooling/Benchmark-Forecasting/performance/phase-2-2b-safety-matrix.json","change":"CREATED","logicalOwner":"Phase 2.2B Safety Contract","tracking":"untracked","classification":"CANONICAL_SOURCE","includeInFutureSgDev":true,"reason":"Inherited and phase-specific future safety gates."},
+    {"path":"tooling/Benchmark-Forecasting/performance/phase-2-2b-experiment-matrix.json","change":"CREATED","logicalOwner":"Phase 2.2B Experiment Matrix","tracking":"untracked","classification":"CANONICAL_SOURCE","includeInFutureSgDev":true,"reason":"Unexecuted future experiment cells and safety references."},
+    {"path":"tooling/Benchmark-Forecasting/performance/phase-2-2b-single-flight-contract.mjs","change":"CREATED","logicalOwner":"Experiment Contract Validation","tracking":"untracked","classification":"TEST","includeInFutureSgDev":true,"reason":"Deterministic strict logical-key builder used only by contract tests."},
+    {"path":"tooling/Benchmark-Forecasting/performance/phase-2-2b-single-flight-contract.test.mjs","change":"CREATED","logicalOwner":"Experiment Contract Validation","tracking":"untracked","classification":"TEST","includeInFutureSgDev":true,"reason":"No-compute identity, namespace, implementation, and load-boundary tests."},
+    {"path":"tooling/Benchmark-Forecasting/performance/phase-2-2b-single-flight-design-freeze.validator.mjs","change":"CREATED","logicalOwner":"Phase 2.2B-0 Final Gate","tracking":"untracked","classification":"TEST","includeInFutureSgDev":true,"reason":"Recomputes evidence, matrix, report, migration, and 64-condition checks."},
+    {"path":"tooling/Benchmark-Forecasting/validation/forecast-phase-2-2b-0-single-flight-design-freeze.json","change":"CREATED","logicalOwner":"Phase 2.2B-0 Final Gate","tracking":"untracked","classification":"EVIDENCE","includeInFutureSgDev":true,"reason":"Required 64-condition machine evidence and gate."},
+    {"path":"tooling/Benchmark-Forecasting/validation/forecast-phase-2-2b-0-migration-readiness.json","change":"CREATED","logicalOwner":"Migration Readiness","tracking":"untracked","classification":"EVIDENCE","includeInFutureSgDev":true,"reason":"Task-attributed path disposition and repository boundary evidence."},
+    {"path":"apps/pmos/.pmos/forecast-phase-2-2b-0-single-flight-experiment-design-freeze-v1-bootstrap.json","change":"CREATED","logicalOwner":"PMOS Completion Authority","tracking":"untracked","classification":"PMOS_RUNTIME","includeInFutureSgDev":false,"reason":"Task-scoped canonical PMOS bootstrap; retained as runtime continuity state, not migrated as Forecast source."}
+  ],
+  "newNestedGitRepositories": 0,
+  "newExternalSourceRepositories": 0,
+  "runtimeSourcePathsChanged": 0,
+  "includeInFutureSgDevCount": 11
+}

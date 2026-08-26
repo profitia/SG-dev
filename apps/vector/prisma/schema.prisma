@@ -1,0 +1,536 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  description String?
+  status      ProjectStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id])
+
+  etaps Etap[]
+  tasks Task[]
+
+  sourceDependencies   ProjectDependency[]      @relation("SourceDeps")
+  targetDependencies   ProjectDependency[]      @relation("TargetDeps")
+  executionDomains     ProjectExecutionDomain[]
+  sharedBlockers       SharedBlockerProject[]
+}
+
+model Etap {
+  id          String  @id @default(cuid())
+  name        String
+  order       Int     @default(0)
+  description String?
+  phaseId     String?
+  projectId   String
+  project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  phase       ExecutionPhase? @relation(fields: [phaseId], references: [id])
+
+  subetaps            Subetap[]
+  tasks               Task[]
+  implementationTasks ImplementationTask[] @relation("EtapImplTasks")
+}
+
+model Subetap {
+  id          String  @id @default(cuid())
+  name        String
+  order       Int     @default(0)
+  description String?
+  streamId    String?
+  etapId      String
+  etap        Etap            @relation(fields: [etapId], references: [id], onDelete: Cascade)
+  stream      ExecutionStream? @relation(fields: [streamId], references: [id])
+
+  tasks Task[]
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  type        TaskType   @default(TASK)
+  status      TaskStatus @default(PLANNED)
+  priority    Priority   @default(MEDIUM)
+  projectId   String
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  etapId      String?
+  etap        Etap?      @relation(fields: [etapId], references: [id])
+  subetapId   String?
+  subetap     Subetap?   @relation(fields: [subetapId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  blockingDependencies Dependency[] @relation("BlockingTask")
+  blockedDependencies  Dependency[] @relation("BlockedTask")
+}
+
+model Dependency {
+  id             String @id @default(cuid())
+  blockingTaskId String
+  blockedTaskId  String
+  blockingTask   Task   @relation("BlockingTask", fields: [blockingTaskId], references: [id], onDelete: Cascade)
+  blockedTask    Task   @relation("BlockedTask", fields: [blockedTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([blockingTaskId, blockedTaskId])
+}
+
+model InboxItem {
+  id               String    @id @default(cuid())
+  rawInput         String
+  interpretedTitle String
+  type             TaskType  @default(TASK)
+  processed        Boolean   @default(false)
+  projectId        String?
+  createdAt        DateTime  @default(now())
+  processedAt      DateTime?
+  taskId           String?
+}
+
+model AiInterpretation {
+  id         String   @id @default(cuid())
+  rawInput   String
+  result     Json
+  accepted   Boolean  @default(false)
+  taskId     String?
+  createdAt  DateTime @default(now())
+}
+
+model CognitionSnapshot {
+  id        String   @id @default(cuid())
+  output    Json
+  createdAt DateTime @default(now())
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// ETAP 07 — Starter Kit / Workspace System
+// ──────────────────────────────────────────────────────────────────────────────
+
+model Workspace {
+  id          String             @id @default(cuid())
+  name        String
+  slug        String             @unique
+  archetype   WorkspaceArchetype
+  description String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  projects    Project[]
+  conventions WorkspaceConvention[]
+  protocol    WorkspaceProtocol?
+}
+
+model WorkspaceConvention {
+  id          String    @id @default(cuid())
+  workspaceId String
+  key         String
+  value       String
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, key])
+}
+
+model WorkspaceTemplate {
+  id            String             @id @default(cuid())
+  name          String
+  archetype     WorkspaceArchetype
+  description   String?
+  configuration Json
+  isBuiltIn     Boolean            @default(false)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// ETAP 06 — Multi-Project Topology
+// ──────────────────────────────────────────────────────────────────────────────
+
+model ProjectDependency {
+  id              String         @id @default(cuid())
+  sourceProjectId String
+  targetProjectId String
+  dependencyType  DependencyType @default(runtime)
+  criticality     Criticality    @default(MEDIUM)
+  description     String?
+  createdAt       DateTime       @default(now())
+
+  sourceProject Project @relation("SourceDeps", fields: [sourceProjectId], references: [id], onDelete: Cascade)
+  targetProject Project @relation("TargetDeps", fields: [targetProjectId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceProjectId, targetProjectId, dependencyType])
+}
+
+model ExecutionDomain {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  projectDomains ProjectExecutionDomain[]
+  coreSystems    CoreSystem[]
+}
+
+model ProjectExecutionDomain {
+  id                String @id @default(cuid())
+  projectId         String
+  executionDomainId String
+
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  executionDomain ExecutionDomain @relation(fields: [executionDomainId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, executionDomainId])
+}
+
+model SharedBlocker {
+  id          String      @id @default(cuid())
+  title       String
+  severity    Criticality @default(MEDIUM)
+  description String?
+  resolved    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  affectedProjects SharedBlockerProject[]
+}
+
+model SharedBlockerProject {
+  id              String @id @default(cuid())
+  sharedBlockerId String
+  projectId       String
+
+  sharedBlocker SharedBlocker @relation(fields: [sharedBlockerId], references: [id], onDelete: Cascade)
+  project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([sharedBlockerId, projectId])
+}
+
+enum ProjectStatus {
+  ACTIVE
+  PAUSED
+  DONE
+  ARCHIVED
+}
+
+enum TaskType {
+  TASK
+  BLOCKER
+  IDEA
+  DECISION
+  BUG
+  NOTE
+  REFACTOR
+}
+
+enum TaskStatus {
+  PLANNED
+  ACTIVE
+  BLOCKED
+  REVIEW
+  DONE
+  ARCHIVED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum DependencyType {
+  runtime
+  orchestration
+  ui
+  infra
+  cognition
+  ai
+  localization
+  deployment
+}
+
+enum Criticality {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum WorkspaceArchetype {
+  SaaS
+  Startup
+  Agency
+  InternalProduct
+  AIPlatform
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// ETAP 07.5 — Execution Protocol System
+// ──────────────────────────────────────────────────────────────────────────────
+
+model ExecutionEvent {
+  id          String            @id @default(cuid())
+  category    EventCategory
+  type        String
+  workspaceId String?
+  projectId   String?
+  payload     Json              @default("{}")
+  source      String            @default("vector")
+  createdAt   DateTime          @default(now())
+}
+
+model RuntimeExport {
+  id          String            @id @default(cuid())
+  workspaceId String?
+  source      String
+  version     String            @default("1.0.0")
+  payload     Json
+  status      RuntimeExportStatus @default(PENDING)
+  ingestedAt  DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model WorkspaceProtocol {
+  id              String   @id @default(cuid())
+  workspaceId     String   @unique
+  protocolVersion String   @default("1.0.0")
+  runtimeVersion  String   @default("1.0.0")
+  identity        Json     @default("{}")
+  conventions     Json     @default("{}")
+  updatedAt       DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model PromptTemplate {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  category    String
+  description String?
+  template    String
+  fields      Json     @default("[]")
+  isBuiltIn   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum EventCategory {
+  PLANNING
+  EXECUTION
+  COGNITION
+  AI
+  TOPOLOGY
+  GOVERNANCE
+}
+
+enum RuntimeExportStatus {
+  PENDING
+  INGESTED
+  CONFLICT
+  STALE
+  REJECTED
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// ETAP 08 — SG2 Execution Topology Expansion
+// Execution phases, orchestration streams, core systems, dependency graph,
+// critical path — VECTOR-only planning topology.
+// ──────────────────────────────────────────────────────────────────────────────
+
+model ExecutionPhase {
+  id          String      @id @default(cuid())
+  order       Int         @unique
+  name        String      @unique
+  description String?
+  status      PhaseStatus @default(PLANNED)
+  createdAt   DateTime    @default(now())
+
+  etaps       Etap[]
+  coreSystems CoreSystem[]
+}
+
+model ExecutionStream {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  label       String
+  description String?
+  color       String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  subetaps            Subetap[]
+  coreSystems         CoreSystem[]
+  implementationTasks ImplementationTask[]
+}
+
+model CoreSystem {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String?
+  domainId    String?
+  streamId    String?
+  phaseId     String?
+  status      SystemStatus @default(PLANNED)
+  criticality Criticality  @default(MEDIUM)
+  isBlocking  Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+
+  domain             ExecutionDomain?     @relation(fields: [domainId], references: [id])
+  stream             ExecutionStream?     @relation(fields: [streamId], references: [id])
+  phase              ExecutionPhase?      @relation(fields: [phaseId], references: [id])
+  sourceDependencies SystemDependency[]   @relation("SourceSystem")
+  targetDependencies SystemDependency[]   @relation("TargetSystem")
+  criticalPathNodes  CriticalPathNode[]
+  implementationTasks ImplementationTask[]
+}
+
+model SystemDependency {
+  id             String         @id @default(cuid())
+  sourceSystemId String
+  targetSystemId String
+  dependencyType DependencyType @default(runtime)
+  criticality    Criticality    @default(MEDIUM)
+  rationale      String?
+  createdAt      DateTime       @default(now())
+
+  sourceSystem CoreSystem @relation("SourceSystem", fields: [sourceSystemId], references: [id], onDelete: Cascade)
+  targetSystem CoreSystem @relation("TargetSystem", fields: [targetSystemId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceSystemId, targetSystemId, dependencyType])
+}
+
+model CriticalPathNode {
+  id        String   @id @default(cuid())
+  order     Int      @unique
+  label     String
+  rationale String?
+  isBlocker Boolean  @default(false)
+  systemId  String?
+  createdAt DateTime @default(now())
+
+  system CoreSystem? @relation(fields: [systemId], references: [id], onDelete: SetNull)
+}
+
+enum PhaseStatus {
+  PLANNED
+  ACTIVE
+  COMPLETE
+}
+
+enum SystemStatus {
+  PLANNED
+  IN_PROGRESS
+  BLOCKED
+  COMPLETE
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// ETAP 09 — SG2 Task Decomposition Engine
+// Implementation waves, decomposed tasks, task-level dependency graph,
+// readiness model, execution queue — VECTOR-only planning decomposition.
+// ──────────────────────────────────────────────────────────────────────────────
+
+model ImplementationWave {
+  id          String     @id @default(cuid())
+  order       Int        @unique
+  name        String     @unique
+  description String?
+  status      WaveStatus @default(PLANNED)
+  createdAt   DateTime   @default(now())
+
+  tasks ImplementationTask[]
+}
+
+model ImplementationTask {
+  id                 String              @id @default(cuid())
+  localId            String              @unique
+  title              String
+  description        String?
+  buildPrompt        String?
+  implementationType ImplementationType
+  readiness          ReadinessState      @default(NOT_READY)
+  complexity         ExecutionComplexity @default(MEDIUM)
+  effort             Int                 @default(3)
+  priority           Priority            @default(MEDIUM)
+  status             TaskStatus          @default(PLANNED)
+
+  systemId String?
+  streamId String?
+  etapId   String?
+  waveId   String?
+
+  system CoreSystem?         @relation(fields: [systemId], references: [id])
+  stream ExecutionStream?    @relation(fields: [streamId], references: [id])
+  etap   Etap?               @relation("EtapImplTasks", fields: [etapId], references: [id])
+  wave   ImplementationWave? @relation(fields: [waveId], references: [id])
+
+  blockingDependencies ImplTaskDependency[] @relation("BlockingImplTask")
+  blockedDependencies  ImplTaskDependency[] @relation("BlockedImplTask")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ImplTaskDependency {
+  id             String @id @default(cuid())
+  blockingTaskId String
+  blockedTaskId  String
+
+  blockingTask ImplementationTask @relation("BlockingImplTask", fields: [blockingTaskId], references: [id], onDelete: Cascade)
+  blockedTask  ImplementationTask @relation("BlockedImplTask", fields: [blockedTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([blockingTaskId, blockedTaskId])
+}
+
+enum WaveStatus {
+  PLANNED
+  ACTIVE
+  BLOCKED
+  COMPLETE
+}
+
+enum ReadinessState {
+  NOT_READY
+  PLANNING
+  READY
+  BLOCKED
+  IN_PROGRESS
+  VALIDATION
+  COMPLETE
+}
+
+enum ImplementationType {
+  ARCHITECTURE
+  RUNTIME
+  BACKEND
+  FRONTEND
+  DATABASE
+  AUTH
+  AI
+  UX
+  INGESTION
+  OBSERVABILITY
+  EXPORT
+  GOVERNANCE
+  DEPLOYMENT
+}
+
+enum ExecutionComplexity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}

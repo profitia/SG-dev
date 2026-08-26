@@ -1,0 +1,422 @@
+{
+  "contract": {
+    "name": "FORECAST_PHASE_2_2B_SINGLE_FLIGHT_EXPERIMENT",
+    "version": 1,
+    "stressTestContractVersion": 1,
+    "measurementControlRevision": 2,
+    "contractDrift": false
+  },
+  "preconditions": {
+    "phase21Gate": "PASS",
+    "phase21BaselineComplete": true,
+    "phase22aGate": "PASS",
+    "correctnessRepairComplete": true
+  },
+  "scope": {
+    "current": true,
+    "verification": true,
+    "persistence": true,
+    "providerObservation": true,
+    "capacityTuning": false,
+    "modelMethodology": false,
+    "runtimeBehaviorChange": false
+  },
+  "logicalKeys": {
+    "current": {
+      "name": "CURRENT_LOGICAL_ARTIFACT_KEY_V1",
+      "namespace": "CURRENT",
+      "serialization": "length-prefixed UTF-8 field-name/value pairs in listed order; null is serialized as the literal <NULL>",
+      "fields": [
+        "namespace",
+        "seriesId",
+        "targetBasis",
+        "targetSemantics",
+        "methodId",
+        "methodVersion",
+        "modelId",
+        "inputSource",
+        "historyFingerprint",
+        "sourceFrequency",
+        "targetCadence",
+        "frequencyIdentity",
+        "forecastOrigin",
+        "horizonConfigurationId"
+      ],
+      "derivation": {
+        "forecastOrigin": "canonical latest observation/origin selected from the exact history used for compute",
+        "horizonConfigurationId": "canonical identifier or checksum of the exact Current target/horizon set resolved before ownership acquisition",
+        "frequencyIdentity": "FORECAST_CADENCE_V1|source=<sourceFrequency>|target=<targetCadence>; lawful legacy identity remains explicit"
+      },
+      "sharingRule": "Share in-flight work only when every listed field is exactly equal.",
+      "sourceBoundary": "apps/sg-runtime/lib/forecast/service.ts ForecastCacheLookupKey plus explicit origin and horizon configuration isolation required by this experiment"
+    },
+    "verification": {
+      "name": "VERIFICATION_LOGICAL_ARTIFACT_KEY_V1",
+      "namespace": "VERIFICATION",
+      "serialization": "length-prefixed UTF-8 field-name/value pairs in listed order; null is serialized as the literal <NULL>",
+      "fields": [
+        "namespace",
+        "seriesId",
+        "targetBasis",
+        "targetSemantics",
+        "methodId",
+        "methodVersion",
+        "modelId",
+        "inputSource",
+        "historyFingerprint",
+        "sourceFrequency",
+        "targetCadence",
+        "frequencyIdentity",
+        "verificationHorizonSetId",
+        "verificationConfigurationId",
+        "originPolicyId"
+      ],
+      "derivation": {
+        "verificationHorizonSetId": "canonical identifier or checksum of the exact Verification horizon set",
+        "verificationConfigurationId": "canonical identifier or checksum of the backtest configuration resolved before ownership acquisition",
+        "originPolicyId": "canonical identifier for the expanding-origin/origin-selection policy"
+      },
+      "sharingRule": "Share in-flight work only when every listed field is exactly equal; never share with CURRENT.",
+      "sourceBoundary": "apps/sg-runtime/lib/forecast/service.ts ForecastCacheLookupKey and persisted Verification horizons/origins"
+    },
+    "providerHistory": {
+      "name": "PROVIDER_HISTORY_REQUEST_KEY_V1",
+      "namespace": "PROVIDER_HISTORY",
+      "status": "BOUNDED",
+      "serialization": "length-prefixed UTF-8 field-name/value pairs in listed order",
+      "fields": [
+        "namespace",
+        "providerCode",
+        "providerSeriesId",
+        "requestedRange",
+        "coverageState",
+        "freshnessReference",
+        "freshnessPolicyId"
+      ],
+      "derivation": {
+        "providerCode": "MACROBOND",
+        "coverageState": "exact pre-fetch cache decision: miss, partial, stale, or db-unavailable",
+        "freshnessReference": "lastProviderFetchAt or latestStoredObservationAt used by the cache decision",
+        "freshnessPolicyId": "identifier for frequencyFreshnessWindowMs and range coverage policy"
+      },
+      "sharingRule": "Provider acquisition may share only for the same exact provider request and the same cache decision inputs; it remains independent from Forecast Current ownership.",
+      "sourceBoundary": "apps/sg-runtime/lib/market-data/service.ts resolveHistoricalSeries"
+    },
+    "persistence": {
+      "name": "PERSISTENCE_OWNERSHIP_KEY_V1",
+      "namespace": "PERSISTENCE",
+      "serialization": "length-prefixed UTF-8 field-name/value pairs in listed order",
+      "fields": [
+        "namespace",
+        "artifactFamily",
+        "artifactLogicalKey",
+        "persistenceOperation",
+        "persistenceSchemaVersion"
+      ],
+      "artifactLogicalKeyRule": "Embed the complete CURRENT_LOGICAL_ARTIFACT_KEY_V1 or VERIFICATION_LOGICAL_ARTIFACT_KEY_V1; no coarse series-only or series-plus-model identity is lawful.",
+      "sharingRule": "Persistence ownership is evaluated independently in Phase 2.2B-3 after measuring whether one compute owner already yields one lawful write-set.",
+      "sourceBoundary": "Forecast run upsert plus replacement point/metric/record write-set"
+    }
+  },
+  "roles": {
+    "OWNER": "The sole execution that lawfully performs missing-artifact work for one exact logical key during its in-flight interval.",
+    "WAITER": "A concurrent requester that observes the same exact key in flight and awaits that owner's canonical result without starting compute.",
+    "PREPARED_READER": "A requester served by the exact READY persisted artifact after exact identity and freshness checks, with no Forecast compute."
+  },
+  "states": [
+    "MISS",
+    "IN_FLIGHT",
+    "READY"
+  ],
+  "structuralInvariants": {
+    "sameKey": {
+      "logicalArtifactCount": 1,
+      "expectedComputeOwnerCount": 1,
+      "expectedDuplicateComputeCount": 0,
+      "expectedCanonicalArtifactCount": 1,
+      "expectedWaiterFormula": "max(0, overlappingRequestCount - 1)",
+      "overlapRule": "Use observed overlap; do not infer waiter count from submitted request count."
+    },
+    "smallPool": {
+      "expectedComputeOwnerFormula": "count(distinct exact missing logicalArtifactKey observed concurrently)",
+      "expectedDuplicateComputeCount": 0,
+      "p04ThreeKeyExample": 3
+    },
+    "isolation": {
+      "model": true,
+      "semantic": true,
+      "cadence": true,
+      "historyFingerprint": true,
+      "forecastOrigin": true,
+      "currentVersusVerification": true
+    }
+  },
+  "failureSemantics": {
+    "ownerSuccess": {
+      "required": "Owner completes lawful compute and existing persistence behavior; all attached waiters receive the same canonical result identity and values.",
+      "release": "Release only after the owner result and required persistence attempt have settled; emit release timing."
+    },
+    "ownerFailure": {
+      "required": "All currently attached waiters observe the same owner failure classification; the entry is removed in a finally-equivalent path; a later request may retry.",
+      "poisoning": "PROHIBITED",
+      "partialPersistence": "May be reused only after the normal exact prepared-artifact read proves a complete lawful artifact; otherwise treat as MISS."
+    },
+    "waiterCancellation": {
+      "required": "Cancellation is local to that waiter and does not cancel the owner while any lawful consumer or required persistence completion remains.",
+      "existingRuntimePolicy": "NOT_DEFINED"
+    },
+    "ownerDisconnect": {
+      "currentObservedBoundary": "Dashboard client abort is not propagated as a Forecast compute cancellation signal in the inspected runtime path.",
+      "requiredExperimentSemantics": "An HTTP owner-request disconnect does not by itself cancel shared compute; observe owner completion/failure and remaining waiter outcomes.",
+      "backgroundJobsIntroduced": false
+    },
+    "timeout": {
+      "ownerComputeTimeout": "NOT_DEFINED",
+      "waiterWaitTimeout": "NOT_DEFINED",
+      "httpRequestTimeout": {
+        "valueMs": 20000,
+        "scope": "Dashboard internal production Forecast fetch",
+        "source": "apps/dashboard-preview/lib/benchmark-forecast/runtime-query.ts INTERNAL_FORECAST_TIMEOUT_MS"
+      },
+      "policy": "Phase 2.2B-1 observes timeout risk before proposing any new value."
+    },
+    "lateArrival": {
+      "duringCompute": "Join as WAITER only when the exact key remains IN_FLIGHT.",
+      "afterPersistenceBeforeRelease": "Join the extant exact-key owner; telemetry must reveal this interval.",
+      "afterReady": "Use PREPARED_READER path after exact prepared validation.",
+      "afterReleaseWithoutReady": "Treat as MISS and permit a new owner."
+    },
+    "releaseRace": {
+      "required": "Correlate compute end, persistence end, entry release, prepared availability, and any subsequent owner acquisition for the same key.",
+      "acceptance": "No second owner starts while a valid exact-key entry is still IN_FLIGHT."
+    },
+    "fingerprintChange": {
+      "required": "Different historyFingerprint or lawful forecast origin produces a different key and prohibits ownership sharing."
+    }
+  },
+  "telemetry": {
+    "events": [
+      "single_flight_lookup",
+      "single_flight_owner_acquired",
+      "single_flight_waiter_joined",
+      "single_flight_owner_completed",
+      "single_flight_owner_failed",
+      "single_flight_waiter_completed",
+      "single_flight_waiter_failed",
+      "single_flight_entry_released"
+    ],
+    "correlationFields": [
+      "stressRunId",
+      "scenarioId",
+      "requestId",
+      "virtualUserId",
+      "logicalArtifactKey",
+      "operationFamily",
+      "ownerRequestId",
+      "role",
+      "modelId",
+      "seriesId",
+      "semantic",
+      "sourceFrequency",
+      "targetCadence",
+      "startedAt",
+      "endedAt",
+      "durationMs"
+    ],
+    "sensitiveDataAllowed": false
+  },
+  "metrics": {
+    "ownership": [
+      "LOGICAL_ARTIFACT_COUNT",
+      "EXPECTED_COMPUTE_OWNER_COUNT",
+      "ACTUAL_COMPUTE_OWNER_COUNT",
+      "ACTUAL_COMPUTE_COUNT",
+      "WAITER_COUNT",
+      "PREPARED_READER_COUNT",
+      "DUPLICATE_COMPUTE_COUNT",
+      "DUPLICATE_COMPUTE_RATIO"
+    ],
+    "persistence": [
+      "CANONICAL_ARTIFACT_WRITE_COUNT",
+      "POINT_WRITE_COUNT",
+      "DUPLICATE_ARTIFACT_WRITE_COUNT",
+      "PERSISTENCE_OWNER_COUNT",
+      "PERSISTENCE_ERROR_COUNT"
+    ],
+    "latency": [
+      "OWNER_LATENCY",
+      "WAITER_LATENCY",
+      "PREPARED_READER_LATENCY",
+      "TIME_TO_JOIN_INFLIGHT",
+      "WAIT_DURATION",
+      "TOTAL_USER_VISIBLE_LATENCY",
+      "P50",
+      "P95",
+      "P99"
+    ],
+    "resource": [
+      "THROUGHPUT",
+      "CPU",
+      "PEAK_MEMORY",
+      "DB_ACTIVITY",
+      "PROVIDER_CALL_COUNT",
+      "ERROR_RATE"
+    ],
+    "correctness": [
+      "SERIES_IDENTITY",
+      "MODEL_IDENTITY",
+      "SEMANTIC_IDENTITY",
+      "CADENCE_IDENTITY",
+      "METHOD_VERSION_IDENTITY",
+      "FORECAST_ORIGIN_IDENTITY",
+      "HISTORY_FINGERPRINT_IDENTITY",
+      "TARGET_DATE_EQUALITY",
+      "FORECAST_VALUE_EQUALITY",
+      "VERIFICATION_EQUIVALENCE"
+    ],
+    "formulas": {
+      "DUPLICATE_COMPUTE_COUNT": "max(0, ACTUAL_COMPUTE_COUNT - LOGICAL_ARTIFACT_COUNT) when one lawful compute is established per exact key",
+      "DUPLICATE_COMPUTE_RATIO": "DUPLICATE_COMPUTE_COUNT / ACTUAL_COMPUTE_COUNT; 0 when ACTUAL_COMPUTE_COUNT = 0",
+      "COMPUTE_REDUCTION_RATIO": "(BEFORE_COMPUTE_COUNT - AFTER_COMPUTE_COUNT) / BEFORE_COMPUTE_COUNT; NOT_COMPARABLE when BEFORE_COMPUTE_COUNT = 0",
+      "DUPLICATE_REDUCTION_RATIO": "(BEFORE_DUPLICATE_COUNT - AFTER_DUPLICATE_COUNT) / BEFORE_DUPLICATE_COUNT; NOT_COMPARABLE when BEFORE_DUPLICATE_COUNT = 0",
+      "CPU_REDUCTION_RATIO": "(BEFORE_CPU - AFTER_CPU) / BEFORE_CPU; NOT_COMPARABLE when BEFORE_CPU = 0",
+      "DB_WRITE_REDUCTION_RATIO": "(BEFORE_DB_WRITES - AFTER_DB_WRITES) / BEFORE_DB_WRITES; NOT_COMPARABLE when BEFORE_DB_WRITES = 0",
+      "P50_CHANGE": "AFTER_P50 - BEFORE_P50; NOT_COMPARABLE when either value is absent",
+      "P95_CHANGE": "AFTER_P95 - BEFORE_P95; NOT_COMPARABLE when either value is absent",
+      "P99_CHANGE": "AFTER_P99 - BEFORE_P99; NOT_COMPARABLE when either value is absent",
+      "THROUGHPUT_CHANGE": "AFTER_THROUGHPUT - BEFORE_THROUGHPUT; NOT_COMPARABLE when either value is absent"
+    },
+    "fairnessObservations": [
+      "WAITER_STARVATION_COUNT",
+      "MAX_CONCURRENT_WAITER_COUNT",
+      "WAITER_TAIL_AMPLIFICATION",
+      "ACTIVE_ENTRY_COUNT_AFTER_SETTLEMENT"
+    ]
+  },
+  "correctnessEquivalence": {
+    "hardGate": true,
+    "comparison": "Exact deterministic equality or canonical checksum where supported; retain only existing lawful numerical tolerance.",
+    "performanceCannotOverrideFailure": true,
+    "methodologyChanged": false,
+    "modelMathematicsChanged": false,
+    "forecastSemanticsChanged": false
+  },
+  "scenarios": {
+    "P03": {
+      "family": "CURRENT_SAME_KEY",
+      "before": "10 requests, 1 logical Current key, 10 computes, 9 duplicates per model",
+      "afterStructuralInvariant": "10 canonical responses, 1 owner, 0 duplicate computes"
+    },
+    "P04": {
+      "family": "CURRENT_SMALL_POOL",
+      "before": "At 100 requests: 3 logical keys, 100 computes, 97 duplicates",
+      "afterStructuralInvariant": "One owner per exact distinct missing request key; 0 duplicate computes"
+    },
+    "P05": {
+      "family": "COLD_SAME_KEY",
+      "before": "10 requests, 1 logical Current key, 10 computes, 9 duplicates, 9 duplicate artifact writes",
+      "afterStructuralInvariant": "Current and provider-history ownership measured separately",
+      "providerSafetyGated": true
+    },
+    "P08": {
+      "family": "VERIFICATION_SAME_KEY",
+      "before": "2 requests, 1 logical Verification key, 2 full computes, 1 duplicate",
+      "afterStructuralInvariant": "2 canonical responses, 1 Verification owner, 1 observed waiter",
+      "initialMaximumConcurrency": 2
+    },
+    "P11": {
+      "family": "WARM_SHOW_FORECAST_SAME_KEY",
+      "before": "Phase 2.2A: 2 canonical responses, 2 computes",
+      "afterStructuralInvariant": "2 canonical responses, 1 Current owner, 1 observed waiter"
+    }
+  },
+  "preparedRegressions": [
+    "P01",
+    "P02",
+    "P06",
+    "P07",
+    "P09",
+    "P10"
+  ],
+  "preparedRegressionInvariants": {
+    "preparedPathsComputeFree": true,
+    "searchForecastComputeCount": 0,
+    "hotReadyNotRerouted": true,
+    "verificationReadyNotRerouted": true
+  },
+  "acceptanceModel": {
+    "independentGates": [
+      "CORRECTNESS_GATE",
+      "STRUCTURAL_OWNERSHIP_GATE",
+      "PERFORMANCE_EVIDENCE_GATE"
+    ],
+    "structuralTarget": "ACTUAL_COMPUTE_OWNER_COUNT = LOGICAL_ARTIFACT_COUNT and DUPLICATE_COMPUTE_COUNT = 0 for exact overlapping misses",
+    "performanceTarget": "MEASURED_WITHOUT_ARBITRARY_PERCENTAGE_SLA"
+  },
+  "resultClassifications": [
+    "CORRECTNESS_PASS",
+    "CORRECTNESS_FAIL",
+    "OWNERSHIP_PASS",
+    "OWNERSHIP_FAIL",
+    "DUPLICATE_WORK_REMAINS",
+    "RESOURCE_IMPROVED",
+    "RESOURCE_NEUTRAL",
+    "RESOURCE_REGRESSED",
+    "UX_IMPROVED",
+    "UX_NEUTRAL",
+    "UX_REGRESSED",
+    "CROSS_INSTANCE_NOT_PROVEN",
+    "SAFETY_BLOCKED"
+  ],
+  "phaseSequence": [
+    "2.2B-1",
+    "2.2B-2",
+    "2.2B-3",
+    "2.2B-4"
+  ],
+  "phaseScopes": {
+    "2.2B-1": "Smallest candidate in-process Current ownership mechanism; deterministic correctness, isolation, failure, cleanup, then small P03/P11 proof.",
+    "2.2B-2": "Independent Verification ownership; begin with exactly 2 concurrent callers and prove 1 owner, 1 waiter, 1 backtest.",
+    "2.2B-3": "Measure and establish canonical persistence ownership/idempotency without assuming extra protection is required.",
+    "2.2B-4": "Formal frozen BEFORE-versus-AFTER comparison for P03/P04/P05/P08/P11 plus prepared regressions."
+  },
+  "limitations": {
+    "initialHypothesis": "IN_PROCESS_EXACT_KEY_SINGLE_FLIGHT",
+    "selectedProductionArchitecture": false,
+    "crossInstanceDuplicatePrevention": "NOT_PROVEN",
+    "registryCardinality": "Only currently in-flight entries; never historical completed artifacts.",
+    "entryReleaseRequired": true
+  },
+  "loadBoundary": {
+    "newStressRequests": 0,
+    "newP03Load": 0,
+    "newP04Load": 0,
+    "newP05Load": 0,
+    "newP08Load": 0,
+    "newP11Load": 0,
+    "new10UserWaves": 0,
+    "new100UserWaves": 0,
+    "new1000UserWaves": 0
+  },
+  "implementation": {
+    "singleFlightImplemented": false,
+    "dedupeImplemented": false,
+    "persistenceDedupeImplemented": false,
+    "promiseSharingImplemented": false,
+    "locksImplemented": false,
+    "queuesImplemented": false,
+    "workersImplemented": false,
+    "cacheRedesigned": false,
+    "warmupRedesigned": false,
+    "dbTuned": false,
+    "capacityTuned": false,
+    "modelMathChanged": false,
+    "forecastSemanticsChanged": false
+  },
+  "authorization": {
+    "phase22b0": true,
+    "phase22b1ReadyForAuthorization": true,
+    "phase22b1Authorized": false,
+    "phase22b1Started": false
+  }
+}

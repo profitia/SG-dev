@@ -2,10 +2,13 @@ export type TimeSeriesViewerLocale = 'pl' | 'en'
 
 export type TimeSeriesViewerSeriesKind =
   | 'historical'
+  | 'monthly-actual'
   | 'historical-forecast'
   | 'forecast-central'
   | 'forecast-upper'
   | 'forecast-lower'
+
+export type TimeSeriesViewerTemporalResolution = 'day' | 'month'
 
 export type TimeSeriesViewerLineStyle = 'solid' | 'dashed'
 
@@ -54,6 +57,7 @@ export interface TimeSeriesViewerDetailModel {
   componentName: string
   benchmarkCode: string | null
   sourceDate: string | null
+  temporalResolution: TimeSeriesViewerTemporalResolution
   scenarioType: string
   value: number | null
   forecastLower: number | null
@@ -67,6 +71,22 @@ export interface TimeSeriesViewerDetailModel {
   qualityStatus: string | null
   sourceLabel: string | null
   lastSyncedAt: string | null
+}
+
+export interface TimeSeriesViewerDeltaOverlayPoint {
+  date: string
+  value: number
+}
+
+export interface TimeSeriesViewerDeltaOverlay {
+  key: string
+  sign: 'above' | 'below'
+  points: TimeSeriesViewerDeltaOverlayPoint[]
+}
+
+export interface TimeSeriesViewerForecastOrigin {
+  date: string
+  label: string
 }
 
 export interface TimeSeriesViewerPoint {
@@ -86,6 +106,7 @@ export interface TimeSeriesViewerSeries {
   label: string
   lineStyle: TimeSeriesViewerLineStyle
   points: TimeSeriesViewerPoint[]
+  segments?: TimeSeriesViewerPoint[][]
 }
 
 export interface TimeSeriesViewerForecastAnchor {
@@ -109,6 +130,9 @@ export interface TimeSeriesViewerPayload {
   yAxis: TimeSeriesViewerYAxis
   series: TimeSeriesViewerSeries[]
   forecastAnchor: TimeSeriesViewerForecastAnchor | null
+  forecastOrigin: TimeSeriesViewerForecastOrigin | null
+  verificationTargetBasis?: 'MONTHLY_AVERAGE' | 'POINT_IN_TIME' | 'END_OF_PERIOD' | null
+  deltaOverlays: TimeSeriesViewerDeltaOverlay[]
   tooltipModel: TimeSeriesViewerTooltipModel | null
   detailModel: TimeSeriesViewerDetailModel | null
   events: []

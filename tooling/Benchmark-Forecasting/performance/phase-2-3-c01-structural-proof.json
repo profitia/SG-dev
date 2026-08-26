@@ -1,0 +1,50 @@
+{
+  "task": "FORECAST_PHASE_2_3_C01_STRUCTURAL_PROOF",
+  "generatedAt": "2026-08-25T16:36:38.036Z",
+  "stages": {
+    "A_UNIT_CORRECTNESS": "PASS",
+    "B_SEMANTIC_EQUIVALENCE": "PASS",
+    "C_FOCUSED_CONCURRENCY_STRUCTURAL_PROOF": "PASS"
+  },
+  "focusedTests": {
+    "expected": 6,
+    "passed": 6,
+    "failed": 0
+  },
+  "sameKey": {
+    "requests": 10,
+    "exactKeys": 1,
+    "owners": 1,
+    "joiners": 9,
+    "underlyingReads": 1,
+    "duplicateReads": 0,
+    "activeEntriesAfterSettlement": 0
+  },
+  "multiKey": {
+    "exactKeys": 6,
+    "owners": 6,
+    "underlyingReads": 6,
+    "crossKeyContamination": false
+  },
+  "failure": {
+    "ownerExecutions": 1,
+    "settledJoiners": 9,
+    "activeEntriesAfterSettlement": 0,
+    "retryOwners": 1
+  },
+  "cacheBoundary": {
+    "hitAtMs": 30000,
+    "missAtMs": 30001,
+    "ttlChanged": false
+  },
+  "semantics": {
+    "plSearch": "PASS",
+    "enSearch": "PASS",
+    "fallback": "PASS",
+    "benchmarkIdentity": "PASS",
+    "historicalSelection": "PASS",
+    "ordering": "PASS",
+    "emptyResult": "PASS"
+  },
+  "loadAuthorized": true
+}

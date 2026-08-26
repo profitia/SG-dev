@@ -1,0 +1,179 @@
+{
+  "manifest": {
+    "name": "FORECAST_PHASE_2_2B_BEFORE_EVIDENCE",
+    "version": 1,
+    "immutable": true,
+    "recalculated": false,
+    "performanceEvidenceAdded": false
+  },
+  "authorities": {
+    "phase21Aggregate": {
+      "path": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/aggregated/final-baseline-evidence.json",
+      "sha256": "9d85b91e688011328c0efbeaa6180bf03a1990a38265496534a1520f20e5846f"
+    },
+    "phase21Gate": {
+      "path": "tooling/Benchmark-Forecasting/validation/forecast-phase-2-1-closeout-normalization.json",
+      "sha256": "9dba412378654b862cbc8420796f739e6f9ebbaede627745bf9f1dd30f3a1cdb"
+    },
+    "phase22aGate": {
+      "path": "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2a-correctness-bound-repair.json",
+      "sha256": "f8c246327c964639a09b7900b09993db3ab231aa2d296f23a2817697d2627a02"
+    },
+    "phase22aP11Proof": {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2a/p11-correctness-proof.json",
+      "sha256": "ab37285a72e41d413f3f42df8bec65423c38cd8ac9949d3f883e6416546bbc1a"
+    }
+  },
+  "scenarios": {
+    "P03": {
+      "scenario": "P03",
+      "state": "WARM_MISS",
+      "keyDistribution": "SAME_KEY",
+      "concurrency": 10,
+      "logicalKeyCount": 1,
+      "requestCount": 10,
+      "computeCount": 10,
+      "duplicateComputeCount": 9,
+      "duplicateArtifactWriteCount": 9,
+      "correctnessStatus": "PASS",
+      "baselineClassification": "STRUCTURAL_DUPLICATION",
+      "modelScope": ["naive", "damped_holt", "ets", "arima"],
+      "logicalKeyPattern": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|<modelId>|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "modelEvidence": [
+        {
+          "modelId": "naive",
+          "stressRunId": "phase-2-1b-p03-10-naive-6f482a33-81a5-4757-8bb1-adad9f439d27",
+          "path": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T122252-191Z-c490c224-fcfd-4013-b163-70a7faaa8ce2/raw/P03-naive-10-r1-phase-2-1b-p03-10-naive-6f482a33-81a5-4757-8bb1-adad9f439d27.json",
+          "sha256": "8580a60df58ab546c2b286d0ee58beabd5949ae33fc109674c1a4ba71fe322a4"
+        },
+        {
+          "modelId": "damped_holt",
+          "stressRunId": "phase-2-1b-p03-10-damped_holt-f12468c6-5566-4133-8e22-1174f32070ba",
+          "path": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T122252-191Z-c490c224-fcfd-4013-b163-70a7faaa8ce2/raw/P03-damped_holt-10-r1-phase-2-1b-p03-10-damped_holt-f12468c6-5566-4133-8e22-1174f32070ba.json",
+          "sha256": "2be3ecfb8999ebbf6f5dc46c01afb46e688aed6803d3e5e898eaf9d02a297a1c"
+        },
+        {
+          "modelId": "ets",
+          "stressRunId": "phase-2-1b-p03-10-ets-1e29769a-bd43-4449-a0a0-f5284a4044fc",
+          "path": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T122252-191Z-c490c224-fcfd-4013-b163-70a7faaa8ce2/raw/P03-ets-10-r1-phase-2-1b-p03-10-ets-1e29769a-bd43-4449-a0a0-f5284a4044fc.json",
+          "sha256": "1d5bff70636e37130c5e7c7fa121cede5423b9838ef8d73a54e0b32036adcdef"
+        },
+        {
+          "modelId": "arima",
+          "stressRunId": "phase-2-1b-p03-10-arima-3756f452-e740-451e-b7ed-d357656c4867",
+          "path": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T122252-191Z-c490c224-fcfd-4013-b163-70a7faaa8ce2/raw/P03-arima-10-r1-phase-2-1b-p03-10-arima-3756f452-e740-451e-b7ed-d357656c4867.json",
+          "sha256": "e2ee624daf41fe24820a5b3ae1b039e638902913a6899ed86f9296bee9dca600"
+        }
+      ]
+    },
+    "P04": {
+      "scenario": "P04",
+      "state": "WARM_MISS",
+      "keyDistribution": "SMALL_POOL",
+      "logicalKeyCount": 3,
+      "modelScope": ["naive", "damped_holt", "ets", "arima"],
+      "logicalKeys": [
+        "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|<modelId>|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7",
+        "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|<modelId>|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7",
+        "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|<modelId>|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7"
+      ],
+      "cells": [
+        {
+          "concurrency": 10,
+          "requestCount": 10,
+          "computeCount": 10,
+          "duplicateComputeCount": 7,
+          "duplicateArtifactWriteCountByModel": {"naive": 7, "damped_holt": 7, "ets": 7, "arima": 7}
+        },
+        {
+          "concurrency": 100,
+          "requestCount": 100,
+          "computeCount": 100,
+          "duplicateComputeCount": 97,
+          "duplicateArtifactWriteCountByModel": {"naive": 96, "damped_holt": 97, "ets": 94, "arima": 97}
+        }
+      ],
+      "correctnessStatus": "PASS",
+      "baselineClassification": "STRUCTURAL_DUPLICATION",
+      "evidence": [
+        {"modelId":"naive","concurrency":10,"stressRunId":"phase-2-1b-p04-10-naive-0f670b0b-da7b-4bdb-bcda-184078771b43","path":"tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/raw/P04-naive-10-r1-phase-2-1b-p04-10-naive-0f670b0b-da7b-4bdb-bcda-184078771b43.json","sha256":"ed33741ce42aa8fc07b47be85ed3615ac0deace2b6e7c0fcbf42cf647e84a86f"},
+        {"modelId":"damped_holt","concurrency":10,"stressRunId":"phase-2-1b-p04-10-damped_holt-bcf918c3-8a65-4f8b-a4c7-9c1b42f37464","path":"tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/raw/P04-damped_holt-10-r1-phase-2-1b-p04-10-damped_holt-bcf918c3-8a65-4f8b-a4c7-9c1b42f37464.json","sha256":"a9651b26f2458cbcf6662abd2bb9e8bf7cf195ab0b2e149e795d9082bc65c363"},
+        {"modelId":"ets","concurrency":10,"stressRunId":"phase-2-1b-p04-10-ets-996b210f-e17c-4cc8-bd6d-9d48db10cb38","path":"tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/raw/P04-ets-10-r1-phase-2-1b-p04-10-ets-996b210f-e17c-4cc8-bd6d-9d48db10cb38.json","sha256":"6ec2c96c19dc922113a4f364be34a0906e105894f34f3161e2d25e86bf54cadc"},
+        {"modelId":"arima","concurrency":10,"stressRunId":"phase-2-1b-p04-10-arima-ac7fc827-25a0-4e20-9ce0-1a8e6502d9bd","path":"tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/raw/P04-arima-10-r1-phase-2-1b-p04-10-arima-ac7fc827-25a0-4e20-9ce0-1a8e6502d9bd.json","sha256":"728956210989acaab84ef2d843fc7706b9f49c28b1a076f1919631ae8e837bf5"},
+        {"modelId":"naive","concurrency":100,"stressRunId":"phase-2-1b-p04-100-naive-3d86cb61-7102-4917-b590-2fe0189de635","path":"tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/raw/P04-naive-100-r1-phase-2-1b-p04-100-naive-3d86cb61-7102-4917-b590-2fe0189de635.json","sha256":"c77e663b04787cc8ee2d40a0c4a1a848acf547f9a7ae6512a1d34f593e6f4930"},
+        {"modelId":"damped_holt","concurrency":100,"stressRunId":"phase-2-1b-p04-100-damped_holt-904d763e-c605-4f95-ab7c-1100dde98295","path":"tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/raw/P04-damped_holt-100-r1-phase-2-1b-p04-100-damped_holt-904d763e-c605-4f95-ab7c-1100dde98295.json","sha256":"d52e1e4c694d90105a5b675ba733120a93a61231b98606b4c2ad24616f2e3c41"},
+        {"modelId":"ets","concurrency":100,"stressRunId":"phase-2-1b-p04-100-ets-bdeca95d-731e-430d-b0ec-d1690f05dd74","path":"tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/raw/P04-ets-100-r1-phase-2-1b-p04-100-ets-bdeca95d-731e-430d-b0ec-d1690f05dd74.json","sha256":"303e744659227a54ed428647ca576fa17d6d4a361899db46116dc05dcde61837"},
+        {"modelId":"arima","concurrency":100,"stressRunId":"phase-2-1b-p04-100-arima-a32d94ba-2e42-49b0-a708-38215631a279","path":"tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/raw/P04-arima-100-r1-phase-2-1b-p04-100-arima-a32d94ba-2e42-49b0-a708-38215631a279.json","sha256":"67e922aefa52dfd214922650bb7bc0590ae060415e9db5bb28f02cc0b3e80044"}
+      ]
+    },
+    "P05": {
+      "scenario": "P05",
+      "state": "COLD",
+      "keyDistribution": "SAME_KEY",
+      "concurrency": 10,
+      "modelId": "ets",
+      "logicalKeyCount": 1,
+      "requestCount": 10,
+      "computeCount": 10,
+      "duplicateComputeCount": 9,
+      "duplicateArtifactWriteCount": 9,
+      "correctnessStatus": "PASS",
+      "baselineClassification": "STRUCTURAL_DUPLICATION",
+      "providerOwnershipConclusion": "NOT_INFERRED_FROM_CURRENT_COUNTS",
+      "logicalKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "evidence": {
+        "stressRunId": "phase-2-1b-p05-10-ets-0bdd0966-48fd-40e1-b107-c2133b302849",
+        "path": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/raw/P05-ets-10-r1-phase-2-1b-p05-10-ets-0bdd0966-48fd-40e1-b107-c2133b302849.json",
+        "sha256": "af48123b055d344c04d523ef53f26d4eb27fb0d1f8a49a0ad0b62c4412d2a947"
+      }
+    },
+    "P08": {
+      "scenario": "P08",
+      "state": "VERIFICATION_MISS",
+      "keyDistribution": "SAME_KEY",
+      "concurrency": 2,
+      "logicalKeyCount": 1,
+      "requestCount": 2,
+      "computeCount": 2,
+      "duplicateComputeCount": 1,
+      "duplicateArtifactWriteCount": 1,
+      "correctnessStatus": "PASS",
+      "baselineClassification": "SAFETY_PROBE_STRUCTURAL_DUPLICATION",
+      "aggregateAdmission": "NOT_ADMITTED_AS_NUMERIC_BASELINE_CELL",
+      "safetyDecision": "DUPLICATE_FULL_BACKTEST",
+      "modelScope": ["naive", "damped_holt", "ets", "arima"],
+      "logicalKeyPattern": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|<modelId>|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "probeEvidence": [
+        {"modelId":"naive","stressRunId":"phase-2-1b-p08-2-naive-a18fdd7f-033a-4fc9-9542-eacd053733a5","path":"tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/diagnostics/phase-2-1b-p08-2-naive-a18fdd7f-033a-4fc9-9542-eacd053733a5-precheck.json","sha256":"9bfe343bf92b58e79d8042be3e58d82f90e8efb72a32aedfa9322c71d849417b"},
+        {"modelId":"damped_holt","stressRunId":"phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb","path":"tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/diagnostics/phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb-precheck.json","sha256":"acce47773671b0e1f57c7474c76d2c2ce32374412f6b24aeebcda8100ab5e865"},
+        {"modelId":"ets","stressRunId":"phase-2-1b-p08-2-ets-5bb8ea6c-5d2a-48f4-87c0-65df8e00eea1","path":"tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/diagnostics/phase-2-1b-p08-2-ets-5bb8ea6c-5d2a-48f4-87c0-65df8e00eea1-precheck.json","sha256":"fdc3d4a64a9294c2211fe1b199cf17f70a8c7ed5cac79bc6f050c456b9fbc0c2"},
+        {"modelId":"arima","stressRunId":"phase-2-1b-p08-2-arima-cf89328b-c449-41e2-b338-91c8b233a7b3","path":"tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/diagnostics/phase-2-1b-p08-2-arima-cf89328b-c449-41e2-b338-91c8b233a7b3-precheck.json","sha256":"03aa5d2433d974dc36ab849aa4051fba7018242c403e4cfd970d77a4b4db727e"}
+      ]
+    },
+    "P11": {
+      "scenario": "P11",
+      "state": "WARM_SHOW_FORECAST",
+      "keyDistribution": "SAME_KEY",
+      "concurrency": 2,
+      "modelId": "naive",
+      "logicalKeyCount": 1,
+      "requestCount": 2,
+      "canonicalResponseCount": 2,
+      "computeCount": 2,
+      "duplicateComputeCount": 1,
+      "writes": "NOT_REPORTED",
+      "correctnessStatus": "PASS",
+      "baselineClassification": "CORRECTNESS_CARRY_FORWARD_WITH_DUPLICATE_WORK",
+      "performanceEvidence": "NOT_MEASURED",
+      "evidence": {
+        "path": "tooling/Benchmark-Forecasting/validation/phase-2-2a/p11-correctness-proof.json",
+        "sha256": "ab37285a72e41d413f3f42df8bec65423c38cd8ac9949d3f883e6416546bbc1a"
+      }
+    }
+  },
+  "guards": {
+    "phase21EvidenceModified": false,
+    "phase22aTimingsPromotedToPerformanceEvidence": false,
+    "newStressRequestsExecuted": 0
+  }
+}

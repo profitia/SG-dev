@@ -1,0 +1,111 @@
+{
+  "metadata": {
+    "conversationId": "5c984dee-6bb0-4cce-94a8-85753a6f8c11",
+    "project": "SpendGuru 2.0",
+    "taskId": "forecast-phase-2-2d-controlled-optimization-selection-gate-v1",
+    "scope": "audit",
+    "etap": "Benchmark Forecasting MVP",
+    "subetap": "Phase 2.2D - Controlled Optimization Selection Gate",
+    "conversationType": "continuity",
+    "importanceLevel": "high",
+    "timestamp": "2026-08-25T16:13:23.000Z",
+    "compatibility": {
+      "legacyPlanningContext": {
+        "etap": "Benchmark Forecasting MVP",
+        "subetap": "Phase 2.2D - Controlled Optimization Selection Gate"
+      }
+    }
+  },
+  "task": {
+    "originalTaskRequest": "Execute Phase 2.2D Controlled Optimization Selection Gate only. Evaluate exactly the six frozen candidates, select at most one smallest evidence-backed Phase 2.3 primary mechanism, produce exactly 64 numbered report sections and exactly 92 acceptance conditions, preserve all accepted authority, run only non-stress validation, complete migration readiness and canonical PMOS/MEMOROS continuity, and do not implement or start Phase 2.3."
+  },
+  "analysis": {
+    "executionSummary": "Phase 2.2D is complete and PASS. Exactly six frozen candidates and all 15 unordered candidate interactions were evaluated against the accepted Phase 2.2C diagnosis. C01 CACHE_MISS_COALESCING was selected as the sole Phase 2.3 primary mechanism with STRONGLY_SUPPORTED_DIRECT confidence because it is the smallest independently testable change that directly removes concurrent duplicate same-key application full-table read ownership while preserving the existing query and business-safe filtering semantics. C02 and C03 remain conditional secondary mechanisms, C04 and C05 are deferred, and C06 is rejected as a production optimization while retained as validation hygiene. The final gate passes 92/92 conditions with exactly 64 report sections. Thirteen non-stress regression checks passed, no stress execution occurred, no runtime behavior source changed, and Phase 2.3 is ready only for a separate authorization decision.",
+    "reasoningSummary": "The accepted P09 cause is concurrent uncoalesced full-table application reads. C01 directly reduces same-key read-owner count without changing row selection, mapping, description fallback, ordering, result TTL, or response semantics. C02 can reduce cost per owner read but does not remove concurrent owner count and has a larger semantic and index surface because current search includes JSON-carried descriptions. C03 limits work after abort but does not prevent initial fan-out and depends on unproven Prisma and PostgreSQL cancellation behavior. C04 and C05 require post-C01 evidence, while C06 improves experimental isolation rather than production capacity. Selection therefore follows causal directness and minimum sufficient scope rather than an arbitrary score."
+  },
+  "findings": {
+    "findings": [
+      "All 22 immutable BEFORE references, three original B4 hashes, seven B4R and 1R hashes, and nine Phase 2.2C hashes remain verified.",
+      "Exactly six candidates were evaluated: C01 through C06, with exactly one primary selection.",
+      "All 15 unordered candidate interaction pairs were documented.",
+      "C01 CACHE_MISS_COALESCING is selected with STRONGLY_SUPPORTED_DIRECT confidence.",
+      "The exact causal metric is APPLICATION_FULL_TABLE_READ_OWNER_COUNT_PER_EXACT_ORGANIZATION_PIPELINE_MISS_WINDOW.",
+      "C02 BOUNDED_QUERY_DB_SIDE_FILTERING and C03 CANCELLATION_PROPAGATION are conditional secondary mechanisms.",
+      "C04 REQUEST_CONCURRENCY_CONTROL and C05 DEFERRED_DB_POOL_EVALUATION are deferred pending direct post-C01 evidence.",
+      "C06 SCENARIO_ISOLATION is rejected as a production optimization and retained as mandatory validation hygiene.",
+      "The Phase 2.3 contract is PLAN_ONLY; Phase 2.3 is authorization-ready but is not authorized and has not started.",
+      "The non-stress regression passed 13/13 checks: Forecast Core 218/218, SG Runtime 172/172, Dashboard Preview 100/100, phase tooling 31/31, three typechecks, and six accepted-gate checks.",
+      "The standalone final validator passes 92/92 conditions and confirms exactly 64 report sections.",
+      "No P09 or P10 replay, stress test, runtime optimization, database tuning, schema or index change, timeout change, pool change, or infrastructure change was performed.",
+      "Migration readiness passes with 14 task-attributed paths, zero runtime behavior source changes, zero new nested repositories, and zero external source repositories."
+    ],
+    "blockers": [],
+    "residualRisks": [
+      "C01 is process-local and does not provide cross-instance miss coalescing.",
+      "The selected owner still performs one full-table application read per exact miss window.",
+      "P09 exact route admission count and acquisition-vs-query timing remain not observable from accepted evidence.",
+      "C01 capacity benefit remains to be measured only after separate Phase 2.3 authorization.",
+      "Historical PMOS estate warnings predate this task and are not active runtime or continuity blockers."
+    ]
+  },
+  "decisions": {
+    "decisions": [
+      "Record PHASE_2_2D_GATE as PASS with 92/92 conditions and exactly 64 report sections.",
+      "Record PHASE_2_2D_OPTIMIZATION_SELECTION_COMPLETE as YES.",
+      "Select C01 CACHE_MISS_COALESCING as the sole Phase 2.3 primary mechanism with STRONGLY_SUPPORTED_DIRECT confidence.",
+      "Use APPLICATION_FULL_TABLE_READ_OWNER_COUNT_PER_EXACT_ORGANIZATION_PIPELINE_MISS_WINDOW as the primary causal metric.",
+      "Keep C02 and C03 conditional secondary, defer C04 and C05, and reject C06 as a production optimization.",
+      "Preserve the current 30-second result-cache TTL and exact organizationId/pipelineId cache identity in any future C01 implementation.",
+      "Make no runtime behavior, query, schema, index, pool, cancellation, timeout, Node, or infrastructure change in Phase 2.2D.",
+      "Mark Phase 2.3 ready for a separate authorization decision, but keep it unauthorized and unstarted."
+    ]
+  },
+  "actions": {
+    "recommendations": [
+      "Use the Phase 2.2D handoff only to decide whether to authorize Phase 2.3 implementation of C01.",
+      "If Phase 2.3 is authorized, first prove exact-key owner and waiter behavior with deterministic tests before any controlled capacity comparison.",
+      "Evaluate C02 only if C01 proves owner-count reduction but the single owner read remains materially costly or P09 remains capacity-bound.",
+      "Evaluate C03 only if post-C01 timeout cases still retain material server or database work and cancellation capability is directly proven.",
+      "Do not infer Prisma pool acquisition pressure from PostgreSQL wait_event observations."
+    ],
+    "validationsExecuted": [
+      "Verified 22 immutable BEFORE references, three original B4 hashes, seven B4R and 1R hashes, and nine Phase 2.2C hashes.",
+      "Asserted source-level cache, query, filtering, index, and cancellation facts without modifying application runtime source.",
+      "Generated the six-candidate evaluation, 15-pair interaction map, selection decision, plan-only implementation contract, handoff, migration readiness, gate, decision analysis, regression evidence, and 64-section report.",
+      "Ran Forecast Core 218/218, SG Runtime 172/172, Dashboard Preview 100/100, and phase tooling 31/31 tests.",
+      "Ran SG Runtime, Dashboard Preview, and Data Runtime typechecks successfully.",
+      "Reran the Current single-flight, Verification, persistence, 1R, B4R, and Phase 2.2C accepted gates through read-only validation paths.",
+      "Ran the standalone Phase 2.2D final validator: 92/92 PASS, 64/64 sections, C01 selected, zero stress execution, and zero runtime behavior source changes.",
+      "Independently parsed all nine Phase 2.2D JSON artifacts and rechecked exact condition and section counts.",
+      "Verified git diff whitespace integrity and zero editor diagnostics across Benchmark-Forecasting."
+    ],
+    "validationsNotExecuted": [
+      "No P09 replay was executed.",
+      "No P10 replay was executed.",
+      "No stress or comparative load harness was executed.",
+      "No runtime optimization or Phase 2.3 implementation was performed.",
+      "No database, schema, index, query, pool, cancellation, HTTP, timeout, Node, or infrastructure tuning was performed.",
+      "No cross-instance coalescing or capacity benefit was claimed or measured."
+    ],
+    "artifactsCreated": [
+      "tooling/Benchmark-Forecasting/performance/phase-2-2d-finalize-selection.mjs",
+      "tooling/Benchmark-Forecasting/performance/phase-2-2d-final-gate.validator.mjs",
+      "tooling/Benchmark-Forecasting/performance/phase-2-2d-functional-regression.mjs",
+      "tooling/Benchmark-Forecasting/FORECAST_PHASE_2_2D_CONTROLLED_OPTIMIZATION_SELECTION_GATE.md",
+      "tooling/Benchmark-Forecasting/performance/phase-2-2d-candidate-evaluation.json",
+      "tooling/Benchmark-Forecasting/performance/phase-2-2d-candidate-interaction-map.json",
+      "tooling/Benchmark-Forecasting/performance/phase-2-2d-selection-decision.json",
+      "tooling/Benchmark-Forecasting/performance/phase-2-2d-phase-2-3-implementation-contract.json",
+      "tooling/Benchmark-Forecasting/performance/phase-2-2d-phase-2-3-handoff.json",
+      "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2d-controlled-optimization-selection.json",
+      "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2d-migration-readiness.json",
+      "tooling/Benchmark-Forecasting/validation/phase-2-2d/decision-analysis.json",
+      "tooling/Benchmark-Forecasting/validation/phase-2-2d/functional-regression.json",
+      "apps/pmos/.pmos/forecast-phase-2-2d-controlled-optimization-selection-gate-v1-bootstrap.json"
+    ],
+    "artifactsModified": []
+  },
+  "result": {
+    "finalStatus": "SUCCESS"
+  }
+}

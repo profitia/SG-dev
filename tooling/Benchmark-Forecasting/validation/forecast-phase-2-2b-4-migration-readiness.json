@@ -1,0 +1,107 @@
+{
+  "task": "FORECAST_PHASE_2_2B_4_BEFORE_AFTER_COMPARATIVE_STRESS_TEST",
+  "generatedAt": "2026-08-25T09:41:58.741Z",
+  "status": "PASS",
+  "taskAttributedPathCount": 12,
+  "paths": [
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-1b-baseline.mjs",
+      "change": "MODIFIED",
+      "logicalOwner": "Benchmark Forecasting Tooling",
+      "classification": "TEST",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.2B-4 execution, evidence, validation, or closeout artifact."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-4-comparative-stress.mjs",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Tooling",
+      "classification": "TEST",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.2B-4 execution, evidence, validation, or closeout artifact."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-4-finalize-evidence.mjs",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Tooling",
+      "classification": "TEST",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.2B-4 execution, evidence, validation, or closeout artifact."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-4-final-gate.validator.mjs",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Tooling",
+      "classification": "TEST",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.2B-4 execution, evidence, validation, or closeout artifact."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-4-execution-plan.json",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Tooling",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.2B-4 execution, evidence, validation, or closeout artifact."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-4-after-aggregate.json",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Tooling",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.2B-4 execution, evidence, validation, or closeout artifact."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-4-before-after-comparison.json",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Tooling",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.2B-4 execution, evidence, validation, or closeout artifact."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-4-phase-2-2c-handoff.json",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Tooling",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.2B-4 execution, evidence, validation, or closeout artifact."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/FORECAST_PHASE_2_2B_4_BEFORE_AFTER_COMPARATIVE_STRESS_TEST.md",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Evidence",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.2B-4 execution, evidence, validation, or closeout artifact."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2b-4-before-after-comparative-stress.json",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Evidence",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.2B-4 execution, evidence, validation, or closeout artifact."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2b-4-migration-readiness.json",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Evidence",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.2B-4 execution, evidence, validation, or closeout artifact."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-4",
+      "change": "CREATED",
+      "logicalOwner": "Benchmark Forecasting Evidence",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.2B-4 execution, evidence, validation, or closeout artifact."
+    }
+  ],
+  "newNestedGitRepositories": 0,
+  "newExternalSourceRepositories": 0,
+  "runtimeSourceBehaviorChanged": false
+}

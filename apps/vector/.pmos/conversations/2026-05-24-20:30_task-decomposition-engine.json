@@ -1,0 +1,89 @@
+{
+  "id": "2026-05-24-20:30_task-decomposition-engine",
+  "timestamp": "2026-05-24T20:30:00.000Z",
+  "etap": "ETAP 09",
+  "title": "SG2 Task Decomposition Engine",
+  "type": "PLANNING",
+  "commit": "febdd9f",
+  "branch": "main",
+  "remote": "https://github.com/profitia/vector.git",
+  "system": "VECTOR",
+  "governance": "PLANNING → VECTOR only; PMOS owns lineage artifacts",
+  "summary": "Transformed SG2 execution topology into executable implementation units. Task decomposition engine seeds 30 implementation tasks across 8 waves with full dependency graph and readiness state machine. 4 tasks immediately buildable, 2 externally blocked on Clerk keys.",
+  "schema": {
+    "migration": "etap09_task_decomposition",
+    "new_models": ["ImplementationWave", "ImplementationTask", "ImplTaskDependency"],
+    "new_enums": ["WaveStatus", "ReadinessState", "ImplementationType", "ExecutionComplexity"],
+    "backrefs_added": ["CoreSystem.implementationTasks", "ExecutionStream.implementationTasks", "Etap.implementationTasks"]
+  },
+  "seeded": {
+    "implementation_waves": 8,
+    "implementation_tasks": 30,
+    "task_dependencies": 26,
+    "systems_decomposed": 7
+  },
+  "systems_decomposed": [
+    "Organization System (ORG-1 → ORG-4)",
+    "Tenant System (TENANT-1 → TENANT-4)",
+    "RBAC (RBAC-1 → RBAC-5)",
+    "Session Management (SESSION-1 → SESSION-3)",
+    "Orchestration Runtime (ORCH-1 → ORCH-4)",
+    "Ingestion Pipeline (ING-1 → ING-5)",
+    "Should-Cost Engine (COST-1 → COST-5)"
+  ],
+  "readiness_report": {
+    "READY": ["ORG-1", "RBAC-1", "ORCH-1", "ING-1"],
+    "BLOCKED": ["RBAC-4", "SESSION-1"],
+    "external_blockers": [
+      { "id": "EXT-001", "title": "Clerk production keys", "severity": "CRITICAL", "blocks": ["RBAC-4", "SESSION-1"] },
+      { "id": "EXT-002", "title": "git push -u origin main", "severity": "HIGH", "blocks": ["deployment path"] },
+      { "id": "EXT-003", "title": "Render deployment config", "severity": "HIGH", "blocks": ["production access"] }
+    ],
+    "NOT_READY": 24,
+    "total_effort": 180,
+    "ready_effort": 32
+  },
+  "waves": [
+    { "order": 1, "name": "FOUNDATION",               "status": "COMPLETE", "tasks": 0 },
+    { "order": 2, "name": "AUTH + TENANT",             "status": "ACTIVE",   "tasks": 20 },
+    { "order": 3, "name": "DATA + INGESTION",          "status": "PLANNED",  "tasks": 5 },
+    { "order": 4, "name": "PROCUREMENT INTELLIGENCE",  "status": "PLANNED",  "tasks": 5 },
+    { "order": 5, "name": "AI + COGNITION",            "status": "PLANNED",  "tasks": 0 },
+    { "order": 6, "name": "UX + APPLICATION",          "status": "PLANNED",  "tasks": 0 },
+    { "order": 7, "name": "OBSERVABILITY + EXPORTS",   "status": "PLANNED",  "tasks": 0 },
+    { "order": 8, "name": "PRODUCTION HARDENING",      "status": "PLANNED",  "tasks": 0 }
+  ],
+  "new_pages": [
+    { "route": "/execution-queue",      "purpose": "READY tasks, BLOCKED tasks, external blockers, build prompts" },
+    { "route": "/task-readiness",       "purpose": "Full readiness matrix grouped by state" },
+    { "route": "/implementation-waves", "purpose": "8 wave cards with progress bars and task lists" }
+  ],
+  "server_actions": "src/app/actions/execution.ts",
+  "dashboard_update": "Execution Readiness widget added to right column",
+  "build": {
+    "pages": 24,
+    "typescript_errors": 0,
+    "status": "PASS"
+  },
+  "cognition_snapshot": {
+    "version": "1.2.0",
+    "health_score": 68,
+    "signals": ["execution thin (4/30 READY)", "Clerk blocker CRITICAL", "AUTH stream overloaded", "ING-5 single point of failure"]
+  },
+  "next_steps": {
+    "immediate_build_now": [
+      "ORG-1: Design Organization data model [CRITICAL / 8sp]",
+      "RBAC-1: Design role taxonomy + permission matrix [CRITICAL / 8sp]",
+      "ORCH-1: Design action registry + execution model [CRITICAL / 8sp]",
+      "ING-1: Design ingestion data model [CRITICAL / 8sp]"
+    ],
+    "user_actions_required": [
+      "git push -u origin main (4 commits on main)",
+      "Obtain Clerk production keys (NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY + CLERK_SECRET_KEY)",
+      "Configure Render deployment for VECTOR",
+      "Set CLERK_WEBHOOK_SECRET in production env"
+    ],
+    "next_etap": "ETAP 10 — Organization System Build (ORG-1 → ORG-4 execution)"
+  },
+  "etap_10_scope_hint": "Execute ORG-1 design → ORG-2 schema → ORG-3 server actions → ORG-4 middleware. First real EXECUTION etap (not planning). Wave 2 first thread. Outputs: Organization Prisma model, CRUD server actions, org context middleware."
+}

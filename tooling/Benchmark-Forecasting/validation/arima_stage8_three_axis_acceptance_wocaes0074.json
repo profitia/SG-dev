@@ -1,0 +1,200 @@
+{
+  "identity": {
+    "seriesId": "wocaes0074",
+    "displayName": "Brent, Spot, FOB North Sea",
+    "forecastMethod": "ROLLING_DAILY_POINT_IN_TIME",
+    "methodVersion": "rolling-daily-point-in-time-v1",
+    "targetBasis": "POINT_IN_TIME",
+    "modelId": "arima",
+    "referenceModels": [
+      "naive",
+      "damped_holt",
+      "ets"
+    ]
+  },
+  "evidenceSources": {
+    "authorities": [
+      "FORECASTING_CANON.md",
+      "FORECASTING_METHODS_SPEC.md",
+      "ROLLING_DAILY_POINT_IN_TIME_METHOD_SPEC.md",
+      "ROLLING_DAILY_PRODUCTION_FORECAST_CONTRACT.md",
+      "FORECAST_TARGET_BASIS_CANON.md"
+    ],
+    "acceptedEvidence": [
+      "ARIMA_ROLLING_DAILY_MODEL_CONTRACT_PARITY_AUDIT.md",
+      "ARIMA_ROLLING_DAILY_CURRENT_FORECAST_ACCEPTANCE.md",
+      "ARIMA_REPRODUCIBILITY_FAST_SERVING_ACCEPTANCE.md",
+      "ARIMA_HISTORICAL_ROLLING_VERIFICATION_ACCEPTANCE.md",
+      "FOUR_MODEL_COMPARATIVE_BACKTEST_ACCEPTANCE.md",
+      "ARIMA_EMPIRICAL_PREDICTION_BAND_ACCEPTANCE.md",
+      "ROLLING_DAILY_STAGE7_PERFORMANCE_COST_CHARACTERIZATION.md"
+    ],
+    "machineReadableEvidence": [
+      "validation/arima_stage4_historical_verification_wocaes0074.json",
+      "validation/four_model_stage5_comparative_backtest_wocaes0074.json",
+      "validation/arima_stage6_empirical_prediction_band_wocaes0074.json",
+      "validation/rolling_daily_stage7_performance_cost_wocaes0074.json"
+    ],
+    "dashboardContext": [
+      "apps/dashboard-preview/lib/benchmark-forecast/forecast-contract.ts",
+      "apps/dashboard-preview/lib/benchmark-forecast/runtime-query.ts",
+      "ARIMA_DASHBOARD_DEMO_DEFERRED_BACKLOG.md"
+    ]
+  },
+  "axisA_methodologicalCorrectness": {
+    "status": "PASS",
+    "contractParity": "PASS",
+    "noLeakage": "PASS",
+    "reproducibility": "PASS",
+    "historicalVerification": "PASS",
+    "comparativeParity": "PASS",
+    "empiricalBand": "PASS",
+    "pointForecastMutation": "NO",
+    "historicalOriginCoverage": {
+      "completed": 681,
+      "expected": 681
+    },
+    "strictCommonCohorts": {
+      "1M": 659,
+      "3M": 615,
+      "6M": 553,
+      "12M": 423
+    },
+    "selectedOrderDistribution": {
+      "ARIMA(1,1,2)": 9,
+      "ARIMA(2,1,0)": 17,
+      "ARIMA(2,1,1)": 115,
+      "ARIMA(2,1,2)": 540
+    },
+    "resolvedMethodSpecDrift": {
+      "detected": true,
+      "resolution": "implementation-and-accepted-stage-evidence-supersede-stale-method-spec-line"
+    },
+    "evidence": [
+      "ARIMA_ROLLING_DAILY_MODEL_CONTRACT_PARITY_AUDIT.md",
+      "ARIMA_ROLLING_DAILY_CURRENT_FORECAST_ACCEPTANCE.md",
+      "ARIMA_REPRODUCIBILITY_FAST_SERVING_ACCEPTANCE.md",
+      "validation/arima_stage4_historical_verification_wocaes0074.json",
+      "validation/four_model_stage5_comparative_backtest_wocaes0074.json",
+      "validation/arima_stage6_empirical_prediction_band_wocaes0074.json",
+      "forecasting/rolling_daily_point_in_time.py"
+    ],
+    "limitations": [
+      "Base rolling-daily method spec still contains a stale pre-Stage-1 sentence disabling ARIMA; current implementation and accepted Stage 1-7 evidence supersede that line under the implementation-wins rule."
+    ]
+  },
+  "axisB_lowCost": {
+    "status": "PASS",
+    "freshCompute": {
+      "medianMs": 14378.88518749969,
+      "sampleCount": 2
+    },
+    "historicalOfflineCompute": {
+      "stage4RuntimeSeconds": 6810.170992082974,
+      "stage4Origins": 681,
+      "stage5RuntimeSeconds": 6957.410418666666,
+      "stage5Origins": 681
+    },
+    "incrementalMaintenance": {
+      "status": "MEASURED_WITHOUT_PERSISTENCE",
+      "totalMs": 1753.756958001759,
+      "persistenceStatus": "NOT_MEASURED_SAFE_READ_ONLY"
+    },
+    "bandCalibration": {
+      "medianMs": 1303.713915986009,
+      "calibrationRecordsRead": 2724
+    },
+    "bandInterpolation": {
+      "medianMs": 0.7248330512084067,
+      "pathLength": 365
+    },
+    "preparedArchitecture": {
+      "preparedReadMedianMs": 27.162020499999983,
+      "arimaFitOnRead": "NO",
+      "historicalCalibrationOnRead": "NO",
+      "persistenceMutationOnRead": "NO"
+    },
+    "boundedCandidateSearch": "PASS",
+    "candidateCount": 17,
+    "requestTimeFit": "NO",
+    "fullHistoricalReplayDuringNormalUse": "NO",
+    "dedicatedArimaInfrastructure": "NO",
+    "directCurrencyCost": "NOT CALCULATED",
+    "evidence": [
+      "ARIMA_HISTORICAL_ROLLING_VERIFICATION_ACCEPTANCE.md",
+      "validation/rolling_daily_stage7_performance_cost_wocaes0074.json",
+      "ROLLING_DAILY_STAGE7_PERFORMANCE_COST_CHARACTERIZATION.md"
+    ],
+    "limitations": [
+      "Incremental maintenance persistence timing was intentionally not measured separately to avoid mutating canonical runtime truth during characterization."
+    ]
+  },
+  "axisC_fastReproducibleServing": {
+    "status": "PASS",
+    "preparedReadLatency": {
+      "medianMs": 27.162020499999983,
+      "sampleCount": 20,
+      "p95Ms": 34.064750000000004
+    },
+    "arimaFitOnRequest": "NO",
+    "historicalCalibrationOnRequest": "NO",
+    "persistenceMutationOnRead": "NO",
+    "benchmarkFinderDependency": "NO",
+    "reproducibility": {
+      "forecastReproducibility": "PASS",
+      "preparedSnapshotIdentity": "PASS",
+      "sourceHistoryFingerprint": "35ecf750e4998799462a2fa9a57758f048695b26892c5fca6436669e32138f82"
+    },
+    "topology": {
+      "status": "PASS",
+      "preparedReadOwner": "rollingDailyCurrentForecastSnapshot",
+      "dashboardReadSeam": "apps/dashboard-preview/lib/benchmark-forecast/runtime-query.ts",
+      "dashboardConsumerMethod": "getBenchmarkForecastCurrent(seriesId, model, 'POINT_IN_TIME')"
+    },
+    "demoContext": {
+      "acknowledged": true,
+      "dashboardV3DemoControlled": true,
+      "renderSmokeCheckDeferred": true
+    },
+    "evidence": [
+      "ARIMA_REPRODUCIBILITY_FAST_SERVING_ACCEPTANCE.md",
+      "validation/rolling_daily_stage7_performance_cost_wocaes0074.json",
+      "apps/dashboard-preview/lib/benchmark-forecast/forecast-contract.ts",
+      "apps/dashboard-preview/lib/benchmark-forecast/runtime-query.ts",
+      "ARIMA_DASHBOARD_DEMO_DEFERRED_BACKLOG.md"
+    ],
+    "limitations": [
+      "Prepared-read latency is runtime datastore-read evidence, not full deployed browser/network latency.",
+      "Dashboard demo evidence is context only and is not treated as a UI acceptance gate."
+    ]
+  },
+  "overall": {
+    "status": "PASS",
+    "stage9Readiness": "READY",
+    "rule": "PASS = all three axes PASS; FAIL = one or more axes FAIL; BLOCKED = no axis FAIL and at least one axis BLOCKED.",
+    "allThreeAxesPass": true
+  },
+  "modelPolicy": {
+    "champion": "NOT DEFINED",
+    "preferredModel": "NOT DEFINED",
+    "defaultModel": "NOT DEFINED",
+    "automaticSelection": "NOT BUILT",
+    "modelRanking": "NOT PERFORMED"
+  },
+  "deferredWork": {
+    "stage9": "NOT EXECUTED",
+    "stage10": "NOT EXECUTED",
+    "stage11FormalAcceptance": "NOT EXECUTED",
+    "stage12FormalAcceptance": "NOT EXECUTED",
+    "stage13": "NOT EXECUTED",
+    "naiveHoltEtsPredictionBandPre1MParity": "DEFERRED",
+    "benchmarkFinderContaminationAudit": "DEFERRED",
+    "deploymentHardening": "DEFERRED",
+    "broaderRegressionTests": "DEFERRED",
+    "other": [
+      "Dashboard v3 legend and tooltip naming hardening remains deferred from the demo slice.",
+      "Deployed-browser regression coverage for Forecast Portfolio v3 remains deferred from the demo slice."
+    ]
+  },
+  "generatedAt": "2026-08-21T18:49:40Z"
+}

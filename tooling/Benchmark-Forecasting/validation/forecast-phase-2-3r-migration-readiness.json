@@ -1,0 +1,572 @@
+{
+  "task": "FORECAST_PHASE_2_3R_MIGRATION_READINESS",
+  "generatedAt": "2026-08-25T17:59:43.972Z",
+  "status": "PASS",
+  "taskAttributedPathCount": 55,
+  "taskAttributedPaths": [
+    {
+      "path": "apps/dashboard-preview/lib/raw-data/dashboard-record-query.ts",
+      "action": "CARRIED_FORWARD_UNCHANGED",
+      "logicalOwner": "Dashboard Preview",
+      "tracked": "tracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "C01 source carried forward unchanged as accepted Phase 2.3 authority."
+    },
+    {
+      "path": "apps/dashboard-preview/lib/phase-2-2c/diagnostics.ts",
+      "action": "CARRIED_FORWARD_UNCHANGED",
+      "logicalOwner": "Dashboard Preview",
+      "tracked": "untracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Default-off C01 diagnostics carried forward unchanged."
+    },
+    {
+      "path": "apps/sg-runtime/lib/market-data/service.ts",
+      "action": "MODIFIED",
+      "logicalOwner": "SG Runtime",
+      "tracked": "tracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Canonical N-API repair: exact-series in-flight stored-read ownership."
+    },
+    {
+      "path": "apps/sg-runtime/tests/market-data-service.test.ts",
+      "action": "MODIFIED",
+      "logicalOwner": "SG Runtime",
+      "tracked": "tracked",
+      "classification": "TEST",
+      "includeInFutureSgDev": "YES",
+      "reason": "Repair tests and deterministic N-API failure regression fixture."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-3r-controlled-validation.mjs",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Default-off diagnostics and governed controlled-validation runner."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-3r-functional-regression.mjs",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Non-stress full regression runner."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-3r-finalize-evidence.mjs",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Deterministic governed artifact finalizer."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-3r-final-gate.validator.mjs",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Read-only independent final gate validator."
+    },
+    {
+      "path": "apps/pmos/.pmos/forecast-phase-2-3r-p09-1000-downstream-sg-runtime-napi-root-cause-repair-v1-bootstrap.json",
+      "action": "CREATED",
+      "logicalOwner": "PMOS",
+      "tracked": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Canonical PMOS and MEMOROS continuity bootstrap."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-3r-napi-root-cause.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-3r-minimal-reproduction.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-3r-repair-evidence.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-3r-p09-lower-control.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-3r-p09-high-concurrency.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-3r-p10-non-regression.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/functional-regression.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/execution-accounting.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-3r-before-after-failure-comparison.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-3r-phase-2-4-handoff.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/forecast-phase-2-3r-migration-readiness.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/forecast-phase-2-3r-napi-root-cause-repair.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/FORECAST_PHASE_2_3R_P09_1000_DOWNSTREAM_SG_RUNTIME_NAPI_ROOT_CAUSE_REPAIR.md",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/controlled-validation.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/p09-100/manifests/P09-mixed-100-r1.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/p09-100/state-proofs/P09-mixed-100-r1.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/p09-100-resume-plan.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/p09-1000/manifests/P09-mixed-1000-r1.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/p09-1000/state-proofs/P09-mixed-1000-r1.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/p09-1000-resume-plan.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/p10-10/manifests/P10-ets-10-r1.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/p10-10/state-proofs/P10-ets-10-r1.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/p10-10-resume-plan.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174438-788Z-91d6f2b3-795a-4e8d-8ac7-a54e183d72c8/aggregated/baseline-results.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174438-788Z-91d6f2b3-795a-4e8d-8ac7-a54e183d72c8/diagnostics/dashboard-preview.log",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174438-788Z-91d6f2b3-795a-4e8d-8ac7-a54e183d72c8/diagnostics/sg-runtime.log",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174438-788Z-91d6f2b3-795a-4e8d-8ac7-a54e183d72c8/manifests/completion-manifest.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174438-788Z-91d6f2b3-795a-4e8d-8ac7-a54e183d72c8/manifests/execution-manifest.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174438-788Z-91d6f2b3-795a-4e8d-8ac7-a54e183d72c8/raw/P09-mixed-100-r1-phase-2-3r-p09-100-p09-100-ets-4366129d-38c2-4962-9cfb-a3d4c1a0ef75.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174618-529Z-fcad0df0-c5ba-43a4-8b30-2cc1169271fb/aggregated/baseline-results.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174618-529Z-fcad0df0-c5ba-43a4-8b30-2cc1169271fb/diagnostics/dashboard-preview.log",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174618-529Z-fcad0df0-c5ba-43a4-8b30-2cc1169271fb/diagnostics/sg-runtime.log",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174618-529Z-fcad0df0-c5ba-43a4-8b30-2cc1169271fb/manifests/completion-manifest.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174618-529Z-fcad0df0-c5ba-43a4-8b30-2cc1169271fb/manifests/execution-manifest.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174618-529Z-fcad0df0-c5ba-43a4-8b30-2cc1169271fb/raw/P09-mixed-1000-r1-phase-2-3r-p09-1000-p09-1000-ets-15af27c2-e10a-44f9-b1ee-5c2502298811.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174746-045Z-c5ad1ee5-dc06-49c1-8daa-814b0ca6783d/aggregated/baseline-results.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174746-045Z-c5ad1ee5-dc06-49c1-8daa-814b0ca6783d/diagnostics/dashboard-preview.log",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174746-045Z-c5ad1ee5-dc06-49c1-8daa-814b0ca6783d/diagnostics/sg-runtime.log",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174746-045Z-c5ad1ee5-dc06-49c1-8daa-814b0ca6783d/manifests/completion-manifest.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174746-045Z-c5ad1ee5-dc06-49c1-8daa-814b0ca6783d/manifests/execution-manifest.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174746-045Z-c5ad1ee5-dc06-49c1-8daa-814b0ca6783d/raw/P10-ets-10-r1-phase-2-3r-p10-10-p10-10-ets-d74d42fe-93c9-426b-ab43-a287d0eab04c.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/fixtures/napi-large-result-concurrency.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/minimal-reproduction.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/repair-regression.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/root-cause-evidence.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-3r/source-hash-guards.json",
+      "action": "CREATED",
+      "logicalOwner": "Benchmark Forecasting",
+      "tracked": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": "YES",
+      "reason": "Phase 2.3R generated evidence or controlled execution record."
+    }
+  ],
+  "canonicalNapiRepairFiles": [
+    "apps/sg-runtime/lib/market-data/service.ts"
+  ],
+  "repairTests": [
+    "apps/sg-runtime/tests/market-data-service.test.ts"
+  ],
+  "diagnostics": [
+    "apps/dashboard-preview/lib/phase-2-2c/diagnostics.ts",
+    "tooling/Benchmark-Forecasting/performance/phase-2-3r-controlled-validation.mjs"
+  ],
+  "c01SourceCarriedForwardUnchanged": [
+    "apps/dashboard-preview/lib/raw-data/dashboard-record-query.ts"
+  ],
+  "generatedEvidence": [
+    "tooling/Benchmark-Forecasting/performance/phase-2-3r-napi-root-cause.json",
+    "tooling/Benchmark-Forecasting/performance/phase-2-3r-minimal-reproduction.json",
+    "tooling/Benchmark-Forecasting/performance/phase-2-3r-repair-evidence.json",
+    "tooling/Benchmark-Forecasting/performance/phase-2-3r-p09-lower-control.json",
+    "tooling/Benchmark-Forecasting/performance/phase-2-3r-p09-high-concurrency.json",
+    "tooling/Benchmark-Forecasting/performance/phase-2-3r-p10-non-regression.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/functional-regression.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/execution-accounting.json",
+    "tooling/Benchmark-Forecasting/performance/phase-2-3r-before-after-failure-comparison.json",
+    "tooling/Benchmark-Forecasting/performance/phase-2-3r-phase-2-4-handoff.json",
+    "tooling/Benchmark-Forecasting/validation/forecast-phase-2-3r-migration-readiness.json",
+    "tooling/Benchmark-Forecasting/validation/forecast-phase-2-3r-napi-root-cause-repair.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/controlled-validation.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/p09-100/manifests/P09-mixed-100-r1.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/p09-100/state-proofs/P09-mixed-100-r1.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/p09-100-resume-plan.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/p09-1000/manifests/P09-mixed-1000-r1.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/p09-1000/state-proofs/P09-mixed-1000-r1.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/p09-1000-resume-plan.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/p10-10/manifests/P10-ets-10-r1.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/p10-10/state-proofs/P10-ets-10-r1.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/execution-control/p10-10-resume-plan.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174438-788Z-91d6f2b3-795a-4e8d-8ac7-a54e183d72c8/aggregated/baseline-results.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174438-788Z-91d6f2b3-795a-4e8d-8ac7-a54e183d72c8/diagnostics/dashboard-preview.log",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174438-788Z-91d6f2b3-795a-4e8d-8ac7-a54e183d72c8/diagnostics/sg-runtime.log",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174438-788Z-91d6f2b3-795a-4e8d-8ac7-a54e183d72c8/manifests/completion-manifest.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174438-788Z-91d6f2b3-795a-4e8d-8ac7-a54e183d72c8/manifests/execution-manifest.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174438-788Z-91d6f2b3-795a-4e8d-8ac7-a54e183d72c8/raw/P09-mixed-100-r1-phase-2-3r-p09-100-p09-100-ets-4366129d-38c2-4962-9cfb-a3d4c1a0ef75.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174618-529Z-fcad0df0-c5ba-43a4-8b30-2cc1169271fb/aggregated/baseline-results.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174618-529Z-fcad0df0-c5ba-43a4-8b30-2cc1169271fb/diagnostics/dashboard-preview.log",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174618-529Z-fcad0df0-c5ba-43a4-8b30-2cc1169271fb/diagnostics/sg-runtime.log",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174618-529Z-fcad0df0-c5ba-43a4-8b30-2cc1169271fb/manifests/completion-manifest.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174618-529Z-fcad0df0-c5ba-43a4-8b30-2cc1169271fb/manifests/execution-manifest.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174618-529Z-fcad0df0-c5ba-43a4-8b30-2cc1169271fb/raw/P09-mixed-1000-r1-phase-2-3r-p09-1000-p09-1000-ets-15af27c2-e10a-44f9-b1ee-5c2502298811.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174746-045Z-c5ad1ee5-dc06-49c1-8daa-814b0ca6783d/aggregated/baseline-results.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174746-045Z-c5ad1ee5-dc06-49c1-8daa-814b0ca6783d/diagnostics/dashboard-preview.log",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174746-045Z-c5ad1ee5-dc06-49c1-8daa-814b0ca6783d/diagnostics/sg-runtime.log",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174746-045Z-c5ad1ee5-dc06-49c1-8daa-814b0ca6783d/manifests/completion-manifest.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174746-045Z-c5ad1ee5-dc06-49c1-8daa-814b0ca6783d/manifests/execution-manifest.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/executions/2026-08-25T174746-045Z-c5ad1ee5-dc06-49c1-8daa-814b0ca6783d/raw/P10-ets-10-r1-phase-2-3r-p10-10-p10-10-ets-d74d42fe-93c9-426b-ab43-a287d0eab04c.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/fixtures/napi-large-result-concurrency.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/minimal-reproduction.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/repair-regression.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/root-cause-evidence.json",
+    "tooling/Benchmark-Forecasting/validation/phase-2-3r/source-hash-guards.json"
+  ],
+  "preExistingNestedRepositoriesExcluded": [
+    {
+      "path": "apps/vector/.git",
+      "createdAt": "2026-05-24T18:11:35Z",
+      "taskAttributed": false
+    }
+  ],
+  "newNestedGitRepositories": 0,
+  "newExternalSourceRepositories": 0
+}

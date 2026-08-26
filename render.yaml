@@ -7,15 +7,76 @@
 # the SG2 production or staging runtime.
 #
 # SG2 PRODUCTION AND STAGING SERVICES:
-# spendguru-production and spendguru-staging are NOT defined here yet.
-# They cannot be safely defined until apps/sg-runtime/ is scaffolded and
-# its build/start commands are confirmed.
-# See: docs/render-blueprint-plan.md for the planned blueprint.
-#
-# DO NOT add spendguru-production or spendguru-staging to this file
-# until apps/sg-runtime/ exists and commands are verified locally.
+# spendguru-production and spendguru-staging deploy the SG Runtime from
+# apps/sg-runtime. Secrets remain Render-managed via sync: false.
 
 services:
+  # SG Runtime - Production
+  - type: web
+    name: spendguru-production
+    runtime: node
+    rootDir: apps/sg-runtime
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    plan: standard
+    branch: main
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: MARKET_DATA_DATABASE_URL
+        sync: false
+      - key: MARKET_DATA_DIRECT_URL
+        sync: false
+      - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLERK_WEBHOOK_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+
+  # SG Runtime - Staging
+  - type: web
+    name: spendguru-staging
+    runtime: node
+    rootDir: apps/sg-runtime
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    plan: free
+    branch: staging
+    envVars:
+      - key: APP_ENV
+        value: staging
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: MARKET_DATA_DATABASE_URL
+        sync: false
+      - key: MARKET_DATA_DIRECT_URL
+        sync: false
+      - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLERK_WEBHOOK_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+
   # PMOS — Developer Workflow Tool (dev-time only, NOT SG2 production runtime)
   - type: web
     name: pmos-spendguru2-development

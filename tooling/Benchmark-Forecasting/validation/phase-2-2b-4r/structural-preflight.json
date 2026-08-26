@@ -1,0 +1,41 @@
+{
+  "task": "FORECAST_PHASE_2_2B_4R_STRUCTURAL_PREFLIGHT",
+  "generatedAt": "2026-08-25T11:49:12.000Z",
+  "loadEvidence": false,
+  "command": "node --import tsx --test tests/current-single-flight.test.ts tests/verification-single-flight.test.ts tests/rolling-daily-current-ownership.test.ts tests/forecast-phase-2-1b-operation.test.ts",
+  "tests": {
+    "passed": 17,
+    "failed": 0,
+    "total": 17
+  },
+  "proofs": {
+    "P03": {
+      "status": "PASS",
+      "exactKeys": 1,
+      "physicalOwners": 1,
+      "currentComputes": 1,
+      "activeEntriesAfterSettlement": 0,
+      "authority": "apps/sg-runtime/tests/current-single-flight.test.ts"
+    },
+    "P04": {
+      "status": "PASS",
+      "requests": 10,
+      "exactKeys": 3,
+      "physicalOwners": 3,
+      "currentComputes": 3,
+      "duplicateCurrentComputes": 0,
+      "activeEntriesAfterSettlement": 0,
+      "authority": "apps/sg-runtime/tests/forecast-phase-2-1b-operation.test.ts"
+    },
+    "VERIFICATION": {
+      "status": "PASS",
+      "exactKeys": 1,
+      "physicalOwners": 1,
+      "fullVerificationExecutions": 1,
+      "duplicateFullVerificationExecutions": 0,
+      "activeEntriesAfterSettlement": 0,
+      "authority": "apps/sg-runtime/tests/verification-single-flight.test.ts"
+    }
+  },
+  "phase22b4rLoadAuthorizedByPreflight": true
+}

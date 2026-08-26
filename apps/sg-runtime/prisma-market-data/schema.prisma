@@ -1,0 +1,343 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/market-data-client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("MARKET_DATA_DATABASE_URL")
+  directUrl = env("MARKET_DATA_DIRECT_URL")
+}
+
+enum ForecastTargetBasis {
+  MONTHLY_AVERAGE
+  POINT_IN_TIME
+  END_OF_PERIOD
+}
+
+enum RollingDailyVerificationMaturityStatus {
+  MATURED
+  NOT_YET_MATURED
+}
+
+enum RollingDailyCalibrationStatus {
+  AVAILABLE
+  INSUFFICIENT_CALIBRATION_HISTORY
+}
+
+model MarketSeries {
+  id               String                @id @default(cuid())
+  providerCode     String
+  providerSeriesId String
+  providerSeriesKey String?
+  displayName      String
+  frequency        String?
+  currency         String?
+  unit             String?
+  sourceLabel      String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  observations     MarketObservation[]
+  hydrationState   MarketHydrationState?
+
+  @@unique([providerCode, providerSeriesId])
+  @@index([providerCode, providerSeriesId])
+  @@map("market_series")
+}
+
+model MarketObservation {
+  id         String      @id @default(cuid())
+  seriesId   String
+  observedAt DateTime
+  value      Decimal?    @db.Decimal(24, 8)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  series     MarketSeries @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+
+  @@unique([seriesId, observedAt])
+  @@index([seriesId, observedAt(sort: Asc)])
+  @@map("market_observations")
+}
+
+model MarketHydrationState {
+  id                           String      @id @default(cuid())
+  seriesId                     String      @unique
+  lastProviderFetchAt          DateTime?
+  earliestStoredObservationAt  DateTime?
+  latestStoredObservationAt    DateTime?
+  lastHydrationStatus          String?
+  lastHydrationMessage         String?
+  lastHydratedObservationCount Int?
+  createdAt                    DateTime    @default(now())
+  updatedAt                    DateTime    @updatedAt
+  series                       MarketSeries @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+
+  @@map("market_hydration_state")
+}
+
+model ForecastCurrentRun {
+  id                 String                 @id @default(cuid())
+  seriesId           String
+  displayName        String
+  description        String?
+  frequency          String?
+  currency           String?
+  unit               String?
+  sourceLabel        String?
+  inputSource        String
+  inputRunId         String?
+  historyFingerprint String
+  targetBasis        ForecastTargetBasis     @default(MONTHLY_AVERAGE)
+  methodId           String
+  historyStartAt     DateTime?
+  historyEndAt       DateTime?
+  observationCount   Int
+  forecastOriginAt   DateTime?
+  modelId            String
+  methodVersion      String
+  status             String
+  failureReason      String?
+  runtimeSeconds     Float?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  points             ForecastCurrentPoint[]
+
+  @@unique([seriesId, inputSource, historyFingerprint, targetBasis, methodId, modelId, methodVersion])
+  @@index([seriesId, targetBasis, methodId, modelId, updatedAt])
+  @@map("forecast_current_runs")
+}
+
+model ForecastCurrentPoint {
+  id              String             @id @default(cuid())
+  runId            String
+  horizonLabel     String
+  horizonSteps     Int
+  forecastDate     DateTime
+  forecastValue    Decimal?          @db.Decimal(24, 8)
+  fitStatus        String?
+  failureReason    String?
+  selectedVariant  String?
+  selectionMetric  String?
+  selectionScore   Float?
+  metadataJson     Json?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  run              ForecastCurrentRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, horizonLabel])
+  @@index([runId, horizonSteps])
+  @@map("forecast_current_points")
+}
+
+model ForecastVerificationRun {
+  id                 String                       @id @default(cuid())
+  seriesId           String
+  displayName        String
+  description        String?
+  frequency          String?
+  currency           String?
+  unit               String?
+  sourceLabel        String?
+  inputSource        String
+  inputRunId         String?
+  historyFingerprint String
+  targetBasis        ForecastTargetBasis      @default(MONTHLY_AVERAGE)
+  methodId           String
+  historyStartAt     DateTime?
+  historyEndAt       DateTime?
+  observationCount   Int
+  forecastOriginAt   DateTime?
+  modelId            String
+  methodVersion      String
+  status             String
+  failureReason      String?
+  runtimeSeconds     Float?
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  metrics            ForecastVerificationMetric[]
+  points             ForecastVerificationPoint[]
+
+  @@unique([seriesId, inputSource, historyFingerprint, targetBasis, methodId, modelId, methodVersion])
+  @@index([seriesId, targetBasis, methodId, modelId, updatedAt])
+  @@map("forecast_verification_runs")
+}
+
+model ForecastVerificationMetric {
+  id                 String                    @id @default(cuid())
+  runId              String
+  horizonLabel       String
+  horizonSteps       Int
+  origins            Int
+  expectedOrigins    Int
+  failedOrigins      Int
+  coverage           Float
+  mae                Float?
+  rmse               Float?
+  mase               Float?
+  smape              Float?
+  directionalAccuracy Float?
+  bias               Float?
+  failureSummaryJson Json?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  run                ForecastVerificationRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, horizonLabel])
+  @@index([runId, horizonSteps])
+  @@map("forecast_verification_metrics")
+}
+
+model ForecastVerificationPoint {
+  id                 String                    @id @default(cuid())
+  runId              String
+  horizonLabel       String
+  horizonSteps       Int
+  forecastOriginAt   DateTime
+  targetDate         DateTime
+  actualObservedAt   DateTime?
+  originValue        Decimal                   @db.Decimal(24, 8)
+  forecastValue      Decimal                   @db.Decimal(24, 8)
+  actualValue        Decimal                   @db.Decimal(24, 8)
+  errorValue         Decimal                   @db.Decimal(24, 8)
+  absoluteErrorValue Decimal                   @db.Decimal(24, 8)
+  deltaValue         Decimal                   @db.Decimal(24, 8)
+  deltaPct           Float?
+  maseScale          Float
+  selectedVariant    String?
+  selectionMetric    String?
+  selectionScore     Float?
+  metadataJson       Json?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  run                ForecastVerificationRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, horizonLabel, forecastOriginAt, targetDate])
+  @@index([runId, horizonLabel, targetDate])
+  @@map("forecast_verification_points")
+}
+
+model RollingDailyVerificationRecord {
+  /// Forecast-derived verification state owned logically by Forecast Runtime, not by raw Market Data SoT.
+  id                           String                                  @id @default(cuid())
+  seriesId                     String
+  inputSource                  String
+  inputRunId                   String?
+  targetBasis                  ForecastTargetBasis                     @default(MONTHLY_AVERAGE)
+  methodId                     String
+  methodVersion                String
+  modelId                      String
+  forecastOriginAt             DateTime
+  horizonLabel                 String
+  horizonMonths                Int
+  horizonSteps                 Int
+  targetCalendarDate           DateTime
+  verificationObservedAt       DateTime?
+  maturityStatus               RollingDailyVerificationMaturityStatus
+  originValue                  Decimal                                 @db.Decimal(24, 8)
+  forecastValue                Decimal                                 @db.Decimal(24, 8)
+  actualValue                  Decimal?                                @db.Decimal(24, 8)
+  errorValue                   Decimal?                                @db.Decimal(24, 8)
+  absoluteErrorValue           Decimal?                                @db.Decimal(24, 8)
+  deltaValue                   Decimal?                                @db.Decimal(24, 8)
+  deltaPct                     Float?
+  residualValue                Decimal?                                @db.Decimal(24, 8)
+  maseScale                    Float
+  trainingHistoryStartAt       DateTime?
+  trainingHistoryEndAt         DateTime
+  trainingObservationCount     Int
+  sourceHistoryFingerprint     String
+  selectedVariant              String?
+  selectionMetric              String?
+  selectionScore               Float?
+  metadataJson                 Json?
+  createdAt                    DateTime                                @default(now())
+  updatedAt                    DateTime                                @updatedAt
+
+  @@unique([seriesId, inputSource, targetBasis, methodId, methodVersion, modelId, forecastOriginAt, horizonLabel], map: "rolling_daily_verification_records_identity_key")
+  @@index([seriesId, inputSource, targetBasis, methodId, methodVersion, modelId, maturityStatus, verificationObservedAt], map: "rolling_daily_verification_records_maturity_idx")
+  @@index([seriesId, inputSource, targetBasis, methodId, methodVersion, modelId, forecastOriginAt], map: "rolling_daily_verification_records_origin_idx")
+  @@index([seriesId, inputSource, targetBasis, methodId, methodVersion, modelId, horizonLabel, verificationObservedAt], map: "rolling_daily_verification_records_horizon_idx")
+  @@map("rolling_daily_verification_records")
+}
+
+model RollingDailyCurrentForecastSnapshot {
+  id                          String              @id @default(cuid())
+  seriesId                    String
+  inputSource                 String
+  inputRunId                  String?
+  targetBasis                 ForecastTargetBasis @default(POINT_IN_TIME)
+  methodId                    String
+  methodVersion               String
+  modelId                     String
+  contractVersion             String
+  status                      String
+  reasonCode                  String?
+  message                     String?
+  forecastOriginAt            DateTime?
+  sourceLatestObservationAt   DateTime?
+  payloadJson                 Json
+  createdAt                   DateTime            @default(now())
+  updatedAt                   DateTime            @updatedAt
+
+  @@unique([seriesId, inputSource, targetBasis, methodId, methodVersion, modelId], map: "rolling_daily_current_forecast_snapshots_identity_key")
+  @@index([seriesId, inputSource, targetBasis, methodId, methodVersion, modelId, updatedAt], map: "rolling_daily_current_forecast_snapshots_updated_idx")
+  @@map("rolling_daily_current_forecast_snapshots")
+}
+
+model RollingDailyCalibrationGroup {
+  /// Forecast-derived calibration authority owned logically by Forecast Runtime, even though it shares the market-data schema.
+  id                           String                           @id @default(cuid())
+  seriesId                     String
+  inputSource                  String
+  inputRunId                   String?
+  targetBasis                  ForecastTargetBasis              @default(MONTHLY_AVERAGE)
+  methodId                     String
+  methodVersion                String
+  modelId                      String
+  horizonLabel                 String
+  horizonMonths                Int
+  calibrationOriginAt          DateTime
+  sampleCount                  Int
+  residualP10                  Decimal?                         @db.Decimal(24, 8)
+  residualP90                  Decimal?                         @db.Decimal(24, 8)
+  quantileMethod               String
+  status                       RollingDailyCalibrationStatus
+  lastResidualObservedAt       DateTime?
+  refreshedAt                  DateTime
+  createdAt                    DateTime                         @default(now())
+  updatedAt                    DateTime                         @updatedAt
+
+  @@unique([seriesId, inputSource, targetBasis, methodId, methodVersion, modelId, horizonLabel], map: "rolling_daily_calibration_groups_identity_key")
+  @@index([seriesId, inputSource, targetBasis, methodId, methodVersion, modelId, refreshedAt], map: "rolling_daily_calibration_groups_refresh_idx")
+  @@map("rolling_daily_calibration_groups")
+}
+
+model RollingDailyMaintenanceState {
+  /// Forecast-derived maintenance lifecycle state owned logically by Forecast Runtime, not by the Dynamic Market Data Store.
+  id                           String               @id @default(cuid())
+  seriesId                     String
+  inputSource                  String
+  inputRunId                   String?
+  targetBasis                  ForecastTargetBasis  @default(MONTHLY_AVERAGE)
+  methodId                     String
+  methodVersion                String
+  modelId                      String
+  historicalOriginStartAt      DateTime
+  minimumTrainingObservations  Int
+  minimumCalibrationSamples    Int
+  latestSourceObservationAt    DateTime?
+  latestSourceHistoryStartAt   DateTime?
+  latestSourceObservationCount Int?
+  latestSourceHistoryFingerprint String?
+  lastProcessedOriginAt        DateTime?
+  lastMaturedObservedAt        DateTime?
+  lastMaintenanceAt            DateTime?
+  lastMaintenanceStatus        String?
+  lastFailureReason            String?
+  createdAt                    DateTime             @default(now())
+  updatedAt                    DateTime             @updatedAt
+
+  @@unique([seriesId, inputSource, targetBasis, methodId, methodVersion, modelId], map: "rolling_daily_maintenance_state_identity_key")
+  @@index([seriesId, inputSource, targetBasis, methodId, methodVersion, modelId, updatedAt], map: "rolling_daily_maintenance_state_updated_idx")
+  @@map("rolling_daily_maintenance_state")
+}

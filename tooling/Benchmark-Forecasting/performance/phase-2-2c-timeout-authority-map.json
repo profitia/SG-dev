@@ -1,0 +1,75 @@
+{
+  "task": "FORECAST_PHASE_2_2C_TIMEOUT_AUTHORITY_MAP",
+  "generatedAt": "2026-08-25T15:40:15.900Z",
+  "timeouts": [
+    {
+      "name": "STRESS_CLIENT_REQUEST_TIMEOUT",
+      "valueMs": 120000,
+      "source": "tooling/Benchmark-Forecasting/performance/phase-2-1b-baseline.mjs",
+      "scope": "Each P09/P10 client fetch",
+      "enforcer": "Node fetch AbortSignal.timeout",
+      "p09": "FIRED_766_TIMES",
+      "p10": "NOT_FIRED"
+    },
+    {
+      "name": "DASHBOARD_INTERNAL_FORECAST_FALLBACK_TIMEOUT",
+      "valueMs": 20000,
+      "source": "apps/dashboard-preview/lib/benchmark-forecast/runtime-query.ts",
+      "scope": "Dashboard to SG Runtime production fallback only",
+      "enforcer": "Dashboard AbortController",
+      "p09": "NOT_ON_PATH",
+      "p10": "NOT_ON_PREPARED_HIT_PATH"
+    },
+    {
+      "name": "DASHBOARD_ANALYTICS_FETCH_TIMEOUT",
+      "valueMs": null,
+      "configured": "NOT_EXPLICITLY_CONFIGURED",
+      "source": "apps/dashboard-preview/lib/time-series/series-query.ts",
+      "scope": "P09 series route to SG Runtime analytics",
+      "enforcer": "HTTP library defaults",
+      "p09": "NO_EXPLICIT_TIMEOUT_OBSERVED",
+      "p10": "NOT_ON_PATH"
+    },
+    {
+      "name": "DB_POOL_ACQUISITION_TIMEOUT",
+      "valueMs": null,
+      "configured": "NOT_EXPLICITLY_CONFIGURED",
+      "source": "Prisma client creation and isolated DATABASE_URL",
+      "scope": "Dashboard and SG Runtime DB acquisition",
+      "enforcer": "Prisma/driver implicit behavior",
+      "p09": "NO_POOL_TIMEOUT_ERROR_RECORDED",
+      "p10": "NO_POOL_TIMEOUT_ERROR_RECORDED"
+    },
+    {
+      "name": "DB_STATEMENT_TIMEOUT",
+      "valueMs": null,
+      "configured": "NOT_EXPLICITLY_CONFIGURED",
+      "source": "Application configuration and isolated DATABASE_URL",
+      "scope": "PostgreSQL statements",
+      "enforcer": "PostgreSQL implicit configuration",
+      "p09": "NO_STATEMENT_TIMEOUT_ERROR_RECORDED",
+      "p10": "NO_STATEMENT_TIMEOUT_ERROR_RECORDED"
+    },
+    {
+      "name": "PRISMA_INTERACTIVE_TRANSACTION_TIMEOUT",
+      "valueMs": 5000,
+      "configured": "PRISMA_DEFAULT_WHERE_RELEVANT",
+      "source": "Generated Prisma client",
+      "scope": "Interactive transactions only",
+      "enforcer": "Prisma",
+      "p09": "NOT_RELEVANT_NO_INTERACTIVE_TRANSACTION",
+      "p10": "NOT_RELEVANT_NO_INTERACTIVE_TRANSACTION"
+    },
+    {
+      "name": "NODE_NEXT_REQUEST_TIMEOUT",
+      "valueMs": null,
+      "configured": "NOT_EXPLICITLY_CONFIGURED",
+      "source": "Next.js application configuration",
+      "scope": "Inbound HTTP",
+      "enforcer": "Node/Next implicit behavior",
+      "p09": "NO_SERVER_TIMEOUT_ERROR_RECORDED",
+      "p10": "NO_SERVER_TIMEOUT_ERROR_RECORDED"
+    }
+  ],
+  "valuesChanged": false
+}

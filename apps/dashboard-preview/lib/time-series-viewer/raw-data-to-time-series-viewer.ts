@@ -18,6 +18,8 @@ function formatScenarioLabel(locale: TimeSeriesViewerLocale, pointType: TimeSeri
   switch (pointType) {
     case 'historical':
       return locale === 'pl' ? 'Ceny historyczne' : 'Historical Prices'
+    case 'monthly-actual':
+      return locale === 'pl' ? 'Miesięczny odczyt' : 'Monthly actual'
     case 'historical-forecast':
       return locale === 'pl' ? 'Historyczna prognoza' : 'Historical forecast'
     case 'forecast-central':
@@ -154,6 +156,7 @@ function buildPointDetail(
   return {
     ...detailBase,
     sourceDate: date,
+    temporalResolution: 'day',
     scenarioType: pointType,
     value,
     forecastAccuracyDiff,
@@ -215,6 +218,7 @@ export function toTimeSeriesViewerPayload(series: SeriesResponse, locale: TimeSe
     componentName: series.detailSummary?.componentName ?? series.selection?.componentName ?? ' - ',
     benchmarkCode: series.detailSummary?.componentCode ?? series.selection?.componentCode ?? null,
     sourceDate: series.detailSummary?.sourceDate ?? normalizedForecastAnchor?.date ?? null,
+    temporalResolution: 'day',
     scenarioType: series.detailSummary?.scenarioType ?? 'historical',
     value: series.detailSummary?.metricValue ?? normalizedForecastAnchor?.value ?? null,
     forecastLower: series.detailSummary?.forecastLower ?? null,
@@ -332,6 +336,8 @@ export function toTimeSeriesViewerPayload(series: SeriesResponse, locale: TimeSe
     },
     series: viewerSeries,
     forecastAnchor: normalizedForecastAnchor,
+    forecastOrigin: null,
+    deltaOverlays: [],
     tooltipModel: defaultPoint?.tooltipModel ?? null,
     detailModel: defaultPoint?.detailModel ?? detailBase,
     events: [],

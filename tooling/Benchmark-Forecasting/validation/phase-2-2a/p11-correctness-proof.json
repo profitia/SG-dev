@@ -1,0 +1,91 @@
+{
+  "task": "FORECAST_PHASE_2_2A_CORRECTNESS_BOUND_REPAIR",
+  "classification": "CORRECTNESS_VALIDATION_EVIDENCE",
+  "scenarioId": "P11",
+  "generatedAt": "2026-08-24T20:15:22.998Z",
+  "phase21EvidenceModified": false,
+  "providerCallCount": 0,
+  "singleProof": {
+    "before": {
+      "monthly": 0,
+      "daily": 0
+    },
+    "monthly": {
+      "first": {
+        "canonical": true,
+        "status": "AVAILABLE",
+        "cacheStatus": "miss",
+        "durationMs": 4709.79725
+      },
+      "afterFirst": {
+        "monthly": 1,
+        "daily": 0
+      },
+      "second": {
+        "canonical": true,
+        "preparedHit": true,
+        "status": "AVAILABLE",
+        "durationMs": 10.601958000001105
+      },
+      "afterSecond": {
+        "monthly": 1,
+        "daily": 0
+      }
+    },
+    "daily": {
+      "first": {
+        "canonical": true,
+        "status": "AVAILABLE",
+        "productionMethod": "ROLLING_DAILY_POINT_IN_TIME",
+        "durationMs": 1485.5883329999997
+      },
+      "afterFirst": {
+        "monthly": 1,
+        "daily": 1
+      },
+      "second": {
+        "canonical": true,
+        "preparedHit": true,
+        "status": "AVAILABLE",
+        "durationMs": 9.607208999997965
+      },
+      "afterSecond": {
+        "monthly": 1,
+        "daily": 1
+      }
+    }
+  },
+  "twoUserProof": {
+    "before": {
+      "monthly": 0,
+      "daily": 0
+    },
+    "responses": [
+      {
+        "canonical": true,
+        "status": "AVAILABLE",
+        "cacheStatus": "miss",
+        "durationMs": 4819.702290999998
+      },
+      {
+        "canonical": true,
+        "status": "AVAILABLE",
+        "cacheStatus": "miss",
+        "durationMs": 4818.791207999995
+      }
+    ],
+    "after": {
+      "monthly": 1,
+      "daily": 0
+    },
+    "canonicalResponses": 2,
+    "computeCount": 2,
+    "duplicateComputeObserved": true,
+    "preparedAfter": {
+      "canonical": true,
+      "preparedHit": true
+    }
+  },
+  "correctnessPassed": true,
+  "performanceEvidence": "NOT_MEASURED"
+}

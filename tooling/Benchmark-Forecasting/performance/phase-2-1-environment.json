@@ -1,0 +1,42 @@
+{
+  "contractVersion": 1,
+  "environmentId": "phase-2-1-local-isolated-v1",
+  "environmentType": "LOCAL_NON_PRODUCTION_ISOLATED",
+  "nonProductionConfirmed": true,
+  "L1": {
+    "id": "LOCAL_COMPONENT_ISOLATED",
+    "role": "Forecast component runtime",
+    "runtime": "v24.15.0"
+  },
+  "L2": {
+    "id": "PHASE_2_1_NON_PRODUCTION_HTTP",
+    "role": "Local SG Runtime HTTP service",
+    "endpointRole": "http://127.0.0.1:3001"
+  },
+  "L3": {
+    "id": "PHASE_2_1_NON_PRODUCTION_DASHBOARD",
+    "role": "Local Dashboard Preview user flow",
+    "endpointRole": "http://127.0.0.1:3002"
+  },
+  "resources": {
+    "cpuAllocation": "8 local logical CPUs",
+    "memoryAllocationBytes": 17179869184
+  },
+  "database": {
+    "cloneAlias": "phase-2-1-local-clone-v1",
+    "applicationDatabase": "sg_phase_2_1_app",
+    "marketDataDatabase": "sg_phase_2_1_market_data",
+    "host": "127.0.0.1",
+    "port": 55421,
+    "isolationProof": "Fail-closed guard requires loopback host, exact clone alias, and exact database names.",
+    "schemaMigration": false
+  },
+  "providerPolicy": "DENY_BY_DEFAULT; exact-series allowlist only in separately authorized cold probes",
+  "stressTelemetry": {
+    "flag": "FORECAST_STRESS_TELEMETRY_ENABLED",
+    "default": false
+  },
+  "writeScope": "Exact controlled identities in the local clone only",
+  "credentialsIncluded": false,
+  "validatedAt": "2026-08-24T11:14:26.414Z"
+}

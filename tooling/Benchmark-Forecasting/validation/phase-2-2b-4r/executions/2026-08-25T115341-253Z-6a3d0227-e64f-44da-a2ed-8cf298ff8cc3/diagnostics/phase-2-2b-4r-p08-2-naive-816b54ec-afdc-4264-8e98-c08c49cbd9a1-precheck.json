@@ -1,0 +1,499 @@
+{
+  "result": {
+    "contractVersion": 1,
+    "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+    "scenarioId": "P08",
+    "environmentId": "phase-2-1-local-isolated-v1",
+    "sourceRevision": "9fc9f81b5649140ff46e029f3381873a9fbb60e3",
+    "startedAt": "2026-08-25T12:16:21.417Z",
+    "endedAt": "2026-08-25T12:16:25.786Z",
+    "concurrency": 10,
+    "keyDistribution": "SAME_KEY",
+    "loadShape": "SYNCHRONIZED_BURST",
+    "releaseSpreadMs": 2.932833,
+    "benchmark": "wocaes0280",
+    "datasetFingerprint": {
+      "seriesId": "wocaes0280",
+      "frequency": "MONTHLY",
+      "lawfulObservationCount": 21718,
+      "historyStart": "1985-01-03T23:00:00Z",
+      "historyEnd": "2026-08-21T00:00:00Z",
+      "historyFingerprint": "7afe5dd3e125915ed483a9ba0bf28ae4",
+      "targetSemantics": "MONTHLY_AVERAGE",
+      "horizon": "CONTRACT_DEFAULT"
+    },
+    "modelId": "naive",
+    "requestsStarted": 2,
+    "requestsCompleted": 2,
+    "successCount": 2,
+    "failureCount": 0,
+    "errorRate": 0,
+    "functionalOutcomes": {
+      "SUCCESS_COMPUTED": 2
+    },
+    "latencyMinMs": 4171.188209,
+    "latencyP50Ms": 4172.655917,
+    "latencyP90Ms": 4173.830083,
+    "latencyP95Ms": 4173.976854,
+    "latencyP99Ms": 4174.094271,
+    "latencyMaxMs": 4174.123625,
+    "latencyMeanMs": 4172.655917,
+    "throughputRps": 0.479142,
+    "successfulThroughputRps": 0.479142,
+    "cpuSeconds": 0.929173,
+    "peakMemoryMb": 395.140625,
+    "memoryDeltaAfterCooldownMb": null,
+    "dbQueryCount": null,
+    "dbWriteCount": 1839,
+    "providerCallCount": 0,
+    "forecastComputeCount": 0,
+    "verificationComputeCount": 1,
+    "computeOwnerCount": 1,
+    "duplicateComputeCount": 0,
+    "duplicateComputeRatio": 0,
+    "duplicateArtifactWriteCount": 0,
+    "preparedHitCount": 0,
+    "preparedMissCount": 2,
+    "wallClockSeconds": 4.174124,
+    "classification": "HEALTHY",
+    "bottleneckAttribution": [],
+    "firstRunAfterStateSetup": true,
+    "repetitionNumber": 1,
+    "excluded": false,
+    "exclusionReason": "NOT_EXCLUDED",
+    "correctnessPassed": true,
+    "notes": [
+      "Safety precheck executed at 2 virtual users; schema concurrency is normalized only in diagnostics and this object is not a baseline raw result."
+    ]
+  },
+  "control": {
+    "valid": true,
+    "classification": "VALID_COMPLETED",
+    "continueEscalation": true,
+    "reason": null
+  },
+  "events": [
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:16:21.588Z",
+      "metrics": {
+        "cpuUserMicros": 28149,
+        "cpuSystemMicros": 3189,
+        "rssBytes": 78413824,
+        "heapUsedBytes": 14504272,
+        "heapTotalBytes": 20660224,
+        "externalBytes": 4726127,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:16:21.591Z",
+      "metrics": {
+        "cpuUserMicros": 2395,
+        "cpuSystemMicros": 396,
+        "rssBytes": 79872000,
+        "heapUsedBytes": 14765088,
+        "heapTotalBytes": 20922368,
+        "externalBytes": 4726167,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "database_read",
+      "timestamp": "2026-08-25T12:16:21.949Z",
+      "metrics": {
+        "operation": "market_history",
+        "queryCount": 1,
+        "durationMs": 359.75479200000007,
+        "failed": false
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "database_read",
+      "timestamp": "2026-08-25T12:16:21.950Z",
+      "metrics": {
+        "operation": "market_history",
+        "queryCount": 1,
+        "durationMs": 358.861709,
+        "failed": false
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "prepared_read",
+      "timestamp": "2026-08-25T12:16:24.100Z",
+      "metrics": {
+        "kind": "verification",
+        "hit": false,
+        "durationMs": 2508.9039589999998
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "single_flight_lookup",
+      "timestamp": "2026-08-25T12:16:24.100Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace12:VERIFICATION|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId5:naive|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|24:verificationHorizonSetId31:{\"12M\":12,\"1M\":1,\"3M\":3,\"6M\":6}|27:verificationConfigurationId24:{\"minTrainingWindow\":36}|14:originPolicyId66:EXPANDING_WINDOW_ROLLING_ORIGIN@expanding-window-rolling-origin-v1",
+        "operationFamily": "VERIFICATION",
+        "ownerRequestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+        "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+        "role": "OWNER",
+        "activeVerificationSingleFlightEntries": 1,
+        "durationMs": null,
+        "error": null,
+        "seriesId": "wocaes0280",
+        "modelId": "naive",
+        "targetSemantics": "MONTHLY_AVERAGE",
+        "sourceFrequency": "MONTHLY",
+        "targetCadence": "MONTHLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "single_flight_owner_acquired",
+      "timestamp": "2026-08-25T12:16:24.100Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace12:VERIFICATION|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId5:naive|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|24:verificationHorizonSetId31:{\"12M\":12,\"1M\":1,\"3M\":3,\"6M\":6}|27:verificationConfigurationId24:{\"minTrainingWindow\":36}|14:originPolicyId66:EXPANDING_WINDOW_ROLLING_ORIGIN@expanding-window-rolling-origin-v1",
+        "operationFamily": "VERIFICATION",
+        "ownerRequestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+        "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+        "role": "OWNER",
+        "activeVerificationSingleFlightEntries": 1,
+        "durationMs": null,
+        "error": null,
+        "seriesId": "wocaes0280",
+        "modelId": "naive",
+        "targetSemantics": "MONTHLY_AVERAGE",
+        "sourceFrequency": "MONTHLY",
+        "targetCadence": "MONTHLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "verification_compute_start",
+      "timestamp": "2026-08-25T12:16:24.101Z",
+      "metrics": {
+        "modelId": "naive",
+        "count": 1,
+        "logicalArtifactKey": "9:namespace12:VERIFICATION|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId5:naive|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|24:verificationHorizonSetId31:{\"12M\":12,\"1M\":1,\"3M\":3,\"6M\":6}|27:verificationConfigurationId24:{\"minTrainingWindow\":36}|14:originPolicyId66:EXPANDING_WINDOW_ROLLING_ORIGIN@expanding-window-rolling-origin-v1"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "prepared_read",
+      "timestamp": "2026-08-25T12:16:24.105Z",
+      "metrics": {
+        "kind": "verification",
+        "hit": false,
+        "durationMs": 2515.664084
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "single_flight_lookup",
+      "timestamp": "2026-08-25T12:16:24.105Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace12:VERIFICATION|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId5:naive|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|24:verificationHorizonSetId31:{\"12M\":12,\"1M\":1,\"3M\":3,\"6M\":6}|27:verificationConfigurationId24:{\"minTrainingWindow\":36}|14:originPolicyId66:EXPANDING_WINDOW_ROLLING_ORIGIN@expanding-window-rolling-origin-v1",
+        "operationFamily": "VERIFICATION",
+        "ownerRequestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+        "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-1",
+        "role": "WAITER",
+        "activeVerificationSingleFlightEntries": 1,
+        "durationMs": null,
+        "error": null,
+        "seriesId": "wocaes0280",
+        "modelId": "naive",
+        "targetSemantics": "MONTHLY_AVERAGE",
+        "sourceFrequency": "MONTHLY",
+        "targetCadence": "MONTHLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "single_flight_waiter_joined",
+      "timestamp": "2026-08-25T12:16:24.105Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace12:VERIFICATION|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId5:naive|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|24:verificationHorizonSetId31:{\"12M\":12,\"1M\":1,\"3M\":3,\"6M\":6}|27:verificationConfigurationId24:{\"minTrainingWindow\":36}|14:originPolicyId66:EXPANDING_WINDOW_ROLLING_ORIGIN@expanding-window-rolling-origin-v1",
+        "operationFamily": "VERIFICATION",
+        "ownerRequestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+        "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-1",
+        "role": "WAITER",
+        "activeVerificationSingleFlightEntries": 1,
+        "durationMs": null,
+        "error": null,
+        "seriesId": "wocaes0280",
+        "modelId": "naive",
+        "targetSemantics": "MONTHLY_AVERAGE",
+        "sourceFrequency": "MONTHLY",
+        "targetCadence": "MONTHLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "verification_compute_end",
+      "timestamp": "2026-08-25T12:16:25.546Z",
+      "metrics": {
+        "modelId": "naive",
+        "count": 1,
+        "originCount": 1834,
+        "durationMs": 1445.5933330000003,
+        "status": "AVAILABLE",
+        "logicalArtifactKey": "9:namespace12:VERIFICATION|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId5:naive|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|24:verificationHorizonSetId31:{\"12M\":12,\"1M\":1,\"3M\":3,\"6M\":6}|27:verificationConfigurationId24:{\"minTrainingWindow\":36}|14:originPolicyId66:EXPANDING_WINDOW_ROLLING_ORIGIN@expanding-window-rolling-origin-v1"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "model_fit",
+      "timestamp": "2026-08-25T12:16:25.546Z",
+      "metrics": {
+        "operation": "verification",
+        "modelId": "naive",
+        "count": 1834,
+        "durationMs": 1445.5933330000003
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "persistence",
+      "timestamp": "2026-08-25T12:16:25.761Z",
+      "metrics": {
+        "operation": "verification",
+        "artifactWrites": 1,
+        "pointWrites": 0,
+        "verificationRecordWrites": 1834,
+        "writeFailures": 0,
+        "durationMs": 213.1605840000002
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "single_flight_owner_completed",
+      "timestamp": "2026-08-25T12:16:25.762Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace12:VERIFICATION|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId5:naive|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|24:verificationHorizonSetId31:{\"12M\":12,\"1M\":1,\"3M\":3,\"6M\":6}|27:verificationConfigurationId24:{\"minTrainingWindow\":36}|14:originPolicyId66:EXPANDING_WINDOW_ROLLING_ORIGIN@expanding-window-rolling-origin-v1",
+        "operationFamily": "VERIFICATION",
+        "ownerRequestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+        "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+        "role": "OWNER",
+        "activeVerificationSingleFlightEntries": 1,
+        "durationMs": 1661.3697079999997,
+        "error": null,
+        "seriesId": "wocaes0280",
+        "modelId": "naive",
+        "targetSemantics": "MONTHLY_AVERAGE",
+        "sourceFrequency": "MONTHLY",
+        "targetCadence": "MONTHLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "single_flight_entry_released",
+      "timestamp": "2026-08-25T12:16:25.762Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace12:VERIFICATION|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId5:naive|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|24:verificationHorizonSetId31:{\"12M\":12,\"1M\":1,\"3M\":3,\"6M\":6}|27:verificationConfigurationId24:{\"minTrainingWindow\":36}|14:originPolicyId66:EXPANDING_WINDOW_ROLLING_ORIGIN@expanding-window-rolling-origin-v1",
+        "operationFamily": "VERIFICATION",
+        "ownerRequestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+        "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+        "role": "OWNER",
+        "activeVerificationSingleFlightEntries": 0,
+        "durationMs": null,
+        "error": null,
+        "seriesId": "wocaes0280",
+        "modelId": "naive",
+        "targetSemantics": "MONTHLY_AVERAGE",
+        "sourceFrequency": "MONTHLY",
+        "targetCadence": "MONTHLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "single_flight_waiter_completed",
+      "timestamp": "2026-08-25T12:16:25.762Z",
+      "metrics": {
+        "logicalArtifactKey": "9:namespace12:VERIFICATION|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId5:naive|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|24:verificationHorizonSetId31:{\"12M\":12,\"1M\":1,\"3M\":3,\"6M\":6}|27:verificationConfigurationId24:{\"minTrainingWindow\":36}|14:originPolicyId66:EXPANDING_WINDOW_ROLLING_ORIGIN@expanding-window-rolling-origin-v1",
+        "operationFamily": "VERIFICATION",
+        "ownerRequestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+        "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-1",
+        "role": "WAITER",
+        "activeVerificationSingleFlightEntries": 0,
+        "durationMs": 1656.6708750000003,
+        "error": null,
+        "seriesId": "wocaes0280",
+        "modelId": "naive",
+        "targetSemantics": "MONTHLY_AVERAGE",
+        "sourceFrequency": "MONTHLY",
+        "targetCadence": "MONTHLY"
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:16:25.762Z",
+      "metrics": {
+        "cpuUserMicros": 798325,
+        "cpuSystemMicros": 96560,
+        "rssBytes": 414334976,
+        "heapUsedBytes": 20466552,
+        "heapTotalBytes": 170737664,
+        "externalBytes": 4615710,
+        "eventLoopUtilization": 0.11961321538887554,
+        "eventLoopDelayMeanMs": 23.17663249162011,
+        "eventLoopDelayMaxMs": 391.643135
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "resource_sample",
+      "timestamp": "2026-08-25T12:16:25.762Z",
+      "metrics": {
+        "cpuUserMicros": 136,
+        "cpuSystemMicros": 23,
+        "rssBytes": 414334976,
+        "heapUsedBytes": 20483416,
+        "heapTotalBytes": 170737664,
+        "externalBytes": 4615710,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-2b-4r-p08-2-naive-816b54ec-afdc-4264-8e98-c08c49cbd9a1-request-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "current_single_flight_registry_settled",
+      "timestamp": "2026-08-25T12:16:25.762Z",
+      "metrics": {
+        "activeEntryCount": 0
+      }
+    }
+  ],
+  "databaseBefore": {
+    "commits": 141,
+    "rollbacks": 0,
+    "read": 2151793,
+    "fetched": 21487,
+    "inserted": 407430,
+    "updated": 73,
+    "deleted": 15,
+    "deadlocks": 0
+  },
+  "databaseAfter": {
+    "commits": 156,
+    "rollbacks": 0,
+    "read": 2200730,
+    "fetched": 44301,
+    "inserted": 409269,
+    "updated": 73,
+    "deleted": 15,
+    "deadlocks": 0
+  },
+  "preloadEvidence": null
+}

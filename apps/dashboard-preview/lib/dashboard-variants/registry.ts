@@ -1,9 +1,22 @@
 export type DashboardVariantId = 'historical-v1' | 'finder-embedded-v2' | 'forecast-portfolio-v3'
-export type DashboardVariantLifecycle = 'legacy' | 'active' | 'planned'
+export type DashboardVariantLifecycle = 'legacy' | 'active' | 'experimental' | 'planned'
 export type DashboardVariantRuntimeStatus = 'runnable' | 'provenance-only' | 'planned'
 export type DashboardVariantHost = 'standalone' | 'embedded'
 export type DashboardVariantHostAvailability = 'runnable' | 'provenance-only' | 'planned'
 export type DashboardVariantResolutionReason = 'default' | 'requested' | 'unknown-fallback'
+
+export type DashboardVariantExperienceDescription = {
+  name: string
+  purpose: string
+  businessContext: string
+  mainComponents: string[]
+  mainControls: string[]
+  supportedModels: string[]
+  verificationHorizons: string[]
+  initialConsumer: string
+  status: string
+  keyDifference: string
+}
 
 export type DashboardVariantRegistration = {
   id: DashboardVariantId
@@ -13,7 +26,8 @@ export type DashboardVariantRegistration = {
   runtimeStatus: DashboardVariantRuntimeStatus
   materialized: boolean
   hostAvailability: Record<DashboardVariantHost, DashboardVariantHostAvailability>
-  showInStandaloneSwitcher: boolean
+  standaloneDisplayOrder: number
+  experience: DashboardVariantExperienceDescription
 }
 
 export type DashboardVariantResolution = {
@@ -34,16 +48,28 @@ export const DEFAULT_DASHBOARD_VARIANT_ID: DashboardVariantId = 'finder-embedded
 const DASHBOARD_VARIANTS: DashboardVariantRegistration[] = [
   {
     id: 'historical-v1',
-    label: 'Historical v1',
-    summary: 'Recovered legacy dashboard-first historical and forecast-accuracy experience.',
+    label: 'Dashboard Preview v1',
+    summary: 'Recovered legacy dashboard-first historical and forecast-accuracy experience preserved as a runnable standalone reference.',
     lifecycle: 'legacy',
-    runtimeStatus: 'provenance-only',
-    materialized: false,
+    runtimeStatus: 'runnable',
+    materialized: true,
     hostAvailability: {
-      standalone: 'provenance-only',
+      standalone: 'runnable',
       embedded: 'provenance-only',
     },
-    showInStandaloneSwitcher: false,
+    standaloneDisplayOrder: 1,
+    experience: {
+      name: 'Dashboard Preview v1',
+      purpose: 'Recovered historical dashboard lineage reference kept runnable for side-by-side UX comparison.',
+      businessContext: 'Preserves the earlier dashboard-first component workflow with legacy forecast and forecast-accuracy controls.',
+      mainComponents: ['analysis workspace', 'component selector', 'benchmark selector', 'time-series chart', 'legacy forecast-accuracy overlays'],
+      mainControls: ['component selector', 'benchmark selector', 'show forecast', 'show forecast accuracy', 'forecast horizon', 'chart range'],
+      supportedModels: [],
+      verificationHorizons: ['1M', '3M', '6M', '12M'],
+      initialConsumer: 'Standalone Dashboard Experience Library review',
+      status: 'LEGACY / RUNNABLE',
+      keyDifference: 'Legacy component-oriented dashboard-first experience preserved as a standalone reference instead of a benchmark-first embed surface.',
+    },
   },
   {
     id: 'finder-embedded-v2',
@@ -56,20 +82,55 @@ const DASHBOARD_VARIANTS: DashboardVariantRegistration[] = [
       standalone: 'runnable',
       embedded: 'runnable',
     },
-    showInStandaloneSwitcher: true,
+    standaloneDisplayOrder: 2,
+    experience: {
+      name: 'Finder Embedded',
+      purpose: 'Fast historical benchmark review with stable embed compatibility.',
+      businessContext: 'Supports chart-first benchmark inspection in standalone preview and embedded Finder host flows.',
+      mainComponents: ['benchmark header', 'time-series chart', 'chart range controls', 'loading and error states'],
+      mainControls: ['chart range'],
+      supportedModels: [],
+      verificationHorizons: [],
+      initialConsumer: 'Standalone preview and embedded Finder host',
+      status: 'ACTIVE / RUNNABLE',
+      keyDifference: 'Historical Actual only baseline with no current forecast or forecast verification layers.',
+    },
   },
   {
     id: 'forecast-portfolio-v3',
     label: 'Forecast Portfolio v3',
-    summary: 'Reserved registry slot for the future Forecast Core UX without runtime implementation yet.',
-    lifecycle: 'planned',
-    runtimeStatus: 'planned',
-    materialized: false,
+    summary: 'First standalone forecast dashboard combining Historical Actual, Historical Forecast Verification, Delta, and Current Forecast on one time axis.',
+    lifecycle: 'experimental',
+    runtimeStatus: 'runnable',
+    materialized: true,
     hostAvailability: {
-      standalone: 'planned',
+      standalone: 'runnable',
       embedded: 'planned',
     },
-    showInStandaloneSwitcher: false,
+    standaloneDisplayOrder: 3,
+    experience: {
+      name: 'Forecast Portfolio',
+      purpose: 'First dashboard that combines Historical Actual, Historical Forecast Verification, and Current Forecast on one shared timeline.',
+      businessContext: 'Supports benchmark review for historical price context, forward price direction, and historical forecast verifiability for the selected model.',
+      mainComponents: [
+        'benchmark header',
+        'time-series chart',
+        'chart range controls',
+        'forecast toggle',
+        'verification toggle',
+        'model selector',
+        'target basis selector',
+        'verification horizon selector',
+        'legend',
+        'loading and error states',
+      ],
+      mainControls: ['chart range', 'show forecast', 'model selector', 'target basis selector', 'show forecast verification', 'verification horizon'],
+      supportedModels: ['Naive', 'Damped Holt', 'ETS', 'ARIMA'],
+      verificationHorizons: ['1M', '3M', '6M', '12M'],
+      initialConsumer: 'Standalone Dashboard Preview only',
+      status: 'EXPERIMENTAL / RUNNABLE',
+      keyDifference: 'Unlike finder-embedded-v2, it layers Historical Actual with Current Forecast and Historical Forecast Verification while making Target Basis a first-class user-facing selector.',
+    },
   },
 ]
 
@@ -90,10 +151,9 @@ export function getDashboardVariantRegistrations() {
 
 export function getStandaloneSwitcherVariants() {
   return DASHBOARD_VARIANTS.filter(
-    (variant) => variant.showInStandaloneSwitcher
-      && variant.runtimeStatus === 'runnable'
+    (variant) => variant.runtimeStatus === 'runnable'
       && variant.hostAvailability.standalone === 'runnable',
-  )
+  ).sort((left, right) => left.standaloneDisplayOrder - right.standaloneDisplayOrder)
 }
 
 export function readFirstSearchParamValue(value: string | string[] | undefined) {

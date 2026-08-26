@@ -1,0 +1,42 @@
+{
+  "contractVersion": 1,
+  "inventoryComplete": true,
+  "runtimeInstrumentationRequiredForPhase21": true,
+  "defaultTelemetryFlag": "FORECAST_STRESS_TELEMETRY_ENABLED=false",
+  "metrics": [
+    { "metric": "HTTP request latency/status/payload", "source": "load harness", "availableNow": true, "missing": false, "collectionMethod": "monotonic client timing and response metadata", "productionChangeRequired": false },
+    { "metric": "Barrier release spread", "source": "load harness", "availableNow": true, "missing": false, "collectionMethod": "first/last monotonic request start", "productionChangeRequired": false },
+    { "metric": "Forecast service total duration", "source": "FORECAST_LIBRARY_CURRENT and verification structured logs", "availableNow": true, "missing": false, "collectionMethod": "existing totalMs event fields", "productionChangeRequired": false },
+    { "metric": "Prepared hit/miss/cache status", "source": "Forecast service responses and logs", "availableNow": true, "missing": false, "collectionMethod": "existing cacheStatus", "productionChangeRequired": false },
+    { "metric": "Market-data DB/provider timing", "source": "market-data service logs", "availableNow": true, "missing": false, "collectionMethod": "existing dbReadMs/providerMs/totalMs fields", "productionChangeRequired": false },
+    { "metric": "Dashboard historical data timing", "source": "Dashboard timing fields", "availableNow": true, "missing": false, "collectionMethod": "existing server and browser performance timings", "productionChangeRequired": false },
+    { "metric": "Browser Search/Historical/Show Forecast TTV", "source": "Dashboard raw-data view profiler", "availableNow": true, "missing": false, "collectionMethod": "existing request/parse/adapter/commit/first-paint/totalInteraction performance marks", "productionChangeRequired": false },
+    { "metric": "Process CPU and CPU seconds", "source": "Node stress telemetry sampler", "availableNow": true, "missing": false, "collectionMethod": "process.cpuUsage under guarded stress telemetry context", "productionChangeRequired": true },
+    { "metric": "RSS/heap/external/peak memory", "source": "Node stress telemetry sampler", "availableNow": true, "missing": false, "collectionMethod": "process.memoryUsage under guarded stress telemetry context", "productionChangeRequired": true },
+    { "metric": "Event-loop lag/utilization", "source": "Node stress telemetry sampler", "availableNow": true, "missing": false, "collectionMethod": "monitorEventLoopDelay and eventLoopUtilization under guarded stress telemetry context", "productionChangeRequired": true },
+    { "metric": "DB query count and duration", "source": "Forecast and market-data repository boundaries", "availableNow": true, "missing": false, "collectionMethod": "stress-correlated database_read structured events", "productionChangeRequired": true },
+    { "metric": "DB connections/pool saturation/wait", "source": "isolated PostgreSQL statistics", "availableNow": true, "missing": false, "collectionMethod": "pg_stat_activity sampled on guarded local clone", "productionChangeRequired": false },
+    { "metric": "DB rows read/written and lock waits", "source": "isolated PostgreSQL statistics", "availableNow": true, "missing": false, "collectionMethod": "pg_stat_database and pg_stat_activity before/after windows", "productionChangeRequired": false },
+    { "metric": "Provider call count/latency/failure", "source": "market-data provider boundary", "availableNow": true, "missing": false, "collectionMethod": "stress-correlated provider_call structured events with deny-by-default allowlist", "productionChangeRequired": true },
+    { "metric": "Forecast Core invocation count", "source": "Forecast bridge boundary", "availableNow": true, "missing": false, "collectionMethod": "current_compute_start/current_compute_end events", "productionChangeRequired": true },
+    { "metric": "Model fit count and duration per model", "source": "Forecast bridge boundary", "availableNow": true, "missing": false, "collectionMethod": "correlated model_fit summary events", "productionChangeRequired": true },
+    { "metric": "Verification origin and fit count", "source": "verification bridge boundary", "availableNow": true, "missing": false, "collectionMethod": "correlated verification_compute_end originCount and model_fit events", "productionChangeRequired": true },
+    { "metric": "Compute owner and duplicate compute count", "source": "Forecast operation events", "availableNow": true, "missing": false, "collectionMethod": "compute-start events grouped by stressRunId and logicalArtifactKey", "productionChangeRequired": true },
+    { "metric": "Artifact/point/verification writes", "source": "repository write boundaries and DB statistics", "availableNow": true, "missing": false, "collectionMethod": "correlated persistence summaries", "productionChangeRequired": true },
+    { "metric": "Forecast correctness checksum", "source": "readiness correctness verifier", "availableNow": true, "missing": false, "collectionMethod": "identity and deep-equality comparison with telemetry OFF versus ON", "productionChangeRequired": false }
+  ],
+  "minimalInstrumentation": [
+    "Propagate stressRunId/scenarioId/requestId only when the stress telemetry flag is enabled.",
+    "Emit low-overhead structured start/end counters for provider, compute, model fit, verification origin, and persistence operations.",
+    "Sample process CPU, memory, and event-loop health outside the request path.",
+    "Collect database/platform metrics by immutable run time window.",
+    "Keep telemetry disabled and behavior-neutral outside the isolated stress environment."
+  ],
+  "functionalBehaviorChange": false,
+  "optimizationImplemented": false,
+  "readinessEvidence": {
+    "telemetry": "validation/forecast-phase-2-1a-telemetry.json",
+    "database": "validation/forecast-phase-2-1a-database-observability.json",
+    "tests": "apps/sg-runtime/tests/forecast-stress-telemetry.test.ts"
+  }
+}

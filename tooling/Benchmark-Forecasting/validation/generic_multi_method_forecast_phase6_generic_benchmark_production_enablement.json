@@ -1,0 +1,294 @@
+{
+  "phase": "PHASE_6",
+  "workstream": "GENERIC_MULTI_METHOD_FORECAST_PRODUCTION_ENABLEMENT",
+  "result": "PASS",
+  "generatedAt": "2026-08-22T18:00:27.511Z",
+  "targetSemantics": [
+    "END_OF_PERIOD",
+    "MONTHLY_AVERAGE",
+    "ROLLING_DAILY_POINT_IN_TIME"
+  ],
+  "modelIds": [
+    "naive",
+    "damped_holt",
+    "ets",
+    "arima"
+  ],
+  "capabilityStates": [
+    "AVAILABLE",
+    "NOT_LAWFUL",
+    "INSUFFICIENT_HISTORY",
+    "DATA_NOT_AVAILABLE",
+    "NOT_PREPARED",
+    "PREPARATION_REQUIRED",
+    "FAILED",
+    "PROVENANCE_REQUIRED"
+  ],
+  "sourceFrequencyCapabilityMatrix": {
+    "DAILY": {
+      "END_OF_PERIOD": {
+        "semanticStatus": "LAWFUL",
+        "provenanceRequirement": "NOT_REQUIRED",
+        "admissionWithoutProvenance": "ADMITTED",
+        "admissionWithValidProvenance": "ADMITTED",
+        "implementationSupport": "SUPPORTED",
+        "minimumHistoryRequirement": 36,
+        "preparationCapability": "PREPARED",
+        "supportedModelIds": [
+          "naive",
+          "damped_holt",
+          "ets",
+          "arima"
+        ]
+      },
+      "MONTHLY_AVERAGE": {
+        "semanticStatus": "LAWFUL",
+        "provenanceRequirement": "NOT_REQUIRED",
+        "admissionWithoutProvenance": "ADMITTED",
+        "admissionWithValidProvenance": "ADMITTED",
+        "implementationSupport": "SUPPORTED",
+        "minimumHistoryRequirement": 36,
+        "preparationCapability": "PREPARED",
+        "supportedModelIds": [
+          "naive",
+          "damped_holt",
+          "ets",
+          "arima"
+        ]
+      },
+      "ROLLING_DAILY_POINT_IN_TIME": {
+        "semanticStatus": "LAWFUL",
+        "provenanceRequirement": "NOT_REQUIRED",
+        "admissionWithoutProvenance": "ADMITTED",
+        "admissionWithValidProvenance": "ADMITTED",
+        "implementationSupport": "SUPPORTED",
+        "minimumHistoryRequirement": 60,
+        "preparationCapability": "PREPARED",
+        "supportedModelIds": [
+          "naive",
+          "damped_holt",
+          "ets",
+          "arima"
+        ]
+      }
+    },
+    "WEEKLY": {
+      "END_OF_PERIOD": {
+        "semanticStatus": "LAWFUL_WITH_PROVENANCE",
+        "provenanceRequirement": "REQUIRED",
+        "admissionWithoutProvenance": "PROVENANCE_REQUIRED",
+        "admissionWithValidProvenance": "ADMITTED",
+        "implementationSupport": "SUPPORTED",
+        "minimumHistoryRequirement": 36,
+        "preparationCapability": "PREPARED",
+        "supportedModelIds": [
+          "naive",
+          "damped_holt",
+          "ets",
+          "arima"
+        ]
+      },
+      "MONTHLY_AVERAGE": {
+        "semanticStatus": "NOT_LAWFUL",
+        "provenanceRequirement": "NOT_APPLICABLE",
+        "admissionWithoutProvenance": "NOT_LAWFUL",
+        "admissionWithValidProvenance": "NOT_LAWFUL",
+        "implementationSupport": "NOT_APPLICABLE",
+        "minimumHistoryRequirement": 36,
+        "preparationCapability": "NOT_SUPPORTED",
+        "supportedModelIds": []
+      },
+      "ROLLING_DAILY_POINT_IN_TIME": {
+        "semanticStatus": "NOT_LAWFUL",
+        "provenanceRequirement": "NOT_APPLICABLE",
+        "admissionWithoutProvenance": "NOT_LAWFUL",
+        "admissionWithValidProvenance": "NOT_LAWFUL",
+        "implementationSupport": "NOT_APPLICABLE",
+        "minimumHistoryRequirement": 60,
+        "preparationCapability": "NOT_SUPPORTED",
+        "supportedModelIds": []
+      }
+    },
+    "MONTHLY": {
+      "END_OF_PERIOD": {
+        "semanticStatus": "LAWFUL_WITH_PROVENANCE",
+        "provenanceRequirement": "REQUIRED",
+        "admissionWithoutProvenance": "PROVENANCE_REQUIRED",
+        "admissionWithValidProvenance": "ADMITTED",
+        "implementationSupport": "SUPPORTED",
+        "minimumHistoryRequirement": 36,
+        "preparationCapability": "PREPARED",
+        "supportedModelIds": [
+          "naive",
+          "damped_holt",
+          "ets",
+          "arima"
+        ]
+      },
+      "MONTHLY_AVERAGE": {
+        "semanticStatus": "LAWFUL_WITH_PROVENANCE",
+        "provenanceRequirement": "REQUIRED",
+        "admissionWithoutProvenance": "PROVENANCE_REQUIRED",
+        "admissionWithValidProvenance": "ADMITTED",
+        "implementationSupport": "SUPPORTED",
+        "minimumHistoryRequirement": 36,
+        "preparationCapability": "PREPARED",
+        "supportedModelIds": [
+          "naive",
+          "damped_holt",
+          "ets",
+          "arima"
+        ]
+      },
+      "ROLLING_DAILY_POINT_IN_TIME": {
+        "semanticStatus": "NOT_LAWFUL",
+        "provenanceRequirement": "NOT_APPLICABLE",
+        "admissionWithoutProvenance": "NOT_LAWFUL",
+        "admissionWithValidProvenance": "NOT_LAWFUL",
+        "implementationSupport": "NOT_APPLICABLE",
+        "minimumHistoryRequirement": 60,
+        "preparationCapability": "NOT_SUPPORTED",
+        "supportedModelIds": []
+      }
+    }
+  },
+  "provenanceRules": {
+    "DAILY": "NOT_REQUIRED_FOR_ACCEPTED_DIRECT_PREPARATION",
+    "WEEKLY_END_OF_PERIOD": "REQUIRES_LEVEL_AT_TIMESTAMP_EXACT_SOURCE_OBSERVATION_CLOSED_PERIOD_AND_LINEAGE",
+    "NATIVE_MONTHLY_END_OF_PERIOD": "REQUIRES_EXACT_SAME_TARGET_EOP_PROVENANCE",
+    "NATIVE_MONTHLY_MONTHLY_AVERAGE": "REQUIRES_ARITHMETIC_MEAN_POPULATION_POLICY_NO_SYNTHETIC_DATA_AND_LINEAGE",
+    "unresolvedBehavior": "FAIL_CLOSED"
+  },
+  "historyEligibility": {
+    "monthlyPreparedMinimum": 36,
+    "rollingDailyMinimum": 60,
+    "trainingHistoryCapIntroduced": false,
+    "controlledFullHistory": {
+      "sourceObservations": 96,
+      "preparedMonthlyObservations": 48,
+      "rollingDailyAvailableObservations": 96
+    }
+  },
+  "targetPreparationSupport": {
+    "DAILY": [
+      "END_OF_PERIOD",
+      "MONTHLY_AVERAGE",
+      "ROLLING_DAILY_POINT_IN_TIME"
+    ],
+    "WEEKLY": [
+      "END_OF_PERIOD_WITH_PROVENANCE"
+    ],
+    "MONTHLY": [
+      "END_OF_PERIOD_WITH_PROVENANCE",
+      "MONTHLY_AVERAGE_WITH_PROVENANCE"
+    ]
+  },
+  "controlledResolutionProof": [
+    {
+      "seriesId": "phase6.generic.daily",
+      "sourceFrequency": "DAILY",
+      "resolvedVariantCount": 12,
+      "lawfulTargetCount": 3,
+      "modelsPerTarget": 4,
+      "capabilityStateBeforeForecastPreparation": "NOT_PREPARED"
+    },
+    {
+      "seriesId": "phase6.generic.daily.second",
+      "resolverPath": "SAME_GENERIC_SERIES_ID_PATH",
+      "tickerSpecificBranchRequired": false
+    }
+  ],
+  "negativeCases": [
+    {
+      "sourceFrequency": "WEEKLY",
+      "targetSemantics": "MONTHLY_AVERAGE",
+      "state": "NOT_LAWFUL"
+    },
+    {
+      "sourceFrequency": "WEEKLY",
+      "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+      "state": "NOT_LAWFUL"
+    },
+    {
+      "sourceFrequency": "MONTHLY",
+      "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+      "state": "NOT_LAWFUL"
+    },
+    {
+      "sourceFrequency": "MONTHLY",
+      "targetSemantics": "END_OF_PERIOD",
+      "provenance": "ABSENT",
+      "state": "PROVENANCE_REQUIRED"
+    },
+    {
+      "sourceFrequency": "MONTHLY",
+      "targetSemantics": "MONTHLY_AVERAGE",
+      "provenance": "ABSENT",
+      "state": "PROVENANCE_REQUIRED"
+    },
+    {
+      "sourceFrequency": "DAILY",
+      "history": "BELOW_ACCEPTED_MINIMUMS",
+      "state": "INSUFFICIENT_HISTORY"
+    }
+  ],
+  "preparedTruthProof": {
+    "identity": {
+      "seriesId": "phase6.generic.prepared",
+      "targetSemantics": "END_OF_PERIOD",
+      "methodId": "END_OF_PERIOD",
+      "methodVersion": "benchmark-forecasting-mvp-phase2-v1",
+      "modelId": "arima"
+    },
+    "currentForecast": "READY",
+    "historicalVerification": "NOT_PREPARED",
+    "crossTargetOrModelFallback": false
+  },
+  "identityPreservation": {
+    "key": "seriesId + targetSemantics + methodId + methodVersion + modelId",
+    "controlledVariantCount": 12,
+    "uniqueControlledIdentityCount": 12,
+    "collisions": 0
+  },
+  "targetedHydration": {
+    "supported": true,
+    "scope": "SINGLE_SERIES",
+    "requestedRange": "ALL",
+    "existingOwner": "DYNAMIC_MARKET_DATA_STORE",
+    "idempotentUpsert": true,
+    "massHydration": false,
+    "networkFetchUsedForEvidence": false
+  },
+  "tickerSpecificCode": false,
+  "schemaOrPersistenceChanges": [],
+  "migrationState": "PHASE_3_MIGRATION_PREPARED_NOT_APPLIED",
+  "implementationGapsDeferred": [
+    "Prepared-state datastore reader remains an injected Forecast persistence adapter; absent state fails closed as NOT_PREPARED.",
+    "Monthly request-time compute fallback remains deferred to Phase 8.",
+    "Rolling Daily active calibration minimum 20 versus canonical 30 remains deferred.",
+    "Recurring preparation and maintenance scheduling remains Phase 8."
+  ],
+  "validation": {
+    "phase6ForecastTests": 66,
+    "rollingDailyRegressionTests": 18,
+    "sgRuntimeTypecheck": "PASS",
+    "dashboardPreviewTypecheck": "PASS",
+    "capabilityEvidenceGenerator": "PASS",
+    "artifactGate": "PASS",
+    "editorDiagnostics": "PASS"
+  },
+  "guardrails": {
+    "forecastMathematicsChanged": false,
+    "rollingDailyMethodologyChanged": false,
+    "recommendationImplemented": false,
+    "preferredModelSelected": false,
+    "schemaChanged": false,
+    "productionMutation": false,
+    "networkFetch": false,
+    "deployment": false,
+    "benchmarkFinderTouched": false,
+    "appShellTouched": false,
+    "phase7Started": false
+  },
+  "nextPhaseStarted": false
+}

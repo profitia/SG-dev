@@ -37,7 +37,33 @@
     "forecastAccuracyInfoLine2": "3M, 6M and 12M use older forecast snapshots prepared respectively 3, 6 or 12 months before the target month.",
     "showForecast": "Show forecast",
     "showForecastAccuracy": "Show forecast accuracy",
+    "showForecastVerification": "Show forecast verification",
+    "forecastUnavailable": "Forecast unavailable",
+    "forecastUnavailableHint": "Historical data stays available. Current forecast could not be loaded for the selected model right now.",
+    "verificationUnavailable": "Forecast verification unavailable",
+    "verificationUnavailableHint": "Historical data and current forecast stay available. Historical forecast verification could not be loaded right now.",
+    "forecastModel": "Forecast model",
+    "forecastTargetBasis": "Forecast target basis",
+    "forecastTargetBasisInfoLabel": "Explain forecast target basis",
+    "forecastTargetBasisInfoLine1": "Target basis defines whether the forecast refers to a monthly average or an end-of-period reading.",
+    "forecastTargetBasisInfoLine2": "Changing the basis changes the meaning of Current Forecast, Historical Forecast, Historical Actual and the verification delta.",
+    "forecastPortfolioTitle": "Forecast portfolio review",
+    "forecastPortfolioSubtitle": "Standalone review surface for one benchmark with historical actuals, current forecast, and historical forecast verification.",
+    "forecastOrigin": "Forecast origin",
+    "targetPeriod": "Target period",
+    "actual": "Actual",
+    "forecast": "Forecast",
+    "delta": "Delta",
+    "model": "Model",
+    "verificationHorizon": "Verification horizon",
+    "verificationHorizonInfoLabel": "Explain verification horizon",
+    "verificationHorizonInfoLine1": "Horizon defines how early the forecast was prepared relative to the target month.",
+    "verificationHorizonInfoLine2": "1M, 3M, 6M and 12M do not change the target basis or model. They only change when the forecast snapshot was taken.",
     "forecastAccuracy": "Forecast Accuracy",
+    "forecastVerificationDelta": "Forecast vs actual delta",
+    "forecastVerificationDeltaInfoLabel": "Explain forecast vs actual delta",
+    "forecastVerificationDeltaInfoLine1": "The ribbon shows the difference between Historical Forecast and the lawful Historical Actual for the selected target basis.",
+    "forecastVerificationDeltaInfoLine2": "A positive delta means the forecast was above the actual. A negative delta means the forecast was below the actual.",
     "accuracyPresentationMode": "Presentation mode",
     "forecastHorizon": "Forecast horizon",
     "forecastHorizonInfoButton": "Explain forecast horizon",
@@ -71,21 +97,21 @@
   },
   "DashboardVariants": {
     "kicker": "Dashboard experience library",
-    "libraryTitle": "Canonical variant registry",
+    "libraryTitle": "Permanent dashboard comparison library",
     "currentVariantLabel": "Resolved runtime",
     "lifecycleLabel": "Lifecycle",
     "runtimeLabel": "Host runtime",
     "switcherLabel": "Runnable standalone variants",
-    "switcherHint": "Standalone mode can switch only between runnable registered variants. Embedded hosts should stay on the stable Finder contract until another variant is materialized.",
+    "switcherHint": "The standalone library automatically lists every runnable dashboard experience from the canonical registry in review order. Embedded hosts stay on the stable Finder contract.",
     "variantLabels": {
-      "historicalV1": "Historical v1",
+      "historicalV1": "Dashboard Preview v1",
       "finderEmbeddedV2": "Finder Embedded v2",
       "forecastPortfolioV3": "Forecast Portfolio v3"
     },
     "variantSummaries": {
-      "historicalV1": "Recovered legacy dashboard-first historical and forecast-accuracy experience.",
+      "historicalV1": "Recovered legacy dashboard-first historical and forecast-accuracy experience preserved as a runnable reference.",
       "finderEmbeddedV2": "Current chart-first benchmark experience with embedded host compatibility.",
-      "forecastPortfolioV3": "Reserved registry slot for the future Forecast Core UX without runtime implementation yet."
+      "forecastPortfolioV3": "First standalone forecast portfolio proposal combining Historical Actual, Current Forecast, and Historical Forecast Verification."
     },
     "availability": {
       "runnable": "Runnable",
@@ -95,6 +121,7 @@
     "lifecycle": {
       "legacy": "Legacy lineage",
       "active": "Active baseline",
+      "experimental": "Experimental standalone",
       "planned": "Planned lineage"
     },
     "notices": {
@@ -103,8 +130,8 @@
     },
     "unavailable": {
       "title": "{variantLabel} is not runnable in this baseline",
-      "historicalV1Message": "This registry entry preserves the recovered historical UX lineage only. The canonical Dashboard Preview app does not materialize it as a runnable surface.",
-      "forecastPortfolioV3Message": "This registry entry reserves the future Forecast Portfolio UX. No runtime implementation is present in Dashboard Preview yet.",
+      "historicalV1Message": "Historical v1 remains a standalone-only reference. It is not available as an embedded runtime.",
+      "forecastPortfolioV3Message": "This registry entry is embedded-disabled in the current baseline. Open it in standalone mode for the experimental forecast portfolio view.",
       "runtimeStatus": "Host runtime: {status}",
       "lifecycleStatus": "Lifecycle: {status}",
       "openActiveBaseline": "Open active baseline"

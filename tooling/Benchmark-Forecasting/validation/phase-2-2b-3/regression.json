@@ -1,0 +1,51 @@
+{
+  "task": "FORECAST_PHASE_2_2B_3_PERSISTENCE_OWNERSHIP_IDEMPOTENCY_EXPERIMENT",
+  "generatedAt": "2026-08-25T05:54:57.499Z",
+  "status": "PASS",
+  "forecastCore": {
+    "runner": ".venv/bin/python -m unittest discover -s tests",
+    "passed": 218,
+    "expected": 218,
+    "failed": 0
+  },
+  "sgRuntime": {
+    "runner": "node --import tsx --test tests/*.test.ts",
+    "passed": 169,
+    "expected": 169,
+    "failed": 0
+  },
+  "dashboard": {
+    "runner": "npm test",
+    "passed": 100,
+    "expected": 100,
+    "failed": 0
+  },
+  "phaseTooling": {
+    "runner": "node --test tooling/Benchmark-Forecasting/performance/*.test.mjs",
+    "passed": 31,
+    "expected": 31,
+    "failed": 0
+  },
+  "preparedAndSearch": {
+    "P01": "PASS",
+    "P02": "PASS",
+    "P06": "PASS",
+    "P07": "PASS",
+    "P09": "PASS",
+    "P10": "PASS",
+    "currentComputes": 0,
+    "verificationComputes": 0,
+    "modelFits": 0,
+    "providerCalls": 0,
+    "persistenceWrites": 0,
+    "singleFlightOwners": 0
+  },
+  "currentSingleFlight": "PASS",
+  "verificationSingleFlight": "PASS",
+  "typechecks": {
+    "sgRuntime": "PASS",
+    "dashboard": "PASS",
+    "dataRuntime": "PASS"
+  },
+  "environmentSnapshots": "PASS"
+}

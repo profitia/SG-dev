@@ -1,0 +1,219 @@
+{
+  "architectureId": "FORECAST_PRODUCTION_ARCHITECTURE_V1",
+  "freezeVersion": 1,
+  "algorithm": "SHA-256",
+  "complete": true,
+  "canonicalSourcePathCount": 35,
+  "files": [
+    {
+      "path": ".github/workflows/forecast-production-operations.yml",
+      "sha256": "11d13ee2d93a23b7687907f719b412e3404af1a73a83385718f4cc8692be3015",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "render.yaml",
+      "sha256": "1988aeb2314b5f770a6e597967cd258478f69d6351d4a80bcd6f161a4fd3d74b",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/backtest.py",
+      "sha256": "e74ac6254123d0ed4a965a787ad3afdb78b9c1c57de653221ba33caf64de1ca1",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/comparative_backtest.py",
+      "sha256": "16ee321a66bd338ac2321c48269af4d85d644f4a4f7c0935c4b6a7f8974a5d7e",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/empirical_prediction_band.py",
+      "sha256": "b3638a8afb06170ebefd41f5f26bef7c8156f54fb965cefb20f1f19e9a8bd937",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/metrics.py",
+      "sha256": "7794de175c8ea193266e58fd882099daf97c199b7cf143b09919e0720a22dd0b",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/models/arima.py",
+      "sha256": "efd47fc6c1b3fe2276ccb7b87c3b5e51fa216ee3ab77bcf67d8fcaa676abf0c8",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/models/damped_holt.py",
+      "sha256": "ae83751d2c187f455657780fb146f1a324ed408efe3a62d654da7042ff3dbcb8",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/models/ets.py",
+      "sha256": "be74ee5bcc8ab3fe0228ba6261fd0d811e01fa04010785bfb9e0c9c3f09f99be",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/models/naive.py",
+      "sha256": "9775cd1434ae62a56592160e1be6033cd73b7330cf7c33a894db086e7773cde3",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/rolling_daily_point_in_time.py",
+      "sha256": "12744446ed060d19780939e3c334bd827f8397791552a2500f0ec5c819a5225d",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/rolling_daily_policy.py",
+      "sha256": "89b51d92db656d79a8eac47d140544d65bb935d1511534f18077c089602e13e2",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/forecasting/service.py",
+      "sha256": "23d41fbc624b156073655d8c96e7b6f72afc522b9bb68e473dd6c2ce5897598f",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/contracts.ts",
+      "sha256": "7fd182a99a78c9e6b426e3dc9e3ce282dbf57ae5cfa8bab11e98a8d9f39bde92",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/current-single-flight.ts",
+      "sha256": "ceb6c4cbd5c969277eb50c173e6c2c2c26ad9f9b4f03a40216b0e60c4d24be13",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/identity.ts",
+      "sha256": "0a13bcbe199735f8ab55193dbf6d418575b95ad20aaea6369f0747ade8cd3d57",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/prepared-state.ts",
+      "sha256": "338b48f2caf573042b540320f22d07c20cfae9c11e7fa9fe72c89692f6ce4439",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/production-routing.ts",
+      "sha256": "01911c3574345688f66eb6f5fa48444b53649e4115f514d80adc15554df843cd",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/rolling-daily-current-ownership.ts",
+      "sha256": "8f3fdad09c1be88aa606e269f4c494664684320e8ce1b7a8599f225134b191db",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/rolling-daily-policy.ts",
+      "sha256": "39cd5ecc073ec9d50ccef4a294c74b2dad3c698f7e95e998aa5789b6f2b42218",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/rolling-daily-production-forecast.ts",
+      "sha256": "0756b3bdac5d5dc676a9b3486d14b961ef633251b0141522c0ea46b1d5e6072b",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/rolling-daily-production-operations.ts",
+      "sha256": "bd68ce4051e56d0498dc3a800a63e472127114b89ee6851120b50e3e9b252e7a",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/rolling-daily-verification.ts",
+      "sha256": "cafd1e351be944254c9b59ae8d8dec17db90a0a0ce94909822f32769e4ea4f5a",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/route-handlers.ts",
+      "sha256": "37b69e7af46d2e60effcb7069960be6aadd7c415411cac7057398b2282fd902c",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/service.ts",
+      "sha256": "c81d3de9db2e27c1d1711af87ebbffcc9c5dcd1fd9497096726948cc8720e582",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/stress-telemetry.ts",
+      "sha256": "f5c9ac12624bf7ba94e41f9066676417acd5c10cc1c74e156187f041f4c34534",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/verification-single-flight.ts",
+      "sha256": "8f81076763f72f435c3e756425d3ff045a3cc89858a6c3580e71ac223fa076dc",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/sg-runtime/lib/market-data/service.ts",
+      "sha256": "11f4233584a832fba0a0fefac3a5b118c6848d990b8feff02e6b2823c69f7ca2",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/sg-runtime/scripts/run-forecast-phase-2-1b-operation.ts",
+      "sha256": "9a9fe660f57c942549c0ab746bf77325f3b74fcf94e385de02868246d34e2210",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/sg-runtime/scripts/run-forecast-production-operations.ts",
+      "sha256": "3b37b57170cb853f1b56c7eaccc510121cf6a858cbc26f7b7e9b1aeb01f1eb1f",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/sg-runtime/package.json",
+      "sha256": "c603851f1e9355c414292806633f6da954529f8f4b0c443452e53335d947c8e1",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/dashboard-preview/lib/benchmark-forecast/runtime-query.ts",
+      "sha256": "801bea95280276204825ce6cb9de2701e0f607376220f636157595334e2ddcc6",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/dashboard-preview/lib/phase-2-2c/diagnostics.ts",
+      "sha256": "593e3c9afb7c8a5d114e7411352c097b40af2c7b984cd1e097170696c41322e0",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/dashboard-preview/lib/raw-data/dashboard-record-query.ts",
+      "sha256": "74c3d20875d0f19e8989e93e0e8b4d7ff49348bd41b33a1664adb7b4a2438d7f",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    },
+    {
+      "path": "apps/dashboard-preview/render.yaml",
+      "sha256": "d637105aee77cc11a5de6fa49f5df42e9a3074133daeeba0d9628c04afbedb1d",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": "YES"
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("SG_RUNTIME_DATABASE_URL")
+  directUrl = env("SG_RUNTIME_DIRECT_URL")
+}
+
+model BusinessBenchmark {
+  id              String                       @id @default(cuid())
+  organizationId  String
+  displayName     String
+  description     String?
+  concept         String?
+  status          String                       @default("ACTIVE")
+  createdByUserId String
+  createdAt       DateTime                     @default(now())
+  updatedAt       DateTime                     @updatedAt
+  providerMapping BenchmarkProviderMapping[]
+  selections      OrganizationBenchmarkSelection[]
+  costComponents  CategoryCostComponent[]
+
+  @@index([organizationId, createdAt(sort: Desc)])
+}
+
+model BenchmarkProviderMapping {
+  id                  String            @id @default(cuid())
+  businessBenchmarkId String
+  organizationId      String
+  providerCode        String
+  providerDisplayName String
+  providerSeriesId    String
+  providerSeriesKey   String?
+  title               String?
+  frequency           String?
+  currency            String?
+  unit                String?
+  sourceLabel         String?
+  region              String?
+  metadataJson        Json?
+  isPrimary           Boolean           @default(true)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  businessBenchmark   BusinessBenchmark @relation(fields: [businessBenchmarkId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, providerCode, providerSeriesId])
+  @@index([businessBenchmarkId])
+  @@index([organizationId])
+}
+
+model OrganizationBenchmarkSelection {
+  id                  String            @id @default(cuid())
+  organizationId      String
+  businessBenchmarkId String
+  createdByUserId     String
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  businessBenchmark   BusinessBenchmark @relation(fields: [businessBenchmarkId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, businessBenchmarkId])
+  @@index([organizationId, createdAt(sort: Desc)])
+}
+
+model Category {
+  id              String                  @id @default(cuid())
+  organizationId  String
+  name            String
+  status          String                  @default("DRAFT")
+  createdByUserId String
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  costComponents  CategoryCostComponent[]
+
+  @@index([organizationId, updatedAt(sort: Desc)])
+}
+
+model CategoryCostComponent {
+  id                  String            @id @default(cuid())
+  categoryId          String
+  name                String
+  businessBenchmarkId String
+  weightPercent       Int               @default(0)
+  position            Int
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  category            Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  businessBenchmark   BusinessBenchmark @relation(fields: [businessBenchmarkId], references: [id], onDelete: Restrict)
+
+  @@index([categoryId, position])
+  @@index([businessBenchmarkId])
+}

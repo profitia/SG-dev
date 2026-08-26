@@ -1,0 +1,397 @@
+{
+  "task": "FORECAST_PHASE_2_2D_CANDIDATE_EVALUATION",
+  "phase": "2.2D",
+  "generatedAt": "2026-08-25T16:12:08.510Z",
+  "principles": [
+    "METHODOLOGICAL_CORRECTNESS_SAFETY",
+    "LOW_INFRASTRUCTURE_COMPUTE_MAINTENANCE_COST",
+    "FAST_REPRODUCIBLE_USER_EXPERIENCE"
+  ],
+  "arbitraryNumericScoringUsed": false,
+  "frozenCandidateCount": 6,
+  "candidates": [
+    {
+      "rootCauseCoverage": {
+        "concurrencyFanOut": "DIRECT",
+        "missCoalescing": "DIRECT",
+        "fullTableRead": "OWNER_READ_REMAINS",
+        "inMemoryFiltering": "WAITER_FILTERING_REMAINS",
+        "postAbortServerWork": "PARTIAL_ONLY_IF_WAITERS_LEAVE",
+        "downstreamTimeout": "INDIRECT"
+      },
+      "expectedEffectModel": {
+        "readCountReduction": "HIGH_FOR_SAME_KEY_MISS_BURSTS",
+        "readCostReduction": "NONE_FOR_OWNER",
+        "dbPressureReduction": "HIGH_FOR_SAME_KEY_MISS_BURSTS",
+        "cpuMappingReduction": "PRISMA_RESULT_MAPPING_REDUCED; PER_REQUEST_BUSINESS_FILTERING_REMAINS",
+        "tailLatencyReduction": "EXPECTED_BUT_NOT_QUANTIFIED",
+        "timeoutProbabilityReduction": "EXPECTED_BUT_NOT_QUANTIFIED"
+      },
+      "principles": {
+        "methodologicalCorrectnessSafety": "PASS_WITH_EXACT_KEY_AND_FAILURE_CLEANUP_INVARIANTS",
+        "lowInfrastructureComputeMaintenanceCost": "BEST_OF_DIRECT_CANDIDATES",
+        "fastReproducibleUserExperience": "EXPECTED_DIRECT_BURST_STABILITY"
+      },
+      "candidateId": "C01",
+      "candidateName": "CACHE_MISS_COALESCING",
+      "targetedCausalLink": "Concurrent requests with one exact organization/pipeline cache key independently execute the same full ordered application-table read after a miss.",
+      "rootCauseDirectness": "DIRECT",
+      "evidenceLevel": "STRONGLY_SUPPORTED_DIRECT",
+      "expectedCapacityEffect": "One application full-table read owner per exact process-local cache key and overlapping miss window; all same-key waiters share the owner result.",
+      "correctnessRisk": "MEDIUM",
+      "semanticRisk": "LOW",
+      "implementationComplexity": "LOW",
+      "blastRadius": "LOW",
+      "infrastructureCost": "VERY_LOW",
+      "runtimeCost": "LOW",
+      "maintenanceCost": "LOW",
+      "reversibility": "HIGH",
+      "observability": "HIGH",
+      "validationComplexity": "LOW",
+      "crossInstanceImplication": "CROSS_INSTANCE_MISS_COALESCING_NOT_PROVIDED",
+      "userLatencyEffect": "Removes duplicate owner contention for overlapping same-key misses without extending the 30-second result TTL.",
+      "timeToImplementRelative": "LOW",
+      "dependencies": [
+        "Preserve cacheKeyFromFilters organizationId/pipelineId identity",
+        "Keep in-flight ownership distinct from result-cache TTL"
+      ],
+      "unknownAssumptions": [
+        "Accepted P09 exact route admission count is not observable",
+        "Benefit across multiple service instances is not provided"
+      ],
+      "evidenceSupporting": [
+        "Phase 2.2C statically proves no in-flight owner",
+        "Accepted P09 cause explicitly includes CONCURRENT and UNCOALESCED full-table reads",
+        "P09 synchronized same component-list requests use one organization/pipeline read key"
+      ],
+      "counterevidence": [
+        "The owner still performs one full-table read",
+        "Process-local ownership cannot eliminate cross-instance duplicate reads"
+      ],
+      "sourceSurfaces": [
+        "apps/dashboard-preview/lib/raw-data/dashboard-record-query.ts",
+        "apps/dashboard-preview/tests/dashboard-record-query.test.ts"
+      ],
+      "decision": "SELECT_FOR_PHASE_2_3",
+      "decisionReason": "Smallest independently testable intervention that directly removes the diagnosed duplicate read count without changing query or response semantics.",
+      "conditionalTrigger": null,
+      "reconsiderationEvidence": null
+    },
+    {
+      "rootCauseCoverage": {
+        "fullTableRead": "DIRECT",
+        "inMemoryFiltering": "DIRECT",
+        "concurrencyFanOut": "NO",
+        "missCoalescing": "NO",
+        "downstreamTimeout": "INDIRECT"
+      },
+      "expectedEffectModel": {
+        "readCostReduction": "HIGH_POTENTIAL",
+        "readCountReduction": "NONE",
+        "dbPressureReduction": "MEDIUM_TO_HIGH_POTENTIAL",
+        "cpuMappingReduction": "HIGH_POTENTIAL",
+        "tailLatencyReduction": "EXPECTED_BUT_NOT_QUANTIFIED",
+        "timeoutProbabilityReduction": "EXPECTED_BUT_NOT_QUANTIFIED"
+      },
+      "principles": {
+        "methodologicalCorrectnessSafety": "CONDITIONAL_ON_SEMANTIC_EQUIVALENCE",
+        "lowInfrastructureComputeMaintenanceCost": "WORSE_THAN_C01_DUE_TO_QUERY_AND_INDEX_SURFACE",
+        "fastReproducibleUserExperience": "POTENTIALLY_STRONG_AFTER_EQUIVALENCE_PROOF"
+      },
+      "candidateId": "C02",
+      "candidateName": "BOUNDED_QUERY_DB_SIDE_FILTERING",
+      "targetedCausalLink": "Each owner reads and maps the full organization/pipeline table before applying business-safe component search in memory.",
+      "rootCauseDirectness": "DIRECT",
+      "evidenceLevel": "STRONGLY_SUPPORTED_DIRECT",
+      "expectedCapacityEffect": "Reduce rows and columns returned and owner-side mapping cost, but retain one query per concurrent miss unless paired with C01.",
+      "correctnessRisk": "HIGH",
+      "semanticRisk": "HIGH",
+      "implementationComplexity": "HIGH",
+      "blastRadius": "MEDIUM",
+      "infrastructureCost": "LOW_TO_MEDIUM",
+      "runtimeCost": "LOWER_EXPECTED",
+      "maintenanceCost": "MEDIUM",
+      "reversibility": "MEDIUM",
+      "observability": "HIGH",
+      "validationComplexity": "HIGH",
+      "crossInstanceImplication": "BENEFIT_APPLIES_PER_QUERY_ACROSS_INSTANCES_BUT_DUPLICATE_QUERY_OWNERS_REMAIN",
+      "userLatencyEffect": "Potentially faster owner query, subject to equivalent predicates and index support.",
+      "timeToImplementRelative": "MEDIUM_TO_HIGH",
+      "dependencies": [
+        "Business-safe fallback fields must be queryable or equivalently reconstructed",
+        "Case, null, locale, deleted-row, tenant, and ordering semantics must match",
+        "Index requirement must be measured"
+      ],
+      "unknownAssumptions": [
+        "Expected result cardinality reduction is not measured",
+        "JSON-carried description search cannot be represented by the current top-level predicate",
+        "Query planner behavior is unmeasured"
+      ],
+      "evidenceSupporting": [
+        "Current P09 read returns all matching organization/pipeline rows and all model columns",
+        "Filtering and grouping happen after business-safe JSON fallback mapping"
+      ],
+      "counterevidence": [
+        "Existing indexes do not cover componentName/componentCode search",
+        "Current q semantics include descriptionPl/descriptionEn recovered from JSON carriers"
+      ],
+      "sourceSurfaces": [
+        "apps/dashboard-preview/lib/raw-data/dashboard-record-query.ts",
+        "apps/dashboard-preview/lib/raw-data/dashboard-record-filters.ts",
+        "apps/dashboard-preview/lib/time-series/series-query.ts",
+        "apps/dashboard-preview/prisma/schema.prisma",
+        "apps/dashboard-preview/tests/dashboard-record-query.test.ts"
+      ],
+      "indexClassification": "LIKELY_NEW_INDEX_REQUIRED",
+      "decision": "CONDITIONAL_SECONDARY",
+      "decisionReason": "Complementary read-cost reduction, but not the smallest first experiment and carries materially larger semantic and index uncertainty.",
+      "conditionalTrigger": "IF C01 proves one owner read per exact miss window but P09 remains capacity-bound or the single owner read remains materially costly, THEN evaluate C02 with semantic-equivalence and index-plan gates.",
+      "reconsiderationEvidence": null
+    },
+    {
+      "rootCauseCoverage": {
+        "postAbortServerWork": "DIRECT",
+        "downstreamTimeout": "DAMAGE_LIMITATION",
+        "concurrencyFanOut": "NO",
+        "missCoalescing": "NO",
+        "fullTableRead": "NO"
+      },
+      "expectedEffectModel": {
+        "postAbortWorkReduction": "HIGH_POTENTIAL",
+        "dbPressureReduction": "AFTER_ABORT_ONLY",
+        "timeoutProbabilityReduction": "NO_DIRECT_PREVENTION",
+        "tailLatencyReduction": "RECOVERY_ONLY"
+      },
+      "principles": {
+        "methodologicalCorrectnessSafety": "REQUIRES_SHARED_OWNER_AND_PARTIAL_ABORT_RULES",
+        "lowInfrastructureComputeMaintenanceCost": "NO_INFRASTRUCTURE_BUT_HIGH_MAINTENANCE",
+        "fastReproducibleUserExperience": "RECOVERY_BENEFIT_ONLY"
+      },
+      "candidateId": "C03",
+      "candidateName": "CANCELLATION_PROPAGATION",
+      "targetedCausalLink": "Client timeout ends waiting while admitted server and database work continues.",
+      "rootCauseDirectness": "PARTIAL",
+      "evidenceLevel": "SUPPORTED",
+      "expectedCapacityEffect": "Reduce retained work after clients leave; does not prevent the synchronized duplicate reads that begin before timeout.",
+      "correctnessRisk": "HIGH",
+      "semanticRisk": "MEDIUM",
+      "implementationComplexity": "HIGH",
+      "blastRadius": "MEDIUM",
+      "infrastructureCost": "VERY_LOW",
+      "runtimeCost": "LOWER_AFTER_ABORT",
+      "maintenanceCost": "HIGH",
+      "reversibility": "MEDIUM",
+      "observability": "MEDIUM",
+      "validationComplexity": "HIGH",
+      "crossInstanceImplication": "REQUEST_LOCAL; EACH_INSTANCE_MUST_PROPAGATE_CANCELLATION",
+      "userLatencyEffect": "No benefit before timeout; potentially faster recovery after overload.",
+      "timeToImplementRelative": "HIGH",
+      "dependencies": [
+        "Next request abort propagation",
+        "Prisma/driver/PostgreSQL cancellation capability proof",
+        "Shared-owner cancellation semantics"
+      ],
+      "unknownAssumptions": [
+        "Prisma query cancellation is not proven",
+        "Exact layer retaining P09 work is not separately timed"
+      ],
+      "evidenceSupporting": [
+        "766 clients timed out while application DB work remained after cooldown"
+      ],
+      "counterevidence": [
+        "Cancellation starts after fan-out already exists",
+        "No route or Prisma AbortSignal exists today"
+      ],
+      "sourceSurfaces": [
+        "apps/dashboard-preview/app/api/components/route.ts",
+        "apps/dashboard-preview/lib/raw-data/dashboard-record-query.ts",
+        "Prisma driver boundary",
+        "PostgreSQL cancellation boundary"
+      ],
+      "decision": "CONDITIONAL_SECONDARY",
+      "decisionReason": "Evidence supports damage limitation after timeout, not prevention of the established first cause.",
+      "conditionalTrigger": "IF C01 is accepted yet timeout/abort cases still leave material server or DB work, THEN prove driver cancellation feasibility and evaluate C03 separately.",
+      "reconsiderationEvidence": null
+    },
+    {
+      "rootCauseCoverage": {
+        "concurrencyFanOut": "DIRECT_LIMIT",
+        "missCoalescing": "NO",
+        "fullTableRead": "NO",
+        "downstreamTimeout": "OVERLOAD_MASKING_RISK"
+      },
+      "expectedEffectModel": {
+        "dbPressureReduction": "CONCURRENCY_CAPPED",
+        "readCountReduction": "NONE",
+        "tailLatencyReduction": "UNKNOWN_QUEUE_TRADEOFF",
+        "timeoutProbabilityReduction": "UNKNOWN"
+      },
+      "principles": {
+        "methodologicalCorrectnessSafety": "REQUIRES_EXPLICIT_ADMISSION_SEMANTICS",
+        "lowInfrastructureComputeMaintenanceCost": "LOW_INFRASTRUCTURE_MEDIUM_OPERATIONAL_COST",
+        "fastReproducibleUserExperience": "MIXED_DUE_TO_QUEUE_AND_FAIRNESS"
+      },
+      "candidateId": "C04",
+      "candidateName": "REQUEST_CONCURRENCY_CONTROL",
+      "targetedCausalLink": "Bound the number of simultaneous expensive reads admitted to the application/DB path.",
+      "rootCauseDirectness": "PARTIAL",
+      "evidenceLevel": "SUPPORTED",
+      "expectedCapacityEffect": "Cap simultaneous pressure while preserving redundant work as queued or rejected requests.",
+      "correctnessRisk": "MEDIUM",
+      "semanticRisk": "MEDIUM",
+      "implementationComplexity": "MEDIUM",
+      "blastRadius": "HIGH",
+      "infrastructureCost": "VERY_LOW",
+      "runtimeCost": "QUEUE_AND_BOOKKEEPING",
+      "maintenanceCost": "MEDIUM",
+      "reversibility": "HIGH",
+      "observability": "MEDIUM",
+      "validationComplexity": "HIGH",
+      "crossInstanceImplication": "PROCESS_LOCAL_CAP_ONLY_UNLESS_DISTRIBUTED_COORDINATION_IS_ADDED",
+      "userLatencyEffect": "Potential queue delay, head-of-line blocking, starvation, rejection, and tenant fairness effects.",
+      "timeToImplementRelative": "MEDIUM",
+      "dependencies": [
+        "Admission policy",
+        "Queue bound",
+        "Fairness and rejection contract",
+        "Per-key versus global scope"
+      ],
+      "unknownAssumptions": [
+        "Safe cap is not measured",
+        "Distinct-key capacity after duplicate removal is unknown"
+      ],
+      "evidenceSupporting": [
+        "P09 is proven through 100 and blocked at 1000"
+      ],
+      "counterevidence": [
+        "Does not remove duplicate reads",
+        "A cap can merely hide overload behind queue latency"
+      ],
+      "sourceSurfaces": [
+        "apps/dashboard-preview/app/api/components/route.ts",
+        "apps/dashboard-preview/lib/raw-data/dashboard-record-query.ts"
+      ],
+      "decision": "DEFER",
+      "decisionReason": "A concurrency cap is not justified before redundant same-key reads are removed and the remaining distinct-key capacity is measured.",
+      "conditionalTrigger": null,
+      "reconsiderationEvidence": "Controlled post-C01 evidence showing overload from simultaneous distinct-key owner reads plus a bounded fairness/tail-latency contract."
+    },
+    {
+      "rootCauseCoverage": {
+        "concurrencyFanOut": "CAPACITY_ENVELOPE_ONLY",
+        "missCoalescing": "NO",
+        "fullTableRead": "NO"
+      },
+      "expectedEffectModel": {
+        "dbPressureReduction": "UNKNOWN",
+        "tailLatencyReduction": "UNKNOWN",
+        "timeoutProbabilityReduction": "UNKNOWN"
+      },
+      "principles": {
+        "methodologicalCorrectnessSafety": "FAILS_CURRENT_EVIDENCE_STANDARD",
+        "lowInfrastructureComputeMaintenanceCost": "POTENTIALLY_EXPENSIVE",
+        "fastReproducibleUserExperience": "UNKNOWN"
+      },
+      "candidateId": "C05",
+      "candidateName": "DEFERRED_DB_POOL_EVALUATION",
+      "targetedCausalLink": "Potential Prisma client-side acquisition pressure.",
+      "rootCauseDirectness": "INDIRECT",
+      "evidenceLevel": "SPECULATIVE",
+      "expectedCapacityEffect": "Unknown; pool changes could increase throughput or amplify database overload.",
+      "correctnessRisk": "MEDIUM",
+      "semanticRisk": "LOW",
+      "implementationComplexity": "LOW",
+      "blastRadius": "HIGH",
+      "infrastructureCost": "POTENTIALLY_HIGH",
+      "runtimeCost": "UNKNOWN",
+      "maintenanceCost": "MEDIUM",
+      "reversibility": "HIGH",
+      "observability": "LOW",
+      "validationComplexity": "HIGH",
+      "crossInstanceImplication": "POOL_LIMITS_MULTIPLY_PER_INSTANCE",
+      "userLatencyEffect": "Unknown until acquisition wait is directly observed.",
+      "timeToImplementRelative": "LOW_CONFIGURATION_HIGH_EVIDENCE_COST",
+      "dependencies": [
+        "Direct Prisma acquisition queue/wait evidence",
+        "Database capacity envelope after query fan-out controls"
+      ],
+      "unknownAssumptions": [
+        "Prisma acquisition count and wait are NOT_OBSERVABLE",
+        "Pool parameters are implicit"
+      ],
+      "evidenceSupporting": [
+        "Post-cooldown PostgreSQL wait events exist"
+      ],
+      "counterevidence": [
+        "The waiter metric is not the Prisma acquisition queue",
+        "No pool error or saturation was proven"
+      ],
+      "sourceSurfaces": [
+        "Dashboard Prisma client configuration",
+        "DATABASE_URL deployment configuration"
+      ],
+      "decision": "DEFER",
+      "decisionReason": "Pool tuning depends on an explicitly unobservable boundary and cannot be promoted from PostgreSQL wait_event evidence.",
+      "conditionalTrigger": null,
+      "reconsiderationEvidence": "Direct client-side acquisition count/wait telemetry and isolated database-capacity evidence after C01/C02 evaluation."
+    },
+    {
+      "rootCauseCoverage": {
+        "concurrencyFanOut": "NO",
+        "missCoalescing": "NO",
+        "fullTableRead": "NO",
+        "postAbortServerWork": "MEASUREMENT_SEPARATION_ONLY"
+      },
+      "expectedEffectModel": {
+        "readCountReduction": "NONE",
+        "readCostReduction": "NONE",
+        "postAbortWorkReduction": "NONE",
+        "timeoutProbabilityReduction": "NONE",
+        "dbPressureReduction": "NONE",
+        "cpuMappingReduction": "NONE",
+        "tailLatencyReduction": "NONE"
+      },
+      "principles": {
+        "methodologicalCorrectnessSafety": "STRONG_FOR_MEASUREMENT",
+        "lowInfrastructureComputeMaintenanceCost": "LOW_TEST_COST",
+        "fastReproducibleUserExperience": "NO_PRODUCTION_EFFECT"
+      },
+      "candidateId": "C06",
+      "candidateName": "SCENARIO_ISOLATION",
+      "targetedCausalLink": "Prevent one stress scenario from contaminating the next scenario measurement.",
+      "rootCauseDirectness": "INDIRECT",
+      "evidenceLevel": "PROVEN_DIRECT",
+      "expectedCapacityEffect": "No production capacity effect; improves test attribution and reproducibility.",
+      "correctnessRisk": "LOW",
+      "semanticRisk": "LOW",
+      "implementationComplexity": "LOW",
+      "blastRadius": "TEST_ONLY",
+      "infrastructureCost": "LOW_TEST_TIME",
+      "runtimeCost": "TEST_ONLY",
+      "maintenanceCost": "LOW",
+      "reversibility": "HIGH",
+      "observability": "HIGH",
+      "validationComplexity": "LOW",
+      "crossInstanceImplication": "TEST_PROCESS_ISOLATION_ONLY",
+      "userLatencyEffect": "NONE_IN_PRODUCTION",
+      "timeToImplementRelative": "LOW",
+      "dependencies": [
+        "Fresh process or full settlement gate between scenarios"
+      ],
+      "unknownAssumptions": [],
+      "evidenceSupporting": [
+        "Clean P10 disproved the shared-process application DB anomaly"
+      ],
+      "counterevidence": [
+        "Does not alter P09 production reads or capacity"
+      ],
+      "sourceSurfaces": [
+        "tooling/Benchmark-Forecasting/performance stress/validation harnesses"
+      ],
+      "decision": "REJECT",
+      "decisionReason": "Retained as mandatory validation hygiene, but rejected as the Phase 2.3 production optimization because it does not address the P09 cause.",
+      "conditionalTrigger": null,
+      "reconsiderationEvidence": null
+    }
+  ]
+}

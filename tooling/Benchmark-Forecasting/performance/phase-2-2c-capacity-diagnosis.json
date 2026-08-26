@@ -1,0 +1,824 @@
+{
+  "task": "FORECAST_PHASE_2_2C_HTTP_CAPACITY_DIAGNOSIS",
+  "phase": "2.2C",
+  "generatedAt": "2026-08-25T15:40:15.900Z",
+  "resourceDiagnosis": "PARTIALLY_ESTABLISHED",
+  "replay": {
+    "required": "YES",
+    "p10At10Count": 1,
+    "p09ControlCount": 0,
+    "p09At1000Count": 0
+  },
+  "p09": {
+    "task": "FORECAST_PHASE_2_2C_P09_DIAGNOSIS",
+    "generatedAt": "2026-08-25T15:40:15.900Z",
+    "acceptedAuthority": {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-4r/executions/2026-08-25T115341-253Z-6a3d0227-e64f-44da-a2ed-8cf298ff8cc3/raw/P09-mixed-1000-r1-phase-2-2b-4r-p09-1000-ets-f745411d-2178-40e7-b45e-3d16509fdfb5.json",
+      "sha256": "53be7fd10434a479e62ae4378ca6423ebb889818caa8befae1d5185f82e8ef49"
+    },
+    "acceptedSymptom": {
+      "concurrency": 1000,
+      "attempts": 1000,
+      "successes": 234,
+      "timeouts": 766,
+      "otherErrors": 0,
+      "forecastCompute": 0,
+      "verificationCompute": 0,
+      "providerCalls": 0,
+      "settlement": {
+        "cooldownStartedAt": "2026-08-25T13:50:41.764Z",
+        "cooldownCompletedAt": "2026-08-25T13:51:11.840Z",
+        "cooldownDurationMs": 30076,
+        "activeHttpRequests": 0,
+        "activeCurrentSingleFlightEntries": 0,
+        "activeVerificationSingleFlightEntries": 0,
+        "inFlightCurrentCompute": 0,
+        "inFlightVerificationCompute": 0,
+        "cpuCooldown": {
+          "status": "PASS",
+          "requiredDurationMs": 30000,
+          "before": {
+            "rootPid": 2523,
+            "processCount": 3,
+            "rssMb": 1389.140625,
+            "cpuTime": [
+              {
+                "pid": 2523,
+                "cpuTime": "0:00.28"
+              },
+              {
+                "pid": 2542,
+                "cpuTime": "0:00.36"
+              },
+              {
+                "pid": 2543,
+                "cpuTime": "4:30.84"
+              }
+            ]
+          },
+          "after": {
+            "rootPid": 2523,
+            "processCount": 3,
+            "rssMb": 1461.234375,
+            "cpuTime": [
+              {
+                "pid": 2523,
+                "cpuTime": "0:00.28"
+              },
+              {
+                "pid": 2542,
+                "cpuTime": "0:00.36"
+              },
+              {
+                "pid": 2543,
+                "cpuTime": "5:05.81"
+              }
+            ]
+          }
+        },
+        "memory": {
+          "preWaveRssMb": null,
+          "peakRssMb": null,
+          "postWaveRssMb": null,
+          "postCooldownRssMb": 1461.234375,
+          "workloadProcessStateAfterCooldown": "SERVICE_IDLE",
+          "rssPeakDeltaMb": null,
+          "rssPostCooldownDeltaMb": null,
+          "memoryRecoveryRatio": null
+        },
+        "dbPool": {
+          "application": {
+            "activeConnections": 17,
+            "idleConnections": 0,
+            "waitingRequests": 17,
+            "totalConnections": 17
+          },
+          "marketData": {
+            "activeConnections": 0,
+            "idleConnections": 4,
+            "waitingRequests": 0,
+            "totalConnections": 4
+          },
+          "saturationObserved": false,
+          "poolErrors": 0,
+          "status": "SAFETY_BLOCKED"
+        },
+        "status": "SAFETY_BLOCKED"
+      }
+    },
+    "controls": [
+      {
+        "repetition": 1,
+        "concurrency": 100,
+        "successes": 100,
+        "latencyP50Ms": 24825.468021,
+        "settlementStatus": "PASS"
+      },
+      {
+        "repetition": 2,
+        "concurrency": 100,
+        "successes": 100,
+        "latencyP50Ms": 25089.61977,
+        "settlementStatus": "PASS"
+      },
+      {
+        "repetition": 3,
+        "concurrency": 100,
+        "successes": 100,
+        "latencyP50Ms": 24057.455729,
+        "settlementStatus": "PASS"
+      }
+    ],
+    "replay": {
+      "controlCount": 0,
+      "at1000Count": 0,
+      "disposition": "NOT_REQUIRED"
+    },
+    "lifecycle": [
+      {
+        "stage": "CLIENT_REQUEST_CREATED",
+        "observability": "AGGREGATE_OBSERVABLE",
+        "evidence": null
+      },
+      {
+        "stage": "CLIENT_REQUEST_SENT",
+        "observability": "AGGREGATE_OBSERVABLE",
+        "evidence": null
+      },
+      {
+        "stage": "HTTP_ACCEPTED",
+        "observability": "NOT_OBSERVABLE",
+        "evidence": null
+      },
+      {
+        "stage": "ROUTE_STARTED",
+        "observability": "NOT_OBSERVABLE",
+        "evidence": null
+      },
+      {
+        "stage": "DB_ACQUIRE_STARTED",
+        "observability": "NOT_OBSERVABLE",
+        "evidence": null
+      },
+      {
+        "stage": "DB_ACQUIRED",
+        "observability": "NOT_OBSERVABLE",
+        "evidence": null
+      },
+      {
+        "stage": "DB_QUERY_STARTED",
+        "observability": "NOT_OBSERVABLE",
+        "evidence": null
+      },
+      {
+        "stage": "DB_QUERY_COMPLETED",
+        "observability": "NOT_OBSERVABLE",
+        "evidence": null
+      },
+      {
+        "stage": "RESULT_MAPPING_STARTED",
+        "observability": "NOT_OBSERVABLE",
+        "evidence": null
+      },
+      {
+        "stage": "RESULT_MAPPING_COMPLETED",
+        "observability": "NOT_OBSERVABLE",
+        "evidence": null
+      },
+      {
+        "stage": "RESPONSE_STARTED",
+        "observability": "NOT_OBSERVABLE",
+        "evidence": null
+      },
+      {
+        "stage": "RESPONSE_COMPLETED",
+        "observability": "NOT_OBSERVABLE",
+        "evidence": null
+      },
+      {
+        "stage": "REQUEST_SETTLED",
+        "observability": "AGGREGATE_OBSERVABLE",
+        "evidence": "2026-08-25T13:50:41.535Z"
+      }
+    ],
+    "firstCapacityBound": "APPLICATION_DB_READ_FAN_OUT",
+    "primaryCause": "CONCURRENT_UNCOALESCED_FULL_TABLE_APPLICATION_READS",
+    "secondaryCauses": [
+      "SERVER_WORK_CONTINUES_AFTER_CLIENT_ABORT",
+      "CPU_AND_MAPPING_PRESSURE_SUPPORTED",
+      "REQUEST_TIMEOUT_BOUND"
+    ],
+    "timeoutClassification": "DOWNSTREAM_SYMPTOM",
+    "confidence": "STRONGLY_SUPPORTED",
+    "acquisitionLatency": "NOT_OBSERVABLE",
+    "queryExecutionLatency": "NOT_OBSERVABLE",
+    "queryInventory": [
+      {
+        "order": 1,
+        "process": "dashboard-preview",
+        "authority": "application",
+        "operation": "drDashboardIndexRecord.findMany",
+        "tables": [
+          "dr_dashboard_index_records"
+        ],
+        "purpose": "Full ordered dashboard read before in-memory component search",
+        "logicalOrmOperationsPerAdmittedRequest": 1,
+        "expectedCardinality": "FULL_MATCHING_APPLICATION_TABLE",
+        "forecastCompute": false
+      },
+      {
+        "order": 2,
+        "process": "sg-runtime",
+        "authority": "marketData",
+        "operation": "marketSeries.findUnique with hydrationState and observations",
+        "tables": [
+          "market_series",
+          "market_hydration_state",
+          "market_observations"
+        ],
+        "purpose": "Historical series cache read after component response succeeds",
+        "logicalOrmOperationsPerSuccessfulRequest": 1,
+        "expectedCardinality": "ONE_SERIES_PLUS_ALL_STORED_OBSERVATIONS",
+        "forecastCompute": false
+      }
+    ],
+    "capacityEnvelope": {
+      "provenThrough": 100,
+      "blockedAt": 1000,
+      "unmeasuredMaximumInvented": false
+    },
+    "causalChain": [
+      "1000_SYNCHRONIZED_CLIENTS",
+      "CONCURRENT_EXPIRED_CACHE_COMPONENT_READS",
+      "APPLICATION_DB_AND_MAPPING_FAN_OUT",
+      "120000_MS_CLIENT_TIMEOUT",
+      "766_CLIENT_ABORTS",
+      "SERVER_WORK_NOT_CANCELLED",
+      "17_ACTIVE_WAITING_APPLICATION_BACKENDS_AFTER_COOLDOWN"
+    ]
+  },
+  "p10": {
+    "task": "FORECAST_PHASE_2_2C_P10_DIAGNOSIS",
+    "generatedAt": "2026-08-25T15:40:15.900Z",
+    "acceptedAuthority": {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-4r/executions/2026-08-25T115341-253Z-6a3d0227-e64f-44da-a2ed-8cf298ff8cc3/raw/P10-ets-10-r1-phase-2-2b-4r-p10-10-ets-f59b5af2-f85e-4dad-9e5f-6eb89fb2e2df.json",
+      "sha256": "38f55690334ca3c262eb4d43fbad0cbeafdf9c1a97d532f06c0b00487b2fe1b4"
+    },
+    "replayAuthority": {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2c/replays/2026-08-25T152843-357Z-1641feee-5625-4d70-b0a6-8386b1e4bda1/raw/P10-ets-10-r1-phase-2-2c-diagnostic-p10-10-ets-794d1242-0a76-40b4-9612-5b76616b7ccd.json",
+      "executionId": "2026-08-25T152843-357Z-1641feee-5625-4d70-b0a6-8386b1e4bda1"
+    },
+    "replayCount": 1,
+    "acceptedSymptom": {
+      "concurrency": 10,
+      "responses": "10/10",
+      "prepared": true,
+      "forecastCompute": 0,
+      "verificationCompute": 0,
+      "owners": 0,
+      "applicationSettlement": {
+        "activeConnections": 15,
+        "idleConnections": 1,
+        "waitingRequests": 14,
+        "totalConnections": 16
+      }
+    },
+    "cleanReplay": {
+      "responses": "10/10",
+      "latency": {
+        "p50Ms": 657.97525,
+        "p95Ms": 662.521715,
+        "maxMs": 662.639333
+      },
+      "prepared": true,
+      "forecastCompute": 0,
+      "verificationCompute": 0,
+      "owners": 0,
+      "writes": 0,
+      "providerCalls": 0,
+      "applicationActivityBefore": [],
+      "applicationActivityAfter": [],
+      "dbPoolSettlement": {
+        "application": {
+          "activeConnections": 0,
+          "idleConnections": 0,
+          "waitingRequests": 0,
+          "totalConnections": 0
+        },
+        "marketData": {
+          "activeConnections": 0,
+          "idleConnections": 0,
+          "waitingRequests": 0,
+          "totalConnections": 0
+        },
+        "saturationObserved": false,
+        "poolErrors": 0,
+        "status": "PASS"
+      },
+      "querySpans": {
+        "count": 14,
+        "p50Ms": 132.735,
+        "p95Ms": 142.832,
+        "p99Ms": 143.57,
+        "maxMs": 143.755
+      },
+      "routeSpans": {
+        "count": 10,
+        "p50Ms": 139.762,
+        "p95Ms": 143.19,
+        "p99Ms": 143.695,
+        "maxMs": 143.821
+      },
+      "serializationSpans": {
+        "count": 10,
+        "p50Ms": 0.155,
+        "p95Ms": 0.944,
+        "p99Ms": 1.229,
+        "maxMs": 1.301
+      }
+    },
+    "lifecycle": [
+      {
+        "stage": "CLIENT_REQUEST_CREATED",
+        "observability": "OBSERVABLE_OR_BOUNDED",
+        "evidence": null
+      },
+      {
+        "stage": "CLIENT_REQUEST_SENT",
+        "observability": "OBSERVABLE_OR_BOUNDED",
+        "evidence": null
+      },
+      {
+        "stage": "HTTP_ACCEPTED",
+        "observability": "OBSERVABLE_OR_BOUNDED",
+        "evidence": null
+      },
+      {
+        "stage": "ROUTE_STARTED",
+        "observability": "OBSERVABLE_OR_BOUNDED",
+        "evidence": null
+      },
+      {
+        "stage": "DB_ACQUIRE_STARTED",
+        "observability": "NOT_SEPARATELY_OBSERVABLE",
+        "evidence": null
+      },
+      {
+        "stage": "DB_ACQUIRED",
+        "observability": "NOT_SEPARATELY_OBSERVABLE",
+        "evidence": null
+      },
+      {
+        "stage": "DB_QUERY_STARTED",
+        "observability": "OBSERVABLE_OR_BOUNDED",
+        "evidence": null
+      },
+      {
+        "stage": "DB_QUERY_COMPLETED",
+        "observability": "OBSERVABLE_OR_BOUNDED",
+        "evidence": null
+      },
+      {
+        "stage": "RESULT_MAPPING_STARTED",
+        "observability": "NOT_SEPARATELY_OBSERVABLE",
+        "evidence": null
+      },
+      {
+        "stage": "RESULT_MAPPING_COMPLETED",
+        "observability": "NOT_SEPARATELY_OBSERVABLE",
+        "evidence": null
+      },
+      {
+        "stage": "RESPONSE_STARTED",
+        "observability": "OBSERVABLE_OR_BOUNDED",
+        "evidence": null
+      },
+      {
+        "stage": "RESPONSE_COMPLETED",
+        "observability": "NOT_SEPARATELY_OBSERVABLE",
+        "evidence": null
+      },
+      {
+        "stage": "REQUEST_SETTLED",
+        "observability": "OBSERVABLE_OR_BOUNDED",
+        "evidence": null
+      }
+    ],
+    "queryInventory": [
+      {
+        "condition": "POINT_IN_TIME",
+        "process": "dashboard-preview",
+        "authority": "marketData",
+        "operations": [
+          "rollingDailyCurrentForecastSnapshot.findFirst",
+          "rollingDailyMaintenanceState.findUnique"
+        ],
+        "logicalOrmOperationsPerRequest": 2,
+        "forecastCompute": false
+      },
+      {
+        "condition": "GENERIC_PERIOD",
+        "process": "dashboard-preview",
+        "authority": "marketData",
+        "operations": [
+          "forecastCurrentRun.findFirst"
+        ],
+        "logicalOrmOperationsPerHit": 1,
+        "fallbackOnMiss": "one additional findFirst",
+        "forecastCompute": false
+      }
+    ],
+    "logicalOrmOperations": {
+      "total": 14,
+      "perRequestMean": 1.4,
+      "pointInTime": 2,
+      "genericHit": 1
+    },
+    "physicalAcquisitions": "NOT_OBSERVABLE",
+    "firstCapacityBound": "NOT_OBSERVED_THROUGH_10",
+    "primaryCause": "MEASUREMENT_CONTAMINATION_FROM_PRECEDING_P09",
+    "secondaryCauses": [
+      "DEV_COLD_ROUTE_COMPILATION_NOT_CAPACITY_BOUND"
+    ],
+    "confidence": "PROVEN",
+    "causalChain": [
+      "P09_UNSETTLED_APPLICATION_DB_WORK",
+      "P10_MARKET_DATA_ONLY_PREPARED_READS",
+      "10_CORRECT_RESPONSES",
+      "SHARED_PROCESS_APPLICATION_DB_SETTLEMENT_SAMPLE",
+      "FALSE_P10_APPLICATION_DB_ATTRIBUTION",
+      "CLEAN_P10_ZERO_APPLICATION_ACTIVITY_AND_FULL_SETTLEMENT"
+    ],
+    "capacityEnvelope": {
+      "provenThrough": 10,
+      "blockedAt": "NOT_OBSERVED_IN_CLEAN_REPLAY",
+      "unmeasuredMaximumInvented": false
+    }
+  },
+  "timeoutAuthorityMap": [
+    {
+      "name": "STRESS_CLIENT_REQUEST_TIMEOUT",
+      "valueMs": 120000,
+      "source": "tooling/Benchmark-Forecasting/performance/phase-2-1b-baseline.mjs",
+      "scope": "Each P09/P10 client fetch",
+      "enforcer": "Node fetch AbortSignal.timeout",
+      "p09": "FIRED_766_TIMES",
+      "p10": "NOT_FIRED"
+    },
+    {
+      "name": "DASHBOARD_INTERNAL_FORECAST_FALLBACK_TIMEOUT",
+      "valueMs": 20000,
+      "source": "apps/dashboard-preview/lib/benchmark-forecast/runtime-query.ts",
+      "scope": "Dashboard to SG Runtime production fallback only",
+      "enforcer": "Dashboard AbortController",
+      "p09": "NOT_ON_PATH",
+      "p10": "NOT_ON_PREPARED_HIT_PATH"
+    },
+    {
+      "name": "DASHBOARD_ANALYTICS_FETCH_TIMEOUT",
+      "valueMs": null,
+      "configured": "NOT_EXPLICITLY_CONFIGURED",
+      "source": "apps/dashboard-preview/lib/time-series/series-query.ts",
+      "scope": "P09 series route to SG Runtime analytics",
+      "enforcer": "HTTP library defaults",
+      "p09": "NO_EXPLICIT_TIMEOUT_OBSERVED",
+      "p10": "NOT_ON_PATH"
+    },
+    {
+      "name": "DB_POOL_ACQUISITION_TIMEOUT",
+      "valueMs": null,
+      "configured": "NOT_EXPLICITLY_CONFIGURED",
+      "source": "Prisma client creation and isolated DATABASE_URL",
+      "scope": "Dashboard and SG Runtime DB acquisition",
+      "enforcer": "Prisma/driver implicit behavior",
+      "p09": "NO_POOL_TIMEOUT_ERROR_RECORDED",
+      "p10": "NO_POOL_TIMEOUT_ERROR_RECORDED"
+    },
+    {
+      "name": "DB_STATEMENT_TIMEOUT",
+      "valueMs": null,
+      "configured": "NOT_EXPLICITLY_CONFIGURED",
+      "source": "Application configuration and isolated DATABASE_URL",
+      "scope": "PostgreSQL statements",
+      "enforcer": "PostgreSQL implicit configuration",
+      "p09": "NO_STATEMENT_TIMEOUT_ERROR_RECORDED",
+      "p10": "NO_STATEMENT_TIMEOUT_ERROR_RECORDED"
+    },
+    {
+      "name": "PRISMA_INTERACTIVE_TRANSACTION_TIMEOUT",
+      "valueMs": 5000,
+      "configured": "PRISMA_DEFAULT_WHERE_RELEVANT",
+      "source": "Generated Prisma client",
+      "scope": "Interactive transactions only",
+      "enforcer": "Prisma",
+      "p09": "NOT_RELEVANT_NO_INTERACTIVE_TRANSACTION",
+      "p10": "NOT_RELEVANT_NO_INTERACTIVE_TRANSACTION"
+    },
+    {
+      "name": "NODE_NEXT_REQUEST_TIMEOUT",
+      "valueMs": null,
+      "configured": "NOT_EXPLICITLY_CONFIGURED",
+      "source": "Next.js application configuration",
+      "scope": "Inbound HTTP",
+      "enforcer": "Node/Next implicit behavior",
+      "p09": "NO_SERVER_TIMEOUT_ERROR_RECORDED",
+      "p10": "NO_SERVER_TIMEOUT_ERROR_RECORDED"
+    }
+  ],
+  "dbConnectionMap": {
+    "task": "FORECAST_PHASE_2_2C_DB_CONNECTION_MAP",
+    "generatedAt": "2026-08-25T15:40:15.900Z",
+    "relevantPrismaCreationSiteCount": 4,
+    "clients": [
+      {
+        "process": "dashboard-preview",
+        "authority": "application",
+        "version": "Prisma 7.8.0 + PrismaPg",
+        "lifecycle": "GLOBAL_SINGLETON_PER_SERVICE_PROCESS",
+        "p09": true,
+        "p10": false
+      },
+      {
+        "process": "dashboard-preview",
+        "authority": "marketData",
+        "version": "Prisma 7.8.0 + PrismaPg",
+        "lifecycle": "GLOBAL_SINGLETON_PER_CONNECTION_STRING",
+        "p09": false,
+        "p10": true
+      },
+      {
+        "process": "sg-runtime",
+        "authority": "application",
+        "version": "Prisma 5.22.0",
+        "lifecycle": "GLOBAL_SINGLETON_IN_DEVELOPMENT",
+        "p09": false,
+        "p10": false
+      },
+      {
+        "process": "sg-runtime",
+        "authority": "marketData",
+        "version": "Prisma 5.22.0",
+        "lifecycle": "GLOBAL_SINGLETON_IN_DEVELOPMENT",
+        "p09": true,
+        "p10": false
+      }
+    ],
+    "poolConfiguration": {
+      "connectionLimit": "IMPLICIT_NOT_EXPLICITLY_CONFIGURED",
+      "poolTimeout": "IMPLICIT_NOT_EXPLICITLY_CONFIGURED",
+      "applicationName": "NOT_EXPLICITLY_CONFIGURED",
+      "endpoints": [
+        "127.0.0.1:55421/sg_phase_2_1_app",
+        "127.0.0.1:55421/sg_phase_2_1_market_data"
+      ]
+    },
+    "waiterDefinition": {
+      "source": "PostgreSQL pg_stat_activity",
+      "expression": "wait_event IS NOT NULL AND state <> 'idle'",
+      "meaning": "Non-idle backend with a PostgreSQL wait event",
+      "notEquivalentTo": "Prisma client-side pool acquisition queue"
+    },
+    "connectionReuse": "SERVICE_SINGLETON_CLIENTS_WITH_DRIVER_POOL_REUSE",
+    "taskOwnedIsolation": {
+      "p10ApplicationDb": "ZERO_ROUTE_ACTIVITY; HARNESS_OBSERVATION_COUNTERS_ONLY",
+      "p10MarketDataDb": "14_PREPARED_READ_OPERATIONS",
+      "p09AcceptedAttribution": "APPLICATION_ACTIVITY_PRESENT_BUT_APPLICATION_NAME_UNSET"
+    }
+  },
+  "rootCauseCandidateMatrix": [
+    {
+      "candidate": "HTTP_ADMISSION_BOUND",
+      "p09Evidence": "NOT_OBSERVABLE_AT_P09",
+      "p09Counterevidence": "All clean P10 requests reached route",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "SUPPORTED_AS_UNKNOWN_ONLY"
+    },
+    {
+      "candidate": "APP_REQUEST_CONCURRENCY_BOUND",
+      "p09Evidence": "1000 synchronized clients and repeated cold-miss route work",
+      "p09Counterevidence": "P09 is lawful through 100",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "SUPPORTED"
+    },
+    {
+      "candidate": "DB_POOL_WAIT_BOUND",
+      "p09Evidence": "17 non-idle application backends had wait_event after cooldown",
+      "p09Counterevidence": "Metric is PostgreSQL wait_event, not Prisma queue; acquisition wait is unobserved",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "SUPPORTED_NOT_PROVEN"
+    },
+    {
+      "candidate": "DB_QUERY_LATENCY_BOUND",
+      "p09Evidence": "Full ordered application-table reads repeat on concurrent cache misses",
+      "p09Counterevidence": "Per-query server execution timing absent for accepted P09",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "STRONGLY_SUPPORTED"
+    },
+    {
+      "candidate": "CONNECTION_RETENTION_BOUND",
+      "p09Evidence": "P09 work remained after client timeout",
+      "p09Counterevidence": "Clean P10 settled and no leak reproduced",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "SUPPORTED_FOR_P09"
+    },
+    {
+      "candidate": "CONNECTION_LEAK_BOUND",
+      "p09Evidence": "Accepted shared process retained activity",
+      "p09Counterevidence": "Clean P10 settled to zero; no permanent leak evidence",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "REJECTED"
+    },
+    {
+      "candidate": "EVENT_LOOP_BOUND",
+      "p09Evidence": "B4R CPU advanced during P09 cooldown",
+      "p09Counterevidence": "No accepted P09 event-loop timing; clean P10 max 28.180 ms",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "WEAK"
+    },
+    {
+      "candidate": "SERIALIZATION_BOUND",
+      "p09Evidence": "Large full-table mapping exists before component response",
+      "p09Counterevidence": "Clean P10 serialization max is small",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "WEAK"
+    },
+    {
+      "candidate": "RESPONSE_DRAIN_BOUND",
+      "p09Evidence": "No exact P09 drain timestamp",
+      "p09Counterevidence": "No reset/drain error evidence",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "WEAK"
+    },
+    {
+      "candidate": "CLIENT_TIMEOUT_BOUND",
+      "p09Evidence": "766 outcomes align with 120-second client timeout",
+      "p09Counterevidence": "Timeout terminates queued client work but does not create upstream work",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "PROVEN_DOWNSTREAM_SYMPTOM"
+    },
+    {
+      "candidate": "SERVER_TIMEOUT_BOUND",
+      "p09Evidence": "No explicit inbound timeout",
+      "p09Counterevidence": "No server-timeout errors",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "REJECTED"
+    },
+    {
+      "candidate": "SOCKET_LIMIT_BOUND",
+      "p09Evidence": "No accepted socket counters",
+      "p09Counterevidence": "Successful admission at lower levels",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "NOT_EVALUATED"
+    },
+    {
+      "candidate": "CPU_BOUND",
+      "p09Evidence": "Dashboard CPU advanced about 35 seconds during P09 cooldown",
+      "p09Counterevidence": "No synchronized wave CPU sample or saturation threshold",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "SUPPORTED_SECONDARY"
+    },
+    {
+      "candidate": "MEMORY_BOUND",
+      "p09Evidence": "P09 post-cooldown RSS 1461.234 MB",
+      "p09Counterevidence": "No peak/baseline and no OOM",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "WEAK"
+    },
+    {
+      "candidate": "MEASUREMENT_CONTAMINATION",
+      "p09Evidence": "P10 followed unsettled P09 in same process; P10 has no application-DB route; clean P10 application activity remained empty",
+      "p09Counterevidence": "None material",
+      "p10Evidence": "P10 followed unsettled P09 in same process; P10 has no application-DB route; clean P10 application activity remained empty",
+      "p10Counterevidence": "None material",
+      "confidence": "PROVEN_FOR_ACCEPTED_P10_SETTLEMENT"
+    },
+    {
+      "candidate": "UNKNOWN_BOUND",
+      "p09Evidence": "Acquisition-vs-execution split remains unobserved for accepted P09",
+      "p09Counterevidence": "First material application DB read fan-out is established",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "SUPPORTED_RESIDUAL"
+    }
+  ],
+  "candidateLevers": [
+    {
+      "candidateId": "C01",
+      "candidate": "Coalesce concurrent application-table cache misses",
+      "targetRootCause": "P09 repeated full-table application reads",
+      "expectedEffect": "One owner read with shared result during an exact cache-miss window",
+      "correctnessRisk": "Cache key and invalidation identity must remain exact",
+      "implementationComplexity": "MEDIUM",
+      "infrastructureCost": "NONE_EXPECTED",
+      "runtimeCost": "LOW",
+      "maintenanceCost": "MEDIUM",
+      "reproducibilityImpact": "Faster and less burst-sensitive search",
+      "evidenceSupporting": "P09 cache is TTL-only and does not single-flight cold misses",
+      "evidenceAgainst": "Must not serve stale or cross-scope data",
+      "requiresBenchmarkBeforeSelection": true
+    },
+    {
+      "candidateId": "C02",
+      "candidate": "Move component filtering into a bounded database query",
+      "targetRootCause": "P09 full-table read and in-memory filtering",
+      "expectedEffect": "Reduce rows returned, mapping, memory, and query work",
+      "correctnessRisk": "Business-safe mapping and locale search semantics may drift",
+      "implementationComplexity": "MEDIUM",
+      "infrastructureCost": "NONE_EXPECTED",
+      "runtimeCost": "LOWER_EXPECTED",
+      "maintenanceCost": "MEDIUM",
+      "reproducibilityImpact": "More stable component latency",
+      "evidenceSupporting": "Current route reads and orders all matching rows before search",
+      "evidenceAgainst": "Requires query behavior change and is not authorized in 2.2C",
+      "requiresBenchmarkBeforeSelection": true
+    },
+    {
+      "candidateId": "C03",
+      "candidate": "Propagate client cancellation to downstream route and database work",
+      "targetRootCause": "P09 work continues after 120-second client abort",
+      "expectedEffect": "Reduce post-timeout retained work and contamination",
+      "correctnessRisk": "Cancellation boundaries must not interrupt committed writes or shared owners",
+      "implementationComplexity": "HIGH",
+      "infrastructureCost": "NONE_EXPECTED",
+      "runtimeCost": "LOWER_AFTER_ABORT",
+      "maintenanceCost": "HIGH",
+      "reproducibilityImpact": "Faster recovery after overload; timeout semantics become more explicit",
+      "evidenceSupporting": "17 application backends remained active/waiting 30 seconds after clients settled",
+      "evidenceAgainst": "Database-driver cancellation support and exact ownership semantics need proof",
+      "requiresBenchmarkBeforeSelection": true
+    },
+    {
+      "candidateId": "C04",
+      "candidate": "Evaluate bounded request concurrency",
+      "targetRootCause": "P09 synchronized application read fan-out",
+      "expectedEffect": "Bound simultaneous DB and mapping pressure",
+      "correctnessRisk": "Fairness and rejection behavior must be specified",
+      "implementationComplexity": "MEDIUM",
+      "infrastructureCost": "NONE_TO_LOW",
+      "runtimeCost": "QUEUEING_TRADEOFF",
+      "maintenanceCost": "MEDIUM",
+      "reproducibilityImpact": "Predictable overload behavior but possible queued UX",
+      "evidenceSupporting": "P09 is healthy through 100 and capacity-bound at 1000",
+      "evidenceAgainst": "Does not remove redundant work",
+      "requiresBenchmarkBeforeSelection": true
+    },
+    {
+      "candidateId": "C05",
+      "candidate": "Evaluate pool sizing only after query fan-out controls",
+      "targetRootCause": "Potential DB acquisition pressure",
+      "expectedEffect": "May alter concurrency envelope",
+      "correctnessRisk": "Can amplify database overload and hide query inefficiency",
+      "implementationComplexity": "LOW",
+      "infrastructureCost": "POTENTIALLY_HIGHER_DB_LOAD",
+      "runtimeCost": "UNKNOWN",
+      "maintenanceCost": "LOW",
+      "reproducibilityImpact": "Unknown until isolated benchmark",
+      "evidenceSupporting": "Post-cooldown PostgreSQL wait events exist",
+      "evidenceAgainst": "Prisma queue was not measured and pool parameters are implicit",
+      "requiresBenchmarkBeforeSelection": true
+    },
+    {
+      "candidateId": "C06",
+      "candidate": "Separate scenario processes or require full settlement before next scenario",
+      "targetRootCause": "Cross-scenario measurement contamination",
+      "expectedEffect": "Prevent P09 residue from being assigned to P10",
+      "correctnessRisk": "LOW; measurement-only control",
+      "implementationComplexity": "LOW",
+      "infrastructureCost": "LOW_TEST_TIME",
+      "runtimeCost": "TEST_ONLY",
+      "maintenanceCost": "LOW",
+      "reproducibilityImpact": "Improves diagnostic reproducibility",
+      "evidenceSupporting": "Clean P10 fully settled; accepted P10 inherited application activity",
+      "evidenceAgainst": "Does not improve production capacity",
+      "requiresBenchmarkBeforeSelection": false
+    }
+  ],
+  "scopeGuards": {
+    "runtimeOptimizationImplemented": false,
+    "dbPoolChanged": false,
+    "queryChanged": false,
+    "indexChanged": false,
+    "httpChanged": false,
+    "timeoutChanged": false,
+    "nodeChanged": false,
+    "infrastructureChanged": false,
+    "currentSingleFlightChanged": false,
+    "verificationSingleFlightChanged": false,
+    "persistenceChanged": false,
+    "forecastMathChanged": false
+  }
+}

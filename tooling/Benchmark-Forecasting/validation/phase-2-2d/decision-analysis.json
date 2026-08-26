@@ -1,0 +1,91 @@
+{
+  "task": "FORECAST_PHASE_2_2D_DECISION_ANALYSIS",
+  "generatedAt": "2026-08-25T16:12:08.510Z",
+  "immutableEvidence": {
+    "before": {
+      "status": "PASS",
+      "referenceCount": 22
+    },
+    "originalB4": {
+      "status": "PASS",
+      "hashes": {
+        "tooling/Benchmark-Forecasting/performance/phase-2-2b-4-after-aggregate.json": "1e62ef689f27816cb777c711f6e9060627e898c6bb59811b358f137cc6584b8d",
+        "tooling/Benchmark-Forecasting/performance/phase-2-2b-4-before-after-comparison.json": "028ad4fc879810a7819888085e205ac2b3fef5c151dac57ff9b3512dca1dc896",
+        "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2b-4-before-after-comparative-stress.json": "c1d34137b9e279257c91aec2b765c73246534bbab88b590f49a0222fe5a70bbb"
+      }
+    },
+    "b4r": {
+      "status": "PASS",
+      "hashes": {
+        "tooling/Benchmark-Forecasting/performance/phase-2-2b-4r-after-aggregate.json": "30af657fb534f74a14749271401e1121604cd78e275ed972fbac2d79cfe4100c",
+        "tooling/Benchmark-Forecasting/performance/phase-2-2b-4r-before-after-comparison.json": "501e6ef42abd34033ad0d9fc5f4ab739329ee24218f2bed9641b4a3b6b5fa249",
+        "tooling/Benchmark-Forecasting/performance/phase-2-2b-4r-phase-2-2c-handoff.json": "2b10a335771b280c05d78458424468b91ae59f97c4414101763cf0b9c8a0d169",
+        "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2b-4r-controlled-comparative-stress.json": "12ba336e88ce8c09fd9e9dfcd5f95a94e0f64040265362939f00785422190a3d",
+        "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2b-1r-p04-small-pool-current-single-flight.json": "c18059cc04fbba91eea290e5b4b5ffeba145cb5826c71ed10be08dc8c7136bfc",
+        "tooling/Benchmark-Forecasting/validation/phase-2-2b-4r/executions/2026-08-25T115341-253Z-6a3d0227-e64f-44da-a2ed-8cf298ff8cc3/raw/P09-mixed-1000-r1-phase-2-2b-4r-p09-1000-ets-f745411d-2178-40e7-b45e-3d16509fdfb5.json": "53be7fd10434a479e62ae4378ca6423ebb889818caa8befae1d5185f82e8ef49",
+        "tooling/Benchmark-Forecasting/validation/phase-2-2b-4r/executions/2026-08-25T115341-253Z-6a3d0227-e64f-44da-a2ed-8cf298ff8cc3/raw/P10-ets-10-r1-phase-2-2b-4r-p10-10-ets-f59b5af2-f85e-4dad-9e5f-6eb89fb2e2df.json": "38f55690334ca3c262eb4d43fbad0cbeafdf9c1a97d532f06c0b00487b2fe1b4"
+      }
+    },
+    "phase22c": {
+      "status": "PASS",
+      "hashes": {
+        "tooling/Benchmark-Forecasting/FORECAST_PHASE_2_2C_HTTP_CAPACITY_DIAGNOSIS.md": "303473f53973c61f927ca529cc97567efb2c69bdff985f96033297fb41838782",
+        "tooling/Benchmark-Forecasting/performance/phase-2-2c-capacity-diagnosis.json": "7ce60c4aea93a79a78117764719c67b9fc7cd4b1f831b790308a2a11b457b090",
+        "tooling/Benchmark-Forecasting/performance/phase-2-2c-p09-diagnosis.json": "61e7dd428e3adbcca7f699943e2a751702d710855a634ed30c568953d99cb43d",
+        "tooling/Benchmark-Forecasting/performance/phase-2-2c-p10-diagnosis.json": "19ae8bee6e4fd65655778aeb4e969bce023e10230be8bb3f32e10db9242dae7e",
+        "tooling/Benchmark-Forecasting/performance/phase-2-2c-timeout-authority-map.json": "cb9483b1cd202ec6d5058072a81a982c121b99e329932c9b4c4ce48b35635077",
+        "tooling/Benchmark-Forecasting/performance/phase-2-2c-db-connection-map.json": "0b9ad13b2fb280e079ecde66418da996b9e2b380f775782a70769a9322c375bd",
+        "tooling/Benchmark-Forecasting/performance/phase-2-2c-candidate-levers.json": "4e4d2d38c96d3e6b037b138c85667f2af2fa4f2f6024e853533569767da37962",
+        "tooling/Benchmark-Forecasting/performance/phase-2-2c-phase-2-2d-handoff.json": "f9100187365e28bb63fc0ae35e27437c7ddd4fd35ff5c062150c5dbae32f54dc",
+        "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2c-http-capacity-diagnosis.json": "9c4f2e2e2fc8124c98fc6662caf259d940debeec35df46a3110d77c4f720d28e"
+      }
+    }
+  },
+  "sourceInspection": {
+    "cache": {
+      "location": "apps/dashboard-preview/lib/raw-data/dashboard-record-query.ts module scope",
+      "key": [
+        "organizationId",
+        "pipelineId"
+      ],
+      "ttlMs": 30000,
+      "resultCacheShape": "SINGLE_PROCESS_LOCAL_ENTRY",
+      "missPath": "$connect then full ordered drDashboardIndexRecord.findMany",
+      "concurrentMissBehavior": "NO_IN_FLIGHT_OWNER; EACH_OVERLAPPING_MISS_EXECUTES_THE_READ",
+      "scope": "PROCESS_LOCAL"
+    },
+    "query": {
+      "table": "dr_dashboard_index_records",
+      "predicate": "organizationId, pipelineId, deletedAt=null; component filters absent on P09 component-list read",
+      "ordering": [
+        "sourceDate asc",
+        "id asc"
+      ],
+      "columns": "ALL_MODEL_COLUMNS",
+      "inMemoryFiltering": [
+        "business-safe componentName equality",
+        "business-safe componentCode equality",
+        "scenario case-normalized equality",
+        "q over component name/code/descriptionPl/descriptionEn"
+      ],
+      "indexClassification": "LIKELY_NEW_INDEX_REQUIRED",
+      "relevantIndexes": [
+        "organizationId,pipelineId,sourceDate",
+        "organizationId,pipelineId,scenarioType,sourceDate",
+        "organizationId,pipelineId,componentId",
+        "organizationId,pipelineId,market,sourceDate"
+      ]
+    },
+    "cancellation": {
+      "stressClient": "AbortSignal.timeout(120000) stops client wait",
+      "dashboardRoute": "REQUEST_SIGNAL_NOT_PROPAGATED",
+      "prismaCall": "NO_ABORT_SIGNAL",
+      "postgresqlQueryCancellation": "NOT_PROVEN"
+    },
+    "directQueryTestsPresent": false
+  },
+  "discriminatingConclusion": "C01 changes duplicate read ownership while preserving the current query/result/filter semantics; C02 changes query/result construction and has broader semantic/index dependencies.",
+  "selectionHypothesisFalsified": false,
+  "stressExecuted": false,
+  "runtimeBehaviorChanged": false
+}

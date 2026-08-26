@@ -1,0 +1,292 @@
+{
+  "generatedAt": "2026-08-25T15:40:15.900Z",
+  "replay": {
+    "executionId": "2026-08-25T152843-357Z-1641feee-5625-4d70-b0a6-8386b1e4bda1",
+    "count": 1
+  },
+  "querySpans": {
+    "count": 14,
+    "p50Ms": 132.735,
+    "p95Ms": 142.832,
+    "p99Ms": 143.57,
+    "maxMs": 143.755
+  },
+  "serializationSpans": {
+    "count": 10,
+    "p50Ms": 0.155,
+    "p95Ms": 0.944,
+    "p99Ms": 1.229,
+    "maxMs": 1.301
+  },
+  "routeSpans": {
+    "count": 10,
+    "p50Ms": 139.762,
+    "p95Ms": 143.19,
+    "p99Ms": 143.695,
+    "maxMs": 143.821
+  },
+  "p09Lifecycle": [
+    {
+      "stage": "CLIENT_REQUEST_CREATED",
+      "observability": "AGGREGATE_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "CLIENT_REQUEST_SENT",
+      "observability": "AGGREGATE_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "HTTP_ACCEPTED",
+      "observability": "NOT_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "ROUTE_STARTED",
+      "observability": "NOT_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "DB_ACQUIRE_STARTED",
+      "observability": "NOT_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "DB_ACQUIRED",
+      "observability": "NOT_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "DB_QUERY_STARTED",
+      "observability": "NOT_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "DB_QUERY_COMPLETED",
+      "observability": "NOT_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "RESULT_MAPPING_STARTED",
+      "observability": "NOT_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "RESULT_MAPPING_COMPLETED",
+      "observability": "NOT_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "RESPONSE_STARTED",
+      "observability": "NOT_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "RESPONSE_COMPLETED",
+      "observability": "NOT_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "REQUEST_SETTLED",
+      "observability": "AGGREGATE_OBSERVABLE",
+      "evidence": "2026-08-25T13:50:41.535Z"
+    }
+  ],
+  "p10Lifecycle": [
+    {
+      "stage": "CLIENT_REQUEST_CREATED",
+      "observability": "OBSERVABLE_OR_BOUNDED",
+      "evidence": null
+    },
+    {
+      "stage": "CLIENT_REQUEST_SENT",
+      "observability": "OBSERVABLE_OR_BOUNDED",
+      "evidence": null
+    },
+    {
+      "stage": "HTTP_ACCEPTED",
+      "observability": "OBSERVABLE_OR_BOUNDED",
+      "evidence": null
+    },
+    {
+      "stage": "ROUTE_STARTED",
+      "observability": "OBSERVABLE_OR_BOUNDED",
+      "evidence": null
+    },
+    {
+      "stage": "DB_ACQUIRE_STARTED",
+      "observability": "NOT_SEPARATELY_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "DB_ACQUIRED",
+      "observability": "NOT_SEPARATELY_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "DB_QUERY_STARTED",
+      "observability": "OBSERVABLE_OR_BOUNDED",
+      "evidence": null
+    },
+    {
+      "stage": "DB_QUERY_COMPLETED",
+      "observability": "OBSERVABLE_OR_BOUNDED",
+      "evidence": null
+    },
+    {
+      "stage": "RESULT_MAPPING_STARTED",
+      "observability": "NOT_SEPARATELY_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "RESULT_MAPPING_COMPLETED",
+      "observability": "NOT_SEPARATELY_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "RESPONSE_STARTED",
+      "observability": "OBSERVABLE_OR_BOUNDED",
+      "evidence": null
+    },
+    {
+      "stage": "RESPONSE_COMPLETED",
+      "observability": "NOT_SEPARATELY_OBSERVABLE",
+      "evidence": null
+    },
+    {
+      "stage": "REQUEST_SETTLED",
+      "observability": "OBSERVABLE_OR_BOUNDED",
+      "evidence": null
+    }
+  ],
+  "candidateMatrix": [
+    {
+      "candidate": "HTTP_ADMISSION_BOUND",
+      "p09Evidence": "NOT_OBSERVABLE_AT_P09",
+      "p09Counterevidence": "All clean P10 requests reached route",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "SUPPORTED_AS_UNKNOWN_ONLY"
+    },
+    {
+      "candidate": "APP_REQUEST_CONCURRENCY_BOUND",
+      "p09Evidence": "1000 synchronized clients and repeated cold-miss route work",
+      "p09Counterevidence": "P09 is lawful through 100",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "SUPPORTED"
+    },
+    {
+      "candidate": "DB_POOL_WAIT_BOUND",
+      "p09Evidence": "17 non-idle application backends had wait_event after cooldown",
+      "p09Counterevidence": "Metric is PostgreSQL wait_event, not Prisma queue; acquisition wait is unobserved",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "SUPPORTED_NOT_PROVEN"
+    },
+    {
+      "candidate": "DB_QUERY_LATENCY_BOUND",
+      "p09Evidence": "Full ordered application-table reads repeat on concurrent cache misses",
+      "p09Counterevidence": "Per-query server execution timing absent for accepted P09",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "STRONGLY_SUPPORTED"
+    },
+    {
+      "candidate": "CONNECTION_RETENTION_BOUND",
+      "p09Evidence": "P09 work remained after client timeout",
+      "p09Counterevidence": "Clean P10 settled and no leak reproduced",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "SUPPORTED_FOR_P09"
+    },
+    {
+      "candidate": "CONNECTION_LEAK_BOUND",
+      "p09Evidence": "Accepted shared process retained activity",
+      "p09Counterevidence": "Clean P10 settled to zero; no permanent leak evidence",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "REJECTED"
+    },
+    {
+      "candidate": "EVENT_LOOP_BOUND",
+      "p09Evidence": "B4R CPU advanced during P09 cooldown",
+      "p09Counterevidence": "No accepted P09 event-loop timing; clean P10 max 28.180 ms",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "WEAK"
+    },
+    {
+      "candidate": "SERIALIZATION_BOUND",
+      "p09Evidence": "Large full-table mapping exists before component response",
+      "p09Counterevidence": "Clean P10 serialization max is small",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "WEAK"
+    },
+    {
+      "candidate": "RESPONSE_DRAIN_BOUND",
+      "p09Evidence": "No exact P09 drain timestamp",
+      "p09Counterevidence": "No reset/drain error evidence",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "WEAK"
+    },
+    {
+      "candidate": "CLIENT_TIMEOUT_BOUND",
+      "p09Evidence": "766 outcomes align with 120-second client timeout",
+      "p09Counterevidence": "Timeout terminates queued client work but does not create upstream work",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "PROVEN_DOWNSTREAM_SYMPTOM"
+    },
+    {
+      "candidate": "SERVER_TIMEOUT_BOUND",
+      "p09Evidence": "No explicit inbound timeout",
+      "p09Counterevidence": "No server-timeout errors",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "REJECTED"
+    },
+    {
+      "candidate": "SOCKET_LIMIT_BOUND",
+      "p09Evidence": "No accepted socket counters",
+      "p09Counterevidence": "Successful admission at lower levels",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "NOT_EVALUATED"
+    },
+    {
+      "candidate": "CPU_BOUND",
+      "p09Evidence": "Dashboard CPU advanced about 35 seconds during P09 cooldown",
+      "p09Counterevidence": "No synchronized wave CPU sample or saturation threshold",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "SUPPORTED_SECONDARY"
+    },
+    {
+      "candidate": "MEMORY_BOUND",
+      "p09Evidence": "P09 post-cooldown RSS 1461.234 MB",
+      "p09Counterevidence": "No peak/baseline and no OOM",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "WEAK"
+    },
+    {
+      "candidate": "MEASUREMENT_CONTAMINATION",
+      "p09Evidence": "P10 followed unsettled P09 in same process; P10 has no application-DB route; clean P10 application activity remained empty",
+      "p09Counterevidence": "None material",
+      "p10Evidence": "P10 followed unsettled P09 in same process; P10 has no application-DB route; clean P10 application activity remained empty",
+      "p10Counterevidence": "None material",
+      "confidence": "PROVEN_FOR_ACCEPTED_P10_SETTLEMENT"
+    },
+    {
+      "candidate": "UNKNOWN_BOUND",
+      "p09Evidence": "Acquisition-vs-execution split remains unobserved for accepted P09",
+      "p09Counterevidence": "First material application DB read fan-out is established",
+      "p10Evidence": "Clean P10 did not reproduce this bound through 10.",
+      "p10Counterevidence": "10/10 correct and full settlement in clean replay.",
+      "confidence": "SUPPORTED_RESIDUAL"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "generatedAt": "2026-08-26T10:47:40.164Z",
+  "status": "FROZEN",
+  "version": 2,
+  "historicalBaselineCommit": "9fc9f81b5649140ff46e029f3381873a9fbb60e3",
+  "preservationAuthorityId": "FORECAST_EXECUTABLE_PRESERVATION_AUTHORITY_V2",
+  "preservationPackageIdentity": "ed1b6e4a84837e14d06049f5b7066311495184d99db8b087731c10983fb7e66d",
+  "closureId": "EXECUTABLE_DEPENDENCY_CLOSURE_V2",
+  "closureSha256": "f19d42e1c1a9a84028b17ea834f08789a199c5d3d93bcdf2d4b262c88c8b0665",
+  "architectureId": "FORECAST_PRODUCTION_ARCHITECTURE_V1",
+  "architectureVersion": 1,
+  "targetTreeFingerprint": "8dd703de2b2ea89a334a280bcde340caa1e73473f314041803b0733969bb97e9",
+  "manifestId": "FORECAST_MIGRATION_MANIFEST_V2",
+  "freezeVersion": 2,
+  "authorityStatus": "FROZEN",
+  "rootBundleSha256": "1025e1b432aa52b81e14bd7ba3cc30d421cc00cd9b846f624e1283831d365fd1",
+  "vectorBundleSha256": "2bde509dabd099e40f0ec03c2da5d04c33c467a78c2fb130d3971faa002dc242",
+  "includeAuthority": {
+    "id": "FORECAST_FUTURE_SG_DEV_INCLUDE_V2",
+    "count": 812,
+    "authorityNormalizedSha256": "2b0d66b7c9cfb3deb89cc6d901920940aa5ca374685331109902c5aad1185f93"
+  },
+  "excludeAuthority": {
+    "id": "FORECAST_FUTURE_SG_DEV_EXCLUDE_V2",
+    "count": 14,
+    "authorityNormalizedSha256": "fb5af6801c47ed1315b3631e180a683ddf0662b736370410ecf6c8c77ffee844"
+  },
+  "protectedAuthority": {
+    "id": "FORECAST_PROTECTED_SET_V2",
+    "count": 62,
+    "authorityNormalizedSha256": "37033b39f92228ce5970c204a43f23e9f526d80aed9bc76d500b12b3a3358e6c"
+  },
+  "restoreAuthority": {
+    "id": "FORECAST_MIGRATION_RESTORE_AUTHORITY_V2",
+    "authorityNormalizedSha256": "842538fa58614e3193883f8a2325a3acfe1a8a6db4c8e78ac2ae98c60ea96df9"
+  },
+  "migrationInvariants": {
+    "MIGRATION-CLOSURE-002": "A migration authority is complete only when its declared historical baseline, overlay, exclusions, generated treatment, and governance additions can produce a clean simulated future target that passes the complete accepted executable and Architecture V1 contract without undeclared repository authority.",
+    "MIGRATION-BASELINE-001": "Absence from Forecast Preservation Authority does not imply deletion from the historical SG-dev repository baseline. Tracked baseline content is retained unless explicit migration deletion authority exists.",
+    "MIGRATION-OVERLAY-001": "A migration overlay contains only paths whose desired future repository byte cannot be obtained exactly from the accepted historical baseline, plus explicit migration-governance additions.",
+    "MIGRATION-PROVENANCE-001": "Every non-baseline byte in the future target must resolve to a frozen accepted authority and SHA-256 or to an explicitly governed deterministic generation recipe."
+  },
+  "classification": {
+    "desiredPreservationPaths": 923,
+    "baselineReuseExact": 119,
+    "overlayIncludeTotal": 804,
+    "governanceAdditions": 8,
+    "trackedBaselineDeletions": 0
+  },
+  "simulations": {
+    "first": {
+      "status": "PASS",
+      "workspace": "/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev-migration-authority/2_5RR_20260826T104740Z/simulation-1/SG-dev",
+      "regression": "17/17",
+      "undeclaredReads": 0,
+      "originalReads": 0
+    },
+    "second": {
+      "status": "PASS",
+      "workspace": "/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev-migration-authority/2_5RR_20260826T104740Z/simulation-2/SG-dev",
+      "regression": "17/17",
+      "undeclaredReads": 0,
+      "originalReads": 0
+    }
+  }
+}

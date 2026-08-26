@@ -1,0 +1,344 @@
+{
+  "task": "FORECAST_PHASE_2_2B_4_BEFORE_AFTER_COMPARATIVE_STRESS_TEST",
+  "generatedAt": "2026-08-25T09:41:58.741Z",
+  "phase22cRequired": true,
+  "phase22cReadyForAuthorization": false,
+  "phase22cAuthorized": false,
+  "phase22cStarted": false,
+  "blockingPrerequisite": "Resolve and revalidate the P04 exact-key ownership hard failure and B4 measurement-control gaps before authorizing HTTP-capacity diagnosis.",
+  "solvedBoundaries": [
+    "P03 SAME_KEY duplicate compute at 10",
+    "P05 SAME_KEY duplicate compute at 10",
+    "P08 Verification duplicate full backtest at 10",
+    "P11 SAME_KEY duplicate compute at 10"
+  ],
+  "unresolvedStructuralEvidence": {
+    "code": "P04_VALID_OVERLAPPING_ROW_DUPLICATE_CURRENT_COMPUTE",
+    "observedAt": {
+      "modelId": "arima",
+      "concurrency": 10,
+      "expectedKeys": 3,
+      "owners": 3,
+      "computes": 6,
+      "duplicates": 3,
+      "duplicateWrites": 3
+    },
+    "contractViolation": "P04 escalated beyond the mandatory @10 ownership stop; higher observations are excluded from numeric evidence."
+  },
+  "capacityEvidence": [
+    {
+      "scenario": "P03",
+      "model": "naive",
+      "concurrency": 100,
+      "safetyRule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+      "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+      "computeDuplicationState": {
+        "current": 0,
+        "verification": 0
+      },
+      "cpuSeconds": 0.036087,
+      "peakRssMb": 78.96875,
+      "dbWrites": 0,
+      "failures": 100,
+      "errorRate": 1,
+      "throughputRps": 52.963083,
+      "higherLevelsSkipped": true
+    },
+    {
+      "scenario": "P03",
+      "model": "damped_holt",
+      "concurrency": 100,
+      "safetyRule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+      "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+      "computeDuplicationState": {
+        "current": 0,
+        "verification": 0
+      },
+      "cpuSeconds": 0.039618,
+      "peakRssMb": 79.515625,
+      "dbWrites": 264,
+      "failures": 100,
+      "errorRate": 1,
+      "throughputRps": 50.099984,
+      "higherLevelsSkipped": true
+    },
+    {
+      "scenario": "P03",
+      "model": "ets",
+      "concurrency": 100,
+      "safetyRule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+      "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+      "computeDuplicationState": {
+        "current": 0,
+        "verification": 0
+      },
+      "cpuSeconds": 0.039793,
+      "peakRssMb": 79.015625,
+      "dbWrites": 0,
+      "failures": 100,
+      "errorRate": 1,
+      "throughputRps": 52.78978,
+      "higherLevelsSkipped": true
+    },
+    {
+      "scenario": "P03",
+      "model": "arima",
+      "concurrency": 100,
+      "safetyRule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+      "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+      "computeDuplicationState": {
+        "current": 0,
+        "verification": 0
+      },
+      "cpuSeconds": 0.047343,
+      "peakRssMb": 79.421875,
+      "dbWrites": 0,
+      "failures": 100,
+      "errorRate": 1,
+      "throughputRps": 48.957945,
+      "higherLevelsSkipped": true
+    },
+    {
+      "scenario": "P05",
+      "model": "ets",
+      "concurrency": 100,
+      "safetyRule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+      "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+      "computeDuplicationState": {
+        "current": 0,
+        "verification": 0
+      },
+      "cpuSeconds": 0.03846,
+      "peakRssMb": 79.28125,
+      "dbWrites": 0,
+      "failures": 100,
+      "errorRate": 1,
+      "throughputRps": 56.61526,
+      "higherLevelsSkipped": true
+    },
+    {
+      "scenario": "P08",
+      "model": "naive",
+      "concurrency": 100,
+      "safetyRule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+      "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+      "computeDuplicationState": {
+        "current": 0,
+        "verification": 0
+      },
+      "cpuSeconds": 0.034677,
+      "peakRssMb": 79.03125,
+      "dbWrites": 0,
+      "failures": 100,
+      "errorRate": 1,
+      "throughputRps": 56.670925,
+      "higherLevelsSkipped": true
+    },
+    {
+      "scenario": "P08",
+      "model": "damped_holt",
+      "concurrency": 100,
+      "safetyRule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+      "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+      "computeDuplicationState": {
+        "current": 0,
+        "verification": 0
+      },
+      "cpuSeconds": 0.03863,
+      "peakRssMb": 79.25,
+      "dbWrites": 0,
+      "failures": 100,
+      "errorRate": 1,
+      "throughputRps": 56.537517,
+      "higherLevelsSkipped": true
+    },
+    {
+      "scenario": "P08",
+      "model": "ets",
+      "concurrency": 100,
+      "safetyRule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+      "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+      "computeDuplicationState": {
+        "current": 0,
+        "verification": 0
+      },
+      "cpuSeconds": 0.037695,
+      "peakRssMb": 78.921875,
+      "dbWrites": 0,
+      "failures": 100,
+      "errorRate": 1,
+      "throughputRps": 56.822067,
+      "higherLevelsSkipped": true
+    },
+    {
+      "scenario": "P08",
+      "model": "arima",
+      "concurrency": 100,
+      "safetyRule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+      "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+      "computeDuplicationState": {
+        "current": 0,
+        "verification": 0
+      },
+      "cpuSeconds": 0.038344,
+      "peakRssMb": 78.921875,
+      "dbWrites": 247,
+      "failures": 100,
+      "errorRate": 1,
+      "throughputRps": 56.476846,
+      "higherLevelsSkipped": true
+    },
+    {
+      "scenario": "P11",
+      "model": "naive",
+      "concurrency": 100,
+      "safetyRule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+      "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+      "computeDuplicationState": {
+        "current": 0,
+        "verification": 0
+      },
+      "cpuSeconds": 1.677849,
+      "peakRssMb": 1072.796875,
+      "dbWrites": 263,
+      "failures": 100,
+      "errorRate": 1,
+      "throughputRps": 4.301937,
+      "higherLevelsSkipped": true
+    },
+    {
+      "scenario": "P11",
+      "model": "damped_holt",
+      "concurrency": 100,
+      "safetyRule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+      "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+      "computeDuplicationState": {
+        "current": 0,
+        "verification": 0
+      },
+      "cpuSeconds": 12.508238,
+      "peakRssMb": 2084.015625,
+      "dbWrites": 264,
+      "failures": 100,
+      "errorRate": 1,
+      "throughputRps": 4.821455,
+      "higherLevelsSkipped": true
+    },
+    {
+      "scenario": "P11",
+      "model": "ets",
+      "concurrency": 100,
+      "safetyRule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+      "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+      "computeDuplicationState": {
+        "current": 0,
+        "verification": 0
+      },
+      "cpuSeconds": 1.039114,
+      "peakRssMb": 1840.734375,
+      "dbWrites": 263,
+      "failures": 100,
+      "errorRate": 1,
+      "throughputRps": 4.641426,
+      "higherLevelsSkipped": true
+    },
+    {
+      "scenario": "P11",
+      "model": "arima",
+      "concurrency": 100,
+      "safetyRule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+      "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+      "computeDuplicationState": {
+        "current": 0,
+        "verification": 0
+      },
+      "cpuSeconds": 18.322492,
+      "peakRssMb": 2958.8125,
+      "dbWrites": 262,
+      "failures": 100,
+      "errorRate": 1,
+      "throughputRps": 4.682181,
+      "higherLevelsSkipped": true
+    },
+    {
+      "scenario": "P02",
+      "model": "ets",
+      "concurrency": 1000,
+      "safetyRule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+      "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+      "computeDuplicationState": {
+        "current": 0,
+        "verification": 0
+      },
+      "cpuSeconds": 2.067503,
+      "peakRssMb": 1122.09375,
+      "dbWrites": 0,
+      "failures": 333,
+      "errorRate": 0.333,
+      "throughputRps": 285.352761,
+      "higherLevelsSkipped": true
+    },
+    {
+      "scenario": "P09",
+      "model": "mixed",
+      "concurrency": 1000,
+      "safetyRule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+      "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+      "computeDuplicationState": {
+        "current": 0,
+        "verification": 0
+      },
+      "cpuSeconds": null,
+      "peakRssMb": null,
+      "dbWrites": 263,
+      "failures": 434,
+      "errorRate": 0.434,
+      "throughputRps": 7.733477,
+      "higherLevelsSkipped": true
+    },
+    {
+      "scenario": "P06",
+      "model": "ets",
+      "concurrency": 10,
+      "safetyRule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+      "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+      "computeDuplicationState": {
+        "current": 0,
+        "verification": 0
+      },
+      "cpuSeconds": 1.055228,
+      "peakRssMb": 611,
+      "dbWrites": 0,
+      "failures": 1,
+      "errorRate": 0.1,
+      "throughputRps": 15.190366,
+      "higherLevelsSkipped": true
+    },
+    {
+      "scenario": "P07",
+      "model": "ets",
+      "concurrency": 1000,
+      "safetyRule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+      "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+      "computeDuplicationState": {
+        "current": 0,
+        "verification": 0
+      },
+      "cpuSeconds": 36.305528,
+      "peakRssMb": 3047.078125,
+      "dbWrites": 264,
+      "failures": 527,
+      "errorRate": 0.527,
+      "throughputRps": 59.257687,
+      "higherLevelsSkipped": true
+    }
+  ],
+  "recommendedInvestigationAfterPrerequisite": [
+    "HTTP connection handling",
+    "request admission and backpressure",
+    "service error diagnostics",
+    "DB pool telemetry",
+    "event-loop and external-memory pressure",
+    "post-cooldown RSS capture"
+  ]
+}

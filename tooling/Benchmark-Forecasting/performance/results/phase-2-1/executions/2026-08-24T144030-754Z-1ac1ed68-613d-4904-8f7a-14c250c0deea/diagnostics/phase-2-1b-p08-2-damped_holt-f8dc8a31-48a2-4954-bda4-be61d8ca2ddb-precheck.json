@@ -1,0 +1,373 @@
+{
+  "result": {
+    "contractVersion": 1,
+    "stressRunId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb",
+    "scenarioId": "P08",
+    "environmentId": "phase-2-1-local-isolated-v1",
+    "sourceRevision": "9fc9f81b5649140ff46e029f3381873a9fbb60e3",
+    "startedAt": "2026-08-24T15:07:06.596Z",
+    "endedAt": "2026-08-24T15:07:18.991Z",
+    "concurrency": 10,
+    "keyDistribution": "SAME_KEY",
+    "loadShape": "SYNCHRONIZED_BURST",
+    "releaseSpreadMs": 2.945833,
+    "benchmark": "wocaes0280",
+    "datasetFingerprint": {
+      "seriesId": "wocaes0280",
+      "frequency": "MONTHLY",
+      "lawfulObservationCount": 21718,
+      "historyStart": "1985-01-03T23:00:00Z",
+      "historyEnd": "2026-08-21T00:00:00Z",
+      "historyFingerprint": "7afe5dd3e125915ed483a9ba0bf28ae4",
+      "targetSemantics": "MONTHLY_AVERAGE",
+      "horizon": "CONTRACT_DEFAULT"
+    },
+    "modelId": "damped_holt",
+    "requestsStarted": 2,
+    "requestsCompleted": 2,
+    "successCount": 2,
+    "failureCount": 0,
+    "errorRate": 0,
+    "functionalOutcomes": {
+      "SUCCESS_COMPUTED": 2
+    },
+    "latencyMinMs": 11998.720125,
+    "latencyP50Ms": 12109.896563,
+    "latencyP90Ms": 12198.837713,
+    "latencyP95Ms": 12209.955356,
+    "latencyP99Ms": 12218.849471,
+    "latencyMaxMs": 12221.073,
+    "latencyMeanMs": 12109.896563,
+    "throughputRps": 0.163652,
+    "successfulThroughputRps": 0.163652,
+    "cpuSeconds": 1.039282,
+    "peakMemoryMb": 405.234375,
+    "memoryDeltaAfterCooldownMb": null,
+    "dbQueryCount": null,
+    "dbWriteCount": 5766,
+    "providerCallCount": 0,
+    "forecastComputeCount": 0,
+    "verificationComputeCount": 2,
+    "computeOwnerCount": 1,
+    "duplicateComputeCount": 1,
+    "duplicateComputeRatio": 1,
+    "duplicateArtifactWriteCount": 1,
+    "preparedHitCount": 0,
+    "preparedMissCount": 2,
+    "wallClockSeconds": 12.221073,
+    "classification": "STRUCTURAL_DUPLICATION",
+    "bottleneckAttribution": [],
+    "firstRunAfterStateSetup": true,
+    "repetitionNumber": 1,
+    "excluded": false,
+    "exclusionReason": "NOT_EXCLUDED",
+    "correctnessPassed": true,
+    "notes": [
+      "Safety precheck executed at 2 virtual users; schema concurrency is normalized only in diagnostics and this object is not a baseline raw result."
+    ]
+  },
+  "control": {
+    "valid": true,
+    "classification": "VALID_COMPLETED",
+    "continueEscalation": false,
+    "reason": "DUPLICATE_FULL_BACKTEST"
+  },
+  "events": [
+    {
+      "stressRunId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb-request-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|damped_holt",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|damped_holt|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "resource_sample",
+      "timestamp": "2026-08-24T15:07:06.742Z",
+      "metrics": {
+        "cpuUserMicros": 26359,
+        "cpuSystemMicros": 2247,
+        "rssBytes": 78692352,
+        "heapUsedBytes": 14317288,
+        "heapTotalBytes": 21184512,
+        "externalBytes": 4705913,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|damped_holt",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|damped_holt|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "resource_sample",
+      "timestamp": "2026-08-24T15:07:06.744Z",
+      "metrics": {
+        "cpuUserMicros": 2356,
+        "cpuSystemMicros": 413,
+        "rssBytes": 79904768,
+        "heapUsedBytes": 14575488,
+        "heapTotalBytes": 21708800,
+        "externalBytes": 4705953,
+        "eventLoopUtilization": 1,
+        "eventLoopDelayMeanMs": 0,
+        "eventLoopDelayMaxMs": 0
+      }
+    },
+    {
+      "stressRunId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb-request-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|damped_holt",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|damped_holt|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "database_read",
+      "timestamp": "2026-08-24T15:07:07.006Z",
+      "metrics": {
+        "operation": "market_history",
+        "queryCount": 1,
+        "durationMs": 263.041042,
+        "failed": false
+      }
+    },
+    {
+      "stressRunId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|damped_holt",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|damped_holt|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "database_read",
+      "timestamp": "2026-08-24T15:07:07.006Z",
+      "metrics": {
+        "operation": "market_history",
+        "queryCount": 1,
+        "durationMs": 262.089292,
+        "failed": false
+      }
+    },
+    {
+      "stressRunId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|damped_holt",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|damped_holt|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "prepared_read",
+      "timestamp": "2026-08-24T15:07:08.388Z",
+      "metrics": {
+        "kind": "verification",
+        "hit": false,
+        "durationMs": 1643.391125
+      }
+    },
+    {
+      "stressRunId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|damped_holt",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|damped_holt|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "verification_compute_start",
+      "timestamp": "2026-08-24T15:07:08.388Z",
+      "metrics": {
+        "modelId": "damped_holt",
+        "count": 1
+      }
+    },
+    {
+      "stressRunId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb-request-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|damped_holt",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|damped_holt|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "prepared_read",
+      "timestamp": "2026-08-24T15:07:08.392Z",
+      "metrics": {
+        "kind": "verification",
+        "hit": false,
+        "durationMs": 1648.894917
+      }
+    },
+    {
+      "stressRunId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb-request-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|damped_holt",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|damped_holt|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "verification_compute_start",
+      "timestamp": "2026-08-24T15:07:08.392Z",
+      "metrics": {
+        "modelId": "damped_holt",
+        "count": 1
+      }
+    },
+    {
+      "stressRunId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|damped_holt",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|damped_holt|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "verification_compute_end",
+      "timestamp": "2026-08-24T15:07:18.505Z",
+      "metrics": {
+        "modelId": "damped_holt",
+        "count": 1,
+        "originCount": 1834,
+        "durationMs": 10117.155083000001,
+        "status": "AVAILABLE"
+      }
+    },
+    {
+      "stressRunId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|damped_holt",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|damped_holt|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "model_fit",
+      "timestamp": "2026-08-24T15:07:18.505Z",
+      "metrics": {
+        "operation": "verification",
+        "modelId": "damped_holt",
+        "count": 1834,
+        "durationMs": 10117.155083000001
+      }
+    },
+    {
+      "stressRunId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb-request-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|damped_holt",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|damped_holt|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "verification_compute_end",
+      "timestamp": "2026-08-24T15:07:18.507Z",
+      "metrics": {
+        "modelId": "damped_holt",
+        "count": 1,
+        "originCount": 1834,
+        "durationMs": 10115.666958,
+        "status": "AVAILABLE"
+      }
+    },
+    {
+      "stressRunId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb-request-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|damped_holt",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|damped_holt|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "model_fit",
+      "timestamp": "2026-08-24T15:07:18.507Z",
+      "metrics": {
+        "operation": "verification",
+        "modelId": "damped_holt",
+        "count": 1834,
+        "durationMs": 10115.666958
+      }
+    },
+    {
+      "stressRunId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|damped_holt",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|damped_holt|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "persistence",
+      "timestamp": "2026-08-24T15:07:18.742Z",
+      "metrics": {
+        "operation": "verification",
+        "artifactWrites": 1,
+        "pointWrites": 0,
+        "verificationRecordWrites": 1834,
+        "writeFailures": 0,
+        "durationMs": 235.52024999999958
+      }
+    },
+    {
+      "stressRunId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-2",
+      "requestId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb-request-2",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|damped_holt",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|damped_holt|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "resource_sample",
+      "timestamp": "2026-08-24T15:07:18.743Z",
+      "metrics": {
+        "cpuUserMicros": 769923,
+        "cpuSystemMicros": 66272,
+        "rssBytes": 418889728,
+        "heapUsedBytes": 46457944,
+        "heapTotalBytes": 160530432,
+        "externalBytes": 4623939,
+        "eventLoopUtilization": 0.04423271579407943,
+        "eventLoopDelayMeanMs": 21.775333934545454,
+        "eventLoopDelayMaxMs": 386.662399
+      }
+    },
+    {
+      "stressRunId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb-request-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|damped_holt",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|damped_holt|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "persistence",
+      "timestamp": "2026-08-24T15:07:18.962Z",
+      "metrics": {
+        "operation": "verification",
+        "artifactWrites": 1,
+        "pointWrites": 0,
+        "verificationRecordWrites": 1834,
+        "writeFailures": 0,
+        "durationMs": 453.22512500000084
+      }
+    },
+    {
+      "stressRunId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb",
+      "scenarioId": "P08",
+      "virtualUserId": "vu-1",
+      "requestId": "phase-2-1b-p08-2-damped_holt-f8dc8a31-48a2-4954-bda4-be61d8ca2ddb-request-1",
+      "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|damped_holt",
+      "logicalArtifactKey": "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|damped_holt|benchmark-forecasting-mvp-phase2-v1|7afe5dd3e125915ed483a9ba0bf28ae4",
+      "event": "resource_sample",
+      "timestamp": "2026-08-24T15:07:18.962Z",
+      "metrics": {
+        "cpuUserMicros": 167871,
+        "cpuSystemMicros": 3841,
+        "rssBytes": 424919040,
+        "heapUsedBytes": 73983520,
+        "heapTotalBytes": 162512896,
+        "externalBytes": 4623939,
+        "eventLoopUtilization": 0.13882645482333633,
+        "eventLoopDelayMeanMs": 20.979712,
+        "eventLoopDelayMaxMs": 21.102591
+      }
+    }
+  ],
+  "databaseBefore": {
+    "commits": 141,
+    "rollbacks": 0,
+    "read": 2151793,
+    "fetched": 21487,
+    "inserted": 407430,
+    "updated": 73,
+    "deleted": 15,
+    "deadlocks": 0
+  },
+  "databaseAfter": {
+    "commits": 185,
+    "rollbacks": 0,
+    "read": 2233218,
+    "fetched": 49871,
+    "inserted": 411261,
+    "updated": 168,
+    "deleted": 1855,
+    "deadlocks": 0
+  }
+}

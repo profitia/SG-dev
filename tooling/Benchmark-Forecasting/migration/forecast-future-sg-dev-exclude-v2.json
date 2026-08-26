@@ -1,0 +1,163 @@
+{
+  "generatedAt": "2026-08-26T10:47:40.164Z",
+  "status": "FROZEN",
+  "version": 2,
+  "historicalBaselineCommit": "9fc9f81b5649140ff46e029f3381873a9fbb60e3",
+  "preservationAuthorityId": "FORECAST_EXECUTABLE_PRESERVATION_AUTHORITY_V2",
+  "preservationPackageIdentity": "ed1b6e4a84837e14d06049f5b7066311495184d99db8b087731c10983fb7e66d",
+  "closureId": "EXECUTABLE_DEPENDENCY_CLOSURE_V2",
+  "closureSha256": "f19d42e1c1a9a84028b17ea834f08789a199c5d3d93bcdf2d4b262c88c8b0665",
+  "architectureId": "FORECAST_PRODUCTION_ARCHITECTURE_V1",
+  "architectureVersion": 1,
+  "targetTreeFingerprint": "8dd703de2b2ea89a334a280bcde340caa1e73473f314041803b0733969bb97e9",
+  "authorityId": "FORECAST_FUTURE_SG_DEV_EXCLUDE_V2",
+  "counts": {
+    "total": 14,
+    "trackedBaselineDeletions": 0,
+    "stillExcluded": 14,
+    "superseded": 0,
+    "notApplicable": 0
+  },
+  "paths": [
+    {
+      "path": "apps/dashboard-preview/.env.local",
+      "reason": "Runtime-only or machine-local state is not Forecast repository source.",
+      "baselineExists": false,
+      "deletionRequired": "NO",
+      "machineLocal": true,
+      "secretRisk": "CREDENTIAL_BOUNDARY",
+      "portable": false,
+      "historicalV1Relation": "STILL_EXCLUDED"
+    },
+    {
+      "path": "apps/pmos/.context/runtime-context.integrity.json",
+      "reason": "Runtime-only or machine-local state is not Forecast repository source.",
+      "baselineExists": false,
+      "deletionRequired": "NO",
+      "machineLocal": true,
+      "secretRisk": "NONE",
+      "portable": false,
+      "historicalV1Relation": "STILL_EXCLUDED"
+    },
+    {
+      "path": "apps/pmos/.context/runtime-context.md",
+      "reason": "Runtime-only or machine-local state is not Forecast repository source.",
+      "baselineExists": false,
+      "deletionRequired": "NO",
+      "machineLocal": true,
+      "secretRisk": "NONE",
+      "portable": false,
+      "historicalV1Relation": "STILL_EXCLUDED"
+    },
+    {
+      "path": "apps/pmos/.pmos/conversations/2026-08-25-21:53_forecast-phase-2-4-production-architecture-freeze-v1.integrity.json",
+      "reason": "Runtime-only or machine-local state is not Forecast repository source.",
+      "baselineExists": false,
+      "deletionRequired": "NO",
+      "machineLocal": true,
+      "secretRisk": "NONE",
+      "portable": false,
+      "historicalV1Relation": "STILL_EXCLUDED"
+    },
+    {
+      "path": "apps/pmos/.pmos/conversations/2026-08-25-21:53_forecast-phase-2-4-production-architecture-freeze-v1.json",
+      "reason": "Runtime-only or machine-local state is not Forecast repository source.",
+      "baselineExists": false,
+      "deletionRequired": "NO",
+      "machineLocal": true,
+      "secretRisk": "NONE",
+      "portable": false,
+      "historicalV1Relation": "STILL_EXCLUDED"
+    },
+    {
+      "path": "apps/pmos/.pmos/conversations/2026-08-25-21:53_forecast-phase-2-4-production-architecture-freeze-v1.lock.json",
+      "reason": "Runtime-only or machine-local state is not Forecast repository source.",
+      "baselineExists": false,
+      "deletionRequired": "NO",
+      "machineLocal": true,
+      "secretRisk": "NONE",
+      "portable": false,
+      "historicalV1Relation": "STILL_EXCLUDED"
+    },
+    {
+      "path": "apps/pmos/.pmos/conversations/2026-08-25-21:53_forecast-phase-2-4-production-architecture-freeze-v1.md",
+      "reason": "Runtime-only or machine-local state is not Forecast repository source.",
+      "baselineExists": false,
+      "deletionRequired": "NO",
+      "machineLocal": true,
+      "secretRisk": "NONE",
+      "portable": false,
+      "historicalV1Relation": "STILL_EXCLUDED"
+    },
+    {
+      "path": "apps/pmos/.pmos/conversations/logs/2026-08-25-21:53_forecast-phase-2-4-production-architecture-freeze-v1.execution-trail.jsonl",
+      "reason": "Runtime-only or machine-local state is not Forecast repository source.",
+      "baselineExists": false,
+      "deletionRequired": "NO",
+      "machineLocal": true,
+      "secretRisk": "NONE",
+      "portable": false,
+      "historicalV1Relation": "STILL_EXCLUDED"
+    },
+    {
+      "path": "apps/pmos/.pmos/conversations/logs/2026-08-25-21:53_forecast-phase-2-4-production-architecture-freeze-v1.execution-trail.md",
+      "reason": "Runtime-only or machine-local state is not Forecast repository source.",
+      "baselineExists": false,
+      "deletionRequired": "NO",
+      "machineLocal": true,
+      "secretRisk": "NONE",
+      "portable": false,
+      "historicalV1Relation": "STILL_EXCLUDED"
+    },
+    {
+      "path": "apps/pmos/.pmos/forecast-phase-2-4-production-architecture-freeze-v1-bootstrap.json",
+      "reason": "Runtime-only or machine-local state is not Forecast repository source.",
+      "baselineExists": false,
+      "deletionRequired": "NO",
+      "machineLocal": true,
+      "secretRisk": "NONE",
+      "portable": false,
+      "historicalV1Relation": "STILL_EXCLUDED"
+    },
+    {
+      "path": "apps/pmos/.pmos/recovery/closeouts/2026-08-25-21:53_forecast-phase-2-4-production-architecture-freeze-v1.closeout.json",
+      "reason": "Runtime-only or machine-local state is not Forecast repository source.",
+      "baselineExists": false,
+      "deletionRequired": "NO",
+      "machineLocal": true,
+      "secretRisk": "NONE",
+      "portable": false,
+      "historicalV1Relation": "STILL_EXCLUDED"
+    },
+    {
+      "path": "apps/pmos/.pmos/recovery/pending-artifacts/2026-08-25-21:53_forecast-phase-2-4-production-architecture-freeze-v1__backup_2026-08-25__19-53-34-645Z.json",
+      "reason": "Runtime-only or machine-local state is not Forecast repository source.",
+      "baselineExists": false,
+      "deletionRequired": "NO",
+      "machineLocal": true,
+      "secretRisk": "NONE",
+      "portable": false,
+      "historicalV1Relation": "STILL_EXCLUDED"
+    },
+    {
+      "path": "apps/sg-runtime/.env.local",
+      "reason": "Runtime-only or machine-local state is not Forecast repository source.",
+      "baselineExists": false,
+      "deletionRequired": "NO",
+      "machineLocal": true,
+      "secretRisk": "CREDENTIAL_BOUNDARY",
+      "portable": false,
+      "historicalV1Relation": "STILL_EXCLUDED"
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/.env",
+      "reason": "Runtime-only or machine-local state is not Forecast repository source.",
+      "baselineExists": false,
+      "deletionRequired": "NO",
+      "machineLocal": true,
+      "secretRisk": "CREDENTIAL_BOUNDARY",
+      "portable": false,
+      "historicalV1Relation": "STILL_EXCLUDED"
+    }
+  ]
+}

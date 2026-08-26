@@ -1,0 +1,1446 @@
+{
+  "plan": {
+    "name": "FORECAST_PHASE_2_2B_4_EXECUTION_PLAN",
+    "version": 1,
+    "phase": "2.2B-4",
+    "authorized": true,
+    "executionStarted": true,
+    "plannedRowCount": 6,
+    "terminalRowCount": 6,
+    "contractVersions": {
+      "stressTestContractVersion": 1,
+      "measurementControlRevision": 2,
+      "singleFlightExperimentContractVersion": 1,
+      "contractDrift": false
+    },
+    "environment": {
+      "environmentId": "phase-2-1-local-isolated-v1",
+      "databaseCloneAlias": "phase-2-1-local-clone-v1",
+      "databaseHost": "127.0.0.1",
+      "databasePort": 55421,
+      "productionDatabaseMutation": false,
+      "remoteDatabaseMutation": false
+    },
+    "immutableEvidence": {
+      "manifest": "tooling/Benchmark-Forecasting/performance/phase-2-2b-before-evidence.json",
+      "boundReferenceCount": 22,
+      "hashVerification": "PASS",
+      "failedHashCount": 0,
+      "acceptedGateHashes": {
+        "phase22b1": "e91e1c7c910024494d10337de2dc9de279b581f180717df35e46e55db09268f8",
+        "phase22b2": "74f49752cd2672531a3faa14433c4224782431b204134dafa0d0788bed3ea340",
+        "phase22b3": "258e7054bd4dbb3869e973977be5b0ba7beca554a87c9f49f59f81e2a3e9b810"
+      }
+    },
+    "globalRules": {
+      "beforeRerun": false,
+      "singleFlightDisabled": false,
+      "runtimeBehaviorChange": false,
+      "providerDefault": "DENY",
+      "executionOrder": "SEQUENTIAL",
+      "cooldown": "active requests = 0; in-flight compute = 0; CPU settled for 30 seconds; post-cooldown memory recorded",
+      "terminalStates": [
+        "VALID_COMPLETED",
+        "SAFETY_BLOCKED",
+        "INVALID_STATE",
+        "CONTRACT_ABORTED"
+      ]
+    },
+    "executionId": "2026-08-25T073804-869Z-47dca741-ffcc-4a8a-a359-18467b69254d",
+    "expandedCellCount": 105,
+    "immutableReferenceCount": 22,
+    "controlledCorrectionExecutionId": "2026-08-25T092417-585Z-458c07e4-ba8f-4e82-a25e-361bf6284926",
+    "controlledCorrectionReason": "Initial B4 adapter omitted the accepted Phase 2.2A Verification READY preparation after immutable snapshot restore.",
+    "finalGate": "FAIL",
+    "finalizedAt": "2026-08-25T09:41:58.741Z"
+  },
+  "rows": [
+    {
+      "experimentId": "B4-P03-COMPARATIVE",
+      "scenario": "P03 BEFORE vs AFTER",
+      "modelScope": [
+        "naive",
+        "damped_holt",
+        "ets",
+        "arima"
+      ],
+      "state": "WARM_INPUT_READY_ARTIFACT_MISS",
+      "concurrency": [
+        10,
+        100,
+        1000
+      ],
+      "beforeAuthority": "tooling/Benchmark-Forecasting/performance/phase-2-2b-before-evidence.json#/scenarios/P03",
+      "beforeEvidenceClass": "FULLY_COMPARABLE",
+      "performanceComparabilityExpectation": {
+        "10": "FULLY_COMPARABLE",
+        "100": "AFTER_ONLY",
+        "1000": "AFTER_ONLY"
+      },
+      "requestManifest": {
+        "distribution": "SAME_KEY",
+        "series": [
+          "wocaes0280"
+        ],
+        "semantic": [
+          "MONTHLY_AVERAGE"
+        ],
+        "sourceFrequency": [
+          "MONTHLY"
+        ],
+        "targetCadence": [
+          "MONTHLY"
+        ],
+        "methodVersion": "benchmark-forecasting-mvp-phase2-v1",
+        "logicalArtifactKeys": [
+          "CURRENT_LOGICAL_ARTIFACT_KEY_V1|seriesId=wocaes0280|targetBasis=MONTHLY_AVERAGE|targetSemantics=MONTHLY_AVERAGE|modelId=<modelScope>|historyFingerprint=7afe5dd3e125915ed483a9ba0bf28ae4|sourceFrequency=MONTHLY|targetCadence=MONTHLY"
+        ],
+        "requestDistribution": "all requests target the one exact model-specific key",
+        "expectedOwners": 1,
+        "providerPermission": "DENIED"
+      },
+      "structuralTarget": "one owner and zero duplicate Current computes per exact model-specific key",
+      "safetyGate": [
+        "SAFE-PRECONDITION",
+        "SAFE-CORRECTNESS",
+        "SAFE-CURRENT-OWNERSHIP",
+        "SAFE-MEMORY",
+        "SAFE-DATABASE",
+        "SAFE-SERVICE",
+        "SAFE-COOLDOWN",
+        "SAFE-MULTI-INSTANCE"
+      ],
+      "executionOrder": 1,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "cells": [
+        {
+          "scenarioId": "P03",
+          "model": "naive",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p03-10-naive-f4d145cd-5230-48d8-81de-1ebc1ca52e0a",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P03",
+          "model": "naive",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+          "stressRunId": "phase-2-2b-4-p03-100-naive-ce86ada6-c793-49b2-bdf5-9b9212293811",
+          "rule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+          "originalStatus": "INVALID_STATE"
+        },
+        {
+          "scenarioId": "P03",
+          "model": "naive",
+          "concurrency": 1000,
+          "status": "CONTRACT_ABORTED",
+          "reason": "CORRECTNESS_FAILED",
+          "rule": "SAFE-CORRECTNESS",
+          "originalStatus": "ABORTED_BY_CONTRACT"
+        },
+        {
+          "scenarioId": "P03",
+          "model": "damped_holt",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p03-10-damped_holt-7bf456eb-c532-4175-9a5f-8a75cf533c3f",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P03",
+          "model": "damped_holt",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+          "stressRunId": "phase-2-2b-4-p03-100-damped_holt-d6bf1694-0771-4f36-b1af-8b62af7f7cb7",
+          "rule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+          "originalStatus": "INVALID_STATE"
+        },
+        {
+          "scenarioId": "P03",
+          "model": "damped_holt",
+          "concurrency": 1000,
+          "status": "CONTRACT_ABORTED",
+          "reason": "CORRECTNESS_FAILED",
+          "rule": "SAFE-CORRECTNESS",
+          "originalStatus": "ABORTED_BY_CONTRACT"
+        },
+        {
+          "scenarioId": "P03",
+          "model": "ets",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p03-10-ets-eb149250-d743-42fe-ad3a-4b0c5233ebc3",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P03",
+          "model": "ets",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+          "stressRunId": "phase-2-2b-4-p03-100-ets-a29ecbad-6d0b-4c8d-b58a-c7b454e7ee3a",
+          "rule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+          "originalStatus": "INVALID_STATE"
+        },
+        {
+          "scenarioId": "P03",
+          "model": "ets",
+          "concurrency": 1000,
+          "status": "CONTRACT_ABORTED",
+          "reason": "CORRECTNESS_FAILED",
+          "rule": "SAFE-CORRECTNESS",
+          "originalStatus": "ABORTED_BY_CONTRACT"
+        },
+        {
+          "scenarioId": "P03",
+          "model": "arima",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p03-10-arima-0551112b-ee4d-4b76-9413-ec8f2e7345f1",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P03",
+          "model": "arima",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+          "stressRunId": "phase-2-2b-4-p03-100-arima-c0f86996-e719-44f9-b880-e91dfd62a463",
+          "rule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+          "originalStatus": "INVALID_STATE"
+        },
+        {
+          "scenarioId": "P03",
+          "model": "arima",
+          "concurrency": 1000,
+          "status": "CONTRACT_ABORTED",
+          "reason": "CORRECTNESS_FAILED",
+          "rule": "SAFE-CORRECTNESS",
+          "originalStatus": "ABORTED_BY_CONTRACT"
+        }
+      ]
+    },
+    {
+      "experimentId": "B4-P04-COMPARATIVE",
+      "scenario": "P04 BEFORE vs AFTER",
+      "modelScope": [
+        "naive",
+        "damped_holt",
+        "ets",
+        "arima"
+      ],
+      "state": "WARM_INPUT_READY_ARTIFACT_MISS",
+      "concurrency": [
+        10,
+        100,
+        1000
+      ],
+      "beforeAuthority": "tooling/Benchmark-Forecasting/performance/phase-2-2b-before-evidence.json#/scenarios/P04",
+      "beforeEvidenceClass": "FULLY_COMPARABLE",
+      "performanceComparabilityExpectation": {
+        "10": "FULLY_COMPARABLE",
+        "100": "FULLY_COMPARABLE",
+        "1000": "AFTER_ONLY"
+      },
+      "requestManifest": {
+        "distribution": "SMALL_POOL",
+        "series": [
+          "wocaes0074",
+          "wocaes0280",
+          "usnaac0169"
+        ],
+        "semantic": [
+          "ROLLING_DAILY_POINT_IN_TIME",
+          "MONTHLY_AVERAGE",
+          "END_OF_PERIOD"
+        ],
+        "sourceFrequency": [
+          "DAILY",
+          "MONTHLY",
+          "QUARTERLY"
+        ],
+        "targetCadence": [
+          "DAILY",
+          "MONTHLY",
+          "QUARTERLY"
+        ],
+        "methodVersion": [
+          "rolling-daily-point-in-time-v1",
+          "benchmark-forecasting-mvp-phase2-v1"
+        ],
+        "logicalArtifactKeys": [
+          "CURRENT_LOGICAL_ARTIFACT_KEY_V1|seriesId=wocaes0074|targetSemantics=ROLLING_DAILY_POINT_IN_TIME|modelId=<modelScope>|historyFingerprint=ebbcb638ce447e4813eac339ce2b45d7|sourceFrequency=DAILY|targetCadence=DAILY",
+          "CURRENT_LOGICAL_ARTIFACT_KEY_V1|seriesId=wocaes0280|targetSemantics=MONTHLY_AVERAGE|modelId=<modelScope>|historyFingerprint=ebbcb638ce447e4813eac339ce2b45d7|sourceFrequency=MONTHLY|targetCadence=MONTHLY",
+          "CURRENT_LOGICAL_ARTIFACT_KEY_V1|seriesId=usnaac0169|targetSemantics=END_OF_PERIOD|modelId=<modelScope>|historyFingerprint=ebbcb638ce447e4813eac339ce2b45d7|sourceFrequency=QUARTERLY|targetCadence=QUARTERLY"
+        ],
+        "requestDistribution": "round-robin across three exact model-specific keys",
+        "expectedOwners": 3,
+        "providerPermission": "DENIED"
+      },
+      "structuralTarget": "owner count equals three exact distinct concurrently missing keys; zero duplicate Current computes",
+      "safetyGate": [
+        "SAFE-PRECONDITION",
+        "SAFE-CORRECTNESS",
+        "SAFE-CURRENT-OWNERSHIP",
+        "SAFE-MEMORY",
+        "SAFE-DATABASE",
+        "SAFE-SERVICE",
+        "SAFE-COOLDOWN"
+      ],
+      "executionOrder": 2,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "cells": [
+        {
+          "scenarioId": "P04",
+          "model": "naive",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "DUPLICATE_CURRENT_COMPUTE_RETURNED",
+          "stressRunId": "phase-2-2b-4-p04-10-naive-5edfd924-3e8b-4ed1-98d1-3edda2706808",
+          "rule": "SAFE-CURRENT-OWNERSHIP",
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P04",
+          "model": "naive",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "CONTRACT_ABORTED",
+          "reason": "P04_10_MANDATORY_STOP_PROHIBITED_ESCALATION",
+          "stressRunId": "phase-2-2b-4-p04-100-naive-090d9aa3-28d7-435d-b004-db769e4a0ce6",
+          "rule": "SAFE-CURRENT-OWNERSHIP",
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P04",
+          "model": "naive",
+          "concurrency": 1000,
+          "repetition": 1,
+          "status": "CONTRACT_ABORTED",
+          "reason": "P04_10_MANDATORY_STOP_PROHIBITED_ESCALATION",
+          "stressRunId": "phase-2-2b-4-p04-1000-naive-6947d74b-fb5e-40bb-8c3f-92dda86dcda1",
+          "rule": "SAFE-CURRENT-OWNERSHIP",
+          "originalStatus": "INVALID_STATE"
+        },
+        {
+          "scenarioId": "P04",
+          "model": "damped_holt",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "DUPLICATE_CURRENT_COMPUTE_RETURNED",
+          "stressRunId": "phase-2-2b-4-p04-10-damped_holt-cdbc898d-8948-4bac-bbe6-a25b557c18b8",
+          "rule": "SAFE-CURRENT-OWNERSHIP",
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P04",
+          "model": "damped_holt",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "CONTRACT_ABORTED",
+          "reason": "P04_10_MANDATORY_STOP_PROHIBITED_ESCALATION",
+          "stressRunId": "phase-2-2b-4-p04-100-damped_holt-b55357cb-b744-479d-9e17-7c7930601109",
+          "rule": "SAFE-CURRENT-OWNERSHIP",
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P04",
+          "model": "damped_holt",
+          "concurrency": 1000,
+          "repetition": 1,
+          "status": "CONTRACT_ABORTED",
+          "reason": "P04_10_MANDATORY_STOP_PROHIBITED_ESCALATION",
+          "stressRunId": "phase-2-2b-4-p04-1000-damped_holt-44f87393-4acb-463f-95e1-8956b69be05a",
+          "rule": "SAFE-CURRENT-OWNERSHIP",
+          "originalStatus": "INVALID_STATE"
+        },
+        {
+          "scenarioId": "P04",
+          "model": "ets",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "DUPLICATE_CURRENT_COMPUTE_RETURNED",
+          "stressRunId": "phase-2-2b-4-p04-10-ets-1987ee52-7dbf-4ae9-a915-c3b70a3b12d6",
+          "rule": "SAFE-CURRENT-OWNERSHIP",
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P04",
+          "model": "ets",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "CONTRACT_ABORTED",
+          "reason": "P04_10_MANDATORY_STOP_PROHIBITED_ESCALATION",
+          "stressRunId": "phase-2-2b-4-p04-100-ets-d7c4d287-4068-4aed-8507-b0054ba19958",
+          "rule": "SAFE-CURRENT-OWNERSHIP",
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P04",
+          "model": "ets",
+          "concurrency": 1000,
+          "repetition": 1,
+          "status": "CONTRACT_ABORTED",
+          "reason": "P04_10_MANDATORY_STOP_PROHIBITED_ESCALATION",
+          "stressRunId": "phase-2-2b-4-p04-1000-ets-b0767b36-7d2a-46ae-9ff5-bfa4a4be1587",
+          "rule": "SAFE-CURRENT-OWNERSHIP",
+          "originalStatus": "INVALID_STATE"
+        },
+        {
+          "scenarioId": "P04",
+          "model": "arima",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "DUPLICATE_CURRENT_COMPUTE_RETURNED",
+          "stressRunId": "phase-2-2b-4-p04-10-arima-b3e8bff7-2cd8-460b-8161-221ffe4a922a",
+          "rule": "SAFE-CURRENT-OWNERSHIP",
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P04",
+          "model": "arima",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "CONTRACT_ABORTED",
+          "reason": "P04_10_MANDATORY_STOP_PROHIBITED_ESCALATION",
+          "stressRunId": "phase-2-2b-4-p04-100-arima-519da412-65d1-4099-9e5d-db6897f81966",
+          "rule": "SAFE-CURRENT-OWNERSHIP",
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P04",
+          "model": "arima",
+          "concurrency": 1000,
+          "repetition": 1,
+          "status": "CONTRACT_ABORTED",
+          "reason": "P04_10_MANDATORY_STOP_PROHIBITED_ESCALATION",
+          "stressRunId": "phase-2-2b-4-p04-1000-arima-b66cae27-d0a3-439f-b645-ac2f1fe7feab",
+          "rule": "SAFE-CURRENT-OWNERSHIP",
+          "originalStatus": "INVALID_STATE"
+        }
+      ]
+    },
+    {
+      "experimentId": "B4-P05-COMPARATIVE",
+      "scenario": "P05 BEFORE vs AFTER",
+      "modelScope": [
+        "ets"
+      ],
+      "state": "COLD_INPUT_AND_ARTIFACT_MISS",
+      "concurrency": [
+        10,
+        100,
+        1000
+      ],
+      "beforeAuthority": "tooling/Benchmark-Forecasting/performance/phase-2-2b-before-evidence.json#/scenarios/P05",
+      "beforeEvidenceClass": "STRUCTURALLY_COMPARABLE_ONLY",
+      "performanceComparabilityExpectation": {
+        "10": "FULLY_COMPARABLE",
+        "100": "AFTER_ONLY",
+        "1000": "AFTER_ONLY"
+      },
+      "requestManifest": {
+        "distribution": "SAME_KEY",
+        "series": [
+          "wocaes0280"
+        ],
+        "semantic": [
+          "MONTHLY_AVERAGE"
+        ],
+        "sourceFrequency": [
+          "MONTHLY"
+        ],
+        "targetCadence": [
+          "MONTHLY"
+        ],
+        "methodVersion": "benchmark-forecasting-mvp-phase2-v1",
+        "logicalArtifactKeys": [
+          "CURRENT_LOGICAL_ARTIFACT_KEY_V1|seriesId=wocaes0280|targetBasis=MONTHLY_AVERAGE|targetSemantics=MONTHLY_AVERAGE|modelId=ets|historyFingerprint=ABSENT_BY_CONTRACT|sourceFrequency=MONTHLY|targetCadence=MONTHLY"
+        ],
+        "requestDistribution": "all requests target the one exact COLD ETS key",
+        "expectedOwners": 1,
+        "providerPermission": "ALLOWLIST_PRECHECK_ONLY"
+      },
+      "structuralTarget": "one Current owner; provider ownership measured independently; no provider-savings claim",
+      "safetyGate": [
+        "SAFE-PRECONDITION",
+        "SAFE-CORRECTNESS",
+        "SAFE-CURRENT-OWNERSHIP",
+        "SAFE-PROVIDER",
+        "SAFE-MEMORY",
+        "SAFE-DATABASE",
+        "SAFE-SERVICE",
+        "SAFE-COOLDOWN"
+      ],
+      "executionOrder": 3,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "cells": [
+        {
+          "scenarioId": "P05",
+          "model": "ets",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p05-10-ets-0d1a1e0c-9620-4d31-846e-e072d6125ab1",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P05",
+          "model": "ets",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+          "stressRunId": "phase-2-2b-4-p05-100-ets-9458add5-07c7-44ad-bb75-1d8b28568d14",
+          "rule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+          "originalStatus": "INVALID_STATE"
+        },
+        {
+          "scenarioId": "P05",
+          "model": "ets",
+          "concurrency": 1000,
+          "status": "CONTRACT_ABORTED",
+          "reason": "CORRECTNESS_FAILED",
+          "rule": "SAFE-CORRECTNESS",
+          "originalStatus": "ABORTED_BY_CONTRACT"
+        }
+      ]
+    },
+    {
+      "experimentId": "B4-P08-COMPARATIVE",
+      "scenario": "P08 BEFORE vs AFTER",
+      "modelScope": [
+        "naive",
+        "damped_holt",
+        "ets",
+        "arima"
+      ],
+      "state": "VERIFICATION_MISS",
+      "concurrency": [
+        10,
+        100,
+        1000
+      ],
+      "beforeAuthority": "tooling/Benchmark-Forecasting/performance/phase-2-2b-before-evidence.json#/scenarios/P08",
+      "beforeEvidenceClass": "STRUCTURALLY_COMPARABLE_ONLY",
+      "performanceComparabilityExpectation": {
+        "10": "NOT_COMPARABLE",
+        "100": "NOT_COMPARABLE",
+        "1000": "NOT_COMPARABLE"
+      },
+      "requestManifest": {
+        "distribution": "SAME_KEY",
+        "series": [
+          "wocaes0280"
+        ],
+        "semantic": [
+          "MONTHLY_AVERAGE"
+        ],
+        "sourceFrequency": [
+          "MONTHLY"
+        ],
+        "targetCadence": [
+          "MONTHLY"
+        ],
+        "methodVersion": "benchmark-forecasting-mvp-phase2-v1",
+        "logicalArtifactKeys": [
+          "VERIFICATION_LOGICAL_ARTIFACT_KEY_V1|seriesId=wocaes0280|targetBasis=MONTHLY_AVERAGE|targetSemantics=MONTHLY_AVERAGE|modelId=<modelScope>|historyFingerprint=7afe5dd3e125915ed483a9ba0bf28ae4|sourceFrequency=MONTHLY|targetCadence=MONTHLY|verificationHorizonSetId=1M,3M,6M,12M"
+        ],
+        "requestDistribution": "all requests target the one exact model-specific Verification key",
+        "expectedOwners": 1,
+        "providerPermission": "DENIED"
+      },
+      "structuralTarget": "one Verification owner and one full backtest per exact model-specific key; zero duplicate backtests",
+      "safetyGate": [
+        "SAFE-PRECONDITION",
+        "SAFE-CORRECTNESS",
+        "SAFE-VERIFICATION",
+        "SAFE-MEMORY",
+        "SAFE-DATABASE",
+        "SAFE-SERVICE",
+        "SAFE-COOLDOWN"
+      ],
+      "executionOrder": 4,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "cells": [
+        {
+          "scenarioId": "P08",
+          "model": "naive",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p08-10-naive-a1400423-678f-4359-833b-81c73aa560f8",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P08",
+          "model": "naive",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+          "stressRunId": "phase-2-2b-4-p08-100-naive-2e41bda9-3772-4087-a2bd-441cbfd01a5d",
+          "rule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+          "originalStatus": "INVALID_STATE"
+        },
+        {
+          "scenarioId": "P08",
+          "model": "naive",
+          "concurrency": 1000,
+          "status": "CONTRACT_ABORTED",
+          "reason": "CORRECTNESS_FAILED",
+          "rule": "SAFE-CORRECTNESS",
+          "originalStatus": "ABORTED_BY_CONTRACT"
+        },
+        {
+          "scenarioId": "P08",
+          "model": "damped_holt",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p08-10-damped_holt-a699320b-9acc-411e-a498-0eab0640e51a",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P08",
+          "model": "damped_holt",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+          "stressRunId": "phase-2-2b-4-p08-100-damped_holt-d4f916f0-6358-4e8d-ab3c-5afe6aa70a9f",
+          "rule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+          "originalStatus": "INVALID_STATE"
+        },
+        {
+          "scenarioId": "P08",
+          "model": "damped_holt",
+          "concurrency": 1000,
+          "status": "CONTRACT_ABORTED",
+          "reason": "CORRECTNESS_FAILED",
+          "rule": "SAFE-CORRECTNESS",
+          "originalStatus": "ABORTED_BY_CONTRACT"
+        },
+        {
+          "scenarioId": "P08",
+          "model": "ets",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p08-10-ets-35cd17f6-30cd-47b2-bba7-db4490ac3982",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P08",
+          "model": "ets",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+          "stressRunId": "phase-2-2b-4-p08-100-ets-d13ff822-7f93-46a0-bc84-b550937f5283",
+          "rule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+          "originalStatus": "INVALID_STATE"
+        },
+        {
+          "scenarioId": "P08",
+          "model": "ets",
+          "concurrency": 1000,
+          "status": "CONTRACT_ABORTED",
+          "reason": "CORRECTNESS_FAILED",
+          "rule": "SAFE-CORRECTNESS",
+          "originalStatus": "ABORTED_BY_CONTRACT"
+        },
+        {
+          "scenarioId": "P08",
+          "model": "arima",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p08-10-arima-efdbec1f-e830-446d-a079-e344db4c814f",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P08",
+          "model": "arima",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+          "stressRunId": "phase-2-2b-4-p08-100-arima-6ca10a6e-55e5-4d7a-87a3-cdb6db60e542",
+          "rule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+          "originalStatus": "INVALID_STATE"
+        },
+        {
+          "scenarioId": "P08",
+          "model": "arima",
+          "concurrency": 1000,
+          "status": "CONTRACT_ABORTED",
+          "reason": "CORRECTNESS_FAILED",
+          "rule": "SAFE-CORRECTNESS",
+          "originalStatus": "ABORTED_BY_CONTRACT"
+        }
+      ]
+    },
+    {
+      "experimentId": "B4-P11-COMPARATIVE",
+      "scenario": "P11 BEFORE vs AFTER",
+      "modelScope": [
+        "naive",
+        "damped_holt",
+        "ets",
+        "arima"
+      ],
+      "state": "WARM_INPUT_READY_ARTIFACT_MISS",
+      "concurrency": [
+        10,
+        100,
+        1000
+      ],
+      "beforeAuthority": "tooling/Benchmark-Forecasting/performance/phase-2-2b-before-evidence.json#/scenarios/P11",
+      "beforeEvidenceClass": "STRUCTURALLY_COMPARABLE_ONLY",
+      "performanceComparabilityExpectation": {
+        "10": "AFTER_ONLY",
+        "100": "AFTER_ONLY",
+        "1000": "AFTER_ONLY"
+      },
+      "requestManifest": {
+        "distribution": "SAME_KEY",
+        "series": [
+          "wocaes0280"
+        ],
+        "semantic": [
+          "MONTHLY_AVERAGE"
+        ],
+        "sourceFrequency": [
+          "MONTHLY"
+        ],
+        "targetCadence": [
+          "MONTHLY"
+        ],
+        "methodVersion": "benchmark-forecasting-mvp-phase2-v1",
+        "logicalArtifactKeys": [
+          "CURRENT_LOGICAL_ARTIFACT_KEY_V1|seriesId=wocaes0280|targetBasis=MONTHLY_AVERAGE|targetSemantics=MONTHLY_AVERAGE|modelId=<modelScope>|historyFingerprint=7afe5dd3e125915ed483a9ba0bf28ae4|sourceFrequency=MONTHLY|targetCadence=MONTHLY"
+        ],
+        "requestDistribution": "all Dashboard Show Forecast requests target the one exact model-specific key",
+        "expectedOwners": 1,
+        "providerPermission": "DENIED"
+      },
+      "structuralTarget": "one Current owner; canonical response for every successful request; subsequent prepared read compute-free",
+      "safetyGate": [
+        "SAFE-PRECONDITION",
+        "SAFE-CORRECTNESS",
+        "SAFE-CURRENT-OWNERSHIP",
+        "SAFE-MEMORY",
+        "SAFE-DATABASE",
+        "SAFE-SERVICE",
+        "SAFE-COOLDOWN"
+      ],
+      "executionOrder": 5,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "cells": [
+        {
+          "scenarioId": "P11",
+          "model": "naive",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p11-10-naive-da7650db-3bbc-41cd-85fc-fc080d47c159",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P11",
+          "model": "naive",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+          "stressRunId": "phase-2-2b-4-p11-100-naive-bffdc2fb-61d5-4c7d-ad3f-63361733502e",
+          "rule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+          "originalStatus": "INVALID_STATE"
+        },
+        {
+          "scenarioId": "P11",
+          "model": "naive",
+          "concurrency": 1000,
+          "status": "CONTRACT_ABORTED",
+          "reason": "CORRECTNESS_FAILED",
+          "rule": "SAFE-CORRECTNESS",
+          "originalStatus": "ABORTED_BY_CONTRACT"
+        },
+        {
+          "scenarioId": "P11",
+          "model": "damped_holt",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p11-10-damped_holt-3ac47c27-6406-4b9c-8d3b-ea8458783bba",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P11",
+          "model": "damped_holt",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+          "stressRunId": "phase-2-2b-4-p11-100-damped_holt-4e907955-bfa2-4386-988b-4347ac1072f9",
+          "rule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+          "originalStatus": "INVALID_STATE"
+        },
+        {
+          "scenarioId": "P11",
+          "model": "damped_holt",
+          "concurrency": 1000,
+          "status": "CONTRACT_ABORTED",
+          "reason": "CORRECTNESS_FAILED",
+          "rule": "SAFE-CORRECTNESS",
+          "originalStatus": "ABORTED_BY_CONTRACT"
+        },
+        {
+          "scenarioId": "P11",
+          "model": "ets",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p11-10-ets-1cc55fe3-afa1-44b3-ac4c-ee4d2fa01c1a",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P11",
+          "model": "ets",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+          "stressRunId": "phase-2-2b-4-p11-100-ets-e156df6f-ba75-43db-9a8b-8d9a41b0dd9f",
+          "rule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+          "originalStatus": "INVALID_STATE"
+        },
+        {
+          "scenarioId": "P11",
+          "model": "ets",
+          "concurrency": 1000,
+          "status": "CONTRACT_ABORTED",
+          "reason": "CORRECTNESS_FAILED",
+          "rule": "SAFE-CORRECTNESS",
+          "originalStatus": "ABORTED_BY_CONTRACT"
+        },
+        {
+          "scenarioId": "P11",
+          "model": "arima",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p11-10-arima-17fd0ed0-3e6e-48bf-a2c1-6e7a59cd4dc0",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P11",
+          "model": "arima",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+          "stressRunId": "phase-2-2b-4-p11-100-arima-7bb7433e-ab9e-4a27-8c55-b123362a31b3",
+          "rule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+          "originalStatus": "INVALID_STATE"
+        },
+        {
+          "scenarioId": "P11",
+          "model": "arima",
+          "concurrency": 1000,
+          "status": "CONTRACT_ABORTED",
+          "reason": "CORRECTNESS_FAILED",
+          "rule": "SAFE-CORRECTNESS",
+          "originalStatus": "ABORTED_BY_CONTRACT"
+        }
+      ]
+    },
+    {
+      "experimentId": "B4-PREPARED-REGRESSIONS",
+      "scenario": "P01/P02/P06/P07/P09/P10 prepared and search regressions",
+      "modelScope": [
+        "frozen contract scope"
+      ],
+      "state": "HOT_READY|VERIFICATION_READY|UX_SEARCH_EXPAND_HISTORICAL",
+      "concurrency": [
+        10,
+        100,
+        1000
+      ],
+      "beforeAuthority": "tooling/Benchmark-Forecasting/performance/results/phase-2-1/executions/2026-08-24T144030-754Z-1ac1ed68-613d-4904-8f7a-14c250c0deea/aggregated/final-baseline-evidence.json",
+      "beforeEvidenceClass": "SCENARIO_SPECIFIC",
+      "performanceComparabilityExpectation": {
+        "P01": "AFTER_ONLY",
+        "P02": "FULLY_COMPARABLE_WHERE_BEFORE_VALID",
+        "P06": "AFTER_ONLY",
+        "P07": "AFTER_ONLY",
+        "P09": "FULLY_COMPARABLE_WHERE_BEFORE_VALID",
+        "P10": "FULLY_COMPARABLE"
+      },
+      "requestManifest": {
+        "distribution": "FROZEN_SCENARIO_DISTRIBUTION",
+        "scenarios": {
+          "P01": {
+            "state": "HOT_READY",
+            "distribution": "SAME_KEY",
+            "expectedOwners": 0,
+            "providerPermission": "DENIED"
+          },
+          "P02": {
+            "state": "HOT_READY",
+            "distribution": "SMALL_POOL",
+            "expectedOwners": 0,
+            "providerPermission": "DENIED"
+          },
+          "P06": {
+            "state": "VERIFICATION_READY",
+            "distribution": "SAME_KEY",
+            "expectedOwners": 0,
+            "providerPermission": "DENIED"
+          },
+          "P07": {
+            "state": "VERIFICATION_READY",
+            "distribution": "SMALL_POOL",
+            "expectedOwners": 0,
+            "providerPermission": "DENIED"
+          },
+          "P09": {
+            "state": "UX_SEARCH_EXPAND_HISTORICAL",
+            "distribution": "SMALL_POOL",
+            "expectedOwners": 0,
+            "providerPermission": "DENIED"
+          },
+          "P10": {
+            "state": "HOT_READY",
+            "distribution": "SMALL_POOL",
+            "expectedOwners": 0,
+            "providerPermission": "DENIED"
+          }
+        },
+        "series": [
+          "wocaes0074",
+          "wocaes0280",
+          "usnaac0169"
+        ],
+        "logicalArtifactKeys": [
+          "exact READY keys restored from immutable HOT/VERIFICATION snapshots; P09 has no Forecast artifact key"
+        ],
+        "requestDistribution": "each scenario uses its frozen SAME_KEY or three-key round-robin distribution",
+        "providerPermission": "DENIED"
+      },
+      "structuralTarget": "prepared paths remain compute-free; P09 Forecast compute equals zero; no ownership acquisition",
+      "safetyGate": [
+        "SAFE-PRECONDITION",
+        "SAFE-CORRECTNESS",
+        "SAFE-MEMORY",
+        "SAFE-DATABASE",
+        "SAFE-SERVICE",
+        "SAFE-COOLDOWN"
+      ],
+      "executionOrder": 6,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "cells": [
+        {
+          "scenarioId": "P01",
+          "model": "ets",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p01-10-ets-ec8fac50-a8f2-4d5e-aba1-0ee47f1551d1",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P01",
+          "model": "ets",
+          "concurrency": 10,
+          "repetition": 2,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p01-10-ets-059e2f2a-0c43-472e-83b8-6ae39d726c6f",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P01",
+          "model": "ets",
+          "concurrency": 10,
+          "repetition": 3,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p01-10-ets-94bb964f-1855-4027-9907-4dee5ee6c12f",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P01",
+          "model": "ets",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p01-100-ets-6affcf04-84b5-4e81-858c-0243b8d7a525",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P01",
+          "model": "ets",
+          "concurrency": 100,
+          "repetition": 2,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p01-100-ets-0e1ef1e9-b431-444f-aac6-3ad22c4d710e",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P01",
+          "model": "ets",
+          "concurrency": 100,
+          "repetition": 3,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p01-100-ets-bd599b7c-39b5-4f8e-a81e-9aab7f6f3e68",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P01",
+          "model": "ets",
+          "concurrency": 1000,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p01-1000-ets-0de76fd9-e46f-47b5-bd86-ff0e695d619d",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P01",
+          "model": "ets",
+          "concurrency": 1000,
+          "repetition": 2,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p01-1000-ets-6ead299e-7d78-480a-9794-45d3ceb2bb8a",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P01",
+          "model": "ets",
+          "concurrency": 1000,
+          "repetition": 3,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p01-1000-ets-6b5ee4c0-6c2b-4e1f-b5fd-e758c5988571",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P02",
+          "model": "ets",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p02-10-ets-4a5dc8f3-21ca-49c4-94e6-d7810fbe3b2d",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P02",
+          "model": "ets",
+          "concurrency": 10,
+          "repetition": 2,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p02-10-ets-9917882c-a3c6-45bd-8297-0da44c433ef1",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P02",
+          "model": "ets",
+          "concurrency": 10,
+          "repetition": 3,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p02-10-ets-8a2afec0-7a21-42ed-9bda-b7942f621196",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P02",
+          "model": "ets",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p02-100-ets-f1012078-0df9-470d-8ddf-123b9414e9ff",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P02",
+          "model": "ets",
+          "concurrency": 100,
+          "repetition": 2,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p02-100-ets-26c18238-a951-464e-8724-3063fd1cd56f",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P02",
+          "model": "ets",
+          "concurrency": 100,
+          "repetition": 3,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p02-100-ets-22f096af-b26e-493c-8ae0-8e58633a2d11",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P02",
+          "model": "ets",
+          "concurrency": 1000,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+          "stressRunId": "phase-2-2b-4-p02-1000-ets-b251ce60-1d01-42af-9f92-7a88244e3f38",
+          "rule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+          "originalStatus": "INVALID_STATE"
+        },
+        {
+          "scenarioId": "P09",
+          "model": "mixed",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p09-10-ets-42710bac-f48f-4f05-83bc-7211e491a866",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P09",
+          "model": "mixed",
+          "concurrency": 10,
+          "repetition": 2,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p09-10-ets-fec3cf89-1bcc-4bfe-b8bb-055980aa134c",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P09",
+          "model": "mixed",
+          "concurrency": 10,
+          "repetition": 3,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p09-10-ets-92e76799-3aad-4fda-a44d-cefdf0073a00",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P09",
+          "model": "mixed",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p09-100-ets-24bac759-a85f-4299-94e9-c83dd5cf4ca2",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P09",
+          "model": "mixed",
+          "concurrency": 100,
+          "repetition": 2,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p09-100-ets-fbc8ff81-96e1-47bf-88e0-c665149619b0",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P09",
+          "model": "mixed",
+          "concurrency": 100,
+          "repetition": 3,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p09-100-ets-e9c39a89-3329-43a7-af65-2123ab796390",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P09",
+          "model": "mixed",
+          "concurrency": 1000,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+          "stressRunId": "phase-2-2b-4-p09-1000-ets-5d5149b1-608b-4ed3-a837-bb183ab35eb5",
+          "rule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+          "originalStatus": "INVALID_STATE"
+        },
+        {
+          "scenarioId": "P10",
+          "model": "ets",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p10-10-ets-2e600d2d-358d-4a8c-9a06-984e93a54834",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P10",
+          "model": "ets",
+          "concurrency": 10,
+          "repetition": 2,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p10-10-ets-04944afb-6e38-49b0-bf5f-92f3b70a72ed",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P10",
+          "model": "ets",
+          "concurrency": 10,
+          "repetition": 3,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p10-10-ets-9289e7c2-6b2b-410f-a23b-666de44faa00",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P10",
+          "model": "ets",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p10-100-ets-37ef242c-fd1a-43e0-8df8-e21ffe90b0b6",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P10",
+          "model": "ets",
+          "concurrency": 100,
+          "repetition": 2,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p10-100-ets-4d8928cb-7292-4425-8b15-c911e8a07fbb",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P10",
+          "model": "ets",
+          "concurrency": 100,
+          "repetition": 3,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p10-100-ets-1b58ef21-adc6-4902-8bd9-6c0e5d6f184f",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P10",
+          "model": "ets",
+          "concurrency": 1000,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p10-1000-ets-4ab08060-e70b-4451-855b-8aabcd4bd411",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P10",
+          "model": "ets",
+          "concurrency": 1000,
+          "repetition": 2,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p10-1000-ets-66aa1eaa-419a-45be-b4de-ce55530fb0b7",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P10",
+          "model": "ets",
+          "concurrency": 1000,
+          "repetition": 3,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-p10-1000-ets-974f94cc-7c4d-4272-9144-d8c77d222a7b",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P06",
+          "model": "ets",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+          "stressRunId": "phase-2-2b-4-correction-p06-10-ets-e1cebe0c-afdf-4b00-9ddb-767dbf4a2a78",
+          "rule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+          "originalStatus": "INVALID_STATE"
+        },
+        {
+          "scenarioId": "P06",
+          "model": "ets",
+          "concurrency": 100,
+          "status": "CONTRACT_ABORTED",
+          "reason": "CORRECTNESS_FAILED",
+          "rule": "SAFE-CORRECTNESS",
+          "originalStatus": "ABORTED_BY_CONTRACT"
+        },
+        {
+          "scenarioId": "P06",
+          "model": "ets",
+          "concurrency": 1000,
+          "status": "CONTRACT_ABORTED",
+          "reason": "CORRECTNESS_FAILED",
+          "rule": "SAFE-CORRECTNESS",
+          "originalStatus": "ABORTED_BY_CONTRACT"
+        },
+        {
+          "scenarioId": "P07",
+          "model": "ets",
+          "concurrency": 10,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-correction-p07-10-ets-8a5683e3-17aa-4dc3-add5-4cfd739f9d69",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P07",
+          "model": "ets",
+          "concurrency": 10,
+          "repetition": 2,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-correction-p07-10-ets-9efe1784-1237-4fa0-a3ae-83eadb274583",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P07",
+          "model": "ets",
+          "concurrency": 10,
+          "repetition": 3,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-correction-p07-10-ets-a1335213-aaf8-4a2e-bd6b-d42b0606b57a",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P07",
+          "model": "ets",
+          "concurrency": 100,
+          "repetition": 1,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-correction-p07-100-ets-4ef0bf51-800c-4580-90f4-4deafe1500ad",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P07",
+          "model": "ets",
+          "concurrency": 100,
+          "repetition": 2,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-correction-p07-100-ets-bdc2bf22-800d-42c4-9be7-7d6f33e47249",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P07",
+          "model": "ets",
+          "concurrency": 100,
+          "repetition": 3,
+          "status": "VALID_COMPLETED",
+          "reason": null,
+          "stressRunId": "phase-2-2b-4-correction-p07-100-ets-8e1d18be-7f05-4da0-bd0f-ec7ec3f1c09e",
+          "rule": null,
+          "originalStatus": "VALID_COMPLETED"
+        },
+        {
+          "scenarioId": "P07",
+          "model": "ets",
+          "concurrency": 1000,
+          "repetition": 1,
+          "status": "SAFETY_BLOCKED",
+          "reason": "CAPACITY_OR_TRANSIENT_SERVICE_FAILURE_WITHOUT_COMPUTE",
+          "stressRunId": "phase-2-2b-4-correction-p07-1000-ets-71db682b-d247-40b7-a7bf-902f7d20f17b",
+          "rule": "SAFE-SERVICE+SAFE-CORRECTNESS",
+          "originalStatus": "INVALID_STATE"
+        }
+      ]
+    }
+  ]
+}

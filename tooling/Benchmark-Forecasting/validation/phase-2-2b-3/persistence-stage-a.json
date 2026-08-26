@@ -1,0 +1,258 @@
+{
+  "task": "FORECAST_PHASE_2_2B_3_PERSISTENCE_OWNERSHIP_IDEMPOTENCY_EXPERIMENT",
+  "generatedAt": "2026-08-25T05:41:20.006Z",
+  "database": {
+    "database": "sg_phase_2_1_market_data",
+    "host": "127.0.0.1/32",
+    "port": 55421
+  },
+  "cloneAlias": "phase-2-1-local-clone-v1",
+  "providerEnabled": false,
+  "sourceBehaviorChanged": false,
+  "additionalPersistenceMechanismPresent": false,
+  "claimBoundary": "EFFECTIVE_CANONICAL_IDEMPOTENCY_NOT_EXACTLY_ONCE_SQL_EXECUTION",
+  "scenarios": [
+    {
+      "id": "CURRENT-NORMAL-SUCCESS",
+      "family": "CURRENT",
+      "attempts": 1,
+      "successfulAttempts": 1,
+      "failedAttempts": 0,
+      "parentCount": 1,
+      "childCount": 2,
+      "expectedChildCount": 2,
+      "canonicalChecksum": "2dd666bfcbe104327b8f25ecf09b4d6ac3c3f9d965c42ddc40688ecf72f26bb7",
+      "acceptedChecksums": [
+        "2dd666bfcbe104327b8f25ecf09b4d6ac3c3f9d965c42ddc40688ecf72f26bb7"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "CURRENT-SEQUENTIAL-DUPLICATE",
+      "family": "CURRENT",
+      "attempts": 2,
+      "successfulAttempts": 2,
+      "failedAttempts": 0,
+      "parentCount": 1,
+      "childCount": 2,
+      "expectedChildCount": 2,
+      "canonicalChecksum": "2dd666bfcbe104327b8f25ecf09b4d6ac3c3f9d965c42ddc40688ecf72f26bb7",
+      "acceptedChecksums": [
+        "2dd666bfcbe104327b8f25ecf09b4d6ac3c3f9d965c42ddc40688ecf72f26bb7"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "CURRENT-CONTROLLED-CONCURRENCY",
+      "family": "CURRENT",
+      "attempts": 2,
+      "successfulAttempts": 2,
+      "failedAttempts": 0,
+      "parentCount": 1,
+      "childCount": 2,
+      "expectedChildCount": 2,
+      "canonicalChecksum": "2dd666bfcbe104327b8f25ecf09b4d6ac3c3f9d965c42ddc40688ecf72f26bb7",
+      "acceptedChecksums": [
+        "2dd666bfcbe104327b8f25ecf09b4d6ac3c3f9d965c42ddc40688ecf72f26bb7",
+        "54b2f1dd2d35f10397b988a5b78831cf685602fb07cb4c14000159950873ad5a"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "CURRENT-FAILURE-RETRY",
+      "family": "CURRENT",
+      "attempts": 2,
+      "successfulAttempts": 1,
+      "failedAttempts": 1,
+      "parentCount": 1,
+      "childCount": 2,
+      "expectedChildCount": 2,
+      "canonicalChecksum": "2dd666bfcbe104327b8f25ecf09b4d6ac3c3f9d965c42ddc40688ecf72f26bb7",
+      "acceptedChecksums": [
+        "2dd666bfcbe104327b8f25ecf09b4d6ac3c3f9d965c42ddc40688ecf72f26bb7"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "CURRENT-UNCERTAIN-COMMIT-REPLAY",
+      "family": "CURRENT",
+      "attempts": 2,
+      "successfulAttempts": 1,
+      "failedAttempts": 1,
+      "parentCount": 1,
+      "childCount": 2,
+      "expectedChildCount": 2,
+      "canonicalChecksum": "2dd666bfcbe104327b8f25ecf09b4d6ac3c3f9d965c42ddc40688ecf72f26bb7",
+      "acceptedChecksums": [
+        "2dd666bfcbe104327b8f25ecf09b4d6ac3c3f9d965c42ddc40688ecf72f26bb7"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "VERIFICATION-NORMAL-SUCCESS",
+      "family": "VERIFICATION",
+      "attempts": 1,
+      "successfulAttempts": 1,
+      "failedAttempts": 0,
+      "parentCount": 1,
+      "childCount": 5,
+      "expectedChildCount": 5,
+      "canonicalChecksum": "67279ba4be306116e56d0bfa42fbe851ceda47c21f1b2090788cd01a2769e2ff",
+      "acceptedChecksums": [
+        "67279ba4be306116e56d0bfa42fbe851ceda47c21f1b2090788cd01a2769e2ff"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "VERIFICATION-SEQUENTIAL-DUPLICATE",
+      "family": "VERIFICATION",
+      "attempts": 2,
+      "successfulAttempts": 2,
+      "failedAttempts": 0,
+      "parentCount": 1,
+      "childCount": 5,
+      "expectedChildCount": 5,
+      "canonicalChecksum": "67279ba4be306116e56d0bfa42fbe851ceda47c21f1b2090788cd01a2769e2ff",
+      "acceptedChecksums": [
+        "67279ba4be306116e56d0bfa42fbe851ceda47c21f1b2090788cd01a2769e2ff"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "VERIFICATION-CONTROLLED-CONCURRENCY",
+      "family": "VERIFICATION",
+      "attempts": 2,
+      "successfulAttempts": 2,
+      "failedAttempts": 0,
+      "parentCount": 1,
+      "childCount": 5,
+      "expectedChildCount": 5,
+      "canonicalChecksum": "a221b19f03c143cc5c6e54dfb1f52590cdbf9e8778c37cd4b8471b38eb0baf31",
+      "acceptedChecksums": [
+        "67279ba4be306116e56d0bfa42fbe851ceda47c21f1b2090788cd01a2769e2ff",
+        "a221b19f03c143cc5c6e54dfb1f52590cdbf9e8778c37cd4b8471b38eb0baf31"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "VERIFICATION-FAILURE-RETRY",
+      "family": "VERIFICATION",
+      "attempts": 2,
+      "successfulAttempts": 1,
+      "failedAttempts": 1,
+      "parentCount": 1,
+      "childCount": 5,
+      "expectedChildCount": 5,
+      "canonicalChecksum": "67279ba4be306116e56d0bfa42fbe851ceda47c21f1b2090788cd01a2769e2ff",
+      "acceptedChecksums": [
+        "67279ba4be306116e56d0bfa42fbe851ceda47c21f1b2090788cd01a2769e2ff"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "VERIFICATION-UNCERTAIN-COMMIT-REPLAY",
+      "family": "VERIFICATION",
+      "attempts": 2,
+      "successfulAttempts": 1,
+      "failedAttempts": 1,
+      "parentCount": 1,
+      "childCount": 5,
+      "expectedChildCount": 5,
+      "canonicalChecksum": "67279ba4be306116e56d0bfa42fbe851ceda47c21f1b2090788cd01a2769e2ff",
+      "acceptedChecksums": [
+        "67279ba4be306116e56d0bfa42fbe851ceda47c21f1b2090788cd01a2769e2ff"
+      ],
+      "status": "PASS"
+    }
+  ],
+  "failureEvidence": [
+    {
+      "family": "CURRENT",
+      "failureBeforePersistence": {
+        "attemptedWriteSets": 0,
+        "state": {
+          "parentCount": 0,
+          "currentPointCount": 0,
+          "verificationMetricCount": 0,
+          "verificationPointCount": 0
+        },
+        "status": "PASS"
+      },
+      "failureDuringPersistence": {
+        "attemptedWriteSets": 1,
+        "committedWriteSets": 0,
+        "controlledRollback": true,
+        "state": {
+          "parentCount": 0,
+          "currentPointCount": 0,
+          "verificationMetricCount": 0,
+          "verificationPointCount": 0
+        },
+        "partialReady": false,
+        "status": "PASS"
+      },
+      "uncertainCommitReplay": {
+        "initialCommitCompleted": true,
+        "acknowledgementObserved": false,
+        "preparedReadBeforeReplay": true,
+        "replayAttempted": true,
+        "canonicalArtifactsAfterReplay": 1,
+        "status": "PASS"
+      }
+    },
+    {
+      "family": "VERIFICATION",
+      "failureBeforePersistence": {
+        "attemptedWriteSets": 0,
+        "state": {
+          "parentCount": 0,
+          "currentPointCount": 0,
+          "verificationMetricCount": 0,
+          "verificationPointCount": 0
+        },
+        "status": "PASS"
+      },
+      "failureDuringPersistence": {
+        "attemptedWriteSets": 1,
+        "committedWriteSets": 0,
+        "controlledRollback": true,
+        "state": {
+          "parentCount": 0,
+          "currentPointCount": 0,
+          "verificationMetricCount": 0,
+          "verificationPointCount": 0
+        },
+        "partialReady": false,
+        "status": "PASS"
+      },
+      "uncertainCommitReplay": {
+        "initialCommitCompleted": true,
+        "acknowledgementObserved": false,
+        "preparedReadBeforeReplay": true,
+        "replayAttempted": true,
+        "canonicalArtifactsAfterReplay": 1,
+        "status": "PASS"
+      }
+    }
+  ],
+  "isolation": {
+    "id": "CURRENT-VERIFICATION-IDENTITY-ISOLATION",
+    "exactIdentities": 4,
+    "parentCount": 4,
+    "currentPointCount": 4,
+    "verificationMetricCount": 4,
+    "verificationPointCount": 6,
+    "preparedReads": 4,
+    "status": "PASS"
+  },
+  "h0": "PASS",
+  "cleanup": {
+    "state": {
+      "parentCount": 0,
+      "currentPointCount": 0,
+      "verificationMetricCount": 0,
+      "verificationPointCount": 0
+    },
+    "status": "PASS"
+  }
+}

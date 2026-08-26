@@ -1,0 +1,1203 @@
+{
+  "task": "FORECAST_PHASE_2_2B_1R_P04_SMALL_POOL_CURRENT_SINGLE_FLIGHT_ROOT_CAUSE_REPAIR",
+  "phase": "2.2B-1R",
+  "generatedAt": "2026-08-25T11:09:39.431Z",
+  "preconditions": {
+    "phase21Gate": "PASS",
+    "phase22aGate": "PASS",
+    "phase22b0Gate": "PASS",
+    "phase22b1Gate": "PASS",
+    "phase22b2Gate": "PASS",
+    "phase22b3Gate": "PASS",
+    "originalPhase22b4Gate": "FAIL",
+    "stressTestContractVersion": 1,
+    "measurementControlRevision": 2,
+    "singleFlightExperimentContractVersion": 1,
+    "contractDrift": false,
+    "originalB4EvidenceChanged": false
+  },
+  "originalFailure": {
+    "scenario": "P04",
+    "concurrency": 10,
+    "logicalKeys": 3,
+    "owners": 3,
+    "computes": 6,
+    "duplicateComputes": 3,
+    "duplicateWrites": 3
+  },
+  "rootCause": {
+    "preRepairReproduced": true,
+    "classification": [
+      "PRE_OWNER_COMPUTE_ESCAPE",
+      "SMALL_POOL_KEY_ROUTING_DEFECT",
+      "OTHER_EXACT_CURRENT_OWNERSHIP_DEFECT"
+    ],
+    "firstIncorrectBoundary": {
+      "sourcePath": "apps/sg-runtime/scripts/run-forecast-phase-2-1b-operation.ts",
+      "function": "runForecastStressOperationWave",
+      "branch": "isRollingDailyCurrent(request)",
+      "expected": "Resolve the exact Daily Current identity, acquire the accepted Current owner, and invoke Rolling Daily production operations only from the owner callback.",
+      "actual": "Every Daily request emits current_compute_start and invokes rollingDailyOperations.run directly without CURRENT_LOGICAL_ARTIFACT_KEY_V1 construction or CurrentForecastSingleFlight.run."
+    },
+    "sourcePaths": [
+      "apps/sg-runtime/scripts/run-forecast-phase-2-1b-operation.ts",
+      "apps/sg-runtime/lib/forecast/rolling-daily-production-operations.ts"
+    ],
+    "functions": [
+      "runForecastStressOperationWave",
+      "createRollingDailyProductionOperationsService().run"
+    ],
+    "whyP03Passed": "P03 contains only the Monthly Generic Period Current key. That route executes prepared lookup, exact key construction, and CurrentForecastSingleFlight.run, yielding one owner callback and one compute.",
+    "whyP04Failed": "P04 adds a Rolling Daily key. Its four requests are dispatched directly to Rolling Daily production operations before the accepted Current ownership boundary. Monthly and Quarterly still collapse to one compute each, so 4 + 1 + 1 = 6."
+  },
+  "perKeyBeforeRepair": [
+    {
+      "modelId": "naive",
+      "runId": "phase-2-2b-4-p04-10-naive-5edfd924-3e8b-4ed1-98d1-3edda2706808",
+      "acceptedSummary": {
+        "requests": 10,
+        "reportedDerivedOwnerCount": 3,
+        "physicalCurrentComputeCount": 6,
+        "duplicateCurrentComputeCount": 3,
+        "duplicateArtifactWriteCount": 3,
+        "providerCallCount": 0,
+        "canonicalResponseCount": 10
+      },
+      "observedRegistryOwnerEventCount": 2,
+      "observedRegistryWaiterEventCount": 4,
+      "metricQualification": {
+        "reportedDerivedOwnerCount": "DERIVED_AS_CURRENT_COMPUTES_MINUS_DUPLICATES_BY_REQUEST_LOGICAL_KEY",
+        "observedRegistryOwnerEventCount": "COUNT_OF_SINGLE_FLIGHT_OWNER_ACQUIRED_EVENTS"
+      },
+      "perKey": [
+        {
+          "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|naive",
+          "requestIds": [
+            "phase-2-2b-4-p04-10-naive-5edfd924-3e8b-4ed1-98d1-3edda2706808-request-1",
+            "phase-2-2b-4-p04-10-naive-5edfd924-3e8b-4ed1-98d1-3edda2706808-request-4",
+            "phase-2-2b-4-p04-10-naive-5edfd924-3e8b-4ed1-98d1-3edda2706808-request-7",
+            "phase-2-2b-4-p04-10-naive-5edfd924-3e8b-4ed1-98d1-3edda2706808-request-10"
+          ],
+          "REQUEST_COUNT": 4,
+          "PREPARED_LOOKUP_COUNT": 0,
+          "PREPARED_MISS_COUNT": 0,
+          "SINGLE_FLIGHT_LOOKUP_COUNT": 0,
+          "OWNER_ACQUISITION_COUNT": 0,
+          "WAITER_JOIN_COUNT": 0,
+          "OWNER_CALLBACK_INVOCATION_COUNT": 0,
+          "SERVICE_COMPUTE_BRANCH_COUNT": 4,
+          "CURRENT_COMPUTE_FUNCTION_INVOCATION_COUNT": 4,
+          "MODEL_COMPUTE_INVOCATION_COUNT": 4,
+          "PERSISTENCE_ATTEMPT_COUNT": 4,
+          "CANONICAL_WRITE_SET_COUNT": 4,
+          "ENTRY_RELEASE_COUNT": 0,
+          "ACTIVE_ENTRY_AFTER_SETTLEMENT": null
+        },
+        {
+          "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|naive",
+          "requestIds": [
+            "phase-2-2b-4-p04-10-naive-5edfd924-3e8b-4ed1-98d1-3edda2706808-request-2",
+            "phase-2-2b-4-p04-10-naive-5edfd924-3e8b-4ed1-98d1-3edda2706808-request-5",
+            "phase-2-2b-4-p04-10-naive-5edfd924-3e8b-4ed1-98d1-3edda2706808-request-8"
+          ],
+          "REQUEST_COUNT": 3,
+          "PREPARED_LOOKUP_COUNT": 3,
+          "PREPARED_MISS_COUNT": 3,
+          "SINGLE_FLIGHT_LOOKUP_COUNT": 3,
+          "OWNER_ACQUISITION_COUNT": 1,
+          "WAITER_JOIN_COUNT": 2,
+          "OWNER_CALLBACK_INVOCATION_COUNT": 1,
+          "SERVICE_COMPUTE_BRANCH_COUNT": 1,
+          "CURRENT_COMPUTE_FUNCTION_INVOCATION_COUNT": 1,
+          "MODEL_COMPUTE_INVOCATION_COUNT": 1,
+          "PERSISTENCE_ATTEMPT_COUNT": 1,
+          "CANONICAL_WRITE_SET_COUNT": 1,
+          "ENTRY_RELEASE_COUNT": 1,
+          "ACTIVE_ENTRY_AFTER_SETTLEMENT": 1
+        },
+        {
+          "forecastIdentity": "usnaac0169|END_OF_PERIOD|naive",
+          "requestIds": [
+            "phase-2-2b-4-p04-10-naive-5edfd924-3e8b-4ed1-98d1-3edda2706808-request-3",
+            "phase-2-2b-4-p04-10-naive-5edfd924-3e8b-4ed1-98d1-3edda2706808-request-6",
+            "phase-2-2b-4-p04-10-naive-5edfd924-3e8b-4ed1-98d1-3edda2706808-request-9"
+          ],
+          "REQUEST_COUNT": 3,
+          "PREPARED_LOOKUP_COUNT": 3,
+          "PREPARED_MISS_COUNT": 3,
+          "SINGLE_FLIGHT_LOOKUP_COUNT": 3,
+          "OWNER_ACQUISITION_COUNT": 1,
+          "WAITER_JOIN_COUNT": 2,
+          "OWNER_CALLBACK_INVOCATION_COUNT": 1,
+          "SERVICE_COMPUTE_BRANCH_COUNT": 1,
+          "CURRENT_COMPUTE_FUNCTION_INVOCATION_COUNT": 1,
+          "MODEL_COMPUTE_INVOCATION_COUNT": 1,
+          "PERSISTENCE_ATTEMPT_COUNT": 1,
+          "CANONICAL_WRITE_SET_COUNT": 1,
+          "ENTRY_RELEASE_COUNT": 1,
+          "ACTIVE_ENTRY_AFTER_SETTLEMENT": 0
+        }
+      ]
+    },
+    {
+      "modelId": "damped_holt",
+      "runId": "phase-2-2b-4-p04-10-damped_holt-cdbc898d-8948-4bac-bbe6-a25b557c18b8",
+      "acceptedSummary": {
+        "requests": 10,
+        "reportedDerivedOwnerCount": 3,
+        "physicalCurrentComputeCount": 6,
+        "duplicateCurrentComputeCount": 3,
+        "duplicateArtifactWriteCount": 3,
+        "providerCallCount": 0,
+        "canonicalResponseCount": 10
+      },
+      "observedRegistryOwnerEventCount": 2,
+      "observedRegistryWaiterEventCount": 4,
+      "metricQualification": {
+        "reportedDerivedOwnerCount": "DERIVED_AS_CURRENT_COMPUTES_MINUS_DUPLICATES_BY_REQUEST_LOGICAL_KEY",
+        "observedRegistryOwnerEventCount": "COUNT_OF_SINGLE_FLIGHT_OWNER_ACQUIRED_EVENTS"
+      },
+      "perKey": [
+        {
+          "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|damped_holt",
+          "requestIds": [
+            "phase-2-2b-4-p04-10-damped_holt-cdbc898d-8948-4bac-bbe6-a25b557c18b8-request-1",
+            "phase-2-2b-4-p04-10-damped_holt-cdbc898d-8948-4bac-bbe6-a25b557c18b8-request-4",
+            "phase-2-2b-4-p04-10-damped_holt-cdbc898d-8948-4bac-bbe6-a25b557c18b8-request-7",
+            "phase-2-2b-4-p04-10-damped_holt-cdbc898d-8948-4bac-bbe6-a25b557c18b8-request-10"
+          ],
+          "REQUEST_COUNT": 4,
+          "PREPARED_LOOKUP_COUNT": 0,
+          "PREPARED_MISS_COUNT": 0,
+          "SINGLE_FLIGHT_LOOKUP_COUNT": 0,
+          "OWNER_ACQUISITION_COUNT": 0,
+          "WAITER_JOIN_COUNT": 0,
+          "OWNER_CALLBACK_INVOCATION_COUNT": 0,
+          "SERVICE_COMPUTE_BRANCH_COUNT": 4,
+          "CURRENT_COMPUTE_FUNCTION_INVOCATION_COUNT": 4,
+          "MODEL_COMPUTE_INVOCATION_COUNT": 4,
+          "PERSISTENCE_ATTEMPT_COUNT": 4,
+          "CANONICAL_WRITE_SET_COUNT": 4,
+          "ENTRY_RELEASE_COUNT": 0,
+          "ACTIVE_ENTRY_AFTER_SETTLEMENT": null
+        },
+        {
+          "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|damped_holt",
+          "requestIds": [
+            "phase-2-2b-4-p04-10-damped_holt-cdbc898d-8948-4bac-bbe6-a25b557c18b8-request-2",
+            "phase-2-2b-4-p04-10-damped_holt-cdbc898d-8948-4bac-bbe6-a25b557c18b8-request-5",
+            "phase-2-2b-4-p04-10-damped_holt-cdbc898d-8948-4bac-bbe6-a25b557c18b8-request-8"
+          ],
+          "REQUEST_COUNT": 3,
+          "PREPARED_LOOKUP_COUNT": 3,
+          "PREPARED_MISS_COUNT": 3,
+          "SINGLE_FLIGHT_LOOKUP_COUNT": 3,
+          "OWNER_ACQUISITION_COUNT": 1,
+          "WAITER_JOIN_COUNT": 2,
+          "OWNER_CALLBACK_INVOCATION_COUNT": 1,
+          "SERVICE_COMPUTE_BRANCH_COUNT": 1,
+          "CURRENT_COMPUTE_FUNCTION_INVOCATION_COUNT": 1,
+          "MODEL_COMPUTE_INVOCATION_COUNT": 1,
+          "PERSISTENCE_ATTEMPT_COUNT": 1,
+          "CANONICAL_WRITE_SET_COUNT": 1,
+          "ENTRY_RELEASE_COUNT": 1,
+          "ACTIVE_ENTRY_AFTER_SETTLEMENT": 0
+        },
+        {
+          "forecastIdentity": "usnaac0169|END_OF_PERIOD|damped_holt",
+          "requestIds": [
+            "phase-2-2b-4-p04-10-damped_holt-cdbc898d-8948-4bac-bbe6-a25b557c18b8-request-3",
+            "phase-2-2b-4-p04-10-damped_holt-cdbc898d-8948-4bac-bbe6-a25b557c18b8-request-6",
+            "phase-2-2b-4-p04-10-damped_holt-cdbc898d-8948-4bac-bbe6-a25b557c18b8-request-9"
+          ],
+          "REQUEST_COUNT": 3,
+          "PREPARED_LOOKUP_COUNT": 3,
+          "PREPARED_MISS_COUNT": 3,
+          "SINGLE_FLIGHT_LOOKUP_COUNT": 3,
+          "OWNER_ACQUISITION_COUNT": 1,
+          "WAITER_JOIN_COUNT": 2,
+          "OWNER_CALLBACK_INVOCATION_COUNT": 1,
+          "SERVICE_COMPUTE_BRANCH_COUNT": 1,
+          "CURRENT_COMPUTE_FUNCTION_INVOCATION_COUNT": 1,
+          "MODEL_COMPUTE_INVOCATION_COUNT": 1,
+          "PERSISTENCE_ATTEMPT_COUNT": 1,
+          "CANONICAL_WRITE_SET_COUNT": 1,
+          "ENTRY_RELEASE_COUNT": 1,
+          "ACTIVE_ENTRY_AFTER_SETTLEMENT": 1
+        }
+      ]
+    },
+    {
+      "modelId": "ets",
+      "runId": "phase-2-2b-4-p04-10-ets-1987ee52-7dbf-4ae9-a915-c3b70a3b12d6",
+      "acceptedSummary": {
+        "requests": 10,
+        "reportedDerivedOwnerCount": 3,
+        "physicalCurrentComputeCount": 6,
+        "duplicateCurrentComputeCount": 3,
+        "duplicateArtifactWriteCount": 3,
+        "providerCallCount": 0,
+        "canonicalResponseCount": 10
+      },
+      "observedRegistryOwnerEventCount": 2,
+      "observedRegistryWaiterEventCount": 4,
+      "metricQualification": {
+        "reportedDerivedOwnerCount": "DERIVED_AS_CURRENT_COMPUTES_MINUS_DUPLICATES_BY_REQUEST_LOGICAL_KEY",
+        "observedRegistryOwnerEventCount": "COUNT_OF_SINGLE_FLIGHT_OWNER_ACQUIRED_EVENTS"
+      },
+      "perKey": [
+        {
+          "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|ets",
+          "requestIds": [
+            "phase-2-2b-4-p04-10-ets-1987ee52-7dbf-4ae9-a915-c3b70a3b12d6-request-1",
+            "phase-2-2b-4-p04-10-ets-1987ee52-7dbf-4ae9-a915-c3b70a3b12d6-request-4",
+            "phase-2-2b-4-p04-10-ets-1987ee52-7dbf-4ae9-a915-c3b70a3b12d6-request-7",
+            "phase-2-2b-4-p04-10-ets-1987ee52-7dbf-4ae9-a915-c3b70a3b12d6-request-10"
+          ],
+          "REQUEST_COUNT": 4,
+          "PREPARED_LOOKUP_COUNT": 0,
+          "PREPARED_MISS_COUNT": 0,
+          "SINGLE_FLIGHT_LOOKUP_COUNT": 0,
+          "OWNER_ACQUISITION_COUNT": 0,
+          "WAITER_JOIN_COUNT": 0,
+          "OWNER_CALLBACK_INVOCATION_COUNT": 0,
+          "SERVICE_COMPUTE_BRANCH_COUNT": 4,
+          "CURRENT_COMPUTE_FUNCTION_INVOCATION_COUNT": 4,
+          "MODEL_COMPUTE_INVOCATION_COUNT": 4,
+          "PERSISTENCE_ATTEMPT_COUNT": 4,
+          "CANONICAL_WRITE_SET_COUNT": 4,
+          "ENTRY_RELEASE_COUNT": 0,
+          "ACTIVE_ENTRY_AFTER_SETTLEMENT": null
+        },
+        {
+          "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|ets",
+          "requestIds": [
+            "phase-2-2b-4-p04-10-ets-1987ee52-7dbf-4ae9-a915-c3b70a3b12d6-request-2",
+            "phase-2-2b-4-p04-10-ets-1987ee52-7dbf-4ae9-a915-c3b70a3b12d6-request-5",
+            "phase-2-2b-4-p04-10-ets-1987ee52-7dbf-4ae9-a915-c3b70a3b12d6-request-8"
+          ],
+          "REQUEST_COUNT": 3,
+          "PREPARED_LOOKUP_COUNT": 3,
+          "PREPARED_MISS_COUNT": 3,
+          "SINGLE_FLIGHT_LOOKUP_COUNT": 3,
+          "OWNER_ACQUISITION_COUNT": 1,
+          "WAITER_JOIN_COUNT": 2,
+          "OWNER_CALLBACK_INVOCATION_COUNT": 1,
+          "SERVICE_COMPUTE_BRANCH_COUNT": 1,
+          "CURRENT_COMPUTE_FUNCTION_INVOCATION_COUNT": 1,
+          "MODEL_COMPUTE_INVOCATION_COUNT": 1,
+          "PERSISTENCE_ATTEMPT_COUNT": 1,
+          "CANONICAL_WRITE_SET_COUNT": 1,
+          "ENTRY_RELEASE_COUNT": 1,
+          "ACTIVE_ENTRY_AFTER_SETTLEMENT": 0
+        },
+        {
+          "forecastIdentity": "usnaac0169|END_OF_PERIOD|ets",
+          "requestIds": [
+            "phase-2-2b-4-p04-10-ets-1987ee52-7dbf-4ae9-a915-c3b70a3b12d6-request-3",
+            "phase-2-2b-4-p04-10-ets-1987ee52-7dbf-4ae9-a915-c3b70a3b12d6-request-6",
+            "phase-2-2b-4-p04-10-ets-1987ee52-7dbf-4ae9-a915-c3b70a3b12d6-request-9"
+          ],
+          "REQUEST_COUNT": 3,
+          "PREPARED_LOOKUP_COUNT": 3,
+          "PREPARED_MISS_COUNT": 3,
+          "SINGLE_FLIGHT_LOOKUP_COUNT": 3,
+          "OWNER_ACQUISITION_COUNT": 1,
+          "WAITER_JOIN_COUNT": 2,
+          "OWNER_CALLBACK_INVOCATION_COUNT": 1,
+          "SERVICE_COMPUTE_BRANCH_COUNT": 1,
+          "CURRENT_COMPUTE_FUNCTION_INVOCATION_COUNT": 1,
+          "MODEL_COMPUTE_INVOCATION_COUNT": 1,
+          "PERSISTENCE_ATTEMPT_COUNT": 1,
+          "CANONICAL_WRITE_SET_COUNT": 1,
+          "ENTRY_RELEASE_COUNT": 1,
+          "ACTIVE_ENTRY_AFTER_SETTLEMENT": 1
+        }
+      ]
+    },
+    {
+      "modelId": "arima",
+      "runId": "phase-2-2b-4-p04-10-arima-b3e8bff7-2cd8-460b-8161-221ffe4a922a",
+      "acceptedSummary": {
+        "requests": 10,
+        "reportedDerivedOwnerCount": 3,
+        "physicalCurrentComputeCount": 6,
+        "duplicateCurrentComputeCount": 3,
+        "duplicateArtifactWriteCount": 3,
+        "providerCallCount": 0,
+        "canonicalResponseCount": 10
+      },
+      "observedRegistryOwnerEventCount": 2,
+      "observedRegistryWaiterEventCount": 4,
+      "metricQualification": {
+        "reportedDerivedOwnerCount": "DERIVED_AS_CURRENT_COMPUTES_MINUS_DUPLICATES_BY_REQUEST_LOGICAL_KEY",
+        "observedRegistryOwnerEventCount": "COUNT_OF_SINGLE_FLIGHT_OWNER_ACQUIRED_EVENTS"
+      },
+      "perKey": [
+        {
+          "forecastIdentity": "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|arima",
+          "requestIds": [
+            "phase-2-2b-4-p04-10-arima-b3e8bff7-2cd8-460b-8161-221ffe4a922a-request-1",
+            "phase-2-2b-4-p04-10-arima-b3e8bff7-2cd8-460b-8161-221ffe4a922a-request-4",
+            "phase-2-2b-4-p04-10-arima-b3e8bff7-2cd8-460b-8161-221ffe4a922a-request-7",
+            "phase-2-2b-4-p04-10-arima-b3e8bff7-2cd8-460b-8161-221ffe4a922a-request-10"
+          ],
+          "REQUEST_COUNT": 4,
+          "PREPARED_LOOKUP_COUNT": 0,
+          "PREPARED_MISS_COUNT": 0,
+          "SINGLE_FLIGHT_LOOKUP_COUNT": 0,
+          "OWNER_ACQUISITION_COUNT": 0,
+          "WAITER_JOIN_COUNT": 0,
+          "OWNER_CALLBACK_INVOCATION_COUNT": 0,
+          "SERVICE_COMPUTE_BRANCH_COUNT": 4,
+          "CURRENT_COMPUTE_FUNCTION_INVOCATION_COUNT": 4,
+          "MODEL_COMPUTE_INVOCATION_COUNT": 4,
+          "PERSISTENCE_ATTEMPT_COUNT": 4,
+          "CANONICAL_WRITE_SET_COUNT": 4,
+          "ENTRY_RELEASE_COUNT": 0,
+          "ACTIVE_ENTRY_AFTER_SETTLEMENT": null
+        },
+        {
+          "forecastIdentity": "wocaes0280|MONTHLY_AVERAGE|arima",
+          "requestIds": [
+            "phase-2-2b-4-p04-10-arima-b3e8bff7-2cd8-460b-8161-221ffe4a922a-request-2",
+            "phase-2-2b-4-p04-10-arima-b3e8bff7-2cd8-460b-8161-221ffe4a922a-request-5",
+            "phase-2-2b-4-p04-10-arima-b3e8bff7-2cd8-460b-8161-221ffe4a922a-request-8"
+          ],
+          "REQUEST_COUNT": 3,
+          "PREPARED_LOOKUP_COUNT": 3,
+          "PREPARED_MISS_COUNT": 3,
+          "SINGLE_FLIGHT_LOOKUP_COUNT": 3,
+          "OWNER_ACQUISITION_COUNT": 1,
+          "WAITER_JOIN_COUNT": 2,
+          "OWNER_CALLBACK_INVOCATION_COUNT": 1,
+          "SERVICE_COMPUTE_BRANCH_COUNT": 1,
+          "CURRENT_COMPUTE_FUNCTION_INVOCATION_COUNT": 1,
+          "MODEL_COMPUTE_INVOCATION_COUNT": 1,
+          "PERSISTENCE_ATTEMPT_COUNT": 1,
+          "CANONICAL_WRITE_SET_COUNT": 1,
+          "ENTRY_RELEASE_COUNT": 1,
+          "ACTIVE_ENTRY_AFTER_SETTLEMENT": 0
+        },
+        {
+          "forecastIdentity": "usnaac0169|END_OF_PERIOD|arima",
+          "requestIds": [
+            "phase-2-2b-4-p04-10-arima-b3e8bff7-2cd8-460b-8161-221ffe4a922a-request-3",
+            "phase-2-2b-4-p04-10-arima-b3e8bff7-2cd8-460b-8161-221ffe4a922a-request-6",
+            "phase-2-2b-4-p04-10-arima-b3e8bff7-2cd8-460b-8161-221ffe4a922a-request-9"
+          ],
+          "REQUEST_COUNT": 3,
+          "PREPARED_LOOKUP_COUNT": 3,
+          "PREPARED_MISS_COUNT": 3,
+          "SINGLE_FLIGHT_LOOKUP_COUNT": 3,
+          "OWNER_ACQUISITION_COUNT": 1,
+          "WAITER_JOIN_COUNT": 2,
+          "OWNER_CALLBACK_INVOCATION_COUNT": 1,
+          "SERVICE_COMPUTE_BRANCH_COUNT": 1,
+          "CURRENT_COMPUTE_FUNCTION_INVOCATION_COUNT": 1,
+          "MODEL_COMPUTE_INVOCATION_COUNT": 1,
+          "PERSISTENCE_ATTEMPT_COUNT": 1,
+          "CANONICAL_WRITE_SET_COUNT": 1,
+          "ENTRY_RELEASE_COUNT": 1,
+          "ACTIVE_ENTRY_AFTER_SETTLEMENT": 1
+        }
+      ]
+    }
+  ],
+  "repair": {
+    "implemented": true,
+    "minimal": true,
+    "currentLogicalKeyChanged": false,
+    "secondRegistryIntroduced": false,
+    "verificationChanged": false,
+    "persistenceArchitectureChanged": false,
+    "providerChanged": false,
+    "globalSerializationIntroduced": false
+  },
+  "after": {
+    "naive": {
+      "task": "FORECAST_PHASE_2_2B_1R_P04_AFTER_MODEL",
+      "generatedAt": "2026-08-25T11:04:59.210Z",
+      "modelId": "naive",
+      "performanceEvidenceClass": "DIAGNOSTIC_ONLY",
+      "rawEvidence": {
+        "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-1r/executions/2026-08-25T105347-658Z-7c9b76f0-87bd-440e-899b-eec8e71aa540/raw/P04-naive-10-r1-phase-2-2b-1r-p04-10-naive-b94dd2ac-ecdd-4cfd-a3cf-94976263d412.json",
+        "sha256": "bd53a49c8fcc1ba3c0d7cdbb52283b5b94bee3a670c27bbedde7cebaf3a3c75f"
+      },
+      "requests": 10,
+      "logicalKeys": 3,
+      "owners": 3,
+      "waiters": 7,
+      "currentComputes": 3,
+      "duplicateCurrentComputes": 0,
+      "duplicateWriteSets": 0,
+      "canonicalResponses": 10,
+      "providerCalls": 0,
+      "activeCurrentSingleFlightEntriesAfterSettlement": 0,
+      "responseChecksums": {
+        "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|naive|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7": "8bcc7fb7ff26543cf1cec926913009cee0925c3c0b402ef35da6f6445a3d10ba",
+        "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|naive|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7": "db5294686821286f29aa74907d73ebc532a3a09d7795b471042cb7384f377c11",
+        "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|naive|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7": "5fba5340289ff1d0888a98b39b22d374c5e5e99e3a2c8a3a87f03593ae523670"
+      },
+      "perKey": [
+        {
+          "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0074|11:targetBasis13:POINT_IN_TIME|15:targetSemantics27:ROLLING_DAILY_POINT_IN_TIME|8:methodId27:ROLLING_DAILY_POINT_IN_TIME|13:methodVersion30:rolling-daily-point-in-time-v1|7:modelId5:naive|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753|15:sourceFrequency5:DAILY|13:targetCadence5:DAILY|17:frequencyIdentity45:FORECAST_CADENCE_V1|source=DAILY|target=DAILY|14:forecastOrigin10:2026-08-20|22:horizonConfigurationId276:{\"maxHorizonMonths\":12,\"anchorTargetDates\":{\"1M\":\"2026-09-20\",\"3M\":\"2026-11-20\",\"6M\":\"2027-02-20\",\"12M\":\"2027-08-20\"},\"path\":{\"startDate\":\"2026-08-21\",\"endDate\":\"2027-08-20\",\"calendarDateInclusion\":\"EVERY_CALENDAR_DATE\"},\"projectionCalendarStrategy\":\"OBSERVED_WEEKDAY_SET_V1\"}",
+          "requestCount": 4,
+          "singleFlightLookupCount": 4,
+          "ownerAcquisitionCount": 1,
+          "waiterJoinCount": 3,
+          "ownerCallbackInvocationCount": 1,
+          "serviceComputeBranchCount": 1,
+          "currentComputeFunctionInvocationCount": 1,
+          "modelComputeInvocationCount": 1,
+          "persistenceAttemptCount": 1,
+          "canonicalWriteSetCount": 1,
+          "entryReleaseCount": 1
+        },
+        {
+          "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:usnaac0169|11:targetBasis13:END_OF_PERIOD|15:targetSemantics13:END_OF_PERIOD|8:methodId13:END_OF_PERIOD|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId5:naive|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:c422e8542541af40f72df1b633df729406ff4f9d3459d04cca35a525b9782224|15:sourceFrequency9:QUARTERLY|13:targetCadence9:QUARTERLY|17:frequencyIdentity53:FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY|14:forecastOrigin10:2026-04-01|22:horizonConfigurationId156:{\"horizons\":{\"3M\":1,\"6M\":2,\"12M\":4},\"currentTargetDates\":{\"3M\":\"2026-07-01T00:00:00.000Z\",\"6M\":\"2026-10-01T00:00:00.000Z\",\"12M\":\"2027-04-01T00:00:00.000Z\"}}",
+          "requestCount": 3,
+          "singleFlightLookupCount": 3,
+          "ownerAcquisitionCount": 1,
+          "waiterJoinCount": 2,
+          "ownerCallbackInvocationCount": 1,
+          "serviceComputeBranchCount": 1,
+          "currentComputeFunctionInvocationCount": 1,
+          "modelComputeInvocationCount": 1,
+          "persistenceAttemptCount": 1,
+          "canonicalWriteSetCount": 1,
+          "entryReleaseCount": 1
+        },
+        {
+          "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId5:naive|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|14:forecastOrigin10:2026-07-01|22:horizonConfigurationId196:{\"horizons\":{\"1M\":1,\"3M\":3,\"6M\":6,\"12M\":12},\"currentTargetDates\":{\"1M\":\"2026-08-01T00:00:00.000Z\",\"3M\":\"2026-10-01T00:00:00.000Z\",\"6M\":\"2027-01-01T00:00:00.000Z\",\"12M\":\"2027-07-01T00:00:00.000Z\"}}",
+          "requestCount": 3,
+          "singleFlightLookupCount": 3,
+          "ownerAcquisitionCount": 1,
+          "waiterJoinCount": 2,
+          "ownerCallbackInvocationCount": 1,
+          "serviceComputeBranchCount": 1,
+          "currentComputeFunctionInvocationCount": 1,
+          "modelComputeInvocationCount": 1,
+          "persistenceAttemptCount": 1,
+          "canonicalWriteSetCount": 1,
+          "entryReleaseCount": 1
+        }
+      ],
+      "correctness": "PASS"
+    },
+    "dampedHolt": {
+      "task": "FORECAST_PHASE_2_2B_1R_P04_AFTER_MODEL",
+      "generatedAt": "2026-08-25T11:04:59.202Z",
+      "modelId": "damped_holt",
+      "performanceEvidenceClass": "DIAGNOSTIC_ONLY",
+      "rawEvidence": {
+        "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-1r/executions/2026-08-25T105347-658Z-7c9b76f0-87bd-440e-899b-eec8e71aa540/raw/P04-damped_holt-10-r1-phase-2-2b-1r-p04-10-damped_holt-774e081e-b420-4e1b-8705-f0e6ac5162f2.json",
+        "sha256": "564722b95a09c06896b77f4ed4f14bd38a70fe3b3affc17a2bf7c288fd71fd35"
+      },
+      "requests": 10,
+      "logicalKeys": 3,
+      "owners": 3,
+      "waiters": 7,
+      "currentComputes": 3,
+      "duplicateCurrentComputes": 0,
+      "duplicateWriteSets": 0,
+      "canonicalResponses": 10,
+      "providerCalls": 0,
+      "activeCurrentSingleFlightEntriesAfterSettlement": 0,
+      "responseChecksums": {
+        "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|damped_holt|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7": "048a9d7e9a8bebe075b5ad2d668229080b22e95e6c0cb12eaeb8331a9c8a8468",
+        "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|damped_holt|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7": "036be7d99fff6491deb190c1970b87b736c2dcc1630972b5d4ad8af1b3ea10a1",
+        "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|damped_holt|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7": "64b38b280d24d9474f6651c5b6a387d56776146ad0185ae34a0c60d4ef373efd"
+      },
+      "perKey": [
+        {
+          "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0074|11:targetBasis13:POINT_IN_TIME|15:targetSemantics27:ROLLING_DAILY_POINT_IN_TIME|8:methodId27:ROLLING_DAILY_POINT_IN_TIME|13:methodVersion30:rolling-daily-point-in-time-v1|7:modelId11:damped_holt|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753|15:sourceFrequency5:DAILY|13:targetCadence5:DAILY|17:frequencyIdentity45:FORECAST_CADENCE_V1|source=DAILY|target=DAILY|14:forecastOrigin10:2026-08-20|22:horizonConfigurationId276:{\"maxHorizonMonths\":12,\"anchorTargetDates\":{\"1M\":\"2026-09-20\",\"3M\":\"2026-11-20\",\"6M\":\"2027-02-20\",\"12M\":\"2027-08-20\"},\"path\":{\"startDate\":\"2026-08-21\",\"endDate\":\"2027-08-20\",\"calendarDateInclusion\":\"EVERY_CALENDAR_DATE\"},\"projectionCalendarStrategy\":\"OBSERVED_WEEKDAY_SET_V1\"}",
+          "requestCount": 4,
+          "singleFlightLookupCount": 4,
+          "ownerAcquisitionCount": 1,
+          "waiterJoinCount": 3,
+          "ownerCallbackInvocationCount": 1,
+          "serviceComputeBranchCount": 1,
+          "currentComputeFunctionInvocationCount": 1,
+          "modelComputeInvocationCount": 1,
+          "persistenceAttemptCount": 1,
+          "canonicalWriteSetCount": 1,
+          "entryReleaseCount": 1
+        },
+        {
+          "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:usnaac0169|11:targetBasis13:END_OF_PERIOD|15:targetSemantics13:END_OF_PERIOD|8:methodId13:END_OF_PERIOD|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId11:damped_holt|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:c422e8542541af40f72df1b633df729406ff4f9d3459d04cca35a525b9782224|15:sourceFrequency9:QUARTERLY|13:targetCadence9:QUARTERLY|17:frequencyIdentity53:FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY|14:forecastOrigin10:2026-04-01|22:horizonConfigurationId156:{\"horizons\":{\"3M\":1,\"6M\":2,\"12M\":4},\"currentTargetDates\":{\"3M\":\"2026-07-01T00:00:00.000Z\",\"6M\":\"2026-10-01T00:00:00.000Z\",\"12M\":\"2027-04-01T00:00:00.000Z\"}}",
+          "requestCount": 3,
+          "singleFlightLookupCount": 3,
+          "ownerAcquisitionCount": 1,
+          "waiterJoinCount": 2,
+          "ownerCallbackInvocationCount": 1,
+          "serviceComputeBranchCount": 1,
+          "currentComputeFunctionInvocationCount": 1,
+          "modelComputeInvocationCount": 1,
+          "persistenceAttemptCount": 1,
+          "canonicalWriteSetCount": 1,
+          "entryReleaseCount": 1
+        },
+        {
+          "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId11:damped_holt|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|14:forecastOrigin10:2026-07-01|22:horizonConfigurationId196:{\"horizons\":{\"1M\":1,\"3M\":3,\"6M\":6,\"12M\":12},\"currentTargetDates\":{\"1M\":\"2026-08-01T00:00:00.000Z\",\"3M\":\"2026-10-01T00:00:00.000Z\",\"6M\":\"2027-01-01T00:00:00.000Z\",\"12M\":\"2027-07-01T00:00:00.000Z\"}}",
+          "requestCount": 3,
+          "singleFlightLookupCount": 3,
+          "ownerAcquisitionCount": 1,
+          "waiterJoinCount": 2,
+          "ownerCallbackInvocationCount": 1,
+          "serviceComputeBranchCount": 1,
+          "currentComputeFunctionInvocationCount": 1,
+          "modelComputeInvocationCount": 1,
+          "persistenceAttemptCount": 1,
+          "canonicalWriteSetCount": 1,
+          "entryReleaseCount": 1
+        }
+      ],
+      "correctness": "PASS"
+    },
+    "ets": {
+      "task": "FORECAST_PHASE_2_2B_1R_P04_AFTER_MODEL",
+      "generatedAt": "2026-08-25T11:04:59.206Z",
+      "modelId": "ets",
+      "performanceEvidenceClass": "DIAGNOSTIC_ONLY",
+      "rawEvidence": {
+        "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-1r/executions/2026-08-25T105347-658Z-7c9b76f0-87bd-440e-899b-eec8e71aa540/raw/P04-ets-10-r1-phase-2-2b-1r-p04-10-ets-a1532aa2-9a05-4a77-a4e4-f376b0b17906.json",
+        "sha256": "65d05007392cc43139d06945cd256ab1bc1d963fd4501ae3e5a9a6b16ca63f37"
+      },
+      "requests": 10,
+      "logicalKeys": 3,
+      "owners": 3,
+      "waiters": 7,
+      "currentComputes": 3,
+      "duplicateCurrentComputes": 0,
+      "duplicateWriteSets": 0,
+      "canonicalResponses": 10,
+      "providerCalls": 0,
+      "activeCurrentSingleFlightEntriesAfterSettlement": 0,
+      "responseChecksums": {
+        "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|ets|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7": "4f60709a48ffcce775de791faeb13c0ab5fb109eb868a7c9c46d358eb438220d",
+        "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7": "3b45dff5fbc10a2c4c7e2d0e23a74809b4bff2c8bd126063e649dcfd392b807f",
+        "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|ets|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7": "cd9df9ff9be243a4a5be8b2bea05f7742611e661fa48a098bd5aca5a325cfc8a"
+      },
+      "perKey": [
+        {
+          "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0074|11:targetBasis13:POINT_IN_TIME|15:targetSemantics27:ROLLING_DAILY_POINT_IN_TIME|8:methodId27:ROLLING_DAILY_POINT_IN_TIME|13:methodVersion30:rolling-daily-point-in-time-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753|15:sourceFrequency5:DAILY|13:targetCadence5:DAILY|17:frequencyIdentity45:FORECAST_CADENCE_V1|source=DAILY|target=DAILY|14:forecastOrigin10:2026-08-20|22:horizonConfigurationId276:{\"maxHorizonMonths\":12,\"anchorTargetDates\":{\"1M\":\"2026-09-20\",\"3M\":\"2026-11-20\",\"6M\":\"2027-02-20\",\"12M\":\"2027-08-20\"},\"path\":{\"startDate\":\"2026-08-21\",\"endDate\":\"2027-08-20\",\"calendarDateInclusion\":\"EVERY_CALENDAR_DATE\"},\"projectionCalendarStrategy\":\"OBSERVED_WEEKDAY_SET_V1\"}",
+          "requestCount": 4,
+          "singleFlightLookupCount": 4,
+          "ownerAcquisitionCount": 1,
+          "waiterJoinCount": 3,
+          "ownerCallbackInvocationCount": 1,
+          "serviceComputeBranchCount": 1,
+          "currentComputeFunctionInvocationCount": 1,
+          "modelComputeInvocationCount": 1,
+          "persistenceAttemptCount": 1,
+          "canonicalWriteSetCount": 1,
+          "entryReleaseCount": 1
+        },
+        {
+          "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|14:forecastOrigin10:2026-07-01|22:horizonConfigurationId196:{\"horizons\":{\"1M\":1,\"3M\":3,\"6M\":6,\"12M\":12},\"currentTargetDates\":{\"1M\":\"2026-08-01T00:00:00.000Z\",\"3M\":\"2026-10-01T00:00:00.000Z\",\"6M\":\"2027-01-01T00:00:00.000Z\",\"12M\":\"2027-07-01T00:00:00.000Z\"}}",
+          "requestCount": 3,
+          "singleFlightLookupCount": 3,
+          "ownerAcquisitionCount": 1,
+          "waiterJoinCount": 2,
+          "ownerCallbackInvocationCount": 1,
+          "serviceComputeBranchCount": 1,
+          "currentComputeFunctionInvocationCount": 1,
+          "modelComputeInvocationCount": 1,
+          "persistenceAttemptCount": 1,
+          "canonicalWriteSetCount": 1,
+          "entryReleaseCount": 1
+        },
+        {
+          "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:usnaac0169|11:targetBasis13:END_OF_PERIOD|15:targetSemantics13:END_OF_PERIOD|8:methodId13:END_OF_PERIOD|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId3:ets|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:c422e8542541af40f72df1b633df729406ff4f9d3459d04cca35a525b9782224|15:sourceFrequency9:QUARTERLY|13:targetCadence9:QUARTERLY|17:frequencyIdentity53:FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY|14:forecastOrigin10:2026-04-01|22:horizonConfigurationId156:{\"horizons\":{\"3M\":1,\"6M\":2,\"12M\":4},\"currentTargetDates\":{\"3M\":\"2026-07-01T00:00:00.000Z\",\"6M\":\"2026-10-01T00:00:00.000Z\",\"12M\":\"2027-04-01T00:00:00.000Z\"}}",
+          "requestCount": 3,
+          "singleFlightLookupCount": 3,
+          "ownerAcquisitionCount": 1,
+          "waiterJoinCount": 2,
+          "ownerCallbackInvocationCount": 1,
+          "serviceComputeBranchCount": 1,
+          "currentComputeFunctionInvocationCount": 1,
+          "modelComputeInvocationCount": 1,
+          "persistenceAttemptCount": 1,
+          "canonicalWriteSetCount": 1,
+          "entryReleaseCount": 1
+        }
+      ],
+      "correctness": "PASS"
+    },
+    "arima": {
+      "task": "FORECAST_PHASE_2_2B_1R_P04_AFTER_MODEL",
+      "generatedAt": "2026-08-25T11:04:59.195Z",
+      "modelId": "arima",
+      "performanceEvidenceClass": "DIAGNOSTIC_ONLY",
+      "rawEvidence": {
+        "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-1r/executions/2026-08-25T105347-658Z-7c9b76f0-87bd-440e-899b-eec8e71aa540/raw/P04-arima-10-r1-phase-2-2b-1r-p04-10-arima-bdaecbfd-420d-4c9c-8b7b-6014b56d47a7.json",
+        "sha256": "31a0eb33b1eab14d4ad878fbde323dae234a9f840f62a36e3daadaf4fb10ac04"
+      },
+      "requests": 10,
+      "logicalKeys": 3,
+      "owners": 3,
+      "waiters": 7,
+      "currentComputes": 3,
+      "duplicateCurrentComputes": 0,
+      "duplicateWriteSets": 0,
+      "canonicalResponses": 10,
+      "providerCalls": 0,
+      "activeCurrentSingleFlightEntriesAfterSettlement": 0,
+      "responseChecksums": {
+        "wocaes0074|ROLLING_DAILY_POINT_IN_TIME|DAILY|DAILY|arima|rolling-daily-point-in-time-v1|ebbcb638ce447e4813eac339ce2b45d7": "8bb1d4beb6ef210d50a167315010baf4451961444a35a8c3c54cd98e8c25c644",
+        "wocaes0280|MONTHLY_AVERAGE|MONTHLY|MONTHLY|arima|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7": "d22f5ea1424e85c313e32ed09d53ca736e5519f424bc6f3a6e00d1de164424e8",
+        "usnaac0169|END_OF_PERIOD|QUARTERLY|QUARTERLY|arima|benchmark-forecasting-mvp-phase2-v1|ebbcb638ce447e4813eac339ce2b45d7": "c26e6fe596ab8bb11842dbae383f2c3f40afedc58ebc987e0bee4d5aad167845"
+      },
+      "perKey": [
+        {
+          "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0074|11:targetBasis13:POINT_IN_TIME|15:targetSemantics27:ROLLING_DAILY_POINT_IN_TIME|8:methodId27:ROLLING_DAILY_POINT_IN_TIME|13:methodVersion30:rolling-daily-point-in-time-v1|7:modelId5:arima|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753|15:sourceFrequency5:DAILY|13:targetCadence5:DAILY|17:frequencyIdentity45:FORECAST_CADENCE_V1|source=DAILY|target=DAILY|14:forecastOrigin10:2026-08-20|22:horizonConfigurationId276:{\"maxHorizonMonths\":12,\"anchorTargetDates\":{\"1M\":\"2026-09-20\",\"3M\":\"2026-11-20\",\"6M\":\"2027-02-20\",\"12M\":\"2027-08-20\"},\"path\":{\"startDate\":\"2026-08-21\",\"endDate\":\"2027-08-20\",\"calendarDateInclusion\":\"EVERY_CALENDAR_DATE\"},\"projectionCalendarStrategy\":\"OBSERVED_WEEKDAY_SET_V1\"}",
+          "requestCount": 4,
+          "singleFlightLookupCount": 4,
+          "ownerAcquisitionCount": 1,
+          "waiterJoinCount": 3,
+          "ownerCallbackInvocationCount": 1,
+          "serviceComputeBranchCount": 1,
+          "currentComputeFunctionInvocationCount": 1,
+          "modelComputeInvocationCount": 1,
+          "persistenceAttemptCount": 1,
+          "canonicalWriteSetCount": 1,
+          "entryReleaseCount": 1
+        },
+        {
+          "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:wocaes0280|11:targetBasis15:MONTHLY_AVERAGE|15:targetSemantics15:MONTHLY_AVERAGE|8:methodId15:MONTHLY_AVERAGE|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId5:arima|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:d83f96bed5b7699bb359e7c76def50787571f43d7560f3aa07e4850f3a02d9b6|15:sourceFrequency7:MONTHLY|13:targetCadence7:MONTHLY|17:frequencyIdentity49:FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY|14:forecastOrigin10:2026-07-01|22:horizonConfigurationId196:{\"horizons\":{\"1M\":1,\"3M\":3,\"6M\":6,\"12M\":12},\"currentTargetDates\":{\"1M\":\"2026-08-01T00:00:00.000Z\",\"3M\":\"2026-10-01T00:00:00.000Z\",\"6M\":\"2027-01-01T00:00:00.000Z\",\"12M\":\"2027-07-01T00:00:00.000Z\"}}",
+          "requestCount": 3,
+          "singleFlightLookupCount": 3,
+          "ownerAcquisitionCount": 1,
+          "waiterJoinCount": 2,
+          "ownerCallbackInvocationCount": 1,
+          "serviceComputeBranchCount": 1,
+          "currentComputeFunctionInvocationCount": 1,
+          "modelComputeInvocationCount": 1,
+          "persistenceAttemptCount": 1,
+          "canonicalWriteSetCount": 1,
+          "entryReleaseCount": 1
+        },
+        {
+          "logicalArtifactKey": "9:namespace7:CURRENT|8:seriesId10:usnaac0169|11:targetBasis13:END_OF_PERIOD|15:targetSemantics13:END_OF_PERIOD|8:methodId13:END_OF_PERIOD|13:methodVersion35:benchmark-forecasting-mvp-phase2-v1|7:modelId5:arima|11:inputSource25:DYNAMIC_MARKET_DATA_STORE|18:historyFingerprint64:c422e8542541af40f72df1b633df729406ff4f9d3459d04cca35a525b9782224|15:sourceFrequency9:QUARTERLY|13:targetCadence9:QUARTERLY|17:frequencyIdentity53:FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY|14:forecastOrigin10:2026-04-01|22:horizonConfigurationId156:{\"horizons\":{\"3M\":1,\"6M\":2,\"12M\":4},\"currentTargetDates\":{\"3M\":\"2026-07-01T00:00:00.000Z\",\"6M\":\"2026-10-01T00:00:00.000Z\",\"12M\":\"2027-04-01T00:00:00.000Z\"}}",
+          "requestCount": 3,
+          "singleFlightLookupCount": 3,
+          "ownerAcquisitionCount": 1,
+          "waiterJoinCount": 2,
+          "ownerCallbackInvocationCount": 1,
+          "serviceComputeBranchCount": 1,
+          "currentComputeFunctionInvocationCount": 1,
+          "modelComputeInvocationCount": 1,
+          "persistenceAttemptCount": 1,
+          "canonicalWriteSetCount": 1,
+          "entryReleaseCount": 1
+        }
+      ],
+      "correctness": "PASS"
+    }
+  },
+  "expectedAfterPerModel": {
+    "requests": 10,
+    "logicalKeys": 3,
+    "owners": 3,
+    "computes": 3,
+    "duplicateComputes": 0,
+    "duplicateWrites": 0,
+    "canonicalResponses": 10,
+    "activeEntriesAfterSettlement": 0
+  },
+  "regressions": {
+    "task": "FORECAST_PHASE_2_2B_1R_REGRESSION_EVIDENCE",
+    "generatedAt": "2026-08-25T11:09:38.777Z",
+    "p03": {
+      "status": "PASS",
+      "proof": "Current primitive same-key and Forecast Library exact-key tests: one owner, one compute, zero retained entries."
+    },
+    "p11": {
+      "status": "PASS",
+      "proof": "Dashboard explicit Show Forecast and SG Runtime production routing tests pass; accepted Phase 2.2A prepared-miss to prepared-read proof remains PASS."
+    },
+    "preparedCurrent": {
+      "status": "PASS",
+      "currentComputes": 0,
+      "ownerAcquisitions": 0,
+      "providerCalls": 0,
+      "writes": 0
+    },
+    "preparedVerification": {
+      "status": "PASS",
+      "verificationComputes": 0,
+      "ownerAcquisitions": 0,
+      "writes": 0
+    },
+    "search": {
+      "status": "PASS",
+      "forecastComputes": 0
+    },
+    "persistence": {
+      "status": "PASS",
+      "acceptedB3H0": "PASS",
+      "oneOwnerOneCanonicalWriteSet": true
+    },
+    "differentKeyConcurrency": {
+      "status": "PASS",
+      "globalSerialization": false
+    },
+    "suites": {
+      "forecastCore": {
+        "testsPassed": 218,
+        "subtestsPassed": 25,
+        "failed": 0
+      },
+      "sgRuntime": {
+        "passed": 172,
+        "failed": 0
+      },
+      "dashboard": {
+        "passed": 100,
+        "failed": 0
+      },
+      "phaseTooling": {
+        "passed": 370,
+        "failed": 0,
+        "basis": "2.2A 60 + B0 contract 10 + B0 gate 64 + B1 gate 72 + B2 gate 80 + B3 gate 84"
+      }
+    },
+    "typechecks": {
+      "sgRuntime": "PASS",
+      "dashboard": "PASS",
+      "dataRuntime": "PASS"
+    },
+    "jsonValidation": "PASS",
+    "gitDiffCheck": "PASS",
+    "editorDiagnostics": "PASS",
+    "originalB4Gate": "FAIL",
+    "originalB4Conditions": "92 / 96",
+    "fullB4Rerun": false,
+    "status": "PASS"
+  },
+  "scopeGuards": {
+    "p04At100Executed": false,
+    "p04At1000Executed": false,
+    "phase22b4RStarted": false,
+    "phase22cStarted": false,
+    "verificationSingleFlightChanged": false,
+    "persistenceArchitectureChanged": false,
+    "providerDedupeImplemented": false,
+    "redisAdded": false,
+    "locksAdded": false,
+    "queuesAdded": false,
+    "workersAdded": false,
+    "dbTuning": false,
+    "httpTuning": false,
+    "infrastructureResized": false,
+    "modelMathChanged": false,
+    "forecastSemanticsChanged": false
+  },
+  "migrationReadiness": {
+    "status": "PASS",
+    "taskAttributedPathCount": 44,
+    "newNestedGitRepositories": 0,
+    "newExternalSourceRepositories": 0
+  },
+  "acceptanceConditions": {
+    "expected": 76,
+    "passed": 76,
+    "blocked": 0,
+    "failed": 0,
+    "conditions": [
+      {
+        "id": 1,
+        "status": "PASS",
+        "description": "Phase 2.1 gate remains PASS."
+      },
+      {
+        "id": 2,
+        "status": "PASS",
+        "description": "Phase 2.2A gate remains PASS."
+      },
+      {
+        "id": 3,
+        "status": "PASS",
+        "description": "Phase 2.2B-0 gate remains PASS."
+      },
+      {
+        "id": 4,
+        "status": "PASS",
+        "description": "Phase 2.2B-1 gate remains PASS."
+      },
+      {
+        "id": 5,
+        "status": "PASS",
+        "description": "Phase 2.2B-2 gate remains PASS."
+      },
+      {
+        "id": 6,
+        "status": "PASS",
+        "description": "Phase 2.2B-3 gate remains PASS."
+      },
+      {
+        "id": 7,
+        "status": "PASS",
+        "description": "Original Phase 2.2B-4 gate remains FAIL."
+      },
+      {
+        "id": 8,
+        "status": "PASS",
+        "description": "Stress Test Contract remains version 1."
+      },
+      {
+        "id": 9,
+        "status": "PASS",
+        "description": "Measurement Control remains revision 2."
+      },
+      {
+        "id": 10,
+        "status": "PASS",
+        "description": "Single-Flight Experiment Contract remains version 1."
+      },
+      {
+        "id": 11,
+        "status": "PASS",
+        "description": "Contract drift equals NO."
+      },
+      {
+        "id": 12,
+        "status": "PASS",
+        "description": "Original B4 evidence remains unchanged."
+      },
+      {
+        "id": 13,
+        "status": "PASS",
+        "description": "Accepted P04@10 failure is bound to immutable evidence."
+      },
+      {
+        "id": 14,
+        "status": "PASS",
+        "description": "P04 exact request manifest is reconstructed."
+      },
+      {
+        "id": 15,
+        "status": "PASS",
+        "description": "Exact missing Current logical-key count equals 3."
+      },
+      {
+        "id": 16,
+        "status": "PASS",
+        "description": "No hidden extra logical key exists."
+      },
+      {
+        "id": 17,
+        "status": "PASS",
+        "description": "CURRENT_LOGICAL_ARTIFACT_KEY_V1 remains unchanged."
+      },
+      {
+        "id": 18,
+        "status": "PASS",
+        "description": "Per-key request count is measured."
+      },
+      {
+        "id": 19,
+        "status": "PASS",
+        "description": "Per-key prepared lookup count is measured."
+      },
+      {
+        "id": 20,
+        "status": "PASS",
+        "description": "Per-key single-flight lookup count is measured."
+      },
+      {
+        "id": 21,
+        "status": "PASS",
+        "description": "Per-key owner count is measured."
+      },
+      {
+        "id": 22,
+        "status": "PASS",
+        "description": "Per-key waiter count is measured."
+      },
+      {
+        "id": 23,
+        "status": "PASS",
+        "description": "Per-key owner callback count is measured."
+      },
+      {
+        "id": 24,
+        "status": "PASS",
+        "description": "Per-key service compute branch count is measured."
+      },
+      {
+        "id": 25,
+        "status": "PASS",
+        "description": "Per-key Current compute count is measured."
+      },
+      {
+        "id": 26,
+        "status": "PASS",
+        "description": "Per-key model compute count is measured."
+      },
+      {
+        "id": 27,
+        "status": "PASS",
+        "description": "Per-key persistence attempt count is measured."
+      },
+      {
+        "id": 28,
+        "status": "PASS",
+        "description": "Physical compute count is distinguished from telemetry count."
+      },
+      {
+        "id": 29,
+        "status": "PASS",
+        "description": "Pre-repair defect is reproduced or conclusively classified as telemetry-only."
+      },
+      {
+        "id": 30,
+        "status": "PASS",
+        "description": "First incorrect boundary is explicitly identified."
+      },
+      {
+        "id": 31,
+        "status": "PASS",
+        "description": "Root-cause classification is explicit."
+      },
+      {
+        "id": 32,
+        "status": "PASS",
+        "description": "Exact source path/function responsible is identified."
+      },
+      {
+        "id": 33,
+        "status": "PASS",
+        "description": "Report explains why P03 passes while P04 fails."
+      },
+      {
+        "id": 34,
+        "status": "PASS",
+        "description": "Repair targets the first incorrect boundary."
+      },
+      {
+        "id": 35,
+        "status": "PASS",
+        "description": "Repair is minimum-scope."
+      },
+      {
+        "id": 36,
+        "status": "PASS",
+        "description": "Current logical key is not weakened."
+      },
+      {
+        "id": 37,
+        "status": "PASS",
+        "description": "No second Current registry is introduced."
+      },
+      {
+        "id": 38,
+        "status": "PASS",
+        "description": "No global Current serialization is introduced."
+      },
+      {
+        "id": 39,
+        "status": "PASS",
+        "description": "Unrelated Current keys remain independently executable."
+      },
+      {
+        "id": 40,
+        "status": "PASS",
+        "description": "Verification single-flight behavior is unchanged."
+      },
+      {
+        "id": 41,
+        "status": "PASS",
+        "description": "Persistence architecture is unchanged."
+      },
+      {
+        "id": 42,
+        "status": "PASS",
+        "description": "Provider behavior is unchanged."
+      },
+      {
+        "id": 43,
+        "status": "PASS",
+        "description": "Provider calls during P04 proof equal zero."
+      },
+      {
+        "id": 44,
+        "status": "PASS",
+        "description": "Naive P04@10 returns 10 canonical responses."
+      },
+      {
+        "id": 45,
+        "status": "PASS",
+        "description": "Naive P04@10 has 3 exact owners."
+      },
+      {
+        "id": 46,
+        "status": "PASS",
+        "description": "Naive P04@10 has 3 Current computes."
+      },
+      {
+        "id": 47,
+        "status": "PASS",
+        "description": "Naive P04@10 has zero duplicate Current computes."
+      },
+      {
+        "id": 48,
+        "status": "PASS",
+        "description": "Damped Holt P04@10 returns 10 canonical responses."
+      },
+      {
+        "id": 49,
+        "status": "PASS",
+        "description": "Damped Holt P04@10 has 3 exact owners."
+      },
+      {
+        "id": 50,
+        "status": "PASS",
+        "description": "Damped Holt P04@10 has 3 Current computes."
+      },
+      {
+        "id": 51,
+        "status": "PASS",
+        "description": "Damped Holt P04@10 has zero duplicate Current computes."
+      },
+      {
+        "id": 52,
+        "status": "PASS",
+        "description": "ETS P04@10 returns 10 canonical responses."
+      },
+      {
+        "id": 53,
+        "status": "PASS",
+        "description": "ETS P04@10 has 3 exact owners."
+      },
+      {
+        "id": 54,
+        "status": "PASS",
+        "description": "ETS P04@10 has 3 Current computes."
+      },
+      {
+        "id": 55,
+        "status": "PASS",
+        "description": "ETS P04@10 has zero duplicate Current computes."
+      },
+      {
+        "id": 56,
+        "status": "PASS",
+        "description": "ARIMA P04@10 returns 10 canonical responses."
+      },
+      {
+        "id": 57,
+        "status": "PASS",
+        "description": "ARIMA P04@10 has 3 exact owners."
+      },
+      {
+        "id": 58,
+        "status": "PASS",
+        "description": "ARIMA P04@10 has 3 Current computes."
+      },
+      {
+        "id": 59,
+        "status": "PASS",
+        "description": "ARIMA P04@10 has zero duplicate Current computes."
+      },
+      {
+        "id": 60,
+        "status": "PASS",
+        "description": "Every P04 model row has zero duplicate write-sets."
+      },
+      {
+        "id": 61,
+        "status": "PASS",
+        "description": "Every P04 model row has zero retained Current entries."
+      },
+      {
+        "id": 62,
+        "status": "PASS",
+        "description": "Per-key owner callback count equals one."
+      },
+      {
+        "id": 63,
+        "status": "PASS",
+        "description": "Per-key Current compute count equals one."
+      },
+      {
+        "id": 64,
+        "status": "PASS",
+        "description": "Per-key persistence write-set count is at most one."
+      },
+      {
+        "id": 65,
+        "status": "PASS",
+        "description": "P04 canonical Forecast outputs remain exact."
+      },
+      {
+        "id": 66,
+        "status": "PASS",
+        "description": "Subsequent prepared reads are compute-free."
+      },
+      {
+        "id": 67,
+        "status": "PASS",
+        "description": "P03 same-key regression passes."
+      },
+      {
+        "id": 68,
+        "status": "PASS",
+        "description": "P11 Current single-flight regression passes."
+      },
+      {
+        "id": 69,
+        "status": "PASS",
+        "description": "Prepared Current regression passes."
+      },
+      {
+        "id": 70,
+        "status": "PASS",
+        "description": "Prepared Verification regression passes."
+      },
+      {
+        "id": 71,
+        "status": "PASS",
+        "description": "Search remains Forecast-compute-free."
+      },
+      {
+        "id": 72,
+        "status": "PASS",
+        "description": "B3 effective persistence idempotency remains preserved."
+      },
+      {
+        "id": 73,
+        "status": "PASS",
+        "description": "Full applicable functional regressions pass."
+      },
+      {
+        "id": 74,
+        "status": "PASS",
+        "description": "Migration Readiness Delta is complete."
+      },
+      {
+        "id": 75,
+        "status": "PASS",
+        "description": "P04@100 and P04@1000 are not executed."
+      },
+      {
+        "id": 76,
+        "status": "PASS",
+        "description": "Phase 2.2B-4R and Phase 2.2C are not started."
+      }
+    ]
+  },
+  "rootCauseGate": "PASS",
+  "p04CorrectnessGate": "PASS",
+  "p04StructuralOwnershipGate": "PASS",
+  "phase22b1rGate": "PASS",
+  "p04OwnershipRepairComplete": true,
+  "phase22bSeriesComplete": false,
+  "phase22b4rReadyForAuthorization": true,
+  "phase22b4rAuthorized": false,
+  "phase22b4rStarted": false,
+  "phase22cReadyForAuthorization": false,
+  "phase22cAuthorized": false,
+  "phase22cStarted": false
+}

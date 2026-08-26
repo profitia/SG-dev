@@ -1,0 +1,90 @@
+{
+  "matrix": {
+    "name": "FORECAST_PHASE_2_2B_SAFETY_MATRIX",
+    "version": 1,
+    "inheritsStressTestContractVersion": 1,
+    "weakensInheritedRules": false
+  },
+  "rules": [
+    {
+      "id": "SAFE-PRECONDITION",
+      "category": "STATE",
+      "condition": "Exact scenario state, identity, fingerprint, method version, cadence, provider policy, and artifact presence/absence match the frozen manifest.",
+      "action": "Invalidate and stop the scenario on any failed precondition."
+    },
+    {
+      "id": "SAFE-CORRECTNESS",
+      "category": "CORRECTNESS_FAILURE",
+      "condition": "Canonical identity, target dates, values, Verification output, or cross-key isolation differs from accepted correctness output.",
+      "action": "Immediate CORRECTNESS_FAIL; stop escalation. Performance cannot override this gate."
+    },
+    {
+      "id": "SAFE-CURRENT-OWNERSHIP",
+      "category": "CURRENT_COMPUTE",
+      "condition": "The smallest exact-key Current proof does not produce one owner, zero duplicate computes, canonical responses, and active entry count returning to zero.",
+      "action": "OWNERSHIP_FAIL or DUPLICATE_WORK_REMAINS; do not authorize larger P03/P11 waves."
+    },
+    {
+      "id": "SAFE-VERIFICATION",
+      "category": "VERIFICATION_COMPUTE",
+      "condition": "The two-caller P08 proof produces more than one full backtest, does not produce one owner plus one waiter, fails correctness, or leaks an entry.",
+      "action": "Stop Verification escalation. Larger Verification waves remain unauthorized."
+    },
+    {
+      "id": "SAFE-PROVIDER",
+      "category": "PROVIDER_HYDRATION",
+      "condition": "A minimal allow-listed COLD precheck for one exact provider key creates duplicate hydration/provider work or violates the provider guard.",
+      "action": "Set COLD_PROVIDER_ESCALATION_BLOCKED_BY_DUPLICATION and stop larger provider waves."
+    },
+    {
+      "id": "SAFE-MEMORY",
+      "category": "MEMORY",
+      "condition": "RSS exceeds 85% of the environment limit, platform memory pressure occurs, post-settlement active entries are nonzero, or completed/failed keys remain retained.",
+      "action": "Abort cleanly, record memory evidence, classify safety failure, and stop escalation."
+    },
+    {
+      "id": "SAFE-DATABASE",
+      "category": "DB_SATURATION",
+      "condition": "DB pool exhaustion or sustained 100% pool saturation for 10 seconds occurs.",
+      "action": "Abort cleanly and stop escalation; do not tune capacity in Phase 2.2B."
+    },
+    {
+      "id": "SAFE-SERVICE",
+      "category": "SERVICE_FAILURE",
+      "condition": "More than 10% failures after ten completions, excluding lawful unavailability, or three consecutive connection failures/503 responses occur.",
+      "action": "Abort cleanly and stop escalation; defer HTTP capacity diagnosis to Phase 2.2C."
+    },
+    {
+      "id": "SAFE-COOLDOWN",
+      "category": "RESOURCE_SETTLEMENT",
+      "condition": "Before the next wave, active requests or in-flight compute are nonzero, CPU has not remained settled for 30 seconds, or post-cooldown memory is missing.",
+      "action": "Do not start the next wave. Record the blocked safety state."
+    },
+    {
+      "id": "SAFE-PERSISTENCE",
+      "category": "PERSISTENCE",
+      "condition": "A race/failure probe produces a wrong, partial-as-ready, cross-key, or semantically divergent persisted artifact.",
+      "action": "CORRECTNESS_FAIL; stop persistence escalation and preserve diagnostics."
+    },
+    {
+      "id": "SAFE-MULTI-INSTANCE",
+      "category": "ARCHITECTURE_BOUNDARY",
+      "condition": "An in-process proof is interpreted as cross-instance duplicate prevention.",
+      "action": "Classify CROSS_INSTANCE_NOT_PROVEN; prohibit a production-wide exact-once claim."
+    }
+  ],
+  "requiredCategories": [
+    "CURRENT_COMPUTE",
+    "VERIFICATION_COMPUTE",
+    "PROVIDER_HYDRATION",
+    "MEMORY",
+    "DB_SATURATION",
+    "SERVICE_FAILURE",
+    "CORRECTNESS_FAILURE"
+  ],
+  "executionBoundary": {
+    "rulesOnly": true,
+    "loadExecuted": false,
+    "capacityTuningAuthorized": false
+  }
+}

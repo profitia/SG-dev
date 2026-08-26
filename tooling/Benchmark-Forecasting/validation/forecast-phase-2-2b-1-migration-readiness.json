@@ -1,0 +1,299 @@
+{
+  "task": "FORECAST_PHASE_2_2B_1_CURRENT_FORECAST_SINGLE_FLIGHT_EXPERIMENT",
+  "generatedAt": "2026-08-24T21:25:41.748Z",
+  "status": "PASS",
+  "taskAttributedPathCount": 32,
+  "paths": [
+    {
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/current/route.ts",
+      "change": "MODIFIED",
+      "logicalOwner": "Dashboard Current Route",
+      "tracking": "untracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": true,
+      "reason": "Forwards approved stress correlation to the runtime owner."
+    },
+    {
+      "path": "apps/dashboard-preview/lib/benchmark-forecast/runtime-query.ts",
+      "change": "MODIFIED",
+      "logicalOwner": "Dashboard Runtime Query",
+      "tracking": "untracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": true,
+      "reason": "Forwards approved correlation headers without changing the existing timeout."
+    },
+    {
+      "path": "apps/dashboard-preview/tests/benchmark-forecast-runtime-query.test.ts",
+      "change": "MODIFIED",
+      "logicalOwner": "Dashboard Forecast Tests",
+      "tracking": "untracked",
+      "classification": "TEST",
+      "includeInFutureSgDev": true,
+      "reason": "Covers internal production correlation forwarding."
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/current-single-flight.ts",
+      "change": "CREATED",
+      "logicalOwner": "Current Single-Flight Primitive",
+      "tracking": "untracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": true,
+      "reason": "Exact-key active-promise registry and logical key serialization."
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/live-market-input.ts",
+      "change": "MODIFIED",
+      "logicalOwner": "Current Horizon Identity",
+      "tracking": "untracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": true,
+      "reason": "Resolves the existing lawful target plan before ownership acquisition."
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/route-handlers.ts",
+      "change": "MODIFIED",
+      "logicalOwner": "Runtime Forecast Routes",
+      "tracking": "untracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": true,
+      "reason": "Enters isolated request telemetry context for internal production calls."
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/service.ts",
+      "change": "MODIFIED",
+      "logicalOwner": "Generic Period Current Owner",
+      "tracking": "untracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": true,
+      "reason": "Acquires exact-key ownership after persisted miss and wraps existing compute plus persistence."
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/stress-telemetry.ts",
+      "change": "MODIFIED",
+      "logicalOwner": "Forecast Stress Telemetry",
+      "tracking": "untracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": true,
+      "reason": "Exposes current request correlation to the ownership primitive."
+    },
+    {
+      "path": "apps/sg-runtime/scripts/run-forecast-phase-2-2b-1-current-wave.ts",
+      "change": "CREATED",
+      "logicalOwner": "B1 Current Worker",
+      "tracking": "untracked",
+      "classification": "CANONICAL_SOURCE",
+      "includeInFutureSgDev": true,
+      "reason": "Narrow frozen two- or ten-request Generic Period experiment adapter."
+    },
+    {
+      "path": "apps/sg-runtime/tests/current-single-flight.test.ts",
+      "change": "CREATED",
+      "logicalOwner": "Current Single-Flight Tests",
+      "tracking": "untracked",
+      "classification": "TEST",
+      "includeInFutureSgDev": true,
+      "reason": "Deterministic exact-key, failure, retry, cleanup, isolation, and cancellation proof."
+    },
+    {
+      "path": "apps/sg-runtime/tests/forecast-library-service.test.ts",
+      "change": "MODIFIED",
+      "logicalOwner": "Forecast Library Tests",
+      "tracking": "untracked",
+      "classification": "TEST",
+      "includeInFutureSgDev": true,
+      "reason": "Service-level ten-caller single-owner and one-write proof."
+    },
+    {
+      "path": "apps/sg-runtime/tests/forecast-stress-telemetry.test.ts",
+      "change": "MODIFIED",
+      "logicalOwner": "Forecast Telemetry Tests",
+      "tracking": "untracked",
+      "classification": "TEST",
+      "includeInFutureSgDev": true,
+      "reason": "Telemetry remains behavior-neutral and correlated."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-1-current-single-flight-experiment.mjs",
+      "change": "CREATED",
+      "logicalOwner": "B1 Live Experiment",
+      "tracking": "untracked",
+      "classification": "TEST",
+      "includeInFutureSgDev": true,
+      "reason": "Fail-fast runner for only frozen two-user, P11@2, and P03@10 rows."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-1-prepared-search-regression.mjs",
+      "change": "CREATED",
+      "logicalOwner": "B1 Prepared Regression",
+      "tracking": "untracked",
+      "classification": "TEST",
+      "includeInFutureSgDev": true,
+      "reason": "Compute-free P01/P02/P06/P07/P09/P10 regression runner."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-1-finalize-evidence.mjs",
+      "change": "CREATED",
+      "logicalOwner": "B1 Final Evidence",
+      "tracking": "untracked",
+      "classification": "TEST",
+      "includeInFutureSgDev": true,
+      "reason": "Asserts source evidence and writes final report, gate, regression, and migration artifacts."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/performance/phase-2-2b-1-final-gate.validator.mjs",
+      "change": "CREATED",
+      "logicalOwner": "B1 Final Gate",
+      "tracking": "untracked",
+      "classification": "TEST",
+      "includeInFutureSgDev": true,
+      "reason": "Independently validates exact report, gate, migration, and source evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/FORECAST_PHASE_2_2B_1_CURRENT_FORECAST_SINGLE_FLIGHT_EXPERIMENT.md",
+      "change": "CREATED",
+      "logicalOwner": "B1 Human Report",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": true,
+      "reason": "Required exact 60-section final report."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2b-1-current-single-flight.json",
+      "change": "CREATED",
+      "logicalOwner": "B1 Machine Gate",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": true,
+      "reason": "Required exact 72-condition machine gate."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/forecast-phase-2-2b-1-migration-readiness.json",
+      "change": "CREATED",
+      "logicalOwner": "B1 Migration Readiness",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": true,
+      "reason": "Task-attributed source, test, evidence, and runtime disposition."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-1/regression.json",
+      "change": "CREATED",
+      "logicalOwner": "B1 Regression Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": true,
+      "reason": "Applicable functional and compute-free regression summary."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-1/deterministic-tests.json",
+      "change": "CREATED",
+      "logicalOwner": "B1 Experiment Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": true,
+      "reason": "Task-scoped deterministic, live, regression, correctness, or resource evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-1/implementation-contract.json",
+      "change": "CREATED",
+      "logicalOwner": "B1 Experiment Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": true,
+      "reason": "Task-scoped deterministic, live, regression, correctness, or resource evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-1/live-current-same-key-2.json",
+      "change": "CREATED",
+      "logicalOwner": "B1 Experiment Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": true,
+      "reason": "Task-scoped deterministic, live, regression, correctness, or resource evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-1/p11-warm-show-2.json",
+      "change": "CREATED",
+      "logicalOwner": "B1 Experiment Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": true,
+      "reason": "Task-scoped deterministic, live, regression, correctness, or resource evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-1/p03-controlled-10.json",
+      "change": "CREATED",
+      "logicalOwner": "B1 Experiment Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": true,
+      "reason": "Task-scoped deterministic, live, regression, correctness, or resource evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-1/p03-controlled-10-naive.json",
+      "change": "CREATED",
+      "logicalOwner": "B1 Experiment Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": true,
+      "reason": "Task-scoped deterministic, live, regression, correctness, or resource evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-1/p03-controlled-10-damped_holt.json",
+      "change": "CREATED",
+      "logicalOwner": "B1 Experiment Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": true,
+      "reason": "Task-scoped deterministic, live, regression, correctness, or resource evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-1/p03-controlled-10-ets.json",
+      "change": "CREATED",
+      "logicalOwner": "B1 Experiment Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": true,
+      "reason": "Task-scoped deterministic, live, regression, correctness, or resource evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-1/p03-controlled-10-arima.json",
+      "change": "CREATED",
+      "logicalOwner": "B1 Experiment Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": true,
+      "reason": "Task-scoped deterministic, live, regression, correctness, or resource evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-1/prepared-search-regressions.json",
+      "change": "CREATED",
+      "logicalOwner": "B1 Experiment Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": true,
+      "reason": "Task-scoped deterministic, live, regression, correctness, or resource evidence."
+    },
+    {
+      "path": "tooling/Benchmark-Forecasting/validation/phase-2-2b-1/resource-ux-observation.json",
+      "change": "CREATED",
+      "logicalOwner": "B1 Experiment Evidence",
+      "tracking": "untracked",
+      "classification": "EVIDENCE",
+      "includeInFutureSgDev": true,
+      "reason": "Task-scoped deterministic, live, regression, correctness, or resource evidence."
+    },
+    {
+      "path": "apps/pmos/.pmos/forecast-phase-2-2b-1-current-single-flight-experiment-v1-bootstrap.json",
+      "change": "CREATED",
+      "logicalOwner": "PMOS Completion Authority",
+      "tracking": "untracked",
+      "classification": "GENERATED",
+      "includeInFutureSgDev": false,
+      "reason": "Task-scoped PMOS bootstrap retained as runtime continuity state."
+    }
+  ],
+  "newNestedGitRepositories": 0,
+  "newExternalSourceRepositories": 0,
+  "includeInFutureSgDevCount": 31
+}

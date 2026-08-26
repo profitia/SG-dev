@@ -1,0 +1,426 @@
+{
+  "generatedAt": "2026-08-21T19:50:30Z",
+  "taskId": "rolling-daily-stage-11-current-snapshot-fast-presentation-v1",
+  "seriesId": "wocaes0074",
+  "displayName": "Brent, Spot, FOB North Sea",
+  "forecastMethod": "ROLLING_DAILY_POINT_IN_TIME",
+  "methodVersion": "rolling-daily-point-in-time-v1",
+  "targetBasis": "POINT_IN_TIME",
+  "models": [
+    "naive",
+    "damped_holt",
+    "ets",
+    "arima"
+  ],
+  "status": "PASS",
+  "authorityInputs": {
+    "stage9": {
+      "status": "PASS",
+      "readiness": "READY",
+      "json": "validation/rolling_daily_stage9_incremental_maintenance_parity_wocaes0074.json",
+      "markdown": "ROLLING_DAILY_STAGE9_INCREMENTAL_MAINTENANCE_PARITY.md"
+    },
+    "stage10": {
+      "status": "PASS",
+      "json": "validation/rolling_daily_stage10_production_contract_parity_wocaes0074.json",
+      "markdown": "ROLLING_DAILY_STAGE10_PRODUCTION_CONTRACT_PARITY.md"
+    },
+    "productionContract": "ROLLING_DAILY_PRODUCTION_FORECAST_CONTRACT.md",
+    "methodSpec": "ROLLING_DAILY_POINT_IN_TIME_METHOD_SPEC.md",
+    "arimaPreparedServing": "ARIMA_REPRODUCIBILITY_FAST_SERVING_ACCEPTANCE.md",
+    "stage7Performance": "ROLLING_DAILY_STAGE7_PERFORMANCE_COST_CHARACTERIZATION.md"
+  },
+  "guardrails": {
+    "stage12Started": "NO",
+    "stage13Started": "NO",
+    "deploymentPerformed": "NO",
+    "dashboardUxChanged": "NO",
+    "forecastMethodologyChanged": "NO",
+    "forecastFittingLogicChanged": "NO",
+    "arimaCandidatePolicyChanged": "NO",
+    "automaticChampionSelectionBuilt": "NO",
+    "benchmarkFinderTouched": "NO",
+    "appShellTouched": "NO",
+    "newForecastServiceCreated": "NO",
+    "newDatabaseTableSchemaCreated": "NO",
+    "historical681OriginReplayPerformed": "NO"
+  },
+  "startingLiveState": {
+    "source": {
+      "latestLawfulObservationDate": "2026-08-20",
+      "latestLawfulObservationValue": 91.48,
+      "lawfulObservationCount": 10462,
+      "liveSourceFingerprint": "d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753"
+    },
+    "freshnessMatrix": [
+      {
+        "modelId": "naive",
+        "maintenanceLatestSourceObservationDate": "2026-08-18",
+        "maintenanceFingerprint": "35ecf750e4998799462a2fa9a57758f048695b26892c5fca6436669e32138f82",
+        "snapshotOriginDate": "2026-08-18",
+        "snapshotSourceLatestObservationDate": "2026-08-18",
+        "snapshotAuditFingerprint": null,
+        "snapshotCalibrationFreshnessStatus": "FRESH",
+        "snapshotProcessedThrough": "2026-08-18",
+        "freshness": "STALE",
+        "staleReasons": [
+          "SOURCE_DATE_MISMATCH",
+          "SOURCE_FINGERPRINT_MISMATCH",
+          "SNAPSHOT_ORIGIN_LAGS_LIVE_SOURCE",
+          "SNAPSHOT_MISSING_SOURCE_HISTORY_FINGERPRINT"
+        ]
+      },
+      {
+        "modelId": "damped_holt",
+        "maintenanceLatestSourceObservationDate": "2026-08-18",
+        "maintenanceFingerprint": "35ecf750e4998799462a2fa9a57758f048695b26892c5fca6436669e32138f82",
+        "snapshotOriginDate": "2026-08-18",
+        "snapshotSourceLatestObservationDate": "2026-08-18",
+        "snapshotAuditFingerprint": null,
+        "snapshotCalibrationFreshnessStatus": "FRESH",
+        "snapshotProcessedThrough": "2026-08-18",
+        "freshness": "STALE",
+        "staleReasons": [
+          "SOURCE_DATE_MISMATCH",
+          "SOURCE_FINGERPRINT_MISMATCH",
+          "SNAPSHOT_ORIGIN_LAGS_LIVE_SOURCE",
+          "SNAPSHOT_MISSING_SOURCE_HISTORY_FINGERPRINT"
+        ]
+      },
+      {
+        "modelId": "ets",
+        "maintenanceLatestSourceObservationDate": "2026-08-18",
+        "maintenanceFingerprint": "35ecf750e4998799462a2fa9a57758f048695b26892c5fca6436669e32138f82",
+        "snapshotOriginDate": "2026-08-18",
+        "snapshotSourceLatestObservationDate": "2026-08-18",
+        "snapshotAuditFingerprint": null,
+        "snapshotCalibrationFreshnessStatus": "FRESH",
+        "snapshotProcessedThrough": "2026-08-18",
+        "freshness": "STALE",
+        "staleReasons": [
+          "SOURCE_DATE_MISMATCH",
+          "SOURCE_FINGERPRINT_MISMATCH",
+          "SNAPSHOT_ORIGIN_LAGS_LIVE_SOURCE",
+          "SNAPSHOT_MISSING_SOURCE_HISTORY_FINGERPRINT"
+        ]
+      },
+      {
+        "modelId": "arima",
+        "maintenanceLatestSourceObservationDate": "2026-08-18",
+        "maintenanceFingerprint": "35ecf750e4998799462a2fa9a57758f048695b26892c5fca6436669e32138f82",
+        "snapshotOriginDate": "2026-08-18",
+        "snapshotSourceLatestObservationDate": "2026-08-18",
+        "snapshotAuditFingerprint": "35ecf750e4998799462a2fa9a57758f048695b26892c5fca6436669e32138f82",
+        "snapshotCalibrationFreshnessStatus": "FRESH",
+        "snapshotProcessedThrough": "2026-08-18",
+        "freshness": "STALE",
+        "staleReasons": [
+          "SOURCE_DATE_MISMATCH",
+          "SOURCE_FINGERPRINT_MISMATCH",
+          "SNAPSHOT_ORIGIN_LAGS_LIVE_SOURCE"
+        ]
+      }
+    ]
+  },
+  "controlledCatchUp": {
+    "path": "CANONICAL_INCREMENTAL_MAINTENANCE_ONLY",
+    "fullRebuild": "NO",
+    "rebuildRequired": "NO",
+    "models": [
+      {
+        "modelId": "naive",
+        "status": "SUCCEEDED",
+        "newOriginCount": 2,
+        "maturedRecordCount": 0,
+        "calibrationRefreshCount": 4,
+        "affectedCalibrationGroupCount": 4,
+        "latestSourceObservationAt": "2026-08-20",
+        "sourceHistoryFingerprint": "d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753",
+        "lastProcessedOriginAt": "2026-08-20",
+        "filteredNullCount": 197,
+        "filteredDuplicateCount": 0,
+        "sourceObservationCount": 10462,
+        "runtimeMs": 3442
+      },
+      {
+        "modelId": "damped_holt",
+        "status": "SUCCEEDED",
+        "newOriginCount": 2,
+        "maturedRecordCount": 0,
+        "calibrationRefreshCount": 4,
+        "affectedCalibrationGroupCount": 4,
+        "latestSourceObservationAt": "2026-08-20",
+        "sourceHistoryFingerprint": "d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753",
+        "lastProcessedOriginAt": "2026-08-20",
+        "filteredNullCount": 197,
+        "filteredDuplicateCount": 0,
+        "sourceObservationCount": 10462,
+        "runtimeMs": 2688
+      },
+      {
+        "modelId": "ets",
+        "status": "SUCCEEDED",
+        "newOriginCount": 2,
+        "maturedRecordCount": 0,
+        "calibrationRefreshCount": 4,
+        "affectedCalibrationGroupCount": 4,
+        "latestSourceObservationAt": "2026-08-20",
+        "sourceHistoryFingerprint": "d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753",
+        "lastProcessedOriginAt": "2026-08-20",
+        "filteredNullCount": 197,
+        "filteredDuplicateCount": 0,
+        "sourceObservationCount": 10462,
+        "runtimeMs": 3094
+      },
+      {
+        "modelId": "arima",
+        "status": "SUCCEEDED",
+        "newOriginCount": 2,
+        "maturedRecordCount": 0,
+        "calibrationRefreshCount": 4,
+        "affectedCalibrationGroupCount": 4,
+        "latestSourceObservationAt": "2026-08-20",
+        "sourceHistoryFingerprint": "d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753",
+        "lastProcessedOriginAt": "2026-08-20",
+        "filteredNullCount": 197,
+        "filteredDuplicateCount": 0,
+        "sourceObservationCount": 10462,
+        "runtimeMs": 27317
+      }
+    ],
+    "snapshotRefresh": {
+      "status": "PASS",
+      "parityStatus": "MATCHED",
+      "models": [
+        "naive",
+        "damped_holt",
+        "ets",
+        "arima"
+      ]
+    }
+  },
+  "postCatchUpLiveState": {
+    "source": {
+      "latestLawfulObservationDate": "2026-08-20",
+      "liveSourceFingerprint": "d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753"
+    },
+    "freshnessMatrix": [
+      {
+        "modelId": "naive",
+        "maintenanceLatestSourceObservationDate": "2026-08-20",
+        "maintenanceFingerprint": "d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753",
+        "snapshotOriginDate": "2026-08-20",
+        "snapshotSourceLatestObservationDate": "2026-08-20",
+        "snapshotAuditFingerprint": "d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753",
+        "snapshotCalibrationFreshnessStatus": "FRESH",
+        "snapshotProcessedThrough": "2026-08-20",
+        "preparedReadStatus": "HIT",
+        "freshness": "FRESH"
+      },
+      {
+        "modelId": "damped_holt",
+        "maintenanceLatestSourceObservationDate": "2026-08-20",
+        "maintenanceFingerprint": "d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753",
+        "snapshotOriginDate": "2026-08-20",
+        "snapshotSourceLatestObservationDate": "2026-08-20",
+        "snapshotAuditFingerprint": "d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753",
+        "snapshotCalibrationFreshnessStatus": "FRESH",
+        "snapshotProcessedThrough": "2026-08-20",
+        "preparedReadStatus": "HIT",
+        "freshness": "FRESH"
+      },
+      {
+        "modelId": "ets",
+        "maintenanceLatestSourceObservationDate": "2026-08-20",
+        "maintenanceFingerprint": "d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753",
+        "snapshotOriginDate": "2026-08-20",
+        "snapshotSourceLatestObservationDate": "2026-08-20",
+        "snapshotAuditFingerprint": "d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753",
+        "snapshotCalibrationFreshnessStatus": "FRESH",
+        "snapshotProcessedThrough": "2026-08-20",
+        "preparedReadStatus": "HIT",
+        "freshness": "FRESH"
+      },
+      {
+        "modelId": "arima",
+        "maintenanceLatestSourceObservationDate": "2026-08-20",
+        "maintenanceFingerprint": "d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753",
+        "snapshotOriginDate": "2026-08-20",
+        "snapshotSourceLatestObservationDate": "2026-08-20",
+        "snapshotAuditFingerprint": "d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753",
+        "snapshotCalibrationFreshnessStatus": "FRESH",
+        "snapshotProcessedThrough": "2026-08-20",
+        "preparedReadStatus": "HIT",
+        "freshness": "FRESH"
+      }
+    ]
+  },
+  "presentationSeam": {
+    "currentReadOwner": "apps/dashboard-preview/lib/benchmark-forecast/runtime-query.ts",
+    "currentReadPath": [
+      "getBenchmarkForecastCurrent(seriesId, model, 'POINT_IN_TIME')",
+      "getPersistedRollingDailyCurrentForecast(...)",
+      "prisma.rollingDailyCurrentForecastSnapshot.findFirst(...)"
+    ],
+    "consumerOwner": "apps/dashboard-preview/lib/time-series-viewer/forecast-portfolio-to-time-series-viewer.ts",
+    "consumerParity": {
+      "status": "PASS",
+      "evidence": [
+        "buildPointInTimeCurrentForecastSeries reads rollingDailySnapshot.path directly",
+        "central, upper, and lower presentation series are all derived from the persisted snapshot path",
+        "POINT_IN_TIME keeps day-resolution display dates and target-basis labeling"
+      ]
+    }
+  },
+  "preparedReadAcceptance": {
+    "status": "PASS",
+    "sampleCountPerModel": 5,
+    "fetchCalls": 0,
+    "results": [
+      {
+        "modelId": "naive",
+        "minMs": 33.39804200000003,
+        "medianMs": 33.69766600000003,
+        "maxMs": 38.72574999999995
+      },
+      {
+        "modelId": "damped_holt",
+        "minMs": 33.6501659999999,
+        "medianMs": 34.17979199999991,
+        "maxMs": 112.23083299999996
+      },
+      {
+        "modelId": "ets",
+        "minMs": 33.89345800000001,
+        "medianMs": 35.297124999999824,
+        "maxMs": 35.567999999999984
+      },
+      {
+        "modelId": "arima",
+        "minMs": 28.157040999999936,
+        "medianMs": 34.273749999999836,
+        "maxMs": 99.39770799999997
+      }
+    ],
+    "determinism": {
+      "status": "PASS",
+      "rule": "Five repeated JSON-serialized reads per model were identical."
+    },
+    "mutationCheck": [
+      {
+        "modelId": "arima",
+        "updatedAtUnchanged": true,
+        "payloadUnchanged": true
+      },
+      {
+        "modelId": "damped_holt",
+        "updatedAtUnchanged": true,
+        "payloadUnchanged": true
+      },
+      {
+        "modelId": "ets",
+        "updatedAtUnchanged": true,
+        "payloadUnchanged": true
+      },
+      {
+        "modelId": "naive",
+        "updatedAtUnchanged": true,
+        "payloadUnchanged": true
+      }
+    ],
+    "requestTimeArimaFitOnRead": "NO",
+    "historicalCalibrationRebuildOnRead": "NO",
+    "benchmarkFinderDependency": "NONE"
+  },
+  "implementedFixes": [
+    {
+      "file": "apps/sg-runtime/scripts/persist-rolling-daily-current-forecast-snapshot.ts",
+      "change": "Load .env.local before snapshot persistence so the canonical Stage 11 snapshot refresh command works standalone."
+    }
+  ],
+  "validations": {
+    "preflight": {
+      "status": "PASS",
+      "checks": [
+        "Prompt Contract loaded",
+        "Execution Canon loaded",
+        "Developer Lifecycle loaded",
+        "pmos:verify-runtime PASS",
+        "pending-artifact clear",
+        "MEMOROS_PROJECT_ID present",
+        "http://localhost:4000/health status=ok"
+      ]
+    },
+    "liveStartingProbe": {
+      "status": "PASS",
+      "result": "All four models were stale at task start against live source date 2026-08-20 and fingerprint d895eccbcbdda448a96961ae578c322c86ad42e78d3ed25ea33136975600d753."
+    },
+    "incrementalCatchUp": {
+      "status": "PASS",
+      "command": "cd '/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime' && node --import tsx <<'EOF' ... createRollingDailyMaintenanceService().runIncrementalMaintenance({ seriesId: 'wocaes0074', modelId, fullRebuild: false }) ... EOF",
+      "assertions": [
+        "APPEND_ONLY_CATCH_UP_ONLY",
+        "NO_REBUILD_REQUIRED",
+        "NO_681_ORIGIN_REPLAY",
+        "NEW_ORIGIN_COUNT_EQUALS_2_FOR_EACH_MODEL"
+      ]
+    },
+    "snapshotRefresh": {
+      "status": "PASS",
+      "command": "cd '/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime' && node --import tsx scripts/persist-rolling-daily-current-forecast-snapshot.ts --seriesId=wocaes0074 --models=naive,damped_holt,ets,arima",
+      "assertions": [
+        "ALL_FOUR_MODELS_AVAILABLE",
+        "PARITY_STATUS_MATCHED"
+      ]
+    },
+    "postCatchUpPreparedReadContract": {
+      "status": "PASS",
+      "command": "cd '/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/sg-runtime' && node --import tsx <<'EOF' ... readRollingDailyCurrentForecastSnapshot({ seriesId: 'wocaes0074', modelId, sourceHistoryFingerprint }) ... EOF",
+      "assertions": [
+        "HIT_FOR_ALL_FOUR_MODELS",
+        "SNAPSHOT_ORIGIN_EQUALS_2026_08_20",
+        "SNAPSHOT_FINGERPRINT_EQUALS_LIVE_SOURCE_FINGERPRINT"
+      ]
+    },
+    "dashboardPreparedReadRegression": {
+      "status": "PASS",
+      "command": "cd '/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/dashboard-preview' && node --import tsx --test tests/benchmark-forecast-runtime-query.test.ts",
+      "testsRun": 6
+    },
+    "dashboardPreparedReadTiming": {
+      "status": "PASS",
+      "command": "cd '/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev/apps/dashboard-preview' && set -a && source .env.local && set +a && node --import tsx <<'EOF' ... getBenchmarkForecastCurrent(seriesId, modelId, 'POINT_IN_TIME') ... EOF",
+      "assertions": [
+        "FETCH_CALLS_EQUALS_0",
+        "NO_PERSISTENCE_MUTATION",
+        "DETERMINISTIC_REPEATED_READS",
+        "ARIMA_READ_MEDIAN_APPROX_34MS"
+      ]
+    }
+  },
+  "overall": {
+    "startingFreshnessMatrix": "PASS",
+    "controlledCatchUp": "PASS",
+    "snapshotRefresh": "PASS",
+    "postCatchUpFreshness": "PASS",
+    "preparedReadFastPath": "PASS",
+    "preparedReadDeterminism": "PASS",
+    "presentationConsumerParity": "PASS",
+    "overall": "PASS"
+  },
+  "artifacts": {
+    "json": "validation/rolling_daily_stage11_current_snapshot_fast_presentation_wocaes0074.json",
+    "markdown": "ROLLING_DAILY_STAGE11_CURRENT_SNAPSHOT_FAST_PRESENTATION.md"
+  },
+  "deferred": [
+    "NO_STAGE_12_WORK_STARTED",
+    "NO_STAGE_13_WORK_STARTED",
+    "NO_FORECAST_METHODOLOGY_CHANGE",
+    "NO_MODEL_FITTING_LOGIC_CHANGE",
+    "NO_ARIMA_CANDIDATE_POLICY_CHANGE",
+    "NO_DASHBOARD_UX_CHANGE",
+    "NO_BENCHMARK_FINDER_CHANGE",
+    "NO_APPSHELL_CHANGE",
+    "NO_DEPLOYMENT"
+  ]
+}

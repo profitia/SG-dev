@@ -1,0 +1,40 @@
+{
+  "task": "FORECAST_PHASE_2_1A_ENVIRONMENT_INSTRUMENTATION_READINESS",
+  "contractVersion": 1,
+  "generatedAt": "2026-08-24T11:45:23.455Z",
+  "classification": "SEQUENTIAL_RUNTIME_SMOKE_NOT_PERFORMANCE_EVIDENCE",
+  "environmentId": "phase-2-1-local-isolated-v1",
+  "cloneAlias": "phase-2-1-local-clone-v1",
+  "L1": {
+    "passed": true,
+    "method": "isolated component test",
+    "command": "node --import tsx --test --test-reporter=tap tests/forecast-stress-telemetry.test.ts"
+  },
+  "L2": {
+    "passed": true,
+    "service": "sg-runtime",
+    "status": "ok",
+    "endpointRole": "/api/health"
+  },
+  "L3": {
+    "passed": true,
+    "pageStatus": 200,
+    "pageRole": "/pl?variantId=historical-v1",
+    "apiRole": "/api/components?locale=pl",
+    "componentCount": 46
+  },
+  "safety": {
+    "sequentialOnly": true,
+    "providerCallsAllowed": false,
+    "databaseTargetsGuarded": true,
+    "servicesStoppedAfterProbe": true,
+    "portsReleased": [
+      3001,
+      3002
+    ],
+    "smokeRequestsExecuted": 6
+  },
+  "loadRequestsExecuted": 0,
+  "phase21BStarted": false,
+  "credentialsIncluded": false
+}

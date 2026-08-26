@@ -1,0 +1,71 @@
+{
+  "task": "FORECAST_PHASE_2_2B_4R_CONTROLLED_BEFORE_AFTER_COMPARATIVE_STRESS_RERUN",
+  "generatedAt": "2026-08-25T14:16:28.114Z",
+  "phase22cHandoffStatus": "READY_FOR_SEPARATE_AUTHORIZATION_DECISION",
+  "phase22cReadyForAuthorizationDecision": true,
+  "phase22cAuthorized": false,
+  "phase22cStarted": false,
+  "solvedBoundaries": [
+    "P04 exact-key ownership through concurrency 100",
+    "Strict stop-rule enforcement",
+    "Persisted settlement decisions"
+  ],
+  "remainingCapacityEvidence": [
+    {
+      "scenario": "P09",
+      "concurrency": 1000,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "MANDATORY_SETTLEMENT_FAILED",
+      "correctnessPassed": false,
+      "successes": 234,
+      "failures": 766,
+      "timeouts": 766,
+      "cooldownDurationMs": 30076,
+      "postCooldownRssMb": 1461.234375,
+      "applicationDbPool": {
+        "activeConnections": 17,
+        "idleConnections": 0,
+        "waitingRequests": 17,
+        "totalConnections": 17
+      },
+      "safetyRules": [
+        "SAFE-COOLDOWN",
+        "SAFE-DATABASE"
+      ],
+      "classification": "DEGRADED_TIMEOUT_AND_DB_POOL_SETTLEMENT_BLOCK"
+    },
+    {
+      "scenario": "P10",
+      "concurrency": 10,
+      "terminalStatus": "SAFETY_BLOCKED",
+      "terminalReason": "MANDATORY_SETTLEMENT_FAILED",
+      "correctnessPassed": true,
+      "successes": 10,
+      "failures": 0,
+      "timeouts": 0,
+      "cooldownDurationMs": 30055,
+      "postCooldownRssMb": 2798.078125,
+      "applicationDbPool": {
+        "activeConnections": 15,
+        "idleConnections": 1,
+        "waitingRequests": 14,
+        "totalConnections": 16
+      },
+      "safetyRules": [
+        "SAFE-COOLDOWN",
+        "SAFE-DATABASE"
+      ],
+      "classification": "CORRECT_PRE_SETTLEMENT_DB_POOL_SETTLEMENT_BLOCK"
+    }
+  ],
+  "remainingBottlenecks": [
+    "HTTP_APPLICATION_CAPACITY_BOUND",
+    "DB_POOL_SETTLEMENT_BOUND",
+    "REQUEST_TIMEOUT_BOUND:P09",
+    "PREPARED_READ_LATENCY_BOUND:P10",
+    "VERIFICATION_BACKTEST_BOUND",
+    "RESOURCE_OBSERVABILITY_BOUND",
+    "DISTRIBUTED_OWNERSHIP_NOT_PROVEN"
+  ],
+  "requiredBoundary": "Phase 2.2C requires separate authorization and may investigate capacity only."
+}
