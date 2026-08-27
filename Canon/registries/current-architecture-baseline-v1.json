@@ -1,8 +1,8 @@
 {
   "schemaVersion": "1.0",
   "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
-  "transitionalEpochStartSha": null,
-  "transitionalPolicyActive": false,
+  "transitionalEpochStartSha": "6d3d81e1b81fa368be85a966ca65beae511f43ce",
+  "transitionalPolicyActive": true,
   "pathResolutionStrategy": "MOST_SPECIFIC_MATCH_WINS",
   "surfaces": [
     {
