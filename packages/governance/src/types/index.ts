@@ -3,7 +3,7 @@
  * @package @sg/governance
  */
 
-import {
+import type {
   ArtifactKind,
   ArtifactNature,
   ArtifactStatus,

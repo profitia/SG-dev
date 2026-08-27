@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import Link from 'next/link'
 import { ConversationList } from '@/components/conversations/ConversationList'
 import { ConversationFilters } from '@/components/conversations/ConversationFilters'
+import { buildCanonicalConversationReadModel } from '@/lib/pmos/flight-record-read'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,6 +11,19 @@ const IMPORTANCE_ORDER: Record<string, number> = {
   high: 1,
   medium: 2,
   low: 3,
+}
+
+function getConversationDisplayMetadata(
+  flightRecordJson: unknown,
+  conversationType: string | null,
+  importanceLevel: string | null,
+) {
+  const canonical = buildCanonicalConversationReadModel(flightRecordJson)
+
+  return {
+    conversationType: canonical.metadata.conversationType ?? conversationType ?? 'unknown',
+    importanceLevel: canonical.metadata.importanceLevel ?? importanceLevel ?? 'medium',
+  }
 }
 
 async function getConversations(searchParams: Record<string, string | undefined>) {
@@ -75,6 +89,24 @@ export default async function ConversationsPage({
     getStats(),
   ])
 
+  const displayConversations = conversations.map((conversation) => {
+    const displayMetadata = getConversationDisplayMetadata(
+      conversation.flightRecordJson,
+      conversation.conversationType,
+      conversation.importanceLevel,
+    )
+
+    return {
+      ...conversation,
+      ...displayMetadata,
+    }
+  })
+
+  const displayTypeCounts = stats.byType.map((typeCount) => ({
+    ...typeCount,
+    conversationType: typeCount.conversationType ?? 'unknown',
+  }))
+
   const totalPages = Math.ceil(total / take)
 
   return (
@@ -104,7 +136,7 @@ export default async function ConversationsPage({
             <StatPill label="Total" value={stats.total} />
             <StatPill label="Foundational" value={stats.foundational} accent />
             <StatPill label="High" value={stats.high} />
-            {stats.byType.slice(0, 4).map((t) => (
+            {displayTypeCounts.slice(0, 4).map((t) => (
               <StatPill key={t.conversationType} label={t.conversationType.replace('_', ' ')} value={t._count} />
             ))}
           </div>
@@ -121,7 +153,7 @@ export default async function ConversationsPage({
         {conversations.length === 0 ? (
           <EmptyState hasFilters={!!(searchParams.q || searchParams.etap || searchParams.type || searchParams.importance)} />
         ) : (
-          <ConversationList conversations={conversations} />
+          <ConversationList conversations={displayConversations} />
         )}
 
         {/* Pagination */}

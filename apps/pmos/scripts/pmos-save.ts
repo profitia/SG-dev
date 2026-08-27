@@ -1246,15 +1246,8 @@ function projectConversationArtifactScalarParity(record: {
     taskId: record.taskId,
     scope: record.scope,
     timestamp: record.timestamp.toISOString(),
-  }
-
-  if (record.etap !== null || record.subetap !== null) {
-    metadata.compatibility = {
-      legacyPlanningContext: {
-        ...(record.etap !== null ? { etap: record.etap } : {}),
-        ...(record.subetap !== null ? { subetap: record.subetap } : {}),
-      },
-    }
+    ...(record.etap !== null ? { etap: record.etap } : {}),
+    ...(record.subetap !== null ? { subetap: record.subetap } : {}),
   }
 
   if (record.conversationType !== null) {
@@ -1276,6 +1269,37 @@ function projectConversationArtifactScalarParity(record: {
     },
     summary: record.summary,
     filesPath: record.filesPath,
+  }
+}
+
+function projectCanonicalFlightRecordScalarParity(
+  artifact: FlightRecordV1,
+  filesPath: string,
+  summary: string,
+): Record<string, unknown> {
+  const metadata: Record<string, unknown> = {
+    conversationId: artifact.metadata.conversationId,
+    project: artifact.metadata.project,
+    taskId: artifact.metadata.taskId,
+    scope: artifact.metadata.scope,
+    timestamp: artifact.metadata.timestamp,
+    etap: artifact.metadata.etap,
+    ...(artifact.metadata.subetap != null ? { subetap: artifact.metadata.subetap } : {}),
+    ...(artifact.metadata.conversationType != null ? { conversationType: artifact.metadata.conversationType } : {}),
+    ...(artifact.metadata.importanceLevel != null ? { importanceLevel: artifact.metadata.importanceLevel } : {}),
+  }
+
+  return {
+    metadata,
+    task: {
+      originalTaskRequest: artifact.task.originalTaskRequest,
+    },
+    analysis: {
+      executionSummary: artifact.analysis.executionSummary,
+      reasoningSummary: summary,
+    },
+    summary,
+    filesPath,
   }
 }
 
@@ -1311,15 +1335,14 @@ function buildConversationArtifactProjection(
   closeout: CloseoutEvidence,
 ) {
   const summary = buildConversationArtifactSummary(artifact, closeout)
-  const legacyPlanningContext = readLegacyPlanningContext(artifact.metadata as Record<string, unknown>)
 
   return {
     timestamp: new Date(artifact.metadata.timestamp),
     project: artifact.metadata.project,
     taskId: artifact.metadata.taskId,
     scope: artifact.metadata.scope,
-    etap: legacyPlanningContext.etap ?? null,
-    subetap: legacyPlanningContext.subetap ?? null,
+    etap: artifact.metadata.etap,
+    subetap: artifact.metadata.subetap ?? null,
     domains: [],
     conversationType: (artifact.metadata.conversationType ?? null) as PrismaConversationType | null,
     importanceLevel: (artifact.metadata.importanceLevel ?? null) as PrismaImportanceLevel | null,
@@ -1339,15 +1362,14 @@ function buildConversationArtifactMutableProjection(
   closeout: CloseoutEvidence,
 ) {
   const summary = buildConversationArtifactSummary(artifact, closeout)
-  const legacyPlanningContext = readLegacyPlanningContext(artifact.metadata as Record<string, unknown>)
 
   return {
     timestamp: new Date(artifact.metadata.timestamp),
     project: artifact.metadata.project,
     taskId: artifact.metadata.taskId,
     scope: artifact.metadata.scope,
-    etap: legacyPlanningContext.etap ?? null,
-    subetap: legacyPlanningContext.subetap ?? null,
+    etap: artifact.metadata.etap,
+    subetap: artifact.metadata.subetap ?? null,
     domains: [],
     conversationType: (artifact.metadata.conversationType ?? null) as PrismaConversationType | null,
     importanceLevel: (artifact.metadata.importanceLevel ?? null) as PrismaImportanceLevel | null,
@@ -2526,16 +2548,11 @@ async function main() {
   }
 
   const dbScalarParityDiffs = collectJsonDiffs(
-    {
-      metadata: canonicalFlightRecordPayload.metadata,
-      task: canonicalFlightRecordPayload.task,
-      analysis: {
-        ...canonicalFlightRecordPayload.analysis,
-        reasoningSummary: buildConversationArtifactSummary(canonicalFlightRecordPayload, evidence),
-      },
-      summary: buildConversationArtifactSummary(canonicalFlightRecordPayload, evidence),
-      filesPath: conversationMdPath,
-    },
+    projectCanonicalFlightRecordScalarParity(
+      canonicalFlightRecordPayload,
+      conversationMdPath,
+      buildConversationArtifactSummary(canonicalFlightRecordPayload, evidence),
+    ),
     projectConversationArtifactScalarParity(persistedRecord),
     'conversationArtifactRow',
   )
