@@ -33,6 +33,36 @@ Hard rules for all future agent execution:
 - PMOS verifies lineage, continuity, and execution history.
 - Conversation archive artifacts win over summaries when reconstructing facts.
 
+## MANDATORY ARCHITECTURE DEVELOPMENT PREFLIGHT
+
+For every task that will modify repository source, config, or runtime code, the following preflight is mandatory before the first source mutation:
+
+1. Load `Canon/v1.0-current-architecture-development-canon.md`.
+2. Declare `TARGET_PATHS` for every intended mutation path, including prospective new files.
+3. Run `node scripts/architecture-classify.mjs --json <targetPath...>`.
+4. Report `ARCHITECTURE_DEVELOPMENT_PREFLIGHT` from resolver output only.
+
+Resolver authority for baseline classification is:
+
+- registry: `Canon/registries/current-architecture-baseline-v1.json`
+- resolver: `scripts/architecture-classify.mjs`
+
+Hard rules:
+
+- Agents MUST NOT assign, infer, reinterpret, promote, or demote architecture classification.
+- `ALIGNED` and `LEGACY` both allow normal development unless a separate canon or task restriction blocks it.
+- If any target path resolves to `NO_MATCH`, `CONFLICT`, `INVALID_INPUT_PATH`, or registry failure, source mutation is blocked for the unresolved target scope.
+- Read `transitionalPolicyActive` from `Canon/registries/current-architecture-baseline-v1.json`.
+- Read `transitionalEpochStartSha` from `Canon/registries/current-architecture-baseline-v1.json`.
+- Record `DEVELOPMENT_TASK_START_HEAD = git rev-parse HEAD` before source mutation.
+- When `transitionalPolicyActive = true`, verify `git merge-base --is-ancestor <transitionalEpochStartSha> <DEVELOPMENT_TASK_START_HEAD>` before source mutation.
+- If the epoch ancestry check fails, source mutation is blocked.
+- If the epoch ancestry check passes, actual changed source paths created by the task receive `CHANGE_CLASSIFICATION = TRANSITIONAL` by policy at closeout.
+- If implementation discovers an additional mutation path, append it to `TARGET_PATHS`, rerun the resolver for that path, and only then edit it.
+- At task closeout, compare declared `TARGET_PATHS` against actual changed source paths and report `UNDECLARED_CHANGED_SOURCE_PATHS`.
+- Cleanup findings do not participate in ordinary development preflight.
+- `TRANSITIONAL` is a policy-derived post-epoch development delta classification, not an agent judgment and not a development blocker.
+
 ## PMOS RECOVERY BASELINE
 
 Canonical recovery baseline:

@@ -1,0 +1,229 @@
+{
+  "schemaVersion": "1.0",
+  "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+  "transitionalEpochStartSha": null,
+  "transitionalPolicyActive": false,
+  "pathResolutionStrategy": "MOST_SPECIFIC_MATCH_WINS",
+  "surfaces": [
+    {
+      "id": "SG2-BASE-001",
+      "capability": "SG Runtime",
+      "name": "SG Runtime Core",
+      "pathPatterns": [
+        "apps/sg-runtime/**"
+      ],
+      "currentOwner": "SG Runtime",
+      "currentResponsibility": "Main product runtime, Benchmark Finder, Category Builder, runtime APIs, and runtime persistence orchestration.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
+      "id": "SG2-BASE-002",
+      "capability": "Forecast",
+      "name": "Forecast Methodology Core",
+      "pathPatterns": [
+        "tooling/Benchmark-Forecasting/**"
+      ],
+      "currentOwner": "Forecast Tooling",
+      "currentResponsibility": "Forecast methodology, models, validation, and compute authority.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
+      "id": "SG2-BASE-003",
+      "capability": "Dashboard Preview",
+      "name": "Dashboard Preview App",
+      "pathPatterns": [
+        "apps/dashboard-preview/**"
+      ],
+      "currentOwner": "Dashboard Preview",
+      "currentResponsibility": "Dashboard and forecast presentation authority.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
+      "id": "SG2-BASE-004",
+      "capability": "Dashboard Data Runtime",
+      "name": "Dashboard Data Runtime",
+      "pathPatterns": [
+        "apps/dashboard-preview/runtime/data-runtime/**"
+      ],
+      "currentOwner": "Dashboard Data Runtime",
+      "currentResponsibility": "Ingestion, synchronization, and read-model preparation for dashboard-serving consumers.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": "SG2-BASE-003",
+      "cleanupReason": null,
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
+      "id": "SG2-BASE-005",
+      "capability": "Vector",
+      "name": "Vector Planning Runtime",
+      "pathPatterns": [
+        "apps/vector/**"
+      ],
+      "currentOwner": "Vector",
+      "currentResponsibility": "Planning, readiness, and execution-topology authority.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
+      "id": "SG2-BASE-006",
+      "capability": "PMOS",
+      "name": "PMOS Continuity Runtime",
+      "pathPatterns": [
+        "apps/pmos/**"
+      ],
+      "currentOwner": "PMOS",
+      "currentResponsibility": "Continuity, persistence, closeout, execution memory, and runtime authority snapshotting.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
+      "id": "SG2-BASE-007",
+      "capability": "Governance",
+      "name": "Governance Source Layer",
+      "pathPatterns": [
+        "packages/governance/src/**"
+      ],
+      "currentOwner": "Governance Source Layer",
+      "currentResponsibility": "Canonical enums, registries, validation, and integrity contracts.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
+      "id": "SG2-BASE-008",
+      "capability": "PCOS Explorer",
+      "name": "PCOS Explorer App",
+      "pathPatterns": [
+        "apps/pcos-explorer/**"
+      ],
+      "currentOwner": "PCOS Explorer",
+      "currentResponsibility": "Current read-only explorer runtime surface.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
+      "id": "SG2-BASE-009",
+      "capability": "Vercly",
+      "name": "Vercly App",
+      "pathPatterns": [
+        "apps/vercly/**"
+      ],
+      "currentOwner": "Vercly",
+      "currentResponsibility": "Internal company verification dashboard runtime.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
+      "id": "SG2-BASE-010",
+      "capability": "Deployment Authority",
+      "name": "Root Deployment Blueprint",
+      "pathPatterns": [
+        "render.yaml"
+      ],
+      "currentOwner": "Repository Deployment Authority",
+      "currentResponsibility": "Current root Render deployment authority for canonical services.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
+      "id": "SG2-BASE-011",
+      "capability": "Forecast Scheduled Workflow",
+      "name": "Forecast Scheduled Workflow",
+      "pathPatterns": [
+        ".github/workflows/forecast-production-operations.yml"
+      ],
+      "currentOwner": "Forecast Operations",
+      "currentResponsibility": "Scheduled forecast production operations workflow.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
+      "id": "SG2-BASE-012",
+      "capability": "Forecast Persistence",
+      "name": "Dashboard Forecast Mirror Schema",
+      "pathPatterns": [
+        "apps/dashboard-preview/prisma-market-data/**"
+      ],
+      "currentOwner": "Dashboard Preview",
+      "currentResponsibility": "Dashboard-local mirror forecast persistence schema surface.",
+      "baselineClassification": "LEGACY",
+      "parentSurfaceId": "SG2-BASE-003",
+      "cleanupReason": "DUPLICATED_PERSISTENCE_AUTHORITY",
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
+      "id": "SG2-BASE-013",
+      "capability": "Forecast Serving",
+      "name": "Dashboard Cross-App Forecast Bridge",
+      "pathPatterns": [
+        "apps/dashboard-preview/lib/benchmark-forecast/runtime-query.ts"
+      ],
+      "currentOwner": "Dashboard Preview",
+      "currentResponsibility": "Dashboard forecast-serving bridge to SG Runtime internal forecast production route.",
+      "baselineClassification": "LEGACY",
+      "parentSurfaceId": "SG2-BASE-003",
+      "cleanupReason": "CROSS_APP_SERVING_BOUNDARY_REQUIRES_RECONCILIATION",
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
+      "id": "SG2-BASE-015",
+      "capability": "PCOS Authority Reference",
+      "name": "PCOS Explorer Prisma Schema Reference",
+      "pathPatterns": [
+        "apps/pcos-explorer/prisma/schema.prisma"
+      ],
+      "currentOwner": "PCOS Explorer",
+      "currentResponsibility": "Read-only schema reference surface that documents upstream PCOS source-of-truth authority.",
+      "baselineClassification": "LEGACY",
+      "parentSurfaceId": "SG2-BASE-008",
+      "cleanupReason": "MISSING_RUNTIME_AUTHORITY_REFERENCE",
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    }
+  ],
+  "cleanupFindings": [
+    {
+      "id": "SG2-CF-001",
+      "finding": "Governance package-boundary formalization gap",
+      "relatedPaths": [
+        "packages/governance/src/**",
+        "apps/pmos/src/lib/pmos/operations.ts",
+        "apps/pmos/scripts/pmos-save.ts"
+      ],
+      "representedAsLegacySurface": false,
+      "reason": "No existing individual path cleanly represents the missing formal package boundary without misclassifying otherwise aligned code."
+    },
+    {
+      "id": "SG2-CF-002",
+      "finding": "Runtime-context authority instruction / implementation drift",
+      "relatedPaths": [
+        ".github/copilot-instructions.md",
+        "apps/vector/package.json",
+        "scripts/build-pmos-context.ts"
+      ],
+      "representedAsLegacySurface": false,
+      "reason": "The issue is an authority, documentation, and entrypoint mismatch rather than evidence that the functioning implementation path is itself a legacy architecture surface."
+    }
+  ]
+}
