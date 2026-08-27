@@ -31,6 +31,17 @@ next-env.d.ts
 
 # PMOS Context (auto-generated — do not commit)
 .context/runtime-context.md
+.context/runtime-context.integrity.json
+
+# PMOS Runtime Artifacts (generated locally unless intentionally promoted)
+.pmos/*bootstrap.json
+.pmos/recovery/
+.pmos/conversations/*.md
+.pmos/conversations/*.json
+.pmos/conversations/*.integrity.json
+.pmos/conversations/*.lock.json
+.pmos/conversations/logs/*.md
+.pmos/conversations/logs/*.jsonl
 
 # Vercel
 .vercel
