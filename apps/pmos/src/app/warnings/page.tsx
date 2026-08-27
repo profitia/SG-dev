@@ -21,6 +21,7 @@ export default async function WarningsPage() {
       relatedPrincipleId: true,
       createdAt: true,
       relatedLog: { select: { id: true, title: true } },
+      relatedRoadmapNode: { select: { id: true, title: true } },
       conversations: {
         include: {
           conversation: {

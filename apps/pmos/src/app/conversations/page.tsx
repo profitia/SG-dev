@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ConversationList } from '@/components/conversations/ConversationList'
 import { ConversationFilters } from '@/components/conversations/ConversationFilters'
 import { buildCanonicalConversationReadModel } from '@/lib/pmos/flight-record-read'
+import { listConversationsWithFallback } from '@/lib/conversations-read'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,18 +53,7 @@ async function getConversations(searchParams: Record<string, string | undefined>
 
   const [total, conversations] = await Promise.all([
     db.conversationArtifact.count({ where }),
-    db.conversationArtifact.findMany({
-      where,
-      orderBy: [{ timestamp: 'desc' }],
-      skip,
-      take,
-      include: {
-        linkedDecisions: { include: { decision: { select: { id: true, title: true, number: true } } } },
-        linkedWarnings: { include: { warning: { select: { id: true, title: true, severity: true } } } },
-        linkedNodes: { include: { node: { select: { id: true, title: true } } } },
-        linkedPrinciples: { include: { principle: { select: { id: true, title: true } } } },
-      },
-    }),
+    listConversationsWithFallback({ where, skip, take }),
   ])
 
   return { conversations, total, page, take }

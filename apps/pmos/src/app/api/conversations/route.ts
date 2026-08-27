@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { listConversationsWithFallback } from '@/lib/conversations-read'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,20 +34,7 @@ export async function GET(req: NextRequest) {
 
   const [total, conversations] = await Promise.all([
     db.conversationArtifact.count({ where }),
-    db.conversationArtifact.findMany({
-      where,
-      orderBy: { timestamp: 'desc' },
-      skip,
-      take,
-      include: {
-        linkedDecisions: { include: { decision: { select: { id: true, title: true, number: true } } } },
-        linkedWarnings: { include: { warning: { select: { id: true, title: true, severity: true } } } },
-        linkedNodes: { include: { node: { select: { id: true, title: true, status: true } } } },
-        linkedLogs: { include: { log: { select: { id: true, title: true } } } },
-        linkedPrinciples: { include: { principle: { select: { id: true, title: true } } } },
-        linkedPrompts: { include: { promptExecution: { select: { id: true, title: true, status: true } } } },
-      },
-    }),
+    listConversationsWithFallback({ where, skip, take }),
   ])
 
   return NextResponse.json({ conversations, total, page, pageSize: take })

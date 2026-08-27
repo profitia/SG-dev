@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { buildCanonicalConversationReadModel } from '@/lib/pmos/flight-record-read'
 import { CopyArtifactButton } from './copy-artifact-button'
+import { getConversationByIdWithFallback } from '@/lib/conversations-read'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,17 +28,7 @@ const TYPE_COLORS: Record<string, string> = {
 }
 
 export default async function ConversationPage({ params }: { params: { id: string } }) {
-  const artifact = await db.conversationArtifact.findUnique({
-    where: { id: params.id },
-    include: {
-      linkedDecisions: { include: { decision: { select: { id: true, title: true, number: true } } } },
-      linkedWarnings: { include: { warning: { select: { id: true, title: true, severity: true, resolved: true } } } },
-      linkedNodes: { include: { node: { select: { id: true, title: true, status: true } } } },
-      linkedLogs: { include: { log: { select: { id: true, title: true, createdAt: true } } } },
-      linkedPrinciples: { include: { principle: { select: { id: true, title: true } } } },
-      linkedPrompts: { include: { promptExecution: { select: { id: true, title: true, status: true, etap: true } } } },
-    },
-  })
+  const artifact = await getConversationByIdWithFallback(params.id)
 
   if (!artifact) notFound()
 

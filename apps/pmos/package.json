@@ -21,6 +21,7 @@
     "pmos:status": "tsx scripts/pmos-status.ts",
     "pmos:health": "tsx scripts/pmos-health.ts",
     "pmos:verify": "tsx scripts/pmos-verify.ts",
+    "pmos:verify-runtime": "tsx scripts/pmos-verify.ts",
     "pmos:maintenance": "tsx scripts/pmos-maintenance.ts",
     "pmos:ingest-sg2-roadmap": "npx dotenv-cli -e .env.local -- tsx scripts/ingest-sg2-roadmap-to-pmos.ts",
     "context:build": "tsx ../../scripts/build-pmos-context.ts",
