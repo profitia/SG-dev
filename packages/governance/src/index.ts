@@ -1,0 +1,151 @@
+/**
+ * @sg/governance — Canonical Governance Contracts for SpendGuru 2.0
+ *
+ * Minimal public package surface required by PMOS runtime scripts.
+ */
+
+export {
+	RoadmapPosition,
+	ReadinessState,
+	PipelineStatus,
+	ExecutionType,
+	ConversationType,
+	ImportanceLevel,
+	ScopeClassification,
+	FlightRecordFinalStatus,
+	ArtifactKind,
+	ArtifactNature,
+	ArtifactStatus,
+	GovernanceState,
+	CloseoutState,
+	SkillKillSwitchLevel,
+	SkillExecutionMode,
+	KillSwitchFailureMode,
+	DryRunMode,
+	DryRunScope,
+	DryRunVerdict,
+	DryRunBlockReason,
+	DryRunActionType,
+	DryRunMutationSurface,
+	ExecutionTrailEventType,
+	ExecutionTrailEventStatus,
+	ExecutionTrailEventSeverity,
+	ExecutionTrailStatus,
+	FactPreservationStatus,
+} from "./enums/index.js"
+
+export {
+	CANONICAL_ETAPS,
+	CANONICAL_ETAP_NAMES,
+	CANONICAL_PIPELINES,
+	CANONICAL_PIPELINE_NAMES,
+	CANONICAL_ROADMAP_POSITIONS,
+	CANONICAL_READINESS_STATES,
+	CANONICAL_SCOPE_CLASSIFICATIONS,
+	LEGACY_ETAP_PREFIXES,
+} from "./registries/index.js"
+
+export type {
+	CanonicalEtapEntry,
+	CanonicalPipelineEntry,
+} from "./registries/index.js"
+
+export type {
+	AuditSeverity,
+	AuditFinding,
+	GovernanceResult,
+	FlightRecordMetadata,
+	FlightRecordTask,
+	FlightRecordAnalysis,
+	FlightRecordFindings,
+	FlightRecordDecisions,
+	FlightRecordActions,
+	FlightRecordResult,
+	FlightRecordCompletionEvidence,
+	FlightRecordContextLinks,
+	FlightRecordV1,
+	PendingArtifactV2,
+	PendingArtifact,
+	ArtifactSourceRef,
+	ArtifactRecord,
+	GptHandoffPayloadV1,
+	GptHandoffArtifactV1,
+	PendingState,
+	TopologyReport,
+	CloseoutPhaseStatus,
+	ArchiveCompletenessStatus,
+	RuntimeContextIntegrityStatus,
+	CloseoutEvidence,
+	ActiveCloseoutPointer,
+	SkillId,
+	SkillKillSwitchEntry,
+	SkillKillSwitchSkillConfig,
+	SkillKillSwitchApproval,
+	SkillKillSwitchChangeRecord,
+	SkillKillSwitchConfig,
+	SkillDryRunConfig,
+	SkillDryRunOutput,
+	ExecutionTrailEvent,
+	ExecutionTrailAppendInput,
+	ExecutionTrailPaths,
+	ExecutionTrailValidationIssue,
+	ExecutionTrailValidationResult,
+} from "./types/index.js"
+
+export {
+	GovernanceError,
+	assertCanonicalEtap,
+	assertCanonicalPipeline,
+	assertCanonicalRoadmapPosition,
+	assertCanonicalReadiness,
+	assertCanonicalConversationType,
+	assertCanonicalImportanceLevel,
+	assertCanonicalScopeClassification,
+	isCanonicalEtap,
+	isCanonicalPipeline,
+	isCanonicalRoadmapPosition,
+	isCanonicalReadiness,
+	isLegacyEtap,
+	isCanonicalScopeClassification,
+	validatePendingArtifact,
+	validateArtifactRecord,
+	validateGptHandoffArtifact,
+	validatePendingState,
+	validateExecutionTrailEvent,
+	buildGovernanceResult,
+} from "./validation/index.js"
+
+export type {
+	PendingArtifactValidationResult,
+	PendingStateValidationResult,
+	ArtifactValidationResult,
+	ExecutionTrailEventValidationResult,
+} from "./validation/index.js"
+
+export {
+	createTextIntegrityMetadata,
+	createObjectIntegrityMetadata,
+	createArtifactLock,
+	computeCanonicalGovernanceHash,
+	hashObject,
+	hashText,
+	sha256,
+	stableStringify,
+	verifyArtifactLock,
+	verifyGovernanceIntegrity,
+	verifyObjectIntegrity,
+	verifyProjectionDeterminism,
+	verifyTextIntegrity,
+} from "./integrity/index.js"
+
+export type {
+	INTEGRITY_VERSION,
+	IntegrityMetadata,
+	ArtifactLockMetadata,
+	IntegrityStatus,
+	IntegrityFinding,
+	IntegrityResult,
+	ArtifactLockResult,
+	ProjectionDeterminismResult,
+	GovernanceIntegrityResult,
+} from "./integrity/index.js"

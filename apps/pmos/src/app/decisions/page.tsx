@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { DecisionList } from '@/components/decisions/DecisionList'
 import Link from 'next/link'
+import { buildCanonicalConversationReadModel } from '@/lib/pmos/flight-record-read'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,7 +15,7 @@ async function getDecisions() {
       conversations: {
         include: {
           conversation: {
-            select: { id: true, summary: true, conversationType: true, importanceLevel: true, timestamp: true },
+            select: { id: true, summary: true, conversationType: true, importanceLevel: true, timestamp: true, flightRecordJson: true },
           },
         },
         orderBy: { conversation: { timestamp: 'desc' } },
@@ -26,6 +27,23 @@ async function getDecisions() {
 
 export default async function DecisionsPage() {
   const decisions = await getDecisions()
+
+  const displayDecisions = decisions.map((decision) => ({
+    ...decision,
+    conversations: decision.conversations.map(({ conversation, ...link }) => {
+      const canonical = buildCanonicalConversationReadModel(conversation.flightRecordJson)
+
+      return {
+        ...link,
+        conversation: {
+          ...conversation,
+          conversationType: canonical.metadata.conversationType ?? conversation.conversationType ?? 'unknown',
+          importanceLevel: canonical.metadata.importanceLevel ?? conversation.importanceLevel ?? 'medium',
+          timestamp: canonical.metadata.timestamp ? new Date(canonical.metadata.timestamp) : conversation.timestamp,
+        },
+      }
+    }),
+  }))
 
   return (
     <div className="min-h-full">
@@ -60,7 +78,7 @@ export default async function DecisionsPage() {
             </Link>
           </div>
         ) : (
-          <DecisionList decisions={decisions} />
+          <DecisionList decisions={displayDecisions} />
         )}
       </div>
     </div>

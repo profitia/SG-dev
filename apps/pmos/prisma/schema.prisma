@@ -118,6 +118,25 @@ enum ImportanceLevel {
   foundational
 }
 
+enum ArtifactKind {
+  CLOSEOUT
+  EXECUTION_TRAIL
+  HANDOFF
+  PUBLICATION
+  RUNTIME_SNAPSHOT
+}
+
+enum ArtifactNature {
+  PRIMARY
+  DERIVED
+}
+
+enum ArtifactStatus {
+  GENERATED
+  DELIVERED
+  FAILED
+}
+
 // ─── Core Models ─────────────────────────────────────────────────────────────
 
 model RoadmapNode {
@@ -393,16 +412,18 @@ model ConversationArtifact {
   timestamp        DateTime
   project          String           @default("project")
   taskId           String?          @map("task_id")
+  scope            String?
   etap             String?
   subetap          String?
   domains          String[]
-  conversationType ConversationType @map("conversation_type")
-  importanceLevel  ImportanceLevel  @map("importance_level")
+  conversationType ConversationType? @map("conversation_type")
+  importanceLevel  ImportanceLevel?  @map("importance_level")
   userPrompt       String           @db.Text @map("user_prompt")
   llmResponse      String           @db.Text @map("llm_response")
   summary          String           @db.Text
   tags             String[]
   chronologyOrder  Int              @default(0) @map("chronology_order")
+  flightRecordJson Json?            @map("flight_record_json")
   filesPath        String?          @map("files_path")
   createdAt        DateTime         @default(now()) @map("created_at")
 
@@ -412,12 +433,39 @@ model ConversationArtifact {
   linkedLogs       ConversationLog[]
   linkedPrinciples ConversationPrinciple[]
   linkedPrompts    ConversationPrompt[]
+  artifacts        Artifact[]
 
   @@index([timestamp])
   @@index([etap])
+  @@index([scope])
   @@index([importanceLevel])
   @@index([conversationType])
   @@map("conversation_artifacts")
+}
+
+model Artifact {
+  id             String         @id @default(cuid())
+  artifactKind   ArtifactKind   @map("artifact_kind")
+  artifactNature ArtifactNature @map("artifact_nature")
+  version        String
+  status         ArtifactStatus @default(GENERATED)
+  taskId         String         @map("task_id")
+  conversationId String         @map("conversation_id")
+  sourceRefs     Json           @map("source_refs")
+  payload        Json
+  copyReadyText  String?        @db.Text @map("copy_ready_text")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  conversation ConversationArtifact @relation(fields: [conversationId], references: [conversationId], onDelete: Cascade)
+
+  @@index([artifactKind])
+  @@index([artifactNature])
+  @@index([status])
+  @@index([taskId])
+  @@index([conversationId])
+  @@index([createdAt])
+  @@map("artifacts")
 }
 
 model ConversationDecision {

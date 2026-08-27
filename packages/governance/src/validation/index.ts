@@ -19,7 +19,7 @@ import {
   CANONICAL_READINESS_STATES,
   CANONICAL_SCOPE_CLASSIFICATIONS,
   LEGACY_ETAP_PREFIXES,
-} from "../registries/index"
+} from "../registries/index.js"
 import {
   CloseoutState,
   ArtifactKind,
@@ -34,7 +34,7 @@ import {
   FlightRecordFinalStatus,
   GovernanceState,
   ScopeClassification,
-} from "../enums/index"
+} from "../enums/index.js"
 import type {
   ArtifactRecord,
   AuditFinding,
@@ -43,7 +43,7 @@ import type {
   GovernanceResult,
   PendingArtifact,
   PendingState,
-} from "../types/index"
+} from "../types/index.js"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GovernanceError — hard fail signal

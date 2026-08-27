@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { buildCanonicalConversationReadModel } from '@/lib/pmos/flight-record-read'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,6 +50,7 @@ export default async function DecisionDetailPage({ params }: { params: { id: str
               timestamp: true,
               etap: true,
               domains: true,
+              flightRecordJson: true,
             },
           },
         },
@@ -58,6 +60,17 @@ export default async function DecisionDetailPage({ params }: { params: { id: str
   })
 
   if (!decision) notFound()
+
+  const displayConversations = decision.conversations.map(({ conversation }) => {
+    const canonical = buildCanonicalConversationReadModel(conversation.flightRecordJson)
+
+    return {
+      ...conversation,
+      conversationType: canonical.metadata.conversationType ?? conversation.conversationType ?? 'unknown',
+      importanceLevel: canonical.metadata.importanceLevel ?? conversation.importanceLevel ?? 'medium',
+      timestamp: canonical.metadata.timestamp ? new Date(canonical.metadata.timestamp) : conversation.timestamp,
+    }
+  })
 
   return (
     <div className="min-h-full">
@@ -166,7 +179,7 @@ export default async function DecisionDetailPage({ params }: { params: { id: str
             </div>
           ) : (
             <div className="space-y-2">
-              {decision.conversations.map(({ conversation }, idx) => (
+              {displayConversations.map((conversation, idx) => (
                 <Link
                   key={conversation.id}
                   href={`/conversations/${conversation.id}`}
