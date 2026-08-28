@@ -1,0 +1,335 @@
+{
+  "HomePage": {
+    "title": "SpendGuru 2.0 Runtime",
+    "subtitle": "SG2 Application Runtime Scaffold",
+    "description": "This is the SG2 runtime foundation. Business features are not yet implemented.",
+    "localeCode": "en",
+    "benchmarkFinderLabel": "Open Benchmark Finder",
+    "categoryBuilderLabel": "Open Category Builder",
+    "environmentLabel": "Environment",
+    "serviceLabel": "Service",
+    "appUrlLabel": "App URL",
+    "healthLabel": "Health check available at"
+  },
+  "CategoryBuilder": {
+    "eyebrow": "Category Builder",
+    "title": "Category Builder MVP",
+    "subtitle": "Create an organization-scoped category from multiple real benchmarks and use SpendGuru to suggest which cost components may matter.",
+    "common": {
+      "loading": "Loading..."
+    },
+    "status": {
+      "draft": "Draft",
+      "ready": "Ready"
+    },
+    "actions": {
+      "newCategory": "New Category",
+      "open": "Open",
+      "runCostScan": "Run Cost Scan",
+      "addComponent": "+ Add manually",
+      "askSuggestions": "Ask SpendGuru for suggestions",
+      "generateAgain": "Generate again",
+      "changeBenchmark": "Change benchmark",
+      "remove": "Remove",
+      "save": "Save Category",
+      "close": "Close"
+    },
+    "saved": {
+      "title": "My Categories",
+      "subtitle": "Saved categories stay scoped to the organization and can be reopened for editing.",
+      "empty": "No category has been saved for this organization yet.",
+      "count": "{count, plural, =0 {0 components} one {# component} other {# components}}"
+    },
+    "builder": {
+      "title": "Create category",
+      "subtitle": "Define the cost components that shape the category and attach a real benchmark to each one.",
+      "name": "Category name",
+      "namePlaceholder": "Steel",
+      "context": "Category context (optional)",
+      "contextPlaceholder": "Structural steel purchased for construction projects in Poland.",
+      "contextHint": "Optional context helps SpendGuru suggest more useful cost components. It is not persisted yet.",
+      "nameRequiredBeforeComponent": "Enter a category name before adding the first cost component.",
+      "minimumHint": "Categories with fewer than two components are saved as draft. Minimum two components are required for a complete setup.",
+      "readyHint": "Category allocation complete. This category has enough benchmarked components to be treated as a complete setup.",
+      "costScanLocked": "Allocate 100% across at least two components before running Cost Scan.",
+      "remainingHint": "{percent}% remains to be allocated before this category can become ready.",
+      "savedState": "Current saved state: {status}",
+      "componentAdded": "Cost component added.",
+      "seededBenchmarkAdded": "Seed benchmark added as the first cost component with 0% weight.",
+      "componentRemoved": "Cost component removed.",
+      "suggestionsLoaded": "SpendGuru suggestions loaded.",
+      "savedDraft": "Category saved as draft.",
+      "savedReady": "Category saved."
+    },
+    "components": {
+      "title": "Cost Components",
+      "subtitle": "Each component should reference one real benchmark selected through the existing Benchmark Finder.",
+      "empty": "Add the first cost component to start building the category.",
+      "itemNumber": "Component {number}",
+      "benchmarkLabel": "Benchmark",
+      "shareLabel": "Share of category"
+    },
+    "allocation": {
+      "title": "Category allocation",
+      "allocated": "Allocated: {percent}%",
+      "remaining": "Remaining: {percent}%",
+      "complete": "100% allocated",
+      "incomplete": "Allocation in progress"
+    },
+    "modal": {
+      "addTitle": "Add cost component",
+      "changeTitle": "Change benchmark",
+      "subtitle": "Use the existing Benchmark Finder to select the benchmark you want to attach."
+    },
+    "suggestions": {
+      "title": "SpendGuru suggestions for {category}",
+      "subtitle": "Select the concepts you want to keep, then use the existing Benchmark Finder to attach a real benchmark.",
+      "findBenchmark": "Find benchmark",
+      "alreadyAdded": "Already added"
+    },
+    "errors": {
+      "nameRequired": "Category name is required.",
+      "saveFailed": "Category could not be saved.",
+      "componentAddFailed": "Component could not be added.",
+      "attachFailed": "Benchmark could not be attached.",
+      "invalidWeight": "Component share must be a whole number between 0 and 100%.",
+      "totalExceeds": "Total component allocation cannot exceed 100%.",
+      "maximumAvailable": "Maximum available share is {percent}%.",
+      "aiUnavailable": "SpendGuru suggestions are temporarily unavailable. You can still add components manually.",
+      "aiNoSuggestions": "SpendGuru could not identify useful components. Try adding more category context.",
+      "minimumRequired": "Category requires at least two components.",
+      "notFound": "Category not found.",
+      "accessDenied": "Access denied."
+    }
+  },
+  "CostScan": {
+    "eyebrow": "Cost Scan",
+    "title": "Cost Scan",
+    "subtitle": "Measure modeled market cost pressure from live benchmark history and saved category weights.",
+    "common": {
+      "loading": "Loading..."
+    },
+    "empty": "Select a valid category to run Cost Scan.",
+    "actions": {
+      "backToCategories": "Back to Category Builder"
+    },
+    "headline": {
+      "title": "Modeled cost pressure",
+      "subtitle": "Weighted cost movement",
+      "partial": "Incomplete"
+    },
+    "range": {
+      "long1M": "1 month",
+      "long3M": "3 months",
+      "long6M": "6 months",
+      "long12M": "12 months"
+    },
+    "direction": {
+      "upward": "Upward cost pressure",
+      "downward": "Downward cost pressure",
+      "stable": "Stable"
+    },
+    "status": {
+      "complete": "Complete",
+      "partial": "Partial"
+    },
+    "summary": {
+      "title": "Deterministic summary",
+      "upward": "Modeled cost pressure increased by {movement} over the last {period}.",
+      "downward": "Modeled cost pressure decreased by {movement} over the last {period}.",
+      "stable": "Modeled cost pressure was stable over the last {period}.",
+      "mainUpwardDriver": "{name} was the largest upward driver, contributing {value}.",
+      "mainDownwardDriver": "{name} was the largest downward driver, contributing {value}.",
+      "incomplete": "Cost Scan cannot calculate the complete category movement because benchmark data is unavailable for {components}."
+    },
+    "drivers": {
+      "title": "Cost drivers",
+      "subtitle": "Each contribution uses the saved component weight and the real benchmark movement for the selected period.",
+      "mainUpwardTitle": "Main upward driver",
+      "mainDownwardTitle": "Main downward driver",
+      "noneUpward": "No upward driver for this period.",
+      "noneDownward": "No downward driver for this period."
+    },
+    "labels": {
+      "weight": "Weight",
+      "benchmarkChange": "Benchmark change",
+      "contribution": "Contribution",
+      "visualContribution": "Visual contribution",
+      "dataAsOf": "Data as of",
+      "requestedWindow": "Requested window",
+      "scanStatus": "Scan status",
+      "start": "Start",
+      "end": "End",
+      "frequency": "Frequency"
+    },
+    "dataStatus": {
+      "dataUnavailable": "Data unavailable",
+      "insufficientData": "Insufficient data",
+      "unsupported": "Unsupported change calculation"
+    },
+    "errors": {
+      "notReady": "Complete category allocation to 100% before running Cost Scan.",
+      "notFound": "Category not found."
+    }
+  },
+  "BenchmarkFinder": {
+    "eyebrow": "Benchmark Finder",
+    "title": "Find a market benchmark or cost driver",
+    "subtitle": "Search live benchmark data, compare clear benchmark candidates, preview the historical trend and save the benchmark for your organization.",
+    "common": {
+      "loading": "Loading..."
+    },
+    "mode": {
+      "search": "Search",
+      "ai": "Ask SpendGuru"
+    },
+    "search": {
+      "simpleTab": "Simple",
+      "advancedTab": "Advanced",
+      "placeholder": "Search benchmark, commodity, index or market...",
+      "submit": "Search",
+      "clear": "Clear",
+      "helper": "Try Brent, Copper, Aluminium or EUR/USD. Search runs live against market benchmarks."
+    },
+    "advanced": {
+      "searchTextLabel": "Search text",
+      "searchTextPlaceholder": "Optional keyword, benchmark family or market phrase...",
+      "exactSeriesIdLabel": "Exact series lookup",
+      "exactSeriesIdPlaceholder": "Paste an exact series ID, for example usfcstpi",
+      "submit": "Run advanced search",
+      "helper": "Advanced Search keeps filters server-side, so precision stays high without slowing the basic flow.",
+      "anyValue": "Any",
+      "valueSearchPlaceholder": "Filter values...",
+      "loadingValues": "Loading values...",
+      "typeToSearchValues": "Type at least {count} characters to search this large dictionary.",
+      "singleSelectHint": "Select one value or leave empty.",
+      "multiSelectHint": "You can select multiple values. Filtering stays local after load.",
+      "retryValues": "Values could not be loaded. Click to retry.",
+      "noMatchingValues": "No matching values.",
+      "showingFilteredValues": "Showing the first {count} of {total} matching values. Keep typing to narrow the list.",
+      "showMoreFilters": "More filters",
+      "hideMoreFilters": "Hide more filters",
+      "metadataSearchLabel": "Find another metadata filter",
+      "metadataSearchPlaceholder": "Search metadata fields...",
+      "businessMetadata": "Business filters",
+      "activeFiltersTitle": "Active filters",
+      "noResultsHint": "Try removing one filter or switching from exact lookup back to keyword search."
+    },
+    "ai": {
+      "label": "Describe the benchmark need",
+      "placeholder": "Describe what benchmark or cost driver you need...",
+      "submit": "Find with AI",
+      "helper": "SpendGuru interprets the need, searches live benchmark data and shows only real candidates.",
+      "exampleLabel": "Example:",
+      "examplePrompt": "Find an energy cost benchmark for steel production in Europe.",
+      "interpretationTitle": "SpendGuru understood"
+    },
+    "recommended": {
+      "title": "Recommended",
+      "subtitle": "Quick starting points for common procurement and market benchmarks.",
+      "families": {
+        "energy": "Energy",
+        "metals": "Metals",
+        "fx": "FX"
+      },
+      "items": {
+        "brent": { "label": "Brent", "hint": "Crude oil reference for energy-sensitive categories." },
+        "wti": { "label": "WTI", "hint": "US crude benchmark for North American exposure." },
+        "naturalGas": { "label": "Natural Gas", "hint": "Useful where packaging, utilities or process heat matter." },
+        "copper": { "label": "Copper", "hint": "A common input benchmark for electrical and industrial spend." },
+        "aluminium": { "label": "Aluminium", "hint": "Helpful for packaging, components and industrial materials." },
+        "eurUsd": { "label": "EUR/USD", "hint": "FX benchmark for imported goods and currency exposure." }
+      }
+    },
+    "results": {
+      "title": "Search Results",
+      "subtitle": "Results surface benchmark identity and current movement immediately.",
+      "aiSubtitle": "Describe the need in natural language and SpendGuru will search live benchmarks for you.",
+      "count": "{count, plural, =0 {0 results} one {# result} other {# results}}",
+      "initialEmpty": "Run a live search to see matched benchmarks.",
+      "showMore": "Show more",
+      "showLess": "Show less",
+      "exactMatch": "Exact match",
+      "bestMatch": "Best match",
+      "whyThisMatch": "Why this match: {value}",
+      "seriesId": "Series ID: {value}",
+      "region": "Region",
+      "source": "Source",
+      "frequency": "Frequency",
+      "currency": "Currency",
+      "unit": "Unit",
+      "dataAsOf": "Data as of",
+      "previewUnavailable": "Latest value unavailable",
+      "analyticsUnavailable": "Full analytics is unavailable for this benchmark.",
+      "primarySeries": "Primary series",
+      "release": "Release",
+      "category": "Category",
+      "concept": "Concept",
+      "seriesPath": "Series path",
+      "alternativeCategories": "Alternative categories",
+      "releaseCalendar": "Next release",
+      "businessMetadata": "Business metadata",
+      "sourceLink": "Source page",
+      "releaseNotes": "Release notes",
+      "methodology": "Methodology",
+      "releaseHistory": "Release history",
+      "releaseCalendarLink": "Release calendar",
+      "showMetadata": "More metadata",
+      "hideMetadata": "Hide metadata"
+    },
+    "preview": {
+      "title": "Preview",
+      "empty": "Choose a benchmark and open Preview to load the live historical series.",
+      "range": "Range",
+      "rangeLabel": "Selected range",
+      "latestValue": "Latest value",
+      "frequency": "Frequency",
+      "unit": "Unit",
+      "change1M": "1M: {value}",
+      "change3M": "3M: {value}",
+      "change1Y": "1Y: {value}"
+    },
+    "recent": {
+      "title": "Recent Searches",
+      "subtitle": "Session-only search history for quickly returning to recent benchmark lookups.",
+      "empty": "No recent searches in this browser session yet.",
+      "clear": "Clear recent searches"
+    },
+    "saved": {
+      "title": "Saved Benchmarks",
+      "subtitle": "Saved benchmarks are organization-scoped business objects and remain available after reload.",
+      "empty": "No benchmark has been added for this organization yet."
+    },
+    "actions": {
+      "preview": "Preview",
+      "useBenchmark": "Use this benchmark",
+      "startBuildingCategory": "Start building category",
+      "openInAnalytics": "Open in Analytics",
+      "addToCompare": "Add to Compare",
+      "comingSoon": "Coming soon",
+      "expandAnalytics": "Expand analytics",
+      "collapseAnalytics": "Collapse analytics"
+    },
+    "selection": {
+      "savedSuccess": "Benchmark added.",
+      "alreadyAdded": "Already added",
+      "addedAction": "Added"
+    },
+    "errors": {
+      "searchUnavailable": "Benchmark search is temporarily unavailable.",
+      "aiUnavailable": "AI-assisted search is temporarily unavailable. You can still search benchmarks manually.",
+      "aiNeedsClarification": "Describe the benchmark need more precisely so SpendGuru can search live data.",
+      "advancedInputRequired": "Add a keyword or an exact series ID before running Advanced Search.",
+      "exactNotFound": "The exact series ID did not return a benchmark.",
+      "metadataUnavailable": "Metadata filters are temporarily unavailable.",
+      "noResults": "No benchmarks found. Try a different search.",
+      "previewUnavailable": "Preview could not be loaded.",
+      "selectionUnavailable": "Benchmark could not be added.",
+      "savedUnavailable": "Saved benchmarks could not be loaded."
+    }
+  },
+  "Metadata": {
+    "title": "SpendGuru 2.0",
+    "description": "SpendGuru 2.0 - Procurement Intelligence Platform"
+  }
+}

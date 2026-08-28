@@ -1,0 +1,335 @@
+{
+  "HomePage": {
+    "title": "SpendGuru 2.0 Runtime",
+    "subtitle": "Szkielet środowiska uruchomieniowego SG2",
+    "description": "To jest fundament środowiska uruchomieniowego SG2. Funkcje biznesowe nie zostały jeszcze zaimplementowane.",
+    "localeCode": "pl",
+    "benchmarkFinderLabel": "Otwórz Benchmark Finder",
+    "categoryBuilderLabel": "Otwórz Category Builder",
+    "environmentLabel": "Środowisko",
+    "serviceLabel": "Serwis",
+    "appUrlLabel": "URL aplikacji",
+    "healthLabel": "Health check dostępny pod adresem"
+  },
+  "CategoryBuilder": {
+    "eyebrow": "Category Builder",
+    "title": "Category Builder MVP",
+    "subtitle": "Zbuduj kategorię przypisaną do organizacji z wielu realnych benchmarków i użyj SpendGuru, aby podpowiedzieć sensowne cost components.",
+    "common": {
+      "loading": "Ładowanie..."
+    },
+    "status": {
+      "draft": "Draft",
+      "ready": "Ready"
+    },
+    "actions": {
+      "newCategory": "Nowa kategoria",
+      "open": "Otwórz",
+      "runCostScan": "Uruchom Cost Scan",
+      "addComponent": "+ Dodaj ręcznie",
+      "askSuggestions": "Zapytaj SpendGuru o sugestie",
+      "generateAgain": "Wygeneruj ponownie",
+      "changeBenchmark": "Zmień benchmark",
+      "remove": "Usuń",
+      "save": "Zapisz kategorię",
+      "close": "Zamknij"
+    },
+    "saved": {
+      "title": "My Categories",
+      "subtitle": "Zapisane kategorie są przypisane do organizacji i można je ponownie otworzyć do edycji.",
+      "empty": "Ta organizacja nie ma jeszcze zapisanej kategorii.",
+      "count": "{count, plural, =0 {0 komponentów} one {# komponent} few {# komponenty} many {# komponentów} other {# komponentów}}"
+    },
+    "builder": {
+      "title": "Utwórz kategorię",
+      "subtitle": "Zdefiniuj cost components, które tworzą kategorię, i przypnij do każdego realny benchmark.",
+      "name": "Nazwa kategorii",
+      "namePlaceholder": "Steel",
+      "context": "Kontekst kategorii - opcjonalnie",
+      "contextPlaceholder": "Stal konstrukcyjna kupowana do projektów budowlanych w Polsce.",
+      "contextHint": "Dodatkowy kontekst pomaga SpendGuru zaproponować trafniejsze cost components. Ten opis nie jest jeszcze zapisywany.",
+      "nameRequiredBeforeComponent": "Najpierw wpisz nazwę kategorii, zanim dodasz pierwszy cost component.",
+      "minimumHint": "Kategorie z mniej niż dwoma komponentami zapisują się jako draft. Do kompletnej konfiguracji potrzebne są co najmniej dwa komponenty.",
+      "readyHint": "Alokacja kategorii jest kompletna. Ta kategoria ma już wystarczającą liczbę benchmarkowanych komponentów, aby traktować ją jako kompletną konfigurację.",
+      "costScanLocked": "Przypisz 100% udziału do co najmniej dwóch komponentów, zanim uruchomisz Cost Scan.",
+      "remainingHint": "Do pełnej gotowości tej kategorii pozostaje jeszcze {percent}% udziału do przypisania.",
+      "savedState": "Aktualny zapisany stan: {status}",
+      "componentAdded": "Dodano cost component.",
+      "seededBenchmarkAdded": "Seedowany benchmark został dodany jako pierwszy komponent z wagą 0%.",
+      "componentRemoved": "Usunięto cost component.",
+      "suggestionsLoaded": "Załadowano sugestie SpendGuru.",
+      "savedDraft": "Kategoria została zapisana jako draft.",
+      "savedReady": "Kategoria została zapisana."
+    },
+    "components": {
+      "title": "Cost Components",
+      "subtitle": "Każdy komponent powinien wskazywać jeden realny benchmark wybrany przez istniejący Benchmark Finder.",
+      "empty": "Dodaj pierwszy cost component, aby rozpocząć budowę kategorii.",
+      "itemNumber": "Komponent {number}",
+      "benchmarkLabel": "Benchmark",
+      "shareLabel": "Udział w kategorii"
+    },
+    "allocation": {
+      "title": "Alokacja kategorii",
+      "allocated": "Przypisano: {percent}%",
+      "remaining": "Pozostało: {percent}%",
+      "complete": "100% przypisane",
+      "incomplete": "Alokacja w toku"
+    },
+    "modal": {
+      "addTitle": "Dodaj cost component",
+      "changeTitle": "Zmień benchmark",
+      "subtitle": "Użyj istniejącego Benchmark Findera, aby wybrać benchmark, który chcesz przypiąć."
+    },
+    "suggestions": {
+      "title": "Sugestie SpendGuru dla kategorii {category}",
+      "subtitle": "Wybierz koncepcje, które chcesz zachować, a potem użyj istniejącego Benchmark Findera, aby przypiąć realny benchmark.",
+      "findBenchmark": "Znajdź benchmark",
+      "alreadyAdded": "Już dodano"
+    },
+    "errors": {
+      "nameRequired": "Nazwa kategorii jest wymagana.",
+      "saveFailed": "Nie udało się zapisać kategorii.",
+      "componentAddFailed": "Nie udało się dodać komponentu.",
+      "attachFailed": "Nie udało się przypiąć benchmarku.",
+      "invalidWeight": "Udział komponentu musi być liczbą całkowitą od 0 do 100%.",
+      "totalExceeds": "Łączny udział komponentów nie może przekroczyć 100%.",
+      "maximumAvailable": "Pozostały dostępny udział to {percent}%.",
+      "aiUnavailable": "Sugestie SpendGuru są chwilowo niedostępne. Nadal możesz dodawać komponenty ręcznie.",
+      "aiNoSuggestions": "SpendGuru nie zidentyfikował użytecznych komponentów. Spróbuj dodać więcej kontekstu kategorii.",
+      "minimumRequired": "Kategoria wymaga co najmniej dwóch komponentów.",
+      "notFound": "Nie znaleziono kategorii.",
+      "accessDenied": "Brak dostępu."
+    }
+  },
+  "CostScan": {
+    "eyebrow": "Cost Scan",
+    "title": "Cost Scan",
+    "subtitle": "Mierzy modelowaną presję kosztową na podstawie live historii benchmarków i zapisanych wag kategorii.",
+    "common": {
+      "loading": "Ładowanie..."
+    },
+    "empty": "Wybierz poprawną kategorię, aby uruchomić Cost Scan.",
+    "actions": {
+      "backToCategories": "Powrót do Category Builder"
+    },
+    "headline": {
+      "title": "Modelowana presja kosztowa",
+      "subtitle": "Ważony ruch kosztowy",
+      "partial": "Niekompletny"
+    },
+    "range": {
+      "long1M": "1 miesiąc",
+      "long3M": "3 miesiące",
+      "long6M": "6 miesięcy",
+      "long12M": "12 miesięcy"
+    },
+    "direction": {
+      "upward": "Rosnąca presja kosztowa",
+      "downward": "Spadająca presja kosztowa",
+      "stable": "Stabilnie"
+    },
+    "status": {
+      "complete": "Kompletny",
+      "partial": "Częściowy"
+    },
+    "summary": {
+      "title": "Deterministyczne podsumowanie",
+      "upward": "Modelowana presja kosztowa wzrosła o {movement} w okresie {period}.",
+      "downward": "Modelowana presja kosztowa spadła o {movement} w okresie {period}.",
+      "stable": "Modelowana presja kosztowa była stabilna w okresie {period}.",
+      "mainUpwardDriver": "Największym czynnikiem wzrostowym było {name} z wkładem {value}.",
+      "mainDownwardDriver": "Największym czynnikiem spadkowym było {name} z wkładem {value}.",
+      "incomplete": "Cost Scan nie może policzyć pełnego ruchu kategorii, ponieważ brakuje danych benchmarkowych dla: {components}."
+    },
+    "drivers": {
+      "title": "Czynniki kosztowe",
+      "subtitle": "Każdy wkład wykorzystuje zapisaną wagę komponentu i realny ruch benchmarku dla wybranego okresu.",
+      "mainUpwardTitle": "Główny czynnik wzrostowy",
+      "mainDownwardTitle": "Główny czynnik spadkowy",
+      "noneUpward": "Brak wzrostowego drivera dla tego okresu.",
+      "noneDownward": "Brak spadkowego drivera dla tego okresu."
+    },
+    "labels": {
+      "weight": "Waga",
+      "benchmarkChange": "Zmiana benchmarku",
+      "contribution": "Wkład",
+      "visualContribution": "Wizualizacja wkładu",
+      "dataAsOf": "Dane na dzień",
+      "requestedWindow": "Żądane okno",
+      "scanStatus": "Status skanu",
+      "start": "Start",
+      "end": "Koniec",
+      "frequency": "Częstotliwość"
+    },
+    "dataStatus": {
+      "dataUnavailable": "Dane niedostępne",
+      "insufficientData": "Niewystarczające dane",
+      "unsupported": "Nieobsługiwana kalkulacja zmiany"
+    },
+    "errors": {
+      "notReady": "Uzupełnij alokację kategorii do 100%, zanim uruchomisz Cost Scan.",
+      "notFound": "Nie znaleziono kategorii."
+    }
+  },
+  "BenchmarkFinder": {
+    "eyebrow": "Wyszukiwarka benchmarków",
+    "title": "Znajdź benchmark rynkowy lub czynnik kosztowy",
+    "subtitle": "Wyszukaj benchmarki na żywo, porównaj czytelnych kandydatów, otwórz historyczny podgląd i zapisz benchmark dla swojej organizacji.",
+    "common": {
+      "loading": "Ładowanie..."
+    },
+    "mode": {
+      "search": "Wyszukiwanie",
+      "ai": "Zapytaj SpendGuru"
+    },
+    "search": {
+      "simpleTab": "Proste",
+      "advancedTab": "Zaawansowane",
+      "placeholder": "Szukaj benchmarku, surowca, indeksu lub rynku...",
+      "submit": "Szukaj",
+      "clear": "Wyczyść",
+      "helper": "Spróbuj Brent, Copper, Aluminium albo EUR/USD. Wyszukiwanie działa na żywo na benchmarkach rynkowych."
+    },
+    "advanced": {
+      "searchTextLabel": "Tekst wyszukiwania",
+      "searchTextPlaceholder": "Opcjonalne słowo kluczowe, rodzina benchmarków lub fraza rynkowa...",
+      "exactSeriesIdLabel": "Dokładny identyfikator serii",
+      "exactSeriesIdPlaceholder": "Wklej dokładne ID serii, na przykład usfcstpi",
+      "submit": "Uruchom wyszukiwanie zaawansowane",
+      "helper": "Wyszukiwanie zaawansowane utrzymuje filtry po stronie serwera, więc precyzja rośnie bez regresji prostego wyszukiwania.",
+      "anyValue": "Dowolna wartość",
+      "valueSearchPlaceholder": "Filtruj wartości...",
+      "loadingValues": "Ładowanie wartości...",
+      "typeToSearchValues": "Wpisz co najmniej {count} znaki, aby przeszukać ten duży słownik.",
+      "singleSelectHint": "Wybierz jedną wartość albo zostaw puste.",
+      "multiSelectHint": "Możesz wybrać wiele wartości. Filtrowanie działa lokalnie po załadowaniu.",
+      "retryValues": "Nie udało się załadować wartości. Kliknij, aby spróbować ponownie.",
+      "noMatchingValues": "Brak pasujących wartości.",
+      "showingFilteredValues": "Pokazano pierwsze {count} z {total} pasujących wartości. Dopisz więcej znaków, aby zawęzić listę.",
+      "showMoreFilters": "Więcej filtrów",
+      "hideMoreFilters": "Ukryj dodatkowe filtry",
+      "metadataSearchLabel": "Znajdź kolejne pole metadanych",
+      "metadataSearchPlaceholder": "Szukaj pól metadanych...",
+      "businessMetadata": "Filtry biznesowe",
+      "activeFiltersTitle": "Aktywne filtry",
+      "noResultsHint": "Spróbuj usunąć jeden filtr albo wrócić z dokładnego identyfikatora do wyszukiwania po słowach kluczowych."
+    },
+    "ai": {
+      "label": "Opisz, jakiego benchmarku potrzebujesz",
+      "placeholder": "Opisz benchmark lub czynnik kosztowy, którego szukasz...",
+      "submit": "Znajdź z AI",
+      "helper": "SpendGuru interpretuje potrzebę, uruchamia wyszukiwanie na żywo na benchmarkach i pokazuje tylko realnych kandydatów.",
+      "exampleLabel": "Przykład:",
+      "examplePrompt": "Znajdź benchmark kosztu energii dla produkcji stali w Europie.",
+      "interpretationTitle": "SpendGuru zrozumiał"
+    },
+    "recommended": {
+      "title": "Polecane",
+      "subtitle": "Szybkie punkty startowe dla częstych benchmarków zakupowych i rynkowych.",
+      "families": {
+        "energy": "Energia",
+        "metals": "Metale",
+        "fx": "FX"
+      },
+      "items": {
+        "brent": { "label": "Brent", "hint": "Referencja dla ropy i kategorii wrażliwych na energię." },
+        "wti": { "label": "WTI", "hint": "Benchmark ropy dla ekspozycji północnoamerykańskiej." },
+        "naturalGas": { "label": "Natural Gas", "hint": "Przydatny tam, gdzie koszt tworzą media, opakowania lub procesowe zużycie energii." },
+        "copper": { "label": "Copper", "hint": "Częsty benchmark kosztowy dla elektryki i przemysłowych zakupów." },
+        "aluminium": { "label": "Aluminium", "hint": "Pomocny dla opakowań, komponentów i materiałów przemysłowych." },
+        "eurUsd": { "label": "EUR/USD", "hint": "Benchmark walutowy dla importu i ekspozycji walutowej." }
+      }
+    },
+    "results": {
+      "title": "Wyniki wyszukiwania",
+      "subtitle": "Wyniki od razu pokazują benchmark i bieżący ruch.",
+      "aiSubtitle": "Opisz potrzebę własnymi słowami, a SpendGuru wyszuka benchmarki na żywo po właściwej interpretacji.",
+      "count": "{count, plural, =0 {0 wyników} one {# wynik} few {# wyniki} many {# wyników} other {# wyników}}",
+      "initialEmpty": "Uruchom wyszukiwanie na żywo, aby zobaczyć dopasowane benchmarki.",
+      "showMore": "Pokaż więcej",
+      "showLess": "Pokaż mniej",
+      "exactMatch": "Dokładne dopasowanie",
+      "bestMatch": "Najlepsze dopasowanie",
+      "whyThisMatch": "Dlaczego to dopasowanie: {value}",
+      "seriesId": "Series ID: {value}",
+      "region": "Region",
+      "source": "Źródło",
+      "frequency": "Częstotliwość",
+      "currency": "Waluta",
+      "unit": "Jednostka",
+      "dataAsOf": "Dane na dzień",
+      "previewUnavailable": "Brak ostatniej wartości",
+      "analyticsUnavailable": "Pełna analityka nie jest dostępna dla tego benchmarku.",
+      "primarySeries": "Główna seria",
+      "release": "Publikacja",
+      "category": "Kategoria",
+      "concept": "Pojęcie",
+      "seriesPath": "Ścieżka serii",
+      "alternativeCategories": "Kategorie alternatywne",
+      "releaseCalendar": "Następna publikacja",
+      "businessMetadata": "Metadane biznesowe",
+      "sourceLink": "Strona źródłowa",
+      "releaseNotes": "Opis publikacji",
+      "methodology": "Metodologia",
+      "releaseHistory": "Historia publikacji",
+      "releaseCalendarLink": "Kalendarz publikacji",
+      "showMetadata": "Więcej metadanych",
+      "hideMetadata": "Ukryj metadane"
+    },
+    "preview": {
+      "title": "Podgląd",
+      "empty": "Wybierz benchmark i otwórz podgląd, aby załadować historyczną serię na żywo.",
+      "range": "Zakres",
+      "rangeLabel": "Wybrany zakres",
+      "latestValue": "Ostatnia wartość",
+      "frequency": "Częstotliwość",
+      "unit": "Jednostka",
+      "change1M": "1M: {value}",
+      "change3M": "3M: {value}",
+      "change1Y": "1Y: {value}"
+    },
+    "recent": {
+      "title": "Ostatnie wyszukiwania",
+      "subtitle": "Historia wyszukiwań tylko dla tej sesji przeglądarki, aby szybko wracać do ostatnich wyszukań benchmarków.",
+      "empty": "Brak ostatnich wyszukiwań w tej sesji przeglądarki.",
+      "clear": "Wyczyść ostatnie wyszukiwania"
+    },
+    "saved": {
+      "title": "Zapisane benchmarki",
+      "subtitle": "Zapisane benchmarki są trwałymi obiektami biznesowymi przypisanymi do organizacji i pozostają dostępne po odświeżeniu strony.",
+      "empty": "Ta organizacja nie ma jeszcze dodanego benchmarku."
+    },
+    "actions": {
+      "preview": "Podgląd",
+      "useBenchmark": "Użyj tego benchmarku",
+      "startBuildingCategory": "Rozpocznij budowę kategorii",
+      "openInAnalytics": "Analizuj",
+      "addToCompare": "Dodaj do porównania",
+      "comingSoon": "Wkrótce",
+      "expandAnalytics": "Rozwiń analitykę",
+      "collapseAnalytics": "Zwiń analitykę"
+    },
+    "selection": {
+      "savedSuccess": "Dodano benchmark.",
+      "alreadyAdded": "Już dodano",
+      "addedAction": "Dodano"
+    },
+    "errors": {
+      "searchUnavailable": "Wyszukiwanie benchmarków jest chwilowo niedostępne.",
+      "aiUnavailable": "Wyszukiwanie wspomagane AI jest chwilowo niedostępne. Nadal możesz wyszukiwać benchmarki ręcznie.",
+      "aiNeedsClarification": "Opisz potrzebę benchmarku bardziej precyzyjnie, aby SpendGuru mógł wykonać wyszukiwanie na żywo.",
+      "advancedInputRequired": "Dodaj słowo kluczowe albo dokładne ID serii przed uruchomieniem wyszukiwania zaawansowanego.",
+      "exactNotFound": "Dokładne ID serii nie zwróciło benchmarku.",
+      "metadataUnavailable": "Filtry metadanych są chwilowo niedostępne.",
+      "noResults": "Nie znaleziono benchmarków. Spróbuj innego zapytania.",
+      "previewUnavailable": "Nie udało się załadować podglądu.",
+      "selectionUnavailable": "Nie udało się dodać benchmarku.",
+      "savedUnavailable": "Nie udało się załadować zapisanych benchmarków."
+    }
+  },
+  "Metadata": {
+    "title": "SpendGuru 2.0",
+    "description": "SpendGuru 2.0 - Platforma Inteligencji Zakupowej"
+  }
+}
