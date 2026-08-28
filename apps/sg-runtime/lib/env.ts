@@ -90,12 +90,22 @@ if (!_publicEnv.success) {
   console.error(_publicEnv.error.flatten().fieldErrors)
 }
 
+function resolveDevelopmentRuntime() {
+  return process.env.NODE_ENV !== 'production' && serverEnv.APP_ENV === 'development'
+}
+
 /**
  * Server-only environment variables.
  * Import this only in server components, API routes and server actions.
  * Never import in client components.
  */
 export const serverEnv = _serverEnv.success ? _serverEnv.data : serverEnvSchema.parse({})
+
+/**
+ * Development-only auth fallback must never activate in a production runtime,
+ * even when APP_ENV is missing or invalid and falls back during parsing.
+ */
+export const isDevelopmentRuntime = resolveDevelopmentRuntime()
 
 /**
  * Public environment variables — safe for client-side use.

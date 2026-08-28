@@ -19,7 +19,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { z } from 'zod'
 
-import { serverEnv } from '@/lib/env'
+import { isDevelopmentRuntime, serverEnv } from '@/lib/env'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Auth context
@@ -41,7 +41,7 @@ export function extractCognitionAuth(request: NextRequest): CognitionAuthContext
   const userId = request.headers.get('x-clerk-user-id')
 
   if (!orgId || !userId) {
-    if (serverEnv.APP_ENV !== 'development') {
+    if (!isDevelopmentRuntime) {
       return null
     }
 
