@@ -1,7 +1,7 @@
 import { serverEnv } from '@/lib/env'
 
 const LOCAL_DASHBOARD_PREVIEW_BASE_URL = 'http://localhost:3002'
-const PRODUCTION_DASHBOARD_PREVIEW_BASE_URL = 'https://sg2-0-charts-preview.onrender.com'
+const PRODUCTION_DASHBOARD_PREVIEW_BASE_URL = 'https://dashboards-library.onrender.com'
 
 export type BenchmarkAnalyticsEligibility = {
   eligible: boolean
