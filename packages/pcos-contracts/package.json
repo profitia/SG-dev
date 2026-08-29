@@ -1,0 +1,14 @@
+{
+  "name": "@sg/pcos-contracts",
+  "version": "1.2.0",
+  "description": "Canonical H-layer entity contracts for PCOS - pure TypeScript, no Prisma dependency. Runtime-owned. Explorer-consumed.",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

@@ -104,6 +104,20 @@
       "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
     },
     {
+      "id": "SG2-BASE-014",
+      "capability": "PCOS Contracts",
+      "name": "PCOS Shared Contracts Package",
+      "pathPatterns": [
+        "packages/pcos-contracts/**"
+      ],
+      "currentOwner": "PCOS Shared Contracts",
+      "currentResponsibility": "Shared PCOS domain and application contracts consumed by canonical PCOS surfaces.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
       "id": "SG2-BASE-008",
       "capability": "PCOS Explorer",
       "name": "PCOS Explorer App",
