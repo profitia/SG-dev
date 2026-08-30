@@ -22,5 +22,5 @@ fi
 "$PYTHON_RUNTIME_BIN" -m pip install -r "$LAB_ROOT/requirements.txt"
 
 cd "$APP_DIR"
-npm install
+npm install --include=dev
 npm run build

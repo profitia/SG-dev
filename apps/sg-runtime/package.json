@@ -10,6 +10,7 @@
     "start": "next start -p ${PORT:-3001}",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "test:runtime-build-contract": "node --test tests/runtime-build-contract.test.mjs",
     "test:market-data": "node --import tsx --test tests/market-data-service.test.ts",
     "test:forecast-library": "node --import tsx --test tests/forecast-library-service.test.ts",
     "test:forecast-live-input": "node --import tsx --test tests/forecast-live-input.test.ts",
