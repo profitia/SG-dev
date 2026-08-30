@@ -9,6 +9,11 @@ import {
   createInternalProductionForecastRouteHandler,
   resolvePreparedForecastVerification,
 } from '../lib/forecast/route-handlers'
+import { createInteractiveForecastPreparationService } from '../lib/forecast/interactive-preparation'
+import {
+  createInternalCurrentForecastPreparationRouteHandler,
+  createInternalForecastCapabilityRouteHandler,
+} from '../lib/forecast/interactive-route-handlers'
 import type {
   BenchmarkForecastCurrentResult,
   BenchmarkForecastVerificationResult,
@@ -16,6 +21,7 @@ import type {
 import type { ProductionForecastResult } from '../lib/forecast/production-routing'
 import type { ForecastRequestInput } from '../lib/forecast/request-contract'
 import { createForecastStressTelemetry, type ForecastStressEvent } from '../lib/forecast/stress-telemetry'
+import type { ForecastCapabilityResolution, ForecastVariantCapability } from '../lib/forecast/capability-resolver'
 
 function buildRequest(url: string, headers: Record<string, string> = {}) {
   return new NextRequest(url, { headers })
@@ -26,6 +32,17 @@ function buildUserRequest(url: string, headers: Record<string, string> = {}) {
     'x-clerk-org-id': 'org-1',
     'x-clerk-user-id': 'user-1',
     ...headers,
+  })
+}
+
+function buildJsonRequest(url: string, body: unknown, headers: Record<string, string> = {}) {
+  return new NextRequest(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...headers,
+    },
+    body: JSON.stringify(body),
   })
 }
 
@@ -53,6 +70,69 @@ function availableIdentity(targetBasis: ForecastRequestInput['targetBasis']) {
       preparation: null,
     },
   } as const
+}
+
+function buildCapabilityCandidate(overrides: Partial<ForecastVariantCapability> = {}): ForecastVariantCapability {
+  return {
+    identity: {
+      seriesId: 'wocaes0074',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      methodId: 'MONTHLY_AVERAGE',
+      methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+      modelId: 'ets',
+    },
+    sourceFrequency: 'MONTHLY',
+    sourceFrequencyRecognized: true,
+    businessTarget: 'AVERAGE',
+    targetCadence: 'MONTHLY',
+    targetSemanticsSupported: true,
+    horizonSupportState: 'NOT_REQUESTED',
+    horizonMonths: null,
+    horizonSteps: null,
+    semanticLawfulness: 'LAWFUL_WITH_PROVENANCE',
+    admissionState: 'ADMITTED',
+    provenanceStatus: 'PROVEN',
+    implementationState: 'SUPPORTED',
+    historyEligibility: 'ELIGIBLE',
+    minimumRequiredObservations: 36,
+    availableObservations: 48,
+    modelEligible: true,
+    currentForecastEligible: true,
+    verificationOriginCount: 36,
+    verificationEvidenceState: 'SUFFICIENT',
+    predictionBandResidualCount: 40,
+    predictionBandState: 'AVAILABLE',
+    targetPreparationState: 'PREPARED',
+    currentPreparedState: 'NOT_PREPARED',
+    historicalPreparedState: 'READY',
+    capabilityState: 'PREPARATION_REQUIRED',
+    ...overrides,
+  }
+}
+
+function buildCapabilityResolution(overrides: Partial<ForecastCapabilityResolution> = {}): ForecastCapabilityResolution {
+  return {
+    status: 'AVAILABLE',
+    reason: null,
+    sourceMetadata: {
+      seriesId: 'wocaes0074',
+      providerCode: 'macrobond',
+      source: 'POSTGRES_RUNTIME_SNAPSHOT',
+      sourceFrequency: 'MONTHLY',
+      rawFrequency: 'MONTHLY',
+      sourceObservationCount: 48,
+      fullHistoryObservationCount: 48,
+    },
+    targetedHydration: {
+      scope: 'SINGLE_SERIES',
+      requestedSeriesId: 'wocaes0074',
+      source: 'postgres',
+      cacheStatus: 'hit',
+    },
+    preparationFailures: {},
+    capabilities: [buildCapabilityCandidate()],
+    ...overrides,
+  }
 }
 
 test('current forecast route defaults missing targetBasis to MONTHLY_AVERAGE', async () => {
@@ -408,6 +488,384 @@ test('internal production forecast route accepts valid dashboard-preview service
       process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
     }
   }
+})
+
+test('internal capability route denies requests without bearer credential', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+
+  try {
+    const handler = createInternalForecastCapabilityRouteHandler(async () => {
+      throw new Error('should not be reached')
+    })
+
+    const response = await handler(buildRequest('http://localhost/api/internal/forecast/capability?seriesId=wocaes0074&targetSemantics=MONTHLY_AVERAGE&modelId=ets'))
+    const payload = await response.json()
+
+    assert.equal(response.status, 401)
+    assert.equal(payload.code, 'INTERNAL_SERVICE_AUTH_REQUIRED')
+  } finally {
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
+})
+
+test('internal capability route rejects invalid requests before resolving capability', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+  let called = false
+
+  try {
+    const handler = createInternalForecastCapabilityRouteHandler(async () => {
+      called = true
+      throw new Error('should not be reached')
+    })
+
+    const response = await handler(buildRequest(
+      'http://localhost/api/internal/forecast/capability?seriesId=*&targetSemantics=MONTHLY_AVERAGE&modelId=ets',
+      { Authorization: 'Bearer test-internal-token' },
+    ))
+    const payload = await response.json()
+
+    assert.equal(response.status, 400)
+    assert.equal(called, false)
+    assert.equal(payload.code, 'VALIDATION_ERROR')
+  } finally {
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
+})
+
+test('internal capability route returns supported capability in legacy-compatible shape', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+
+  try {
+    const handler = createInternalForecastCapabilityRouteHandler(async (input) => ({
+      seriesId: input.seriesId,
+      targetSemantics: input.targetSemantics,
+      modelId: input.modelId,
+      sourceFrequency: 'MONTHLY',
+      sourceAvailability: 'AVAILABLE',
+      lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
+      status: 'READY',
+      currentReadiness: 'READY',
+      verificationReadiness: 'READY',
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 7,
+      reason: null,
+    }))
+
+    const response = await handler(buildRequest(
+      'http://localhost/api/internal/forecast/capability?seriesId=wocaes0074&targetSemantics=MONTHLY_AVERAGE&modelId=ets',
+      { Authorization: 'Bearer test-internal-token' },
+    ))
+    const payload = await response.json()
+
+    assert.equal(response.status, 200)
+    assert.deepEqual(payload, {
+      seriesId: 'wocaes0074',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      modelId: 'ets',
+      sourceFrequency: 'MONTHLY',
+      sourceAvailability: 'AVAILABLE',
+      lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
+      status: 'READY',
+      currentReadiness: 'READY',
+      verificationReadiness: 'READY',
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 7,
+      reason: null,
+    })
+  } finally {
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
+})
+
+test('internal capability route returns unavailable capability without changing status code', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+
+  try {
+    const handler = createInternalForecastCapabilityRouteHandler(async (input) => ({
+      seriesId: input.seriesId,
+      targetSemantics: input.targetSemantics,
+      modelId: input.modelId,
+      sourceFrequency: 'MONTHLY',
+      sourceAvailability: 'AVAILABLE',
+      lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
+      status: 'PREPARATION_REQUIRED',
+      currentReadiness: 'NOT_PREPARED',
+      verificationReadiness: 'NOT_PREPARED',
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 5,
+      reason: 'Prepared artifacts are missing.',
+    }))
+
+    const response = await handler(buildRequest(
+      'http://localhost/api/internal/forecast/capability?seriesId=wocaes0074&targetSemantics=MONTHLY_AVERAGE&modelId=ets',
+      { Authorization: 'Bearer test-internal-token' },
+    ))
+    const payload = await response.json()
+
+    assert.equal(response.status, 200)
+    assert.equal(payload.status, 'PREPARATION_REQUIRED')
+    assert.equal(payload.currentReadiness, 'NOT_PREPARED')
+    assert.equal(payload.reason, 'Prepared artifacts are missing.')
+  } finally {
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
+})
+
+test('internal prepare-current route denies invalid bearer credential', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+
+  try {
+    const handler = createInternalCurrentForecastPreparationRouteHandler(async () => {
+      throw new Error('should not be reached')
+    })
+
+    const response = await handler(buildJsonRequest(
+      'http://localhost/api/internal/forecast/prepare/current',
+      { seriesId: 'wocaes0074', targetSemantics: 'MONTHLY_AVERAGE', modelId: 'ets' },
+      { Authorization: 'Bearer wrong-token' },
+    ))
+    const payload = await response.json()
+
+    assert.equal(response.status, 403)
+    assert.equal(payload.code, 'INTERNAL_SERVICE_AUTH_INVALID')
+  } finally {
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
+})
+
+test('internal prepare-current route rejects invalid payload before compute delegation', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+  let called = false
+
+  try {
+    const handler = createInternalCurrentForecastPreparationRouteHandler(async () => {
+      called = true
+      throw new Error('should not be reached')
+    })
+
+    const response = await handler(buildJsonRequest(
+      'http://localhost/api/internal/forecast/prepare/current',
+      { seriesId: '*', targetSemantics: 'MONTHLY_AVERAGE', modelId: 'ets' },
+      { Authorization: 'Bearer test-internal-token' },
+    ))
+    const payload = await response.json()
+
+    assert.equal(response.status, 400)
+    assert.equal(called, false)
+    assert.equal(payload.code, 'VALIDATION_ERROR')
+  } finally {
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
+})
+
+test('internal prepare-current route returns reused success in legacy-compatible shape', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+
+  try {
+    const handler = createInternalCurrentForecastPreparationRouteHandler(async (input) => ({
+      ...input,
+      operation: 'CURRENT_FORECAST',
+      status: 'REUSED',
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 11,
+      reason: null,
+    }))
+
+    const response = await handler(buildJsonRequest(
+      'http://localhost/api/internal/forecast/prepare/current',
+      { seriesId: 'wocaes0074', targetSemantics: 'MONTHLY_AVERAGE', modelId: 'ets' },
+      { Authorization: 'Bearer test-internal-token' },
+    ))
+    const payload = await response.json()
+
+    assert.equal(response.status, 200)
+    assert.deepEqual(payload, {
+      seriesId: 'wocaes0074',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      modelId: 'ets',
+      operation: 'CURRENT_FORECAST',
+      status: 'REUSED',
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 11,
+      reason: null,
+    })
+  } finally {
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
+})
+
+test('interactive current preparation service returns lawful unavailable status without compute', async () => {
+  let monthlyCalls = 0
+  let rollingCalls = 0
+  const service = createInteractiveForecastPreparationService({
+    now: () => 10,
+    resolveCapabilities: async () => buildCapabilityResolution({
+      capabilities: [buildCapabilityCandidate({
+        targetPreparationState: 'NOT_SUPPORTED',
+        capabilityState: 'PREPARATION_REQUIRED',
+      })],
+    }),
+    prepareMonthlyCurrent: async () => {
+      monthlyCalls += 1
+      throw new Error('should not be called')
+    },
+    prepareRollingCurrent: async () => {
+      rollingCalls += 1
+      throw new Error('should not be called')
+    },
+  })
+
+  const result = await service.prepareCurrent({
+    seriesId: 'wocaes0074',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'ets',
+  })
+
+  assert.equal(result.status, 'PREPARATION_REQUIRED')
+  assert.equal(result.reason, 'PREPARATION_REQUIRED')
+  assert.equal(monthlyCalls, 0)
+  assert.equal(rollingCalls, 0)
+})
+
+test('interactive current preparation service reuses ready artifacts without duplicate compute', async () => {
+  let monthlyCalls = 0
+  let rollingCalls = 0
+  const service = createInteractiveForecastPreparationService({
+    now: () => 20,
+    resolveCapabilities: async () => buildCapabilityResolution({
+      capabilities: [buildCapabilityCandidate({
+        currentPreparedState: 'READY',
+        capabilityState: 'AVAILABLE',
+      })],
+    }),
+    prepareMonthlyCurrent: async () => {
+      monthlyCalls += 1
+      throw new Error('should not be called')
+    },
+    prepareRollingCurrent: async () => {
+      rollingCalls += 1
+      throw new Error('should not be called')
+    },
+  })
+
+  const result = await service.prepareCurrent({
+    seriesId: 'wocaes0074',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'ets',
+  })
+
+  assert.equal(result.status, 'REUSED')
+  assert.equal(monthlyCalls, 0)
+  assert.equal(rollingCalls, 0)
+})
+
+test('interactive current preparation service delegates monthly and rolling preparation to canonical owners only', async () => {
+  let monthlyCalls = 0
+  let rollingCalls = 0
+  const service = createInteractiveForecastPreparationService({
+    now: (() => {
+      let tick = 0
+      return () => ++tick
+    })(),
+    resolveCapabilities: async () => buildCapabilityResolution({
+      capabilities: [
+        buildCapabilityCandidate(),
+        buildCapabilityCandidate({
+          identity: {
+            seriesId: 'wocaes0074',
+            targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+            methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+            methodVersion: 'rolling-daily-point-in-time-v1',
+            modelId: 'ets',
+          },
+          sourceFrequency: 'DAILY',
+          businessTarget: 'DAILY',
+          targetCadence: 'DAILY',
+          semanticLawfulness: 'LAWFUL',
+          minimumRequiredObservations: 60,
+          availableObservations: 96,
+          predictionBandResidualCount: 48,
+          currentPreparedState: 'NOT_PREPARED',
+          historicalPreparedState: 'NOT_PREPARED',
+          capabilityState: 'PREPARATION_REQUIRED',
+        }),
+      ],
+    }),
+    prepareMonthlyCurrent: async () => {
+      monthlyCalls += 1
+      return {
+        status: 'AVAILABLE',
+        cacheStatus: 'miss',
+        reason: null,
+      } as BenchmarkForecastCurrentResult
+    },
+    prepareRollingCurrent: async () => {
+      rollingCalls += 1
+      return {
+        seriesId: 'wocaes0074',
+        modelId: 'ets',
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodVersion: 'rolling-daily-point-in-time-v1',
+        contractVersion: '1',
+        status: 'AVAILABLE',
+        reasonCode: null,
+        parityStatus: 'MATCHED',
+      }
+    },
+  })
+
+  const monthly = await service.prepareCurrent({
+    seriesId: 'wocaes0074',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'ets',
+  })
+  const rolling = await service.prepareCurrent({
+    seriesId: 'wocaes0074',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'ets',
+  })
+
+  assert.equal(monthly.status, 'READY')
+  assert.equal(rolling.status, 'READY')
+  assert.equal(monthlyCalls, 1)
+  assert.equal(rollingCalls, 1)
 })
 
 test('current forecast route propagates stress correlation into the resolver context', async () => {
