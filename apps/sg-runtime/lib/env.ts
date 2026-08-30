@@ -48,6 +48,13 @@ const serverEnvSchema = z.object({
   // Dashboard Preview — canonical analytics application base URL
   DASHBOARD_PREVIEW_BASE_URL: z.string().url().optional(),
 
+  // Transitional deployment flag for the standalone public benchmark component.
+  // Exact string 'true' is required to enable it; malformed values fail closed.
+  SG_RUNTIME_TEMPORARY_PUBLIC_BENCHMARK_COMPONENT: z.preprocess(
+    (value) => (value === 'true' || value === 'false' ? value : undefined),
+    z.enum(['true', 'false']).optional(),
+  ),
+
   // Internal service credential for Dashboard Preview -> SG Runtime production forecast reads
   SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN: z.string().optional(),
 
@@ -106,6 +113,14 @@ export const serverEnv = _serverEnv.success ? _serverEnv.data : serverEnvSchema.
  * even when APP_ENV is missing or invalid and falls back during parsing.
  */
 export const isDevelopmentRuntime = resolveDevelopmentRuntime()
+
+/**
+ * Transitional standalone Benchmark Finder deployment profile.
+ * This must remain an explicit opt-in and defaults closed for all other SG runtimes.
+ */
+export const isTemporaryPublicBenchmarkComponentProfile = (
+  serverEnv.SG_RUNTIME_TEMPORARY_PUBLIC_BENCHMARK_COMPONENT === 'true'
+)
 
 /**
  * Public environment variables — safe for client-side use.

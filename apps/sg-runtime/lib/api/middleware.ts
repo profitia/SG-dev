@@ -19,7 +19,11 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { z } from 'zod'
 
-import { isDevelopmentRuntime, serverEnv } from '@/lib/env'
+import {
+  isDevelopmentRuntime,
+  isTemporaryPublicBenchmarkComponentProfile,
+  serverEnv,
+} from '@/lib/env'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Auth context
@@ -32,36 +36,133 @@ export interface CognitionAuthContext {
   readonly requestId: string
 }
 
+type AuthRequestLike = Pick<NextRequest, 'headers' | 'method' | 'nextUrl'>
+
+type CognitionAuthRuntimeConfig = {
+  readonly isDevelopmentRuntime: boolean
+  readonly isTemporaryPublicBenchmarkComponentProfile: boolean
+  readonly developmentOrgId?: string
+  readonly developmentUserId?: string
+  readonly developmentOrgRole?: string
+}
+
+type TemporaryPublicBenchmarkComponentRoute = {
+  readonly method: 'GET' | 'POST'
+  readonly pattern: RegExp
+}
+
+export const TEMPORARY_PUBLIC_BENCHMARK_COMPONENT_ALLOWLIST: readonly TemporaryPublicBenchmarkComponentRoute[] = [
+  { method: 'GET', pattern: /^\/api\/benchmark\/search$/ },
+  { method: 'POST', pattern: /^\/api\/benchmark\/search$/ },
+  { method: 'GET', pattern: /^\/api\/benchmark\/selection$/ },
+  { method: 'POST', pattern: /^\/api\/benchmark\/selection$/ },
+  { method: 'GET', pattern: /^\/api\/benchmark\/analytics-series$/ },
+  { method: 'GET', pattern: /^\/api\/benchmark\/analytics-eligibility$/ },
+  { method: 'GET', pattern: /^\/api\/benchmark\/metadata$/ },
+  { method: 'GET', pattern: /^\/api\/benchmark\/metadata\/[^/]+\/values$/ },
+  { method: 'GET', pattern: /^\/api\/category$/ },
+  { method: 'GET', pattern: /^\/api\/category\/[^/]+$/ },
+] as const
+
+function trimToUndefined(value?: string | null) {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : undefined
+}
+
+function normalizePathname(pathname: string) {
+  if (pathname.length > 1 && pathname.endsWith('/')) {
+    return pathname.slice(0, -1)
+  }
+
+  return pathname
+}
+
+export function isTemporaryPublicBenchmarkComponentRequest(method: string, pathname: string) {
+  const normalizedMethod = method.trim().toUpperCase()
+  const normalizedPathname = normalizePathname(pathname)
+
+  return TEMPORARY_PUBLIC_BENCHMARK_COMPONENT_ALLOWLIST.some((route) => (
+    route.method === normalizedMethod && route.pattern.test(normalizedPathname)
+  ))
+}
+
+function resolveDevelopmentFallbackAuth(request: AuthRequestLike, config: CognitionAuthRuntimeConfig) {
+  if (!config.isDevelopmentRuntime) {
+    return null
+  }
+
+  return {
+    orgId: config.developmentOrgId ?? 'dev-org-1',
+    userId: config.developmentUserId ?? 'dev-user-1',
+    orgRole: config.developmentOrgRole ?? 'developer',
+    requestId: request.headers.get('x-request-id') ?? randomUUID(),
+  } satisfies CognitionAuthContext
+}
+
+function resolveTemporaryPublicBenchmarkComponentAuth(
+  request: AuthRequestLike,
+  config: CognitionAuthRuntimeConfig,
+) {
+  if (!config.isTemporaryPublicBenchmarkComponentProfile) {
+    return null
+  }
+
+  if (!isTemporaryPublicBenchmarkComponentRequest(request.method, request.nextUrl.pathname)) {
+    return null
+  }
+
+  const developmentOrgId = trimToUndefined(config.developmentOrgId)
+  const developmentUserId = trimToUndefined(config.developmentUserId)
+  const developmentOrgRole = trimToUndefined(config.developmentOrgRole)
+
+  if (!developmentOrgId || !developmentUserId || !developmentOrgRole) {
+    return null
+  }
+
+  return {
+    orgId: developmentOrgId,
+    userId: developmentUserId,
+    orgRole: developmentOrgRole,
+    requestId: request.headers.get('x-request-id') ?? randomUUID(),
+  } satisfies CognitionAuthContext
+}
+
+export function resolveCognitionAuth(
+  request: AuthRequestLike,
+  config: CognitionAuthRuntimeConfig,
+): CognitionAuthContext | null {
+  const orgId = request.headers.get('x-clerk-org-id')
+  const userId = request.headers.get('x-clerk-user-id')
+
+  if (orgId && userId) {
+    return {
+      orgId,
+      userId,
+      orgRole: request.headers.get('x-clerk-org-role') ?? undefined,
+      requestId: request.headers.get('x-request-id') ?? randomUUID(),
+    }
+  }
+
+  const developmentAuth = resolveDevelopmentFallbackAuth(request, config)
+  if (developmentAuth) {
+    return developmentAuth
+  }
+
+  return resolveTemporaryPublicBenchmarkComponentAuth(request, config)
+}
+
 /**
  * Extract Clerk auth context from Next.js request headers.
  * Clerk middleware injects x-clerk-org-id and x-clerk-user-id before the route handler.
  */
 export function extractCognitionAuth(request: NextRequest): CognitionAuthContext | null {
-  const orgId  = request.headers.get('x-clerk-org-id')
-  const userId = request.headers.get('x-clerk-user-id')
-
-  if (!orgId || !userId) {
-    if (!isDevelopmentRuntime) {
-      return null
-    }
-
-    const developmentOrgId = serverEnv.SG_RUNTIME_DEV_ORG_ID ?? 'dev-org-1'
-    const developmentUserId = serverEnv.SG_RUNTIME_DEV_USER_ID ?? 'dev-user-1'
-
-    return {
-      orgId: developmentOrgId,
-      userId: developmentUserId,
-      orgRole: serverEnv.SG_RUNTIME_DEV_ORG_ROLE ?? 'developer',
-      requestId: request.headers.get('x-request-id') ?? randomUUID(),
-    }
-  }
-
-  return {
-    orgId,
-    userId,
-    orgRole:   request.headers.get('x-clerk-org-role') ?? undefined,
-    requestId: request.headers.get('x-request-id') ?? randomUUID(),
-  }
+  return resolveCognitionAuth(request, {
+    isDevelopmentRuntime,
+    isTemporaryPublicBenchmarkComponentProfile,
+    developmentOrgId: serverEnv.SG_RUNTIME_DEV_ORG_ID,
+    developmentUserId: serverEnv.SG_RUNTIME_DEV_USER_ID,
+    developmentOrgRole: serverEnv.SG_RUNTIME_DEV_ORG_ROLE,
+  })
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
