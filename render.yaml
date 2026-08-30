@@ -15,9 +15,9 @@ services:
   - type: web
     name: spendguru-production
     runtime: node
-    rootDir: apps/sg-runtime
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
+    rootDir: .
+    buildCommand: bash ./scripts/build-sg-runtime-private-service.sh
+    startCommand: cd apps/sg-runtime && npm run start
     plan: standard
     branch: main
     envVars:
@@ -48,9 +48,9 @@ services:
   - type: web
     name: spendguru-staging
     runtime: node
-    rootDir: apps/sg-runtime
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
+    rootDir: .
+    buildCommand: bash ./scripts/build-sg-runtime-private-service.sh
+    startCommand: cd apps/sg-runtime && npm run start
     plan: free
     branch: staging
     envVars:
