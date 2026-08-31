@@ -150,8 +150,12 @@ test('existing local development fallback behavior is unchanged', () => {
 test('temporary benchmark component allowlist is constrained to the approved method and path pairs', () => {
   assert.equal(isTemporaryPublicBenchmarkComponentRequest('GET', '/api/benchmark/metadata'), true)
   assert.equal(isTemporaryPublicBenchmarkComponentRequest('GET', '/api/benchmark/metadata/source/values'), true)
+  assert.equal(isTemporaryPublicBenchmarkComponentRequest('GET', '/api/benchmark/preview'), true)
+  assert.equal(isTemporaryPublicBenchmarkComponentRequest('POST', '/api/benchmark/context'), true)
   assert.equal(isTemporaryPublicBenchmarkComponentRequest('GET', '/api/category'), true)
   assert.equal(isTemporaryPublicBenchmarkComponentRequest('GET', '/api/category/cat-1'), true)
+  assert.equal(isTemporaryPublicBenchmarkComponentRequest('GET', '/api/benchmark/context'), false)
+  assert.equal(isTemporaryPublicBenchmarkComponentRequest('POST', '/api/benchmark/preview'), false)
   assert.equal(isTemporaryPublicBenchmarkComponentRequest('POST', '/api/category'), false)
   assert.equal(isTemporaryPublicBenchmarkComponentRequest('PATCH', '/api/category/cat-1'), false)
   assert.equal(isTemporaryPublicBenchmarkComponentRequest('GET', '/api/internal/forecast/production'), false)

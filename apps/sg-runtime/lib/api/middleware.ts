@@ -54,6 +54,8 @@ type TemporaryPublicBenchmarkComponentRoute = {
 export const TEMPORARY_PUBLIC_BENCHMARK_COMPONENT_ALLOWLIST: readonly TemporaryPublicBenchmarkComponentRoute[] = [
   { method: 'GET', pattern: /^\/api\/benchmark\/search$/ },
   { method: 'POST', pattern: /^\/api\/benchmark\/search$/ },
+  { method: 'GET', pattern: /^\/api\/benchmark\/preview$/ },
+  { method: 'POST', pattern: /^\/api\/benchmark\/context$/ },
   { method: 'GET', pattern: /^\/api\/benchmark\/selection$/ },
   { method: 'POST', pattern: /^\/api\/benchmark\/selection$/ },
   { method: 'GET', pattern: /^\/api\/benchmark\/analytics-series$/ },
