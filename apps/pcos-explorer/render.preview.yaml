@@ -1,11 +1,12 @@
 services:
   - type: web
-    name: pcos-explorer-preview
+    name: sg2-pcos-cognition-explorer-preview
     runtime: node
-    rootDir: apps/pcos-explorer
-    buildCommand: npm ci && npx prisma generate && npm run build
-    startCommand: npm run start
-    plan: free
+    branch: main
+    autoDeploy: true
+    buildCommand: cd apps/pcos-explorer && npm ci --include=dev && npx prisma generate && PCOS_EXPLORER_PREVIEW_MODE=mock npm run build
+    startCommand: cd apps/pcos-explorer && npm run start
+    plan: starter
     envVars:
       - key: NODE_ENV
         value: production

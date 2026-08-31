@@ -1,82 +1,25 @@
 # render.yaml — SpendGuru 2.0 Render Blueprint
 #
 # SCOPE:
-# This file currently defines the PMOS dev-time tool only.
+# This file mixes one Blueprint-owned PMOS service definition with
+# provider-managed deployment contract documentation for SG2 runtime services.
 # PMOS (pmos-spendguru2-development) is NOT the SG2 application runtime.
 # It is a developer workflow tool and must not be used as a substitute for
 # the SG2 production or staging runtime.
 #
-# SG2 PRODUCTION AND STAGING SERVICES:
-# spendguru-production and spendguru-staging deploy the SG Runtime from
-# apps/sg-runtime. Secrets remain Render-managed via sync: false.
+# CANONICAL SG2 RUNTIME TOPOLOGY:
+# spendguru-stage is the canonical main SG Runtime deployment.
+# - repo: profitia/SG-dev
+# - branch: main
+# - rootDir: .
+# - buildCommand: bash ./scripts/build-sg-runtime-private-service.sh
+# - startCommand: cd apps/sg-runtime && npm run start
+#
+# BENCHMARK-FINDER-CATEGORY-BUILDER is an intentional second deployment of
+# apps/sg-runtime for the temporary public benchmark/category surface.
+# It remains provider-managed and is not Blueprint-owned in this file.
 
 services:
-  # SG Runtime - Production
-  - type: web
-    name: spendguru-production
-    runtime: node
-    rootDir: .
-    buildCommand: bash ./scripts/build-sg-runtime-private-service.sh
-    startCommand: cd apps/sg-runtime && npm run start
-    plan: standard
-    branch: main
-    envVars:
-      - key: APP_ENV
-        value: production
-      - key: NODE_ENV
-        value: production
-      - key: NEXT_PUBLIC_APP_URL
-        sync: false
-      - key: DATABASE_URL
-        sync: false
-      - key: DIRECT_URL
-        sync: false
-      - key: MARKET_DATA_DATABASE_URL
-        sync: false
-      - key: MARKET_DATA_DIRECT_URL
-        sync: false
-      - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-        sync: false
-      - key: CLERK_SECRET_KEY
-        sync: false
-      - key: CLERK_WEBHOOK_SECRET
-        sync: false
-      - key: OPENAI_API_KEY
-        sync: false
-
-  # SG Runtime - Staging
-  - type: web
-    name: spendguru-staging
-    runtime: node
-    rootDir: .
-    buildCommand: bash ./scripts/build-sg-runtime-private-service.sh
-    startCommand: cd apps/sg-runtime && npm run start
-    plan: free
-    branch: staging
-    envVars:
-      - key: APP_ENV
-        value: staging
-      - key: NODE_ENV
-        value: production
-      - key: NEXT_PUBLIC_APP_URL
-        sync: false
-      - key: DATABASE_URL
-        sync: false
-      - key: DIRECT_URL
-        sync: false
-      - key: MARKET_DATA_DATABASE_URL
-        sync: false
-      - key: MARKET_DATA_DIRECT_URL
-        sync: false
-      - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-        sync: false
-      - key: CLERK_SECRET_KEY
-        sync: false
-      - key: CLERK_WEBHOOK_SECRET
-        sync: false
-      - key: OPENAI_API_KEY
-        sync: false
-
   # PMOS — Developer Workflow Tool (dev-time only, NOT SG2 production runtime)
   - type: web
     name: pmos-spendguru2-development
@@ -84,7 +27,9 @@ services:
     rootDir: apps/pmos
     buildCommand: npm install --include=dev && npx prisma generate && npx next build
     startCommand: npm run start
-    plan: free
+    plan: starter
+    branch: main
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
