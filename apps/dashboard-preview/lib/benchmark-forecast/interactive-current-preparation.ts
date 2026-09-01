@@ -16,7 +16,7 @@ const DEPLOYED_SG_RUNTIME_FALLBACK_BASE_URLS = [
 ]
 const INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH = '/api/internal/forecast/capability'
 const INTERNAL_FORECAST_PREPARE_CURRENT_ROUTE_PATH = '/api/internal/forecast/prepare/current'
-const INTERNAL_FORECAST_TIMEOUT_MS = 20_000
+const INTERNAL_FORECAST_TIMEOUT_MS = 45_000
 
 export function parseBenchmarkForecastCurrentPreparationRequest(
   input: unknown,
