@@ -38,9 +38,14 @@ Hard rules for all future agent execution:
 For every task that will modify repository source, config, or runtime code, the following preflight is mandatory before the first source mutation:
 
 1. Load `Canon/v1.0-current-architecture-development-canon.md`.
-2. Declare `TARGET_PATHS` for every intended mutation path, including prospective new files.
-3. Run `node scripts/architecture-classify.mjs --json <targetPath...>`.
-4. Report `ARCHITECTURE_DEVELOPMENT_PREFLIGHT` from resolver output only.
+2. Load `Canon/v1.0-post-migration-architecture-state-and-change-classification-canon.md`.
+3. Load `Canon/v1.0-repository-routing-and-module-ownership-canon.md`.
+4. Load `Canon/v1.0-mandatory-canonical-routing-guard-wrapper.md`.
+5. Execute the mandatory routing guard and require `ROUTING_GATE = PASS` before the first source mutation.
+6. If `ROUTING_GATE = BLOCKED`, implementation MUST NOT begin.
+7. Declare `TARGET_PATHS` for every intended mutation path, including prospective new files.
+8. Run `node scripts/architecture-classify.mjs --json <targetPath...>`.
+9. Report `ARCHITECTURE_DEVELOPMENT_PREFLIGHT` from resolver output only.
 
 Resolver authority for baseline classification is:
 
@@ -51,6 +56,10 @@ Hard rules:
 
 - Agents MUST NOT assign, infer, reinterpret, promote, or demote architecture classification.
 - `ALIGNED` and `LEGACY` both allow normal development unless a separate canon or task restriction blocks it.
+- The architecture canon and registry continue to determine whether a path is `ALIGNED` or `LEGACY`.
+- For post-migration development routing only, `Canon/v1.0-post-migration-architecture-state-and-change-classification-canon.md` is the more-specific policy authority for whether a `LEGACY` path may be written.
+- `LEGACY` does not become `ALIGNED`, the registry is not changed, and older permissive wording is narrowed only for the question of whether a development task may write to that `LEGACY` path.
+- A `LEGACY` write requires the explicit exception mechanism defined by the post-migration architecture-state canon.
 - If any target path resolves to `NO_MATCH`, `CONFLICT`, `INVALID_INPUT_PATH`, or registry failure, source mutation is blocked for the unresolved target scope.
 - Read `transitionalPolicyActive` from `Canon/registries/current-architecture-baseline-v1.json`.
 - Read `transitionalEpochStartSha` from `Canon/registries/current-architecture-baseline-v1.json`.
