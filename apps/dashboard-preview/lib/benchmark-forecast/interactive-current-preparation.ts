@@ -11,6 +11,9 @@ import {
 } from './forecast-contract'
 
 const LOCAL_SG_RUNTIME_BASE_URL = 'http://localhost:3001'
+const DEPLOYED_SG_RUNTIME_FALLBACK_BASE_URLS = [
+  'https://benchmark-finder-category-builder.onrender.com',
+]
 const INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH = '/api/internal/forecast/capability'
 const INTERNAL_FORECAST_PREPARE_CURRENT_ROUTE_PATH = '/api/internal/forecast/prepare/current'
 const INTERNAL_FORECAST_TIMEOUT_MS = 20_000
@@ -77,6 +80,19 @@ function resolveSgRuntimeBaseUrl() {
   return LOCAL_SG_RUNTIME_BASE_URL
 }
 
+function resolveSgRuntimeBaseUrls() {
+  const primaryBaseUrl = resolveSgRuntimeBaseUrl()
+  const candidates = [primaryBaseUrl]
+
+  for (const fallbackBaseUrl of DEPLOYED_SG_RUNTIME_FALLBACK_BASE_URLS) {
+    if (!candidates.includes(fallbackBaseUrl)) {
+      candidates.push(fallbackBaseUrl)
+    }
+  }
+
+  return candidates
+}
+
 function readSgRuntimeInternalForecastServiceToken() {
   return process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN?.trim() ?? ''
 }
@@ -85,43 +101,56 @@ async function readInternalJson<T>(
   pathname: string,
   init: RequestInit,
 ) {
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), INTERNAL_FORECAST_TIMEOUT_MS)
+  let lastError: unknown = null
 
-  try {
-    const response = await fetch(new URL(pathname, resolveSgRuntimeBaseUrl()), {
-      ...init,
-      cache: 'no-store',
-      signal: controller.signal,
-      headers: {
-        Accept: 'application/json',
-        ...(init.headers ?? {}),
-      },
-    })
+  for (const baseUrl of resolveSgRuntimeBaseUrls()) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), INTERNAL_FORECAST_TIMEOUT_MS)
 
-    const payload = await response.json() as Record<string, unknown>
-    if (!response.ok) {
-      const message = typeof payload.error === 'string'
-        ? payload.error
-        : 'SG Runtime interactive forecast request failed.'
+    try {
+      const response = await fetch(new URL(pathname, baseUrl), {
+        ...init,
+        cache: 'no-store',
+        signal: controller.signal,
+        headers: {
+          Accept: 'application/json',
+          ...(init.headers ?? {}),
+        },
+      })
 
-      if (response.status === 401 || response.status === 403) {
-        throw new SgRuntimeForecastPreparationAuthError(message, response.status)
+      const payload = await response.json() as Record<string, unknown>
+      if (!response.ok) {
+        const message = typeof payload.error === 'string'
+          ? payload.error
+          : 'SG Runtime interactive forecast request failed.'
+
+        if (response.status === 401 || response.status === 403) {
+          throw new SgRuntimeForecastPreparationAuthError(message, response.status)
+        }
+
+        throw new Error(message)
       }
 
-      throw new Error(message)
-    }
+      return payload as T
+    } catch (error) {
+      if (error instanceof SgRuntimeForecastPreparationAuthError) {
+        throw error
+      }
 
-    return payload as T
-  } catch (error) {
-    if ((error as Error).name === 'AbortError') {
-      throw new Error('SG Runtime interactive forecast request timed out.')
+      lastError = error
+      if ((error as Error).name !== 'AbortError') {
+        throw error
+      }
+    } finally {
+      clearTimeout(timeoutId)
     }
-
-    throw error
-  } finally {
-    clearTimeout(timeoutId)
   }
+
+  if ((lastError as Error | null)?.name === 'AbortError') {
+    throw new Error('SG Runtime interactive forecast request timed out.')
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('SG Runtime interactive forecast request failed.')
 }
 
 function resolveAuthorizedHeaders() {
@@ -139,7 +168,7 @@ export async function readInteractiveForecastCapability(
   input: BenchmarkForecastCurrentPreparationRequest,
 ) {
   const targetSemantics = resolveForecastTargetSemantics(input.targetBasis)
-  const url = new URL(INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH, resolveSgRuntimeBaseUrl())
+  const url = new URL(INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH, LOCAL_SG_RUNTIME_BASE_URL)
   url.searchParams.set('seriesId', input.seriesId)
   url.searchParams.set('modelId', input.modelId)
   url.searchParams.set('targetSemantics', targetSemantics)

@@ -329,3 +329,62 @@ test('interactive current prepare bridge keeps private auth server-side and forw
     targetSemantics: 'MONTHLY_AVERAGE',
   })
 })
+
+test('interactive capability bridge falls back to the public SG Runtime deployment after a primary timeout', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const originalFetch = global.fetch
+  const visited: string[] = []
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime-primary.example.invalid'
+  global.fetch = (async (input: URL | RequestInfo | string) => {
+    const url = new URL(String(input))
+    visited.push(url.origin)
+
+    if (url.origin === 'https://sg-runtime-primary.example.invalid') {
+      const timeoutError = new Error('timed out') as Error & { name: string }
+      timeoutError.name = 'AbortError'
+      throw timeoutError
+    }
+
+    return new Response(JSON.stringify({
+      seriesId: 'wocaes0280',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      modelId: 'arima',
+      sourceFrequency: 'MONTHLY',
+      sourceAvailability: 'AVAILABLE',
+      lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
+      status: 'NOT_PREPARED',
+      currentReadiness: 'NOT_PREPARED',
+      verificationReadiness: 'NOT_PREPARED',
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 11,
+      reason: 'Prepared artifacts are missing.',
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }) as typeof fetch
+
+  try {
+    const result = await readInteractiveForecastCapability({
+      seriesId: 'wocaes0280',
+      modelId: 'arima',
+      targetBasis: 'MONTHLY_AVERAGE',
+    })
+
+    assert.equal(result.status, 'NOT_PREPARED')
+  } finally {
+    global.fetch = originalFetch
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+  }
+
+  assert.deepEqual(visited, [
+    'https://sg-runtime-primary.example.invalid',
+    'https://benchmark-finder-category-builder.onrender.com',
+  ])
+})
