@@ -554,7 +554,7 @@ test('internal capability route returns supported capability in legacy-compatibl
       sourceFrequency: 'MONTHLY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
-      status: 'READY',
+      status: 'AVAILABLE',
       currentReadiness: 'READY',
       verificationReadiness: 'READY',
       targetedDataScope: 'SINGLE_SERIES',
@@ -576,7 +576,7 @@ test('internal capability route returns supported capability in legacy-compatibl
       sourceFrequency: 'MONTHLY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
-      status: 'READY',
+      status: 'AVAILABLE',
       currentReadiness: 'READY',
       verificationReadiness: 'READY',
       targetedDataScope: 'SINGLE_SERIES',
@@ -622,6 +622,42 @@ test('internal capability route returns unavailable capability without changing 
     assert.equal(payload.status, 'PREPARATION_REQUIRED')
     assert.equal(payload.currentReadiness, 'NOT_PREPARED')
     assert.equal(payload.reason, 'Prepared artifacts are missing.')
+  } finally {
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
+})
+
+test('internal capability route emits timing header only when trace is requested', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+
+  try {
+    const handler = createInternalForecastCapabilityRouteHandler(async () => ({
+      seriesId: 'usnaac0169',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      modelId: 'arima',
+      sourceFrequency: 'QUARTERLY',
+      sourceAvailability: 'AVAILABLE',
+      lawfulTargetSemantics: 'NOT_LAWFUL',
+      status: 'NOT_LAWFUL',
+      currentReadiness: 'NOT_PREPARED',
+      verificationReadiness: 'READY',
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 37,
+      reason: 'NOT_LAWFUL',
+    }))
+
+    const response = await handler(buildRequest(
+      'http://localhost/api/internal/forecast/capability?seriesId=usnaac0169&targetSemantics=ROLLING_DAILY_POINT_IN_TIME&modelId=arima',
+      { Authorization: 'Bearer test-internal-token', 'x-sg-forecast-trace': '1' },
+    ))
+
+    assert.equal(response.status, 200)
+    assert.equal(response.headers.get('x-sg-runtime-capability-total-ms'), '37')
   } finally {
     if (previousToken === undefined) {
       delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
@@ -734,11 +770,17 @@ test('interactive current preparation service returns lawful unavailable status 
   let rollingCalls = 0
   const service = createInteractiveForecastPreparationService({
     now: () => 10,
-    resolveCapabilities: async () => buildCapabilityResolution({
-      capabilities: [buildCapabilityCandidate({
+    resolveExactCapability: async () => ({
+      resolution: buildCapabilityResolution({
+        capabilities: [buildCapabilityCandidate({
+          targetPreparationState: 'NOT_SUPPORTED',
+          capabilityState: 'PREPARATION_REQUIRED',
+        })],
+      }),
+      capability: buildCapabilityCandidate({
         targetPreparationState: 'NOT_SUPPORTED',
         capabilityState: 'PREPARATION_REQUIRED',
-      })],
+      }),
     }),
     prepareMonthlyCurrent: async () => {
       monthlyCalls += 1
@@ -767,11 +809,17 @@ test('interactive current preparation service reuses ready artifacts without dup
   let rollingCalls = 0
   const service = createInteractiveForecastPreparationService({
     now: () => 20,
-    resolveCapabilities: async () => buildCapabilityResolution({
-      capabilities: [buildCapabilityCandidate({
+    resolveExactCapability: async () => ({
+      resolution: buildCapabilityResolution({
+        capabilities: [buildCapabilityCandidate({
+          currentPreparedState: 'READY',
+          capabilityState: 'AVAILABLE',
+        })],
+      }),
+      capability: buildCapabilityCandidate({
         currentPreparedState: 'READY',
         capabilityState: 'AVAILABLE',
-      })],
+      }),
     }),
     prepareMonthlyCurrent: async () => {
       monthlyCalls += 1
@@ -802,10 +850,9 @@ test('interactive current preparation service delegates monthly and rolling prep
       let tick = 0
       return () => ++tick
     })(),
-    resolveCapabilities: async () => buildCapabilityResolution({
-      capabilities: [
-        buildCapabilityCandidate(),
-        buildCapabilityCandidate({
+    resolveExactCapability: async (input) => {
+      const capability = input.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+        ? buildCapabilityCandidate({
           identity: {
             seriesId: 'wocaes0074',
             targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
@@ -823,16 +870,21 @@ test('interactive current preparation service delegates monthly and rolling prep
           currentPreparedState: 'NOT_PREPARED',
           historicalPreparedState: 'NOT_PREPARED',
           capabilityState: 'PREPARATION_REQUIRED',
-        }),
-      ],
-    }),
+        })
+        : buildCapabilityCandidate()
+
+      return {
+        resolution: buildCapabilityResolution({ capabilities: [capability] }),
+        capability,
+      }
+    },
     prepareMonthlyCurrent: async () => {
       monthlyCalls += 1
       return {
         status: 'AVAILABLE',
         cacheStatus: 'miss',
         reason: null,
-      } as BenchmarkForecastCurrentResult
+      } as unknown as BenchmarkForecastCurrentResult
     },
     prepareRollingCurrent: async () => {
       rollingCalls += 1

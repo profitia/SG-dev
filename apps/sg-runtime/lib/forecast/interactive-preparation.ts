@@ -1,8 +1,7 @@
 import { z } from 'zod'
 
 import {
-  resolveForecastCapabilitiesBySeriesId,
-  type ForecastCapabilityResolution,
+  resolveExactForecastCapability,
   type ForecastVariantCapability,
 } from '@/lib/forecast/capability-resolver'
 import { USER_FACING_FORECAST_MODELS } from '@/lib/forecast/contracts'
@@ -59,7 +58,7 @@ export type InteractiveForecastPreparationResult = {
 }
 
 type InteractiveForecastPreparationDependencies = {
-  resolveCapabilities: typeof resolveForecastCapabilitiesBySeriesId
+  resolveExactCapability: typeof resolveExactForecastCapability
   prepareMonthlyCurrent: typeof resolveBenchmarkCurrentForecast
   prepareRollingCurrent: typeof persistRollingDailyCurrentForecastSnapshot
   now: () => number
@@ -72,7 +71,7 @@ const TARGET_BASIS_BY_SEMANTICS = {
 } as const
 
 function findExactCapability(
-  resolution: ForecastCapabilityResolution,
+  resolution: { capabilities: ForecastVariantCapability[] },
   input: InteractiveForecastIdentity,
 ) {
   return resolution.capabilities.find((candidate) => (
@@ -94,15 +93,15 @@ export function createInteractiveForecastPreparationService(
   dependencies: Partial<InteractiveForecastPreparationDependencies> = {},
 ) {
   const resolvedDependencies: InteractiveForecastPreparationDependencies = {
-    resolveCapabilities: dependencies.resolveCapabilities ?? resolveForecastCapabilitiesBySeriesId,
+    resolveExactCapability: dependencies.resolveExactCapability ?? resolveExactForecastCapability,
     prepareMonthlyCurrent: dependencies.prepareMonthlyCurrent ?? resolveBenchmarkCurrentForecast,
     prepareRollingCurrent: dependencies.prepareRollingCurrent ?? persistRollingDailyCurrentForecastSnapshot,
     now: dependencies.now ?? (() => performance.now()),
   }
 
   async function resolveExact(input: InteractiveForecastIdentity) {
-    const resolution = await resolvedDependencies.resolveCapabilities(input.seriesId)
-    return { resolution, capability: findExactCapability(resolution, input) }
+    const exact = await resolvedDependencies.resolveExactCapability(input)
+    return { resolution: exact.resolution, capability: exact.capability ?? findExactCapability(exact.resolution, input) }
   }
 
   return {

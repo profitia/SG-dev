@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import {
+  FORECAST_TRACE_HEADER,
   SgRuntimeForecastPreparationAuthError,
   parseBenchmarkForecastCurrentPreparationRequest,
   prepareInteractiveCurrentForecast,
@@ -28,7 +29,8 @@ export function createPrepareCurrentForecastRouteHandler(
     }
 
     try {
-      return NextResponse.json(await gateway(parsed.data))
+      const traceEnabled = request.headers.get(FORECAST_TRACE_HEADER) === '1'
+      return NextResponse.json(await gateway(parsed.data, traceEnabled))
     } catch (error) {
       if (error instanceof SgRuntimeForecastPreparationAuthError) {
         return NextResponse.json({ error: error.message }, { status: error.statusCode })

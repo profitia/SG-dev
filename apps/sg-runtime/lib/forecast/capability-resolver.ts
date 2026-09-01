@@ -138,6 +138,17 @@ export type ForecastCapabilityResolution = {
   capabilities: ForecastVariantCapability[]
 }
 
+export type ExactForecastCapabilityInput = {
+  seriesId: string
+  targetSemantics: ForecastTargetSemantics
+  modelId: UserFacingForecastModelId
+}
+
+export type ExactForecastCapabilityResolution = {
+  resolution: ForecastCapabilityResolution
+  capability: ForecastVariantCapability | null
+}
+
 type HistoricalSeriesResolution = {
   history: BenchmarkHistoricalSeriesResult
   marketDataSource: 'postgres' | 'macrobond'
@@ -509,6 +520,38 @@ function failedCapabilityResolution(seriesId: string, reason: string): ForecastC
   }
 }
 
+function buildCapabilityResolution(
+  seriesId: string,
+  resolution: HistoricalSeriesResolution,
+  history: BenchmarkHistoricalSeriesResult,
+  sourceFrequency: ForecastSourceFrequency,
+  sourceObservationCount: number,
+  preparationFailures: ForecastCapabilityResolution['preparationFailures'],
+  capabilities: ForecastVariantCapability[],
+): ForecastCapabilityResolution {
+  return {
+    status: 'AVAILABLE',
+    reason: null,
+    sourceMetadata: {
+      seriesId,
+      providerCode: history.providerSeries.provider.providerCode,
+      source: history.source,
+      sourceFrequency,
+      rawFrequency: history.frequency,
+      sourceObservationCount,
+      fullHistoryObservationCount: history.historical.length,
+    },
+    targetedHydration: {
+      scope: 'SINGLE_SERIES',
+      requestedSeriesId: seriesId,
+      source: resolution.marketDataSource,
+      cacheStatus: resolution.cacheStatus,
+    },
+    preparationFailures,
+    capabilities,
+  }
+}
+
 export function createForecastCapabilityService(
   dependencies: Partial<ForecastCapabilityServiceDependencies> = {},
 ) {
@@ -644,26 +687,14 @@ export function createForecastCapabilityService(
         }
       }
 
-      return {
-        status: 'AVAILABLE',
-        reason: null,
-        sourceMetadata: {
-          seriesId,
-          providerCode: history.providerSeries.provider.providerCode,
-          source: history.source,
-          sourceFrequency,
-          rawFrequency: history.frequency,
-          sourceObservationCount,
-          fullHistoryObservationCount: history.historical.length,
-        },
-        targetedHydration: {
-          scope: 'SINGLE_SERIES',
-          requestedSeriesId: seriesId,
-          source: resolution.marketDataSource,
-          cacheStatus: resolution.cacheStatus,
-        },
+      return buildCapabilityResolution(
+        seriesId,
+        resolution,
+        history,
+        sourceFrequency,
+        sourceObservationCount,
         preparationFailures,
-        capabilities: resolveForecastCapabilities({
+        resolveForecastCapabilities({
           seriesId,
           sourceFrequency,
           sourceObservationCount,
@@ -671,6 +702,191 @@ export function createForecastCapabilityService(
           provenance,
           preparedVariants,
         }),
+      )
+    },
+
+    async resolveExact(input: ExactForecastCapabilityInput): Promise<ExactForecastCapabilityResolution> {
+      let resolution: HistoricalSeriesResolution
+      try {
+        resolution = await resolvedDependencies.resolveHistoricalSeries(input.seriesId, 'ALL')
+      } catch (error) {
+        return {
+          resolution: failedCapabilityResolution(
+            input.seriesId,
+            error instanceof Error ? error.message : String(error),
+          ),
+          capability: null,
+        }
+      }
+
+      const history = resolution.history
+      if (history.providerSeries.providerSeriesId !== input.seriesId) {
+        return {
+          resolution: failedCapabilityResolution(input.seriesId, `Forecast capability source identity mismatch for ${input.seriesId}.`),
+          capability: null,
+        }
+      }
+
+      const sourceFrequency = normalizeForecastSourceFrequency(history.frequency)
+      if (!sourceFrequency) {
+        return {
+          resolution: failedCapabilityResolution(
+            input.seriesId,
+            `Forecast capability source frequency is unavailable or unsupported for ${input.seriesId}.`,
+          ),
+          capability: null,
+        }
+      }
+
+      const sourceObservationCount = countLawfulSourceObservations(history)
+
+      if (input.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME' && sourceFrequency !== 'DAILY') {
+        const capability = resolveVariant({
+          seriesId: input.seriesId,
+          sourceFrequency,
+          sourceObservationCount,
+          preparedObservationCounts: {},
+          provenance: [],
+          preparedVariants: [],
+        }, input.targetSemantics, input.modelId)
+
+        return {
+          resolution: buildCapabilityResolution(
+            input.seriesId,
+            resolution,
+            history,
+            sourceFrequency,
+            sourceObservationCount,
+            {},
+            [capability],
+          ),
+          capability,
+        }
+      }
+
+      const preparedObservationCounts: ForecastCapabilityResolverInput['preparedObservationCounts'] = {}
+      const preparationFailures: ForecastCapabilityResolution['preparationFailures'] = {}
+      let provenance: readonly ForecastCapabilityProvenance[]
+      let preparedVariants: readonly ForecastPreparedVariant[]
+      try {
+        [provenance, preparedVariants] = await Promise.all([
+          sourceFrequency !== 'DAILY'
+            ? resolvedDependencies.resolveProvenance(input.seriesId, history)
+            : Promise.resolve([]),
+          resolvedDependencies.readPreparedVariants(input.seriesId, history),
+        ])
+      } catch (error) {
+        return {
+          resolution: failedCapabilityResolution(
+            input.seriesId,
+            error instanceof Error ? error.message : String(error),
+          ),
+          capability: null,
+        }
+      }
+
+      const admissionInput: ForecastCapabilityResolverInput = {
+        seriesId: input.seriesId,
+        sourceFrequency,
+        sourceObservationCount,
+        preparedObservationCounts,
+        provenance,
+        preparedVariants,
+      }
+
+      if (sourceFrequency === 'DAILY') {
+        if (input.targetSemantics === 'END_OF_PERIOD') {
+          try {
+            preparedObservationCounts.END_OF_PERIOD = canonicalizeDailyMarketPriceToEndOfPeriod(history, {
+              now: resolvedDependencies.now(),
+            }).historical.length
+          } catch (error) {
+            preparationFailures.END_OF_PERIOD = error instanceof Error ? error.message : String(error)
+          }
+        }
+
+        if (input.targetSemantics === 'MONTHLY_AVERAGE') {
+          try {
+            preparedObservationCounts.MONTHLY_AVERAGE = canonicalizeDailyMarketPriceToMonthly(history, {
+              now: resolvedDependencies.now(),
+            }).historical.length
+          } catch (error) {
+            preparationFailures.MONTHLY_AVERAGE = error instanceof Error ? error.message : String(error)
+          }
+        }
+
+        if (input.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME') {
+          preparedObservationCounts.ROLLING_DAILY_POINT_IN_TIME = sourceObservationCount
+        }
+      }
+
+      if (
+        sourceFrequency === 'WEEKLY'
+        && input.targetSemantics === 'END_OF_PERIOD'
+        && hasRequiredProvenance(admissionInput, 'END_OF_PERIOD')
+      ) {
+        try {
+          preparedObservationCounts.END_OF_PERIOD = canonicalizeProvenanceQualifiedWeeklyEndOfPeriod(history, {
+            now: resolvedDependencies.now(),
+          }).historical.length
+        } catch (error) {
+          preparationFailures.END_OF_PERIOD = error instanceof Error ? error.message : String(error)
+        }
+      }
+
+      if (
+        sourceFrequency === 'MONTHLY'
+        && input.targetSemantics !== 'ROLLING_DAILY_POINT_IN_TIME'
+        && hasRequiredProvenance(admissionInput, input.targetSemantics)
+      ) {
+        try {
+          preparedObservationCounts[input.targetSemantics] = canonicalizeProvenanceQualifiedNativeMonthly(
+            history,
+            input.targetSemantics,
+            { now: resolvedDependencies.now() },
+          ).historical.length
+        } catch (error) {
+          preparationFailures[input.targetSemantics] = error instanceof Error ? error.message : String(error)
+        }
+      }
+
+      if (
+        isForecastExecutableNativeSparseFrequency(sourceFrequency)
+        && input.targetSemantics !== 'ROLLING_DAILY_POINT_IN_TIME'
+        && hasRequiredProvenance(admissionInput, input.targetSemantics)
+      ) {
+        try {
+          preparedObservationCounts[input.targetSemantics] = canonicalizeProvenanceQualifiedNativePeriod(
+            history,
+            input.targetSemantics,
+            sourceFrequency,
+            { now: resolvedDependencies.now() },
+          ).historical.length
+        } catch (error) {
+          preparationFailures[input.targetSemantics] = error instanceof Error ? error.message : String(error)
+        }
+      }
+
+      const capability = resolveVariant({
+        seriesId: input.seriesId,
+        sourceFrequency,
+        sourceObservationCount,
+        preparedObservationCounts,
+        provenance,
+        preparedVariants,
+      }, input.targetSemantics, input.modelId)
+
+      return {
+        resolution: buildCapabilityResolution(
+          input.seriesId,
+          resolution,
+          history,
+          sourceFrequency,
+          sourceObservationCount,
+          preparationFailures,
+          [capability],
+        ),
+        capability,
       }
     },
   }
@@ -680,4 +896,8 @@ const forecastCapabilityService = createForecastCapabilityService()
 
 export async function resolveForecastCapabilitiesBySeriesId(seriesId: string) {
   return forecastCapabilityService.resolveBySeriesId(seriesId)
+}
+
+export async function resolveExactForecastCapability(input: ExactForecastCapabilityInput) {
+  return forecastCapabilityService.resolveExact(input)
 }

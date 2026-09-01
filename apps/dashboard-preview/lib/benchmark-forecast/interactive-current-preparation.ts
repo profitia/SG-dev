@@ -17,6 +17,29 @@ const DEPLOYED_SG_RUNTIME_FALLBACK_BASE_URLS = [
 const INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH = '/api/internal/forecast/capability'
 const INTERNAL_FORECAST_PREPARE_CURRENT_ROUTE_PATH = '/api/internal/forecast/prepare/current'
 const INTERNAL_FORECAST_TIMEOUT_MS = 45_000
+export const FORECAST_TRACE_HEADER = 'x-sg-forecast-trace'
+
+export type ForecastBridgeAttemptTrace = {
+  targetRole: 'PRIMARY' | 'FALLBACK'
+  startedAt: string
+  completedAt: string
+  durationMs: number
+  httpStatus: number | null
+  timeout: boolean
+  fallbackUsed: boolean
+  sgRuntimeCapabilityExecutionMs: number | null
+}
+
+export type ForecastBridgeTrace = {
+  dashboardBridgeTotalMs: number
+  attempts: ForecastBridgeAttemptTrace[]
+  fallbackUsed: boolean
+}
+
+type TraceOptions = {
+  enabled: boolean
+  attempts: ForecastBridgeAttemptTrace[]
+}
 
 export function parseBenchmarkForecastCurrentPreparationRequest(
   input: unknown,
@@ -100,12 +123,17 @@ function readSgRuntimeInternalForecastServiceToken() {
 async function readInternalJson<T>(
   pathname: string,
   init: RequestInit,
+  traceOptions?: TraceOptions,
 ) {
   let lastError: unknown = null
 
-  for (const baseUrl of resolveSgRuntimeBaseUrls()) {
+  const baseUrls = resolveSgRuntimeBaseUrls()
+
+  for (const [index, baseUrl] of baseUrls.entries()) {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), INTERNAL_FORECAST_TIMEOUT_MS)
+    const startedAt = new Date().toISOString()
+    const startedAtMs = Date.now()
 
     try {
       const response = await fetch(new URL(pathname, baseUrl), {
@@ -114,11 +142,30 @@ async function readInternalJson<T>(
         signal: controller.signal,
         headers: {
           Accept: 'application/json',
+          ...(traceOptions?.enabled ? { [FORECAST_TRACE_HEADER]: '1' } : {}),
           ...(init.headers ?? {}),
         },
       })
 
       const payload = await response.json() as Record<string, unknown>
+      if (traceOptions?.enabled) {
+        traceOptions.attempts.push({
+          targetRole: index === 0 ? 'PRIMARY' : 'FALLBACK',
+          startedAt,
+          completedAt: new Date().toISOString(),
+          durationMs: Math.max(0, Date.now() - startedAtMs),
+          httpStatus: response.status,
+          timeout: false,
+          fallbackUsed: index > 0,
+          sgRuntimeCapabilityExecutionMs: (() => {
+            const header = response.headers.get('x-sg-runtime-capability-total-ms')
+            if (!header) return null
+            const parsed = Number.parseInt(header, 10)
+            return Number.isFinite(parsed) ? parsed : null
+          })(),
+        })
+      }
+
       if (!response.ok) {
         const message = typeof payload.error === 'string'
           ? payload.error
@@ -133,6 +180,19 @@ async function readInternalJson<T>(
 
       return payload as T
     } catch (error) {
+      if (traceOptions?.enabled) {
+        traceOptions.attempts.push({
+          targetRole: index === 0 ? 'PRIMARY' : 'FALLBACK',
+          startedAt,
+          completedAt: new Date().toISOString(),
+          durationMs: Math.max(0, Date.now() - startedAtMs),
+          httpStatus: null,
+          timeout: (error as Error).name === 'AbortError',
+          fallbackUsed: index > 0,
+          sgRuntimeCapabilityExecutionMs: null,
+        })
+      }
+
       if (error instanceof SgRuntimeForecastPreparationAuthError) {
         throw error
       }
@@ -166,6 +226,7 @@ function resolveAuthorizedHeaders() {
 
 export async function readInteractiveForecastCapability(
   input: BenchmarkForecastCurrentPreparationRequest,
+  traceOptions?: TraceOptions,
 ) {
   const targetSemantics = resolveForecastTargetSemantics(input.targetBasis)
   const url = new URL(INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH, LOCAL_SG_RUNTIME_BASE_URL)
@@ -176,11 +237,12 @@ export async function readInteractiveForecastCapability(
   return readInternalJson<InteractiveForecastCapabilityResult>(url.pathname + url.search, {
     method: 'GET',
     headers: resolveAuthorizedHeaders(),
-  })
+  }, traceOptions)
 }
 
 export async function requestInteractiveForecastCurrentPreparation(
   input: BenchmarkForecastCurrentPreparationRequest,
+  traceOptions?: TraceOptions,
 ) {
   return readInternalJson<InteractiveForecastPreparationResult>(INTERNAL_FORECAST_PREPARE_CURRENT_ROUTE_PATH, {
     method: 'POST',
@@ -193,7 +255,7 @@ export async function requestInteractiveForecastCurrentPreparation(
       modelId: input.modelId,
       targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
     }),
-  })
+  }, traceOptions)
 }
 
 export function createInteractiveCurrentPreparationGateway(
@@ -207,10 +269,15 @@ export function createInteractiveCurrentPreparationGateway(
 
   return async function prepareCurrent(
     input: BenchmarkForecastCurrentPreparationRequest,
-  ): Promise<BenchmarkForecastCurrentPreparationResult> {
+    traceEnabled = false,
+  ): Promise<BenchmarkForecastCurrentPreparationResult & { trace?: ForecastBridgeTrace }> {
     const startedAt = resolvedDependencies.now()
     const targetSemantics = resolveForecastTargetSemantics(input.targetBasis)
-    const capability = await resolvedDependencies.resolveCapability(input)
+    const attempts: ForecastBridgeAttemptTrace[] = []
+    const traceOptions: TraceOptions | undefined = traceEnabled
+      ? { enabled: true, attempts }
+      : undefined
+    const capability = await resolvedDependencies.resolveCapability(input, traceOptions as never)
 
     const baseResult = {
       seriesId: input.seriesId,
@@ -230,6 +297,13 @@ export function createInteractiveCurrentPreparationGateway(
         prepareStatus: null,
         reason: null,
         timingMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
+        ...(traceEnabled ? {
+          trace: {
+            dashboardBridgeTotalMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
+            attempts,
+            fallbackUsed: attempts.some((attempt) => attempt.fallbackUsed),
+          },
+        } : {}),
       }
     }
 
@@ -244,10 +318,17 @@ export function createInteractiveCurrentPreparationGateway(
         prepareStatus: null,
         reason: capability.reason ?? capability.status,
         timingMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
+        ...(traceEnabled ? {
+          trace: {
+            dashboardBridgeTotalMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
+            attempts,
+            fallbackUsed: attempts.some((attempt) => attempt.fallbackUsed),
+          },
+        } : {}),
       }
     }
 
-    const preparation = await resolvedDependencies.prepareCurrent(input)
+    const preparation = await resolvedDependencies.prepareCurrent(input, traceOptions as never)
     const preparationState = preparation.status === 'READY' || preparation.status === 'REUSED'
       ? 'READY'
       : preparation.status === 'FAILED'
@@ -261,6 +342,13 @@ export function createInteractiveCurrentPreparationGateway(
       prepareStatus: preparation.status,
       reason: preparationState === 'READY' ? null : preparation.reason ?? preparation.status,
       timingMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
+      ...(traceEnabled ? {
+        trace: {
+          dashboardBridgeTotalMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
+          attempts,
+          fallbackUsed: attempts.some((attempt) => attempt.fallbackUsed),
+        },
+      } : {}),
     }
   }
 }

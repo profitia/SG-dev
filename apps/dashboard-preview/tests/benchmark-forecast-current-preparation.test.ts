@@ -4,6 +4,7 @@ import test from 'node:test'
 import { NextRequest } from 'next/server'
 
 import {
+  FORECAST_TRACE_HEADER,
   createInteractiveCurrentPreparationGateway,
   readInteractiveForecastCapability,
   requestInteractiveForecastCurrentPreparation,
@@ -213,6 +214,47 @@ test('interactive current preparation route rejects invalid input before gateway
   assert.equal(String(payload.error), 'seriesId is required.')
 })
 
+test('interactive current preparation route includes trace payload only when explicitly requested', async () => {
+  const handler = createPrepareCurrentForecastRouteHandler(async () => ({
+    seriesId: 'usnaac0169',
+    modelId: 'arima',
+    targetBasis: 'POINT_IN_TIME',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    capabilityStatus: 'NOT_LAWFUL',
+    currentReadiness: 'NOT_PREPARED',
+    timingMs: 111,
+    state: 'UNSUPPORTED',
+    prepareAttempted: false,
+    prepareStatus: null,
+    reason: 'NOT_LAWFUL',
+    trace: {
+      dashboardBridgeTotalMs: 111,
+      fallbackUsed: false,
+      attempts: [{
+        targetRole: 'PRIMARY',
+        startedAt: '2026-09-01T00:00:00.000Z',
+        completedAt: '2026-09-01T00:00:00.111Z',
+        durationMs: 111,
+        httpStatus: 200,
+        timeout: false,
+        fallbackUsed: false,
+        sgRuntimeCapabilityExecutionMs: 109,
+      }],
+    },
+  }))
+
+  const response = await handler(new NextRequest('http://localhost/api/benchmark-forecast/current/prepare', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', [FORECAST_TRACE_HEADER]: '1' },
+    body: JSON.stringify({ seriesId: 'usnaac0169', modelId: 'arima', targetBasis: 'POINT_IN_TIME' }),
+  }))
+  const payload = await response.json()
+
+  assert.equal(response.status, 200)
+  assert.equal(payload.trace.dashboardBridgeTotalMs, 111)
+  assert.equal(payload.trace.attempts[0].sgRuntimeCapabilityExecutionMs, 109)
+})
+
 test('interactive current capability bridge keeps private auth server-side and forwards exact identity', async () => {
   const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
   const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
@@ -240,7 +282,7 @@ test('interactive current capability bridge keeps private auth server-side and f
       reason: 'UNSUPPORTED_FREQUENCY',
     }), {
       status: 200,
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', 'x-sg-runtime-capability-total-ms': '8' },
     })
   }) as typeof fetch
 
@@ -270,6 +312,7 @@ test('interactive current capability bridge keeps private auth server-side and f
   assert.equal(capturedUrl.searchParams.get('targetSemantics'), 'ROLLING_DAILY_POINT_IN_TIME')
   assert.equal(capturedUrl.searchParams.get('token'), null)
   assert.equal((capturedInit.headers as Record<string, string>).Authorization, 'Bearer dashboard-preview-token')
+  assert.equal((capturedInit.headers as Record<string, string>)[FORECAST_TRACE_HEADER], undefined)
 })
 
 test('interactive current prepare bridge keeps private auth server-side and forwards exact identity', async () => {
@@ -295,7 +338,7 @@ test('interactive current prepare bridge keeps private auth server-side and forw
       reason: null,
     }), {
       status: 200,
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', 'x-sg-runtime-capability-total-ms': '11' },
     })
   }) as typeof fetch
 

@@ -581,3 +581,41 @@ test('service returns explicit FAILED state when source metadata cannot be resol
   assert.equal(resolution.targetedHydration.scope, 'SINGLE_SERIES')
   assert.deepEqual(resolution.capabilities, [])
 })
+
+test('exact rolling-daily capability exits early for sparse native frequencies without provenance or prepared reads', async () => {
+  let provenanceCalls = 0
+  let preparedVariantCalls = 0
+  const service = createForecastCapabilityService({
+    async resolveHistoricalSeries(seriesId) {
+      const history = createDailyHistory(seriesId)
+      history.frequency = 'Quarterly'
+      history.historical = Array.from({ length: 48 }, (_, quarterIndex) => ({
+        date: new Date(Date.UTC(2014 + Math.floor(quarterIndex / 4), (quarterIndex % 4) * 3, 1)).toISOString(),
+        value: 100 + quarterIndex,
+      }))
+      return { history, marketDataSource: 'postgres', cacheStatus: 'hit' }
+    },
+    async resolveProvenance() {
+      provenanceCalls += 1
+      return []
+    },
+    async readPreparedVariants() {
+      preparedVariantCalls += 1
+      return []
+    },
+  })
+
+  const exact = await service.resolveExact({
+    seriesId: 'generic.quarterly',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'arima',
+  })
+
+  assert.equal(exact.resolution.status, 'AVAILABLE')
+  assert.equal(exact.resolution.sourceMetadata.sourceFrequency, 'QUARTERLY')
+  assert.equal(exact.capability?.semanticLawfulness, 'NOT_LAWFUL')
+  assert.equal(exact.capability?.capabilityState, 'NOT_LAWFUL')
+  assert.equal(exact.capability?.currentForecastEligible, false)
+  assert.equal(provenanceCalls, 0)
+  assert.equal(preparedVariantCalls, 0)
+})
