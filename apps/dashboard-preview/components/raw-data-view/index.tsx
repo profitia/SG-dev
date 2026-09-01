@@ -2364,7 +2364,7 @@ export function RawDataView({
       setShowForecastVerification(false)
       setForecastVerificationState('idle')
       setForecastVerificationResult(null)
-      setForecastVerificationErrorMessage(null)
+      setForecastVerificationErrorState(null)
     }
   }, [showForecast])
 
