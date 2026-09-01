@@ -106,7 +106,7 @@ test('interactive current preparation gateway prepares exactly the requested var
         sourceFrequency: 'MONTHLY',
         sourceAvailability: 'AVAILABLE',
         lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
-        status: 'PREPARATION_REQUIRED',
+        status: 'NOT_PREPARED',
         currentReadiness: 'NOT_PREPARED',
         verificationReadiness: 'NOT_PREPARED',
         targetedDataScope: 'SINGLE_SERIES',

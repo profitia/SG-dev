@@ -204,7 +204,10 @@ export function createInteractiveCurrentPreparationGateway(
       }
     }
 
-    if (capability.status !== 'PREPARATION_REQUIRED' || capability.currentReadiness !== 'NOT_PREPARED') {
+    const prepareEligible = capability.currentReadiness === 'NOT_PREPARED'
+      && (capability.status === 'PREPARATION_REQUIRED' || capability.status === 'NOT_PREPARED')
+
+    if (!prepareEligible) {
       return {
         ...baseResult,
         state: capability.status === 'FAILED' ? 'FAILED' : 'UNSUPPORTED',

@@ -11,6 +11,7 @@ export type ForecastMethodId = (typeof FORECAST_METHOD_IDS)[number]
 export type ForecastCurrentUiState = 'IDLE' | 'READING' | 'AVAILABLE' | 'NOT_PREPARED' | 'PREPARING' | 'FAILED' | 'UNSUPPORTED'
 export type InteractiveForecastCapabilityStatus =
   | 'READY'
+  | 'NOT_PREPARED'
   | 'PREPARATION_REQUIRED'
   | 'DATA_NOT_AVAILABLE'
   | 'INSUFFICIENT_HISTORY'
