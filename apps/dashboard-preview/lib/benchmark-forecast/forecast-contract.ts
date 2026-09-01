@@ -8,6 +8,75 @@ export type ForecastPortfolioModelId = (typeof FORECAST_PORTFOLIO_MODELS)[number
 export type ForecastTargetBasis = (typeof FORECAST_TARGET_BASES)[number]
 export type ForecastTargetSemantics = (typeof FORECAST_TARGET_SEMANTICS)[number]
 export type ForecastMethodId = (typeof FORECAST_METHOD_IDS)[number]
+export type ForecastCurrentUiState = 'IDLE' | 'READING' | 'AVAILABLE' | 'NOT_PREPARED' | 'PREPARING' | 'FAILED' | 'UNSUPPORTED'
+export type InteractiveForecastCapabilityStatus =
+  | 'READY'
+  | 'PREPARATION_REQUIRED'
+  | 'DATA_NOT_AVAILABLE'
+  | 'INSUFFICIENT_HISTORY'
+  | 'NOT_LAWFUL'
+  | 'PROVENANCE_REQUIRED'
+  | 'NOT_IMPLEMENTED'
+  | 'FAILED'
+export type InteractiveForecastPreparationStatus = InteractiveForecastCapabilityStatus | 'REUSED'
+
+export interface BenchmarkForecastCurrentPreparationRequest {
+  seriesId: string
+  modelId: ForecastPortfolioModelId
+  targetBasis: ForecastTargetBasis
+}
+
+export interface InteractiveForecastCapabilityResult {
+  seriesId: string
+  targetSemantics: ForecastTargetSemantics
+  modelId: ForecastPortfolioModelId
+  sourceFrequency: string | null
+  sourceAvailability: 'AVAILABLE' | 'DATA_NOT_AVAILABLE' | 'FAILED'
+  lawfulTargetSemantics: string | null
+  status: InteractiveForecastCapabilityStatus
+  currentReadiness: 'READY' | 'NOT_PREPARED'
+  verificationReadiness: 'READY' | 'NOT_PREPARED'
+  targetedDataScope: 'SINGLE_SERIES'
+  timingMs: number
+  reason: string | null
+}
+
+export interface InteractiveForecastPreparationResult {
+  seriesId: string
+  targetSemantics: ForecastTargetSemantics
+  modelId: ForecastPortfolioModelId
+  operation: 'CURRENT_FORECAST'
+  status: InteractiveForecastPreparationStatus
+  targetedDataScope: 'SINGLE_SERIES'
+  timingMs: number
+  reason: string | null
+}
+
+export interface BenchmarkForecastCurrentPreparationResult {
+  seriesId: string
+  modelId: ForecastPortfolioModelId
+  targetBasis: ForecastTargetBasis
+  targetSemantics: ForecastTargetSemantics
+  state: 'READY' | 'NOT_PREPARED' | 'UNSUPPORTED' | 'FAILED'
+  capabilityStatus: InteractiveForecastCapabilityStatus
+  currentReadiness: 'READY' | 'NOT_PREPARED'
+  prepareAttempted: boolean
+  prepareStatus: InteractiveForecastPreparationStatus | null
+  reason: string | null
+  timingMs: number
+}
+
+export function resolveForecastTargetSemantics(targetBasis: ForecastTargetBasis): ForecastTargetSemantics {
+  if (targetBasis === 'POINT_IN_TIME') {
+    return 'ROLLING_DAILY_POINT_IN_TIME'
+  }
+
+  if (targetBasis === 'END_OF_PERIOD') {
+    return 'END_OF_PERIOD'
+  }
+
+  return 'MONTHLY_AVERAGE'
+}
 
 export interface ForecastIdentity {
   seriesId: string

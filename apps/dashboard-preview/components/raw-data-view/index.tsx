@@ -16,10 +16,19 @@ import {
   isAvailableCurrentResult,
   isAvailableVerificationResult,
   type BenchmarkForecastCurrentResult,
+  type ForecastCurrentUiState,
   type BenchmarkForecastVerificationResult,
   type ForecastTargetBasis,
   type ForecastPortfolioModelId,
 } from '@/lib/benchmark-forecast/forecast-contract'
+import {
+  explicitlyPrepareForecastCurrent,
+  readPreparedCurrentForecastThroughDashboard,
+  requestExplicitCurrentForecastPreparationThroughDashboard,
+  resolveForecastCurrentUiState,
+  shouldReadCurrentForecast,
+  shouldShowExplicitCurrentPreparation,
+} from '@/lib/benchmark-forecast/interactive-current-client'
 
 import type {
   ComponentListItem,
@@ -2329,7 +2338,7 @@ export function RawDataView({
   const [forecastAccuracyState, setForecastAccuracyState] = useState<LoadState>('idle')
   const [forecastAccuracyResponse, setForecastAccuracyResponse] = useState<ForecastAccuracyResponse | null>(null)
   const [forecastAccuracyPayload, setForecastAccuracyPayload] = useState<TimeSeriesViewerPayload | null>(null)
-  const [forecastCurrentState, setForecastCurrentState] = useState<LoadState>(initialForecastVisibility ? 'loading' : 'idle')
+  const [forecastCurrentState, setForecastCurrentState] = useState<ForecastCurrentUiState>(initialForecastVisibility ? 'READING' : 'IDLE')
   const [forecastCurrentResult, setForecastCurrentResult] = useState<BenchmarkForecastCurrentResult | null>(null)
   const [forecastVerificationState, setForecastVerificationState] = useState<LoadState>(initialForecastVerificationVisibility ? 'loading' : 'idle')
   const [forecastVerificationResult, setForecastVerificationResult] = useState<BenchmarkForecastVerificationResult | null>(null)
@@ -2342,6 +2351,7 @@ export function RawDataView({
   const forecastAccuracyAbortRef = useRef<AbortController | null>(null)
   const forecastCurrentAbortRef = useRef<AbortController | null>(null)
   const forecastVerificationAbortRef = useRef<AbortController | null>(null)
+  const forecastPreparationRequestRef = useRef(0)
   const seriesCacheRef = useRef<Map<string, CachedSeriesEntry>>(new Map())
   const forecastLayerCacheRef = useRef<Map<string, ForecastLayerCacheEntry<BenchmarkForecastCurrentResult | BenchmarkForecastVerificationResult>>>(new Map())
 
@@ -2355,7 +2365,7 @@ export function RawDataView({
     setForecastModel('arima')
     setSelectedForecastTargetBasis(defaultForecastTargetBasis)
     setForecastAccuracyHorizon(1)
-    setForecastCurrentState(initialForecastVisibility ? 'loading' : 'idle')
+    setForecastCurrentState(initialForecastVisibility ? 'READING' : 'IDLE')
     setForecastVerificationState(initialForecastVerificationVisibility ? 'loading' : 'idle')
   }, [defaultForecastTargetBasis, initialForecastVerificationVisibility, initialForecastVisibility, isForecastPortfolioVariant])
 
@@ -2940,10 +2950,11 @@ export function RawDataView({
     }
 
     const activeSeriesId = benchmarkSeriesId
+    forecastPreparationRequestRef.current += 1
 
-    if (!showForecast) {
+    if (!shouldReadCurrentForecast({ showForecast, isForecastPortfolioVariant, seriesId: activeSeriesId })) {
       forecastCurrentAbortRef.current?.abort()
-      setForecastCurrentState('idle')
+      setForecastCurrentState('IDLE')
       setForecastCurrentResult(null)
       setForecastErrorState(null)
       return
@@ -2959,50 +2970,48 @@ export function RawDataView({
       const cached = forecastLayerCacheRef.current.get(cacheKey)
 
       if (cached) {
-        setForecastCurrentResult(cached.payload as BenchmarkForecastCurrentResult)
-        setForecastCurrentState('ready')
+        const cachedResult = cached.payload as BenchmarkForecastCurrentResult
+        const cachedState = resolveForecastCurrentUiState(cachedResult)
+        setForecastCurrentResult(cachedResult)
+        setForecastCurrentState(cachedState)
         setForecastErrorState(null)
         return
       }
 
-      setForecastCurrentState('loading')
+      setForecastCurrentState('READING')
       setForecastErrorState(null)
 
       try {
-        const params = new URLSearchParams({
+        const payload = await readPreparedCurrentForecastThroughDashboard(fetch, {
           seriesId: activeSeriesId,
-          model: forecastModel,
+          modelId: forecastModel,
           targetBasis: selectedForecastTargetBasis,
-        })
-        const response = await fetch(`/api/benchmark-forecast/current?${params.toString()}`, { cache: 'no-store', signal: controller.signal })
-        const payload = await response.json() as BenchmarkForecastCurrentResult | { error?: string }
-
-        if (!response.ok) {
-          throw new Error('error' in payload ? payload.error ?? t('forecastUnavailable') : t('forecastUnavailable'))
-        }
+        }, controller.signal)
 
         if (cancelled) {
           return
         }
 
-        if ((payload as BenchmarkForecastCurrentResult).seriesId !== activeSeriesId
-          || (payload as BenchmarkForecastCurrentResult).modelId !== forecastModel
-          || (payload as BenchmarkForecastCurrentResult).targetBasis !== selectedForecastTargetBasis) {
+        if (payload.seriesId !== activeSeriesId
+          || payload.modelId !== forecastModel
+          || payload.targetBasis !== selectedForecastTargetBasis) {
           return
         }
 
         forecastLayerCacheRef.current.set(cacheKey, {
-          payload: payload as BenchmarkForecastCurrentResult,
+          payload,
           cachedAt: Date.now(),
         })
-        setForecastCurrentResult(payload as BenchmarkForecastCurrentResult)
-        setForecastCurrentState('ready')
+        const nextState = resolveForecastCurrentUiState(payload)
+        setForecastCurrentResult(payload)
+        setForecastCurrentState(nextState)
+        setForecastErrorState(null)
       } catch (error) {
         if (cancelled || (error as Error).name === 'AbortError') {
           return
         }
 
-        setForecastCurrentState('error')
+        setForecastCurrentState('FAILED')
         setForecastCurrentResult(null)
         setForecastErrorState(toUiLoadErrorState(
           error,
@@ -3022,6 +3031,75 @@ export function RawDataView({
       controller.abort()
     }
   }, [benchmarkSeriesId, forecastModel, isForecastPortfolioVariant, locale, selectedForecastTargetBasis, showForecast, t])
+
+  async function handlePrepareForecastCurrent() {
+    if (!benchmarkSeriesId) {
+      return
+    }
+
+    const requestId = forecastPreparationRequestRef.current + 1
+    forecastPreparationRequestRef.current = requestId
+    const identity = {
+      seriesId: benchmarkSeriesId,
+      modelId: forecastModel,
+      targetBasis: selectedForecastTargetBasis,
+    } as const
+
+    setForecastCurrentState('PREPARING')
+    setForecastErrorState(null)
+
+    try {
+      const outcome = await explicitlyPrepareForecastCurrent(identity, {
+        prepareCurrent: (input) => requestExplicitCurrentForecastPreparationThroughDashboard(fetch, input),
+        readPrepared: (input) => readPreparedCurrentForecastThroughDashboard(fetch, input),
+      })
+
+      if (requestId !== forecastPreparationRequestRef.current) {
+        return
+      }
+
+      const cacheKey = buildForecastLayerCacheKey(locale, identity.seriesId, identity.modelId, identity.targetBasis, 'current')
+      if (outcome.currentResult) {
+        forecastLayerCacheRef.current.set(cacheKey, {
+          payload: outcome.currentResult,
+          cachedAt: Date.now(),
+        })
+      }
+
+      setForecastCurrentResult(outcome.currentResult)
+      setForecastCurrentState(outcome.currentState)
+
+      if (outcome.currentState === 'FAILED') {
+        setForecastErrorState({
+          title: t('forecastPreparationFailed'),
+          message: outcome.errorMessage ?? t('forecastUnavailableHint'),
+        })
+        return
+      }
+
+      if (outcome.currentState === 'UNSUPPORTED') {
+        setForecastErrorState(null)
+        return
+      }
+
+      setForecastErrorState(null)
+    } catch (error) {
+      if (requestId !== forecastPreparationRequestRef.current) {
+        return
+      }
+
+      setForecastCurrentState('FAILED')
+      setForecastCurrentResult(null)
+      setForecastErrorState(toUiLoadErrorState(
+        error,
+        t('forecastPreparationFailed'),
+        t('forecastPreparationFailedHint'),
+        t('errors.timeout'),
+        t('forecastBlocked'),
+        t('forecastBlockedHint'),
+      ))
+    }
+  }
 
   useEffect(() => {
     if (!isForecastPortfolioVariant || !benchmarkSeriesId) {
@@ -3431,7 +3509,30 @@ export function RawDataView({
             </div>
           </div>
         ) : null}
-        {isForecastPortfolioVariant && forecastErrorState ? (
+        {isForecastPortfolioVariant && forecastCurrentState === 'NOT_PREPARED' ? (
+          <div className="callout" role="status" aria-live="polite">
+            <strong>{t('forecastPreparationRequired')}</strong>
+            <p>{t('forecastPreparationRequiredHint')}</p>
+            <div className="callout-actions">
+              <button type="button" className="callout-button" onClick={handlePrepareForecastCurrent}>
+                {t('prepareForecast')}
+              </button>
+            </div>
+          </div>
+        ) : null}
+        {isForecastPortfolioVariant && forecastCurrentState === 'PREPARING' ? (
+          <div className="callout" role="status" aria-live="polite">
+            <strong>{t('forecastPreparing')}</strong>
+            <p>{t('forecastPreparingHint')}</p>
+          </div>
+        ) : null}
+        {isForecastPortfolioVariant && forecastCurrentState === 'UNSUPPORTED' ? (
+          <div className="callout" role="status" aria-live="polite">
+            <strong>{t('forecastUnsupported')}</strong>
+            <p>{forecastCurrentResult?.reason ?? t('forecastUnsupportedHint')}</p>
+          </div>
+        ) : null}
+        {isForecastPortfolioVariant && forecastCurrentState === 'FAILED' && forecastErrorState ? (
           <div className="callout callout-error" role="status" aria-live="polite">
             <strong>{forecastErrorState.title}</strong>
             <p>{forecastErrorState.message}</p>
