@@ -870,18 +870,10 @@ type ShowForecastDependencies = {
     model: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
   ) => Promise<{ status: string }>
-  computeProduction: (
-    seriesId: string,
-    model: ForecastPortfolioModelId,
-    targetBasis: ForecastTargetBasis,
-    cadence?: { sourceFrequency: string, targetCadence: string },
-    correlationHeaders?: Record<string, string>,
-  ) => Promise<{ status: string }>
 }
 
 const showForecastDependencies: ShowForecastDependencies = {
   readPrepared: getBenchmarkForecastCurrent,
-  computeProduction: getBenchmarkProductionForecast,
 }
 
 export async function resolveShowForecastCurrent(
@@ -889,13 +881,8 @@ export async function resolveShowForecastCurrent(
   model: ForecastPortfolioModelId,
   targetBasis: ForecastTargetBasis = DEFAULT_FORECAST_TARGET_BASIS,
   dependencies: ShowForecastDependencies = showForecastDependencies,
-  cadence?: { sourceFrequency: string, targetCadence: string },
-  correlationHeaders?: Record<string, string>,
 ) {
-  const prepared = await dependencies.readPrepared(seriesId, model, targetBasis)
-  return prepared.status === 'NOT_AVAILABLE'
-    ? dependencies.computeProduction(seriesId, model, targetBasis, cadence, correlationHeaders)
-    : prepared
+  return dependencies.readPrepared(seriesId, model, targetBasis)
 }
 
 export async function getBenchmarkForecastVerification(

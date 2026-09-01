@@ -10,35 +10,35 @@ import {
 
 const mutableEnv = process.env as Record<string, string | undefined>
 
-test('explicit Show Forecast preserves prepared hits and routes prepared misses to production', async () => {
+test('explicit Show Forecast preserves prepared hits and returns prepared misses without compute fallback', async () => {
   const calls: string[] = []
   const available = { status: 'AVAILABLE', seriesId: 'wocaes0280', marker: 'prepared' }
-  const computed = { status: 'AVAILABLE', seriesId: 'wocaes0280', marker: 'computed' }
+  const missing = {
+    status: 'NOT_AVAILABLE',
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    methodId: 'MONTHLY_AVERAGE',
+    reason: 'PREPARATION_REQUIRED: No exact prepared Current Forecast is available.',
+  }
 
   const preparedResult = await resolveShowForecastCurrent('wocaes0280', 'ets', 'MONTHLY_AVERAGE', {
     readPrepared: async () => {
       calls.push('prepared-hit')
       return available
     },
-    computeProduction: async () => {
-      calls.push('unexpected-compute')
-      return computed
-    },
   })
   const computedResult = await resolveShowForecastCurrent('wocaes0280', 'ets', 'MONTHLY_AVERAGE', {
     readPrepared: async () => {
       calls.push('prepared-miss')
-      return { status: 'NOT_AVAILABLE', seriesId: 'wocaes0280' }
-    },
-    computeProduction: async () => {
-      calls.push('compute')
-      return computed
+      return missing
     },
   })
 
   assert.equal(preparedResult, available)
-  assert.equal(computedResult, computed)
-  assert.deepEqual(calls, ['prepared-hit', 'prepared-miss', 'compute'])
+  assert.equal(computedResult, missing)
+  assert.deepEqual(calls, ['prepared-hit', 'prepared-miss'])
 })
 
 test('runtime query returns preparation-required without fetching when current datastore is unavailable', async () => {
