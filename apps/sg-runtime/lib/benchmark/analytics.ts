@@ -28,9 +28,10 @@ export function buildDashboardPreviewAnalyticsUrl(
 ) {
   const url = new URL(`/${locale}`, resolveDashboardPreviewBaseUrl())
   url.searchParams.set('embed', '1')
+  url.searchParams.set('variantId', 'forecast-portfolio-v3')
+  url.searchParams.set('showForecast', 'false')
   url.searchParams.set('seriesId', seriesId)
   url.searchParams.set('range', '1Y')
-  url.searchParams.set('showForecast', 'false')
   if (displayName?.trim()) {
     url.searchParams.set('displayName', displayName.trim())
   }

@@ -105,7 +105,7 @@ const DASHBOARD_VARIANTS: DashboardVariantRegistration[] = [
     materialized: true,
     hostAvailability: {
       standalone: 'runnable',
-      embedded: 'planned',
+      embedded: 'runnable',
     },
     standaloneDisplayOrder: 3,
     experience: {
@@ -127,9 +127,9 @@ const DASHBOARD_VARIANTS: DashboardVariantRegistration[] = [
       mainControls: ['chart range', 'show forecast', 'model selector', 'target basis selector', 'show forecast verification', 'verification horizon'],
       supportedModels: ['Naive', 'Damped Holt', 'ETS', 'ARIMA'],
       verificationHorizons: ['1M', '3M', '6M', '12M'],
-      initialConsumer: 'Standalone Dashboard Preview only',
+      initialConsumer: 'Standalone Dashboard Preview and embedded Finder host',
       status: 'EXPERIMENTAL / RUNNABLE',
-      keyDifference: 'Unlike finder-embedded-v2, it layers Historical Actual with Current Forecast and Historical Forecast Verification while making Target Basis a first-class user-facing selector.',
+      keyDifference: 'Unlike finder-embedded-v2, it layers Historical Actual with opt-in Current Forecast and Historical Forecast Verification while making Target Basis a first-class user-facing selector.',
     },
   },
 ]

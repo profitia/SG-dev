@@ -38,14 +38,14 @@ test('dashboard variant resolver keeps historical-v1 embedded-disabled', () => {
   assert.equal(resolution.isRunnable, false)
 })
 
-test('dashboard variant resolver keeps forecast-portfolio-v3 explicit and planned', () => {
+test('dashboard variant resolver keeps forecast-portfolio-v3 explicit and runnable in embedded mode', () => {
   const resolution = resolveDashboardVariant({ requestedVariantId: 'forecast-portfolio-v3', embedded: true })
 
   assert.equal(resolution.host, 'embedded')
   assert.equal(resolution.resolutionReason, 'requested')
   assert.equal(resolution.resolvedVariant.id, 'forecast-portfolio-v3')
-  assert.equal(resolution.hostAvailability, 'planned')
-  assert.equal(resolution.isRunnable, false)
+  assert.equal(resolution.hostAvailability, 'runnable')
+  assert.equal(resolution.isRunnable, true)
 })
 
 test('dashboard variant resolver materializes forecast-portfolio-v3 as runnable in standalone mode only', () => {

@@ -103,6 +103,11 @@ type ForecastLayerCacheEntry<T> = {
   cachedAt: number
 }
 
+type UiLoadErrorState = {
+  title: string
+  message: string
+}
+
 type ClientSeriesProfiling = {
   componentName: string
   componentCode: string | null
@@ -516,14 +521,34 @@ function recordRawDataViewProfile(sample: ClientSeriesProfiling) {
   profiler.history = [sample, ...profiler.history].slice(0, 20)
 }
 
-function toUiLoadErrorMessage(error: unknown, fallbackMessage: string, timeoutMessage: string) {
+function toUiLoadErrorState(
+  error: unknown,
+  fallbackTitle: string,
+  fallbackMessage: string,
+  timeoutMessage: string,
+  blockedTitle?: string,
+  blockedMessage?: string,
+): UiLoadErrorState {
   const message = error instanceof Error ? error.message.toLowerCase() : ''
 
   if (message.includes('timeout') || message.includes('timed out')) {
-    return timeoutMessage
+    return {
+      title: fallbackTitle,
+      message: timeoutMessage,
+    }
   }
 
-  return fallbackMessage
+  if ((message.includes('provenance_required') || message.includes('provenance required')) && blockedTitle && blockedMessage) {
+    return {
+      title: blockedTitle,
+      message: blockedMessage,
+    }
+  }
+
+  return {
+    title: fallbackTitle,
+    message: fallbackMessage,
+  }
 }
 
 function SearchableSelect({
@@ -2257,6 +2282,14 @@ export function resolveDefaultForecastTargetBasis(variant: DashboardVariantId): 
   return DEFAULT_FORECAST_TARGET_BASIS
 }
 
+export function resolveInitialForecastVisibility(variant: DashboardVariantId, embedded: boolean): boolean {
+  return variant === 'forecast-portfolio-v3' && !embedded
+}
+
+export function resolveInitialForecastVerificationVisibility(variant: DashboardVariantId, embedded: boolean): boolean {
+  return resolveInitialForecastVisibility(variant, embedded)
+}
+
 export function RawDataView({
   embedded = false,
   initialBenchmarkSeries = null,
@@ -2275,6 +2308,8 @@ export function RawDataView({
   const benchmarkDisplayName = benchmarkSubject?.displayName ?? null
   const initialRange = readInitialRange(searchParams)
   const defaultForecastTargetBasis = resolveDefaultForecastTargetBasis(variant)
+  const initialForecastVisibility = resolveInitialForecastVisibility(variant, embedded)
+  const initialForecastVerificationVisibility = resolveInitialForecastVerificationVisibility(variant, embedded)
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [componentsState, setComponentsState] = useState<LoadState>('idle')
   const [seriesState, setSeriesState] = useState<LoadState>('idle')
@@ -2285,21 +2320,21 @@ export function RawDataView({
   const [selectedComponentCode, setSelectedComponentCode] = useState('')
   const [componentSearch, setComponentSearch] = useState('')
   const [benchmarkSearch, setBenchmarkSearch] = useState('')
-  const [showForecast, setShowForecast] = useState(isForecastPortfolioVariant)
+  const [showForecast, setShowForecast] = useState(initialForecastVisibility)
   const [showForecastAccuracy, setShowForecastAccuracy] = useState(false)
-  const [showForecastVerification, setShowForecastVerification] = useState(isForecastPortfolioVariant)
+  const [showForecastVerification, setShowForecastVerification] = useState(initialForecastVerificationVisibility)
   const [forecastModel, setForecastModel] = useState<ForecastPortfolioModelId>('arima')
   const [selectedForecastTargetBasis, setSelectedForecastTargetBasis] = useState<ForecastTargetBasis>(defaultForecastTargetBasis)
   const [forecastAccuracyHorizon, setForecastAccuracyHorizon] = useState<ForecastAccuracyHorizonMonths>(1)
   const [forecastAccuracyState, setForecastAccuracyState] = useState<LoadState>('idle')
   const [forecastAccuracyResponse, setForecastAccuracyResponse] = useState<ForecastAccuracyResponse | null>(null)
   const [forecastAccuracyPayload, setForecastAccuracyPayload] = useState<TimeSeriesViewerPayload | null>(null)
-  const [forecastCurrentState, setForecastCurrentState] = useState<LoadState>(isForecastPortfolioVariant ? 'loading' : 'idle')
+  const [forecastCurrentState, setForecastCurrentState] = useState<LoadState>(initialForecastVisibility ? 'loading' : 'idle')
   const [forecastCurrentResult, setForecastCurrentResult] = useState<BenchmarkForecastCurrentResult | null>(null)
-  const [forecastVerificationState, setForecastVerificationState] = useState<LoadState>(isForecastPortfolioVariant ? 'loading' : 'idle')
+  const [forecastVerificationState, setForecastVerificationState] = useState<LoadState>(initialForecastVerificationVisibility ? 'loading' : 'idle')
   const [forecastVerificationResult, setForecastVerificationResult] = useState<BenchmarkForecastVerificationResult | null>(null)
-  const [forecastErrorMessage, setForecastErrorMessage] = useState<string | null>(null)
-  const [forecastVerificationErrorMessage, setForecastVerificationErrorMessage] = useState<string | null>(null)
+  const [forecastErrorState, setForecastErrorState] = useState<UiLoadErrorState | null>(null)
+  const [forecastVerificationErrorState, setForecastVerificationErrorState] = useState<UiLoadErrorState | null>(null)
   const [series, setSeries] = useState<SeriesResponse | null>(null)
   const [viewerPayload, setViewerPayload] = useState<TimeSeriesViewerPayload | null>(null)
   const [benchmarkRange, setBenchmarkRange] = useState<RangePreset>(initialRange)
@@ -2315,12 +2350,14 @@ export function RawDataView({
       return
     }
 
-    setShowForecast(true)
-    setShowForecastVerification(true)
+    setShowForecast(initialForecastVisibility)
+    setShowForecastVerification(initialForecastVerificationVisibility)
     setForecastModel('arima')
     setSelectedForecastTargetBasis(defaultForecastTargetBasis)
     setForecastAccuracyHorizon(1)
-  }, [defaultForecastTargetBasis, isForecastPortfolioVariant])
+    setForecastCurrentState(initialForecastVisibility ? 'loading' : 'idle')
+    setForecastVerificationState(initialForecastVerificationVisibility ? 'loading' : 'idle')
+  }, [defaultForecastTargetBasis, initialForecastVerificationVisibility, initialForecastVisibility, isForecastPortfolioVariant])
 
   useEffect(() => {
     if (!showForecast) {
@@ -2908,7 +2945,7 @@ export function RawDataView({
       forecastCurrentAbortRef.current?.abort()
       setForecastCurrentState('idle')
       setForecastCurrentResult(null)
-      setForecastErrorMessage(null)
+      setForecastErrorState(null)
       return
     }
 
@@ -2924,12 +2961,12 @@ export function RawDataView({
       if (cached) {
         setForecastCurrentResult(cached.payload as BenchmarkForecastCurrentResult)
         setForecastCurrentState('ready')
-        setForecastErrorMessage(null)
+        setForecastErrorState(null)
         return
       }
 
       setForecastCurrentState('loading')
-      setForecastErrorMessage(null)
+      setForecastErrorState(null)
 
       try {
         const params = new URLSearchParams({
@@ -2967,7 +3004,14 @@ export function RawDataView({
 
         setForecastCurrentState('error')
         setForecastCurrentResult(null)
-        setForecastErrorMessage(toUiLoadErrorMessage(error, t('forecastUnavailableHint'), t('errors.timeout')))
+        setForecastErrorState(toUiLoadErrorState(
+          error,
+          t('forecastUnavailable'),
+          t('forecastUnavailableHint'),
+          t('errors.timeout'),
+          t('forecastBlocked'),
+          t('forecastBlockedHint'),
+        ))
       }
     }
 
@@ -2990,7 +3034,7 @@ export function RawDataView({
       forecastVerificationAbortRef.current?.abort()
       setForecastVerificationState('idle')
       setForecastVerificationResult(null)
-      setForecastVerificationErrorMessage(null)
+      setForecastVerificationErrorState(null)
       return
     }
 
@@ -3006,12 +3050,12 @@ export function RawDataView({
       if (cached) {
         setForecastVerificationResult(cached.payload as BenchmarkForecastVerificationResult)
         setForecastVerificationState('ready')
-        setForecastVerificationErrorMessage(null)
+        setForecastVerificationErrorState(null)
         return
       }
 
       setForecastVerificationState('loading')
-      setForecastVerificationErrorMessage(null)
+      setForecastVerificationErrorState(null)
 
       try {
         const params = new URLSearchParams({
@@ -3049,7 +3093,14 @@ export function RawDataView({
 
         setForecastVerificationState('error')
         setForecastVerificationResult(null)
-        setForecastVerificationErrorMessage(toUiLoadErrorMessage(error, t('verificationUnavailableHint'), t('errors.timeout')))
+        setForecastVerificationErrorState(toUiLoadErrorState(
+          error,
+          t('verificationUnavailable'),
+          t('verificationUnavailableHint'),
+          t('errors.timeout'),
+          t('verificationBlocked'),
+          t('verificationBlockedHint'),
+        ))
       }
     }
 
@@ -3380,16 +3431,16 @@ export function RawDataView({
             </div>
           </div>
         ) : null}
-        {isForecastPortfolioVariant && forecastErrorMessage ? (
+        {isForecastPortfolioVariant && forecastErrorState ? (
           <div className="callout callout-error" role="status" aria-live="polite">
-            <strong>{t('forecastUnavailable')}</strong>
-            <p>{forecastErrorMessage}</p>
+            <strong>{forecastErrorState.title}</strong>
+            <p>{forecastErrorState.message}</p>
           </div>
         ) : null}
-        {isForecastPortfolioVariant && forecastVerificationErrorMessage ? (
+        {isForecastPortfolioVariant && forecastVerificationErrorState ? (
           <div className="callout callout-error" role="status" aria-live="polite">
-            <strong>{t('verificationUnavailable')}</strong>
-            <p>{forecastVerificationErrorMessage}</p>
+            <strong>{forecastVerificationErrorState.title}</strong>
+            <p>{forecastVerificationErrorState.message}</p>
           </div>
         ) : null}
       </section>}
