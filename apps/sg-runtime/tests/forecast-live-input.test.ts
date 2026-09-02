@@ -29,6 +29,28 @@ function createDailyHistory(
   }
 }
 
+function createWeeklyHistory(
+  points: Array<{ date: string; value: number | null }>,
+  seriesId = 'uscaes0001',
+): BenchmarkHistoricalSeriesResult {
+  return {
+    providerSeries: {
+      provider: {
+        providerCode: 'MACROBOND',
+        displayName: 'Macrobond',
+      },
+      providerSeriesId: seriesId,
+      providerSeriesKey: seriesId,
+    },
+    displayName: 'Total, Including SPR',
+    frequency: 'Weekly',
+    currency: null,
+    unit: 'Barrels',
+    source: 'src_useia',
+    historical: points,
+  }
+}
+
 test('wocaes0074 live forecast input payload is monthly and provider-neutral at the bridge boundary', () => {
   const payload = buildLiveForecastBridgePayloadFromHistory(
     'wocaes0074',
@@ -79,6 +101,33 @@ test('wocaes0074 end-of-period live payload preserves exact source observation p
   assert.deepEqual(payload.history.points, [
     { date: '2026-02-01T00:00:00.000Z', value: 73, sourceObservedAt: '2026-02-27T00:00:00.000Z' },
     { date: '2026-03-01T00:00:00.000Z', value: 103, sourceObservedAt: '2026-03-31T00:00:00.000Z' },
+  ])
+})
+
+test('weekly end-of-period live payload lawfully canonicalizes weekly history into closed monthly periods', () => {
+  const payload = buildLiveForecastBridgePayloadFromHistory(
+    'uscaes0001',
+    createWeeklyHistory([
+      { date: '2026-01-04T00:00:00.000Z', value: 100 },
+      { date: '2026-01-11T00:00:00.000Z', value: 105 },
+      { date: '2026-01-18T00:00:00.000Z', value: 110 },
+      { date: '2026-01-25T00:00:00.000Z', value: 115 },
+      { date: '2026-02-01T00:00:00.000Z', value: 120 },
+      { date: '2026-02-08T00:00:00.000Z', value: 121 },
+      { date: '2026-02-15T00:00:00.000Z', value: 122 },
+      { date: '2026-02-22T00:00:00.000Z', value: 123 },
+      { date: '2026-03-01T00:00:00.000Z', value: 124 },
+    ]),
+    { now: new Date('2026-03-15T00:00:00.000Z'), targetBasis: 'END_OF_PERIOD', targetCadence: 'MONTHLY' },
+  )
+
+  assert.equal(payload.benchmark.frequency, 'MONTHLY')
+  assert.equal(payload.canonicalization.targetBasis, 'END_OF_PERIOD')
+  assert.equal(payload.canonicalization.method, 'LAST_LAWFUL_WEEKLY_LEVEL_IN_CLOSED_PERIOD')
+  assert.equal(payload.canonicalization.version, 'weekly-level-end-of-period-v1')
+  assert.deepEqual(payload.history.points, [
+    { date: '2026-01-01T00:00:00.000Z', value: 115, sourceObservedAt: '2026-01-25T00:00:00.000Z' },
+    { date: '2026-02-01T00:00:00.000Z', value: 123, sourceObservedAt: '2026-02-22T00:00:00.000Z' },
   ])
 })
 

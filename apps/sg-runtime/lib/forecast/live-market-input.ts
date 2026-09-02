@@ -6,6 +6,7 @@ import {
   DAILY_MARKET_PRICE_MONTHLY_VERSION,
   LIVE_FORECAST_INPUT_SOURCE_KIND,
   canonicalizeDailyMarketPriceHistory,
+  canonicalizeProvenanceQualifiedWeeklyEndOfPeriod,
   canonicalizeProvenanceQualifiedNativePeriod,
 } from '@/lib/forecast/canonical-history'
 import { DEFAULT_FORECAST_TARGET_BASIS, type ForecastTargetBasis } from '@/lib/forecast/contracts'
@@ -111,6 +112,8 @@ export function buildLiveForecastBridgePayloadFromHistory(
   const sourceFrequency = normalizeForecastSourceFrequency(history.frequency)
   const canonical = sourceFrequency === 'DAILY' && targetCadence === 'MONTHLY'
     ? canonicalizeDailyMarketPriceHistory(history, targetBasis, options)
+    : sourceFrequency === 'WEEKLY' && targetCadence === 'MONTHLY' && targetBasis === 'END_OF_PERIOD'
+      ? canonicalizeProvenanceQualifiedWeeklyEndOfPeriod(history, options)
     : canonicalizeProvenanceQualifiedNativePeriod(history, targetBasis, targetCadence, options)
   const firstPoint = canonical.historical[0]
   const lastPoint = canonical.historical[canonical.historical.length - 1]
@@ -179,7 +182,9 @@ export async function loadLiveForecastBridgePayload(
   if (
     !sourceFrequency
     || (sourceFrequency === 'DAILY' && targetCadence !== 'MONTHLY')
-    || (sourceFrequency !== 'DAILY' && sourceFrequency !== targetCadence)
+    || (sourceFrequency !== 'DAILY'
+      && sourceFrequency !== targetCadence
+      && !(sourceFrequency === 'WEEKLY' && targetCadence === 'MONTHLY' && (options.targetBasis ?? DEFAULT_FORECAST_TARGET_BASIS) === 'END_OF_PERIOD'))
   ) {
     return null
   }
