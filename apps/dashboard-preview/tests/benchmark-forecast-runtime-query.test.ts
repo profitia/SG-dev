@@ -137,6 +137,104 @@ test('runtime query returns preparation-required without fetching when verificat
   assert.equal(fetchCalls, 0)
 })
 
+test('point-in-time current forecast fails closed as unsupported for non-daily capability before snapshot lookup', async () => {
+  const originalFetch = global.fetch
+  const previousMarketDataUrl = process.env.MARKET_DATA_DATABASE_URL
+  const previousDatabaseUrl = process.env.DATABASE_URL
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_URL
+  const marketDataGlobal = globalThis as typeof globalThis & {
+    dashboardPreviewMarketDataPrisma?: {
+      rollingDailyCurrentForecastSnapshot: {
+        findFirst: () => Promise<Record<string, unknown> | null>
+      }
+    }
+    dashboardPreviewMarketDataPrismaConnectionString?: string
+  }
+  const previousPrisma = marketDataGlobal.dashboardPreviewMarketDataPrisma
+  const previousPrismaConnectionString = marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString
+  let snapshotReads = 0
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_URL = 'https://sg-runtime.example.invalid'
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://market-data-present'
+  delete process.env.DATABASE_URL
+
+  marketDataGlobal.dashboardPreviewMarketDataPrisma = {
+    rollingDailyCurrentForecastSnapshot: {
+      async findFirst() {
+        snapshotReads += 1
+        return null
+      },
+    },
+  }
+  marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = process.env.MARKET_DATA_DATABASE_URL
+
+  global.fetch = (async (input: URL | RequestInfo | string) => {
+    const url = new URL(String(input))
+    assert.equal(url.pathname, '/api/internal/forecast/capability')
+    assert.equal(url.searchParams.get('seriesId'), 'ussurv0303')
+    assert.equal(url.searchParams.get('modelId'), 'arima')
+    assert.equal(url.searchParams.get('targetSemantics'), 'ROLLING_DAILY_POINT_IN_TIME')
+
+    return new Response(JSON.stringify({
+      seriesId: 'ussurv0303',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      modelId: 'arima',
+      sourceFrequency: 'SEMIANNUAL',
+      sourceAvailability: 'AVAILABLE',
+      lawfulTargetSemantics: 'NOT_LAWFUL',
+      status: 'NOT_LAWFUL',
+      currentReadiness: 'NOT_PREPARED',
+      verificationReadiness: 'NOT_PREPARED',
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 12,
+      reason: 'NOT_LAWFUL',
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }) as typeof fetch
+
+  try {
+    const result = await getBenchmarkForecastCurrent('ussurv0303', 'arima', 'POINT_IN_TIME')
+    assert.deepEqual(result, {
+      status: 'UNSUPPORTED',
+      seriesId: 'ussurv0303',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      reason: 'UNSUPPORTED_FREQUENCY',
+    })
+    assert.equal(snapshotReads, 0)
+  } finally {
+    global.fetch = originalFetch
+    if (previousMarketDataUrl === undefined) {
+      delete process.env.MARKET_DATA_DATABASE_URL
+    } else {
+      process.env.MARKET_DATA_DATABASE_URL = previousMarketDataUrl
+    }
+    if (previousDatabaseUrl === undefined) {
+      delete process.env.DATABASE_URL
+    } else {
+      process.env.DATABASE_URL = previousDatabaseUrl
+    }
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+    if (previousBaseUrl === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_URL
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_URL = previousBaseUrl
+    }
+    marketDataGlobal.dashboardPreviewMarketDataPrisma = previousPrisma
+    marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = previousPrismaConnectionString
+  }
+})
+
 test('monthly prepared read filters by canonical method identity and returns an unambiguous DTO', async () => {
   const previousMarketDataUrl = process.env.MARKET_DATA_DATABASE_URL
   const previousDatabaseUrl = process.env.DATABASE_URL

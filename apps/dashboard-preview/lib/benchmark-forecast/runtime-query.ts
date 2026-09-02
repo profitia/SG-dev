@@ -8,6 +8,7 @@ import type {
   ForecastCurrentPoint,
   ForecastIdentity,
   ForecastMethodId,
+  InteractiveForecastCapabilityResult,
   ForecastVerificationHorizon,
   ForecastVerificationRecord,
   ForecastTargetBasis,
@@ -21,6 +22,7 @@ import { getMarketDataPrismaClient } from '@/lib/db/market-data-prisma'
 import { phase22cDiagnosticSpan } from '@/lib/phase-2-2c/diagnostics'
 
 const LOCAL_SG_RUNTIME_BASE_URL = 'http://localhost:3001'
+const INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH = '/api/internal/forecast/capability'
 const INTERNAL_FORECAST_ROUTE_PATH = '/api/internal/forecast/production'
 const INTERNAL_FORECAST_TIMEOUT_MS = 20_000
 const ROLLING_DAILY_INPUT_SOURCE = 'DYNAMIC_MARKET_DATA_STORE'
@@ -838,6 +840,58 @@ export async function getBenchmarkProductionForecast(
   }
 }
 
+async function readInteractiveForecastCapability(
+  seriesId: string,
+  model: ForecastPortfolioModelId,
+  targetBasis: ForecastTargetBasis,
+): Promise<InteractiveForecastCapabilityResult> {
+  const token = readSgRuntimeInternalForecastServiceToken()
+
+  if (!token) {
+    throw new Error('SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN is not configured.')
+  }
+
+  const url = new URL(INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH, resolveSgRuntimeBaseUrl())
+  url.searchParams.set('seriesId', seriesId)
+  url.searchParams.set('modelId', model)
+  url.searchParams.set('targetSemantics', resolveForecastMethodIdentity(targetBasis).targetSemantics)
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), INTERNAL_FORECAST_TIMEOUT_MS)
+
+  try {
+    const response = await fetch(url, {
+      cache: 'no-store',
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    const payload = await response.json() as InteractiveForecastCapabilityResult | { error?: string }
+    if (!response.ok) {
+      const message = 'error' in payload ? payload.error ?? 'SG Runtime capability request failed.' : 'SG Runtime capability request failed.'
+
+      if (response.status === 401 || response.status === 403) {
+        throw new SgRuntimeForecastAuthError(message, response.status)
+      }
+
+      throw new Error(message)
+    }
+
+    return payload as InteractiveForecastCapabilityResult
+  } catch (error) {
+    if ((error as Error).name === 'AbortError') {
+      throw new Error('SG Runtime capability request timed out.')
+    }
+
+    throw error
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
 export async function getBenchmarkForecastCurrent(
   seriesId: string,
   model: ForecastPortfolioModelId,
@@ -845,6 +899,25 @@ export async function getBenchmarkForecastCurrent(
 ) {
   if (targetBasis === 'POINT_IN_TIME') {
     assertPointInTimeSnapshotDatastoreAvailable()
+
+    let capability: InteractiveForecastCapabilityResult | null = null
+    if (readSgRuntimeInternalForecastServiceToken()) {
+      capability = await readInteractiveForecastCapability(seriesId, model, targetBasis)
+    }
+
+    if (capability && (capability.status === 'NOT_LAWFUL' || capability.reason === 'NOT_LAWFUL')) {
+      const identity = resolveForecastMethodIdentity(targetBasis)
+      return {
+        status: 'UNSUPPORTED',
+        seriesId,
+        modelId: model,
+        targetBasis,
+        targetSemantics: identity.targetSemantics,
+        methodId: identity.methodId,
+        reason: 'UNSUPPORTED_FREQUENCY',
+      } satisfies BenchmarkForecastCurrentResult
+    }
+
     return getPersistedRollingDailyCurrentForecast(seriesId, model)
   }
 
