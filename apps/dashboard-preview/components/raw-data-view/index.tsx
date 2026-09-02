@@ -2299,6 +2299,13 @@ export function resolveInitialForecastVerificationVisibility(variant: DashboardV
   return resolveInitialForecastVisibility(variant, embedded)
 }
 
+export function shouldHideEmbeddedBenchmarkShell(
+  embedded: boolean,
+  isBenchmarkMode: boolean,
+  isForecastPortfolioVariant: boolean,
+): boolean {
+  return embedded && isBenchmarkMode && !isForecastPortfolioVariant
+}
 export function RawDataView({
   embedded = false,
   initialBenchmarkSeries = null,
@@ -3286,7 +3293,11 @@ export function RawDataView({
   const isChartLoading = componentsState === 'loading'
     || seriesState === 'loading'
     || (!isForecastPortfolioVariant && forecastAccuracyState === 'loading' && !activePayload)
-  const hideEmbeddedBenchmarkShell = embedded && isBenchmarkMode
+  const hideEmbeddedBenchmarkShell = shouldHideEmbeddedBenchmarkShell(
+    embedded,
+    isBenchmarkMode,
+    isForecastPortfolioVariant,
+  )
   const selectedBenchmarkLabel = benchmarkRequired
     ? t('selectBenchmark')
     : selectedComponent?.availableBenchmarks.find((benchmark) => benchmark.componentCode === effectiveComponentCode)?.sourceLabel

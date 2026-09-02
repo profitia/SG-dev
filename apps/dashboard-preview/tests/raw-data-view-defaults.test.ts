@@ -5,6 +5,7 @@ import {
   resolveDefaultForecastTargetBasis,
   resolveInitialForecastVerificationVisibility,
   resolveInitialForecastVisibility,
+  shouldHideEmbeddedBenchmarkShell,
 } from '@/components/raw-data-view/index'
 
 test('forecast-portfolio-v3 defaults target basis to point in time', () => {
@@ -24,4 +25,9 @@ test('forecast-portfolio-v3 stays historical-first when embedded', () => {
 test('forecast-portfolio-v3 still defaults forecast-on in standalone mode', () => {
   assert.equal(resolveInitialForecastVisibility('forecast-portfolio-v3', false), true)
   assert.equal(resolveInitialForecastVerificationVisibility('forecast-portfolio-v3', false), true)
+})
+
+test('embedded forecast-portfolio-v3 keeps the benchmark shell visible for controls', () => {
+  assert.equal(shouldHideEmbeddedBenchmarkShell(true, true, true), false)
+  assert.equal(shouldHideEmbeddedBenchmarkShell(true, true, false), true)
 })
