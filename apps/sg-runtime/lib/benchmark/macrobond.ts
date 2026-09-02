@@ -64,6 +64,7 @@ const SEMANTIC_CONTEXT_CACHE_MAX_ENTRIES = 256
 const SEMANTIC_ENTITY_CACHE_MAX_ENTRIES = 512
 const MAX_METADATA_VALUES_CACHEABLE_ITEMS = 10_000
 const MEMORY_LOG_MIN_VALUE_COUNT = 1_000
+const LABEL_ENRICHMENT_REMOTE_ONLY_METADATA_KEYS = new Set(['Region'])
 const SMART_RECALL_STOP_WORDS = new Set(['a', 'an', 'and', 'for', 'in', 'of', 'the', 'to'])
 const SMART_RECALL_MAX_SEEDS = 4
 const CANONICAL_MACROBOND_FREQUENCY_FILTER_VALUES = new Set([
@@ -457,6 +458,10 @@ function deriveSemanticContext(metadata: Record<string, unknown>, relatedEntitie
 async function resolveMetadataDisplayLabel(metadataKey: string, value: string | null) {
   if (!value) {
     return null
+  }
+
+  if (LABEL_ENRICHMENT_REMOTE_ONLY_METADATA_KEYS.has(metadataKey)) {
+    return value
   }
 
   try {

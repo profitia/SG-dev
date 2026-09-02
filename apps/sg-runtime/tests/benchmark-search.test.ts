@@ -87,6 +87,59 @@ test('advanced search returns filtered results even when metadata label enrichme
   }
 })
 
+test('advanced search skips full Region label hydration during enrichment', async () => {
+  const requests: Array<{ url: string; body: string | null }> = []
+  const restoreFetch = installFetchMock(async (url, init) => {
+    requests.push({ url, body: typeof init?.body === 'string' ? init.body : null })
+
+    if (url.includes('/mbauth/connect/token')) {
+      return jsonResponse({ access_token: 'token', expires_in: 3600 })
+    }
+
+    if (url.includes('/v1/search/entities')) {
+      return jsonResponse({
+        results: [{
+          Name: 'cnprod4162',
+          Title: 'China, Steel Inventory',
+          Description: 'Daily steel inventory',
+          Frequency: 'daily',
+          Region: 'cn',
+          Unit: 'Tons (Metric)',
+          Source: 'src_cncisa',
+        }],
+      })
+    }
+
+    if (url.includes('/v1/metadata/listattributevalues')) {
+      if (url.includes('n=Region')) {
+        throw new Error(`Unexpected Region metadata hydration: ${url}`)
+      }
+
+      return jsonResponse([
+        { value: 'daily', label: 'Daily' },
+        { value: 'src_cncisa', label: 'China Iron & Steel Association' },
+      ])
+    }
+
+    throw new Error(`Unexpected fetch: ${url}`)
+  })
+
+  try {
+    const { searchMacrobondBenchmarks } = await import('../lib/benchmark/macrobond')
+    const items = await searchMacrobondBenchmarks({
+      query: 'steel',
+      filters: [{ metadataKey: 'Frequency', operator: 'equals', values: ['Daily'] }],
+      limit: 25,
+    })
+
+    assert.equal(items.length, 1)
+    assert.equal(items[0]?.region, 'cn')
+    assert.ok(!requests.some((request) => request.url.includes('/v1/metadata/listattributevalues') && request.url.includes('n=Region')))
+  } finally {
+    restoreFetch()
+  }
+})
+
 test('advanced search normalizes human-readable Frequency labels before provider search', async () => {
   const requests: Array<{ url: string; body: string | null }> = []
   const restoreFetch = installFetchMock(async (url, init) => {
