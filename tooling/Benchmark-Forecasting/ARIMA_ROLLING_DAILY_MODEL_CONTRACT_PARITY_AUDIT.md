@@ -411,15 +411,26 @@ Conclusion:
 
 ## 15. Deployment Architecture Parity
 
+Post-migration reconciliation note:
+
+- The standalone deployment-repository wording used in the original Stage 0 audit is historical only.
+- Current write authority is defined by `apps/dashboard-preview/FORECAST_DEPLOYMENT_CANON.md`.
+
 Development Workspace: `SG-dev`
 
 Database Authority: `Neon PostgreSQL / neondb / public`
 
 Database ENV Authority: `MARKET_DATA_DATABASE_URL`
 
-GitHub Deployment Repository: `profitia/dashboards-library`
+Canonical Source Repository: `profitia/SG-dev`
 
-Render Service: `dashboards-library`
+Canonical Source Branch: `main`
+
+Canonical Source Path: `apps/dashboard-preview`
+
+Historical Standalone Repository Role: `SUPERSEDED / HISTORICAL ONLY`
+
+Render Service Identity: `dashboards-library`
 
 Render Service ID: `srv-da2i7j9t0dsc73ag7qv0`
 
