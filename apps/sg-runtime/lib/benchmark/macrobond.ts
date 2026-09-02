@@ -66,6 +66,16 @@ const MAX_METADATA_VALUES_CACHEABLE_ITEMS = 10_000
 const MEMORY_LOG_MIN_VALUE_COUNT = 1_000
 const SMART_RECALL_STOP_WORDS = new Set(['a', 'an', 'and', 'for', 'in', 'of', 'the', 'to'])
 const SMART_RECALL_MAX_SEEDS = 4
+const CANONICAL_MACROBOND_FREQUENCY_FILTER_VALUES = new Set([
+  'annual',
+  'bimonthly',
+  'daily',
+  'monthly',
+  'quadmonthly',
+  'quarterly',
+  'semiannual',
+  'weekly',
+])
 
 const SEARCHABLE_ATTRIBUTE_CANDIDATES: Array<{
   key: string
@@ -655,6 +665,22 @@ function normalizeAttributeValue(item: unknown): BenchmarkMetadataValue | null {
   }
 }
 
+function normalizeMacrobondFilterValue(metadataKey: string, value: string) {
+  const normalizedValue = value.trim()
+  if (!normalizedValue) {
+    return null
+  }
+
+  if (metadataKey === 'Frequency') {
+    const canonicalFrequencyValue = normalizedValue.toLowerCase()
+    if (CANONICAL_MACROBOND_FREQUENCY_FILTER_VALUES.has(canonicalFrequencyValue)) {
+      return canonicalFrequencyValue
+    }
+  }
+
+  return normalizedValue
+}
+
 function collectFilteredMetadataValues(payload: unknown, query: string) {
   const items = extractAttributeValueItems(payload)
   const normalizedQuery = query.trim().toLowerCase()
@@ -691,7 +717,11 @@ function normalizeSearchFilters(filters: BenchmarkSearchFilter[]) {
   const mustHaveValues: Record<string, string[]> = {}
 
   for (const filter of filters) {
-    const values = [filter.value, ...(filter.values ?? [])].filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+    const values = [filter.value, ...(filter.values ?? [])]
+      .filter((value): value is string => typeof value === 'string')
+      .map((value) => normalizeMacrobondFilterValue(filter.metadataKey, value))
+      .filter((value): value is string => typeof value === 'string' && value.length > 0)
+
     if (values.length > 0) {
       mustHaveValues[filter.metadataKey] = [...new Set(values)]
     }
