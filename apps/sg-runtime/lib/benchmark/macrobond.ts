@@ -459,8 +459,20 @@ async function resolveMetadataDisplayLabel(metadataKey: string, value: string | 
     return null
   }
 
-  const result = await getMacrobondMetadataValues(metadataKey, [])
-  return result.items.find((item) => item.value === value)?.label ?? value
+  try {
+    const result = await getMacrobondMetadataValues(metadataKey, [])
+    return result.items.find((item) => item.value === value)?.label ?? value
+  } catch (error) {
+    if (error instanceof BenchmarkAppError) {
+      logPerf('BENCHMARK_LABEL_ENRICHMENT_FALLBACK', {
+        metadataKey,
+        code: error.code,
+      })
+      return value
+    }
+
+    throw error
+  }
 }
 
 async function fetchMacrobondEntityMetadataBatch(names: string[]) {
