@@ -135,6 +135,22 @@ function buildCapabilityResolution(overrides: Partial<ForecastCapabilityResoluti
   }
 }
 
+function buildExactCapabilityTrace() {
+  return {
+    sourceFrequencyAuthority: 'HISTORICAL_SERIES_FREQUENCY' as const,
+    sourceFrequencyLookupMs: 1,
+    sourceFrequencyLookupExternalIo: false,
+    provenanceReadMs: 0,
+    provenanceReadCount: 0,
+    preparedVariantReadMs: 0,
+    preparedVariantReadCount: 0,
+    prepareCount: 0,
+    modelFitCount: 0,
+    exactUnsupportedFastPathTaken: false,
+    capabilityTotalMs: 1,
+  }
+}
+
 test('current forecast route defaults missing targetBasis to MONTHLY_AVERAGE', async () => {
   let receivedInput: ForecastRequestInput | null = null
 
@@ -781,6 +797,7 @@ test('interactive current preparation service returns lawful unavailable status 
         targetPreparationState: 'NOT_SUPPORTED',
         capabilityState: 'PREPARATION_REQUIRED',
       }),
+      trace: buildExactCapabilityTrace(),
     }),
     prepareMonthlyCurrent: async () => {
       monthlyCalls += 1
@@ -820,6 +837,7 @@ test('interactive current preparation service reuses ready artifacts without dup
         currentPreparedState: 'READY',
         capabilityState: 'AVAILABLE',
       }),
+      trace: buildExactCapabilityTrace(),
     }),
     prepareMonthlyCurrent: async () => {
       monthlyCalls += 1
@@ -876,6 +894,7 @@ test('interactive current preparation service delegates monthly and rolling prep
       return {
         resolution: buildCapabilityResolution({ capabilities: [capability] }),
         capability,
+        trace: buildExactCapabilityTrace(),
       }
     },
     prepareMonthlyCurrent: async () => {
@@ -918,6 +937,68 @@ test('interactive current preparation service delegates monthly and rolling prep
   assert.equal(rolling.status, 'READY')
   assert.equal(monthlyCalls, 1)
   assert.equal(rollingCalls, 1)
+})
+
+test('interactive current preparation service preserves native sparse cadence for lawful END_OF_PERIOD preparation', async () => {
+  let monthlyCalls = 0
+
+  const service = createInteractiveForecastPreparationService({
+    now: (() => {
+      let tick = 100
+      return () => ++tick
+    })(),
+    resolveExactCapability: async () => {
+      const capability = buildCapabilityCandidate({
+        identity: {
+          seriesId: 'ussurv0303',
+          targetSemantics: 'END_OF_PERIOD',
+          methodId: 'END_OF_PERIOD',
+          methodVersion: 'native-period-end-of-period-v1',
+          modelId: 'arima',
+        },
+        sourceFrequency: 'SEMIANNUAL',
+        businessTarget: 'END_OF_PERIOD',
+        targetCadence: 'SEMIANNUAL',
+        semanticLawfulness: 'LAWFUL_WITH_PROVENANCE',
+        currentPreparedState: 'NOT_PREPARED',
+        historicalPreparedState: 'NOT_PREPARED',
+        capabilityState: 'PREPARATION_REQUIRED',
+      })
+
+      return {
+        resolution: buildCapabilityResolution({ capabilities: [capability] }),
+        capability,
+        trace: buildExactCapabilityTrace(),
+      }
+    },
+    prepareMonthlyCurrent: async (request) => {
+      monthlyCalls += 1
+      assert.equal(request.seriesId, 'ussurv0303')
+      assert.equal(request.modelId, 'arima')
+      assert.equal(request.targetBasis, 'END_OF_PERIOD')
+      assert.equal(request.sourceFrequency, 'SEMIANNUAL')
+      assert.equal(request.targetCadence, 'SEMIANNUAL')
+
+      return {
+        status: 'AVAILABLE',
+        cacheStatus: 'miss',
+        reason: null,
+      } as unknown as BenchmarkForecastCurrentResult
+    },
+    prepareRollingCurrent: async () => {
+      throw new Error('should not be called')
+    },
+  })
+
+  const result = await service.prepareCurrent({
+    seriesId: 'ussurv0303',
+    targetSemantics: 'END_OF_PERIOD',
+    modelId: 'arima',
+  })
+
+  assert.equal(result.status, 'READY')
+  assert.equal(result.reason, null)
+  assert.equal(monthlyCalls, 1)
 })
 
 test('current forecast route propagates stress correlation into the resolver context', async () => {

@@ -181,10 +181,18 @@ export function createInteractiveForecastPreparationService(
         }
       }
 
+      const cadenceContext = capability.sourceFrequency && capability.targetCadence
+        ? {
+            sourceFrequency: capability.sourceFrequency,
+            targetCadence: capability.targetCadence,
+          }
+        : {}
+
       const result = await resolvedDependencies.prepareMonthlyCurrent({
         seriesId: input.seriesId,
         modelId: input.modelId,
         targetBasis: TARGET_BASIS_BY_SEMANTICS[input.targetSemantics],
+        ...cadenceContext,
       })
       const persisted = result.status === 'AVAILABLE' && (result.cacheStatus === 'hit' || result.cacheStatus === 'miss')
 
