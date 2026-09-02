@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+import { resolveForecastPortfolioBenchmarkSubject } from '@/app/[locale]/page'
 import {
   resolveDefaultForecastTargetBasis,
   resolveInitialForecastVerificationVisibility,
@@ -30,4 +31,45 @@ test('forecast-portfolio-v3 still defaults forecast-on in standalone mode', () =
 test('embedded forecast-portfolio-v3 keeps the benchmark shell visible for controls', () => {
   assert.equal(shouldHideEmbeddedBenchmarkShell(true, true, true), false)
   assert.equal(shouldHideEmbeddedBenchmarkShell(true, true, false), true)
+})
+
+test('forecast-portfolio-v3 keeps a dynamic non-Brent seriesId authoritative', () => {
+  assert.deepEqual(
+    resolveForecastPortfolioBenchmarkSubject({
+      variantId: 'forecast-portfolio-v3',
+      seriesId: 'ussurv1055',
+      displayName: 'US Sulphur Example',
+    }),
+    {
+      seriesId: 'ussurv1055',
+      displayName: 'US Sulphur Example',
+    },
+  )
+})
+
+test('forecast-portfolio-v3 keeps explicit Brent authoritative when Brent is selected', () => {
+  assert.deepEqual(
+    resolveForecastPortfolioBenchmarkSubject({
+      variantId: 'forecast-portfolio-v3',
+      seriesId: 'wocaes0074',
+      displayName: 'Brent, Spot, FOB North Sea',
+    }),
+    {
+      seriesId: 'wocaes0074',
+      displayName: 'Brent, Spot, FOB North Sea',
+    },
+  )
+})
+
+test('forecast-portfolio-v3 falls back to Brent only when no seriesId is supplied', () => {
+  assert.deepEqual(
+    resolveForecastPortfolioBenchmarkSubject({
+      variantId: 'forecast-portfolio-v3',
+      displayName: 'Ignored without series',
+    }),
+    {
+      seriesId: 'wocaes0074',
+      displayName: 'Brent, Spot, FOB North Sea',
+    },
+  )
 })

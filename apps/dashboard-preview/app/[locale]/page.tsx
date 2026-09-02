@@ -17,6 +17,22 @@ const FORECAST_PORTFOLIO_DEFAULT_BENCHMARK = {
   displayName: 'Brent, Spot, FOB North Sea',
 } as const
 
+export function resolveForecastPortfolioBenchmarkSubject(
+  searchParams: Record<string, string | string[] | undefined>,
+) {
+  const seriesId = readFirstSearchParamValue(searchParams.seriesId)?.trim() ?? ''
+  const displayName = readFirstSearchParamValue(searchParams.displayName)?.trim() ?? ''
+
+  if (seriesId) {
+    return {
+      seriesId,
+      displayName: displayName || null,
+    }
+  }
+
+  return FORECAST_PORTFOLIO_DEFAULT_BENCHMARK
+}
+
 type LocaleHomePageProps = {
   params: {
     locale: string
@@ -138,7 +154,9 @@ export default async function LocaleHomePage({
         <RawDataView
           embedded={embedded}
           variant={resolution.resolvedVariant.id}
-          forcedBenchmarkSubject={resolution.resolvedVariant.id === 'forecast-portfolio-v3' ? FORECAST_PORTFOLIO_DEFAULT_BENCHMARK : null}
+          forcedBenchmarkSubject={resolution.resolvedVariant.id === 'forecast-portfolio-v3'
+            ? resolveForecastPortfolioBenchmarkSubject(searchParams)
+            : null}
         />
       ) : (
         <DashboardVariantState
