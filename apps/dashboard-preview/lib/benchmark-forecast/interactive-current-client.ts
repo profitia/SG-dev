@@ -3,11 +3,18 @@ import type {
   BenchmarkForecastCurrentPreparationResult,
   BenchmarkForecastCurrentResult,
   ForecastCurrentUiState,
+  InteractiveForecastCapabilityResult,
 } from './forecast-contract'
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>
 
 type ExplicitPreparationDependencies = {
+  prepareCurrent: (input: BenchmarkForecastCurrentPreparationRequest) => Promise<BenchmarkForecastCurrentPreparationResult>
+  readPrepared: (input: BenchmarkForecastCurrentPreparationRequest) => Promise<BenchmarkForecastCurrentResult>
+}
+
+type WarmCurrentForecastDependencies = {
+  readCapability: (input: BenchmarkForecastCurrentPreparationRequest) => Promise<InteractiveForecastCapabilityResult>
   prepareCurrent: (input: BenchmarkForecastCurrentPreparationRequest) => Promise<BenchmarkForecastCurrentPreparationResult>
   readPrepared: (input: BenchmarkForecastCurrentPreparationRequest) => Promise<BenchmarkForecastCurrentResult>
 }
@@ -38,6 +45,34 @@ export function shouldShowExplicitCurrentPreparation(
   result: BenchmarkForecastCurrentResult | null,
 ) {
   return state === 'NOT_PREPARED' && result?.status === 'NOT_AVAILABLE'
+}
+
+export function shouldPrepareCurrentForecastFromCapability(capability: InteractiveForecastCapabilityResult) {
+  return capability.currentReadiness === 'NOT_PREPARED'
+    && (capability.status === 'PREPARATION_REQUIRED' || capability.status === 'NOT_PREPARED')
+}
+
+export async function readCurrentForecastCapabilityThroughDashboard(
+  fetchLike: FetchLike,
+  input: BenchmarkForecastCurrentPreparationRequest,
+  signal?: AbortSignal,
+) {
+  const params = new URLSearchParams({
+    seriesId: input.seriesId,
+    modelId: input.modelId,
+    targetBasis: input.targetBasis,
+  })
+  const response = await fetchLike(`/api/benchmark-forecast/current/capability?${params.toString()}`, {
+    cache: 'no-store',
+    signal,
+  })
+  const payload = await response.json() as InteractiveForecastCapabilityResult | { error?: string }
+
+  if (!response.ok) {
+    throw new Error('error' in payload ? payload.error ?? 'Forecast capability unavailable' : 'Forecast capability unavailable')
+  }
+
+  return payload as InteractiveForecastCapabilityResult
 }
 
 export async function readPreparedCurrentForecastThroughDashboard(
@@ -84,6 +119,64 @@ export async function requestExplicitCurrentForecastPreparationThroughDashboard(
   }
 
   return payload as BenchmarkForecastCurrentPreparationResult
+}
+
+export async function warmCurrentForecastThroughDashboard(
+  fetchLike: FetchLike,
+  input: BenchmarkForecastCurrentPreparationRequest,
+  signal?: AbortSignal,
+  dependencies?: Partial<WarmCurrentForecastDependencies>,
+) {
+  const resolvedDependencies: WarmCurrentForecastDependencies = {
+    readCapability: dependencies?.readCapability ?? ((request) => readCurrentForecastCapabilityThroughDashboard(fetchLike, request, signal)),
+    prepareCurrent: dependencies?.prepareCurrent ?? ((request) => requestExplicitCurrentForecastPreparationThroughDashboard(fetchLike, request, signal)),
+    readPrepared: dependencies?.readPrepared ?? ((request) => readPreparedCurrentForecastThroughDashboard(fetchLike, request, signal)),
+  }
+
+  const capability = await resolvedDependencies.readCapability(input)
+
+  if (capability.currentReadiness === 'READY' || capability.status === 'READY') {
+    const currentResult = await resolvedDependencies.readPrepared(input)
+    return {
+      capability,
+      preparation: null,
+      currentResult,
+      currentState: resolveForecastCurrentUiState(currentResult),
+      prepareAttempted: false,
+    } as const
+  }
+
+  if (!shouldPrepareCurrentForecastFromCapability(capability)) {
+    return {
+      capability,
+      preparation: null,
+      currentResult: null,
+      currentState: capability.status === 'FAILED' ? 'FAILED' : 'UNSUPPORTED',
+      prepareAttempted: false,
+    } as const
+  }
+
+  const preparation = await resolvedDependencies.prepareCurrent(input)
+  if (preparation.state !== 'READY') {
+    return {
+      capability,
+      preparation,
+      currentResult: null,
+      currentState: preparation.state === 'FAILED' ? 'FAILED' : 'UNSUPPORTED',
+      prepareAttempted: preparation.prepareAttempted,
+    } as const
+  }
+
+  const currentResult = await resolvedDependencies.readPrepared(input)
+  const currentState = resolveForecastCurrentUiState(currentResult)
+
+  return {
+    capability,
+    preparation,
+    currentResult,
+    currentState: currentState === 'AVAILABLE' ? currentState : 'FAILED',
+    prepareAttempted: preparation.prepareAttempted,
+  } as const
 }
 
 export async function explicitlyPrepareForecastCurrent(

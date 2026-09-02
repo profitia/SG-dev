@@ -3,12 +3,16 @@ import test from 'node:test'
 
 import {
   explicitlyPrepareForecastCurrent,
+  readCurrentForecastCapabilityThroughDashboard,
   readPreparedCurrentForecastThroughDashboard,
   requestExplicitCurrentForecastPreparationThroughDashboard,
   resolveForecastCurrentUiState,
   shouldReadCurrentForecast,
+  shouldPrepareCurrentForecastFromCapability,
   shouldShowExplicitCurrentPreparation,
+  warmCurrentForecastThroughDashboard,
 } from '@/lib/benchmark-forecast/interactive-current-client'
+import { shouldWarmCurrentForecastInBackground } from '@/components/raw-data-view'
 
 test('initial embedded historical-first state keeps current forecast reads disabled until explicit forecast intent', () => {
   assert.equal(shouldReadCurrentForecast({
@@ -16,6 +20,227 @@ test('initial embedded historical-first state keeps current forecast reads disab
     isForecastPortfolioVariant: true,
     seriesId: 'wocaes0074',
   }), false)
+})
+
+test('embedded forecast portfolio warm-up stays behind an explicit query gate', () => {
+  const enabledParams = new URLSearchParams('warmCurrentForecast=1')
+  const disabledParams = new URLSearchParams('warmCurrentForecast=0')
+
+  assert.equal(shouldWarmCurrentForecastInBackground(enabledParams as ReturnType<typeof import('next/navigation').useSearchParams>, {
+    embedded: true,
+    variant: 'forecast-portfolio-v3',
+  }), true)
+
+  assert.equal(shouldWarmCurrentForecastInBackground(disabledParams as ReturnType<typeof import('next/navigation').useSearchParams>, {
+    embedded: true,
+    variant: 'forecast-portfolio-v3',
+  }), false)
+
+  assert.equal(shouldWarmCurrentForecastInBackground(enabledParams as ReturnType<typeof import('next/navigation').useSearchParams>, {
+    embedded: false,
+    variant: 'forecast-portfolio-v3',
+  }), false)
+})
+
+test('background warm-up uses capability truth and avoids prepare for unsupported identities', async () => {
+  const calls: string[] = []
+
+  const outcome = await warmCurrentForecastThroughDashboard(async (input, init) => {
+    const url = new URL(String(input), 'https://dashboard.example.invalid')
+    calls.push(`${init?.method ?? 'GET'} ${url.pathname}?${url.searchParams.toString()}`)
+
+    if (url.pathname === '/api/benchmark-forecast/current/capability') {
+      return new Response(JSON.stringify({
+        seriesId: 'usnaac0169',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        modelId: 'arima',
+        sourceFrequency: 'WEEKLY',
+        sourceAvailability: 'AVAILABLE',
+        lawfulTargetSemantics: 'NOT_LAWFUL',
+        status: 'NOT_LAWFUL',
+        currentReadiness: 'NOT_PREPARED',
+        verificationReadiness: 'READY',
+        targetedDataScope: 'SINGLE_SERIES',
+        timingMs: 9,
+        reason: 'UNSUPPORTED_FREQUENCY',
+      }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    }
+
+    throw new Error(`Unexpected request ${url.pathname}`)
+  }, {
+    seriesId: 'usnaac0169',
+    modelId: 'arima',
+    targetBasis: 'POINT_IN_TIME',
+  })
+
+  assert.equal(outcome.currentState, 'UNSUPPORTED')
+  assert.equal(outcome.prepareAttempted, false)
+  assert.equal(shouldPrepareCurrentForecastFromCapability(outcome.capability), false)
+  assert.deepEqual(calls, [
+    'GET /api/benchmark-forecast/current/capability?seriesId=usnaac0169&modelId=arima&targetBasis=POINT_IN_TIME',
+  ])
+})
+
+test('background warm-up performs one exact prepare and one reread for a lawful cold miss', async () => {
+  const calls: string[] = []
+
+  const outcome = await warmCurrentForecastThroughDashboard(async (input, init) => {
+    const method = init?.method ?? 'GET'
+    const url = new URL(String(input), 'https://dashboard.example.invalid')
+    calls.push(`${method} ${url.pathname}?${url.searchParams.toString()}`)
+
+    if (url.pathname === '/api/benchmark-forecast/current/capability') {
+      return new Response(JSON.stringify({
+        seriesId: 'wocaes0280',
+        targetSemantics: 'END_OF_PERIOD',
+        modelId: 'ets',
+        sourceFrequency: 'MONTHLY',
+        sourceAvailability: 'AVAILABLE',
+        lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
+        status: 'PREPARATION_REQUIRED',
+        currentReadiness: 'NOT_PREPARED',
+        verificationReadiness: 'NOT_PREPARED',
+        targetedDataScope: 'SINGLE_SERIES',
+        timingMs: 6,
+        reason: 'Prepared artifacts are missing.',
+      }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    }
+
+    if (url.pathname === '/api/benchmark-forecast/current/prepare') {
+      return new Response(JSON.stringify({
+        seriesId: 'wocaes0280',
+        modelId: 'ets',
+        targetBasis: 'END_OF_PERIOD',
+        targetSemantics: 'END_OF_PERIOD',
+        state: 'READY',
+        capabilityStatus: 'PREPARATION_REQUIRED',
+        currentReadiness: 'NOT_PREPARED',
+        prepareAttempted: true,
+        prepareStatus: 'READY',
+        reason: null,
+        timingMs: 1200,
+      }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    }
+
+    if (url.pathname === '/api/benchmark-forecast/current') {
+      return new Response(JSON.stringify({
+        status: 'AVAILABLE',
+        seriesId: 'wocaes0280',
+        modelId: 'ets',
+        targetBasis: 'END_OF_PERIOD',
+        targetSemantics: 'END_OF_PERIOD',
+        methodId: 'END_OF_PERIOD',
+        displayName: 'WTI',
+        description: null,
+        methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+        lineage: {
+          inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+          inputRunId: null,
+          sourceSeriesId: 'wocaes0280',
+          sourceFrequency: 'MONTHLY',
+          historyFingerprint: 'abc',
+          preparation: null,
+        },
+        history: { frequency: 'MONTHLY', start: '2020-01-01', end: '2026-08-01', observations: 80 },
+        forecastOrigin: '2026-08-01',
+        currentForecast: {},
+      }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    }
+
+    throw new Error(`Unexpected request ${url.pathname}`)
+  }, {
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+  })
+
+  assert.equal(outcome.currentState, 'AVAILABLE')
+  assert.equal(outcome.prepareAttempted, true)
+  assert.deepEqual(calls, [
+    'GET /api/benchmark-forecast/current/capability?seriesId=wocaes0280&modelId=ets&targetBasis=END_OF_PERIOD',
+    'POST /api/benchmark-forecast/current/prepare?',
+    'GET /api/benchmark-forecast/current?seriesId=wocaes0280&model=ets&targetBasis=END_OF_PERIOD',
+  ])
+})
+
+test('background warm-up hot reuse reads prepared current without recompute', async () => {
+  const prepareCalls: string[] = []
+
+  const outcome = await warmCurrentForecastThroughDashboard(async (input, init) => {
+    const method = init?.method ?? 'GET'
+    const url = new URL(String(input), 'https://dashboard.example.invalid')
+
+    if (url.pathname === '/api/benchmark-forecast/current/capability') {
+      return new Response(JSON.stringify({
+        seriesId: 'wocaes0074',
+        targetSemantics: 'POINT_IN_TIME',
+        modelId: 'arima',
+        sourceFrequency: 'DAILY',
+        sourceAvailability: 'AVAILABLE',
+        lawfulTargetSemantics: 'LAWFUL',
+        status: 'READY',
+        currentReadiness: 'READY',
+        verificationReadiness: 'READY',
+        targetedDataScope: 'SINGLE_SERIES',
+        timingMs: 4,
+        reason: null,
+      }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    }
+
+    if (url.pathname === '/api/benchmark-forecast/current/prepare') {
+      prepareCalls.push(method)
+      throw new Error('prepare should not be called for hot warm-up')
+    }
+
+    return new Response(JSON.stringify({
+      status: 'AVAILABLE',
+      seriesId: 'wocaes0074',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      displayName: 'Brent',
+      description: null,
+      methodVersion: 'rolling-daily-point-in-time-v1',
+      lineage: {
+        inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+        inputRunId: null,
+        sourceSeriesId: 'wocaes0074',
+        sourceFrequency: 'DAILY',
+        historyFingerprint: 'abc',
+        preparation: null,
+      },
+      history: { frequency: 'DAILY', start: '2026-01-01', end: '2026-08-31', observations: 180 },
+      forecastOrigin: '2026-08-31',
+      currentForecast: {},
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }, {
+    seriesId: 'wocaes0074',
+    modelId: 'arima',
+    targetBasis: 'POINT_IN_TIME',
+  })
+
+  assert.equal(outcome.currentState, 'AVAILABLE')
+  assert.equal(outcome.prepareAttempted, false)
+  assert.deepEqual(prepareCalls, [])
 })
 
 test('prepared current result stays on the hot read path without explicit preparation action', () => {
@@ -72,6 +297,40 @@ test('dashboard current read forwards exact model and target identity', async ()
   assert.equal(payload.targetBasis, 'END_OF_PERIOD')
   assert.equal(capturedUrl?.searchParams.get('seriesId'), 'wocaes0280')
   assert.equal(capturedUrl?.searchParams.get('model'), 'ets')
+  assert.equal(capturedUrl?.searchParams.get('targetBasis'), 'END_OF_PERIOD')
+})
+
+test('dashboard current capability read forwards exact model and target identity', async () => {
+  let capturedUrl: URL | null = null
+  const payload = await readCurrentForecastCapabilityThroughDashboard(async (input) => {
+    capturedUrl = new URL(String(input), 'https://dashboard.example.invalid')
+    return new Response(JSON.stringify({
+      seriesId: 'wocaes0280',
+      targetSemantics: 'END_OF_PERIOD',
+      modelId: 'ets',
+      sourceFrequency: 'MONTHLY',
+      sourceAvailability: 'AVAILABLE',
+      lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
+      status: 'PREPARATION_REQUIRED',
+      currentReadiness: 'NOT_PREPARED',
+      verificationReadiness: 'NOT_PREPARED',
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 12,
+      reason: 'Prepared artifacts are missing.',
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }, {
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+  })
+
+  assert.equal(payload.modelId, 'ets')
+  assert.equal(payload.status, 'PREPARATION_REQUIRED')
+  assert.equal(capturedUrl?.searchParams.get('seriesId'), 'wocaes0280')
+  assert.equal(capturedUrl?.searchParams.get('modelId'), 'ets')
   assert.equal(capturedUrl?.searchParams.get('targetBasis'), 'END_OF_PERIOD')
 })
 

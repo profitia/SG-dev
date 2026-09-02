@@ -2,6 +2,16 @@ import { serverEnv } from '@/lib/env'
 
 const LOCAL_DASHBOARD_PREVIEW_BASE_URL = 'http://localhost:3002'
 const PRODUCTION_DASHBOARD_PREVIEW_BASE_URL = 'https://dashboards-library.onrender.com'
+export const FORECAST_WARMUP_EXPERIMENT_SEARCH_PARAM = 'forecastWarmupExperiment'
+const FORECAST_WARMUP_QUERY_VALUE = '1'
+
+export type ForecastWarmupExperiment = 'single'
+
+export function normalizeForecastWarmupExperiment(
+  value: string | null | undefined,
+): ForecastWarmupExperiment | null {
+  return value === 'single' ? 'single' : null
+}
 
 export type BenchmarkAnalyticsEligibility = {
   eligible: boolean
@@ -25,11 +35,17 @@ export function buildDashboardPreviewAnalyticsUrl(
   locale: 'pl' | 'en',
   seriesId: string,
   displayName?: string | null,
+  options?: {
+    warmCurrentForecast?: boolean
+  },
 ) {
   const url = new URL(`/${locale}`, resolveDashboardPreviewBaseUrl())
   url.searchParams.set('embed', '1')
   url.searchParams.set('variantId', 'forecast-portfolio-v3')
   url.searchParams.set('showForecast', 'false')
+  if (options?.warmCurrentForecast) {
+    url.searchParams.set('warmCurrentForecast', FORECAST_WARMUP_QUERY_VALUE)
+  }
   url.searchParams.set('seriesId', seriesId)
   url.searchParams.set('range', '1Y')
   if (displayName?.trim()) {
@@ -42,6 +58,9 @@ export async function resolveBenchmarkAnalyticsEligibility(
   locale: 'pl' | 'en',
   seriesId: string,
   displayName?: string | null,
+  options?: {
+    warmCurrentForecast?: boolean
+  },
 ): Promise<BenchmarkAnalyticsEligibility> {
   if (!seriesId.trim()) {
     return {
@@ -54,6 +73,6 @@ export async function resolveBenchmarkAnalyticsEligibility(
   return {
     eligible: true,
     componentCode: null,
-    analyticsUrl: buildDashboardPreviewAnalyticsUrl(locale, seriesId, displayName),
+    analyticsUrl: buildDashboardPreviewAnalyticsUrl(locale, seriesId, displayName, options),
   }
 }

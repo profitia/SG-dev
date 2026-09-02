@@ -1,9 +1,13 @@
 'use client'
 
 import { memo, useDeferredValue, useEffect, useRef, useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 
+import {
+  FORECAST_WARMUP_EXPERIMENT_SEARCH_PARAM,
+  normalizeForecastWarmupExperiment,
+} from '@/lib/benchmark/analytics'
 import {
   formatDisplayMeasurement,
   sanitizeUserFacingPublisher,
@@ -878,7 +882,11 @@ export function BenchmarkFinderClient({
 }: BenchmarkFinderClientProps) {
   const t = useTranslations('BenchmarkFinder')
   const router = useRouter()
+  const searchParams = useSearchParams()
   const alternateLocale = locale === 'en' ? 'pl' : 'en'
+  const forecastWarmupExperiment = normalizeForecastWarmupExperiment(
+    searchParams.get(FORECAST_WARMUP_EXPERIMENT_SEARCH_PARAM),
+  )
   const isPickerMode = selectionMode === 'picker' && typeof onBenchmarkSelected === 'function'
   const initialLocaleSwitchSnapshotRef = useRef<LocaleSwitchSnapshot | null>(typeof window === 'undefined' ? null : readLocaleSwitchSnapshot(locale))
   const localeSnapshotHandledRef = useRef(!initialLocaleSwitchSnapshotRef.current)
@@ -1122,7 +1130,11 @@ export function BenchmarkFinderClient({
       enrichedCandidates,
     })
 
-    router.push(`/${nextLocale}/benchmark-finder`)
+    const nextPath = forecastWarmupExperiment
+      ? `/${nextLocale}/benchmark-finder?${FORECAST_WARMUP_EXPERIMENT_SEARCH_PARAM}=${encodeURIComponent(forecastWarmupExperiment)}`
+      : `/${nextLocale}/benchmark-finder`
+
+    router.push(nextPath)
   }
 
   function openAdvancedSearchSurface() {
@@ -1512,7 +1524,7 @@ export function BenchmarkFinderClient({
       return
     }
 
-    const cacheKey = `${locale}:${seriesId}`
+    const cacheKey = `${locale}:${seriesId}:${forecastWarmupExperiment ?? 'off'}`
     const cachedEligibility = analyticsEligibilityCacheRef.current[cacheKey]
     if (cachedEligibility) {
       setCandidatePreviewState(seriesId, (state) => ({
@@ -1543,6 +1555,9 @@ export function BenchmarkFinderClient({
       seriesId,
       displayName: candidate.displayName,
     })
+    if (forecastWarmupExperiment) {
+      params.set(FORECAST_WARMUP_EXPERIMENT_SEARCH_PARAM, forecastWarmupExperiment)
+    }
 
     try {
       const payload = await readJson<AnalyticsEligibilityResponse>(await fetch(`/api/benchmark/analytics-eligibility?${params.toString()}`, {

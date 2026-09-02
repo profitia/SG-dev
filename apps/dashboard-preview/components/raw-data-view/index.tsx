@@ -24,6 +24,7 @@ import {
 import {
   explicitlyPrepareForecastCurrent,
   readPreparedCurrentForecastThroughDashboard,
+  warmCurrentForecastThroughDashboard,
   requestExplicitCurrentForecastPreparationThroughDashboard,
   resolveForecastCurrentUiState,
   shouldReadCurrentForecast,
@@ -111,6 +112,8 @@ type ForecastLayerCacheEntry<T> = {
   payload: T
   cachedAt: number
 }
+
+type BackgroundWarmupOutcome = Awaited<ReturnType<typeof warmCurrentForecastThroughDashboard>>
 
 type UiLoadErrorState = {
   title: string
@@ -500,6 +503,20 @@ function readInitialRange(searchParams: ReturnType<typeof useSearchParams>): Ran
     default:
       return '1Y'
   }
+}
+
+type SearchParamsReader = Pick<ReturnType<typeof useSearchParams>, 'get'>
+
+export function shouldWarmCurrentForecastInBackground(
+  searchParams: SearchParamsReader,
+  options: {
+    embedded: boolean
+    variant: DashboardVariantId
+  },
+) {
+  return options.embedded
+    && options.variant === 'forecast-portfolio-v3'
+    && searchParams.get('warmCurrentForecast')?.trim() === '1'
 }
 
 function getRawDataViewProfiler() {
@@ -2323,6 +2340,7 @@ export function RawDataView({
   const benchmarkSeriesId = benchmarkSubject?.seriesId ?? null
   const benchmarkDisplayName = benchmarkSubject?.displayName ?? null
   const initialRange = readInitialRange(searchParams)
+  const backgroundCurrentForecastWarmupEnabled = shouldWarmCurrentForecastInBackground(searchParams, { embedded, variant })
   const defaultForecastTargetBasis = resolveDefaultForecastTargetBasis(variant)
   const initialForecastVisibility = resolveInitialForecastVisibility(variant, embedded)
   const initialForecastVerificationVisibility = resolveInitialForecastVerificationVisibility(variant, embedded)
@@ -2361,6 +2379,8 @@ export function RawDataView({
   const forecastPreparationRequestRef = useRef(0)
   const seriesCacheRef = useRef<Map<string, CachedSeriesEntry>>(new Map())
   const forecastLayerCacheRef = useRef<Map<string, ForecastLayerCacheEntry<BenchmarkForecastCurrentResult | BenchmarkForecastVerificationResult>>>(new Map())
+  const backgroundWarmupAttemptedRef = useRef<Set<string>>(new Set())
+  const backgroundWarmupInflightRef = useRef<Map<string, Promise<BackgroundWarmupOutcome>>>(new Map())
 
   useEffect(() => {
     if (!isForecastPortfolioVariant) {
@@ -3039,6 +3059,58 @@ export function RawDataView({
     }
   }, [benchmarkSeriesId, forecastModel, isForecastPortfolioVariant, locale, selectedForecastTargetBasis, showForecast, t])
 
+  useEffect(() => {
+    if (!backgroundCurrentForecastWarmupEnabled || !benchmarkSeriesId) {
+      return
+    }
+
+    const cacheKey = buildForecastLayerCacheKey(locale, benchmarkSeriesId, forecastModel, selectedForecastTargetBasis, 'current')
+    if (forecastLayerCacheRef.current.has(cacheKey) || backgroundWarmupAttemptedRef.current.has(cacheKey)) {
+      return
+    }
+
+    backgroundWarmupAttemptedRef.current.add(cacheKey)
+    const controller = new AbortController()
+    let cancelled = false
+
+    const warmupPromise = warmCurrentForecastThroughDashboard(fetch, {
+      seriesId: benchmarkSeriesId,
+      modelId: forecastModel,
+      targetBasis: selectedForecastTargetBasis,
+    }, controller.signal)
+    backgroundWarmupInflightRef.current.set(cacheKey, warmupPromise)
+
+    async function warmCurrentForecast() {
+      try {
+        const outcome = await warmupPromise
+
+        if (cancelled || !outcome.currentResult || outcome.currentState !== 'AVAILABLE') {
+          return
+        }
+
+        forecastLayerCacheRef.current.set(cacheKey, {
+          payload: outcome.currentResult,
+          cachedAt: Date.now(),
+        })
+      } catch (error) {
+        if (cancelled || (error as Error).name === 'AbortError') {
+          return
+        }
+      } finally {
+        if (backgroundWarmupInflightRef.current.get(cacheKey) === warmupPromise) {
+          backgroundWarmupInflightRef.current.delete(cacheKey)
+        }
+      }
+    }
+
+    void warmCurrentForecast()
+
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [backgroundCurrentForecastWarmupEnabled, benchmarkSeriesId, forecastModel, locale, selectedForecastTargetBasis])
+
   async function handlePrepareForecastCurrent() {
     if (!benchmarkSeriesId) {
       return
@@ -3051,11 +3123,47 @@ export function RawDataView({
       modelId: forecastModel,
       targetBasis: selectedForecastTargetBasis,
     } as const
+    const cacheKey = buildForecastLayerCacheKey(locale, identity.seriesId, identity.modelId, identity.targetBasis, 'current')
+    const inFlightWarmup = backgroundWarmupInflightRef.current.get(cacheKey)
 
     setForecastCurrentState('PREPARING')
     setForecastErrorState(null)
 
     try {
+      if (inFlightWarmup) {
+        const outcome = await inFlightWarmup
+
+        if (requestId !== forecastPreparationRequestRef.current) {
+          return
+        }
+
+        if (outcome.currentResult) {
+          forecastLayerCacheRef.current.set(cacheKey, {
+            payload: outcome.currentResult,
+            cachedAt: Date.now(),
+          })
+        }
+
+        setForecastCurrentResult(outcome.currentResult)
+        setForecastCurrentState(outcome.currentState)
+
+        if (outcome.currentState === 'FAILED') {
+          setForecastErrorState({
+            title: t('forecastPreparationFailed'),
+            message: outcome.preparation?.reason ?? t('forecastUnavailableHint'),
+          })
+          return
+        }
+
+        if (outcome.currentState === 'UNSUPPORTED') {
+          setForecastErrorState(null)
+          return
+        }
+
+        setForecastErrorState(null)
+        return
+      }
+
       const outcome = await explicitlyPrepareForecastCurrent(identity, {
         prepareCurrent: (input) => requestExplicitCurrentForecastPreparationThroughDashboard(fetch, input),
         readPrepared: (input) => readPreparedCurrentForecastThroughDashboard(fetch, input),
@@ -3065,7 +3173,6 @@ export function RawDataView({
         return
       }
 
-      const cacheKey = buildForecastLayerCacheKey(locale, identity.seriesId, identity.modelId, identity.targetBasis, 'current')
       if (outcome.currentResult) {
         forecastLayerCacheRef.current.set(cacheKey, {
           payload: outcome.currentResult,
