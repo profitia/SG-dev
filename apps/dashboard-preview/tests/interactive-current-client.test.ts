@@ -271,6 +271,49 @@ test('prepared current result stays on the hot read path without explicit prepar
   assert.equal(shouldShowExplicitCurrentPreparation(state, null), false)
 })
 
+test('stale point-in-time current result falls back to not-prepared UI state', () => {
+  const state = resolveForecastCurrentUiState({
+    status: 'AVAILABLE',
+    seriesId: 'wocaes0074',
+    modelId: 'arima',
+    targetBasis: 'POINT_IN_TIME',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+    displayName: 'Brent',
+    description: null,
+    methodVersion: 'rolling-daily-point-in-time-v1',
+    lineage: {
+      inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+      inputRunId: null,
+      sourceSeriesId: 'wocaes0074',
+      sourceFrequency: 'DAILY',
+      historyFingerprint: 'abc',
+      preparation: null,
+    },
+    history: { frequency: 'DAILY', start: '2026-01-01', end: '2026-08-31', observations: 180 },
+    forecastOrigin: '2026-08-31',
+    currentForecast: {},
+    freshness: {
+      identity: {
+        forecastIdentity: {
+          seriesId: 'wocaes0074',
+          targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+          methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+          methodVersion: 'rolling-daily-point-in-time-v1',
+          modelId: 'arima',
+        },
+        inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+        sourceHistoryFingerprint: 'snapshot-fingerprint',
+        forecastOrigin: '2026-08-31',
+      },
+      status: 'STALE',
+      reason: 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
+    },
+  })
+
+  assert.equal(state, 'NOT_PREPARED')
+})
+
 test('dashboard current read forwards exact model and target identity', async () => {
   let capturedUrl: URL | null = null
   const payload = await readPreparedCurrentForecastThroughDashboard(async (input) => {

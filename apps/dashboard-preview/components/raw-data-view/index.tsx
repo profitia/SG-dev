@@ -577,6 +577,43 @@ function toUiLoadErrorState(
   }
 }
 
+type ForecastVerificationErrorMessages = {
+  verificationUnavailable: string
+  verificationUnavailableHint: string
+  verificationBlocked: string
+  verificationBlockedHint: string
+}
+
+export function resolveForecastVerificationUnavailableState(
+  result: BenchmarkForecastVerificationResult,
+  messages: ForecastVerificationErrorMessages,
+): UiLoadErrorState | null {
+  if (result.status === 'AVAILABLE') {
+    return null
+  }
+
+  const reason = result.reason.toUpperCase()
+
+  if (reason.includes('PREPARATION_REQUIRED')) {
+    return {
+      title: messages.verificationUnavailable,
+      message: messages.verificationUnavailableHint,
+    }
+  }
+
+  if (reason.includes('UNSUPPORTED')) {
+    return {
+      title: messages.verificationBlocked,
+      message: messages.verificationBlockedHint,
+    }
+  }
+
+  return {
+    title: messages.verificationUnavailable,
+    message: result.reason,
+  }
+}
+
 function SearchableSelect({
   label,
   placeholder,
@@ -3272,12 +3309,27 @@ export function RawDataView({
           return
         }
 
+        const normalizedPayload = payload as BenchmarkForecastVerificationResult
+
+        if (!isAvailableVerificationResult(normalizedPayload)) {
+          setForecastVerificationResult(null)
+          setForecastVerificationState('error')
+          setForecastVerificationErrorState(resolveForecastVerificationUnavailableState(normalizedPayload, {
+            verificationUnavailable: t('verificationUnavailable'),
+            verificationUnavailableHint: t('verificationUnavailableHint'),
+            verificationBlocked: t('verificationBlocked'),
+            verificationBlockedHint: t('verificationBlockedHint'),
+          }))
+          return
+        }
+
         forecastLayerCacheRef.current.set(cacheKey, {
-          payload: payload as BenchmarkForecastVerificationResult,
+          payload: normalizedPayload,
           cachedAt: Date.now(),
         })
-        setForecastVerificationResult(payload as BenchmarkForecastVerificationResult)
+        setForecastVerificationResult(normalizedPayload)
         setForecastVerificationState('ready')
+        setForecastVerificationErrorState(null)
       } catch (error) {
         if (cancelled || (error as Error).name === 'AbortError') {
           return
