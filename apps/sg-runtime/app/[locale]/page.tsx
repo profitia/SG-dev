@@ -92,11 +92,10 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
   }
 
   return (
-    <main className="min-h-screen bg-white py-8 text-slate-950 sm:py-10">
-      <div className="mx-auto w-full max-w-[1440px] px-[clamp(24px,4vw,56px)]">
-        <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center xl:min-h-[calc(100vh-5rem)]">
-          <div className="grid w-full gap-10 xl:grid-cols-[minmax(0,46fr)_1px_minmax(0,54fr)] xl:gap-0">
-            <section className="flex min-h-full flex-col xl:pr-[clamp(36px,4vw,64px)]">
+    <main className="bg-white text-slate-950">
+      <div className="mx-auto w-full max-w-[1440px] px-[clamp(24px,4vw,56px)] py-8 sm:py-10 xl:flex xl:min-h-screen xl:items-center">
+        <div className="grid w-full gap-10 xl:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] xl:gap-0">
+            <section className="flex min-h-full flex-col xl:pr-[clamp(36px,4vw,56px)]">
               <div>
               <div className="flex items-start justify-between gap-6">
                 <img
@@ -212,7 +211,6 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
               </div>
             </section>
           </div>
-        </div>
       </div>
     </main>
   )
