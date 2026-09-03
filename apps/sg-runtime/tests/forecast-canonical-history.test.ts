@@ -11,8 +11,9 @@ import {
   canonicalizeDailyMarketPriceToEndOfPeriod,
   canonicalizeDailyMarketPriceToMonthly,
   canonicalizeProvenanceQualifiedNativePeriod,
-    canonicalizeProvenanceQualifiedNativeMonthly,
-    canonicalizeProvenanceQualifiedWeeklyEndOfPeriod,
+  canonicalizeProvenanceQualifiedNativeMonthly,
+  canonicalizeProvenanceQualifiedWeeklyEndOfPeriod,
+  selectLatestContiguousMonthlySuffix,
 } from '../lib/forecast/canonical-history'
 
 function createDailyHistory(points: Array<{ date: string; value: number | null }>): BenchmarkHistoricalSeriesResult {
@@ -169,6 +170,22 @@ test('missing closed calendar month fails closed for Forecast Core monthly caden
       ),
     /has a gap between/i,
   )
+})
+
+test('latest contiguous monthly suffix keeps only the newest lawful segment without modifying values or provenance', () => {
+  const suffix = selectLatestContiguousMonthlySuffix([
+    { date: '2020-01-01T00:00:00.000Z', value: 10, sourceObservedAt: null },
+    { date: '2020-02-01T00:00:00.000Z', value: 11, sourceObservedAt: null },
+    { date: '2020-05-01T00:00:00.000Z', value: 12, sourceObservedAt: '2020-05-29T00:00:00.000Z' },
+    { date: '2020-06-01T00:00:00.000Z', value: 13, sourceObservedAt: '2020-06-30T00:00:00.000Z' },
+    { date: '2020-07-01T00:00:00.000Z', value: 14, sourceObservedAt: '2020-07-31T00:00:00.000Z' },
+  ])
+
+  assert.deepEqual(suffix, [
+    { date: '2020-05-01T00:00:00.000Z', value: 12, sourceObservedAt: '2020-05-29T00:00:00.000Z' },
+    { date: '2020-06-01T00:00:00.000Z', value: 13, sourceObservedAt: '2020-06-30T00:00:00.000Z' },
+    { date: '2020-07-01T00:00:00.000Z', value: 14, sourceObservedAt: '2020-07-31T00:00:00.000Z' },
+  ])
 })
 
 test('end-of-period uses the last lawful observation when month-end exists', () => {

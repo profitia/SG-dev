@@ -63,6 +63,7 @@ import {
   buildCurrentForecastExecutionPlan,
   buildCurrentHorizonConfigurationId,
   loadLiveForecastBridgePayload,
+  selectLatestCurrentForecastMonthlyTrainingPayload,
   type LiveForecastBridgePayload,
 } from '@/lib/forecast/live-market-input'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
@@ -321,7 +322,7 @@ export type ForecastBridge = {
 }
 
 export type ForecastPreparedExecutionContext = {
-  exportHistory(): Promise<ForecastHistoryBridgeResponse>
+  exportHistory(mode?: 'current' | 'verification'): Promise<ForecastHistoryBridgeResponse>
   exportCurrent(modelId: string): Promise<ForecastCurrentBridgeResponse>
   exportVerification(modelId: string): Promise<ForecastVerificationBridgeResponse>
 }
@@ -942,11 +943,13 @@ async function prepareExecutionContext(
     return null
   }
 
+  const currentPayload = selectLatestCurrentForecastMonthlyTrainingPayload(payload)
+
   return {
-    exportHistory() {
+    exportHistory(mode = 'verification') {
       return executePreparedLiveForecastBridge(
         configuration,
-        payload,
+        mode === 'current' ? currentPayload : payload,
         'history',
         input.seriesId,
       ) as Promise<ForecastHistoryBridgeResponse>
@@ -954,7 +957,7 @@ async function prepareExecutionContext(
     exportCurrent(modelId) {
       return executePreparedLiveForecastBridge(
         configuration,
-        payload,
+        currentPayload,
         'current',
         input.seriesId,
         modelId,
@@ -1595,7 +1598,7 @@ export function createForecastLibraryService(
       }) ?? null
 
       const historyResponse = preparedExecutionContext
-        ? await preparedExecutionContext.exportHistory()
+        ? await preparedExecutionContext.exportHistory('current')
         : await resolvedDependencies.bridge.exportHistory({
             seriesId: input.seriesId,
             targetBasis: input.targetBasis,
@@ -1858,7 +1861,7 @@ export function createForecastLibraryService(
       }) ?? null
 
       const historyResponse = preparedExecutionContext
-        ? await preparedExecutionContext.exportHistory()
+        ? await preparedExecutionContext.exportHistory('verification')
         : await resolvedDependencies.bridge.exportHistory({
             seriesId: input.seriesId,
             targetBasis: input.targetBasis,

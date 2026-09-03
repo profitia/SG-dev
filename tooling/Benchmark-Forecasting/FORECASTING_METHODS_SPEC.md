@@ -209,9 +209,17 @@ If a model family is theoretically valid on shorter history, that does not chang
 
 After backtesting, a current forecast for each model family is produced by:
 
-1. selecting the family configuration using full available history only
-2. fitting the selected configuration on full available history only
-3. forecasting `1M`, `3M`, `6M`, and `12M`
+1. selecting the latest lawful contiguous canonical MONTHLY training suffix that ends at the Current Forecast origin
+2. verifying that suffix satisfies the existing model minimum observation requirement
+3. selecting the family configuration using that suffix only
+4. fitting the selected configuration on that suffix only
+5. forecasting `1M`, `3M`, `6M`, and `12M`
+
+For Current Forecast only, a historical monthly gap that falls strictly before the selected latest lawful contiguous suffix does not invalidate preparation.
+
+No interpolation, forward-fill, synthetic observation, or segment splicing is allowed. If the latest lawful contiguous suffix remains shorter than the existing model minimum, Current Forecast must remain unavailable and report insufficient contiguous history truthfully.
+
+Historical Verification does not change under this rule. Verification origin policy, including `PREFERRED_BACKTEST_ORIGIN_FLOOR = 2024-01-01`, continues to bound origins only and does not truncate lawful pre-origin training history.
 
 This step is allowed because it is not a historical backtest claim.
 

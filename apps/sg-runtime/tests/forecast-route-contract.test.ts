@@ -665,6 +665,19 @@ test('internal capability route emits timing header only when trace is requested
       targetedDataScope: 'SINGLE_SERIES',
       timingMs: 37,
       reason: 'NOT_LAWFUL',
+      trace: {
+        sourceFrequencyAuthority: 'HISTORICAL_SERIES_FREQUENCY',
+        sourceFrequencyLookupMs: 31,
+        sourceFrequencyLookupExternalIo: true,
+        provenanceReadMs: 0,
+        provenanceReadCount: 0,
+        preparedVariantReadMs: 0,
+        preparedVariantReadCount: 0,
+        prepareCount: 0,
+        modelFitCount: 0,
+        exactUnsupportedFastPathTaken: true,
+        capabilityTotalMs: 37,
+      },
     }))
 
     const response = await handler(buildRequest(
@@ -817,6 +830,46 @@ test('interactive current preparation service returns lawful unavailable status 
 
   assert.equal(result.status, 'PREPARATION_REQUIRED')
   assert.equal(result.reason, 'PREPARATION_REQUIRED')
+  assert.equal(monthlyCalls, 0)
+  assert.equal(rollingCalls, 0)
+})
+
+test('interactive current preparation service returns structured insufficient contiguous history without compute', async () => {
+  let monthlyCalls = 0
+  let rollingCalls = 0
+  const capability = buildCapabilityCandidate({
+    availableObservations: 7,
+    minimumRequiredObservations: 36,
+    historyEligibility: 'INSUFFICIENT_HISTORY',
+    modelEligible: false,
+    currentForecastEligible: false,
+    capabilityState: 'INSUFFICIENT_HISTORY',
+  })
+  const service = createInteractiveForecastPreparationService({
+    now: () => 15,
+    resolveExactCapability: async () => ({
+      resolution: buildCapabilityResolution({ capabilities: [capability] }),
+      capability,
+      trace: buildExactCapabilityTrace(),
+    }),
+    prepareMonthlyCurrent: async () => {
+      monthlyCalls += 1
+      throw new Error('should not be called')
+    },
+    prepareRollingCurrent: async () => {
+      rollingCalls += 1
+      throw new Error('should not be called')
+    },
+  })
+
+  const result = await service.prepareCurrent({
+    seriesId: 'bindex',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'arima',
+  })
+
+  assert.equal(result.status, 'INSUFFICIENT_HISTORY')
+  assert.equal(result.reason, 'INSUFFICIENT_CONTIGUOUS_HISTORY: availableContiguousObservations=7; requiredObservations=36.')
   assert.equal(monthlyCalls, 0)
   assert.equal(rollingCalls, 0)
 })

@@ -8,6 +8,7 @@ import {
   canonicalizeDailyMarketPriceHistory,
   canonicalizeProvenanceQualifiedWeeklyEndOfPeriod,
   canonicalizeProvenanceQualifiedNativePeriod,
+  selectLatestContiguousMonthlySuffix,
 } from '@/lib/forecast/canonical-history'
 import { DEFAULT_FORECAST_TARGET_BASIS, type ForecastTargetBasis } from '@/lib/forecast/contracts'
 import {
@@ -66,6 +67,51 @@ export type LiveForecastBridgePayload = {
     excludedPartialPeriods: number
   }
   history: LiveForecastBridgeHistory
+}
+
+export function selectLatestCurrentForecastMonthlyTrainingPayload(
+  payload: LiveForecastBridgePayload,
+): LiveForecastBridgePayload {
+  if (payload.history.frequency !== 'MONTHLY') {
+    return payload
+  }
+
+  const points = selectLatestContiguousMonthlySuffix(payload.history.points.map((point) => ({
+    ...point,
+    sourceObservedAt: point.sourceObservedAt ?? null,
+  })))
+  if (points.length === payload.history.points.length) {
+    return payload
+  }
+
+  const firstPoint = points[0]
+  const lastPoint = points[points.length - 1]
+  if (!firstPoint || !lastPoint) {
+    return payload
+  }
+
+  const { horizons, currentTargetDates } = buildCurrentForecastExecutionPlan(lastPoint.date, payload.execution.frequency)
+
+  return {
+    ...payload,
+    benchmark: {
+      ...payload.benchmark,
+      expectedObservations: points.length,
+    },
+    execution: {
+      ...payload.execution,
+      historicalPeriodStarts: points.map((point) => point.date),
+      horizons,
+      currentTargetDates,
+    },
+    history: {
+      ...payload.history,
+      start: firstPoint.date,
+      end: lastPoint.date,
+      observations: points.length,
+      points,
+    },
+  }
 }
 
 export function buildCurrentForecastExecutionPlan(

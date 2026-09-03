@@ -521,6 +521,35 @@ function createNativeMonthlyHistory(seriesId: string): BenchmarkHistoricalSeries
   return history
 }
 
+function createDailyHistoryWithMonthlyGap(seriesId: string, options: { prefixMonths: number; suffixMonths: number; gapMonths: number }) {
+  const historical = Array.from({ length: options.prefixMonths + options.suffixMonths }, (_, index) => {
+    const monthIndex = index < options.prefixMonths
+      ? index
+      : index + options.gapMonths
+    const year = 2018 + Math.floor(monthIndex / 12)
+    const month = monthIndex % 12
+
+    return [2, 24].map((day) => ({
+      date: new Date(Date.UTC(year, month, day)).toISOString(),
+      value: 100 + monthIndex + day / 100,
+    }))
+  }).flat()
+
+  return {
+    providerSeries: {
+      provider: { providerCode: 'MACROBOND', displayName: 'Macrobond' },
+      providerSeriesId: seriesId,
+      providerSeriesKey: seriesId,
+    },
+    displayName: seriesId,
+    frequency: 'Daily',
+    currency: null,
+    unit: null,
+    source: 'Controlled fixture',
+    historical,
+  } satisfies BenchmarkHistoricalSeriesResult
+}
+
 test('service prepares provenance-qualified WEEKLY EOP and native MONTHLY targets without ticker code', async () => {
   const weeklyHistory = createDailyHistory('generic.weekly')
   weeklyHistory.frequency = 'Weekly'
@@ -564,6 +593,60 @@ test('service prepares provenance-qualified WEEKLY EOP and native MONTHLY target
   assert.ok(monthlyLawful.every((item) => item.admissionState === 'ADMITTED'))
   assert.ok(monthlyLawful.every((item) => item.implementationState === 'SUPPORTED'))
   assert.ok(monthlyLawful.every((item) => item.availableObservations === 48))
+})
+
+test('exact monthly-average capability uses the latest contiguous monthly suffix for Current Forecast eligibility', async () => {
+  const service = createForecastCapabilityService({
+    async resolveHistoricalSeries(seriesId) {
+      return {
+        history: createDailyHistoryWithMonthlyGap(seriesId, { prefixMonths: 2, gapMonths: 4, suffixMonths: 48 }),
+        marketDataSource: 'macrobond',
+        cacheStatus: 'miss',
+      }
+    },
+    async readPreparedVariants() {
+      return []
+    },
+    now: () => new Date('2026-09-15T00:00:00.000Z'),
+  })
+
+  const exact = await service.resolveExact({
+    seriesId: 'suffix-positive',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'arima',
+  })
+
+  assert.equal(exact.capability?.availableObservations, 48)
+  assert.equal(exact.capability?.historyEligibility, 'ELIGIBLE')
+  assert.equal(exact.capability?.capabilityState, 'NOT_PREPARED')
+  assert.equal(exact.resolution.preparationFailures.MONTHLY_AVERAGE, undefined)
+})
+
+test('exact monthly-average capability reports insufficient history from the latest contiguous monthly suffix', async () => {
+  const service = createForecastCapabilityService({
+    async resolveHistoricalSeries(seriesId) {
+      return {
+        history: createDailyHistoryWithMonthlyGap(seriesId, { prefixMonths: 24, gapMonths: 2, suffixMonths: 7 }),
+        marketDataSource: 'macrobond',
+        cacheStatus: 'miss',
+      }
+    },
+    async readPreparedVariants() {
+      return []
+    },
+    now: () => new Date('2026-09-15T00:00:00.000Z'),
+  })
+
+  const exact = await service.resolveExact({
+    seriesId: 'suffix-negative',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'arima',
+  })
+
+  assert.equal(exact.capability?.availableObservations, 7)
+  assert.equal(exact.capability?.historyEligibility, 'INSUFFICIENT_HISTORY')
+  assert.equal(exact.capability?.capabilityState, 'INSUFFICIENT_HISTORY')
+  assert.equal(exact.resolution.preparationFailures.MONTHLY_AVERAGE, undefined)
 })
 
 test('service returns explicit FAILED state when source metadata cannot be resolved', async () => {
@@ -616,6 +699,13 @@ test('exact rolling-daily capability exits early for sparse native frequencies w
   assert.equal(exact.capability?.semanticLawfulness, 'NOT_LAWFUL')
   assert.equal(exact.capability?.capabilityState, 'NOT_LAWFUL')
   assert.equal(exact.capability?.currentForecastEligible, false)
+  assert.equal(exact.trace.sourceFrequencyAuthority, 'HISTORICAL_SERIES_FREQUENCY')
+  assert.equal(exact.trace.sourceFrequencyLookupExternalIo, true)
+  assert.equal(exact.trace.provenanceReadCount, 0)
+  assert.equal(exact.trace.preparedVariantReadCount, 0)
+  assert.equal(exact.trace.prepareCount, 0)
+  assert.equal(exact.trace.modelFitCount, 0)
+  assert.equal(exact.trace.exactUnsupportedFastPathTaken, true)
   assert.equal(provenanceCalls, 0)
   assert.equal(preparedVariantCalls, 0)
 })

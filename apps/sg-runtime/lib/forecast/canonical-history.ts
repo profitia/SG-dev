@@ -48,6 +48,8 @@ export type CanonicalMonthlyObservation = {
   sourceObservedAt: string | null
 }
 
+type MonthlyContinuityPolicy = 'REQUIRE_FULL' | 'ALLOW_GAPS'
+
 export type CanonicalMonthlySeries = {
   frequency: 'MONTHLY'
   targetBasis: ForecastTargetBasis
@@ -102,6 +104,40 @@ function assertRegularMonthlyCadence(seriesId: string, points: CanonicalMonthlyO
       )
     }
   }
+}
+
+export function selectLatestContiguousMonthlySuffix(points: CanonicalMonthlyObservation[]) {
+  if (points.length < 2) {
+    return [...points]
+  }
+
+  let suffixStartIndex = points.length - 1
+
+  for (let index = points.length - 1; index > 0; index -= 1) {
+    const previous = parseBenchmarkObservationDate(points[index - 1].date)
+    const current = parseBenchmarkObservationDate(points[index].date)
+    const expectedCurrent = new Date(Date.UTC(previous.getUTCFullYear(), previous.getUTCMonth() + 1, 1))
+
+    if (current.getTime() !== expectedCurrent.getTime()) {
+      break
+    }
+
+    suffixStartIndex = index - 1
+  }
+
+  return points.slice(suffixStartIndex)
+}
+
+function finalizeMonthlyHistory(
+  seriesId: string,
+  historical: CanonicalMonthlyObservation[],
+  continuityPolicy: MonthlyContinuityPolicy,
+) {
+  if (continuityPolicy === 'REQUIRE_FULL') {
+    assertRegularMonthlyCadence(seriesId, historical)
+  }
+
+  return historical
 }
 
 function assertRegularNativeCadence(
@@ -180,14 +216,15 @@ function groupClosedMonthlyPeriods(
 
 export function canonicalizeDailyMarketPriceToMonthly(
   history: BenchmarkHistoricalSeriesResult,
-  options: { now?: Date } = {},
+  options: { now?: Date; continuityPolicy?: MonthlyContinuityPolicy } = {},
 ): DailyCanonicalMonthlySeries {
   assertDailyFrequency(history)
 
   const now = options.now ?? new Date()
+  const continuityPolicy = options.continuityPolicy ?? 'REQUIRE_FULL'
   const { groups, excludedPartialPeriods } = groupClosedMonthlyPeriods(history, now)
   let sourceObservationsUsed = 0
-  const historical = groups.flatMap(({ period, observations }) => {
+  const historical = finalizeMonthlyHistory(history.providerSeries.providerSeriesId, groups.flatMap(({ period, observations }) => {
     const lawful = getLawfulObservationsInForecastTargetPeriod(observations, period)
     const value = reduceForecastPeriodAverage(lawful)
     sourceObservationsUsed += lawful.length
@@ -196,9 +233,7 @@ export function canonicalizeDailyMarketPriceToMonthly(
       value,
       sourceObservedAt: null,
     }]
-  })
-
-  assertRegularMonthlyCadence(history.providerSeries.providerSeriesId, historical)
+  }), continuityPolicy)
 
   return {
     frequency: 'MONTHLY',
@@ -216,7 +251,7 @@ export function canonicalizeDailyMarketPriceToMonthly(
 
 export function canonicalizeDailyMarketPriceToEndOfPeriod(
   history: BenchmarkHistoricalSeriesResult,
-  options: { now?: Date } = {},
+  options: { now?: Date; continuityPolicy?: MonthlyContinuityPolicy } = {},
 ): DailyCanonicalMonthlySeries {
   assertDailyFrequency(history)
   const prepared = canonicalizeEndOfPeriodLevels(history, options)
@@ -229,7 +264,7 @@ export function canonicalizeDailyMarketPriceToEndOfPeriod(
 
 export function canonicalizeProvenanceQualifiedWeeklyEndOfPeriod(
   history: BenchmarkHistoricalSeriesResult,
-  options: { now?: Date } = {},
+  options: { now?: Date; continuityPolicy?: MonthlyContinuityPolicy } = {},
 ): CanonicalMonthlySeries {
   assertSourceFrequency(history, 'WEEKLY')
   const prepared = canonicalizeEndOfPeriodLevels(history, options)
@@ -243,12 +278,13 @@ export function canonicalizeProvenanceQualifiedWeeklyEndOfPeriod(
 
 function canonicalizeEndOfPeriodLevels(
   history: BenchmarkHistoricalSeriesResult,
-  options: { now?: Date } = {},
+  options: { now?: Date; continuityPolicy?: MonthlyContinuityPolicy } = {},
 ): CanonicalMonthlySeries {
   const now = options.now ?? new Date()
+  const continuityPolicy = options.continuityPolicy ?? 'REQUIRE_FULL'
   const { groups, excludedPartialPeriods } = groupClosedMonthlyPeriods(history, now)
   let sourceObservationsUsed = 0
-  const historical = groups.flatMap(({ period, observations }) => {
+  const historical = finalizeMonthlyHistory(history.providerSeries.providerSeriesId, groups.flatMap(({ period, observations }) => {
     const lawful = getLawfulObservationsInForecastTargetPeriod(observations, period)
     const endOfPeriod = reduceForecastPeriodEndOfPeriod(lawful)
     sourceObservationsUsed += lawful.length
@@ -257,9 +293,7 @@ function canonicalizeEndOfPeriodLevels(
       value: endOfPeriod.value,
       sourceObservedAt: endOfPeriod.observedAt.toISOString(),
     }]
-  })
-
-  assertRegularMonthlyCadence(history.providerSeries.providerSeriesId, historical)
+  }), continuityPolicy)
 
   return {
     frequency: 'MONTHLY',
@@ -278,10 +312,11 @@ function canonicalizeEndOfPeriodLevels(
 export function canonicalizeProvenanceQualifiedNativeMonthly(
   history: BenchmarkHistoricalSeriesResult,
   targetBasis: 'END_OF_PERIOD' | 'MONTHLY_AVERAGE',
-  options: { now?: Date } = {},
+  options: { now?: Date; continuityPolicy?: MonthlyContinuityPolicy } = {},
 ): CanonicalMonthlySeries {
   assertSourceFrequency(history, 'MONTHLY')
   const now = options.now ?? new Date()
+  const continuityPolicy = options.continuityPolicy ?? 'REQUIRE_FULL'
   const { groups, excludedPartialPeriods } = groupClosedMonthlyPeriods(history, now)
   const historical: CanonicalMonthlyObservation[] = []
   let sourceObservationsUsed = 0
@@ -305,7 +340,7 @@ export function canonicalizeProvenanceQualifiedNativeMonthly(
   }
 
   historical.sort((left, right) => left.date.localeCompare(right.date))
-  assertRegularMonthlyCadence(history.providerSeries.providerSeriesId, historical)
+  finalizeMonthlyHistory(history.providerSeries.providerSeriesId, historical, continuityPolicy)
 
   return {
     frequency: 'MONTHLY',

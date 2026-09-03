@@ -1357,6 +1357,7 @@ test('forecast library current path computes END_OF_PERIOD for live-input series
 test('forecast library current path reuses prepared selected live history and executes only the requested model', async () => {
   let prepareCalls = 0
   let historyCalls = 0
+  let historyMode: 'current' | 'verification' | null = null
   let currentCalls = 0
   let verificationCalls = 0
 
@@ -1367,8 +1368,9 @@ test('forecast library current path reuses prepared selected live history and ex
       assert.equal(input.targetBasis, 'END_OF_PERIOD')
 
       return {
-        async exportHistory() {
+        async exportHistory(mode) {
           historyCalls += 1
+          historyMode = mode ?? null
           return createEndOfPeriodHistoryResponse()
         },
         async exportCurrent(modelId) {
@@ -1419,6 +1421,7 @@ test('forecast library current path reuses prepared selected live history and ex
   assert.equal(result.cacheStatus, 'miss')
   assert.equal(prepareCalls, 1)
   assert.equal(historyCalls, 1)
+  assert.equal(historyMode, 'current')
   assert.equal(currentCalls, 1)
   assert.equal(verificationCalls, 0)
 })
@@ -1426,6 +1429,7 @@ test('forecast library current path reuses prepared selected live history and ex
 test('forecast library verification path reuses prepared selected live history and does not invoke unrelated current compute', async () => {
   let prepareCalls = 0
   let historyCalls = 0
+  let historyMode: 'current' | 'verification' | null = null
   let currentCalls = 0
   let verificationCalls = 0
 
@@ -1436,8 +1440,9 @@ test('forecast library verification path reuses prepared selected live history a
       assert.equal(input.targetBasis, 'END_OF_PERIOD')
 
       return {
-        async exportHistory() {
+        async exportHistory(mode) {
           historyCalls += 1
+          historyMode = mode ?? null
           return createEndOfPeriodHistoryResponse()
         },
         async exportCurrent() {
@@ -1488,6 +1493,7 @@ test('forecast library verification path reuses prepared selected live history a
   assert.equal(result.cacheStatus, 'miss')
   assert.equal(prepareCalls, 1)
   assert.equal(historyCalls, 1)
+  assert.equal(historyMode, 'verification')
   assert.equal(currentCalls, 0)
   assert.equal(verificationCalls, 1)
 })

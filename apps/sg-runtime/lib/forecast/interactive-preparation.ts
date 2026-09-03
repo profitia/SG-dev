@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import {
+  type ExactForecastCapabilityTrace,
   resolveExactForecastCapability,
   type ForecastVariantCapability,
 } from '@/lib/forecast/capability-resolver'
@@ -44,6 +45,7 @@ export type InteractiveForecastCapabilityResult = {
   targetedDataScope: 'SINGLE_SERIES'
   timingMs: number
   reason: string | null
+  trace?: ExactForecastCapabilityTrace
 }
 
 export type InteractiveForecastPreparationResult = {
@@ -89,6 +91,22 @@ function blockedPreparationStatus(capability: ForecastVariantCapability): Intera
   return null
 }
 
+function formatInteractiveCapabilityReason(capability: ForecastVariantCapability | null, fallback: string | null = null) {
+  if (!capability) {
+    return fallback
+  }
+
+  if (
+    capability.historyEligibility === 'INSUFFICIENT_HISTORY'
+    && capability.targetCadence === 'MONTHLY'
+    && capability.identity.targetSemantics !== 'ROLLING_DAILY_POINT_IN_TIME'
+  ) {
+    return `INSUFFICIENT_CONTIGUOUS_HISTORY: availableContiguousObservations=${capability.availableObservations}; requiredObservations=${capability.minimumRequiredObservations}.`
+  }
+
+  return fallback
+}
+
 export function createInteractiveForecastPreparationService(
   dependencies: Partial<InteractiveForecastPreparationDependencies> = {},
 ) {
@@ -101,13 +119,17 @@ export function createInteractiveForecastPreparationService(
 
   async function resolveExact(input: InteractiveForecastIdentity) {
     const exact = await resolvedDependencies.resolveExactCapability(input)
-    return { resolution: exact.resolution, capability: exact.capability ?? findExactCapability(exact.resolution, input) }
+    return {
+      resolution: exact.resolution,
+      capability: exact.capability ?? findExactCapability(exact.resolution, input),
+      trace: exact.trace,
+    }
   }
 
   return {
     async capability(input: InteractiveForecastIdentity): Promise<InteractiveForecastCapabilityResult> {
       const startedAt = resolvedDependencies.now()
-      const { resolution, capability } = await resolveExact(input)
+      const { resolution, capability, trace } = await resolveExact(input)
       const sourceAvailability = resolution.status !== 'AVAILABLE'
         ? 'FAILED'
         : resolution.sourceMetadata.sourceObservationCount === 0
@@ -126,7 +148,8 @@ export function createInteractiveForecastPreparationService(
         verificationReadiness: capability?.historicalPreparedState ?? 'NOT_PREPARED',
         targetedDataScope: 'SINGLE_SERIES',
         timingMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
-        reason: resolution.reason ?? (capability ? null : 'Exact Forecast capability was not resolved.'),
+        reason: formatInteractiveCapabilityReason(capability, resolution.reason ?? (capability ? null : 'Exact Forecast capability was not resolved.')),
+        trace,
       }
     },
 
@@ -154,7 +177,7 @@ export function createInteractiveForecastPreparationService(
           ...base,
           status: blocked,
           timingMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
-          reason: capability.capabilityState,
+          reason: formatInteractiveCapabilityReason(capability, capability.capabilityState),
         }
       }
 

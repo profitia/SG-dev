@@ -9,6 +9,7 @@ import {
   canonicalizeProvenanceQualifiedNativePeriod,
   canonicalizeProvenanceQualifiedNativeMonthly,
   canonicalizeProvenanceQualifiedWeeklyEndOfPeriod,
+  selectLatestContiguousMonthlySuffix,
 } from '@/lib/forecast/canonical-history'
 import {
   FORECAST_NATIVE_FREQUENCIES,
@@ -144,9 +145,24 @@ export type ExactForecastCapabilityInput = {
   modelId: UserFacingForecastModelId
 }
 
+export type ExactForecastCapabilityTrace = {
+  sourceFrequencyAuthority: 'HISTORICAL_SERIES_FREQUENCY'
+  sourceFrequencyLookupMs: number
+  sourceFrequencyLookupExternalIo: boolean
+  provenanceReadMs: number
+  provenanceReadCount: number
+  preparedVariantReadMs: number
+  preparedVariantReadCount: number
+  prepareCount: number
+  modelFitCount: number
+  exactUnsupportedFastPathTaken: boolean
+  capabilityTotalMs: number
+}
+
 export type ExactForecastCapabilityResolution = {
   resolution: ForecastCapabilityResolution
   capability: ForecastVariantCapability | null
+  trace: ExactForecastCapabilityTrace
 }
 
 type HistoricalSeriesResolution = {
@@ -166,6 +182,11 @@ type ForecastCapabilityServiceDependencies = {
     history: BenchmarkHistoricalSeriesResult,
   ) => Promise<readonly ForecastPreparedVariant[]>
   now: () => Date
+}
+
+type TimedAsyncResult<T> = {
+  value: T
+  durationMs: number
 }
 
 const MONTHLY_MINIMUM_OBSERVATIONS = 36
@@ -496,6 +517,10 @@ function countLawfulSourceObservations(history: BenchmarkHistoricalSeriesResult)
   return history.historical.filter((point) => point.value !== null && Number.isFinite(point.value)).length
 }
 
+function countLatestContiguousMonthlyObservations(points: Array<{ date: string; value: number; sourceObservedAt: string | null }>) {
+  return selectLatestContiguousMonthlySuffix(points).length
+}
+
 function failedCapabilityResolution(seriesId: string, reason: string): ForecastCapabilityResolution {
   return {
     status: 'FAILED',
@@ -549,6 +574,15 @@ function buildCapabilityResolution(
     },
     preparationFailures,
     capabilities,
+  }
+}
+
+async function measureAsync<T>(operation: () => Promise<T>): Promise<TimedAsyncResult<T>> {
+  const startedAtMs = Date.now()
+  const value = await operation()
+  return {
+    value,
+    durationMs: Math.max(0, Date.now() - startedAtMs),
   }
 }
 
@@ -706,9 +740,13 @@ export function createForecastCapabilityService(
     },
 
     async resolveExact(input: ExactForecastCapabilityInput): Promise<ExactForecastCapabilityResolution> {
+      const capabilityStartedAtMs = Date.now()
+      let sourceFrequencyLookupMs = 0
       let resolution: HistoricalSeriesResolution
       try {
-        resolution = await resolvedDependencies.resolveHistoricalSeries(input.seriesId, 'ALL')
+        const historicalSeries = await measureAsync(() => resolvedDependencies.resolveHistoricalSeries(input.seriesId, 'ALL'))
+        resolution = historicalSeries.value
+        sourceFrequencyLookupMs = historicalSeries.durationMs
       } catch (error) {
         return {
           resolution: failedCapabilityResolution(
@@ -716,6 +754,19 @@ export function createForecastCapabilityService(
             error instanceof Error ? error.message : String(error),
           ),
           capability: null,
+          trace: {
+            sourceFrequencyAuthority: 'HISTORICAL_SERIES_FREQUENCY',
+            sourceFrequencyLookupMs,
+            sourceFrequencyLookupExternalIo: true,
+            provenanceReadMs: 0,
+            provenanceReadCount: 0,
+            preparedVariantReadMs: 0,
+            preparedVariantReadCount: 0,
+            prepareCount: 0,
+            modelFitCount: 0,
+            exactUnsupportedFastPathTaken: false,
+            capabilityTotalMs: Math.max(0, Date.now() - capabilityStartedAtMs),
+          },
         }
       }
 
@@ -724,6 +775,19 @@ export function createForecastCapabilityService(
         return {
           resolution: failedCapabilityResolution(input.seriesId, `Forecast capability source identity mismatch for ${input.seriesId}.`),
           capability: null,
+          trace: {
+            sourceFrequencyAuthority: 'HISTORICAL_SERIES_FREQUENCY',
+            sourceFrequencyLookupMs,
+            sourceFrequencyLookupExternalIo: true,
+            provenanceReadMs: 0,
+            provenanceReadCount: 0,
+            preparedVariantReadMs: 0,
+            preparedVariantReadCount: 0,
+            prepareCount: 0,
+            modelFitCount: 0,
+            exactUnsupportedFastPathTaken: false,
+            capabilityTotalMs: Math.max(0, Date.now() - capabilityStartedAtMs),
+          },
         }
       }
 
@@ -735,6 +799,19 @@ export function createForecastCapabilityService(
             `Forecast capability source frequency is unavailable or unsupported for ${input.seriesId}.`,
           ),
           capability: null,
+          trace: {
+            sourceFrequencyAuthority: 'HISTORICAL_SERIES_FREQUENCY',
+            sourceFrequencyLookupMs,
+            sourceFrequencyLookupExternalIo: true,
+            provenanceReadMs: 0,
+            provenanceReadCount: 0,
+            preparedVariantReadMs: 0,
+            preparedVariantReadCount: 0,
+            prepareCount: 0,
+            modelFitCount: 0,
+            exactUnsupportedFastPathTaken: false,
+            capabilityTotalMs: Math.max(0, Date.now() - capabilityStartedAtMs),
+          },
         }
       }
 
@@ -761,6 +838,19 @@ export function createForecastCapabilityService(
             [capability],
           ),
           capability,
+          trace: {
+            sourceFrequencyAuthority: 'HISTORICAL_SERIES_FREQUENCY',
+            sourceFrequencyLookupMs,
+            sourceFrequencyLookupExternalIo: true,
+            provenanceReadMs: 0,
+            provenanceReadCount: 0,
+            preparedVariantReadMs: 0,
+            preparedVariantReadCount: 0,
+            prepareCount: 0,
+            modelFitCount: 0,
+            exactUnsupportedFastPathTaken: true,
+            capabilityTotalMs: Math.max(0, Date.now() - capabilityStartedAtMs),
+          },
         }
       }
 
@@ -768,13 +858,19 @@ export function createForecastCapabilityService(
       const preparationFailures: ForecastCapabilityResolution['preparationFailures'] = {}
       let provenance: readonly ForecastCapabilityProvenance[]
       let preparedVariants: readonly ForecastPreparedVariant[]
+      let provenanceReadMs = 0
+      let preparedVariantReadMs = 0
       try {
-        [provenance, preparedVariants] = await Promise.all([
+        const [provenanceResult, preparedVariantResult] = await Promise.all([
           sourceFrequency !== 'DAILY'
-            ? resolvedDependencies.resolveProvenance(input.seriesId, history)
-            : Promise.resolve([]),
-          resolvedDependencies.readPreparedVariants(input.seriesId, history),
+            ? measureAsync(() => resolvedDependencies.resolveProvenance(input.seriesId, history))
+            : Promise.resolve({ value: [] as readonly ForecastCapabilityProvenance[], durationMs: 0 }),
+          measureAsync(() => resolvedDependencies.readPreparedVariants(input.seriesId, history)),
         ])
+        provenance = provenanceResult.value
+        preparedVariants = preparedVariantResult.value
+        provenanceReadMs = provenanceResult.durationMs
+        preparedVariantReadMs = preparedVariantResult.durationMs
       } catch (error) {
         return {
           resolution: failedCapabilityResolution(
@@ -782,6 +878,19 @@ export function createForecastCapabilityService(
             error instanceof Error ? error.message : String(error),
           ),
           capability: null,
+          trace: {
+            sourceFrequencyAuthority: 'HISTORICAL_SERIES_FREQUENCY',
+            sourceFrequencyLookupMs,
+            sourceFrequencyLookupExternalIo: true,
+            provenanceReadMs,
+            provenanceReadCount: sourceFrequency !== 'DAILY' ? 1 : 0,
+            preparedVariantReadMs,
+            preparedVariantReadCount: 1,
+            prepareCount: 0,
+            modelFitCount: 0,
+            exactUnsupportedFastPathTaken: false,
+            capabilityTotalMs: Math.max(0, Date.now() - capabilityStartedAtMs),
+          },
         }
       }
 
@@ -797,9 +906,10 @@ export function createForecastCapabilityService(
       if (sourceFrequency === 'DAILY') {
         if (input.targetSemantics === 'END_OF_PERIOD') {
           try {
-            preparedObservationCounts.END_OF_PERIOD = canonicalizeDailyMarketPriceToEndOfPeriod(history, {
+            preparedObservationCounts.END_OF_PERIOD = countLatestContiguousMonthlyObservations(canonicalizeDailyMarketPriceToEndOfPeriod(history, {
               now: resolvedDependencies.now(),
-            }).historical.length
+              continuityPolicy: 'ALLOW_GAPS',
+            }).historical)
           } catch (error) {
             preparationFailures.END_OF_PERIOD = error instanceof Error ? error.message : String(error)
           }
@@ -807,9 +917,10 @@ export function createForecastCapabilityService(
 
         if (input.targetSemantics === 'MONTHLY_AVERAGE') {
           try {
-            preparedObservationCounts.MONTHLY_AVERAGE = canonicalizeDailyMarketPriceToMonthly(history, {
+            preparedObservationCounts.MONTHLY_AVERAGE = countLatestContiguousMonthlyObservations(canonicalizeDailyMarketPriceToMonthly(history, {
               now: resolvedDependencies.now(),
-            }).historical.length
+              continuityPolicy: 'ALLOW_GAPS',
+            }).historical)
           } catch (error) {
             preparationFailures.MONTHLY_AVERAGE = error instanceof Error ? error.message : String(error)
           }
@@ -826,9 +937,10 @@ export function createForecastCapabilityService(
         && hasRequiredProvenance(admissionInput, 'END_OF_PERIOD')
       ) {
         try {
-          preparedObservationCounts.END_OF_PERIOD = canonicalizeProvenanceQualifiedWeeklyEndOfPeriod(history, {
+          preparedObservationCounts.END_OF_PERIOD = countLatestContiguousMonthlyObservations(canonicalizeProvenanceQualifiedWeeklyEndOfPeriod(history, {
             now: resolvedDependencies.now(),
-          }).historical.length
+            continuityPolicy: 'ALLOW_GAPS',
+          }).historical)
         } catch (error) {
           preparationFailures.END_OF_PERIOD = error instanceof Error ? error.message : String(error)
         }
@@ -840,11 +952,14 @@ export function createForecastCapabilityService(
         && hasRequiredProvenance(admissionInput, input.targetSemantics)
       ) {
         try {
-          preparedObservationCounts[input.targetSemantics] = canonicalizeProvenanceQualifiedNativeMonthly(
+          preparedObservationCounts[input.targetSemantics] = countLatestContiguousMonthlyObservations(canonicalizeProvenanceQualifiedNativeMonthly(
             history,
             input.targetSemantics,
-            { now: resolvedDependencies.now() },
-          ).historical.length
+            {
+              now: resolvedDependencies.now(),
+              continuityPolicy: 'ALLOW_GAPS',
+            },
+          ).historical)
         } catch (error) {
           preparationFailures[input.targetSemantics] = error instanceof Error ? error.message : String(error)
         }
@@ -887,6 +1002,19 @@ export function createForecastCapabilityService(
           [capability],
         ),
         capability,
+        trace: {
+          sourceFrequencyAuthority: 'HISTORICAL_SERIES_FREQUENCY',
+          sourceFrequencyLookupMs,
+          sourceFrequencyLookupExternalIo: true,
+          provenanceReadMs,
+          provenanceReadCount: sourceFrequency !== 'DAILY' ? 1 : 0,
+          preparedVariantReadMs,
+          preparedVariantReadCount: 1,
+          prepareCount: 0,
+          modelFitCount: 0,
+          exactUnsupportedFastPathTaken: false,
+          capabilityTotalMs: Math.max(0, Date.now() - capabilityStartedAtMs),
+        },
       }
     },
   }
