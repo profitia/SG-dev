@@ -9,6 +9,7 @@ import {
 } from '../lib/porr-demo-session'
 import {
   isPorrDemoAllowedApiRequest,
+  resolvePorrDemoAbsoluteUrl,
   isPorrDemoProtectedPagePath,
   isPorrDemoRestrictedPagePath,
   isPorrDemoRuntimeReady,
@@ -73,6 +74,14 @@ test('PORR demo routing and readiness helpers fail closed by default', () => {
   assert.equal(isPorrDemoAllowedApiRequest('GET', '/api/category'), false)
   assert.equal(resolvePorrDemoCookieDomain('https://demo-sg-porr.spenduru.app'), '.spenduru.app')
   assert.equal(resolvePorrDemoCookieDomain('http://localhost:3001'), undefined)
+  assert.equal(
+    resolvePorrDemoAbsoluteUrl(
+      '/pl?next=%2Fpl%2Fbenchmark-finder&error=invalid-password',
+      'https://spendguru-porr-demo.onrender.com',
+      'http://localhost:10000/api/porr-demo-auth',
+    ).toString(),
+    'https://spendguru-porr-demo.onrender.com/pl?next=%2Fpl%2Fbenchmark-finder&error=invalid-password',
+  )
   assert.equal(isPorrDemoRuntimeReady({ enabled: false }), false)
   assert.equal(isPorrDemoRuntimeReady({ enabled: true, password: 'pw', sessionSecret: 'secret', orgId: 'org', userId: 'user', orgRole: 'viewer' }), true)
   assert.equal(isPorrDemoRuntimeReady({ enabled: true, password: 'pw', sessionSecret: 'secret', orgId: 'org', userId: '', orgRole: 'viewer' }), false)

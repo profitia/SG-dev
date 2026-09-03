@@ -143,3 +143,11 @@ export function resolvePorrDemoNextPath(nextPath: string | null | undefined, loc
 
   return normalized
 }
+
+export function resolvePorrDemoAbsoluteUrl(pathname: string, appUrl: string, fallbackUrl?: string) {
+  try {
+    return new URL(pathname, appUrl)
+  } catch {
+    return new URL(pathname, fallbackUrl ?? appUrl)
+  }
+}

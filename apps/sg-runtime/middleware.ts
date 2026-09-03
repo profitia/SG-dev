@@ -6,6 +6,7 @@ import {
   isPorrDemoProtectedPagePath,
   isPorrDemoRestrictedPagePath,
   isPorrDemoRuntimeReady,
+  resolvePorrDemoAbsoluteUrl,
   resolvePorrDemoLocale,
   resolvePorrDemoNextPath,
   resolvePorrDemoRuntimeConfig,
@@ -34,7 +35,11 @@ export default async function middleware(request: NextRequest) {
     : null
 
   if (isPorrDemoRestrictedPagePath(request.nextUrl.pathname)) {
-    return NextResponse.redirect(new URL(session ? `/${locale}/benchmark-finder` : `/${locale}`, request.url))
+    return NextResponse.redirect(resolvePorrDemoAbsoluteUrl(
+      session ? `/${locale}/benchmark-finder` : `/${locale}`,
+      runtimeConfig.appUrl,
+      request.url,
+    ))
   }
 
   if (!isPorrDemoProtectedPagePath(request.nextUrl.pathname)) {
@@ -42,7 +47,7 @@ export default async function middleware(request: NextRequest) {
   }
 
   if (!isPorrDemoRuntimeReady(runtimeConfig)) {
-    const redirectUrl = new URL(`/${locale}`, request.url)
+    const redirectUrl = resolvePorrDemoAbsoluteUrl(`/${locale}`, runtimeConfig.appUrl, request.url)
     redirectUrl.searchParams.set('error', 'configuration')
     return NextResponse.redirect(redirectUrl)
   }
@@ -51,7 +56,7 @@ export default async function middleware(request: NextRequest) {
     return intlResponse
   }
 
-  const redirectUrl = new URL(`/${locale}`, request.url)
+  const redirectUrl = resolvePorrDemoAbsoluteUrl(`/${locale}`, runtimeConfig.appUrl, request.url)
   redirectUrl.searchParams.set('next', resolvePorrDemoNextPath(`${request.nextUrl.pathname}${request.nextUrl.search}`, locale))
   return NextResponse.redirect(redirectUrl)
 }

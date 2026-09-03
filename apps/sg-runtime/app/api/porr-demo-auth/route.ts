@@ -7,6 +7,7 @@ import {
 } from '@/lib/porr-demo-session'
 import {
   isPorrDemoRuntimeReady,
+  resolvePorrDemoAbsoluteUrl,
   resolvePorrDemoLocale,
   resolvePorrDemoNextPath,
   resolvePorrDemoRuntimeConfig,
@@ -14,8 +15,8 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-function buildAccessRedirect(request: NextRequest, locale: 'pl' | 'en', nextPath: string, error: string) {
-  const redirectUrl = new URL(`/${locale}`, request.url)
+function buildAccessRedirect(runtimeAppUrl: string, request: NextRequest, locale: 'pl' | 'en', nextPath: string, error: string) {
+  const redirectUrl = resolvePorrDemoAbsoluteUrl(`/${locale}`, runtimeAppUrl, request.url)
   redirectUrl.searchParams.set('next', nextPath)
   redirectUrl.searchParams.set('error', error)
   return redirectUrl
@@ -28,12 +29,12 @@ export async function POST(request: NextRequest) {
   const nextPath = resolvePorrDemoNextPath(String(formData.get('next') ?? ''), locale)
 
   if (!runtimeConfig.enabled || !isPorrDemoRuntimeReady(runtimeConfig)) {
-    return NextResponse.redirect(buildAccessRedirect(request, locale, nextPath, 'configuration'))
+    return NextResponse.redirect(buildAccessRedirect(runtimeConfig.appUrl, request, locale, nextPath, 'configuration'))
   }
 
   const submittedPassword = String(formData.get('password') ?? '').trim()
   if (submittedPassword !== runtimeConfig.password) {
-    const response = NextResponse.redirect(buildAccessRedirect(request, locale, nextPath, 'invalid-password'))
+    const response = NextResponse.redirect(buildAccessRedirect(runtimeConfig.appUrl, request, locale, nextPath, 'invalid-password'))
     response.cookies.set(buildExpiredPorrDemoSessionCookie(runtimeConfig.appUrl, runtimeConfig.nodeEnv))
     return response
   }
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     orgRole: runtimeConfig.orgRole!,
   })
 
-  const response = NextResponse.redirect(new URL(nextPath, request.url))
+  const response = NextResponse.redirect(resolvePorrDemoAbsoluteUrl(nextPath, runtimeConfig.appUrl, request.url))
   response.cookies.set(buildPorrDemoSessionCookie(token, runtimeConfig.appUrl, runtimeConfig.nodeEnv))
   return response
 }
