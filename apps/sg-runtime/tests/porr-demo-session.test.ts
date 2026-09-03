@@ -54,11 +54,11 @@ test('rejects tampered or expired PORR demo session tokens', async () => {
   assert.equal(await verifyPorrDemoSessionToken(SECRET, undefined, 1_725_000_010_000), null)
 })
 
-test('builds spenduru-wide cookie settings for production deployments', () => {
-  const cookie = buildPorrDemoSessionCookie('token', 'https://demo-sg-porr.spenduru.app', 'production')
-  const expiredCookie = buildExpiredPorrDemoSessionCookie('https://demo-sg-porr.spenduru.app', 'production')
+test('builds spendguru-wide cookie settings for production deployments', () => {
+  const cookie = buildPorrDemoSessionCookie('token', 'https://demo-sg-porr.spendguru.app', 'production')
+  const expiredCookie = buildExpiredPorrDemoSessionCookie('https://demo-sg-porr.spendguru.app', 'production')
 
-  assert.equal(cookie.domain, '.spenduru.app')
+  assert.equal(cookie.domain, '.spendguru.app')
   assert.equal(cookie.httpOnly, true)
   assert.equal(cookie.sameSite, 'lax')
   assert.equal(cookie.secure, true)
@@ -72,7 +72,7 @@ test('PORR demo routing and readiness helpers fail closed by default', () => {
   assert.equal(isPorrDemoRestrictedPagePath('/en/cost-scan/category/cat-1'), true)
   assert.equal(isPorrDemoAllowedApiRequest('POST', '/api/benchmark/ai-search'), true)
   assert.equal(isPorrDemoAllowedApiRequest('GET', '/api/category'), false)
-  assert.equal(resolvePorrDemoCookieDomain('https://demo-sg-porr.spenduru.app'), '.spenduru.app')
+  assert.equal(resolvePorrDemoCookieDomain('https://demo-sg-porr.spendguru.app'), '.spendguru.app')
   assert.equal(resolvePorrDemoCookieDomain('http://localhost:3001'), undefined)
   assert.equal(
     resolvePorrDemoAbsoluteUrl(

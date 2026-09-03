@@ -116,8 +116,8 @@ export function isPorrDemoAllowedApiRequest(method: string, pathname: string) {
 export function resolvePorrDemoCookieDomain(appUrl: string) {
   try {
     const hostname = new URL(appUrl).hostname
-    if (hostname === 'spenduru.app' || hostname.endsWith('.spenduru.app')) {
-      return '.spenduru.app'
+    if (hostname === 'spendguru.app' || hostname.endsWith('.spendguru.app')) {
+      return '.spendguru.app'
     }
   } catch {
     return undefined

@@ -57,25 +57,25 @@ function withEnv(overrides: Record<string, string | undefined>, run: () => Promi
 test('PORR middleware redirects unauthenticated page requests to the SG Runtime entry URL', async () => {
   await withEnv({
     DASHBOARD_PREVIEW_PORR_DEMO: 'true',
-    PORR_DEMO_ENTRY_URL: 'https://demo-sg-porr.spenduru.app/pl',
+    PORR_DEMO_ENTRY_URL: 'https://demo-sg-porr.spendguru.app/pl',
     PORR_DEMO_SESSION_SECRET: 'shared-secret',
   }, async () => {
-    const response = await middleware(new NextRequest('https://analytics-demo-sg-porr.spenduru.app/pl?embed=1'))
+    const response = await middleware(new NextRequest('https://analytics-demo-sg-porr.spendguru.app/pl?embed=1'))
     assert.equal(response.status, 307)
-    assert.equal(response.headers.get('location'), 'https://demo-sg-porr.spenduru.app/pl')
+    assert.equal(response.headers.get('location'), 'https://demo-sg-porr.spendguru.app/pl')
   })
 })
 
 test('PORR middleware rejects unauthenticated and malformed API requests', async () => {
   await withEnv({
     DASHBOARD_PREVIEW_PORR_DEMO: 'true',
-    PORR_DEMO_ENTRY_URL: 'https://demo-sg-porr.spenduru.app/pl',
+    PORR_DEMO_ENTRY_URL: 'https://demo-sg-porr.spendguru.app/pl',
     PORR_DEMO_SESSION_SECRET: 'shared-secret',
   }, async () => {
-    const missing = await middleware(new NextRequest('https://analytics-demo-sg-porr.spenduru.app/api/series?seriesId=wocaes0074'))
+    const missing = await middleware(new NextRequest('https://analytics-demo-sg-porr.spendguru.app/api/series?seriesId=wocaes0074'))
     assert.equal(missing.status, 401)
 
-    const malformed = await middleware(new NextRequest('https://analytics-demo-sg-porr.spenduru.app/api/series?seriesId=wocaes0074', {
+    const malformed = await middleware(new NextRequest('https://analytics-demo-sg-porr.spendguru.app/api/series?seriesId=wocaes0074', {
       headers: { cookie: 'sg_porr_demo_session=malformed-token' },
     }))
     assert.equal(malformed.status, 401)
@@ -85,15 +85,15 @@ test('PORR middleware rejects unauthenticated and malformed API requests', async
 test('PORR middleware accepts a valid shared session for embedded dashboard requests', async () => {
   await withEnv({
     DASHBOARD_PREVIEW_PORR_DEMO: 'true',
-    PORR_DEMO_ENTRY_URL: 'https://demo-sg-porr.spenduru.app/pl',
+    PORR_DEMO_ENTRY_URL: 'https://demo-sg-porr.spendguru.app/pl',
     PORR_DEMO_SESSION_SECRET: 'shared-secret',
   }, async () => {
     const token = await createSignedToken('shared-secret')
-    const response = await middleware(new NextRequest('https://analytics-demo-sg-porr.spenduru.app/pl?embed=1&variantId=forecast-portfolio-v3', {
+    const response = await middleware(new NextRequest('https://analytics-demo-sg-porr.spendguru.app/pl?embed=1&variantId=forecast-portfolio-v3', {
       headers: { cookie: `sg_porr_demo_session=${token}` },
     }))
 
-    assert.notEqual(response.headers.get('location'), 'https://demo-sg-porr.spenduru.app/pl')
+    assert.notEqual(response.headers.get('location'), 'https://demo-sg-porr.spendguru.app/pl')
     assert.equal(response.status, 200)
   })
 })
@@ -101,10 +101,10 @@ test('PORR middleware accepts a valid shared session for embedded dashboard requ
 test('PORR middleware fails closed when profile is enabled without the shared session secret', async () => {
   await withEnv({
     DASHBOARD_PREVIEW_PORR_DEMO: 'true',
-    PORR_DEMO_ENTRY_URL: 'https://demo-sg-porr.spenduru.app/pl',
+    PORR_DEMO_ENTRY_URL: 'https://demo-sg-porr.spendguru.app/pl',
     PORR_DEMO_SESSION_SECRET: undefined,
   }, async () => {
-    const response = await middleware(new NextRequest('https://analytics-demo-sg-porr.spenduru.app/api/series?seriesId=wocaes0074'))
+    const response = await middleware(new NextRequest('https://analytics-demo-sg-porr.spendguru.app/api/series?seriesId=wocaes0074'))
     assert.equal(response.status, 503)
   })
 })

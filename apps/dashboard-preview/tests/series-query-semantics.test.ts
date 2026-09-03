@@ -119,7 +119,7 @@ test('forwards only the shared PORR demo cookie to SG Runtime benchmark analytic
   const previousFetch = global.fetch
   let capturedCookieHeader: string | null = null
 
-  process.env.SG_RUNTIME_BASE_URL = 'https://demo-sg-porr.spenduru.app'
+  process.env.SG_RUNTIME_BASE_URL = 'https://demo-sg-porr.spendguru.app'
   global.fetch = (async (_input: URL | RequestInfo, init?: RequestInit) => {
     capturedCookieHeader = new Headers(init?.headers).get('Cookie')
 
