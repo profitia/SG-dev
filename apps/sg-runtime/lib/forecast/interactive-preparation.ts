@@ -10,7 +10,7 @@ import {
   FORECAST_TARGET_SEMANTICS,
   type ForecastTargetSemantics,
 } from '@/lib/forecast/identity'
-import { persistRollingDailyCurrentForecastSnapshot } from '@/lib/forecast/rolling-daily-current-forecast-snapshot'
+import { createRollingDailyProductionOperationsService } from '@/lib/forecast/rolling-daily-production-operations'
 import { resolveBenchmarkCurrentForecast } from '@/lib/forecast/service'
 
 export const InteractiveForecastIdentitySchema = z.object({
@@ -62,7 +62,7 @@ export type InteractiveForecastPreparationResult = {
 type InteractiveForecastPreparationDependencies = {
   resolveExactCapability: typeof resolveExactForecastCapability
   prepareMonthlyCurrent: typeof resolveBenchmarkCurrentForecast
-  prepareRollingCurrent: typeof persistRollingDailyCurrentForecastSnapshot
+  prepareRollingCurrent: ReturnType<typeof createRollingDailyProductionOperationsService>['run']
   now: () => number
 }
 
@@ -110,10 +110,11 @@ function formatInteractiveCapabilityReason(capability: ForecastVariantCapability
 export function createInteractiveForecastPreparationService(
   dependencies: Partial<InteractiveForecastPreparationDependencies> = {},
 ) {
+  const rollingDaily = createRollingDailyProductionOperationsService()
   const resolvedDependencies: InteractiveForecastPreparationDependencies = {
     resolveExactCapability: dependencies.resolveExactCapability ?? resolveExactForecastCapability,
     prepareMonthlyCurrent: dependencies.prepareMonthlyCurrent ?? resolveBenchmarkCurrentForecast,
-    prepareRollingCurrent: dependencies.prepareRollingCurrent ?? persistRollingDailyCurrentForecastSnapshot,
+    prepareRollingCurrent: dependencies.prepareRollingCurrent ?? ((request) => rollingDaily.run(request)),
     now: dependencies.now ?? (() => performance.now()),
   }
 
@@ -193,14 +194,25 @@ export function createInteractiveForecastPreparationService(
       if (input.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME') {
         const result = await resolvedDependencies.prepareRollingCurrent({
           seriesId: input.seriesId,
-          modelId: input.modelId,
+          modelIds: [input.modelId],
         })
+        const modelResult = result.results.find((candidate) => candidate.modelId === input.modelId)
+        const failed = result.status === 'FAILED'
+          || !modelResult
+          || modelResult.status === 'FAILED'
+          || modelResult.status === 'REBUILD_REQUIRED'
 
         return {
           ...base,
-          status: result.status === 'AVAILABLE' ? 'READY' : 'FAILED',
+          status: failed
+            ? 'FAILED'
+            : modelResult.status === 'NO_OP'
+              ? 'REUSED'
+              : 'READY',
           timingMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
-          reason: result.reasonCode,
+          reason: failed
+            ? modelResult?.error ?? 'Rolling Daily production operations did not produce a prepared artifact.'
+            : null,
         }
       }
 

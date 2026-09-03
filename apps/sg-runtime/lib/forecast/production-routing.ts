@@ -12,6 +12,7 @@ import {
   createRollingDailyProductionForecastService,
   type RollingDailyProductionForecastResult,
 } from '@/lib/forecast/rolling-daily-production-forecast'
+import { createRollingDailyMaintenanceService } from '@/lib/forecast/rolling-daily-maintenance'
 import { persistResolvedRollingDailyCurrentForecastSnapshot } from '@/lib/forecast/rolling-daily-current-forecast-snapshot'
 import { resolveBenchmarkCurrentForecast } from '@/lib/forecast/service'
 import { resolveForecastMethodContract } from '@/lib/forecast/identity'
@@ -42,9 +43,21 @@ type RollingDailyForecastResolver = (input: {
   modelId: UserFacingForecastModelId
 }) => Promise<RollingDailyProductionForecastResult>
 
+type RollingDailyHistoricalPreparer = (input: {
+  seriesId: string
+  modelId: UserFacingForecastModelId
+}) => Promise<{ status: 'SUCCEEDED' | 'NO_OP' | 'REBUILD_REQUIRED' }>
+
+type RollingDailySnapshotPersister = (input: {
+  seriesId: string
+  modelId: UserFacingForecastModelId
+}, result: RollingDailyProductionForecastResult & { productionMethod: 'ROLLING_DAILY_POINT_IN_TIME' }) => Promise<unknown>
+
 type ProductionForecastRouterDependencies = {
   resolveMonthlyForecast: MonthlyForecastResolver
   resolveRollingDailyForecast: RollingDailyForecastResolver
+  prepareRollingDailyHistorical: RollingDailyHistoricalPreparer
+  persistRollingDailySnapshot: RollingDailySnapshotPersister
 }
 
 function isSupportedProductionForecastMethod(value: string): value is ProductionForecastMethod {
@@ -76,17 +89,15 @@ export function createProductionForecastRouter(
   dependencies: Partial<ProductionForecastRouterDependencies> = {},
 ) {
   const rollingDailyService = createRollingDailyProductionForecastService()
+  const rollingDailyMaintenance = createRollingDailyMaintenanceService()
   const resolvedDependencies: ProductionForecastRouterDependencies = {
     resolveMonthlyForecast: dependencies.resolveMonthlyForecast ?? resolveBenchmarkCurrentForecast,
     resolveRollingDailyForecast: dependencies.resolveRollingDailyForecast
-      ?? (async (input) => {
-        const result = await rollingDailyService.getRollingDailyProductionForecast(input)
-        await persistResolvedRollingDailyCurrentForecastSnapshot(input, {
-          ...result,
-          productionMethod: 'ROLLING_DAILY_POINT_IN_TIME',
-        })
-        return result
-      }),
+      ?? ((input) => rollingDailyService.getRollingDailyProductionForecast(input)),
+    prepareRollingDailyHistorical: dependencies.prepareRollingDailyHistorical
+      ?? ((input) => rollingDailyMaintenance.runIncrementalMaintenance(input)),
+    persistRollingDailySnapshot: dependencies.persistRollingDailySnapshot
+      ?? ((input, result) => persistResolvedRollingDailyCurrentForecastSnapshot(input, result)),
   }
 
   return {
@@ -106,6 +117,22 @@ export function createProductionForecastRouter(
           seriesId: input.seriesId,
           modelId: input.modelId,
         })
+        try {
+          const maintenance = await resolvedDependencies.prepareRollingDailyHistorical({
+            seriesId: input.seriesId,
+            modelId: input.modelId,
+          })
+
+          if (maintenance.status !== 'REBUILD_REQUIRED') {
+            await resolvedDependencies.persistRollingDailySnapshot(input, {
+              ...result,
+              productionMethod: 'ROLLING_DAILY_POINT_IN_TIME',
+            })
+          }
+        } catch {
+          // Skip snapshot persistence when maintenance cannot lawfully establish historical state.
+        }
+
         return {
           ...result,
           productionMethod: 'ROLLING_DAILY_POINT_IN_TIME',

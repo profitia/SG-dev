@@ -958,19 +958,49 @@ test('interactive current preparation service delegates monthly and rolling prep
         reason: null,
       } as unknown as BenchmarkForecastCurrentResult
     },
-    prepareRollingCurrent: async () => {
+    prepareRollingCurrent: async (request) => {
       rollingCalls += 1
+      assert.equal(request.seriesId, 'wocaes0074')
+      assert.deepEqual(request.modelIds, ['ets'])
       return {
+        status: 'SUCCEEDED',
         seriesId: 'wocaes0074',
-        modelId: 'ets',
-        targetBasis: 'POINT_IN_TIME',
-        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
-        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
-        methodVersion: 'rolling-daily-point-in-time-v1',
-        contractVersion: '1',
-        status: 'AVAILABLE',
-        reasonCode: null,
-        parityStatus: 'MATCHED',
+        refreshedSnapshotCount: 1,
+        recoveredSnapshotCount: 0,
+        noOpModelCount: 0,
+        failedModelCount: 0,
+        results: [{
+          status: 'SUCCEEDED',
+          modelId: 'ets',
+          maintenance: {
+            status: 'SUCCEEDED',
+            seriesId: 'wocaes0074',
+            modelId: 'ets',
+            targetBasis: 'POINT_IN_TIME',
+            inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+            methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+            methodVersion: 'rolling-daily-point-in-time-v1',
+            reasonCode: null,
+            sourceHistoryFingerprint: 'hist-1',
+            latestSourceObservationAt: '2026-08-20',
+            sourceObservationCount: 96,
+            filteredNullCount: 0,
+            filteredDuplicateCount: 0,
+            newOriginCount: 1,
+            maturedRecordCount: 0,
+            calibrationRefreshCount: 0,
+            affectedCalibrationGroupCount: 0,
+            lastProcessedOriginAt: '2026-08-20',
+            lastMaturedObservedAt: null,
+            runtimeMs: 10,
+          },
+          snapshot: {
+            status: 'REFRESHED_AFTER_MAINTENANCE',
+            reason: 'MAINTENANCE_DELTA_APPLIED',
+            parityStatus: 'MATCHED',
+          },
+          error: null,
+        }],
       }
     },
   })
@@ -990,6 +1020,124 @@ test('interactive current preparation service delegates monthly and rolling prep
   assert.equal(rolling.status, 'READY')
   assert.equal(monthlyCalls, 1)
   assert.equal(rollingCalls, 1)
+})
+
+test('interactive current preparation service maps rolling daily NO_OP to REUSED and failures to FAILED', async () => {
+  let rollingCalls = 0
+  const service = createInteractiveForecastPreparationService({
+    now: (() => {
+      let tick = 200
+      return () => ++tick
+    })(),
+    resolveExactCapability: async () => {
+      const capability = buildCapabilityCandidate({
+        identity: {
+          seriesId: 'bz_c1_cl',
+          targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+          methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+          methodVersion: 'rolling-daily-point-in-time-v1',
+          modelId: 'arima',
+        },
+        sourceFrequency: 'DAILY',
+        businessTarget: 'DAILY',
+        targetCadence: 'DAILY',
+        semanticLawfulness: 'LAWFUL',
+        minimumRequiredObservations: 60,
+        availableObservations: 6108,
+        currentPreparedState: 'NOT_PREPARED',
+        historicalPreparedState: 'NOT_PREPARED',
+        capabilityState: 'PREPARATION_REQUIRED',
+      })
+
+      return {
+        resolution: buildCapabilityResolution({ capabilities: [capability] }),
+        capability,
+        trace: buildExactCapabilityTrace(),
+      }
+    },
+    prepareMonthlyCurrent: async () => {
+      throw new Error('should not be called')
+    },
+    prepareRollingCurrent: async () => {
+      rollingCalls += 1
+      return rollingCalls === 1
+        ? {
+            status: 'NO_OP',
+            seriesId: 'bz_c1_cl',
+            refreshedSnapshotCount: 0,
+            recoveredSnapshotCount: 0,
+            noOpModelCount: 1,
+            failedModelCount: 0,
+            results: [{
+              status: 'NO_OP',
+              modelId: 'arima',
+              maintenance: {
+                status: 'NO_OP',
+                seriesId: 'bz_c1_cl',
+                modelId: 'arima',
+                targetBasis: 'POINT_IN_TIME',
+                inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+                methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+                methodVersion: 'rolling-daily-point-in-time-v1',
+                reasonCode: null,
+                sourceHistoryFingerprint: 'hist-2',
+                latestSourceObservationAt: '2026-08-20',
+                sourceObservationCount: 6108,
+                filteredNullCount: 0,
+                filteredDuplicateCount: 0,
+                newOriginCount: 0,
+                maturedRecordCount: 0,
+                calibrationRefreshCount: 0,
+                affectedCalibrationGroupCount: 0,
+                lastProcessedOriginAt: '2026-08-20',
+                lastMaturedObservedAt: null,
+                runtimeMs: 10,
+              },
+              snapshot: {
+                status: 'SKIPPED_ALREADY_FRESH',
+                reason: null,
+                parityStatus: null,
+              },
+              error: null,
+            }],
+          }
+        : {
+            status: 'FAILED',
+            seriesId: 'bz_c1_cl',
+            refreshedSnapshotCount: 0,
+            recoveredSnapshotCount: 0,
+            noOpModelCount: 0,
+            failedModelCount: 1,
+            results: [{
+              status: 'FAILED',
+              modelId: 'arima',
+              maintenance: null,
+              snapshot: {
+                status: 'SKIPPED_MAINTENANCE_FAILURE',
+                reason: 'MAINTENANCE_FAILED',
+                parityStatus: null,
+              },
+              error: 'maintenance failed',
+            }],
+          }
+    },
+  })
+
+  const reused = await service.prepareCurrent({
+    seriesId: 'bz_c1_cl',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'arima',
+  })
+  const failed = await service.prepareCurrent({
+    seriesId: 'bz_c1_cl',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'arima',
+  })
+
+  assert.equal(reused.status, 'REUSED')
+  assert.equal(reused.reason, null)
+  assert.equal(failed.status, 'FAILED')
+  assert.equal(failed.reason, 'maintenance failed')
 })
 
 test('interactive current preparation service preserves native sparse cadence for lawful END_OF_PERIOD preparation', async () => {
