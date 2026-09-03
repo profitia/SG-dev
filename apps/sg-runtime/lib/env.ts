@@ -55,6 +55,17 @@ const serverEnvSchema = z.object({
     z.enum(['true', 'false']).optional(),
   ),
 
+  // Explicit deployment profile flag for the PORR password-protected demo shell.
+  // Exact string 'true' is required to enable it; malformed values fail closed.
+  SG_RUNTIME_PORR_DEMO: z.preprocess(
+    (value) => (value === 'true' || value === 'false' ? value : undefined),
+    z.enum(['true', 'false']).optional(),
+  ),
+
+  // Shared-password demo access. Never expose these client-side.
+  PORR_DEMO_PASSWORD: z.string().optional(),
+  PORR_DEMO_SESSION_SECRET: z.string().optional(),
+
   // Internal service credential for Dashboard Preview -> SG Runtime production forecast reads
   SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN: z.string().optional(),
 
@@ -121,6 +132,12 @@ export const isDevelopmentRuntime = resolveDevelopmentRuntime()
 export const isTemporaryPublicBenchmarkComponentProfile = (
   serverEnv.SG_RUNTIME_TEMPORARY_PUBLIC_BENCHMARK_COMPONENT === 'true'
 )
+
+/**
+ * PORR demo shell must remain an explicit opt-in profile and defaults closed
+ * for every existing SG Runtime deployment.
+ */
+export const isPorrDemoProfile = serverEnv.SG_RUNTIME_PORR_DEMO === 'true'
 
 /**
  * Public environment variables — safe for client-side use.

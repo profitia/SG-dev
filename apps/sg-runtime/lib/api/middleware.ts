@@ -21,9 +21,16 @@ import { z } from 'zod'
 
 import {
   isDevelopmentRuntime,
+  isPorrDemoProfile,
   isTemporaryPublicBenchmarkComponentProfile,
   serverEnv,
 } from '@/lib/env'
+import {
+  PORR_DEMO_SESSION_COOKIE_NAME,
+  isPorrDemoAllowedApiRequest,
+  isPorrDemoRuntimeReady,
+} from '@/lib/porr-demo-profile'
+import { verifyPorrDemoSessionToken } from '@/lib/porr-demo-session'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Auth context
@@ -41,9 +48,12 @@ type AuthRequestLike = Pick<NextRequest, 'headers' | 'method' | 'nextUrl'>
 type CognitionAuthRuntimeConfig = {
   readonly isDevelopmentRuntime: boolean
   readonly isTemporaryPublicBenchmarkComponentProfile: boolean
+  readonly isPorrDemoProfile: boolean
   readonly developmentOrgId?: string
   readonly developmentUserId?: string
   readonly developmentOrgRole?: string
+  readonly porrDemoPassword?: string
+  readonly porrDemoSessionSecret?: string
 }
 
 type TemporaryPublicBenchmarkComponentRoute = {
@@ -129,10 +139,52 @@ function resolveTemporaryPublicBenchmarkComponentAuth(
   } satisfies CognitionAuthContext
 }
 
-export function resolveCognitionAuth(
+async function resolvePorrDemoAuth(
   request: AuthRequestLike,
   config: CognitionAuthRuntimeConfig,
-): CognitionAuthContext | null {
+) {
+  if (!config.isPorrDemoProfile || config.isTemporaryPublicBenchmarkComponentProfile) {
+    return null
+  }
+
+  if (!isPorrDemoRuntimeReady({
+    enabled: config.isPorrDemoProfile,
+    password: config.porrDemoPassword,
+    sessionSecret: config.porrDemoSessionSecret,
+    orgId: config.developmentOrgId,
+    userId: config.developmentUserId,
+    orgRole: config.developmentOrgRole,
+  })) {
+    return null
+  }
+
+  if (!isPorrDemoAllowedApiRequest(request.method, request.nextUrl.pathname)) {
+    return null
+  }
+
+  const token = request.headers.get('cookie')
+    ?.split(';')
+    .map((entry) => entry.trim())
+    .find((entry) => entry.startsWith(`${PORR_DEMO_SESSION_COOKIE_NAME}=`))
+    ?.slice(PORR_DEMO_SESSION_COOKIE_NAME.length + 1)
+
+  const session = await verifyPorrDemoSessionToken(config.porrDemoSessionSecret!, token)
+  if (!session) {
+    return null
+  }
+
+  return {
+    orgId: session.orgId,
+    userId: session.userId,
+    orgRole: session.orgRole,
+    requestId: request.headers.get('x-request-id') ?? randomUUID(),
+  } satisfies CognitionAuthContext
+}
+
+export async function resolveCognitionAuth(
+  request: AuthRequestLike,
+  config: CognitionAuthRuntimeConfig,
+): Promise<CognitionAuthContext | null> {
   const orgId = request.headers.get('x-clerk-org-id')
   const userId = request.headers.get('x-clerk-user-id')
 
@@ -143,6 +195,15 @@ export function resolveCognitionAuth(
       orgRole: request.headers.get('x-clerk-org-role') ?? undefined,
       requestId: request.headers.get('x-request-id') ?? randomUUID(),
     }
+  }
+
+  const porrDemoAuth = await resolvePorrDemoAuth(request, config)
+  if (porrDemoAuth) {
+    return porrDemoAuth
+  }
+
+  if (config.isPorrDemoProfile) {
+    return null
   }
 
   const developmentAuth = resolveDevelopmentFallbackAuth(request, config)
@@ -157,13 +218,16 @@ export function resolveCognitionAuth(
  * Extract Clerk auth context from Next.js request headers.
  * Clerk middleware injects x-clerk-org-id and x-clerk-user-id before the route handler.
  */
-export function extractCognitionAuth(request: NextRequest): CognitionAuthContext | null {
+export async function extractCognitionAuth(request: NextRequest): Promise<CognitionAuthContext | null> {
   return resolveCognitionAuth(request, {
     isDevelopmentRuntime,
     isTemporaryPublicBenchmarkComponentProfile,
+    isPorrDemoProfile,
     developmentOrgId: serverEnv.SG_RUNTIME_DEV_ORG_ID,
     developmentUserId: serverEnv.SG_RUNTIME_DEV_USER_ID,
     developmentOrgRole: serverEnv.SG_RUNTIME_DEV_ORG_ROLE,
+    porrDemoPassword: serverEnv.PORR_DEMO_PASSWORD,
+    porrDemoSessionSecret: serverEnv.PORR_DEMO_SESSION_SECRET,
   })
 }
 
@@ -206,7 +270,7 @@ type CognitionHandler<TArgs extends unknown[] = []> = (
 
 export function withCognitionAuth<TArgs extends unknown[]>(handler: CognitionHandler<TArgs>) {
   return async (request: NextRequest, ...args: TArgs): Promise<NextResponse> => {
-    const auth = extractCognitionAuth(request)
+    const auth = await extractCognitionAuth(request)
 
     if (!auth) {
       return cognitionError(

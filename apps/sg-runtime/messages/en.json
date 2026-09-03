@@ -9,7 +9,26 @@
     "environmentLabel": "Environment",
     "serviceLabel": "Service",
     "appUrlLabel": "App URL",
-    "healthLabel": "Health check available at"
+    "healthLabel": "Health check available at",
+    "porrDemo": {
+      "eyebrow": "SpendGuru for PORR",
+      "title": "Market benchmark discovery for the PORR procurement demo",
+      "subtitle": "Access the customer-facing SpendGuru demo shell and open the Benchmark Finder with the current shared demo password.",
+      "availableNowLabel": "Available in this demo",
+      "availableItemOne": "Benchmark Finder for live market benchmark discovery.",
+      "availableItemTwo": "Benchmark preview and analytics through the existing Dashboard Preview integration.",
+      "availableItemThree": "A focused demo surface without unfinished SG Runtime modules.",
+      "accessEyebrow": "Shared password access",
+      "accessTitle": "Enter the PORR demo",
+      "accessSubtitle": "Use the current shared password to open the protected SpendGuru runtime session.",
+      "unavailableTitle": "Demo access is not configured",
+      "unavailableSubtitle": "The PORR demo profile is enabled, but the required server-side password session settings are incomplete.",
+      "passwordLabel": "Shared demo password",
+      "invalidPassword": "The password was not accepted. Try the current shared PORR demo password again.",
+      "configurationError": "Server-side PORR demo access is not fully configured yet. Add the required protected environment variables before using this profile.",
+      "submitLabel": "Open Benchmark Finder",
+      "openFinder": "Open Benchmark Finder"
+    }
   },
   "CategoryBuilder": {
     "eyebrow": "Category Builder",

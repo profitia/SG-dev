@@ -9,7 +9,26 @@
     "environmentLabel": "Środowisko",
     "serviceLabel": "Serwis",
     "appUrlLabel": "URL aplikacji",
-    "healthLabel": "Health check dostępny pod adresem"
+    "healthLabel": "Health check dostępny pod adresem",
+    "porrDemo": {
+      "eyebrow": "SpendGuru dla PORR",
+      "title": "Wyszukiwanie benchmarków rynkowych dla demo zakupowego PORR",
+      "subtitle": "To jest customer-facing shell demo SpendGuru. Użyj aktualnego wspólnego hasła, aby otworzyć Benchmark Finder i istniejący podgląd analityczny.",
+      "availableNowLabel": "Dostępne w tym demo",
+      "availableItemOne": "Benchmark Finder do wyszukiwania benchmarków rynkowych na żywo.",
+      "availableItemTwo": "Podgląd benchmarku i analityka przez istniejącą integrację z Dashboard Preview.",
+      "availableItemThree": "Wąski zakres demo bez odsłaniania niegotowych modułów SG Runtime.",
+      "accessEyebrow": "Wspólny dostęp hasłowy",
+      "accessTitle": "Wejdź do demo PORR",
+      "accessSubtitle": "Wpisz aktualne wspólne hasło, aby otworzyć chronioną sesję demo SpendGuru.",
+      "unavailableTitle": "Dostęp do demo nie jest skonfigurowany",
+      "unavailableSubtitle": "Profil PORR jest włączony, ale brakuje części wymaganej konfiguracji serwerowej dla hasła i sesji.",
+      "passwordLabel": "Wspólne hasło demo",
+      "invalidPassword": "Hasło nie zostało zaakceptowane. Spróbuj ponownie z aktualnym hasłem do demo PORR.",
+      "configurationError": "Serwerowy dostęp do demo PORR nie jest jeszcze kompletny. Dodaj wymagane chronione zmienne środowiskowe przed użyciem tego profilu.",
+      "submitLabel": "Otwórz Benchmark Finder",
+      "openFinder": "Otwórz Benchmark Finder"
+    }
   },
   "CategoryBuilder": {
     "eyebrow": "Category Builder",

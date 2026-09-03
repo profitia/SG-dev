@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     try {
       const payload = await phase22cDiagnosticSpan(
         'series_resolve',
-        () => getSeries(request.nextUrl.searchParams, readLocale(request)),
+        () => getSeries(request.nextUrl.searchParams, readLocale(request), request.headers.get('cookie')),
       )
       return phase22cDiagnosticSyncSpan('response_serialize', () => NextResponse.json(payload))
     } catch (error) {

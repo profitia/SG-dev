@@ -11,6 +11,10 @@ import {
   type DashboardRecordSource,
 } from '@/lib/raw-data/dashboard-record-mapper'
 import { readBooleanQuery, readNumberQuery, type SeriesFilters } from '@/lib/raw-data/dashboard-record-filters'
+import {
+  buildPorrDemoSessionCookieHeader,
+  extractPorrDemoSessionCookieValue,
+} from '@/lib/porr-demo-profile'
 import type { DashboardRecordListFilters } from '@/lib/raw-data/dashboard-record-filters'
 
 import type { ComponentListResponse, RecordsResponse, SeriesProfilingMetrics, SeriesResponse } from './series-contract'
@@ -146,6 +150,7 @@ function toBenchmarkSeriesResponse(
 async function getBenchmarkSeries(
   params: URLSearchParams,
   locale: 'pl' | 'en',
+  requestCookieHeader?: string | null,
 ): Promise<SeriesResponse> {
   const seriesId = params.get('seriesId')?.trim()
 
@@ -161,6 +166,9 @@ async function getBenchmarkSeries(
     cache: 'no-store',
     headers: {
       Accept: 'application/json',
+      ...(buildPorrDemoSessionCookieHeader(extractPorrDemoSessionCookieValue(requestCookieHeader))
+        ? { Cookie: buildPorrDemoSessionCookieHeader(extractPorrDemoSessionCookieValue(requestCookieHeader))! }
+        : {}),
     },
   })
 
@@ -310,9 +318,13 @@ export async function getComponentList(params: URLSearchParams, locale: 'pl' | '
   }
 }
 
-export async function getSeries(params: URLSearchParams, locale: 'pl' | 'en'): Promise<SeriesResponse> {
+export async function getSeries(
+  params: URLSearchParams,
+  locale: 'pl' | 'en',
+  requestCookieHeader?: string | null,
+): Promise<SeriesResponse> {
   if (params.get('seriesId')?.trim()) {
-    return getBenchmarkSeries(params, locale)
+    return getBenchmarkSeries(params, locale, requestCookieHeader)
   }
 
   const profileMode = readProfileMode(params)

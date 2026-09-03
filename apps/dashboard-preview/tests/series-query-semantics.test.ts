@@ -6,6 +6,7 @@ import {
   filterBusinessRecords,
   filterScenario,
   findBenchmarkVariants,
+  getSeries,
 } from '@/lib/time-series/series-query'
 import { toBusinessSafeDashboardRecord, type DashboardRecordSource } from '@/lib/raw-data/dashboard-record-mapper'
 
@@ -111,4 +112,44 @@ test('preserves benchmark identity, Historical selection, and ascending series o
   assert.deepEqual(historical.map(({ id }) => id), ['historical-1', 'historical-2'])
   assert.deepEqual(filterScenario(records, 'forecast').map(({ id }) => id), ['forecast-1'])
   assert.ok(historical.every((record) => toBusinessSafeDashboardRecord(record, { locale: 'pl' }).scenarioType === 'Historical'))
+})
+
+test('forwards only the shared PORR demo cookie to SG Runtime benchmark analytics requests', async () => {
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const previousFetch = global.fetch
+  let capturedCookieHeader: string | null = null
+
+  process.env.SG_RUNTIME_BASE_URL = 'https://demo-sg-porr.spenduru.app'
+  global.fetch = (async (_input: URL | RequestInfo, init?: RequestInit) => {
+    capturedCookieHeader = new Headers(init?.headers).get('Cookie')
+
+    return new Response(JSON.stringify({
+      providerSeries: { providerSeriesId: 'wocaes0074' },
+      displayName: 'Brent, Spot, FOB North Sea',
+      latestValue: 101,
+      frequency: 'monthly',
+      currency: 'USD',
+      unit: 'bbl',
+      source: 'Macrobond',
+      range: '1Y',
+      historical: [{ date: '2026-08-01T00:00:00.000Z', value: 101 }],
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }) as typeof global.fetch
+
+  try {
+    await getSeries(
+      new URLSearchParams('seriesId=wocaes0074&range=1Y&displayName=Brent'),
+      'pl',
+      'other=value; sg_porr_demo_session=signed.token; extra=1',
+    )
+
+    assert.equal(capturedCookieHeader, 'sg_porr_demo_session=signed.token')
+  } finally {
+    global.fetch = previousFetch
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+  }
 })
