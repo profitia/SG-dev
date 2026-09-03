@@ -8,6 +8,10 @@ import type {
   BenchmarkSemanticContext,
   BenchmarkSearchRequest,
 } from '@/lib/benchmark/contracts'
+import {
+  getStoredBenchmarkMetadataDefinitions,
+  getStoredBenchmarkMetadataValues,
+} from '@/lib/benchmark/metadata-store'
 import { parseBenchmarkObservationDate } from '@/lib/benchmark/observation-date'
 import {
   fetchMacrobondEntityMetadata,
@@ -191,6 +195,11 @@ export async function getSavedBenchmarks(organizationId: string) {
 }
 
 export async function getBenchmarkMetadataDefinitions(): Promise<BenchmarkMetadataDefinition[]> {
+  const storedDefinitions = await getStoredBenchmarkMetadataDefinitions()
+  if (storedDefinitions) {
+    return storedDefinitions
+  }
+
   return getMacrobondMetadataDefinitions()
 }
 
@@ -208,6 +217,11 @@ export async function getBenchmarkMetadataValues(
   query: string
   limited: boolean
 }> {
+  const storedValues = await getStoredBenchmarkMetadataValues(metadataKey, filters ?? [], options)
+  if (storedValues) {
+    return storedValues
+  }
+
   return getMacrobondMetadataValues(metadataKey, filters ?? [], options)
 }
 

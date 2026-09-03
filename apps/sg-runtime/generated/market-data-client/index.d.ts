@@ -73,6 +73,16 @@ export type RollingDailyCalibrationGroup = $Result.DefaultSelection<Prisma.$Roll
  * 
  */
 export type RollingDailyMaintenanceState = $Result.DefaultSelection<Prisma.$RollingDailyMaintenanceStatePayload>
+/**
+ * Model BenchmarkMetadataFacetRecord
+ * 
+ */
+export type BenchmarkMetadataFacetRecord = $Result.DefaultSelection<Prisma.$BenchmarkMetadataFacetRecordPayload>
+/**
+ * Model BenchmarkMetadataValueRecord
+ * 
+ */
+export type BenchmarkMetadataValueRecord = $Result.DefaultSelection<Prisma.$BenchmarkMetadataValueRecordPayload>
 
 /**
  * Enums
@@ -358,6 +368,26 @@ export class PrismaClient<
     * ```
     */
   get rollingDailyMaintenanceState(): Prisma.RollingDailyMaintenanceStateDelegate<ExtArgs>;
+
+  /**
+   * `prisma.benchmarkMetadataFacetRecord`: Exposes CRUD operations for the **BenchmarkMetadataFacetRecord** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more BenchmarkMetadataFacetRecords
+    * const benchmarkMetadataFacetRecords = await prisma.benchmarkMetadataFacetRecord.findMany()
+    * ```
+    */
+  get benchmarkMetadataFacetRecord(): Prisma.BenchmarkMetadataFacetRecordDelegate<ExtArgs>;
+
+  /**
+   * `prisma.benchmarkMetadataValueRecord`: Exposes CRUD operations for the **BenchmarkMetadataValueRecord** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more BenchmarkMetadataValueRecords
+    * const benchmarkMetadataValueRecords = await prisma.benchmarkMetadataValueRecord.findMany()
+    * ```
+    */
+  get benchmarkMetadataValueRecord(): Prisma.BenchmarkMetadataValueRecordDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -810,7 +840,9 @@ export namespace Prisma {
     RollingDailyVerificationRecord: 'RollingDailyVerificationRecord',
     RollingDailyCurrentForecastSnapshot: 'RollingDailyCurrentForecastSnapshot',
     RollingDailyCalibrationGroup: 'RollingDailyCalibrationGroup',
-    RollingDailyMaintenanceState: 'RollingDailyMaintenanceState'
+    RollingDailyMaintenanceState: 'RollingDailyMaintenanceState',
+    BenchmarkMetadataFacetRecord: 'BenchmarkMetadataFacetRecord',
+    BenchmarkMetadataValueRecord: 'BenchmarkMetadataValueRecord'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -826,7 +858,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "marketSeries" | "marketObservation" | "marketHydrationState" | "forecastCurrentRun" | "forecastCurrentPoint" | "forecastVerificationRun" | "forecastVerificationMetric" | "forecastVerificationPoint" | "rollingDailyVerificationRecord" | "rollingDailyCurrentForecastSnapshot" | "rollingDailyCalibrationGroup" | "rollingDailyMaintenanceState"
+      modelProps: "marketSeries" | "marketObservation" | "marketHydrationState" | "forecastCurrentRun" | "forecastCurrentPoint" | "forecastVerificationRun" | "forecastVerificationMetric" | "forecastVerificationPoint" | "rollingDailyVerificationRecord" | "rollingDailyCurrentForecastSnapshot" | "rollingDailyCalibrationGroup" | "rollingDailyMaintenanceState" | "benchmarkMetadataFacetRecord" | "benchmarkMetadataValueRecord"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1667,6 +1699,146 @@ export namespace Prisma {
           count: {
             args: Prisma.RollingDailyMaintenanceStateCountArgs<ExtArgs>
             result: $Utils.Optional<RollingDailyMaintenanceStateCountAggregateOutputType> | number
+          }
+        }
+      }
+      BenchmarkMetadataFacetRecord: {
+        payload: Prisma.$BenchmarkMetadataFacetRecordPayload<ExtArgs>
+        fields: Prisma.BenchmarkMetadataFacetRecordFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.BenchmarkMetadataFacetRecordFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataFacetRecordPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.BenchmarkMetadataFacetRecordFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataFacetRecordPayload>
+          }
+          findFirst: {
+            args: Prisma.BenchmarkMetadataFacetRecordFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataFacetRecordPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.BenchmarkMetadataFacetRecordFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataFacetRecordPayload>
+          }
+          findMany: {
+            args: Prisma.BenchmarkMetadataFacetRecordFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataFacetRecordPayload>[]
+          }
+          create: {
+            args: Prisma.BenchmarkMetadataFacetRecordCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataFacetRecordPayload>
+          }
+          createMany: {
+            args: Prisma.BenchmarkMetadataFacetRecordCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.BenchmarkMetadataFacetRecordCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataFacetRecordPayload>[]
+          }
+          delete: {
+            args: Prisma.BenchmarkMetadataFacetRecordDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataFacetRecordPayload>
+          }
+          update: {
+            args: Prisma.BenchmarkMetadataFacetRecordUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataFacetRecordPayload>
+          }
+          deleteMany: {
+            args: Prisma.BenchmarkMetadataFacetRecordDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.BenchmarkMetadataFacetRecordUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.BenchmarkMetadataFacetRecordUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataFacetRecordPayload>
+          }
+          aggregate: {
+            args: Prisma.BenchmarkMetadataFacetRecordAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateBenchmarkMetadataFacetRecord>
+          }
+          groupBy: {
+            args: Prisma.BenchmarkMetadataFacetRecordGroupByArgs<ExtArgs>
+            result: $Utils.Optional<BenchmarkMetadataFacetRecordGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.BenchmarkMetadataFacetRecordCountArgs<ExtArgs>
+            result: $Utils.Optional<BenchmarkMetadataFacetRecordCountAggregateOutputType> | number
+          }
+        }
+      }
+      BenchmarkMetadataValueRecord: {
+        payload: Prisma.$BenchmarkMetadataValueRecordPayload<ExtArgs>
+        fields: Prisma.BenchmarkMetadataValueRecordFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.BenchmarkMetadataValueRecordFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataValueRecordPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.BenchmarkMetadataValueRecordFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataValueRecordPayload>
+          }
+          findFirst: {
+            args: Prisma.BenchmarkMetadataValueRecordFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataValueRecordPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.BenchmarkMetadataValueRecordFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataValueRecordPayload>
+          }
+          findMany: {
+            args: Prisma.BenchmarkMetadataValueRecordFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataValueRecordPayload>[]
+          }
+          create: {
+            args: Prisma.BenchmarkMetadataValueRecordCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataValueRecordPayload>
+          }
+          createMany: {
+            args: Prisma.BenchmarkMetadataValueRecordCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.BenchmarkMetadataValueRecordCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataValueRecordPayload>[]
+          }
+          delete: {
+            args: Prisma.BenchmarkMetadataValueRecordDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataValueRecordPayload>
+          }
+          update: {
+            args: Prisma.BenchmarkMetadataValueRecordUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataValueRecordPayload>
+          }
+          deleteMany: {
+            args: Prisma.BenchmarkMetadataValueRecordDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.BenchmarkMetadataValueRecordUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.BenchmarkMetadataValueRecordUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BenchmarkMetadataValueRecordPayload>
+          }
+          aggregate: {
+            args: Prisma.BenchmarkMetadataValueRecordAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateBenchmarkMetadataValueRecord>
+          }
+          groupBy: {
+            args: Prisma.BenchmarkMetadataValueRecordGroupByArgs<ExtArgs>
+            result: $Utils.Optional<BenchmarkMetadataValueRecordGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.BenchmarkMetadataValueRecordCountArgs<ExtArgs>
+            result: $Utils.Optional<BenchmarkMetadataValueRecordCountAggregateOutputType> | number
           }
         }
       }
@@ -15406,6 +15578,2036 @@ export namespace Prisma {
 
 
   /**
+   * Model BenchmarkMetadataFacetRecord
+   */
+
+  export type AggregateBenchmarkMetadataFacetRecord = {
+    _count: BenchmarkMetadataFacetRecordCountAggregateOutputType | null
+    _avg: BenchmarkMetadataFacetRecordAvgAggregateOutputType | null
+    _sum: BenchmarkMetadataFacetRecordSumAggregateOutputType | null
+    _min: BenchmarkMetadataFacetRecordMinAggregateOutputType | null
+    _max: BenchmarkMetadataFacetRecordMaxAggregateOutputType | null
+  }
+
+  export type BenchmarkMetadataFacetRecordAvgAggregateOutputType = {
+    valueCount: number | null
+  }
+
+  export type BenchmarkMetadataFacetRecordSumAggregateOutputType = {
+    valueCount: number | null
+  }
+
+  export type BenchmarkMetadataFacetRecordMinAggregateOutputType = {
+    id: string | null
+    providerCode: string | null
+    key: string | null
+    label: string | null
+    description: string | null
+    searchable: boolean | null
+    featured: boolean | null
+    category: string | null
+    controlType: string | null
+    allowMultipleValues: boolean | null
+    providerKey: string | null
+    active: boolean | null
+    lastSyncStartedAt: Date | null
+    lastSyncSucceededAt: Date | null
+    lastSyncStatus: string | null
+    lastSyncError: string | null
+    valueCount: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type BenchmarkMetadataFacetRecordMaxAggregateOutputType = {
+    id: string | null
+    providerCode: string | null
+    key: string | null
+    label: string | null
+    description: string | null
+    searchable: boolean | null
+    featured: boolean | null
+    category: string | null
+    controlType: string | null
+    allowMultipleValues: boolean | null
+    providerKey: string | null
+    active: boolean | null
+    lastSyncStartedAt: Date | null
+    lastSyncSucceededAt: Date | null
+    lastSyncStatus: string | null
+    lastSyncError: string | null
+    valueCount: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type BenchmarkMetadataFacetRecordCountAggregateOutputType = {
+    id: number
+    providerCode: number
+    key: number
+    label: number
+    description: number
+    searchable: number
+    featured: number
+    category: number
+    controlType: number
+    allowMultipleValues: number
+    providerKey: number
+    active: number
+    lastSyncStartedAt: number
+    lastSyncSucceededAt: number
+    lastSyncStatus: number
+    lastSyncError: number
+    valueCount: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type BenchmarkMetadataFacetRecordAvgAggregateInputType = {
+    valueCount?: true
+  }
+
+  export type BenchmarkMetadataFacetRecordSumAggregateInputType = {
+    valueCount?: true
+  }
+
+  export type BenchmarkMetadataFacetRecordMinAggregateInputType = {
+    id?: true
+    providerCode?: true
+    key?: true
+    label?: true
+    description?: true
+    searchable?: true
+    featured?: true
+    category?: true
+    controlType?: true
+    allowMultipleValues?: true
+    providerKey?: true
+    active?: true
+    lastSyncStartedAt?: true
+    lastSyncSucceededAt?: true
+    lastSyncStatus?: true
+    lastSyncError?: true
+    valueCount?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type BenchmarkMetadataFacetRecordMaxAggregateInputType = {
+    id?: true
+    providerCode?: true
+    key?: true
+    label?: true
+    description?: true
+    searchable?: true
+    featured?: true
+    category?: true
+    controlType?: true
+    allowMultipleValues?: true
+    providerKey?: true
+    active?: true
+    lastSyncStartedAt?: true
+    lastSyncSucceededAt?: true
+    lastSyncStatus?: true
+    lastSyncError?: true
+    valueCount?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type BenchmarkMetadataFacetRecordCountAggregateInputType = {
+    id?: true
+    providerCode?: true
+    key?: true
+    label?: true
+    description?: true
+    searchable?: true
+    featured?: true
+    category?: true
+    controlType?: true
+    allowMultipleValues?: true
+    providerKey?: true
+    active?: true
+    lastSyncStartedAt?: true
+    lastSyncSucceededAt?: true
+    lastSyncStatus?: true
+    lastSyncError?: true
+    valueCount?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type BenchmarkMetadataFacetRecordAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BenchmarkMetadataFacetRecord to aggregate.
+     */
+    where?: BenchmarkMetadataFacetRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BenchmarkMetadataFacetRecords to fetch.
+     */
+    orderBy?: BenchmarkMetadataFacetRecordOrderByWithRelationInput | BenchmarkMetadataFacetRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: BenchmarkMetadataFacetRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BenchmarkMetadataFacetRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BenchmarkMetadataFacetRecords.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned BenchmarkMetadataFacetRecords
+    **/
+    _count?: true | BenchmarkMetadataFacetRecordCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: BenchmarkMetadataFacetRecordAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: BenchmarkMetadataFacetRecordSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: BenchmarkMetadataFacetRecordMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: BenchmarkMetadataFacetRecordMaxAggregateInputType
+  }
+
+  export type GetBenchmarkMetadataFacetRecordAggregateType<T extends BenchmarkMetadataFacetRecordAggregateArgs> = {
+        [P in keyof T & keyof AggregateBenchmarkMetadataFacetRecord]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateBenchmarkMetadataFacetRecord[P]>
+      : GetScalarType<T[P], AggregateBenchmarkMetadataFacetRecord[P]>
+  }
+
+
+
+
+  export type BenchmarkMetadataFacetRecordGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BenchmarkMetadataFacetRecordWhereInput
+    orderBy?: BenchmarkMetadataFacetRecordOrderByWithAggregationInput | BenchmarkMetadataFacetRecordOrderByWithAggregationInput[]
+    by: BenchmarkMetadataFacetRecordScalarFieldEnum[] | BenchmarkMetadataFacetRecordScalarFieldEnum
+    having?: BenchmarkMetadataFacetRecordScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: BenchmarkMetadataFacetRecordCountAggregateInputType | true
+    _avg?: BenchmarkMetadataFacetRecordAvgAggregateInputType
+    _sum?: BenchmarkMetadataFacetRecordSumAggregateInputType
+    _min?: BenchmarkMetadataFacetRecordMinAggregateInputType
+    _max?: BenchmarkMetadataFacetRecordMaxAggregateInputType
+  }
+
+  export type BenchmarkMetadataFacetRecordGroupByOutputType = {
+    id: string
+    providerCode: string
+    key: string
+    label: string
+    description: string | null
+    searchable: boolean
+    featured: boolean
+    category: string
+    controlType: string
+    allowMultipleValues: boolean
+    providerKey: string
+    active: boolean
+    lastSyncStartedAt: Date | null
+    lastSyncSucceededAt: Date | null
+    lastSyncStatus: string | null
+    lastSyncError: string | null
+    valueCount: number
+    createdAt: Date
+    updatedAt: Date
+    _count: BenchmarkMetadataFacetRecordCountAggregateOutputType | null
+    _avg: BenchmarkMetadataFacetRecordAvgAggregateOutputType | null
+    _sum: BenchmarkMetadataFacetRecordSumAggregateOutputType | null
+    _min: BenchmarkMetadataFacetRecordMinAggregateOutputType | null
+    _max: BenchmarkMetadataFacetRecordMaxAggregateOutputType | null
+  }
+
+  type GetBenchmarkMetadataFacetRecordGroupByPayload<T extends BenchmarkMetadataFacetRecordGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<BenchmarkMetadataFacetRecordGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof BenchmarkMetadataFacetRecordGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], BenchmarkMetadataFacetRecordGroupByOutputType[P]>
+            : GetScalarType<T[P], BenchmarkMetadataFacetRecordGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type BenchmarkMetadataFacetRecordSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    providerCode?: boolean
+    key?: boolean
+    label?: boolean
+    description?: boolean
+    searchable?: boolean
+    featured?: boolean
+    category?: boolean
+    controlType?: boolean
+    allowMultipleValues?: boolean
+    providerKey?: boolean
+    active?: boolean
+    lastSyncStartedAt?: boolean
+    lastSyncSucceededAt?: boolean
+    lastSyncStatus?: boolean
+    lastSyncError?: boolean
+    valueCount?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["benchmarkMetadataFacetRecord"]>
+
+  export type BenchmarkMetadataFacetRecordSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    providerCode?: boolean
+    key?: boolean
+    label?: boolean
+    description?: boolean
+    searchable?: boolean
+    featured?: boolean
+    category?: boolean
+    controlType?: boolean
+    allowMultipleValues?: boolean
+    providerKey?: boolean
+    active?: boolean
+    lastSyncStartedAt?: boolean
+    lastSyncSucceededAt?: boolean
+    lastSyncStatus?: boolean
+    lastSyncError?: boolean
+    valueCount?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["benchmarkMetadataFacetRecord"]>
+
+  export type BenchmarkMetadataFacetRecordSelectScalar = {
+    id?: boolean
+    providerCode?: boolean
+    key?: boolean
+    label?: boolean
+    description?: boolean
+    searchable?: boolean
+    featured?: boolean
+    category?: boolean
+    controlType?: boolean
+    allowMultipleValues?: boolean
+    providerKey?: boolean
+    active?: boolean
+    lastSyncStartedAt?: boolean
+    lastSyncSucceededAt?: boolean
+    lastSyncStatus?: boolean
+    lastSyncError?: boolean
+    valueCount?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+
+  export type $BenchmarkMetadataFacetRecordPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "BenchmarkMetadataFacetRecord"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      providerCode: string
+      key: string
+      label: string
+      description: string | null
+      searchable: boolean
+      featured: boolean
+      category: string
+      controlType: string
+      allowMultipleValues: boolean
+      providerKey: string
+      active: boolean
+      lastSyncStartedAt: Date | null
+      lastSyncSucceededAt: Date | null
+      lastSyncStatus: string | null
+      lastSyncError: string | null
+      valueCount: number
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["benchmarkMetadataFacetRecord"]>
+    composites: {}
+  }
+
+  type BenchmarkMetadataFacetRecordGetPayload<S extends boolean | null | undefined | BenchmarkMetadataFacetRecordDefaultArgs> = $Result.GetResult<Prisma.$BenchmarkMetadataFacetRecordPayload, S>
+
+  type BenchmarkMetadataFacetRecordCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<BenchmarkMetadataFacetRecordFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: BenchmarkMetadataFacetRecordCountAggregateInputType | true
+    }
+
+  export interface BenchmarkMetadataFacetRecordDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['BenchmarkMetadataFacetRecord'], meta: { name: 'BenchmarkMetadataFacetRecord' } }
+    /**
+     * Find zero or one BenchmarkMetadataFacetRecord that matches the filter.
+     * @param {BenchmarkMetadataFacetRecordFindUniqueArgs} args - Arguments to find a BenchmarkMetadataFacetRecord
+     * @example
+     * // Get one BenchmarkMetadataFacetRecord
+     * const benchmarkMetadataFacetRecord = await prisma.benchmarkMetadataFacetRecord.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends BenchmarkMetadataFacetRecordFindUniqueArgs>(args: SelectSubset<T, BenchmarkMetadataFacetRecordFindUniqueArgs<ExtArgs>>): Prisma__BenchmarkMetadataFacetRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataFacetRecordPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one BenchmarkMetadataFacetRecord that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {BenchmarkMetadataFacetRecordFindUniqueOrThrowArgs} args - Arguments to find a BenchmarkMetadataFacetRecord
+     * @example
+     * // Get one BenchmarkMetadataFacetRecord
+     * const benchmarkMetadataFacetRecord = await prisma.benchmarkMetadataFacetRecord.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends BenchmarkMetadataFacetRecordFindUniqueOrThrowArgs>(args: SelectSubset<T, BenchmarkMetadataFacetRecordFindUniqueOrThrowArgs<ExtArgs>>): Prisma__BenchmarkMetadataFacetRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataFacetRecordPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first BenchmarkMetadataFacetRecord that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BenchmarkMetadataFacetRecordFindFirstArgs} args - Arguments to find a BenchmarkMetadataFacetRecord
+     * @example
+     * // Get one BenchmarkMetadataFacetRecord
+     * const benchmarkMetadataFacetRecord = await prisma.benchmarkMetadataFacetRecord.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends BenchmarkMetadataFacetRecordFindFirstArgs>(args?: SelectSubset<T, BenchmarkMetadataFacetRecordFindFirstArgs<ExtArgs>>): Prisma__BenchmarkMetadataFacetRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataFacetRecordPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first BenchmarkMetadataFacetRecord that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BenchmarkMetadataFacetRecordFindFirstOrThrowArgs} args - Arguments to find a BenchmarkMetadataFacetRecord
+     * @example
+     * // Get one BenchmarkMetadataFacetRecord
+     * const benchmarkMetadataFacetRecord = await prisma.benchmarkMetadataFacetRecord.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends BenchmarkMetadataFacetRecordFindFirstOrThrowArgs>(args?: SelectSubset<T, BenchmarkMetadataFacetRecordFindFirstOrThrowArgs<ExtArgs>>): Prisma__BenchmarkMetadataFacetRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataFacetRecordPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more BenchmarkMetadataFacetRecords that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BenchmarkMetadataFacetRecordFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all BenchmarkMetadataFacetRecords
+     * const benchmarkMetadataFacetRecords = await prisma.benchmarkMetadataFacetRecord.findMany()
+     * 
+     * // Get first 10 BenchmarkMetadataFacetRecords
+     * const benchmarkMetadataFacetRecords = await prisma.benchmarkMetadataFacetRecord.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const benchmarkMetadataFacetRecordWithIdOnly = await prisma.benchmarkMetadataFacetRecord.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends BenchmarkMetadataFacetRecordFindManyArgs>(args?: SelectSubset<T, BenchmarkMetadataFacetRecordFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BenchmarkMetadataFacetRecordPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a BenchmarkMetadataFacetRecord.
+     * @param {BenchmarkMetadataFacetRecordCreateArgs} args - Arguments to create a BenchmarkMetadataFacetRecord.
+     * @example
+     * // Create one BenchmarkMetadataFacetRecord
+     * const BenchmarkMetadataFacetRecord = await prisma.benchmarkMetadataFacetRecord.create({
+     *   data: {
+     *     // ... data to create a BenchmarkMetadataFacetRecord
+     *   }
+     * })
+     * 
+     */
+    create<T extends BenchmarkMetadataFacetRecordCreateArgs>(args: SelectSubset<T, BenchmarkMetadataFacetRecordCreateArgs<ExtArgs>>): Prisma__BenchmarkMetadataFacetRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataFacetRecordPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many BenchmarkMetadataFacetRecords.
+     * @param {BenchmarkMetadataFacetRecordCreateManyArgs} args - Arguments to create many BenchmarkMetadataFacetRecords.
+     * @example
+     * // Create many BenchmarkMetadataFacetRecords
+     * const benchmarkMetadataFacetRecord = await prisma.benchmarkMetadataFacetRecord.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends BenchmarkMetadataFacetRecordCreateManyArgs>(args?: SelectSubset<T, BenchmarkMetadataFacetRecordCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many BenchmarkMetadataFacetRecords and returns the data saved in the database.
+     * @param {BenchmarkMetadataFacetRecordCreateManyAndReturnArgs} args - Arguments to create many BenchmarkMetadataFacetRecords.
+     * @example
+     * // Create many BenchmarkMetadataFacetRecords
+     * const benchmarkMetadataFacetRecord = await prisma.benchmarkMetadataFacetRecord.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many BenchmarkMetadataFacetRecords and only return the `id`
+     * const benchmarkMetadataFacetRecordWithIdOnly = await prisma.benchmarkMetadataFacetRecord.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends BenchmarkMetadataFacetRecordCreateManyAndReturnArgs>(args?: SelectSubset<T, BenchmarkMetadataFacetRecordCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BenchmarkMetadataFacetRecordPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a BenchmarkMetadataFacetRecord.
+     * @param {BenchmarkMetadataFacetRecordDeleteArgs} args - Arguments to delete one BenchmarkMetadataFacetRecord.
+     * @example
+     * // Delete one BenchmarkMetadataFacetRecord
+     * const BenchmarkMetadataFacetRecord = await prisma.benchmarkMetadataFacetRecord.delete({
+     *   where: {
+     *     // ... filter to delete one BenchmarkMetadataFacetRecord
+     *   }
+     * })
+     * 
+     */
+    delete<T extends BenchmarkMetadataFacetRecordDeleteArgs>(args: SelectSubset<T, BenchmarkMetadataFacetRecordDeleteArgs<ExtArgs>>): Prisma__BenchmarkMetadataFacetRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataFacetRecordPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one BenchmarkMetadataFacetRecord.
+     * @param {BenchmarkMetadataFacetRecordUpdateArgs} args - Arguments to update one BenchmarkMetadataFacetRecord.
+     * @example
+     * // Update one BenchmarkMetadataFacetRecord
+     * const benchmarkMetadataFacetRecord = await prisma.benchmarkMetadataFacetRecord.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends BenchmarkMetadataFacetRecordUpdateArgs>(args: SelectSubset<T, BenchmarkMetadataFacetRecordUpdateArgs<ExtArgs>>): Prisma__BenchmarkMetadataFacetRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataFacetRecordPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more BenchmarkMetadataFacetRecords.
+     * @param {BenchmarkMetadataFacetRecordDeleteManyArgs} args - Arguments to filter BenchmarkMetadataFacetRecords to delete.
+     * @example
+     * // Delete a few BenchmarkMetadataFacetRecords
+     * const { count } = await prisma.benchmarkMetadataFacetRecord.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends BenchmarkMetadataFacetRecordDeleteManyArgs>(args?: SelectSubset<T, BenchmarkMetadataFacetRecordDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more BenchmarkMetadataFacetRecords.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BenchmarkMetadataFacetRecordUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many BenchmarkMetadataFacetRecords
+     * const benchmarkMetadataFacetRecord = await prisma.benchmarkMetadataFacetRecord.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends BenchmarkMetadataFacetRecordUpdateManyArgs>(args: SelectSubset<T, BenchmarkMetadataFacetRecordUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one BenchmarkMetadataFacetRecord.
+     * @param {BenchmarkMetadataFacetRecordUpsertArgs} args - Arguments to update or create a BenchmarkMetadataFacetRecord.
+     * @example
+     * // Update or create a BenchmarkMetadataFacetRecord
+     * const benchmarkMetadataFacetRecord = await prisma.benchmarkMetadataFacetRecord.upsert({
+     *   create: {
+     *     // ... data to create a BenchmarkMetadataFacetRecord
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the BenchmarkMetadataFacetRecord we want to update
+     *   }
+     * })
+     */
+    upsert<T extends BenchmarkMetadataFacetRecordUpsertArgs>(args: SelectSubset<T, BenchmarkMetadataFacetRecordUpsertArgs<ExtArgs>>): Prisma__BenchmarkMetadataFacetRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataFacetRecordPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of BenchmarkMetadataFacetRecords.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BenchmarkMetadataFacetRecordCountArgs} args - Arguments to filter BenchmarkMetadataFacetRecords to count.
+     * @example
+     * // Count the number of BenchmarkMetadataFacetRecords
+     * const count = await prisma.benchmarkMetadataFacetRecord.count({
+     *   where: {
+     *     // ... the filter for the BenchmarkMetadataFacetRecords we want to count
+     *   }
+     * })
+    **/
+    count<T extends BenchmarkMetadataFacetRecordCountArgs>(
+      args?: Subset<T, BenchmarkMetadataFacetRecordCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], BenchmarkMetadataFacetRecordCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a BenchmarkMetadataFacetRecord.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BenchmarkMetadataFacetRecordAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends BenchmarkMetadataFacetRecordAggregateArgs>(args: Subset<T, BenchmarkMetadataFacetRecordAggregateArgs>): Prisma.PrismaPromise<GetBenchmarkMetadataFacetRecordAggregateType<T>>
+
+    /**
+     * Group by BenchmarkMetadataFacetRecord.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BenchmarkMetadataFacetRecordGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends BenchmarkMetadataFacetRecordGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: BenchmarkMetadataFacetRecordGroupByArgs['orderBy'] }
+        : { orderBy?: BenchmarkMetadataFacetRecordGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, BenchmarkMetadataFacetRecordGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetBenchmarkMetadataFacetRecordGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the BenchmarkMetadataFacetRecord model
+   */
+  readonly fields: BenchmarkMetadataFacetRecordFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for BenchmarkMetadataFacetRecord.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__BenchmarkMetadataFacetRecordClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the BenchmarkMetadataFacetRecord model
+   */ 
+  interface BenchmarkMetadataFacetRecordFieldRefs {
+    readonly id: FieldRef<"BenchmarkMetadataFacetRecord", 'String'>
+    readonly providerCode: FieldRef<"BenchmarkMetadataFacetRecord", 'String'>
+    readonly key: FieldRef<"BenchmarkMetadataFacetRecord", 'String'>
+    readonly label: FieldRef<"BenchmarkMetadataFacetRecord", 'String'>
+    readonly description: FieldRef<"BenchmarkMetadataFacetRecord", 'String'>
+    readonly searchable: FieldRef<"BenchmarkMetadataFacetRecord", 'Boolean'>
+    readonly featured: FieldRef<"BenchmarkMetadataFacetRecord", 'Boolean'>
+    readonly category: FieldRef<"BenchmarkMetadataFacetRecord", 'String'>
+    readonly controlType: FieldRef<"BenchmarkMetadataFacetRecord", 'String'>
+    readonly allowMultipleValues: FieldRef<"BenchmarkMetadataFacetRecord", 'Boolean'>
+    readonly providerKey: FieldRef<"BenchmarkMetadataFacetRecord", 'String'>
+    readonly active: FieldRef<"BenchmarkMetadataFacetRecord", 'Boolean'>
+    readonly lastSyncStartedAt: FieldRef<"BenchmarkMetadataFacetRecord", 'DateTime'>
+    readonly lastSyncSucceededAt: FieldRef<"BenchmarkMetadataFacetRecord", 'DateTime'>
+    readonly lastSyncStatus: FieldRef<"BenchmarkMetadataFacetRecord", 'String'>
+    readonly lastSyncError: FieldRef<"BenchmarkMetadataFacetRecord", 'String'>
+    readonly valueCount: FieldRef<"BenchmarkMetadataFacetRecord", 'Int'>
+    readonly createdAt: FieldRef<"BenchmarkMetadataFacetRecord", 'DateTime'>
+    readonly updatedAt: FieldRef<"BenchmarkMetadataFacetRecord", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * BenchmarkMetadataFacetRecord findUnique
+   */
+  export type BenchmarkMetadataFacetRecordFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataFacetRecord
+     */
+    select?: BenchmarkMetadataFacetRecordSelect<ExtArgs> | null
+    /**
+     * Filter, which BenchmarkMetadataFacetRecord to fetch.
+     */
+    where: BenchmarkMetadataFacetRecordWhereUniqueInput
+  }
+
+  /**
+   * BenchmarkMetadataFacetRecord findUniqueOrThrow
+   */
+  export type BenchmarkMetadataFacetRecordFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataFacetRecord
+     */
+    select?: BenchmarkMetadataFacetRecordSelect<ExtArgs> | null
+    /**
+     * Filter, which BenchmarkMetadataFacetRecord to fetch.
+     */
+    where: BenchmarkMetadataFacetRecordWhereUniqueInput
+  }
+
+  /**
+   * BenchmarkMetadataFacetRecord findFirst
+   */
+  export type BenchmarkMetadataFacetRecordFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataFacetRecord
+     */
+    select?: BenchmarkMetadataFacetRecordSelect<ExtArgs> | null
+    /**
+     * Filter, which BenchmarkMetadataFacetRecord to fetch.
+     */
+    where?: BenchmarkMetadataFacetRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BenchmarkMetadataFacetRecords to fetch.
+     */
+    orderBy?: BenchmarkMetadataFacetRecordOrderByWithRelationInput | BenchmarkMetadataFacetRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BenchmarkMetadataFacetRecords.
+     */
+    cursor?: BenchmarkMetadataFacetRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BenchmarkMetadataFacetRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BenchmarkMetadataFacetRecords.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BenchmarkMetadataFacetRecords.
+     */
+    distinct?: BenchmarkMetadataFacetRecordScalarFieldEnum | BenchmarkMetadataFacetRecordScalarFieldEnum[]
+  }
+
+  /**
+   * BenchmarkMetadataFacetRecord findFirstOrThrow
+   */
+  export type BenchmarkMetadataFacetRecordFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataFacetRecord
+     */
+    select?: BenchmarkMetadataFacetRecordSelect<ExtArgs> | null
+    /**
+     * Filter, which BenchmarkMetadataFacetRecord to fetch.
+     */
+    where?: BenchmarkMetadataFacetRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BenchmarkMetadataFacetRecords to fetch.
+     */
+    orderBy?: BenchmarkMetadataFacetRecordOrderByWithRelationInput | BenchmarkMetadataFacetRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BenchmarkMetadataFacetRecords.
+     */
+    cursor?: BenchmarkMetadataFacetRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BenchmarkMetadataFacetRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BenchmarkMetadataFacetRecords.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BenchmarkMetadataFacetRecords.
+     */
+    distinct?: BenchmarkMetadataFacetRecordScalarFieldEnum | BenchmarkMetadataFacetRecordScalarFieldEnum[]
+  }
+
+  /**
+   * BenchmarkMetadataFacetRecord findMany
+   */
+  export type BenchmarkMetadataFacetRecordFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataFacetRecord
+     */
+    select?: BenchmarkMetadataFacetRecordSelect<ExtArgs> | null
+    /**
+     * Filter, which BenchmarkMetadataFacetRecords to fetch.
+     */
+    where?: BenchmarkMetadataFacetRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BenchmarkMetadataFacetRecords to fetch.
+     */
+    orderBy?: BenchmarkMetadataFacetRecordOrderByWithRelationInput | BenchmarkMetadataFacetRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing BenchmarkMetadataFacetRecords.
+     */
+    cursor?: BenchmarkMetadataFacetRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BenchmarkMetadataFacetRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BenchmarkMetadataFacetRecords.
+     */
+    skip?: number
+    distinct?: BenchmarkMetadataFacetRecordScalarFieldEnum | BenchmarkMetadataFacetRecordScalarFieldEnum[]
+  }
+
+  /**
+   * BenchmarkMetadataFacetRecord create
+   */
+  export type BenchmarkMetadataFacetRecordCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataFacetRecord
+     */
+    select?: BenchmarkMetadataFacetRecordSelect<ExtArgs> | null
+    /**
+     * The data needed to create a BenchmarkMetadataFacetRecord.
+     */
+    data: XOR<BenchmarkMetadataFacetRecordCreateInput, BenchmarkMetadataFacetRecordUncheckedCreateInput>
+  }
+
+  /**
+   * BenchmarkMetadataFacetRecord createMany
+   */
+  export type BenchmarkMetadataFacetRecordCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many BenchmarkMetadataFacetRecords.
+     */
+    data: BenchmarkMetadataFacetRecordCreateManyInput | BenchmarkMetadataFacetRecordCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * BenchmarkMetadataFacetRecord createManyAndReturn
+   */
+  export type BenchmarkMetadataFacetRecordCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataFacetRecord
+     */
+    select?: BenchmarkMetadataFacetRecordSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many BenchmarkMetadataFacetRecords.
+     */
+    data: BenchmarkMetadataFacetRecordCreateManyInput | BenchmarkMetadataFacetRecordCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * BenchmarkMetadataFacetRecord update
+   */
+  export type BenchmarkMetadataFacetRecordUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataFacetRecord
+     */
+    select?: BenchmarkMetadataFacetRecordSelect<ExtArgs> | null
+    /**
+     * The data needed to update a BenchmarkMetadataFacetRecord.
+     */
+    data: XOR<BenchmarkMetadataFacetRecordUpdateInput, BenchmarkMetadataFacetRecordUncheckedUpdateInput>
+    /**
+     * Choose, which BenchmarkMetadataFacetRecord to update.
+     */
+    where: BenchmarkMetadataFacetRecordWhereUniqueInput
+  }
+
+  /**
+   * BenchmarkMetadataFacetRecord updateMany
+   */
+  export type BenchmarkMetadataFacetRecordUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update BenchmarkMetadataFacetRecords.
+     */
+    data: XOR<BenchmarkMetadataFacetRecordUpdateManyMutationInput, BenchmarkMetadataFacetRecordUncheckedUpdateManyInput>
+    /**
+     * Filter which BenchmarkMetadataFacetRecords to update
+     */
+    where?: BenchmarkMetadataFacetRecordWhereInput
+  }
+
+  /**
+   * BenchmarkMetadataFacetRecord upsert
+   */
+  export type BenchmarkMetadataFacetRecordUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataFacetRecord
+     */
+    select?: BenchmarkMetadataFacetRecordSelect<ExtArgs> | null
+    /**
+     * The filter to search for the BenchmarkMetadataFacetRecord to update in case it exists.
+     */
+    where: BenchmarkMetadataFacetRecordWhereUniqueInput
+    /**
+     * In case the BenchmarkMetadataFacetRecord found by the `where` argument doesn't exist, create a new BenchmarkMetadataFacetRecord with this data.
+     */
+    create: XOR<BenchmarkMetadataFacetRecordCreateInput, BenchmarkMetadataFacetRecordUncheckedCreateInput>
+    /**
+     * In case the BenchmarkMetadataFacetRecord was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<BenchmarkMetadataFacetRecordUpdateInput, BenchmarkMetadataFacetRecordUncheckedUpdateInput>
+  }
+
+  /**
+   * BenchmarkMetadataFacetRecord delete
+   */
+  export type BenchmarkMetadataFacetRecordDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataFacetRecord
+     */
+    select?: BenchmarkMetadataFacetRecordSelect<ExtArgs> | null
+    /**
+     * Filter which BenchmarkMetadataFacetRecord to delete.
+     */
+    where: BenchmarkMetadataFacetRecordWhereUniqueInput
+  }
+
+  /**
+   * BenchmarkMetadataFacetRecord deleteMany
+   */
+  export type BenchmarkMetadataFacetRecordDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BenchmarkMetadataFacetRecords to delete
+     */
+    where?: BenchmarkMetadataFacetRecordWhereInput
+  }
+
+  /**
+   * BenchmarkMetadataFacetRecord without action
+   */
+  export type BenchmarkMetadataFacetRecordDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataFacetRecord
+     */
+    select?: BenchmarkMetadataFacetRecordSelect<ExtArgs> | null
+  }
+
+
+  /**
+   * Model BenchmarkMetadataValueRecord
+   */
+
+  export type AggregateBenchmarkMetadataValueRecord = {
+    _count: BenchmarkMetadataValueRecordCountAggregateOutputType | null
+    _min: BenchmarkMetadataValueRecordMinAggregateOutputType | null
+    _max: BenchmarkMetadataValueRecordMaxAggregateOutputType | null
+  }
+
+  export type BenchmarkMetadataValueRecordMinAggregateOutputType = {
+    id: string | null
+    providerCode: string | null
+    facetKey: string | null
+    providerValueId: string | null
+    label: string | null
+    normalizedLabel: string | null
+    active: boolean | null
+    firstSeenAt: Date | null
+    lastSeenAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type BenchmarkMetadataValueRecordMaxAggregateOutputType = {
+    id: string | null
+    providerCode: string | null
+    facetKey: string | null
+    providerValueId: string | null
+    label: string | null
+    normalizedLabel: string | null
+    active: boolean | null
+    firstSeenAt: Date | null
+    lastSeenAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type BenchmarkMetadataValueRecordCountAggregateOutputType = {
+    id: number
+    providerCode: number
+    facetKey: number
+    providerValueId: number
+    label: number
+    normalizedLabel: number
+    active: number
+    firstSeenAt: number
+    lastSeenAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type BenchmarkMetadataValueRecordMinAggregateInputType = {
+    id?: true
+    providerCode?: true
+    facetKey?: true
+    providerValueId?: true
+    label?: true
+    normalizedLabel?: true
+    active?: true
+    firstSeenAt?: true
+    lastSeenAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type BenchmarkMetadataValueRecordMaxAggregateInputType = {
+    id?: true
+    providerCode?: true
+    facetKey?: true
+    providerValueId?: true
+    label?: true
+    normalizedLabel?: true
+    active?: true
+    firstSeenAt?: true
+    lastSeenAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type BenchmarkMetadataValueRecordCountAggregateInputType = {
+    id?: true
+    providerCode?: true
+    facetKey?: true
+    providerValueId?: true
+    label?: true
+    normalizedLabel?: true
+    active?: true
+    firstSeenAt?: true
+    lastSeenAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type BenchmarkMetadataValueRecordAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BenchmarkMetadataValueRecord to aggregate.
+     */
+    where?: BenchmarkMetadataValueRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BenchmarkMetadataValueRecords to fetch.
+     */
+    orderBy?: BenchmarkMetadataValueRecordOrderByWithRelationInput | BenchmarkMetadataValueRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: BenchmarkMetadataValueRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BenchmarkMetadataValueRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BenchmarkMetadataValueRecords.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned BenchmarkMetadataValueRecords
+    **/
+    _count?: true | BenchmarkMetadataValueRecordCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: BenchmarkMetadataValueRecordMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: BenchmarkMetadataValueRecordMaxAggregateInputType
+  }
+
+  export type GetBenchmarkMetadataValueRecordAggregateType<T extends BenchmarkMetadataValueRecordAggregateArgs> = {
+        [P in keyof T & keyof AggregateBenchmarkMetadataValueRecord]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateBenchmarkMetadataValueRecord[P]>
+      : GetScalarType<T[P], AggregateBenchmarkMetadataValueRecord[P]>
+  }
+
+
+
+
+  export type BenchmarkMetadataValueRecordGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BenchmarkMetadataValueRecordWhereInput
+    orderBy?: BenchmarkMetadataValueRecordOrderByWithAggregationInput | BenchmarkMetadataValueRecordOrderByWithAggregationInput[]
+    by: BenchmarkMetadataValueRecordScalarFieldEnum[] | BenchmarkMetadataValueRecordScalarFieldEnum
+    having?: BenchmarkMetadataValueRecordScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: BenchmarkMetadataValueRecordCountAggregateInputType | true
+    _min?: BenchmarkMetadataValueRecordMinAggregateInputType
+    _max?: BenchmarkMetadataValueRecordMaxAggregateInputType
+  }
+
+  export type BenchmarkMetadataValueRecordGroupByOutputType = {
+    id: string
+    providerCode: string
+    facetKey: string
+    providerValueId: string
+    label: string
+    normalizedLabel: string
+    active: boolean
+    firstSeenAt: Date
+    lastSeenAt: Date
+    createdAt: Date
+    updatedAt: Date
+    _count: BenchmarkMetadataValueRecordCountAggregateOutputType | null
+    _min: BenchmarkMetadataValueRecordMinAggregateOutputType | null
+    _max: BenchmarkMetadataValueRecordMaxAggregateOutputType | null
+  }
+
+  type GetBenchmarkMetadataValueRecordGroupByPayload<T extends BenchmarkMetadataValueRecordGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<BenchmarkMetadataValueRecordGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof BenchmarkMetadataValueRecordGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], BenchmarkMetadataValueRecordGroupByOutputType[P]>
+            : GetScalarType<T[P], BenchmarkMetadataValueRecordGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type BenchmarkMetadataValueRecordSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    providerCode?: boolean
+    facetKey?: boolean
+    providerValueId?: boolean
+    label?: boolean
+    normalizedLabel?: boolean
+    active?: boolean
+    firstSeenAt?: boolean
+    lastSeenAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["benchmarkMetadataValueRecord"]>
+
+  export type BenchmarkMetadataValueRecordSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    providerCode?: boolean
+    facetKey?: boolean
+    providerValueId?: boolean
+    label?: boolean
+    normalizedLabel?: boolean
+    active?: boolean
+    firstSeenAt?: boolean
+    lastSeenAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["benchmarkMetadataValueRecord"]>
+
+  export type BenchmarkMetadataValueRecordSelectScalar = {
+    id?: boolean
+    providerCode?: boolean
+    facetKey?: boolean
+    providerValueId?: boolean
+    label?: boolean
+    normalizedLabel?: boolean
+    active?: boolean
+    firstSeenAt?: boolean
+    lastSeenAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+
+  export type $BenchmarkMetadataValueRecordPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "BenchmarkMetadataValueRecord"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      providerCode: string
+      facetKey: string
+      providerValueId: string
+      label: string
+      normalizedLabel: string
+      active: boolean
+      firstSeenAt: Date
+      lastSeenAt: Date
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["benchmarkMetadataValueRecord"]>
+    composites: {}
+  }
+
+  type BenchmarkMetadataValueRecordGetPayload<S extends boolean | null | undefined | BenchmarkMetadataValueRecordDefaultArgs> = $Result.GetResult<Prisma.$BenchmarkMetadataValueRecordPayload, S>
+
+  type BenchmarkMetadataValueRecordCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<BenchmarkMetadataValueRecordFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: BenchmarkMetadataValueRecordCountAggregateInputType | true
+    }
+
+  export interface BenchmarkMetadataValueRecordDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['BenchmarkMetadataValueRecord'], meta: { name: 'BenchmarkMetadataValueRecord' } }
+    /**
+     * Find zero or one BenchmarkMetadataValueRecord that matches the filter.
+     * @param {BenchmarkMetadataValueRecordFindUniqueArgs} args - Arguments to find a BenchmarkMetadataValueRecord
+     * @example
+     * // Get one BenchmarkMetadataValueRecord
+     * const benchmarkMetadataValueRecord = await prisma.benchmarkMetadataValueRecord.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends BenchmarkMetadataValueRecordFindUniqueArgs>(args: SelectSubset<T, BenchmarkMetadataValueRecordFindUniqueArgs<ExtArgs>>): Prisma__BenchmarkMetadataValueRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataValueRecordPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one BenchmarkMetadataValueRecord that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {BenchmarkMetadataValueRecordFindUniqueOrThrowArgs} args - Arguments to find a BenchmarkMetadataValueRecord
+     * @example
+     * // Get one BenchmarkMetadataValueRecord
+     * const benchmarkMetadataValueRecord = await prisma.benchmarkMetadataValueRecord.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends BenchmarkMetadataValueRecordFindUniqueOrThrowArgs>(args: SelectSubset<T, BenchmarkMetadataValueRecordFindUniqueOrThrowArgs<ExtArgs>>): Prisma__BenchmarkMetadataValueRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataValueRecordPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first BenchmarkMetadataValueRecord that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BenchmarkMetadataValueRecordFindFirstArgs} args - Arguments to find a BenchmarkMetadataValueRecord
+     * @example
+     * // Get one BenchmarkMetadataValueRecord
+     * const benchmarkMetadataValueRecord = await prisma.benchmarkMetadataValueRecord.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends BenchmarkMetadataValueRecordFindFirstArgs>(args?: SelectSubset<T, BenchmarkMetadataValueRecordFindFirstArgs<ExtArgs>>): Prisma__BenchmarkMetadataValueRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataValueRecordPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first BenchmarkMetadataValueRecord that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BenchmarkMetadataValueRecordFindFirstOrThrowArgs} args - Arguments to find a BenchmarkMetadataValueRecord
+     * @example
+     * // Get one BenchmarkMetadataValueRecord
+     * const benchmarkMetadataValueRecord = await prisma.benchmarkMetadataValueRecord.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends BenchmarkMetadataValueRecordFindFirstOrThrowArgs>(args?: SelectSubset<T, BenchmarkMetadataValueRecordFindFirstOrThrowArgs<ExtArgs>>): Prisma__BenchmarkMetadataValueRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataValueRecordPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more BenchmarkMetadataValueRecords that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BenchmarkMetadataValueRecordFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all BenchmarkMetadataValueRecords
+     * const benchmarkMetadataValueRecords = await prisma.benchmarkMetadataValueRecord.findMany()
+     * 
+     * // Get first 10 BenchmarkMetadataValueRecords
+     * const benchmarkMetadataValueRecords = await prisma.benchmarkMetadataValueRecord.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const benchmarkMetadataValueRecordWithIdOnly = await prisma.benchmarkMetadataValueRecord.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends BenchmarkMetadataValueRecordFindManyArgs>(args?: SelectSubset<T, BenchmarkMetadataValueRecordFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BenchmarkMetadataValueRecordPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a BenchmarkMetadataValueRecord.
+     * @param {BenchmarkMetadataValueRecordCreateArgs} args - Arguments to create a BenchmarkMetadataValueRecord.
+     * @example
+     * // Create one BenchmarkMetadataValueRecord
+     * const BenchmarkMetadataValueRecord = await prisma.benchmarkMetadataValueRecord.create({
+     *   data: {
+     *     // ... data to create a BenchmarkMetadataValueRecord
+     *   }
+     * })
+     * 
+     */
+    create<T extends BenchmarkMetadataValueRecordCreateArgs>(args: SelectSubset<T, BenchmarkMetadataValueRecordCreateArgs<ExtArgs>>): Prisma__BenchmarkMetadataValueRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataValueRecordPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many BenchmarkMetadataValueRecords.
+     * @param {BenchmarkMetadataValueRecordCreateManyArgs} args - Arguments to create many BenchmarkMetadataValueRecords.
+     * @example
+     * // Create many BenchmarkMetadataValueRecords
+     * const benchmarkMetadataValueRecord = await prisma.benchmarkMetadataValueRecord.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends BenchmarkMetadataValueRecordCreateManyArgs>(args?: SelectSubset<T, BenchmarkMetadataValueRecordCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many BenchmarkMetadataValueRecords and returns the data saved in the database.
+     * @param {BenchmarkMetadataValueRecordCreateManyAndReturnArgs} args - Arguments to create many BenchmarkMetadataValueRecords.
+     * @example
+     * // Create many BenchmarkMetadataValueRecords
+     * const benchmarkMetadataValueRecord = await prisma.benchmarkMetadataValueRecord.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many BenchmarkMetadataValueRecords and only return the `id`
+     * const benchmarkMetadataValueRecordWithIdOnly = await prisma.benchmarkMetadataValueRecord.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends BenchmarkMetadataValueRecordCreateManyAndReturnArgs>(args?: SelectSubset<T, BenchmarkMetadataValueRecordCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BenchmarkMetadataValueRecordPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a BenchmarkMetadataValueRecord.
+     * @param {BenchmarkMetadataValueRecordDeleteArgs} args - Arguments to delete one BenchmarkMetadataValueRecord.
+     * @example
+     * // Delete one BenchmarkMetadataValueRecord
+     * const BenchmarkMetadataValueRecord = await prisma.benchmarkMetadataValueRecord.delete({
+     *   where: {
+     *     // ... filter to delete one BenchmarkMetadataValueRecord
+     *   }
+     * })
+     * 
+     */
+    delete<T extends BenchmarkMetadataValueRecordDeleteArgs>(args: SelectSubset<T, BenchmarkMetadataValueRecordDeleteArgs<ExtArgs>>): Prisma__BenchmarkMetadataValueRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataValueRecordPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one BenchmarkMetadataValueRecord.
+     * @param {BenchmarkMetadataValueRecordUpdateArgs} args - Arguments to update one BenchmarkMetadataValueRecord.
+     * @example
+     * // Update one BenchmarkMetadataValueRecord
+     * const benchmarkMetadataValueRecord = await prisma.benchmarkMetadataValueRecord.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends BenchmarkMetadataValueRecordUpdateArgs>(args: SelectSubset<T, BenchmarkMetadataValueRecordUpdateArgs<ExtArgs>>): Prisma__BenchmarkMetadataValueRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataValueRecordPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more BenchmarkMetadataValueRecords.
+     * @param {BenchmarkMetadataValueRecordDeleteManyArgs} args - Arguments to filter BenchmarkMetadataValueRecords to delete.
+     * @example
+     * // Delete a few BenchmarkMetadataValueRecords
+     * const { count } = await prisma.benchmarkMetadataValueRecord.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends BenchmarkMetadataValueRecordDeleteManyArgs>(args?: SelectSubset<T, BenchmarkMetadataValueRecordDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more BenchmarkMetadataValueRecords.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BenchmarkMetadataValueRecordUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many BenchmarkMetadataValueRecords
+     * const benchmarkMetadataValueRecord = await prisma.benchmarkMetadataValueRecord.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends BenchmarkMetadataValueRecordUpdateManyArgs>(args: SelectSubset<T, BenchmarkMetadataValueRecordUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one BenchmarkMetadataValueRecord.
+     * @param {BenchmarkMetadataValueRecordUpsertArgs} args - Arguments to update or create a BenchmarkMetadataValueRecord.
+     * @example
+     * // Update or create a BenchmarkMetadataValueRecord
+     * const benchmarkMetadataValueRecord = await prisma.benchmarkMetadataValueRecord.upsert({
+     *   create: {
+     *     // ... data to create a BenchmarkMetadataValueRecord
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the BenchmarkMetadataValueRecord we want to update
+     *   }
+     * })
+     */
+    upsert<T extends BenchmarkMetadataValueRecordUpsertArgs>(args: SelectSubset<T, BenchmarkMetadataValueRecordUpsertArgs<ExtArgs>>): Prisma__BenchmarkMetadataValueRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataValueRecordPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of BenchmarkMetadataValueRecords.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BenchmarkMetadataValueRecordCountArgs} args - Arguments to filter BenchmarkMetadataValueRecords to count.
+     * @example
+     * // Count the number of BenchmarkMetadataValueRecords
+     * const count = await prisma.benchmarkMetadataValueRecord.count({
+     *   where: {
+     *     // ... the filter for the BenchmarkMetadataValueRecords we want to count
+     *   }
+     * })
+    **/
+    count<T extends BenchmarkMetadataValueRecordCountArgs>(
+      args?: Subset<T, BenchmarkMetadataValueRecordCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], BenchmarkMetadataValueRecordCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a BenchmarkMetadataValueRecord.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BenchmarkMetadataValueRecordAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends BenchmarkMetadataValueRecordAggregateArgs>(args: Subset<T, BenchmarkMetadataValueRecordAggregateArgs>): Prisma.PrismaPromise<GetBenchmarkMetadataValueRecordAggregateType<T>>
+
+    /**
+     * Group by BenchmarkMetadataValueRecord.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BenchmarkMetadataValueRecordGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends BenchmarkMetadataValueRecordGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: BenchmarkMetadataValueRecordGroupByArgs['orderBy'] }
+        : { orderBy?: BenchmarkMetadataValueRecordGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, BenchmarkMetadataValueRecordGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetBenchmarkMetadataValueRecordGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the BenchmarkMetadataValueRecord model
+   */
+  readonly fields: BenchmarkMetadataValueRecordFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for BenchmarkMetadataValueRecord.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__BenchmarkMetadataValueRecordClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the BenchmarkMetadataValueRecord model
+   */ 
+  interface BenchmarkMetadataValueRecordFieldRefs {
+    readonly id: FieldRef<"BenchmarkMetadataValueRecord", 'String'>
+    readonly providerCode: FieldRef<"BenchmarkMetadataValueRecord", 'String'>
+    readonly facetKey: FieldRef<"BenchmarkMetadataValueRecord", 'String'>
+    readonly providerValueId: FieldRef<"BenchmarkMetadataValueRecord", 'String'>
+    readonly label: FieldRef<"BenchmarkMetadataValueRecord", 'String'>
+    readonly normalizedLabel: FieldRef<"BenchmarkMetadataValueRecord", 'String'>
+    readonly active: FieldRef<"BenchmarkMetadataValueRecord", 'Boolean'>
+    readonly firstSeenAt: FieldRef<"BenchmarkMetadataValueRecord", 'DateTime'>
+    readonly lastSeenAt: FieldRef<"BenchmarkMetadataValueRecord", 'DateTime'>
+    readonly createdAt: FieldRef<"BenchmarkMetadataValueRecord", 'DateTime'>
+    readonly updatedAt: FieldRef<"BenchmarkMetadataValueRecord", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * BenchmarkMetadataValueRecord findUnique
+   */
+  export type BenchmarkMetadataValueRecordFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataValueRecord
+     */
+    select?: BenchmarkMetadataValueRecordSelect<ExtArgs> | null
+    /**
+     * Filter, which BenchmarkMetadataValueRecord to fetch.
+     */
+    where: BenchmarkMetadataValueRecordWhereUniqueInput
+  }
+
+  /**
+   * BenchmarkMetadataValueRecord findUniqueOrThrow
+   */
+  export type BenchmarkMetadataValueRecordFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataValueRecord
+     */
+    select?: BenchmarkMetadataValueRecordSelect<ExtArgs> | null
+    /**
+     * Filter, which BenchmarkMetadataValueRecord to fetch.
+     */
+    where: BenchmarkMetadataValueRecordWhereUniqueInput
+  }
+
+  /**
+   * BenchmarkMetadataValueRecord findFirst
+   */
+  export type BenchmarkMetadataValueRecordFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataValueRecord
+     */
+    select?: BenchmarkMetadataValueRecordSelect<ExtArgs> | null
+    /**
+     * Filter, which BenchmarkMetadataValueRecord to fetch.
+     */
+    where?: BenchmarkMetadataValueRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BenchmarkMetadataValueRecords to fetch.
+     */
+    orderBy?: BenchmarkMetadataValueRecordOrderByWithRelationInput | BenchmarkMetadataValueRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BenchmarkMetadataValueRecords.
+     */
+    cursor?: BenchmarkMetadataValueRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BenchmarkMetadataValueRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BenchmarkMetadataValueRecords.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BenchmarkMetadataValueRecords.
+     */
+    distinct?: BenchmarkMetadataValueRecordScalarFieldEnum | BenchmarkMetadataValueRecordScalarFieldEnum[]
+  }
+
+  /**
+   * BenchmarkMetadataValueRecord findFirstOrThrow
+   */
+  export type BenchmarkMetadataValueRecordFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataValueRecord
+     */
+    select?: BenchmarkMetadataValueRecordSelect<ExtArgs> | null
+    /**
+     * Filter, which BenchmarkMetadataValueRecord to fetch.
+     */
+    where?: BenchmarkMetadataValueRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BenchmarkMetadataValueRecords to fetch.
+     */
+    orderBy?: BenchmarkMetadataValueRecordOrderByWithRelationInput | BenchmarkMetadataValueRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BenchmarkMetadataValueRecords.
+     */
+    cursor?: BenchmarkMetadataValueRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BenchmarkMetadataValueRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BenchmarkMetadataValueRecords.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BenchmarkMetadataValueRecords.
+     */
+    distinct?: BenchmarkMetadataValueRecordScalarFieldEnum | BenchmarkMetadataValueRecordScalarFieldEnum[]
+  }
+
+  /**
+   * BenchmarkMetadataValueRecord findMany
+   */
+  export type BenchmarkMetadataValueRecordFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataValueRecord
+     */
+    select?: BenchmarkMetadataValueRecordSelect<ExtArgs> | null
+    /**
+     * Filter, which BenchmarkMetadataValueRecords to fetch.
+     */
+    where?: BenchmarkMetadataValueRecordWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BenchmarkMetadataValueRecords to fetch.
+     */
+    orderBy?: BenchmarkMetadataValueRecordOrderByWithRelationInput | BenchmarkMetadataValueRecordOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing BenchmarkMetadataValueRecords.
+     */
+    cursor?: BenchmarkMetadataValueRecordWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BenchmarkMetadataValueRecords from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BenchmarkMetadataValueRecords.
+     */
+    skip?: number
+    distinct?: BenchmarkMetadataValueRecordScalarFieldEnum | BenchmarkMetadataValueRecordScalarFieldEnum[]
+  }
+
+  /**
+   * BenchmarkMetadataValueRecord create
+   */
+  export type BenchmarkMetadataValueRecordCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataValueRecord
+     */
+    select?: BenchmarkMetadataValueRecordSelect<ExtArgs> | null
+    /**
+     * The data needed to create a BenchmarkMetadataValueRecord.
+     */
+    data: XOR<BenchmarkMetadataValueRecordCreateInput, BenchmarkMetadataValueRecordUncheckedCreateInput>
+  }
+
+  /**
+   * BenchmarkMetadataValueRecord createMany
+   */
+  export type BenchmarkMetadataValueRecordCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many BenchmarkMetadataValueRecords.
+     */
+    data: BenchmarkMetadataValueRecordCreateManyInput | BenchmarkMetadataValueRecordCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * BenchmarkMetadataValueRecord createManyAndReturn
+   */
+  export type BenchmarkMetadataValueRecordCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataValueRecord
+     */
+    select?: BenchmarkMetadataValueRecordSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many BenchmarkMetadataValueRecords.
+     */
+    data: BenchmarkMetadataValueRecordCreateManyInput | BenchmarkMetadataValueRecordCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * BenchmarkMetadataValueRecord update
+   */
+  export type BenchmarkMetadataValueRecordUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataValueRecord
+     */
+    select?: BenchmarkMetadataValueRecordSelect<ExtArgs> | null
+    /**
+     * The data needed to update a BenchmarkMetadataValueRecord.
+     */
+    data: XOR<BenchmarkMetadataValueRecordUpdateInput, BenchmarkMetadataValueRecordUncheckedUpdateInput>
+    /**
+     * Choose, which BenchmarkMetadataValueRecord to update.
+     */
+    where: BenchmarkMetadataValueRecordWhereUniqueInput
+  }
+
+  /**
+   * BenchmarkMetadataValueRecord updateMany
+   */
+  export type BenchmarkMetadataValueRecordUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update BenchmarkMetadataValueRecords.
+     */
+    data: XOR<BenchmarkMetadataValueRecordUpdateManyMutationInput, BenchmarkMetadataValueRecordUncheckedUpdateManyInput>
+    /**
+     * Filter which BenchmarkMetadataValueRecords to update
+     */
+    where?: BenchmarkMetadataValueRecordWhereInput
+  }
+
+  /**
+   * BenchmarkMetadataValueRecord upsert
+   */
+  export type BenchmarkMetadataValueRecordUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataValueRecord
+     */
+    select?: BenchmarkMetadataValueRecordSelect<ExtArgs> | null
+    /**
+     * The filter to search for the BenchmarkMetadataValueRecord to update in case it exists.
+     */
+    where: BenchmarkMetadataValueRecordWhereUniqueInput
+    /**
+     * In case the BenchmarkMetadataValueRecord found by the `where` argument doesn't exist, create a new BenchmarkMetadataValueRecord with this data.
+     */
+    create: XOR<BenchmarkMetadataValueRecordCreateInput, BenchmarkMetadataValueRecordUncheckedCreateInput>
+    /**
+     * In case the BenchmarkMetadataValueRecord was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<BenchmarkMetadataValueRecordUpdateInput, BenchmarkMetadataValueRecordUncheckedUpdateInput>
+  }
+
+  /**
+   * BenchmarkMetadataValueRecord delete
+   */
+  export type BenchmarkMetadataValueRecordDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataValueRecord
+     */
+    select?: BenchmarkMetadataValueRecordSelect<ExtArgs> | null
+    /**
+     * Filter which BenchmarkMetadataValueRecord to delete.
+     */
+    where: BenchmarkMetadataValueRecordWhereUniqueInput
+  }
+
+  /**
+   * BenchmarkMetadataValueRecord deleteMany
+   */
+  export type BenchmarkMetadataValueRecordDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BenchmarkMetadataValueRecords to delete
+     */
+    where?: BenchmarkMetadataValueRecordWhereInput
+  }
+
+  /**
+   * BenchmarkMetadataValueRecord without action
+   */
+  export type BenchmarkMetadataValueRecordDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BenchmarkMetadataValueRecord
+     */
+    select?: BenchmarkMetadataValueRecordSelect<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -15711,6 +17913,48 @@ export namespace Prisma {
   export type RollingDailyMaintenanceStateScalarFieldEnum = (typeof RollingDailyMaintenanceStateScalarFieldEnum)[keyof typeof RollingDailyMaintenanceStateScalarFieldEnum]
 
 
+  export const BenchmarkMetadataFacetRecordScalarFieldEnum: {
+    id: 'id',
+    providerCode: 'providerCode',
+    key: 'key',
+    label: 'label',
+    description: 'description',
+    searchable: 'searchable',
+    featured: 'featured',
+    category: 'category',
+    controlType: 'controlType',
+    allowMultipleValues: 'allowMultipleValues',
+    providerKey: 'providerKey',
+    active: 'active',
+    lastSyncStartedAt: 'lastSyncStartedAt',
+    lastSyncSucceededAt: 'lastSyncSucceededAt',
+    lastSyncStatus: 'lastSyncStatus',
+    lastSyncError: 'lastSyncError',
+    valueCount: 'valueCount',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type BenchmarkMetadataFacetRecordScalarFieldEnum = (typeof BenchmarkMetadataFacetRecordScalarFieldEnum)[keyof typeof BenchmarkMetadataFacetRecordScalarFieldEnum]
+
+
+  export const BenchmarkMetadataValueRecordScalarFieldEnum: {
+    id: 'id',
+    providerCode: 'providerCode',
+    facetKey: 'facetKey',
+    providerValueId: 'providerValueId',
+    label: 'label',
+    normalizedLabel: 'normalizedLabel',
+    active: 'active',
+    firstSeenAt: 'firstSeenAt',
+    lastSeenAt: 'lastSeenAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type BenchmarkMetadataValueRecordScalarFieldEnum = (typeof BenchmarkMetadataValueRecordScalarFieldEnum)[keyof typeof BenchmarkMetadataValueRecordScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -15880,6 +18124,13 @@ export namespace Prisma {
    * Reference to a field of type 'RollingDailyCalibrationStatus[]'
    */
   export type ListEnumRollingDailyCalibrationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RollingDailyCalibrationStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'Boolean'
+   */
+  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
   /**
    * Deep Input Types
@@ -17369,6 +19620,214 @@ export namespace Prisma {
     lastFailureReason?: StringNullableWithAggregatesFilter<"RollingDailyMaintenanceState"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"RollingDailyMaintenanceState"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"RollingDailyMaintenanceState"> | Date | string
+  }
+
+  export type BenchmarkMetadataFacetRecordWhereInput = {
+    AND?: BenchmarkMetadataFacetRecordWhereInput | BenchmarkMetadataFacetRecordWhereInput[]
+    OR?: BenchmarkMetadataFacetRecordWhereInput[]
+    NOT?: BenchmarkMetadataFacetRecordWhereInput | BenchmarkMetadataFacetRecordWhereInput[]
+    id?: StringFilter<"BenchmarkMetadataFacetRecord"> | string
+    providerCode?: StringFilter<"BenchmarkMetadataFacetRecord"> | string
+    key?: StringFilter<"BenchmarkMetadataFacetRecord"> | string
+    label?: StringFilter<"BenchmarkMetadataFacetRecord"> | string
+    description?: StringNullableFilter<"BenchmarkMetadataFacetRecord"> | string | null
+    searchable?: BoolFilter<"BenchmarkMetadataFacetRecord"> | boolean
+    featured?: BoolFilter<"BenchmarkMetadataFacetRecord"> | boolean
+    category?: StringFilter<"BenchmarkMetadataFacetRecord"> | string
+    controlType?: StringFilter<"BenchmarkMetadataFacetRecord"> | string
+    allowMultipleValues?: BoolFilter<"BenchmarkMetadataFacetRecord"> | boolean
+    providerKey?: StringFilter<"BenchmarkMetadataFacetRecord"> | string
+    active?: BoolFilter<"BenchmarkMetadataFacetRecord"> | boolean
+    lastSyncStartedAt?: DateTimeNullableFilter<"BenchmarkMetadataFacetRecord"> | Date | string | null
+    lastSyncSucceededAt?: DateTimeNullableFilter<"BenchmarkMetadataFacetRecord"> | Date | string | null
+    lastSyncStatus?: StringNullableFilter<"BenchmarkMetadataFacetRecord"> | string | null
+    lastSyncError?: StringNullableFilter<"BenchmarkMetadataFacetRecord"> | string | null
+    valueCount?: IntFilter<"BenchmarkMetadataFacetRecord"> | number
+    createdAt?: DateTimeFilter<"BenchmarkMetadataFacetRecord"> | Date | string
+    updatedAt?: DateTimeFilter<"BenchmarkMetadataFacetRecord"> | Date | string
+  }
+
+  export type BenchmarkMetadataFacetRecordOrderByWithRelationInput = {
+    id?: SortOrder
+    providerCode?: SortOrder
+    key?: SortOrder
+    label?: SortOrder
+    description?: SortOrderInput | SortOrder
+    searchable?: SortOrder
+    featured?: SortOrder
+    category?: SortOrder
+    controlType?: SortOrder
+    allowMultipleValues?: SortOrder
+    providerKey?: SortOrder
+    active?: SortOrder
+    lastSyncStartedAt?: SortOrderInput | SortOrder
+    lastSyncSucceededAt?: SortOrderInput | SortOrder
+    lastSyncStatus?: SortOrderInput | SortOrder
+    lastSyncError?: SortOrderInput | SortOrder
+    valueCount?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BenchmarkMetadataFacetRecordWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    providerCode_key?: BenchmarkMetadataFacetRecordProviderCodeKeyCompoundUniqueInput
+    AND?: BenchmarkMetadataFacetRecordWhereInput | BenchmarkMetadataFacetRecordWhereInput[]
+    OR?: BenchmarkMetadataFacetRecordWhereInput[]
+    NOT?: BenchmarkMetadataFacetRecordWhereInput | BenchmarkMetadataFacetRecordWhereInput[]
+    providerCode?: StringFilter<"BenchmarkMetadataFacetRecord"> | string
+    key?: StringFilter<"BenchmarkMetadataFacetRecord"> | string
+    label?: StringFilter<"BenchmarkMetadataFacetRecord"> | string
+    description?: StringNullableFilter<"BenchmarkMetadataFacetRecord"> | string | null
+    searchable?: BoolFilter<"BenchmarkMetadataFacetRecord"> | boolean
+    featured?: BoolFilter<"BenchmarkMetadataFacetRecord"> | boolean
+    category?: StringFilter<"BenchmarkMetadataFacetRecord"> | string
+    controlType?: StringFilter<"BenchmarkMetadataFacetRecord"> | string
+    allowMultipleValues?: BoolFilter<"BenchmarkMetadataFacetRecord"> | boolean
+    providerKey?: StringFilter<"BenchmarkMetadataFacetRecord"> | string
+    active?: BoolFilter<"BenchmarkMetadataFacetRecord"> | boolean
+    lastSyncStartedAt?: DateTimeNullableFilter<"BenchmarkMetadataFacetRecord"> | Date | string | null
+    lastSyncSucceededAt?: DateTimeNullableFilter<"BenchmarkMetadataFacetRecord"> | Date | string | null
+    lastSyncStatus?: StringNullableFilter<"BenchmarkMetadataFacetRecord"> | string | null
+    lastSyncError?: StringNullableFilter<"BenchmarkMetadataFacetRecord"> | string | null
+    valueCount?: IntFilter<"BenchmarkMetadataFacetRecord"> | number
+    createdAt?: DateTimeFilter<"BenchmarkMetadataFacetRecord"> | Date | string
+    updatedAt?: DateTimeFilter<"BenchmarkMetadataFacetRecord"> | Date | string
+  }, "id" | "providerCode_key">
+
+  export type BenchmarkMetadataFacetRecordOrderByWithAggregationInput = {
+    id?: SortOrder
+    providerCode?: SortOrder
+    key?: SortOrder
+    label?: SortOrder
+    description?: SortOrderInput | SortOrder
+    searchable?: SortOrder
+    featured?: SortOrder
+    category?: SortOrder
+    controlType?: SortOrder
+    allowMultipleValues?: SortOrder
+    providerKey?: SortOrder
+    active?: SortOrder
+    lastSyncStartedAt?: SortOrderInput | SortOrder
+    lastSyncSucceededAt?: SortOrderInput | SortOrder
+    lastSyncStatus?: SortOrderInput | SortOrder
+    lastSyncError?: SortOrderInput | SortOrder
+    valueCount?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: BenchmarkMetadataFacetRecordCountOrderByAggregateInput
+    _avg?: BenchmarkMetadataFacetRecordAvgOrderByAggregateInput
+    _max?: BenchmarkMetadataFacetRecordMaxOrderByAggregateInput
+    _min?: BenchmarkMetadataFacetRecordMinOrderByAggregateInput
+    _sum?: BenchmarkMetadataFacetRecordSumOrderByAggregateInput
+  }
+
+  export type BenchmarkMetadataFacetRecordScalarWhereWithAggregatesInput = {
+    AND?: BenchmarkMetadataFacetRecordScalarWhereWithAggregatesInput | BenchmarkMetadataFacetRecordScalarWhereWithAggregatesInput[]
+    OR?: BenchmarkMetadataFacetRecordScalarWhereWithAggregatesInput[]
+    NOT?: BenchmarkMetadataFacetRecordScalarWhereWithAggregatesInput | BenchmarkMetadataFacetRecordScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"BenchmarkMetadataFacetRecord"> | string
+    providerCode?: StringWithAggregatesFilter<"BenchmarkMetadataFacetRecord"> | string
+    key?: StringWithAggregatesFilter<"BenchmarkMetadataFacetRecord"> | string
+    label?: StringWithAggregatesFilter<"BenchmarkMetadataFacetRecord"> | string
+    description?: StringNullableWithAggregatesFilter<"BenchmarkMetadataFacetRecord"> | string | null
+    searchable?: BoolWithAggregatesFilter<"BenchmarkMetadataFacetRecord"> | boolean
+    featured?: BoolWithAggregatesFilter<"BenchmarkMetadataFacetRecord"> | boolean
+    category?: StringWithAggregatesFilter<"BenchmarkMetadataFacetRecord"> | string
+    controlType?: StringWithAggregatesFilter<"BenchmarkMetadataFacetRecord"> | string
+    allowMultipleValues?: BoolWithAggregatesFilter<"BenchmarkMetadataFacetRecord"> | boolean
+    providerKey?: StringWithAggregatesFilter<"BenchmarkMetadataFacetRecord"> | string
+    active?: BoolWithAggregatesFilter<"BenchmarkMetadataFacetRecord"> | boolean
+    lastSyncStartedAt?: DateTimeNullableWithAggregatesFilter<"BenchmarkMetadataFacetRecord"> | Date | string | null
+    lastSyncSucceededAt?: DateTimeNullableWithAggregatesFilter<"BenchmarkMetadataFacetRecord"> | Date | string | null
+    lastSyncStatus?: StringNullableWithAggregatesFilter<"BenchmarkMetadataFacetRecord"> | string | null
+    lastSyncError?: StringNullableWithAggregatesFilter<"BenchmarkMetadataFacetRecord"> | string | null
+    valueCount?: IntWithAggregatesFilter<"BenchmarkMetadataFacetRecord"> | number
+    createdAt?: DateTimeWithAggregatesFilter<"BenchmarkMetadataFacetRecord"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"BenchmarkMetadataFacetRecord"> | Date | string
+  }
+
+  export type BenchmarkMetadataValueRecordWhereInput = {
+    AND?: BenchmarkMetadataValueRecordWhereInput | BenchmarkMetadataValueRecordWhereInput[]
+    OR?: BenchmarkMetadataValueRecordWhereInput[]
+    NOT?: BenchmarkMetadataValueRecordWhereInput | BenchmarkMetadataValueRecordWhereInput[]
+    id?: StringFilter<"BenchmarkMetadataValueRecord"> | string
+    providerCode?: StringFilter<"BenchmarkMetadataValueRecord"> | string
+    facetKey?: StringFilter<"BenchmarkMetadataValueRecord"> | string
+    providerValueId?: StringFilter<"BenchmarkMetadataValueRecord"> | string
+    label?: StringFilter<"BenchmarkMetadataValueRecord"> | string
+    normalizedLabel?: StringFilter<"BenchmarkMetadataValueRecord"> | string
+    active?: BoolFilter<"BenchmarkMetadataValueRecord"> | boolean
+    firstSeenAt?: DateTimeFilter<"BenchmarkMetadataValueRecord"> | Date | string
+    lastSeenAt?: DateTimeFilter<"BenchmarkMetadataValueRecord"> | Date | string
+    createdAt?: DateTimeFilter<"BenchmarkMetadataValueRecord"> | Date | string
+    updatedAt?: DateTimeFilter<"BenchmarkMetadataValueRecord"> | Date | string
+  }
+
+  export type BenchmarkMetadataValueRecordOrderByWithRelationInput = {
+    id?: SortOrder
+    providerCode?: SortOrder
+    facetKey?: SortOrder
+    providerValueId?: SortOrder
+    label?: SortOrder
+    normalizedLabel?: SortOrder
+    active?: SortOrder
+    firstSeenAt?: SortOrder
+    lastSeenAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BenchmarkMetadataValueRecordWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    providerCode_facetKey_providerValueId?: BenchmarkMetadataValueRecordProviderCodeFacetKeyProviderValueIdCompoundUniqueInput
+    AND?: BenchmarkMetadataValueRecordWhereInput | BenchmarkMetadataValueRecordWhereInput[]
+    OR?: BenchmarkMetadataValueRecordWhereInput[]
+    NOT?: BenchmarkMetadataValueRecordWhereInput | BenchmarkMetadataValueRecordWhereInput[]
+    providerCode?: StringFilter<"BenchmarkMetadataValueRecord"> | string
+    facetKey?: StringFilter<"BenchmarkMetadataValueRecord"> | string
+    providerValueId?: StringFilter<"BenchmarkMetadataValueRecord"> | string
+    label?: StringFilter<"BenchmarkMetadataValueRecord"> | string
+    normalizedLabel?: StringFilter<"BenchmarkMetadataValueRecord"> | string
+    active?: BoolFilter<"BenchmarkMetadataValueRecord"> | boolean
+    firstSeenAt?: DateTimeFilter<"BenchmarkMetadataValueRecord"> | Date | string
+    lastSeenAt?: DateTimeFilter<"BenchmarkMetadataValueRecord"> | Date | string
+    createdAt?: DateTimeFilter<"BenchmarkMetadataValueRecord"> | Date | string
+    updatedAt?: DateTimeFilter<"BenchmarkMetadataValueRecord"> | Date | string
+  }, "id" | "providerCode_facetKey_providerValueId">
+
+  export type BenchmarkMetadataValueRecordOrderByWithAggregationInput = {
+    id?: SortOrder
+    providerCode?: SortOrder
+    facetKey?: SortOrder
+    providerValueId?: SortOrder
+    label?: SortOrder
+    normalizedLabel?: SortOrder
+    active?: SortOrder
+    firstSeenAt?: SortOrder
+    lastSeenAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: BenchmarkMetadataValueRecordCountOrderByAggregateInput
+    _max?: BenchmarkMetadataValueRecordMaxOrderByAggregateInput
+    _min?: BenchmarkMetadataValueRecordMinOrderByAggregateInput
+  }
+
+  export type BenchmarkMetadataValueRecordScalarWhereWithAggregatesInput = {
+    AND?: BenchmarkMetadataValueRecordScalarWhereWithAggregatesInput | BenchmarkMetadataValueRecordScalarWhereWithAggregatesInput[]
+    OR?: BenchmarkMetadataValueRecordScalarWhereWithAggregatesInput[]
+    NOT?: BenchmarkMetadataValueRecordScalarWhereWithAggregatesInput | BenchmarkMetadataValueRecordScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"BenchmarkMetadataValueRecord"> | string
+    providerCode?: StringWithAggregatesFilter<"BenchmarkMetadataValueRecord"> | string
+    facetKey?: StringWithAggregatesFilter<"BenchmarkMetadataValueRecord"> | string
+    providerValueId?: StringWithAggregatesFilter<"BenchmarkMetadataValueRecord"> | string
+    label?: StringWithAggregatesFilter<"BenchmarkMetadataValueRecord"> | string
+    normalizedLabel?: StringWithAggregatesFilter<"BenchmarkMetadataValueRecord"> | string
+    active?: BoolWithAggregatesFilter<"BenchmarkMetadataValueRecord"> | boolean
+    firstSeenAt?: DateTimeWithAggregatesFilter<"BenchmarkMetadataValueRecord"> | Date | string
+    lastSeenAt?: DateTimeWithAggregatesFilter<"BenchmarkMetadataValueRecord"> | Date | string
+    createdAt?: DateTimeWithAggregatesFilter<"BenchmarkMetadataValueRecord"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"BenchmarkMetadataValueRecord"> | Date | string
   }
 
   export type MarketSeriesCreateInput = {
@@ -19178,6 +21637,258 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type BenchmarkMetadataFacetRecordCreateInput = {
+    id: string
+    providerCode: string
+    key: string
+    label: string
+    description?: string | null
+    searchable: boolean
+    featured: boolean
+    category: string
+    controlType: string
+    allowMultipleValues: boolean
+    providerKey: string
+    active: boolean
+    lastSyncStartedAt?: Date | string | null
+    lastSyncSucceededAt?: Date | string | null
+    lastSyncStatus?: string | null
+    lastSyncError?: string | null
+    valueCount: number
+    createdAt: Date | string
+    updatedAt: Date | string
+  }
+
+  export type BenchmarkMetadataFacetRecordUncheckedCreateInput = {
+    id: string
+    providerCode: string
+    key: string
+    label: string
+    description?: string | null
+    searchable: boolean
+    featured: boolean
+    category: string
+    controlType: string
+    allowMultipleValues: boolean
+    providerKey: string
+    active: boolean
+    lastSyncStartedAt?: Date | string | null
+    lastSyncSucceededAt?: Date | string | null
+    lastSyncStatus?: string | null
+    lastSyncError?: string | null
+    valueCount: number
+    createdAt: Date | string
+    updatedAt: Date | string
+  }
+
+  export type BenchmarkMetadataFacetRecordUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    providerCode?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    searchable?: BoolFieldUpdateOperationsInput | boolean
+    featured?: BoolFieldUpdateOperationsInput | boolean
+    category?: StringFieldUpdateOperationsInput | string
+    controlType?: StringFieldUpdateOperationsInput | string
+    allowMultipleValues?: BoolFieldUpdateOperationsInput | boolean
+    providerKey?: StringFieldUpdateOperationsInput | string
+    active?: BoolFieldUpdateOperationsInput | boolean
+    lastSyncStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastSyncSucceededAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastSyncStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastSyncError?: NullableStringFieldUpdateOperationsInput | string | null
+    valueCount?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BenchmarkMetadataFacetRecordUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    providerCode?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    searchable?: BoolFieldUpdateOperationsInput | boolean
+    featured?: BoolFieldUpdateOperationsInput | boolean
+    category?: StringFieldUpdateOperationsInput | string
+    controlType?: StringFieldUpdateOperationsInput | string
+    allowMultipleValues?: BoolFieldUpdateOperationsInput | boolean
+    providerKey?: StringFieldUpdateOperationsInput | string
+    active?: BoolFieldUpdateOperationsInput | boolean
+    lastSyncStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastSyncSucceededAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastSyncStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastSyncError?: NullableStringFieldUpdateOperationsInput | string | null
+    valueCount?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BenchmarkMetadataFacetRecordCreateManyInput = {
+    id: string
+    providerCode: string
+    key: string
+    label: string
+    description?: string | null
+    searchable: boolean
+    featured: boolean
+    category: string
+    controlType: string
+    allowMultipleValues: boolean
+    providerKey: string
+    active: boolean
+    lastSyncStartedAt?: Date | string | null
+    lastSyncSucceededAt?: Date | string | null
+    lastSyncStatus?: string | null
+    lastSyncError?: string | null
+    valueCount: number
+    createdAt: Date | string
+    updatedAt: Date | string
+  }
+
+  export type BenchmarkMetadataFacetRecordUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    providerCode?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    searchable?: BoolFieldUpdateOperationsInput | boolean
+    featured?: BoolFieldUpdateOperationsInput | boolean
+    category?: StringFieldUpdateOperationsInput | string
+    controlType?: StringFieldUpdateOperationsInput | string
+    allowMultipleValues?: BoolFieldUpdateOperationsInput | boolean
+    providerKey?: StringFieldUpdateOperationsInput | string
+    active?: BoolFieldUpdateOperationsInput | boolean
+    lastSyncStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastSyncSucceededAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastSyncStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastSyncError?: NullableStringFieldUpdateOperationsInput | string | null
+    valueCount?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BenchmarkMetadataFacetRecordUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    providerCode?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    searchable?: BoolFieldUpdateOperationsInput | boolean
+    featured?: BoolFieldUpdateOperationsInput | boolean
+    category?: StringFieldUpdateOperationsInput | string
+    controlType?: StringFieldUpdateOperationsInput | string
+    allowMultipleValues?: BoolFieldUpdateOperationsInput | boolean
+    providerKey?: StringFieldUpdateOperationsInput | string
+    active?: BoolFieldUpdateOperationsInput | boolean
+    lastSyncStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastSyncSucceededAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastSyncStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastSyncError?: NullableStringFieldUpdateOperationsInput | string | null
+    valueCount?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BenchmarkMetadataValueRecordCreateInput = {
+    id: string
+    providerCode: string
+    facetKey: string
+    providerValueId: string
+    label: string
+    normalizedLabel: string
+    active: boolean
+    firstSeenAt: Date | string
+    lastSeenAt: Date | string
+    createdAt: Date | string
+    updatedAt: Date | string
+  }
+
+  export type BenchmarkMetadataValueRecordUncheckedCreateInput = {
+    id: string
+    providerCode: string
+    facetKey: string
+    providerValueId: string
+    label: string
+    normalizedLabel: string
+    active: boolean
+    firstSeenAt: Date | string
+    lastSeenAt: Date | string
+    createdAt: Date | string
+    updatedAt: Date | string
+  }
+
+  export type BenchmarkMetadataValueRecordUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    providerCode?: StringFieldUpdateOperationsInput | string
+    facetKey?: StringFieldUpdateOperationsInput | string
+    providerValueId?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    normalizedLabel?: StringFieldUpdateOperationsInput | string
+    active?: BoolFieldUpdateOperationsInput | boolean
+    firstSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BenchmarkMetadataValueRecordUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    providerCode?: StringFieldUpdateOperationsInput | string
+    facetKey?: StringFieldUpdateOperationsInput | string
+    providerValueId?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    normalizedLabel?: StringFieldUpdateOperationsInput | string
+    active?: BoolFieldUpdateOperationsInput | boolean
+    firstSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BenchmarkMetadataValueRecordCreateManyInput = {
+    id: string
+    providerCode: string
+    facetKey: string
+    providerValueId: string
+    label: string
+    normalizedLabel: string
+    active: boolean
+    firstSeenAt: Date | string
+    lastSeenAt: Date | string
+    createdAt: Date | string
+    updatedAt: Date | string
+  }
+
+  export type BenchmarkMetadataValueRecordUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    providerCode?: StringFieldUpdateOperationsInput | string
+    facetKey?: StringFieldUpdateOperationsInput | string
+    providerValueId?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    normalizedLabel?: StringFieldUpdateOperationsInput | string
+    active?: BoolFieldUpdateOperationsInput | boolean
+    firstSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BenchmarkMetadataValueRecordUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    providerCode?: StringFieldUpdateOperationsInput | string
+    facetKey?: StringFieldUpdateOperationsInput | string
+    providerValueId?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    normalizedLabel?: StringFieldUpdateOperationsInput | string
+    active?: BoolFieldUpdateOperationsInput | boolean
+    firstSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -20670,6 +23381,146 @@ export namespace Prisma {
     latestSourceObservationCount?: SortOrder
   }
 
+  export type BoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
+  export type BenchmarkMetadataFacetRecordProviderCodeKeyCompoundUniqueInput = {
+    providerCode: string
+    key: string
+  }
+
+  export type BenchmarkMetadataFacetRecordCountOrderByAggregateInput = {
+    id?: SortOrder
+    providerCode?: SortOrder
+    key?: SortOrder
+    label?: SortOrder
+    description?: SortOrder
+    searchable?: SortOrder
+    featured?: SortOrder
+    category?: SortOrder
+    controlType?: SortOrder
+    allowMultipleValues?: SortOrder
+    providerKey?: SortOrder
+    active?: SortOrder
+    lastSyncStartedAt?: SortOrder
+    lastSyncSucceededAt?: SortOrder
+    lastSyncStatus?: SortOrder
+    lastSyncError?: SortOrder
+    valueCount?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BenchmarkMetadataFacetRecordAvgOrderByAggregateInput = {
+    valueCount?: SortOrder
+  }
+
+  export type BenchmarkMetadataFacetRecordMaxOrderByAggregateInput = {
+    id?: SortOrder
+    providerCode?: SortOrder
+    key?: SortOrder
+    label?: SortOrder
+    description?: SortOrder
+    searchable?: SortOrder
+    featured?: SortOrder
+    category?: SortOrder
+    controlType?: SortOrder
+    allowMultipleValues?: SortOrder
+    providerKey?: SortOrder
+    active?: SortOrder
+    lastSyncStartedAt?: SortOrder
+    lastSyncSucceededAt?: SortOrder
+    lastSyncStatus?: SortOrder
+    lastSyncError?: SortOrder
+    valueCount?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BenchmarkMetadataFacetRecordMinOrderByAggregateInput = {
+    id?: SortOrder
+    providerCode?: SortOrder
+    key?: SortOrder
+    label?: SortOrder
+    description?: SortOrder
+    searchable?: SortOrder
+    featured?: SortOrder
+    category?: SortOrder
+    controlType?: SortOrder
+    allowMultipleValues?: SortOrder
+    providerKey?: SortOrder
+    active?: SortOrder
+    lastSyncStartedAt?: SortOrder
+    lastSyncSucceededAt?: SortOrder
+    lastSyncStatus?: SortOrder
+    lastSyncError?: SortOrder
+    valueCount?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BenchmarkMetadataFacetRecordSumOrderByAggregateInput = {
+    valueCount?: SortOrder
+  }
+
+  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
+  }
+
+  export type BenchmarkMetadataValueRecordProviderCodeFacetKeyProviderValueIdCompoundUniqueInput = {
+    providerCode: string
+    facetKey: string
+    providerValueId: string
+  }
+
+  export type BenchmarkMetadataValueRecordCountOrderByAggregateInput = {
+    id?: SortOrder
+    providerCode?: SortOrder
+    facetKey?: SortOrder
+    providerValueId?: SortOrder
+    label?: SortOrder
+    normalizedLabel?: SortOrder
+    active?: SortOrder
+    firstSeenAt?: SortOrder
+    lastSeenAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BenchmarkMetadataValueRecordMaxOrderByAggregateInput = {
+    id?: SortOrder
+    providerCode?: SortOrder
+    facetKey?: SortOrder
+    providerValueId?: SortOrder
+    label?: SortOrder
+    normalizedLabel?: SortOrder
+    active?: SortOrder
+    firstSeenAt?: SortOrder
+    lastSeenAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type BenchmarkMetadataValueRecordMinOrderByAggregateInput = {
+    id?: SortOrder
+    providerCode?: SortOrder
+    facetKey?: SortOrder
+    providerValueId?: SortOrder
+    label?: SortOrder
+    normalizedLabel?: SortOrder
+    active?: SortOrder
+    firstSeenAt?: SortOrder
+    lastSeenAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
   export type MarketObservationCreateNestedManyWithoutSeriesInput = {
     create?: XOR<MarketObservationCreateWithoutSeriesInput, MarketObservationUncheckedCreateWithoutSeriesInput> | MarketObservationCreateWithoutSeriesInput[] | MarketObservationUncheckedCreateWithoutSeriesInput[]
     connectOrCreate?: MarketObservationCreateOrConnectWithoutSeriesInput | MarketObservationCreateOrConnectWithoutSeriesInput[]
@@ -21014,6 +23865,10 @@ export namespace Prisma {
 
   export type EnumRollingDailyCalibrationStatusFieldUpdateOperationsInput = {
     set?: $Enums.RollingDailyCalibrationStatus
+  }
+
+  export type BoolFieldUpdateOperationsInput = {
+    set?: boolean
   }
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -21383,6 +24238,19 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumRollingDailyCalibrationStatusFilter<$PrismaModel>
     _max?: NestedEnumRollingDailyCalibrationStatusFilter<$PrismaModel>
+  }
+
+  export type NestedBoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
+  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type MarketObservationCreateWithoutSeriesInput = {
@@ -22628,6 +25496,14 @@ export namespace Prisma {
      * @deprecated Use RollingDailyMaintenanceStateDefaultArgs instead
      */
     export type RollingDailyMaintenanceStateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RollingDailyMaintenanceStateDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use BenchmarkMetadataFacetRecordDefaultArgs instead
+     */
+    export type BenchmarkMetadataFacetRecordArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = BenchmarkMetadataFacetRecordDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use BenchmarkMetadataValueRecordDefaultArgs instead
+     */
+    export type BenchmarkMetadataValueRecordArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = BenchmarkMetadataValueRecordDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

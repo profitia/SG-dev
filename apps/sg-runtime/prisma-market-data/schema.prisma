@@ -341,3 +341,48 @@ model RollingDailyMaintenanceState {
   @@index([seriesId, inputSource, targetBasis, methodId, methodVersion, modelId, updatedAt], map: "rolling_daily_maintenance_state_updated_idx")
   @@map("rolling_daily_maintenance_state")
 }
+
+model BenchmarkMetadataFacetRecord {
+  id                  String   @id
+  providerCode        String
+  key                 String
+  label               String
+  description         String?
+  searchable          Boolean
+  featured            Boolean
+  category            String
+  controlType         String
+  allowMultipleValues Boolean
+  providerKey         String
+  active              Boolean
+  lastSyncStartedAt   DateTime?
+  lastSyncSucceededAt DateTime?
+  lastSyncStatus      String?
+  lastSyncError       String?
+  valueCount          Int
+  createdAt           DateTime
+  updatedAt           DateTime
+
+  @@unique([providerCode, key])
+  @@index([providerCode, active, featured])
+  @@map("benchmark_metadata_facets")
+}
+
+model BenchmarkMetadataValueRecord {
+  id              String   @id
+  providerCode    String
+  facetKey        String
+  providerValueId String
+  label           String
+  normalizedLabel String
+  active          Boolean
+  firstSeenAt     DateTime
+  lastSeenAt      DateTime
+  createdAt       DateTime
+  updatedAt       DateTime
+
+  @@unique([providerCode, facetKey, providerValueId])
+  @@index([providerCode, facetKey, active])
+  @@index([providerCode, facetKey, label])
+  @@map("benchmark_metadata_values")
+}

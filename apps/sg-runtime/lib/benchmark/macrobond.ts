@@ -1081,11 +1081,12 @@ export async function lookupMacrobondSeriesExact(seriesName: string): Promise<Be
   const rawSource = getString(displayResult ?? {}, 'Source') ?? getMetadataString(metadata, ['Source'])
   const rawFrequency = getString(displayResult ?? {}, 'Frequency') ?? getMetadataString(metadata, ['Frequency', 'SamplingPeriod'])
   const rawCurrency = getString(displayResult ?? {}, 'Currency') ?? getMetadataString(metadata, ['Currency'])
+  const { resolveStoredBenchmarkMetadataDisplayLabel } = await import('@/lib/benchmark/metadata-store')
   const [resolvedRegion, resolvedSource, resolvedFrequency, resolvedCurrency] = await Promise.all([
-    resolveMetadataDisplayLabel('Region', rawRegion),
-    resolveMetadataDisplayLabel('Source', rawSource),
-    resolveMetadataDisplayLabel('Frequency', rawFrequency),
-    resolveMetadataDisplayLabel('Currency', rawCurrency),
+    resolveStoredBenchmarkMetadataDisplayLabel('Region', rawRegion),
+    resolveStoredBenchmarkMetadataDisplayLabel('Source', rawSource),
+    resolveStoredBenchmarkMetadataDisplayLabel('Frequency', rawFrequency),
+    resolveStoredBenchmarkMetadataDisplayLabel('Currency', rawCurrency),
   ])
 
   return normalizeCandidate(
@@ -1095,11 +1096,11 @@ export async function lookupMacrobondSeriesExact(seriesName: string): Promise<Be
         ?? getMetadataString(metadata, ['Title', 'PrimName', 'Description', 'Name'])
         ?? normalizedSeriesName,
       Description: getMetadataString(metadata, ['Description', 'FullDescription']),
-      Frequency: resolvedFrequency,
-      Currency: resolvedCurrency,
+      Frequency: resolvedFrequency ?? rawFrequency,
+      Currency: resolvedCurrency ?? rawCurrency,
       Unit: getString(displayResult ?? {}, 'Unit') ?? getMetadataString(metadata, ['DisplayUnit', 'TitleUnit']),
-      Source: resolvedSource,
-      Region: resolvedRegion,
+      Source: resolvedSource ?? rawSource,
+      Region: resolvedRegion ?? rawRegion,
     },
     { metadata, exactMatch: true },
   )
