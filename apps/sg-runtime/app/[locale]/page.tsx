@@ -1,8 +1,8 @@
 import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 
-import { PorrDemoShell } from '@/components/porr-demo/porr-demo-shell'
 import { isPorrDemoProfile } from '@/lib/env'
 import {
   PORR_DEMO_SESSION_COOKIE_NAME,
@@ -88,45 +88,7 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
   const nextPath = resolvePorrDemoNextPath(searchParams?.next, locale)
 
   if (session) {
-    return (
-      <PorrDemoShell locale={locale} activeRoute="home">
-        <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-          <div className="space-y-5">
-            <div className="space-y-3">
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-amber-600">
-                {t('porrDemo.eyebrow')}
-              </p>
-              <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-                {t('porrDemo.title')}
-              </h1>
-              <p className="max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-                {t('porrDemo.subtitle')}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href={`/${locale}/benchmark-finder`}
-                className="inline-flex items-center justify-center rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-              >
-                {t('porrDemo.openFinder')}
-              </Link>
-            </div>
-          </div>
-
-          <div className="rounded-[28px] border border-slate-200 bg-white/85 p-6 shadow-[0_20px_80px_rgba(15,23,42,0.08)] backdrop-blur">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-              {t('porrDemo.availableNowLabel')}
-            </p>
-            <ul className="mt-4 space-y-3 text-sm text-slate-700">
-              <li>{t('porrDemo.availableItemOne')}</li>
-              <li>{t('porrDemo.availableItemTwo')}</li>
-              <li>{t('porrDemo.availableItemThree')}</li>
-            </ul>
-          </div>
-        </section>
-      </PorrDemoShell>
-    )
+      redirect(`/${locale}/benchmark-finder`)
   }
 
   return (
