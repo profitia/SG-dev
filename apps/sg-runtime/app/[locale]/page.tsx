@@ -130,87 +130,126 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
   }
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,#f6f2ea_0%,#fbfaf8_48%,#f4f0e8_100%)] px-6 py-10 text-slate-950 sm:px-10">
-      <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-6xl items-center justify-center">
-        <div className="grid w-full overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_30px_120px_rgba(15,23,42,0.12)] lg:grid-cols-[1.05fr_0.95fr]">
-          <section className="bg-[radial-gradient(circle_at_top_left,#fde9bf_0%,#f6f2ea_46%,#ffffff_100%)] px-8 py-10 sm:px-12 sm:py-14">
-            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-amber-700">
-              {t('porrDemo.eyebrow')}
-            </p>
-            <h1 className="mt-6 max-w-2xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-              {t('porrDemo.title')}
-            </h1>
-            <p className="mt-5 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
-              {t('porrDemo.subtitle')}
-            </p>
-
-            <div className="mt-10 rounded-[28px] border border-white/80 bg-white/75 p-6 shadow-[0_16px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                {t('porrDemo.availableNowLabel')}
-              </p>
-              <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-700">
-                <li>{t('porrDemo.availableItemOne')}</li>
-                <li>{t('porrDemo.availableItemTwo')}</li>
-                <li>{t('porrDemo.availableItemThree')}</li>
-              </ul>
-            </div>
-          </section>
-
-          <section className="px-8 py-10 sm:px-12 sm:py-14">
-            <div className="mx-auto max-w-md space-y-6">
+    <main className="min-h-screen bg-white py-8 text-slate-950 sm:py-10">
+      <div className="mx-auto w-full max-w-[1440px] px-[clamp(24px,4vw,56px)]">
+        <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center xl:min-h-[calc(100vh-5rem)]">
+          <div className="grid w-full gap-10 xl:grid-cols-[minmax(0,46fr)_1px_minmax(0,54fr)] xl:gap-0">
+            <section className="flex min-h-full flex-col xl:pr-[clamp(36px,4vw,64px)]">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-400">
-                  {t('porrDemo.accessEyebrow')}
-                </p>
-                <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
-                  {runtimeReady ? t('porrDemo.accessTitle') : t('porrDemo.unavailableTitle')}
-                </h2>
-                <p className="mt-3 text-sm leading-6 text-slate-600">
-                  {runtimeReady ? t('porrDemo.accessSubtitle') : t('porrDemo.unavailableSubtitle')}
-                </p>
+              <div className="flex items-start justify-between gap-6">
+                <img
+                  src="/porr-demo/spendguru-logo.png"
+                  alt={t('porrDemo.spendGuruLogoAlt')}
+                  className="h-auto w-[138px] sm:w-[164px]"
+                />
+                <img
+                  src="/porr-demo/porr-logo.svg"
+                  alt={t('porrDemo.porrLogoAlt')}
+                  className="mt-1 h-auto w-[34px] sm:w-[40px]"
+                />
               </div>
 
-              {runtimeReady ? (
-                <form action="/api/porr-demo-auth" method="post" className="space-y-4">
-                  <input type="hidden" name="locale" value={locale} />
-                  <input type="hidden" name="next" value={nextPath} />
+              <h1 className="mt-10 max-w-[11ch] text-4xl font-semibold leading-[1.02] tracking-[-0.04em] text-slate-950 sm:text-[3.75rem]">
+                {t('porrDemo.loginTitle')}
+              </h1>
 
-                  <label className="block space-y-2">
-                    <span className="text-sm font-medium text-slate-700">{t('porrDemo.passwordLabel')}</span>
-                    <input
-                      type="password"
-                      name="password"
-                      autoComplete="current-password"
-                      className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-base text-slate-950 outline-none transition focus:border-slate-500 focus:bg-white"
-                    />
-                  </label>
+              <p className="mt-8 text-[1.06rem] font-medium text-slate-950">
+                {t('porrDemo.loginSubtitle')}
+              </p>
+              <p className="mt-4 max-w-md text-sm leading-6 text-slate-700">
+                {t('porrDemo.loginDescription')}
+              </p>
 
-                  {searchParams?.error === 'invalid-password' ? (
-                    <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                      {t('porrDemo.invalidPassword')}
-                    </p>
-                  ) : null}
+              <div className="mt-8 max-w-md space-y-4 xl:max-w-none">
+                {runtimeReady ? (
+                  <form action="/api/porr-demo-auth" method="post" className="space-y-4">
+                    <input type="hidden" name="locale" value={locale} />
+                    <input type="hidden" name="next" value={nextPath} />
 
-                  {searchParams?.error === 'configuration' ? (
-                    <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                      {t('porrDemo.configurationError')}
-                    </p>
-                  ) : null}
+                    <label className="block">
+                      <span className="sr-only">{t('porrDemo.passwordLabel')}</span>
+                      <input
+                        type="password"
+                        name="password"
+                        autoComplete="current-password"
+                        placeholder={t('porrDemo.passwordPlaceholder')}
+                        className="w-full rounded-xl border border-slate-300 bg-white px-5 py-4 text-base text-slate-950 outline-none transition placeholder:text-slate-500 focus:border-slate-500"
+                      />
+                    </label>
 
-                  <button
-                    type="submit"
-                    className="inline-flex w-full items-center justify-center rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-                  >
-                    {t('porrDemo.submitLabel')}
-                  </button>
-                </form>
-              ) : (
-                <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                  {t('porrDemo.configurationError')}
-                </p>
-              )}
-            </div>
-          </section>
+                    {searchParams?.error === 'invalid-password' ? (
+                      <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                        {t('porrDemo.invalidPassword')}
+                      </p>
+                    ) : null}
+
+                    {searchParams?.error === 'configuration' ? (
+                      <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        {t('porrDemo.configurationError')}
+                      </p>
+                    ) : null}
+
+                    <button
+                      type="submit"
+                      className="inline-flex w-full items-center justify-center rounded-full bg-[#D12177] px-5 py-3.5 text-sm font-semibold text-white transition hover:brightness-95"
+                    >
+                      {t('porrDemo.submitLabel')}
+                    </button>
+                  </form>
+                ) : (
+                  <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    {t('porrDemo.configurationError')}
+                  </p>
+                )}
+              </div>
+              </div>
+
+              <p className="mt-10 max-w-md text-xs leading-5 text-slate-700 xl:mt-auto xl:pt-10">
+              {t('porrDemo.loginDisclaimer')}
+              </p>
+            </section>
+
+            <div className="hidden bg-[#0E4F8A] xl:block" aria-hidden="true" />
+
+            <section className="flex min-h-full flex-col xl:pl-[clamp(36px,4vw,56px)]">
+              <div className="flex min-h-full flex-col gap-9 text-sm leading-6 text-slate-950">
+              <div className="space-y-1">
+                <p>{t('porrDemo.versionLabel')}</p>
+                <p>{t('porrDemo.publicationDateLabel')}</p>
+              </div>
+
+              <div>
+                <h2 className="text-base font-semibold text-slate-950">{t('porrDemo.currentScopeTitle')}</h2>
+                <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-slate-950 marker:text-slate-950">
+                  <li>{t('porrDemo.currentScopeItemOne')}</li>
+                  <li>{t('porrDemo.currentScopeItemTwo')}</li>
+                  <li>{t('porrDemo.currentScopeItemThree')}</li>
+                </ul>
+              </div>
+
+              <div>
+                <h2 className="text-base font-semibold text-slate-950">{t('porrDemo.changelogTitle')}</h2>
+                <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-slate-950 marker:text-slate-950">
+                  <li>{t('porrDemo.changelogItemOne')}</li>
+                </ul>
+              </div>
+
+              <div>
+                <h2 className="text-base font-semibold text-slate-950">{t('porrDemo.plannedTopicsTitle')}</h2>
+                <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-slate-950 marker:text-slate-950">
+                  <li>{t('porrDemo.plannedTopicsItemOne')}</li>
+                  <li>{t('porrDemo.plannedTopicsItemTwo')}</li>
+                  <li>{t('porrDemo.plannedTopicsItemThree')}</li>
+                </ul>
+              </div>
+
+                <div className="mt-auto pt-8 text-sm text-slate-950">
+                <p>{t('porrDemo.contactTitle')}</p>
+                <p>{t('porrDemo.contactEmail')}</p>
+                </div>
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </main>
