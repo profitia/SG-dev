@@ -10,6 +10,7 @@ import {
   requestInteractiveForecastCurrentPreparation,
 } from '@/lib/benchmark-forecast/interactive-current-preparation'
 import { createPrepareCurrentForecastRouteHandler } from '@/app/api/benchmark-forecast/current/prepare/route'
+import { createProgressiveForecastPreparationRouteHandler } from '@/app/api/benchmark-forecast/progressive/route'
 
 test('interactive current preparation gateway reuses ready variants without prepare POST', async () => {
   let prepareCalls = 0
@@ -253,6 +254,54 @@ test('interactive current preparation route includes trace payload only when exp
   assert.equal(response.status, 200)
   assert.equal(payload.trace.dashboardBridgeTotalMs, 111)
   assert.equal(payload.trace.attempts[0].sgRuntimeCapabilityExecutionMs, 109)
+})
+
+test('progressive preparation route forwards the exact identity and returns snapshot payload', async () => {
+  const handler = createProgressiveForecastPreparationRouteHandler(async (input) => {
+    assert.deepEqual(input, {
+      seriesId: 'wocaes0280',
+      modelId: 'arima',
+      targetBasis: 'MONTHLY_AVERAGE',
+    })
+
+    return {
+      seriesId: input.seriesId,
+      variants: [{
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis: input.targetBasis,
+        targetSemantics: 'MONTHLY_AVERAGE',
+        currentState: 'PREPARING',
+        currentReason: null,
+        verificationState: 'QUEUED',
+        verificationReason: null,
+      }],
+      firstReadyCurrent: null,
+      activeItem: {
+        modelId: input.modelId,
+        targetBasis: input.targetBasis,
+        kind: 'CURRENT',
+      },
+      queuedCount: 1,
+      currentReadyCount: 0,
+      verificationReadyCount: 0,
+    }
+  })
+
+  const response = await handler(new NextRequest('http://localhost/api/benchmark-forecast/progressive', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      seriesId: 'wocaes0280',
+      modelId: 'arima',
+      targetBasis: 'MONTHLY_AVERAGE',
+    }),
+  }))
+  const payload = await response.json()
+
+  assert.equal(response.status, 200)
+  assert.equal(payload.activeItem.kind, 'CURRENT')
+  assert.equal(payload.variants[0].currentState, 'PREPARING')
 })
 
 test('interactive current capability bridge keeps private auth server-side and forwards exact identity', async () => {

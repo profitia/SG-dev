@@ -8,7 +8,8 @@ export type ForecastPortfolioModelId = (typeof FORECAST_PORTFOLIO_MODELS)[number
 export type ForecastTargetBasis = (typeof FORECAST_TARGET_BASES)[number]
 export type ForecastTargetSemantics = (typeof FORECAST_TARGET_SEMANTICS)[number]
 export type ForecastMethodId = (typeof FORECAST_METHOD_IDS)[number]
-export type ForecastCurrentUiState = 'IDLE' | 'READING' | 'AVAILABLE' | 'NOT_PREPARED' | 'PREPARING' | 'FAILED' | 'UNSUPPORTED'
+export type ForecastCurrentUiState = 'IDLE' | 'READING' | 'AVAILABLE' | 'NOT_PREPARED' | 'PREPARING' | 'QUEUED' | 'FAILED' | 'UNSUPPORTED'
+export type ProgressiveForecastPreparationState = 'READY' | 'PREPARING' | 'QUEUED' | 'UNSUPPORTED' | 'FAILED'
 export type InteractiveForecastCapabilityStatus =
   | 'READY'
   | 'NOT_PREPARED'
@@ -65,6 +66,35 @@ export interface BenchmarkForecastCurrentPreparationResult {
   prepareStatus: InteractiveForecastPreparationStatus | null
   reason: string | null
   timingMs: number
+}
+
+export interface ProgressiveForecastVariantSnapshot {
+  seriesId: string
+  modelId: ForecastPortfolioModelId
+  targetBasis: ForecastTargetBasis
+  targetSemantics: ForecastTargetSemantics
+  currentState: ProgressiveForecastPreparationState
+  currentReason: string | null
+  verificationState: ProgressiveForecastPreparationState
+  verificationReason: string | null
+}
+
+export interface ProgressiveForecastPreparationSnapshot {
+  seriesId: string
+  variants: ProgressiveForecastVariantSnapshot[]
+  firstReadyCurrent: {
+    modelId: ForecastPortfolioModelId
+    targetBasis: ForecastTargetBasis
+    targetSemantics: ForecastTargetSemantics
+  } | null
+  activeItem: {
+    modelId: ForecastPortfolioModelId
+    targetBasis: ForecastTargetBasis
+    kind: 'CURRENT' | 'VERIFICATION'
+  } | null
+  queuedCount: number
+  currentReadyCount: number
+  verificationReadyCount: number
 }
 
 export function resolveForecastTargetSemantics(targetBasis: ForecastTargetBasis): ForecastTargetSemantics {

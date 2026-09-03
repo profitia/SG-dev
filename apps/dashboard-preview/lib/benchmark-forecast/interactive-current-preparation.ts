@@ -5,6 +5,7 @@ import {
   type BenchmarkForecastCurrentPreparationRequest,
   type BenchmarkForecastCurrentPreparationResult,
   type ForecastPortfolioModelId,
+  type ProgressiveForecastPreparationSnapshot,
   type ForecastTargetBasis,
   type InteractiveForecastCapabilityResult,
   type InteractiveForecastPreparationResult,
@@ -16,6 +17,7 @@ const DEPLOYED_SG_RUNTIME_FALLBACK_BASE_URLS = [
 ]
 const INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH = '/api/internal/forecast/capability'
 const INTERNAL_FORECAST_PREPARE_CURRENT_ROUTE_PATH = '/api/internal/forecast/prepare/current'
+const INTERNAL_FORECAST_PROGRESSIVE_ROUTE_PATH = '/api/internal/forecast/progressive'
 const INTERNAL_FORECAST_TIMEOUT_MS = 45_000
 export const FORECAST_TRACE_HEADER = 'x-sg-forecast-trace'
 
@@ -76,8 +78,14 @@ export function parseBenchmarkForecastCurrentPreparationRequest(
 }
 
 type GatewayDependencies = {
-  resolveCapability: (input: BenchmarkForecastCurrentPreparationRequest) => Promise<InteractiveForecastCapabilityResult>
-  prepareCurrent: (input: BenchmarkForecastCurrentPreparationRequest) => Promise<InteractiveForecastPreparationResult>
+  resolveCapability: (
+    input: BenchmarkForecastCurrentPreparationRequest,
+    traceOptions?: TraceOptions,
+  ) => Promise<InteractiveForecastCapabilityResult>
+  prepareCurrent: (
+    input: BenchmarkForecastCurrentPreparationRequest,
+    traceOptions?: TraceOptions,
+  ) => Promise<InteractiveForecastPreparationResult>
   now: () => number
 }
 
@@ -258,6 +266,24 @@ export async function requestInteractiveForecastCurrentPreparation(
   }, traceOptions)
 }
 
+export async function requestProgressiveForecastPreparationSnapshot(
+  input: BenchmarkForecastCurrentPreparationRequest,
+  traceOptions?: TraceOptions,
+) {
+  return readInternalJson<ProgressiveForecastPreparationSnapshot>(INTERNAL_FORECAST_PROGRESSIVE_ROUTE_PATH, {
+    method: 'POST',
+    headers: {
+      ...resolveAuthorizedHeaders(),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      seriesId: input.seriesId,
+      modelId: input.modelId,
+      targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
+    }),
+  }, traceOptions)
+}
+
 export function createInteractiveCurrentPreparationGateway(
   dependencies: Partial<GatewayDependencies> = {},
 ) {
@@ -277,7 +303,7 @@ export function createInteractiveCurrentPreparationGateway(
     const traceOptions: TraceOptions | undefined = traceEnabled
       ? { enabled: true, attempts }
       : undefined
-    const capability = await resolvedDependencies.resolveCapability(input, traceOptions as never)
+    const capability = await resolvedDependencies.resolveCapability(input, traceOptions)
 
     const baseResult = {
       seriesId: input.seriesId,
@@ -328,7 +354,7 @@ export function createInteractiveCurrentPreparationGateway(
       }
     }
 
-    const preparation = await resolvedDependencies.prepareCurrent(input, traceOptions as never)
+    const preparation = await resolvedDependencies.prepareCurrent(input, traceOptions)
     const preparationState = preparation.status === 'READY' || preparation.status === 'REUSED'
       ? 'READY'
       : preparation.status === 'FAILED'

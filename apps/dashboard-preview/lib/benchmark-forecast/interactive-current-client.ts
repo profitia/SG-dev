@@ -4,6 +4,8 @@ import type {
   BenchmarkForecastCurrentResult,
   ForecastCurrentUiState,
   InteractiveForecastCapabilityResult,
+  ProgressiveForecastPreparationSnapshot,
+  ProgressiveForecastVariantSnapshot,
 } from './forecast-contract'
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>
@@ -42,6 +44,36 @@ export function resolveForecastCurrentUiState(result: BenchmarkForecastCurrentRe
   }
 
   return 'NOT_PREPARED'
+}
+
+export function resolveSelectedProgressiveVariant(
+  snapshot: ProgressiveForecastPreparationSnapshot | null,
+  input: BenchmarkForecastCurrentPreparationRequest,
+) {
+  return snapshot?.variants.find((variant) => (
+    variant.seriesId === input.seriesId
+    && variant.modelId === input.modelId
+    && variant.targetBasis === input.targetBasis
+  )) ?? null
+}
+
+export function resolveForecastCurrentDisplayState(
+  currentState: ForecastCurrentUiState,
+  variant: ProgressiveForecastVariantSnapshot | null,
+): ForecastCurrentUiState {
+  if (currentState === 'AVAILABLE' || currentState === 'FAILED' || currentState === 'READING' || currentState === 'IDLE') {
+    return currentState
+  }
+
+  if (!variant) {
+    return currentState
+  }
+
+  if (variant.currentState === 'PREPARING') return 'PREPARING'
+  if (variant.currentState === 'QUEUED') return 'QUEUED'
+  if (variant.currentState === 'UNSUPPORTED') return 'UNSUPPORTED'
+  if (variant.currentState === 'FAILED') return 'FAILED'
+  return currentState
 }
 
 export function shouldShowExplicitCurrentPreparation(
@@ -123,6 +155,29 @@ export async function requestExplicitCurrentForecastPreparationThroughDashboard(
   }
 
   return payload as BenchmarkForecastCurrentPreparationResult
+}
+
+export async function readProgressiveForecastPreparationThroughDashboard(
+  fetchLike: FetchLike,
+  input: BenchmarkForecastCurrentPreparationRequest,
+  signal?: AbortSignal,
+) {
+  const response = await fetchLike('/api/benchmark-forecast/progressive', {
+    method: 'POST',
+    cache: 'no-store',
+    signal,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  })
+  const payload = await response.json() as ProgressiveForecastPreparationSnapshot | { error?: string }
+
+  if (!response.ok) {
+    throw new Error('error' in payload ? payload.error ?? 'Forecast progressive preparation unavailable' : 'Forecast progressive preparation unavailable')
+  }
+
+  return payload as ProgressiveForecastPreparationSnapshot
 }
 
 export async function warmCurrentForecastThroughDashboard(

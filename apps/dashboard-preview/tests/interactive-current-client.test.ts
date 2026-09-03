@@ -4,9 +4,12 @@ import test from 'node:test'
 import {
   explicitlyPrepareForecastCurrent,
   readCurrentForecastCapabilityThroughDashboard,
+  readProgressiveForecastPreparationThroughDashboard,
   readPreparedCurrentForecastThroughDashboard,
   requestExplicitCurrentForecastPreparationThroughDashboard,
+  resolveForecastCurrentDisplayState,
   resolveForecastCurrentUiState,
+  resolveSelectedProgressiveVariant,
   shouldReadCurrentForecast,
   shouldPrepareCurrentForecastFromCapability,
   shouldShowExplicitCurrentPreparation,
@@ -312,6 +315,72 @@ test('stale point-in-time current result falls back to not-prepared UI state', (
   })
 
   assert.equal(state, 'NOT_PREPARED')
+})
+
+test('progressive snapshot keeps lawful cold misses out of unsupported state', () => {
+  const variant = resolveSelectedProgressiveVariant({
+    seriesId: 'wocaes0280',
+    variants: [{
+      seriesId: 'wocaes0280',
+      modelId: 'ets',
+      targetBasis: 'END_OF_PERIOD',
+      targetSemantics: 'END_OF_PERIOD',
+      currentState: 'QUEUED',
+      currentReason: null,
+      verificationState: 'QUEUED',
+      verificationReason: null,
+    }],
+    firstReadyCurrent: null,
+    activeItem: null,
+    queuedCount: 1,
+    currentReadyCount: 0,
+    verificationReadyCount: 0,
+  }, {
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+  })
+
+  assert.equal(resolveForecastCurrentDisplayState('NOT_PREPARED', variant), 'QUEUED')
+  assert.equal(resolveForecastCurrentDisplayState('UNSUPPORTED', variant), 'QUEUED')
+})
+
+test('dashboard progressive preparation route forwards exact model and target identity', async () => {
+  const payload = await readProgressiveForecastPreparationThroughDashboard(async (_input, init) => {
+    const body = JSON.parse(String(init?.body ?? '{}')) as Record<string, string>
+    assert.equal(body.seriesId, 'wocaes0280')
+    assert.equal(body.modelId, 'arima')
+    assert.equal(body.targetBasis, 'MONTHLY_AVERAGE')
+
+    return new Response(JSON.stringify({
+      seriesId: 'wocaes0280',
+      variants: [{
+        seriesId: 'wocaes0280',
+        modelId: 'arima',
+        targetBasis: 'MONTHLY_AVERAGE',
+        targetSemantics: 'MONTHLY_AVERAGE',
+        currentState: 'PREPARING',
+        currentReason: null,
+        verificationState: 'QUEUED',
+        verificationReason: null,
+      }],
+      firstReadyCurrent: null,
+      activeItem: { modelId: 'arima', targetBasis: 'MONTHLY_AVERAGE', kind: 'CURRENT' },
+      queuedCount: 1,
+      currentReadyCount: 0,
+      verificationReadyCount: 0,
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }, {
+    seriesId: 'wocaes0280',
+    modelId: 'arima',
+    targetBasis: 'MONTHLY_AVERAGE',
+  })
+
+  assert.equal(payload.activeItem?.kind, 'CURRENT')
+  assert.equal(payload.variants[0]?.currentState, 'PREPARING')
 })
 
 test('dashboard current read forwards exact model and target identity', async () => {

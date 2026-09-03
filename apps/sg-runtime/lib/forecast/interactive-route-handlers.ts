@@ -4,15 +4,21 @@ import { withInternalForecastServiceAuth } from '@/lib/api/internal-forecast-ser
 import { cognitionError, cognitionOk, parseJsonBody, parseSearchParams } from '@/lib/api/middleware'
 import {
   InteractiveForecastIdentitySchema,
+  type InteractiveForecastIdentity,
   prepareInteractiveCurrentForecast,
   resolveInteractiveForecastCapability,
   type InteractiveForecastCapabilityResult,
-  type InteractiveForecastIdentity,
   type InteractiveForecastPreparationResult,
 } from '@/lib/forecast/interactive-preparation'
+import {
+  progressiveForecastPreparationService,
+  type ProgressiveForecastPreparationRequest,
+  type ProgressiveForecastPreparationSnapshot,
+} from '@/lib/forecast/progressive-preparation'
 
 type CapabilityResolver = (input: InteractiveForecastIdentity) => Promise<InteractiveForecastCapabilityResult>
 type CurrentPreparationResolver = (input: InteractiveForecastIdentity) => Promise<InteractiveForecastPreparationResult>
+type ProgressivePreparationResolver = (input: ProgressiveForecastPreparationRequest) => Promise<ProgressiveForecastPreparationSnapshot>
 const FORECAST_TRACE_HEADER = 'x-sg-forecast-trace'
 const SG_RUNTIME_CAPABILITY_TOTAL_MS_HEADER = 'x-sg-runtime-capability-total-ms'
 
@@ -54,6 +60,27 @@ export function createInternalCurrentForecastPreparationRouteHandler(
 
     try {
       return cognitionOk(await prepareCurrent(parsed.data))
+    } catch (error) {
+      return internalRouteError(error, principal.requestId)
+    }
+  })
+}
+
+export function createInternalProgressiveForecastPreparationRouteHandler(
+  prepareProgressively: ProgressivePreparationResolver = progressiveForecastPreparationService.snapshotAndKickoff,
+) {
+  return withInternalForecastServiceAuth(async (principal, request: NextRequest) => {
+    const parsed = await parseJsonBody(request, InteractiveForecastIdentitySchema)
+    if (!parsed.ok) return cognitionError('VALIDATION_ERROR', parsed.message, 400, principal.requestId)
+
+    try {
+      return cognitionOk(await prepareProgressively({
+        seriesId: parsed.data.seriesId,
+        preferredModelId: parsed.data.modelId,
+        preferredTargetBasis: parsed.data.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+          ? 'POINT_IN_TIME'
+          : parsed.data.targetSemantics,
+      }))
     } catch (error) {
       return internalRouteError(error, principal.requestId)
     }

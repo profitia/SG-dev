@@ -20,15 +20,20 @@ import {
   type BenchmarkForecastVerificationResult,
   type ForecastTargetBasis,
   type ForecastPortfolioModelId,
+  type ProgressiveForecastPreparationSnapshot,
+  type ProgressiveForecastPreparationState,
 } from '@/lib/benchmark-forecast/forecast-contract'
 import {
   explicitlyPrepareForecastCurrent,
+  readProgressiveForecastPreparationThroughDashboard,
   readPreparedCurrentForecastThroughDashboard,
-  warmCurrentForecastThroughDashboard,
   requestExplicitCurrentForecastPreparationThroughDashboard,
+  resolveForecastCurrentDisplayState,
   resolveForecastCurrentUiState,
+  resolveSelectedProgressiveVariant,
   shouldReadCurrentForecast,
   shouldShowExplicitCurrentPreparation,
+  warmCurrentForecastThroughDashboard,
 } from '@/lib/benchmark-forecast/interactive-current-client'
 
 import type {
@@ -449,6 +454,22 @@ function forecastTargetBasisLabel(locale: Locale, targetBasis: ForecastTargetBas
   }
 }
 
+function forecastPreparationStateLabel(locale: Locale, state: ProgressiveForecastPreparationState) {
+  switch (state) {
+    case 'READY':
+      return locale === 'pl' ? 'Gotowe' : 'Ready'
+    case 'PREPARING':
+      return locale === 'pl' ? 'Przygotowywanie' : 'Preparing'
+    case 'QUEUED':
+      return locale === 'pl' ? 'W kolejce' : 'Queued'
+    case 'FAILED':
+      return locale === 'pl' ? 'Błąd' : 'Failed'
+    case 'UNSUPPORTED':
+    default:
+      return locale === 'pl' ? 'Niewspierane' : 'Unsupported'
+  }
+}
+
 function InfoButton({
   label,
   lines,
@@ -575,6 +596,14 @@ function toUiLoadErrorState(
     title: fallbackTitle,
     message: fallbackMessage,
   }
+}
+
+function toUiLoadErrorMessage(
+  error: unknown,
+  fallbackMessage: string,
+  timeoutMessage: string,
+) {
+  return toUiLoadErrorState(error, '', fallbackMessage, timeoutMessage).message
 }
 
 type ForecastVerificationErrorMessages = {
@@ -2402,6 +2431,9 @@ export function RawDataView({
   const [forecastAccuracyPayload, setForecastAccuracyPayload] = useState<TimeSeriesViewerPayload | null>(null)
   const [forecastCurrentState, setForecastCurrentState] = useState<ForecastCurrentUiState>(initialForecastVisibility ? 'READING' : 'IDLE')
   const [forecastCurrentResult, setForecastCurrentResult] = useState<BenchmarkForecastCurrentResult | null>(null)
+  const [progressivePreparationSnapshot, setProgressivePreparationSnapshot] = useState<ProgressiveForecastPreparationSnapshot | null>(null)
+  const [forecastCurrentReloadNonce, setForecastCurrentReloadNonce] = useState(0)
+  const [forecastVerificationReloadNonce, setForecastVerificationReloadNonce] = useState(0)
   const [forecastVerificationState, setForecastVerificationState] = useState<LoadState>(initialForecastVerificationVisibility ? 'loading' : 'idle')
   const [forecastVerificationResult, setForecastVerificationResult] = useState<BenchmarkForecastVerificationResult | null>(null)
   const [forecastErrorState, setForecastErrorState] = useState<UiLoadErrorState | null>(null)
@@ -2418,6 +2450,9 @@ export function RawDataView({
   const forecastLayerCacheRef = useRef<Map<string, ForecastLayerCacheEntry<BenchmarkForecastCurrentResult | BenchmarkForecastVerificationResult>>>(new Map())
   const backgroundWarmupAttemptedRef = useRef<Set<string>>(new Set())
   const backgroundWarmupInflightRef = useRef<Map<string, Promise<BackgroundWarmupOutcome>>>(new Map())
+  const forecastSelectionTouchedRef = useRef(false)
+  const selectedProgressiveCurrentStateRef = useRef<ProgressiveForecastPreparationState | null>(null)
+  const selectedProgressiveVerificationStateRef = useRef<ProgressiveForecastPreparationState | null>(null)
 
   useEffect(() => {
     if (!isForecastPortfolioVariant) {
@@ -2430,8 +2465,21 @@ export function RawDataView({
     setSelectedForecastTargetBasis(defaultForecastTargetBasis)
     setForecastAccuracyHorizon(1)
     setForecastCurrentState(initialForecastVisibility ? 'READING' : 'IDLE')
+    setProgressivePreparationSnapshot(null)
+    setForecastCurrentReloadNonce(0)
+    setForecastVerificationReloadNonce(0)
     setForecastVerificationState(initialForecastVerificationVisibility ? 'loading' : 'idle')
+    forecastSelectionTouchedRef.current = false
+    selectedProgressiveCurrentStateRef.current = null
+    selectedProgressiveVerificationStateRef.current = null
   }, [defaultForecastTargetBasis, initialForecastVerificationVisibility, initialForecastVisibility, isForecastPortfolioVariant])
+
+  const selectedProgressiveVariant = resolveSelectedProgressiveVariant(progressivePreparationSnapshot, {
+    seriesId: benchmarkSeriesId ?? '',
+    modelId: forecastModel,
+    targetBasis: selectedForecastTargetBasis,
+  })
+  const forecastCurrentDisplayState = resolveForecastCurrentDisplayState(forecastCurrentState, selectedProgressiveVariant)
 
   useEffect(() => {
     if (!showForecast) {
@@ -3094,7 +3142,88 @@ export function RawDataView({
       cancelled = true
       controller.abort()
     }
-  }, [benchmarkSeriesId, forecastModel, isForecastPortfolioVariant, locale, selectedForecastTargetBasis, showForecast, t])
+  }, [benchmarkSeriesId, forecastCurrentReloadNonce, forecastModel, isForecastPortfolioVariant, locale, selectedForecastTargetBasis, showForecast, t])
+
+  useEffect(() => {
+    if (!isForecastPortfolioVariant || !benchmarkSeriesId || !showForecast) {
+      setProgressivePreparationSnapshot(null)
+      return
+    }
+
+    const activeSeriesId = benchmarkSeriesId
+    const controller = new AbortController()
+    let cancelled = false
+
+    async function pollProgressivePreparation() {
+      while (!cancelled) {
+        try {
+          const snapshot = await readProgressiveForecastPreparationThroughDashboard(fetch, {
+            seriesId: activeSeriesId,
+            modelId: forecastModel,
+            targetBasis: selectedForecastTargetBasis,
+          }, controller.signal)
+
+          if (cancelled) {
+            return
+          }
+
+          setProgressivePreparationSnapshot(snapshot)
+
+          const selectedVariant = resolveSelectedProgressiveVariant(snapshot, {
+            seriesId: activeSeriesId,
+            modelId: forecastModel,
+            targetBasis: selectedForecastTargetBasis,
+          })
+
+          if (
+            !forecastSelectionTouchedRef.current
+            && snapshot.firstReadyCurrent
+            && selectedVariant
+            && selectedVariant.currentState !== 'READY'
+            && forecastCurrentState !== 'AVAILABLE'
+          ) {
+            forecastSelectionTouchedRef.current = true
+            setForecastModel(snapshot.firstReadyCurrent.modelId)
+            setSelectedForecastTargetBasis(snapshot.firstReadyCurrent.targetBasis)
+            return
+          }
+
+          if (selectedVariant?.currentState === 'READY' && selectedProgressiveCurrentStateRef.current !== 'READY' && forecastCurrentState !== 'AVAILABLE') {
+            forecastLayerCacheRef.current.delete(buildForecastLayerCacheKey(locale, activeSeriesId, forecastModel, selectedForecastTargetBasis, 'current'))
+            setForecastCurrentReloadNonce((value) => value + 1)
+          }
+
+          if (selectedVariant?.verificationState === 'READY' && selectedProgressiveVerificationStateRef.current !== 'READY') {
+            forecastLayerCacheRef.current.delete(buildForecastLayerCacheKey(locale, activeSeriesId, forecastModel, selectedForecastTargetBasis, 'verification'))
+            setForecastVerificationReloadNonce((value) => value + 1)
+          }
+
+          selectedProgressiveCurrentStateRef.current = selectedVariant?.currentState ?? null
+          selectedProgressiveVerificationStateRef.current = selectedVariant?.verificationState ?? null
+
+          if (!snapshot.activeItem && snapshot.queuedCount === 0) {
+            return
+          }
+
+          await new Promise((resolve) => window.setTimeout(resolve, 1500))
+        } catch (error) {
+          if (cancelled || (error as Error).name === 'AbortError') {
+            return
+          }
+
+          setProgressivePreparationSnapshot(null)
+          return
+        }
+      }
+    }
+
+    void pollProgressivePreparation()
+
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [benchmarkSeriesId, forecastCurrentState, forecastModel, isForecastPortfolioVariant, locale, selectedForecastTargetBasis, showForecast])
 
   useEffect(() => {
     if (!backgroundCurrentForecastWarmupEnabled || !benchmarkSeriesId) {
@@ -3267,6 +3396,19 @@ export function RawDataView({
       return
     }
 
+    if (
+      selectedProgressiveVariant
+      && selectedProgressiveVariant.verificationState !== 'READY'
+      && selectedProgressiveVariant.verificationState !== 'UNSUPPORTED'
+      && selectedProgressiveVariant.verificationState !== 'FAILED'
+    ) {
+      forecastVerificationAbortRef.current?.abort()
+      setForecastVerificationState('loading')
+      setForecastVerificationResult(null)
+      setForecastVerificationErrorState(null)
+      return
+    }
+
     let cancelled = false
     forecastVerificationAbortRef.current?.abort()
     const controller = new AbortController()
@@ -3354,7 +3496,7 @@ export function RawDataView({
       cancelled = true
       controller.abort()
     }
-  }, [benchmarkSeriesId, forecastModel, isForecastPortfolioVariant, locale, selectedForecastTargetBasis, showForecast, showForecastVerification, t])
+  }, [benchmarkSeriesId, forecastModel, forecastVerificationReloadNonce, isForecastPortfolioVariant, locale, selectedForecastTargetBasis, selectedProgressiveVariant?.verificationState, showForecast, showForecastVerification, t])
 
   useEffect(() => {
     if (isBenchmarkMode) {
@@ -3524,9 +3666,19 @@ export function RawDataView({
                         aria-pressed={forecastModel === model}
                         disabled={!showForecast}
                         tabIndex={showForecast ? 0 : -1}
-                        onClick={() => setForecastModel(model)}
+                        onClick={() => {
+                          forecastSelectionTouchedRef.current = true
+                          setForecastModel(model)
+                        }}
                       >
                         {forecastModelLabel(locale, model)}
+                        {progressivePreparationSnapshot ? (
+                          <span className="muted">{' · '}{forecastPreparationStateLabel(locale, resolveSelectedProgressiveVariant(progressivePreparationSnapshot, {
+                            seriesId: benchmarkSeriesId ?? '',
+                            modelId: model,
+                            targetBasis: selectedForecastTargetBasis,
+                          })?.currentState ?? 'UNSUPPORTED')}</span>
+                        ) : null}
                       </button>
                     ))}
                   </div>
@@ -3550,9 +3702,19 @@ export function RawDataView({
                         aria-pressed={selectedForecastTargetBasis === targetBasis}
                         disabled={!showForecast}
                         tabIndex={showForecast ? 0 : -1}
-                        onClick={() => setSelectedForecastTargetBasis(targetBasis)}
+                        onClick={() => {
+                          forecastSelectionTouchedRef.current = true
+                          setSelectedForecastTargetBasis(targetBasis)
+                        }}
                       >
                         {forecastTargetBasisLabel(locale, targetBasis)}
+                        {progressivePreparationSnapshot ? (
+                          <span className="muted">{' · '}{forecastPreparationStateLabel(locale, resolveSelectedProgressiveVariant(progressivePreparationSnapshot, {
+                            seriesId: benchmarkSeriesId ?? '',
+                            modelId: forecastModel,
+                            targetBasis,
+                          })?.currentState ?? 'UNSUPPORTED')}</span>
+                        ) : null}
                       </button>
                     ))}
                   </div>
@@ -3679,7 +3841,7 @@ export function RawDataView({
             </div>
           </div>
         ) : null}
-        {isForecastPortfolioVariant && forecastCurrentState === 'NOT_PREPARED' ? (
+        {isForecastPortfolioVariant && forecastCurrentDisplayState === 'NOT_PREPARED' ? (
           <div className="callout" role="status" aria-live="polite">
             <strong>{t('forecastPreparationRequired')}</strong>
             <p>{t('forecastPreparationRequiredHint')}</p>
@@ -3690,22 +3852,34 @@ export function RawDataView({
             </div>
           </div>
         ) : null}
-        {isForecastPortfolioVariant && forecastCurrentState === 'PREPARING' ? (
+        {isForecastPortfolioVariant && forecastCurrentDisplayState === 'PREPARING' ? (
           <div className="callout" role="status" aria-live="polite">
             <strong>{t('forecastPreparing')}</strong>
             <p>{t('forecastPreparingHint')}</p>
           </div>
         ) : null}
-        {isForecastPortfolioVariant && forecastCurrentState === 'UNSUPPORTED' ? (
+        {isForecastPortfolioVariant && forecastCurrentDisplayState === 'QUEUED' ? (
           <div className="callout" role="status" aria-live="polite">
-            <strong>{t('forecastUnsupported')}</strong>
-            <p>{forecastCurrentResult?.reason ?? t('forecastUnsupportedHint')}</p>
+            <strong>{t('forecastQueued')}</strong>
+            <p>{t('forecastQueuedHint')}</p>
           </div>
         ) : null}
-        {isForecastPortfolioVariant && forecastCurrentState === 'FAILED' && forecastErrorState ? (
+        {isForecastPortfolioVariant && forecastCurrentDisplayState === 'UNSUPPORTED' ? (
+          <div className="callout" role="status" aria-live="polite">
+            <strong>{t('forecastUnsupported')}</strong>
+            <p>{selectedProgressiveVariant?.currentReason ?? (forecastCurrentResult && !isAvailableCurrentResult(forecastCurrentResult) ? forecastCurrentResult.reason : null) ?? t('forecastUnsupportedHint')}</p>
+          </div>
+        ) : null}
+        {isForecastPortfolioVariant && forecastCurrentDisplayState === 'FAILED' && forecastErrorState ? (
           <div className="callout callout-error" role="status" aria-live="polite">
             <strong>{forecastErrorState.title}</strong>
             <p>{forecastErrorState.message}</p>
+          </div>
+        ) : null}
+        {isForecastPortfolioVariant && showForecast && showForecastVerification && selectedProgressiveVariant && forecastVerificationState !== 'ready' && ['PREPARING', 'QUEUED'].includes(selectedProgressiveVariant.verificationState) ? (
+          <div className="callout" role="status" aria-live="polite">
+            <strong>{selectedProgressiveVariant.verificationState === 'PREPARING' ? t('verificationPreparing') : t('verificationQueued')}</strong>
+            <p>{selectedProgressiveVariant.verificationState === 'PREPARING' ? t('verificationPreparingHint') : t('verificationQueuedHint')}</p>
           </div>
         ) : null}
         {isForecastPortfolioVariant && forecastVerificationErrorState ? (

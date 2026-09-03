@@ -13,6 +13,7 @@ import { createInteractiveForecastPreparationService } from '../lib/forecast/int
 import {
   createInternalCurrentForecastPreparationRouteHandler,
   createInternalForecastCapabilityRouteHandler,
+  createInternalProgressiveForecastPreparationRouteHandler,
 } from '../lib/forecast/interactive-route-handlers'
 import type {
   BenchmarkForecastCurrentResult,
@@ -785,6 +786,55 @@ test('internal prepare-current route returns reused success in legacy-compatible
       timingMs: 11,
       reason: null,
     })
+  } finally {
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
+})
+
+test('internal progressive preparation route accepts valid dashboard-preview service credential and returns queued status snapshot', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+
+  try {
+    const handler = createInternalProgressiveForecastPreparationRouteHandler(async () => ({
+      seriesId: 'wocaes0074',
+      variants: [{
+        seriesId: 'wocaes0074',
+        modelId: 'naive',
+        targetBasis: 'MONTHLY_AVERAGE',
+        targetSemantics: 'MONTHLY_AVERAGE',
+        currentState: 'PREPARING',
+        currentReason: null,
+        verificationState: 'QUEUED',
+        verificationReason: null,
+      }],
+      firstReadyCurrent: null,
+      activeItem: {
+        modelId: 'naive',
+        targetBasis: 'MONTHLY_AVERAGE',
+        kind: 'CURRENT',
+      },
+      queuedCount: 1,
+      currentReadyCount: 0,
+      verificationReadyCount: 0,
+    }))
+
+    const response = await handler(buildJsonRequest(
+      'http://localhost/api/internal/forecast/progressive',
+      { seriesId: 'wocaes0074', targetSemantics: 'MONTHLY_AVERAGE', modelId: 'naive' },
+      { Authorization: 'Bearer test-internal-token' },
+    ))
+    const payload = await response.json()
+
+    assert.equal(response.status, 200)
+    assert.equal(payload.seriesId, 'wocaes0074')
+    assert.equal(payload.variants[0]?.currentState, 'PREPARING')
+    assert.equal(payload.variants[0]?.verificationState, 'QUEUED')
+    assert.equal(payload.activeItem?.kind, 'CURRENT')
   } finally {
     if (previousToken === undefined) {
       delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
