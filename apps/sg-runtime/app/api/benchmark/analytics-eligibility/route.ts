@@ -31,9 +31,9 @@ function createAnalyticsEligibilityRouteHandler(
       parsed.data.locale,
       parsed.data.seriesId,
       parsed.data.displayName,
-      {
-        warmCurrentForecast: parsed.data[FORECAST_WARMUP_EXPERIMENT_SEARCH_PARAM] === 'single',
-      },
+      parsed.data[FORECAST_WARMUP_EXPERIMENT_SEARCH_PARAM] === 'single'
+        ? { warmCurrentForecast: true }
+        : undefined,
     )
     return cognitionOk(eligibility)
   }
