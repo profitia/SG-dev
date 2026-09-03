@@ -9,6 +9,15 @@ import {
   normalizeForecastWarmupExperiment,
 } from '@/lib/benchmark/analytics'
 import {
+  buildMetadataValueRequestKey,
+  buildMetadataValuesRequestPath,
+  countReadyMetadataPrewarmFacets,
+  isDuplicateMetadataValueRequest,
+  prepareAdvancedMetadata,
+  shouldReuseMetadataValueState,
+  shouldUseRemoteMetadataQuery,
+} from '@/components/benchmark-finder/metadata-prefetch'
+import {
   formatDisplayMeasurement,
   sanitizeUserFacingPublisher,
   sanitizeUserFacingResolvedLabel,
@@ -169,7 +178,6 @@ const RECENT_SEARCHES_SESSION_KEY = 'benchmark-finder-recent-searches'
 const FINDER_LOCALE_SWITCH_STATE_SESSION_KEY = 'benchmark-finder-locale-switch-state'
 const REMOTE_METADATA_QUERY_MIN_LENGTH = 2
 const FINDER_LOCALE_SWITCH_STATE_TTL_MS = 30_000
-const REMOTE_METADATA_QUERY_KEYS = new Set(['Region'])
 const RANGE_PRESETS: BenchmarkRangePreset[] = ['1M', '3M', '6M', '1Y', '5Y']
 const GENERIC_TOKENS = new Set(['world', 'close', 'open', 'high', 'low', 'last', 'avg', 'average'])
 const GENERIC_COMMODITIES = new Set(['crude oil', 'oil', 'natural gas', 'copper', 'aluminium', 'aluminum', 'inflation'])
@@ -309,10 +317,6 @@ function createCandidateFromSaved(saved: SavedBenchmark): BenchmarkCandidate {
     region: null,
     titleUnit: saved.unit,
   }
-}
-
-function shouldUseRemoteMetadataQuery(metadataKey: string) {
-  return REMOTE_METADATA_QUERY_KEYS.has(metadataKey)
 }
 
 function buildRecentSearchId(entry: Pick<RecentSearchEntry, 'mode' | 'query' | 'exactSeriesId' | 'aiPrompt' | 'filters'>) {
@@ -934,10 +938,14 @@ export function BenchmarkFinderClient({
   const activePreviewRequestsRef = useRef<Record<string, number>>({})
   const activeAnalyticsEligibilityRequestsRef = useRef<Record<string, number>>({})
   const analyticsEligibilityCacheRef = useRef<Record<string, AnalyticsEligibilityResponse>>({})
+  const metadataDefinitionsRequestRef = useRef<Promise<BenchmarkMetadataDefinition[]> | null>(null)
+  const metadataPreparationPromiseRef = useRef<Promise<void> | null>(null)
+  const metadataValueRequestKeysRef = useRef<Record<string, string>>({})
   const localizedMetadataDefinitions = localizeMetadataDefinitions(metadataDefinitions, locale)
   const featuredDefinitions = localizedMetadataDefinitions.filter((definition) => definition.featured)
   const hasExplicitInitialState = Boolean(initialMode || initialSearchQuery.trim() || initialAiPrompt.trim())
   const activeFilterChips = buildActiveFilters(selectedFilters, localizedMetadataDefinitions, metadataValuesByKey)
+  const prewarmedFacetsReady = countReadyMetadataPrewarmFacets(metadataValuesByKey)
 
   function pushRecentSearch(entry: Omit<RecentSearchEntry, 'id' | 'createdAt'>) {
     const recentEntry: RecentSearchEntry = {
@@ -974,18 +982,35 @@ export function BenchmarkFinderClient({
     setSaved(payload.items)
   }
 
-  async function loadMetadataDefinitions() {
+  async function loadMetadataDefinitions(): Promise<BenchmarkMetadataDefinition[]> {
     if (metadataDefinitionsLoaded) {
-      return
+      return metadataDefinitions
     }
 
-    setMetadataError(null)
-    const payload = await readJson<{ items: BenchmarkMetadataDefinition[] }>(await fetch('/api/benchmark/metadata', { cache: 'no-store' }))
-    setMetadataDefinitions(payload.items)
-    setMetadataDefinitionsLoaded(true)
+    if (metadataDefinitionsRequestRef.current) {
+      return metadataDefinitionsRequestRef.current
+    }
+
+    const request = (async () => {
+      setMetadataError(null)
+      const payload = await readJson<{ items: BenchmarkMetadataDefinition[] }>(await fetch('/api/benchmark/metadata', { cache: 'no-store' }))
+      setMetadataDefinitions(payload.items)
+      setMetadataDefinitionsLoaded(true)
+      return payload.items
+    })()
+
+    metadataDefinitionsRequestRef.current = request
+
+    try {
+      return await request
+    } finally {
+      if (metadataDefinitionsRequestRef.current === request) {
+        metadataDefinitionsRequestRef.current = null
+      }
+    }
   }
 
-  async function loadMetadataValues(metadataKey: string, nextSearchQuery?: string) {
+  async function loadMetadataValues(metadataKey: string, nextSearchQuery?: string, options?: { suppressGlobalError?: boolean }) {
     const remoteFiltering = shouldUseRemoteMetadataQuery(metadataKey)
     const normalizedQuery = (nextSearchQuery ?? metadataValueSearchByKey[metadataKey] ?? '').trim()
     const filters = buildSearchFilters(selectedFilters).filter((filter) => filter.metadataKey !== metadataKey)
@@ -1008,16 +1033,13 @@ export function BenchmarkFinderClient({
       return
     }
 
-    if (current?.status === 'ready'
-      && current.filterSignature === filterSignature
-      && (!remoteFiltering || current.query === normalizedQuery)) {
+    if (shouldReuseMetadataValueState(current, filterSignature, normalizedQuery)) {
       console.info(`[METADATA_PERF] key=${metadataKey} cacheHit=true values=${current.items.length}`)
       return
     }
 
-    if (current?.status === 'loading'
-      && current.filterSignature === filterSignature
-      && (!remoteFiltering || current.query === normalizedQuery)) {
+    const requestKey = buildMetadataValueRequestKey(metadataKey, filterSignature, normalizedQuery)
+    if (isDuplicateMetadataValueRequest(metadataValueRequestKeysRef.current[metadataKey], requestKey)) {
       return
     }
 
@@ -1025,6 +1047,7 @@ export function BenchmarkFinderClient({
     metadataAbortControllersRef.current[metadataKey]?.abort()
     const controller = new AbortController()
     metadataAbortControllersRef.current[metadataKey] = controller
+    metadataValueRequestKeysRef.current[metadataKey] = requestKey
     const startedAt = performance.now()
 
     setMetadataValuesByKey((previous) => ({
@@ -1041,13 +1064,13 @@ export function BenchmarkFinderClient({
     }))
 
     try {
-      const params = new URLSearchParams({ filters: filterSignature })
-      if (remoteFiltering) {
-        params.set('q', normalizedQuery)
-        params.set('limit', String(MAX_METADATA_VISIBLE_ITEMS))
-      }
-
-      const payload = await readJson<MetadataValuesResponse>(await fetch(`/api/benchmark/metadata/${encodeURIComponent(metadataKey)}/values?${params.toString()}`, {
+      const payload = await readJson<MetadataValuesResponse>(await fetch(buildMetadataValuesRequestPath({
+        metadataKey,
+        filterSignature,
+        remoteFiltering,
+        query: normalizedQuery,
+        limit: MAX_METADATA_VISIBLE_ITEMS,
+      }), {
         cache: 'no-store',
         signal: controller.signal,
       }))
@@ -1085,12 +1108,46 @@ export function BenchmarkFinderClient({
           filterSignature,
         },
       }))
-      setMetadataError(resolveErrorMessage('metadata', locale, error, t))
+        if (!options?.suppressGlobalError) {
+          setMetadataError(resolveErrorMessage('metadata', locale, error, t))
+        }
     } finally {
       if (metadataAbortControllersRef.current[metadataKey] === controller) {
         delete metadataAbortControllersRef.current[metadataKey]
       }
+      if (metadataValueRequestKeysRef.current[metadataKey] === requestKey) {
+        delete metadataValueRequestKeysRef.current[metadataKey]
+      }
     }
+  }
+
+  function prepareMetadataInBackground() {
+    if (metadataPreparationPromiseRef.current) {
+      return metadataPreparationPromiseRef.current
+    }
+
+    const request = prepareAdvancedMetadata({
+      metadataDefinitionsLoaded,
+      metadataDefinitions,
+      loadMetadataDefinitions,
+      prewarmMetadataValue: (metadataKey) => loadMetadataValues(metadataKey, undefined, { suppressGlobalError: true }),
+    })
+      .then((result) => {
+        console.info(
+          `[METADATA_PREFETCH] definitionsLoaded=true prewarmedFacetsReady=${result.prewarmedKeys.length} prewarmTargets=${result.prewarmKeys.length} prewarmFailures=${result.failedKeys.length}`,
+        )
+      })
+      .catch((error: unknown) => {
+        console.warn('[METADATA_PREFETCH_FAILED]', error)
+      })
+      .finally(() => {
+        if (metadataPreparationPromiseRef.current === request) {
+          metadataPreparationPromiseRef.current = null
+        }
+      })
+
+    metadataPreparationPromiseRef.current = request
+    return request
   }
 
   function queueMetadataValueLoad(metadataKey: string, nextSearchQuery?: string) {
@@ -1789,6 +1846,10 @@ export function BenchmarkFinderClient({
   }, [])
 
   useEffect(() => {
+    void prepareMetadataInBackground()
+  }, [locale])
+
+  useEffect(() => {
     startSavedTransition(() => {
       loadSavedBenchmarks().catch((loadError: unknown) => setSavedError(resolveErrorMessage('saved', locale, loadError, t)))
     })
@@ -1877,14 +1938,14 @@ export function BenchmarkFinderClient({
 
         const interactiveAt = performance.now()
         console.info(
-          `[ADVANCED_PERF] interactiveMs=${Math.round(interactiveAt - startedAt)} definitionsLoaded=${metadataDefinitionsLoaded} featuredFilters=${featuredDefinitions.length} searchInputReady=${Boolean(advancedInputRef.current)}`,
+          `[ADVANCED_PERF] interactiveMs=${Math.round(interactiveAt - startedAt)} definitionsLoaded=${metadataDefinitionsLoaded} prewarmedFacetsReady=${prewarmedFacetsReady} featuredFilters=${featuredDefinitions.length} searchInputReady=${Boolean(advancedInputRef.current)}`,
         )
         advancedOpenLoggedRef.current = true
       })
     })
 
     return () => cancelAnimationFrame(frame)
-  }, [featuredDefinitions.length, metadataDefinitionsLoaded, mode, searchSurfaceMode])
+  }, [featuredDefinitions.length, metadataDefinitionsLoaded, mode, prewarmedFacetsReady, searchSurfaceMode])
 
   const visibleResults = results.slice(0, visibleResultCount)
   const hasPreviewState = Object.keys(previewStates).length > 0
