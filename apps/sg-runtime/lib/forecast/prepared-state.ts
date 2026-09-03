@@ -17,6 +17,7 @@ import {
 } from '@/lib/forecast/rolling-daily-maintenance'
 import type { ForecastPreparedState, ForecastPreparedVariant } from '@/lib/forecast/capability-resolver'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
+import { selectLatestCurrentForecastMonthlyTrainingPayload } from '@/lib/forecast/live-market-input'
 
 const MONTHLY_TARGETS = ['END_OF_PERIOD', 'MONTHLY_AVERAGE'] as const
 
@@ -61,20 +62,40 @@ export async function readForecastPreparedVariants(
     : [artifactFrequency]
 
   const monthlyCandidates = MONTHLY_TARGETS.map((targetBasis) => {
-    const payload = buildLiveForecastBridgePayloadFromHistory(seriesId, history, {
+    const currentPayload = selectLatestCurrentForecastMonthlyTrainingPayload(buildLiveForecastBridgePayloadFromHistory(seriesId, history, {
       targetBasis,
       targetCadence,
       now: options.now,
-    })
+      continuityPolicy: targetCadence === 'MONTHLY' ? 'ALLOW_GAPS' : 'REQUIRE_FULL',
+    }))
+    const historicalPayload = (() => {
+      try {
+        return buildLiveForecastBridgePayloadFromHistory(seriesId, history, {
+          targetBasis,
+          targetCadence,
+          now: options.now,
+        })
+      } catch {
+        return null
+      }
+    })()
+
     return {
       targetBasis,
-      historyFingerprints: {
-        legacy: buildForecastHistoryFingerprint(payload.history),
+      currentHistoryFingerprints: {
+        legacy: buildForecastHistoryFingerprint(currentPayload.history),
         cadence: buildForecastHistoryFingerprint({
-          ...payload.history,
+          ...currentPayload.history,
           cadence: { sourceFrequency, targetCadence },
         }),
       },
+      historicalHistoryFingerprints: historicalPayload ? {
+        legacy: buildForecastHistoryFingerprint(historicalPayload.history),
+        cadence: buildForecastHistoryFingerprint({
+          ...historicalPayload.history,
+          cadence: { sourceFrequency, targetCadence },
+        }),
+      } : null,
     }
   })
   const rollingHistory = {
@@ -120,8 +141,10 @@ export async function readForecastPreparedVariants(
 
       variants.push({
         identity,
-        current: stateForRun(current, candidate.historyFingerprints),
-        historical: stateForRun(historical, candidate.historyFingerprints),
+        current: stateForRun(current, candidate.currentHistoryFingerprints),
+        historical: candidate.historicalHistoryFingerprints
+          ? stateForRun(historical, candidate.historicalHistoryFingerprints)
+          : 'NOT_PREPARED',
       })
     }
   }

@@ -144,7 +144,12 @@ export function buildCurrentHorizonConfigurationId(
 export function buildLiveForecastBridgePayloadFromHistory(
   seriesId: string,
   history: BenchmarkHistoricalSeriesResult,
-  options: { now?: Date; targetBasis?: ForecastTargetBasis; targetCadence?: ForecastTargetCadence } = {},
+  options: {
+    now?: Date
+    targetBasis?: ForecastTargetBasis
+    targetCadence?: ForecastTargetCadence
+    continuityPolicy?: 'REQUIRE_FULL' | 'ALLOW_GAPS'
+  } = {},
 ): LiveForecastBridgePayload {
   if (history.providerSeries.providerSeriesId !== seriesId) {
     throw new Error(`Exact series integrity violated for ${seriesId}.`)
@@ -155,12 +160,25 @@ export function buildLiveForecastBridgePayloadFromHistory(
     throw new Error('The period forecast bridge does not support POINT_IN_TIME targets.')
   }
   const targetCadence = options.targetCadence ?? 'MONTHLY'
+  const continuityPolicy = options.continuityPolicy ?? 'REQUIRE_FULL'
   const sourceFrequency = normalizeForecastSourceFrequency(history.frequency)
   const canonical = sourceFrequency === 'DAILY' && targetCadence === 'MONTHLY'
-    ? canonicalizeDailyMarketPriceHistory(history, targetBasis, options)
+    ? canonicalizeDailyMarketPriceHistory(history, targetBasis, {
+        now: options.now,
+        continuityPolicy,
+      })
     : sourceFrequency === 'WEEKLY' && targetCadence === 'MONTHLY' && targetBasis === 'END_OF_PERIOD'
-      ? canonicalizeProvenanceQualifiedWeeklyEndOfPeriod(history, options)
-    : canonicalizeProvenanceQualifiedNativePeriod(history, targetBasis, targetCadence, options)
+      ? canonicalizeProvenanceQualifiedWeeklyEndOfPeriod(history, {
+          now: options.now,
+          continuityPolicy,
+        })
+      : sourceFrequency === 'MONTHLY' && targetCadence === 'MONTHLY'
+        ? canonicalizeProvenanceQualifiedNativePeriod(history, targetBasis, targetCadence, {
+            now: options.now,
+          })
+        : canonicalizeProvenanceQualifiedNativePeriod(history, targetBasis, targetCadence, {
+            now: options.now,
+          })
   const firstPoint = canonical.historical[0]
   const lastPoint = canonical.historical[canonical.historical.length - 1]
 
@@ -220,7 +238,12 @@ export function buildLiveForecastBridgePayloadFromHistory(
 
 export async function loadLiveForecastBridgePayload(
   seriesId: string,
-  options: { now?: Date; targetBasis?: ForecastTargetBasis; targetCadence?: ForecastTargetCadence } = {},
+  options: {
+    now?: Date
+    targetBasis?: ForecastTargetBasis
+    targetCadence?: ForecastTargetCadence
+    continuityPolicy?: 'REQUIRE_FULL' | 'ALLOW_GAPS'
+  } = {},
 ) {
   const resolved = await resolveBenchmarkHistoricalSeries(seriesId, 'ALL')
   const sourceFrequency = normalizeForecastSourceFrequency(resolved.history.frequency)

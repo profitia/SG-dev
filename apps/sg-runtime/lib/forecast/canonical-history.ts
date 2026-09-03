@@ -446,7 +446,7 @@ export function canonicalizeProvenanceQualifiedNativePeriod(
 export function canonicalizeDailyMarketPriceHistory(
   history: BenchmarkHistoricalSeriesResult,
   targetBasis: ForecastTargetBasis,
-  options: { now?: Date } = {},
+  options: { now?: Date; continuityPolicy?: MonthlyContinuityPolicy } = {},
 ): DailyCanonicalMonthlySeries {
   if (targetBasis === 'END_OF_PERIOD') {
     return canonicalizeDailyMarketPriceToEndOfPeriod(history, options)

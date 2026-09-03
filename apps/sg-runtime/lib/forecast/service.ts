@@ -935,24 +935,50 @@ async function prepareExecutionContext(
     return null
   }
 
-  const payload = await loadLiveForecastBridgePayload(input.seriesId, {
+  const currentBasePayload = await loadLiveForecastBridgePayload(input.seriesId, {
     targetBasis: input.targetBasis,
     targetCadence: input.targetCadence,
+    continuityPolicy: input.targetCadence === 'MONTHLY' || input.targetCadence === undefined ? 'ALLOW_GAPS' : 'REQUIRE_FULL',
   })
-  if (!payload) {
+  if (!currentBasePayload) {
     return null
   }
 
-  const currentPayload = selectLatestCurrentForecastMonthlyTrainingPayload(payload)
+  const currentPayload = selectLatestCurrentForecastMonthlyTrainingPayload(currentBasePayload)
 
   return {
     exportHistory(mode = 'verification') {
-      return executePreparedLiveForecastBridge(
-        configuration,
-        mode === 'current' ? currentPayload : payload,
-        'history',
-        input.seriesId,
-      ) as Promise<ForecastHistoryBridgeResponse>
+      if (mode === 'current') {
+        return executePreparedLiveForecastBridge(
+          configuration,
+          currentPayload,
+          'history',
+          input.seriesId,
+        ) as Promise<ForecastHistoryBridgeResponse>
+      }
+
+      return (async () => {
+        const verificationPayload = await loadLiveForecastBridgePayload(input.seriesId, {
+          targetBasis: input.targetBasis,
+          targetCadence: input.targetCadence,
+        })
+        if (!verificationPayload) {
+          return {
+            status: 'UNSUPPORTED',
+            reason: `Forecast targetBasis ${input.targetBasis} requires an implemented lawful source adapter.`,
+            seriesId: input.seriesId,
+            supportedSeriesIds: [input.seriesId],
+            supportedModels: [...USER_FACING_FORECAST_MODELS],
+          } satisfies ForecastBridgeUnsupported
+        }
+
+        return executePreparedLiveForecastBridge(
+          configuration,
+          verificationPayload,
+          'history',
+          input.seriesId,
+        ) as Promise<ForecastHistoryBridgeResponse>
+      })()
     },
     exportCurrent(modelId) {
       return executePreparedLiveForecastBridge(
@@ -964,13 +990,29 @@ async function prepareExecutionContext(
       ) as Promise<ForecastCurrentBridgeResponse>
     },
     exportVerification(modelId) {
-      return executePreparedLiveForecastBridge(
-        configuration,
-        payload,
-        'verification',
-        input.seriesId,
-        modelId,
-      ) as Promise<ForecastVerificationBridgeResponse>
+      return (async () => {
+        const verificationPayload = await loadLiveForecastBridgePayload(input.seriesId, {
+          targetBasis: input.targetBasis,
+          targetCadence: input.targetCadence,
+        })
+        if (!verificationPayload) {
+          return {
+            status: 'UNSUPPORTED',
+            reason: `Forecast targetBasis ${input.targetBasis} requires an implemented lawful source adapter.`,
+            seriesId: input.seriesId,
+            supportedSeriesIds: [input.seriesId],
+            supportedModels: [...USER_FACING_FORECAST_MODELS],
+          } satisfies ForecastBridgeUnsupported
+        }
+
+        return executePreparedLiveForecastBridge(
+          configuration,
+          verificationPayload,
+          'verification',
+          input.seriesId,
+          modelId,
+        ) as Promise<ForecastVerificationBridgeResponse>
+      })()
     },
   }
 }

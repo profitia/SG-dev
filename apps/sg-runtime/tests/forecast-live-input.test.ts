@@ -5,6 +5,7 @@ import type { BenchmarkHistoricalSeriesResult } from '../lib/benchmark/contracts
 import { buildForecastHistoryFingerprint } from '../lib/forecast/service'
 import {
   buildLiveForecastBridgePayloadFromHistory,
+  selectLatestCurrentForecastMonthlyTrainingPayload,
 } from '../lib/forecast/live-market-input'
 
 function createDailyHistory(
@@ -235,4 +236,40 @@ test('generic Forecast input rejects mismatched provider series identity', () =>
       { date: '2026-01-02T00:00:00.000Z', value: 10 },
     ], 'different.series'),
   ), /exact series integrity/i)
+})
+
+test('current monthly training payload can be narrowed from a gap-tolerant lawful suffix without preserving ancient gaps', () => {
+  const payload = buildLiveForecastBridgePayloadFromHistory(
+    'gappy.monthly.series',
+    createDailyHistory([
+      { date: '2020-01-02T00:00:00.000Z', value: 10 },
+      { date: '2020-01-24T00:00:00.000Z', value: 11 },
+      { date: '2020-02-03T00:00:00.000Z', value: 12 },
+      { date: '2020-02-24T00:00:00.000Z', value: 13 },
+      { date: '2020-05-04T00:00:00.000Z', value: 20 },
+      { date: '2020-05-25T00:00:00.000Z', value: 21 },
+      { date: '2020-06-03T00:00:00.000Z', value: 22 },
+      { date: '2020-06-24T00:00:00.000Z', value: 23 },
+      { date: '2020-07-03T00:00:00.000Z', value: 24 },
+      { date: '2020-07-24T00:00:00.000Z', value: 25 },
+      { date: '2020-08-03T00:00:00.000Z', value: 26 },
+      { date: '2020-08-24T00:00:00.000Z', value: 27 },
+    ], 'gappy.monthly.series'),
+    {
+      now: new Date('2020-09-15T00:00:00.000Z'),
+      continuityPolicy: 'ALLOW_GAPS',
+    },
+  )
+
+  const narrowed = selectLatestCurrentForecastMonthlyTrainingPayload(payload)
+
+  assert.deepEqual(narrowed.execution.historicalPeriodStarts, [
+    '2020-05-01T00:00:00.000Z',
+    '2020-06-01T00:00:00.000Z',
+    '2020-07-01T00:00:00.000Z',
+    '2020-08-01T00:00:00.000Z',
+  ])
+  assert.equal(narrowed.history.start, '2020-05-01T00:00:00.000Z')
+  assert.equal(narrowed.history.end, '2020-08-01T00:00:00.000Z')
+  assert.equal(narrowed.history.observations, 4)
 })
