@@ -275,6 +275,168 @@ test('displayed current forecast stays on the chart until the requested identity
   }), null)
 })
 
+test('displayed current forecast switches exactly Naive to ARIMA to Naive without blanking once both identities are renderable', () => {
+  const naive: BenchmarkForecastCurrentAvailableResult = {
+    status: 'AVAILABLE',
+    seriesId: 'wocaes0074',
+    modelId: 'naive',
+    targetBasis: 'POINT_IN_TIME',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+    displayName: 'Brent',
+    description: null,
+    methodVersion: 'rolling-daily-point-in-time-v1',
+    lineage: {
+      inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+      inputRunId: null,
+      sourceSeriesId: 'wocaes0074',
+      sourceFrequency: 'DAILY',
+      historyFingerprint: 'history-naive',
+      preparation: null,
+    },
+    history: {
+      frequency: 'DAILY',
+      start: '2026-01-01',
+      end: '2026-09-01',
+      observations: 200,
+    },
+    forecastOrigin: '2026-09-01',
+    currentForecast: {
+      '1M': {
+        horizon: '1M',
+        horizonSteps: 1,
+        forecastDate: '2026-10-01',
+        forecastValue: 72,
+      },
+    },
+    rollingDailySnapshot: {
+      productionMethod: 'ROLLING_DAILY_POINT_IN_TIME',
+      contractVersion: '1',
+      status: 'AVAILABLE',
+      benchmark: {
+        benchmarkId: 'wocaes0074',
+        unit: null,
+        currency: null,
+        provider: null,
+        providerSeriesId: 'wocaes0074',
+        displayName: 'Brent',
+        frequency: 'DAILY',
+      },
+      model: { id: 'naive', selectedCandidate: null },
+      origin: { date: '2026-09-01', value: 71 },
+      forecastMethod: { id: 'ROLLING_DAILY_POINT_IN_TIME', version: 'rolling-daily-point-in-time-v1' },
+      maxHorizonMonths: 12,
+      audit: {
+        generatedAt: '2026-09-01T00:00:00.000Z',
+        inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+        sourceHistoryFingerprint: 'history-naive',
+        sourceLatestObservationDate: '2026-09-01',
+        calendarProjectionMode: 'OBSERVED_WEEKDAY_SET_V1',
+        projectionCalendarStrategy: 'OBSERVED_WEEKDAY_SET_V1',
+        technicalMinimumTrainingObservations: 60,
+        methodologicalTrainingEligibilityStatus: 'OPEN_REQUIRES_CROSS_BENCHMARK_VALIDATION',
+        calibrationUpdatedAt: null,
+        calibrationLastResidualAvailabilityDate: null,
+      },
+      anchors: [],
+      path: [
+        {
+          date: '2026-09-02',
+          pointForecast: 72,
+          band: { status: 'NOT_AVAILABLE', reasonCode: 'CALIBRATION_NOT_AVAILABLE', source: null, lower: null, upper: null },
+        },
+      ],
+      calibration: {
+        availabilityStatus: 'NOT_AVAILABLE',
+        freshnessStatus: null,
+        quantileConvention: 'HF7_LINEAR_INTERPOLATION',
+        coverageLabel: '80% empirical prediction band',
+        methodologicalMinimumStatus: 'OPEN_REQUIRES_CROSS_BENCHMARK_VALIDATION',
+        updatedAt: null,
+        processedThrough: null,
+        lastResidualAvailabilityDate: null,
+      },
+      warnings: [],
+    },
+  }
+
+  const naiveSnapshot = naive.rollingDailySnapshot
+  if (!naiveSnapshot) {
+    throw new Error('Expected naive rolling daily snapshot fixture')
+  }
+
+  const arima: BenchmarkForecastCurrentAvailableResult = {
+    ...naive,
+    modelId: 'arima',
+    lineage: {
+      ...naive.lineage,
+      historyFingerprint: 'history-arima',
+    },
+    currentForecast: {
+      '1M': {
+        horizon: '1M',
+        horizonSteps: 1,
+        forecastDate: '2026-10-01',
+        forecastValue: 75,
+      },
+    },
+    rollingDailySnapshot: {
+      ...naiveSnapshot,
+      model: { id: 'arima', selectedCandidate: 'ARIMA(2,1,2)' },
+      audit: {
+        ...naiveSnapshot.audit,
+        sourceHistoryFingerprint: 'history-arima',
+      },
+      path: [
+        {
+          date: '2026-09-02',
+          pointForecast: 75,
+          band: { status: 'NOT_AVAILABLE', reasonCode: 'CALIBRATION_NOT_AVAILABLE', source: null, lower: null, upper: null },
+        },
+      ],
+    },
+  }
+
+  const displayedArima = resolveDisplayedRenderableCurrentResult({
+    showForecast: true,
+    requestedIdentity: {
+      seriesId: 'wocaes0074',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+    },
+    requestedResult: arima,
+    displayedResult: naive,
+  })
+
+  const displayedNaiveAgain = resolveDisplayedRenderableCurrentResult({
+    showForecast: true,
+    requestedIdentity: {
+      seriesId: 'wocaes0074',
+      modelId: 'naive',
+      targetBasis: 'POINT_IN_TIME',
+    },
+    requestedResult: naive,
+    displayedResult: displayedArima,
+  })
+
+  const displayedArimaAgain = resolveDisplayedRenderableCurrentResult({
+    showForecast: true,
+    requestedIdentity: {
+      seriesId: 'wocaes0074',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+    },
+    requestedResult: arima,
+    displayedResult: displayedNaiveAgain,
+  })
+
+  assert.equal(displayedArima, arima)
+  assert.equal(displayedNaiveAgain, naive)
+  assert.equal(displayedArimaAgain, arima)
+  assert.notEqual(displayedArima, null)
+  assert.notEqual(displayedNaiveAgain, null)
+})
+
 test('forecast controls preserve the requested labels and presets', () => {
   assert.deepEqual(
     ['naive', 'damped_holt', 'ets', 'arima'].map((model) => forecastModelLabel('en', model as 'naive' | 'damped_holt' | 'ets' | 'arima')),

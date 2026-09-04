@@ -69,6 +69,10 @@ type PersistedArtifactCheckResult = {
   historyFingerprint: string | null
 }
 
+type AvailableCurrentResult = Extract<BenchmarkForecastCurrentResult, { status: 'AVAILABLE' }>
+type AvailableVerificationResult = Extract<BenchmarkForecastVerificationResult, { status: 'AVAILABLE' }>
+type ExactReadIdentity = Pick<ForecastAcceptanceIdentity, 'seriesId' | 'modelId' | 'targetBasis' | 'targetSemantics' | 'methodId' | 'methodVersion'>
+
 type AcceptanceMatrixDependencies = {
   readCapability: (input: BenchmarkForecastCurrentPreparationRequest) => Promise<InteractiveForecastCapabilityResult>
   prepareCurrent: (input: BenchmarkForecastCurrentPreparationRequest) => Promise<BenchmarkForecastCurrentPreparationResult>
@@ -198,6 +202,49 @@ function capabilityAllowsMatrixEvaluation(capability: InteractiveForecastCapabil
     || capability.status === 'READY'
     || capability.status === 'PREPARATION_REQUIRED'
     || capability.status === 'NOT_PREPARED'
+}
+
+function resolveReadIdentityMismatch(
+  expected: ExactReadIdentity,
+  actual: ExactReadIdentity,
+) {
+  const mismatch = ([
+    ['seriesId', expected.seriesId, actual.seriesId],
+    ['modelId', expected.modelId, actual.modelId],
+    ['targetBasis', expected.targetBasis, actual.targetBasis],
+    ['targetSemantics', expected.targetSemantics, actual.targetSemantics],
+    ['methodId', expected.methodId, actual.methodId],
+    ['methodVersion', expected.methodVersion, actual.methodVersion],
+  ] as const).find(([, expectedValue, actualValue]) => expectedValue !== actualValue)
+
+  if (!mismatch) {
+    return null
+  }
+
+  const [field, expectedValue, actualValue] = mismatch
+  return `Expected ${field}=${String(expectedValue)} but read ${String(actualValue)}.`
+}
+
+function resolvePersistedFingerprintMismatch(
+  persistedHistoryFingerprint: string | null,
+  readHistoryFingerprint: string,
+) {
+  if (!persistedHistoryFingerprint || persistedHistoryFingerprint === readHistoryFingerprint) {
+    return null
+  }
+
+  return `Persisted history fingerprint ${persistedHistoryFingerprint} does not match canonical read fingerprint ${readHistoryFingerprint}.`
+}
+
+function resolveCurrentStaleFingerprint(
+  current: AvailableCurrentResult,
+  persistedHistoryFingerprint: string | null,
+) {
+  if (current.freshness?.status === 'STALE') {
+    return `Current forecast freshness is STALE: ${current.freshness.reason ?? 'UNKNOWN'} (snapshot=${current.freshness.snapshotSourceHistoryFingerprint ?? 'null'}, current=${current.freshness.currentSourceHistoryFingerprint ?? 'null'}).`
+  }
+
+  return resolvePersistedFingerprintMismatch(persistedHistoryFingerprint, current.lineage.historyFingerprint)
 }
 
 async function checkPersistedCurrentArtifact(
@@ -478,8 +525,32 @@ export function createForecastAcceptanceMatrixService(
         }
       }
 
-      if (!isRenderableCurrentResult(current)) {
-        const availableCurrent = current as Extract<BenchmarkForecastCurrentResult, { status: 'AVAILABLE' }>
+      const availableCurrent = current as AvailableCurrentResult
+      const currentIdentityMismatch = resolveReadIdentityMismatch(identityBase, availableCurrent)
+      if (currentIdentityMismatch) {
+        return {
+          identity: { ...identityBase, kind: 'CURRENT', historyFingerprint: availableCurrent.lineage.historyFingerprint, verificationHorizon: null },
+          state: 'FAIL',
+          failingLayer: 'DASHBOARD_ADAPTER',
+          reasonCode: 'IDENTITY_MISMATCH',
+          diagnostic: currentIdentityMismatch,
+          preparation: buildPreparation(Boolean(prepareEvidence), prepareEvidence?.prepareStatus ?? null, Boolean(prepareEvidence)),
+        }
+      }
+
+      const currentStaleFingerprint = resolveCurrentStaleFingerprint(availableCurrent, persisted.historyFingerprint)
+      if (currentStaleFingerprint) {
+        return {
+          identity: { ...identityBase, kind: 'CURRENT', historyFingerprint: availableCurrent.lineage.historyFingerprint, verificationHorizon: null },
+          state: 'FAIL',
+          failingLayer: 'POSTGRES_ARTIFACT',
+          reasonCode: 'STALE_FINGERPRINT',
+          diagnostic: currentStaleFingerprint,
+          preparation: buildPreparation(Boolean(prepareEvidence), prepareEvidence?.prepareStatus ?? null, Boolean(prepareEvidence)),
+        }
+      }
+
+      if (!isRenderableCurrentResult(availableCurrent)) {
         return {
           identity: { ...identityBase, kind: 'CURRENT', historyFingerprint: availableCurrent.lineage.historyFingerprint, verificationHorizon: null },
           state: 'FAIL',
@@ -490,7 +561,7 @@ export function createForecastAcceptanceMatrixService(
         }
       }
 
-      const renderableCurrent = current as Extract<BenchmarkForecastCurrentResult, { status: 'AVAILABLE' }>
+      const renderableCurrent = availableCurrent
 
       return {
         identity: { ...identityBase, kind: 'CURRENT', historyFingerprint: renderableCurrent.lineage.historyFingerprint, verificationHorizon: null },
@@ -568,6 +639,30 @@ export function createForecastAcceptanceMatrixService(
           failingLayer: 'CANONICAL_READ',
           reasonCode: verification.status === 'UNSUPPORTED' ? 'UNSUPPORTED_COMBINATION' : 'READ_NOT_AVAILABLE',
           diagnostic: verification.reason,
+          preparation: buildPreparation(Boolean(prepareEvidence), prepareEvidence?.prepareStatus ?? null, Boolean(prepareEvidence)),
+        }
+      }
+
+      const verificationIdentityMismatch = resolveReadIdentityMismatch(identityBase, verification)
+      if (verificationIdentityMismatch) {
+        return {
+          identity: { ...identityBase, kind: 'VERIFICATION', historyFingerprint: verification.lineage.historyFingerprint, verificationHorizon: horizon },
+          state: 'FAIL',
+          failingLayer: 'DASHBOARD_ADAPTER',
+          reasonCode: 'IDENTITY_MISMATCH',
+          diagnostic: verificationIdentityMismatch,
+          preparation: buildPreparation(Boolean(prepareEvidence), prepareEvidence?.prepareStatus ?? null, Boolean(prepareEvidence)),
+        }
+      }
+
+      const verificationStaleFingerprint = resolvePersistedFingerprintMismatch(persisted.historyFingerprint, verification.lineage.historyFingerprint)
+      if (verificationStaleFingerprint) {
+        return {
+          identity: { ...identityBase, kind: 'VERIFICATION', historyFingerprint: verification.lineage.historyFingerprint, verificationHorizon: horizon },
+          state: 'FAIL',
+          failingLayer: 'POSTGRES_ARTIFACT',
+          reasonCode: 'STALE_FINGERPRINT',
+          diagnostic: verificationStaleFingerprint,
           preparation: buildPreparation(Boolean(prepareEvidence), prepareEvidence?.prepareStatus ?? null, Boolean(prepareEvidence)),
         }
       }

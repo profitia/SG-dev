@@ -768,3 +768,78 @@ test('model and target switches preserve exact peer identity instead of reusing 
     'uscaes0302:ets:END_OF_PERIOD',
   ])
 })
+
+test('exact Naive to ARIMA to Naive switch-back rereads prepared identities without reprepare', async () => {
+  const calls: string[] = []
+
+  const fetcher = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const method = init?.method ?? 'GET'
+    const url = new URL(String(input), 'https://dashboard.example.invalid')
+    calls.push(`${method} ${url.pathname}?${url.searchParams.toString()}`)
+
+    if (url.pathname === '/api/benchmark-forecast/current/prepare') {
+      throw new Error('prepare route must not be called for prepared switch-back reads')
+    }
+
+    return new Response(JSON.stringify({
+      status: 'AVAILABLE',
+      seriesId: 'wocaes0074',
+      modelId: url.searchParams.get('model'),
+      targetBasis: 'POINT_IN_TIME',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      displayName: 'Brent',
+      description: null,
+      methodVersion: 'rolling-daily-point-in-time-v1',
+      lineage: {
+        inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+        inputRunId: null,
+        sourceSeriesId: 'wocaes0074',
+        sourceFrequency: 'DAILY',
+        historyFingerprint: `history-${url.searchParams.get('model')}`,
+        preparation: null,
+      },
+      history: { frequency: 'DAILY', start: '2026-01-01', end: '2026-09-01', observations: 200 },
+      forecastOrigin: '2026-09-01',
+      currentForecast: {
+        '1M': {
+          horizon: '1M',
+          horizonSteps: 1,
+          forecastDate: '2026-10-01',
+          forecastValue: url.searchParams.get('model') === 'arima' ? 75 : 72,
+        },
+      },
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }
+
+  const naiveFirst = await readPreparedCurrentForecastThroughDashboard(fetcher, {
+    seriesId: 'wocaes0074',
+    modelId: 'naive',
+    targetBasis: 'POINT_IN_TIME',
+  })
+  const arima = await readPreparedCurrentForecastThroughDashboard(fetcher, {
+    seriesId: 'wocaes0074',
+    modelId: 'arima',
+    targetBasis: 'POINT_IN_TIME',
+  })
+  const naiveAgain = await readPreparedCurrentForecastThroughDashboard(fetcher, {
+    seriesId: 'wocaes0074',
+    modelId: 'naive',
+    targetBasis: 'POINT_IN_TIME',
+  })
+
+  assert.equal(naiveFirst.status, 'AVAILABLE')
+  assert.equal(arima.status, 'AVAILABLE')
+  assert.equal(naiveAgain.status, 'AVAILABLE')
+  assert.equal(naiveFirst.modelId, 'naive')
+  assert.equal(arima.modelId, 'arima')
+  assert.equal(naiveAgain.modelId, 'naive')
+  assert.deepEqual(calls, [
+    'GET /api/benchmark-forecast/current?seriesId=wocaes0074&model=naive&targetBasis=POINT_IN_TIME',
+    'GET /api/benchmark-forecast/current?seriesId=wocaes0074&model=arima&targetBasis=POINT_IN_TIME',
+    'GET /api/benchmark-forecast/current?seriesId=wocaes0074&model=naive&targetBasis=POINT_IN_TIME',
+  ])
+})
