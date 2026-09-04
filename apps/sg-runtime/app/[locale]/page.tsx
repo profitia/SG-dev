@@ -199,8 +199,6 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
                 <h2 className="text-base font-semibold text-slate-950">{t('porrDemo.plannedTopicsTitle')}</h2>
                 <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-slate-950 marker:text-slate-950">
                   <li>{t('porrDemo.plannedTopicsItemOne')}</li>
-                  <li>{t('porrDemo.plannedTopicsItemTwo')}</li>
-                  <li>{t('porrDemo.plannedTopicsItemThree')}</li>
                 </ul>
               </div>
 

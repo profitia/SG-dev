@@ -200,7 +200,7 @@ const ACCURACY_TOOLTIP_ARM_DELAY_MS = 140
 const ACCURACY_MARKER_AXIS_CLEARANCE = 14
 const ACCURACY_MARKER_TOP_CLEARANCE = 12
 const EDGE_TICK_LABEL_OFFSET = 8
-const RANGE_PRESETS: RangePreset[] = ['3M', '6M', '1Y', '3Y', '5Y', 'ALL']
+export const RANGE_PRESETS: RangePreset[] = ['3M', '6M', '1Y', '3Y', '5Y', 'ALL']
 const CLIENT_SERIES_CACHE_TTL_MS = 30_000
 
 type ChartLayout = {
@@ -429,7 +429,7 @@ function buildForecastLayerCacheKey(
   return JSON.stringify({ locale, seriesId, model, targetBasis, layer })
 }
 
-function forecastModelLabel(locale: Locale, model: ForecastPortfolioModelId) {
+export function forecastModelLabel(locale: Locale, model: ForecastPortfolioModelId) {
   switch (model) {
     case 'naive':
       return 'Naive'
@@ -442,7 +442,7 @@ function forecastModelLabel(locale: Locale, model: ForecastPortfolioModelId) {
   }
 }
 
-function forecastTargetBasisLabel(locale: Locale, targetBasis: ForecastTargetBasis) {
+export function forecastTargetBasisLabel(locale: Locale, targetBasis: ForecastTargetBasis) {
   switch (targetBasis) {
     case 'POINT_IN_TIME':
       return locale === 'pl' ? 'Dzienna' : 'Daily'
@@ -653,6 +653,64 @@ export function resolveForecastVerificationUnavailableState(
     title: messages.verificationUnavailable,
     message: result.reason,
   }
+}
+
+function isExactSelectedVerificationResult(
+  result: BenchmarkForecastVerificationResult | null,
+  identity: {
+    seriesId: string
+    modelId: ForecastPortfolioModelId
+    targetBasis: ForecastTargetBasis
+  },
+) {
+  return isAvailableVerificationResult(result)
+    && result.seriesId === identity.seriesId
+    && result.modelId === identity.modelId
+    && result.targetBasis === identity.targetBasis
+}
+
+export function resolveForecastVerificationBannerState(options: {
+  forecastVerificationState: LoadState
+  forecastVerificationResult: BenchmarkForecastVerificationResult | null
+  forecastVerificationErrorState: UiLoadErrorState | null
+  selectedProgressiveVariant: {
+    verificationState: ProgressiveForecastPreparationState
+  } | null
+  identity: {
+    seriesId: string
+    modelId: ForecastPortfolioModelId
+    targetBasis: ForecastTargetBasis
+  }
+}): Extract<ProgressiveForecastPreparationState, 'PREPARING' | 'QUEUED'> | null {
+  const {
+    forecastVerificationState,
+    forecastVerificationResult,
+    forecastVerificationErrorState,
+    selectedProgressiveVariant,
+    identity,
+  } = options
+
+  if (!selectedProgressiveVariant) {
+    return null
+  }
+
+  if (forecastVerificationState === 'ready' || forecastVerificationErrorState) {
+    return null
+  }
+
+  if (isExactSelectedVerificationResult(forecastVerificationResult, identity)) {
+    return null
+  }
+
+  if (selectedProgressiveVariant.verificationState === 'PREPARING') {
+    return 'PREPARING'
+  }
+
+  if (selectedProgressiveVariant.verificationState === 'QUEUED') {
+    return 'QUEUED'
+  }
+
+  return null
 }
 
 function SearchableSelect({
@@ -2492,6 +2550,22 @@ export function RawDataView({
     targetBasis: selectedForecastTargetBasis,
   })
   const forecastCurrentDisplayState = resolveForecastCurrentDisplayState(forecastCurrentState, selectedProgressiveVariant)
+  const selectedForecastIdentity = benchmarkSeriesId
+    ? {
+        seriesId: benchmarkSeriesId,
+        modelId: forecastModel,
+        targetBasis: selectedForecastTargetBasis,
+      }
+    : null
+  const forecastVerificationBannerState = selectedForecastIdentity
+    ? resolveForecastVerificationBannerState({
+        forecastVerificationState,
+        forecastVerificationResult,
+        forecastVerificationErrorState,
+        selectedProgressiveVariant,
+        identity: selectedForecastIdentity,
+      })
+    : null
 
   useEffect(() => {
     if (!showForecast) {
@@ -3408,11 +3482,18 @@ export function RawDataView({
       return
     }
 
+    const selectedVerificationResultReady = isExactSelectedVerificationResult(forecastVerificationResult, {
+      seriesId: activeSeriesId,
+      modelId: forecastModel,
+      targetBasis: selectedForecastTargetBasis,
+    })
+
     if (
       selectedProgressiveVariant
       && selectedProgressiveVariant.verificationState !== 'READY'
       && selectedProgressiveVariant.verificationState !== 'UNSUPPORTED'
       && selectedProgressiveVariant.verificationState !== 'FAILED'
+      && !selectedVerificationResultReady
     ) {
       forecastVerificationAbortRef.current?.abort()
       setForecastVerificationState('loading')
@@ -3508,7 +3589,7 @@ export function RawDataView({
       cancelled = true
       controller.abort()
     }
-  }, [benchmarkSeriesId, forecastModel, forecastVerificationReloadNonce, isForecastPortfolioVariant, locale, selectedForecastTargetBasis, selectedProgressiveVariant?.verificationState, showForecast, showForecastVerification, t])
+  }, [benchmarkSeriesId, forecastModel, forecastVerificationReloadNonce, forecastVerificationResult, isForecastPortfolioVariant, locale, selectedForecastTargetBasis, selectedProgressiveVariant?.verificationState, showForecast, showForecastVerification, t])
 
   useEffect(() => {
     if (isBenchmarkMode) {
@@ -3662,14 +3743,14 @@ export function RawDataView({
               </div>
 
               <div className="control-check-row forecast-portfolio-controls">
-                <label className="control-check control-check-inline forecast-portfolio-toggle">
-                  <input type="checkbox" checked={showForecast} onChange={(event) => setShowForecast(event.target.checked)} />
-                  <span>{t('showForecast')}</span>
-                </label>
+                <div className="forecast-portfolio-row forecast-current-row">
+                  <label className="control-check control-check-inline forecast-portfolio-toggle">
+                    <input type="checkbox" checked={showForecast} onChange={(event) => setShowForecast(event.target.checked)} />
+                    <span>{t('showForecast')}</span>
+                  </label>
 
-                <div className={`control-block control-mode-group forecast-portfolio-group${showForecast ? '' : ' is-hidden'}`} aria-hidden={!showForecast}>
-                  <span className="control-group-label">{t('forecastModel')}</span>
-                  <div className="chart-range-buttons control-mode-buttons" role="group" aria-label={t('forecastModel')}>
+                  <div className={`control-block control-mode-group forecast-portfolio-group forecast-model-group${showForecast ? '' : ' is-hidden'}`} aria-hidden={!showForecast}>
+                    <div className="chart-range-buttons control-mode-buttons" role="group" aria-label={t('forecastModel')}>
                     {FORECAST_PORTFOLIO_MODELS.map((model) => {
                       const buttonMeta = buildForecastControlButtonMeta(
                         forecastModelLabel(locale, model),
@@ -3705,19 +3786,19 @@ export function RawDataView({
                         </button>
                       )
                     })}
+                    </div>
                   </div>
-                </div>
 
-                <div className={`control-block control-mode-group forecast-portfolio-group${showForecast ? '' : ' is-hidden'}`} aria-hidden={!showForecast}>
-                  <div className="control-label-with-help">
-                    <span className="control-group-label">{t('forecastTargetBasis')}</span>
-                    <InfoButton
-                      label={t('forecastTargetBasisInfoLabel')}
-                      lines={[t('forecastTargetBasisInfoLine1'), t('forecastTargetBasisInfoLine2')]}
-                      tabIndex={showForecast ? 0 : -1}
-                    />
-                  </div>
-                  <div className="chart-range-buttons control-mode-buttons" role="group" aria-label={t('forecastTargetBasis')}>
+                  <div className={`control-block control-mode-group forecast-portfolio-group forecast-target-basis-group${showForecast ? '' : ' is-hidden'}`} aria-hidden={!showForecast}>
+                    <div className="control-label-with-help">
+                      <span className="control-group-label">{t('forecastTargetBasis')}</span>
+                      <InfoButton
+                        label={t('forecastTargetBasisInfoLabel')}
+                        lines={[t('forecastTargetBasisInfoLine1'), t('forecastTargetBasisInfoLine2')]}
+                        tabIndex={showForecast ? 0 : -1}
+                      />
+                    </div>
+                    <div className="chart-range-buttons control-mode-buttons" role="group" aria-label={t('forecastTargetBasis')}>
                     {FORECAST_TARGET_BASES.map((targetBasis) => {
                       const buttonMeta = buildForecastControlButtonMeta(
                         forecastTargetBasisLabel(locale, targetBasis),
@@ -3753,45 +3834,48 @@ export function RawDataView({
                         </button>
                       )
                     })}
+                    </div>
                   </div>
                 </div>
 
-                <label className={`control-check control-check-inline forecast-portfolio-toggle${showForecast ? '' : ' is-hidden'}`} aria-hidden={!showForecast}>
-                  <input
-                    type="checkbox"
-                    checked={showForecast && showForecastVerification}
-                    disabled={!showForecast}
-                    onChange={(event) => setShowForecastVerification(event.target.checked)}
-                  />
-                  <span>{t('showForecastVerification')}</span>
-                </label>
-
-                <div
-                  className={`control-block control-mode-group control-horizon-group forecast-portfolio-group${showForecast && showForecastVerification ? '' : ' is-hidden'}`}
-                  aria-hidden={!(showForecast && showForecastVerification)}
-                >
-                  <div className="control-label-with-help">
-                    <span className="control-group-label">{t('verificationHorizon')}</span>
-                    <InfoButton
-                      label={t('verificationHorizonInfoLabel')}
-                      lines={[t('verificationHorizonInfoLine1'), t('verificationHorizonInfoLine2')]}
-                      tabIndex={showForecast && showForecastVerification ? 0 : -1}
+                <div className={`forecast-portfolio-row forecast-verification-row${showForecast ? '' : ' is-hidden'}`} aria-hidden={!showForecast}>
+                  <label className="control-check control-check-inline forecast-portfolio-toggle">
+                    <input
+                      type="checkbox"
+                      checked={showForecast && showForecastVerification}
+                      disabled={!showForecast}
+                      onChange={(event) => setShowForecastVerification(event.target.checked)}
                     />
-                  </div>
-                  <div className="chart-range-buttons control-mode-buttons" role="group" aria-label={t('verificationHorizon')}>
-                    {FORECAST_ACCURACY_HORIZONS.map((horizon) => (
-                      <button
-                        key={horizon}
-                        type="button"
-                        className={`chart-range-button${forecastAccuracyHorizon === horizon ? ' is-active' : ''}`}
-                        aria-pressed={forecastAccuracyHorizon === horizon}
-                        disabled={!(showForecast && showForecastVerification)}
+                    <span>{t('showForecastVerification')}</span>
+                  </label>
+
+                  <div
+                    className={`control-block control-mode-group control-horizon-group forecast-portfolio-group forecast-verification-group${showForecast && showForecastVerification ? '' : ' is-hidden'}`}
+                    aria-hidden={!(showForecast && showForecastVerification)}
+                  >
+                    <div className="control-label-with-help">
+                      <span className="control-group-label">{t('verificationHorizon')}</span>
+                      <InfoButton
+                        label={t('verificationHorizonInfoLabel')}
+                        lines={[t('verificationHorizonInfoLine1'), t('verificationHorizonInfoLine2')]}
                         tabIndex={showForecast && showForecastVerification ? 0 : -1}
-                        onClick={() => setForecastAccuracyHorizon(horizon)}
-                      >
-                        {`${horizon}M`}
-                      </button>
-                    ))}
+                      />
+                    </div>
+                    <div className="chart-range-buttons control-mode-buttons" role="group" aria-label={t('verificationHorizon')}>
+                      {FORECAST_ACCURACY_HORIZONS.map((horizon) => (
+                        <button
+                          key={horizon}
+                          type="button"
+                          className={`chart-range-button${forecastAccuracyHorizon === horizon ? ' is-active' : ''}`}
+                          aria-pressed={forecastAccuracyHorizon === horizon}
+                          disabled={!(showForecast && showForecastVerification)}
+                          tabIndex={showForecast && showForecastVerification ? 0 : -1}
+                          onClick={() => setForecastAccuracyHorizon(horizon)}
+                        >
+                          {`${horizon}M`}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -3912,10 +3996,10 @@ export function RawDataView({
             <p>{forecastErrorState.message}</p>
           </div>
         ) : null}
-        {isForecastPortfolioVariant && showForecast && showForecastVerification && selectedProgressiveVariant && forecastVerificationState !== 'ready' && ['PREPARING', 'QUEUED'].includes(selectedProgressiveVariant.verificationState) ? (
+        {isForecastPortfolioVariant && showForecast && showForecastVerification && forecastVerificationBannerState ? (
           <div className="callout" role="status" aria-live="polite">
-            <strong>{selectedProgressiveVariant.verificationState === 'PREPARING' ? t('verificationPreparing') : t('verificationQueued')}</strong>
-            <p>{selectedProgressiveVariant.verificationState === 'PREPARING' ? t('verificationPreparingHint') : t('verificationQueuedHint')}</p>
+            <strong>{forecastVerificationBannerState === 'PREPARING' ? t('verificationPreparing') : t('verificationQueued')}</strong>
+            <p>{forecastVerificationBannerState === 'PREPARING' ? t('verificationPreparingHint') : t('verificationQueuedHint')}</p>
           </div>
         ) : null}
         {isForecastPortfolioVariant && forecastVerificationErrorState ? (

@@ -111,25 +111,25 @@ body:has(.app-shell.is-embedded) .chart-header {
 html.preview-embedded .chart-actions,
 body.preview-embedded .chart-actions,
 body:has(.app-shell.is-embedded) .chart-actions {
-  width: 100%;
+  width: auto;
   flex: 0 0 auto;
-  align-items: stretch;
+  margin-left: auto;
+  align-items: flex-end;
   gap: 0.45rem;
 }
 
 html.preview-embedded .chart-range-buttons,
 body.preview-embedded .chart-range-buttons,
 body:has(.app-shell.is-embedded) .chart-range-buttons {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  width: 100%;
-  max-width: none;
+  display: flex;
+  flex-wrap: wrap;
+  width: auto;
+  max-width: min(100%, 28rem);
   overflow: visible;
-  flex-wrap: nowrap;
-  justify-content: stretch;
+  justify-content: flex-end;
   padding-bottom: 0;
   scrollbar-width: none;
-  gap: 0.3rem;
+  gap: 0.35rem;
 }
 
 .app-shell-brand {
@@ -474,12 +474,22 @@ input:focus-visible {
 }
 
 .forecast-portfolio-controls {
-  align-items: center;
-  gap: 0.8rem 1.2rem;
+  display: grid;
+  gap: 0.7rem;
+  align-items: start;
+  width: 100%;
 }
 
 .forecast-portfolio-controls .is-hidden {
   display: none;
+}
+
+.forecast-portfolio-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.7rem 1rem;
+  width: 100%;
 }
 
 .forecast-portfolio-controls .forecast-portfolio-toggle,
@@ -490,6 +500,8 @@ input:focus-visible {
 
 .forecast-portfolio-controls .forecast-portfolio-toggle {
   min-height: 2.5rem;
+  min-width: max-content;
+  align-self: center;
 }
 
 .forecast-portfolio-controls .forecast-portfolio-group {
@@ -498,6 +510,18 @@ input:focus-visible {
   align-items: flex-start;
   gap: 0.45rem;
   min-height: 2.5rem;
+}
+
+.forecast-current-row .forecast-model-group {
+  flex: 1 1 24rem;
+}
+
+.forecast-current-row .forecast-target-basis-group {
+  flex: 0 1 24rem;
+}
+
+.forecast-verification-row .forecast-verification-group {
+  flex: 0 1 auto;
 }
 
 .forecast-portfolio-controls .control-group-label,
@@ -515,12 +539,12 @@ input:focus-visible {
 .forecast-portfolio-controls .control-mode-buttons {
   align-items: center;
   justify-content: flex-start;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .forecast-portfolio-controls .chart-range-button {
   min-height: 2.5rem;
-  padding: 0.45rem 0.8rem;
+  padding: 0.42rem 0.72rem;
   text-align: left;
   white-space: normal;
 }
@@ -580,9 +604,9 @@ input:focus-visible {
 }
 
 .forecast-portfolio-controls .control-horizon-group {
-  align-self: center;
+  align-self: flex-start;
   min-height: 2.5rem;
-  gap: 0.7rem;
+  gap: 0.5rem 0.75rem;
 }
 
 .control-info-button {
@@ -2190,6 +2214,26 @@ body:has(.app-shell.is-embedded) .chart-reset-button {
     padding-bottom: 0;
   }
 
+  html.preview-embedded .chart-actions,
+  body.preview-embedded .chart-actions,
+  html:has(.app-shell.is-embedded) .chart-actions,
+  body:has(.app-shell.is-embedded) .chart-actions {
+    width: 100%;
+    align-items: flex-end;
+  }
+
+  html.preview-embedded .chart-range-buttons,
+  body.preview-embedded .chart-range-buttons,
+  html:has(.app-shell.is-embedded) .chart-range-buttons,
+  body:has(.app-shell.is-embedded) .chart-range-buttons {
+    width: auto;
+    max-width: 100%;
+    overflow: visible;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    padding-bottom: 0;
+  }
+
   .chart-surface {
     overflow-x: clip;
     overflow-y: visible;
@@ -2252,8 +2296,11 @@ body:has(.app-shell.is-embedded) .chart-reset-button {
   }
 
   .forecast-portfolio-controls {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .forecast-portfolio-row {
     gap: 0.75rem;
   }
 
