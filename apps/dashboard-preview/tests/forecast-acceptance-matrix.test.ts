@@ -180,6 +180,28 @@ test('matrix marks lawful exact current and verification identities as PASS', as
   assert.equal(monthlyVerification?.state, 'PASS')
 })
 
+test('matrix accepts live-shaped AVAILABLE capability truth when readiness is READY', async () => {
+  const service = createForecastAcceptanceMatrixService({
+    readCapability: async () => capability({ status: 'AVAILABLE' as never }),
+    prepareCurrent: async () => preparationResult(),
+    readCurrent: async () => currentResult(),
+    readVerification: async () => verificationResult(),
+    getPrisma: () => ({
+      forecastCurrentRun: { findFirst: async () => ({ status: 'AVAILABLE', historyFingerprint: 'fp-current', points: [{ forecastValue: 101 }] }) },
+      rollingDailyCurrentForecastSnapshot: { findFirst: async () => null },
+      forecastVerificationRun: { findFirst: async () => ({ status: 'AVAILABLE', historyFingerprint: 'fp-verification', metrics: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }], points: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }] }) },
+      rollingDailyVerificationRecord: { findMany: async () => [] },
+    } as never),
+  })
+
+  const report = await service.evaluateSeries('brent')
+  const monthlyCurrent = report.current.cells.find((cell) => cell.identity.modelId === 'naive' && cell.identity.targetBasis === 'MONTHLY_AVERAGE')
+  const monthlyVerification = report.verification.cells.find((cell) => cell.identity.modelId === 'naive' && cell.identity.targetBasis === 'MONTHLY_AVERAGE' && cell.identity.verificationHorizon === '1M')
+
+  assert.equal(monthlyCurrent?.state, 'PASS')
+  assert.equal(monthlyVerification?.state, 'PASS')
+})
+
 test('matrix returns UNSUPPORTED from capability without reading artifacts', async () => {
   let currentReads = 0
   let verificationReads = 0

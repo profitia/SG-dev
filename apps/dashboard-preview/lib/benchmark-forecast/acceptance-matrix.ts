@@ -193,6 +193,13 @@ function capabilityFailureReason(capability: InteractiveForecastCapabilityResult
   }
 }
 
+function capabilityAllowsMatrixEvaluation(capability: InteractiveForecastCapabilityResult) {
+  return capability.status === 'AVAILABLE'
+    || capability.status === 'READY'
+    || capability.status === 'PREPARATION_REQUIRED'
+    || capability.status === 'NOT_PREPARED'
+}
+
 async function checkPersistedCurrentArtifact(
   prisma: PrismaClientLike | null,
   seriesId: string,
@@ -425,7 +432,7 @@ export function createForecastAcceptanceMatrixService(
 
       const identityBase = resolveIdentityBase(seriesId, modelId, targetBasis, effectiveCapability.sourceFrequency)
 
-      if (effectiveCapability.status !== 'READY' && effectiveCapability.status !== 'PREPARATION_REQUIRED' && effectiveCapability.status !== 'NOT_PREPARED') {
+      if (!capabilityAllowsMatrixEvaluation(effectiveCapability)) {
         return {
           identity: { ...identityBase, kind: 'CURRENT', historyFingerprint: null, verificationHorizon: null },
           state: capabilityFailureState(effectiveCapability),
@@ -519,7 +526,7 @@ export function createForecastAcceptanceMatrixService(
 
       const identityBase = resolveIdentityBase(seriesId, modelId, targetBasis, effectiveCapability.sourceFrequency)
 
-      if (effectiveCapability.status !== 'READY' && effectiveCapability.status !== 'PREPARATION_REQUIRED' && effectiveCapability.status !== 'NOT_PREPARED') {
+      if (!capabilityAllowsMatrixEvaluation(effectiveCapability)) {
         return {
           identity: { ...identityBase, kind: 'VERIFICATION', historyFingerprint: null, verificationHorizon: horizon },
           state: capabilityFailureState(effectiveCapability),
