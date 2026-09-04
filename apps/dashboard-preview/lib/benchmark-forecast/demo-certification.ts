@@ -30,6 +30,7 @@ const DEFAULT_DEPLOYED_REVISION_ENV_KEYS = [
   'VERCEL_GIT_COMMIT_SHA',
   'NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA',
 ] as const
+const DEFAULT_BENCHMARK_TIMEOUT_MS = 75_000
 
 export type DemoCertificationMode = 'CERTIFY' | 'REVALIDATE'
 export type DemoCohortGroup = 'PRIMARY' | 'FALLBACK'
@@ -189,6 +190,7 @@ export type DemoCertificationReport = {
 
 type DemoCertificationDependencies = {
   now: () => string
+  benchmarkTimeoutMs: number
   cohort: readonly DemoCohortEntry[]
   resolveReleaseSnapshot: (cohort: readonly DemoCohortEntry[], mode: DemoCertificationMode) => DemoReleaseSnapshot
   readCapability: (input: BenchmarkForecastCurrentPreparationRequest) => Promise<InteractiveForecastCapabilityResult>
@@ -596,6 +598,32 @@ function createEnvironmentFailureBenchmark(
   }
 }
 
+async function withBenchmarkTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+): Promise<T> {
+  if (timeoutMs <= 0) {
+    return promise
+  }
+
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error(`Demo certification benchmark timed out after ${timeoutMs}ms.`))
+        }, timeoutMs)
+      }),
+    ])
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
+  }
+}
+
 export function getDefaultDemoCertificationCohort() {
   return [...DEFAULT_DEMO_COHORT]
 }
@@ -605,6 +633,7 @@ export function createDemoCertificationService(
 ) {
   const resolvedDependencies: DemoCertificationDependencies = {
     now: dependencies.now ?? (() => new Date().toISOString()),
+    benchmarkTimeoutMs: dependencies.benchmarkTimeoutMs ?? DEFAULT_BENCHMARK_TIMEOUT_MS,
     cohort: dependencies.cohort ?? DEFAULT_DEMO_COHORT,
     resolveReleaseSnapshot: dependencies.resolveReleaseSnapshot ?? defaultReleaseSnapshot,
     readCapability: dependencies.readCapability ?? readInteractiveForecastCapability,
@@ -637,6 +666,7 @@ export function createDemoCertificationService(
         const requiredModels = resolveRequiredModels(entry)
         const requiredVerificationHorizons = resolveRequiredHorizons(entry)
         try {
+          const benchmark = await withBenchmarkTimeout((async (): Promise<DemoBenchmarkCertification> => {
           const variants: DemoVariantPreparationRecord[] = []
 
           for (const modelId of requiredModels) {
@@ -753,7 +783,7 @@ export function createDemoCertificationService(
             releaseSnapshot.deployedRevision,
           )
 
-          benchmarks.push({
+          return {
             seriesId: entry.seriesId,
             benchmarkName: entry.benchmarkName,
             group: entry.group,
@@ -771,7 +801,10 @@ export function createDemoCertificationService(
             lastVerifiedAt: resolvedDependencies.now(),
             deployedRevision: releaseSnapshot.deployedRevision,
             fingerprintDigest,
-          })
+          }
+          })(), resolvedDependencies.benchmarkTimeoutMs)
+
+          benchmarks.push(benchmark)
         } catch (error) {
           const reason = error instanceof Error ? error.message : 'Demo certification environment is not ready.'
           benchmarks.push(createEnvironmentFailureBenchmark(

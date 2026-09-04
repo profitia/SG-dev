@@ -296,11 +296,13 @@ function createService(options: {
   currentResolver?: (input: BenchmarkForecastCurrentPreparationRequest) => BenchmarkForecastCurrentResult
   verificationResolver?: (input: BenchmarkForecastCurrentPreparationRequest) => BenchmarkForecastVerificationResult
   matrixResolver?: (seriesId: string, allowPrepare: boolean) => ForecastAcceptanceMatrixReport
+  benchmarkTimeoutMs?: number
   deployedRevision?: string | null
   prepareCalls?: string[]
 }) {
   return createDemoCertificationService({
     now: () => '2026-09-04T18:30:00.000Z',
+    benchmarkTimeoutMs: options.benchmarkTimeoutMs,
     cohort: options.cohort ?? [{ seriesId: 'wocaes0074', benchmarkName: 'Brent', group: 'PRIMARY' }],
     resolveReleaseSnapshot: (cohort, mode) => ({
       sourceRevision: options.deployedRevision ?? 'rev-a',
@@ -505,6 +507,26 @@ test('I2. one benchmark runtime failure degrades to ENVIRONMENT_NOT_READY instea
   assert.equal(report.benchmarks[1]?.reason, 'ENVIRONMENT_NOT_READY')
   assert.equal(report.benchmarks[1]?.precompute.status, 'FAIL')
   assert.match(report.benchmarks[1]?.precompute.reason ?? '', /No persisted point-in-time forecast verification/i)
+})
+
+test('I3. one benchmark timeout degrades to ENVIRONMENT_NOT_READY instead of timing out the whole report', async () => {
+  const report = await createService({
+    benchmarkTimeoutMs: 1,
+    verificationResolver: async (input) => {
+      if (input.seriesId === 'lmeofcucashask') {
+        return new Promise(() => {}) as Promise<BenchmarkForecastVerificationResult>
+      }
+
+      return verificationResult(input)
+    },
+  }).run({ seriesIds: ['wocaes0074', 'lmeofcucashask'] })
+
+  assert.equal(report.summary.demoCohort, 2)
+  assert.equal(report.summary.demoSafe, 1)
+  assert.equal(report.summary.notDemoSafe, 1)
+  assert.equal(report.benchmarks[1]?.demoSafe, 'NO')
+  assert.equal(report.benchmarks[1]?.reason, 'ENVIRONMENT_NOT_READY')
+  assert.match(report.benchmarks[1]?.precompute.reason ?? '', /timed out/i)
 })
 
 test('J. Stage 3 cohort config does not restrict product capability', async () => {
