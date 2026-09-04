@@ -4,8 +4,10 @@ import {
   resolveForecastTargetSemantics,
   type BenchmarkForecastCurrentPreparationRequest,
   type BenchmarkForecastCurrentPreparationResult,
+  type BenchmarkForecastPreparationState,
   type ForecastPortfolioModelId,
   type ProgressiveForecastPreparationSnapshot,
+  type ProgressiveForecastVariantSnapshot,
   type ForecastTargetBasis,
   type InteractiveForecastCapabilityResult,
   type InteractiveForecastPreparationResult,
@@ -86,6 +88,10 @@ type GatewayDependencies = {
     input: BenchmarkForecastCurrentPreparationRequest,
     traceOptions?: TraceOptions,
   ) => Promise<InteractiveForecastPreparationResult>
+  readProgressiveSnapshot: (
+    input: BenchmarkForecastCurrentPreparationRequest,
+    traceOptions?: TraceOptions,
+  ) => Promise<ProgressiveForecastPreparationSnapshot>
   now: () => number
 }
 
@@ -288,12 +294,56 @@ export async function requestProgressiveForecastPreparationSnapshot(
   }, traceOptions)
 }
 
+function isInteractiveForecastTimeoutError(error: unknown) {
+  return error instanceof Error && error.message === 'SG Runtime interactive forecast request timed out.'
+}
+
+function resolveRequestedProgressiveVariant(
+  snapshot: ProgressiveForecastPreparationSnapshot,
+  input: BenchmarkForecastCurrentPreparationRequest,
+) {
+  return snapshot.variants.find((variant) => (
+    variant.seriesId === input.seriesId
+    && variant.modelId === input.modelId
+    && variant.targetBasis === input.targetBasis
+  )) ?? null
+}
+
+function resolvePreparationStateFromProgressiveVariant(
+  variant: ProgressiveForecastVariantSnapshot,
+): BenchmarkForecastPreparationState {
+  if (variant.currentState === 'READY') return 'READY'
+  if (variant.currentState === 'PREPARING') return 'PREPARING'
+  if (variant.currentState === 'QUEUED') return 'QUEUED'
+  if (variant.currentState === 'FAILED') return 'FAILED'
+  return 'UNSUPPORTED'
+}
+
+function buildTracePayload(
+  traceEnabled: boolean,
+  attempts: ForecastBridgeAttemptTrace[],
+  totalMs: number,
+) {
+  if (!traceEnabled) {
+    return {}
+  }
+
+  return {
+    trace: {
+      dashboardBridgeTotalMs: totalMs,
+      attempts,
+      fallbackUsed: attempts.some((attempt) => attempt.fallbackUsed),
+    },
+  }
+}
+
 export function createInteractiveCurrentPreparationGateway(
   dependencies: Partial<GatewayDependencies> = {},
 ) {
   const resolvedDependencies: GatewayDependencies = {
     resolveCapability: dependencies.resolveCapability ?? readInteractiveForecastCapability,
     prepareCurrent: dependencies.prepareCurrent ?? requestInteractiveForecastCurrentPreparation,
+    readProgressiveSnapshot: dependencies.readProgressiveSnapshot ?? requestProgressiveForecastPreparationSnapshot,
     now: dependencies.now ?? (() => Date.now()),
   }
 
@@ -320,20 +370,15 @@ export function createInteractiveCurrentPreparationGateway(
     }
 
     if (capability.currentReadiness === 'READY' || capability.status === 'READY') {
+      const totalMs = Math.max(0, Math.round(resolvedDependencies.now() - startedAt))
       return {
         ...baseResult,
         state: 'READY',
         prepareAttempted: false,
         prepareStatus: null,
         reason: null,
-        timingMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
-        ...(traceEnabled ? {
-          trace: {
-            dashboardBridgeTotalMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
-            attempts,
-            fallbackUsed: attempts.some((attempt) => attempt.fallbackUsed),
-          },
-        } : {}),
+        timingMs: totalMs,
+        ...buildTracePayload(traceEnabled, attempts, totalMs),
       }
     }
 
@@ -341,29 +386,57 @@ export function createInteractiveCurrentPreparationGateway(
       && (capability.status === 'PREPARATION_REQUIRED' || capability.status === 'NOT_PREPARED')
 
     if (!prepareEligible) {
+      const totalMs = Math.max(0, Math.round(resolvedDependencies.now() - startedAt))
       return {
         ...baseResult,
         state: capability.status === 'FAILED' ? 'FAILED' : 'UNSUPPORTED',
         prepareAttempted: false,
         prepareStatus: null,
         reason: capability.reason ?? capability.status,
-        timingMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
-        ...(traceEnabled ? {
-          trace: {
-            dashboardBridgeTotalMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
-            attempts,
-            fallbackUsed: attempts.some((attempt) => attempt.fallbackUsed),
-          },
-        } : {}),
+        timingMs: totalMs,
+        ...buildTracePayload(traceEnabled, attempts, totalMs),
       }
     }
 
-    const preparation = await resolvedDependencies.prepareCurrent(input, traceOptions)
+    let preparation: InteractiveForecastPreparationResult
+
+    try {
+      preparation = await resolvedDependencies.prepareCurrent(input, traceOptions)
+    } catch (error) {
+      if (!isInteractiveForecastTimeoutError(error)) {
+        throw error
+      }
+
+      try {
+        const progressiveSnapshot = await resolvedDependencies.readProgressiveSnapshot(input, traceOptions)
+        const variant = resolveRequestedProgressiveVariant(progressiveSnapshot, input)
+        if (!variant) {
+          throw error
+        }
+
+        const totalMs = Math.max(0, Math.round(resolvedDependencies.now() - startedAt))
+        const state = resolvePreparationStateFromProgressiveVariant(variant)
+        return {
+          ...baseResult,
+          state,
+          prepareAttempted: true,
+          prepareStatus: state === 'READY' ? 'READY' : null,
+          reason: state === 'FAILED' || state === 'UNSUPPORTED' ? variant.currentReason ?? capability.reason ?? capability.status : null,
+          timingMs: totalMs,
+          ...buildTracePayload(traceEnabled, attempts, totalMs),
+        }
+      } catch {
+        throw error
+      }
+    }
+
     const preparationState = preparation.status === 'READY' || preparation.status === 'REUSED'
       ? 'READY'
       : preparation.status === 'FAILED'
         ? 'FAILED'
         : 'UNSUPPORTED'
+
+    const totalMs = Math.max(0, Math.round(resolvedDependencies.now() - startedAt))
 
     return {
       ...baseResult,
@@ -371,14 +444,8 @@ export function createInteractiveCurrentPreparationGateway(
       prepareAttempted: true,
       prepareStatus: preparation.status,
       reason: preparationState === 'READY' ? null : preparation.reason ?? preparation.status,
-      timingMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
-      ...(traceEnabled ? {
-        trace: {
-          dashboardBridgeTotalMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
-          attempts,
-          fallbackUsed: attempts.some((attempt) => attempt.fallbackUsed),
-        },
-      } : {}),
+      timingMs: totalMs,
+      ...buildTracePayload(traceEnabled, attempts, totalMs),
     }
   }
 }

@@ -246,6 +246,89 @@ test('background warm-up hot reuse reads prepared current without recompute', as
   assert.deepEqual(prepareCalls, [])
 })
 
+test('background warm-up preserves progressive preparing state after timeout fallback', async () => {
+  const outcome = await warmCurrentForecastThroughDashboard(async (input, init) => {
+    const url = new URL(String(input), 'https://dashboard.example.invalid')
+
+    if (url.pathname === '/api/benchmark-forecast/current/capability') {
+      return new Response(JSON.stringify({
+        seriesId: 'cl_c1_cl',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        modelId: 'arima',
+        sourceFrequency: 'DAILY',
+        sourceAvailability: 'AVAILABLE',
+        lawfulTargetSemantics: 'LAWFUL',
+        status: 'PREPARATION_REQUIRED',
+        currentReadiness: 'NOT_PREPARED',
+        verificationReadiness: 'NOT_PREPARED',
+        targetedDataScope: 'SINGLE_SERIES',
+        timingMs: 8,
+        reason: 'Prepared artifacts are missing.',
+      }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    }
+
+    if (url.pathname === '/api/benchmark-forecast/current/prepare') {
+      return new Response(JSON.stringify({
+        seriesId: 'cl_c1_cl',
+        modelId: 'arima',
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        state: 'PREPARING',
+        capabilityStatus: 'PREPARATION_REQUIRED',
+        currentReadiness: 'NOT_PREPARED',
+        prepareAttempted: true,
+        prepareStatus: null,
+        reason: null,
+        timingMs: 45012,
+      }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    }
+
+    throw new Error(`Unexpected request ${init?.method ?? 'GET'} ${url.pathname}`)
+  }, {
+    seriesId: 'cl_c1_cl',
+    modelId: 'arima',
+    targetBasis: 'POINT_IN_TIME',
+  })
+
+  assert.equal(outcome.currentState, 'PREPARING')
+  assert.equal(outcome.prepareAttempted, true)
+})
+
+test('explicit preparation preserves queued state until the progressive owner work becomes ready', async () => {
+  const outcome = await explicitlyPrepareForecastCurrent({
+    seriesId: 'cl_c1_cl',
+    modelId: 'ets',
+    targetBasis: 'POINT_IN_TIME',
+  }, {
+    prepareCurrent: async () => ({
+      seriesId: 'cl_c1_cl',
+      modelId: 'ets',
+      targetBasis: 'POINT_IN_TIME',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      state: 'QUEUED',
+      capabilityStatus: 'PREPARATION_REQUIRED',
+      currentReadiness: 'NOT_PREPARED',
+      prepareAttempted: true,
+      prepareStatus: null,
+      reason: null,
+      timingMs: 45001,
+    }),
+    readPrepared: async () => {
+      throw new Error('readPrepared should not be called before the owner work is ready')
+    },
+  })
+
+  assert.equal(outcome.currentState, 'QUEUED')
+  assert.equal(outcome.rereadAttempted, false)
+  assert.equal(outcome.currentResult, null)
+})
+
 test('prepared current result stays on the hot read path without explicit preparation action', () => {
   const state = resolveForecastCurrentUiState({
     status: 'AVAILABLE',

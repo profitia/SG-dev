@@ -221,7 +221,13 @@ export async function warmCurrentForecastThroughDashboard(
       capability,
       preparation,
       currentResult: null,
-      currentState: preparation.state === 'FAILED' ? 'FAILED' : 'UNSUPPORTED',
+      currentState: preparation.state === 'FAILED'
+        ? 'FAILED'
+        : preparation.state === 'PREPARING'
+          ? 'PREPARING'
+          : preparation.state === 'QUEUED'
+            ? 'QUEUED'
+            : 'UNSUPPORTED',
       prepareAttempted: preparation.prepareAttempted,
     } as const
   }
@@ -248,7 +254,13 @@ export async function explicitlyPrepareForecastCurrent(
     return {
       preparation,
       currentResult: null,
-      currentState: preparation.state === 'UNSUPPORTED' ? 'UNSUPPORTED' : 'FAILED',
+      currentState: preparation.state === 'UNSUPPORTED'
+        ? 'UNSUPPORTED'
+        : preparation.state === 'PREPARING'
+          ? 'PREPARING'
+          : preparation.state === 'QUEUED'
+            ? 'QUEUED'
+            : 'FAILED',
       rereadAttempted: false,
       errorMessage: preparation.reason,
     } as const

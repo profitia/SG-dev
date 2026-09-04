@@ -196,6 +196,65 @@ test('interactive current preparation gateway reports failed preparation truthfu
   assert.equal(result.reason, 'MODEL_FIT_FAILED')
 })
 
+test('interactive current preparation gateway falls back to progressive state after timeout', async () => {
+  const prepareCurrent = createInteractiveCurrentPreparationGateway({
+    now: (() => {
+      let tick = 50
+      return () => tick += 9
+    })(),
+    resolveCapability: async () => ({
+      seriesId: 'cl_c1_cl',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      modelId: 'arima',
+      sourceFrequency: 'DAILY',
+      sourceAvailability: 'AVAILABLE',
+      lawfulTargetSemantics: 'LAWFUL',
+      status: 'PREPARATION_REQUIRED',
+      currentReadiness: 'NOT_PREPARED',
+      verificationReadiness: 'NOT_PREPARED',
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 7,
+      reason: 'Prepared artifacts are missing.',
+    }),
+    prepareCurrent: async () => {
+      throw new Error('SG Runtime interactive forecast request timed out.')
+    },
+    readProgressiveSnapshot: async () => ({
+      seriesId: 'cl_c1_cl',
+      variants: [{
+        seriesId: 'cl_c1_cl',
+        modelId: 'arima',
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        currentState: 'PREPARING',
+        currentReason: null,
+        verificationState: 'QUEUED',
+        verificationReason: null,
+      }],
+      firstReadyCurrent: null,
+      activeItem: {
+        modelId: 'arima',
+        targetBasis: 'POINT_IN_TIME',
+        kind: 'CURRENT',
+      },
+      queuedCount: 1,
+      currentReadyCount: 0,
+      verificationReadyCount: 0,
+    }),
+  })
+
+  const result = await prepareCurrent({
+    seriesId: 'cl_c1_cl',
+    modelId: 'arima',
+    targetBasis: 'POINT_IN_TIME',
+  })
+
+  assert.equal(result.state, 'PREPARING')
+  assert.equal(result.prepareAttempted, true)
+  assert.equal(result.prepareStatus, null)
+  assert.equal(result.reason, null)
+})
+
 test('interactive current preparation route rejects invalid input before gateway execution', async () => {
   let called = false
   const handler = createPrepareCurrentForecastRouteHandler(async () => {
