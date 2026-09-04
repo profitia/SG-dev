@@ -229,6 +229,40 @@ test('matrix returns UNSUPPORTED from capability without reading artifacts', asy
   assert.equal(verificationReads, 0)
 })
 
+test('matrix fails the current cell when readiness stays not prepared after capability evaluation', async () => {
+  const service = createForecastAcceptanceMatrixService({
+    readCapability: async () => capability({ status: 'AVAILABLE' as never, currentReadiness: 'NOT_PREPARED', verificationReadiness: 'READY' }),
+    prepareCurrent: async () => preparationResult({ prepareAttempted: false, prepareStatus: null }),
+    readCurrent: async () => currentResult(),
+    readVerification: async () => verificationResult(),
+    getPrisma: () => null,
+  })
+
+  const report = await service.evaluateSeries('brent')
+  const currentCell = report.current.cells.find((cell) => cell.identity.modelId === 'naive' && cell.identity.targetBasis === 'MONTHLY_AVERAGE')
+
+  assert.equal(currentCell?.state, 'FAIL')
+  assert.equal(currentCell?.failingLayer, 'PREPARED_STATE')
+  assert.equal(currentCell?.reasonCode, 'PREPARED_STATE_NOT_READY')
+})
+
+test('matrix fails the verification cell when verification readiness stays not prepared', async () => {
+  const service = createForecastAcceptanceMatrixService({
+    readCapability: async () => capability({ status: 'AVAILABLE' as never, currentReadiness: 'READY', verificationReadiness: 'NOT_PREPARED' }),
+    prepareCurrent: async () => preparationResult({ prepareAttempted: false, prepareStatus: null }),
+    readCurrent: async () => currentResult(),
+    readVerification: async () => verificationResult(),
+    getPrisma: () => null,
+  })
+
+  const report = await service.evaluateSeries('brent')
+  const verificationCell = report.verification.cells.find((cell) => cell.identity.modelId === 'naive' && cell.identity.targetBasis === 'MONTHLY_AVERAGE' && cell.identity.verificationHorizon === '1M')
+
+  assert.equal(verificationCell?.state, 'FAIL')
+  assert.equal(verificationCell?.failingLayer, 'PREPARED_STATE')
+  assert.equal(verificationCell?.reasonCode, 'VERIFICATION_NOT_READY')
+})
+
 test('matrix fails at persisted layer when prepared state is READY but exact artifact is missing', async () => {
   const service = createForecastAcceptanceMatrixService({
     readCapability: async () => capability(),
@@ -385,6 +419,48 @@ test('matrix rejects available reads that do not match the requested forecast id
   assert.equal(currentCell?.state, 'FAIL')
   assert.equal(currentCell?.failingLayer, 'DASHBOARD_ADAPTER')
   assert.equal(currentCell?.reasonCode, 'IDENTITY_MISMATCH')
+})
+
+test('matrix surfaces canonical read misses as READ_NOT_AVAILABLE after persisted artifacts pass', async () => {
+  const service = createForecastAcceptanceMatrixService({
+    readCapability: async () => capability(),
+    prepareCurrent: async () => preparationResult(),
+    readCurrent: async () => ({
+      status: 'NOT_AVAILABLE',
+      seriesId: 'brent',
+      modelId: 'naive',
+      targetBasis: 'MONTHLY_AVERAGE',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      methodId: 'MONTHLY_AVERAGE',
+      reason: 'Current forecast not available.',
+    }),
+    readVerification: async () => ({
+      status: 'NOT_AVAILABLE',
+      seriesId: 'brent',
+      modelId: 'naive',
+      targetBasis: 'MONTHLY_AVERAGE',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      methodId: 'MONTHLY_AVERAGE',
+      reason: 'Verification forecast not available.',
+    }),
+    getPrisma: () => ({
+      forecastCurrentRun: { findFirst: async () => ({ status: 'AVAILABLE', historyFingerprint: 'fp-current', points: [{ forecastValue: 101 }] }) },
+      rollingDailyCurrentForecastSnapshot: { findFirst: async () => null },
+      forecastVerificationRun: { findFirst: async () => ({ status: 'AVAILABLE', historyFingerprint: 'fp-verification', metrics: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }], points: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }] }) },
+      rollingDailyVerificationRecord: { findMany: async () => [] },
+    } as never),
+  })
+
+  const report = await service.evaluateSeries('brent')
+  const currentCell = report.current.cells.find((cell) => cell.identity.modelId === 'naive' && cell.identity.targetBasis === 'MONTHLY_AVERAGE')
+  const verificationCell = report.verification.cells.find((cell) => cell.identity.modelId === 'naive' && cell.identity.targetBasis === 'MONTHLY_AVERAGE' && cell.identity.verificationHorizon === '1M')
+
+  assert.equal(currentCell?.state, 'FAIL')
+  assert.equal(currentCell?.failingLayer, 'CANONICAL_READ')
+  assert.equal(currentCell?.reasonCode, 'READ_NOT_AVAILABLE')
+  assert.equal(verificationCell?.state, 'FAIL')
+  assert.equal(verificationCell?.failingLayer, 'CANONICAL_READ')
+  assert.equal(verificationCell?.reasonCode, 'READ_NOT_AVAILABLE')
 })
 
 test('matrix uses deterministic failure taxonomy for non-renderable current and empty verification horizon', async () => {
