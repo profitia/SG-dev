@@ -539,6 +539,63 @@ function resolveDemoSafeReason(
   return null
 }
 
+function createEnvironmentFailureBenchmark(
+  entry: DemoCohortEntry,
+  requiredTargetBases: ForecastTargetBasis[],
+  optionalTargetBases: ForecastTargetBasis[],
+  requiredModels: ForecastPortfolioModelId[],
+  requiredVerificationHorizons: string[],
+  reason: string,
+  now: string,
+  deployedRevision: string | null,
+): DemoBenchmarkCertification {
+  return {
+    seriesId: entry.seriesId,
+    benchmarkName: entry.benchmarkName,
+    group: entry.group,
+    requiredTargetBases,
+    optionalTargetBases,
+    requiredModels,
+    requiredVerificationHorizons,
+    precompute: {
+      status: 'FAIL',
+      variants: [],
+      reason,
+    },
+    reread: {
+      status: 'FAIL',
+      reason,
+    },
+    matrix: {
+      status: 'FAIL',
+      current: { pass: 0, fail: 0, unsupported: 0 },
+      verification: { pass: 0, fail: 0, unsupported: 0 },
+      failingReasons: [reason],
+    },
+    freshness: {
+      status: 'FAIL',
+      fingerprintRefs: [],
+      reason,
+    },
+    warmRehearsal: {
+      modelSwitch: 'FAIL',
+      targetBasisSwitch: 'FAIL',
+      verification: 'FAIL',
+      verificationHorizonSwitch: 'FAIL',
+      switchBack: 'FAIL',
+      hardReload: 'FAIL',
+      warmReuse: 'FAIL',
+      status: 'FAIL',
+      reason,
+    },
+    demoSafe: 'NO',
+    reason: 'ENVIRONMENT_NOT_READY',
+    lastVerifiedAt: now,
+    deployedRevision,
+    fingerprintDigest: null,
+  }
+}
+
 export function getDefaultDemoCertificationCohort() {
   return [...DEFAULT_DEMO_COHORT]
 }
@@ -579,141 +636,155 @@ export function createDemoCertificationService(
         const inspectedTargetBases = [...new Set([...requiredTargetBases, ...optionalTargetBases])]
         const requiredModels = resolveRequiredModels(entry)
         const requiredVerificationHorizons = resolveRequiredHorizons(entry)
-        const variants: DemoVariantPreparationRecord[] = []
+        try {
+          const variants: DemoVariantPreparationRecord[] = []
 
-        for (const modelId of requiredModels) {
-          for (const targetBasis of inspectedTargetBases) {
-            const input = { seriesId: entry.seriesId, modelId, targetBasis }
-            const capability = await resolvedDependencies.readCapability(input)
-            const required = requiredTargetBases.includes(targetBasis)
+          for (const modelId of requiredModels) {
+            for (const targetBasis of inspectedTargetBases) {
+              const input = { seriesId: entry.seriesId, modelId, targetBasis }
+              const capability = await resolvedDependencies.readCapability(input)
+              const required = requiredTargetBases.includes(targetBasis)
 
-            if (!isCapabilityLawful(capability)) {
+              if (!isCapabilityLawful(capability)) {
+                variants.push({
+                  seriesId: entry.seriesId,
+                  modelId,
+                  targetBasis,
+                  targetSemantics: resolveForecastTargetSemantics(targetBasis),
+                  required,
+                  capabilityStatus: capability.status,
+                  currentReadiness: capability.currentReadiness,
+                  verificationReadiness: capability.verificationReadiness,
+                  preparationStatus: null,
+                  status: required ? 'FAIL' : 'UNSUPPORTED',
+                  reason: capability.reason ?? capability.status,
+                })
+                continue
+              }
+
+              if (mode === 'REVALIDATE') {
+                const warmReady = capability.currentReadiness === 'READY' && capability.verificationReadiness === 'READY'
+                variants.push({
+                  seriesId: entry.seriesId,
+                  modelId,
+                  targetBasis,
+                  targetSemantics: resolveForecastTargetSemantics(targetBasis),
+                  required,
+                  capabilityStatus: capability.status,
+                  currentReadiness: capability.currentReadiness,
+                  verificationReadiness: capability.verificationReadiness,
+                  preparationStatus: null,
+                  status: warmReady ? 'PASS' : 'FAIL',
+                  reason: warmReady ? null : 'Warm revalidation requires both current and verification readiness to remain READY.',
+                })
+                continue
+              }
+
+              if (capability.currentReadiness === 'READY' && capability.verificationReadiness === 'READY') {
+                variants.push({
+                  seriesId: entry.seriesId,
+                  modelId,
+                  targetBasis,
+                  targetSemantics: resolveForecastTargetSemantics(targetBasis),
+                  required,
+                  capabilityStatus: capability.status,
+                  currentReadiness: capability.currentReadiness,
+                  verificationReadiness: capability.verificationReadiness,
+                  preparationStatus: null,
+                  status: 'PASS',
+                  reason: null,
+                })
+                continue
+              }
+
+              const preparation = await resolvedDependencies.prepareCurrent(input)
               variants.push({
                 seriesId: entry.seriesId,
                 modelId,
                 targetBasis,
-                targetSemantics: resolveForecastTargetSemantics(targetBasis),
+                targetSemantics: preparation.targetSemantics,
                 required,
                 capabilityStatus: capability.status,
                 currentReadiness: capability.currentReadiness,
                 verificationReadiness: capability.verificationReadiness,
-                preparationStatus: null,
-                status: required ? 'FAIL' : 'UNSUPPORTED',
-                reason: capability.reason ?? capability.status,
+                preparationStatus: preparation.prepareStatus,
+                status: preparation.state === 'READY' ? 'PASS' : 'FAIL',
+                reason: preparation.state === 'READY' ? null : preparation.reason ?? preparation.state,
               })
-              continue
             }
-
-            if (mode === 'REVALIDATE') {
-              const warmReady = capability.currentReadiness === 'READY' && capability.verificationReadiness === 'READY'
-              variants.push({
-                seriesId: entry.seriesId,
-                modelId,
-                targetBasis,
-                targetSemantics: resolveForecastTargetSemantics(targetBasis),
-                required,
-                capabilityStatus: capability.status,
-                currentReadiness: capability.currentReadiness,
-                verificationReadiness: capability.verificationReadiness,
-                preparationStatus: null,
-                status: warmReady ? 'PASS' : 'FAIL',
-                reason: warmReady ? null : 'Warm revalidation requires both current and verification readiness to remain READY.',
-              })
-              continue
-            }
-
-            if (capability.currentReadiness === 'READY' && capability.verificationReadiness === 'READY') {
-              variants.push({
-                seriesId: entry.seriesId,
-                modelId,
-                targetBasis,
-                targetSemantics: resolveForecastTargetSemantics(targetBasis),
-                required,
-                capabilityStatus: capability.status,
-                currentReadiness: capability.currentReadiness,
-                verificationReadiness: capability.verificationReadiness,
-                preparationStatus: null,
-                status: 'PASS',
-                reason: null,
-              })
-              continue
-            }
-
-            const preparation = await resolvedDependencies.prepareCurrent(input)
-            variants.push({
-              seriesId: entry.seriesId,
-              modelId,
-              targetBasis,
-              targetSemantics: preparation.targetSemantics,
-              required,
-              capabilityStatus: capability.status,
-              currentReadiness: capability.currentReadiness,
-              verificationReadiness: capability.verificationReadiness,
-              preparationStatus: preparation.prepareStatus,
-              status: preparation.state === 'READY' ? 'PASS' : 'FAIL',
-              reason: preparation.state === 'READY' ? null : preparation.reason ?? preparation.state,
-            })
           }
-        }
 
-        const requiredVariants = variants.filter((variant) => variant.required)
-        const precompute = {
-          status: requiredVariants.every((variant) => variant.status === 'PASS') ? 'PASS' as DemoStatus : 'FAIL' as DemoStatus,
-          variants,
-          reason: requiredVariants.find((variant) => variant.status !== 'PASS')?.reason ?? null,
-        }
+          const requiredVariants = variants.filter((variant) => variant.required)
+          const precompute = {
+            status: requiredVariants.every((variant) => variant.status === 'PASS') ? 'PASS' as DemoStatus : 'FAIL' as DemoStatus,
+            variants,
+            reason: requiredVariants.find((variant) => variant.status !== 'PASS')?.reason ?? null,
+          }
 
-        const matrixReport = await resolvedDependencies.evaluateMatrix(entry.seriesId, mode === 'CERTIFY')
-        const requiredCells = filterRequiredCells(matrixReport, requiredTargetBases, requiredVerificationHorizons)
-        const matrix = resolveMatrixGate(requiredCells.current, requiredCells.verification)
-        const freshness = resolveFreshnessGate(requiredCells.current, requiredCells.verification)
-        const reread = {
-          status: matrix.status === 'PASS' ? 'PASS' as DemoStatus : 'FAIL' as DemoStatus,
-          reason: matrix.status === 'PASS' ? null : matrix.failingReasons[0] ?? 'Stage 2 matrix did not stay fully PASS.',
-        }
-        const warmRehearsal = await runWarmRehearsal(
-          entry,
-          requiredTargetBases,
-          requiredModels,
-          requiredVerificationHorizons,
-          {
-            readCurrent: resolvedDependencies.readCurrent,
-            readVerification: resolvedDependencies.readVerification,
-            evaluateMatrix: resolvedDependencies.evaluateMatrix,
-          },
-        )
-        const fingerprintDigest = resolveFingerprintDigest(freshness.fingerprintRefs)
-        const priorSnapshot = priorBySeriesId.get(entry.seriesId)
-        const reason = resolveDemoSafeReason(
-          precompute,
-          reread,
-          matrix,
-          freshness,
-          warmRehearsal,
-          priorSnapshot,
-          fingerprintDigest,
-          releaseSnapshot.deployedRevision,
-        )
+          const matrixReport = await resolvedDependencies.evaluateMatrix(entry.seriesId, mode === 'CERTIFY')
+          const requiredCells = filterRequiredCells(matrixReport, requiredTargetBases, requiredVerificationHorizons)
+          const matrix = resolveMatrixGate(requiredCells.current, requiredCells.verification)
+          const freshness = resolveFreshnessGate(requiredCells.current, requiredCells.verification)
+          const reread = {
+            status: matrix.status === 'PASS' ? 'PASS' as DemoStatus : 'FAIL' as DemoStatus,
+            reason: matrix.status === 'PASS' ? null : matrix.failingReasons[0] ?? 'Stage 2 matrix did not stay fully PASS.',
+          }
+          const warmRehearsal = await runWarmRehearsal(
+            entry,
+            requiredTargetBases,
+            requiredModels,
+            requiredVerificationHorizons,
+            {
+              readCurrent: resolvedDependencies.readCurrent,
+              readVerification: resolvedDependencies.readVerification,
+              evaluateMatrix: resolvedDependencies.evaluateMatrix,
+            },
+          )
+          const fingerprintDigest = resolveFingerprintDigest(freshness.fingerprintRefs)
+          const priorSnapshot = priorBySeriesId.get(entry.seriesId)
+          const reason = resolveDemoSafeReason(
+            precompute,
+            reread,
+            matrix,
+            freshness,
+            warmRehearsal,
+            priorSnapshot,
+            fingerprintDigest,
+            releaseSnapshot.deployedRevision,
+          )
 
-        benchmarks.push({
-          seriesId: entry.seriesId,
-          benchmarkName: entry.benchmarkName,
-          group: entry.group,
-          requiredTargetBases,
-          optionalTargetBases,
-          requiredModels,
-          requiredVerificationHorizons,
-          precompute,
-          reread,
-          matrix,
-          freshness,
-          warmRehearsal,
-          demoSafe: reason ? 'NO' : 'YES',
-          reason,
-          lastVerifiedAt: resolvedDependencies.now(),
-          deployedRevision: releaseSnapshot.deployedRevision,
-          fingerprintDigest,
-        })
+          benchmarks.push({
+            seriesId: entry.seriesId,
+            benchmarkName: entry.benchmarkName,
+            group: entry.group,
+            requiredTargetBases,
+            optionalTargetBases,
+            requiredModels,
+            requiredVerificationHorizons,
+            precompute,
+            reread,
+            matrix,
+            freshness,
+            warmRehearsal,
+            demoSafe: reason ? 'NO' : 'YES',
+            reason,
+            lastVerifiedAt: resolvedDependencies.now(),
+            deployedRevision: releaseSnapshot.deployedRevision,
+            fingerprintDigest,
+          })
+        } catch (error) {
+          const reason = error instanceof Error ? error.message : 'Demo certification environment is not ready.'
+          benchmarks.push(createEnvironmentFailureBenchmark(
+            entry,
+            requiredTargetBases,
+            optionalTargetBases,
+            requiredModels,
+            requiredVerificationHorizons,
+            reason,
+            resolvedDependencies.now(),
+            releaseSnapshot.deployedRevision,
+          ))
+        }
       }
 
       const invalidationReasons = benchmarks.flatMap((benchmark) => (

@@ -14,6 +14,7 @@ export type BenchmarkForecastPreparationState = 'READY' | 'NOT_PREPARED' | 'PREP
 export type InteractiveForecastCapabilityStatus =
   | 'AVAILABLE'
   | 'READY'
+  | 'STALE'
   | 'NOT_PREPARED'
   | 'PREPARATION_REQUIRED'
   | 'DATA_NOT_AVAILABLE'
@@ -38,8 +39,8 @@ export interface InteractiveForecastCapabilityResult {
   sourceAvailability: 'AVAILABLE' | 'DATA_NOT_AVAILABLE' | 'FAILED'
   lawfulTargetSemantics: string | null
   status: InteractiveForecastCapabilityStatus
-  currentReadiness: 'READY' | 'NOT_PREPARED'
-  verificationReadiness: 'READY' | 'NOT_PREPARED'
+  currentReadiness: 'READY' | 'NOT_PREPARED' | 'STALE'
+  verificationReadiness: 'READY' | 'NOT_PREPARED' | 'STALE'
   targetedDataScope: 'SINGLE_SERIES'
   timingMs: number
   reason: string | null

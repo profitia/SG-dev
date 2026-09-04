@@ -486,6 +486,27 @@ test('I. Stage 2 verification regression blocks demo certification', async () =>
   assert.equal(report.benchmarks[0]?.matrix.status, 'FAIL')
 })
 
+test('I2. one benchmark runtime failure degrades to ENVIRONMENT_NOT_READY instead of aborting the report', async () => {
+  const report = await createService({
+    verificationResolver: (input) => {
+      if (input.seriesId === 'lmeofcucashask' && input.modelId === 'arima' && input.targetBasis === 'POINT_IN_TIME') {
+        throw new Error('No persisted point-in-time forecast verification is available for the selected series and model.')
+      }
+
+      return verificationResult(input)
+    },
+  }).run({ seriesIds: ['wocaes0074', 'lmeofcucashask'] })
+
+  assert.equal(report.summary.demoCohort, 2)
+  assert.equal(report.summary.demoSafe, 1)
+  assert.equal(report.summary.notDemoSafe, 1)
+  assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
+  assert.equal(report.benchmarks[1]?.demoSafe, 'NO')
+  assert.equal(report.benchmarks[1]?.reason, 'ENVIRONMENT_NOT_READY')
+  assert.equal(report.benchmarks[1]?.precompute.status, 'FAIL')
+  assert.match(report.benchmarks[1]?.precompute.reason ?? '', /No persisted point-in-time forecast verification/i)
+})
+
 test('J. Stage 3 cohort config does not restrict product capability', async () => {
   const report = await createService({}).run({ includeFallback: true, seriesIds: ['custom-non-cohort-series'] })
   const defaultCohort = getDefaultDemoCertificationCohort()
