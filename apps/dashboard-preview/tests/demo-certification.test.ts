@@ -345,6 +345,17 @@ test('A. full pass certifies the benchmark as demo-safe', async () => {
   assert.equal(benchmark.warmRehearsal.status, 'PASS')
 })
 
+test('A2. available warm-ready capability still certifies as demo-safe', async () => {
+  const report = await createService({
+    capabilityResolver: (input) => capability(input, { status: 'AVAILABLE' }),
+  }).run()
+  const benchmark = report.benchmarks[0]
+
+  assert.equal(benchmark.demoSafe, 'YES')
+  assert.equal(benchmark.precompute.status, 'PASS')
+  assert.equal(benchmark.reason, null)
+})
+
 test('B. one lawful matrix fail blocks demo certification', async () => {
   const report = await createService({
     matrixResolver: (seriesId) => matrixReport(seriesId, {

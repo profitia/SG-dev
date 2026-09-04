@@ -12,6 +12,7 @@ export type ForecastCurrentUiState = 'IDLE' | 'READING' | 'AVAILABLE' | 'NOT_PRE
 export type ProgressiveForecastPreparationState = 'READY' | 'PREPARING' | 'QUEUED' | 'UNSUPPORTED' | 'FAILED'
 export type BenchmarkForecastPreparationState = 'READY' | 'NOT_PREPARED' | 'PREPARING' | 'QUEUED' | 'UNSUPPORTED' | 'FAILED'
 export type InteractiveForecastCapabilityStatus =
+  | 'AVAILABLE'
   | 'READY'
   | 'NOT_PREPARED'
   | 'PREPARATION_REQUIRED'

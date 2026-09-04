@@ -224,7 +224,8 @@ function uniqueStrings(values: readonly string[]) {
 }
 
 function isCapabilityLawful(capability: InteractiveForecastCapabilityResult) {
-  return capability.status === 'READY'
+  return capability.status === 'AVAILABLE'
+    || capability.status === 'READY'
     || capability.status === 'NOT_PREPARED'
     || capability.status === 'PREPARATION_REQUIRED'
 }
