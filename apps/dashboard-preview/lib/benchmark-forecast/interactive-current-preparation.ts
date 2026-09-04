@@ -115,6 +115,10 @@ function resolveSgRuntimeBaseUrls() {
   const primaryBaseUrl = resolveSgRuntimeBaseUrl()
   const candidates = [primaryBaseUrl]
 
+  if (primaryBaseUrl !== LOCAL_SG_RUNTIME_BASE_URL) {
+    return candidates
+  }
+
   for (const fallbackBaseUrl of DEPLOYED_SG_RUNTIME_FALLBACK_BASE_URLS) {
     if (!candidates.includes(fallbackBaseUrl)) {
       candidates.push(fallbackBaseUrl)

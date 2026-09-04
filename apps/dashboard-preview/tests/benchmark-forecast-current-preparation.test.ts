@@ -422,19 +422,23 @@ test('interactive current prepare bridge keeps private auth server-side and forw
   })
 })
 
-test('interactive capability bridge falls back to the public SG Runtime deployment after a primary timeout', async () => {
+test('interactive capability bridge falls back to the public SG Runtime deployment after a localhost timeout', async () => {
   const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
   const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  const previousVercelUrl = process.env.VERCEL_URL
   const originalFetch = global.fetch
   const visited: string[] = []
 
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
-  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime-primary.example.invalid'
+  delete process.env.SG_RUNTIME_BASE_URL
+  delete process.env.RENDER_EXTERNAL_URL
+  delete process.env.VERCEL_URL
   global.fetch = (async (input: URL | RequestInfo | string) => {
     const url = new URL(String(input))
     visited.push(url.origin)
 
-    if (url.origin === 'https://sg-runtime-primary.example.invalid') {
+    if (url.origin === 'http://localhost:3001') {
       const timeoutError = new Error('timed out') as Error & { name: string }
       timeoutError.name = 'AbortError'
       throw timeoutError
@@ -473,10 +477,60 @@ test('interactive capability bridge falls back to the public SG Runtime deployme
     else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
     if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
     else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+    if (previousRenderExternalUrl === undefined) delete process.env.RENDER_EXTERNAL_URL
+    else process.env.RENDER_EXTERNAL_URL = previousRenderExternalUrl
+    if (previousVercelUrl === undefined) delete process.env.VERCEL_URL
+    else process.env.VERCEL_URL = previousVercelUrl
+  }
+
+  assert.deepEqual(visited, [
+    'http://localhost:3001',
+    'https://benchmark-finder-category-builder.onrender.com',
+  ])
+})
+
+test('interactive capability bridge does not fall back away from an explicit deployed SG Runtime base URL after a timeout', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  const previousVercelUrl = process.env.VERCEL_URL
+  const originalFetch = global.fetch
+  const visited: string[] = []
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime-primary.example.invalid'
+  process.env.RENDER_EXTERNAL_URL = 'https://analytics-demo-sg-porr.spendguru.app'
+  delete process.env.VERCEL_URL
+  global.fetch = (async (input: URL | RequestInfo | string) => {
+    const url = new URL(String(input))
+    visited.push(url.origin)
+    const timeoutError = new Error('timed out') as Error & { name: string }
+    timeoutError.name = 'AbortError'
+    throw timeoutError
+  }) as typeof fetch
+
+  try {
+    await assert.rejects(
+      () => readInteractiveForecastCapability({
+        seriesId: 'wocaes0280',
+        modelId: 'arima',
+        targetBasis: 'MONTHLY_AVERAGE',
+      }),
+      /timed out/,
+    )
+  } finally {
+    global.fetch = originalFetch
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+    if (previousRenderExternalUrl === undefined) delete process.env.RENDER_EXTERNAL_URL
+    else process.env.RENDER_EXTERNAL_URL = previousRenderExternalUrl
+    if (previousVercelUrl === undefined) delete process.env.VERCEL_URL
+    else process.env.VERCEL_URL = previousVercelUrl
   }
 
   assert.deepEqual(visited, [
     'https://sg-runtime-primary.example.invalid',
-    'https://benchmark-finder-category-builder.onrender.com',
   ])
 })
