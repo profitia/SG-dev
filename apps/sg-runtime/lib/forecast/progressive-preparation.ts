@@ -61,9 +61,16 @@ type QueueItem = {
 type SeriesState = {
   preferredModelId: UserFacingForecastModelId
   preferredTargetBasis: ForecastTargetBasis
+  selectionOrdinal: number
   queuedItems: QueueItem[]
   activeItemKey: string | null
   failedReasons: Map<string, string>
+}
+
+type QueueCandidate = {
+  seriesId: string
+  state: SeriesState
+  item: QueueItem
 }
 
 type ProgressiveForecastPreparationDependencies = {
@@ -305,31 +312,123 @@ export function createProgressiveForecastPreparationService(
   }
 
   const seriesStates = new Map<string, SeriesState>()
-  let activeSeriesId: string | null = null
+  let selectionOrdinal = 0
+  let drainPromise: Promise<void> | null = null
+
+  function nextSelectionOrdinal() {
+    selectionOrdinal += 1
+    return selectionOrdinal
+  }
+
+  function buildSelectionKeys(request: ProgressiveForecastPreparationRequest) {
+    const targetSemantics = request.preferredTargetBasis === 'POINT_IN_TIME'
+      ? 'ROLLING_DAILY_POINT_IN_TIME'
+      : request.preferredTargetBasis
+
+    return {
+      currentSelectionKey: toVariantKey('CURRENT', targetSemantics, request.preferredModelId),
+      verificationSelectionKey: toVariantKey('VERIFICATION', targetSemantics, request.preferredModelId),
+    }
+  }
+
+  function reconcileQueuedItems(state: SeriesState, resolution: ForecastCapabilityResolution) {
+    const activeItemKey = state.activeItemKey
+    const rebuiltQueue = buildQueuedItems(resolution, state)
+
+    state.queuedItems = activeItemKey
+      ? [
+          ...rebuiltQueue.filter((item) => item.key === activeItemKey),
+          ...rebuiltQueue.filter((item) => item.key !== activeItemKey),
+        ]
+      : rebuiltQueue
+  }
+
+  function hasQueuedWork() {
+    return Array.from(seriesStates.values()).some((state) => state.queuedItems.length > 0)
+  }
+
+  function compareQueueCandidates(left: QueueCandidate, right: QueueCandidate) {
+    if (left.item.kind !== right.item.kind) {
+      return left.item.kind === 'CURRENT' ? -1 : 1
+    }
+
+    if (left.state.selectionOrdinal !== right.state.selectionOrdinal) {
+      return right.state.selectionOrdinal - left.state.selectionOrdinal
+    }
+
+    if (left.seriesId !== right.seriesId) {
+      return left.seriesId.localeCompare(right.seriesId)
+    }
+
+    return compareQueueItems(left.item, right.item, left.state.preferredModelId, left.state.preferredTargetBasis)
+  }
+
+  function selectNextCandidate(): QueueCandidate | null {
+    const candidates: QueueCandidate[] = []
+
+    for (const [seriesId, state] of seriesStates.entries()) {
+      const item = state.queuedItems[0]
+      if (item) {
+        candidates.push({ seriesId, state, item })
+      }
+    }
+
+    if (candidates.length === 0) {
+      return null
+    }
+
+    candidates.sort(compareQueueCandidates)
+    return candidates[0] ?? null
+  }
+
+  function ensureDrainRunning() {
+    if (drainPromise || !hasQueuedWork()) {
+      return
+    }
+
+    drainPromise = (async () => {
+      while (true) {
+        const candidate = selectNextCandidate()
+        if (!candidate) {
+          return
+        }
+
+        const { seriesId, state, item } = candidate
+        state.activeItemKey = item.key
+        const freshResolution = await resolvedDependencies.resolveCapabilities(seriesId)
+
+        try {
+          await performItem(item, freshResolution)
+          state.failedReasons.delete(item.key)
+        } catch (error) {
+          state.failedReasons.set(item.key, error instanceof Error ? error.message : 'Preparation failed.')
+        }
+
+        const updatedResolution = await resolvedDependencies.resolveCapabilities(seriesId)
+        state.queuedItems = buildQueuedItems(updatedResolution, state).filter((queuedItem) => queuedItem.key !== item.key)
+        state.activeItemKey = null
+      }
+    })().finally(() => {
+      drainPromise = null
+      if (hasQueuedWork()) {
+        ensureDrainRunning()
+      }
+    })
+  }
 
   function getSeriesState(seriesId: string, request: ProgressiveForecastPreparationRequest): SeriesState {
     const existing = seriesStates.get(seriesId)
     if (existing) {
       existing.preferredModelId = request.preferredModelId
       existing.preferredTargetBasis = request.preferredTargetBasis
-      const currentSelectionKey = toVariantKey(
-        'CURRENT',
-        request.preferredTargetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : request.preferredTargetBasis,
-        request.preferredModelId,
-      )
-      const verificationSelectionKey = toVariantKey(
-        'VERIFICATION',
-        request.preferredTargetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : request.preferredTargetBasis,
-        request.preferredModelId,
-      )
-      existing.failedReasons.delete(currentSelectionKey)
-      existing.failedReasons.delete(verificationSelectionKey)
+      existing.selectionOrdinal = nextSelectionOrdinal()
       return existing
     }
 
     const created: SeriesState = {
       preferredModelId: request.preferredModelId,
       preferredTargetBasis: request.preferredTargetBasis,
+      selectionOrdinal: nextSelectionOrdinal(),
       queuedItems: [],
       activeItemKey: null,
       failedReasons: new Map(),
@@ -385,59 +484,14 @@ export function createProgressiveForecastPreparationService(
     }))
   }
 
-  async function drainQueue(seriesId: string) {
-    const state = seriesStates.get(seriesId)
-    if (!state || activeSeriesId !== seriesId) {
-      return
-    }
-
-    while (state.queuedItems.length > 0 && activeSeriesId === seriesId) {
-      const item = state.queuedItems[0]!
-      state.activeItemKey = item.key
-      const freshResolution = await resolvedDependencies.resolveCapabilities(seriesId)
-
-      try {
-        await performItem(item, freshResolution)
-        state.failedReasons.delete(item.key)
-      } catch (error) {
-        state.failedReasons.set(item.key, error instanceof Error ? error.message : 'Preparation failed.')
-      }
-
-      const updatedResolution = await resolvedDependencies.resolveCapabilities(seriesId)
-      state.queuedItems = buildQueuedItems(updatedResolution, state).filter((candidate) => candidate.key !== item.key)
-      state.activeItemKey = null
-    }
-
-    activeSeriesId = null
-
-    for (const [candidateSeriesId, candidateState] of seriesStates.entries()) {
-      if (candidateState.queuedItems.length > 0) {
-        activeSeriesId = candidateSeriesId
-        void drainQueue(candidateSeriesId)
-        break
-      }
-    }
-  }
-
   return {
     async snapshotAndKickoff(
       request: ProgressiveForecastPreparationRequest,
     ): Promise<ProgressiveForecastPreparationSnapshot> {
       const resolution = await resolvedDependencies.resolveCapabilities(request.seriesId)
       const state = getSeriesState(request.seriesId, request)
-      const activeItem = state.activeItemKey
-      const rebuiltQueue = buildQueuedItems(resolution, state)
-      state.queuedItems = activeItem
-        ? [
-            ...rebuiltQueue.filter((item) => item.key === activeItem),
-            ...rebuiltQueue.filter((item) => item.key !== activeItem),
-          ]
-        : rebuiltQueue
-
-      if (activeSeriesId === null && state.queuedItems.length > 0) {
-        activeSeriesId = request.seriesId
-        void drainQueue(request.seriesId)
-      }
+      reconcileQueuedItems(state, resolution)
+      ensureDrainRunning()
 
       return buildSnapshot(resolution, state)
     },
