@@ -347,6 +347,10 @@ export function createProgressiveForecastPreparationService(
     return Array.from(seriesStates.values()).some((state) => state.queuedItems.length > 0)
   }
 
+  function hasActiveItem() {
+    return Array.from(seriesStates.values()).some((state) => state.activeItemKey !== null)
+  }
+
   function compareQueueCandidates(left: QueueCandidate, right: QueueCandidate) {
     if (left.item.kind !== right.item.kind) {
       return left.item.kind === 'CURRENT' ? -1 : 1
@@ -381,6 +385,33 @@ export function createProgressiveForecastPreparationService(
     return candidates[0] ?? null
   }
 
+  async function runCandidate(candidate: QueueCandidate) {
+    const { seriesId, state, item } = candidate
+    state.activeItemKey = item.key
+    const freshResolution = await resolvedDependencies.resolveCapabilities(seriesId)
+
+    try {
+      await performItem(item, freshResolution)
+      state.failedReasons.delete(item.key)
+    } catch (error) {
+      state.failedReasons.set(item.key, error instanceof Error ? error.message : 'Preparation failed.')
+    }
+
+    const updatedResolution = await resolvedDependencies.resolveCapabilities(seriesId)
+    state.queuedItems = buildQueuedItems(updatedResolution, state).filter((queuedItem) => queuedItem.key !== item.key)
+    state.activeItemKey = null
+  }
+
+  async function runNextCandidateInline() {
+    const candidate = selectNextCandidate()
+    if (!candidate) {
+      return false
+    }
+
+    await runCandidate(candidate)
+    return true
+  }
+
   function ensureDrainRunning() {
     if (drainPromise || !hasQueuedWork()) {
       return
@@ -393,20 +424,7 @@ export function createProgressiveForecastPreparationService(
           return
         }
 
-        const { seriesId, state, item } = candidate
-        state.activeItemKey = item.key
-        const freshResolution = await resolvedDependencies.resolveCapabilities(seriesId)
-
-        try {
-          await performItem(item, freshResolution)
-          state.failedReasons.delete(item.key)
-        } catch (error) {
-          state.failedReasons.set(item.key, error instanceof Error ? error.message : 'Preparation failed.')
-        }
-
-        const updatedResolution = await resolvedDependencies.resolveCapabilities(seriesId)
-        state.queuedItems = buildQueuedItems(updatedResolution, state).filter((queuedItem) => queuedItem.key !== item.key)
-        state.activeItemKey = null
+        await runCandidate(candidate)
       }
     })().finally(() => {
       drainPromise = null
@@ -488,10 +506,22 @@ export function createProgressiveForecastPreparationService(
     async snapshotAndKickoff(
       request: ProgressiveForecastPreparationRequest,
     ): Promise<ProgressiveForecastPreparationSnapshot> {
-      const resolution = await resolvedDependencies.resolveCapabilities(request.seriesId)
+      let resolution = await resolvedDependencies.resolveCapabilities(request.seriesId)
+      const hadExistingState = seriesStates.has(request.seriesId)
       const state = getSeriesState(request.seriesId, request)
       reconcileQueuedItems(state, resolution)
-      ensureDrainRunning()
+
+      if (!drainPromise && hasQueuedWork()) {
+        if (hadExistingState && !hasActiveItem()) {
+          const progressedInline = await runNextCandidateInline()
+          if (progressedInline) {
+            resolution = await resolvedDependencies.resolveCapabilities(request.seriesId)
+            reconcileQueuedItems(state, resolution)
+          }
+        } else {
+          ensureDrainRunning()
+        }
+      }
 
       return buildSnapshot(resolution, state)
     },
