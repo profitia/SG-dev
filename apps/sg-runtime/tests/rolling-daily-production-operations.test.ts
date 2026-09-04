@@ -36,6 +36,7 @@ function createMaintenanceResult(overrides: Partial<RollingDailyMaintenanceResul
 test('production operations refreshes snapshots for the canonical four-model maintenance pass', async () => {
   const maintenanceCalls: string[] = []
   const currentForecastCalls: string[] = []
+  const currentForecastPreparedFlags: boolean[] = []
   const snapshotCalls: string[] = []
 
   const service = createRollingDailyProductionOperationsService({
@@ -45,6 +46,7 @@ test('production operations refreshes snapshots for the canonical four-model mai
     },
     async resolveCurrentForecast(request) {
       currentForecastCalls.push(request.modelId)
+      currentForecastPreparedFlags.push(Boolean(request.preparedHistory))
       return {
         contractVersion: '1',
         status: 'AVAILABLE',
@@ -127,9 +129,111 @@ test('production operations refreshes snapshots for the canonical four-model mai
   assert.equal(result.status, 'SUCCEEDED')
   assert.deepEqual(maintenanceCalls, [...ROLLING_DAILY_PRODUCTION_OPERATIONS_MODELS])
   assert.deepEqual(currentForecastCalls, [...ROLLING_DAILY_PRODUCTION_OPERATIONS_MODELS])
+  assert.deepEqual(currentForecastPreparedFlags, [false, false, false, false])
   assert.deepEqual(snapshotCalls, [...ROLLING_DAILY_PRODUCTION_OPERATIONS_MODELS])
   assert.equal(result.refreshedSnapshotCount, 4)
   assert.equal(result.failedModelCount, 0)
+})
+
+test('production operations forwards prepared history into naive snapshot refresh', async () => {
+  const preparedFlags: boolean[] = []
+
+  const service = createRollingDailyProductionOperationsService({
+    async runMaintenance(request) {
+      return createMaintenanceResult({ modelId: request.modelId, status: 'SUCCEEDED' })
+    },
+    async resolveCurrentForecast(request) {
+      preparedFlags.push(Boolean(request.preparedHistory))
+      return {
+        contractVersion: '1',
+        status: 'AVAILABLE',
+        benchmark: {
+          benchmarkId: request.seriesId,
+          displayName: 'Brent',
+          frequency: 'DAILY',
+          unit: 'USD/bbl',
+          currency: 'USD',
+          provider: 'macrobond',
+          providerSeriesId: request.seriesId,
+        },
+        forecastMethod: {
+          id: 'ROLLING_DAILY_POINT_IN_TIME',
+          version: 'rolling-daily-point-in-time-v1',
+        },
+        model: {
+          id: request.modelId,
+          selectedCandidate: 'stub',
+          selectionMetric: null,
+          selectionScore: null,
+          selectedParameters: {},
+        },
+        origin: {
+          date: '2026-08-18',
+          value: 89.9,
+        },
+        maxHorizonMonths: 12,
+        anchors: [],
+        path: [],
+        calibration: {
+          availabilityStatus: 'NOT_AVAILABLE',
+          freshnessStatus: null,
+          quantileConvention: 'HF7_LINEAR_INTERPOLATION',
+          coverageLabel: '80% empirical prediction band',
+          methodologicalMinimumStatus: 'OPEN_REQUIRES_MORE_BENCHMARK_VALIDATION',
+          updatedAt: null,
+          processedThrough: null,
+          lastResidualAvailabilityDate: null,
+        },
+        audit: {
+          sourceHistoryFingerprint: 'hist-1',
+          generatedAt: '2026-08-18T12:00:00.000Z',
+          sourceLatestObservationDate: '2026-08-18',
+          calendarProjectionMode: 'ROLLING_DAILY_BUSINESS_CALENDAR_V1',
+          projectionCalendarStrategy: 'ROLLING_DAILY_BUSINESS_CALENDAR_V1',
+          technicalMinimumTrainingObservations: 60,
+          methodologicalTrainingEligibilityStatus: 'OPEN_REQUIRES_CROSS_BENCHMARK_VALIDATION',
+          calibrationUpdatedAt: null,
+          calibrationLastResidualAvailabilityDate: null,
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+        },
+        warnings: [],
+      }
+    },
+    async persistSnapshot(request) {
+      return {
+        seriesId: request.seriesId,
+        modelId: request.modelId,
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodVersion: 'rolling-daily-point-in-time-v1',
+        contractVersion: '1',
+        status: 'AVAILABLE',
+        reasonCode: null,
+        parityStatus: 'MATCHED',
+      }
+    },
+    async readSnapshot() {
+      throw new Error('readSnapshot should not be called after maintenance delta')
+    },
+    logEvent: () => {},
+  })
+
+  const result = await service.run({
+    seriesId: 'wocaes0074',
+    modelIds: ['naive'],
+    preparedHistory: {
+      seriesId: 'wocaes0074',
+      displayName: 'Brent',
+      description: 'Brent',
+      frequency: 'DAILY',
+      source: 'DYNAMIC_MARKET_DATA_STORE',
+      points: [{ date: '2026-08-18', value: 89.9 }],
+    },
+  })
+
+  assert.equal(result.status, 'SUCCEEDED')
+  assert.deepEqual(preparedFlags, [true])
 })
 
 test('production operations returns NO_OP when maintenance is idle and snapshots are already fresh', async () => {

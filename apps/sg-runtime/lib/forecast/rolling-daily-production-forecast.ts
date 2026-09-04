@@ -25,6 +25,7 @@ import {
   ROLLING_DAILY_INPUT_SOURCE,
   ROLLING_DAILY_METHOD_ID,
   ROLLING_DAILY_METHOD_VERSION,
+  type RollingDailyHistoryPayload,
   type RollingDailyCalibrationGroupArtifact,
   type RollingDailyMaintenanceStateArtifact,
 } from '@/lib/forecast/rolling-daily-maintenance'
@@ -393,6 +394,7 @@ export type RollingDailyProductionForecastRequest = {
   targetBasis?: ForecastTargetBasis
   minimumTrainingObservations?: number
   minimumCalibrationSamples?: number
+  preparedHistory?: RollingDailyHistoryPayload
 }
 
 type RollingDailyProductionCalibrationAuthority = {
@@ -431,6 +433,414 @@ function normalizeOptionalString(value?: string | null) {
 
 function toIsoDateOnly(value: string | null) {
   return value ? value.slice(0, 10) : null
+}
+
+function normalizeDailyObservationDay(value: string) {
+  return value.trim().slice(0, 10)
+}
+
+function addCalendarMonthsClamped(value: string, months: number) {
+  const source = new Date(`${value}T00:00:00.000Z`)
+  const targetMonthIndex = source.getUTCMonth() + months
+  const targetYear = source.getUTCFullYear() + Math.floor(targetMonthIndex / 12)
+  const targetMonth = ((targetMonthIndex % 12) + 12) % 12
+  const lastTargetDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate()
+  return new Date(Date.UTC(targetYear, targetMonth, Math.min(source.getUTCDate(), lastTargetDay)))
+    .toISOString()
+    .slice(0, 10)
+}
+
+function nextCalendarDay(value: string) {
+  const date = new Date(`${value}T00:00:00.000Z`)
+  date.setUTCDate(date.getUTCDate() + 1)
+  return date.toISOString().slice(0, 10)
+}
+
+function toUtcDate(value: string) {
+  return new Date(`${value}T00:00:00.000Z`)
+}
+
+function differenceInUtcDays(left: string, right: string) {
+  const millisecondsPerDay = 24 * 60 * 60 * 1000
+  return Math.round((toUtcDate(left).getTime() - toUtcDate(right).getTime()) / millisecondsPerDay)
+}
+
+function inferSupportedWeekdays(points: RollingDailyProductionHistoryPoint[]) {
+  const weekdays = [...new Set(points.map((point) => toUtcDate(point.date).getUTCDay()))].sort((left, right) => left - right)
+  if (weekdays.length === 0) {
+    throw new Error('Cannot infer lawful DAILY projection weekdays from an empty history.')
+  }
+  return weekdays
+}
+
+function buildProjectedStepCounts(
+  originDate: string,
+  maxTargetDate: string,
+  supportedWeekdays: number[],
+) {
+  const calendarDates: string[] = []
+  const stepCounts = new Map<string, number>()
+  const supportedWeekdaySet = new Set(supportedWeekdays)
+  let current = nextCalendarDay(originDate)
+  let stepCount = 0
+
+  while (current <= maxTargetDate) {
+    if (supportedWeekdaySet.has(toUtcDate(current).getUTCDay())) {
+      stepCount += 1
+    }
+    calendarDates.push(current)
+    stepCounts.set(current, stepCount)
+    current = nextCalendarDay(current)
+  }
+
+  return { calendarDates, stepCounts }
+}
+
+function buildBenchmarkContextFromPreparedHistory(history: RollingDailyHistoryPayload): RollingDailyProductionBenchmarkContext {
+  const lawfulPoints = history.points
+    .filter((point): point is { date: string; value: number } => point.value !== null)
+    .sort((left, right) => normalizeDailyObservationDay(left.date).localeCompare(normalizeDailyObservationDay(right.date)))
+
+  const latestLawfulPoint = lawfulPoints.at(-1) ?? null
+
+  return {
+    benchmark: {
+      benchmarkId: history.seriesId,
+      displayName: history.displayName,
+      frequency: 'DAILY',
+      unit: null,
+      currency: null,
+      provider: history.source,
+      providerSeriesId: history.seriesId,
+    },
+    history,
+    sourceLatestObservationDate: latestLawfulPoint ? normalizeDailyObservationDay(latestLawfulPoint.date) : null,
+    sourceLatestObservationValue: latestLawfulPoint?.value ?? null,
+  }
+}
+
+function normalizePreparedHistoryForNaiveCurrent(input: {
+  history: RollingDailyHistoryPayload
+  minimumTrainingObservations: number
+}): {
+  status: 'AVAILABLE'
+  sourceHistory: RollingDailyCurrentForecastBridgeResponse['sourceHistory']
+  originDate: string
+  originValue: number
+  points: Array<{ date: string; value: number }>
+} | {
+  status: 'UNSUPPORTED_FREQUENCY' | 'INSUFFICIENT_HISTORY' | 'FAILED'
+  reason: string
+  sourceHistory: RollingDailyCurrentForecastBridgeResponse['sourceHistory']
+} {
+  const pointsPayload = input.history.points
+  const sortedPoints = [...pointsPayload].sort((left, right) => normalizeDailyObservationDay(left.date).localeCompare(normalizeDailyObservationDay(right.date)))
+  const seenDates = new Set<string>()
+  let filteredNullCount = 0
+  let filteredDuplicateCount = 0
+  const points: Array<{ date: string; value: number }> = []
+
+  for (const point of sortedPoints) {
+    const date = normalizeDailyObservationDay(point.date)
+    if (point.value === null) {
+      filteredNullCount += 1
+      continue
+    }
+    if (!Number.isFinite(point.value)) {
+      return {
+        status: 'FAILED',
+        reason: `Non-finite DAILY value encountered on ${date}.`,
+        sourceHistory: {
+          startDate: null,
+          latestObservationDate: null,
+          observationCount: 0,
+          filteredNullCount,
+          filteredDuplicateCount,
+        },
+      }
+    }
+    if (seenDates.has(date)) {
+      filteredDuplicateCount += 1
+      continue
+    }
+    seenDates.add(date)
+    points.push({ date, value: point.value })
+  }
+
+  const sourceHistory = {
+    startDate: points[0]?.date ?? null,
+    latestObservationDate: points.at(-1)?.date ?? null,
+    observationCount: points.length,
+    filteredNullCount,
+    filteredDuplicateCount,
+  }
+
+  if (input.history.frequency.trim().toUpperCase() !== 'DAILY') {
+    return {
+      status: 'UNSUPPORTED_FREQUENCY',
+      reason: 'UNSUPPORTED_FREQUENCY',
+      sourceHistory,
+    }
+  }
+
+  if (points.length === 0) {
+    return {
+      status: 'FAILED',
+      reason: 'SOURCE_DATA_UNAVAILABLE: No lawful numeric DAILY observations are available for the requested benchmark.',
+      sourceHistory,
+    }
+  }
+
+  if (points.length < input.minimumTrainingObservations) {
+    return {
+      status: 'INSUFFICIENT_HISTORY',
+      reason: `INSUFFICIENT_HISTORY: ${points.length} observations remain after filtering.`,
+      sourceHistory,
+    }
+  }
+
+  return {
+    status: 'AVAILABLE',
+    sourceHistory,
+    originDate: points[points.length - 1]!.date,
+    originValue: points[points.length - 1]!.value,
+    points,
+  }
+}
+
+function isAvailableCalibrationGroup(
+  group: RollingDailyCurrentForecastBridgeCalibrationGroup | undefined,
+): group is RollingDailyCurrentForecastBridgeCalibrationGroup & { residualP10: number; residualP90: number } {
+  return group?.status === 'AVAILABLE' && group.residualP10 !== null && group.residualP90 !== null
+}
+
+function requireAvailableCalibrationGroup(
+  group: RollingDailyCurrentForecastBridgeCalibrationGroup | undefined,
+): (RollingDailyCurrentForecastBridgeCalibrationGroup & { residualP10: number; residualP90: number }) | null {
+  return isAvailableCalibrationGroup(group) ? group : null
+}
+
+function buildNaiveBand(input: {
+  originDate: string
+  targetDate: string
+  pointForecast: number
+  anchorDates: Record<'1M' | '3M' | '6M' | '12M', string>
+  calibrationSummaries: Map<string, RollingDailyCurrentForecastBridgeCalibrationGroup>
+  orderedHorizons: Array<['1M' | '3M' | '6M' | '12M', number]>
+}): Omit<RollingDailyCurrentForecastBridgePathPoint, 'date' | 'pointForecast'> {
+  const exactAnchor = input.orderedHorizons.find(([horizon]) => input.anchorDates[horizon] === input.targetDate)
+  if (exactAnchor) {
+    const [horizon] = exactAnchor
+    const summary = input.calibrationSummaries.get(horizon)
+    const availableSummary = requireAvailableCalibrationGroup(summary)
+    if (!availableSummary) {
+      return {
+        lowerP10: null,
+        upperP90: null,
+        bandStatus: summary ? 'INSUFFICIENT_CALIBRATION_HISTORY' : 'NOT_AVAILABLE',
+        bandSource: null,
+        p10ResidualOffset: null,
+        p90ResidualOffset: null,
+      }
+    }
+
+    return {
+      lowerP10: input.pointForecast + availableSummary.residualP10,
+      upperP90: input.pointForecast + availableSummary.residualP90,
+      bandStatus: 'AVAILABLE',
+      bandSource: 'EMPIRICAL_ANCHOR',
+      p10ResidualOffset: availableSummary.residualP10,
+      p90ResidualOffset: availableSummary.residualP90,
+    }
+  }
+
+  const [firstHorizon] = input.orderedHorizons[0]!
+  const firstAnchorDate = input.anchorDates[firstHorizon]
+  const firstSummary = requireAvailableCalibrationGroup(input.calibrationSummaries.get(firstHorizon))
+
+  if (input.targetDate < firstAnchorDate) {
+    if (input.originDate < input.targetDate && firstSummary) {
+      const totalDays = differenceInUtcDays(firstAnchorDate, input.originDate)
+      const elapsedDays = differenceInUtcDays(input.targetDate, input.originDate)
+      const fraction = elapsedDays / totalDays
+      const p10ResidualOffset = fraction * firstSummary.residualP10
+      const p90ResidualOffset = fraction * firstSummary.residualP90
+      return {
+        lowerP10: input.pointForecast + p10ResidualOffset,
+        upperP90: input.pointForecast + p90ResidualOffset,
+        bandStatus: 'AVAILABLE',
+        bandSource: 'INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS',
+        p10ResidualOffset,
+        p90ResidualOffset,
+      }
+    }
+
+    return {
+      lowerP10: null,
+      upperP90: null,
+      bandStatus: 'NOT_AVAILABLE_BEFORE_FIRST_EMPIRICAL_ANCHOR',
+      bandSource: null,
+      p10ResidualOffset: null,
+      p90ResidualOffset: null,
+    }
+  }
+
+  for (let index = 0; index < input.orderedHorizons.length - 1; index += 1) {
+    const [leftHorizon] = input.orderedHorizons[index]!
+    const [rightHorizon] = input.orderedHorizons[index + 1]!
+    const leftDate = input.anchorDates[leftHorizon]
+    const rightDate = input.anchorDates[rightHorizon]
+    if (!(leftDate < input.targetDate && input.targetDate < rightDate)) {
+      continue
+    }
+
+    const leftSummary = requireAvailableCalibrationGroup(input.calibrationSummaries.get(leftHorizon))
+    const rightSummary = requireAvailableCalibrationGroup(input.calibrationSummaries.get(rightHorizon))
+    if (!leftSummary || !rightSummary) {
+      return {
+        lowerP10: null,
+        upperP90: null,
+        bandStatus: 'NOT_AVAILABLE_INSUFFICIENT_ANCHOR_CALIBRATION',
+        bandSource: null,
+        p10ResidualOffset: null,
+        p90ResidualOffset: null,
+      }
+    }
+
+    const totalDays = differenceInUtcDays(rightDate, leftDate)
+    const elapsedDays = differenceInUtcDays(input.targetDate, leftDate)
+    const fraction = elapsedDays / totalDays
+    const p10ResidualOffset = leftSummary.residualP10 + fraction * (rightSummary.residualP10 - leftSummary.residualP10)
+    const p90ResidualOffset = leftSummary.residualP90 + fraction * (rightSummary.residualP90 - leftSummary.residualP90)
+    return {
+      lowerP10: input.pointForecast + p10ResidualOffset,
+      upperP90: input.pointForecast + p90ResidualOffset,
+      bandStatus: 'AVAILABLE',
+      bandSource: 'INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS',
+      p10ResidualOffset,
+      p90ResidualOffset,
+    }
+  }
+
+  return {
+    lowerP10: null,
+    upperP90: null,
+    bandStatus: 'NOT_AVAILABLE',
+    bandSource: null,
+    p10ResidualOffset: null,
+    p90ResidualOffset: null,
+  }
+}
+
+function buildNaiveCurrentBridgeResponse(input: {
+  history: RollingDailyHistoryPayload
+  modelId: string
+  methodId: string
+  methodVersion: string
+  minimumTrainingObservations: number
+  calibrationGroups: RollingDailyCurrentForecastBridgeCalibrationGroup[]
+}): RollingDailyCurrentForecastBridgeResponse {
+  const normalized = normalizePreparedHistoryForNaiveCurrent({
+    history: input.history,
+    minimumTrainingObservations: input.minimumTrainingObservations,
+  })
+
+  if (normalized.status !== 'AVAILABLE') {
+    return {
+      status: normalized.status,
+      reason: normalized.reason,
+      methodId: input.methodId,
+      methodVersion: input.methodVersion,
+      modelId: input.modelId,
+      sourceHistory: normalized.sourceHistory,
+      currentForecast: {
+        originDate: normalized.sourceHistory.latestObservationDate,
+        calendarProjectionMode: ROLLING_DAILY_PROJECTION_CALENDAR_STRATEGY,
+        maxHorizonMonths: 12,
+        selectedCandidate: null,
+        selectionMetric: null,
+        selectionScore: null,
+        selectedParameters: {},
+        path: [],
+        anchors: [],
+      },
+    }
+  }
+
+  const orderedHorizons: Array<['1M' | '3M' | '6M' | '12M', number]> = [
+    ['1M', 1],
+    ['3M', 3],
+    ['6M', 6],
+    ['12M', 12],
+  ]
+  const anchorDates = Object.fromEntries(
+    orderedHorizons.map(([horizon, months]) => [horizon, addCalendarMonthsClamped(normalized.originDate, months)]),
+  ) as Record<'1M' | '3M' | '6M' | '12M', string>
+  const maxTargetDate = anchorDates['12M']
+  const supportedWeekdays = inferSupportedWeekdays(normalized.points)
+  const { calendarDates, stepCounts } = buildProjectedStepCounts(normalized.originDate, maxTargetDate, supportedWeekdays)
+  const calibrationSummaries = new Map(input.calibrationGroups.map((group) => [group.horizonLabel, group]))
+
+  const path = calendarDates.map((targetDate) => {
+    const band = buildNaiveBand({
+      originDate: normalized.originDate,
+      targetDate,
+      pointForecast: normalized.originValue,
+      anchorDates,
+      calibrationSummaries,
+      orderedHorizons,
+    })
+    return {
+      date: targetDate,
+      pointForecast: normalized.originValue,
+      ...band,
+    }
+  })
+
+  const anchors = orderedHorizons.map(([horizon, horizonMonths]) => {
+    const targetDate = anchorDates[horizon]
+    const band = buildNaiveBand({
+      originDate: normalized.originDate,
+      targetDate,
+      pointForecast: normalized.originValue,
+      anchorDates,
+      calibrationSummaries,
+      orderedHorizons,
+    })
+
+    return {
+      horizon,
+      horizonMonths,
+      targetCalendarDate: targetDate,
+      pointForecast: normalized.originValue,
+      lowerP10: band.lowerP10,
+      upperP90: band.upperP90,
+      bandStatus: band.bandStatus,
+      bandSource: band.bandSource,
+      p10ResidualOffset: band.p10ResidualOffset,
+      p90ResidualOffset: band.p90ResidualOffset,
+      projectedStepCount: stepCounts.get(targetDate) ?? 0,
+    }
+  })
+
+  return {
+    status: 'AVAILABLE',
+    methodId: input.methodId,
+    methodVersion: input.methodVersion,
+    modelId: input.modelId,
+    sourceHistory: normalized.sourceHistory,
+    currentForecast: {
+      originDate: normalized.originDate,
+      calendarProjectionMode: ROLLING_DAILY_PROJECTION_CALENDAR_STRATEGY,
+      maxHorizonMonths: 12,
+      selectedCandidate: 'NAIVE_LAST_VALUE',
+      selectionMetric: null,
+      selectionScore: null,
+      selectedParameters: {},
+      path,
+      anchors,
+    },
+  }
 }
 
 function resolveRollingDailyBridgeConfiguration() {
@@ -927,7 +1337,9 @@ export function createRollingDailyProductionForecastService(
       }
 
       const [benchmarkContext, calibrationAuthority] = await Promise.all([
-        resolvedDependencies.loadBenchmarkContext(input.seriesId),
+        input.preparedHistory
+          ? Promise.resolve(buildBenchmarkContextFromPreparedHistory(input.preparedHistory))
+          : resolvedDependencies.loadBenchmarkContext(input.seriesId),
         resolvedDependencies.repository.readCalibrationAuthority(identity),
       ])
 
@@ -969,7 +1381,7 @@ export function createRollingDailyProductionForecastService(
         })
       }
 
-      const bridgeResponse = await resolvedDependencies.runner.run({
+      const bridgeRequest = {
         seriesId: input.seriesId,
         modelId: input.modelId,
         methodId: ROLLING_DAILY_METHOD_ID,
@@ -985,7 +1397,11 @@ export function createRollingDailyProductionForecastService(
           residualP90: group.residualP90,
           status: group.status,
         })),
-      })
+      }
+
+      const bridgeResponse = input.modelId === 'naive' && input.preparedHistory
+        ? buildNaiveCurrentBridgeResponse(bridgeRequest)
+        : await resolvedDependencies.runner.run(bridgeRequest)
 
       if (bridgeResponse.status !== 'AVAILABLE') {
         return mapUnavailableResult({

@@ -5,6 +5,7 @@ import {
   ROLLING_DAILY_INPUT_SOURCE,
   ROLLING_DAILY_METHOD_ID,
   ROLLING_DAILY_METHOD_VERSION,
+  type RollingDailyHistoryPayload,
 } from '@/lib/forecast/rolling-daily-maintenance'
 import {
   ROLLING_DAILY_TARGET_BASIS,
@@ -21,6 +22,7 @@ export type RollingDailyCurrentForecastSnapshotModelId = 'naive' | 'damped_holt'
 export type RollingDailyCurrentForecastSnapshotRequest = {
   seriesId: string
   modelId: RollingDailyCurrentForecastSnapshotModelId
+  preparedHistory?: RollingDailyHistoryPayload
 }
 
 export type RollingDailyCurrentForecastSnapshotPersistenceResult = {

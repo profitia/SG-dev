@@ -13,6 +13,7 @@ import {
   type RollingDailyProductionForecastRepository,
 } from '../lib/forecast/rolling-daily-production-forecast'
 import {
+  buildRollingDailyHistoryFingerprint,
   ROLLING_DAILY_INPUT_SOURCE,
   ROLLING_DAILY_METHOD_ID,
   ROLLING_DAILY_METHOD_VERSION,
@@ -303,6 +304,48 @@ test('rolling daily production forecast maps current bridge output into the ETAP
   assert.equal(result.audit.projectionCalendarStrategy, ROLLING_DAILY_PROJECTION_CALENDAR_STRATEGY)
   assert.ok(result.audit.sourceHistoryFingerprint)
   assert.equal(result.warnings[0]?.code, 'CALIBRATION_STALE')
+})
+
+test('rolling daily production forecast serves naive current from prepared history without bridge runner', async () => {
+  let runnerCallCount = 0
+
+  const service = createRollingDailyProductionForecastService({
+    repository: createRepository(),
+    loadBenchmarkContext: async () => {
+      throw new Error('prepared history should avoid market-data reload')
+    },
+    now: () => new Date('2024-03-29T12:00:00.000Z'),
+    runner: {
+      async run() {
+        runnerCallCount += 1
+        throw new Error('naive prepared history should not call the bridge runner')
+      },
+    },
+  })
+
+  const result = await service.getRollingDailyProductionForecast({
+    seriesId: 'wocaes0074',
+    modelId: 'naive',
+    minimumTrainingObservations: 2,
+    preparedHistory: createBenchmarkContext().history,
+  })
+
+  assert.equal(runnerCallCount, 0)
+  assert.equal(result.status, 'AVAILABLE')
+  if (result.status !== 'AVAILABLE') {
+    throw new Error('Expected AVAILABLE result.')
+  }
+
+  assert.equal(result.origin.date, '2024-03-29')
+  assert.equal(result.origin.value, 102)
+  assert.equal(result.model.selectedCandidate, 'NAIVE_LAST_VALUE')
+  assert.deepEqual(result.model.selectedParameters, {})
+  assert.equal(result.path[0]?.pointForecast, 102)
+  assert.equal(result.path[0]?.band.status, 'AVAILABLE')
+  assert.equal(result.path[0]?.band.source, 'INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS')
+  assert.equal(result.anchors[0]?.pointForecast, 102)
+  assert.equal(result.anchors[0]?.band.status, 'AVAILABLE')
+  assert.equal(result.audit.sourceHistoryFingerprint, buildRollingDailyHistoryFingerprint(createBenchmarkContext().history))
 })
 
 test('rolling daily production forecast maps unavailable bridge states without fabricating bands', async () => {

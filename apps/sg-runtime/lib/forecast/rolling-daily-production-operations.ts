@@ -187,7 +187,7 @@ export function createRollingDailyProductionOperationsService(
             const snapshot = await refreshSnapshot(
               resolveCurrentForecast,
               persistSnapshot,
-              { seriesId: request.seriesId, modelId },
+              { seriesId: request.seriesId, modelId, preparedHistory: request.preparedHistory },
               'REFRESHED_AFTER_MAINTENANCE',
               'MAINTENANCE_DELTA_APPLIED',
             )
@@ -226,7 +226,7 @@ export function createRollingDailyProductionOperationsService(
           const snapshot = await refreshSnapshot(
             resolveCurrentForecast,
             persistSnapshot,
-            { seriesId: request.seriesId, modelId },
+            { seriesId: request.seriesId, modelId, preparedHistory: request.preparedHistory },
             'REFRESHED_AFTER_RECOVERY',
             snapshotState.status === 'MISS' ? 'SNAPSHOT_MISS' : snapshotState.reason,
           )
