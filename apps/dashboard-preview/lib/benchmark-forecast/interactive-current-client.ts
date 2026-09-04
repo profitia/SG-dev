@@ -7,6 +7,7 @@ import type {
   ProgressiveForecastPreparationSnapshot,
   ProgressiveForecastVariantSnapshot,
 } from './forecast-contract'
+import { isRenderableCurrentResult } from './forecast-contract'
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>
 
@@ -31,6 +32,10 @@ export function shouldReadCurrentForecast(options: {
 
 export function resolveForecastCurrentUiState(result: BenchmarkForecastCurrentResult): ForecastCurrentUiState {
   if (result.status === 'AVAILABLE') {
+    if (!isRenderableCurrentResult(result)) {
+      return 'NOT_PREPARED'
+    }
+
     if (result.targetBasis === 'POINT_IN_TIME' && result.freshness?.status === 'STALE') {
       return 'NOT_PREPARED'
     }

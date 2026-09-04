@@ -279,7 +279,7 @@ test('monthly prepared read filters by canonical method identity and returns an 
 
   try {
     const result = await getBenchmarkForecastCurrent('wocaes0074', 'arima', 'END_OF_PERIOD')
-    assert.equal(result.status, 'AVAILABLE')
+    assert.equal(result.status, 'NOT_AVAILABLE')
     assert.equal(capturedArgs.where.methodId, 'END_OF_PERIOD')
     assert.equal(capturedArgs.where.methodVersion, 'benchmark-forecasting-mvp-phase2-v1')
     assert.ok((capturedArgs.where.frequency as { in: string[] }).in.includes('MONTHLY'))
@@ -287,11 +287,8 @@ test('monthly prepared read filters by canonical method identity and returns an 
       'FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY',
     ))
     assert.deepEqual(capturedArgs.orderBy, [{ updatedAt: 'desc' }])
-    if (result.status !== 'AVAILABLE') return
-    assert.equal(result.targetSemantics, 'END_OF_PERIOD')
-    assert.equal(result.methodId, 'END_OF_PERIOD')
-    assert.equal(result.modelId, 'arima')
-    assert.equal(result.lineage.historyFingerprint, 'eop-history-fingerprint')
+    if (result.status !== 'NOT_AVAILABLE') return
+    assert.match(result.reason, /missing renderable forecast points/i)
   } finally {
     if (previousMarketDataUrl === undefined) delete process.env.MARKET_DATA_DATABASE_URL
     else process.env.MARKET_DATA_DATABASE_URL = previousMarketDataUrl

@@ -8,6 +8,8 @@ import {
   buildForecastControlButtonMeta,
   forecastModelLabel,
   forecastTargetBasisLabel,
+  isExactSelectedRenderableCurrentResult,
+  resolveDisplayedRenderableCurrentResult,
   resolveDefaultForecastTargetBasis,
   resolveForecastVerificationBannerState,
   resolveInitialForecastVerificationVisibility,
@@ -15,6 +17,7 @@ import {
   resolveForecastVerificationUnavailableState,
   shouldHideEmbeddedBenchmarkShell,
 } from '@/components/raw-data-view/index'
+import type { BenchmarkForecastCurrentAvailableResult } from '@/lib/benchmark-forecast/forecast-contract'
 import { FORECAST_ACCURACY_HORIZONS } from '@/lib/forecast-accuracy/forecast-accuracy-contract'
 
 test('forecast-portfolio-v3 defaults target basis to point in time', () => {
@@ -141,6 +144,135 @@ test('verification banner preserves a truthful preparing state when the exact ar
       targetBasis: 'END_OF_PERIOD',
     },
   }), 'PREPARING')
+})
+
+test('displayed current forecast stays on the chart until the requested identity becomes renderable', () => {
+  const displayed: BenchmarkForecastCurrentAvailableResult = {
+    status: 'AVAILABLE' as const,
+    seriesId: 'wocaes0074',
+    modelId: 'naive' as const,
+    targetBasis: 'POINT_IN_TIME' as const,
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME' as const,
+    methodId: 'ROLLING_DAILY_POINT_IN_TIME' as const,
+    displayName: 'Brent',
+    description: null,
+    methodVersion: 'rolling-daily-point-in-time-v1',
+    lineage: {
+      inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+      inputRunId: null,
+      sourceSeriesId: 'wocaes0074',
+      sourceFrequency: 'DAILY' as const,
+      historyFingerprint: 'history-1',
+      preparation: null,
+    },
+    history: {
+      frequency: 'DAILY',
+      start: '2026-01-01',
+      end: '2026-09-01',
+      observations: 200,
+    },
+    forecastOrigin: '2026-09-01',
+    currentForecast: {
+      '1M': {
+        horizon: '1M',
+        horizonSteps: 1,
+        forecastDate: '2026-10-01',
+        forecastValue: 72,
+      },
+    },
+    rollingDailySnapshot: {
+      productionMethod: 'ROLLING_DAILY_POINT_IN_TIME',
+      contractVersion: '1',
+      status: 'AVAILABLE',
+      benchmark: {
+        benchmarkId: 'wocaes0074',
+        unit: null,
+        currency: null,
+        provider: null,
+        providerSeriesId: 'wocaes0074',
+        displayName: 'Brent',
+        frequency: 'DAILY',
+      },
+      model: { id: 'naive', selectedCandidate: null },
+      origin: { date: '2026-09-01', value: 71 },
+      forecastMethod: { id: 'ROLLING_DAILY_POINT_IN_TIME', version: 'rolling-daily-point-in-time-v1' },
+      maxHorizonMonths: 12,
+      audit: {
+        generatedAt: '2026-09-01T00:00:00.000Z',
+        inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+        sourceHistoryFingerprint: 'history-1',
+        sourceLatestObservationDate: '2026-09-01',
+        calendarProjectionMode: 'OBSERVED_WEEKDAY_SET_V1',
+        projectionCalendarStrategy: 'OBSERVED_WEEKDAY_SET_V1',
+        technicalMinimumTrainingObservations: 60,
+        methodologicalTrainingEligibilityStatus: 'OPEN_REQUIRES_CROSS_BENCHMARK_VALIDATION',
+        calibrationUpdatedAt: null,
+        calibrationLastResidualAvailabilityDate: null,
+      },
+      anchors: [],
+      path: [
+        {
+          date: '2026-09-02',
+          pointForecast: 72,
+          band: { status: 'NOT_AVAILABLE', reasonCode: 'CALIBRATION_NOT_AVAILABLE', source: null, lower: null, upper: null },
+        },
+      ],
+      calibration: {
+        availabilityStatus: 'NOT_AVAILABLE',
+        freshnessStatus: null,
+        quantileConvention: 'HF7_LINEAR_INTERPOLATION',
+        coverageLabel: '80% empirical prediction band',
+        methodologicalMinimumStatus: 'OPEN_REQUIRES_CROSS_BENCHMARK_VALIDATION',
+        updatedAt: null,
+        processedThrough: null,
+        lastResidualAvailabilityDate: null,
+      },
+      warnings: [],
+    },
+  }
+
+  const displayedSnapshot = displayed.rollingDailySnapshot
+  if (!displayedSnapshot) {
+    throw new Error('Expected rolling daily snapshot fixture')
+  }
+
+  const requestedNotRenderable: BenchmarkForecastCurrentAvailableResult = {
+    ...displayed,
+    modelId: 'arima' as const,
+    currentForecast: {},
+    rollingDailySnapshot: {
+      ...displayedSnapshot,
+      path: [],
+    },
+  }
+
+  assert.equal(isExactSelectedRenderableCurrentResult(displayed, {
+    seriesId: 'wocaes0074',
+    modelId: 'naive',
+    targetBasis: 'POINT_IN_TIME',
+  }), true)
+
+  assert.deepEqual(resolveDisplayedRenderableCurrentResult({
+    showForecast: true,
+    requestedIdentity: {
+      seriesId: 'wocaes0074',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+    },
+    requestedResult: requestedNotRenderable,
+    displayedResult: displayed,
+  }), displayed)
+
+  assert.equal(resolveDisplayedRenderableCurrentResult({
+    showForecast: true,
+    requestedIdentity: {
+      seriesId: 'ussurv0301',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+    },
+    requestedResult: requestedNotRenderable,
+    displayedResult: displayed,
+  }), null)
 })
 
 test('forecast controls preserve the requested labels and presets', () => {

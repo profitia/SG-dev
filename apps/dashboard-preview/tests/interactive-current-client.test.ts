@@ -169,7 +169,7 @@ test('background warm-up performs one exact prepare and one reread for a lawful 
     targetBasis: 'END_OF_PERIOD',
   })
 
-  assert.equal(outcome.currentState, 'AVAILABLE')
+  assert.equal(outcome.currentState, 'FAILED')
   assert.equal(outcome.prepareAttempted, true)
   assert.deepEqual(calls, [
     'GET /api/benchmark-forecast/current/capability?seriesId=wocaes0280&modelId=ets&targetBasis=END_OF_PERIOD',
@@ -241,7 +241,7 @@ test('background warm-up hot reuse reads prepared current without recompute', as
     targetBasis: 'POINT_IN_TIME',
   })
 
-  assert.equal(outcome.currentState, 'AVAILABLE')
+  assert.equal(outcome.currentState, 'NOT_PREPARED')
   assert.equal(outcome.prepareAttempted, false)
   assert.deepEqual(prepareCalls, [])
 })
@@ -351,6 +351,70 @@ test('prepared current result stays on the hot read path without explicit prepar
     history: { frequency: 'DAILY', start: '2026-01-01', end: '2026-08-31', observations: 180 },
     forecastOrigin: '2026-08-31',
     currentForecast: {},
+    rollingDailySnapshot: {
+      productionMethod: 'ROLLING_DAILY_POINT_IN_TIME',
+      contractVersion: '1',
+      status: 'AVAILABLE',
+      benchmark: {
+        benchmarkId: 'wocaes0074',
+        unit: null,
+        currency: null,
+        provider: null,
+        providerSeriesId: 'wocaes0074',
+        displayName: 'Brent',
+        frequency: 'DAILY',
+      },
+      model: {
+        id: 'arima',
+        selectedCandidate: null,
+      },
+      forecastMethod: {
+        id: 'ROLLING_DAILY_POINT_IN_TIME',
+        version: 'rolling-daily-point-in-time-v1',
+      },
+      origin: {
+        date: '2026-08-31',
+        value: 74,
+      },
+      maxHorizonMonths: 12,
+      anchors: [],
+      path: [
+        {
+          date: '2026-09-01',
+          pointForecast: 75,
+          band: {
+            status: 'NOT_AVAILABLE',
+            reasonCode: 'CALIBRATION_NOT_AVAILABLE',
+            source: null,
+            lower: null,
+            upper: null,
+          },
+        },
+      ],
+      calibration: {
+        availabilityStatus: 'NOT_AVAILABLE',
+        freshnessStatus: null,
+        quantileConvention: 'HF7_LINEAR_INTERPOLATION',
+        coverageLabel: '80% empirical prediction band',
+        methodologicalMinimumStatus: 'OPEN_REQUIRES_CROSS_BENCHMARK_VALIDATION',
+        updatedAt: null,
+        processedThrough: null,
+        lastResidualAvailabilityDate: null,
+      },
+      audit: {
+        generatedAt: '2026-08-31T00:00:00.000Z',
+        sourceLatestObservationDate: '2026-08-31',
+        calendarProjectionMode: 'OBSERVED_WEEKDAY_SET_V1',
+        projectionCalendarStrategy: 'OBSERVED_WEEKDAY_SET_V1',
+        technicalMinimumTrainingObservations: 60,
+        methodologicalTrainingEligibilityStatus: 'OPEN_REQUIRES_CROSS_BENCHMARK_VALIDATION',
+        calibrationUpdatedAt: null,
+        calibrationLastResidualAvailabilityDate: null,
+        inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+        sourceHistoryFingerprint: 'abc',
+      },
+      warnings: [],
+    },
   })
 
   assert.equal(state, 'AVAILABLE')
@@ -394,6 +458,8 @@ test('stale point-in-time current result falls back to not-prepared UI state', (
       },
       status: 'STALE',
       reason: 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
+      snapshotSourceHistoryFingerprint: 'snapshot-fingerprint',
+      currentSourceHistoryFingerprint: 'abc',
     },
   })
 
@@ -579,7 +645,7 @@ test('explicit current preparation performs exactly one prepare action and one p
     },
   })
 
-  assert.equal(result.currentState, 'AVAILABLE')
+  assert.equal(result.currentState, 'FAILED')
   assert.equal(result.rereadAttempted, true)
   assert.deepEqual(calls, [
     'prepare:wocaes0280:arima:MONTHLY_AVERAGE',

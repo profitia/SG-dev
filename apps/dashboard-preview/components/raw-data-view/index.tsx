@@ -14,6 +14,7 @@ import {
   FORECAST_PORTFOLIO_MODELS,
   FORECAST_TARGET_BASES,
   isAvailableCurrentResult,
+  isRenderableCurrentResult,
   isAvailableVerificationResult,
   type BenchmarkForecastCurrentResult,
   type ForecastCurrentUiState,
@@ -667,6 +668,52 @@ function isExactSelectedVerificationResult(
     && result.seriesId === identity.seriesId
     && result.modelId === identity.modelId
     && result.targetBasis === identity.targetBasis
+}
+
+export function isExactSelectedRenderableCurrentResult(
+  result: BenchmarkForecastCurrentResult | null,
+  identity: {
+    seriesId: string
+    modelId: ForecastPortfolioModelId
+    targetBasis: ForecastTargetBasis
+  },
+) {
+  return isRenderableCurrentResult(result)
+    && result.seriesId === identity.seriesId
+    && result.modelId === identity.modelId
+    && result.targetBasis === identity.targetBasis
+}
+
+export function resolveDisplayedRenderableCurrentResult(options: {
+  showForecast: boolean
+  requestedIdentity: {
+    seriesId: string
+    modelId: ForecastPortfolioModelId
+    targetBasis: ForecastTargetBasis
+  } | null
+  requestedResult: BenchmarkForecastCurrentResult | null
+  displayedResult: BenchmarkForecastCurrentResult | null
+}) {
+  const {
+    showForecast,
+    requestedIdentity,
+    requestedResult,
+    displayedResult,
+  } = options
+
+  if (!showForecast || !requestedIdentity) {
+    return null
+  }
+
+  if (isExactSelectedRenderableCurrentResult(requestedResult, requestedIdentity)) {
+    return requestedResult
+  }
+
+  if (isRenderableCurrentResult(displayedResult) && displayedResult.seriesId === requestedIdentity.seriesId) {
+    return displayedResult
+  }
+
+  return null
 }
 
 export function resolveForecastVerificationBannerState(options: {
@@ -2501,6 +2548,7 @@ export function RawDataView({
   const [forecastAccuracyPayload, setForecastAccuracyPayload] = useState<TimeSeriesViewerPayload | null>(null)
   const [forecastCurrentState, setForecastCurrentState] = useState<ForecastCurrentUiState>(initialForecastVisibility ? 'READING' : 'IDLE')
   const [forecastCurrentResult, setForecastCurrentResult] = useState<BenchmarkForecastCurrentResult | null>(null)
+  const [displayedForecastCurrentResult, setDisplayedForecastCurrentResult] = useState<BenchmarkForecastCurrentResult | null>(null)
   const [progressivePreparationSnapshot, setProgressivePreparationSnapshot] = useState<ProgressiveForecastPreparationSnapshot | null>(null)
   const [forecastCurrentReloadNonce, setForecastCurrentReloadNonce] = useState(0)
   const [forecastVerificationReloadNonce, setForecastVerificationReloadNonce] = useState(0)
@@ -2535,6 +2583,7 @@ export function RawDataView({
     setSelectedForecastTargetBasis(defaultForecastTargetBasis)
     setForecastAccuracyHorizon(1)
     setForecastCurrentState(initialForecastVisibility ? 'READING' : 'IDLE')
+    setDisplayedForecastCurrentResult(null)
     setProgressivePreparationSnapshot(null)
     setForecastCurrentReloadNonce(0)
     setForecastVerificationReloadNonce(0)
@@ -2566,6 +2615,15 @@ export function RawDataView({
         identity: selectedForecastIdentity,
       })
     : null
+
+  useEffect(() => {
+    setDisplayedForecastCurrentResult((current) => resolveDisplayedRenderableCurrentResult({
+      showForecast,
+      requestedIdentity: selectedForecastIdentity,
+      requestedResult: forecastCurrentResult,
+      displayedResult: current,
+    }))
+  }, [forecastCurrentResult, selectedForecastIdentity, showForecast])
 
   useEffect(() => {
     if (!showForecast) {
@@ -3673,8 +3731,12 @@ export function RawDataView({
     ? buildForecastPortfolioPayload({
         basePayload: viewerPayload,
         locale,
-        model: forecastModel,
-        currentResult: showForecast && isAvailableCurrentResult(forecastCurrentResult) ? forecastCurrentResult : null,
+        model: showForecast && isRenderableCurrentResult(displayedForecastCurrentResult)
+          ? displayedForecastCurrentResult.modelId
+          : forecastModel,
+        currentResult: showForecast && isRenderableCurrentResult(displayedForecastCurrentResult)
+          ? displayedForecastCurrentResult
+          : null,
         verificationResult: showForecast && showForecastVerification && isAvailableVerificationResult(forecastVerificationResult)
           ? forecastVerificationResult
           : null,

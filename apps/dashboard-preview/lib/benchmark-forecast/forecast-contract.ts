@@ -372,6 +372,30 @@ export interface ForecastUnavailableResult {
 export type BenchmarkForecastCurrentResult = BenchmarkForecastCurrentAvailableResult | ForecastUnavailableResult
 export type BenchmarkForecastVerificationResult = BenchmarkForecastVerificationAvailableResult | ForecastUnavailableResult
 
+function hasRenderableMonthlyCurrentForecast(result: BenchmarkForecastCurrentAvailableResult) {
+  return Object.values(result.currentForecast).some((point) => (
+    point.forecastValue !== null && Number.isFinite(point.forecastValue)
+  ))
+}
+
+function hasRenderablePointInTimeCurrentForecast(result: BenchmarkForecastCurrentAvailableResult) {
+  return (result.rollingDailySnapshot?.path ?? []).some((point) => Number.isFinite(point.pointForecast))
+}
+
+export function isRenderableCurrentResult(
+  result: BenchmarkForecastCurrentResult | null,
+): result is BenchmarkForecastCurrentAvailableResult {
+  if (result?.status !== 'AVAILABLE') {
+    return false
+  }
+
+  if (result.targetBasis === 'POINT_IN_TIME') {
+    return hasRenderablePointInTimeCurrentForecast(result)
+  }
+
+  return hasRenderableMonthlyCurrentForecast(result)
+}
+
 export function isAvailableCurrentResult(
   result: BenchmarkForecastCurrentResult | null,
 ): result is BenchmarkForecastCurrentAvailableResult {

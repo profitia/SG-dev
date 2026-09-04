@@ -76,10 +76,20 @@ test('prepared-state binding is exact across semantics, models, versions, and cu
       forecastCurrentRun: {
         async findFirst({ where }: { where: Record<string, string> }) {
           if (where.targetBasis === 'END_OF_PERIOD' && where.modelId === 'arima') {
-            return { status: 'AVAILABLE', historyFingerprint: eopFingerprint, frequency: 'MONTHLY' }
+            return {
+              status: 'AVAILABLE',
+              historyFingerprint: eopFingerprint,
+              frequency: 'MONTHLY',
+              points: [{ forecastValue: 123 }],
+            }
           }
           if (where.targetBasis === 'MONTHLY_AVERAGE' && where.modelId === 'ets') {
-            return { status: 'AVAILABLE', historyFingerprint: 'stale-monthly-average', frequency: 'MONTHLY' }
+            return {
+              status: 'AVAILABLE',
+              historyFingerprint: 'stale-monthly-average',
+              frequency: 'MONTHLY',
+              points: [{ forecastValue: 123 }],
+            }
           }
           return null
         },
@@ -98,7 +108,18 @@ test('prepared-state binding is exact across semantics, models, versions, and cu
       rollingDailyCurrentForecastSnapshot: {
         async findFirst({ where }: { where: Record<string, string> }) {
           return where.modelId === 'naive'
-            ? { status: 'AVAILABLE', payloadJson: { audit: { sourceHistoryFingerprint: rollingFingerprint } } }
+            ? {
+                status: 'AVAILABLE',
+                payloadJson: {
+                  audit: { sourceHistoryFingerprint: rollingFingerprint },
+                  path: [
+                    {
+                      date: '2025-01-16',
+                      pointForecast: 123,
+                    },
+                  ],
+                },
+              }
             : null
         },
       },
@@ -199,7 +220,7 @@ test('native sparse prepared reads use each canonical persisted cadence identity
                     targetCadence: sourceFrequency,
                     now: new Date('2025-01-15T00:00:00.000Z'),
                   }).history, cadence: { sourceFrequency, targetCadence: sourceFrequency } },
-                ), frequency: artifactFrequency }
+                ), frequency: artifactFrequency, points: [{ forecastValue: 123 }] }
               : null
           },
         },
@@ -221,4 +242,83 @@ test('native sparse prepared reads use each canonical persisted cadence identity
       in: [artifactFrequency],
     })))
   }
+})
+
+test('monthly current artifacts without renderable forecast points cannot satisfy READY', async () => {
+  const history = createHistory()
+  const now = new Date('2025-01-15T00:00:00.000Z')
+  const eopFingerprint = buildForecastHistoryFingerprint(
+    buildLiveForecastBridgePayloadFromHistory(history.providerSeries.providerSeriesId, history, {
+      targetBasis: 'END_OF_PERIOD',
+      now,
+    }).history,
+  )
+
+  const variants = await readForecastPreparedVariants(history.providerSeries.providerSeriesId, history, {
+    now,
+    prisma: {
+      forecastCurrentRun: {
+        async findFirst({ where }: { where: Record<string, string> }) {
+          if (where.targetBasis === 'END_OF_PERIOD' && where.modelId === 'arima') {
+            return {
+              status: 'AVAILABLE',
+              historyFingerprint: eopFingerprint,
+              frequency: 'MONTHLY',
+              points: [],
+            }
+          }
+
+          return null
+        },
+      },
+      forecastVerificationRun: { async findFirst() { return null } },
+      rollingDailyCurrentForecastSnapshot: { async findFirst() { return null } },
+      rollingDailyMaintenanceState: { async findUnique() { return null } },
+      rollingDailyVerificationRecord: { async count() { return 0 } },
+    } as never,
+  })
+
+  assert.equal(
+    variants.find((variant) => variant.identity.targetSemantics === 'END_OF_PERIOD' && variant.identity.modelId === 'arima')?.current,
+    'STALE',
+  )
+})
+
+test('point-in-time snapshots without a renderable path cannot satisfy READY', async () => {
+  const history = createHistory()
+  const now = new Date('2025-01-15T00:00:00.000Z')
+  const rollingFingerprint = buildRollingDailyHistoryFingerprint({
+    seriesId: history.providerSeries.providerSeriesId,
+    displayName: history.displayName,
+    description: history.displayName,
+    frequency: 'DAILY',
+    source: history.source,
+    points: history.historical,
+  })
+
+  const variants = await readForecastPreparedVariants(history.providerSeries.providerSeriesId, history, {
+    now,
+    prisma: {
+      forecastCurrentRun: { async findFirst() { return null } },
+      forecastVerificationRun: { async findFirst() { return null } },
+      rollingDailyCurrentForecastSnapshot: {
+        async findFirst({ where }: { where: Record<string, string> }) {
+          return where.modelId === 'naive'
+            ? { status: 'AVAILABLE', payloadJson: { audit: { sourceHistoryFingerprint: rollingFingerprint }, path: [] } }
+            : null
+        },
+      },
+      rollingDailyMaintenanceState: {
+        async findUnique() {
+          return { latestSourceHistoryFingerprint: rollingFingerprint }
+        },
+      },
+      rollingDailyVerificationRecord: { async count() { return 0 } },
+    } as never,
+  })
+
+  assert.equal(
+    variants.find((variant) => variant.identity.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME' && variant.identity.modelId === 'naive')?.current,
+    'STALE',
+  )
 })

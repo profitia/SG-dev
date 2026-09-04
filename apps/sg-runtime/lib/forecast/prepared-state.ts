@@ -23,7 +23,45 @@ const MONTHLY_TARGETS = ['END_OF_PERIOD', 'MONTHLY_AVERAGE'] as const
 
 type MarketDataPrismaClient = NonNullable<ReturnType<typeof getMarketDataPrisma>>
 
-function stateForRun(
+function hasRenderableCurrentPoints(points: Array<{ forecastValue: unknown }> | undefined) {
+  return (points ?? []).some((point) => point.forecastValue !== null)
+}
+
+function hasRenderableRollingDailyPath(payload: unknown) {
+  if (!payload || typeof payload !== 'object' || !('path' in payload) || !Array.isArray(payload.path)) {
+    return false
+  }
+
+  return payload.path.some((point) => (
+    point
+    && typeof point === 'object'
+    && 'pointForecast' in point
+    && typeof point.pointForecast === 'number'
+    && Number.isFinite(point.pointForecast)
+  ))
+}
+
+function stateForCurrentRun(
+  run: {
+    status: string
+    historyFingerprint: string
+    frequency: string | null
+    points?: Array<{ forecastValue: unknown }>
+  } | null,
+  expectedFingerprints: { legacy: string, cadence: string },
+): ForecastPreparedState {
+  if (!run) return 'NOT_PREPARED'
+  const expectedFingerprint = run.frequency === LEGACY_MONTHLY_ARTIFACT_FREQUENCY
+    ? expectedFingerprints.legacy
+    : expectedFingerprints.cadence
+  return run.status === 'AVAILABLE'
+    && run.historyFingerprint === expectedFingerprint
+    && hasRenderableCurrentPoints(run.points)
+    ? 'READY'
+    : 'STALE'
+}
+
+function stateForHistoricalRun(
   run: { status: string, historyFingerprint: string, frequency: string | null } | null,
   expectedFingerprints: { legacy: string, cadence: string },
 ): ForecastPreparedState {
@@ -122,7 +160,16 @@ export async function readForecastPreparedVariants(
             methodVersion: identity.methodVersion,
             modelId,
           },
-          select: { status: true, historyFingerprint: true, frequency: true },
+          select: {
+            status: true,
+            historyFingerprint: true,
+            frequency: true,
+            points: {
+              select: {
+                forecastValue: true,
+              },
+            },
+          },
           orderBy: { updatedAt: 'desc' },
         }),
         prisma.forecastVerificationRun.findFirst({
@@ -141,9 +188,9 @@ export async function readForecastPreparedVariants(
 
       variants.push({
         identity,
-        current: stateForRun(current, candidate.currentHistoryFingerprints),
+        current: stateForCurrentRun(current, candidate.currentHistoryFingerprints),
         historical: candidate.historicalHistoryFingerprints
-          ? stateForRun(historical, candidate.historicalHistoryFingerprints)
+          ? stateForHistoricalRun(historical, candidate.historicalHistoryFingerprints)
           : 'NOT_PREPARED',
       })
     }
@@ -197,7 +244,9 @@ export async function readForecastPreparedVariants(
     variants.push({
       identity,
       current: stateForFingerprint(
-        snapshotFingerprint,
+        snapshot?.status === 'AVAILABLE' && hasRenderableRollingDailyPath(snapshot.payloadJson)
+          ? snapshotFingerprint
+          : null,
         rollingFingerprint,
         snapshot?.status === 'AVAILABLE',
       ),

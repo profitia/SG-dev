@@ -16,7 +16,7 @@ import type {
   ForecastTargetSemantics,
   RollingDailyProductionForecastResult,
 } from './forecast-contract'
-import { DEFAULT_FORECAST_TARGET_BASIS } from './forecast-contract'
+import { DEFAULT_FORECAST_TARGET_BASIS, isRenderableCurrentResult } from './forecast-contract'
 
 import { getMarketDataPrismaClient } from '@/lib/db/market-data-prisma'
 import { phase22cDiagnosticSpan } from '@/lib/phase-2-2c/diagnostics'
@@ -291,6 +291,25 @@ function toPointInTimeCurrentResult(
   }
 }
 
+function toCurrentNotAvailableReason(
+  seriesId: string,
+  model: ForecastPortfolioModelId,
+  targetBasis: ForecastTargetBasis,
+  reason: string,
+): BenchmarkForecastCurrentResult {
+  const identity = resolveForecastMethodIdentity(targetBasis)
+
+  return {
+    status: 'NOT_AVAILABLE',
+    seriesId,
+    modelId: model,
+    targetBasis,
+    targetSemantics: identity.targetSemantics,
+    methodId: identity.methodId,
+    reason,
+  }
+}
+
 async function getPersistedRollingDailyCurrentForecast(
   seriesId: string,
   model: ForecastPortfolioModelId,
@@ -341,7 +360,7 @@ async function getPersistedRollingDailyCurrentForecast(
     }
   }
 
-  return toPointInTimeCurrentResult(
+  const result = toPointInTimeCurrentResult(
     seriesId,
     model,
     payload,
@@ -352,6 +371,15 @@ async function getPersistedRollingDailyCurrentForecast(
       await getRollingDailyCurrentSourceHistoryFingerprint(seriesId, model),
     ),
   )
+
+  return isRenderableCurrentResult(result)
+    ? result
+    : toCurrentNotAvailableReason(
+        seriesId,
+        model,
+        'POINT_IN_TIME',
+        'PREPARATION_REQUIRED: Exact prepared Current Forecast payload is missing a renderable point-in-time forecast path.',
+      )
 }
 
 async function getPersistedCurrentForecast(
@@ -445,7 +473,7 @@ async function getPersistedCurrentForecast(
     }
   }
 
-  return {
+  const result = {
     status: 'AVAILABLE',
     seriesId: run.seriesId,
     modelId: model,
@@ -472,6 +500,15 @@ async function getPersistedCurrentForecast(
     forecastOrigin: toIsoString(run.forecastOriginAt),
     currentForecast,
   } satisfies BenchmarkForecastCurrentAvailableResult
+
+  return isRenderableCurrentResult(result)
+    ? result
+    : toCurrentNotAvailableReason(
+        seriesId,
+        model,
+        targetBasis,
+        'PREPARATION_REQUIRED: Exact prepared Current Forecast payload is missing renderable forecast points.',
+      )
 }
 
 async function getPersistedForecastVerification(
