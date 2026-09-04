@@ -1,5 +1,5 @@
 import {
-  persistRollingDailyCurrentForecastSnapshot,
+  persistResolvedRollingDailyCurrentForecastSnapshot,
   readRollingDailyCurrentForecastSnapshot,
   type RollingDailyCurrentForecastSnapshotModelId,
   type RollingDailyCurrentForecastSnapshotPersistenceResult,
@@ -12,6 +12,10 @@ import {
   type RollingDailyMaintenanceRequest,
   type RollingDailyMaintenanceResult,
 } from '@/lib/forecast/rolling-daily-maintenance'
+import {
+  createRollingDailyProductionForecastService,
+  type RollingDailyProductionForecastResult,
+} from '@/lib/forecast/rolling-daily-production-forecast'
 
 export const DEFAULT_ROLLING_DAILY_PRODUCTION_OPERATIONS_SERIES_ID = 'wocaes0074'
 export const ROLLING_DAILY_PRODUCTION_OPERATIONS_MODELS = ['naive', 'damped_holt', 'ets', 'arima'] as const
@@ -71,7 +75,11 @@ export type RollingDailyProductionOperationsResult = {
 
 type RollingDailyProductionOperationsDependencies = {
   runMaintenance?: (request: RollingDailyMaintenanceRequest) => Promise<RollingDailyMaintenanceResult>
-  persistSnapshot?: (request: RollingDailyCurrentForecastSnapshotRequest) => Promise<RollingDailyCurrentForecastSnapshotPersistenceResult>
+  resolveCurrentForecast?: (request: RollingDailyCurrentForecastSnapshotRequest) => Promise<RollingDailyProductionForecastResult>
+  persistSnapshot?: (
+    request: RollingDailyCurrentForecastSnapshotRequest,
+    result: RollingDailyProductionForecastResult & { productionMethod: 'ROLLING_DAILY_POINT_IN_TIME' },
+  ) => Promise<RollingDailyCurrentForecastSnapshotPersistenceResult>
   readSnapshot?: (request: {
     seriesId: string
     modelId: RollingDailyCurrentForecastSnapshotModelId
@@ -89,24 +97,31 @@ function logProductionOperationsEvent(event: string, data: Record<string, string
 }
 
 async function refreshSnapshot(
+  resolveCurrentForecast: NonNullable<RollingDailyProductionOperationsDependencies['resolveCurrentForecast']>,
   persistSnapshot: NonNullable<RollingDailyProductionOperationsDependencies['persistSnapshot']>,
   request: RollingDailyCurrentForecastSnapshotRequest,
   status: 'REFRESHED_AFTER_MAINTENANCE',
   reason: 'MAINTENANCE_DELTA_APPLIED',
 ): Promise<Extract<RollingDailyProductionOperationsSnapshotResult, { status: 'REFRESHED_AFTER_MAINTENANCE' }>>
 async function refreshSnapshot(
+  resolveCurrentForecast: NonNullable<RollingDailyProductionOperationsDependencies['resolveCurrentForecast']>,
   persistSnapshot: NonNullable<RollingDailyProductionOperationsDependencies['persistSnapshot']>,
   request: RollingDailyCurrentForecastSnapshotRequest,
   status: 'REFRESHED_AFTER_RECOVERY',
   reason: 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
 ): Promise<Extract<RollingDailyProductionOperationsSnapshotResult, { status: 'REFRESHED_AFTER_RECOVERY' }>>
 async function refreshSnapshot(
+  resolveCurrentForecast: NonNullable<RollingDailyProductionOperationsDependencies['resolveCurrentForecast']>,
   persistSnapshot: NonNullable<RollingDailyProductionOperationsDependencies['persistSnapshot']>,
   request: RollingDailyCurrentForecastSnapshotRequest,
   status: 'REFRESHED_AFTER_MAINTENANCE' | 'REFRESHED_AFTER_RECOVERY',
   reason: 'MAINTENANCE_DELTA_APPLIED' | 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
 ): Promise<Extract<RollingDailyProductionOperationsSnapshotResult, { status: 'REFRESHED_AFTER_MAINTENANCE' | 'REFRESHED_AFTER_RECOVERY' }>> {
-  const persisted = await persistSnapshot(request)
+  const result = await resolveCurrentForecast(request)
+  const persisted = await persistSnapshot(request, {
+    ...result,
+    productionMethod: 'ROLLING_DAILY_POINT_IN_TIME',
+  })
 
   if (status === 'REFRESHED_AFTER_MAINTENANCE') {
     return {
@@ -127,9 +142,13 @@ export function createRollingDailyProductionOperationsService(
   dependencies: RollingDailyProductionOperationsDependencies = {},
 ) {
   const maintenanceService = createRollingDailyMaintenanceService()
+  const productionForecastService = createRollingDailyProductionForecastService()
   const runMaintenance = dependencies.runMaintenance
     ?? ((request: RollingDailyMaintenanceRequest) => maintenanceService.runIncrementalMaintenance(request))
-  const persistSnapshot = dependencies.persistSnapshot ?? persistRollingDailyCurrentForecastSnapshot
+  const resolveCurrentForecast = dependencies.resolveCurrentForecast
+    ?? ((request: RollingDailyCurrentForecastSnapshotRequest) => productionForecastService.getRollingDailyProductionForecast(request))
+  const persistSnapshot = dependencies.persistSnapshot
+    ?? ((request, result) => persistResolvedRollingDailyCurrentForecastSnapshot(request, result))
   const readSnapshot = dependencies.readSnapshot ?? readRollingDailyCurrentForecastSnapshot
   const logEvent = dependencies.logEvent ?? logProductionOperationsEvent
 
@@ -166,6 +185,7 @@ export function createRollingDailyProductionOperationsService(
 
           if (maintenance.status === 'SUCCEEDED') {
             const snapshot = await refreshSnapshot(
+              resolveCurrentForecast,
               persistSnapshot,
               { seriesId: request.seriesId, modelId },
               'REFRESHED_AFTER_MAINTENANCE',
@@ -204,6 +224,7 @@ export function createRollingDailyProductionOperationsService(
           }
 
           const snapshot = await refreshSnapshot(
+            resolveCurrentForecast,
             persistSnapshot,
             { seriesId: request.seriesId, modelId },
             'REFRESHED_AFTER_RECOVERY',

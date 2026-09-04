@@ -1008,10 +1008,23 @@ test('interactive current preparation service delegates monthly and rolling prep
         reason: null,
       } as unknown as BenchmarkForecastCurrentResult
     },
+    prepareRollingDailyOwnership: async () => ({
+      history: {
+        seriesId: 'wocaes0074',
+        displayName: 'Brent',
+        description: 'Brent',
+        frequency: 'DAILY',
+        source: 'DYNAMIC_MARKET_DATA_STORE',
+        points: [{ date: '2026-08-20', value: 89.9 }],
+      },
+      identity: {} as never,
+      logicalArtifactKey: 'current|wocaes0074|ets|hist-1',
+    }),
     prepareRollingCurrent: async (request) => {
       rollingCalls += 1
       assert.equal(request.seriesId, 'wocaes0074')
       assert.deepEqual(request.modelIds, ['ets'])
+      assert.equal(request.preparedHistory?.seriesId, 'wocaes0074')
       return {
         status: 'SUCCEEDED',
         seriesId: 'wocaes0074',
@@ -1108,6 +1121,18 @@ test('interactive current preparation service maps rolling daily NO_OP to REUSED
     prepareMonthlyCurrent: async () => {
       throw new Error('should not be called')
     },
+    prepareRollingDailyOwnership: async () => ({
+      history: {
+        seriesId: 'bz_c1_cl',
+        displayName: 'Brent',
+        description: 'Brent',
+        frequency: 'DAILY',
+        source: 'DYNAMIC_MARKET_DATA_STORE',
+        points: [{ date: '2026-08-20', value: 89.9 }],
+      },
+      identity: {} as never,
+      logicalArtifactKey: 'current|bz_c1_cl|arima|hist-2',
+    }),
     prepareRollingCurrent: async () => {
       rollingCalls += 1
       return rollingCalls === 1
@@ -1188,6 +1213,309 @@ test('interactive current preparation service maps rolling daily NO_OP to REUSED
   assert.equal(reused.reason, null)
   assert.equal(failed.status, 'FAILED')
   assert.equal(failed.reason, 'maintenance failed')
+})
+
+test('interactive point-in-time current reuses ready artifacts without owner compute', async () => {
+  let rollingCalls = 0
+  let ownershipCalls = 0
+
+  const capability = buildCapabilityCandidate({
+    identity: {
+      seriesId: 'wocaes0074',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodVersion: 'rolling-daily-point-in-time-v1',
+      modelId: 'arima',
+    },
+    sourceFrequency: 'DAILY',
+    businessTarget: 'DAILY',
+    targetCadence: 'DAILY',
+    semanticLawfulness: 'LAWFUL',
+    currentPreparedState: 'READY',
+    historicalPreparedState: 'READY',
+    capabilityState: 'AVAILABLE',
+  })
+
+  const service = createInteractiveForecastPreparationService({
+    now: () => 300,
+    resolveExactCapability: async () => ({
+      resolution: buildCapabilityResolution({ capabilities: [capability] }),
+      capability,
+      trace: buildExactCapabilityTrace(),
+    }),
+    prepareRollingDailyOwnership: async () => {
+      ownershipCalls += 1
+      throw new Error('should not be called')
+    },
+    prepareMonthlyCurrent: async () => {
+      throw new Error('should not be called')
+    },
+    prepareRollingCurrent: async () => {
+      rollingCalls += 1
+      throw new Error('should not be called')
+    },
+  })
+
+  const result = await service.prepareCurrent({
+    seriesId: 'wocaes0074',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'arima',
+  })
+
+  assert.equal(result.status, 'REUSED')
+  assert.equal(ownershipCalls, 0)
+  assert.equal(rollingCalls, 0)
+})
+
+test('interactive point-in-time current uses canonical single-flight for concurrent same-identity requests', async () => {
+  let rollingCalls = 0
+  let ownershipCalls = 0
+  let releaseRolling: (() => void) | undefined
+  const rollingGate = new Promise<void>((resolve) => {
+    releaseRolling = resolve
+  })
+
+  const capability = buildCapabilityCandidate({
+    identity: {
+      seriesId: 'wocaes0074',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodVersion: 'rolling-daily-point-in-time-v1',
+      modelId: 'arima',
+    },
+    sourceFrequency: 'DAILY',
+    businessTarget: 'DAILY',
+    targetCadence: 'DAILY',
+    semanticLawfulness: 'LAWFUL',
+    minimumRequiredObservations: 60,
+    availableObservations: 6108,
+    currentPreparedState: 'NOT_PREPARED',
+    historicalPreparedState: 'READY',
+    capabilityState: 'PREPARATION_REQUIRED',
+  })
+
+  const service = createInteractiveForecastPreparationService({
+    now: (() => {
+      let tick = 400
+      return () => ++tick
+    })(),
+    resolveExactCapability: async () => ({
+      resolution: buildCapabilityResolution({ capabilities: [capability] }),
+      capability,
+      trace: buildExactCapabilityTrace(),
+    }),
+    prepareRollingDailyOwnership: async () => {
+      ownershipCalls += 1
+      return {
+        history: {
+          seriesId: 'wocaes0074',
+          displayName: 'Brent',
+          description: 'Brent',
+          frequency: 'DAILY',
+          source: 'DYNAMIC_MARKET_DATA_STORE',
+          points: [{ date: '2026-08-20', value: 89.9 }],
+        },
+        identity: {} as never,
+        logicalArtifactKey: 'current|wocaes0074|arima|hist-1',
+      }
+    },
+    prepareMonthlyCurrent: async () => {
+      throw new Error('should not be called')
+    },
+    prepareRollingCurrent: async (request) => {
+      rollingCalls += 1
+      assert.equal(request.seriesId, 'wocaes0074')
+      assert.deepEqual(request.modelIds, ['arima'])
+      await rollingGate
+      return {
+        status: 'SUCCEEDED',
+        seriesId: 'wocaes0074',
+        refreshedSnapshotCount: 1,
+        recoveredSnapshotCount: 0,
+        noOpModelCount: 0,
+        failedModelCount: 0,
+        results: [{
+          status: 'SUCCEEDED',
+          modelId: 'arima',
+          maintenance: {
+            status: 'SUCCEEDED',
+            seriesId: 'wocaes0074',
+            modelId: 'arima',
+            targetBasis: 'POINT_IN_TIME',
+            inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+            methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+            methodVersion: 'rolling-daily-point-in-time-v1',
+            reasonCode: null,
+            sourceHistoryFingerprint: 'hist-1',
+            latestSourceObservationAt: '2026-08-20',
+            sourceObservationCount: 6108,
+            filteredNullCount: 0,
+            filteredDuplicateCount: 0,
+            newOriginCount: 1,
+            maturedRecordCount: 0,
+            calibrationRefreshCount: 0,
+            affectedCalibrationGroupCount: 0,
+            lastProcessedOriginAt: '2026-08-20',
+            lastMaturedObservedAt: null,
+            runtimeMs: 10,
+          },
+          snapshot: {
+            status: 'REFRESHED_AFTER_MAINTENANCE',
+            reason: 'MAINTENANCE_DELTA_APPLIED',
+            parityStatus: 'MATCHED',
+          },
+          error: null,
+        }],
+      }
+    },
+  })
+
+  const first = service.prepareCurrent({
+    seriesId: 'wocaes0074',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'arima',
+  })
+  const second = service.prepareCurrent({
+    seriesId: 'wocaes0074',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'arima',
+  })
+
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.equal(rollingCalls, 1)
+  assert.equal(ownershipCalls, 2)
+
+  releaseRolling?.()
+  const results = await Promise.all([first, second])
+
+  assert.equal(rollingCalls, 1)
+  assert.deepEqual(results.map((result) => result.status), ['READY', 'READY'])
+  assert.ok(results.every((result) => result.reason === null))
+})
+
+test('interactive point-in-time current keeps different lawful identities independent', async () => {
+  let rollingCalls = 0
+  let activeRollingCalls = 0
+  let maxActiveRollingCalls = 0
+  let releaseRolling: (() => void) | undefined
+  const rollingGate = new Promise<void>((resolve) => {
+    releaseRolling = resolve
+  })
+
+  const service = createInteractiveForecastPreparationService({
+    now: (() => {
+      let tick = 500
+      return () => ++tick
+    })(),
+    resolveExactCapability: async (input) => {
+      const capability = buildCapabilityCandidate({
+        identity: {
+          seriesId: 'wocaes0074',
+          targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+          methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+          methodVersion: 'rolling-daily-point-in-time-v1',
+          modelId: input.modelId,
+        },
+        sourceFrequency: 'DAILY',
+        businessTarget: 'DAILY',
+        targetCadence: 'DAILY',
+        semanticLawfulness: 'LAWFUL',
+        minimumRequiredObservations: 60,
+        availableObservations: 6108,
+        currentPreparedState: 'NOT_PREPARED',
+        historicalPreparedState: 'READY',
+        capabilityState: 'PREPARATION_REQUIRED',
+      })
+
+      return {
+        resolution: buildCapabilityResolution({ capabilities: [capability] }),
+        capability,
+        trace: buildExactCapabilityTrace(),
+      }
+    },
+    prepareRollingDailyOwnership: async (input) => ({
+      history: {
+        seriesId: input.seriesId,
+        displayName: 'Brent',
+        description: 'Brent',
+        frequency: 'DAILY',
+        source: 'DYNAMIC_MARKET_DATA_STORE',
+        points: [{ date: '2026-08-20', value: 89.9 }],
+      },
+      identity: {} as never,
+      logicalArtifactKey: `current|${input.seriesId}|${input.modelId}|hist-1`,
+    }),
+    prepareMonthlyCurrent: async () => {
+      throw new Error('should not be called')
+    },
+    prepareRollingCurrent: async (request) => {
+      rollingCalls += 1
+      activeRollingCalls += 1
+      maxActiveRollingCalls = Math.max(maxActiveRollingCalls, activeRollingCalls)
+      await rollingGate
+      activeRollingCalls -= 1
+      return {
+        status: 'SUCCEEDED',
+        seriesId: request.seriesId,
+        refreshedSnapshotCount: 1,
+        recoveredSnapshotCount: 0,
+        noOpModelCount: 0,
+        failedModelCount: 0,
+        results: request.modelIds.map((modelId) => ({
+          status: 'SUCCEEDED' as const,
+          modelId,
+          maintenance: {
+            status: 'SUCCEEDED' as const,
+            seriesId: request.seriesId,
+            modelId,
+            targetBasis: 'POINT_IN_TIME',
+            inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+            methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+            methodVersion: 'rolling-daily-point-in-time-v1',
+            reasonCode: null,
+            sourceHistoryFingerprint: 'hist-1',
+            latestSourceObservationAt: '2026-08-20',
+            sourceObservationCount: 6108,
+            filteredNullCount: 0,
+            filteredDuplicateCount: 0,
+            newOriginCount: 1,
+            maturedRecordCount: 0,
+            calibrationRefreshCount: 0,
+            affectedCalibrationGroupCount: 0,
+            lastProcessedOriginAt: '2026-08-20',
+            lastMaturedObservedAt: null,
+            runtimeMs: 10,
+          },
+          snapshot: {
+            status: 'REFRESHED_AFTER_MAINTENANCE' as const,
+            reason: 'MAINTENANCE_DELTA_APPLIED' as const,
+            parityStatus: 'MATCHED' as const,
+          },
+          error: null,
+        })),
+      }
+    },
+  })
+
+  const first = service.prepareCurrent({
+    seriesId: 'wocaes0074',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'ets',
+  })
+  const second = service.prepareCurrent({
+    seriesId: 'wocaes0074',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'arima',
+  })
+
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.equal(rollingCalls, 2)
+  assert.equal(maxActiveRollingCalls, 2)
+
+  releaseRolling?.()
+  const results = await Promise.all([first, second])
+
+  assert.deepEqual(results.map((result) => result.status), ['READY', 'READY'])
 })
 
 test('interactive current preparation service preserves native sparse cadence for lawful END_OF_PERIOD preparation', async () => {

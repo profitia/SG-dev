@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 
 import {
@@ -10,8 +11,9 @@ import {
   FORECAST_TARGET_SEMANTICS,
   type ForecastTargetSemantics,
 } from '@/lib/forecast/identity'
+import { prepareRollingDailyCurrentOwnership } from '@/lib/forecast/rolling-daily-current-ownership'
 import { createRollingDailyProductionOperationsService } from '@/lib/forecast/rolling-daily-production-operations'
-import { resolveBenchmarkCurrentForecast } from '@/lib/forecast/service'
+import { resolveBenchmarkCurrentForecast, runCurrentForecastSingleFlight } from '@/lib/forecast/service'
 
 export const InteractiveForecastIdentitySchema = z.object({
   seriesId: z.string().trim().min(1).refine((seriesId) => seriesId !== '*', 'A concrete seriesId is required.'),
@@ -63,6 +65,7 @@ type InteractiveForecastPreparationDependencies = {
   resolveExactCapability: typeof resolveExactForecastCapability
   prepareMonthlyCurrent: typeof resolveBenchmarkCurrentForecast
   prepareRollingCurrent: ReturnType<typeof createRollingDailyProductionOperationsService>['run']
+  prepareRollingDailyOwnership: typeof prepareRollingDailyCurrentOwnership
   now: () => number
 }
 
@@ -115,6 +118,7 @@ export function createInteractiveForecastPreparationService(
     resolveExactCapability: dependencies.resolveExactCapability ?? resolveExactForecastCapability,
     prepareMonthlyCurrent: dependencies.prepareMonthlyCurrent ?? resolveBenchmarkCurrentForecast,
     prepareRollingCurrent: dependencies.prepareRollingCurrent ?? ((request) => rollingDaily.run(request)),
+    prepareRollingDailyOwnership: dependencies.prepareRollingDailyOwnership ?? prepareRollingDailyCurrentOwnership,
     now: dependencies.now ?? (() => performance.now()),
   }
 
@@ -192,9 +196,18 @@ export function createInteractiveForecastPreparationService(
       }
 
       if (input.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME') {
-        const result = await resolvedDependencies.prepareRollingCurrent({
+        const ownership = await resolvedDependencies.prepareRollingDailyOwnership({
           seriesId: input.seriesId,
-          modelIds: [input.modelId],
+          modelId: input.modelId,
+        })
+        const result = await runCurrentForecastSingleFlight<Awaited<ReturnType<InteractiveForecastPreparationDependencies['prepareRollingCurrent']>>>({
+          logicalArtifactKey: ownership.logicalArtifactKey,
+          requestId: randomUUID(),
+          operation: () => resolvedDependencies.prepareRollingCurrent({
+            seriesId: input.seriesId,
+            modelIds: [input.modelId],
+            preparedHistory: ownership.history,
+          }),
         })
         const modelResult = result.results.find((candidate) => candidate.modelId === input.modelId)
         const failed = result.status === 'FAILED'
