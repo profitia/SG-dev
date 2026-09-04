@@ -3,6 +3,7 @@ import test from 'node:test'
 
 import { resolveForecastPortfolioBenchmarkSubject } from '@/app/[locale]/page'
 import {
+  buildForecastControlButtonMeta,
   resolveDefaultForecastTargetBasis,
   resolveInitialForecastVerificationVisibility,
   resolveInitialForecastVisibility,
@@ -44,6 +45,26 @@ test('forecast-portfolio-v3 keeps a dynamic non-Brent seriesId authoritative', (
     {
       seriesId: 'ussurv1055',
       displayName: 'US Sulphur Example',
+    },
+  )
+})
+
+test('forecast control button metadata keeps readiness text separate from the primary label', () => {
+  assert.deepEqual(
+    buildForecastControlButtonMeta('ARIMA', 'pl', 'QUEUED'),
+    {
+      label: 'ARIMA',
+      statusLabel: 'W kolejce',
+      state: 'QUEUED',
+    },
+  )
+
+  assert.deepEqual(
+    buildForecastControlButtonMeta('Daily', 'en', null),
+    {
+      label: 'Daily',
+      statusLabel: null,
+      state: null,
     },
   )
 })

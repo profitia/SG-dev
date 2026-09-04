@@ -493,10 +493,10 @@ input:focus-visible {
 }
 
 .forecast-portfolio-controls .forecast-portfolio-group {
-  display: inline-flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
   min-height: 2.5rem;
 }
 
@@ -509,7 +509,7 @@ input:focus-visible {
 .forecast-portfolio-controls .control-group-label {
   color: var(--muted);
   line-height: 1.2;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .forecast-portfolio-controls .control-mode-buttons {
@@ -521,6 +521,62 @@ input:focus-visible {
 .forecast-portfolio-controls .chart-range-button {
   min-height: 2.5rem;
   padding: 0.45rem 0.8rem;
+  text-align: left;
+  white-space: normal;
+}
+
+.forecast-portfolio-controls .forecast-control-button {
+  align-items: flex-start;
+}
+
+.forecast-control-button-copy {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.22rem;
+  line-height: 1.15;
+}
+
+.forecast-control-button-label {
+  display: block;
+}
+
+.forecast-control-button-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.25rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 78%, var(--surface-alt) 22%);
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.forecast-control-button-status.is-ready {
+  background: color-mix(in srgb, var(--success-soft) 72%, transparent);
+  color: var(--success-strong);
+}
+
+.forecast-control-button-status.is-preparing {
+  background: color-mix(in srgb, var(--warning-soft) 76%, transparent);
+  color: var(--warning-strong);
+}
+
+.forecast-control-button-status.is-queued {
+  background: color-mix(in srgb, var(--info-soft) 76%, transparent);
+  color: var(--info-strong);
+}
+
+.forecast-control-button-status.is-failed {
+  background: color-mix(in srgb, var(--danger-soft) 76%, transparent);
+  color: var(--danger-strong);
+}
+
+.forecast-control-button-status.is-unsupported {
+  background: color-mix(in srgb, var(--panel) 82%, var(--surface-alt) 18%);
+  color: var(--muted);
 }
 
 .forecast-portfolio-controls .control-horizon-group {

@@ -470,6 +470,18 @@ function forecastPreparationStateLabel(locale: Locale, state: ProgressiveForecas
   }
 }
 
+export function buildForecastControlButtonMeta(
+  label: string,
+  locale: Locale,
+  state: ProgressiveForecastPreparationState | null,
+) {
+  return {
+    label,
+    statusLabel: state ? forecastPreparationStateLabel(locale, state) : null,
+    state,
+  }
+}
+
 function InfoButton({
   label,
   lines,
@@ -3658,29 +3670,41 @@ export function RawDataView({
                 <div className={`control-block control-mode-group forecast-portfolio-group${showForecast ? '' : ' is-hidden'}`} aria-hidden={!showForecast}>
                   <span className="control-group-label">{t('forecastModel')}</span>
                   <div className="chart-range-buttons control-mode-buttons" role="group" aria-label={t('forecastModel')}>
-                    {FORECAST_PORTFOLIO_MODELS.map((model) => (
-                      <button
-                        key={model}
-                        type="button"
-                        className={`chart-range-button${forecastModel === model ? ' is-active' : ''}`}
-                        aria-pressed={forecastModel === model}
-                        disabled={!showForecast}
-                        tabIndex={showForecast ? 0 : -1}
-                        onClick={() => {
-                          forecastSelectionTouchedRef.current = true
-                          setForecastModel(model)
-                        }}
-                      >
-                        {forecastModelLabel(locale, model)}
-                        {progressivePreparationSnapshot ? (
-                          <span className="muted">{' · '}{forecastPreparationStateLabel(locale, resolveSelectedProgressiveVariant(progressivePreparationSnapshot, {
+                    {FORECAST_PORTFOLIO_MODELS.map((model) => {
+                      const buttonMeta = buildForecastControlButtonMeta(
+                        forecastModelLabel(locale, model),
+                        locale,
+                        progressivePreparationSnapshot
+                          ? resolveSelectedProgressiveVariant(progressivePreparationSnapshot, {
                             seriesId: benchmarkSeriesId ?? '',
                             modelId: model,
                             targetBasis: selectedForecastTargetBasis,
-                          })?.currentState ?? 'UNSUPPORTED')}</span>
-                        ) : null}
-                      </button>
-                    ))}
+                          })?.currentState ?? 'UNSUPPORTED'
+                          : null,
+                      )
+
+                      return (
+                        <button
+                          key={model}
+                          type="button"
+                          className={`chart-range-button forecast-control-button${forecastModel === model ? ' is-active' : ''}`}
+                          aria-pressed={forecastModel === model}
+                          disabled={!showForecast}
+                          tabIndex={showForecast ? 0 : -1}
+                          onClick={() => {
+                            forecastSelectionTouchedRef.current = true
+                            setForecastModel(model)
+                          }}
+                        >
+                          <span className="forecast-control-button-copy">
+                            <span className="forecast-control-button-label">{buttonMeta.label}</span>
+                            {buttonMeta.statusLabel ? (
+                              <span className={`forecast-control-button-status is-${buttonMeta.state?.toLowerCase()}`}>{buttonMeta.statusLabel}</span>
+                            ) : null}
+                          </span>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
 
@@ -3694,29 +3718,41 @@ export function RawDataView({
                     />
                   </div>
                   <div className="chart-range-buttons control-mode-buttons" role="group" aria-label={t('forecastTargetBasis')}>
-                    {FORECAST_TARGET_BASES.map((targetBasis) => (
-                      <button
-                        key={targetBasis}
-                        type="button"
-                        className={`chart-range-button${selectedForecastTargetBasis === targetBasis ? ' is-active' : ''}`}
-                        aria-pressed={selectedForecastTargetBasis === targetBasis}
-                        disabled={!showForecast}
-                        tabIndex={showForecast ? 0 : -1}
-                        onClick={() => {
-                          forecastSelectionTouchedRef.current = true
-                          setSelectedForecastTargetBasis(targetBasis)
-                        }}
-                      >
-                        {forecastTargetBasisLabel(locale, targetBasis)}
-                        {progressivePreparationSnapshot ? (
-                          <span className="muted">{' · '}{forecastPreparationStateLabel(locale, resolveSelectedProgressiveVariant(progressivePreparationSnapshot, {
+                    {FORECAST_TARGET_BASES.map((targetBasis) => {
+                      const buttonMeta = buildForecastControlButtonMeta(
+                        forecastTargetBasisLabel(locale, targetBasis),
+                        locale,
+                        progressivePreparationSnapshot
+                          ? resolveSelectedProgressiveVariant(progressivePreparationSnapshot, {
                             seriesId: benchmarkSeriesId ?? '',
                             modelId: forecastModel,
                             targetBasis,
-                          })?.currentState ?? 'UNSUPPORTED')}</span>
-                        ) : null}
-                      </button>
-                    ))}
+                          })?.currentState ?? 'UNSUPPORTED'
+                          : null,
+                      )
+
+                      return (
+                        <button
+                          key={targetBasis}
+                          type="button"
+                          className={`chart-range-button forecast-control-button${selectedForecastTargetBasis === targetBasis ? ' is-active' : ''}`}
+                          aria-pressed={selectedForecastTargetBasis === targetBasis}
+                          disabled={!showForecast}
+                          tabIndex={showForecast ? 0 : -1}
+                          onClick={() => {
+                            forecastSelectionTouchedRef.current = true
+                            setSelectedForecastTargetBasis(targetBasis)
+                          }}
+                        >
+                          <span className="forecast-control-button-copy">
+                            <span className="forecast-control-button-label">{buttonMeta.label}</span>
+                            {buttonMeta.statusLabel ? (
+                              <span className={`forecast-control-button-status is-${buttonMeta.state?.toLowerCase()}`}>{buttonMeta.statusLabel}</span>
+                            ) : null}
+                          </span>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
 
