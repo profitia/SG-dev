@@ -193,11 +193,11 @@ type DemoCertificationDependencies = {
   benchmarkTimeoutMs: number
   cohort: readonly DemoCohortEntry[]
   resolveReleaseSnapshot: (cohort: readonly DemoCohortEntry[], mode: DemoCertificationMode) => DemoReleaseSnapshot
-  readCapability: (input: BenchmarkForecastCurrentPreparationRequest) => Promise<InteractiveForecastCapabilityResult>
-  prepareCurrent: (input: BenchmarkForecastCurrentPreparationRequest) => Promise<BenchmarkForecastCurrentPreparationResult>
+  readCapability: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => Promise<InteractiveForecastCapabilityResult>
+  prepareCurrent: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => Promise<BenchmarkForecastCurrentPreparationResult>
   readCurrent: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => Promise<BenchmarkForecastCurrentResult>
   readVerification: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => Promise<BenchmarkForecastVerificationResult>
-  evaluateMatrix: (seriesId: string, allowPrepare: boolean) => Promise<ForecastAcceptanceMatrixReport>
+  evaluateMatrix: (seriesId: string, allowPrepare: boolean, options?: { signal?: AbortSignal }) => Promise<ForecastAcceptanceMatrixReport>
 }
 
 type DemoCertificationOptions = {
@@ -276,7 +276,7 @@ function isPrepareEligible(capability: InteractiveForecastCapabilityResult) {
 function createMatrixEvaluator(
   dependencies: Pick<DemoCertificationDependencies, 'readCapability' | 'prepareCurrent' | 'readCurrent' | 'readVerification'>,
 ) {
-  return async (seriesId: string, allowPrepare: boolean) => {
+  return async (seriesId: string, allowPrepare: boolean, options?: { signal?: AbortSignal }) => {
     const service = createForecastAcceptanceMatrixService({
       readCapability: dependencies.readCapability,
       prepareCurrent: allowPrepare
@@ -286,7 +286,7 @@ function createMatrixEvaluator(
       readVerification: dependencies.readVerification,
     })
 
-    return service.evaluateSeries(seriesId)
+    return service.evaluateSeries(seriesId, options)
   }
 }
 
@@ -444,6 +444,7 @@ async function runWarmRehearsal(
   requiredModels: readonly ForecastPortfolioModelId[],
   requiredHorizons: readonly string[],
   dependencies: Pick<DemoCertificationDependencies, 'readCurrent' | 'readVerification' | 'evaluateMatrix'>,
+  options?: { signal?: AbortSignal },
 ): Promise<DemoWarmRehearsal> {
   const currentInputs: BenchmarkForecastCurrentPreparationRequest[] = []
   const currentFailures: string[] = []
@@ -488,7 +489,7 @@ async function runWarmRehearsal(
       : 'FAIL'
   }
 
-  const warmMatrix = await dependencies.evaluateMatrix(entry.seriesId, false)
+  const warmMatrix = await dependencies.evaluateMatrix(entry.seriesId, false, options)
   const requiredCells = filterRequiredCells(warmMatrix, requiredTargetBases, requiredHorizons)
   const warmReuse = [...requiredCells.current, ...requiredCells.verification].every((cell) => cell.state === 'PASS')
     ? 'PASS'
@@ -604,20 +605,22 @@ function createEnvironmentFailureBenchmark(
 }
 
 async function withBenchmarkTimeout<T>(
-  promise: Promise<T>,
+  operation: (signal: AbortSignal) => Promise<T>,
   timeoutMs: number,
 ): Promise<T> {
   if (timeoutMs <= 0) {
-    return promise
+    return operation(new AbortController().signal)
   }
 
+  const controller = new AbortController()
   let timeoutId: ReturnType<typeof setTimeout> | null = null
 
   try {
     return await Promise.race([
-      promise,
+      operation(controller.signal),
       new Promise<T>((_, reject) => {
         timeoutId = setTimeout(() => {
+          controller.abort()
           reject(new Error(`Demo certification benchmark timed out after ${timeoutMs}ms.`))
         }, timeoutMs)
       }),
@@ -671,7 +674,7 @@ export function createDemoCertificationService(
         const requiredModels = resolveRequiredModels(entry)
         const requiredVerificationHorizons = resolveRequiredHorizons(entry)
         try {
-          const benchmark = await withBenchmarkTimeout((async (): Promise<DemoBenchmarkCertification> => {
+          const benchmark = await withBenchmarkTimeout((async (signal): Promise<DemoBenchmarkCertification> => {
           const variants: DemoVariantPreparationRecord[] = []
           const capabilityChecks = await Promise.all(
             requiredModels.flatMap((modelId) => (
@@ -680,7 +683,7 @@ export function createDemoCertificationService(
                 return {
                   input,
                   required: requiredTargetBases.includes(targetBasis),
-                  capability: await resolvedDependencies.readCapability(input),
+                  capability: await resolvedDependencies.readCapability(input, { signal }),
                 }
               })
             )),
@@ -756,7 +759,7 @@ export function createDemoCertificationService(
               continue
             }
 
-            const preparation = await resolvedDependencies.prepareCurrent(input)
+            const preparation = await resolvedDependencies.prepareCurrent(input, { signal })
             variants.push({
               seriesId: entry.seriesId,
               modelId: input.modelId,
@@ -779,7 +782,7 @@ export function createDemoCertificationService(
             reason: requiredVariants.find((variant) => variant.status !== 'PASS')?.reason ?? null,
           }
 
-          const matrixReport = await resolvedDependencies.evaluateMatrix(entry.seriesId, mode === 'CERTIFY')
+          const matrixReport = await resolvedDependencies.evaluateMatrix(entry.seriesId, mode === 'CERTIFY', { signal })
           const requiredCells = filterRequiredCells(matrixReport, requiredTargetBases, requiredVerificationHorizons)
           const matrix = resolveMatrixGate(requiredCells.current, requiredCells.verification)
           const freshness = resolveFreshnessGate(requiredCells.current, requiredCells.verification)
@@ -797,6 +800,7 @@ export function createDemoCertificationService(
               readVerification: resolvedDependencies.readVerification,
               evaluateMatrix: resolvedDependencies.evaluateMatrix,
             },
+            { signal },
           )
           const fingerprintDigest = resolveFingerprintDigest(freshness.fingerprintRefs)
           const priorSnapshot = priorBySeriesId.get(entry.seriesId)
@@ -830,7 +834,7 @@ export function createDemoCertificationService(
             deployedRevision: releaseSnapshot.deployedRevision,
             fingerprintDigest,
           }
-          })(), resolvedDependencies.benchmarkTimeoutMs)
+          }), resolvedDependencies.benchmarkTimeoutMs)
 
           benchmarks.push(benchmark)
         } catch (error) {

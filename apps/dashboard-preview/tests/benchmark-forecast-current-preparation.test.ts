@@ -9,6 +9,7 @@ import {
   readInteractiveForecastCapability,
   requestInteractiveForecastCurrentPreparation,
 } from '@/lib/benchmark-forecast/interactive-current-preparation'
+import { createReadCurrentForecastCapabilityRouteHandler } from '@/app/api/benchmark-forecast/current/capability/route'
 import { createPrepareCurrentForecastRouteHandler } from '@/app/api/benchmark-forecast/current/prepare/route'
 import { createProgressiveForecastPreparationRouteHandler } from '@/app/api/benchmark-forecast/progressive/route'
 
@@ -315,6 +316,67 @@ test('interactive current preparation route includes trace payload only when exp
   assert.equal(payload.trace.attempts[0].sgRuntimeCapabilityExecutionMs, 109)
 })
 
+test('interactive current capability route forwards request abort signal to the bridge', async () => {
+  let capturedSignal: AbortSignal | undefined
+  const handler = createReadCurrentForecastCapabilityRouteHandler(async (_input, _traceOptions, options) => {
+    capturedSignal = options?.signal
+
+    return {
+      seriesId: 'usnaac0169',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      modelId: 'arima',
+      sourceFrequency: 'DAILY',
+      sourceAvailability: 'AVAILABLE',
+      lawfulTargetSemantics: 'LAWFUL',
+      status: 'READY',
+      currentReadiness: 'READY',
+      verificationReadiness: 'READY',
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 5,
+      reason: null,
+    }
+  })
+
+  const request = new NextRequest('http://localhost/api/benchmark-forecast/current/capability?seriesId=usnaac0169&modelId=arima&targetBasis=POINT_IN_TIME')
+
+  const response = await handler(request)
+
+  assert.equal(response.status, 200)
+  assert.equal(capturedSignal, request.signal)
+})
+
+test('interactive current preparation route forwards request abort signal to the gateway', async () => {
+  let capturedSignal: AbortSignal | undefined
+  const handler = createPrepareCurrentForecastRouteHandler(async (_input, _traceEnabled, signal) => {
+    capturedSignal = signal
+
+    return {
+      seriesId: 'usnaac0169',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      capabilityStatus: 'READY',
+      currentReadiness: 'READY',
+      timingMs: 9,
+      state: 'READY',
+      prepareAttempted: false,
+      prepareStatus: null,
+      reason: null,
+    }
+  })
+
+  const request = new NextRequest('http://localhost/api/benchmark-forecast/current/prepare', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ seriesId: 'usnaac0169', modelId: 'arima', targetBasis: 'POINT_IN_TIME' }),
+  })
+
+  const response = await handler(request)
+
+  assert.equal(response.status, 200)
+  assert.equal(capturedSignal, request.signal)
+})
+
 test('progressive preparation route forwards the exact identity and returns snapshot payload', async () => {
   const handler = createProgressiveForecastPreparationRouteHandler(async (input) => {
     assert.deepEqual(input, {
@@ -361,6 +423,47 @@ test('progressive preparation route forwards the exact identity and returns snap
   assert.equal(response.status, 200)
   assert.equal(payload.activeItem.kind, 'CURRENT')
   assert.equal(payload.variants[0].currentState, 'PREPARING')
+})
+
+test('progressive preparation route forwards request abort signal to the bridge', async () => {
+  let capturedSignal: AbortSignal | undefined
+  const handler = createProgressiveForecastPreparationRouteHandler(async (_input, _traceOptions, options) => {
+    capturedSignal = options?.signal
+
+    return {
+      seriesId: 'wocaes0280',
+      variants: [{
+        seriesId: 'wocaes0280',
+        modelId: 'arima',
+        targetBasis: 'MONTHLY_AVERAGE',
+        targetSemantics: 'MONTHLY_AVERAGE',
+        currentState: 'PREPARING',
+        currentReason: null,
+        verificationState: 'QUEUED',
+        verificationReason: null,
+      }],
+      firstReadyCurrent: null,
+      activeItem: {
+        modelId: 'arima',
+        targetBasis: 'MONTHLY_AVERAGE',
+        kind: 'CURRENT',
+      },
+      queuedCount: 1,
+      currentReadyCount: 0,
+      verificationReadyCount: 0,
+    }
+  })
+
+  const request = new NextRequest('http://localhost/api/benchmark-forecast/progressive', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ seriesId: 'wocaes0280', modelId: 'arima', targetBasis: 'MONTHLY_AVERAGE' }),
+  })
+
+  const response = await handler(request)
+
+  assert.equal(response.status, 200)
+  assert.equal(capturedSignal, request.signal)
 })
 
 test('interactive current capability bridge keeps private auth server-side and forwards exact identity', async () => {
@@ -479,6 +582,48 @@ test('interactive current prepare bridge keeps private auth server-side and forw
     modelId: 'ets',
     targetSemantics: 'MONTHLY_AVERAGE',
   })
+})
+
+test('interactive capability bridge aborts downstream fetch when caller signal aborts', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const originalFetch = global.fetch
+  const callerController = new AbortController()
+  let capturedSignal: AbortSignal | undefined
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime.example.invalid'
+  global.fetch = (((_input: URL | RequestInfo | string, init?: RequestInit) => {
+    capturedSignal = init?.signal
+
+    return new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener('abort', () => {
+        const aborted = new Error('aborted') as Error & { name: string }
+        aborted.name = 'AbortError'
+        reject(aborted)
+      }, { once: true })
+    })
+  }) as typeof fetch)
+
+  try {
+    const pending = readInteractiveForecastCapability({
+      seriesId: 'usnaac0169',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+    }, undefined, { signal: callerController.signal })
+
+    callerController.abort()
+
+    await assert.rejects(() => pending, /aborted/)
+  } finally {
+    global.fetch = originalFetch
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+  }
+
+  assert.equal(capturedSignal?.aborted, true)
 })
 
 test('interactive capability bridge falls back to the public SG Runtime deployment after a localhost timeout', async () => {

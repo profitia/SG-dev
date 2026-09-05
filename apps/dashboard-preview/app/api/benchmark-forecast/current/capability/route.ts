@@ -8,7 +8,11 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-type CapabilityReader = typeof readInteractiveForecastCapability
+type CapabilityReader = (
+  input: Parameters<typeof readInteractiveForecastCapability>[0],
+  traceOptions?: Parameters<typeof readInteractiveForecastCapability>[1],
+  options?: Parameters<typeof readInteractiveForecastCapability>[2],
+) => ReturnType<typeof readInteractiveForecastCapability>
 
 export function createReadCurrentForecastCapabilityRouteHandler(
   reader: CapabilityReader = readInteractiveForecastCapability,
@@ -25,7 +29,7 @@ export function createReadCurrentForecastCapabilityRouteHandler(
     }
 
     try {
-      return NextResponse.json(await reader(parsed.data))
+      return NextResponse.json(await reader(parsed.data, undefined, { signal: request.signal }))
     } catch (error) {
       if (error instanceof SgRuntimeForecastPreparationAuthError) {
         return NextResponse.json({ error: error.message }, { status: error.statusCode })

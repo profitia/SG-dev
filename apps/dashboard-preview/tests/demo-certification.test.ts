@@ -291,11 +291,11 @@ function matrixReport(seriesId: string, overrides?: {
 
 function createService(options: {
   cohort?: DemoCohortEntry[]
-  capabilityResolver?: (input: BenchmarkForecastCurrentPreparationRequest) => InteractiveForecastCapabilityResult
-  prepareResolver?: (input: BenchmarkForecastCurrentPreparationRequest) => BenchmarkForecastCurrentPreparationResult
+  capabilityResolver?: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => InteractiveForecastCapabilityResult
+  prepareResolver?: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => BenchmarkForecastCurrentPreparationResult
   currentResolver?: (input: BenchmarkForecastCurrentPreparationRequest) => BenchmarkForecastCurrentResult
   verificationResolver?: (input: BenchmarkForecastCurrentPreparationRequest) => BenchmarkForecastVerificationResult
-  matrixResolver?: (seriesId: string, allowPrepare: boolean) => ForecastAcceptanceMatrixReport
+  matrixResolver?: (seriesId: string, allowPrepare: boolean, options?: { signal?: AbortSignal }) => ForecastAcceptanceMatrixReport
   benchmarkTimeoutMs?: number
   deployedRevision?: string | null
   prepareCalls?: string[]
@@ -312,10 +312,10 @@ function createService(options: {
       acceptedAt: '2026-09-04T18:30:00.000Z',
       cohort: cohort.map((entry) => ({ seriesId: entry.seriesId, benchmarkName: entry.benchmarkName, group: entry.group })),
     }),
-    readCapability: async (input) => options.capabilityResolver ? options.capabilityResolver(input) : capability(input),
-    prepareCurrent: async (input) => {
+    readCapability: async (input, requestOptions) => options.capabilityResolver ? options.capabilityResolver(input, requestOptions) : capability(input),
+    prepareCurrent: async (input, requestOptions) => {
       options.prepareCalls?.push(`${input.seriesId}:${input.modelId}:${input.targetBasis}`)
-      return options.prepareResolver ? options.prepareResolver(input) : preparation(input)
+      return options.prepareResolver ? options.prepareResolver(input, requestOptions) : preparation(input)
     },
     readCurrent: async (seriesId, modelId, targetBasis) => (
       options.currentResolver
@@ -327,9 +327,9 @@ function createService(options: {
         ? options.verificationResolver({ seriesId, modelId, targetBasis })
         : verificationResult({ seriesId, modelId, targetBasis })
     ),
-    evaluateMatrix: async (seriesId, allowPrepare) => (
+    evaluateMatrix: async (seriesId, allowPrepare, requestOptions) => (
       options.matrixResolver
-        ? options.matrixResolver(seriesId, allowPrepare)
+        ? options.matrixResolver(seriesId, allowPrepare, requestOptions)
         : matrixReport(seriesId)
     ),
   })
@@ -545,6 +545,32 @@ test('I3. one benchmark timeout degrades to ENVIRONMENT_NOT_READY instead of tim
   assert.equal(report.benchmarks[1]?.demoSafe, 'NO')
   assert.equal(report.benchmarks[1]?.reason, 'ENVIRONMENT_NOT_READY')
   assert.match(report.benchmarks[1]?.precompute.reason ?? '', /timed out/i)
+})
+
+test('I4. one benchmark timeout aborts in-flight SG Runtime-backed capability work', async () => {
+  let capturedSignal: AbortSignal | undefined
+
+  const report = await createService({
+    benchmarkTimeoutMs: 1,
+    capabilityResolver: (input, options) => {
+      if (input.seriesId !== 'lmeofcucashask') {
+        return capability(input)
+      }
+
+      capturedSignal = options?.signal
+
+      return new Promise<InteractiveForecastCapabilityResult>((_resolve, reject) => {
+        options?.signal?.addEventListener('abort', () => {
+          const aborted = new Error('capability aborted') as Error & { name: string }
+          aborted.name = 'AbortError'
+          reject(aborted)
+        }, { once: true })
+      }) as never
+    },
+  }).run({ seriesIds: ['wocaes0074', 'lmeofcucashask'] })
+
+  assert.equal(report.benchmarks[1]?.reason, 'ENVIRONMENT_NOT_READY')
+  assert.equal(capturedSignal?.aborted, true)
 })
 
 test('J. Stage 3 cohort config does not restrict product capability', async () => {

@@ -9,7 +9,11 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-type PreparationGateway = typeof prepareInteractiveCurrentForecast
+type PreparationGateway = (
+  input: Parameters<typeof prepareInteractiveCurrentForecast>[0],
+  traceEnabled?: Parameters<typeof prepareInteractiveCurrentForecast>[1],
+  signal?: Parameters<typeof prepareInteractiveCurrentForecast>[2],
+) => ReturnType<typeof prepareInteractiveCurrentForecast>
 
 export function createPrepareCurrentForecastRouteHandler(
   gateway: PreparationGateway = prepareInteractiveCurrentForecast,
@@ -30,7 +34,7 @@ export function createPrepareCurrentForecastRouteHandler(
 
     try {
       const traceEnabled = request.headers.get(FORECAST_TRACE_HEADER) === '1'
-      return NextResponse.json(await gateway(parsed.data, traceEnabled))
+      return NextResponse.json(await gateway(parsed.data, traceEnabled, request.signal))
     } catch (error) {
       if (error instanceof SgRuntimeForecastPreparationAuthError) {
         return NextResponse.json({ error: error.message }, { status: error.statusCode })

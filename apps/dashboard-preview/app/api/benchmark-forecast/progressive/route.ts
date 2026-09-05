@@ -8,7 +8,11 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-type ProgressiveSnapshotReader = typeof requestProgressiveForecastPreparationSnapshot
+type ProgressiveSnapshotReader = (
+  input: Parameters<typeof requestProgressiveForecastPreparationSnapshot>[0],
+  traceOptions?: Parameters<typeof requestProgressiveForecastPreparationSnapshot>[1],
+  options?: Parameters<typeof requestProgressiveForecastPreparationSnapshot>[2],
+) => ReturnType<typeof requestProgressiveForecastPreparationSnapshot>
 
 export function createProgressiveForecastPreparationRouteHandler(
   reader: ProgressiveSnapshotReader = requestProgressiveForecastPreparationSnapshot,
@@ -28,7 +32,7 @@ export function createProgressiveForecastPreparationRouteHandler(
     }
 
     try {
-      return NextResponse.json(await reader(parsed.data))
+      return NextResponse.json(await reader(parsed.data, undefined, { signal: request.signal }))
     } catch (error) {
       if (error instanceof SgRuntimeForecastPreparationAuthError) {
         return NextResponse.json({ error: error.message }, { status: error.statusCode })

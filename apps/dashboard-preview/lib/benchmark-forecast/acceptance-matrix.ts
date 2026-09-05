@@ -74,8 +74,8 @@ type AvailableVerificationResult = Extract<BenchmarkForecastVerificationResult, 
 type ExactReadIdentity = Pick<ForecastAcceptanceIdentity, 'seriesId' | 'modelId' | 'targetBasis' | 'targetSemantics' | 'methodId' | 'methodVersion'>
 
 type AcceptanceMatrixDependencies = {
-  readCapability: (input: BenchmarkForecastCurrentPreparationRequest) => Promise<InteractiveForecastCapabilityResult>
-  prepareCurrent: (input: BenchmarkForecastCurrentPreparationRequest) => Promise<BenchmarkForecastCurrentPreparationResult>
+  readCapability: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => Promise<InteractiveForecastCapabilityResult>
+  prepareCurrent: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => Promise<BenchmarkForecastCurrentPreparationResult>
   readCurrent: (seriesId: string, model: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => Promise<BenchmarkForecastCurrentResult>
   readVerification: (seriesId: string, model: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => Promise<BenchmarkForecastVerificationResult>
   getPrisma: () => PrismaClientLike | null
@@ -408,6 +408,7 @@ export function createForecastAcceptanceMatrixService(
 
   async function ensurePrepared(
     input: BenchmarkForecastCurrentPreparationRequest,
+    options?: { signal?: AbortSignal },
   ): Promise<PreparationEvidence> {
     const cacheKey = createVariantKey(input.seriesId, input.modelId, input.targetBasis)
     const cached = preparationCache.get(cacheKey)
@@ -415,7 +416,7 @@ export function createForecastAcceptanceMatrixService(
       return cached
     }
 
-    const pending = resolvedDependencies.prepareCurrent(input)
+    const pending = resolvedDependencies.prepareCurrent(input, options)
       .then((result) => ({
         state: result.state,
         prepareStatus: result.prepareStatus,
@@ -460,6 +461,7 @@ export function createForecastAcceptanceMatrixService(
 
   async function resolveVariantReadiness(
     input: BenchmarkForecastCurrentPreparationRequest,
+    options?: { signal?: AbortSignal },
   ): Promise<ResolvedVariantReadiness> {
     const cacheKey = createVariantKey(input.seriesId, input.modelId, input.targetBasis)
     const cached = readinessCache.get(cacheKey)
@@ -468,7 +470,7 @@ export function createForecastAcceptanceMatrixService(
     }
 
     const pending = (async () => {
-      const initialCapability = await resolvedDependencies.readCapability(input)
+      const initialCapability = await resolvedDependencies.readCapability(input, options)
 
       if (
         (initialCapability.currentReadiness === 'READY' || initialCapability.verificationReadiness === 'READY')
@@ -480,8 +482,8 @@ export function createForecastAcceptanceMatrixService(
         }
       }
 
-      const preparation = await ensurePrepared(input)
-      const warmedCapability = await resolvedDependencies.readCapability(input)
+      const preparation = await ensurePrepared(input, options)
+      const warmedCapability = await resolvedDependencies.readCapability(input, options)
 
       return {
         capability: warmedCapability,
@@ -505,9 +507,10 @@ export function createForecastAcceptanceMatrixService(
     seriesId: string,
     modelId: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
+    options?: { signal?: AbortSignal },
   ): Promise<ForecastAcceptanceCell> {
     try {
-      const resolvedReadiness = await resolveVariantReadiness({ seriesId, modelId, targetBasis })
+      const resolvedReadiness = await resolveVariantReadiness({ seriesId, modelId, targetBasis }, options)
       const effectiveCapability = resolvedReadiness.capability
       const prepareEvidence = resolvedReadiness.preparation
 
@@ -623,9 +626,10 @@ export function createForecastAcceptanceMatrixService(
     modelId: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
     horizon: string,
+    options?: { signal?: AbortSignal },
   ): Promise<ForecastAcceptanceCell> {
     try {
-      const resolvedReadiness = await resolveVariantReadiness({ seriesId, modelId, targetBasis })
+      const resolvedReadiness = await resolveVariantReadiness({ seriesId, modelId, targetBasis }, options)
       const effectiveCapability = resolvedReadiness.capability
       const prepareEvidence = resolvedReadiness.preparation
 
@@ -746,14 +750,14 @@ export function createForecastAcceptanceMatrixService(
   }
 
   return {
-    async evaluateSeries(seriesId: string): Promise<ForecastAcceptanceMatrixReport> {
+    async evaluateSeries(seriesId: string, options?: { signal?: AbortSignal }): Promise<ForecastAcceptanceMatrixReport> {
       const variantResults = await Promise.all(
         FORECAST_PORTFOLIO_MODELS.flatMap((modelId) => (
           FORECAST_TARGET_BASES.map(async (targetBasis) => ({
-            current: await evaluateCurrentCell(seriesId, modelId, targetBasis),
+            current: await evaluateCurrentCell(seriesId, modelId, targetBasis, options),
             verification: await Promise.all(
               DEFAULT_VERIFICATION_HORIZONS.map((horizon) => (
-                evaluateVerificationCell(seriesId, modelId, targetBasis, horizon)
+                evaluateVerificationCell(seriesId, modelId, targetBasis, horizon, options)
               )),
             ),
           }))
