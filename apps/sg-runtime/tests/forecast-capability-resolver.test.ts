@@ -249,7 +249,7 @@ test('proves the frozen eight-frequency business target matrix and default targe
         : sourceFrequency === 'DAILY'
           || sourceFrequency === 'MONTHLY'
           || (sourceFrequency === 'WEEKLY' && item.businessTarget === 'END_OF_PERIOD')
-          || ['BIMONTHLY', 'QUARTERLY', 'SEMIANNUAL', 'ANNUAL'].includes(sourceFrequency)
+          || ['BIMONTHLY', 'QUARTERLY', 'QUADMONTHLY', 'SEMIANNUAL', 'ANNUAL'].includes(sourceFrequency)
             ? 'SUPPORTED'
             : 'NOT_IMPLEMENTED'
       return item.implementationState === expected
@@ -281,7 +281,7 @@ test('keeps sparse semantic support separate from model and real execution eligi
 })
 
 test('enables only real-provider-accepted native sparse Average and EOP execution', () => {
-  for (const sourceFrequency of ['BIMONTHLY', 'QUARTERLY', 'SEMIANNUAL', 'ANNUAL'] as const) {
+  for (const sourceFrequency of ['BIMONTHLY', 'QUARTERLY', 'QUADMONTHLY', 'SEMIANNUAL', 'ANNUAL'] as const) {
     const capabilities = resolve({
       sourceFrequency,
       sourceObservationCount: 40,
@@ -488,7 +488,7 @@ test('service enables the lawful sparse frequency family behind provenance admis
     assert.equal(resolution.status, 'AVAILABLE')
     assert.equal(resolution.sourceMetadata.sourceFrequency, normalizedFrequency)
     const periodCapabilities = resolution.capabilities.filter((capability) => capability.businessTarget !== 'DAILY')
-    const expectedImplementation = normalizedFrequency === 'QUADMONTHLY' ? 'NOT_IMPLEMENTED' : 'SUPPORTED'
+    const expectedImplementation = 'SUPPORTED'
     assert.ok(periodCapabilities.every((capability) => capability.implementationState === expectedImplementation))
     assert.ok(periodCapabilities.every((capability) => capability.capabilityState === 'PROVENANCE_REQUIRED'))
     assert.ok(resolution.capabilities
