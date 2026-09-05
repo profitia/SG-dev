@@ -268,6 +268,11 @@ function createWarmOnlyPreparationResult(
   }
 }
 
+function isPrepareEligible(capability: InteractiveForecastCapabilityResult) {
+  return capability.currentReadiness === 'NOT_PREPARED'
+    && (capability.status === 'PREPARATION_REQUIRED' || capability.status === 'NOT_PREPARED')
+}
+
 function createMatrixEvaluator(
   dependencies: Pick<DemoCertificationDependencies, 'readCapability' | 'prepareCurrent' | 'readCurrent' | 'readVerification'>,
 ) {
@@ -668,80 +673,103 @@ export function createDemoCertificationService(
         try {
           const benchmark = await withBenchmarkTimeout((async (): Promise<DemoBenchmarkCertification> => {
           const variants: DemoVariantPreparationRecord[] = []
+          const capabilityChecks = await Promise.all(
+            requiredModels.flatMap((modelId) => (
+              inspectedTargetBases.map(async (targetBasis) => {
+                const input = { seriesId: entry.seriesId, modelId, targetBasis }
+                return {
+                  input,
+                  required: requiredTargetBases.includes(targetBasis),
+                  capability: await resolvedDependencies.readCapability(input),
+                }
+              })
+            )),
+          )
 
-          for (const modelId of requiredModels) {
-            for (const targetBasis of inspectedTargetBases) {
-              const input = { seriesId: entry.seriesId, modelId, targetBasis }
-              const capability = await resolvedDependencies.readCapability(input)
-              const required = requiredTargetBases.includes(targetBasis)
-
-              if (!isCapabilityLawful(capability)) {
-                variants.push({
-                  seriesId: entry.seriesId,
-                  modelId,
-                  targetBasis,
-                  targetSemantics: resolveForecastTargetSemantics(targetBasis),
-                  required,
-                  capabilityStatus: capability.status,
-                  currentReadiness: capability.currentReadiness,
-                  verificationReadiness: capability.verificationReadiness,
-                  preparationStatus: null,
-                  status: required ? 'FAIL' : 'UNSUPPORTED',
-                  reason: capability.reason ?? capability.status,
-                })
-                continue
-              }
-
-              if (mode === 'REVALIDATE') {
-                const warmReady = capability.currentReadiness === 'READY' && capability.verificationReadiness === 'READY'
-                variants.push({
-                  seriesId: entry.seriesId,
-                  modelId,
-                  targetBasis,
-                  targetSemantics: resolveForecastTargetSemantics(targetBasis),
-                  required,
-                  capabilityStatus: capability.status,
-                  currentReadiness: capability.currentReadiness,
-                  verificationReadiness: capability.verificationReadiness,
-                  preparationStatus: null,
-                  status: warmReady ? 'PASS' : 'FAIL',
-                  reason: warmReady ? null : 'Warm revalidation requires both current and verification readiness to remain READY.',
-                })
-                continue
-              }
-
-              if (capability.currentReadiness === 'READY' && capability.verificationReadiness === 'READY') {
-                variants.push({
-                  seriesId: entry.seriesId,
-                  modelId,
-                  targetBasis,
-                  targetSemantics: resolveForecastTargetSemantics(targetBasis),
-                  required,
-                  capabilityStatus: capability.status,
-                  currentReadiness: capability.currentReadiness,
-                  verificationReadiness: capability.verificationReadiness,
-                  preparationStatus: null,
-                  status: 'PASS',
-                  reason: null,
-                })
-                continue
-              }
-
-              const preparation = await resolvedDependencies.prepareCurrent(input)
+          for (const { input, required, capability } of capabilityChecks) {
+            if (!isCapabilityLawful(capability)) {
               variants.push({
                 seriesId: entry.seriesId,
-                modelId,
-                targetBasis,
-                targetSemantics: preparation.targetSemantics,
+                modelId: input.modelId,
+                targetBasis: input.targetBasis,
+                targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
                 required,
                 capabilityStatus: capability.status,
                 currentReadiness: capability.currentReadiness,
                 verificationReadiness: capability.verificationReadiness,
-                preparationStatus: preparation.prepareStatus,
-                status: preparation.state === 'READY' ? 'PASS' : 'FAIL',
-                reason: preparation.state === 'READY' ? null : preparation.reason ?? preparation.state,
+                preparationStatus: null,
+                status: required ? 'FAIL' : 'UNSUPPORTED',
+                reason: capability.reason ?? capability.status,
               })
+              continue
             }
+
+            if (mode === 'REVALIDATE') {
+              const warmReady = capability.currentReadiness === 'READY' && capability.verificationReadiness === 'READY'
+              variants.push({
+                seriesId: entry.seriesId,
+                modelId: input.modelId,
+                targetBasis: input.targetBasis,
+                targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
+                required,
+                capabilityStatus: capability.status,
+                currentReadiness: capability.currentReadiness,
+                verificationReadiness: capability.verificationReadiness,
+                preparationStatus: null,
+                status: warmReady ? 'PASS' : 'FAIL',
+                reason: warmReady ? null : 'Warm revalidation requires both current and verification readiness to remain READY.',
+              })
+              continue
+            }
+
+            if (capability.currentReadiness === 'READY' && capability.verificationReadiness === 'READY') {
+              variants.push({
+                seriesId: entry.seriesId,
+                modelId: input.modelId,
+                targetBasis: input.targetBasis,
+                targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
+                required,
+                capabilityStatus: capability.status,
+                currentReadiness: capability.currentReadiness,
+                verificationReadiness: capability.verificationReadiness,
+                preparationStatus: null,
+                status: 'PASS',
+                reason: null,
+              })
+              continue
+            }
+
+            if (!isPrepareEligible(capability)) {
+              variants.push({
+                seriesId: entry.seriesId,
+                modelId: input.modelId,
+                targetBasis: input.targetBasis,
+                targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
+                required,
+                capabilityStatus: capability.status,
+                currentReadiness: capability.currentReadiness,
+                verificationReadiness: capability.verificationReadiness,
+                preparationStatus: null,
+                status: 'FAIL',
+                reason: capability.reason ?? capability.status,
+              })
+              continue
+            }
+
+            const preparation = await resolvedDependencies.prepareCurrent(input)
+            variants.push({
+              seriesId: entry.seriesId,
+              modelId: input.modelId,
+              targetBasis: input.targetBasis,
+              targetSemantics: preparation.targetSemantics,
+              required,
+              capabilityStatus: capability.status,
+              currentReadiness: capability.currentReadiness,
+              verificationReadiness: capability.verificationReadiness,
+              preparationStatus: preparation.prepareStatus,
+              status: preparation.state === 'READY' ? 'PASS' : 'FAIL',
+              reason: preparation.state === 'READY' ? null : preparation.reason ?? preparation.state,
+            })
           }
 
           const requiredVariants = variants.filter((variant) => variant.required)

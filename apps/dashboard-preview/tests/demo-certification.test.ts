@@ -462,6 +462,24 @@ test('G. warm revalidation stays pass without new prepare calls', async () => {
   assert.deepEqual(prepareCalls, [])
 })
 
+test('G2. stale capability fails precompute without redundant prepare calls', async () => {
+  const prepareCalls: string[] = []
+  const report = await createService({
+    prepareCalls,
+    capabilityResolver: (input) => capability(input, {
+      status: 'STALE' as never,
+      currentReadiness: 'STALE',
+      verificationReadiness: 'STALE',
+      reason: 'STALE',
+    }),
+  }).run({ includeFallback: false })
+
+  assert.equal(report.benchmarks[0]?.demoSafe, 'NO')
+  assert.equal(report.benchmarks[0]?.reason, 'PRECOMPUTE_FAIL')
+  assert.equal(report.benchmarks[0]?.precompute.status, 'FAIL')
+  assert.deepEqual(prepareCalls, [])
+})
+
 test('H. rehearsal failure blocks demo certification', async () => {
   const report = await createService({
     currentResolver: (input) => (

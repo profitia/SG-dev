@@ -533,6 +533,67 @@ test('matrix performs one cold prepare on first evaluation and zero prepares on 
           targetPrepared = true
         }
 
+      test('matrix reads verification once per variant across all horizons', async () => {
+        let verificationReads = 0
+
+        const service = createForecastAcceptanceMatrixService({
+          readCapability: async (input) => capability({
+            modelId: input.modelId,
+            targetSemantics: input.targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : input.targetBasis,
+            sourceFrequency: input.targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
+          }),
+          prepareCurrent: async (input) => preparationResult({
+            modelId: input.modelId,
+            targetBasis: input.targetBasis,
+            targetSemantics: input.targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : input.targetBasis,
+          }),
+          readCurrent: async (_seriesId, modelId, targetBasis) => currentResult({
+            modelId,
+            targetBasis,
+            targetSemantics: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis,
+            methodId: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis,
+            methodVersion: targetBasis === 'POINT_IN_TIME' ? 'rolling-daily-point-in-time-v1' : 'benchmark-forecasting-mvp-phase2-v1',
+            lineage: {
+              inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+              inputRunId: 'run-1',
+              sourceSeriesId: 'brent',
+              sourceFrequency: targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
+              historyFingerprint: `${modelId}-${targetBasis}`,
+              preparation: null,
+            },
+          }),
+          readVerification: async (_seriesId, modelId, targetBasis) => {
+            verificationReads += 1
+            return verificationResult({
+              modelId,
+              targetBasis,
+              targetSemantics: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis,
+              methodId: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis,
+              methodVersion: targetBasis === 'POINT_IN_TIME' ? 'rolling-daily-point-in-time-v1' : 'benchmark-forecasting-mvp-phase2-v1',
+              lineage: {
+                inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+                inputRunId: 'verification-1',
+                sourceSeriesId: 'brent',
+                sourceFrequency: targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
+                historyFingerprint: `${modelId}-${targetBasis}-verification`,
+                preparation: null,
+              },
+            })
+          },
+          getPrisma: () => ({
+            forecastCurrentRun: { findFirst: async ({ where }: { where: { modelId: string, targetBasis: string } }) => ({ status: 'AVAILABLE', historyFingerprint: `${where.modelId}-${where.targetBasis}`, points: [{ forecastValue: 1 }] }) },
+            rollingDailyCurrentForecastSnapshot: { findFirst: async () => ({ status: 'AVAILABLE', payloadJson: { status: 'AVAILABLE', audit: { sourceHistoryFingerprint: 'arima-POINT_IN_TIME' }, path: [{ pointForecast: 1 }] } }) },
+            forecastVerificationRun: { findFirst: async ({ where }: { where: { modelId: string, targetBasis: string } }) => ({ status: 'AVAILABLE', historyFingerprint: `${where.modelId}-${where.targetBasis}-verification`, metrics: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }], points: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }] }) },
+            rollingDailyVerificationRecord: { findMany: async () => [{ actualValue: 1, maturityStatus: 'MATURED', sourceHistoryFingerprint: 'arima-POINT_IN_TIME-verification' }] },
+          } as never),
+        })
+
+        const report = await service.evaluateSeries('brent')
+
+        assert.equal(report.verification.cells.length, 48)
+        assert.equal(verificationReads, 12)
+      })
+
         return preparationResult({ modelId: input.modelId, targetBasis: input.targetBasis, targetSemantics: input.targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : input.targetBasis })
       },
       readCurrent: async (_seriesId, modelId, targetBasis) => currentResult({ modelId, targetBasis, targetSemantics: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis, methodId: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis, methodVersion: targetBasis === 'POINT_IN_TIME' ? 'rolling-daily-point-in-time-v1' : 'benchmark-forecasting-mvp-phase2-v1' }),

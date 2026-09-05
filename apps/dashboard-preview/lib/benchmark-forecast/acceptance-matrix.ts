@@ -395,6 +395,8 @@ export function createForecastAcceptanceMatrixService(
 
   const preparationCache = new Map<string, Promise<PreparationEvidence>>()
   const readinessCache = new Map<string, Promise<ResolvedVariantReadiness>>()
+  const currentReadCache = new Map<string, Promise<BenchmarkForecastCurrentResult>>()
+  const verificationReadCache = new Map<string, Promise<BenchmarkForecastVerificationResult>>()
 
   function createVariantKey(
     seriesId: string,
@@ -421,6 +423,38 @@ export function createForecastAcceptanceMatrixService(
       }))
 
     preparationCache.set(cacheKey, pending)
+    return pending
+  }
+
+  async function readCurrentOnce(
+    seriesId: string,
+    modelId: ForecastPortfolioModelId,
+    targetBasis: ForecastTargetBasis,
+  ): Promise<BenchmarkForecastCurrentResult> {
+    const cacheKey = createVariantKey(seriesId, modelId, targetBasis)
+    const cached = currentReadCache.get(cacheKey)
+    if (cached) {
+      return cached
+    }
+
+    const pending = resolvedDependencies.readCurrent(seriesId, modelId, targetBasis)
+    currentReadCache.set(cacheKey, pending)
+    return pending
+  }
+
+  async function readVerificationOnce(
+    seriesId: string,
+    modelId: ForecastPortfolioModelId,
+    targetBasis: ForecastTargetBasis,
+  ): Promise<BenchmarkForecastVerificationResult> {
+    const cacheKey = createVariantKey(seriesId, modelId, targetBasis)
+    const cached = verificationReadCache.get(cacheKey)
+    if (cached) {
+      return cached
+    }
+
+    const pending = resolvedDependencies.readVerification(seriesId, modelId, targetBasis)
+    verificationReadCache.set(cacheKey, pending)
     return pending
   }
 
@@ -513,7 +547,7 @@ export function createForecastAcceptanceMatrixService(
         }
       }
 
-      const current = await resolvedDependencies.readCurrent(seriesId, modelId, targetBasis)
+      const current = await readCurrentOnce(seriesId, modelId, targetBasis)
       if (current.status !== 'AVAILABLE') {
         return {
           identity: { ...identityBase, kind: 'CURRENT', historyFingerprint: persisted.historyFingerprint, verificationHorizon: null },
@@ -631,7 +665,7 @@ export function createForecastAcceptanceMatrixService(
         }
       }
 
-      const verification = await resolvedDependencies.readVerification(seriesId, modelId, targetBasis)
+      const verification = await readVerificationOnce(seriesId, modelId, targetBasis)
       if (!isAvailableVerificationResult(verification)) {
         return {
           identity: { ...identityBase, kind: 'VERIFICATION', historyFingerprint: persisted.historyFingerprint, verificationHorizon: horizon },
@@ -713,17 +747,21 @@ export function createForecastAcceptanceMatrixService(
 
   return {
     async evaluateSeries(seriesId: string): Promise<ForecastAcceptanceMatrixReport> {
-      const currentCells: ForecastAcceptanceCell[] = []
-      const verificationCells: ForecastAcceptanceCell[] = []
+      const variantResults = await Promise.all(
+        FORECAST_PORTFOLIO_MODELS.flatMap((modelId) => (
+          FORECAST_TARGET_BASES.map(async (targetBasis) => ({
+            current: await evaluateCurrentCell(seriesId, modelId, targetBasis),
+            verification: await Promise.all(
+              DEFAULT_VERIFICATION_HORIZONS.map((horizon) => (
+                evaluateVerificationCell(seriesId, modelId, targetBasis, horizon)
+              )),
+            ),
+          }))
+        )),
+      )
 
-      for (const modelId of FORECAST_PORTFOLIO_MODELS) {
-        for (const targetBasis of FORECAST_TARGET_BASES) {
-          currentCells.push(await evaluateCurrentCell(seriesId, modelId, targetBasis))
-          for (const horizon of DEFAULT_VERIFICATION_HORIZONS) {
-            verificationCells.push(await evaluateVerificationCell(seriesId, modelId, targetBasis, horizon))
-          }
-        }
-      }
+      const currentCells = variantResults.map((result) => result.current)
+      const verificationCells = variantResults.flatMap((result) => result.verification)
 
       const current = summarize(currentCells)
       const verification = summarize(verificationCells)
