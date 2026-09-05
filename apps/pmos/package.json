@@ -17,6 +17,7 @@
     "archive:migrate": "npx dotenv-cli -e .env.local -- prisma db push --accept-data-loss && npx dotenv-cli -e .env.local -- tsx scripts/archive-migrate.ts",
     "archive:inventory": "npx dotenv-cli -e .env.local -- tsx scripts/archive-inventory.ts",
     "pmos:save": "npx dotenv-cli -e .env.local -- tsx scripts/pmos-save.ts",
+    "pmos:publish-phr": "npx dotenv-cli -e .env.local -- tsx scripts/pmos-publish-phr.ts",
     "pmos:context": "npx dotenv-cli -e .env.local -- tsx scripts/build-runtime-context.ts",
     "pmos:status": "tsx scripts/pmos-status.ts",
     "pmos:health": "tsx scripts/pmos-health.ts",

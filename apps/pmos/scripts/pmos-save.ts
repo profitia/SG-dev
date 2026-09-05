@@ -80,6 +80,7 @@ import {
   readJsonFileSafe,
 } from '../src/lib/pmos/atomic-io'
 import { materializePendingArtifactFromBootstrap } from '../src/lib/pmos/completion-authority'
+import { publishPhrPublicationOnCompletedCloseout } from '../src/lib/pmos/phr-publication'
 import { repairRuntimeContextArtifacts } from '../src/lib/pmos/runtime-context-write'
 
 const prisma = new PrismaClient()
@@ -96,9 +97,9 @@ const CLOSEOUTS_DIR = path.join(RECOVERY_DIR, 'closeouts')
 const OPERATIONS_DIR = path.join(RECOVERY_DIR, 'operations')
 const RUNTIME_RECOVERY_DIR = path.join(RECOVERY_DIR, 'runtime')
 const ACTIVE_CLOSEOUT_FILE = path.join(RECOVERY_DIR, 'active-closeout.json')
+const PHR_PUBLICATIONS_DIR = path.join(RECOVERY_DIR, 'phr-publications')
 const RUNTIME_CONTEXT_FILE = path.resolve(__dirname, '../.context/runtime-context.md')
 const RUNTIME_CONTEXT_INTEGRITY_FILE = path.resolve(__dirname, '../.context/runtime-context.integrity.json')
-const DEFAULT_MEMOROS_API_BASE_URL = 'http://localhost:4000'
 const MEMOROS_IMPORT_ROUTE = '/api/import/pmos-artifact'
 
 const CANONICAL_PROJECT_NAMES: ReadonlySet<string> = new Set([
@@ -124,6 +125,7 @@ const LOCK_STALE_MS = 60_000 // 60 seconds — enough for any normal save operat
 type ParsedArgs = {
   bootstrapInputPath: string | null
   usedLegacyInputFlag: boolean
+  refreshHandoffTaskId: string | null
 }
 
 type PersistedConversationArtifactForPublication = {
@@ -227,6 +229,12 @@ type MemorosPublicationArtifactV1 = {
   payload: MemorosPublicationPayloadV1
 }
 
+type HandoffFinalizationContext = {
+  publicationArtifact: MemorosPublicationArtifactV1 | null
+  publicationAck: MemorosPublicationAck | null
+  pendingArtifactSlotFinal: 'CLEAR' | 'OCCUPIED' | 'INVALID' | 'UNKNOWN'
+}
+
 // ── Filename Helpers ──────────────────────────────────────────────────────────
 
 function formatTimestampForFilename(date: Date): string {
@@ -258,6 +266,7 @@ function parseArgs(): ParsedArgs {
   const args = process.argv.slice(2)
   let bootstrapInputPath: string | null = null
   let usedLegacyInputFlag = false
+  let refreshHandoffTaskId: string | null = null
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index]
@@ -270,13 +279,22 @@ function parseArgs(): ParsedArgs {
       bootstrapInputPath = args[index + 1] ?? null
       usedLegacyInputFlag = true
       index += 1
+      continue
+    }
+    if (arg === '--refresh-handoff-task-id') {
+      refreshHandoffTaskId = args[index + 1] ?? null
+      index += 1
     }
   }
 
-  return { bootstrapInputPath, usedLegacyInputFlag }
+  return { bootstrapInputPath, usedLegacyInputFlag, refreshHandoffTaskId }
 }
 
 function ensurePendingArtifactReady(params: ParsedArgs): void {
+  if (params.refreshHandoffTaskId) {
+    return
+  }
+
   if (fs.existsSync(PENDING_FILE)) {
     if (params.bootstrapInputPath) {
       console.warn('[pmos-save] WARNING: Ignoring bootstrap input because pending-artifact.json already exists.')
@@ -363,12 +381,12 @@ function normalizeStringList(values: string[]): string[] {
 }
 
 function getMemorosPublicationTargetSnapshot(): MemorosPublicationTargetSnapshot {
-  const configuredBaseUrl = normalizeOptionalString(process.env.MEMOROS_API_BASE_URL) ?? DEFAULT_MEMOROS_API_BASE_URL
-  const baseUrl = configuredBaseUrl.replace(/\/+$/, '')
+  const configuredBaseUrl = normalizeOptionalString(process.env.MEMOROS_API_BASE_URL)
+  const baseUrl = configuredBaseUrl ? configuredBaseUrl.replace(/\/+$/, '') : ''
 
   return {
     baseUrl,
-    endpoint: `${baseUrl}${MEMOROS_IMPORT_ROUTE}`,
+    endpoint: baseUrl ? `${baseUrl}${MEMOROS_IMPORT_ROUTE}` : '',
     projectId: normalizeOptionalString(process.env.MEMOROS_PROJECT_ID) ?? null,
   }
 }
@@ -376,8 +394,12 @@ function getMemorosPublicationTargetSnapshot(): MemorosPublicationTargetSnapshot
 function getMemorosPublicationConfigOrThrow(): MemorosPublicationConfig {
   const snapshot = getMemorosPublicationTargetSnapshot()
 
+  if (!snapshot.baseUrl) {
+    throw new Error('MEMOROS_API_BASE_URL is not configured. Publication aborted.')
+  }
+
   if (!snapshot.projectId) {
-    throw new Error('MEMOROS publication is not configured: set MEMOROS_PROJECT_ID in apps/pmos/.env.local.')
+    throw new Error('MEMOROS_PROJECT_ID is not configured. Publication aborted.')
   }
 
   return {
@@ -1494,6 +1516,94 @@ function buildHandoffTextSection(title: string, items: string[]): string {
 }
 
 function buildDerivedHandoffPayload(artifact: FlightRecordV1, closeout: CloseoutEvidence) {
+  return buildDerivedHandoffPayloadWithContext(artifact, closeout, {
+    publicationArtifact: null,
+    publicationAck: null,
+    pendingArtifactSlotFinal: fs.existsSync(PENDING_FILE) ? 'OCCUPIED' : 'CLEAR',
+  })
+}
+
+function mapMemorosPublicationStatus(context: HandoffFinalizationContext): 'SUCCEEDED' | 'FAILED' | 'NOT_STARTED' | 'UNKNOWN' {
+  if (context.publicationArtifact?.status === ArtifactStatus.DELIVERED) return 'SUCCEEDED'
+  if (context.publicationArtifact?.status === ArtifactStatus.FAILED) return 'FAILED'
+  if (context.publicationArtifact?.status === ArtifactStatus.GENERATED) return 'NOT_STARTED'
+  return 'UNKNOWN'
+}
+
+function mapPublicationAck(context: HandoffFinalizationContext): 'YES' | 'NO' | 'UNKNOWN' {
+  if (context.publicationAck) return 'YES'
+  if (context.publicationArtifact?.status === ArtifactStatus.FAILED) return 'NO'
+  return 'UNKNOWN'
+}
+
+function mapKnowledgeProcessingStatus(context: HandoffFinalizationContext): 'STARTED' | 'READY' | 'FAILED' | 'UNKNOWN' | 'NOT_AVAILABLE' {
+  const status = context.publicationAck?.knowledgeProcessingStatus
+  if (status === 'knowledge_ready') return 'READY'
+  if (status === 'failed') return 'FAILED'
+  if (status === 'pending' || status === 'running') return 'STARTED'
+  if (context.publicationArtifact?.status === ArtifactStatus.DELIVERED) return 'UNKNOWN'
+  return 'NOT_AVAILABLE'
+}
+
+function mapKnowledgeReady(context: HandoffFinalizationContext): 'YES' | 'NO' | 'UNKNOWN' | 'NOT_REQUIRED' {
+  const status = context.publicationAck?.knowledgeProcessingStatus
+  const readiness = context.publicationAck?.consumerReadinessStatus
+  if (status === 'knowledge_ready' || readiness === 'ready') return 'YES'
+  if (status === 'pending' || status === 'running' || readiness === 'pending') return 'NO'
+  if (status === 'failed' || readiness === 'failed') return 'NO'
+  if (context.publicationArtifact?.status === ArtifactStatus.DELIVERED) return 'UNKNOWN'
+  return 'NOT_REQUIRED'
+}
+
+function mapPublicationConfiguration(closeout: CloseoutEvidence, context: HandoffFinalizationContext): 'PASS' | 'FAIL' | 'NOT_REQUIRED' {
+  if (context.publicationArtifact || context.publicationAck) return 'PASS'
+  if (closeout.handoffPublicationStatus === 'FAILED') return 'FAIL'
+  return 'NOT_REQUIRED'
+}
+
+function mapFinalVerdict(closeout: CloseoutEvidence, context: HandoffFinalizationContext): 'PASS' | 'PASS_WITH_DOWNSTREAM_PROCESSING_PENDING' | 'WARNING' | 'BLOCKED' | 'FAIL' {
+  if (closeout.pmosSaveStatus !== 'SUCCEEDED') return closeout.pmosSaveStatus === 'FAILED' ? 'FAIL' : 'BLOCKED'
+  if (closeout.closeoutState !== CloseoutState.CLOSEOUT_COMPLETE) return 'WARNING'
+  if (mapMemorosPublicationStatus(context) !== 'SUCCEEDED' || mapPublicationAck(context) !== 'YES') return 'WARNING'
+  if (mapKnowledgeReady(context) === 'YES') return 'PASS'
+  return 'PASS_WITH_DOWNSTREAM_PROCESSING_PENDING'
+}
+
+function shouldKeepValidationNotExecuted(
+  item: string,
+  closeout: CloseoutEvidence,
+  context: HandoffFinalizationContext,
+): boolean {
+  const normalized = item.toLowerCase()
+
+  if (closeout.pmosSaveStatus === 'SUCCEEDED' && /pmos persistence|canonical pmos:save|pmos save/.test(normalized)) {
+    return false
+  }
+
+  if (closeout.vectorRebuildStatus === 'SUCCEEDED' && /runtime rebuild|pmos:context|runtime-context/.test(normalized)) {
+    return false
+  }
+
+  if (closeout.runtimeContextIntegrityStatus === 'PASS' && /runtime verification|verify-runtime|runtime integrity/.test(normalized)) {
+    return false
+  }
+
+  if (mapMemorosPublicationStatus(context) === 'SUCCEEDED' && /memoros publication|publication artifact/.test(normalized)) {
+    return false
+  }
+
+  if (mapPublicationAck(context) === 'YES' && /publication ack|publication acknowledgment|acknowledg/.test(normalized)) {
+    return false
+  }
+
+  return true
+}
+
+function buildDerivedHandoffPayloadWithContext(
+  artifact: FlightRecordV1,
+  closeout: CloseoutEvidence,
+  context: HandoffFinalizationContext,
+) {
   const completedWork = [
     ...artifact.findings.findings,
     ...artifact.actions.artifactsCreated.map((item) => `Created: ${item}`),
@@ -1501,8 +1611,17 @@ function buildDerivedHandoffPayload(artifact: FlightRecordV1, closeout: Closeout
     ...artifact.actions.validationsExecuted.map((item) => `Validated: ${item}`),
   ]
 
+  completedWork.push(`Finalized: PMOS_SAVE=${closeout.pmosSaveStatus}`)
+  completedWork.push(`Finalized: closeoutState=${closeout.closeoutState}`)
+
+  if (mapMemorosPublicationStatus(context) === 'SUCCEEDED') {
+    completedWork.push('Finalized: MEMOROS publication acknowledged and publication artifact delivered.')
+  }
+
   const notCompleted = [
-    ...artifact.actions.validationsNotExecuted.map((item) => `Validation not executed: ${item}`),
+    ...artifact.actions.validationsNotExecuted
+      .filter((item) => shouldKeepValidationNotExecuted(item, closeout, context))
+      .map((item) => `Validation not executed: ${item}`),
     ...(closeout.recoveryRequired ? [`Recovery required: ${closeout.recoveryReason ?? 'unknown reason'}`] : []),
   ]
 
@@ -1511,10 +1630,10 @@ function buildDerivedHandoffPayload(artifact: FlightRecordV1, closeout: Closeout
   const unresolvedAreas = [
     ...artifact.findings.blockers,
     ...artifact.findings.residualRisks,
-    ...artifact.actions.validationsNotExecuted,
+    ...artifact.actions.validationsNotExecuted.filter((item) => shouldKeepValidationNotExecuted(item, closeout, context)),
   ]
   const recommendedNextDecision = outstandingTopics[0] ?? openQuestions[0] ?? 'None recorded.'
-  const currentState = buildCurrentStateSnapshot(artifact, closeout)
+  const currentState = buildCurrentStateSnapshot(artifact, closeout, context)
   const bridgePayloadText = buildBridgePayloadText({
     originalObjective: artifact.task.originalTaskRequest,
     resultStatus: artifact.result.finalStatus,
@@ -1564,11 +1683,43 @@ function getPmosMemorosKnowledgeReadyCallbackUrl(): string | null {
   return `${baseUrl.replace(/\/$/, '')}/api/publication/memoros/knowledge-ready`
 }
 
-function buildCurrentStateSnapshot(artifact: FlightRecordV1, closeout: CloseoutEvidence): string[] {
+function buildCurrentStateSnapshot(
+  artifact: FlightRecordV1,
+  closeout: CloseoutEvidence,
+  context: HandoffFinalizationContext,
+): string[] {
   const currentState: string[] = []
 
-  currentState.push(`Persisted HANDOFF: ${closeout.handoffPublicationStatus === 'SUCCEEDED' ? 'ACTIVE' : closeout.handoffPublicationStatus === 'FAILED' ? 'FAILED' : 'PENDING'}`)
+  const memorosPublication = mapMemorosPublicationStatus(context)
+  const publicationAck = mapPublicationAck(context)
+  const knowledgeProcessingStatus = mapKnowledgeProcessingStatus(context)
+  const knowledgeReady = mapKnowledgeReady(context)
+  const publicationConfiguration = mapPublicationConfiguration(closeout, context)
+  const finalVerdict = mapFinalVerdict(closeout, context)
+
+  currentState.push(`Persisted HANDOFF: ${closeout.closeoutState === CloseoutState.CLOSEOUT_COMPLETE ? 'ACTIVE' : closeout.handoffPublicationStatus === 'FAILED' ? 'FAILED' : 'PENDING'}`)
+  currentState.push(`PMOS_SAVE = ${closeout.pmosSaveStatus}`)
+  currentState.push(`closeoutState = ${closeout.closeoutState}`)
+  currentState.push(`CONVERSATION_ARTIFACT_PERSISTED = ${closeout.pmosSaveStatus === 'SUCCEEDED' ? 'YES' : closeout.pmosSaveStatus === 'FAILED' ? 'NO' : 'UNKNOWN'}`)
+  currentState.push('HANDOFF_ARTIFACT_PERSISTED = YES')
+  currentState.push(`PUBLICATION_CONFIGURATION = ${publicationConfiguration}`)
   currentState.push(`PostgreSQL Persistence: ${closeout.pmosSaveStatus === 'SUCCEEDED' ? 'ACTIVE' : closeout.pmosSaveStatus === 'FAILED' ? 'FAILED' : 'PENDING'}`)
+  currentState.push(`MEMOROS Publication: ${memorosPublication}`)
+  currentState.push(`PUBLICATION_ACK = ${publicationAck}`)
+  if (context.publicationAck?.threadId) {
+    currentState.push(`MEMOROS_THREAD_ID = ${context.publicationAck.threadId}`)
+  }
+  if (context.publicationAck?.sourceRecordId) {
+    currentState.push(`MEMOROS_SOURCE_RECORD_ID = ${context.publicationAck.sourceRecordId}`)
+  }
+  if (context.publicationAck?.knowledgeProcessingId) {
+    currentState.push(`MEMOROS_KNOWLEDGE_PROCESSING_ID = ${context.publicationAck.knowledgeProcessingId}`)
+  }
+  currentState.push(`MEMOROS_KNOWLEDGE_PROCESSING_STATUS = ${knowledgeProcessingStatus}`)
+  currentState.push(`MEMOROS_KNOWLEDGE_READY = ${knowledgeReady}`)
+  currentState.push(`PENDING_ARTIFACT_SLOT_FINAL = ${context.pendingArtifactSlotFinal}`)
+  currentState.push(`RUNTIME_VERIFICATION = ${closeout.runtimeContextIntegrityStatus === 'PASS' ? 'PASS' : closeout.runtimeContextIntegrityStatus === 'FAIL' ? 'FAIL' : 'NOT_AVAILABLE'}`)
+  currentState.push(`FINAL_VERDICT = ${finalVerdict}`)
 
   const eventLedgerVisibility = artifact.actions.validationsExecuted.some((item) => /event details|event ledger/i.test(item))
     ? 'ACTIVE'
@@ -1674,7 +1825,11 @@ function readPersistedHandoffArtifactOrThrow(row: {
 }
 
 function buildGptHandoffArtifact(artifact: FlightRecordV1, closeout: CloseoutEvidence, closeoutRef: string): GptHandoffArtifactV1 {
-  const payload = buildDerivedHandoffPayload(artifact, closeout)
+  const payload = buildDerivedHandoffPayloadWithContext(artifact, closeout, {
+    publicationArtifact: null,
+    publicationAck: null,
+    pendingArtifactSlotFinal: fs.existsSync(PENDING_FILE) ? 'OCCUPIED' : 'CLEAR',
+  })
 
   return {
     id: `${artifact.metadata.conversationId}:${ArtifactKind.HANDOFF}:v1`,
@@ -1699,8 +1854,41 @@ async function persistGptHandoffArtifact(params: {
   artifact: FlightRecordV1
   closeout: CloseoutEvidence
   closeoutRef: string
+  finalizationContext?: HandoffFinalizationContext
 }): Promise<GptHandoffArtifactV1> {
-  const handoffArtifact = buildGptHandoffArtifact(params.artifact, params.closeout, params.closeoutRef)
+  const finalizationContext = params.finalizationContext ?? {
+    publicationArtifact: null,
+    publicationAck: null,
+    pendingArtifactSlotFinal: fs.existsSync(PENDING_FILE) ? 'OCCUPIED' : 'CLEAR',
+  }
+
+  const handoffArtifact = (() => {
+    const payload = buildDerivedHandoffPayloadWithContext(params.artifact, params.closeout, finalizationContext)
+
+    return {
+      id: `${params.artifact.metadata.conversationId}:${ArtifactKind.HANDOFF}:v1`,
+      artifactKind: ArtifactKind.HANDOFF,
+      artifactNature: ArtifactNature.DERIVED,
+      version: 'v1',
+      status: ArtifactStatus.GENERATED,
+      taskId: params.artifact.metadata.taskId,
+      conversationId: params.artifact.metadata.conversationId,
+      createdAt: new Date().toISOString(),
+      sourceRefs: [
+        {
+          sourceArtifactKind: ArtifactKind.CLOSEOUT,
+          sourceArtifactRef: params.closeoutRef,
+        },
+        ...(finalizationContext.publicationArtifact
+          ? [{
+              sourceArtifactKind: ArtifactKind.PUBLICATION,
+              sourceArtifactRef: finalizationContext.publicationArtifact.id,
+            }]
+          : []),
+      ],
+      payload,
+    }
+  })()
   const validation = validateGptHandoffArtifact(handoffArtifact)
 
   if (!validation.valid) {
@@ -1766,6 +1954,120 @@ async function persistGptHandoffArtifact(params: {
   }
 
   return handoffArtifact
+}
+
+async function readMemorosPublicationArtifactByConversationIdOrThrow(conversationId: string): Promise<MemorosPublicationArtifactV1> {
+  const publicationArtifactId = `${conversationId}:${ArtifactKind.PUBLICATION}:MEMOROS:v1`
+  const persisted = await prisma.artifact.findUnique({
+    where: { id: publicationArtifactId },
+    select: {
+      id: true,
+      artifactKind: true,
+      artifactNature: true,
+      version: true,
+      status: true,
+      taskId: true,
+      conversationId: true,
+      sourceRefs: true,
+      payload: true,
+      createdAt: true,
+    },
+  })
+
+  if (!persisted) {
+    throw new Error(`MEMOROS publication artifact not found for conversation ${conversationId}.`)
+  }
+
+  return readPersistedMemorosPublicationArtifactOrThrow(persisted)
+}
+
+function buildConversationTraceability(baseName: string, closeout: CloseoutEvidence) {
+  return {
+    executionTrailPath: closeout.executionTrailPath ?? relativize(getExecutionTrailPaths(baseName).jsonlPath),
+    executionTrailMarkdownPath: closeout.executionTrailMarkdownPath ?? relativize(getExecutionTrailPaths(baseName).markdownPath),
+    closeoutEvidencePath: relativize(path.join(CLOSEOUTS_DIR, `${baseName}.closeout.json`)),
+    pendingArtifactBackupPath: closeout.pendingArtifactBackupPath ?? 'NOT_AVAILABLE',
+  }
+}
+
+async function refreshPersistedHandoffForCompletedTask(taskId: string): Promise<void> {
+  console.log(`[pmos-save] Refreshing persisted HANDOFF for completed task ${taskId}...`)
+
+  const conversationArtifact = await prisma.conversationArtifact.findFirst({
+    where: { taskId },
+    orderBy: { timestamp: 'desc' },
+    select: {
+      id: true,
+      conversationId: true,
+      timestamp: true,
+      project: true,
+      taskId: true,
+      scope: true,
+      etap: true,
+      subetap: true,
+      summary: true,
+      conversationType: true,
+      importanceLevel: true,
+      filesPath: true,
+      flightRecordJson: true,
+    },
+  })
+
+  if (!conversationArtifact) {
+    throw new Error(`ConversationArtifact not found for task ${taskId}.`)
+  }
+
+  const artifact = reconstructFlightRecordFromDbOrThrow({
+    conversationId: conversationArtifact.conversationId,
+    flightRecordJson: conversationArtifact.flightRecordJson,
+  })
+  const baseName = buildArtifactBaseName(artifact)
+  const closeoutPath = path.join(CLOSEOUTS_DIR, `${baseName}.closeout.json`)
+  const closeoutResult = readJsonFileSafe<CloseoutEvidence>(closeoutPath)
+  if (!closeoutResult.value) {
+    throw new Error(closeoutResult.error ?? `Closeout evidence missing for task ${taskId}.`)
+  }
+
+  const closeout = closeoutResult.value
+  if (closeout.closeoutState !== CloseoutState.CLOSEOUT_COMPLETE || closeout.pmosSaveStatus !== 'SUCCEEDED') {
+    throw new Error(`Task ${taskId} is not lawfully complete enough for HANDOFF refresh.`)
+  }
+
+  const publicationArtifact = await readMemorosPublicationArtifactByConversationIdOrThrow(conversationArtifact.conversationId)
+  if (publicationArtifact.status !== ArtifactStatus.DELIVERED) {
+    throw new Error(`Task ${taskId} does not have a delivered MEMOROS publication artifact.`)
+  }
+
+  const finalizationContext: HandoffFinalizationContext = {
+    publicationArtifact,
+    publicationAck: publicationArtifact.payload.ack,
+    pendingArtifactSlotFinal: fs.existsSync(PENDING_FILE) ? 'OCCUPIED' : 'CLEAR',
+  }
+
+  const refreshedHandoff = await persistGptHandoffArtifact({
+    artifact,
+    closeout,
+    closeoutRef: relativize(closeoutPath),
+    finalizationContext,
+  })
+
+  const mdPath = path.join(CONVERSATIONS_DIR, `${baseName}.md`)
+  const jsonPath = path.join(CONVERSATIONS_DIR, `${baseName}.json`)
+  const lockPath = path.join(CONVERSATIONS_DIR, `${baseName}.lock.json`)
+  const integrityPath = path.join(CONVERSATIONS_DIR, `${baseName}.integrity.json`)
+  writeConversationArtifactFiles({
+    artifact,
+    baseName,
+    mdPath,
+    jsonPath,
+    integrityPath,
+    lockPath,
+    recoveryDir: QUARANTINE_DIR,
+    handoff: refreshedHandoff,
+    traceability: buildConversationTraceability(baseName, closeout),
+  })
+
+  console.log(`[pmos-save] ✓ Refreshed persisted HANDOFF: ${refreshedHandoff.id}`)
 }
 
 function buildMemorosPublicationArtifact(params: {
@@ -2129,6 +2431,12 @@ async function main() {
   const args = parseArgs()
   assertDatabaseUrl('pmos:save')
   console.log('[pmos-save] Starting PMOS persistence routine...')
+
+  if (args.refreshHandoffTaskId) {
+    await refreshPersistedHandoffForCompletedTask(args.refreshHandoffTaskId)
+    console.log('[pmos-save] PMOS handoff refresh COMPLETE.')
+    return
+  }
 
   // 1. Preflight the pending artifact handoff surface.
   ensurePendingArtifactReady(args)
@@ -2728,6 +3036,39 @@ async function main() {
     },
   })
 
+  const phrPublicationResult = publishPhrPublicationOnCompletedCloseout({
+    artifact: canonicalFlightRecordPayload,
+    handoff: persistedHandoffArtifactForPublication,
+    closeout: evidence,
+    closeoutRef: relativize(closeoutEvidencePath),
+    conversationArtifactPath: relativize(jsonPath),
+    sidecarPath: path.join(PHR_PUBLICATIONS_DIR, `${baseName}.json`),
+    repositoryPath: process.env.PHR_REPOSITORY_PATH ?? '',
+  })
+  if (phrPublicationResult.attempted) {
+    if (phrPublicationResult.result && isSuccessfulPhrPublicationStatus(phrPublicationResult.result.status)) {
+      console.log(`[pmos-save] ✓ PHR publication ${phrPublicationResult.result.status.toLowerCase()} for ${artifact.metadata.conversationId}`)
+    } else if (phrPublicationResult.result) {
+      console.warn(`[pmos-save] ⚠️  PHR publication ${phrPublicationResult.result.status.toLowerCase()} for ${artifact.metadata.conversationId}: ${phrPublicationResult.result.error ?? 'unknown error'}`)
+    }
+  }
+
+  // 4. Clear pending artifact
+  fs.unlinkSync(PENDING_FILE)
+  console.log('[pmos-save] ✓ Cleared pending-artifact.json')
+
+  const refreshedHandoff = await persistGptHandoffArtifact({
+    artifact,
+    closeout: evidence,
+    closeoutRef: relativize(closeoutEvidencePath),
+    finalizationContext: {
+      publicationArtifact: memorosPublication.publicationArtifact,
+      publicationAck: memorosPublication.ack,
+      pendingArtifactSlotFinal: 'CLEAR',
+    },
+  })
+  persistedHandoffArtifactForPublication = refreshedHandoff
+
   writeJson(closeoutEvidencePath, evidence)
   writeConversationArtifactFiles({
     artifact: canonicalFlightRecordPayload,
@@ -2737,14 +3078,10 @@ async function main() {
     integrityPath,
     lockPath,
     recoveryDir: QUARANTINE_DIR,
-    handoff: persistedHandoff,
+    handoff: refreshedHandoff,
     traceability,
   })
   syncPendingArtifactSnapshot(canonicalFlightRecordPayload)
-
-  // 4. Clear pending artifact
-  fs.unlinkSync(PENDING_FILE)
-  console.log('[pmos-save] ✓ Cleared pending-artifact.json')
 
   if (fs.existsSync(ACTIVE_CLOSEOUT_FILE)) {
     fs.unlinkSync(ACTIVE_CLOSEOUT_FILE)
