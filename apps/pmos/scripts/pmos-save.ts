@@ -80,7 +80,7 @@ import {
   readJsonFileSafe,
 } from '../src/lib/pmos/atomic-io'
 import { materializePendingArtifactFromBootstrap } from '../src/lib/pmos/completion-authority'
-import { publishPhrPublicationOnCompletedCloseout } from '../src/lib/pmos/phr-publication'
+import { isSuccessfulPhrPublicationStatus, publishPhrPublicationOnCompletedCloseout } from '../src/lib/pmos/phr-publication'
 import { repairRuntimeContextArtifacts } from '../src/lib/pmos/runtime-context-write'
 
 const prisma = new PrismaClient()
