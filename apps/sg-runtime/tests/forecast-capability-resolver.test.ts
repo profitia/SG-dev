@@ -402,6 +402,24 @@ test('keeps current Forecast and historical Verification readiness independent',
   assert.equal(capability?.capabilityState, 'NOT_PREPARED')
 })
 
+test('rejects orphan Rolling Daily current readiness without historical verification readiness', () => {
+  const identity = createForecastIdentity({
+    seriesId: 'rolling.daily.orphan.series',
+    targetBasis: 'POINT_IN_TIME',
+    modelId: 'arima',
+  })
+  const capability = resolve({
+    seriesId: identity.seriesId,
+    preparedVariants: [{ identity, current: 'READY', historical: 'NOT_PREPARED' }],
+  }).find((item) => (
+    item.identity.targetSemantics === identity.targetSemantics && item.identity.modelId === identity.modelId
+  ))
+
+  assert.equal(capability?.currentPreparedState, 'READY')
+  assert.equal(capability?.historicalPreparedState, 'NOT_PREPARED')
+  assert.equal(capability?.capabilityState, 'NOT_PREPARED')
+})
+
 function createDailyHistory(seriesId: string): BenchmarkHistoricalSeriesResult {
   const historical = Array.from({ length: 48 }, (_, monthIndex) => [0, 14].map((dayOffset) => ({
     date: new Date(Date.UTC(2021 + Math.floor(monthIndex / 12), monthIndex % 12, 1 + dayOffset)).toISOString(),
