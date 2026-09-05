@@ -80,6 +80,7 @@ import {
   readJsonFileSafe,
 } from '../src/lib/pmos/atomic-io'
 import { materializePendingArtifactFromBootstrap } from '../src/lib/pmos/completion-authority'
+import { buildPhrPublicationInput, writePhrPublicationAttempt, writePhrPublicationSidecar } from '../src/lib/pmos/phr-publication'
 import { repairRuntimeContextArtifacts } from '../src/lib/pmos/runtime-context-write'
 
 const prisma = new PrismaClient()
@@ -98,6 +99,7 @@ const RUNTIME_RECOVERY_DIR = path.join(RECOVERY_DIR, 'runtime')
 const ACTIVE_CLOSEOUT_FILE = path.join(RECOVERY_DIR, 'active-closeout.json')
 const RUNTIME_CONTEXT_FILE = path.resolve(__dirname, '../.context/runtime-context.md')
 const RUNTIME_CONTEXT_INTEGRITY_FILE = path.resolve(__dirname, '../.context/runtime-context.integrity.json')
+const PHR_PUBLICATIONS_DIR = path.join(RECOVERY_DIR, 'phr-publications')
 const DEFAULT_MEMOROS_API_BASE_URL = 'http://localhost:4000'
 const MEMOROS_IMPORT_ROUTE = '/api/import/pmos-artifact'
 
@@ -2741,6 +2743,32 @@ async function main() {
     traceability,
   })
   syncPendingArtifactSnapshot(canonicalFlightRecordPayload)
+
+  fs.mkdirSync(PHR_PUBLICATIONS_DIR, { recursive: true })
+  const phrPublicationAttemptedAt = new Date().toISOString()
+  const phrPublicationResult = writePhrPublicationAttempt({
+    publication: buildPhrPublicationInput({
+      artifact: canonicalFlightRecordPayload,
+      handoff: persistedHandoff,
+      closeout: evidence,
+      closeoutRef: relativize(closeoutEvidencePath),
+      conversationArtifactPath: relativize(jsonPath),
+    }),
+    repositoryPath: process.env.PHR_REPOSITORY_PATH ?? '',
+  })
+  writePhrPublicationSidecar({
+    sidecarPath: path.join(PHR_PUBLICATIONS_DIR, `${baseName}.json`),
+    result: phrPublicationResult,
+    attemptedAt: phrPublicationAttemptedAt,
+    closeoutRef: relativize(closeoutEvidencePath),
+    handoffArtifactId: persistedHandoff.id,
+    conversationArtifactPath: relativize(jsonPath),
+  })
+  if (phrPublicationResult.status === 'FAILED') {
+    console.warn(`[pmos-save] ⚠️  PHR publication failed for ${artifact.metadata.conversationId}: ${phrPublicationResult.error}`)
+  } else {
+    console.log(`[pmos-save] ✓ PHR publication ${phrPublicationResult.status.toLowerCase()} for ${artifact.metadata.conversationId}`)
+  }
 
   // 4. Clear pending artifact
   fs.unlinkSync(PENDING_FILE)

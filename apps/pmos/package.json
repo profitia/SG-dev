@@ -23,6 +23,7 @@
     "pmos:verify": "tsx scripts/pmos-verify.ts",
     "pmos:verify-runtime": "tsx scripts/pmos-verify.ts",
     "pmos:maintenance": "tsx scripts/pmos-maintenance.ts",
+    "pmos:publish-phr": "npx dotenv-cli -e .env.local -- tsx scripts/pmos-publish-phr.ts",
     "pmos:ingest-sg2-roadmap": "npx dotenv-cli -e .env.local -- tsx scripts/ingest-sg2-roadmap-to-pmos.ts",
     "context:build": "tsx ../../scripts/build-pmos-context.ts",
     "audit:governance": "npx dotenv-cli -e .env.local -- tsx scripts/audit-governance.ts",
