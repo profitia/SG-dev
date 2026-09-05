@@ -919,6 +919,43 @@ export function createRollingDailyMaintenanceService(
       const forceCalibrationRefresh = latestPersistedMaturedObservedAt !== null
         && latestPersistedMaturedObservedAt !== stateLastMaturedObservedAt
 
+      if (!input.fullRebuild && state === null && existingRecords.length === 0) {
+        const runtimeMs = Math.round(performance.now() - startedAt)
+
+        resolvedDependencies.logEvent('ROLLING_DAILY_INCREMENTAL_MAINTENANCE', {
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          status: 'NO_OP',
+          runtimeMs,
+          newOriginCount: 0,
+          maturedRecordCount: 0,
+          calibrationRefreshCount: 0,
+        })
+
+        return {
+          status: 'NO_OP',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis,
+          inputSource: identity.inputSource,
+          methodId: identity.methodId,
+          methodVersion: identity.methodVersion,
+          reasonCode: null,
+          sourceHistoryFingerprint,
+          latestSourceObservationAt: historyState.latestSourceObservationAt,
+          sourceObservationCount: historyState.latestSourceObservationCount,
+          filteredNullCount: 0,
+          filteredDuplicateCount: 0,
+          newOriginCount: 0,
+          maturedRecordCount: 0,
+          calibrationRefreshCount: 0,
+          affectedCalibrationGroupCount: 0,
+          lastProcessedOriginAt: null,
+          lastMaturedObservedAt: null,
+          runtimeMs,
+        }
+      }
+
       const persistFailureState = async (
         failureReason: string,
         maintenanceStatus: 'FAILED' | 'REBUILD_REQUIRED',

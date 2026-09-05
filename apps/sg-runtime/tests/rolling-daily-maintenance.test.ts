@@ -287,6 +287,55 @@ test('rolling daily maintenance returns NO_OP when the runner reports no delta',
   assert.equal(result.maturedRecordCount, 0)
 })
 
+test('rolling daily incremental maintenance does not bootstrap full replay for an unseeded identity', async () => {
+  let runnerCalled = false
+  let applyCalled = false
+
+  const repository: RollingDailyMaintenanceRepository = {
+    async readState() {
+      return null
+    },
+    async listVerificationRecords() {
+      return []
+    },
+    async applyMaintenanceUpdate() {
+      applyCalled = true
+    },
+    async recordMaintenanceFailure() {
+      throw new Error('recordMaintenanceFailure should not be called for an unseeded incremental current prepare')
+    },
+  }
+
+  const runner: RollingDailyMaintenanceRunner = {
+    async run() {
+      runnerCalled = true
+      throw new Error('runner should not be called for an unseeded incremental pass')
+    },
+  }
+
+  const service = createRollingDailyMaintenanceService({
+    repository,
+    runner,
+    loadHistory: async () => createHistory(),
+    logEvent: () => {},
+  })
+
+  const result = await service.runIncrementalMaintenance({
+    seriesId: 'wocaes0074',
+    modelId: 'naive',
+    minimumTrainingObservations: 5,
+  })
+
+  assert.equal(result.status, 'NO_OP')
+  assert.equal(result.reasonCode, null)
+  assert.equal(result.newOriginCount, 0)
+  assert.equal(result.maturedRecordCount, 0)
+  assert.equal(result.calibrationRefreshCount, 0)
+  assert.equal(result.lastProcessedOriginAt, null)
+  assert.equal(runnerCalled, false)
+  assert.equal(applyCalled, false)
+})
+
 test('rolling daily maintenance requests a calibration-only refresh when mature records exist but the state watermark is missing', async () => {
   let capturedForceCalibrationRefresh: boolean | undefined
 
