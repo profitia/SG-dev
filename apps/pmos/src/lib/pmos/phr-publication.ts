@@ -44,6 +44,118 @@ export type PhrPublicationResult = {
   error: string | null
 }
 
+const EXPECTED_PHR_REPOSITORY_SLUG = 'profitia/project-history-repository'
+
+export type PhrRepositoryValidationResult = {
+  ok: boolean
+  retryable: boolean
+  repositoryPath: string | null
+  originUrl: string | null
+  error: string | null
+}
+
+function runGitCommand(repositoryPath: string, args: string[]): { ok: boolean; stdout: string; stderr: string } {
+  const result = spawnSync('git', args, {
+    cwd: repositoryPath,
+    encoding: 'utf8',
+  })
+  return {
+    ok: result.status === 0,
+    stdout: result.stdout?.trim() ?? '',
+    stderr: result.stderr?.trim() ?? '',
+  }
+}
+
+export function validatePhrRepositoryPath(repositoryPath: string): PhrRepositoryValidationResult {
+  if (!repositoryPath) {
+    return {
+      ok: false,
+      retryable: true,
+      repositoryPath: null,
+      originUrl: null,
+      error: 'PHR_REPOSITORY_PATH is not configured.',
+    }
+  }
+
+  let resolvedPath: string
+  try {
+    resolvedPath = fs.realpathSync(repositoryPath)
+  } catch {
+    return {
+      ok: false,
+      retryable: true,
+      repositoryPath,
+      originUrl: null,
+      error: `PHR repository path is unavailable: ${repositoryPath}`,
+    }
+  }
+
+  if (!fs.existsSync(resolvedPath) || !fs.statSync(resolvedPath).isDirectory()) {
+    return {
+      ok: false,
+      retryable: true,
+      repositoryPath: resolvedPath,
+      originUrl: null,
+      error: `PHR repository path is unavailable: ${resolvedPath}`,
+    }
+  }
+
+  const workTreeCheck = runGitCommand(resolvedPath, ['rev-parse', '--is-inside-work-tree'])
+  if (!workTreeCheck.ok || workTreeCheck.stdout !== 'true') {
+    return {
+      ok: false,
+      retryable: false,
+      repositoryPath: resolvedPath,
+      originUrl: null,
+      error: `PHR repository path is not a Git worktree: ${resolvedPath}`,
+    }
+  }
+
+  const origin = runGitCommand(resolvedPath, ['remote', 'get-url', 'origin'])
+  if (!origin.ok || !origin.stdout) {
+    return {
+      ok: false,
+      retryable: false,
+      repositoryPath: resolvedPath,
+      originUrl: null,
+      error: `PHR repository origin remote is not configured: ${resolvedPath}`,
+    }
+  }
+
+  const normalizedOrigin = origin.stdout.replace(/\.git$/i, '')
+  const identityMatches = normalizedOrigin.includes(EXPECTED_PHR_REPOSITORY_SLUG)
+  const requiredFiles = ['scripts/publish-bundle.mjs', 'schemas/publication-manifest-v1.schema.json', 'history/README.md']
+  const missingFiles = requiredFiles.filter((relativePath) => !fs.existsSync(path.join(resolvedPath, relativePath)))
+
+  if (!identityMatches) {
+    return {
+      ok: false,
+      retryable: false,
+      repositoryPath: resolvedPath,
+      originUrl: origin.stdout,
+      error: `PHR repository origin does not match ${EXPECTED_PHR_REPOSITORY_SLUG}: ${origin.stdout}`,
+    }
+  }
+
+  if (missingFiles.length > 0) {
+    return {
+      ok: false,
+      retryable: false,
+      repositoryPath: resolvedPath,
+      originUrl: origin.stdout,
+      error: `PHR repository is missing canonical files: ${missingFiles.join(', ')}`,
+    }
+  }
+
+  return {
+    ok: true,
+    retryable: false,
+    repositoryPath: resolvedPath,
+    originUrl: origin.stdout,
+    error: null,
+  }
+}
+
 export function buildPhrPublicationInput(params: {
   artifact: FlightRecordV1
   handoff: GptHandoffArtifactV1
@@ -109,7 +221,8 @@ export function writePhrPublicationAttempt(params: {
   publication: PhrPublicationInput
   repositoryPath: string
 }): PhrPublicationResult {
-  if (!params.repositoryPath) {
+  const repositoryValidation = validatePhrRepositoryPath(params.repositoryPath)
+  if (!repositoryValidation.ok) {
     return {
       status: 'FAILED',
       bundlePath: null,
@@ -118,8 +231,8 @@ export function writePhrPublicationAttempt(params: {
       publicationId: params.publication.publicationId,
       taskId: params.publication.taskId,
       artifactCount: params.publication.artifacts.length,
-      repositoryPath: null,
-      error: 'PHR_REPOSITORY_PATH is not configured.',
+      repositoryPath: repositoryValidation.repositoryPath,
+      error: repositoryValidation.error,
     }
   }
 
@@ -130,7 +243,7 @@ export function writePhrPublicationAttempt(params: {
   })
 
   try {
-    const publisherScript = path.join(params.repositoryPath, 'scripts', 'publish-bundle.mjs')
+    const publisherScript = path.join(repositoryValidation.repositoryPath ?? params.repositoryPath, 'scripts', 'publish-bundle.mjs')
     if (!fs.existsSync(publisherScript)) {
       return {
         status: 'FAILED',
@@ -140,17 +253,17 @@ export function writePhrPublicationAttempt(params: {
         publicationId: params.publication.publicationId,
         taskId: params.publication.taskId,
         artifactCount: params.publication.artifacts.length,
-        repositoryPath: params.repositoryPath,
+        repositoryPath: repositoryValidation.repositoryPath,
         error: `PHR publisher entrypoint not found: ${publisherScript}`,
       }
     }
 
     const result = spawnSync(process.execPath, [publisherScript, '--input', inputPath], {
-      cwd: params.repositoryPath,
+      cwd: repositoryValidation.repositoryPath ?? params.repositoryPath,
       encoding: 'utf8',
       env: {
         ...process.env,
-        PHR_REPOSITORY_PATH: params.repositoryPath,
+        PHR_REPOSITORY_PATH: repositoryValidation.repositoryPath ?? params.repositoryPath,
       },
     })
 
@@ -163,7 +276,7 @@ export function writePhrPublicationAttempt(params: {
         publicationId: params.publication.publicationId,
         taskId: params.publication.taskId,
         artifactCount: params.publication.artifacts.length,
-        repositoryPath: params.repositoryPath,
+        repositoryPath: repositoryValidation.repositoryPath,
         error: result.error.message,
       }
     }
@@ -178,7 +291,7 @@ export function writePhrPublicationAttempt(params: {
         publicationId: params.publication.publicationId,
         taskId: params.publication.taskId,
         artifactCount: params.publication.artifacts.length,
-        repositoryPath: params.repositoryPath,
+        repositoryPath: repositoryValidation.repositoryPath,
         error: result.stderr?.trim() || stdout || `PHR publisher exited with status ${result.status}`,
       }
     }
@@ -201,7 +314,7 @@ export function writePhrPublicationAttempt(params: {
       publicationId: parsed.publicationId ?? params.publication.publicationId,
       taskId: parsed.taskId ?? params.publication.taskId,
       artifactCount: parsed.artifactCount ?? params.publication.artifacts.length,
-      repositoryPath: params.repositoryPath,
+      repositoryPath: repositoryValidation.repositoryPath,
       error: null,
     }
   } catch (error) {
@@ -213,7 +326,7 @@ export function writePhrPublicationAttempt(params: {
       publicationId: params.publication.publicationId,
       taskId: params.publication.taskId,
       artifactCount: params.publication.artifacts.length,
-      repositoryPath: params.repositoryPath,
+      repositoryPath: repositoryValidation.repositoryPath,
       error: error instanceof Error ? error.message : String(error),
     }
   } finally {
