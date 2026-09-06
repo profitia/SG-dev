@@ -364,6 +364,7 @@ model ForecastPreparationExecutionLedger {
   sourceFrequency             String
   targetCadence               String
   frequencyIdentity           String
+  attemptKind                 String
   executionMode               String
   ownerToken                  String
   leaseVersion                Int                 @default(1)

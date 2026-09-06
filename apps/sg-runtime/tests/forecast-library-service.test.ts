@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { createNoopForecastPreparationExecutionLedger } from '../lib/forecast/execution-ledger'
+import { createForecastPreparationExecutionContextRegistry, createNoopForecastPreparationExecutionLedger } from '../lib/forecast/execution-ledger'
+import { createCurrentForecastStatisticalCompatibility, createFullVerificationStatisticalCompatibility } from '../lib/forecast/identity'
 import { createForecastLibraryService, type ForecastBridge, type ForecastLibraryRepository, buildForecastHistoryFingerprint } from '../lib/forecast/service'
 
 function createHistoryResponse() {
@@ -350,16 +351,27 @@ function createEndOfPeriodVerificationResponse(modelId = 'ets') {
   }
 }
 
-function persistedIdentity(targetBasis: 'MONTHLY_AVERAGE' | 'END_OF_PERIOD') {
+function persistedIdentity(
+  targetBasis: 'MONTHLY_AVERAGE' | 'END_OF_PERIOD',
+  artifactFamily: 'CURRENT' | 'VERIFICATION' = 'CURRENT',
+) {
+  const statisticalCompatibility = artifactFamily === 'CURRENT'
+    ? createCurrentForecastStatisticalCompatibility({
+        sourceFrequency: 'MONTHLY',
+        targetCadence: 'MONTHLY',
+        targetSemantics: targetBasis,
+      })
+    : createFullVerificationStatisticalCompatibility({
+        sourceFrequency: 'MONTHLY',
+        targetCadence: 'MONTHLY',
+        targetSemantics: targetBasis,
+      })
+
   return {
     targetSemantics: targetBasis,
     methodId: targetBasis,
     preparation: null,
-    statisticalCompatibility: {
-      artifactScope: 'CURRENT_FORECAST',
-      trainingWindowPolicyId: 'CURRENT_POLICY_FREQUENCY_SPECIFIC@current-policy-frequency-specific-v1',
-      calibrationPolicy: 'EXACT_STATISTICAL_MATCH_ONLY',
-    },
+    statisticalCompatibility,
     cadence: null,
     frequencyIdentity: 'MONTHLY',
   } as const
@@ -700,6 +712,7 @@ test('forecast library current miss records a durable execution ledger without c
     eventType: string
     executionId: string
     ownerRequestId: string
+    attemptKind: string | undefined
     executionMode: string | undefined
     ownerToken: string | undefined
     leaseVersion: number | undefined
@@ -753,6 +766,7 @@ test('forecast library current miss records a durable execution ledger without c
           eventType: input.eventType,
           executionId: input.executionId,
           ownerRequestId: input.ownerRequestId,
+          attemptKind: input.attemptKind,
           executionMode: input.executionMode,
           ownerToken: input.ownerToken,
           leaseVersion: input.leaseVersion,
@@ -777,7 +791,8 @@ test('forecast library current miss records a durable execution ledger without c
   assert.ok(events.every((event) => event.ownerRequestId === 'req-stage2-current'))
   assert.ok(events.every((event) => event.executionId !== 'CURRENT:req-stage2-current'))
   assert.equal(new Set(events.map((event) => event.executionId)).size, 1)
-  assert.ok(events.every((event) => event.executionMode === 'PRIMARY'))
+  assert.ok(events.every((event) => event.attemptKind === 'PRIMARY'))
+  assert.ok(events.every((event) => event.executionMode === 'PRE_STAGE3_PREPARATION'))
   assert.ok(events.every((event) => typeof event.ownerToken === 'string' && event.ownerToken.length > 0))
   assert.ok(events.every((event) => event.leaseVersion === 1))
   assert.ok(events.every((event) => event.leaseAcquiredAt === events[0]?.leaseAcquiredAt))
@@ -948,6 +963,53 @@ test('forecast library Current owner remains in flight through persistence settl
   assert.equal(computes, 2)
   assert.equal(writes, 2)
   assert.equal(events.filter(({ event }) => event === 'single_flight_owner_acquired').length, 2)
+})
+
+test('forecast library Current owner and waiters share one context and release it after single-flight cleanup', async () => {
+  const registry = createForecastPreparationExecutionContextRegistry()
+  const observedExecutionIds = new Set<string>()
+  const observedOwnerTokens = new Set<string>()
+  let releaseCompute: (() => void) | undefined
+  const computeGate = new Promise<void>((resolve) => {
+    releaseCompute = resolve
+  })
+
+  const service = createForecastLibraryService({
+    bridge: {
+      async exportHistory() { return createHistoryResponse() },
+      async exportCurrent() {
+        await computeGate
+        return createCurrentResponse()
+      },
+      async exportVerification() { throw new Error('unused') },
+    },
+    repository: {
+      async readCurrentRun() { return null },
+      async writeCurrentRun() {},
+      async readVerificationRun() { return null },
+      async writeVerificationRun() { throw new Error('unused') },
+    },
+    logEvent: () => {},
+    executionContextRegistry: registry,
+    executionLedger: {
+      ...createNoopForecastPreparationExecutionLedger(),
+      async recordEvent(input) {
+        observedExecutionIds.add(input.executionId)
+        observedOwnerTokens.add(input.ownerToken ?? '')
+      },
+    },
+  })
+
+  const requests = Array.from({ length: 10 }, () => service.resolveCurrentForecast('wocaes0280', 'ets'))
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.equal(registry.getActiveContextCount(), 1)
+
+  releaseCompute?.()
+  await Promise.all(requests)
+
+  assert.equal(observedExecutionIds.size, 1)
+  assert.equal(observedOwnerTokens.size, 1)
+  assert.equal(registry.getActiveContextCount(), 0)
 })
 
 test('forecast library current path marks cached payload unaligned when forecast origin drifts from lawful history end', async () => {
@@ -1253,7 +1315,7 @@ test('forecast library current path does not reuse cache across target bases', a
           displayName: 'FRACHT_DRY',
           description: 'Baltic Exchange, Dry Index (BDI), USD',
           targetBasis: 'END_OF_PERIOD',
-          ...persistedIdentity('END_OF_PERIOD'),
+          ...persistedIdentity('END_OF_PERIOD', 'VERIFICATION'),
           methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
           source: {
             kind: 'POSTGRES_RUNTIME_SNAPSHOT',
@@ -1324,7 +1386,7 @@ test('forecast library verification path does not reuse cache across target base
           displayName: 'FRACHT_DRY',
           description: 'Baltic Exchange, Dry Index (BDI), USD',
           targetBasis: 'END_OF_PERIOD',
-          ...persistedIdentity('END_OF_PERIOD'),
+          ...persistedIdentity('END_OF_PERIOD', 'VERIFICATION'),
           methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
           source: {
             kind: 'POSTGRES_RUNTIME_SNAPSHOT',
@@ -1876,7 +1938,7 @@ test('forecast library verification path rebuilds stale END_OF_PERIOD cache entr
         displayName: 'Brent, Spot, FOB North Sea',
         description: 'Brent, Spot, FOB North Sea',
         targetBasis: 'END_OF_PERIOD',
-        ...persistedIdentity('END_OF_PERIOD'),
+        ...persistedIdentity('END_OF_PERIOD', 'VERIFICATION'),
         methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
         source: {
           kind: 'DYNAMIC_MARKET_DATA_STORE',

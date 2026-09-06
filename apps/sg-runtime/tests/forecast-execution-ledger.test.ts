@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 import {
-  buildForecastPreparationExecutionId,
   createForecastPreparationExecutionContextRegistry,
   createForecastPreparationExecutionLedger,
   reduceForecastPreparationExecution,
+  STAGE2_NON_AUTHORITATIVE_LEASE_WINDOW_MS,
   type ForecastPreparationExecutionLedgerStore,
   type ForecastPreparationExecutionRecord,
 } from '../lib/forecast/execution-ledger'
@@ -74,7 +75,8 @@ test('execution ledger reducer preserves owner/waiter lineage and phase timestam
     role: 'OWNER',
     eventType: 'single_flight_owner_acquired',
     observedAt: '2026-09-06T18:20:00.000Z',
-    executionMode: 'PRIMARY',
+    attemptKind: 'PRIMARY',
+    executionMode: 'PRE_STAGE3_PREPARATION',
     ownerToken: 'owner-token-1',
     leaseVersion: 1,
     leaseAcquiredAt: '2026-09-06T18:20:00.000Z',
@@ -160,7 +162,8 @@ test('execution ledger reducer preserves owner/waiter lineage and phase timestam
   })
 
   assert.equal(record.executionStatus, 'COMPLETED')
-  assert.equal(record.executionMode, 'PRIMARY')
+  assert.equal(record.attemptKind, 'PRIMARY')
+  assert.equal(record.executionMode, 'PRE_STAGE3_PREPARATION')
   assert.equal(record.ownerToken, 'owner-token-1')
   assert.equal(record.leaseVersion, 1)
   assert.equal(record.leaseAcquiredAt, '2026-09-06T18:20:00.000Z')
@@ -180,7 +183,7 @@ test('execution ledger reducer preserves owner/waiter lineage and phase timestam
 
 test('execution ledger serializes concurrent writes per execution id', async () => {
   const ledger = createForecastPreparationExecutionLedger({ store: createInMemoryStore() })
-  const executionId = buildForecastPreparationExecutionId('VERIFICATION', 'req-owner')
+  const executionId = '4d71e28e-d7eb-44c1-aec1-a5aa2c1cc1d8'
 
   await Promise.all([
     ledger.recordEvent({
@@ -193,6 +196,8 @@ test('execution ledger serializes concurrent writes per execution id', async () 
       role: 'OWNER',
       eventType: 'single_flight_owner_acquired',
       observedAt: '2026-09-06T18:21:00.000Z',
+      attemptKind: 'PRIMARY',
+      executionMode: 'PRE_STAGE3_PREPARATION',
     }),
     ledger.recordEvent({
       executionId,
@@ -214,14 +219,11 @@ test('execution ledger serializes concurrent writes per execution id', async () 
   assert.equal(stored?.waiterCount, 1)
 })
 
-test('execution ids isolate operation families for the same owner request', () => {
-  assert.notEqual(
-    buildForecastPreparationExecutionId('CURRENT', 'req-123'),
-    buildForecastPreparationExecutionId('VERIFICATION', 'req-123'),
-  )
+test('stage 2 lease window stays explicitly non-authoritative until Stage 3', () => {
+  assert.equal(STAGE2_NON_AUTHORITATIVE_LEASE_WINDOW_MS, 5 * 60 * 1000)
 })
 
-test('execution context registry mints ids independent from request ids and reuses owner lineage for waiters', () => {
+test('execution context registry mints UUID ids independent from request ids and reuses owner lineage for waiters', () => {
   const registry = createForecastPreparationExecutionContextRegistry()
 
   const owner = registry.getOrCreateContext({
@@ -241,13 +243,16 @@ test('execution context registry mints ids independent from request ids and reus
   assert.equal(waiterView.executionId, owner.executionId)
   assert.equal(waiterView.ownerToken, owner.ownerToken)
   assert.equal(owner.ownerRequestId, 'req-owner')
-  assert.notEqual(owner.executionId, 'CURRENT:req-owner')
   assert.match(owner.executionId, /^[0-9a-f-]{36}$/)
   assert.match(owner.ownerToken, /^[0-9a-f-]{36}$/)
-  assert.equal(owner.executionMode, 'PRIMARY')
+  assert.notEqual(owner.executionId, owner.ownerRequestId)
+  assert.notEqual(owner.executionId, owner.ownerToken)
+  assert.equal(owner.attemptKind, 'PRIMARY')
+  assert.equal(owner.executionMode, 'PRE_STAGE3_PREPARATION')
   assert.equal(owner.leaseVersion, 1)
   assert.equal(owner.leaseAcquiredAt, '2026-09-06T18:22:00.000Z')
   assert.equal(owner.leaseExpiresAt, '2026-09-06T18:27:00.000Z')
+  assert.equal(registry.getActiveContextCount(), 1)
 })
 
 test('execution context registry releases terminal lineage and allows a fresh recovery execution', () => {
@@ -261,21 +266,49 @@ test('execution context registry releases terminal lineage and allows a fresh re
   })
 
   registry.releaseContext(initial.executionId)
+  assert.equal(registry.getActiveContextCount(), 0)
 
   const recovery = registry.getOrCreateContext({
     operationFamily: 'VERIFICATION',
     logicalArtifactKey: 'logical-verification',
     ownerRequestId: 'req-owner',
-    executionMode: 'RECOVERY',
+    attemptKind: 'RECOVERY',
+    executionMode: 'RECOVERY_RESUME',
     recoveredFromExecutionId: initial.executionId,
     observedAt: '2026-09-06T18:24:00.000Z',
   })
 
   assert.notEqual(recovery.executionId, initial.executionId)
   assert.notEqual(recovery.ownerToken, initial.ownerToken)
-  assert.equal(recovery.executionMode, 'RECOVERY')
+  assert.equal(recovery.attemptKind, 'RECOVERY')
+  assert.equal(recovery.executionMode, 'RECOVERY_RESUME')
   assert.equal(recovery.recoveredFromExecutionId, initial.executionId)
   assert.equal(recovery.leaseAcquiredAt, '2026-09-06T18:24:00.000Z')
+})
+
+test('owner and nine waiters share one context and release it exactly once', () => {
+  const registry = createForecastPreparationExecutionContextRegistry()
+  const owner = registry.getOrCreateContext({
+    operationFamily: 'CURRENT',
+    logicalArtifactKey: 'logical-current',
+    ownerRequestId: 'req-owner',
+    observedAt: '2026-09-06T18:26:00.000Z',
+  })
+
+  const waiters = Array.from({ length: 9 }, (_, index) => registry.getOrCreateContext({
+    operationFamily: 'CURRENT',
+    logicalArtifactKey: 'logical-current',
+    ownerRequestId: 'req-owner',
+    observedAt: `2026-09-06T18:26:${String(index + 1).padStart(2, '0')}.000Z`,
+  }))
+
+  assert.equal(new Set(waiters.map((context) => context.executionId)).size, 1)
+  assert.ok(waiters.every((context) => context.executionId === owner.executionId))
+  assert.ok(waiters.every((context) => context.ownerToken === owner.ownerToken))
+  assert.equal(registry.getActiveContextCount(), 1)
+
+  registry.releaseContext(owner.executionId)
+  assert.equal(registry.getActiveContextCount(), 0)
 })
 
 test('execution ledger failure metadata is phase-aware and terminal transitions are guarded', () => {
@@ -290,7 +323,8 @@ test('execution ledger failure metadata is phase-aware and terminal transitions 
     role: 'OWNER',
     eventType: 'single_flight_owner_acquired',
     observedAt: '2026-09-06T18:30:00.000Z',
-    executionMode: 'RECOVERY',
+    attemptKind: 'RECOVERY',
+    executionMode: 'RECOVERY_RESUME',
     ownerToken: 'owner-token-2',
     leaseVersion: 2,
     leaseAcquiredAt: '2026-09-06T18:30:00.000Z',
@@ -349,7 +383,8 @@ test('execution ledger failure metadata is phase-aware and terminal transitions 
     observedAt: '2026-09-06T18:30:04.000Z',
   })
 
-  assert.equal(record.executionMode, 'RECOVERY')
+  assert.equal(record.attemptKind, 'RECOVERY')
+  assert.equal(record.executionMode, 'RECOVERY_RESUME')
   assert.equal(record.recoveredFromExecutionId, 'prior-execution-id')
   assert.equal(record.failurePhase, 'COMPUTE')
   assert.equal(record.failureReason, 'bridge failure')
@@ -359,4 +394,21 @@ test('execution ledger failure metadata is phase-aware and terminal transitions 
   assert.equal(released.events.at(-1)?.eventType, 'single_flight_entry_released')
   assert.equal(released.lastEventAt, '2026-09-06T18:30:04.000Z')
   assert.equal(released.lastProgressAt, '2026-09-06T18:30:02.000Z')
+})
+
+test('corrective migration keeps historical progress semantics and removes misleading defaults additively', () => {
+  const migration = readFileSync(
+    new URL('../prisma-market-data/migrations/20260906235500_forecast_execution_ledger_stage2_contract_fix/migration.sql', import.meta.url),
+    'utf8',
+  )
+
+  assert.match(migration, /ADD COLUMN "attemptKind" TEXT/)
+  assert.match(migration, /"executionMode" = CASE\s+WHEN "executionMode" = 'RECOVERY' THEN 'RECOVERY_RESUME'\s+ELSE 'PRE_STAGE3_PREPARATION'/)
+  assert.match(migration, /"lastProgressAt" = COALESCE\(\s+"persistenceCompletedAt",\s+"persistenceStartedAt",\s+"computeCompletedAt",\s+"computeStartedAt",\s+"startedAt"/)
+  assert.match(migration, /"leaseExpiresAt" = "startedAt"/)
+  assert.match(migration, /ALTER COLUMN "executionMode" DROP DEFAULT/)
+  assert.match(migration, /ALTER COLUMN "ownerToken" DROP DEFAULT/)
+  assert.match(migration, /ALTER COLUMN "leaseAcquiredAt" DROP DEFAULT/)
+  assert.match(migration, /ALTER COLUMN "leaseExpiresAt" DROP DEFAULT/)
+  assert.match(migration, /ALTER COLUMN "lastProgressAt" DROP DEFAULT/)
 })

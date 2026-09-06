@@ -35,6 +35,7 @@ export const RECENT_VERIFICATION_TRAINING_WINDOW_POLICY_ID =
 export const FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID =
   'FULL_EXPANDING_HISTORY_PER_ORIGIN@full-expanding-history-per-origin-v1'
 export const LEGACY_UNRESOLVED_TRAINING_WINDOW_POLICY_ID = 'LEGACY_UNRESOLVED'
+export const FORECAST_EFFECTIVE_TRAINING_POLICY_ID_VERSION = 'forecast-effective-training-policy-v1'
 export const FORECAST_CALIBRATION_POLICIES = [
   'EXACT_STATISTICAL_MATCH_ONLY',
   'CONDITIONAL_POLICY_MATCH_ONLY',
@@ -49,6 +50,7 @@ export type ForecastTrainingWindowPolicyId =
   | typeof FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID
   | typeof LEGACY_UNRESOLVED_TRAINING_WINDOW_POLICY_ID
 export type ForecastCalibrationPolicy = (typeof FORECAST_CALIBRATION_POLICIES)[number]
+export type ForecastEffectiveTrainingPolicyId = string
 
 export type ForecastIdentity = {
   seriesId: string
@@ -89,12 +91,20 @@ export type ForecastPreparationIdentity = {
 export type ForecastStatisticalCompatibility = {
   artifactScope: ForecastArtifactScope
   trainingWindowPolicyId: ForecastTrainingWindowPolicyId
+  effectiveTrainingPolicyId: ForecastEffectiveTrainingPolicyId
   calibrationPolicy: ForecastCalibrationPolicy
+}
+
+export type ForecastTrainingPolicyResolutionContext = {
+  sourceFrequency: ForecastSourceFrequency
+  targetCadence: ForecastTargetCadence
+  targetSemantics: ForecastTargetSemantics
 }
 
 export type ForecastCalibrationIdentity = {
   artifactScope: ForecastArtifactScope
   seriesId: string
+  sourceSeriesId: string
   inputSource: string
   sourceFrequency: string
   targetCadence: string
@@ -103,6 +113,7 @@ export type ForecastCalibrationIdentity = {
   methodId: string
   methodVersion: string
   trainingWindowPolicyId: ForecastTrainingWindowPolicyId
+  effectiveTrainingPolicyId: ForecastEffectiveTrainingPolicyId
   historyFingerprint: string
   horizonLabel: string
   forecastOrigin: string | null
@@ -113,6 +124,7 @@ export type ForecastCalibrationIdentity = {
 export type ForecastVerificationReuseIdentity = {
   artifactScope: Extract<ForecastArtifactScope, 'RECENT_VERIFICATION' | 'FULL_VERIFICATION'>
   seriesId: string
+  sourceSeriesId: string
   inputSource: string
   sourceFrequency: string
   targetCadence: string
@@ -121,6 +133,7 @@ export type ForecastVerificationReuseIdentity = {
   methodId: string
   methodVersion: string
   trainingWindowPolicyId: ForecastTrainingWindowPolicyId
+  effectiveTrainingPolicyId: ForecastEffectiveTrainingPolicyId
   historyFingerprint: string
   horizonLabel: string
   forecastOrigin: string | null
@@ -135,11 +148,8 @@ const CALIBRATION_IDENTITY_FIELDS = [
   'modelId',
   'methodId',
   'methodVersion',
-  'trainingWindowPolicyId',
-  'historyFingerprint',
+  'effectiveTrainingPolicyId',
   'horizonLabel',
-  'forecastOrigin',
-  'actualObservedAt',
 ] as const
 
 const VERIFICATION_REUSE_FIELDS = [
@@ -151,8 +161,7 @@ const VERIFICATION_REUSE_FIELDS = [
   'modelId',
   'methodId',
   'methodVersion',
-  'trainingWindowPolicyId',
-  'historyFingerprint',
+  'effectiveTrainingPolicyId',
   'horizonLabel',
   'forecastOrigin',
 ] as const
@@ -305,44 +314,104 @@ export function buildForecastArtifactIdentityKey(identity: ForecastArtifactIdent
   ].join('|')
 }
 
-export function createCurrentForecastStatisticalCompatibility(): ForecastStatisticalCompatibility {
+function buildEffectiveTrainingPolicyId(
+  policyFamily: 'CURRENT_FREQUENCY_SPECIFIC' | 'FULL_EXPANDING_HISTORY_PER_ORIGIN',
+  context: ForecastTrainingPolicyResolutionContext,
+): ForecastEffectiveTrainingPolicyId {
+  return [
+    `${policyFamily}@${FORECAST_EFFECTIVE_TRAINING_POLICY_ID_VERSION}`,
+    `source=${context.sourceFrequency}`,
+    `target=${context.targetCadence}`,
+    `semantics=${context.targetSemantics}`,
+  ].join('|')
+}
+
+export function resolveEffectiveTrainingPolicyId(
+  trainingWindowPolicyId: ForecastTrainingWindowPolicyId,
+  context: ForecastTrainingPolicyResolutionContext,
+): ForecastEffectiveTrainingPolicyId {
+  if (
+    trainingWindowPolicyId === CURRENT_FORECAST_TRAINING_WINDOW_POLICY_ID
+    || trainingWindowPolicyId === RECENT_VERIFICATION_TRAINING_WINDOW_POLICY_ID
+  ) {
+    return buildEffectiveTrainingPolicyId('CURRENT_FREQUENCY_SPECIFIC', context)
+  }
+
+  if (trainingWindowPolicyId === FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID) {
+    return buildEffectiveTrainingPolicyId('FULL_EXPANDING_HISTORY_PER_ORIGIN', context)
+  }
+
+  return [
+    `${LEGACY_UNRESOLVED_TRAINING_WINDOW_POLICY_ID}@${FORECAST_EFFECTIVE_TRAINING_POLICY_ID_VERSION}`,
+    `source=${context.sourceFrequency}`,
+    `target=${context.targetCadence}`,
+    `semantics=${context.targetSemantics}`,
+  ].join('|')
+}
+
+export function createCurrentForecastStatisticalCompatibility(
+  context: ForecastTrainingPolicyResolutionContext,
+): ForecastStatisticalCompatibility {
   return {
     artifactScope: 'CURRENT_FORECAST',
     trainingWindowPolicyId: CURRENT_FORECAST_TRAINING_WINDOW_POLICY_ID,
+    effectiveTrainingPolicyId: resolveEffectiveTrainingPolicyId(
+      CURRENT_FORECAST_TRAINING_WINDOW_POLICY_ID,
+      context,
+    ),
     calibrationPolicy: 'EXACT_STATISTICAL_MATCH_ONLY',
   }
 }
 
-export function createRecentVerificationStatisticalCompatibility(): ForecastStatisticalCompatibility {
+export function createRecentVerificationStatisticalCompatibility(
+  context: ForecastTrainingPolicyResolutionContext,
+): ForecastStatisticalCompatibility {
   return {
     artifactScope: 'RECENT_VERIFICATION',
     trainingWindowPolicyId: RECENT_VERIFICATION_TRAINING_WINDOW_POLICY_ID,
+    effectiveTrainingPolicyId: resolveEffectiveTrainingPolicyId(
+      RECENT_VERIFICATION_TRAINING_WINDOW_POLICY_ID,
+      context,
+    ),
     calibrationPolicy: 'EXACT_STATISTICAL_MATCH_ONLY',
   }
 }
 
-export function createFullVerificationStatisticalCompatibility(): ForecastStatisticalCompatibility {
+export function createFullVerificationStatisticalCompatibility(
+  context: ForecastTrainingPolicyResolutionContext,
+): ForecastStatisticalCompatibility {
   return {
     artifactScope: 'FULL_VERIFICATION',
     trainingWindowPolicyId: FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID,
+    effectiveTrainingPolicyId: resolveEffectiveTrainingPolicyId(
+      FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID,
+      context,
+    ),
     calibrationPolicy: 'EXACT_STATISTICAL_MATCH_ONLY',
   }
 }
 
-export function createLegacyVerificationStatisticalCompatibility(): ForecastStatisticalCompatibility {
+export function createLegacyVerificationStatisticalCompatibility(
+  context: ForecastTrainingPolicyResolutionContext,
+): ForecastStatisticalCompatibility {
   return {
     artifactScope: 'FULL_VERIFICATION',
     trainingWindowPolicyId: FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID,
+    effectiveTrainingPolicyId: resolveEffectiveTrainingPolicyId(
+      FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID,
+      context,
+    ),
     calibrationPolicy: 'CONDITIONAL_POLICY_MATCH_ONLY',
   }
 }
 
 export function resolveLegacyForecastStatisticalCompatibility(
   artifactFamily: 'CURRENT' | 'VERIFICATION',
+  context: ForecastTrainingPolicyResolutionContext,
 ): ForecastStatisticalCompatibility {
   return artifactFamily === 'CURRENT'
-    ? createCurrentForecastStatisticalCompatibility()
-    : createLegacyVerificationStatisticalCompatibility()
+    ? createCurrentForecastStatisticalCompatibility(context)
+    : createLegacyVerificationStatisticalCompatibility(context)
 }
 
 export function areForecastStatisticalCompatibilitiesEqual(
@@ -351,6 +420,7 @@ export function areForecastStatisticalCompatibilitiesEqual(
 ): boolean {
   return left.artifactScope === right.artifactScope
     && left.trainingWindowPolicyId === right.trainingWindowPolicyId
+    && left.effectiveTrainingPolicyId === right.effectiveTrainingPolicyId
     && left.calibrationPolicy === right.calibrationPolicy
 }
 
@@ -370,6 +440,44 @@ export function isRecentVerificationReusableForFullVerification(
   }
 
   return VERIFICATION_REUSE_FIELDS.every((fieldName) => available[fieldName] === requested[fieldName])
+    && available.sourceSeriesId === requested.sourceSeriesId
+    && available.inputSource === requested.inputSource
+    && available.sourceFrequency === requested.sourceFrequency
+    && available.historyFingerprint === requested.historyFingerprint
+}
+
+function parseComparableTimestamp(value: string | null): number | null {
+  if (!value) {
+    return null
+  }
+
+  const parsed = Date.parse(value)
+  return Number.isNaN(parsed) ? null : parsed
+}
+
+function isCalibrationSourceLineageCompatible(
+  residual: ForecastCalibrationIdentity,
+  current: ForecastCalibrationIdentity,
+) {
+  if (
+    residual.sourceSeriesId !== current.sourceSeriesId
+    || residual.inputSource !== current.inputSource
+    || residual.sourceFrequency !== current.sourceFrequency
+  ) {
+    return false
+  }
+
+  const residualOrigin = parseComparableTimestamp(residual.forecastOrigin)
+  const currentOrigin = parseComparableTimestamp(current.forecastOrigin)
+  if (residualOrigin === null || currentOrigin === null) {
+    return residual.historyFingerprint === current.historyFingerprint
+  }
+
+  if (residualOrigin === currentOrigin) {
+    return residual.historyFingerprint === current.historyFingerprint
+  }
+
+  return residualOrigin < currentOrigin
 }
 
 export function canResidualCalibrateCurrent(
@@ -383,5 +491,10 @@ export function canResidualCalibrateCurrent(
     return false
   }
 
+  if (residual.actualObservedAt === null) {
+    return false
+  }
+
   return CALIBRATION_IDENTITY_FIELDS.every((fieldName) => residual[fieldName] === current[fieldName])
+    && isCalibrationSourceLineageCompatible(residual, current)
 }

@@ -24,6 +24,7 @@ import {
 import {
   createForecastPreparationExecutionContextRegistry,
   createDefaultForecastPreparationExecutionLedger,
+  type ForecastPreparationExecutionContextRegistry,
   type ForecastPreparationExecutionLedger,
 } from '@/lib/forecast/execution-ledger'
 import {
@@ -345,6 +346,7 @@ export type ForecastLibraryServiceDependencies = {
   logEvent: (event: string, data: Record<string, string | number | boolean | null>) => void
   telemetry: Pick<ForecastStressTelemetry, 'emit'> & Partial<Pick<ForecastStressTelemetry, 'currentContext'>>
   executionLedger: ForecastPreparationExecutionLedger
+  executionContextRegistry: ForecastPreparationExecutionContextRegistry
 }
 
 function buildDefaultLogPayload(data: Record<string, string | number | boolean | null>) {
@@ -719,7 +721,20 @@ function mapCurrentArtifact(
   cadenceContext: ReturnType<typeof resolveArtifactCadenceContext>,
 ): PersistedCurrentArtifact {
   const identity = resolveCapabilityIdentity(targetBasis, response.methodVersion)
-  const statisticalCompatibility = createCurrentForecastStatisticalCompatibility()
+  const sourceFrequency = cadenceContext.cadence?.sourceFrequency
+    ?? normalizeForecastSourceFrequency(response.result.history.frequency)
+  const targetCadence = cadenceContext.cadence?.targetCadence
+    ?? normalizeForecastSourceFrequency(response.result.history.frequency)
+
+  if (!sourceFrequency || !targetCadence) {
+    throw new Error('Current artifact mapping requires lawful source and target cadence.')
+  }
+
+  const statisticalCompatibility = createCurrentForecastStatisticalCompatibility({
+    sourceFrequency,
+    targetCadence,
+    targetSemantics: identity.targetSemantics,
+  })
 
   return {
     seriesId: response.benchmark.seriesId,
@@ -755,7 +770,20 @@ function mapVerificationArtifact(
   cadenceContext: ReturnType<typeof resolveArtifactCadenceContext>,
 ): PersistedVerificationArtifact {
   const identity = resolveCapabilityIdentity(targetBasis, response.methodVersion)
-  const statisticalCompatibility = createFullVerificationStatisticalCompatibility()
+  const sourceFrequency = cadenceContext.cadence?.sourceFrequency
+    ?? normalizeForecastSourceFrequency(authoritativeHistory.frequency)
+  const targetCadence = cadenceContext.cadence?.targetCadence
+    ?? normalizeForecastSourceFrequency(authoritativeHistory.frequency)
+
+  if (!sourceFrequency || !targetCadence) {
+    throw new Error('Verification artifact mapping requires lawful source and target cadence.')
+  }
+
+  const statisticalCompatibility = createFullVerificationStatisticalCompatibility({
+    sourceFrequency,
+    targetCadence,
+    targetSemantics: identity.targetSemantics,
+  })
   const actualObservedAtByTargetDate = buildActualObservedAtByTargetDate(authoritativeHistory, targetBasis)
   const verification = Object.fromEntries(
     Object.entries(response.result.backtest)
@@ -1124,6 +1152,16 @@ export async function readCurrentRunFromPrisma(key: ForecastCacheLookupKey): Pro
     ]),
   )
   const storedCadence = parseForecastArtifactCadenceIdentity(run.frequency)
+  const sourceFrequency = storedCadence?.legacyMonthly
+    ? 'MONTHLY'
+    : storedCadence?.sourceFrequency ?? normalizeForecastSourceFrequency(run.frequency)
+  const targetCadence = storedCadence?.legacyMonthly
+    ? 'MONTHLY'
+    : storedCadence?.targetCadence ?? normalizeForecastSourceFrequency(run.frequency)
+
+  if (!sourceFrequency || !targetCadence) {
+    throw new Error('Stored Current artifact requires lawful source and target cadence.')
+  }
 
   return {
     seriesId: run.seriesId,
@@ -1143,7 +1181,11 @@ export async function readCurrentRunFromPrisma(key: ForecastCacheLookupKey): Pro
       ? createForecastCadence(storedCadence.sourceFrequency, storedCadence.targetCadence)
       : null,
     frequencyIdentity: run.frequency ?? key.frequencyIdentity,
-    statisticalCompatibility: resolveLegacyForecastStatisticalCompatibility('CURRENT'),
+    statisticalCompatibility: resolveLegacyForecastStatisticalCompatibility('CURRENT', {
+      sourceFrequency,
+      targetCadence,
+      targetSemantics: key.targetSemantics,
+    }),
     preparation: null,
     history: {
       frequency: storedCadence?.targetCadence ?? run.frequency,
@@ -1336,6 +1378,16 @@ export async function readVerificationRunFromPrisma(key: ForecastCacheLookupKey)
     }),
   )
   const storedCadence = parseForecastArtifactCadenceIdentity(run.frequency)
+  const sourceFrequency = storedCadence?.legacyMonthly
+    ? 'MONTHLY'
+    : storedCadence?.sourceFrequency ?? normalizeForecastSourceFrequency(run.frequency)
+  const targetCadence = storedCadence?.legacyMonthly
+    ? 'MONTHLY'
+    : storedCadence?.targetCadence ?? normalizeForecastSourceFrequency(run.frequency)
+
+  if (!sourceFrequency || !targetCadence) {
+    throw new Error('Stored Verification artifact requires lawful source and target cadence.')
+  }
 
   return {
     seriesId: run.seriesId,
@@ -1355,7 +1407,11 @@ export async function readVerificationRunFromPrisma(key: ForecastCacheLookupKey)
       ? createForecastCadence(storedCadence.sourceFrequency, storedCadence.targetCadence)
       : null,
     frequencyIdentity: run.frequency ?? key.frequencyIdentity,
-    statisticalCompatibility: resolveLegacyForecastStatisticalCompatibility('VERIFICATION'),
+    statisticalCompatibility: resolveLegacyForecastStatisticalCompatibility('VERIFICATION', {
+      sourceFrequency,
+      targetCadence,
+      targetSemantics: key.targetSemantics,
+    }),
     preparation: null,
     history: {
       frequency: storedCadence?.targetCadence ?? run.frequency,
@@ -1573,8 +1629,9 @@ export function createForecastLibraryService(
     logEvent: dependencies.logEvent ?? logForecastEvent,
     telemetry: dependencies.telemetry ?? forecastStressTelemetry,
     executionLedger: dependencies.executionLedger ?? createDefaultForecastPreparationExecutionLedger(),
+    executionContextRegistry: dependencies.executionContextRegistry ?? createForecastPreparationExecutionContextRegistry(),
   }
-  const executionContextRegistry = createForecastPreparationExecutionContextRegistry()
+  const executionContextRegistry = resolvedDependencies.executionContextRegistry
   const isExecutionContextReleaseEvent = (eventType: string) =>
     eventType === 'single_flight_entry_released'
 
@@ -1761,7 +1818,11 @@ export function createForecastLibraryService(
       if (!sourceFrequency || !targetCadence) {
         throw new Error('Current single-flight identity requires lawful source and target cadence.')
       }
-      const currentStatisticalCompatibility = createCurrentForecastStatisticalCompatibility()
+      const currentStatisticalCompatibility = createCurrentForecastStatisticalCompatibility({
+        sourceFrequency,
+        targetCadence,
+        targetSemantics: methodIdentity.targetSemantics,
+      })
       const logicalArtifactIdentity: CurrentLogicalArtifactIdentity = {
         artifactScope: currentStatisticalCompatibility.artifactScope,
         seriesId: input.seriesId,
@@ -1784,11 +1845,6 @@ export function createForecastLibraryService(
       }
       const logicalArtifactKey = buildCurrentLogicalArtifactKey(logicalArtifactIdentity)
       const requestId = resolvedDependencies.telemetry.currentContext?.()?.requestId ?? randomUUID()
-      executionContextRegistry.getOrCreateContext({
-        operationFamily: 'CURRENT',
-        logicalArtifactKey,
-        ownerRequestId: requestId,
-      })
       const recordCurrentExecutionEvent = (
         inputEvent: Omit<Parameters<ForecastPreparationExecutionLedger['recordEvent']>[0], 'executionId'>,
       ) => {
@@ -1796,6 +1852,9 @@ export function createForecastLibraryService(
           operationFamily: 'CURRENT',
           logicalArtifactKey,
           ownerRequestId: inputEvent.ownerRequestId,
+          attemptKind: inputEvent.role === 'OWNER' && inputEvent.eventType === 'single_flight_owner_failed'
+            ? 'PRIMARY'
+            : undefined,
           observedAt: inputEvent.observedAt,
         })
 
@@ -1806,6 +1865,7 @@ export function createForecastLibraryService(
         void resolvedDependencies.executionLedger.recordEvent({
           ...inputEvent,
           executionId: executionContext.executionId,
+          attemptKind: executionContext.attemptKind,
           executionMode: executionContext.executionMode,
           ownerToken: executionContext.ownerToken,
           leaseVersion: executionContext.leaseVersion,
@@ -2225,7 +2285,11 @@ export function createForecastLibraryService(
       const verificationHorizonSetId = buildVerificationHorizonSetId(
         buildCurrentForecastExecutionPlan(historyResponse.history.end, targetCadence).horizons,
       )
-      const verificationStatisticalCompatibility = createFullVerificationStatisticalCompatibility()
+      const verificationStatisticalCompatibility = createFullVerificationStatisticalCompatibility({
+        sourceFrequency,
+        targetCadence,
+        targetSemantics: methodIdentity.targetSemantics,
+      })
       const logicalArtifactIdentity: VerificationLogicalArtifactIdentity = {
         artifactScope: verificationStatisticalCompatibility.artifactScope,
         seriesId: input.seriesId,
@@ -2246,11 +2310,6 @@ export function createForecastLibraryService(
       }
       const logicalArtifactKey = buildVerificationLogicalArtifactKey(logicalArtifactIdentity)
       const requestId = resolvedDependencies.telemetry.currentContext?.()?.requestId ?? randomUUID()
-      executionContextRegistry.getOrCreateContext({
-        operationFamily: 'VERIFICATION',
-        logicalArtifactKey,
-        ownerRequestId: requestId,
-      })
       const recordVerificationExecutionEvent = (
         inputEvent: Omit<Parameters<ForecastPreparationExecutionLedger['recordEvent']>[0], 'executionId'>,
       ) => {
@@ -2258,6 +2317,9 @@ export function createForecastLibraryService(
           operationFamily: 'VERIFICATION',
           logicalArtifactKey,
           ownerRequestId: inputEvent.ownerRequestId,
+          attemptKind: inputEvent.role === 'OWNER' && inputEvent.eventType === 'single_flight_owner_failed'
+            ? 'PRIMARY'
+            : undefined,
           observedAt: inputEvent.observedAt,
         })
 
@@ -2268,6 +2330,7 @@ export function createForecastLibraryService(
         void resolvedDependencies.executionLedger.recordEvent({
           ...inputEvent,
           executionId: executionContext.executionId,
+          attemptKind: executionContext.attemptKind,
           executionMode: executionContext.executionMode,
           ownerToken: executionContext.ownerToken,
           leaseVersion: executionContext.leaseVersion,

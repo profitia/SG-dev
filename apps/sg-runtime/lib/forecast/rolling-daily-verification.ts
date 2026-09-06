@@ -113,7 +113,11 @@ export async function readPreparedRollingDailyForecastVerification(
     if (!record.trainingHistoryStartAt) return earliest
     return !earliest || record.trainingHistoryStartAt < earliest ? record.trainingHistoryStartAt : earliest
   }, null)
-  const statisticalCompatibility = createFullVerificationStatisticalCompatibility()
+  const statisticalCompatibility = createFullVerificationStatisticalCompatibility({
+    sourceFrequency: 'DAILY',
+    targetCadence: 'DAILY',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+  })
 
   return {
     status: 'AVAILABLE',

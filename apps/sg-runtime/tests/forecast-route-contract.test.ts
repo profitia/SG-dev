@@ -19,6 +19,7 @@ import type {
   BenchmarkForecastCurrentResult,
   BenchmarkForecastVerificationResult,
 } from '../lib/forecast/contracts'
+import { createCurrentForecastStatisticalCompatibility } from '../lib/forecast/identity'
 import type { ProductionForecastResult } from '../lib/forecast/production-routing'
 import type { ForecastRequestInput } from '../lib/forecast/request-contract'
 import { createForecastStressTelemetry, type ForecastStressEvent } from '../lib/forecast/stress-telemetry'
@@ -60,20 +61,26 @@ function capabilityIdentity(targetBasis: ForecastRequestInput['targetBasis']) {
 }
 
 function availableIdentity(targetBasis: ForecastRequestInput['targetBasis']) {
+  const sourceFrequency = targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY'
+  const targetCadence = targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY'
+  const targetSemantics = targetBasis === 'POINT_IN_TIME'
+    ? 'ROLLING_DAILY_POINT_IN_TIME'
+    : targetBasis
+
   return {
     ...capabilityIdentity(targetBasis),
     lineage: {
       inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
       inputRunId: null,
       sourceSeriesId: 'wocaes0074',
-      sourceFrequency: targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
+      sourceFrequency,
       historyFingerprint: 'abc',
       preparation: null,
-      statisticalCompatibility: {
-        artifactScope: 'CURRENT_FORECAST',
-        trainingWindowPolicyId: 'CURRENT_POLICY_FREQUENCY_SPECIFIC@current-policy-frequency-specific-v1',
-        calibrationPolicy: 'EXACT_STATISTICAL_MATCH_ONLY',
-      },
+      statisticalCompatibility: createCurrentForecastStatisticalCompatibility({
+        sourceFrequency,
+        targetCadence,
+        targetSemantics,
+      }),
     },
   } as const
 }

@@ -8,7 +8,11 @@ import { getActiveCurrentForecastSingleFlightEntryCount } from '@/lib/forecast/s
 import type { ForecastStressContext } from '@/lib/forecast/stress-telemetry'
 
 function preparedDailyCurrentOwnership(seriesId: string, modelId: string) {
-  const statisticalCompatibility = createCurrentForecastStatisticalCompatibility()
+  const statisticalCompatibility = createCurrentForecastStatisticalCompatibility({
+    sourceFrequency: 'DAILY',
+    targetCadence: 'DAILY',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+  })
   const identity = {
     artifactScope: statisticalCompatibility.artifactScope,
     seriesId,

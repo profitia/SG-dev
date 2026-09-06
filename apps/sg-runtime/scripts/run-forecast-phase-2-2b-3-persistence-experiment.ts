@@ -50,7 +50,11 @@ type ScenarioResult = {
 
 function currentArtifact(variant: 'A' | 'B' = 'A'): PersistedCurrentArtifact {
   const offset = variant === 'A' ? 0 : 100
-  const statisticalCompatibility = createCurrentForecastStatisticalCompatibility()
+  const statisticalCompatibility = createCurrentForecastStatisticalCompatibility({
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: 'MONTHLY_AVERAGE',
+  })
   return {
     seriesId: CURRENT_SERIES_ID,
     modelId: 'naive',
@@ -97,7 +101,11 @@ function currentArtifact(variant: 'A' | 'B' = 'A'): PersistedCurrentArtifact {
 
 function verificationArtifact(variant: 'A' | 'B' = 'A'): PersistedVerificationArtifact {
   const offset = variant === 'A' ? 0 : 100
-  const statisticalCompatibility = createFullVerificationStatisticalCompatibility()
+  const statisticalCompatibility = createFullVerificationStatisticalCompatibility({
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: 'MONTHLY_AVERAGE',
+  })
   const record = (horizon: string, horizonSteps: number, originMonth: string, targetMonth: string, base: number) => ({
     benchmarkId: VERIFICATION_SERIES_ID,
     modelId: 'naive',

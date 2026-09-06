@@ -15708,6 +15708,7 @@ export namespace Prisma {
     sourceFrequency: string | null
     targetCadence: string | null
     frequencyIdentity: string | null
+    attemptKind: string | null
     executionMode: string | null
     ownerToken: string | null
     leaseVersion: number | null
@@ -15754,6 +15755,7 @@ export namespace Prisma {
     sourceFrequency: string | null
     targetCadence: string | null
     frequencyIdentity: string | null
+    attemptKind: string | null
     executionMode: string | null
     ownerToken: string | null
     leaseVersion: number | null
@@ -15800,6 +15802,7 @@ export namespace Prisma {
     sourceFrequency: number
     targetCadence: number
     frequencyIdentity: number
+    attemptKind: number
     executionMode: number
     ownerToken: number
     leaseVersion: number
@@ -15862,6 +15865,7 @@ export namespace Prisma {
     sourceFrequency?: true
     targetCadence?: true
     frequencyIdentity?: true
+    attemptKind?: true
     executionMode?: true
     ownerToken?: true
     leaseVersion?: true
@@ -15908,6 +15912,7 @@ export namespace Prisma {
     sourceFrequency?: true
     targetCadence?: true
     frequencyIdentity?: true
+    attemptKind?: true
     executionMode?: true
     ownerToken?: true
     leaseVersion?: true
@@ -15954,6 +15959,7 @@ export namespace Prisma {
     sourceFrequency?: true
     targetCadence?: true
     frequencyIdentity?: true
+    attemptKind?: true
     executionMode?: true
     ownerToken?: true
     leaseVersion?: true
@@ -16089,6 +16095,7 @@ export namespace Prisma {
     sourceFrequency: string
     targetCadence: string
     frequencyIdentity: string
+    attemptKind: string
     executionMode: string
     ownerToken: string
     leaseVersion: number
@@ -16156,6 +16163,7 @@ export namespace Prisma {
     sourceFrequency?: boolean
     targetCadence?: boolean
     frequencyIdentity?: boolean
+    attemptKind?: boolean
     executionMode?: boolean
     ownerToken?: boolean
     leaseVersion?: boolean
@@ -16204,6 +16212,7 @@ export namespace Prisma {
     sourceFrequency?: boolean
     targetCadence?: boolean
     frequencyIdentity?: boolean
+    attemptKind?: boolean
     executionMode?: boolean
     ownerToken?: boolean
     leaseVersion?: boolean
@@ -16252,6 +16261,7 @@ export namespace Prisma {
     sourceFrequency?: boolean
     targetCadence?: boolean
     frequencyIdentity?: boolean
+    attemptKind?: boolean
     executionMode?: boolean
     ownerToken?: boolean
     leaseVersion?: boolean
@@ -16307,6 +16317,7 @@ export namespace Prisma {
       sourceFrequency: string
       targetCadence: string
       frequencyIdentity: string
+      attemptKind: string
       executionMode: string
       ownerToken: string
       leaseVersion: number
@@ -16745,6 +16756,7 @@ export namespace Prisma {
     readonly sourceFrequency: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
     readonly targetCadence: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
     readonly frequencyIdentity: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly attemptKind: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
     readonly executionMode: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
     readonly ownerToken: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
     readonly leaseVersion: FieldRef<"ForecastPreparationExecutionLedger", 'Int'>
@@ -19415,6 +19427,7 @@ export namespace Prisma {
     sourceFrequency: 'sourceFrequency',
     targetCadence: 'targetCadence',
     frequencyIdentity: 'frequencyIdentity',
+    attemptKind: 'attemptKind',
     executionMode: 'executionMode',
     ownerToken: 'ownerToken',
     leaseVersion: 'leaseVersion',
@@ -21178,6 +21191,7 @@ export namespace Prisma {
     sourceFrequency?: StringFilter<"ForecastPreparationExecutionLedger"> | string
     targetCadence?: StringFilter<"ForecastPreparationExecutionLedger"> | string
     frequencyIdentity?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    attemptKind?: StringFilter<"ForecastPreparationExecutionLedger"> | string
     executionMode?: StringFilter<"ForecastPreparationExecutionLedger"> | string
     ownerToken?: StringFilter<"ForecastPreparationExecutionLedger"> | string
     leaseVersion?: IntFilter<"ForecastPreparationExecutionLedger"> | number
@@ -21226,6 +21240,7 @@ export namespace Prisma {
     sourceFrequency?: SortOrder
     targetCadence?: SortOrder
     frequencyIdentity?: SortOrder
+    attemptKind?: SortOrder
     executionMode?: SortOrder
     ownerToken?: SortOrder
     leaseVersion?: SortOrder
@@ -21277,6 +21292,7 @@ export namespace Prisma {
     sourceFrequency?: StringFilter<"ForecastPreparationExecutionLedger"> | string
     targetCadence?: StringFilter<"ForecastPreparationExecutionLedger"> | string
     frequencyIdentity?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    attemptKind?: StringFilter<"ForecastPreparationExecutionLedger"> | string
     executionMode?: StringFilter<"ForecastPreparationExecutionLedger"> | string
     ownerToken?: StringFilter<"ForecastPreparationExecutionLedger"> | string
     leaseVersion?: IntFilter<"ForecastPreparationExecutionLedger"> | number
@@ -21325,6 +21341,7 @@ export namespace Prisma {
     sourceFrequency?: SortOrder
     targetCadence?: SortOrder
     frequencyIdentity?: SortOrder
+    attemptKind?: SortOrder
     executionMode?: SortOrder
     ownerToken?: SortOrder
     leaseVersion?: SortOrder
@@ -21381,6 +21398,7 @@ export namespace Prisma {
     sourceFrequency?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
     targetCadence?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
     frequencyIdentity?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    attemptKind?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
     executionMode?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
     ownerToken?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
     leaseVersion?: IntWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | number
@@ -23444,6 +23462,7 @@ export namespace Prisma {
     sourceFrequency: string
     targetCadence: string
     frequencyIdentity: string
+    attemptKind: string
     executionMode: string
     ownerToken: string
     leaseVersion?: number
@@ -23492,6 +23511,7 @@ export namespace Prisma {
     sourceFrequency: string
     targetCadence: string
     frequencyIdentity: string
+    attemptKind: string
     executionMode: string
     ownerToken: string
     leaseVersion?: number
@@ -23540,6 +23560,7 @@ export namespace Prisma {
     sourceFrequency?: StringFieldUpdateOperationsInput | string
     targetCadence?: StringFieldUpdateOperationsInput | string
     frequencyIdentity?: StringFieldUpdateOperationsInput | string
+    attemptKind?: StringFieldUpdateOperationsInput | string
     executionMode?: StringFieldUpdateOperationsInput | string
     ownerToken?: StringFieldUpdateOperationsInput | string
     leaseVersion?: IntFieldUpdateOperationsInput | number
@@ -23588,6 +23609,7 @@ export namespace Prisma {
     sourceFrequency?: StringFieldUpdateOperationsInput | string
     targetCadence?: StringFieldUpdateOperationsInput | string
     frequencyIdentity?: StringFieldUpdateOperationsInput | string
+    attemptKind?: StringFieldUpdateOperationsInput | string
     executionMode?: StringFieldUpdateOperationsInput | string
     ownerToken?: StringFieldUpdateOperationsInput | string
     leaseVersion?: IntFieldUpdateOperationsInput | number
@@ -23636,6 +23658,7 @@ export namespace Prisma {
     sourceFrequency: string
     targetCadence: string
     frequencyIdentity: string
+    attemptKind: string
     executionMode: string
     ownerToken: string
     leaseVersion?: number
@@ -23684,6 +23707,7 @@ export namespace Prisma {
     sourceFrequency?: StringFieldUpdateOperationsInput | string
     targetCadence?: StringFieldUpdateOperationsInput | string
     frequencyIdentity?: StringFieldUpdateOperationsInput | string
+    attemptKind?: StringFieldUpdateOperationsInput | string
     executionMode?: StringFieldUpdateOperationsInput | string
     ownerToken?: StringFieldUpdateOperationsInput | string
     leaseVersion?: IntFieldUpdateOperationsInput | number
@@ -23732,6 +23756,7 @@ export namespace Prisma {
     sourceFrequency?: StringFieldUpdateOperationsInput | string
     targetCadence?: StringFieldUpdateOperationsInput | string
     frequencyIdentity?: StringFieldUpdateOperationsInput | string
+    attemptKind?: StringFieldUpdateOperationsInput | string
     executionMode?: StringFieldUpdateOperationsInput | string
     ownerToken?: StringFieldUpdateOperationsInput | string
     leaseVersion?: IntFieldUpdateOperationsInput | number
@@ -25524,6 +25549,7 @@ export namespace Prisma {
     sourceFrequency?: SortOrder
     targetCadence?: SortOrder
     frequencyIdentity?: SortOrder
+    attemptKind?: SortOrder
     executionMode?: SortOrder
     ownerToken?: SortOrder
     leaseVersion?: SortOrder
@@ -25578,6 +25604,7 @@ export namespace Prisma {
     sourceFrequency?: SortOrder
     targetCadence?: SortOrder
     frequencyIdentity?: SortOrder
+    attemptKind?: SortOrder
     executionMode?: SortOrder
     ownerToken?: SortOrder
     leaseVersion?: SortOrder
@@ -25624,6 +25651,7 @@ export namespace Prisma {
     sourceFrequency?: SortOrder
     targetCadence?: SortOrder
     frequencyIdentity?: SortOrder
+    attemptKind?: SortOrder
     executionMode?: SortOrder
     ownerToken?: SortOrder
     leaseVersion?: SortOrder

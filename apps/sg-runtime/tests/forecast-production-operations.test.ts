@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+import { createCurrentForecastStatisticalCompatibility } from '../lib/forecast/identity'
 import { resolveForecastCapabilities } from '../lib/forecast/capability-resolver'
 import { createForecastProductionOperationsService } from '../lib/forecast/production-operations'
 
@@ -40,6 +41,12 @@ function capabilityResolution(seriesId: string) {
 }
 
 function available(targetBasis: 'END_OF_PERIOD' | 'MONTHLY_AVERAGE', modelId: string, cacheStatus: 'hit' | 'miss') {
+  const statisticalCompatibility = createCurrentForecastStatisticalCompatibility({
+    sourceFrequency: 'DAILY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: targetBasis,
+  })
+
   return {
     status: 'AVAILABLE',
     seriesId: 'generic.operations.series',
@@ -59,11 +66,7 @@ function available(targetBasis: 'END_OF_PERIOD' | 'MONTHLY_AVERAGE', modelId: st
       sourceFrequency: 'DAILY',
       historyFingerprint: `${targetBasis}-fingerprint`,
       preparation: null,
-      statisticalCompatibility: {
-        artifactScope: 'CURRENT_FORECAST',
-        trainingWindowPolicyId: 'CURRENT_POLICY_FREQUENCY_SPECIFIC@current-policy-frequency-specific-v1',
-        calibrationPolicy: 'EXACT_STATISTICAL_MATCH_ONLY',
-      },
+      statisticalCompatibility,
     },
     historyFingerprint: `${targetBasis}-fingerprint`,
     history: { frequency: 'MONTHLY', start: '2021-01-01', end: '2024-12-01', observations: 48 },

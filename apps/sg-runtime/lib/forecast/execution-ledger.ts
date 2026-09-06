@@ -14,7 +14,8 @@ import type { VerificationLogicalArtifactIdentity } from '@/lib/forecast/verific
 export type ForecastPreparationOperationFamily = 'CURRENT' | 'VERIFICATION'
 export type ForecastPreparationExecutionStatus = 'STARTED' | 'COMPLETED' | 'FAILED'
 export type ForecastPreparationExecutionRole = 'OWNER' | 'WAITER'
-export type ForecastPreparationExecutionMode = 'PRIMARY' | 'RECOVERY'
+export type ForecastPreparationAttemptKind = 'PRIMARY' | 'RECOVERY'
+export type ForecastPreparationExecutionMode = 'PRE_STAGE3_PREPARATION' | 'RECOVERY_RESUME'
 export type ForecastPreparationFailurePhase = 'SINGLE_FLIGHT' | 'COMPUTE' | 'PERSISTENCE' | 'FINALIZATION'
 export type ForecastPreparationExecutionEventType =
   | 'single_flight_lookup'
@@ -76,6 +77,7 @@ export type ForecastPreparationExecutionRecord = {
   sourceFrequency: string
   targetCadence: string
   frequencyIdentity: string
+  attemptKind: ForecastPreparationAttemptKind
   executionMode: ForecastPreparationExecutionMode
   ownerToken: string
   leaseVersion: number
@@ -121,6 +123,7 @@ export type ForecastPreparationExecutionLedgerEventInput = {
   verificationRecordWrites?: number | null
   writeFailures?: number | null
   payload?: Record<string, unknown> | null
+  attemptKind?: ForecastPreparationAttemptKind
   executionMode?: ForecastPreparationExecutionMode
   ownerToken?: string
   leaseVersion?: number
@@ -145,6 +148,7 @@ export type ForecastPreparationExecutionContext = {
   operationFamily: ForecastPreparationOperationFamily
   logicalArtifactKey: string
   ownerRequestId: string
+  attemptKind: ForecastPreparationAttemptKind
   executionMode: ForecastPreparationExecutionMode
   leaseVersion: number
   leaseAcquiredAt: string
@@ -157,11 +161,13 @@ export type ForecastPreparationExecutionContextRegistry = {
     operationFamily: ForecastPreparationOperationFamily
     logicalArtifactKey: string
     ownerRequestId: string
+    attemptKind?: ForecastPreparationAttemptKind
     executionMode?: ForecastPreparationExecutionMode
     recoveredFromExecutionId?: string | null
     observedAt?: string
   }): ForecastPreparationExecutionContext
   releaseContext(executionId: string): void
+  getActiveContextCount(): number
 }
 
 type CommonLogicalIdentity = {
@@ -183,6 +189,8 @@ type CommonLogicalIdentity = {
 function nowIso() {
   return new Date().toISOString()
 }
+
+export const STAGE2_NON_AUTHORITATIVE_LEASE_WINDOW_MS = 5 * 60 * 1000
 
 function addLeaseWindow(observedAt: string, leaseWindowMs: number) {
   return new Date(new Date(observedAt).getTime() + leaseWindowMs).toISOString()
@@ -209,6 +217,14 @@ const PROGRESS_EVENT_TYPES: ForecastPreparationExecutionEventType[] = [
 
 function isProgressEvent(eventType: ForecastPreparationExecutionEventType) {
   return PROGRESS_EVENT_TYPES.includes(eventType)
+}
+
+function defaultExecutionMode(attemptKind: ForecastPreparationAttemptKind): ForecastPreparationExecutionMode {
+  return attemptKind === 'RECOVERY' ? 'RECOVERY_RESUME' : 'PRE_STAGE3_PREPARATION'
+}
+
+function defaultAttemptKind(executionMode?: ForecastPreparationExecutionMode): ForecastPreparationAttemptKind {
+  return executionMode === 'RECOVERY_RESUME' ? 'RECOVERY' : 'PRIMARY'
 }
 
 function deriveFailurePhase(
@@ -268,17 +284,10 @@ function extractCommonIdentity(identity: ForecastPreparationLogicalArtifactIdent
   }
 }
 
-export function buildForecastPreparationExecutionId(
-  operationFamily: ForecastPreparationOperationFamily,
-  ownerRequestId: string,
-) {
-  return `${operationFamily}:${ownerRequestId}`
-}
-
 export function createForecastPreparationExecutionContextRegistry(
   dependencies: { leaseWindowMs?: number } = {},
 ): ForecastPreparationExecutionContextRegistry {
-  const leaseWindowMs = dependencies.leaseWindowMs ?? 5 * 60 * 1000
+  const leaseWindowMs = dependencies.leaseWindowMs ?? STAGE2_NON_AUTHORITATIVE_LEASE_WINDOW_MS
   const contextByOwnerKey = new Map<string, ForecastPreparationExecutionContext>()
   const ownerKeyByExecutionId = new Map<string, string>()
 
@@ -291,13 +300,15 @@ export function createForecastPreparationExecutionContextRegistry(
       }
 
       const leaseAcquiredAt = input.observedAt ?? nowIso()
+      const attemptKind = input.attemptKind ?? defaultAttemptKind(input.executionMode)
       const context: ForecastPreparationExecutionContext = {
         executionId: randomUUID(),
         ownerToken: randomUUID(),
         operationFamily: input.operationFamily,
         logicalArtifactKey: input.logicalArtifactKey,
         ownerRequestId: input.ownerRequestId,
-        executionMode: input.executionMode ?? 'PRIMARY',
+        attemptKind,
+        executionMode: input.executionMode ?? defaultExecutionMode(attemptKind),
         leaseVersion: 1,
         leaseAcquiredAt,
         leaseExpiresAt: addLeaseWindow(leaseAcquiredAt, leaseWindowMs),
@@ -316,6 +327,9 @@ export function createForecastPreparationExecutionContextRegistry(
 
       ownerKeyByExecutionId.delete(executionId)
       contextByOwnerKey.delete(ownerKey)
+    },
+    getActiveContextCount() {
+      return contextByOwnerKey.size
     },
   }
 }
@@ -378,8 +392,9 @@ export function reduceForecastPreparationExecution(
         sourceFrequency: commonIdentity.sourceFrequency,
         targetCadence: commonIdentity.targetCadence,
         frequencyIdentity: commonIdentity.frequencyIdentity,
-        executionMode: input.executionMode ?? 'PRIMARY',
-        ownerToken: input.ownerToken ?? input.ownerRequestId,
+        attemptKind: input.attemptKind ?? defaultAttemptKind(input.executionMode),
+        executionMode: input.executionMode ?? defaultExecutionMode(input.attemptKind ?? defaultAttemptKind(input.executionMode)),
+        ownerToken: input.ownerToken ?? input.executionId,
         leaseVersion: input.leaseVersion ?? 1,
         leaseAcquiredAt: input.leaseAcquiredAt ?? observedAt,
         leaseExpiresAt: input.leaseExpiresAt ?? observedAt,
@@ -410,6 +425,7 @@ export function reduceForecastPreparationExecution(
   next.lastEventAt = observedAt
   next.eventCount = event.sequence
   next.events = [...next.events, event]
+  next.attemptKind = input.attemptKind ?? next.attemptKind
   next.executionMode = input.executionMode ?? next.executionMode
   next.ownerToken = input.ownerToken ?? next.ownerToken
   next.leaseVersion = input.leaseVersion ?? next.leaseVersion
@@ -502,6 +518,7 @@ function mapStoredExecutionRecord(record: {
   sourceFrequency: string
   targetCadence: string
   frequencyIdentity: string
+  attemptKind: string
   executionMode: string
   ownerToken: string
   leaseVersion: number
@@ -546,6 +563,7 @@ function mapStoredExecutionRecord(record: {
     sourceFrequency: record.sourceFrequency,
     targetCadence: record.targetCadence,
     frequencyIdentity: record.frequencyIdentity,
+    attemptKind: record.attemptKind as ForecastPreparationAttemptKind,
     executionMode: record.executionMode as ForecastPreparationExecutionMode,
     ownerToken: record.ownerToken,
     leaseVersion: record.leaseVersion,
@@ -610,6 +628,7 @@ function createPrismaStore(): ForecastPreparationExecutionLedgerStore {
           sourceFrequency: record.sourceFrequency,
           targetCadence: record.targetCadence,
           frequencyIdentity: record.frequencyIdentity,
+          attemptKind: record.attemptKind,
           executionMode: record.executionMode,
           ownerToken: record.ownerToken,
           leaseVersion: record.leaseVersion,
@@ -653,6 +672,7 @@ function createPrismaStore(): ForecastPreparationExecutionLedgerStore {
           sourceFrequency: record.sourceFrequency,
           targetCadence: record.targetCadence,
           frequencyIdentity: record.frequencyIdentity,
+          attemptKind: record.attemptKind,
           executionMode: record.executionMode,
           ownerToken: record.ownerToken,
           leaseVersion: record.leaseVersion,

@@ -94,7 +94,11 @@ export async function prepareRollingDailyCurrentOwnership(input: {
     throw new Error(`Rolling Daily Current ownership requires DAILY history for ${input.seriesId}.`)
   }
   const forecastOrigin = latestLawfulObservationDate(history)
-  const statisticalCompatibility = createCurrentForecastStatisticalCompatibility()
+  const statisticalCompatibility = createCurrentForecastStatisticalCompatibility({
+    sourceFrequency: 'DAILY',
+    targetCadence: 'DAILY',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+  })
   const identity = {
     artifactScope: statisticalCompatibility.artifactScope,
     seriesId: input.seriesId,
