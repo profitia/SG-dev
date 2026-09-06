@@ -58,7 +58,11 @@ export type VerificationSingleFlightEventData = {
 type VerificationSingleFlightTelemetry = (
   event: VerificationSingleFlightEvent,
   data: VerificationSingleFlightEventData,
-) => void
+) => void | Promise<void>
+
+function isPromiseLike(result: void | Promise<void> | undefined): result is Promise<void> {
+  return Boolean(result) && typeof result.then === 'function'
+}
 
 type InFlightEntry<Result> = {
   ownerRequestId: string
@@ -113,22 +117,34 @@ export class VerificationForecastSingleFlight<Result> {
         role: 'WAITER',
         activeVerificationSingleFlightEntries: this.entries.size,
       })
-      input.emit?.('single_flight_lookup', eventData())
-      input.emit?.('single_flight_waiter_joined', eventData())
+      const lookupTelemetry = input.emit?.('single_flight_lookup', eventData())
+      if (isPromiseLike(lookupTelemetry)) {
+        await lookupTelemetry
+      }
+      const waiterJoinedTelemetry = input.emit?.('single_flight_waiter_joined', eventData())
+      if (isPromiseLike(waiterJoinedTelemetry)) {
+        await waiterJoinedTelemetry
+      }
 
       try {
         const result = await existing.promise
-        input.emit?.('single_flight_waiter_completed', {
+        const waiterCompletedTelemetry = input.emit?.('single_flight_waiter_completed', {
           ...eventData(),
           durationMs: performance.now() - startedAt,
         })
+        if (isPromiseLike(waiterCompletedTelemetry)) {
+          await waiterCompletedTelemetry
+        }
         return result
       } catch (error) {
-        input.emit?.('single_flight_waiter_failed', {
+        const waiterFailedTelemetry = input.emit?.('single_flight_waiter_failed', {
           ...eventData(),
           durationMs: performance.now() - startedAt,
           error: error instanceof Error ? error.message : 'unknown',
         })
+        if (isPromiseLike(waiterFailedTelemetry)) {
+          await waiterFailedTelemetry
+        }
         throw error
       }
     }
@@ -146,28 +162,43 @@ export class VerificationForecastSingleFlight<Result> {
       role: 'OWNER',
       activeVerificationSingleFlightEntries: this.entries.size,
     })
-    input.emit?.('single_flight_lookup', eventData())
-    input.emit?.('single_flight_owner_acquired', eventData())
+    const lookupTelemetry = input.emit?.('single_flight_lookup', eventData())
+    if (isPromiseLike(lookupTelemetry)) {
+      await lookupTelemetry
+    }
+    const ownerAcquiredTelemetry = input.emit?.('single_flight_owner_acquired', eventData())
+    if (isPromiseLike(ownerAcquiredTelemetry)) {
+      await ownerAcquiredTelemetry
+    }
 
     try {
       const result = await entry.promise
-      input.emit?.('single_flight_owner_completed', {
+      const ownerCompletedTelemetry = input.emit?.('single_flight_owner_completed', {
         ...eventData(),
         durationMs: performance.now() - startedAt,
       })
+      if (isPromiseLike(ownerCompletedTelemetry)) {
+        await ownerCompletedTelemetry
+      }
       return result
     } catch (error) {
-      input.emit?.('single_flight_owner_failed', {
+      const ownerFailedTelemetry = input.emit?.('single_flight_owner_failed', {
         ...eventData(),
         durationMs: performance.now() - startedAt,
         error: error instanceof Error ? error.message : 'unknown',
       })
+      if (isPromiseLike(ownerFailedTelemetry)) {
+        await ownerFailedTelemetry
+      }
       throw error
     } finally {
       if (this.entries.get(input.logicalArtifactKey) === entry) {
         this.entries.delete(input.logicalArtifactKey)
       }
-      input.emit?.('single_flight_entry_released', eventData())
+      const entryReleasedTelemetry = input.emit?.('single_flight_entry_released', eventData())
+      if (isPromiseLike(entryReleasedTelemetry)) {
+        await entryReleasedTelemetry
+      }
     }
   }
 }

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+import { createNoopForecastPreparationExecutionLedger } from '../lib/forecast/execution-ledger'
 import { createForecastLibraryService, type ForecastBridge, type ForecastLibraryRepository, buildForecastHistoryFingerprint } from '../lib/forecast/service'
 
 function createHistoryResponse() {
@@ -691,6 +692,61 @@ test('forecast library current path computes and persists on cache miss', async 
   assert.equal(persistedFingerprint, result.historyFingerprint)
   assert.equal(persistedHorizons, 2)
   assert.equal(persistedTargetBasis, 'MONTHLY_AVERAGE')
+})
+
+test('forecast library current miss records a durable execution ledger without changing result semantics', async () => {
+  const history = createHistoryResponse()
+  const events: string[] = []
+
+  const service = createForecastLibraryService({
+    bridge: {
+      async exportHistory() {
+        return history
+      },
+      async exportCurrent() {
+        return createCurrentResponse()
+      },
+      async exportVerification() {
+        throw new Error('unused')
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        return null
+      },
+      async writeCurrentRun() {},
+      async readVerificationRun() {
+        return null
+      },
+      async writeVerificationRun() {
+        throw new Error('unused')
+      },
+    },
+    logEvent: () => {},
+    telemetry: {
+      emit() {},
+      currentContext() {
+        return { requestId: 'req-stage2-current' }
+      },
+    },
+    executionLedger: {
+      ...createNoopForecastPreparationExecutionLedger(),
+      async recordEvent(input) {
+        events.push(input.eventType)
+      },
+    },
+  })
+
+  const result = await service.resolveCurrentForecast('wocaes0280', 'ets')
+
+  assert.equal(result.status, 'AVAILABLE')
+  assert.equal(result.cacheStatus, 'miss')
+  assert.ok(events.includes('single_flight_owner_acquired'))
+  assert.ok(events.includes('compute_started'))
+  assert.ok(events.includes('compute_completed'))
+  assert.ok(events.includes('persistence_started'))
+  assert.ok(events.includes('persistence_completed'))
+  assert.ok(events.includes('execution_completed'))
 })
 
 test('forecast library Current exact-key misses use one owner, nine waiters, and one write', async () => {

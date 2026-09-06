@@ -342,6 +342,51 @@ model RollingDailyMaintenanceState {
   @@map("rolling_daily_maintenance_state")
 }
 
+model ForecastPreparationExecutionLedger {
+  /// Passive durable execution ledger for Forecast preparation lifecycles. Stage 2 records execution identity and phase history without changing admission authority.
+  id                          String              @id @default(cuid())
+  executionId                 String              @unique
+  logicalArtifactKey          String
+  operationFamily             String
+  executionStatus             String
+  resultStatus                String?
+  cacheStatus                 String?
+  artifactScope               String
+  trainingWindowPolicyId      String
+  seriesId                    String
+  targetBasis                 ForecastTargetBasis @default(MONTHLY_AVERAGE)
+  targetSemantics             String
+  methodId                    String
+  methodVersion               String
+  modelId                     String
+  inputSource                 String
+  historyFingerprint          String
+  sourceFrequency             String
+  targetCadence               String
+  frequencyIdentity           String
+  ownerRequestId              String
+  latestRequestId             String
+  latestRole                  String
+  waiterCount                 Int                 @default(0)
+  eventCount                  Int                 @default(0)
+  startedAt                   DateTime
+  lastEventAt                 DateTime
+  completedAt                 DateTime?
+  computeStartedAt            DateTime?
+  computeCompletedAt          DateTime?
+  persistenceStartedAt        DateTime?
+  persistenceCompletedAt      DateTime?
+  failureReason               String?
+  logicalArtifactIdentityJson Json
+  eventsJson                  Json
+  createdAt                   DateTime            @default(now())
+  updatedAt                   DateTime            @updatedAt
+
+  @@index([logicalArtifactKey, startedAt], map: "forecast_preparation_execution_ledger_logical_key_idx")
+  @@index([seriesId, operationFamily, executionStatus, updatedAt], map: "forecast_preparation_execution_ledger_series_status_idx")
+  @@map("forecast_preparation_execution_ledger")
+}
+
 model BenchmarkMetadataFacetRecord {
   id                  String   @id
   providerCode        String

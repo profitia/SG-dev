@@ -22,6 +22,11 @@ import {
   CurrentForecastSingleFlight,
 } from '@/lib/forecast/current-single-flight'
 import {
+  buildForecastPreparationExecutionId,
+  createDefaultForecastPreparationExecutionLedger,
+  type ForecastPreparationExecutionLedger,
+} from '@/lib/forecast/execution-ledger'
+import {
   buildVerificationHorizonSetId,
   buildVerificationLogicalArtifactKey,
   VERIFICATION_CONFIGURATION_ID,
@@ -339,6 +344,7 @@ export type ForecastLibraryServiceDependencies = {
   bridge: ForecastBridge
   logEvent: (event: string, data: Record<string, string | number | boolean | null>) => void
   telemetry: Pick<ForecastStressTelemetry, 'emit'> & Partial<Pick<ForecastStressTelemetry, 'currentContext'>>
+  executionLedger: ForecastPreparationExecutionLedger
 }
 
 function buildDefaultLogPayload(data: Record<string, string | number | boolean | null>) {
@@ -1566,6 +1572,7 @@ export function createForecastLibraryService(
     bridge: dependencies.bridge ?? createDefaultBridge(),
     logEvent: dependencies.logEvent ?? logForecastEvent,
     telemetry: dependencies.telemetry ?? forecastStressTelemetry,
+    executionLedger: dependencies.executionLedger ?? createDefaultForecastPreparationExecutionLedger(),
   }
 
   return {
@@ -1774,11 +1781,26 @@ export function createForecastLibraryService(
       }
       const logicalArtifactKey = buildCurrentLogicalArtifactKey(logicalArtifactIdentity)
       const requestId = resolvedDependencies.telemetry.currentContext?.()?.requestId ?? randomUUID()
+      const recordCurrentExecutionEvent = async (
+        inputEvent: Parameters<ForecastPreparationExecutionLedger['recordEvent']>[0],
+      ) => {
+        try {
+          await resolvedDependencies.executionLedger.recordEvent(inputEvent)
+        } catch (error) {
+          resolvedDependencies.logEvent('FORECAST_PREPARATION_EXECUTION_LEDGER', {
+            seriesId: input.seriesId,
+            modelId: input.modelId,
+            operationFamily: 'CURRENT',
+            ledgerFailure: true,
+            ledgerError: error instanceof Error ? error.message : 'unknown',
+          })
+        }
+      }
 
       return runCurrentForecastSingleFlight<BenchmarkForecastCurrentResult>({
         logicalArtifactKey,
         requestId,
-        emit(event, eventData) {
+        async emit(event, eventData) {
           resolvedDependencies.telemetry.emit(event, {
             logicalArtifactKey: eventData.logicalArtifactKey,
             operationFamily: eventData.operationFamily,
@@ -1794,110 +1816,270 @@ export function createForecastLibraryService(
             sourceFrequency,
             targetCadence,
           })
+          await recordCurrentExecutionEvent({
+            executionId: buildForecastPreparationExecutionId('CURRENT', eventData.ownerRequestId),
+            logicalArtifactKey,
+            operationFamily: 'CURRENT',
+            logicalArtifactIdentity,
+            requestId: eventData.requestId,
+            ownerRequestId: eventData.ownerRequestId,
+            role: eventData.role,
+            eventType: event,
+            durationMs: eventData.durationMs ?? null,
+            error: eventData.error ?? null,
+            activeSingleFlightEntries: eventData.activeCurrentSingleFlightEntries,
+          })
         },
         operation: async () => {
-          const computeStartedAt = performance.now()
-          resolvedDependencies.telemetry.emit('current_compute_start', {
-            modelId: input.modelId,
-            count: 1,
-            logicalArtifactKey,
-          })
-          const currentResponse = preparedExecutionContext
-            ? await preparedExecutionContext.exportCurrent(input.modelId)
-            : await resolvedDependencies.bridge.exportCurrent(input)
-          const computeDurationMs = performance.now() - computeStartedAt
-          resolvedDependencies.telemetry.emit('current_compute_end', {
-            modelId: input.modelId,
-            count: 1,
-            durationMs: computeDurationMs,
-            status: currentResponse.status,
-            logicalArtifactKey,
-          })
-          resolvedDependencies.telemetry.emit('model_fit', {
-            operation: 'current',
-            modelId: input.modelId,
-            count: currentResponse.status === 'AVAILABLE' ? 1 : 0,
-            durationMs: computeDurationMs,
-          })
+          const executionId = buildForecastPreparationExecutionId('CURRENT', requestId)
 
-          if (currentResponse.status === 'NOT_AVAILABLE') {
-            const identity = resolveCapabilityIdentity(input.targetBasis)
-            return {
-              status: 'NOT_AVAILABLE',
-              seriesId: input.seriesId,
+          try {
+            const computeStartedAt = performance.now()
+            resolvedDependencies.telemetry.emit('current_compute_start', {
               modelId: input.modelId,
-              targetBasis: input.targetBasis,
-              targetSemantics: identity.targetSemantics,
-              methodId: identity.methodId,
-              reason: currentResponse.reason,
-            }
-          }
-
-          if (currentResponse.status === 'UNSUPPORTED') {
-            return toUnsupportedResult(currentResponse, input)
-          }
-
-          if (currentResponse.status === 'FAILED') {
-            const identity = resolveCapabilityIdentity(input.targetBasis, currentResponse.methodVersion)
-            return {
-              status: 'FAILED',
-              seriesId: input.seriesId,
+              count: 1,
+              logicalArtifactKey,
+            })
+            await recordCurrentExecutionEvent({
+              executionId,
+              logicalArtifactKey,
+              operationFamily: 'CURRENT',
+              logicalArtifactIdentity,
+              requestId,
+              ownerRequestId: requestId,
+              role: 'OWNER',
+              eventType: 'compute_started',
+            })
+            const currentResponse = preparedExecutionContext
+              ? await preparedExecutionContext.exportCurrent(input.modelId)
+              : await resolvedDependencies.bridge.exportCurrent(input)
+            const computeDurationMs = performance.now() - computeStartedAt
+            resolvedDependencies.telemetry.emit('current_compute_end', {
               modelId: input.modelId,
-              targetBasis: input.targetBasis,
-              targetSemantics: identity.targetSemantics,
-              methodId: identity.methodId,
-              reason: currentResponse.reason,
-              methodVersion: currentResponse.methodVersion,
-              source: currentResponse.source,
-              historyFingerprint,
-            }
-          }
+              count: 1,
+              durationMs: computeDurationMs,
+              status: currentResponse.status,
+              logicalArtifactKey,
+            })
+            resolvedDependencies.telemetry.emit('model_fit', {
+              operation: 'current',
+              modelId: input.modelId,
+              count: currentResponse.status === 'AVAILABLE' ? 1 : 0,
+              durationMs: computeDurationMs,
+            })
+            await recordCurrentExecutionEvent({
+              executionId,
+              logicalArtifactKey,
+              operationFamily: 'CURRENT',
+              logicalArtifactIdentity,
+              requestId,
+              ownerRequestId: requestId,
+              role: 'OWNER',
+              eventType: 'compute_completed',
+              durationMs: computeDurationMs,
+              resultStatus: currentResponse.status,
+              payload: {
+                modelFitCount: currentResponse.status === 'AVAILABLE' ? 1 : 0,
+              },
+            })
 
-          const artifact = mapCurrentArtifact(currentResponse, input.targetBasis, cadenceContext)
-          const cacheStatus: BenchmarkForecastCurrentAvailableResult['cacheStatus'] = dbReadFailed ? 'db-unavailable' : 'miss'
-
-          if (!dbReadFailed) {
-            try {
-              const persistStartedAt = performance.now()
-              await resolvedDependencies.repository.writeCurrentRun(artifact)
-              resolvedDependencies.telemetry.emit('persistence', {
-                operation: 'current',
-                artifactWrites: 1,
-                pointWrites: Object.keys(artifact.currentForecast).length,
-                verificationRecordWrites: 0,
-                writeFailures: 0,
-                durationMs: performance.now() - persistStartedAt,
+            if (currentResponse.status === 'NOT_AVAILABLE') {
+              const identity = resolveCapabilityIdentity(input.targetBasis)
+              await recordCurrentExecutionEvent({
+                executionId,
+                logicalArtifactKey,
+                operationFamily: 'CURRENT',
+                logicalArtifactIdentity,
+                requestId,
+                ownerRequestId: requestId,
+                role: 'OWNER',
+                eventType: 'execution_completed',
+                resultStatus: currentResponse.status,
+                cacheStatus: dbReadFailed ? 'db-unavailable' : 'miss',
               })
-            } catch (error) {
-              resolvedDependencies.telemetry.emit('persistence', {
-                operation: 'current',
-                artifactWrites: 0,
-                pointWrites: 0,
-                verificationRecordWrites: 0,
-                writeFailures: 1,
-              })
-              resolvedDependencies.logEvent('FORECAST_LIBRARY_CURRENT', {
+              return {
+                status: 'NOT_AVAILABLE',
                 seriesId: input.seriesId,
                 modelId: input.modelId,
-                cacheStatus: 'persist-failed',
-                totalMs: Math.round(performance.now() - startedAt),
-                dbFailure: true,
-                persistError: error instanceof Error ? error.message : 'unknown',
-              })
-
-              return toCurrentAvailable(artifact, 'persist-failed')
+                targetBasis: input.targetBasis,
+                targetSemantics: identity.targetSemantics,
+                methodId: identity.methodId,
+                reason: currentResponse.reason,
+              }
             }
+
+            if (currentResponse.status === 'UNSUPPORTED') {
+              await recordCurrentExecutionEvent({
+                executionId,
+                logicalArtifactKey,
+                operationFamily: 'CURRENT',
+                logicalArtifactIdentity,
+                requestId,
+                ownerRequestId: requestId,
+                role: 'OWNER',
+                eventType: 'execution_completed',
+                resultStatus: currentResponse.status,
+                cacheStatus: dbReadFailed ? 'db-unavailable' : 'miss',
+              })
+              return toUnsupportedResult(currentResponse, input)
+            }
+
+            if (currentResponse.status === 'FAILED') {
+              await recordCurrentExecutionEvent({
+                executionId,
+                logicalArtifactKey,
+                operationFamily: 'CURRENT',
+                logicalArtifactIdentity,
+                requestId,
+                ownerRequestId: requestId,
+                role: 'OWNER',
+                eventType: 'execution_failed',
+                resultStatus: currentResponse.status,
+                cacheStatus: dbReadFailed ? 'db-unavailable' : 'miss',
+                error: currentResponse.reason,
+              })
+              const identity = resolveCapabilityIdentity(input.targetBasis, currentResponse.methodVersion)
+              return {
+                status: 'FAILED',
+                seriesId: input.seriesId,
+                modelId: input.modelId,
+                targetBasis: input.targetBasis,
+                targetSemantics: identity.targetSemantics,
+                methodId: identity.methodId,
+                reason: currentResponse.reason,
+                methodVersion: currentResponse.methodVersion,
+                source: currentResponse.source,
+                historyFingerprint,
+              }
+            }
+
+            const artifact = mapCurrentArtifact(currentResponse, input.targetBasis, cadenceContext)
+            const cacheStatus: BenchmarkForecastCurrentAvailableResult['cacheStatus'] = dbReadFailed ? 'db-unavailable' : 'miss'
+
+            if (!dbReadFailed) {
+              try {
+                const persistStartedAt = performance.now()
+                await recordCurrentExecutionEvent({
+                  executionId,
+                  logicalArtifactKey,
+                  operationFamily: 'CURRENT',
+                  logicalArtifactIdentity,
+                  requestId,
+                  ownerRequestId: requestId,
+                  role: 'OWNER',
+                  eventType: 'persistence_started',
+                })
+                await resolvedDependencies.repository.writeCurrentRun(artifact)
+                const persistenceDurationMs = performance.now() - persistStartedAt
+                resolvedDependencies.telemetry.emit('persistence', {
+                  operation: 'current',
+                  artifactWrites: 1,
+                  pointWrites: Object.keys(artifact.currentForecast).length,
+                  verificationRecordWrites: 0,
+                  writeFailures: 0,
+                  durationMs: persistenceDurationMs,
+                })
+                await recordCurrentExecutionEvent({
+                  executionId,
+                  logicalArtifactKey,
+                  operationFamily: 'CURRENT',
+                  logicalArtifactIdentity,
+                  requestId,
+                  ownerRequestId: requestId,
+                  role: 'OWNER',
+                  eventType: 'persistence_completed',
+                  durationMs: persistenceDurationMs,
+                  artifactWrites: 1,
+                  pointWrites: Object.keys(artifact.currentForecast).length,
+                  verificationRecordWrites: 0,
+                  writeFailures: 0,
+                })
+              } catch (error) {
+                resolvedDependencies.telemetry.emit('persistence', {
+                  operation: 'current',
+                  artifactWrites: 0,
+                  pointWrites: 0,
+                  verificationRecordWrites: 0,
+                  writeFailures: 1,
+                })
+                await recordCurrentExecutionEvent({
+                  executionId,
+                  logicalArtifactKey,
+                  operationFamily: 'CURRENT',
+                  logicalArtifactIdentity,
+                  requestId,
+                  ownerRequestId: requestId,
+                  role: 'OWNER',
+                  eventType: 'persistence_failed',
+                  error: error instanceof Error ? error.message : 'unknown',
+                  artifactWrites: 0,
+                  pointWrites: 0,
+                  verificationRecordWrites: 0,
+                  writeFailures: 1,
+                })
+                await recordCurrentExecutionEvent({
+                  executionId,
+                  logicalArtifactKey,
+                  operationFamily: 'CURRENT',
+                  logicalArtifactIdentity,
+                  requestId,
+                  ownerRequestId: requestId,
+                  role: 'OWNER',
+                  eventType: 'execution_failed',
+                  resultStatus: 'AVAILABLE',
+                  cacheStatus: 'persist-failed',
+                  error: error instanceof Error ? error.message : 'unknown',
+                })
+                resolvedDependencies.logEvent('FORECAST_LIBRARY_CURRENT', {
+                  seriesId: input.seriesId,
+                  modelId: input.modelId,
+                  cacheStatus: 'persist-failed',
+                  totalMs: Math.round(performance.now() - startedAt),
+                  dbFailure: true,
+                  persistError: error instanceof Error ? error.message : 'unknown',
+                })
+
+                return toCurrentAvailable(artifact, 'persist-failed')
+              }
+            }
+
+            await recordCurrentExecutionEvent({
+              executionId,
+              logicalArtifactKey,
+              operationFamily: 'CURRENT',
+              logicalArtifactIdentity,
+              requestId,
+              ownerRequestId: requestId,
+              role: 'OWNER',
+              eventType: 'execution_completed',
+              resultStatus: 'AVAILABLE',
+              cacheStatus,
+            })
+            resolvedDependencies.logEvent('FORECAST_LIBRARY_CURRENT', {
+              seriesId: input.seriesId,
+              modelId: input.modelId,
+              cacheStatus,
+              totalMs: Math.round(performance.now() - startedAt),
+              dbFailure: dbReadFailed,
+            })
+
+            return toCurrentAvailable(artifact, cacheStatus)
+          } catch (error) {
+            await recordCurrentExecutionEvent({
+              executionId,
+              logicalArtifactKey,
+              operationFamily: 'CURRENT',
+              logicalArtifactIdentity,
+              requestId,
+              ownerRequestId: requestId,
+              role: 'OWNER',
+              eventType: 'execution_failed',
+              resultStatus: 'FAILED',
+              cacheStatus: dbReadFailed ? 'db-unavailable' : 'miss',
+              error: error instanceof Error ? error.message : 'unknown',
+            })
+            throw error
           }
-
-          resolvedDependencies.logEvent('FORECAST_LIBRARY_CURRENT', {
-            seriesId: input.seriesId,
-            modelId: input.modelId,
-            cacheStatus,
-            totalMs: Math.round(performance.now() - startedAt),
-            dbFailure: dbReadFailed,
-          })
-
-          return toCurrentAvailable(artifact, cacheStatus)
         }
       })
     },
@@ -2052,11 +2234,26 @@ export function createForecastLibraryService(
       }
       const logicalArtifactKey = buildVerificationLogicalArtifactKey(logicalArtifactIdentity)
       const requestId = resolvedDependencies.telemetry.currentContext?.()?.requestId ?? randomUUID()
+      const recordVerificationExecutionEvent = async (
+        inputEvent: Parameters<ForecastPreparationExecutionLedger['recordEvent']>[0],
+      ) => {
+        try {
+          await resolvedDependencies.executionLedger.recordEvent(inputEvent)
+        } catch (error) {
+          resolvedDependencies.logEvent('FORECAST_PREPARATION_EXECUTION_LEDGER', {
+            seriesId: input.seriesId,
+            modelId: input.modelId,
+            operationFamily: 'VERIFICATION',
+            ledgerFailure: true,
+            ledgerError: error instanceof Error ? error.message : 'unknown',
+          })
+        }
+      }
 
       return verificationForecastSingleFlight.run({
         logicalArtifactKey,
         requestId,
-        emit(event, eventData) {
+        async emit(event, eventData) {
           resolvedDependencies.telemetry.emit(event, {
             logicalArtifactKey: eventData.logicalArtifactKey,
             operationFamily: eventData.operationFamily,
@@ -2072,121 +2269,281 @@ export function createForecastLibraryService(
             sourceFrequency,
             targetCadence,
           })
+          await recordVerificationExecutionEvent({
+            executionId: buildForecastPreparationExecutionId('VERIFICATION', eventData.ownerRequestId),
+            logicalArtifactKey,
+            operationFamily: 'VERIFICATION',
+            logicalArtifactIdentity,
+            requestId: eventData.requestId,
+            ownerRequestId: eventData.ownerRequestId,
+            role: eventData.role,
+            eventType: event,
+            durationMs: eventData.durationMs ?? null,
+            error: eventData.error ?? null,
+            activeSingleFlightEntries: eventData.activeVerificationSingleFlightEntries,
+          })
         },
         operation: async () => {
-          const verificationStartedAt = performance.now()
-          resolvedDependencies.telemetry.emit('verification_compute_start', {
-            modelId: input.modelId,
-            count: 1,
-            logicalArtifactKey,
-          })
-          const verificationResponse = preparedExecutionContext
-            ? await preparedExecutionContext.exportVerification(input.modelId)
-            : await resolvedDependencies.bridge.exportVerification(input)
-          const verificationDurationMs = performance.now() - verificationStartedAt
-          const verificationOrigins = verificationResponse.status === 'AVAILABLE'
-            ? Object.values(verificationResponse.result.backtest).reduce((sum, horizon) => sum + horizon.origins, 0)
-            : 0
-          resolvedDependencies.telemetry.emit('verification_compute_end', {
-            modelId: input.modelId,
-            count: 1,
-            originCount: verificationOrigins,
-            durationMs: verificationDurationMs,
-            status: verificationResponse.status,
-            logicalArtifactKey,
-          })
-          resolvedDependencies.telemetry.emit('model_fit', {
-            operation: 'verification',
-            modelId: input.modelId,
-            count: verificationOrigins,
-            durationMs: verificationDurationMs,
-          })
+          const executionId = buildForecastPreparationExecutionId('VERIFICATION', requestId)
 
-          if (verificationResponse.status === 'NOT_AVAILABLE') {
-            const identity = resolveCapabilityIdentity(input.targetBasis)
-            return {
-              status: 'NOT_AVAILABLE',
-              seriesId: input.seriesId,
+          try {
+            const verificationStartedAt = performance.now()
+            resolvedDependencies.telemetry.emit('verification_compute_start', {
               modelId: input.modelId,
-              targetBasis: input.targetBasis,
-              targetSemantics: identity.targetSemantics,
-              methodId: identity.methodId,
-              reason: verificationResponse.reason,
-            }
-          }
-
-          if (verificationResponse.status === 'UNSUPPORTED') {
-            return toUnsupportedResult(verificationResponse, input)
-          }
-
-          if (verificationResponse.status === 'FAILED') {
-            const identity = resolveCapabilityIdentity(input.targetBasis, verificationResponse.methodVersion)
-            return {
-              status: 'FAILED',
-              seriesId: input.seriesId,
+              count: 1,
+              logicalArtifactKey,
+            })
+            await recordVerificationExecutionEvent({
+              executionId,
+              logicalArtifactKey,
+              operationFamily: 'VERIFICATION',
+              logicalArtifactIdentity,
+              requestId,
+              ownerRequestId: requestId,
+              role: 'OWNER',
+              eventType: 'compute_started',
+            })
+            const verificationResponse = preparedExecutionContext
+              ? await preparedExecutionContext.exportVerification(input.modelId)
+              : await resolvedDependencies.bridge.exportVerification(input)
+            const verificationDurationMs = performance.now() - verificationStartedAt
+            const verificationOrigins = verificationResponse.status === 'AVAILABLE'
+              ? Object.values(verificationResponse.result.backtest).reduce((sum, horizon) => sum + horizon.origins, 0)
+              : 0
+            resolvedDependencies.telemetry.emit('verification_compute_end', {
               modelId: input.modelId,
-              targetBasis: input.targetBasis,
-              targetSemantics: identity.targetSemantics,
-              methodId: identity.methodId,
-              reason: verificationResponse.reason,
-              methodVersion: verificationResponse.methodVersion,
-              source: verificationResponse.source,
-              historyFingerprint,
-            }
-          }
+              count: 1,
+              originCount: verificationOrigins,
+              durationMs: verificationDurationMs,
+              status: verificationResponse.status,
+              logicalArtifactKey,
+            })
+            resolvedDependencies.telemetry.emit('model_fit', {
+              operation: 'verification',
+              modelId: input.modelId,
+              count: verificationOrigins,
+              durationMs: verificationDurationMs,
+            })
+            await recordVerificationExecutionEvent({
+              executionId,
+              logicalArtifactKey,
+              operationFamily: 'VERIFICATION',
+              logicalArtifactIdentity,
+              requestId,
+              ownerRequestId: requestId,
+              role: 'OWNER',
+              eventType: 'compute_completed',
+              durationMs: verificationDurationMs,
+              resultStatus: verificationResponse.status,
+              payload: {
+                verificationOrigins,
+              },
+            })
 
-          const artifact = mapVerificationArtifact(
-            verificationResponse,
-            input.targetBasis,
-            historyResponse.history,
-            cadenceContext,
-          )
-          const cacheStatus: BenchmarkForecastVerificationAvailableResult['cacheStatus'] = dbReadFailed ? 'db-unavailable' : 'miss'
-
-          if (!dbReadFailed) {
-            try {
-              const persistStartedAt = performance.now()
-              await resolvedDependencies.repository.writeVerificationRun(artifact)
-              const verificationRecordWrites = Object.values(artifact.verification)
-                .reduce((sum, horizon) => sum + horizon.records.length, 0)
-              resolvedDependencies.telemetry.emit('persistence', {
-                operation: 'verification',
-                artifactWrites: 1,
-                pointWrites: 0,
-                verificationRecordWrites,
-                writeFailures: 0,
-                durationMs: performance.now() - persistStartedAt,
+            if (verificationResponse.status === 'NOT_AVAILABLE') {
+              const identity = resolveCapabilityIdentity(input.targetBasis)
+              await recordVerificationExecutionEvent({
+                executionId,
+                logicalArtifactKey,
+                operationFamily: 'VERIFICATION',
+                logicalArtifactIdentity,
+                requestId,
+                ownerRequestId: requestId,
+                role: 'OWNER',
+                eventType: 'execution_completed',
+                resultStatus: verificationResponse.status,
+                cacheStatus: dbReadFailed ? 'db-unavailable' : 'miss',
               })
-            } catch (error) {
-              resolvedDependencies.telemetry.emit('persistence', {
-                operation: 'verification',
-                artifactWrites: 0,
-                pointWrites: 0,
-                verificationRecordWrites: 0,
-                writeFailures: 1,
-              })
-              resolvedDependencies.logEvent('FORECAST_LIBRARY_VERIFICATION', {
+              return {
+                status: 'NOT_AVAILABLE',
                 seriesId: input.seriesId,
                 modelId: input.modelId,
-                cacheStatus: 'persist-failed',
-                totalMs: Math.round(performance.now() - startedAt),
-                dbFailure: true,
-                persistError: error instanceof Error ? error.message : 'unknown',
-              })
-
-              return toVerificationAvailable(artifact, 'persist-failed')
+                targetBasis: input.targetBasis,
+                targetSemantics: identity.targetSemantics,
+                methodId: identity.methodId,
+                reason: verificationResponse.reason,
+              }
             }
+
+            if (verificationResponse.status === 'UNSUPPORTED') {
+              await recordVerificationExecutionEvent({
+                executionId,
+                logicalArtifactKey,
+                operationFamily: 'VERIFICATION',
+                logicalArtifactIdentity,
+                requestId,
+                ownerRequestId: requestId,
+                role: 'OWNER',
+                eventType: 'execution_completed',
+                resultStatus: verificationResponse.status,
+                cacheStatus: dbReadFailed ? 'db-unavailable' : 'miss',
+              })
+              return toUnsupportedResult(verificationResponse, input)
+            }
+
+            if (verificationResponse.status === 'FAILED') {
+              await recordVerificationExecutionEvent({
+                executionId,
+                logicalArtifactKey,
+                operationFamily: 'VERIFICATION',
+                logicalArtifactIdentity,
+                requestId,
+                ownerRequestId: requestId,
+                role: 'OWNER',
+                eventType: 'execution_failed',
+                resultStatus: verificationResponse.status,
+                cacheStatus: dbReadFailed ? 'db-unavailable' : 'miss',
+                error: verificationResponse.reason,
+              })
+              const identity = resolveCapabilityIdentity(input.targetBasis, verificationResponse.methodVersion)
+              return {
+                status: 'FAILED',
+                seriesId: input.seriesId,
+                modelId: input.modelId,
+                targetBasis: input.targetBasis,
+                targetSemantics: identity.targetSemantics,
+                methodId: identity.methodId,
+                reason: verificationResponse.reason,
+                methodVersion: verificationResponse.methodVersion,
+                source: verificationResponse.source,
+                historyFingerprint,
+              }
+            }
+
+            const artifact = mapVerificationArtifact(
+              verificationResponse,
+              input.targetBasis,
+              historyResponse.history,
+              cadenceContext,
+            )
+            const cacheStatus: BenchmarkForecastVerificationAvailableResult['cacheStatus'] = dbReadFailed ? 'db-unavailable' : 'miss'
+
+            if (!dbReadFailed) {
+              try {
+                const persistStartedAt = performance.now()
+                await recordVerificationExecutionEvent({
+                  executionId,
+                  logicalArtifactKey,
+                  operationFamily: 'VERIFICATION',
+                  logicalArtifactIdentity,
+                  requestId,
+                  ownerRequestId: requestId,
+                  role: 'OWNER',
+                  eventType: 'persistence_started',
+                })
+                await resolvedDependencies.repository.writeVerificationRun(artifact)
+                const persistenceDurationMs = performance.now() - persistStartedAt
+                const verificationRecordWrites = Object.values(artifact.verification)
+                  .reduce((sum, horizon) => sum + horizon.records.length, 0)
+                resolvedDependencies.telemetry.emit('persistence', {
+                  operation: 'verification',
+                  artifactWrites: 1,
+                  pointWrites: 0,
+                  verificationRecordWrites,
+                  writeFailures: 0,
+                  durationMs: persistenceDurationMs,
+                })
+                await recordVerificationExecutionEvent({
+                  executionId,
+                  logicalArtifactKey,
+                  operationFamily: 'VERIFICATION',
+                  logicalArtifactIdentity,
+                  requestId,
+                  ownerRequestId: requestId,
+                  role: 'OWNER',
+                  eventType: 'persistence_completed',
+                  durationMs: persistenceDurationMs,
+                  artifactWrites: 1,
+                  pointWrites: 0,
+                  verificationRecordWrites,
+                  writeFailures: 0,
+                })
+              } catch (error) {
+                resolvedDependencies.telemetry.emit('persistence', {
+                  operation: 'verification',
+                  artifactWrites: 0,
+                  pointWrites: 0,
+                  verificationRecordWrites: 0,
+                  writeFailures: 1,
+                })
+                await recordVerificationExecutionEvent({
+                  executionId,
+                  logicalArtifactKey,
+                  operationFamily: 'VERIFICATION',
+                  logicalArtifactIdentity,
+                  requestId,
+                  ownerRequestId: requestId,
+                  role: 'OWNER',
+                  eventType: 'persistence_failed',
+                  error: error instanceof Error ? error.message : 'unknown',
+                  artifactWrites: 0,
+                  pointWrites: 0,
+                  verificationRecordWrites: 0,
+                  writeFailures: 1,
+                })
+                await recordVerificationExecutionEvent({
+                  executionId,
+                  logicalArtifactKey,
+                  operationFamily: 'VERIFICATION',
+                  logicalArtifactIdentity,
+                  requestId,
+                  ownerRequestId: requestId,
+                  role: 'OWNER',
+                  eventType: 'execution_failed',
+                  resultStatus: 'AVAILABLE',
+                  cacheStatus: 'persist-failed',
+                  error: error instanceof Error ? error.message : 'unknown',
+                })
+                resolvedDependencies.logEvent('FORECAST_LIBRARY_VERIFICATION', {
+                  seriesId: input.seriesId,
+                  modelId: input.modelId,
+                  cacheStatus: 'persist-failed',
+                  totalMs: Math.round(performance.now() - startedAt),
+                  dbFailure: true,
+                  persistError: error instanceof Error ? error.message : 'unknown',
+                })
+
+                return toVerificationAvailable(artifact, 'persist-failed')
+              }
+            }
+
+            await recordVerificationExecutionEvent({
+              executionId,
+              logicalArtifactKey,
+              operationFamily: 'VERIFICATION',
+              logicalArtifactIdentity,
+              requestId,
+              ownerRequestId: requestId,
+              role: 'OWNER',
+              eventType: 'execution_completed',
+              resultStatus: 'AVAILABLE',
+              cacheStatus,
+            })
+            resolvedDependencies.logEvent('FORECAST_LIBRARY_VERIFICATION', {
+              seriesId: input.seriesId,
+              modelId: input.modelId,
+              cacheStatus,
+              totalMs: Math.round(performance.now() - startedAt),
+              dbFailure: dbReadFailed,
+            })
+
+            return toVerificationAvailable(artifact, cacheStatus)
+          } catch (error) {
+            await recordVerificationExecutionEvent({
+              executionId,
+              logicalArtifactKey,
+              operationFamily: 'VERIFICATION',
+              logicalArtifactIdentity,
+              requestId,
+              ownerRequestId: requestId,
+              role: 'OWNER',
+              eventType: 'execution_failed',
+              resultStatus: 'FAILED',
+              cacheStatus: dbReadFailed ? 'db-unavailable' : 'miss',
+              error: error instanceof Error ? error.message : 'unknown',
+            })
+            throw error
           }
-
-          resolvedDependencies.logEvent('FORECAST_LIBRARY_VERIFICATION', {
-            seriesId: input.seriesId,
-            modelId: input.modelId,
-            cacheStatus,
-            totalMs: Math.round(performance.now() - startedAt),
-            dbFailure: dbReadFailed,
-          })
-
-          return toVerificationAvailable(artifact, cacheStatus)
         },
       })
     },
