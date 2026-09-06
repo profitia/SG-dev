@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
@@ -25,6 +25,9 @@ const DEFAULT_FORECASTING_LAB_ROOT = path.resolve(process.cwd(), '..', '..', 'to
 const DEFAULT_FORECASTING_PYTHON = path.join(DEFAULT_FORECASTING_LAB_ROOT, '.venv', 'bin', 'python')
 const ROLLING_DAILY_MAINTENANCE_SCRIPT = ['scripts', 'export_rolling_daily_incremental_maintenance.py']
 const BRIDGE_BUFFER_BYTES = 25 * 1024 * 1024
+const ROLLING_DAILY_HISTORICAL_TRACE_PREFIX = '[ROLLING_DAILY_HISTORICAL_TRACE]'
+const DEFAULT_HISTORICAL_TRACE_SLOW_FIT_MS = 15_000
+const DEFAULT_HISTORICAL_TRACE_PROGRESS_EVERY_ORIGINS = 25
 
 export {
   ROLLING_DAILY_METHOD_ID,
@@ -37,6 +40,22 @@ export const DEFAULT_ROLLING_DAILY_MINIMUM_TRAINING_OBSERVATIONS = ROLLING_DAILY
 export const DEFAULT_ROLLING_DAILY_MINIMUM_CALIBRATION_SAMPLES = ROLLING_DAILY_CONFIGURED_CALIBRATION_MINIMUM_SAMPLES
 export const DEFAULT_ROLLING_DAILY_HISTORICAL_ORIGIN_START_DATE = '2024-01-01'
 export const ROLLING_DAILY_REBUILD_REQUIRED_REASON = 'SOURCE_HISTORY_REVISION_DETECTED'
+
+export type RollingDailyHistoricalTraceMode = 'basic' | 'detailed'
+
+export type RollingDailyHistoricalTraceInput = {
+  enabled?: boolean
+  mode?: RollingDailyHistoricalTraceMode
+  slowFitThresholdMs?: number
+  progressEveryOrigins?: number
+}
+
+export type RollingDailyHistoricalTraceConfig = {
+  enabled: true
+  mode: RollingDailyHistoricalTraceMode
+  slowFitThresholdMs: number
+  progressEveryOrigins: number
+}
 
 type RollingDailyMaintenanceHistoryPoint = {
   date: string
@@ -138,6 +157,7 @@ export type RollingDailyMaintenanceRequest = {
   minimumCalibrationSamples?: number
   bootstrapHistoricalIfMissing?: boolean
   fullRebuild?: boolean
+  trace?: RollingDailyHistoricalTraceInput | RollingDailyHistoricalTraceConfig
 }
 
 export type RollingDailyMaintenanceBridgeRequest = {
@@ -155,6 +175,7 @@ export type RollingDailyMaintenanceBridgeRequest = {
   lastProcessedOriginDate: string | null
   sourceHistoryFingerprint: string
   forceCalibrationRefresh?: boolean
+  trace?: RollingDailyHistoricalTraceConfig
 }
 
 export type RollingDailyMaintenanceBridgeResponse = {
@@ -314,6 +335,118 @@ function logMaintenanceEvent(event: string, data: Record<string, string | number
   console.info(`[${event}] ${buildDefaultLogPayload(data)}`)
 }
 
+function sanitizePositiveInteger(value: number | undefined, fallback: number) {
+  if (!Number.isFinite(value) || !Number.isInteger(value) || !value || value < 1) {
+    return fallback
+  }
+  return value
+}
+
+function readHistoricalTraceModeFromEnv(): RollingDailyHistoricalTraceMode | null {
+  const raw = (process.env.FORECAST_HISTORICAL_TRACE ?? '').trim().toLowerCase()
+  if (!raw || raw === '0' || raw === 'false' || raw === 'off') {
+    return null
+  }
+  if (raw === 'detailed' || raw === 'verbose') {
+    return 'detailed'
+  }
+  return 'basic'
+}
+
+export function resolveRollingDailyHistoricalTraceConfig(
+  input?: RollingDailyHistoricalTraceInput | RollingDailyHistoricalTraceConfig,
+): RollingDailyHistoricalTraceConfig | null {
+  const envMode = readHistoricalTraceModeFromEnv()
+  const enabledFromInput = input?.enabled
+  const requestedMode = input?.mode ?? envMode
+
+  if (enabledFromInput === false) {
+    return null
+  }
+
+  if (!requestedMode && enabledFromInput !== true) {
+    return null
+  }
+
+  return {
+    enabled: true,
+    mode: requestedMode ?? 'basic',
+    slowFitThresholdMs: sanitizePositiveInteger(input?.slowFitThresholdMs, DEFAULT_HISTORICAL_TRACE_SLOW_FIT_MS),
+    progressEveryOrigins: sanitizePositiveInteger(input?.progressEveryOrigins, DEFAULT_HISTORICAL_TRACE_PROGRESS_EVERY_ORIGINS),
+  }
+}
+
+function emitRollingDailyHistoricalTrace(
+  trace: RollingDailyHistoricalTraceConfig | null,
+  event: string,
+  payload: Record<string, string | number | boolean | null>,
+) {
+  if (!trace) {
+    return
+  }
+
+  console.info(`${ROLLING_DAILY_HISTORICAL_TRACE_PREFIX} ${JSON.stringify({
+    event,
+    ...payload,
+  })}`)
+}
+
+async function runBridgeWithStreamingTrace(params: {
+  pythonBin: string
+  scriptPath: string
+  inputPath: string
+  outputPath: string
+  cwd: string
+  onTraceLine: (line: string) => void
+}): Promise<{ stderr: string }> {
+  const child = spawn(
+    params.pythonBin,
+    [
+      params.scriptPath,
+      '--input-json',
+      params.inputPath,
+      '--output-json',
+      params.outputPath,
+    ],
+    {
+      cwd: params.cwd,
+      env: process.env,
+      stdio: ['ignore', 'ignore', 'pipe'],
+    },
+  )
+
+  let stderr = ''
+  let stderrRemainder = ''
+
+  child.stderr?.setEncoding('utf8')
+  child.stderr?.on('data', (chunk: string) => {
+    stderr += chunk
+    stderrRemainder += chunk
+    const lines = stderrRemainder.split(/\r?\n/)
+    stderrRemainder = lines.pop() ?? ''
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (trimmed) {
+        params.onTraceLine(trimmed)
+      }
+    }
+  })
+
+  return await new Promise((resolve, reject) => {
+    child.once('error', reject)
+    child.once('close', (code, signal) => {
+      if (stderrRemainder.trim()) {
+        params.onTraceLine(stderrRemainder.trim())
+      }
+      if (code === 0) {
+        resolve({ stderr })
+        return
+      }
+      reject(new Error(`Rolling daily maintenance bridge exited with code ${code ?? 'unknown'}${signal ? ` (${signal})` : ''}${stderr.trim() ? `: ${stderr.trim()}` : ''}`))
+    })
+  })
+}
+
 function normalizeDailyObservationDay(value: string) {
   return value.trim().slice(0, 10)
 }
@@ -417,6 +550,7 @@ function createDefaultRunner(): RollingDailyMaintenanceRunner {
 
   return {
     async run(request) {
+      const trace = request.trace ?? null
       if (!existsSync(pythonBin)) {
         return {
           status: 'FAILED',
@@ -484,22 +618,60 @@ function createDefaultRunner(): RollingDailyMaintenanceRunner {
       try {
         await writeFile(inputPath, JSON.stringify(request), 'utf8')
 
-        const { stderr } = await execFileAsync(
-          pythonBin,
-          [
-            scriptPath,
-            '--input-json',
-            inputPath,
-            '--output-json',
-            outputPath,
-          ],
-          {
-            cwd: labRoot,
-            maxBuffer: BRIDGE_BUFFER_BYTES,
-          },
-        )
+        emitRollingDailyHistoricalTrace(trace, 'bridge_dispatch_started', {
+          seriesId: request.seriesId,
+          modelId: request.modelId,
+          targetBasis: request.targetBasis,
+          totalElapsedMs: 0,
+        })
+
+        const bridgeStartedAt = performance.now()
+
+        const bridgeExecution = trace
+          ? runBridgeWithStreamingTrace({
+              pythonBin,
+              scriptPath,
+              inputPath,
+              outputPath,
+              cwd: labRoot,
+              onTraceLine: (line) => {
+                console.info(line)
+              },
+            })
+          : execFileAsync(
+              pythonBin,
+              [
+                scriptPath,
+                '--input-json',
+                inputPath,
+                '--output-json',
+                outputPath,
+              ],
+              {
+                cwd: labRoot,
+                maxBuffer: BRIDGE_BUFFER_BYTES,
+              },
+            )
+
+        const { stderr } = await bridgeExecution
+
+        emitRollingDailyHistoricalTrace(trace, 'bridge_returned', {
+          seriesId: request.seriesId,
+          modelId: request.modelId,
+          targetBasis: request.targetBasis,
+          durationMs: Math.round(performance.now() - bridgeStartedAt),
+        })
 
         const output = JSON.parse(await readFile(outputPath, 'utf8')) as RollingDailyMaintenanceBridgeResponse
+        emitRollingDailyHistoricalTrace(trace, 'bridge_output_parsed', {
+          seriesId: request.seriesId,
+          modelId: request.modelId,
+          targetBasis: request.targetBasis,
+          status: output.status,
+          newOriginCount: output.maintenance.newOriginCount,
+          maturedRecordCount: output.maintenance.maturedRecordCount,
+          calibrationGroupCount: output.calibrationGroups.length,
+        })
         if (output.status === 'FAILED' && stderr.trim().length > 0 && !output.reason) {
           output.reason = stderr.trim()
         }
@@ -886,6 +1058,7 @@ export function createRollingDailyMaintenanceService(
   return {
     async runIncrementalMaintenance(input: RollingDailyMaintenanceRequest): Promise<RollingDailyMaintenanceResult> {
       const startedAt = performance.now()
+      const trace = resolveRollingDailyHistoricalTraceConfig(input.trace)
       const targetBasis = input.targetBasis ?? ROLLING_DAILY_TARGET_BASIS
       const identity: RollingDailyMaintenanceIdentity = {
         seriesId: input.seriesId,
@@ -901,6 +1074,16 @@ export function createRollingDailyMaintenanceService(
         resolvedDependencies.repository.readState(identity),
         resolvedDependencies.repository.listVerificationRecords(identity),
       ])
+
+      emitRollingDailyHistoricalTrace(trace, 'history_loaded', {
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis,
+        durationMs: Math.round(performance.now() - startedAt),
+        observationCount: history.points.length,
+        existingRecordCount: existingRecords.length,
+        hasState: state !== null,
+      })
 
       const historicalOriginStartDate = input.historicalOriginStartDate
         ?? state?.historicalOriginStartAt?.slice(0, 10)
@@ -1060,15 +1243,32 @@ export function createRollingDailyMaintenanceService(
         lastProcessedOriginDate: input.fullRebuild || bootstrapHistoricalIfMissing ? null : state?.lastProcessedOriginAt?.slice(0, 10) ?? null,
         sourceHistoryFingerprint,
         forceCalibrationRefresh,
+        trace: trace ?? undefined,
       })
 
       if (bridgeResponse.status === 'FAILED') {
+        emitRollingDailyHistoricalTrace(trace, 'bridge_failed', {
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis,
+          totalElapsedMs: Math.round(performance.now() - startedAt),
+        })
         const failureReason = bridgeResponse.reason ?? 'Rolling daily maintenance bridge failed.'
         await persistFailureState(failureReason, 'FAILED')
         throw new Error(failureReason)
       }
 
       try {
+        const persistStartedAt = performance.now()
+        emitRollingDailyHistoricalTrace(trace, 'verification_persist_started', {
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis,
+          newRecordCount: bridgeResponse.newRecords.length,
+          maturedRecordCount: bridgeResponse.maturedRecords.length,
+          calibrationGroupCount: bridgeResponse.calibrationGroups.length,
+          totalElapsedMs: Math.round(persistStartedAt - startedAt),
+        })
         await resolvedDependencies.repository.applyMaintenanceUpdate({
           identity,
           inputRunId: null,
@@ -1084,6 +1284,13 @@ export function createRollingDailyMaintenanceService(
           newRecords: bridgeResponse.newRecords,
           maturedRecords: bridgeResponse.maturedRecords,
           calibrationGroups: bridgeResponse.calibrationGroups,
+        })
+        emitRollingDailyHistoricalTrace(trace, 'verification_persist_completed', {
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis,
+          durationMs: Math.round(performance.now() - persistStartedAt),
+          totalElapsedMs: Math.round(performance.now() - startedAt),
         })
       } catch (error) {
         const failureReason = error instanceof Error ? error.message : 'Rolling daily maintenance persistence failed.'
@@ -1105,6 +1312,16 @@ export function createRollingDailyMaintenanceService(
         modelId: input.modelId,
         status,
         runtimeMs,
+        newOriginCount: bridgeResponse.maintenance.newOriginCount,
+        maturedRecordCount: bridgeResponse.maintenance.maturedRecordCount,
+        calibrationRefreshCount: bridgeResponse.maintenance.calibrationRefreshCount,
+      })
+
+      emitRollingDailyHistoricalTrace(trace, 'bridge_completed', {
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis,
+        totalElapsedMs: runtimeMs,
         newOriginCount: bridgeResponse.maintenance.newOriginCount,
         maturedRecordCount: bridgeResponse.maintenance.maturedRecordCount,
         calibrationRefreshCount: bridgeResponse.maintenance.calibrationRefreshCount,

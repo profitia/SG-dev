@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import io
 import tempfile
 import unittest
 from datetime import date, timedelta
@@ -79,6 +80,30 @@ def run_script(payload: dict[str, object]) -> dict[str, object]:
         return json.loads(output_path.read_text(encoding="utf-8"))
 
 
+def run_script_with_stderr(payload: dict[str, object]) -> tuple[dict[str, object], list[dict[str, object]]]:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        input_path = Path(temp_dir) / "input.json"
+        output_path = Path(temp_dir) / "output.json"
+        input_path.write_text(json.dumps(payload), encoding="utf-8")
+        stderr_buffer = io.StringIO()
+        with patch("sys.argv", [
+            "export_rolling_daily_incremental_maintenance.py",
+            "--input-json",
+            str(input_path),
+            "--output-json",
+            str(output_path),
+        ]), patch("sys.stderr", stderr_buffer):
+            exit_code = incremental_script.main()
+        if exit_code != 0:
+            raise AssertionError(f"Script returned exit code {exit_code}.")
+        output = json.loads(output_path.read_text(encoding="utf-8"))
+        events: list[dict[str, object]] = []
+        for line in stderr_buffer.getvalue().splitlines():
+          if line.startswith("[ROLLING_DAILY_HISTORICAL_TRACE] "):
+              events.append(json.loads(line.split(" ", 1)[1]))
+        return output, events
+
+
 def run_current_script(payload: dict[str, object]) -> dict[str, object]:
     with tempfile.TemporaryDirectory() as temp_dir:
         input_path = Path(temp_dir) / "input.json"
@@ -137,6 +162,101 @@ def without_method_version(items: list[dict[str, object]]) -> list[dict[str, obj
 
 
 class RollingDailyIncrementalMaintenanceTests(unittest.TestCase):
+    def test_trace_disabled_preserves_bridge_output(self) -> None:
+        payload = {**build_payload(
+            end=date(2024, 5, 31),
+            last_processed_origin_date=None,
+            existing_records=[],
+            model_id="arima",
+        ), "minimumTrainingObservations": 60}
+
+        traced_payload = {
+            **payload,
+            "trace": {
+                "enabled": True,
+                "mode": "detailed",
+                "slowFitThresholdMs": 1,
+                "progressEveryOrigins": 2,
+            },
+        }
+
+        baseline = run_script(payload)
+        traced, events = run_script_with_stderr(traced_payload)
+
+        self.assertEqual(traced, baseline)
+        self.assertTrue(events)
+
+    def test_trace_enabled_emits_progress_and_fit_timing_events_without_corrupting_output(self) -> None:
+        payload = {
+            **build_payload(
+                end=date(2024, 5, 31),
+                last_processed_origin_date=None,
+                existing_records=[],
+                model_id="arima",
+            ),
+            "minimumTrainingObservations": 60,
+            "trace": {
+                "enabled": True,
+                "mode": "detailed",
+                "slowFitThresholdMs": 1,
+                "progressEveryOrigins": 5,
+            },
+        }
+
+        output, events = run_script_with_stderr(payload)
+        event_names = [event["event"] for event in events]
+
+        self.assertEqual(output["status"], "AVAILABLE")
+        self.assertIn("historical_bridge_started", event_names)
+        self.assertIn("eligible_origins_resolved", event_names)
+        self.assertIn("origin_started", event_names)
+        self.assertIn("model_fit_started", event_names)
+        self.assertIn("model_fit_completed", event_names)
+        self.assertIn("origin_completed", event_names)
+        self.assertIn("maturation_completed", event_names)
+        self.assertIn("calibration_completed", event_names)
+        self.assertIn("bridge_completed", event_names)
+
+        eligible_event = next(event for event in events if event["event"] == "eligible_origins_resolved")
+        self.assertEqual(eligible_event["eligibleOriginsTotal"], output["maintenance"]["newOriginCount"])
+
+        origin_completed = [event for event in events if event["event"] == "origin_completed"]
+        self.assertEqual(len(origin_completed), output["maintenance"]["newOriginCount"])
+        self.assertEqual(origin_completed[-1]["originsCompleted"], output["maintenance"]["newOriginCount"])
+
+        fit_completed = [event for event in events if event["event"] == "model_fit_completed"]
+        self.assertTrue(all(event["fitDurationMs"] >= 0 for event in fit_completed))
+        self.assertTrue(any(event["slowFit"] is True for event in fit_completed))
+
+    def test_basic_trace_mode_uses_bounded_origin_completion_events(self) -> None:
+        payload = {
+            **build_payload(
+                end=date(2024, 5, 31),
+                last_processed_origin_date=None,
+                existing_records=[],
+                model_id="arima",
+            ),
+            "minimumTrainingObservations": 60,
+            "trace": {
+                "enabled": True,
+                "mode": "basic",
+                "slowFitThresholdMs": 999999,
+                "progressEveryOrigins": 10,
+            },
+        }
+
+        output, events = run_script_with_stderr(payload)
+        origin_started = [event for event in events if event["event"] == "origin_started"]
+        origin_completed = [event for event in events if event["event"] == "origin_completed"]
+        fit_started = [event for event in events if event["event"] == "model_fit_started"]
+        fit_completed = [event for event in events if event["event"] == "model_fit_completed"]
+
+        self.assertEqual(output["status"], "AVAILABLE")
+        self.assertEqual(len(origin_started), output["maintenance"]["newOriginCount"])
+        self.assertLess(len(origin_completed), len(origin_started))
+        self.assertEqual(len(fit_started), 0)
+        self.assertEqual(len(fit_completed), 0)
+
     def test_rolling_daily_policy_uses_point_in_time_basis_without_bumping_method_version(self) -> None:
         self.assertEqual(ROLLING_DAILY_TARGET_BASIS, "POINT_IN_TIME")
         self.assertEqual(ROLLING_DAILY_POINT_IN_TIME_METHOD_VERSION, "rolling-daily-point-in-time-v1")

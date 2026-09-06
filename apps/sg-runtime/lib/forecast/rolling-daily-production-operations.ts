@@ -9,8 +9,11 @@ import {
 import {
   createRollingDailyMaintenanceService,
   type RollingDailyHistoryPayload,
+  type RollingDailyHistoricalTraceConfig,
+  type RollingDailyHistoricalTraceInput,
   type RollingDailyMaintenanceRequest,
   type RollingDailyMaintenanceResult,
+  resolveRollingDailyHistoricalTraceConfig,
 } from '@/lib/forecast/rolling-daily-maintenance'
 import {
   createRollingDailyProductionForecastService,
@@ -27,7 +30,10 @@ export type RollingDailyProductionOperationsRequest = {
   modelIds?: readonly RollingDailyProductionOperationsModelId[]
   preparedHistory?: RollingDailyHistoryPayload
   prepareHistorical?: boolean
+  trace?: RollingDailyHistoricalTraceInput | RollingDailyHistoricalTraceConfig
 }
+
+const ROLLING_DAILY_HISTORICAL_TRACE_PREFIX = '[ROLLING_DAILY_HISTORICAL_TRACE]'
 
 export type RollingDailyProductionOperationsSnapshotResult =
   | {
@@ -101,6 +107,7 @@ async function refreshSnapshot(
   resolveCurrentForecast: NonNullable<RollingDailyProductionOperationsDependencies['resolveCurrentForecast']>,
   persistSnapshot: NonNullable<RollingDailyProductionOperationsDependencies['persistSnapshot']>,
   request: RollingDailyCurrentForecastSnapshotRequest,
+  trace: RollingDailyHistoricalTraceConfig | null,
   status: 'REFRESHED_AFTER_MAINTENANCE',
   reason: 'MAINTENANCE_DELTA_APPLIED',
 ): Promise<Extract<RollingDailyProductionOperationsSnapshotResult, { status: 'REFRESHED_AFTER_MAINTENANCE' }>>
@@ -108,6 +115,7 @@ async function refreshSnapshot(
   resolveCurrentForecast: NonNullable<RollingDailyProductionOperationsDependencies['resolveCurrentForecast']>,
   persistSnapshot: NonNullable<RollingDailyProductionOperationsDependencies['persistSnapshot']>,
   request: RollingDailyCurrentForecastSnapshotRequest,
+  trace: RollingDailyHistoricalTraceConfig | null,
   status: 'REFRESHED_AFTER_RECOVERY',
   reason: 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
 ): Promise<Extract<RollingDailyProductionOperationsSnapshotResult, { status: 'REFRESHED_AFTER_RECOVERY' }>>
@@ -115,14 +123,37 @@ async function refreshSnapshot(
   resolveCurrentForecast: NonNullable<RollingDailyProductionOperationsDependencies['resolveCurrentForecast']>,
   persistSnapshot: NonNullable<RollingDailyProductionOperationsDependencies['persistSnapshot']>,
   request: RollingDailyCurrentForecastSnapshotRequest,
+  trace: RollingDailyHistoricalTraceConfig | null,
   status: 'REFRESHED_AFTER_MAINTENANCE' | 'REFRESHED_AFTER_RECOVERY',
   reason: 'MAINTENANCE_DELTA_APPLIED' | 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
 ): Promise<Extract<RollingDailyProductionOperationsSnapshotResult, { status: 'REFRESHED_AFTER_MAINTENANCE' | 'REFRESHED_AFTER_RECOVERY' }>> {
+  const refreshStartedAt = performance.now()
+  if (trace) {
+    console.info(`${ROLLING_DAILY_HISTORICAL_TRACE_PREFIX} ${JSON.stringify({
+      event: 'current_refresh_started',
+      seriesId: request.seriesId,
+      modelId: request.modelId,
+      reason,
+      refreshStatus: status,
+    })}`)
+  }
   const result = await resolveCurrentForecast(request)
   const persisted = await persistSnapshot(request, {
     ...result,
     productionMethod: 'ROLLING_DAILY_POINT_IN_TIME',
   })
+
+  if (trace) {
+    console.info(`${ROLLING_DAILY_HISTORICAL_TRACE_PREFIX} ${JSON.stringify({
+      event: 'current_refresh_completed',
+      seriesId: request.seriesId,
+      modelId: request.modelId,
+      reason,
+      refreshStatus: status,
+      durationMs: Math.round(performance.now() - refreshStartedAt),
+      parityStatus: persisted.parityStatus,
+    })}`)
+  }
 
   if (status === 'REFRESHED_AFTER_MAINTENANCE') {
     return {
@@ -155,6 +186,7 @@ export function createRollingDailyProductionOperationsService(
 
   return {
     async run(request: RollingDailyProductionOperationsRequest): Promise<RollingDailyProductionOperationsResult> {
+      const trace = resolveRollingDailyHistoricalTraceConfig(request.trace)
       const modelIds = request.modelIds?.length
         ? [...request.modelIds]
         : [...ROLLING_DAILY_PRODUCTION_OPERATIONS_MODELS]
@@ -168,6 +200,7 @@ export function createRollingDailyProductionOperationsService(
             modelId,
             preparedHistory: request.preparedHistory,
             bootstrapHistoricalIfMissing: request.prepareHistorical,
+            trace: trace ?? undefined,
           })
 
           if (maintenance.status === 'REBUILD_REQUIRED') {
@@ -190,6 +223,7 @@ export function createRollingDailyProductionOperationsService(
               resolveCurrentForecast,
               persistSnapshot,
               { seriesId: request.seriesId, modelId, preparedHistory: request.preparedHistory },
+              trace,
               'REFRESHED_AFTER_MAINTENANCE',
               'MAINTENANCE_DELTA_APPLIED',
             )
@@ -229,6 +263,7 @@ export function createRollingDailyProductionOperationsService(
             resolveCurrentForecast,
             persistSnapshot,
             { seriesId: request.seriesId, modelId, preparedHistory: request.preparedHistory },
+            trace,
             'REFRESHED_AFTER_RECOVERY',
             snapshotState.status === 'MISS' ? 'SNAPSHOT_MISS' : snapshotState.reason,
           )

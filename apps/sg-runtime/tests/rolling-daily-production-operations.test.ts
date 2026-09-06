@@ -514,3 +514,105 @@ test('production operations fails closed on rebuild required and preserves the l
   assert.equal(result.results[0]?.snapshot.status, 'SKIPPED_REBUILD_REQUIRED')
   assert.equal(snapshotRefreshes, 0)
 })
+
+test('production operations emits current refresh trace when opt-in tracing is enabled', async () => {
+  const messages: string[] = []
+  const originalConsoleInfo = console.info
+  console.info = (message?: unknown) => {
+    messages.push(String(message ?? ''))
+  }
+
+  try {
+    const service = createRollingDailyProductionOperationsService({
+      async runMaintenance(request) {
+        return createMaintenanceResult({ modelId: request.modelId, status: 'SUCCEEDED' })
+      },
+      async resolveCurrentForecast(request) {
+        return {
+          contractVersion: '1',
+          status: 'AVAILABLE',
+          benchmark: {
+            benchmarkId: request.seriesId,
+            displayName: 'Brent',
+            frequency: 'DAILY',
+            unit: 'USD/bbl',
+            currency: 'USD',
+            provider: 'macrobond',
+            providerSeriesId: request.seriesId,
+          },
+          forecastMethod: {
+            id: 'ROLLING_DAILY_POINT_IN_TIME',
+            version: 'rolling-daily-point-in-time-v1',
+          },
+          model: {
+            id: request.modelId,
+            selectedCandidate: 'stub',
+            selectionMetric: null,
+            selectionScore: null,
+            selectedParameters: {},
+          },
+          origin: {
+            date: '2026-08-18',
+            value: 89.9,
+          },
+          maxHorizonMonths: 12,
+          anchors: [],
+          path: [],
+          calibration: {
+            availabilityStatus: 'NOT_AVAILABLE',
+            freshnessStatus: null,
+            quantileConvention: 'HF7_LINEAR_INTERPOLATION',
+            coverageLabel: '80% empirical prediction band',
+            methodologicalMinimumStatus: 'OPEN_REQUIRES_MORE_BENCHMARK_VALIDATION',
+            updatedAt: null,
+            processedThrough: null,
+            lastResidualAvailabilityDate: null,
+          },
+          audit: {
+            sourceHistoryFingerprint: 'hist-1',
+            generatedAt: '2026-08-18T12:00:00.000Z',
+            sourceLatestObservationDate: '2026-08-18',
+            calendarProjectionMode: 'ROLLING_DAILY_BUSINESS_CALENDAR_V1',
+            projectionCalendarStrategy: 'ROLLING_DAILY_BUSINESS_CALENDAR_V1',
+            technicalMinimumTrainingObservations: 60,
+            methodologicalTrainingEligibilityStatus: 'OPEN_REQUIRES_CROSS_BENCHMARK_VALIDATION',
+            calibrationUpdatedAt: null,
+            calibrationLastResidualAvailabilityDate: null,
+            inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          },
+          warnings: [],
+        }
+      },
+      async persistSnapshot(request) {
+        return {
+          seriesId: request.seriesId,
+          modelId: request.modelId,
+          targetBasis: 'POINT_IN_TIME',
+          targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+          methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+          methodVersion: 'rolling-daily-point-in-time-v1',
+          contractVersion: '1',
+          status: 'AVAILABLE',
+          reasonCode: null,
+          parityStatus: 'MATCHED',
+        }
+      },
+      async readSnapshot() {
+        throw new Error('readSnapshot should not be called after maintenance delta')
+      },
+      logEvent: () => {},
+    })
+
+    const result = await service.run({
+      seriesId: 'wocaes0074',
+      modelIds: ['arima'],
+      trace: { enabled: true, mode: 'basic' },
+    })
+
+    assert.equal(result.status, 'SUCCEEDED')
+    assert.ok(messages.some((message) => message.includes('current_refresh_started')))
+    assert.ok(messages.some((message) => message.includes('current_refresh_completed')))
+  } finally {
+    console.info = originalConsoleInfo
+  }
+})

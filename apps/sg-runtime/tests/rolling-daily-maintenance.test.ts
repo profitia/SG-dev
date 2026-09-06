@@ -7,6 +7,7 @@ import {
   createRollingDailyMaintenanceService,
   DEFAULT_ROLLING_DAILY_HISTORICAL_ORIGIN_START_DATE,
   normalizePersistedRollingDailyArtifacts,
+  type RollingDailyMaintenanceBridgeRequest,
   ROLLING_DAILY_REBUILD_REQUIRED_REASON,
   ROLLING_DAILY_INPUT_SOURCE,
   ROLLING_DAILY_METHOD_ID,
@@ -913,4 +914,92 @@ test('rolling daily persistence artifacts are normalized to the canonical mainte
   assert.equal(normalized.maturedRecords[0]?.inputSource, ROLLING_DAILY_INPUT_SOURCE)
   assert.equal(normalized.calibrationGroups[0]?.inputSource, ROLLING_DAILY_INPUT_SOURCE)
   assert.equal(normalized.calibrationGroups[0]?.modelId, 'arima')
+})
+
+test('rolling daily maintenance forwards opt-in trace config and preserves persistence flow', async () => {
+  const traceRequests: RollingDailyMaintenanceBridgeRequest[] = []
+
+  const repository: RollingDailyMaintenanceRepository = {
+    async readState() {
+      return null
+    },
+    async listVerificationRecords() {
+      return []
+    },
+    async applyMaintenanceUpdate() {
+      return
+    },
+    async recordMaintenanceFailure() {
+      throw new Error('recordMaintenanceFailure should not be called for successful trace pass')
+    },
+  }
+
+  const runner: RollingDailyMaintenanceRunner = {
+    async run(request) {
+      traceRequests.push(request)
+      return {
+        status: 'AVAILABLE',
+        methodId: ROLLING_DAILY_METHOD_ID,
+        methodVersion: ROLLING_DAILY_METHOD_VERSION,
+        sourceHistory: {
+          startDate: '2024-01-01',
+          endDate: '2024-01-05',
+          latestObservationDate: '2024-01-05',
+          observationCount: 5,
+          filteredNullCount: 0,
+          filteredDuplicateCount: 0,
+          historyFingerprint: 'hist-1',
+        },
+        maintenance: {
+          newOriginCount: 1,
+          maturedRecordCount: 0,
+          affectedCalibrationGroupCount: 0,
+          calibrationRefreshCount: 0,
+          lastProcessedOriginDate: '2024-01-05',
+          lastMaturedObservedAt: null,
+          newOriginDates: ['2024-01-05'],
+        },
+        newRecords: [createVerificationRecord()],
+        maturedRecords: [],
+        calibrationGroups: [],
+      }
+    },
+  }
+
+  const messages: string[] = []
+  const originalConsoleInfo = console.info
+  console.info = (message?: unknown) => {
+    messages.push(String(message ?? ''))
+  }
+
+  try {
+    const service = createRollingDailyMaintenanceService({
+      repository,
+      runner,
+      loadHistory: async () => createHistory(),
+      logEvent: () => {},
+    })
+
+    const result = await service.runIncrementalMaintenance({
+      seriesId: 'wocaes0074',
+      modelId: 'naive',
+      minimumTrainingObservations: 5,
+      bootstrapHistoricalIfMissing: true,
+      trace: { enabled: true, mode: 'basic', slowFitThresholdMs: 1234, progressEveryOrigins: 7 },
+    })
+
+    assert.equal(result.status, 'SUCCEEDED')
+    assert.equal(traceRequests.length, 1)
+    assert.deepEqual(traceRequests[0]?.trace, {
+      enabled: true,
+      mode: 'basic',
+      slowFitThresholdMs: 1234,
+      progressEveryOrigins: 7,
+    })
+    assert.ok(messages.some((message) => message.includes('history_loaded')))
+    assert.ok(messages.some((message) => message.includes('verification_persist_started')))
+    assert.ok(messages.some((message) => message.includes('verification_persist_completed')))
+  } finally {
+    console.info = originalConsoleInfo
+  }
 })

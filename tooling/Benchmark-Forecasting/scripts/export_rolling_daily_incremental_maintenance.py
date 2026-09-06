@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from datetime import date
 from hashlib import sha256
 from pathlib import Path
@@ -29,11 +30,81 @@ from forecasting.rolling_daily_point_in_time import (
 )
 from forecasting.runtime_catalog import build_model
 
+TRACE_PREFIX = "[ROLLING_DAILY_HISTORICAL_TRACE]"
+DEFAULT_TRACE_SLOW_FIT_THRESHOLD_MS = 15000
+DEFAULT_TRACE_PROGRESS_EVERY_ORIGINS = 25
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Export incremental rolling-daily maintenance delta.")
     parser.add_argument("--input-json", required=True, help="Path to maintenance bridge input JSON.")
     parser.add_argument("--output-json", required=True, help="Path to maintenance bridge output JSON.")
     return parser.parse_args()
+
+
+def _sanitize_positive_int(value: Any, fallback: int) -> int:
+    if not isinstance(value, int) or value < 1:
+        return fallback
+    return value
+
+
+def resolve_trace_config(payload: dict[str, Any]) -> dict[str, Any] | None:
+    raw = payload.get("trace")
+    if not isinstance(raw, dict):
+        return None
+    if raw.get("enabled") is False:
+        return None
+    mode = str(raw.get("mode") or "basic").strip().lower()
+    if mode not in {"basic", "detailed"}:
+        mode = "basic"
+    return {
+        "enabled": True,
+        "mode": mode,
+        "slowFitThresholdMs": _sanitize_positive_int(raw.get("slowFitThresholdMs"), DEFAULT_TRACE_SLOW_FIT_THRESHOLD_MS),
+        "progressEveryOrigins": _sanitize_positive_int(raw.get("progressEveryOrigins"), DEFAULT_TRACE_PROGRESS_EVERY_ORIGINS),
+    }
+
+
+class HistoricalTraceEmitter:
+    def __init__(self, payload: dict[str, Any], config: dict[str, Any] | None) -> None:
+        self._payload = payload
+        self._config = config
+        self._started_at = time.perf_counter()
+
+    def emit(self, event: str, **data: Any) -> None:
+        if self._config is None:
+            return
+        record = {
+            "event": event,
+            "seriesId": str(self._payload.get("seriesId") or ""),
+            "modelId": str(self._payload.get("modelId") or ""),
+            "targetBasis": str(self._payload.get("targetBasis") or ""),
+            **data,
+        }
+        sys.stderr.write(f"{TRACE_PREFIX} {json.dumps(record, separators=(',', ':'))}\n")
+        sys.stderr.flush()
+
+    def elapsed_ms(self) -> int:
+        return round((time.perf_counter() - self._started_at) * 1000)
+
+    def is_detailed(self) -> bool:
+        return self._config is not None and str(self._config.get("mode")) == "detailed"
+
+    def progress_every_origins(self) -> int:
+        if self._config is None:
+            return DEFAULT_TRACE_PROGRESS_EVERY_ORIGINS
+        return int(self._config["progressEveryOrigins"])
+
+    def slow_fit_threshold_ms(self) -> int:
+        if self._config is None:
+            return DEFAULT_TRACE_SLOW_FIT_THRESHOLD_MS
+        return int(self._config["slowFitThresholdMs"])
+
+    def should_emit_progress_summary(self, origin_index: int, total_origins: int) -> bool:
+        if total_origins <= 0:
+            return False
+        if origin_index in {1, total_origins}:
+            return True
+        return origin_index % self.progress_every_origins() == 0
 
 
 def normalize_date(value: Any) -> str:
@@ -156,6 +227,7 @@ def compute_origin_records(
     history_fingerprint: str,
     config: RollingDailyPointInTimeConfig,
     origin_indexes: list[int],
+    tracer: HistoricalTraceEmitter,
 ) -> list[dict[str, Any]]:
     observations = series.observations
     if not origin_indexes:
@@ -164,10 +236,28 @@ def compute_origin_records(
     model = build_model(model_id)
     source_last_observation_date = observations[-1].date
     serialized_records: list[dict[str, Any]] = []
+    total_origins = len(origin_indexes)
 
-    for origin_index in origin_indexes:
+    tracer.emit(
+        "eligible_origins_resolved",
+        eligibleOriginsTotal=total_origins,
+        firstOriginDate=None if not origin_indexes else observations[origin_indexes[0]].date.isoformat(),
+        lastOriginDate=None if not origin_indexes else observations[origin_indexes[-1]].date.isoformat(),
+    )
+
+    for offset, origin_index in enumerate(origin_indexes, start=1):
         history = observations[:origin_index + 1]
         origin_date = history[-1].date
+        origin_started_at = time.perf_counter()
+        tracer.emit(
+            "origin_started",
+            originIndex=offset,
+            eligibleOriginsTotal=total_origins,
+            originsCompleted=offset - 1,
+            originDate=origin_date.isoformat(),
+            progressPercent=round(((offset - 1) / total_origins) * 100, 2) if total_origins else 100,
+            totalElapsedMs=tracer.elapsed_ms(),
+        )
         supported_weekdays = infer_supported_weekdays(history)
         max_target_date = add_calendar_months_clamped(origin_date, config.max_horizon_months)
         _, step_counts = _build_projected_step_counts(origin_date, max_target_date, supported_weekdays)
@@ -189,7 +279,41 @@ def compute_origin_records(
                 )
             plans.append((horizon_label, horizon_months, target_calendar_date, projected_steps, maturity_status, verification_observation))
 
-        fit = fit_path_model(model, history)
+        fit_started_at = time.perf_counter()
+        if tracer.is_detailed():
+            tracer.emit(
+                "model_fit_started",
+                originIndex=offset,
+                eligibleOriginsTotal=total_origins,
+                originsCompleted=offset - 1,
+                originDate=origin_date.isoformat(),
+                fitStartedAtMs=tracer.elapsed_ms(),
+            )
+        try:
+            fit = fit_path_model(model, history)
+        except Exception:
+            tracer.emit(
+                "origin_failed",
+                originIndex=offset,
+                eligibleOriginsTotal=total_origins,
+                originsCompleted=offset - 1,
+                originDate=origin_date.isoformat(),
+                totalElapsedMs=tracer.elapsed_ms(),
+            )
+            raise
+        fit_duration_ms = round((time.perf_counter() - fit_started_at) * 1000)
+        slow_fit = fit_duration_ms >= tracer.slow_fit_threshold_ms()
+        if tracer.is_detailed() or slow_fit:
+            tracer.emit(
+                "model_fit_completed",
+                originIndex=offset,
+                eligibleOriginsTotal=total_origins,
+                originsCompleted=offset - 1,
+                originDate=origin_date.isoformat(),
+                fitDurationMs=fit_duration_ms,
+                slowFit=slow_fit,
+                totalElapsedMs=tracer.elapsed_ms(),
+            )
         max_steps = max(plan[3] for plan in plans)
         forecast_values = fit.forecast_path(max_steps)
         mase_scale = compute_mase_scale(list(history))
@@ -235,6 +359,18 @@ def compute_origin_records(
                     training_history_end_at=history[-1].date,
                     training_observation_count=len(history),
                 )
+            )
+
+        if tracer.is_detailed() or tracer.should_emit_progress_summary(offset, total_origins):
+            tracer.emit(
+                "origin_completed",
+                originIndex=offset,
+                eligibleOriginsTotal=total_origins,
+                originsCompleted=offset,
+                originDate=origin_date.isoformat(),
+                durationMs=round((time.perf_counter() - origin_started_at) * 1000),
+                totalElapsedMs=tracer.elapsed_ms(),
+                progressPercent=round((offset / total_origins) * 100, 2) if total_origins else 100,
             )
 
     return serialized_records
@@ -466,12 +602,23 @@ def build_calibration_groups(
 def main() -> int:
     args = parse_args()
     payload = json.loads(Path(args.input_json).read_text(encoding="utf-8"))
+    tracer = HistoricalTraceEmitter(payload, resolve_trace_config(payload))
+    tracer.emit("historical_bridge_started")
 
     try:
+        history_started_at = time.perf_counter()
         history_payload = payload["history"]
         series, filter_counts = build_time_series(history_payload)
         if series.frequency is not Frequency.DAILY:
             raise ValueError("Rolling daily maintenance requires DAILY history input.")
+        tracer.emit(
+            "history_loaded",
+            durationMs=round((time.perf_counter() - history_started_at) * 1000),
+            observationCount=series.observation_count,
+            filteredNullCount=filter_counts["filteredNullCount"],
+            filteredDuplicateCount=filter_counts["filteredDuplicateCount"],
+            latestObservationDate=series.end.isoformat(),
+        )
 
         history_fingerprint = build_history_fingerprint(series.series_id, series.frequency.value, list(series.observations))
         input_source = str(payload.get("inputSource") or payload.get("history", {}).get("source") or "DYNAMIC_MARKET_DATA_STORE")
@@ -519,11 +666,20 @@ def main() -> int:
             history_fingerprint=history_fingerprint,
             config=config,
             origin_indexes=eligible_origin_indexes,
+            tracer=tracer,
         )
+        maturation_started_at = time.perf_counter()
+        tracer.emit("maturation_started", totalElapsedMs=tracer.elapsed_ms())
         matured_records = mature_existing_records(
             series=series,
             existing_records=existing_records,
             history_fingerprint=history_fingerprint,
+        )
+        tracer.emit(
+            "maturation_completed",
+            durationMs=round((time.perf_counter() - maturation_started_at) * 1000),
+            maturedRecordCount=len(matured_records),
+            totalElapsedMs=tracer.elapsed_ms(),
         )
 
         record_identity = lambda record: (record["forecastOriginAt"], record["horizonLabel"])
@@ -537,6 +693,8 @@ def main() -> int:
             merged_records[record_identity(record)] = record
 
         latest_observation_date = series.observations[-1].date
+        calibration_started_at = time.perf_counter()
+        tracer.emit("calibration_started", totalElapsedMs=tracer.elapsed_ms())
         calibration_groups = build_calibration_groups(
             records=list(merged_records.values()),
             changed_records=[*matured_records, *new_records],
@@ -549,6 +707,12 @@ def main() -> int:
             refreshed_at=latest_observation_date,
             force_calibration_refresh=force_calibration_refresh,
         )
+        tracer.emit(
+            "calibration_completed",
+            durationMs=round((time.perf_counter() - calibration_started_at) * 1000),
+            calibrationGroupCount=len(calibration_groups),
+            totalElapsedMs=tracer.elapsed_ms(),
+        )
 
         latest_matured_observed_at = max(
             (
@@ -559,6 +723,8 @@ def main() -> int:
             default=None,
         )
 
+        result_build_started_at = time.perf_counter()
+        tracer.emit("result_build_started", totalElapsedMs=tracer.elapsed_ms())
         output = {
             "status": "AVAILABLE",
             "methodId": method_id,
@@ -585,6 +751,14 @@ def main() -> int:
             "maturedRecords": matured_records,
             "calibrationGroups": calibration_groups,
         }
+        tracer.emit(
+            "result_build_completed",
+            durationMs=round((time.perf_counter() - result_build_started_at) * 1000),
+            newOriginCount=output["maintenance"]["newOriginCount"],
+            maturedRecordCount=output["maintenance"]["maturedRecordCount"],
+            calibrationGroupCount=len(calibration_groups),
+            totalElapsedMs=tracer.elapsed_ms(),
+        )
     except Exception as error:
         output = {
             "status": "FAILED",
@@ -613,8 +787,23 @@ def main() -> int:
             "maturedRecords": [],
             "calibrationGroups": [],
         }
+        tracer.emit(
+            "bridge_failed",
+            reason=str(error),
+            totalElapsedMs=tracer.elapsed_ms(),
+        )
 
+    serialization_started_at = time.perf_counter()
     Path(args.output_json).write_text(json.dumps(output, indent=2) + "\n", encoding="utf-8")
+    tracer.emit(
+        "bridge_completed",
+        durationMs=round((time.perf_counter() - serialization_started_at) * 1000),
+        status=output["status"],
+        totalElapsedMs=tracer.elapsed_ms(),
+        newOriginCount=output["maintenance"]["newOriginCount"],
+        maturedRecordCount=output["maintenance"]["maturedRecordCount"],
+        calibrationGroupCount=len(output["calibrationGroups"]),
+    )
     return 0
 
 
