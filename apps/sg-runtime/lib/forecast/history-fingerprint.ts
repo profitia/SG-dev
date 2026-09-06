@@ -37,6 +37,40 @@ function padMilliseconds(value?: string) {
   return (value ?? '').padEnd(3, '0').slice(0, 3)
 }
 
+function resolveHistoryPeriodNormalizer(history: Pick<ForecastHistoryFingerprintInput, 'frequency' | 'cadence'>) {
+  const targetCadence = history.cadence?.targetCadence
+  if (
+    history.cadence
+    && normalizeForecastSourceFrequency(history.frequency) !== history.cadence.targetCadence
+  ) {
+    throw new Error(
+      `Forecast history frequency ${history.frequency} must match target cadence ${history.cadence.targetCadence}.`,
+    )
+  }
+
+  return {
+    targetCadence,
+    normalizePeriod: (value: string, label: string) => targetCadence
+      ? normalizeForecastPeriodIdentity(value, targetCadence, label)
+      : normalizeMonthlyPeriodIdentity(value, label),
+  }
+}
+
+function normalizeHistoryPoints(
+  history: ForecastHistoryFingerprintInput,
+  normalizePeriod: (value: string, label: string) => string,
+) {
+  return [...history.points]
+    .map((point) => ({
+      date: normalizePeriod(point.date, 'Forecast history point date'),
+      value: point.value,
+      sourceObservedAt: point.sourceObservedAt
+        ? normalizeSourceObservedAtIdentity(point.sourceObservedAt, 'Forecast history point sourceObservedAt')
+        : null,
+    }))
+    .sort((left, right) => left.date.localeCompare(right.date))
+}
+
 function parseIsoLikeInstant(value: string, label: string) {
   const trimmed = value.trim()
 
@@ -119,27 +153,8 @@ export function normalizeSourceObservedAtIdentity(value: string, label: string) 
 
 export function buildForecastHistoryFingerprint(history: ForecastHistoryFingerprintInput) {
   const hash = createHash('sha256')
-  const targetCadence = history.cadence?.targetCadence
-  if (
-    history.cadence
-    && normalizeForecastSourceFrequency(history.frequency) !== history.cadence.targetCadence
-  ) {
-    throw new Error(
-      `Forecast history frequency ${history.frequency} must match target cadence ${history.cadence.targetCadence}.`,
-    )
-  }
-  const normalizePeriod = (value: string, label: string) => targetCadence
-    ? normalizeForecastPeriodIdentity(value, targetCadence, label)
-    : normalizeMonthlyPeriodIdentity(value, label)
-  const normalizedPoints = [...history.points]
-    .map((point) => ({
-      date: normalizePeriod(point.date, 'Forecast history point date'),
-      value: point.value,
-      sourceObservedAt: point.sourceObservedAt
-        ? normalizeSourceObservedAtIdentity(point.sourceObservedAt, 'Forecast history point sourceObservedAt')
-        : null,
-    }))
-    .sort((left, right) => left.date.localeCompare(right.date))
+  const { normalizePeriod } = resolveHistoryPeriodNormalizer(history)
+  const normalizedPoints = normalizeHistoryPoints(history, normalizePeriod)
 
   hash.update(history.seriesId)
   if (history.cadence) {
@@ -174,4 +189,28 @@ export function buildForecastHistoryFingerprint(history: ForecastHistoryFingerpr
   }
 
   return hash.digest('hex')
+}
+
+export function buildOriginBoundForecastHistoryFingerprint(
+  history: ForecastHistoryFingerprintInput,
+  forecastOrigin: string,
+): string | null {
+  const { normalizePeriod } = resolveHistoryPeriodNormalizer(history)
+  const normalizedOrigin = normalizePeriod(forecastOrigin, 'Forecast calibration forecastOrigin')
+  const normalizedPoints = normalizeHistoryPoints(history, normalizePeriod)
+  const originBoundPoints = normalizedPoints.filter((point) => point.date <= normalizedOrigin)
+  const lastPoint = originBoundPoints.at(-1)
+  const firstPoint = originBoundPoints[0]
+
+  if (!firstPoint || !lastPoint || lastPoint.date !== normalizedOrigin) {
+    return null
+  }
+
+  return buildForecastHistoryFingerprint({
+    ...history,
+    start: firstPoint.date,
+    end: lastPoint.date,
+    observations: originBoundPoints.length,
+    points: originBoundPoints,
+  })
 }

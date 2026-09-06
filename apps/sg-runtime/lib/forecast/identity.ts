@@ -121,6 +121,10 @@ export type ForecastCalibrationIdentity = {
   calibrationPolicy: ForecastCalibrationPolicy
 }
 
+export type ForecastCalibrationLineageProof = {
+  canonicalHistoryFingerprintAtResidualOrigin?: string | null
+}
+
 export type ForecastVerificationReuseIdentity = {
   artifactScope: Extract<ForecastArtifactScope, 'RECENT_VERIFICATION' | 'FULL_VERIFICATION'>
   seriesId: string
@@ -455,9 +459,14 @@ function parseComparableTimestamp(value: string | null): number | null {
   return Number.isNaN(parsed) ? null : parsed
 }
 
+function hasExplicitButMalformedTimestamp(value: string | null) {
+  return value !== null && value !== '' && parseComparableTimestamp(value) === null
+}
+
 function isCalibrationSourceLineageCompatible(
   residual: ForecastCalibrationIdentity,
   current: ForecastCalibrationIdentity,
+  lineageProof?: ForecastCalibrationLineageProof,
 ) {
   if (
     residual.sourceSeriesId !== current.sourceSeriesId
@@ -467,22 +476,43 @@ function isCalibrationSourceLineageCompatible(
     return false
   }
 
+  if (
+    hasExplicitButMalformedTimestamp(residual.forecastOrigin)
+    || hasExplicitButMalformedTimestamp(current.forecastOrigin)
+  ) {
+    return false
+  }
+
   const residualOrigin = parseComparableTimestamp(residual.forecastOrigin)
   const currentOrigin = parseComparableTimestamp(current.forecastOrigin)
-  if (residualOrigin === null || currentOrigin === null) {
-    return residual.historyFingerprint === current.historyFingerprint
+  const canonicalHistoryFingerprintAtResidualOrigin =
+    lineageProof?.canonicalHistoryFingerprintAtResidualOrigin ?? null
+
+  if (residualOrigin === null) {
+    return canonicalHistoryFingerprintAtResidualOrigin !== null
+      && canonicalHistoryFingerprintAtResidualOrigin === residual.historyFingerprint
+  }
+
+  if (currentOrigin === null) {
+    return false
   }
 
   if (residualOrigin === currentOrigin) {
     return residual.historyFingerprint === current.historyFingerprint
   }
 
-  return residualOrigin < currentOrigin
+  if (residualOrigin > currentOrigin) {
+    return false
+  }
+
+  return canonicalHistoryFingerprintAtResidualOrigin !== null
+    && canonicalHistoryFingerprintAtResidualOrigin === residual.historyFingerprint
 }
 
 export function canResidualCalibrateCurrent(
   residual: ForecastCalibrationIdentity,
   current: ForecastCalibrationIdentity,
+  lineageProof?: ForecastCalibrationLineageProof,
 ): boolean {
   if (
     residual.calibrationPolicy !== 'EXACT_STATISTICAL_MATCH_ONLY'
@@ -496,5 +526,5 @@ export function canResidualCalibrateCurrent(
   }
 
   return CALIBRATION_IDENTITY_FIELDS.every((fieldName) => residual[fieldName] === current[fieldName])
-    && isCalibrationSourceLineageCompatible(residual, current)
+    && isCalibrationSourceLineageCompatible(residual, current, lineageProof)
 }

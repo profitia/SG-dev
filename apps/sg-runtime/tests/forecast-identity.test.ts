@@ -222,8 +222,8 @@ test('calibration compatibility is exact-contract based rather than scope-based'
     artifactScope: recentCompatibility.artifactScope,
     trainingWindowPolicyId: recentCompatibility.trainingWindowPolicyId,
     effectiveTrainingPolicyId: recentCompatibility.effectiveTrainingPolicyId,
-    historyFingerprint: 'history-recent-origin',
-    forecastOrigin: '2026-03-01T00:00:00.000Z',
+    historyFingerprint: 'history-live',
+    forecastOrigin: '2026-04-01T00:00:00.000Z',
     actualObservedAt: '2026-04-30T00:00:00.000Z',
   } as const
   const exactFullResidual = {
@@ -231,8 +231,8 @@ test('calibration compatibility is exact-contract based rather than scope-based'
     artifactScope: fullCompatibility.artifactScope,
     trainingWindowPolicyId: fullCompatibility.trainingWindowPolicyId,
     effectiveTrainingPolicyId: fullCompatibility.effectiveTrainingPolicyId,
-    historyFingerprint: 'history-full-origin',
-    forecastOrigin: '2026-03-01T00:00:00.000Z',
+    historyFingerprint: 'history-live',
+    forecastOrigin: '2026-04-01T00:00:00.000Z',
     actualObservedAt: '2026-04-30T00:00:00.000Z',
   } as const
   const conditionalLegacyResidual = {
