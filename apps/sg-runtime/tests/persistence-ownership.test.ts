@@ -44,11 +44,13 @@ function buildPersistenceOwnershipKey(identity: PersistenceOwnershipIdentity) {
 }
 
 const currentIdentity: CurrentLogicalArtifactIdentity = {
+  artifactScope: 'CURRENT_FORECAST',
   seriesId: 'b3.current',
   targetBasis: 'MONTHLY_AVERAGE',
   targetSemantics: 'MONTHLY_AVERAGE',
   methodId: 'MONTHLY_AVERAGE',
   methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+  trainingWindowPolicyId: 'CURRENT_ALL_AVAILABLE_HISTORY@current-all-available-history-v1',
   modelId: 'naive',
   inputSource: 'B3_CONTROLLED_FIXTURE',
   historyFingerprint: 'b3-current-history',
@@ -60,11 +62,13 @@ const currentIdentity: CurrentLogicalArtifactIdentity = {
 }
 
 const verificationIdentity: VerificationLogicalArtifactIdentity = {
+  artifactScope: 'FULL_VERIFICATION',
   seriesId: 'b3.verification',
   targetBasis: 'MONTHLY_AVERAGE',
   targetSemantics: 'MONTHLY_AVERAGE',
   methodId: 'MONTHLY_AVERAGE',
   methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+  trainingWindowPolicyId: 'FULL_EXPANDING_WINDOW@full-expanding-window-v1',
   modelId: 'naive',
   inputSource: 'B3_CONTROLLED_FIXTURE',
   historyFingerprint: 'b3-verification-history',

@@ -3,14 +3,23 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 import {
+  areForecastStatisticalCompatibilitiesEqual,
   buildForecastArtifactCadenceIdentity,
   buildForecastArtifactIdentityKey,
   buildForecastIdentityKey,
+  createCurrentForecastStatisticalCompatibility,
+  createFullVerificationStatisticalCompatibility,
+  createRecentVerificationStatisticalCompatibility,
   createForecastIdentity,
+  doesForecastArtifactSatisfyRequest,
   FORECAST_ARTIFACT_CADENCE_IDENTITY_VERSION,
+  FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID,
+  isForecastStatisticalCompatibilityCalibrationEligible,
+  isRecentVerificationReusableForFullVerification,
   LEGACY_UNRESOLVED_FORECAST_METHOD_ID,
   parseForecastArtifactCadenceIdentity,
   resolveForecastMethodContract,
+  resolveLegacyForecastStatisticalCompatibility,
 } from '../lib/forecast/identity'
 
 test('generic identity keeps target semantics separate for the same series and model', () => {
@@ -121,4 +130,42 @@ test('migration keeps pre-canonical monthly rows explicitly unresolved instead o
   assert.match(migration, /ALTER COLUMN "methodId" DROP DEFAULT/)
   assert.match(migration, /"targetBasis", "methodId", "modelId", "methodVersion"/)
     assert.equal(migration.includes('UPDATE'), false)
+})
+
+test('statistical compatibility keeps Current, Recent Verification, and Full Verification distinct', () => {
+  const current = createCurrentForecastStatisticalCompatibility()
+  const recent = createRecentVerificationStatisticalCompatibility()
+  const full = createFullVerificationStatisticalCompatibility()
+
+  assert.equal(new Set([
+    `${current.artifactScope}|${current.trainingWindowPolicyId}|${current.calibrationEligible}`,
+    `${recent.artifactScope}|${recent.trainingWindowPolicyId}|${recent.calibrationEligible}`,
+    `${full.artifactScope}|${full.trainingWindowPolicyId}|${full.calibrationEligible}`,
+  ]).size, 3)
+  assert.equal(areForecastStatisticalCompatibilitiesEqual(current, current), true)
+  assert.equal(areForecastStatisticalCompatibilitiesEqual(current, full), false)
+  assert.equal(doesForecastArtifactSatisfyRequest(full, full), true)
+  assert.equal(doesForecastArtifactSatisfyRequest(full, recent), false)
+})
+
+test('statistical compatibility encodes Full-only calibration and fail-closed Recent to Full reuse', () => {
+  const recent = createRecentVerificationStatisticalCompatibility()
+  const full = createFullVerificationStatisticalCompatibility()
+
+  assert.equal(isForecastStatisticalCompatibilityCalibrationEligible(recent), false)
+  assert.equal(isForecastStatisticalCompatibilityCalibrationEligible(full), true)
+  assert.equal(isRecentVerificationReusableForFullVerification(recent), false)
+  assert.equal(isRecentVerificationReusableForFullVerification(full), true)
+  assert.equal(full.trainingWindowPolicyId, FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID)
+})
+
+test('legacy statistical compatibility mapping is deterministic by artifact family', () => {
+  assert.deepEqual(
+    resolveLegacyForecastStatisticalCompatibility('CURRENT'),
+    createCurrentForecastStatisticalCompatibility(),
+  )
+  assert.deepEqual(
+    resolveLegacyForecastStatisticalCompatibility('VERIFICATION'),
+    createFullVerificationStatisticalCompatibility(),
+  )
 })

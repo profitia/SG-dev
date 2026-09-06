@@ -23,9 +23,27 @@ export const ROLLING_DAILY_FORECAST_METHOD_VERSION = 'rolling-daily-point-in-tim
 export const LEGACY_UNRESOLVED_FORECAST_METHOD_ID = 'LEGACY_UNRESOLVED'
 export const FORECAST_ARTIFACT_CADENCE_IDENTITY_VERSION = 'FORECAST_CADENCE_V1'
 export const LEGACY_MONTHLY_ARTIFACT_FREQUENCY = 'MONTHLY'
+export const FORECAST_ARTIFACT_SCOPES = [
+  'CURRENT_FORECAST',
+  'RECENT_VERIFICATION',
+  'FULL_VERIFICATION',
+] as const
+export const CURRENT_FORECAST_TRAINING_WINDOW_POLICY_ID =
+  'CURRENT_ALL_AVAILABLE_HISTORY@current-all-available-history-v1'
+export const RECENT_VERIFICATION_TRAINING_WINDOW_POLICY_ID =
+  'RECENT_COMPARABLE_WINDOW@recent-comparable-window-v1'
+export const FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID =
+  'FULL_EXPANDING_WINDOW@full-expanding-window-v1'
+export const LEGACY_UNRESOLVED_TRAINING_WINDOW_POLICY_ID = 'LEGACY_UNRESOLVED'
 
 export type ForecastTargetSemantics = (typeof FORECAST_TARGET_SEMANTICS)[number]
 export type ForecastMethodId = (typeof FORECAST_METHOD_IDS)[number]
+export type ForecastArtifactScope = (typeof FORECAST_ARTIFACT_SCOPES)[number]
+export type ForecastTrainingWindowPolicyId =
+  | typeof CURRENT_FORECAST_TRAINING_WINDOW_POLICY_ID
+  | typeof RECENT_VERIFICATION_TRAINING_WINDOW_POLICY_ID
+  | typeof FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID
+  | typeof LEGACY_UNRESOLVED_TRAINING_WINDOW_POLICY_ID
 
 export type ForecastIdentity = {
   seriesId: string
@@ -63,6 +81,12 @@ export type ForecastPreparationIdentity = {
   provenanceStatus: 'PROVEN' | 'NOT_REQUIRED' | 'LEGACY_UNRESOLVED'
 }
 
+export type ForecastStatisticalCompatibility = {
+  artifactScope: ForecastArtifactScope
+  trainingWindowPolicyId: ForecastTrainingWindowPolicyId
+  calibrationEligible: boolean
+}
+
 export type ForecastSourceLineage = {
   inputSource: string
   inputRunId: string | null
@@ -70,6 +94,7 @@ export type ForecastSourceLineage = {
   sourceFrequency: string | null
   historyFingerprint: string
   preparation: ForecastPreparationIdentity | null
+  statisticalCompatibility: ForecastStatisticalCompatibility
 }
 
 export type ForecastCapabilityState =
@@ -208,4 +233,66 @@ export function buildForecastArtifactIdentityKey(identity: ForecastArtifactIdent
     buildForecastIdentityKey(identity),
     buildForecastArtifactCadenceIdentity(identity),
   ].join('|')
+}
+
+export function createCurrentForecastStatisticalCompatibility(): ForecastStatisticalCompatibility {
+  return {
+    artifactScope: 'CURRENT_FORECAST',
+    trainingWindowPolicyId: CURRENT_FORECAST_TRAINING_WINDOW_POLICY_ID,
+    calibrationEligible: false,
+  }
+}
+
+export function createRecentVerificationStatisticalCompatibility(): ForecastStatisticalCompatibility {
+  return {
+    artifactScope: 'RECENT_VERIFICATION',
+    trainingWindowPolicyId: RECENT_VERIFICATION_TRAINING_WINDOW_POLICY_ID,
+    calibrationEligible: false,
+  }
+}
+
+export function createFullVerificationStatisticalCompatibility(): ForecastStatisticalCompatibility {
+  return {
+    artifactScope: 'FULL_VERIFICATION',
+    trainingWindowPolicyId: FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID,
+    calibrationEligible: true,
+  }
+}
+
+export function resolveLegacyForecastStatisticalCompatibility(
+  artifactFamily: 'CURRENT' | 'VERIFICATION',
+): ForecastStatisticalCompatibility {
+  return artifactFamily === 'CURRENT'
+    ? createCurrentForecastStatisticalCompatibility()
+    : createFullVerificationStatisticalCompatibility()
+}
+
+export function areForecastStatisticalCompatibilitiesEqual(
+  left: ForecastStatisticalCompatibility,
+  right: ForecastStatisticalCompatibility,
+): boolean {
+  return left.artifactScope === right.artifactScope
+    && left.trainingWindowPolicyId === right.trainingWindowPolicyId
+    && left.calibrationEligible === right.calibrationEligible
+}
+
+export function doesForecastArtifactSatisfyRequest(
+  available: ForecastStatisticalCompatibility,
+  requested: ForecastStatisticalCompatibility,
+): boolean {
+  return areForecastStatisticalCompatibilitiesEqual(available, requested)
+}
+
+export function isRecentVerificationReusableForFullVerification(
+  available: ForecastStatisticalCompatibility,
+): boolean {
+  return available.artifactScope === 'FULL_VERIFICATION'
+    && available.trainingWindowPolicyId === FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID
+    && available.calibrationEligible
+}
+
+export function isForecastStatisticalCompatibilityCalibrationEligible(
+  compatibility: ForecastStatisticalCompatibility,
+): boolean {
+  return compatibility.artifactScope === 'FULL_VERIFICATION' && compatibility.calibrationEligible
 }

@@ -4,6 +4,7 @@ import type {
   ForecastVerificationHorizon,
   ForecastVerificationRecord,
 } from '@/lib/forecast/contracts'
+import { createFullVerificationStatisticalCompatibility } from '@/lib/forecast/identity'
 import type { ForecastRequestInput } from '@/lib/forecast/request-contract'
 import { buildRollingDailyHistoryFingerprint, ROLLING_DAILY_INPUT_SOURCE } from '@/lib/forecast/rolling-daily-maintenance'
 import { forecastStressTelemetry } from '@/lib/forecast/stress-telemetry'
@@ -112,6 +113,7 @@ export async function readPreparedRollingDailyForecastVerification(
     if (!record.trainingHistoryStartAt) return earliest
     return !earliest || record.trainingHistoryStartAt < earliest ? record.trainingHistoryStartAt : earliest
   }, null)
+  const statisticalCompatibility = createFullVerificationStatisticalCompatibility()
 
   return {
     status: 'AVAILABLE',
@@ -132,6 +134,7 @@ export async function readPreparedRollingDailyForecastVerification(
       sourceFrequency: 'DAILY',
       historyFingerprint: sourceHistoryFingerprint,
       preparation: null,
+      statisticalCompatibility,
     },
     historyFingerprint: sourceHistoryFingerprint,
     history: {

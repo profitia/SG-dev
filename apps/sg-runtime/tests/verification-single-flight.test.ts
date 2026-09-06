@@ -9,11 +9,13 @@ import {
 } from '../lib/forecast/verification-single-flight'
 
 const identity: VerificationLogicalArtifactIdentity = {
+  artifactScope: 'FULL_VERIFICATION',
   seriesId: 'wocaes0280',
   targetBasis: 'MONTHLY_AVERAGE',
   targetSemantics: 'MONTHLY_AVERAGE',
   methodId: 'MONTHLY_AVERAGE',
   methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+  trainingWindowPolicyId: 'FULL_EXPANDING_WINDOW@full-expanding-window-v1',
   modelId: 'naive',
   inputSource: 'DYNAMIC_MARKET_DATA_STORE',
   historyFingerprint: 'history-a',
@@ -36,6 +38,7 @@ test('Verification logical key is deterministic, exact-field isolated, and fail-
     'targetSemantics',
     'targetBasis',
     'methodVersion',
+    'trainingWindowPolicyId',
     'sourceFrequency',
     'targetCadence',
     'frequencyIdentity',

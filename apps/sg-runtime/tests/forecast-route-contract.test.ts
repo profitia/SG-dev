@@ -69,6 +69,11 @@ function availableIdentity(targetBasis: ForecastRequestInput['targetBasis']) {
       sourceFrequency: targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
       historyFingerprint: 'abc',
       preparation: null,
+      statisticalCompatibility: {
+        artifactScope: 'CURRENT_FORECAST',
+        trainingWindowPolicyId: 'CURRENT_ALL_AVAILABLE_HISTORY@current-all-available-history-v1',
+        calibrationEligible: false,
+      },
     },
   } as const
 }

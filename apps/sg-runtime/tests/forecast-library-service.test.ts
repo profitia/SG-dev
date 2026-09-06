@@ -354,6 +354,11 @@ function persistedIdentity(targetBasis: 'MONTHLY_AVERAGE' | 'END_OF_PERIOD') {
     targetSemantics: targetBasis,
     methodId: targetBasis,
     preparation: null,
+    statisticalCompatibility: {
+      artifactScope: 'CURRENT_FORECAST',
+      trainingWindowPolicyId: 'CURRENT_ALL_AVAILABLE_HISTORY@current-all-available-history-v1',
+      calibrationEligible: false,
+    },
     cadence: null,
     frequencyIdentity: 'MONTHLY',
   } as const
@@ -432,6 +437,8 @@ test('forecast library current path returns cached artifact without invoking com
   assert.equal(result.methodId, 'MONTHLY_AVERAGE')
   assert.equal(result.targetSemantics, 'MONTHLY_AVERAGE')
   assert.equal(result.methodId, 'MONTHLY_AVERAGE')
+  assert.equal(result.lineage.statisticalCompatibility.artifactScope, 'CURRENT_FORECAST')
+  assert.equal(result.lineage.statisticalCompatibility.trainingWindowPolicyId, 'CURRENT_ALL_AVAILABLE_HISTORY@current-all-available-history-v1')
   assert.equal(result.alignment.status, 'ALIGNED')
   assert.equal(result.alignment.lastHistoricalPeriod, '2026-04-01T00:00:00')
   assert.equal(result.alignment.forecastOrigin, '2026-04-01T00:00:00')
@@ -676,6 +683,7 @@ test('forecast library current path computes and persists on cache miss', async 
   assert.equal(result.targetSemantics, 'MONTHLY_AVERAGE')
   assert.equal(result.methodId, 'MONTHLY_AVERAGE')
   assert.equal(result.lineage.preparation?.provenanceStatus, 'LEGACY_UNRESOLVED')
+  assert.equal(result.lineage.statisticalCompatibility.artifactScope, 'CURRENT_FORECAST')
   assert.equal(result.alignment.status, 'ALIGNED')
   assert.equal(result.alignment.lastHistoricalPeriod, '2026-04-01T00:00:00')
   assert.equal(result.alignment.forecastOrigin, '2026-04-01T00:00:00')
@@ -889,6 +897,8 @@ test('forecast library verification path normalizes metrics and persists heavier
   assert.equal(result.status, 'AVAILABLE')
   assert.equal(result.cacheStatus, 'miss')
   assert.equal(result.targetBasis, 'MONTHLY_AVERAGE')
+  assert.equal(result.lineage.statisticalCompatibility.artifactScope, 'FULL_VERIFICATION')
+  assert.equal(result.lineage.statisticalCompatibility.calibrationEligible, true)
   assert.equal(result.verification['1M']?.metrics?.directionalAccuracy, 0.64)
   assert.equal(result.verification['1M']?.records.length, 1)
   assert.equal(result.verification['1M']?.records[0]?.actualObservedAt, '2025-02-28T00:00:00')

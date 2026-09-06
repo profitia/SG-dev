@@ -18,6 +18,7 @@ import {
 } from '@/lib/forecast/cadence'
 import {
   buildCurrentLogicalArtifactKey,
+  type CurrentLogicalArtifactIdentity,
   CurrentForecastSingleFlight,
 } from '@/lib/forecast/current-single-flight'
 import {
@@ -25,6 +26,7 @@ import {
   buildVerificationLogicalArtifactKey,
   VERIFICATION_CONFIGURATION_ID,
   VERIFICATION_ORIGIN_POLICY_ID,
+  type VerificationLogicalArtifactIdentity,
   VerificationForecastSingleFlight,
 } from '@/lib/forecast/verification-single-flight'
 import {
@@ -52,11 +54,15 @@ import type {
 import { DEFAULT_FORECAST_TARGET_BASIS, USER_FACING_FORECAST_MODELS } from '@/lib/forecast/contracts'
 import {
   buildForecastArtifactCadenceIdentity,
+  createCurrentForecastStatisticalCompatibility,
+  createFullVerificationStatisticalCompatibility,
   LEGACY_MONTHLY_ARTIFACT_FREQUENCY,
   parseForecastArtifactCadenceIdentity,
   resolveForecastMethodContract,
+  resolveLegacyForecastStatisticalCompatibility,
   type ForecastMethodId,
   type ForecastPreparationIdentity,
+  type ForecastStatisticalCompatibility,
   type ForecastTargetSemantics,
 } from '@/lib/forecast/identity'
 import {
@@ -263,6 +269,7 @@ type ForecastPersistedArtifactBase = {
   historyFingerprint: string
   cadence: ForecastCadence | null
   frequencyIdentity: string
+  statisticalCompatibility: ForecastStatisticalCompatibility
   history: ForecastHistorySummary
   forecastOrigin: string | null
   runtimeSeconds: number | null
@@ -596,6 +603,7 @@ function toCurrentAvailable(
       sourceFrequency: artifact.cadence?.sourceFrequency ?? artifact.history.frequency,
       historyFingerprint: artifact.historyFingerprint,
       preparation: artifact.preparation,
+      statisticalCompatibility: artifact.statisticalCompatibility,
     },
     historyFingerprint: artifact.historyFingerprint,
     history: artifact.history,
@@ -630,6 +638,7 @@ function toVerificationAvailable(
       sourceFrequency: artifact.cadence?.sourceFrequency ?? artifact.history.frequency,
       historyFingerprint: artifact.historyFingerprint,
       preparation: artifact.preparation,
+      statisticalCompatibility: artifact.statisticalCompatibility,
     },
     historyFingerprint: artifact.historyFingerprint,
     history: artifact.history,
@@ -704,6 +713,7 @@ function mapCurrentArtifact(
   cadenceContext: ReturnType<typeof resolveArtifactCadenceContext>,
 ): PersistedCurrentArtifact {
   const identity = resolveCapabilityIdentity(targetBasis, response.methodVersion)
+  const statisticalCompatibility = createCurrentForecastStatisticalCompatibility()
 
   return {
     seriesId: response.benchmark.seriesId,
@@ -721,6 +731,7 @@ function mapCurrentArtifact(
     historyFingerprint: buildForecastHistoryFingerprint(response.result.history, cadenceContext.cadence ?? undefined),
     cadence: cadenceContext.cadence,
     frequencyIdentity: cadenceContext.frequencyIdentity,
+    statisticalCompatibility,
     preparation: preparationIdentityFromHistory(response.result.history),
     history: historySummaryFromBridge(response.result.history),
     forecastOrigin: response.result.history.end,
@@ -738,6 +749,7 @@ function mapVerificationArtifact(
   cadenceContext: ReturnType<typeof resolveArtifactCadenceContext>,
 ): PersistedVerificationArtifact {
   const identity = resolveCapabilityIdentity(targetBasis, response.methodVersion)
+  const statisticalCompatibility = createFullVerificationStatisticalCompatibility()
   const actualObservedAtByTargetDate = buildActualObservedAtByTargetDate(authoritativeHistory, targetBasis)
   const verification = Object.fromEntries(
     Object.entries(response.result.backtest)
@@ -782,6 +794,7 @@ function mapVerificationArtifact(
     historyFingerprint: buildForecastHistoryFingerprint(authoritativeHistory, cadenceContext.cadence ?? undefined),
     cadence: cadenceContext.cadence,
     frequencyIdentity: cadenceContext.frequencyIdentity,
+    statisticalCompatibility,
     preparation: preparationIdentityFromHistory(authoritativeHistory),
     history: historySummaryFromBridge(authoritativeHistory),
     forecastOrigin: authoritativeHistory.end,
@@ -1124,6 +1137,7 @@ export async function readCurrentRunFromPrisma(key: ForecastCacheLookupKey): Pro
       ? createForecastCadence(storedCadence.sourceFrequency, storedCadence.targetCadence)
       : null,
     frequencyIdentity: run.frequency ?? key.frequencyIdentity,
+    statisticalCompatibility: resolveLegacyForecastStatisticalCompatibility('CURRENT'),
     preparation: null,
     history: {
       frequency: storedCadence?.targetCadence ?? run.frequency,
@@ -1335,6 +1349,7 @@ export async function readVerificationRunFromPrisma(key: ForecastCacheLookupKey)
       ? createForecastCadence(storedCadence.sourceFrequency, storedCadence.targetCadence)
       : null,
     frequencyIdentity: run.frequency ?? key.frequencyIdentity,
+    statisticalCompatibility: resolveLegacyForecastStatisticalCompatibility('VERIFICATION'),
     preparation: null,
     history: {
       frequency: storedCadence?.targetCadence ?? run.frequency,
@@ -1736,12 +1751,15 @@ export function createForecastLibraryService(
       if (!sourceFrequency || !targetCadence) {
         throw new Error('Current single-flight identity requires lawful source and target cadence.')
       }
-      const logicalArtifactKey = buildCurrentLogicalArtifactKey({
+      const currentStatisticalCompatibility = createCurrentForecastStatisticalCompatibility()
+      const logicalArtifactIdentity: CurrentLogicalArtifactIdentity = {
+        artifactScope: currentStatisticalCompatibility.artifactScope,
         seriesId: input.seriesId,
         targetBasis: input.targetBasis,
         targetSemantics: methodIdentity.targetSemantics,
         methodId: methodIdentity.methodId,
         methodVersion: historyResponse.methodVersion,
+        trainingWindowPolicyId: currentStatisticalCompatibility.trainingWindowPolicyId,
         modelId: input.modelId,
         inputSource: historyResponse.source.kind,
         historyFingerprint,
@@ -1753,7 +1771,8 @@ export function createForecastLibraryService(
           historyResponse.history.end,
           targetCadence,
         ),
-      })
+      }
+      const logicalArtifactKey = buildCurrentLogicalArtifactKey(logicalArtifactIdentity)
       const requestId = resolvedDependencies.telemetry.currentContext?.()?.requestId ?? randomUUID()
 
       return runCurrentForecastSingleFlight<BenchmarkForecastCurrentResult>({
@@ -2012,12 +2031,15 @@ export function createForecastLibraryService(
       const verificationHorizonSetId = buildVerificationHorizonSetId(
         buildCurrentForecastExecutionPlan(historyResponse.history.end, targetCadence).horizons,
       )
-      const logicalArtifactKey = buildVerificationLogicalArtifactKey({
+      const verificationStatisticalCompatibility = createFullVerificationStatisticalCompatibility()
+      const logicalArtifactIdentity: VerificationLogicalArtifactIdentity = {
+        artifactScope: verificationStatisticalCompatibility.artifactScope,
         seriesId: input.seriesId,
         targetBasis: input.targetBasis,
         targetSemantics: methodIdentity.targetSemantics,
         methodId: methodIdentity.methodId,
         methodVersion: historyResponse.methodVersion,
+        trainingWindowPolicyId: verificationStatisticalCompatibility.trainingWindowPolicyId,
         modelId: input.modelId,
         inputSource: historyResponse.source.kind,
         historyFingerprint,
@@ -2027,7 +2049,8 @@ export function createForecastLibraryService(
         verificationHorizonSetId,
         verificationConfigurationId: VERIFICATION_CONFIGURATION_ID,
         originPolicyId: VERIFICATION_ORIGIN_POLICY_ID,
-      })
+      }
+      const logicalArtifactKey = buildVerificationLogicalArtifactKey(logicalArtifactIdentity)
       const requestId = resolvedDependencies.telemetry.currentContext?.()?.requestId ?? randomUUID()
 
       return verificationForecastSingleFlight.run({

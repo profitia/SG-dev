@@ -1,10 +1,12 @@
 export const CURRENT_LOGICAL_ARTIFACT_KEY_FIELDS = [
   'namespace',
+  'artifactScope',
   'seriesId',
   'targetBasis',
   'targetSemantics',
   'methodId',
   'methodVersion',
+  'trainingWindowPolicyId',
   'modelId',
   'inputSource',
   'historyFingerprint',

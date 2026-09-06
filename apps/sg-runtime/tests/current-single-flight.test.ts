@@ -9,11 +9,13 @@ import {
 } from '../lib/forecast/current-single-flight'
 
 const identity: CurrentLogicalArtifactIdentity = {
+  artifactScope: 'CURRENT_FORECAST',
   seriesId: 'wocaes0280',
   targetBasis: 'MONTHLY_AVERAGE',
   targetSemantics: 'MONTHLY_AVERAGE',
   methodId: 'MONTHLY_AVERAGE',
   methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+  trainingWindowPolicyId: 'CURRENT_ALL_AVAILABLE_HISTORY@current-all-available-history-v1',
   modelId: 'naive',
   inputSource: 'DYNAMIC_MARKET_DATA_STORE',
   historyFingerprint: 'history-a',
@@ -35,6 +37,7 @@ test('Current logical key is deterministic, exact-field isolated, and fail-close
     'targetSemantics',
     'targetBasis',
     'methodVersion',
+    'trainingWindowPolicyId',
     'sourceFrequency',
     'targetCadence',
     'frequencyIdentity',

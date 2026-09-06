@@ -59,6 +59,11 @@ function available(targetBasis: 'END_OF_PERIOD' | 'MONTHLY_AVERAGE', modelId: st
       sourceFrequency: 'DAILY',
       historyFingerprint: `${targetBasis}-fingerprint`,
       preparation: null,
+      statisticalCompatibility: {
+        artifactScope: 'CURRENT_FORECAST',
+        trainingWindowPolicyId: 'CURRENT_ALL_AVAILABLE_HISTORY@current-all-available-history-v1',
+        calibrationEligible: false,
+      },
     },
     historyFingerprint: `${targetBasis}-fingerprint`,
     history: { frequency: 'MONTHLY', start: '2021-01-01', end: '2024-12-01', observations: 48 },
