@@ -357,8 +357,8 @@ function persistedIdentity(targetBasis: 'MONTHLY_AVERAGE' | 'END_OF_PERIOD') {
     preparation: null,
     statisticalCompatibility: {
       artifactScope: 'CURRENT_FORECAST',
-      trainingWindowPolicyId: 'CURRENT_ALL_AVAILABLE_HISTORY@current-all-available-history-v1',
-      calibrationEligible: false,
+      trainingWindowPolicyId: 'CURRENT_POLICY_FREQUENCY_SPECIFIC@current-policy-frequency-specific-v1',
+      calibrationPolicy: 'EXACT_STATISTICAL_MATCH_ONLY',
     },
     cadence: null,
     frequencyIdentity: 'MONTHLY',
@@ -439,7 +439,7 @@ test('forecast library current path returns cached artifact without invoking com
   assert.equal(result.targetSemantics, 'MONTHLY_AVERAGE')
   assert.equal(result.methodId, 'MONTHLY_AVERAGE')
   assert.equal(result.lineage.statisticalCompatibility.artifactScope, 'CURRENT_FORECAST')
-  assert.equal(result.lineage.statisticalCompatibility.trainingWindowPolicyId, 'CURRENT_ALL_AVAILABLE_HISTORY@current-all-available-history-v1')
+  assert.equal(result.lineage.statisticalCompatibility.trainingWindowPolicyId, 'CURRENT_POLICY_FREQUENCY_SPECIFIC@current-policy-frequency-specific-v1')
   assert.equal(result.alignment.status, 'ALIGNED')
   assert.equal(result.alignment.lastHistoricalPeriod, '2026-04-01T00:00:00')
   assert.equal(result.alignment.forecastOrigin, '2026-04-01T00:00:00')
@@ -696,7 +696,17 @@ test('forecast library current path computes and persists on cache miss', async 
 
 test('forecast library current miss records a durable execution ledger without changing result semantics', async () => {
   const history = createHistoryResponse()
-  const events: string[] = []
+  const events: Array<{
+    eventType: string
+    executionId: string
+    ownerRequestId: string
+    executionMode: string | undefined
+    ownerToken: string | undefined
+    leaseVersion: number | undefined
+    leaseAcquiredAt: string | undefined
+    leaseExpiresAt: string | undefined
+    recoveredFromExecutionId: string | null | undefined
+  }> = []
 
   const service = createForecastLibraryService({
     bridge: {
@@ -726,13 +736,30 @@ test('forecast library current miss records a durable execution ledger without c
     telemetry: {
       emit() {},
       currentContext() {
-        return { requestId: 'req-stage2-current' }
+        return {
+          stressRunId: 'stress-run-current',
+          scenarioId: 'scenario-current',
+          virtualUserId: 'virtual-user-current',
+          requestId: 'req-stage2-current',
+          forecastIdentity: 'forecast-identity-current',
+          logicalArtifactKey: 'logical-artifact-current',
+        }
       },
     },
     executionLedger: {
       ...createNoopForecastPreparationExecutionLedger(),
       async recordEvent(input) {
-        events.push(input.eventType)
+        events.push({
+          eventType: input.eventType,
+          executionId: input.executionId,
+          ownerRequestId: input.ownerRequestId,
+          executionMode: input.executionMode,
+          ownerToken: input.ownerToken,
+          leaseVersion: input.leaseVersion,
+          leaseAcquiredAt: input.leaseAcquiredAt,
+          leaseExpiresAt: input.leaseExpiresAt,
+          recoveredFromExecutionId: input.recoveredFromExecutionId,
+        })
       },
     },
   })
@@ -741,12 +768,83 @@ test('forecast library current miss records a durable execution ledger without c
 
   assert.equal(result.status, 'AVAILABLE')
   assert.equal(result.cacheStatus, 'miss')
-  assert.ok(events.includes('single_flight_owner_acquired'))
-  assert.ok(events.includes('compute_started'))
-  assert.ok(events.includes('compute_completed'))
-  assert.ok(events.includes('persistence_started'))
-  assert.ok(events.includes('persistence_completed'))
-  assert.ok(events.includes('execution_completed'))
+  assert.ok(events.some((event) => event.eventType === 'single_flight_owner_acquired'))
+  assert.ok(events.some((event) => event.eventType === 'compute_started'))
+  assert.ok(events.some((event) => event.eventType === 'compute_completed'))
+  assert.ok(events.some((event) => event.eventType === 'persistence_started'))
+  assert.ok(events.some((event) => event.eventType === 'persistence_completed'))
+  assert.ok(events.some((event) => event.eventType === 'execution_completed'))
+  assert.ok(events.every((event) => event.ownerRequestId === 'req-stage2-current'))
+  assert.ok(events.every((event) => event.executionId !== 'CURRENT:req-stage2-current'))
+  assert.equal(new Set(events.map((event) => event.executionId)).size, 1)
+  assert.ok(events.every((event) => event.executionMode === 'PRIMARY'))
+  assert.ok(events.every((event) => typeof event.ownerToken === 'string' && event.ownerToken.length > 0))
+  assert.ok(events.every((event) => event.leaseVersion === 1))
+  assert.ok(events.every((event) => event.leaseAcquiredAt === events[0]?.leaseAcquiredAt))
+  assert.ok(events.every((event) => event.leaseExpiresAt === events[0]?.leaseExpiresAt))
+  assert.ok(events.every((event) => event.recoveredFromExecutionId === null))
+})
+
+test('forecast library current path does not await passive execution-ledger writes', async () => {
+  const history = createHistoryResponse()
+  let releaseLedger: (() => void) | undefined
+  const ledgerGate = new Promise<void>((resolve) => {
+    releaseLedger = resolve
+  })
+
+  const service = createForecastLibraryService({
+    bridge: {
+      async exportHistory() {
+        return history
+      },
+      async exportCurrent() {
+        return createCurrentResponse()
+      },
+      async exportVerification() {
+        throw new Error('unused')
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        return null
+      },
+      async writeCurrentRun() {},
+      async readVerificationRun() {
+        return null
+      },
+      async writeVerificationRun() {
+        throw new Error('unused')
+      },
+    },
+    logEvent: () => {},
+    telemetry: {
+      emit() {},
+      currentContext() {
+        return {
+          stressRunId: 'stress-run-nonblocking',
+          scenarioId: 'scenario-nonblocking',
+          virtualUserId: 'virtual-user-nonblocking',
+          requestId: 'req-stage2-nonblocking',
+          forecastIdentity: 'forecast-identity-nonblocking',
+          logicalArtifactKey: 'logical-artifact-nonblocking',
+        }
+      },
+    },
+    executionLedger: {
+      ...createNoopForecastPreparationExecutionLedger(),
+      async recordEvent() {
+        await ledgerGate
+      },
+    },
+  })
+
+  const outcome = await Promise.race([
+    service.resolveCurrentForecast('wocaes0280', 'ets').then((result) => result.status),
+    new Promise<'pending'>((resolve) => setTimeout(() => resolve('pending'), 20)),
+  ])
+
+  assert.equal(outcome, 'AVAILABLE')
+  releaseLedger?.()
 })
 
 test('forecast library Current exact-key misses use one owner, nine waiters, and one write', async () => {
@@ -954,7 +1052,8 @@ test('forecast library verification path normalizes metrics and persists heavier
   assert.equal(result.cacheStatus, 'miss')
   assert.equal(result.targetBasis, 'MONTHLY_AVERAGE')
   assert.equal(result.lineage.statisticalCompatibility.artifactScope, 'FULL_VERIFICATION')
-  assert.equal(result.lineage.statisticalCompatibility.calibrationEligible, true)
+  assert.equal(result.lineage.statisticalCompatibility.trainingWindowPolicyId, 'FULL_EXPANDING_HISTORY_PER_ORIGIN@full-expanding-history-per-origin-v1')
+  assert.equal(result.lineage.statisticalCompatibility.calibrationPolicy, 'EXACT_STATISTICAL_MATCH_ONLY')
   assert.equal(result.verification['1M']?.metrics?.directionalAccuracy, 0.64)
   assert.equal(result.verification['1M']?.records.length, 1)
   assert.equal(result.verification['1M']?.records[0]?.actualObservedAt, '2025-02-28T00:00:00')

@@ -61,8 +61,8 @@ function available(targetBasis: 'END_OF_PERIOD' | 'MONTHLY_AVERAGE', modelId: st
       preparation: null,
       statisticalCompatibility: {
         artifactScope: 'CURRENT_FORECAST',
-        trainingWindowPolicyId: 'CURRENT_ALL_AVAILABLE_HISTORY@current-all-available-history-v1',
-        calibrationEligible: false,
+        trainingWindowPolicyId: 'CURRENT_POLICY_FREQUENCY_SPECIFIC@current-policy-frequency-specific-v1',
+        calibrationPolicy: 'EXACT_STATISTICAL_MATCH_ONLY',
       },
     },
     historyFingerprint: `${targetBasis}-fingerprint`,

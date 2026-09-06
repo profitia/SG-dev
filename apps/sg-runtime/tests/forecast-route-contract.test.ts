@@ -71,8 +71,8 @@ function availableIdentity(targetBasis: ForecastRequestInput['targetBasis']) {
       preparation: null,
       statisticalCompatibility: {
         artifactScope: 'CURRENT_FORECAST',
-        trainingWindowPolicyId: 'CURRENT_ALL_AVAILABLE_HISTORY@current-all-available-history-v1',
-        calibrationEligible: false,
+        trainingWindowPolicyId: 'CURRENT_POLICY_FREQUENCY_SPECIFIC@current-policy-frequency-specific-v1',
+        calibrationPolicy: 'EXACT_STATISTICAL_MATCH_ONLY',
       },
     },
   } as const
@@ -1466,7 +1466,7 @@ test('interactive point-in-time current keeps different lawful identities indepe
         recoveredSnapshotCount: 0,
         noOpModelCount: 0,
         failedModelCount: 0,
-        results: request.modelIds.map((modelId) => ({
+        results: (request.modelIds ?? []).map((modelId) => ({
           status: 'SUCCEEDED' as const,
           modelId,
           maintenance: {

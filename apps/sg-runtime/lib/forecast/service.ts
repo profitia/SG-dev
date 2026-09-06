@@ -22,7 +22,7 @@ import {
   CurrentForecastSingleFlight,
 } from '@/lib/forecast/current-single-flight'
 import {
-  buildForecastPreparationExecutionId,
+  createForecastPreparationExecutionContextRegistry,
   createDefaultForecastPreparationExecutionLedger,
   type ForecastPreparationExecutionLedger,
 } from '@/lib/forecast/execution-ledger'
@@ -1574,6 +1574,9 @@ export function createForecastLibraryService(
     telemetry: dependencies.telemetry ?? forecastStressTelemetry,
     executionLedger: dependencies.executionLedger ?? createDefaultForecastPreparationExecutionLedger(),
   }
+  const executionContextRegistry = createForecastPreparationExecutionContextRegistry()
+  const isExecutionContextReleaseEvent = (eventType: string) =>
+    eventType === 'single_flight_entry_released'
 
   return {
     async readPreparedCurrentForecastRequest(input: ForecastServiceRequest): Promise<BenchmarkForecastCurrentResult> {
@@ -1781,12 +1784,35 @@ export function createForecastLibraryService(
       }
       const logicalArtifactKey = buildCurrentLogicalArtifactKey(logicalArtifactIdentity)
       const requestId = resolvedDependencies.telemetry.currentContext?.()?.requestId ?? randomUUID()
-      const recordCurrentExecutionEvent = async (
-        inputEvent: Parameters<ForecastPreparationExecutionLedger['recordEvent']>[0],
+      executionContextRegistry.getOrCreateContext({
+        operationFamily: 'CURRENT',
+        logicalArtifactKey,
+        ownerRequestId: requestId,
+      })
+      const recordCurrentExecutionEvent = (
+        inputEvent: Omit<Parameters<ForecastPreparationExecutionLedger['recordEvent']>[0], 'executionId'>,
       ) => {
-        try {
-          await resolvedDependencies.executionLedger.recordEvent(inputEvent)
-        } catch (error) {
+        const executionContext = executionContextRegistry.getOrCreateContext({
+          operationFamily: 'CURRENT',
+          logicalArtifactKey,
+          ownerRequestId: inputEvent.ownerRequestId,
+          observedAt: inputEvent.observedAt,
+        })
+
+        if (isExecutionContextReleaseEvent(inputEvent.eventType)) {
+          executionContextRegistry.releaseContext(executionContext.executionId)
+        }
+
+        void resolvedDependencies.executionLedger.recordEvent({
+          ...inputEvent,
+          executionId: executionContext.executionId,
+          executionMode: executionContext.executionMode,
+          ownerToken: executionContext.ownerToken,
+          leaseVersion: executionContext.leaseVersion,
+          leaseAcquiredAt: executionContext.leaseAcquiredAt,
+          leaseExpiresAt: executionContext.leaseExpiresAt,
+          recoveredFromExecutionId: executionContext.recoveredFromExecutionId,
+        }).catch((error) => {
           resolvedDependencies.logEvent('FORECAST_PREPARATION_EXECUTION_LEDGER', {
             seriesId: input.seriesId,
             modelId: input.modelId,
@@ -1794,7 +1820,7 @@ export function createForecastLibraryService(
             ledgerFailure: true,
             ledgerError: error instanceof Error ? error.message : 'unknown',
           })
-        }
+        })
       }
 
       return runCurrentForecastSingleFlight<BenchmarkForecastCurrentResult>({
@@ -1816,8 +1842,7 @@ export function createForecastLibraryService(
             sourceFrequency,
             targetCadence,
           })
-          await recordCurrentExecutionEvent({
-            executionId: buildForecastPreparationExecutionId('CURRENT', eventData.ownerRequestId),
+          recordCurrentExecutionEvent({
             logicalArtifactKey,
             operationFamily: 'CURRENT',
             logicalArtifactIdentity,
@@ -1831,8 +1856,6 @@ export function createForecastLibraryService(
           })
         },
         operation: async () => {
-          const executionId = buildForecastPreparationExecutionId('CURRENT', requestId)
-
           try {
             const computeStartedAt = performance.now()
             resolvedDependencies.telemetry.emit('current_compute_start', {
@@ -1840,8 +1863,7 @@ export function createForecastLibraryService(
               count: 1,
               logicalArtifactKey,
             })
-            await recordCurrentExecutionEvent({
-              executionId,
+            recordCurrentExecutionEvent({
               logicalArtifactKey,
               operationFamily: 'CURRENT',
               logicalArtifactIdentity,
@@ -1867,8 +1889,7 @@ export function createForecastLibraryService(
               count: currentResponse.status === 'AVAILABLE' ? 1 : 0,
               durationMs: computeDurationMs,
             })
-            await recordCurrentExecutionEvent({
-              executionId,
+            recordCurrentExecutionEvent({
               logicalArtifactKey,
               operationFamily: 'CURRENT',
               logicalArtifactIdentity,
@@ -1885,8 +1906,7 @@ export function createForecastLibraryService(
 
             if (currentResponse.status === 'NOT_AVAILABLE') {
               const identity = resolveCapabilityIdentity(input.targetBasis)
-              await recordCurrentExecutionEvent({
-                executionId,
+              recordCurrentExecutionEvent({
                 logicalArtifactKey,
                 operationFamily: 'CURRENT',
                 logicalArtifactIdentity,
@@ -1909,8 +1929,7 @@ export function createForecastLibraryService(
             }
 
             if (currentResponse.status === 'UNSUPPORTED') {
-              await recordCurrentExecutionEvent({
-                executionId,
+              recordCurrentExecutionEvent({
                 logicalArtifactKey,
                 operationFamily: 'CURRENT',
                 logicalArtifactIdentity,
@@ -1925,8 +1944,7 @@ export function createForecastLibraryService(
             }
 
             if (currentResponse.status === 'FAILED') {
-              await recordCurrentExecutionEvent({
-                executionId,
+              recordCurrentExecutionEvent({
                 logicalArtifactKey,
                 operationFamily: 'CURRENT',
                 logicalArtifactIdentity,
@@ -1959,8 +1977,7 @@ export function createForecastLibraryService(
             if (!dbReadFailed) {
               try {
                 const persistStartedAt = performance.now()
-                await recordCurrentExecutionEvent({
-                  executionId,
+                recordCurrentExecutionEvent({
                   logicalArtifactKey,
                   operationFamily: 'CURRENT',
                   logicalArtifactIdentity,
@@ -1979,8 +1996,7 @@ export function createForecastLibraryService(
                   writeFailures: 0,
                   durationMs: persistenceDurationMs,
                 })
-                await recordCurrentExecutionEvent({
-                  executionId,
+                recordCurrentExecutionEvent({
                   logicalArtifactKey,
                   operationFamily: 'CURRENT',
                   logicalArtifactIdentity,
@@ -2002,8 +2018,7 @@ export function createForecastLibraryService(
                   verificationRecordWrites: 0,
                   writeFailures: 1,
                 })
-                await recordCurrentExecutionEvent({
-                  executionId,
+                recordCurrentExecutionEvent({
                   logicalArtifactKey,
                   operationFamily: 'CURRENT',
                   logicalArtifactIdentity,
@@ -2017,8 +2032,7 @@ export function createForecastLibraryService(
                   verificationRecordWrites: 0,
                   writeFailures: 1,
                 })
-                await recordCurrentExecutionEvent({
-                  executionId,
+                recordCurrentExecutionEvent({
                   logicalArtifactKey,
                   operationFamily: 'CURRENT',
                   logicalArtifactIdentity,
@@ -2043,8 +2057,7 @@ export function createForecastLibraryService(
               }
             }
 
-            await recordCurrentExecutionEvent({
-              executionId,
+            recordCurrentExecutionEvent({
               logicalArtifactKey,
               operationFamily: 'CURRENT',
               logicalArtifactIdentity,
@@ -2065,8 +2078,7 @@ export function createForecastLibraryService(
 
             return toCurrentAvailable(artifact, cacheStatus)
           } catch (error) {
-            await recordCurrentExecutionEvent({
-              executionId,
+            recordCurrentExecutionEvent({
               logicalArtifactKey,
               operationFamily: 'CURRENT',
               logicalArtifactIdentity,
@@ -2234,12 +2246,35 @@ export function createForecastLibraryService(
       }
       const logicalArtifactKey = buildVerificationLogicalArtifactKey(logicalArtifactIdentity)
       const requestId = resolvedDependencies.telemetry.currentContext?.()?.requestId ?? randomUUID()
-      const recordVerificationExecutionEvent = async (
-        inputEvent: Parameters<ForecastPreparationExecutionLedger['recordEvent']>[0],
+      executionContextRegistry.getOrCreateContext({
+        operationFamily: 'VERIFICATION',
+        logicalArtifactKey,
+        ownerRequestId: requestId,
+      })
+      const recordVerificationExecutionEvent = (
+        inputEvent: Omit<Parameters<ForecastPreparationExecutionLedger['recordEvent']>[0], 'executionId'>,
       ) => {
-        try {
-          await resolvedDependencies.executionLedger.recordEvent(inputEvent)
-        } catch (error) {
+        const executionContext = executionContextRegistry.getOrCreateContext({
+          operationFamily: 'VERIFICATION',
+          logicalArtifactKey,
+          ownerRequestId: inputEvent.ownerRequestId,
+          observedAt: inputEvent.observedAt,
+        })
+
+        if (isExecutionContextReleaseEvent(inputEvent.eventType)) {
+          executionContextRegistry.releaseContext(executionContext.executionId)
+        }
+
+        void resolvedDependencies.executionLedger.recordEvent({
+          ...inputEvent,
+          executionId: executionContext.executionId,
+          executionMode: executionContext.executionMode,
+          ownerToken: executionContext.ownerToken,
+          leaseVersion: executionContext.leaseVersion,
+          leaseAcquiredAt: executionContext.leaseAcquiredAt,
+          leaseExpiresAt: executionContext.leaseExpiresAt,
+          recoveredFromExecutionId: executionContext.recoveredFromExecutionId,
+        }).catch((error) => {
           resolvedDependencies.logEvent('FORECAST_PREPARATION_EXECUTION_LEDGER', {
             seriesId: input.seriesId,
             modelId: input.modelId,
@@ -2247,7 +2282,7 @@ export function createForecastLibraryService(
             ledgerFailure: true,
             ledgerError: error instanceof Error ? error.message : 'unknown',
           })
-        }
+        })
       }
 
       return verificationForecastSingleFlight.run({
@@ -2269,8 +2304,7 @@ export function createForecastLibraryService(
             sourceFrequency,
             targetCadence,
           })
-          await recordVerificationExecutionEvent({
-            executionId: buildForecastPreparationExecutionId('VERIFICATION', eventData.ownerRequestId),
+          recordVerificationExecutionEvent({
             logicalArtifactKey,
             operationFamily: 'VERIFICATION',
             logicalArtifactIdentity,
@@ -2284,8 +2318,6 @@ export function createForecastLibraryService(
           })
         },
         operation: async () => {
-          const executionId = buildForecastPreparationExecutionId('VERIFICATION', requestId)
-
           try {
             const verificationStartedAt = performance.now()
             resolvedDependencies.telemetry.emit('verification_compute_start', {
@@ -2293,8 +2325,7 @@ export function createForecastLibraryService(
               count: 1,
               logicalArtifactKey,
             })
-            await recordVerificationExecutionEvent({
-              executionId,
+            recordVerificationExecutionEvent({
               logicalArtifactKey,
               operationFamily: 'VERIFICATION',
               logicalArtifactIdentity,
@@ -2324,8 +2355,7 @@ export function createForecastLibraryService(
               count: verificationOrigins,
               durationMs: verificationDurationMs,
             })
-            await recordVerificationExecutionEvent({
-              executionId,
+            recordVerificationExecutionEvent({
               logicalArtifactKey,
               operationFamily: 'VERIFICATION',
               logicalArtifactIdentity,
@@ -2342,8 +2372,7 @@ export function createForecastLibraryService(
 
             if (verificationResponse.status === 'NOT_AVAILABLE') {
               const identity = resolveCapabilityIdentity(input.targetBasis)
-              await recordVerificationExecutionEvent({
-                executionId,
+              recordVerificationExecutionEvent({
                 logicalArtifactKey,
                 operationFamily: 'VERIFICATION',
                 logicalArtifactIdentity,
@@ -2366,8 +2395,7 @@ export function createForecastLibraryService(
             }
 
             if (verificationResponse.status === 'UNSUPPORTED') {
-              await recordVerificationExecutionEvent({
-                executionId,
+              recordVerificationExecutionEvent({
                 logicalArtifactKey,
                 operationFamily: 'VERIFICATION',
                 logicalArtifactIdentity,
@@ -2382,8 +2410,7 @@ export function createForecastLibraryService(
             }
 
             if (verificationResponse.status === 'FAILED') {
-              await recordVerificationExecutionEvent({
-                executionId,
+              recordVerificationExecutionEvent({
                 logicalArtifactKey,
                 operationFamily: 'VERIFICATION',
                 logicalArtifactIdentity,
@@ -2421,8 +2448,7 @@ export function createForecastLibraryService(
             if (!dbReadFailed) {
               try {
                 const persistStartedAt = performance.now()
-                await recordVerificationExecutionEvent({
-                  executionId,
+                recordVerificationExecutionEvent({
                   logicalArtifactKey,
                   operationFamily: 'VERIFICATION',
                   logicalArtifactIdentity,
@@ -2443,8 +2469,7 @@ export function createForecastLibraryService(
                   writeFailures: 0,
                   durationMs: persistenceDurationMs,
                 })
-                await recordVerificationExecutionEvent({
-                  executionId,
+                recordVerificationExecutionEvent({
                   logicalArtifactKey,
                   operationFamily: 'VERIFICATION',
                   logicalArtifactIdentity,
@@ -2466,8 +2491,7 @@ export function createForecastLibraryService(
                   verificationRecordWrites: 0,
                   writeFailures: 1,
                 })
-                await recordVerificationExecutionEvent({
-                  executionId,
+                recordVerificationExecutionEvent({
                   logicalArtifactKey,
                   operationFamily: 'VERIFICATION',
                   logicalArtifactIdentity,
@@ -2481,8 +2505,7 @@ export function createForecastLibraryService(
                   verificationRecordWrites: 0,
                   writeFailures: 1,
                 })
-                await recordVerificationExecutionEvent({
-                  executionId,
+                recordVerificationExecutionEvent({
                   logicalArtifactKey,
                   operationFamily: 'VERIFICATION',
                   logicalArtifactIdentity,
@@ -2507,8 +2530,7 @@ export function createForecastLibraryService(
               }
             }
 
-            await recordVerificationExecutionEvent({
-              executionId,
+            recordVerificationExecutionEvent({
               logicalArtifactKey,
               operationFamily: 'VERIFICATION',
               logicalArtifactIdentity,
@@ -2529,8 +2551,7 @@ export function createForecastLibraryService(
 
             return toVerificationAvailable(artifact, cacheStatus)
           } catch (error) {
-            await recordVerificationExecutionEvent({
-              executionId,
+            recordVerificationExecutionEvent({
               logicalArtifactKey,
               operationFamily: 'VERIFICATION',
               logicalArtifactIdentity,

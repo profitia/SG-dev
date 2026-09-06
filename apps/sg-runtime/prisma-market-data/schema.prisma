@@ -364,6 +364,12 @@ model ForecastPreparationExecutionLedger {
   sourceFrequency             String
   targetCadence               String
   frequencyIdentity           String
+  executionMode               String
+  ownerToken                  String
+  leaseVersion                Int                 @default(1)
+  leaseAcquiredAt             DateTime
+  leaseExpiresAt              DateTime
+  recoveredFromExecutionId    String?
   ownerRequestId              String
   latestRequestId             String
   latestRole                  String
@@ -371,11 +377,13 @@ model ForecastPreparationExecutionLedger {
   eventCount                  Int                 @default(0)
   startedAt                   DateTime
   lastEventAt                 DateTime
+  lastProgressAt              DateTime
   completedAt                 DateTime?
   computeStartedAt            DateTime?
   computeCompletedAt          DateTime?
   persistenceStartedAt        DateTime?
   persistenceCompletedAt      DateTime?
+  failurePhase                String?
   failureReason               String?
   logicalArtifactIdentityJson Json
   eventsJson                  Json
@@ -383,6 +391,7 @@ model ForecastPreparationExecutionLedger {
   updatedAt                   DateTime            @updatedAt
 
   @@index([logicalArtifactKey, startedAt], map: "forecast_preparation_execution_ledger_logical_key_idx")
+  @@index([recoveredFromExecutionId], map: "forecast_preparation_execution_ledger_recovery_idx")
   @@index([seriesId, operationFamily, executionStatus, updatedAt], map: "forecast_preparation_execution_ledger_series_status_idx")
   @@map("forecast_preparation_execution_ledger")
 }

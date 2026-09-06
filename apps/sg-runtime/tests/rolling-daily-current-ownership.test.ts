@@ -53,7 +53,9 @@ test('Daily callers share the accepted Current owner and release the entry after
   const callers = Array.from({ length: 4 }, (_, index) => runCurrentForecastSingleFlight({
     logicalArtifactKey,
     requestId: `daily-request-${index + 1}`,
-    emit: (event) => events.push(event),
+    emit: (event) => {
+      events.push(event)
+    },
     operation: async () => {
       computes += 1
       await ownerGate

@@ -1,4 +1,7 @@
 import {
+  createCurrentForecastStatisticalCompatibility,
+} from '@/lib/forecast/identity'
+import {
   buildCurrentLogicalArtifactKey,
   type CurrentLogicalArtifactIdentity,
 } from '@/lib/forecast/current-single-flight'
@@ -91,12 +94,15 @@ export async function prepareRollingDailyCurrentOwnership(input: {
     throw new Error(`Rolling Daily Current ownership requires DAILY history for ${input.seriesId}.`)
   }
   const forecastOrigin = latestLawfulObservationDate(history)
+  const statisticalCompatibility = createCurrentForecastStatisticalCompatibility()
   const identity = {
+    artifactScope: statisticalCompatibility.artifactScope,
     seriesId: input.seriesId,
     targetBasis: ROLLING_DAILY_TARGET_BASIS,
     targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
     methodId: ROLLING_DAILY_METHOD_ID,
     methodVersion: ROLLING_DAILY_METHOD_VERSION,
+    trainingWindowPolicyId: statisticalCompatibility.trainingWindowPolicyId,
     modelId: input.modelId,
     inputSource: ROLLING_DAILY_INPUT_SOURCE,
     historyFingerprint: buildRollingDailyHistoryFingerprint(history),

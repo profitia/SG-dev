@@ -51,7 +51,7 @@ type CurrentSingleFlightTelemetry = (
 ) => void | Promise<void>
 
 function isPromiseLike(result: void | Promise<void> | undefined): result is Promise<void> {
-  return Boolean(result) && typeof result.then === 'function'
+  return result !== undefined && typeof result?.then === 'function'
 }
 
 type InFlightEntry<Result> = {

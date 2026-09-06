@@ -231,13 +231,14 @@ function createMonthlyHarness(options: {
 const TARGET_BASIS_BY_TEST_SEMANTICS = {
   END_OF_PERIOD: 'END_OF_PERIOD',
   MONTHLY_AVERAGE: 'MONTHLY_AVERAGE',
+  ROLLING_DAILY_POINT_IN_TIME: 'POINT_IN_TIME',
 } as const
 
 test('snapshotAndKickoff prioritizes current work before verification and elevates the selected identity', async () => {
   const currentCalls: string[] = []
   const historicalCalls: string[] = []
   let prepared = new Set<string>()
-  let releaseFirstCurrent: (() => void) | null = null
+  let releaseFirstCurrent: (() => void) | undefined
   let firstCurrentPending = true
   const firstCurrentGate = new Promise<void>((resolve) => {
     releaseFirstCurrent = resolve

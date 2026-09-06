@@ -15676,11 +15676,13 @@ export namespace Prisma {
   }
 
   export type ForecastPreparationExecutionLedgerAvgAggregateOutputType = {
+    leaseVersion: number | null
     waiterCount: number | null
     eventCount: number | null
   }
 
   export type ForecastPreparationExecutionLedgerSumAggregateOutputType = {
+    leaseVersion: number | null
     waiterCount: number | null
     eventCount: number | null
   }
@@ -15706,6 +15708,12 @@ export namespace Prisma {
     sourceFrequency: string | null
     targetCadence: string | null
     frequencyIdentity: string | null
+    executionMode: string | null
+    ownerToken: string | null
+    leaseVersion: number | null
+    leaseAcquiredAt: Date | null
+    leaseExpiresAt: Date | null
+    recoveredFromExecutionId: string | null
     ownerRequestId: string | null
     latestRequestId: string | null
     latestRole: string | null
@@ -15713,11 +15721,13 @@ export namespace Prisma {
     eventCount: number | null
     startedAt: Date | null
     lastEventAt: Date | null
+    lastProgressAt: Date | null
     completedAt: Date | null
     computeStartedAt: Date | null
     computeCompletedAt: Date | null
     persistenceStartedAt: Date | null
     persistenceCompletedAt: Date | null
+    failurePhase: string | null
     failureReason: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -15744,6 +15754,12 @@ export namespace Prisma {
     sourceFrequency: string | null
     targetCadence: string | null
     frequencyIdentity: string | null
+    executionMode: string | null
+    ownerToken: string | null
+    leaseVersion: number | null
+    leaseAcquiredAt: Date | null
+    leaseExpiresAt: Date | null
+    recoveredFromExecutionId: string | null
     ownerRequestId: string | null
     latestRequestId: string | null
     latestRole: string | null
@@ -15751,11 +15767,13 @@ export namespace Prisma {
     eventCount: number | null
     startedAt: Date | null
     lastEventAt: Date | null
+    lastProgressAt: Date | null
     completedAt: Date | null
     computeStartedAt: Date | null
     computeCompletedAt: Date | null
     persistenceStartedAt: Date | null
     persistenceCompletedAt: Date | null
+    failurePhase: string | null
     failureReason: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -15782,6 +15800,12 @@ export namespace Prisma {
     sourceFrequency: number
     targetCadence: number
     frequencyIdentity: number
+    executionMode: number
+    ownerToken: number
+    leaseVersion: number
+    leaseAcquiredAt: number
+    leaseExpiresAt: number
+    recoveredFromExecutionId: number
     ownerRequestId: number
     latestRequestId: number
     latestRole: number
@@ -15789,11 +15813,13 @@ export namespace Prisma {
     eventCount: number
     startedAt: number
     lastEventAt: number
+    lastProgressAt: number
     completedAt: number
     computeStartedAt: number
     computeCompletedAt: number
     persistenceStartedAt: number
     persistenceCompletedAt: number
+    failurePhase: number
     failureReason: number
     logicalArtifactIdentityJson: number
     eventsJson: number
@@ -15804,11 +15830,13 @@ export namespace Prisma {
 
 
   export type ForecastPreparationExecutionLedgerAvgAggregateInputType = {
+    leaseVersion?: true
     waiterCount?: true
     eventCount?: true
   }
 
   export type ForecastPreparationExecutionLedgerSumAggregateInputType = {
+    leaseVersion?: true
     waiterCount?: true
     eventCount?: true
   }
@@ -15834,6 +15862,12 @@ export namespace Prisma {
     sourceFrequency?: true
     targetCadence?: true
     frequencyIdentity?: true
+    executionMode?: true
+    ownerToken?: true
+    leaseVersion?: true
+    leaseAcquiredAt?: true
+    leaseExpiresAt?: true
+    recoveredFromExecutionId?: true
     ownerRequestId?: true
     latestRequestId?: true
     latestRole?: true
@@ -15841,11 +15875,13 @@ export namespace Prisma {
     eventCount?: true
     startedAt?: true
     lastEventAt?: true
+    lastProgressAt?: true
     completedAt?: true
     computeStartedAt?: true
     computeCompletedAt?: true
     persistenceStartedAt?: true
     persistenceCompletedAt?: true
+    failurePhase?: true
     failureReason?: true
     createdAt?: true
     updatedAt?: true
@@ -15872,6 +15908,12 @@ export namespace Prisma {
     sourceFrequency?: true
     targetCadence?: true
     frequencyIdentity?: true
+    executionMode?: true
+    ownerToken?: true
+    leaseVersion?: true
+    leaseAcquiredAt?: true
+    leaseExpiresAt?: true
+    recoveredFromExecutionId?: true
     ownerRequestId?: true
     latestRequestId?: true
     latestRole?: true
@@ -15879,11 +15921,13 @@ export namespace Prisma {
     eventCount?: true
     startedAt?: true
     lastEventAt?: true
+    lastProgressAt?: true
     completedAt?: true
     computeStartedAt?: true
     computeCompletedAt?: true
     persistenceStartedAt?: true
     persistenceCompletedAt?: true
+    failurePhase?: true
     failureReason?: true
     createdAt?: true
     updatedAt?: true
@@ -15910,6 +15954,12 @@ export namespace Prisma {
     sourceFrequency?: true
     targetCadence?: true
     frequencyIdentity?: true
+    executionMode?: true
+    ownerToken?: true
+    leaseVersion?: true
+    leaseAcquiredAt?: true
+    leaseExpiresAt?: true
+    recoveredFromExecutionId?: true
     ownerRequestId?: true
     latestRequestId?: true
     latestRole?: true
@@ -15917,11 +15967,13 @@ export namespace Prisma {
     eventCount?: true
     startedAt?: true
     lastEventAt?: true
+    lastProgressAt?: true
     completedAt?: true
     computeStartedAt?: true
     computeCompletedAt?: true
     persistenceStartedAt?: true
     persistenceCompletedAt?: true
+    failurePhase?: true
     failureReason?: true
     logicalArtifactIdentityJson?: true
     eventsJson?: true
@@ -16037,6 +16089,12 @@ export namespace Prisma {
     sourceFrequency: string
     targetCadence: string
     frequencyIdentity: string
+    executionMode: string
+    ownerToken: string
+    leaseVersion: number
+    leaseAcquiredAt: Date
+    leaseExpiresAt: Date
+    recoveredFromExecutionId: string | null
     ownerRequestId: string
     latestRequestId: string
     latestRole: string
@@ -16044,11 +16102,13 @@ export namespace Prisma {
     eventCount: number
     startedAt: Date
     lastEventAt: Date
+    lastProgressAt: Date
     completedAt: Date | null
     computeStartedAt: Date | null
     computeCompletedAt: Date | null
     persistenceStartedAt: Date | null
     persistenceCompletedAt: Date | null
+    failurePhase: string | null
     failureReason: string | null
     logicalArtifactIdentityJson: JsonValue
     eventsJson: JsonValue
@@ -16096,6 +16156,12 @@ export namespace Prisma {
     sourceFrequency?: boolean
     targetCadence?: boolean
     frequencyIdentity?: boolean
+    executionMode?: boolean
+    ownerToken?: boolean
+    leaseVersion?: boolean
+    leaseAcquiredAt?: boolean
+    leaseExpiresAt?: boolean
+    recoveredFromExecutionId?: boolean
     ownerRequestId?: boolean
     latestRequestId?: boolean
     latestRole?: boolean
@@ -16103,11 +16169,13 @@ export namespace Prisma {
     eventCount?: boolean
     startedAt?: boolean
     lastEventAt?: boolean
+    lastProgressAt?: boolean
     completedAt?: boolean
     computeStartedAt?: boolean
     computeCompletedAt?: boolean
     persistenceStartedAt?: boolean
     persistenceCompletedAt?: boolean
+    failurePhase?: boolean
     failureReason?: boolean
     logicalArtifactIdentityJson?: boolean
     eventsJson?: boolean
@@ -16136,6 +16204,12 @@ export namespace Prisma {
     sourceFrequency?: boolean
     targetCadence?: boolean
     frequencyIdentity?: boolean
+    executionMode?: boolean
+    ownerToken?: boolean
+    leaseVersion?: boolean
+    leaseAcquiredAt?: boolean
+    leaseExpiresAt?: boolean
+    recoveredFromExecutionId?: boolean
     ownerRequestId?: boolean
     latestRequestId?: boolean
     latestRole?: boolean
@@ -16143,11 +16217,13 @@ export namespace Prisma {
     eventCount?: boolean
     startedAt?: boolean
     lastEventAt?: boolean
+    lastProgressAt?: boolean
     completedAt?: boolean
     computeStartedAt?: boolean
     computeCompletedAt?: boolean
     persistenceStartedAt?: boolean
     persistenceCompletedAt?: boolean
+    failurePhase?: boolean
     failureReason?: boolean
     logicalArtifactIdentityJson?: boolean
     eventsJson?: boolean
@@ -16176,6 +16252,12 @@ export namespace Prisma {
     sourceFrequency?: boolean
     targetCadence?: boolean
     frequencyIdentity?: boolean
+    executionMode?: boolean
+    ownerToken?: boolean
+    leaseVersion?: boolean
+    leaseAcquiredAt?: boolean
+    leaseExpiresAt?: boolean
+    recoveredFromExecutionId?: boolean
     ownerRequestId?: boolean
     latestRequestId?: boolean
     latestRole?: boolean
@@ -16183,11 +16265,13 @@ export namespace Prisma {
     eventCount?: boolean
     startedAt?: boolean
     lastEventAt?: boolean
+    lastProgressAt?: boolean
     completedAt?: boolean
     computeStartedAt?: boolean
     computeCompletedAt?: boolean
     persistenceStartedAt?: boolean
     persistenceCompletedAt?: boolean
+    failurePhase?: boolean
     failureReason?: boolean
     logicalArtifactIdentityJson?: boolean
     eventsJson?: boolean
@@ -16223,6 +16307,12 @@ export namespace Prisma {
       sourceFrequency: string
       targetCadence: string
       frequencyIdentity: string
+      executionMode: string
+      ownerToken: string
+      leaseVersion: number
+      leaseAcquiredAt: Date
+      leaseExpiresAt: Date
+      recoveredFromExecutionId: string | null
       ownerRequestId: string
       latestRequestId: string
       latestRole: string
@@ -16230,11 +16320,13 @@ export namespace Prisma {
       eventCount: number
       startedAt: Date
       lastEventAt: Date
+      lastProgressAt: Date
       completedAt: Date | null
       computeStartedAt: Date | null
       computeCompletedAt: Date | null
       persistenceStartedAt: Date | null
       persistenceCompletedAt: Date | null
+      failurePhase: string | null
       failureReason: string | null
       logicalArtifactIdentityJson: Prisma.JsonValue
       eventsJson: Prisma.JsonValue
@@ -16653,6 +16745,12 @@ export namespace Prisma {
     readonly sourceFrequency: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
     readonly targetCadence: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
     readonly frequencyIdentity: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly executionMode: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly ownerToken: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly leaseVersion: FieldRef<"ForecastPreparationExecutionLedger", 'Int'>
+    readonly leaseAcquiredAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
+    readonly leaseExpiresAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
+    readonly recoveredFromExecutionId: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
     readonly ownerRequestId: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
     readonly latestRequestId: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
     readonly latestRole: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
@@ -16660,11 +16758,13 @@ export namespace Prisma {
     readonly eventCount: FieldRef<"ForecastPreparationExecutionLedger", 'Int'>
     readonly startedAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
     readonly lastEventAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
+    readonly lastProgressAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
     readonly completedAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
     readonly computeStartedAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
     readonly computeCompletedAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
     readonly persistenceStartedAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
     readonly persistenceCompletedAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
+    readonly failurePhase: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
     readonly failureReason: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
     readonly logicalArtifactIdentityJson: FieldRef<"ForecastPreparationExecutionLedger", 'Json'>
     readonly eventsJson: FieldRef<"ForecastPreparationExecutionLedger", 'Json'>
@@ -19315,6 +19415,12 @@ export namespace Prisma {
     sourceFrequency: 'sourceFrequency',
     targetCadence: 'targetCadence',
     frequencyIdentity: 'frequencyIdentity',
+    executionMode: 'executionMode',
+    ownerToken: 'ownerToken',
+    leaseVersion: 'leaseVersion',
+    leaseAcquiredAt: 'leaseAcquiredAt',
+    leaseExpiresAt: 'leaseExpiresAt',
+    recoveredFromExecutionId: 'recoveredFromExecutionId',
     ownerRequestId: 'ownerRequestId',
     latestRequestId: 'latestRequestId',
     latestRole: 'latestRole',
@@ -19322,11 +19428,13 @@ export namespace Prisma {
     eventCount: 'eventCount',
     startedAt: 'startedAt',
     lastEventAt: 'lastEventAt',
+    lastProgressAt: 'lastProgressAt',
     completedAt: 'completedAt',
     computeStartedAt: 'computeStartedAt',
     computeCompletedAt: 'computeCompletedAt',
     persistenceStartedAt: 'persistenceStartedAt',
     persistenceCompletedAt: 'persistenceCompletedAt',
+    failurePhase: 'failurePhase',
     failureReason: 'failureReason',
     logicalArtifactIdentityJson: 'logicalArtifactIdentityJson',
     eventsJson: 'eventsJson',
@@ -21070,6 +21178,12 @@ export namespace Prisma {
     sourceFrequency?: StringFilter<"ForecastPreparationExecutionLedger"> | string
     targetCadence?: StringFilter<"ForecastPreparationExecutionLedger"> | string
     frequencyIdentity?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    executionMode?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    ownerToken?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    leaseVersion?: IntFilter<"ForecastPreparationExecutionLedger"> | number
+    leaseAcquiredAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    leaseExpiresAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    recoveredFromExecutionId?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
     ownerRequestId?: StringFilter<"ForecastPreparationExecutionLedger"> | string
     latestRequestId?: StringFilter<"ForecastPreparationExecutionLedger"> | string
     latestRole?: StringFilter<"ForecastPreparationExecutionLedger"> | string
@@ -21077,11 +21191,13 @@ export namespace Prisma {
     eventCount?: IntFilter<"ForecastPreparationExecutionLedger"> | number
     startedAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
     lastEventAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    lastProgressAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
     completedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
     computeStartedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
     computeCompletedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
     persistenceStartedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
     persistenceCompletedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    failurePhase?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
     failureReason?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
     logicalArtifactIdentityJson?: JsonFilter<"ForecastPreparationExecutionLedger">
     eventsJson?: JsonFilter<"ForecastPreparationExecutionLedger">
@@ -21110,6 +21226,12 @@ export namespace Prisma {
     sourceFrequency?: SortOrder
     targetCadence?: SortOrder
     frequencyIdentity?: SortOrder
+    executionMode?: SortOrder
+    ownerToken?: SortOrder
+    leaseVersion?: SortOrder
+    leaseAcquiredAt?: SortOrder
+    leaseExpiresAt?: SortOrder
+    recoveredFromExecutionId?: SortOrderInput | SortOrder
     ownerRequestId?: SortOrder
     latestRequestId?: SortOrder
     latestRole?: SortOrder
@@ -21117,11 +21239,13 @@ export namespace Prisma {
     eventCount?: SortOrder
     startedAt?: SortOrder
     lastEventAt?: SortOrder
+    lastProgressAt?: SortOrder
     completedAt?: SortOrderInput | SortOrder
     computeStartedAt?: SortOrderInput | SortOrder
     computeCompletedAt?: SortOrderInput | SortOrder
     persistenceStartedAt?: SortOrderInput | SortOrder
     persistenceCompletedAt?: SortOrderInput | SortOrder
+    failurePhase?: SortOrderInput | SortOrder
     failureReason?: SortOrderInput | SortOrder
     logicalArtifactIdentityJson?: SortOrder
     eventsJson?: SortOrder
@@ -21153,6 +21277,12 @@ export namespace Prisma {
     sourceFrequency?: StringFilter<"ForecastPreparationExecutionLedger"> | string
     targetCadence?: StringFilter<"ForecastPreparationExecutionLedger"> | string
     frequencyIdentity?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    executionMode?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    ownerToken?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    leaseVersion?: IntFilter<"ForecastPreparationExecutionLedger"> | number
+    leaseAcquiredAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    leaseExpiresAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    recoveredFromExecutionId?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
     ownerRequestId?: StringFilter<"ForecastPreparationExecutionLedger"> | string
     latestRequestId?: StringFilter<"ForecastPreparationExecutionLedger"> | string
     latestRole?: StringFilter<"ForecastPreparationExecutionLedger"> | string
@@ -21160,11 +21290,13 @@ export namespace Prisma {
     eventCount?: IntFilter<"ForecastPreparationExecutionLedger"> | number
     startedAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
     lastEventAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    lastProgressAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
     completedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
     computeStartedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
     computeCompletedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
     persistenceStartedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
     persistenceCompletedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    failurePhase?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
     failureReason?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
     logicalArtifactIdentityJson?: JsonFilter<"ForecastPreparationExecutionLedger">
     eventsJson?: JsonFilter<"ForecastPreparationExecutionLedger">
@@ -21193,6 +21325,12 @@ export namespace Prisma {
     sourceFrequency?: SortOrder
     targetCadence?: SortOrder
     frequencyIdentity?: SortOrder
+    executionMode?: SortOrder
+    ownerToken?: SortOrder
+    leaseVersion?: SortOrder
+    leaseAcquiredAt?: SortOrder
+    leaseExpiresAt?: SortOrder
+    recoveredFromExecutionId?: SortOrderInput | SortOrder
     ownerRequestId?: SortOrder
     latestRequestId?: SortOrder
     latestRole?: SortOrder
@@ -21200,11 +21338,13 @@ export namespace Prisma {
     eventCount?: SortOrder
     startedAt?: SortOrder
     lastEventAt?: SortOrder
+    lastProgressAt?: SortOrder
     completedAt?: SortOrderInput | SortOrder
     computeStartedAt?: SortOrderInput | SortOrder
     computeCompletedAt?: SortOrderInput | SortOrder
     persistenceStartedAt?: SortOrderInput | SortOrder
     persistenceCompletedAt?: SortOrderInput | SortOrder
+    failurePhase?: SortOrderInput | SortOrder
     failureReason?: SortOrderInput | SortOrder
     logicalArtifactIdentityJson?: SortOrder
     eventsJson?: SortOrder
@@ -21241,6 +21381,12 @@ export namespace Prisma {
     sourceFrequency?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
     targetCadence?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
     frequencyIdentity?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    executionMode?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    ownerToken?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    leaseVersion?: IntWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | number
+    leaseAcquiredAt?: DateTimeWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    leaseExpiresAt?: DateTimeWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    recoveredFromExecutionId?: StringNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string | null
     ownerRequestId?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
     latestRequestId?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
     latestRole?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
@@ -21248,11 +21394,13 @@ export namespace Prisma {
     eventCount?: IntWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | number
     startedAt?: DateTimeWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string
     lastEventAt?: DateTimeWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    lastProgressAt?: DateTimeWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string
     completedAt?: DateTimeNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
     computeStartedAt?: DateTimeNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
     computeCompletedAt?: DateTimeNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
     persistenceStartedAt?: DateTimeNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
     persistenceCompletedAt?: DateTimeNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    failurePhase?: StringNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string | null
     failureReason?: StringNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string | null
     logicalArtifactIdentityJson?: JsonWithAggregatesFilter<"ForecastPreparationExecutionLedger">
     eventsJson?: JsonWithAggregatesFilter<"ForecastPreparationExecutionLedger">
@@ -23296,6 +23444,12 @@ export namespace Prisma {
     sourceFrequency: string
     targetCadence: string
     frequencyIdentity: string
+    executionMode: string
+    ownerToken: string
+    leaseVersion?: number
+    leaseAcquiredAt: Date | string
+    leaseExpiresAt: Date | string
+    recoveredFromExecutionId?: string | null
     ownerRequestId: string
     latestRequestId: string
     latestRole: string
@@ -23303,11 +23457,13 @@ export namespace Prisma {
     eventCount?: number
     startedAt: Date | string
     lastEventAt: Date | string
+    lastProgressAt: Date | string
     completedAt?: Date | string | null
     computeStartedAt?: Date | string | null
     computeCompletedAt?: Date | string | null
     persistenceStartedAt?: Date | string | null
     persistenceCompletedAt?: Date | string | null
+    failurePhase?: string | null
     failureReason?: string | null
     logicalArtifactIdentityJson: JsonNullValueInput | InputJsonValue
     eventsJson: JsonNullValueInput | InputJsonValue
@@ -23336,6 +23492,12 @@ export namespace Prisma {
     sourceFrequency: string
     targetCadence: string
     frequencyIdentity: string
+    executionMode: string
+    ownerToken: string
+    leaseVersion?: number
+    leaseAcquiredAt: Date | string
+    leaseExpiresAt: Date | string
+    recoveredFromExecutionId?: string | null
     ownerRequestId: string
     latestRequestId: string
     latestRole: string
@@ -23343,11 +23505,13 @@ export namespace Prisma {
     eventCount?: number
     startedAt: Date | string
     lastEventAt: Date | string
+    lastProgressAt: Date | string
     completedAt?: Date | string | null
     computeStartedAt?: Date | string | null
     computeCompletedAt?: Date | string | null
     persistenceStartedAt?: Date | string | null
     persistenceCompletedAt?: Date | string | null
+    failurePhase?: string | null
     failureReason?: string | null
     logicalArtifactIdentityJson: JsonNullValueInput | InputJsonValue
     eventsJson: JsonNullValueInput | InputJsonValue
@@ -23376,6 +23540,12 @@ export namespace Prisma {
     sourceFrequency?: StringFieldUpdateOperationsInput | string
     targetCadence?: StringFieldUpdateOperationsInput | string
     frequencyIdentity?: StringFieldUpdateOperationsInput | string
+    executionMode?: StringFieldUpdateOperationsInput | string
+    ownerToken?: StringFieldUpdateOperationsInput | string
+    leaseVersion?: IntFieldUpdateOperationsInput | number
+    leaseAcquiredAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    leaseExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    recoveredFromExecutionId?: NullableStringFieldUpdateOperationsInput | string | null
     ownerRequestId?: StringFieldUpdateOperationsInput | string
     latestRequestId?: StringFieldUpdateOperationsInput | string
     latestRole?: StringFieldUpdateOperationsInput | string
@@ -23383,11 +23553,13 @@ export namespace Prisma {
     eventCount?: IntFieldUpdateOperationsInput | number
     startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lastEventAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastProgressAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     computeStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     computeCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     persistenceStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     persistenceCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    failurePhase?: NullableStringFieldUpdateOperationsInput | string | null
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     logicalArtifactIdentityJson?: JsonNullValueInput | InputJsonValue
     eventsJson?: JsonNullValueInput | InputJsonValue
@@ -23416,6 +23588,12 @@ export namespace Prisma {
     sourceFrequency?: StringFieldUpdateOperationsInput | string
     targetCadence?: StringFieldUpdateOperationsInput | string
     frequencyIdentity?: StringFieldUpdateOperationsInput | string
+    executionMode?: StringFieldUpdateOperationsInput | string
+    ownerToken?: StringFieldUpdateOperationsInput | string
+    leaseVersion?: IntFieldUpdateOperationsInput | number
+    leaseAcquiredAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    leaseExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    recoveredFromExecutionId?: NullableStringFieldUpdateOperationsInput | string | null
     ownerRequestId?: StringFieldUpdateOperationsInput | string
     latestRequestId?: StringFieldUpdateOperationsInput | string
     latestRole?: StringFieldUpdateOperationsInput | string
@@ -23423,11 +23601,13 @@ export namespace Prisma {
     eventCount?: IntFieldUpdateOperationsInput | number
     startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lastEventAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastProgressAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     computeStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     computeCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     persistenceStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     persistenceCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    failurePhase?: NullableStringFieldUpdateOperationsInput | string | null
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     logicalArtifactIdentityJson?: JsonNullValueInput | InputJsonValue
     eventsJson?: JsonNullValueInput | InputJsonValue
@@ -23456,6 +23636,12 @@ export namespace Prisma {
     sourceFrequency: string
     targetCadence: string
     frequencyIdentity: string
+    executionMode: string
+    ownerToken: string
+    leaseVersion?: number
+    leaseAcquiredAt: Date | string
+    leaseExpiresAt: Date | string
+    recoveredFromExecutionId?: string | null
     ownerRequestId: string
     latestRequestId: string
     latestRole: string
@@ -23463,11 +23649,13 @@ export namespace Prisma {
     eventCount?: number
     startedAt: Date | string
     lastEventAt: Date | string
+    lastProgressAt: Date | string
     completedAt?: Date | string | null
     computeStartedAt?: Date | string | null
     computeCompletedAt?: Date | string | null
     persistenceStartedAt?: Date | string | null
     persistenceCompletedAt?: Date | string | null
+    failurePhase?: string | null
     failureReason?: string | null
     logicalArtifactIdentityJson: JsonNullValueInput | InputJsonValue
     eventsJson: JsonNullValueInput | InputJsonValue
@@ -23496,6 +23684,12 @@ export namespace Prisma {
     sourceFrequency?: StringFieldUpdateOperationsInput | string
     targetCadence?: StringFieldUpdateOperationsInput | string
     frequencyIdentity?: StringFieldUpdateOperationsInput | string
+    executionMode?: StringFieldUpdateOperationsInput | string
+    ownerToken?: StringFieldUpdateOperationsInput | string
+    leaseVersion?: IntFieldUpdateOperationsInput | number
+    leaseAcquiredAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    leaseExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    recoveredFromExecutionId?: NullableStringFieldUpdateOperationsInput | string | null
     ownerRequestId?: StringFieldUpdateOperationsInput | string
     latestRequestId?: StringFieldUpdateOperationsInput | string
     latestRole?: StringFieldUpdateOperationsInput | string
@@ -23503,11 +23697,13 @@ export namespace Prisma {
     eventCount?: IntFieldUpdateOperationsInput | number
     startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lastEventAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastProgressAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     computeStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     computeCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     persistenceStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     persistenceCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    failurePhase?: NullableStringFieldUpdateOperationsInput | string | null
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     logicalArtifactIdentityJson?: JsonNullValueInput | InputJsonValue
     eventsJson?: JsonNullValueInput | InputJsonValue
@@ -23536,6 +23732,12 @@ export namespace Prisma {
     sourceFrequency?: StringFieldUpdateOperationsInput | string
     targetCadence?: StringFieldUpdateOperationsInput | string
     frequencyIdentity?: StringFieldUpdateOperationsInput | string
+    executionMode?: StringFieldUpdateOperationsInput | string
+    ownerToken?: StringFieldUpdateOperationsInput | string
+    leaseVersion?: IntFieldUpdateOperationsInput | number
+    leaseAcquiredAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    leaseExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    recoveredFromExecutionId?: NullableStringFieldUpdateOperationsInput | string | null
     ownerRequestId?: StringFieldUpdateOperationsInput | string
     latestRequestId?: StringFieldUpdateOperationsInput | string
     latestRole?: StringFieldUpdateOperationsInput | string
@@ -23543,11 +23745,13 @@ export namespace Prisma {
     eventCount?: IntFieldUpdateOperationsInput | number
     startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lastEventAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastProgressAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     computeStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     computeCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     persistenceStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     persistenceCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    failurePhase?: NullableStringFieldUpdateOperationsInput | string | null
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     logicalArtifactIdentityJson?: JsonNullValueInput | InputJsonValue
     eventsJson?: JsonNullValueInput | InputJsonValue
@@ -25320,6 +25524,12 @@ export namespace Prisma {
     sourceFrequency?: SortOrder
     targetCadence?: SortOrder
     frequencyIdentity?: SortOrder
+    executionMode?: SortOrder
+    ownerToken?: SortOrder
+    leaseVersion?: SortOrder
+    leaseAcquiredAt?: SortOrder
+    leaseExpiresAt?: SortOrder
+    recoveredFromExecutionId?: SortOrder
     ownerRequestId?: SortOrder
     latestRequestId?: SortOrder
     latestRole?: SortOrder
@@ -25327,11 +25537,13 @@ export namespace Prisma {
     eventCount?: SortOrder
     startedAt?: SortOrder
     lastEventAt?: SortOrder
+    lastProgressAt?: SortOrder
     completedAt?: SortOrder
     computeStartedAt?: SortOrder
     computeCompletedAt?: SortOrder
     persistenceStartedAt?: SortOrder
     persistenceCompletedAt?: SortOrder
+    failurePhase?: SortOrder
     failureReason?: SortOrder
     logicalArtifactIdentityJson?: SortOrder
     eventsJson?: SortOrder
@@ -25340,6 +25552,7 @@ export namespace Prisma {
   }
 
   export type ForecastPreparationExecutionLedgerAvgOrderByAggregateInput = {
+    leaseVersion?: SortOrder
     waiterCount?: SortOrder
     eventCount?: SortOrder
   }
@@ -25365,6 +25578,12 @@ export namespace Prisma {
     sourceFrequency?: SortOrder
     targetCadence?: SortOrder
     frequencyIdentity?: SortOrder
+    executionMode?: SortOrder
+    ownerToken?: SortOrder
+    leaseVersion?: SortOrder
+    leaseAcquiredAt?: SortOrder
+    leaseExpiresAt?: SortOrder
+    recoveredFromExecutionId?: SortOrder
     ownerRequestId?: SortOrder
     latestRequestId?: SortOrder
     latestRole?: SortOrder
@@ -25372,11 +25591,13 @@ export namespace Prisma {
     eventCount?: SortOrder
     startedAt?: SortOrder
     lastEventAt?: SortOrder
+    lastProgressAt?: SortOrder
     completedAt?: SortOrder
     computeStartedAt?: SortOrder
     computeCompletedAt?: SortOrder
     persistenceStartedAt?: SortOrder
     persistenceCompletedAt?: SortOrder
+    failurePhase?: SortOrder
     failureReason?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -25403,6 +25624,12 @@ export namespace Prisma {
     sourceFrequency?: SortOrder
     targetCadence?: SortOrder
     frequencyIdentity?: SortOrder
+    executionMode?: SortOrder
+    ownerToken?: SortOrder
+    leaseVersion?: SortOrder
+    leaseAcquiredAt?: SortOrder
+    leaseExpiresAt?: SortOrder
+    recoveredFromExecutionId?: SortOrder
     ownerRequestId?: SortOrder
     latestRequestId?: SortOrder
     latestRole?: SortOrder
@@ -25410,17 +25637,20 @@ export namespace Prisma {
     eventCount?: SortOrder
     startedAt?: SortOrder
     lastEventAt?: SortOrder
+    lastProgressAt?: SortOrder
     completedAt?: SortOrder
     computeStartedAt?: SortOrder
     computeCompletedAt?: SortOrder
     persistenceStartedAt?: SortOrder
     persistenceCompletedAt?: SortOrder
+    failurePhase?: SortOrder
     failureReason?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
 
   export type ForecastPreparationExecutionLedgerSumOrderByAggregateInput = {
+    leaseVersion?: SortOrder
     waiterCount?: SortOrder
     eventCount?: SortOrder
   }

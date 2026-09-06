@@ -15,7 +15,7 @@ const identity: VerificationLogicalArtifactIdentity = {
   targetSemantics: 'MONTHLY_AVERAGE',
   methodId: 'MONTHLY_AVERAGE',
   methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
-  trainingWindowPolicyId: 'FULL_EXPANDING_WINDOW@full-expanding-window-v1',
+  trainingWindowPolicyId: 'FULL_EXPANDING_HISTORY_PER_ORIGIN@full-expanding-history-per-origin-v1',
   modelId: 'naive',
   inputSource: 'DYNAMIC_MARKET_DATA_STORE',
   historyFingerprint: 'history-a',
@@ -82,7 +82,9 @@ test('ten exact-key Verification callers share one owner and release the entry',
     logicalArtifactKey: key,
     requestId: `request-${index + 1}`,
     operation,
-    emit: (event) => events.push(event),
+    emit: (event) => {
+      events.push(event)
+    },
   }))
 
   await new Promise((resolve) => setImmediate(resolve))
@@ -185,14 +187,18 @@ test('late arrivals join before settlement and become new owners after release',
     logicalArtifactKey: key,
     requestId: 'owner',
     operation,
-    emit: (event) => events.push(event),
+    emit: (event) => {
+      events.push(event)
+    },
   })
   await new Promise((resolve) => setImmediate(resolve))
   const lateWaiter = registry.run({
     logicalArtifactKey: key,
     requestId: 'late-waiter',
     operation,
-    emit: (event) => events.push(event),
+    emit: (event) => {
+      events.push(event)
+    },
   })
 
   assert.equal(events.filter((event) => event === 'single_flight_waiter_joined').length, 1)

@@ -7,14 +7,15 @@ import {
   buildForecastArtifactCadenceIdentity,
   buildForecastArtifactIdentityKey,
   buildForecastIdentityKey,
+  canResidualCalibrateCurrent,
   createCurrentForecastStatisticalCompatibility,
   createFullVerificationStatisticalCompatibility,
+  createLegacyVerificationStatisticalCompatibility,
   createRecentVerificationStatisticalCompatibility,
   createForecastIdentity,
   doesForecastArtifactSatisfyRequest,
   FORECAST_ARTIFACT_CADENCE_IDENTITY_VERSION,
   FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID,
-  isForecastStatisticalCompatibilityCalibrationEligible,
   isRecentVerificationReusableForFullVerification,
   LEGACY_UNRESOLVED_FORECAST_METHOD_ID,
   parseForecastArtifactCadenceIdentity,
@@ -138,9 +139,9 @@ test('statistical compatibility keeps Current, Recent Verification, and Full Ver
   const full = createFullVerificationStatisticalCompatibility()
 
   assert.equal(new Set([
-    `${current.artifactScope}|${current.trainingWindowPolicyId}|${current.calibrationEligible}`,
-    `${recent.artifactScope}|${recent.trainingWindowPolicyId}|${recent.calibrationEligible}`,
-    `${full.artifactScope}|${full.trainingWindowPolicyId}|${full.calibrationEligible}`,
+    `${current.artifactScope}|${current.trainingWindowPolicyId}|${current.calibrationPolicy}`,
+    `${recent.artifactScope}|${recent.trainingWindowPolicyId}|${recent.calibrationPolicy}`,
+    `${full.artifactScope}|${full.trainingWindowPolicyId}|${full.calibrationPolicy}`,
   ]).size, 3)
   assert.equal(areForecastStatisticalCompatibilitiesEqual(current, current), true)
   assert.equal(areForecastStatisticalCompatibilitiesEqual(current, full), false)
@@ -148,15 +149,14 @@ test('statistical compatibility keeps Current, Recent Verification, and Full Ver
   assert.equal(doesForecastArtifactSatisfyRequest(full, recent), false)
 })
 
-test('statistical compatibility encodes Full-only calibration and fail-closed Recent to Full reuse', () => {
-  const recent = createRecentVerificationStatisticalCompatibility()
+test('legacy verification mapping stays deterministic while calibration remains conditional', () => {
+  const legacyVerification = createLegacyVerificationStatisticalCompatibility()
   const full = createFullVerificationStatisticalCompatibility()
 
-  assert.equal(isForecastStatisticalCompatibilityCalibrationEligible(recent), false)
-  assert.equal(isForecastStatisticalCompatibilityCalibrationEligible(full), true)
-  assert.equal(isRecentVerificationReusableForFullVerification(recent), false)
-  assert.equal(isRecentVerificationReusableForFullVerification(full), true)
-  assert.equal(full.trainingWindowPolicyId, FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID)
+  assert.equal(legacyVerification.artifactScope, 'FULL_VERIFICATION')
+  assert.equal(legacyVerification.trainingWindowPolicyId, FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID)
+  assert.equal(legacyVerification.calibrationPolicy, 'CONDITIONAL_POLICY_MATCH_ONLY')
+  assert.equal(areForecastStatisticalCompatibilitiesEqual(legacyVerification, full), false)
 })
 
 test('legacy statistical compatibility mapping is deterministic by artifact family', () => {
@@ -166,6 +166,81 @@ test('legacy statistical compatibility mapping is deterministic by artifact fami
   )
   assert.deepEqual(
     resolveLegacyForecastStatisticalCompatibility('VERIFICATION'),
-    createFullVerificationStatisticalCompatibility(),
+    createLegacyVerificationStatisticalCompatibility(),
   )
+})
+
+test('calibration compatibility is exact-contract based rather than scope-based', () => {
+  const currentTarget = {
+    artifactScope: 'CURRENT_FORECAST',
+    seriesId: 'wocaes0280',
+    inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'ets',
+    methodId: 'MONTHLY_AVERAGE',
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    trainingWindowPolicyId: 'CURRENT_POLICY_FREQUENCY_SPECIFIC@current-policy-frequency-specific-v1',
+    historyFingerprint: 'history-a',
+    horizonLabel: '1M',
+    forecastOrigin: '2026-04-01T00:00:00.000Z',
+    actualObservedAt: null,
+    calibrationPolicy: 'EXACT_STATISTICAL_MATCH_ONLY',
+  } as const
+
+  const exactRecentResidual = {
+    ...currentTarget,
+    artifactScope: 'RECENT_VERIFICATION',
+  } as const
+  const exactFullResidual = {
+    ...currentTarget,
+    artifactScope: 'FULL_VERIFICATION',
+  } as const
+  const conditionalLegacyResidual = {
+    ...currentTarget,
+    artifactScope: 'FULL_VERIFICATION',
+    calibrationPolicy: 'CONDITIONAL_POLICY_MATCH_ONLY',
+  } as const
+
+  assert.equal(canResidualCalibrateCurrent(exactRecentResidual, currentTarget), true)
+  assert.equal(canResidualCalibrateCurrent(exactFullResidual, currentTarget), true)
+  assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, trainingWindowPolicyId: FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID }, currentTarget), false)
+  assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, targetSemantics: 'END_OF_PERIOD' }, currentTarget), false)
+  assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, modelId: 'arima' }, currentTarget), false)
+  assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, methodVersion: 'benchmark-forecasting-mvp-phase2-v2' }, currentTarget), false)
+  assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, sourceFrequency: 'QUARTERLY' }, currentTarget), false)
+  assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, targetCadence: 'QUARTERLY' }, currentTarget), false)
+  assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, horizonLabel: '3M' }, currentTarget), false)
+  assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, historyFingerprint: 'history-b' }, currentTarget), false)
+  assert.equal(canResidualCalibrateCurrent(conditionalLegacyResidual, currentTarget), false)
+})
+
+test('Recent to Full reuse is conditional by exact identity rather than scope alone', () => {
+  const recent = {
+    artifactScope: 'RECENT_VERIFICATION',
+    seriesId: 'wocaes0280',
+    inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'ets',
+    methodId: 'MONTHLY_AVERAGE',
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    trainingWindowPolicyId: 'RECENT_SAME_POLICY_AS_CURRENT@recent-same-policy-as-current-v1',
+    historyFingerprint: 'history-a',
+    horizonLabel: '1M',
+    forecastOrigin: '2025-12-01T00:00:00.000Z',
+  } as const
+  const full = {
+    ...recent,
+    artifactScope: 'FULL_VERIFICATION',
+    trainingWindowPolicyId: 'RECENT_SAME_POLICY_AS_CURRENT@recent-same-policy-as-current-v1',
+  } as const
+
+  assert.equal(isRecentVerificationReusableForFullVerification(recent, full), true)
+  assert.equal(isRecentVerificationReusableForFullVerification({ ...recent, trainingWindowPolicyId: FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID }, full), false)
+  assert.equal(isRecentVerificationReusableForFullVerification({ ...recent, modelId: 'arima' }, full), false)
+  assert.equal(isRecentVerificationReusableForFullVerification({ ...recent, horizonLabel: '3M' }, full), false)
+  assert.equal(isRecentVerificationReusableForFullVerification({ ...recent, historyFingerprint: 'history-b' }, full), false)
 })

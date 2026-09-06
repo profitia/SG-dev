@@ -354,8 +354,9 @@ test('rolling daily maintenance bootstraps missing historical artifacts when exp
 
   assert.equal(result.status, 'SUCCEEDED')
   assert.ok(runnerRequest)
-  assert.equal(runnerRequest?.lastProcessedOriginDate, null)
-  assert.deepEqual(runnerRequest?.existingRecords, [])
+  const issuedRunnerRequest = runnerRequest as RollingDailyMaintenanceBridgeRequest
+  assert.equal(issuedRunnerRequest.lastProcessedOriginDate, null)
+  assert.deepEqual(issuedRunnerRequest.existingRecords, [])
 })
 
 test('rolling daily incremental maintenance does not bootstrap full replay for an unseeded identity', async () => {

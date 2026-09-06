@@ -3,16 +3,20 @@ import test from 'node:test'
 
 import { runForecastStressOperationWave } from '@/scripts/run-forecast-phase-2-1b-operation'
 import { CurrentForecastSingleFlight } from '@/lib/forecast/current-single-flight'
+import { createCurrentForecastStatisticalCompatibility } from '@/lib/forecast/identity'
 import { getActiveCurrentForecastSingleFlightEntryCount } from '@/lib/forecast/service'
 import type { ForecastStressContext } from '@/lib/forecast/stress-telemetry'
 
 function preparedDailyCurrentOwnership(seriesId: string, modelId: string) {
+  const statisticalCompatibility = createCurrentForecastStatisticalCompatibility()
   const identity = {
+    artifactScope: statisticalCompatibility.artifactScope,
     seriesId,
     targetBasis: 'POINT_IN_TIME' as const,
     targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME' as const,
     methodId: 'ROLLING_DAILY_POINT_IN_TIME',
     methodVersion: 'v1',
+    trainingWindowPolicyId: statisticalCompatibility.trainingWindowPolicyId,
     modelId,
     inputSource: 'DYNAMIC_MARKET_DATA_STORE',
     historyFingerprint: `fingerprint-${seriesId}`,
