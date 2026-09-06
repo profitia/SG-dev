@@ -114,6 +114,7 @@ test('generic operations prepare all selected monthly current variants before op
 
 test('generic operations delegate Rolling Daily to its existing owner and keep historical opt-in', async () => {
   let rollingCalls = 0
+  let capturedPrepareHistorical: boolean | undefined
   const service = createForecastProductionOperationsService({
     async resolveCapabilities(seriesId) {
       return capabilityResolution(seriesId)
@@ -126,6 +127,7 @@ test('generic operations delegate Rolling Daily to its existing owner and keep h
     },
     async runRollingDaily(request) {
       rollingCalls += 1
+      capturedPrepareHistorical = request.prepareHistorical
       return {
         status: 'NO_OP',
         seriesId: request.seriesId,
@@ -152,9 +154,56 @@ test('generic operations delegate Rolling Daily to its existing owner and keep h
   })
 
   assert.equal(rollingCalls, 1)
+  assert.equal(capturedPrepareHistorical, false)
   assert.equal(result.status, 'SUCCEEDED')
   assert.equal(result.results[0]?.current, 'REUSED')
   assert.equal(result.results[0]?.historical, 'NOT_REQUESTED')
+})
+
+test('generic operations request explicit rolling-daily historical bootstrap when historical preparation is enabled', async () => {
+  let capturedPrepareHistorical: boolean | undefined
+
+  const service = createForecastProductionOperationsService({
+    async resolveCapabilities(seriesId) {
+      return capabilityResolution(seriesId)
+    },
+    async prepareMonthlyCurrent() {
+      throw new Error('Monthly preparation should not run.')
+    },
+    async prepareMonthlyHistorical() {
+      throw new Error('Monthly historical preparation should not run.')
+    },
+    async runRollingDaily(request) {
+      capturedPrepareHistorical = request.prepareHistorical
+      return {
+        status: 'SUCCEEDED',
+        seriesId: request.seriesId,
+        results: [{
+          status: 'SUCCEEDED',
+          modelId: 'arima',
+          maintenance: { status: 'SUCCEEDED', sourceHistoryFingerprint: 'fingerprint' } as never,
+          snapshot: { status: 'REFRESHED_AFTER_MAINTENANCE', reason: 'MAINTENANCE_DELTA_APPLIED', parityStatus: 'MATCHED' },
+          error: null,
+        }],
+        refreshedSnapshotCount: 1,
+        recoveredSnapshotCount: 0,
+        noOpModelCount: 0,
+        failedModelCount: 0,
+      }
+    },
+  })
+
+  const result = await service.run({
+    seriesId: 'generic.operations.series',
+    targetSemantics: ['ROLLING_DAILY_POINT_IN_TIME'],
+    modelIds: ['arima'],
+    prepareHistorical: true,
+  })
+
+  assert.equal(capturedPrepareHistorical, true)
+  assert.equal(result.status, 'SUCCEEDED')
+  assert.equal(result.results[0]?.current, 'READY')
+  assert.equal(result.results[0]?.historical, 'READY')
 })
 
 test('generic operations fail closed when current compute is not persisted', async () => {

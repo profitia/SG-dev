@@ -136,6 +136,7 @@ export type RollingDailyMaintenanceRequest = {
   historicalOriginStartDate?: string
   minimumTrainingObservations?: number
   minimumCalibrationSamples?: number
+  bootstrapHistoricalIfMissing?: boolean
   fullRebuild?: boolean
 }
 
@@ -918,8 +919,9 @@ export function createRollingDailyMaintenanceService(
         : null
       const forceCalibrationRefresh = latestPersistedMaturedObservedAt !== null
         && latestPersistedMaturedObservedAt !== stateLastMaturedObservedAt
+      const bootstrapHistoricalIfMissing = input.bootstrapHistoricalIfMissing === true && existingRecords.length === 0
 
-      if (!input.fullRebuild && state === null && existingRecords.length === 0) {
+      if (!input.fullRebuild && !bootstrapHistoricalIfMissing && state === null && existingRecords.length === 0) {
         const runtimeMs = Math.round(performance.now() - startedAt)
 
         resolvedDependencies.logEvent('ROLLING_DAILY_INCREMENTAL_MAINTENANCE', {
@@ -1054,8 +1056,8 @@ export function createRollingDailyMaintenanceService(
         minimumTrainingObservations,
         minimumCalibrationSamples,
         history,
-        existingRecords: input.fullRebuild ? [] : existingRecords,
-        lastProcessedOriginDate: input.fullRebuild ? null : state?.lastProcessedOriginAt?.slice(0, 10) ?? null,
+        existingRecords: input.fullRebuild || bootstrapHistoricalIfMissing ? [] : existingRecords,
+        lastProcessedOriginDate: input.fullRebuild || bootstrapHistoricalIfMissing ? null : state?.lastProcessedOriginAt?.slice(0, 10) ?? null,
         sourceHistoryFingerprint,
         forceCalibrationRefresh,
       })

@@ -182,6 +182,7 @@ export function createForecastProductionOperationsService(
         const rolling = await resolvedDependencies.runRollingDaily({
           seriesId: request.seriesId,
           modelIds: requestedModels,
+          prepareHistorical,
         })
         for (const modelId of requestedModels) {
           const item = rolling.results.find((candidate) => candidate.modelId === modelId)

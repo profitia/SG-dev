@@ -287,6 +287,76 @@ test('rolling daily maintenance returns NO_OP when the runner reports no delta',
   assert.equal(result.maturedRecordCount, 0)
 })
 
+test('rolling daily maintenance bootstraps missing historical artifacts when explicitly requested', async () => {
+  let runnerRequest: RollingDailyMaintenanceBridgeRequest | null = null
+
+  const repository: RollingDailyMaintenanceRepository = {
+    async readState() {
+      return null
+    },
+    async listVerificationRecords() {
+      return []
+    },
+    async applyMaintenanceUpdate() {
+      return
+    },
+    async recordMaintenanceFailure() {
+      throw new Error('recordMaintenanceFailure should not be called for explicit bootstrap success')
+    },
+  }
+
+  const runner: RollingDailyMaintenanceRunner = {
+    async run(request) {
+      runnerRequest = request
+      return {
+        status: 'AVAILABLE',
+        methodId: ROLLING_DAILY_METHOD_ID,
+        methodVersion: ROLLING_DAILY_METHOD_VERSION,
+        sourceHistory: {
+          startDate: '2024-01-01',
+          endDate: '2024-01-05',
+          latestObservationDate: '2024-01-05',
+          observationCount: 5,
+          filteredNullCount: 0,
+          filteredDuplicateCount: 0,
+          historyFingerprint: 'hist-1',
+        },
+        maintenance: {
+          newOriginCount: 1,
+          maturedRecordCount: 0,
+          affectedCalibrationGroupCount: 0,
+          calibrationRefreshCount: 0,
+          lastProcessedOriginDate: '2024-01-05',
+          lastMaturedObservedAt: null,
+          newOriginDates: ['2024-01-05'],
+        },
+        newRecords: [createVerificationRecord()],
+        maturedRecords: [],
+        calibrationGroups: [],
+      }
+    },
+  }
+
+  const service = createRollingDailyMaintenanceService({
+    repository,
+    runner,
+    loadHistory: async () => createHistory(),
+    logEvent: () => {},
+  })
+
+  const result = await service.runIncrementalMaintenance({
+    seriesId: 'wocaes0074',
+    modelId: 'naive',
+    minimumTrainingObservations: 5,
+    bootstrapHistoricalIfMissing: true,
+  })
+
+  assert.equal(result.status, 'SUCCEEDED')
+  assert.ok(runnerRequest)
+  assert.equal(runnerRequest?.lastProcessedOriginDate, null)
+  assert.deepEqual(runnerRequest?.existingRecords, [])
+})
+
 test('rolling daily incremental maintenance does not bootstrap full replay for an unseeded identity', async () => {
   let runnerCalled = false
   let applyCalled = false

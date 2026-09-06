@@ -26,6 +26,7 @@ export type RollingDailyProductionOperationsRequest = {
   seriesId: string
   modelIds?: readonly RollingDailyProductionOperationsModelId[]
   preparedHistory?: RollingDailyHistoryPayload
+  prepareHistorical?: boolean
 }
 
 export type RollingDailyProductionOperationsSnapshotResult =
@@ -166,6 +167,7 @@ export function createRollingDailyProductionOperationsService(
             seriesId: request.seriesId,
             modelId,
             preparedHistory: request.preparedHistory,
+            bootstrapHistoricalIfMissing: request.prepareHistorical,
           })
 
           if (maintenance.status === 'REBUILD_REQUIRED') {
