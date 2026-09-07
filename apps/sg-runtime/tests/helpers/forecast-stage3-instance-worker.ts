@@ -2,10 +2,10 @@ process.env.MARKET_DATA_DATABASE_URL = process.env.MARKET_DATA_DATABASE_URL ?? '
 
 import { appendFile } from 'node:fs/promises'
 
-import { createNoopForecastPreparationExecutionLedger } from '../../lib/forecast/execution-ledger'
 import { createForecastLibraryService } from '../../lib/forecast/service'
 
 type Stage3Mode = 'current' | 'verification'
+type Stage3ResultMode = 'AVAILABLE' | 'FAILED'
 
 function createHistoryResponse(seriesId: string) {
   return {
@@ -31,8 +31,8 @@ function createHistoryResponse(seriesId: string) {
       end: '2026-04-01T00:00:00',
       observations: 64,
       points: [
-        { date: '2021-01-01T00:00:00', value: 1000 },
-        { date: '2026-04-01T00:00:00', value: 1125 },
+        { date: '2021-01-01T00:00:00', value: 1000, sourceObservedAt: '2021-01-31T00:00:00' },
+        { date: '2026-04-01T00:00:00', value: 1125, sourceObservedAt: '2026-04-30T00:00:00' },
       ],
     },
   }
@@ -182,6 +182,7 @@ function createVerificationResponse(seriesId: string, modelId: string) {
 
 async function main() {
   const mode = (process.env.STAGE3_MODE ?? 'current') as Stage3Mode
+  const resultMode = (process.env.STAGE3_RESULT_MODE ?? 'AVAILABLE') as Stage3ResultMode
   const seriesId = process.env.STAGE3_SERIES_ID ?? 'wocaes0280'
   const modelId = process.env.STAGE3_MODEL_ID ?? 'ets'
   const targetBasis = (process.env.STAGE3_TARGET_BASIS ?? 'MONTHLY_AVERAGE') as 'MONTHLY_AVERAGE' | 'END_OF_PERIOD'
@@ -198,6 +199,19 @@ async function main() {
           await appendFile(computeLogPath, `${mode}:${seriesId}:${modelId}:${process.pid}\n`)
         }
         await new Promise((resolve) => setTimeout(resolve, computeDelayMs))
+        if (resultMode === 'FAILED') {
+          return {
+            status: 'FAILED' as const,
+            reason: `stage3-worker-${mode.toLowerCase()}-failed`,
+            seriesId,
+            model: modelId,
+            methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+            source: {
+              kind: 'POSTGRES_RUNTIME_SNAPSHOT',
+              runId: 'cmrd3xvlu0000cedt8gczw378',
+            },
+          }
+        }
         return createCurrentResponse(seriesId, modelId)
       },
       async exportVerification() {
@@ -205,6 +219,19 @@ async function main() {
           await appendFile(computeLogPath, `${mode}:${seriesId}:${modelId}:${process.pid}\n`)
         }
         await new Promise((resolve) => setTimeout(resolve, computeDelayMs))
+        if (resultMode === 'FAILED') {
+          return {
+            status: 'FAILED' as const,
+            reason: `stage3-worker-${mode.toLowerCase()}-failed`,
+            seriesId,
+            model: modelId,
+            methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+            source: {
+              kind: 'POSTGRES_RUNTIME_SNAPSHOT',
+              runId: 'cmrd3xvlu0000cedt8gczw378',
+            },
+          }
+        }
         return createVerificationResponse(seriesId, modelId)
       },
     },
@@ -212,7 +239,6 @@ async function main() {
     telemetry: {
       emit() {},
     },
-    executionLedger: createNoopForecastPreparationExecutionLedger(),
   })
 
   const result = mode === 'verification'

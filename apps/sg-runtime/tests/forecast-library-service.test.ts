@@ -1,9 +1,22 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { createForecastPreparationExecutionContextRegistry, createNoopForecastPreparationExecutionLedger } from '../lib/forecast/execution-ledger'
+import {
+  createForecastPreparationExecutionContextRegistry,
+  createInMemoryForecastPreparationExecutionAdmission,
+  createNoopForecastPreparationExecutionLedger,
+} from '../lib/forecast/execution-ledger'
 import { createCurrentForecastStatisticalCompatibility, createFullVerificationStatisticalCompatibility } from '../lib/forecast/identity'
 import { createForecastLibraryService, type ForecastBridge, type ForecastLibraryRepository, buildForecastHistoryFingerprint } from '../lib/forecast/service'
+
+function createTestForecastLibraryService(
+  dependencies: Parameters<typeof createForecastLibraryService>[0] = {},
+) {
+  return createForecastLibraryService({
+    ...dependencies,
+    executionAdmission: dependencies.executionAdmission ?? createInMemoryForecastPreparationExecutionAdmission(),
+  })
+}
 
 function createHistoryResponse() {
   return {
@@ -439,7 +452,7 @@ test('forecast library current path returns cached artifact without invoking com
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveCurrentForecast('wocaes0280', 'ets')
 
   assert.equal(result.status, 'AVAILABLE')
@@ -486,7 +499,7 @@ test('prepared-only Forecast Library reads never invoke history, model, verifica
   }
   delete (verificationArtifact as { currentForecast?: unknown }).currentForecast
 
-  const service = createForecastLibraryService({
+  const service = createTestForecastLibraryService({
     bridge: {
       async exportHistory() { bridgeCalls += 1; return history },
       async exportCurrent() { bridgeCalls += 1; return createCurrentResponse('arima') },
@@ -550,7 +563,7 @@ test('prepared-only lookup selects the exact source-frequency and target-cadence
     currentForecast: {},
   }
 
-  const service = createForecastLibraryService({
+  const service = createTestForecastLibraryService({
     bridge: {
       async exportHistory() { sideEffects += 1; return createHistoryResponse() },
       async exportCurrent() { sideEffects += 1; return createCurrentResponse() },
@@ -594,7 +607,7 @@ test('prepared-only lookup selects the exact source-frequency and target-cadence
 
 test('prepared-only lookup rejects partial cadence identity without compute or fallback', async () => {
   let sideEffects = 0
-  const service = createForecastLibraryService({
+  const service = createTestForecastLibraryService({
     bridge: {
       async exportHistory() { sideEffects += 1; return createHistoryResponse() },
       async exportCurrent() { sideEffects += 1; return createCurrentResponse() },
@@ -625,7 +638,7 @@ test('prepared-only lookup rejects partial cadence identity without compute or f
 
 test('prepared-only Forecast Library miss is explicit and performs no compute or write', async () => {
   let sideEffects = 0
-  const service = createForecastLibraryService({
+  const service = createTestForecastLibraryService({
     bridge: {
       async exportHistory() { sideEffects += 1; return createHistoryResponse() },
       async exportCurrent() { sideEffects += 1; return createCurrentResponse() },
@@ -686,7 +699,7 @@ test('forecast library current path computes and persists on cache miss', async 
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveCurrentForecast('wocaes0280', 'ets')
 
   assert.equal(result.status, 'AVAILABLE')
@@ -721,7 +734,7 @@ test('forecast library current miss records a durable execution ledger without c
     recoveredFromExecutionId: string | null | undefined
   }> = []
 
-  const service = createForecastLibraryService({
+  const service = createTestForecastLibraryService({
     bridge: {
       async exportHistory() {
         return history
@@ -796,7 +809,7 @@ test('forecast library current miss records a durable execution ledger without c
   assert.ok(events.every((event) => typeof event.ownerToken === 'string' && event.ownerToken.length > 0))
   assert.ok(events.every((event) => event.leaseVersion === 1))
   assert.ok(events.every((event) => event.leaseAcquiredAt === events[0]?.leaseAcquiredAt))
-  assert.ok(events.every((event) => event.leaseExpiresAt === events[0]?.leaseExpiresAt))
+  assert.ok(events.every((event) => typeof event.leaseExpiresAt === 'string' && event.leaseExpiresAt.length > 0))
   assert.ok(events.every((event) => event.recoveredFromExecutionId === null))
 })
 
@@ -807,7 +820,7 @@ test('forecast library current path does not await passive execution-ledger writ
     releaseLedger = resolve
   })
 
-  const service = createForecastLibraryService({
+  const service = createTestForecastLibraryService({
     bridge: {
       async exportHistory() {
         return history
@@ -870,7 +883,7 @@ test('forecast library Current exact-key misses use one owner, nine waiters, and
   const computeGate = new Promise<void>((resolve) => {
     releaseCompute = resolve
   })
-  const service = createForecastLibraryService({
+  const service = createTestForecastLibraryService({
     bridge: {
       async exportHistory() { return createHistoryResponse() },
       async exportCurrent() {
@@ -918,7 +931,7 @@ test('forecast library Current owner remains in flight through persistence settl
   const persistenceGate = new Promise<void>((resolve) => {
     releasePersistence = resolve
   })
-  const service = createForecastLibraryService({
+  const service = createTestForecastLibraryService({
     bridge: {
       async exportHistory() { return createHistoryResponse() },
       async exportCurrent() {
@@ -974,7 +987,7 @@ test('forecast library Current owner and waiters share one context and release i
     releaseCompute = resolve
   })
 
-  const service = createForecastLibraryService({
+  const service = createTestForecastLibraryService({
     bridge: {
       async exportHistory() { return createHistoryResponse() },
       async exportCurrent() {
@@ -1002,7 +1015,7 @@ test('forecast library Current owner and waiters share one context and release i
 
   const requests = Array.from({ length: 10 }, () => service.resolveCurrentForecast('wocaes0280', 'ets'))
   await new Promise((resolve) => setImmediate(resolve))
-  assert.equal(registry.getActiveContextCount(), 1)
+  assert.equal(registry.getActiveContextCount(), 0)
 
   releaseCompute?.()
   await Promise.all(requests)
@@ -1064,7 +1077,7 @@ test('forecast library current path marks cached payload unaligned when forecast
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveCurrentForecast('wocaes0280', 'ets')
 
   assert.equal(result.status, 'AVAILABLE')
@@ -1107,7 +1120,7 @@ test('forecast library verification path normalizes metrics and persists heavier
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveVerification('wocaes0280', 'ets')
 
   assert.equal(result.status, 'AVAILABLE')
@@ -1131,7 +1144,7 @@ test('forecast library Verification exact-key misses use one owner, one waiter, 
   const computeGate = new Promise<void>((resolve) => {
     releaseCompute = resolve
   })
-  const service = createForecastLibraryService({
+  const service = createTestForecastLibraryService({
     bridge: {
       async exportHistory() { return createHistoryResponse() },
       async exportCurrent() { throw new Error('Current must remain outside Verification single-flight.') },
@@ -1182,7 +1195,7 @@ test('forecast library Verification owner remains in flight through persistence 
   const persistenceGate = new Promise<void>((resolve) => {
     releasePersistence = resolve
   })
-  const service = createForecastLibraryService({
+  const service = createTestForecastLibraryService({
     bridge: {
       async exportHistory() { return createHistoryResponse() },
       async exportCurrent() { throw new Error('unused') },
@@ -1239,7 +1252,7 @@ test('forecast library Verification owner failure releases, writes nothing, and 
   const failureGate = new Promise<void>((resolve) => {
     releaseFailure = resolve
   })
-  const service = createForecastLibraryService({
+  const service = createTestForecastLibraryService({
     bridge: {
       async exportHistory() { return createHistoryResponse() },
       async exportCurrent() { throw new Error('unused') },
@@ -1346,7 +1359,7 @@ test('forecast library current path does not reuse cache across target bases', a
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveCurrentForecast('wocaes0280', 'ets')
 
   assert.equal(result.status, 'AVAILABLE')
@@ -1431,7 +1444,7 @@ test('forecast library verification path does not reuse cache across target base
     async writeVerificationRun() {},
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveVerification('wocaes0280', 'ets')
 
   assert.equal(result.status, 'AVAILABLE')
@@ -1470,7 +1483,7 @@ test('forecast library current path fails closed when datastore is unavailable',
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   await assert.rejects(
     () => service.resolveCurrentForecast('wocaes0280', 'ets'),
     (error: unknown) => error instanceof Error
@@ -1523,7 +1536,7 @@ test('forecast library short-circuits unsupported benchmarks before compute', as
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveCurrentForecast('unsupported-series', 'ets')
 
   assert.equal(result.status, 'UNSUPPORTED')
@@ -1568,7 +1581,7 @@ test('forecast library current path computes END_OF_PERIOD for live-input series
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveCurrentForecastRequest({
     seriesId: 'wocaes0074',
     modelId: 'ets',
@@ -1638,7 +1651,7 @@ test('forecast library current path reuses prepared selected live history and ex
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveCurrentForecastRequest({
     seriesId: 'wocaes0074',
     modelId: 'naive',
@@ -1710,7 +1723,7 @@ test('forecast library verification path reuses prepared selected live history a
     async writeVerificationRun() {},
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveVerificationRequest({
     seriesId: 'wocaes0074',
     modelId: 'damped_holt',
@@ -1761,7 +1774,7 @@ test('forecast library verification path backfills END_OF_PERIOD actualObservedA
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveVerificationRequest({
     seriesId: 'wocaes0074',
     modelId: 'ets',
@@ -1825,7 +1838,7 @@ test('forecast library verification path backfills END_OF_PERIOD actualObservedA
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveVerificationRequest({
     seriesId: 'wocaes0074',
     modelId: 'ets',
@@ -1895,7 +1908,7 @@ test('forecast library verification path uses exportHistory provenance when veri
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveVerificationRequest({
     seriesId: 'wocaes0074',
     modelId: 'ets',
@@ -1989,7 +2002,7 @@ test('forecast library verification path rebuilds stale END_OF_PERIOD cache entr
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveVerificationRequest({
     seriesId: 'wocaes0074',
     modelId: 'ets',
@@ -2005,7 +2018,7 @@ test('forecast library verification path rebuilds stale END_OF_PERIOD cache entr
 
 test('forecast library emits prepared, compute, model-fit, verification, and persistence counters', async () => {
   const events: Array<{ event: string; metrics: Record<string, string | number | boolean | null> }> = []
-  const service = createForecastLibraryService({
+  const service = createTestForecastLibraryService({
     bridge: {
       async exportHistory() { return createHistoryResponse() },
       async exportCurrent() { return createCurrentResponse() },
@@ -2039,7 +2052,7 @@ test('forecast library emits prepared, compute, model-fit, verification, and per
 
 test('stress telemetry leaves Forecast values and identity unchanged', async () => {
   function createService(emit: (event: string, metrics?: Record<string, string | number | boolean | null>) => void) {
-    return createForecastLibraryService({
+    return createTestForecastLibraryService({
       bridge: {
         async exportHistory() { return createHistoryResponse() },
         async exportCurrent() { return createCurrentResponse() },

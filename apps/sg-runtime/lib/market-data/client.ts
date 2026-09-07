@@ -10,9 +10,8 @@ function normalizeUrl(value?: string) {
   return trimmed && trimmed.length > 0 ? trimmed : undefined
 }
 
-const marketDataDatabaseUrl = normalizeUrl(process.env.MARKET_DATA_DATABASE_URL)
-
 export function getMarketDataPrisma() {
+  const marketDataDatabaseUrl = normalizeUrl(process.env.MARKET_DATA_DATABASE_URL)
   if (!marketDataDatabaseUrl) {
     return null
   }

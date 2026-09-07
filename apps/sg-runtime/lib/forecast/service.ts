@@ -25,7 +25,6 @@ import {
   createForecastPreparationExecutionContextRegistry,
   createDefaultForecastPreparationExecutionAdmission,
   createDefaultForecastPreparationExecutionLedger,
-  createInMemoryForecastPreparationExecutionAdmission,
   ForecastExecutionControlError,
   type ForecastPreparationExecutionAdmission,
   type ForecastPreparationExecutionContextRegistry,
@@ -94,6 +93,9 @@ const DEFAULT_FORECASTING_LAB_ROOT = path.resolve(process.cwd(), '..', '..', 'to
 const DEFAULT_FORECASTING_PYTHON = path.join(DEFAULT_FORECASTING_LAB_ROOT, '.venv', 'bin', 'python')
 const FORECASTING_BRIDGE_SCRIPT = ['scripts', 'export_forecast_bundle.py']
 const BRIDGE_BUFFER_BYTES = 25 * 1024 * 1024
+const DEFAULT_FORECAST_STAGE3_WAITER_MULTIPLIER = 10
+const MIN_FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS = 1_000
+const MAX_FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS = 15_000
 const currentForecastSingleFlight = new CurrentForecastSingleFlight<unknown>()
 const verificationForecastSingleFlight = new VerificationForecastSingleFlight<BenchmarkForecastVerificationResult>()
 
@@ -115,6 +117,67 @@ export type ForecastServiceRequest = {
   targetBasis: ForecastTargetBasis
   sourceFrequency?: ForecastSourceFrequency
   targetCadence?: ForecastTargetCadence
+  signal?: AbortSignal
+}
+
+type Stage3AuthoritativeExecutionLedgerContext = {
+  executionId: string
+  ownerToken: string
+  leaseVersion: number
+  attemptKind?: 'PRIMARY' | 'RECOVERY'
+  executionMode?: 'PRE_STAGE3_PREPARATION' | 'RECOVERY_RESUME'
+  leaseAcquiredAt?: string
+  leaseExpiresAt: string
+  recoveredFromExecutionId: string | null
+}
+
+function createAbortError() {
+  const error = new Error('The operation was aborted.')
+  error.name = 'AbortError'
+  return error
+}
+
+function asAbortError(signal?: AbortSignal) {
+  if (signal?.reason instanceof Error) {
+    return signal.reason
+  }
+
+  return createAbortError()
+}
+
+function throwIfAborted(signal?: AbortSignal) {
+  if (signal?.aborted) {
+    throw asAbortError(signal)
+  }
+}
+
+function resolveStage3HeartbeatIntervalMs(leaseDurationMs: number) {
+  const rawValue = process.env.FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS?.trim()
+  if (rawValue) {
+    const parsed = Number.parseInt(rawValue, 10)
+    if (!Number.isFinite(parsed) || parsed < MIN_FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS) {
+      throw new Error('FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS must be an integer >= 1000 milliseconds.')
+    }
+    return parsed
+  }
+
+  return Math.max(
+    MIN_FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS,
+    Math.min(Math.floor(leaseDurationMs / 3), MAX_FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS),
+  )
+}
+
+function resolveStage3WaiterMaxWaitMs(leaseDurationMs: number) {
+  const rawValue = process.env.FORECAST_STAGE3_WAITER_MAX_WAIT_MS?.trim()
+  if (rawValue) {
+    const parsed = Number.parseInt(rawValue, 10)
+    if (!Number.isFinite(parsed) || parsed < 1_000) {
+      throw new Error('FORECAST_STAGE3_WAITER_MAX_WAIT_MS must be an integer >= 1000 milliseconds.')
+    }
+    return parsed
+  }
+
+  return leaseDurationMs * DEFAULT_FORECAST_STAGE3_WAITER_MULTIPLIER
 }
 
 type ForecastHistoryPoint = {
@@ -345,6 +408,16 @@ export type ForecastPersistenceOwnership = {
 
 export type ForecastRepositoryWriteOptions = {
   ownership?: ForecastPersistenceOwnership
+}
+
+type ForecastPersistenceTestHooks = {
+  afterOwnerFenceAcquired?: (ownership: ForecastPersistenceOwnership) => void | Promise<void>
+}
+
+let forecastPersistenceTestHooks: ForecastPersistenceTestHooks | null = null
+
+export function setForecastPersistenceTestHooks(hooks: ForecastPersistenceTestHooks | null) {
+  forecastPersistenceTestHooks = hooks
 }
 
 export type ForecastBridge = {
@@ -1229,31 +1302,31 @@ export async function writeCurrentRunWithPrisma(
     throw new Error('Forecast library datastore is unavailable.')
   }
 
+  const observedAt = new Date().toISOString()
+
   await prisma.$transaction(async (tx) => {
     const ownership = options?.ownership
     if (ownership) {
-      const fencedOwner = await tx.forecastPreparationExecutionLedger.findFirst({
-        where: {
-          executionId: ownership.executionId,
-          logicalArtifactKey: ownership.logicalArtifactKey,
-          executionStatus: 'STARTED',
-          ownerToken: ownership.ownerToken,
-          leaseVersion: ownership.leaseVersion,
-          leaseExpiresAt: {
-            gt: new Date(),
-          },
-        },
-        select: {
-          executionId: true,
-        },
-      })
+      const fencedOwner = await tx.$queryRaw<Array<{ executionId: string }>>(Prisma.sql`
+        SELECT "executionId"
+        FROM "forecast_preparation_execution_ledger"
+        WHERE "executionId" = ${ownership.executionId}
+          AND "logicalArtifactKey" = ${ownership.logicalArtifactKey}
+          AND "executionStatus" = 'STARTED'
+          AND "ownerToken" = ${ownership.ownerToken}
+          AND "leaseVersion" = ${ownership.leaseVersion}
+          AND "leaseExpiresAt" > CAST(${observedAt} AS timestamp)
+        FOR UPDATE
+      `)
 
-      if (!fencedOwner) {
+      if (fencedOwner.length !== 1) {
         throw new ForecastExecutionControlError(
           'STALE_OWNER',
           `Execution ${ownership.executionId} lost fenced persistence rights for ${ownership.logicalArtifactKey}.`,
         )
       }
+
+      await forecastPersistenceTestHooks?.afterOwnerFenceAcquired?.(ownership)
     }
 
     const run = await tx.forecastCurrentRun.upsert({
@@ -1484,31 +1557,31 @@ export async function writeVerificationRunWithPrisma(
     throw new Error('Forecast library datastore is unavailable.')
   }
 
+  const observedAt = new Date().toISOString()
+
   await prisma.$transaction(async (tx) => {
     const ownership = options?.ownership
     if (ownership) {
-      const fencedOwner = await tx.forecastPreparationExecutionLedger.findFirst({
-        where: {
-          executionId: ownership.executionId,
-          logicalArtifactKey: ownership.logicalArtifactKey,
-          executionStatus: 'STARTED',
-          ownerToken: ownership.ownerToken,
-          leaseVersion: ownership.leaseVersion,
-          leaseExpiresAt: {
-            gt: new Date(),
-          },
-        },
-        select: {
-          executionId: true,
-        },
-      })
+      const fencedOwner = await tx.$queryRaw<Array<{ executionId: string }>>(Prisma.sql`
+        SELECT "executionId"
+        FROM "forecast_preparation_execution_ledger"
+        WHERE "executionId" = ${ownership.executionId}
+          AND "logicalArtifactKey" = ${ownership.logicalArtifactKey}
+          AND "executionStatus" = 'STARTED'
+          AND "ownerToken" = ${ownership.ownerToken}
+          AND "leaseVersion" = ${ownership.leaseVersion}
+          AND "leaseExpiresAt" > CAST(${observedAt} AS timestamp)
+        FOR UPDATE
+      `)
 
-      if (!fencedOwner) {
+      if (fencedOwner.length !== 1) {
         throw new ForecastExecutionControlError(
           'STALE_OWNER',
           `Execution ${ownership.executionId} lost fenced persistence rights for ${ownership.logicalArtifactKey}.`,
         )
       }
+
+      await forecastPersistenceTestHooks?.afterOwnerFenceAcquired?.(ownership)
     }
 
     const run = await tx.forecastVerificationRun.upsert({
@@ -1709,17 +1782,33 @@ export function createForecastLibraryService(
     telemetry: dependencies.telemetry ?? forecastStressTelemetry,
     executionLedger: dependencies.executionLedger ?? createDefaultForecastPreparationExecutionLedger(),
     executionContextRegistry: dependencies.executionContextRegistry ?? createForecastPreparationExecutionContextRegistry(),
-    executionAdmission: dependencies.executionAdmission
-      ?? (dependencies.repository
-        ? createInMemoryForecastPreparationExecutionAdmission()
-        : createDefaultForecastPreparationExecutionAdmission()),
+    executionAdmission: dependencies.executionAdmission ?? createDefaultForecastPreparationExecutionAdmission(),
   }
-  const executionContextRegistry = resolvedDependencies.executionContextRegistry
   const isExecutionContextReleaseEvent = (eventType: string) =>
     eventType === 'single_flight_entry_released'
   const durableWaitBackoffMs = [25, 50, 100, 200, 400] as const
-  const waitForBackoff = (attempt: number) =>
-    new Promise<void>((resolve) => setTimeout(resolve, durableWaitBackoffMs[Math.min(attempt, durableWaitBackoffMs.length - 1)]))
+  const stage3HeartbeatIntervalMs = resolveStage3HeartbeatIntervalMs(resolvedDependencies.executionAdmission.leaseDurationMs)
+  const stage3WaiterMaxWaitMs = resolveStage3WaiterMaxWaitMs(resolvedDependencies.executionAdmission.leaseDurationMs)
+  const waitForBackoff = (attempt: number, signal?: AbortSignal) =>
+    new Promise<void>((resolve, reject) => {
+      throwIfAborted(signal)
+      let timeout: ReturnType<typeof setTimeout> | null = null
+
+      const onAbort = () => {
+        if (timeout) {
+          clearTimeout(timeout)
+        }
+        signal?.removeEventListener('abort', onAbort)
+        reject(asAbortError(signal))
+      }
+
+      timeout = setTimeout(() => {
+        signal?.removeEventListener('abort', onAbort)
+        resolve()
+      }, durableWaitBackoffMs[Math.min(attempt, durableWaitBackoffMs.length - 1)])
+
+      signal?.addEventListener('abort', onAbort, { once: true })
+    })
   const buildPersistenceOwnership = (
     operationFamily: 'CURRENT' | 'VERIFICATION',
     logicalArtifactKey: string,
@@ -1734,6 +1823,148 @@ export function createForecastLibraryService(
     ownerRequestId: ownership.ownerRequestId,
     role: ownership.role,
   })
+
+  const toAuthoritativeExecutionLedgerContext = (
+    ownership: ForecastPreparationOwnedExecutionContext,
+  ): Stage3AuthoritativeExecutionLedgerContext => ({
+    executionId: ownership.executionId,
+    ownerToken: ownership.ownerToken,
+    leaseVersion: ownership.leaseVersion,
+    attemptKind: ownership.attemptKind,
+    executionMode: ownership.executionMode,
+    leaseAcquiredAt: ownership.leaseAcquiredAt,
+    leaseExpiresAt: ownership.leaseExpiresAt,
+    recoveredFromExecutionId: ownership.recoveredFromExecutionId,
+  })
+
+  const toWaiterExecutionLedgerContext = (
+    admission: Extract<Awaited<ReturnType<ForecastPreparationExecutionAdmission['acquireExecution']>>, { role: 'WAITER' }>,
+  ): Stage3AuthoritativeExecutionLedgerContext => ({
+    executionId: admission.executionId,
+    ownerToken: admission.ownerToken,
+    leaseVersion: admission.leaseVersion,
+    leaseExpiresAt: admission.leaseExpiresAt,
+    recoveredFromExecutionId: admission.recoveredFromExecutionId,
+  })
+
+  const recordAuthoritativeExecutionEvent = (
+    executionContext: Stage3AuthoritativeExecutionLedgerContext | null,
+    inputEvent: Omit<Parameters<ForecastPreparationExecutionLedger['recordEvent']>[0], 'executionId'>,
+    context: { seriesId: string; modelId: string },
+  ) => {
+    if (!executionContext || isExecutionContextReleaseEvent(inputEvent.eventType)) {
+      return
+    }
+
+    void resolvedDependencies.executionLedger.recordEvent({
+      ...inputEvent,
+      executionId: executionContext.executionId,
+      attemptKind: executionContext.attemptKind,
+      executionMode: executionContext.executionMode,
+      ownerToken: executionContext.ownerToken,
+      leaseVersion: executionContext.leaseVersion,
+      leaseAcquiredAt: executionContext.leaseAcquiredAt,
+      leaseExpiresAt: executionContext.leaseExpiresAt,
+      recoveredFromExecutionId: executionContext.recoveredFromExecutionId,
+    }).catch((error) => {
+      resolvedDependencies.logEvent('FORECAST_PREPARATION_EXECUTION_LEDGER', {
+        seriesId: context.seriesId,
+        modelId: context.modelId,
+        operationFamily: inputEvent.operationFamily,
+        ledgerFailure: true,
+        ledgerError: error instanceof Error ? error.message : 'unknown',
+      })
+    })
+  }
+
+  const startLeaseHeartbeat = (
+    logicalArtifactKey: string,
+    ownership: ForecastPreparationOwnedExecutionContext,
+    requestId: string,
+  ) => {
+    let currentOwnership = ownership
+    let stopped = false
+    let timer: ReturnType<typeof setTimeout> | null = null
+    let activeRenewal: Promise<void> | null = null
+    let ownershipLossError: Error | null = null
+
+    const normalizeOwnershipLoss = (error: unknown) => {
+      if (error instanceof Error) {
+        return error
+      }
+
+      return new ForecastExecutionControlError(
+        'CONTROL_DB_UNAVAILABLE',
+        `Execution ${currentOwnership.executionId} lost PostgreSQL authority for ${logicalArtifactKey}.`,
+      )
+    }
+
+    const schedule = () => {
+      if (stopped) {
+        return
+      }
+
+      timer = setTimeout(() => {
+        activeRenewal = (async () => {
+          try {
+            currentOwnership = await resolvedDependencies.executionAdmission.renewLease({
+              executionId: currentOwnership.executionId,
+              logicalArtifactKey,
+              ownerToken: currentOwnership.ownerToken,
+              leaseVersion: currentOwnership.leaseVersion,
+              requestId,
+            })
+          } catch (error) {
+            ownershipLossError = normalizeOwnershipLoss(error)
+            stopped = true
+            return
+          }
+
+          schedule()
+        })().finally(() => {
+          activeRenewal = null
+        })
+      }, stage3HeartbeatIntervalMs)
+    }
+
+    schedule()
+
+    return {
+      assertActive() {
+        if (ownershipLossError) {
+          throw ownershipLossError
+        }
+      },
+      getOwnership() {
+        if (ownershipLossError) {
+          throw ownershipLossError
+        }
+        return currentOwnership
+      },
+      async renewNow() {
+        if (ownershipLossError) {
+          throw ownershipLossError
+        }
+
+        currentOwnership = await resolvedDependencies.executionAdmission.renewLease({
+          executionId: currentOwnership.executionId,
+          logicalArtifactKey,
+          ownerToken: currentOwnership.ownerToken,
+          leaseVersion: currentOwnership.leaseVersion,
+          requestId,
+        })
+        return currentOwnership
+      },
+      async stop() {
+        stopped = true
+        if (timer) {
+          clearTimeout(timer)
+          timer = null
+        }
+        await activeRenewal
+      },
+    }
+  }
 
   return {
     async readPreparedCurrentForecastRequest(input: ForecastServiceRequest): Promise<BenchmarkForecastCurrentResult> {
@@ -1946,42 +2177,12 @@ export function createForecastLibraryService(
       const logicalArtifactKey = buildCurrentLogicalArtifactKey(logicalArtifactIdentity)
       const requestId = resolvedDependencies.telemetry.currentContext?.()?.requestId ?? randomUUID()
       const recordCurrentExecutionEvent = (
+        executionContext: Stage3AuthoritativeExecutionLedgerContext | null,
         inputEvent: Omit<Parameters<ForecastPreparationExecutionLedger['recordEvent']>[0], 'executionId'>,
-      ) => {
-        const executionContext = executionContextRegistry.getOrCreateContext({
-          operationFamily: 'CURRENT',
-          logicalArtifactKey,
-          ownerRequestId: inputEvent.ownerRequestId,
-          attemptKind: inputEvent.role === 'OWNER' && inputEvent.eventType === 'single_flight_owner_failed'
-            ? 'PRIMARY'
-            : undefined,
-          observedAt: inputEvent.observedAt,
-        })
-
-        if (isExecutionContextReleaseEvent(inputEvent.eventType)) {
-          executionContextRegistry.releaseContext(executionContext.executionId)
-        }
-
-        void resolvedDependencies.executionLedger.recordEvent({
-          ...inputEvent,
-          executionId: executionContext.executionId,
-          attemptKind: executionContext.attemptKind,
-          executionMode: executionContext.executionMode,
-          ownerToken: executionContext.ownerToken,
-          leaseVersion: executionContext.leaseVersion,
-          leaseAcquiredAt: executionContext.leaseAcquiredAt,
-          leaseExpiresAt: executionContext.leaseExpiresAt,
-          recoveredFromExecutionId: executionContext.recoveredFromExecutionId,
-        }).catch((error) => {
-          resolvedDependencies.logEvent('FORECAST_PREPARATION_EXECUTION_LEDGER', {
-            seriesId: input.seriesId,
-            modelId: input.modelId,
-            operationFamily: 'CURRENT',
-            ledgerFailure: true,
-            ledgerError: error instanceof Error ? error.message : 'unknown',
-          })
-        })
-      }
+      ) => recordAuthoritativeExecutionEvent(executionContext, inputEvent, {
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+      })
 
       return runCurrentForecastSingleFlight<BenchmarkForecastCurrentResult>({
         logicalArtifactKey,
@@ -2002,7 +2203,7 @@ export function createForecastLibraryService(
             sourceFrequency,
             targetCadence,
           })
-          recordCurrentExecutionEvent({
+          recordCurrentExecutionEvent(null, {
             logicalArtifactKey,
             operationFamily: 'CURRENT',
             logicalArtifactIdentity,
@@ -2023,7 +2224,10 @@ export function createForecastLibraryService(
             )
           }
 
+          const waitDeadline = Date.now() + stage3WaiterMaxWaitMs
+
           while (true) {
+            throwIfAborted(input.signal)
             const admission = await resolvedDependencies.executionAdmission.acquireExecution({
               operationFamily: 'CURRENT',
               logicalArtifactKey,
@@ -2033,10 +2237,19 @@ export function createForecastLibraryService(
             })
 
             if (admission.role === 'WAITER') {
-              const waitDeadline = Date.now() + resolvedDependencies.executionAdmission.leaseDurationMs * 10
+              recordCurrentExecutionEvent(toWaiterExecutionLedgerContext(admission), {
+                logicalArtifactKey,
+                operationFamily: 'CURRENT',
+                logicalArtifactIdentity,
+                requestId,
+                ownerRequestId: admission.ownerRequestId,
+                role: 'WAITER',
+                eventType: 'single_flight_waiter_joined',
+              })
               let attempt = 0
 
               while (Date.now() <= waitDeadline) {
+                throwIfAborted(input.signal)
                 const persisted = await resolvedDependencies.repository.readCurrentRun(cacheKey)
                 if (persisted) {
                   resolvedDependencies.logEvent('FORECAST_LIBRARY_CURRENT', {
@@ -2050,8 +2263,22 @@ export function createForecastLibraryService(
                 }
 
                 const latestExecution = await resolvedDependencies.executionAdmission.readLatestExecutionForLogicalArtifact(logicalArtifactKey)
-                if (!latestExecution || latestExecution.executionStatus === 'FAILED') {
+                if (!latestExecution) {
                   break
+                }
+                if (latestExecution.executionStatus === 'FAILED') {
+                  return {
+                    status: 'FAILED',
+                    seriesId: input.seriesId,
+                    modelId: input.modelId,
+                    targetBasis: input.targetBasis,
+                    targetSemantics: methodIdentity.targetSemantics,
+                    methodId: methodIdentity.methodId,
+                    reason: latestExecution.failureReason ?? 'Authoritative forecast execution failed before producing an artifact.',
+                    methodVersion: historyResponse.methodVersion,
+                    source: historyResponse.source,
+                    historyFingerprint,
+                  }
                 }
                 if (latestExecution.executionStatus === 'COMPLETED') {
                   throw new Error(`Current execution completed without a canonical artifact for ${logicalArtifactKey}.`)
@@ -2060,24 +2287,65 @@ export function createForecastLibraryService(
                   break
                 }
 
-                await waitForBackoff(attempt)
+                await waitForBackoff(attempt, input.signal)
                 attempt += 1
+              }
+
+              if (Date.now() > waitDeadline) {
+                throw new Error(`Timed out waiting for the authoritative Current execution for ${logicalArtifactKey}.`)
               }
 
               continue
             }
 
             let ownership = admission.ownership
+            let executionLedgerContext = toAuthoritativeExecutionLedgerContext(ownership)
+            const heartbeat = startLeaseHeartbeat(logicalArtifactKey, ownership, requestId)
             let failurePhase: 'COMPUTE' | 'PERSISTENCE' | 'FINALIZATION' = 'COMPUTE'
 
             try {
+              const persistedAfterAdmission = await resolvedDependencies.repository.readCurrentRun(cacheKey)
+              if (persistedAfterAdmission) {
+                await resolvedDependencies.executionAdmission.markExecutionCompleted({
+                  executionId: ownership.executionId,
+                  logicalArtifactKey,
+                  ownerToken: ownership.ownerToken,
+                  leaseVersion: ownership.leaseVersion,
+                  requestId,
+                  ownerRequestId: ownership.ownerRequestId,
+                  resultStatus: 'AVAILABLE',
+                  cacheStatus: 'hit',
+                })
+                recordCurrentExecutionEvent(executionLedgerContext, {
+                  logicalArtifactKey,
+                  operationFamily: 'CURRENT',
+                  logicalArtifactIdentity,
+                  requestId,
+                  ownerRequestId: ownership.ownerRequestId,
+                  role: 'OWNER',
+                  eventType: 'execution_completed',
+                  resultStatus: 'AVAILABLE',
+                  cacheStatus: 'hit',
+                })
+                return toCurrentAvailable(persistedAfterAdmission, 'hit')
+              }
+
+              recordCurrentExecutionEvent(executionLedgerContext, {
+                logicalArtifactKey,
+                operationFamily: 'CURRENT',
+                logicalArtifactIdentity,
+                requestId,
+                ownerRequestId: ownership.ownerRequestId,
+                role: 'OWNER',
+                eventType: 'single_flight_owner_acquired',
+              })
               const computeStartedAt = performance.now()
               resolvedDependencies.telemetry.emit('current_compute_start', {
                 modelId: input.modelId,
                 count: 1,
                 logicalArtifactKey,
               })
-              recordCurrentExecutionEvent({
+              recordCurrentExecutionEvent(executionLedgerContext, {
                 logicalArtifactKey,
                 operationFamily: 'CURRENT',
                 logicalArtifactIdentity,
@@ -2103,7 +2371,7 @@ export function createForecastLibraryService(
                 count: currentResponse.status === 'AVAILABLE' ? 1 : 0,
                 durationMs: computeDurationMs,
               })
-              recordCurrentExecutionEvent({
+              recordCurrentExecutionEvent(executionLedgerContext, {
                 logicalArtifactKey,
                 operationFamily: 'CURRENT',
                 logicalArtifactIdentity,
@@ -2117,6 +2385,7 @@ export function createForecastLibraryService(
                   modelFitCount: currentResponse.status === 'AVAILABLE' ? 1 : 0,
                 },
               })
+              heartbeat.assertActive()
 
               if (currentResponse.status === 'NOT_AVAILABLE') {
                 const identity = resolveCapabilityIdentity(input.targetBasis)
@@ -2130,7 +2399,7 @@ export function createForecastLibraryService(
                   resultStatus: currentResponse.status,
                   cacheStatus: 'miss',
                 })
-                recordCurrentExecutionEvent({
+                recordCurrentExecutionEvent(executionLedgerContext, {
                   logicalArtifactKey,
                   operationFamily: 'CURRENT',
                   logicalArtifactIdentity,
@@ -2163,7 +2432,7 @@ export function createForecastLibraryService(
                   resultStatus: currentResponse.status,
                   cacheStatus: 'miss',
                 })
-                recordCurrentExecutionEvent({
+                recordCurrentExecutionEvent(executionLedgerContext, {
                   logicalArtifactKey,
                   operationFamily: 'CURRENT',
                   logicalArtifactIdentity,
@@ -2179,17 +2448,19 @@ export function createForecastLibraryService(
 
               if (currentResponse.status === 'FAILED') {
                 const identity = resolveCapabilityIdentity(input.targetBasis, currentResponse.methodVersion)
-                await resolvedDependencies.executionAdmission.markExecutionCompleted({
+                await resolvedDependencies.executionAdmission.markExecutionFailed({
                   executionId: ownership.executionId,
                   logicalArtifactKey,
                   ownerToken: ownership.ownerToken,
                   leaseVersion: ownership.leaseVersion,
                   requestId,
                   ownerRequestId: ownership.ownerRequestId,
+                  failurePhase: 'COMPUTE',
+                  failureReason: currentResponse.reason,
                   resultStatus: currentResponse.status,
                   cacheStatus: 'miss',
                 })
-                recordCurrentExecutionEvent({
+                recordCurrentExecutionEvent(executionLedgerContext, {
                   logicalArtifactKey,
                   operationFamily: 'CURRENT',
                   logicalArtifactIdentity,
@@ -2220,7 +2491,7 @@ export function createForecastLibraryService(
               failurePhase = 'PERSISTENCE'
 
               const persistStartedAt = performance.now()
-              recordCurrentExecutionEvent({
+              recordCurrentExecutionEvent(executionLedgerContext, {
                 logicalArtifactKey,
                 operationFamily: 'CURRENT',
                 logicalArtifactIdentity,
@@ -2229,13 +2500,8 @@ export function createForecastLibraryService(
                 role: 'OWNER',
                 eventType: 'persistence_started',
               })
-              ownership = await resolvedDependencies.executionAdmission.renewLease({
-                executionId: ownership.executionId,
-                logicalArtifactKey,
-                ownerToken: ownership.ownerToken,
-                leaseVersion: ownership.leaseVersion,
-                requestId,
-              })
+              ownership = await heartbeat.renewNow()
+              executionLedgerContext = toAuthoritativeExecutionLedgerContext(ownership)
               await resolvedDependencies.repository.writeCurrentRun(artifact, {
                 ownership: buildPersistenceOwnership('CURRENT', logicalArtifactKey, ownership),
               })
@@ -2248,7 +2514,7 @@ export function createForecastLibraryService(
                 writeFailures: 0,
                 durationMs: persistenceDurationMs,
               })
-              recordCurrentExecutionEvent({
+              recordCurrentExecutionEvent(executionLedgerContext, {
                 logicalArtifactKey,
                 operationFamily: 'CURRENT',
                 logicalArtifactIdentity,
@@ -2264,6 +2530,7 @@ export function createForecastLibraryService(
               })
 
               failurePhase = 'FINALIZATION'
+              heartbeat.assertActive()
               await resolvedDependencies.executionAdmission.markExecutionCompleted({
                 executionId: ownership.executionId,
                 logicalArtifactKey,
@@ -2274,7 +2541,7 @@ export function createForecastLibraryService(
                 resultStatus: 'AVAILABLE',
                 cacheStatus,
               })
-              recordCurrentExecutionEvent({
+              recordCurrentExecutionEvent(executionLedgerContext, {
                 logicalArtifactKey,
                 operationFamily: 'CURRENT',
                 logicalArtifactIdentity,
@@ -2303,7 +2570,7 @@ export function createForecastLibraryService(
                   verificationRecordWrites: 0,
                   writeFailures: 1,
                 })
-                recordCurrentExecutionEvent({
+                recordCurrentExecutionEvent(executionLedgerContext, {
                   logicalArtifactKey,
                   operationFamily: 'CURRENT',
                   logicalArtifactIdentity,
@@ -2320,6 +2587,7 @@ export function createForecastLibraryService(
               }
 
               try {
+                heartbeat.assertActive()
                 await resolvedDependencies.executionAdmission.markExecutionFailed({
                   executionId: ownership.executionId,
                   logicalArtifactKey,
@@ -2336,7 +2604,7 @@ export function createForecastLibraryService(
                 // Preserve the original execution failure as the surfaced error.
               }
 
-              recordCurrentExecutionEvent({
+              recordCurrentExecutionEvent(executionLedgerContext, {
                 logicalArtifactKey,
                 operationFamily: 'CURRENT',
                 logicalArtifactIdentity,
@@ -2349,6 +2617,8 @@ export function createForecastLibraryService(
                 error: error instanceof Error ? error.message : 'unknown',
               })
               throw error
+            } finally {
+              await heartbeat.stop()
             }
           }
         }
@@ -2510,42 +2780,12 @@ export function createForecastLibraryService(
       const logicalArtifactKey = buildVerificationLogicalArtifactKey(logicalArtifactIdentity)
       const requestId = resolvedDependencies.telemetry.currentContext?.()?.requestId ?? randomUUID()
       const recordVerificationExecutionEvent = (
+        executionContext: Stage3AuthoritativeExecutionLedgerContext | null,
         inputEvent: Omit<Parameters<ForecastPreparationExecutionLedger['recordEvent']>[0], 'executionId'>,
-      ) => {
-        const executionContext = executionContextRegistry.getOrCreateContext({
-          operationFamily: 'VERIFICATION',
-          logicalArtifactKey,
-          ownerRequestId: inputEvent.ownerRequestId,
-          attemptKind: inputEvent.role === 'OWNER' && inputEvent.eventType === 'single_flight_owner_failed'
-            ? 'PRIMARY'
-            : undefined,
-          observedAt: inputEvent.observedAt,
-        })
-
-        if (isExecutionContextReleaseEvent(inputEvent.eventType)) {
-          executionContextRegistry.releaseContext(executionContext.executionId)
-        }
-
-        void resolvedDependencies.executionLedger.recordEvent({
-          ...inputEvent,
-          executionId: executionContext.executionId,
-          attemptKind: executionContext.attemptKind,
-          executionMode: executionContext.executionMode,
-          ownerToken: executionContext.ownerToken,
-          leaseVersion: executionContext.leaseVersion,
-          leaseAcquiredAt: executionContext.leaseAcquiredAt,
-          leaseExpiresAt: executionContext.leaseExpiresAt,
-          recoveredFromExecutionId: executionContext.recoveredFromExecutionId,
-        }).catch((error) => {
-          resolvedDependencies.logEvent('FORECAST_PREPARATION_EXECUTION_LEDGER', {
-            seriesId: input.seriesId,
-            modelId: input.modelId,
-            operationFamily: 'VERIFICATION',
-            ledgerFailure: true,
-            ledgerError: error instanceof Error ? error.message : 'unknown',
-          })
-        })
-      }
+      ) => recordAuthoritativeExecutionEvent(executionContext, inputEvent, {
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+      })
 
       return verificationForecastSingleFlight.run({
         logicalArtifactKey,
@@ -2566,7 +2806,7 @@ export function createForecastLibraryService(
             sourceFrequency,
             targetCadence,
           })
-          recordVerificationExecutionEvent({
+          recordVerificationExecutionEvent(null, {
             logicalArtifactKey,
             operationFamily: 'VERIFICATION',
             logicalArtifactIdentity,
@@ -2587,7 +2827,10 @@ export function createForecastLibraryService(
             )
           }
 
+          const waitDeadline = Date.now() + stage3WaiterMaxWaitMs
+
           while (true) {
+            throwIfAborted(input.signal)
             const admission = await resolvedDependencies.executionAdmission.acquireExecution({
               operationFamily: 'VERIFICATION',
               logicalArtifactKey,
@@ -2597,10 +2840,19 @@ export function createForecastLibraryService(
             })
 
             if (admission.role === 'WAITER') {
-              const waitDeadline = Date.now() + resolvedDependencies.executionAdmission.leaseDurationMs * 10
+              recordVerificationExecutionEvent(toWaiterExecutionLedgerContext(admission), {
+                logicalArtifactKey,
+                operationFamily: 'VERIFICATION',
+                logicalArtifactIdentity,
+                requestId,
+                ownerRequestId: admission.ownerRequestId,
+                role: 'WAITER',
+                eventType: 'single_flight_waiter_joined',
+              })
               let attempt = 0
 
               while (Date.now() <= waitDeadline) {
+                throwIfAborted(input.signal)
                 const persisted = await resolvedDependencies.repository.readVerificationRun(cacheKey)
                 if (persisted) {
                   resolvedDependencies.logEvent('FORECAST_LIBRARY_VERIFICATION', {
@@ -2614,8 +2866,22 @@ export function createForecastLibraryService(
                 }
 
                 const latestExecution = await resolvedDependencies.executionAdmission.readLatestExecutionForLogicalArtifact(logicalArtifactKey)
-                if (!latestExecution || latestExecution.executionStatus === 'FAILED') {
+                if (!latestExecution) {
                   break
+                }
+                if (latestExecution.executionStatus === 'FAILED') {
+                  return {
+                    status: 'FAILED',
+                    seriesId: input.seriesId,
+                    modelId: input.modelId,
+                    targetBasis: input.targetBasis,
+                    targetSemantics: methodIdentity.targetSemantics,
+                    methodId: methodIdentity.methodId,
+                    reason: latestExecution.failureReason ?? 'Authoritative verification execution failed before producing an artifact.',
+                    methodVersion: historyResponse.methodVersion,
+                    source: historyResponse.source,
+                    historyFingerprint,
+                  }
                 }
                 if (latestExecution.executionStatus === 'COMPLETED') {
                   throw new Error(`Verification execution completed without a canonical artifact for ${logicalArtifactKey}.`)
@@ -2624,24 +2890,65 @@ export function createForecastLibraryService(
                   break
                 }
 
-                await waitForBackoff(attempt)
+                await waitForBackoff(attempt, input.signal)
                 attempt += 1
+              }
+
+              if (Date.now() > waitDeadline) {
+                throw new Error(`Timed out waiting for the authoritative Verification execution for ${logicalArtifactKey}.`)
               }
 
               continue
             }
 
             let ownership = admission.ownership
+            let executionLedgerContext = toAuthoritativeExecutionLedgerContext(ownership)
+            const heartbeat = startLeaseHeartbeat(logicalArtifactKey, ownership, requestId)
             let failurePhase: 'COMPUTE' | 'PERSISTENCE' | 'FINALIZATION' = 'COMPUTE'
 
             try {
+              const persistedAfterAdmission = await resolvedDependencies.repository.readVerificationRun(cacheKey)
+              if (persistedAfterAdmission && !verificationArtifactNeedsRebuild(persistedAfterAdmission)) {
+                await resolvedDependencies.executionAdmission.markExecutionCompleted({
+                  executionId: ownership.executionId,
+                  logicalArtifactKey,
+                  ownerToken: ownership.ownerToken,
+                  leaseVersion: ownership.leaseVersion,
+                  requestId,
+                  ownerRequestId: ownership.ownerRequestId,
+                  resultStatus: 'AVAILABLE',
+                  cacheStatus: 'hit',
+                })
+                recordVerificationExecutionEvent(executionLedgerContext, {
+                  logicalArtifactKey,
+                  operationFamily: 'VERIFICATION',
+                  logicalArtifactIdentity,
+                  requestId,
+                  ownerRequestId: ownership.ownerRequestId,
+                  role: 'OWNER',
+                  eventType: 'execution_completed',
+                  resultStatus: 'AVAILABLE',
+                  cacheStatus: 'hit',
+                })
+                return toVerificationAvailable(persistedAfterAdmission, 'hit')
+              }
+
+              recordVerificationExecutionEvent(executionLedgerContext, {
+                logicalArtifactKey,
+                operationFamily: 'VERIFICATION',
+                logicalArtifactIdentity,
+                requestId,
+                ownerRequestId: ownership.ownerRequestId,
+                role: 'OWNER',
+                eventType: 'single_flight_owner_acquired',
+              })
               const verificationStartedAt = performance.now()
               resolvedDependencies.telemetry.emit('verification_compute_start', {
                 modelId: input.modelId,
                 count: 1,
                 logicalArtifactKey,
               })
-              recordVerificationExecutionEvent({
+              recordVerificationExecutionEvent(executionLedgerContext, {
                 logicalArtifactKey,
                 operationFamily: 'VERIFICATION',
                 logicalArtifactIdentity,
@@ -2671,7 +2978,7 @@ export function createForecastLibraryService(
                 count: verificationOrigins,
                 durationMs: verificationDurationMs,
               })
-              recordVerificationExecutionEvent({
+              recordVerificationExecutionEvent(executionLedgerContext, {
                 logicalArtifactKey,
                 operationFamily: 'VERIFICATION',
                 logicalArtifactIdentity,
@@ -2685,6 +2992,7 @@ export function createForecastLibraryService(
                   verificationOrigins,
                 },
               })
+              heartbeat.assertActive()
 
               if (verificationResponse.status === 'NOT_AVAILABLE') {
                 const identity = resolveCapabilityIdentity(input.targetBasis)
@@ -2698,7 +3006,7 @@ export function createForecastLibraryService(
                   resultStatus: verificationResponse.status,
                   cacheStatus: 'miss',
                 })
-                recordVerificationExecutionEvent({
+                recordVerificationExecutionEvent(executionLedgerContext, {
                   logicalArtifactKey,
                   operationFamily: 'VERIFICATION',
                   logicalArtifactIdentity,
@@ -2731,7 +3039,7 @@ export function createForecastLibraryService(
                   resultStatus: verificationResponse.status,
                   cacheStatus: 'miss',
                 })
-                recordVerificationExecutionEvent({
+                recordVerificationExecutionEvent(executionLedgerContext, {
                   logicalArtifactKey,
                   operationFamily: 'VERIFICATION',
                   logicalArtifactIdentity,
@@ -2747,17 +3055,19 @@ export function createForecastLibraryService(
 
               if (verificationResponse.status === 'FAILED') {
                 const identity = resolveCapabilityIdentity(input.targetBasis, verificationResponse.methodVersion)
-                await resolvedDependencies.executionAdmission.markExecutionCompleted({
+                await resolvedDependencies.executionAdmission.markExecutionFailed({
                   executionId: ownership.executionId,
                   logicalArtifactKey,
                   ownerToken: ownership.ownerToken,
                   leaseVersion: ownership.leaseVersion,
                   requestId,
                   ownerRequestId: ownership.ownerRequestId,
+                  failurePhase: 'COMPUTE',
+                  failureReason: verificationResponse.reason,
                   resultStatus: verificationResponse.status,
                   cacheStatus: 'miss',
                 })
-                recordVerificationExecutionEvent({
+                recordVerificationExecutionEvent(executionLedgerContext, {
                   logicalArtifactKey,
                   operationFamily: 'VERIFICATION',
                   logicalArtifactIdentity,
@@ -2793,7 +3103,7 @@ export function createForecastLibraryService(
               failurePhase = 'PERSISTENCE'
 
               const persistStartedAt = performance.now()
-              recordVerificationExecutionEvent({
+              recordVerificationExecutionEvent(executionLedgerContext, {
                 logicalArtifactKey,
                 operationFamily: 'VERIFICATION',
                 logicalArtifactIdentity,
@@ -2802,13 +3112,8 @@ export function createForecastLibraryService(
                 role: 'OWNER',
                 eventType: 'persistence_started',
               })
-              ownership = await resolvedDependencies.executionAdmission.renewLease({
-                executionId: ownership.executionId,
-                logicalArtifactKey,
-                ownerToken: ownership.ownerToken,
-                leaseVersion: ownership.leaseVersion,
-                requestId,
-              })
+              ownership = await heartbeat.renewNow()
+              executionLedgerContext = toAuthoritativeExecutionLedgerContext(ownership)
               await resolvedDependencies.repository.writeVerificationRun(artifact, {
                 ownership: buildPersistenceOwnership('VERIFICATION', logicalArtifactKey, ownership),
               })
@@ -2823,7 +3128,7 @@ export function createForecastLibraryService(
                 writeFailures: 0,
                 durationMs: persistenceDurationMs,
               })
-              recordVerificationExecutionEvent({
+              recordVerificationExecutionEvent(executionLedgerContext, {
                 logicalArtifactKey,
                 operationFamily: 'VERIFICATION',
                 logicalArtifactIdentity,
@@ -2839,6 +3144,7 @@ export function createForecastLibraryService(
               })
 
               failurePhase = 'FINALIZATION'
+              heartbeat.assertActive()
               await resolvedDependencies.executionAdmission.markExecutionCompleted({
                 executionId: ownership.executionId,
                 logicalArtifactKey,
@@ -2849,7 +3155,7 @@ export function createForecastLibraryService(
                 resultStatus: 'AVAILABLE',
                 cacheStatus,
               })
-              recordVerificationExecutionEvent({
+              recordVerificationExecutionEvent(executionLedgerContext, {
                 logicalArtifactKey,
                 operationFamily: 'VERIFICATION',
                 logicalArtifactIdentity,
@@ -2878,7 +3184,7 @@ export function createForecastLibraryService(
                   verificationRecordWrites: 0,
                   writeFailures: 1,
                 })
-                recordVerificationExecutionEvent({
+                recordVerificationExecutionEvent(executionLedgerContext, {
                   logicalArtifactKey,
                   operationFamily: 'VERIFICATION',
                   logicalArtifactIdentity,
@@ -2895,6 +3201,7 @@ export function createForecastLibraryService(
               }
 
               try {
+                heartbeat.assertActive()
                 await resolvedDependencies.executionAdmission.markExecutionFailed({
                   executionId: ownership.executionId,
                   logicalArtifactKey,
@@ -2911,7 +3218,7 @@ export function createForecastLibraryService(
                 // Preserve the original execution failure as the surfaced error.
               }
 
-              recordVerificationExecutionEvent({
+              recordVerificationExecutionEvent(executionLedgerContext, {
                 logicalArtifactKey,
                 operationFamily: 'VERIFICATION',
                 logicalArtifactIdentity,
@@ -2924,6 +3231,8 @@ export function createForecastLibraryService(
                 error: error instanceof Error ? error.message : 'unknown',
               })
               throw error
+            } finally {
+              await heartbeat.stop()
             }
           }
         },

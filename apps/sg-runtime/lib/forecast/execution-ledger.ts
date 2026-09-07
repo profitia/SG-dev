@@ -276,6 +276,10 @@ function nowIso() {
 export const STAGE2_NON_AUTHORITATIVE_LEASE_WINDOW_MS = 5 * 60 * 1000
 export const DEFAULT_FORECAST_STAGE3_LEASE_DURATION_MS = 60 * 1000
 
+type LockedExecutionRow = {
+  executionId: string
+}
+
 function resolveStage3LeaseDurationMs() {
   const rawValue = process.env.FORECAST_STAGE3_LEASE_DURATION_MS?.trim()
   if (!rawValue) {
@@ -292,6 +296,10 @@ function resolveStage3LeaseDurationMs() {
 
 function addLeaseWindow(observedAt: string, leaseWindowMs: number) {
   return new Date(new Date(observedAt).getTime() + leaseWindowMs).toISOString()
+}
+
+function asSqlTimestamp(isoTimestamp: string) {
+  return Prisma.sql`CAST(${isoTimestamp} AS timestamp)`
 }
 
 function createExecutionRecordFromAdmission(input: {
@@ -623,11 +631,26 @@ export function reduceForecastPreparationExecution(
   next.events = [...next.events, event]
   next.attemptKind = input.attemptKind ?? next.attemptKind
   next.executionMode = input.executionMode ?? next.executionMode
-  next.ownerToken = input.ownerToken ?? next.ownerToken
-  next.leaseVersion = input.leaseVersion ?? next.leaseVersion
-  next.leaseAcquiredAt = input.leaseAcquiredAt ?? next.leaseAcquiredAt
-  next.leaseExpiresAt = input.leaseExpiresAt ?? next.leaseExpiresAt
-  next.recoveredFromExecutionId = input.recoveredFromExecutionId ?? next.recoveredFromExecutionId
+
+  if (input.ownerToken) {
+    next.ownerToken = input.ownerToken
+  }
+
+  const shouldAdvanceLeaseContext = input.leaseVersion !== undefined && (
+    input.leaseVersion > next.leaseVersion
+    || (
+      input.leaseVersion === next.leaseVersion
+      && input.leaseExpiresAt !== undefined
+      && new Date(input.leaseExpiresAt).getTime() > new Date(next.leaseExpiresAt).getTime()
+    )
+  )
+
+  if (shouldAdvanceLeaseContext) {
+    next.leaseVersion = input.leaseVersion as number
+    next.leaseAcquiredAt = input.leaseAcquiredAt ?? next.leaseAcquiredAt
+    next.leaseExpiresAt = input.leaseExpiresAt ?? next.leaseExpiresAt
+    next.recoveredFromExecutionId = input.recoveredFromExecutionId ?? next.recoveredFromExecutionId
+  }
 
   if (isProgressEvent(input.eventType)) {
     next.lastProgressAt = observedAt
@@ -809,6 +832,7 @@ export function createInMemoryForecastPreparationExecutionAdmission(
         || current.logicalArtifactKey !== input.logicalArtifactKey
         || current.ownerToken !== input.ownerToken
         || current.leaseVersion !== input.leaseVersion
+        || new Date(current.leaseExpiresAt).getTime() <= new Date(observedAt).getTime()
       ) {
         throw new ForecastExecutionControlError('STALE_OWNER', `Execution ${input.executionId} no longer owns ${input.logicalArtifactKey}.`)
       }
@@ -839,6 +863,7 @@ export function createInMemoryForecastPreparationExecutionAdmission(
         || current.logicalArtifactKey !== input.logicalArtifactKey
         || current.ownerToken !== input.ownerToken
         || current.leaseVersion !== input.leaseVersion
+        || new Date(current.leaseExpiresAt).getTime() <= new Date(observedAt).getTime()
       ) {
         throw new ForecastExecutionControlError('STALE_OWNER', `Execution ${input.executionId} no longer owns ${input.logicalArtifactKey}.`)
       }
@@ -1151,6 +1176,33 @@ export function createDefaultForecastPreparationExecutionAdmission(): ForecastPr
     return latest ? mapStoredExecutionRecord(latest) : null
   }
 
+  async function lockActiveExecutionForUpdate(
+    tx: Prisma.TransactionClient,
+    logicalArtifactKey: string,
+  ) {
+    const lockedRows = await tx.$queryRaw<LockedExecutionRow[]>(Prisma.sql`
+      SELECT "executionId"
+      FROM "forecast_preparation_execution_ledger"
+      WHERE "logicalArtifactKey" = ${logicalArtifactKey}
+        AND "executionStatus" = 'STARTED'
+      ORDER BY "startedAt" DESC, "updatedAt" DESC
+      LIMIT 1
+      FOR UPDATE
+    `)
+
+    if (lockedRows.length === 0) {
+      return null
+    }
+
+    const active = await tx.forecastPreparationExecutionLedger.findUnique({
+      where: {
+        executionId: lockedRows[0]!.executionId,
+      },
+    })
+
+    return active ? mapStoredExecutionRecord(active) : null
+  }
+
   return {
     leaseDurationMs,
 
@@ -1239,23 +1291,13 @@ export function createDefaultForecastPreparationExecutionAdmission(): ForecastPr
 
       try {
         return await prisma.$transaction(async (tx) => {
-          const active = await tx.forecastPreparationExecutionLedger.findFirst({
-            where: {
-              logicalArtifactKey: input.logicalArtifactKey,
-              executionStatus: 'STARTED',
-            },
-            orderBy: [
-              { startedAt: 'desc' },
-              { updatedAt: 'desc' },
-            ],
-          })
+          const active = await lockActiveExecutionForUpdate(tx, input.logicalArtifactKey)
 
           if (!active) {
             return createOwnedExecution(tx, null)
           }
 
-          const mappedActive = mapStoredExecutionRecord(active)
-          if (isLeaseActive(mappedActive, observedAt)) {
+          if (isLeaseActive(active, observedAt)) {
             await tx.forecastPreparationExecutionLedger.update({
               where: {
                 executionId: active.executionId,
@@ -1269,7 +1311,7 @@ export function createDefaultForecastPreparationExecutionAdmission(): ForecastPr
                 lastEventAt: observedDate,
               },
             })
-            return toWaiterAdmission(mappedActive)
+            return toWaiterAdmission(active)
           }
 
           const staleMarked = await tx.forecastPreparationExecutionLedger.updateMany({
@@ -1278,9 +1320,6 @@ export function createDefaultForecastPreparationExecutionAdmission(): ForecastPr
               executionStatus: 'STARTED',
               ownerToken: active.ownerToken,
               leaseVersion: active.leaseVersion,
-              leaseExpiresAt: {
-                lte: observedDate,
-              },
             },
             data: {
               executionStatus: 'FAILED',
@@ -1311,7 +1350,7 @@ export function createDefaultForecastPreparationExecutionAdmission(): ForecastPr
             return createOwnedExecution(tx, null)
           }
 
-          return createOwnedExecution(tx, mappedActive)
+          return createOwnedExecution(tx, active)
         })
       } catch (error) {
         if (isUniqueViolation(error)) {
@@ -1327,29 +1366,24 @@ export function createDefaultForecastPreparationExecutionAdmission(): ForecastPr
     async renewLease(input) {
       const prisma = requirePrisma()
       const observedAt = input.observedAt ?? nowIso()
-      const observedDate = new Date(observedAt)
-      const nextLeaseExpiresAt = new Date(new Date(observedAt).getTime() + leaseDurationMs)
-      const updated = await prisma.forecastPreparationExecutionLedger.updateMany({
-        where: {
-          executionId: input.executionId,
-          logicalArtifactKey: input.logicalArtifactKey,
-          executionStatus: 'STARTED',
-          ownerToken: input.ownerToken,
-          leaseVersion: input.leaseVersion,
-          leaseExpiresAt: {
-            gt: observedDate,
-          },
-        },
-        data: {
-          latestRequestId: input.requestId,
-          latestRole: 'OWNER',
-          lastEventAt: observedDate,
-          lastProgressAt: observedDate,
-          leaseExpiresAt: nextLeaseExpiresAt,
-        },
-      })
+      const nextLeaseExpiresAt = addLeaseWindow(observedAt, leaseDurationMs)
+      const updated = await prisma.$executeRaw(Prisma.sql`
+        UPDATE "forecast_preparation_execution_ledger"
+        SET
+          "latestRequestId" = ${input.requestId},
+          "latestRole" = 'OWNER',
+          "lastEventAt" = ${asSqlTimestamp(observedAt)},
+          "lastProgressAt" = ${asSqlTimestamp(observedAt)},
+          "leaseExpiresAt" = ${asSqlTimestamp(nextLeaseExpiresAt)}
+        WHERE "executionId" = ${input.executionId}
+          AND "logicalArtifactKey" = ${input.logicalArtifactKey}
+          AND "executionStatus" = 'STARTED'
+          AND "ownerToken" = ${input.ownerToken}
+          AND "leaseVersion" = ${input.leaseVersion}
+          AND "leaseExpiresAt" > ${asSqlTimestamp(observedAt)}
+      `)
 
-      if (updated.count !== 1) {
+      if (updated !== 1) {
         throw new ForecastExecutionControlError('STALE_OWNER', `Execution ${input.executionId} no longer owns ${input.logicalArtifactKey}.`)
       }
 
@@ -1367,29 +1401,28 @@ export function createDefaultForecastPreparationExecutionAdmission(): ForecastPr
     async markExecutionFailed(input) {
       const prisma = requirePrisma()
       const observedAt = input.observedAt ?? nowIso()
-      const updated = await prisma.forecastPreparationExecutionLedger.updateMany({
-        where: {
-          executionId: input.executionId,
-          logicalArtifactKey: input.logicalArtifactKey,
-          executionStatus: 'STARTED',
-          ownerToken: input.ownerToken,
-          leaseVersion: input.leaseVersion,
-        },
-        data: {
-          executionStatus: 'FAILED',
-          resultStatus: input.resultStatus ?? undefined,
-          cacheStatus: input.cacheStatus ?? undefined,
-          latestRequestId: input.requestId,
-          latestRole: 'OWNER',
-          lastEventAt: new Date(observedAt),
-          lastProgressAt: new Date(observedAt),
-          completedAt: new Date(observedAt),
-          failurePhase: input.failurePhase,
-          failureReason: input.failureReason,
-        },
-      })
+      const updated = await prisma.$executeRaw(Prisma.sql`
+        UPDATE "forecast_preparation_execution_ledger"
+        SET
+          "executionStatus" = 'FAILED',
+          "resultStatus" = ${input.resultStatus ?? null},
+          "cacheStatus" = ${input.cacheStatus ?? null},
+          "latestRequestId" = ${input.requestId},
+          "latestRole" = 'OWNER',
+          "lastEventAt" = ${asSqlTimestamp(observedAt)},
+          "lastProgressAt" = ${asSqlTimestamp(observedAt)},
+          "completedAt" = ${asSqlTimestamp(observedAt)},
+          "failurePhase" = ${input.failurePhase},
+          "failureReason" = ${input.failureReason}
+        WHERE "executionId" = ${input.executionId}
+          AND "logicalArtifactKey" = ${input.logicalArtifactKey}
+          AND "executionStatus" = 'STARTED'
+          AND "ownerToken" = ${input.ownerToken}
+          AND "leaseVersion" = ${input.leaseVersion}
+          AND "leaseExpiresAt" > ${asSqlTimestamp(observedAt)}
+      `)
 
-      if (updated.count !== 1) {
+      if (updated !== 1) {
         throw new ForecastExecutionControlError('STALE_OWNER', `Execution ${input.executionId} no longer owns ${input.logicalArtifactKey}.`)
       }
     },
@@ -1397,29 +1430,28 @@ export function createDefaultForecastPreparationExecutionAdmission(): ForecastPr
     async markExecutionCompleted(input) {
       const prisma = requirePrisma()
       const observedAt = input.observedAt ?? nowIso()
-      const updated = await prisma.forecastPreparationExecutionLedger.updateMany({
-        where: {
-          executionId: input.executionId,
-          logicalArtifactKey: input.logicalArtifactKey,
-          executionStatus: 'STARTED',
-          ownerToken: input.ownerToken,
-          leaseVersion: input.leaseVersion,
-        },
-        data: {
-          executionStatus: 'COMPLETED',
-          resultStatus: input.resultStatus ?? undefined,
-          cacheStatus: input.cacheStatus ?? undefined,
-          latestRequestId: input.requestId,
-          latestRole: 'OWNER',
-          lastEventAt: new Date(observedAt),
-          lastProgressAt: new Date(observedAt),
-          completedAt: new Date(observedAt),
-          failurePhase: null,
-          failureReason: null,
-        },
-      })
+      const updated = await prisma.$executeRaw(Prisma.sql`
+        UPDATE "forecast_preparation_execution_ledger"
+        SET
+          "executionStatus" = 'COMPLETED',
+          "resultStatus" = ${input.resultStatus ?? null},
+          "cacheStatus" = ${input.cacheStatus ?? null},
+          "latestRequestId" = ${input.requestId},
+          "latestRole" = 'OWNER',
+          "lastEventAt" = ${asSqlTimestamp(observedAt)},
+          "lastProgressAt" = ${asSqlTimestamp(observedAt)},
+          "completedAt" = ${asSqlTimestamp(observedAt)},
+          "failurePhase" = NULL,
+          "failureReason" = NULL
+        WHERE "executionId" = ${input.executionId}
+          AND "logicalArtifactKey" = ${input.logicalArtifactKey}
+          AND "executionStatus" = 'STARTED'
+          AND "ownerToken" = ${input.ownerToken}
+          AND "leaseVersion" = ${input.leaseVersion}
+          AND "leaseExpiresAt" > ${asSqlTimestamp(observedAt)}
+      `)
 
-      if (updated.count !== 1) {
+      if (updated !== 1) {
         throw new ForecastExecutionControlError('STALE_OWNER', `Execution ${input.executionId} no longer owns ${input.logicalArtifactKey}.`)
       }
     },
