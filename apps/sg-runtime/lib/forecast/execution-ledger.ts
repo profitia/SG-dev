@@ -156,6 +156,89 @@ export type ForecastPreparationExecutionContext = {
   recoveredFromExecutionId: string | null
 }
 
+export type ForecastPreparationOwnedExecutionContext = ForecastPreparationExecutionContext & {
+  role: 'OWNER' | 'RECOVERY_OWNER'
+  requestId: string
+}
+
+export type ForecastPreparationAdmissionResult =
+  | {
+      role: 'OWNER' | 'RECOVERY_OWNER'
+      ownership: ForecastPreparationOwnedExecutionContext
+    }
+  | {
+      role: 'WAITER'
+      executionId: string
+      ownerRequestId: string
+      ownerToken: string
+      leaseVersion: number
+      leaseExpiresAt: string
+      recoveredFromExecutionId: string | null
+    }
+
+export type ForecastPreparationAdmissionInput = {
+  operationFamily: ForecastPreparationOperationFamily
+  logicalArtifactKey: string
+  logicalArtifactIdentity: ForecastPreparationLogicalArtifactIdentity
+  requestId: string
+  ownerRequestId: string
+  observedAt?: string
+}
+
+export type ForecastPreparationLeaseRenewalInput = {
+  executionId: string
+  logicalArtifactKey: string
+  ownerToken: string
+  leaseVersion: number
+  requestId: string
+  observedAt?: string
+}
+
+export type ForecastPreparationMarkFailedInput = {
+  executionId: string
+  logicalArtifactKey: string
+  ownerToken: string
+  leaseVersion: number
+  requestId: string
+  ownerRequestId: string
+  failurePhase: ForecastPreparationFailurePhase
+  failureReason: string
+  resultStatus?: string | null
+  cacheStatus?: string | null
+  observedAt?: string
+}
+
+export type ForecastPreparationMarkCompletedInput = {
+  executionId: string
+  logicalArtifactKey: string
+  ownerToken: string
+  leaseVersion: number
+  requestId: string
+  ownerRequestId: string
+  resultStatus?: string | null
+  cacheStatus?: string | null
+  observedAt?: string
+}
+
+export type ForecastPreparationExecutionAdmission = {
+  leaseDurationMs: number
+  acquireExecution(input: ForecastPreparationAdmissionInput): Promise<ForecastPreparationAdmissionResult>
+  renewLease(input: ForecastPreparationLeaseRenewalInput): Promise<ForecastPreparationOwnedExecutionContext>
+  markExecutionCompleted(input: ForecastPreparationMarkCompletedInput): Promise<void>
+  markExecutionFailed(input: ForecastPreparationMarkFailedInput): Promise<void>
+  readLatestExecutionForLogicalArtifact(logicalArtifactKey: string): Promise<ForecastPreparationExecutionRecord | null>
+}
+
+export class ForecastExecutionControlError extends Error {
+  constructor(
+    readonly code: 'CONTROL_DB_UNAVAILABLE' | 'STALE_OWNER' | 'NO_ACTIVE_EXECUTION',
+    message: string,
+  ) {
+    super(message)
+    this.name = 'ForecastExecutionControlError'
+  }
+}
+
 export type ForecastPreparationExecutionContextRegistry = {
   getOrCreateContext(input: {
     operationFamily: ForecastPreparationOperationFamily
@@ -191,9 +274,122 @@ function nowIso() {
 }
 
 export const STAGE2_NON_AUTHORITATIVE_LEASE_WINDOW_MS = 5 * 60 * 1000
+export const DEFAULT_FORECAST_STAGE3_LEASE_DURATION_MS = 60 * 1000
+
+function resolveStage3LeaseDurationMs() {
+  const rawValue = process.env.FORECAST_STAGE3_LEASE_DURATION_MS?.trim()
+  if (!rawValue) {
+    return DEFAULT_FORECAST_STAGE3_LEASE_DURATION_MS
+  }
+
+  const parsed = Number.parseInt(rawValue, 10)
+  if (!Number.isFinite(parsed) || parsed < 1_000) {
+    throw new Error('FORECAST_STAGE3_LEASE_DURATION_MS must be an integer >= 1000 milliseconds.')
+  }
+
+  return parsed
+}
 
 function addLeaseWindow(observedAt: string, leaseWindowMs: number) {
   return new Date(new Date(observedAt).getTime() + leaseWindowMs).toISOString()
+}
+
+function createExecutionRecordFromAdmission(input: {
+  executionId: string
+  logicalArtifactKey: string
+  operationFamily: ForecastPreparationOperationFamily
+  logicalArtifactIdentity: ForecastPreparationLogicalArtifactIdentity
+  ownerRequestId: string
+  requestId: string
+  attemptKind: ForecastPreparationAttemptKind
+  executionMode: ForecastPreparationExecutionMode
+  ownerToken: string
+  leaseVersion: number
+  leaseAcquiredAt: string
+  leaseExpiresAt: string
+  recoveredFromExecutionId: string | null
+}): ForecastPreparationExecutionRecord {
+  const commonIdentity = extractCommonIdentity(input.logicalArtifactIdentity)
+  return {
+    executionId: input.executionId,
+    logicalArtifactKey: input.logicalArtifactKey,
+    operationFamily: input.operationFamily,
+    executionStatus: 'STARTED',
+    resultStatus: null,
+    cacheStatus: null,
+    artifactScope: commonIdentity.artifactScope,
+    trainingWindowPolicyId: commonIdentity.trainingWindowPolicyId,
+    seriesId: commonIdentity.seriesId,
+    targetBasis: commonIdentity.targetBasis,
+    targetSemantics: commonIdentity.targetSemantics,
+    methodId: commonIdentity.methodId,
+    methodVersion: commonIdentity.methodVersion,
+    modelId: commonIdentity.modelId,
+    inputSource: commonIdentity.inputSource,
+    historyFingerprint: commonIdentity.historyFingerprint,
+    sourceFrequency: commonIdentity.sourceFrequency,
+    targetCadence: commonIdentity.targetCadence,
+    frequencyIdentity: commonIdentity.frequencyIdentity,
+    attemptKind: input.attemptKind,
+    executionMode: input.executionMode,
+    ownerToken: input.ownerToken,
+    leaseVersion: input.leaseVersion,
+    leaseAcquiredAt: input.leaseAcquiredAt,
+    leaseExpiresAt: input.leaseExpiresAt,
+    recoveredFromExecutionId: input.recoveredFromExecutionId,
+    ownerRequestId: input.ownerRequestId,
+    latestRequestId: input.requestId,
+    latestRole: 'OWNER',
+    waiterCount: 0,
+    eventCount: 0,
+    startedAt: input.leaseAcquiredAt,
+    lastEventAt: input.leaseAcquiredAt,
+    lastProgressAt: input.leaseAcquiredAt,
+    completedAt: null,
+    computeStartedAt: null,
+    computeCompletedAt: null,
+    persistenceStartedAt: null,
+    persistenceCompletedAt: null,
+    failurePhase: null,
+    failureReason: null,
+    logicalArtifactIdentity: input.logicalArtifactIdentity,
+    events: [],
+  }
+}
+
+function asOwnedExecutionContext(record: ForecastPreparationExecutionRecord, requestId: string): ForecastPreparationOwnedExecutionContext {
+  return {
+    role: record.attemptKind === 'RECOVERY' ? 'RECOVERY_OWNER' : 'OWNER',
+    requestId,
+    executionId: record.executionId,
+    ownerToken: record.ownerToken,
+    operationFamily: record.operationFamily,
+    logicalArtifactKey: record.logicalArtifactKey,
+    ownerRequestId: record.ownerRequestId,
+    attemptKind: record.attemptKind,
+    executionMode: record.executionMode,
+    leaseVersion: record.leaseVersion,
+    leaseAcquiredAt: record.leaseAcquiredAt,
+    leaseExpiresAt: record.leaseExpiresAt,
+    recoveredFromExecutionId: record.recoveredFromExecutionId,
+  }
+}
+
+function isLeaseActive(record: Pick<ForecastPreparationExecutionRecord, 'executionStatus' | 'leaseExpiresAt'>, observedAt: string) {
+  return record.executionStatus === 'STARTED'
+    && new Date(record.leaseExpiresAt).getTime() > new Date(observedAt).getTime()
+}
+
+function toWaiterAdmission(record: ForecastPreparationExecutionRecord): ForecastPreparationAdmissionResult {
+  return {
+    role: 'WAITER',
+    executionId: record.executionId,
+    ownerRequestId: record.ownerRequestId,
+    ownerToken: record.ownerToken,
+    leaseVersion: record.leaseVersion,
+    leaseExpiresAt: record.leaseExpiresAt,
+    recoveredFromExecutionId: record.recoveredFromExecutionId,
+  }
 }
 
 function buildExecutionContextOwnerKey(input: {
@@ -498,6 +694,176 @@ function createNoopStore(): ForecastPreparationExecutionLedgerStore {
   }
 }
 
+export function createInMemoryForecastPreparationExecutionAdmission(
+  dependencies: { leaseDurationMs?: number } = {},
+): ForecastPreparationExecutionAdmission {
+  const leaseDurationMs = dependencies.leaseDurationMs ?? resolveStage3LeaseDurationMs()
+  const recordByExecutionId = new Map<string, ForecastPreparationExecutionRecord>()
+  const latestExecutionIdByLogicalArtifactKey = new Map<string, string>()
+
+  const persistRecord = (record: ForecastPreparationExecutionRecord) => {
+    recordByExecutionId.set(record.executionId, record)
+    latestExecutionIdByLogicalArtifactKey.set(record.logicalArtifactKey, record.executionId)
+  }
+
+  const readLatest = (logicalArtifactKey: string) => {
+    const latestExecutionId = latestExecutionIdByLogicalArtifactKey.get(logicalArtifactKey)
+    return latestExecutionId ? recordByExecutionId.get(latestExecutionId) ?? null : null
+  }
+
+  return {
+    leaseDurationMs,
+    async acquireExecution(input) {
+      const observedAt = input.observedAt ?? nowIso()
+      const latest = readLatest(input.logicalArtifactKey)
+      if (latest && isLeaseActive(latest, observedAt)) {
+        const updated: ForecastPreparationExecutionRecord = {
+          ...latest,
+          latestRequestId: input.requestId,
+          latestRole: 'WAITER',
+          waiterCount: latest.waiterCount + 1,
+          lastEventAt: observedAt,
+        }
+        persistRecord(updated)
+        return toWaiterAdmission(updated)
+      }
+
+      if (latest && latest.executionStatus === 'STARTED') {
+        const terminalized: ForecastPreparationExecutionRecord = {
+          ...latest,
+          executionStatus: 'FAILED',
+          completedAt: observedAt,
+          lastEventAt: observedAt,
+          lastProgressAt: observedAt,
+          failurePhase: latest.failurePhase ?? 'FINALIZATION',
+          failureReason: latest.failureReason ?? 'Lease expired before completion; execution was superseded by recovery owner.',
+        }
+        persistRecord(terminalized)
+      }
+
+      const executionId = randomUUID()
+      const ownerToken = randomUUID()
+      const recoveredFromExecutionId = latest?.executionStatus === 'FAILED' || latest?.executionStatus === 'COMPLETED'
+        ? null
+        : latest?.executionId ?? null
+      const attemptKind: ForecastPreparationAttemptKind = latest?.executionStatus === 'STARTED' ? 'RECOVERY' : 'PRIMARY'
+      const executionMode = attemptKind === 'RECOVERY' ? 'RECOVERY_RESUME' : 'PRE_STAGE3_PREPARATION'
+      const leaseVersion = latest?.executionStatus === 'STARTED' ? latest.leaseVersion + 1 : 1
+      const record = createExecutionRecordFromAdmission({
+        executionId,
+        logicalArtifactKey: input.logicalArtifactKey,
+        operationFamily: input.operationFamily,
+        logicalArtifactIdentity: input.logicalArtifactIdentity,
+        ownerRequestId: input.ownerRequestId,
+        requestId: input.requestId,
+        attemptKind,
+        executionMode,
+        ownerToken,
+        leaseVersion,
+        leaseAcquiredAt: observedAt,
+        leaseExpiresAt: addLeaseWindow(observedAt, leaseDurationMs),
+        recoveredFromExecutionId: attemptKind === 'RECOVERY' ? latest?.executionId ?? null : null,
+      })
+      persistRecord(record)
+      return {
+        role: record.attemptKind === 'RECOVERY' ? 'RECOVERY_OWNER' : 'OWNER',
+        ownership: asOwnedExecutionContext(record, input.requestId),
+      }
+    },
+
+    async renewLease(input) {
+      const observedAt = input.observedAt ?? nowIso()
+      const current = recordByExecutionId.get(input.executionId)
+      if (!current) {
+        throw new ForecastExecutionControlError('NO_ACTIVE_EXECUTION', `No active execution exists for ${input.executionId}.`)
+      }
+      if (
+        current.executionStatus !== 'STARTED'
+        || current.logicalArtifactKey !== input.logicalArtifactKey
+        || current.ownerToken !== input.ownerToken
+        || current.leaseVersion !== input.leaseVersion
+        || new Date(current.leaseExpiresAt).getTime() <= new Date(observedAt).getTime()
+      ) {
+        throw new ForecastExecutionControlError('STALE_OWNER', `Execution ${input.executionId} no longer owns ${input.logicalArtifactKey}.`)
+      }
+
+      const renewed: ForecastPreparationExecutionRecord = {
+        ...current,
+        latestRequestId: input.requestId,
+        lastEventAt: observedAt,
+        lastProgressAt: observedAt,
+        leaseExpiresAt: addLeaseWindow(observedAt, leaseDurationMs),
+      }
+      persistRecord(renewed)
+      return asOwnedExecutionContext(renewed, input.requestId)
+    },
+
+    async markExecutionFailed(input) {
+      const observedAt = input.observedAt ?? nowIso()
+      const current = recordByExecutionId.get(input.executionId)
+      if (!current) {
+        throw new ForecastExecutionControlError('NO_ACTIVE_EXECUTION', `No active execution exists for ${input.executionId}.`)
+      }
+      if (
+        current.executionStatus !== 'STARTED'
+        || current.logicalArtifactKey !== input.logicalArtifactKey
+        || current.ownerToken !== input.ownerToken
+        || current.leaseVersion !== input.leaseVersion
+      ) {
+        throw new ForecastExecutionControlError('STALE_OWNER', `Execution ${input.executionId} no longer owns ${input.logicalArtifactKey}.`)
+      }
+
+      persistRecord({
+        ...current,
+        executionStatus: 'FAILED',
+        resultStatus: input.resultStatus ?? current.resultStatus,
+        cacheStatus: input.cacheStatus ?? current.cacheStatus,
+        latestRequestId: input.requestId,
+        latestRole: 'OWNER',
+        lastEventAt: observedAt,
+        lastProgressAt: observedAt,
+        completedAt: observedAt,
+        failurePhase: input.failurePhase,
+        failureReason: input.failureReason,
+      })
+    },
+
+    async markExecutionCompleted(input) {
+      const observedAt = input.observedAt ?? nowIso()
+      const current = recordByExecutionId.get(input.executionId)
+      if (!current) {
+        throw new ForecastExecutionControlError('NO_ACTIVE_EXECUTION', `No active execution exists for ${input.executionId}.`)
+      }
+      if (
+        current.executionStatus !== 'STARTED'
+        || current.logicalArtifactKey !== input.logicalArtifactKey
+        || current.ownerToken !== input.ownerToken
+        || current.leaseVersion !== input.leaseVersion
+      ) {
+        throw new ForecastExecutionControlError('STALE_OWNER', `Execution ${input.executionId} no longer owns ${input.logicalArtifactKey}.`)
+      }
+
+      persistRecord({
+        ...current,
+        executionStatus: 'COMPLETED',
+        resultStatus: input.resultStatus ?? current.resultStatus,
+        cacheStatus: input.cacheStatus ?? current.cacheStatus,
+        latestRequestId: input.requestId,
+        latestRole: 'OWNER',
+        lastEventAt: observedAt,
+        lastProgressAt: observedAt,
+        completedAt: observedAt,
+        failurePhase: null,
+        failureReason: null,
+      })
+    },
+
+    async readLatestExecutionForLogicalArtifact(logicalArtifactKey) {
+      return readLatest(logicalArtifactKey)
+    },
+  }
+}
+
 function mapStoredExecutionRecord(record: {
   executionId: string
   logicalArtifactKey: string
@@ -734,6 +1100,331 @@ export function createForecastPreparationExecutionLedger(
     readExecution(executionId) {
       return store.readExecution(executionId)
     },
+  }
+}
+
+function isUniqueViolation(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'
+}
+
+export function createDefaultForecastPreparationExecutionAdmission(): ForecastPreparationExecutionAdmission {
+  const leaseDurationMs = resolveStage3LeaseDurationMs()
+
+  function requirePrisma() {
+    const prisma = getMarketDataPrisma()
+    if (!prisma) {
+      throw new ForecastExecutionControlError(
+        'CONTROL_DB_UNAVAILABLE',
+        'Forecast execution admission requires the market-data PostgreSQL authority.',
+      )
+    }
+    return prisma
+  }
+
+  async function readLatestExecutionForLogicalArtifact(logicalArtifactKey: string) {
+    const prisma = requirePrisma()
+    const active = await prisma.forecastPreparationExecutionLedger.findFirst({
+      where: {
+        logicalArtifactKey,
+        executionStatus: 'STARTED',
+      },
+      orderBy: [
+        { startedAt: 'desc' },
+        { updatedAt: 'desc' },
+      ],
+    })
+
+    if (active) {
+      return mapStoredExecutionRecord(active)
+    }
+
+    const latest = await prisma.forecastPreparationExecutionLedger.findFirst({
+      where: {
+        logicalArtifactKey,
+      },
+      orderBy: [
+        { startedAt: 'desc' },
+        { updatedAt: 'desc' },
+      ],
+    })
+
+    return latest ? mapStoredExecutionRecord(latest) : null
+  }
+
+  return {
+    leaseDurationMs,
+
+    async acquireExecution(input) {
+      const prisma = requirePrisma()
+      const observedAt = input.observedAt ?? nowIso()
+      const observedDate = new Date(observedAt)
+
+      const createOwnedExecution = async (
+        tx: Prisma.TransactionClient,
+        recoveredFrom: ForecastPreparationExecutionRecord | null,
+      ) => {
+        const attemptKind: ForecastPreparationAttemptKind = recoveredFrom ? 'RECOVERY' : 'PRIMARY'
+        const executionMode: ForecastPreparationExecutionMode = attemptKind === 'RECOVERY'
+          ? 'RECOVERY_RESUME'
+          : 'PRE_STAGE3_PREPARATION'
+        const record = createExecutionRecordFromAdmission({
+          executionId: randomUUID(),
+          logicalArtifactKey: input.logicalArtifactKey,
+          operationFamily: input.operationFamily,
+          logicalArtifactIdentity: input.logicalArtifactIdentity,
+          ownerRequestId: input.ownerRequestId,
+          requestId: input.requestId,
+          attemptKind,
+          executionMode,
+          ownerToken: randomUUID(),
+          leaseVersion: recoveredFrom ? recoveredFrom.leaseVersion + 1 : 1,
+          leaseAcquiredAt: observedAt,
+          leaseExpiresAt: addLeaseWindow(observedAt, leaseDurationMs),
+          recoveredFromExecutionId: recoveredFrom?.executionId ?? null,
+        })
+
+        await tx.forecastPreparationExecutionLedger.create({
+          data: {
+            executionId: record.executionId,
+            logicalArtifactKey: record.logicalArtifactKey,
+            operationFamily: record.operationFamily,
+            executionStatus: record.executionStatus,
+            resultStatus: record.resultStatus,
+            cacheStatus: record.cacheStatus,
+            artifactScope: record.artifactScope,
+            trainingWindowPolicyId: record.trainingWindowPolicyId,
+            seriesId: record.seriesId,
+            targetBasis: record.targetBasis,
+            targetSemantics: record.targetSemantics,
+            methodId: record.methodId,
+            methodVersion: record.methodVersion,
+            modelId: record.modelId,
+            inputSource: record.inputSource,
+            historyFingerprint: record.historyFingerprint,
+            sourceFrequency: record.sourceFrequency,
+            targetCadence: record.targetCadence,
+            frequencyIdentity: record.frequencyIdentity,
+            attemptKind: record.attemptKind,
+            executionMode: record.executionMode,
+            ownerToken: record.ownerToken,
+            leaseVersion: record.leaseVersion,
+            leaseAcquiredAt: new Date(record.leaseAcquiredAt),
+            leaseExpiresAt: new Date(record.leaseExpiresAt),
+            recoveredFromExecutionId: record.recoveredFromExecutionId,
+            ownerRequestId: record.ownerRequestId,
+            latestRequestId: record.latestRequestId,
+            latestRole: record.latestRole,
+            waiterCount: record.waiterCount,
+            eventCount: record.eventCount,
+            startedAt: new Date(record.startedAt),
+            lastEventAt: new Date(record.lastEventAt),
+            lastProgressAt: new Date(record.lastProgressAt),
+            completedAt: null,
+            computeStartedAt: null,
+            computeCompletedAt: null,
+            persistenceStartedAt: null,
+            persistenceCompletedAt: null,
+            failurePhase: null,
+            failureReason: null,
+            logicalArtifactIdentityJson: record.logicalArtifactIdentity as Prisma.InputJsonValue,
+            eventsJson: record.events as Prisma.InputJsonValue,
+          },
+        })
+
+        return {
+          role: record.attemptKind === 'RECOVERY' ? 'RECOVERY_OWNER' : 'OWNER',
+          ownership: asOwnedExecutionContext(record, input.requestId),
+        } satisfies ForecastPreparationAdmissionResult
+      }
+
+      try {
+        return await prisma.$transaction(async (tx) => {
+          const active = await tx.forecastPreparationExecutionLedger.findFirst({
+            where: {
+              logicalArtifactKey: input.logicalArtifactKey,
+              executionStatus: 'STARTED',
+            },
+            orderBy: [
+              { startedAt: 'desc' },
+              { updatedAt: 'desc' },
+            ],
+          })
+
+          if (!active) {
+            return createOwnedExecution(tx, null)
+          }
+
+          const mappedActive = mapStoredExecutionRecord(active)
+          if (isLeaseActive(mappedActive, observedAt)) {
+            await tx.forecastPreparationExecutionLedger.update({
+              where: {
+                executionId: active.executionId,
+              },
+              data: {
+                latestRequestId: input.requestId,
+                latestRole: 'WAITER',
+                waiterCount: {
+                  increment: 1,
+                },
+                lastEventAt: observedDate,
+              },
+            })
+            return toWaiterAdmission(mappedActive)
+          }
+
+          const staleMarked = await tx.forecastPreparationExecutionLedger.updateMany({
+            where: {
+              executionId: active.executionId,
+              executionStatus: 'STARTED',
+              ownerToken: active.ownerToken,
+              leaseVersion: active.leaseVersion,
+              leaseExpiresAt: {
+                lte: observedDate,
+              },
+            },
+            data: {
+              executionStatus: 'FAILED',
+              latestRequestId: input.requestId,
+              latestRole: 'OWNER',
+              lastEventAt: observedDate,
+              lastProgressAt: observedDate,
+              completedAt: observedDate,
+              failurePhase: active.failurePhase ?? 'FINALIZATION',
+              failureReason: active.failureReason ?? 'Lease expired before completion; execution was superseded by recovery owner.',
+            },
+          })
+
+          if (staleMarked.count === 0) {
+            const latest = await tx.forecastPreparationExecutionLedger.findFirst({
+              where: {
+                logicalArtifactKey: input.logicalArtifactKey,
+                executionStatus: 'STARTED',
+              },
+              orderBy: [
+                { startedAt: 'desc' },
+                { updatedAt: 'desc' },
+              ],
+            })
+            if (latest) {
+              return toWaiterAdmission(mapStoredExecutionRecord(latest))
+            }
+            return createOwnedExecution(tx, null)
+          }
+
+          return createOwnedExecution(tx, mappedActive)
+        })
+      } catch (error) {
+        if (isUniqueViolation(error)) {
+          const latest = await readLatestExecutionForLogicalArtifact(input.logicalArtifactKey)
+          if (latest && latest.executionStatus === 'STARTED') {
+            return toWaiterAdmission(latest)
+          }
+        }
+        throw error
+      }
+    },
+
+    async renewLease(input) {
+      const prisma = requirePrisma()
+      const observedAt = input.observedAt ?? nowIso()
+      const observedDate = new Date(observedAt)
+      const nextLeaseExpiresAt = new Date(new Date(observedAt).getTime() + leaseDurationMs)
+      const updated = await prisma.forecastPreparationExecutionLedger.updateMany({
+        where: {
+          executionId: input.executionId,
+          logicalArtifactKey: input.logicalArtifactKey,
+          executionStatus: 'STARTED',
+          ownerToken: input.ownerToken,
+          leaseVersion: input.leaseVersion,
+          leaseExpiresAt: {
+            gt: observedDate,
+          },
+        },
+        data: {
+          latestRequestId: input.requestId,
+          latestRole: 'OWNER',
+          lastEventAt: observedDate,
+          lastProgressAt: observedDate,
+          leaseExpiresAt: nextLeaseExpiresAt,
+        },
+      })
+
+      if (updated.count !== 1) {
+        throw new ForecastExecutionControlError('STALE_OWNER', `Execution ${input.executionId} no longer owns ${input.logicalArtifactKey}.`)
+      }
+
+      const record = await prisma.forecastPreparationExecutionLedger.findUnique({
+        where: {
+          executionId: input.executionId,
+        },
+      })
+      if (!record) {
+        throw new ForecastExecutionControlError('NO_ACTIVE_EXECUTION', `Execution ${input.executionId} disappeared during lease renewal.`)
+      }
+      return asOwnedExecutionContext(mapStoredExecutionRecord(record), input.requestId)
+    },
+
+    async markExecutionFailed(input) {
+      const prisma = requirePrisma()
+      const observedAt = input.observedAt ?? nowIso()
+      const updated = await prisma.forecastPreparationExecutionLedger.updateMany({
+        where: {
+          executionId: input.executionId,
+          logicalArtifactKey: input.logicalArtifactKey,
+          executionStatus: 'STARTED',
+          ownerToken: input.ownerToken,
+          leaseVersion: input.leaseVersion,
+        },
+        data: {
+          executionStatus: 'FAILED',
+          resultStatus: input.resultStatus ?? undefined,
+          cacheStatus: input.cacheStatus ?? undefined,
+          latestRequestId: input.requestId,
+          latestRole: 'OWNER',
+          lastEventAt: new Date(observedAt),
+          lastProgressAt: new Date(observedAt),
+          completedAt: new Date(observedAt),
+          failurePhase: input.failurePhase,
+          failureReason: input.failureReason,
+        },
+      })
+
+      if (updated.count !== 1) {
+        throw new ForecastExecutionControlError('STALE_OWNER', `Execution ${input.executionId} no longer owns ${input.logicalArtifactKey}.`)
+      }
+    },
+
+    async markExecutionCompleted(input) {
+      const prisma = requirePrisma()
+      const observedAt = input.observedAt ?? nowIso()
+      const updated = await prisma.forecastPreparationExecutionLedger.updateMany({
+        where: {
+          executionId: input.executionId,
+          logicalArtifactKey: input.logicalArtifactKey,
+          executionStatus: 'STARTED',
+          ownerToken: input.ownerToken,
+          leaseVersion: input.leaseVersion,
+        },
+        data: {
+          executionStatus: 'COMPLETED',
+          resultStatus: input.resultStatus ?? undefined,
+          cacheStatus: input.cacheStatus ?? undefined,
+          latestRequestId: input.requestId,
+          latestRole: 'OWNER',
+          lastEventAt: new Date(observedAt),
+          lastProgressAt: new Date(observedAt),
+          completedAt: new Date(observedAt),
+          failurePhase: null,
+          failureReason: null,
+        },
+      })
+
+      if (updated.count !== 1) {
+        throw new ForecastExecutionControlError('STALE_OWNER', `Execution ${input.executionId} no longer owns ${input.logicalArtifactKey}.`)
+      }
+    },
+
+    readLatestExecutionForLogicalArtifact,
   }
 }
 

@@ -343,7 +343,7 @@ model RollingDailyMaintenanceState {
 }
 
 model ForecastPreparationExecutionLedger {
-  /// Passive durable execution ledger for Forecast preparation lifecycles. Stage 2 records execution identity and phase history without changing admission authority.
+  /// Stage 3 durable execution ledger and admission authority for Forecast preparation lifecycles.
   id                          String              @id @default(cuid())
   executionId                 String              @unique
   logicalArtifactKey          String
@@ -392,6 +392,7 @@ model ForecastPreparationExecutionLedger {
   updatedAt                   DateTime            @updatedAt
 
   @@index([logicalArtifactKey, startedAt], map: "forecast_preparation_execution_ledger_logical_key_idx")
+  @@index([logicalArtifactKey, executionStatus, leaseExpiresAt, startedAt], map: "forecast_preparation_execution_ledger_active_lookup_idx")
   @@index([recoveredFromExecutionId], map: "forecast_preparation_execution_ledger_recovery_idx")
   @@index([seriesId, operationFamily, executionStatus, updatedAt], map: "forecast_preparation_execution_ledger_series_status_idx")
   @@map("forecast_preparation_execution_ledger")

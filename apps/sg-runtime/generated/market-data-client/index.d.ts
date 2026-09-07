@@ -16295,7 +16295,7 @@ export namespace Prisma {
     objects: {}
     scalars: $Extensions.GetPayloadResult<{
       /**
-       * Passive durable execution ledger for Forecast preparation lifecycles. Stage 2 records execution identity and phase history without changing admission authority.
+       * Stage 3 durable execution ledger and admission authority for Forecast preparation lifecycles.
        */
       id: string
       executionId: string

@@ -1440,7 +1440,7 @@ test('forecast library verification path does not reuse cache across target base
   assert.equal(verificationCalls, 1)
 })
 
-test('forecast library current path serves compute result when datastore is unavailable', async () => {
+test('forecast library current path fails closed when datastore is unavailable', async () => {
   let persisted = false
 
   const bridge: ForecastBridge = {
@@ -1471,10 +1471,13 @@ test('forecast library current path serves compute result when datastore is unav
   }
 
   const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
-  const result = await service.resolveCurrentForecast('wocaes0280', 'ets')
-
-  assert.equal(result.status, 'AVAILABLE')
-  assert.equal(result.cacheStatus, 'db-unavailable')
+  await assert.rejects(
+    () => service.resolveCurrentForecast('wocaes0280', 'ets'),
+    (error: unknown) => error instanceof Error
+      && error.name === 'ForecastExecutionControlError'
+      && 'code' in error
+      && error.code === 'CONTROL_DB_UNAVAILABLE',
+  )
   assert.equal(persisted, false)
 })
 

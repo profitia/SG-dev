@@ -412,3 +412,14 @@ test('corrective migration keeps historical progress semantics and removes misle
   assert.match(migration, /ALTER COLUMN "leaseExpiresAt" DROP DEFAULT/)
   assert.match(migration, /ALTER COLUMN "lastProgressAt" DROP DEFAULT/)
 })
+
+test('stage 3 migration enforces one active durable owner per logical artifact key', () => {
+  const migration = readFileSync(
+    new URL('../prisma-market-data/migrations/20260907_forecast_stage3_canonical_execution_admission/migration.sql', import.meta.url),
+    'utf8',
+  )
+
+  assert.match(migration, /CREATE UNIQUE INDEX "forecast_preparation_execution_ledger_active_owner_uidx"/)
+  assert.match(migration, /WHERE "executionStatus" = 'STARTED'/)
+  assert.match(migration, /CREATE INDEX "forecast_preparation_execution_ledger_active_lookup_idx"/)
+})
