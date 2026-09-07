@@ -44,6 +44,7 @@ const marketDataPrisma = new PrismaClient({
 
 let createDefaultForecastPreparationExecutionAdmission: typeof import('../lib/forecast/execution-ledger')['createDefaultForecastPreparationExecutionAdmission']
 let createForecastPreparationExecutionLedger: typeof import('../lib/forecast/execution-ledger')['createForecastPreparationExecutionLedger']
+let setForecastPreparationExecutionLedgerTestHooks: typeof import('../lib/forecast/execution-ledger')['setForecastPreparationExecutionLedgerTestHooks']
 let createForecastLibraryService: typeof import('../lib/forecast/service')['createForecastLibraryService']
 let setForecastPersistenceTestHooks: typeof import('../lib/forecast/service')['setForecastPersistenceTestHooks']
 let writeCurrentRunWithPrisma: typeof import('../lib/forecast/service')['writeCurrentRunWithPrisma']
@@ -373,6 +374,20 @@ async function waitForExecutionStatus(
   throw new Error(`Timed out waiting for execution ${logicalArtifactKey} to reach ${executionStatus}.`)
 }
 
+function createBarrier() {
+  let release: (() => void) | undefined
+  const promise = new Promise<void>((resolve) => {
+    release = resolve
+  })
+
+  return {
+    promise,
+    release() {
+      release?.()
+    },
+  }
+}
+
 function createDbBackedService(bridgeOverrides: Partial<ForecastBridge> = {}) {
   const bridge: ForecastBridge = {
     async exportHistory(input) {
@@ -415,6 +430,7 @@ test.before(async () => {
 
   createDefaultForecastPreparationExecutionAdmission = executionLedgerModule.createDefaultForecastPreparationExecutionAdmission
   createForecastPreparationExecutionLedger = executionLedgerModule.createForecastPreparationExecutionLedger
+  setForecastPreparationExecutionLedgerTestHooks = executionLedgerModule.setForecastPreparationExecutionLedgerTestHooks
   createForecastLibraryService = serviceModule.createForecastLibraryService
   setForecastPersistenceTestHooks = serviceModule.setForecastPersistenceTestHooks
   writeCurrentRunWithPrisma = serviceModule.writeCurrentRunWithPrisma
@@ -422,10 +438,12 @@ test.before(async () => {
 
 test.beforeEach(async () => {
   await resetForecastTables()
+  setForecastPreparationExecutionLedgerTestHooks(null)
   setForecastPersistenceTestHooks(null)
 })
 
 test.after(async () => {
+  setForecastPreparationExecutionLedgerTestHooks(null)
   setForecastPersistenceTestHooks(null)
   await requirePrisma().$disconnect()
 })
@@ -869,6 +887,313 @@ serialTest('db-backed passive waiter ledger writes cannot overwrite authoritativ
   assert.equal(execution?.recoveredFromExecutionId, null)
   assert.equal(execution?.waiterCount, 1)
   assert.equal(execution?.latestRole, 'WAITER')
+})
+
+serialTest('db-backed delayed telemetry cannot regress authoritative COMPLETED state', async () => {
+  const logicalArtifactIdentity = createCurrentLogicalArtifactIdentity('stage3-telemetry-terminal-race-series')
+  const logicalArtifactKey = buildCurrentStage3LogicalArtifactKey('stage3-telemetry-terminal-race-series')
+  const admission = createDefaultForecastPreparationExecutionAdmission()
+  const ledger = createForecastPreparationExecutionLedger()
+  const owner = await admission.acquireExecution({
+    operationFamily: 'CURRENT',
+    logicalArtifactKey,
+    logicalArtifactIdentity,
+    requestId: 'stage3-telemetry-terminal-owner',
+    ownerRequestId: 'stage3-telemetry-terminal-owner',
+    observedAt: '2026-09-07T12:20:00.000Z',
+  })
+
+  assert.equal(owner.role, 'OWNER')
+  if (owner.role !== 'OWNER') {
+    throw new Error('Expected primary owner acquisition.')
+  }
+
+  const telemetryReadBarrier = createBarrier()
+  const telemetryResumeBarrier = createBarrier()
+  let barrierArmed = true
+  setForecastPreparationExecutionLedgerTestHooks({
+    async beforePersistExistingExecutionEvent({ input }) {
+      if (!barrierArmed || input.executionId !== owner.ownership.executionId) {
+        return
+      }
+
+      barrierArmed = false
+      telemetryReadBarrier.release()
+      await telemetryResumeBarrier.promise
+    },
+  })
+
+  const telemetryPromise = ledger.recordEvent({
+    executionId: owner.ownership.executionId,
+    logicalArtifactKey,
+    operationFamily: 'CURRENT',
+    logicalArtifactIdentity,
+    requestId: 'stage3-telemetry-terminal-waiter',
+    ownerRequestId: owner.ownership.ownerRequestId,
+    role: 'WAITER',
+    eventType: 'single_flight_waiter_joined',
+    observedAt: '2026-09-07T12:20:01.000Z',
+  })
+
+  await telemetryReadBarrier.promise
+
+  await admission.markExecutionCompleted({
+    executionId: owner.ownership.executionId,
+    logicalArtifactKey,
+    ownerToken: owner.ownership.ownerToken,
+    leaseVersion: owner.ownership.leaseVersion,
+    requestId: 'stage3-telemetry-terminal-owner',
+    ownerRequestId: owner.ownership.ownerRequestId,
+    resultStatus: 'AVAILABLE',
+    cacheStatus: 'miss',
+    observedAt: '2026-09-07T12:20:02.000Z',
+  })
+
+  telemetryResumeBarrier.release()
+  await telemetryPromise
+
+  const execution = await requirePrisma().forecastPreparationExecutionLedger.findUnique({
+    where: { executionId: owner.ownership.executionId },
+  })
+
+  assert.ok(execution)
+  assert.equal(execution?.executionStatus, 'COMPLETED')
+  assert.equal(execution?.completedAt?.toISOString(), '2026-09-07T12:20:02.000Z')
+  assert.equal(execution?.resultStatus, 'AVAILABLE')
+  assert.equal(execution?.cacheStatus, 'miss')
+  assert.equal(execution?.waiterCount, 1)
+})
+
+serialTest('db-backed delayed telemetry cannot regress renewed lease state', async () => {
+  const logicalArtifactIdentity = createCurrentLogicalArtifactIdentity('stage3-telemetry-lease-race-series')
+  const logicalArtifactKey = buildCurrentStage3LogicalArtifactKey('stage3-telemetry-lease-race-series')
+  const admission = createDefaultForecastPreparationExecutionAdmission()
+  const ledger = createForecastPreparationExecutionLedger()
+  const owner = await admission.acquireExecution({
+    operationFamily: 'CURRENT',
+    logicalArtifactKey,
+    logicalArtifactIdentity,
+    requestId: 'stage3-telemetry-lease-owner',
+    ownerRequestId: 'stage3-telemetry-lease-owner',
+    observedAt: '2026-09-07T12:30:00.000Z',
+  })
+
+  assert.equal(owner.role, 'OWNER')
+  if (owner.role !== 'OWNER') {
+    throw new Error('Expected primary owner acquisition.')
+  }
+
+  const initialLeaseExpiresAt = owner.ownership.leaseExpiresAt
+  const telemetryReadBarrier = createBarrier()
+  const telemetryResumeBarrier = createBarrier()
+  let barrierArmed = true
+  setForecastPreparationExecutionLedgerTestHooks({
+    async beforePersistExistingExecutionEvent({ input }) {
+      if (!barrierArmed || input.executionId !== owner.ownership.executionId) {
+        return
+      }
+
+      barrierArmed = false
+      telemetryReadBarrier.release()
+      await telemetryResumeBarrier.promise
+    },
+  })
+
+  const telemetryPromise = ledger.recordEvent({
+    executionId: owner.ownership.executionId,
+    logicalArtifactKey,
+    operationFamily: 'CURRENT',
+    logicalArtifactIdentity,
+    requestId: 'stage3-telemetry-lease-waiter',
+    ownerRequestId: owner.ownership.ownerRequestId,
+    role: 'WAITER',
+    eventType: 'single_flight_waiter_joined',
+    observedAt: '2026-09-07T12:30:01.000Z',
+  })
+
+  await telemetryReadBarrier.promise
+
+  const renewed = await admission.renewLease({
+    executionId: owner.ownership.executionId,
+    logicalArtifactKey,
+    ownerToken: owner.ownership.ownerToken,
+    leaseVersion: owner.ownership.leaseVersion,
+    requestId: 'stage3-telemetry-lease-owner',
+    observedAt: '2026-09-07T12:30:30.000Z',
+  })
+
+  telemetryResumeBarrier.release()
+  await telemetryPromise
+
+  const execution = await requirePrisma().forecastPreparationExecutionLedger.findUnique({
+    where: { executionId: owner.ownership.executionId },
+  })
+
+  assert.ok(execution)
+  assert.equal(execution?.executionStatus, 'STARTED')
+  assert.equal(execution?.leaseVersion, owner.ownership.leaseVersion)
+  assert.notEqual(renewed.leaseExpiresAt, initialLeaseExpiresAt)
+  assert.equal(execution?.leaseExpiresAt.toISOString(), renewed.leaseExpiresAt)
+  assert.equal(execution?.latestRole, 'OWNER')
+})
+
+serialTest('db-backed delayed telemetry cannot regress authoritative FAILED state', async () => {
+  const logicalArtifactIdentity = createCurrentLogicalArtifactIdentity('stage3-telemetry-failed-race-series')
+  const logicalArtifactKey = buildCurrentStage3LogicalArtifactKey('stage3-telemetry-failed-race-series')
+  const admission = createDefaultForecastPreparationExecutionAdmission()
+  const ledger = createForecastPreparationExecutionLedger()
+  const owner = await admission.acquireExecution({
+    operationFamily: 'CURRENT',
+    logicalArtifactKey,
+    logicalArtifactIdentity,
+    requestId: 'stage3-telemetry-failed-owner',
+    ownerRequestId: 'stage3-telemetry-failed-owner',
+    observedAt: '2026-09-07T12:40:00.000Z',
+  })
+
+  assert.equal(owner.role, 'OWNER')
+  if (owner.role !== 'OWNER') {
+    throw new Error('Expected primary owner acquisition.')
+  }
+
+  const telemetryReadBarrier = createBarrier()
+  const telemetryResumeBarrier = createBarrier()
+  let barrierArmed = true
+  setForecastPreparationExecutionLedgerTestHooks({
+    async beforePersistExistingExecutionEvent({ input }) {
+      if (!barrierArmed || input.executionId !== owner.ownership.executionId) {
+        return
+      }
+
+      barrierArmed = false
+      telemetryReadBarrier.release()
+      await telemetryResumeBarrier.promise
+    },
+  })
+
+  const telemetryPromise = ledger.recordEvent({
+    executionId: owner.ownership.executionId,
+    logicalArtifactKey,
+    operationFamily: 'CURRENT',
+    logicalArtifactIdentity,
+    requestId: 'stage3-telemetry-failed-waiter',
+    ownerRequestId: owner.ownership.ownerRequestId,
+    role: 'WAITER',
+    eventType: 'single_flight_waiter_joined',
+    observedAt: '2026-09-07T12:40:01.000Z',
+  })
+
+  await telemetryReadBarrier.promise
+
+  await admission.markExecutionFailed({
+    executionId: owner.ownership.executionId,
+    logicalArtifactKey,
+    ownerToken: owner.ownership.ownerToken,
+    leaseVersion: owner.ownership.leaseVersion,
+    requestId: 'stage3-telemetry-failed-owner',
+    ownerRequestId: owner.ownership.ownerRequestId,
+    failurePhase: 'PERSISTENCE',
+    failureReason: 'simulated-terminal-failure',
+    resultStatus: 'FAILED',
+    cacheStatus: 'miss',
+    observedAt: '2026-09-07T12:40:02.000Z',
+  })
+
+  telemetryResumeBarrier.release()
+  await telemetryPromise
+
+  const execution = await requirePrisma().forecastPreparationExecutionLedger.findUnique({
+    where: { executionId: owner.ownership.executionId },
+  })
+
+  assert.ok(execution)
+  assert.equal(execution?.executionStatus, 'FAILED')
+  assert.equal(execution?.failurePhase, 'PERSISTENCE')
+  assert.equal(execution?.failureReason, 'simulated-terminal-failure')
+  assert.equal(execution?.completedAt?.toISOString(), '2026-09-07T12:40:02.000Z')
+  assert.equal(execution?.waiterCount, 1)
+})
+
+serialTest('db-backed stale predecessor telemetry cannot damage recovery truth', async () => {
+  const logicalArtifactIdentity = createCurrentLogicalArtifactIdentity('stage3-telemetry-recovery-race-series')
+  const logicalArtifactKey = buildCurrentStage3LogicalArtifactKey('stage3-telemetry-recovery-race-series')
+  const admission = createDefaultForecastPreparationExecutionAdmission()
+  const ledger = createForecastPreparationExecutionLedger()
+  const owner = await admission.acquireExecution({
+    operationFamily: 'CURRENT',
+    logicalArtifactKey,
+    logicalArtifactIdentity,
+    requestId: 'stage3-telemetry-recovery-owner-a',
+    ownerRequestId: 'stage3-telemetry-recovery-owner-a',
+    observedAt: '2026-09-07T12:50:00.000Z',
+  })
+
+  assert.equal(owner.role, 'OWNER')
+  if (owner.role !== 'OWNER') {
+    throw new Error('Expected primary owner acquisition.')
+  }
+
+  const telemetryReadBarrier = createBarrier()
+  const telemetryResumeBarrier = createBarrier()
+  let barrierArmed = true
+  setForecastPreparationExecutionLedgerTestHooks({
+    async beforePersistExistingExecutionEvent({ input }) {
+      if (!barrierArmed || input.executionId !== owner.ownership.executionId) {
+        return
+      }
+
+      barrierArmed = false
+      telemetryReadBarrier.release()
+      await telemetryResumeBarrier.promise
+    },
+  })
+
+  const telemetryPromise = ledger.recordEvent({
+    executionId: owner.ownership.executionId,
+    logicalArtifactKey,
+    operationFamily: 'CURRENT',
+    logicalArtifactIdentity,
+    requestId: 'stage3-telemetry-recovery-waiter-a',
+    ownerRequestId: owner.ownership.ownerRequestId,
+    role: 'WAITER',
+    eventType: 'single_flight_waiter_joined',
+    observedAt: '2026-09-07T12:50:30.000Z',
+  })
+
+  await telemetryReadBarrier.promise
+
+  const recovery = await admission.acquireExecution({
+    operationFamily: 'CURRENT',
+    logicalArtifactKey,
+    logicalArtifactIdentity,
+    requestId: 'stage3-telemetry-recovery-owner-b',
+    ownerRequestId: 'stage3-telemetry-recovery-owner-b',
+    observedAt: '2026-09-07T12:51:01.000Z',
+  })
+
+  assert.equal(recovery.role, 'RECOVERY_OWNER')
+  if (recovery.role !== 'RECOVERY_OWNER') {
+    throw new Error('Expected recovery owner acquisition.')
+  }
+
+  telemetryResumeBarrier.release()
+  await telemetryPromise
+
+  const executions = await requirePrisma().forecastPreparationExecutionLedger.findMany({
+    where: { logicalArtifactKey },
+    orderBy: { startedAt: 'asc' },
+  })
+
+  assert.equal(executions.length, 2)
+  assert.equal(executions[0]?.executionId, owner.ownership.executionId)
+  assert.equal(executions[0]?.executionStatus, 'FAILED')
+  assert.equal(executions[1]?.executionId, recovery.ownership.executionId)
+  assert.equal(executions[1]?.executionStatus, 'STARTED')
+  assert.equal(executions[1]?.attemptKind, 'RECOVERY')
+  assert.equal(executions[1]?.ownerToken, recovery.ownership.ownerToken)
+  assert.equal(executions[1]?.leaseVersion, recovery.ownership.leaseVersion)
+  assert.equal(executions[1]?.leaseExpiresAt.toISOString(), recovery.ownership.leaseExpiresAt)
+  assert.equal(executions[1]?.recoveredFromExecutionId, owner.ownership.executionId)
 })
 
 serialTest('db-backed waiter cancellation exits promptly without starting compute or cancelling the owner', async () => {

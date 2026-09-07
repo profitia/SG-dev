@@ -135,6 +135,25 @@ export type ForecastPreparationExecutionLedgerEventInput = {
 export type ForecastPreparationExecutionLedgerStore = {
   readExecution(executionId: string): Promise<ForecastPreparationExecutionRecord | null>
   writeExecution(record: ForecastPreparationExecutionRecord): Promise<void>
+  appendExecutionTelemetry?(params: {
+    current: ForecastPreparationExecutionRecord
+    next: ForecastPreparationExecutionRecord
+    input: ForecastPreparationExecutionLedgerEventInput
+  }): Promise<void>
+}
+
+type ForecastPreparationExecutionLedgerTestHooks = {
+  beforePersistExistingExecutionEvent?: (params: {
+    current: ForecastPreparationExecutionRecord
+    next: ForecastPreparationExecutionRecord
+    input: ForecastPreparationExecutionLedgerEventInput
+  }) => void | Promise<void>
+}
+
+let forecastPreparationExecutionLedgerTestHooks: ForecastPreparationExecutionLedgerTestHooks | null = null
+
+export function setForecastPreparationExecutionLedgerTestHooks(hooks: ForecastPreparationExecutionLedgerTestHooks | null) {
+  forecastPreparationExecutionLedgerTestHooks = hooks
 }
 
 export type ForecastPreparationExecutionLedger = {
@@ -255,6 +274,22 @@ export type ForecastPreparationExecutionContextRegistry = {
 
 function canEventAdvanceAuthoritativeLeaseContext(input: ForecastPreparationExecutionLedgerEventInput) {
   return input.role === 'OWNER' && input.leaseVersion !== undefined
+}
+
+function preserveEarliestTimestampSql(columnName: string, observedAt: string) {
+  const timestamp = asSqlTimestamp(observedAt)
+  return Prisma.sql`CASE
+    WHEN ${Prisma.raw(`"${columnName}"`)} IS NULL OR ${Prisma.raw(`"${columnName}"`)} > ${timestamp} THEN ${timestamp}
+    ELSE ${Prisma.raw(`"${columnName}"`)}
+  END`
+}
+
+function preserveLatestTimestampSql(columnName: string, observedAt: string) {
+  const timestamp = asSqlTimestamp(observedAt)
+  return Prisma.sql`CASE
+    WHEN ${Prisma.raw(`"${columnName}"`)} IS NULL OR ${Prisma.raw(`"${columnName}"`)} < ${timestamp} THEN ${timestamp}
+    ELSE ${Prisma.raw(`"${columnName}"`)}
+  END`
 }
 
 type CommonLogicalIdentity = {
@@ -640,10 +675,14 @@ export function reduceForecastPreparationExecution(
     next.ownerToken = input.ownerToken
   }
 
-  const shouldAdvanceLeaseContext = canEventAdvanceAuthoritativeLeaseContext(input) && (
-    input.leaseVersion > next.leaseVersion
+  const authoritativeLeaseVersion = canEventAdvanceAuthoritativeLeaseContext(input)
+    ? input.leaseVersion
+    : undefined
+
+  const shouldAdvanceLeaseContext = authoritativeLeaseVersion !== undefined && (
+    authoritativeLeaseVersion > next.leaseVersion
     || (
-      input.leaseVersion === next.leaseVersion
+      authoritativeLeaseVersion === next.leaseVersion
       && input.leaseExpiresAt !== undefined
       && new Date(input.leaseExpiresAt).getTime() > new Date(next.leaseExpiresAt).getTime()
     )
@@ -1094,6 +1133,52 @@ function createPrismaStore(): ForecastPreparationExecutionLedgerStore {
         },
       })
     },
+
+    async appendExecutionTelemetry({ current, next, input }) {
+      const event = next.events.at(-1)
+      if (!event) {
+        return
+      }
+
+      const observedAt = event.observedAt
+      const progressObservedAt = isProgressEvent(input.eventType) ? observedAt : null
+      const waiterIncrement = input.eventType === 'single_flight_waiter_joined' && input.requestId !== input.ownerRequestId
+        ? 1
+        : 0
+      const isNewerOrEqualEvent = Prisma.sql`"lastEventAt" <= ${asSqlTimestamp(observedAt)}`
+      const { sequence: _sequence, ...eventWithoutSequence } = event
+      const eventJson = JSON.stringify(eventWithoutSequence)
+
+      const updatedRows = await prisma.$executeRaw(Prisma.sql`
+        UPDATE "forecast_preparation_execution_ledger"
+        SET
+          "eventsJson" = COALESCE("eventsJson", '[]'::jsonb) || jsonb_build_array(
+            CAST(${eventJson} AS jsonb) || jsonb_build_object('sequence', "eventCount" + 1)
+          ),
+          "eventCount" = "eventCount" + 1,
+          "latestRequestId" = CASE
+            WHEN ${isNewerOrEqualEvent} THEN ${input.requestId}
+            ELSE "latestRequestId"
+          END,
+          "latestRole" = CASE
+            WHEN ${isNewerOrEqualEvent} THEN ${input.role}
+            ELSE "latestRole"
+          END,
+          "waiterCount" = "waiterCount" + ${waiterIncrement},
+          "lastEventAt" = ${preserveLatestTimestampSql('lastEventAt', observedAt)},
+          "lastProgressAt" = ${progressObservedAt ? preserveLatestTimestampSql('lastProgressAt', progressObservedAt) : Prisma.sql`"lastProgressAt"`},
+          "computeStartedAt" = ${input.eventType === 'compute_started' ? preserveEarliestTimestampSql('computeStartedAt', observedAt) : Prisma.sql`"computeStartedAt"`},
+          "computeCompletedAt" = ${input.eventType === 'compute_completed' ? preserveLatestTimestampSql('computeCompletedAt', observedAt) : Prisma.sql`"computeCompletedAt"`},
+          "persistenceStartedAt" = ${input.eventType === 'persistence_started' ? preserveEarliestTimestampSql('persistenceStartedAt', observedAt) : Prisma.sql`"persistenceStartedAt"`},
+          "persistenceCompletedAt" = ${(input.eventType === 'persistence_completed' || input.eventType === 'persistence_failed') ? preserveLatestTimestampSql('persistenceCompletedAt', observedAt) : Prisma.sql`"persistenceCompletedAt"`},
+          "updatedAt" = NOW()
+        WHERE "executionId" = ${current.executionId}
+      `)
+
+      if (updatedRows !== 1) {
+        throw new Error(`Execution telemetry update expected exactly one row for ${current.executionId}, updated ${updatedRows}.`)
+      }
+    },
   }
 }
 
@@ -1123,6 +1208,24 @@ export function createForecastPreparationExecutionLedger(
       await runSerial(input.executionId, async () => {
         const current = await store.readExecution(input.executionId)
         const next = reduceForecastPreparationExecution(current, input)
+
+        if (current !== null && next === current) {
+          return
+        }
+
+        if (current !== null) {
+          await forecastPreparationExecutionLedgerTestHooks?.beforePersistExistingExecutionEvent?.({
+            current,
+            next,
+            input,
+          })
+        }
+
+        if (current !== null && store.appendExecutionTelemetry) {
+          await store.appendExecutionTelemetry({ current, next, input })
+          return
+        }
+
         await store.writeExecution(next)
       })
     },

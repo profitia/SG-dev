@@ -2200,7 +2200,7 @@ export function createForecastLibraryService(
       const logicalArtifactKey = buildCurrentLogicalArtifactKey(logicalArtifactIdentity)
       const requestId = resolvedDependencies.telemetry.currentContext?.()?.requestId ?? randomUUID()
       const recordCurrentExecutionEvent = (
-        executionContext: Stage3AuthoritativeExecutionLedgerContext | null,
+        executionContext: Stage3ExecutionLedgerContext | null,
         inputEvent: Omit<Parameters<ForecastPreparationExecutionLedger['recordEvent']>[0], 'executionId'>,
       ) => recordAuthoritativeExecutionEvent(executionContext, inputEvent, {
         seriesId: input.seriesId,
@@ -2803,7 +2803,7 @@ export function createForecastLibraryService(
       const logicalArtifactKey = buildVerificationLogicalArtifactKey(logicalArtifactIdentity)
       const requestId = resolvedDependencies.telemetry.currentContext?.()?.requestId ?? randomUUID()
       const recordVerificationExecutionEvent = (
-        executionContext: Stage3AuthoritativeExecutionLedgerContext | null,
+        executionContext: Stage3ExecutionLedgerContext | null,
         inputEvent: Omit<Parameters<ForecastPreparationExecutionLedger['recordEvent']>[0], 'executionId'>,
       ) => recordAuthoritativeExecutionEvent(executionContext, inputEvent, {
         seriesId: input.seriesId,
