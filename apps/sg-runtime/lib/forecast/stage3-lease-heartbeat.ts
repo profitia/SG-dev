@@ -48,7 +48,7 @@ export function startForecastExecutionLeaseHeartbeat(input: {
   let currentOwnership = input.ownership
   let stopped = false
   let timer: ReturnType<typeof setTimeout> | null = null
-  let activeRenewal: Promise<void> | null = null
+  let activeRenewal: Promise<ForecastPreparationOwnedExecutionContext> | null = null
   let ownershipLossError: Error | null = null
 
   const normalizeOwnershipLoss = (error: unknown) => {
@@ -62,30 +62,48 @@ export function startForecastExecutionLeaseHeartbeat(input: {
     )
   }
 
+  const renewSerialized = () => {
+    if (ownershipLossError) {
+      throw ownershipLossError
+    }
+
+    if (activeRenewal) {
+      return activeRenewal
+    }
+
+    activeRenewal = input.executionAdmission.renewLease({
+      executionId: currentOwnership.executionId,
+      logicalArtifactKey: input.logicalArtifactKey,
+      ownerToken: currentOwnership.ownerToken,
+      leaseVersion: currentOwnership.leaseVersion,
+      requestId: input.requestId,
+    }).then((renewedOwnership) => {
+      currentOwnership = renewedOwnership
+      return renewedOwnership
+    }).catch((error) => {
+      ownershipLossError = normalizeOwnershipLoss(error)
+      stopped = true
+      throw ownershipLossError
+    }).finally(() => {
+      activeRenewal = null
+    })
+
+    return activeRenewal
+  }
+
   const schedule = () => {
     if (stopped) {
       return
     }
 
     timer = setTimeout(() => {
-      activeRenewal = (async () => {
-        try {
-          currentOwnership = await input.executionAdmission.renewLease({
-            executionId: currentOwnership.executionId,
-            logicalArtifactKey: input.logicalArtifactKey,
-            ownerToken: currentOwnership.ownerToken,
-            leaseVersion: currentOwnership.leaseVersion,
-            requestId: input.requestId,
-          })
-        } catch (error) {
-          ownershipLossError = normalizeOwnershipLoss(error)
-          stopped = true
-          return
+      timer = null
+      void renewSerialized().then(() => {
+        if (!stopped) {
+          schedule()
         }
-
-        schedule()
-      })().finally(() => {
-        activeRenewal = null
+      }).catch(() => {
+        // ownershipLossError is set by renewSerialized and remains sticky.
       })
     }, input.heartbeatIntervalMs)
   }
@@ -109,14 +127,7 @@ export function startForecastExecutionLeaseHeartbeat(input: {
         throw ownershipLossError
       }
 
-      currentOwnership = await input.executionAdmission.renewLease({
-        executionId: currentOwnership.executionId,
-        logicalArtifactKey: input.logicalArtifactKey,
-        ownerToken: currentOwnership.ownerToken,
-        leaseVersion: currentOwnership.leaseVersion,
-        requestId: input.requestId,
-      })
-      return currentOwnership
+      return renewSerialized()
     },
     async stop() {
       stopped = true
