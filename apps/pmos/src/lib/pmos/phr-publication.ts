@@ -90,7 +90,14 @@ function classifyPublicationFailure(message: string): Pick<PhrPublicationResult,
     return { status: 'FAILED_RETRYABLE', retryable: true }
   }
 
-  if (message.includes('does not match') || message.includes('not a Git worktree') || message.includes('missing canonical files')) {
+  if (
+    message.includes('does not match') ||
+    message.includes('not a Git worktree') ||
+    message.includes('missing canonical files') ||
+    message.includes('Bundle conflict detected') ||
+    message.includes('immutable bundle') ||
+    message.includes('conflict')
+  ) {
     return { status: 'CONFLICT', retryable: false }
   }
 

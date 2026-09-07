@@ -38,6 +38,59 @@ function createTempPhrRepo(originRemote: string) {
   return { tempRoot, repoPath }
 }
 
+function createReplayableTempPhrRepo(originRemote: string) {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'pmos-phr-replay-'))
+  const repoPath = path.join(tempRoot, 'phr')
+
+  runGit(tempRoot, ['init', repoPath])
+  runGit(repoPath, ['config', 'user.email', 'phr-test@example.com'])
+  runGit(repoPath, ['config', 'user.name', 'PHR Test'])
+
+  fs.mkdirSync(path.join(repoPath, 'scripts'), { recursive: true })
+  fs.mkdirSync(path.join(repoPath, 'schemas'), { recursive: true })
+  fs.mkdirSync(path.join(repoPath, 'history'), { recursive: true })
+  fs.writeFileSync(path.join(repoPath, 'history', 'README.md'), 'history\n', 'utf8')
+  fs.writeFileSync(path.join(repoPath, 'schemas', 'publication-manifest-v1.schema.json'), '{}\n', 'utf8')
+  fs.writeFileSync(path.join(repoPath, 'scripts', 'publish-bundle.mjs'), [
+    '#!/usr/bin/env node',
+    'import fs from "node:fs"',
+    'import path from "node:path"',
+    'import { createHash } from "node:crypto"',
+    'const inputIndex = process.argv.indexOf("--input")',
+    'if (inputIndex === -1 || !process.argv[inputIndex + 1]) {',
+    '  console.error("Missing --input")',
+    '  process.exit(1)',
+    '}',
+    'const publication = JSON.parse(fs.readFileSync(process.argv[inputIndex + 1], "utf8"))',
+    'const historyRoot = path.join(process.env.PHR_REPOSITORY_PATH, "history", publication.publicationId)',
+    'const fingerprint = createHash("sha256").update(JSON.stringify({',
+    '  publicationId: publication.publicationId,',
+    '  handoff: publication.artifacts.find((artifact) => artifact.type === "handoff.md")?.content ?? null,',
+    '})).digest("hex")',
+    'const fingerprintPath = path.join(historyRoot, "fingerprint.json")',
+    'const manifestPath = path.join(historyRoot, "manifest.json")',
+    'if (!fs.existsSync(historyRoot)) {',
+    '  fs.mkdirSync(historyRoot, { recursive: true })',
+    '  fs.writeFileSync(fingerprintPath, JSON.stringify({ fingerprint }, null, 2))',
+    '  fs.writeFileSync(manifestPath, JSON.stringify({ fingerprint, publicationId: publication.publicationId }, null, 2))',
+    '  console.log(JSON.stringify({ status: "PUBLISHED", bundlePath: historyRoot, manifestPath, commitSha: "abc123", publicationId: publication.publicationId, taskId: publication.taskId, artifactCount: publication.artifacts.length }))',
+    '  process.exit(0)',
+    '}',
+    'const existing = JSON.parse(fs.readFileSync(fingerprintPath, "utf8")).fingerprint',
+    'if (existing === fingerprint) {',
+    '  console.log(JSON.stringify({ status: "IDEMPOTENT", bundlePath: historyRoot, manifestPath, commitSha: "abc123", publicationId: publication.publicationId, taskId: publication.taskId, artifactCount: publication.artifacts.length }))',
+    '  process.exit(0)',
+    '}',
+    'console.error("Bundle conflict detected for handoff.md")',
+    'process.exit(1)',
+  ].join('\n'), 'utf8')
+  runGit(repoPath, ['add', '.'])
+  runGit(repoPath, ['commit', '-m', 'init replayable phr'])
+  runGit(repoPath, ['remote', 'add', 'origin', originRemote])
+
+  return { tempRoot, repoPath }
+}
+
 function makePublication() {
   return buildPhrPublicationInput({
     artifact: {
@@ -76,6 +129,42 @@ function makePublication() {
         copyReadyText: 'test',
       },
     },
+    closeout: {
+      closeoutState: 'CLOSEOUT_COMPLETE',
+      closeoutCompletedAt: '2026-09-05T12:01:00.000Z',
+    } as never,
+    closeoutRef: 'apps/pmos/.pmos/recovery/closeouts/test.closeout.json',
+    conversationArtifactPath: 'apps/pmos/.pmos/conversations/test.json',
+  })
+}
+
+function makeRefreshedPublication(options?: { pendingArtifactSlotFinal?: 'CLEAR' | 'OCCUPIED' }) {
+  return buildPhrPublicationInput({
+    artifact: {
+      metadata: {
+        taskId: 'phr-adapter-test',
+        project: 'Project History Repository',
+        timestamp: '2026-09-05T12:00:00.000Z',
+      },
+      result: { finalStatus: 'SUCCESS' },
+    } as never,
+    handoff: {
+      id: 'conversation:HANDOFF:v1',
+      artifactKind: 'HANDOFF',
+      artifactNature: 'DERIVED',
+      version: 'v1',
+      status: 'GENERATED',
+      taskId: 'phr-adapter-test',
+      conversationId: 'conversation',
+      createdAt: '2026-09-05T12:00:00.000Z',
+      sourceRefs: [],
+      payload: {
+        finalizationContext: {
+          pendingArtifactSlotFinal: options?.pendingArtifactSlotFinal ?? 'CLEAR',
+        },
+        bridgePayloadText: 'refreshed',
+      },
+    } as never,
     closeout: {
       closeoutState: 'CLOSEOUT_COMPLETE',
       closeoutCompletedAt: '2026-09-05T12:01:00.000Z',
@@ -232,6 +321,95 @@ test('publishPhrPublicationOnCompletedCloseout writes sidecar on lawful closeout
   assert.equal(result.result?.status, 'PUBLISHED')
   assert.equal(attemptCalls, 1)
   assert.equal(sidecarCalls, 1)
+})
+
+test('buildPhrPublicationInput carries the refreshed handoff slot state', () => {
+  const publication = makeRefreshedPublication({ pendingArtifactSlotFinal: 'CLEAR' })
+
+  assert.equal(publication.artifacts[0].sourceId, 'conversation:HANDOFF:v1')
+  assert.equal(
+    (publication.artifacts[0].content as { payload?: { finalizationContext?: { pendingArtifactSlotFinal?: string } } }).payload?.finalizationContext?.pendingArtifactSlotFinal,
+    'CLEAR',
+  )
+})
+
+test('writePhrPublicationAttempt publishes once, replays idempotently, and conflicts on immutable bundle drift', () => {
+  const { repoPath } = createReplayableTempPhrRepo('https://github.com/profitia/project-history-repository.git')
+  const publication = makeRefreshedPublication({ pendingArtifactSlotFinal: 'CLEAR' })
+
+  const first = writePhrPublicationAttempt({ publication, repositoryPath: repoPath })
+  assert.equal(first.status, 'PUBLISHED')
+
+  const second = writePhrPublicationAttempt({ publication, repositoryPath: repoPath })
+  assert.equal(second.status, 'IDEMPOTENT')
+
+  const bundleEntries = fs.readdirSync(path.join(repoPath, 'history', publication.publicationId))
+  assert.equal(bundleEntries.filter((entry) => entry === 'manifest.json').length, 1)
+  assert.equal(bundleEntries.filter((entry) => entry === 'fingerprint.json').length, 1)
+
+  const conflictingPublication = makeRefreshedPublication({ pendingArtifactSlotFinal: 'OCCUPIED' })
+  const conflict = writePhrPublicationAttempt({ publication: conflictingPublication, repositoryPath: repoPath })
+  assert.equal(conflict.status, 'CONFLICT')
+  assert.equal(conflict.retryable, false)
+})
+
+test('publishPhrPublicationOnCompletedCloseout keeps PMOS closeout independent from publication failure', () => {
+  let attemptCalls = 0
+  const result = publishPhrPublicationOnCompletedCloseout({
+    artifact: {
+      metadata: {
+        taskId: 'phr-adapter-test',
+        project: 'Project History Repository',
+        timestamp: '2026-09-05T12:00:00.000Z',
+      },
+      result: { finalStatus: 'SUCCESS' },
+    } as never,
+    handoff: {
+      id: 'conversation:HANDOFF:v1',
+      artifactKind: 'HANDOFF',
+      artifactNature: 'DERIVED',
+      version: 'v1',
+      status: 'GENERATED',
+      taskId: 'phr-adapter-test',
+      conversationId: 'conversation',
+      createdAt: '2026-09-05T12:00:00.000Z',
+      sourceRefs: [],
+      payload: {
+        finalizationContext: {
+          pendingArtifactSlotFinal: 'CLEAR',
+        },
+        bridgePayloadText: 'refreshed',
+      },
+    } as never,
+    closeout: {
+      closeoutState: 'CLOSEOUT_COMPLETE',
+      closeoutCompletedAt: '2026-09-05T12:01:00.000Z',
+    } as never,
+    closeoutRef: 'closeout.json',
+    conversationArtifactPath: 'conversation.json',
+    sidecarPath: path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'pmos-phr-failure-')), 'phr.json'),
+    repositoryPath: '/tmp/phr',
+    writeAttempt: () => {
+      attemptCalls += 1
+      return {
+        status: 'FAILED',
+        retryable: false,
+        bundlePath: null,
+        manifestPath: null,
+        commitSha: null,
+        publicationId: 'phr-adapter-test',
+        taskId: 'phr-adapter-test',
+        artifactCount: 5,
+        repositoryPath: '/tmp/phr',
+        error: 'immutable bundle conflict',
+      }
+    },
+    writeSidecar: () => undefined,
+  })
+
+  assert.equal(result.attempted, true)
+  assert.equal(result.result?.status, 'FAILED')
+  assert.equal(attemptCalls, 1)
 })
 
 function makeFailedResult() {

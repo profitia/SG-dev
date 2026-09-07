@@ -3036,23 +3036,6 @@ async function main() {
     },
   })
 
-  const phrPublicationResult = publishPhrPublicationOnCompletedCloseout({
-    artifact: canonicalFlightRecordPayload,
-    handoff: persistedHandoffArtifactForPublication,
-    closeout: evidence,
-    closeoutRef: relativize(closeoutEvidencePath),
-    conversationArtifactPath: relativize(jsonPath),
-    sidecarPath: path.join(PHR_PUBLICATIONS_DIR, `${baseName}.json`),
-    repositoryPath: process.env.PHR_REPOSITORY_PATH ?? '',
-  })
-  if (phrPublicationResult.attempted) {
-    if (phrPublicationResult.result && isSuccessfulPhrPublicationStatus(phrPublicationResult.result.status)) {
-      console.log(`[pmos-save] ✓ PHR publication ${phrPublicationResult.result.status.toLowerCase()} for ${artifact.metadata.conversationId}`)
-    } else if (phrPublicationResult.result) {
-      console.warn(`[pmos-save] ⚠️  PHR publication ${phrPublicationResult.result.status.toLowerCase()} for ${artifact.metadata.conversationId}: ${phrPublicationResult.result.error ?? 'unknown error'}`)
-    }
-  }
-
   // 4. Clear pending artifact
   fs.unlinkSync(PENDING_FILE)
   console.log('[pmos-save] ✓ Cleared pending-artifact.json')
@@ -3082,6 +3065,23 @@ async function main() {
     traceability,
   })
   syncPendingArtifactSnapshot(canonicalFlightRecordPayload)
+
+  const phrPublicationResult = publishPhrPublicationOnCompletedCloseout({
+    artifact: canonicalFlightRecordPayload,
+    handoff: persistedHandoffArtifactForPublication,
+    closeout: evidence,
+    closeoutRef: relativize(closeoutEvidencePath),
+    conversationArtifactPath: relativize(jsonPath),
+    sidecarPath: path.join(PHR_PUBLICATIONS_DIR, `${baseName}.json`),
+    repositoryPath: process.env.PHR_REPOSITORY_PATH ?? '',
+  })
+  if (phrPublicationResult.attempted) {
+    if (phrPublicationResult.result && isSuccessfulPhrPublicationStatus(phrPublicationResult.result.status)) {
+      console.log(`[pmos-save] ✓ PHR publication ${phrPublicationResult.result.status.toLowerCase()} for ${artifact.metadata.conversationId}`)
+    } else if (phrPublicationResult.result) {
+      console.warn(`[pmos-save] ⚠️  PHR publication ${phrPublicationResult.result.status.toLowerCase()} for ${artifact.metadata.conversationId}: ${phrPublicationResult.result.error ?? 'unknown error'}`)
+    }
+  }
 
   if (fs.existsSync(ACTIVE_CLOSEOUT_FILE)) {
     fs.unlinkSync(ACTIVE_CLOSEOUT_FILE)
