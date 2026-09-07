@@ -120,7 +120,11 @@ export type ForecastServiceRequest = {
   signal?: AbortSignal
 }
 
-type Stage3AuthoritativeExecutionLedgerContext = {
+type Stage3ExecutionLedgerContext = {
+  executionId: string
+}
+
+type Stage3AuthoritativeExecutionLedgerContext = Stage3ExecutionLedgerContext & {
   executionId: string
   ownerToken: string
   leaseVersion: number
@@ -152,19 +156,34 @@ function throwIfAborted(signal?: AbortSignal) {
 }
 
 function resolveStage3HeartbeatIntervalMs(leaseDurationMs: number) {
+  if (leaseDurationMs <= MIN_FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS) {
+    throw new Error(
+      'FORECAST_STAGE3_LEASE_DURATION_MS must be greater than 1000 milliseconds so heartbeatInterval can remain strictly below leaseDuration.',
+    )
+  }
+
   const rawValue = process.env.FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS?.trim()
   if (rawValue) {
     const parsed = Number.parseInt(rawValue, 10)
     if (!Number.isFinite(parsed) || parsed < MIN_FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS) {
       throw new Error('FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS must be an integer >= 1000 milliseconds.')
     }
+    if (parsed >= leaseDurationMs) {
+      throw new Error('FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS must be strictly less than FORECAST_STAGE3_LEASE_DURATION_MS.')
+    }
     return parsed
   }
 
-  return Math.max(
+  const heartbeatIntervalMs = Math.max(
     MIN_FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS,
     Math.min(Math.floor(leaseDurationMs / 3), MAX_FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS),
   )
+
+  if (heartbeatIntervalMs >= leaseDurationMs) {
+    throw new Error('Derived Stage 3 heartbeat interval must remain strictly less than the lease duration.')
+  }
+
+  return heartbeatIntervalMs
 }
 
 function resolveStage3WaiterMaxWaitMs(leaseDurationMs: number) {
@@ -1839,16 +1858,16 @@ export function createForecastLibraryService(
 
   const toWaiterExecutionLedgerContext = (
     admission: Extract<Awaited<ReturnType<ForecastPreparationExecutionAdmission['acquireExecution']>>, { role: 'WAITER' }>,
-  ): Stage3AuthoritativeExecutionLedgerContext => ({
+  ): Stage3ExecutionLedgerContext => ({
     executionId: admission.executionId,
-    ownerToken: admission.ownerToken,
-    leaseVersion: admission.leaseVersion,
-    leaseExpiresAt: admission.leaseExpiresAt,
-    recoveredFromExecutionId: admission.recoveredFromExecutionId,
   })
 
+  const isAuthoritativeExecutionLedgerContext = (
+    executionContext: Stage3ExecutionLedgerContext,
+  ): executionContext is Stage3AuthoritativeExecutionLedgerContext => 'ownerToken' in executionContext
+
   const recordAuthoritativeExecutionEvent = (
-    executionContext: Stage3AuthoritativeExecutionLedgerContext | null,
+    executionContext: Stage3ExecutionLedgerContext | null,
     inputEvent: Omit<Parameters<ForecastPreparationExecutionLedger['recordEvent']>[0], 'executionId'>,
     context: { seriesId: string; modelId: string },
   ) => {
@@ -1859,13 +1878,17 @@ export function createForecastLibraryService(
     void resolvedDependencies.executionLedger.recordEvent({
       ...inputEvent,
       executionId: executionContext.executionId,
-      attemptKind: executionContext.attemptKind,
-      executionMode: executionContext.executionMode,
-      ownerToken: executionContext.ownerToken,
-      leaseVersion: executionContext.leaseVersion,
-      leaseAcquiredAt: executionContext.leaseAcquiredAt,
-      leaseExpiresAt: executionContext.leaseExpiresAt,
-      recoveredFromExecutionId: executionContext.recoveredFromExecutionId,
+      ...(isAuthoritativeExecutionLedgerContext(executionContext)
+        ? {
+            attemptKind: executionContext.attemptKind,
+            executionMode: executionContext.executionMode,
+            ownerToken: executionContext.ownerToken,
+            leaseVersion: executionContext.leaseVersion,
+            leaseAcquiredAt: executionContext.leaseAcquiredAt,
+            leaseExpiresAt: executionContext.leaseExpiresAt,
+            recoveredFromExecutionId: executionContext.recoveredFromExecutionId,
+          }
+        : {}),
     }).catch((error) => {
       resolvedDependencies.logEvent('FORECAST_PREPARATION_EXECUTION_LEDGER', {
         seriesId: context.seriesId,

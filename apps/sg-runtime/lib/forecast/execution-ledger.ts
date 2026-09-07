@@ -253,6 +253,10 @@ export type ForecastPreparationExecutionContextRegistry = {
   getActiveContextCount(): number
 }
 
+function canEventAdvanceAuthoritativeLeaseContext(input: ForecastPreparationExecutionLedgerEventInput) {
+  return input.role === 'OWNER' && input.leaseVersion !== undefined
+}
+
 type CommonLogicalIdentity = {
   artifactScope: ForecastArtifactScope
   trainingWindowPolicyId: ForecastTrainingWindowPolicyId
@@ -636,7 +640,7 @@ export function reduceForecastPreparationExecution(
     next.ownerToken = input.ownerToken
   }
 
-  const shouldAdvanceLeaseContext = input.leaseVersion !== undefined && (
+  const shouldAdvanceLeaseContext = canEventAdvanceAuthoritativeLeaseContext(input) && (
     input.leaseVersion > next.leaseVersion
     || (
       input.leaseVersion === next.leaseVersion

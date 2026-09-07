@@ -18,6 +18,31 @@ function createTestForecastLibraryService(
   })
 }
 
+async function withEnv<T>(overrides: Record<string, string | undefined>, run: () => Promise<T>): Promise<T> {
+  const previousValues = new Map<string, string | undefined>()
+
+  for (const [key, value] of Object.entries(overrides)) {
+    previousValues.set(key, process.env[key])
+    if (value === undefined) {
+      delete process.env[key]
+      continue
+    }
+    process.env[key] = value
+  }
+
+  try {
+    return await run()
+  } finally {
+    for (const [key, value] of previousValues.entries()) {
+      if (value === undefined) {
+        delete process.env[key]
+        continue
+      }
+      process.env[key] = value
+    }
+  }
+}
+
 function createHistoryResponse() {
   return {
     status: 'AVAILABLE' as const,
@@ -2077,4 +2102,34 @@ test('stress telemetry leaves Forecast values and identity unchanged', async () 
   assert.ok(telemetryEvents.includes('current_compute_end'))
   assert.ok(telemetryEvents.includes('model_fit'))
   assert.ok(telemetryEvents.includes('persistence'))
+})
+
+test('forecast library rejects Stage 3 heartbeat intervals that are not strictly below the lease duration', async () => {
+  await withEnv(
+    {
+      FORECAST_STAGE3_LEASE_DURATION_MS: '3000',
+      FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS: '3000',
+    },
+    async () => {
+      await assert.rejects(
+        async () => createTestForecastLibraryService({ logEvent: () => {} }),
+        /FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS must be strictly less than FORECAST_STAGE3_LEASE_DURATION_MS/,
+      )
+    },
+  )
+})
+
+test('forecast library rejects lease durations that cannot support a safe Stage 3 heartbeat', async () => {
+  await withEnv(
+    {
+      FORECAST_STAGE3_LEASE_DURATION_MS: '1000',
+      FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS: undefined,
+    },
+    async () => {
+      await assert.rejects(
+        async () => createTestForecastLibraryService({ logEvent: () => {} }),
+        /FORECAST_STAGE3_LEASE_DURATION_MS must be greater than 1000 milliseconds/,
+      )
+    },
+  )
 })

@@ -396,6 +396,50 @@ test('execution ledger failure metadata is phase-aware and terminal transitions 
   assert.equal(released.lastProgressAt, '2026-09-06T18:30:02.000Z')
 })
 
+test('passive waiter events cannot advance authoritative lease state', () => {
+  const executionId = '29c08242-9dad-40bf-9136-2400c21c7dbb'
+  let record = reduceForecastPreparationExecution(null, {
+    executionId,
+    logicalArtifactKey: 'logical-current',
+    operationFamily: 'CURRENT',
+    logicalArtifactIdentity: currentIdentity,
+    requestId: 'req-owner',
+    ownerRequestId: 'req-owner',
+    role: 'OWNER',
+    eventType: 'single_flight_owner_acquired',
+    observedAt: '2026-09-07T12:00:00.000Z',
+    attemptKind: 'PRIMARY',
+    executionMode: 'PRE_STAGE3_PREPARATION',
+    ownerToken: 'owner-token-3',
+    leaseVersion: 1,
+    leaseAcquiredAt: '2026-09-07T12:00:00.000Z',
+    leaseExpiresAt: '2026-09-07T12:05:00.000Z',
+  })
+
+  record = reduceForecastPreparationExecution(record, {
+    executionId,
+    logicalArtifactKey: 'logical-current',
+    operationFamily: 'CURRENT',
+    logicalArtifactIdentity: currentIdentity,
+    requestId: 'req-waiter',
+    ownerRequestId: 'req-owner',
+    role: 'WAITER',
+    eventType: 'single_flight_waiter_joined',
+    observedAt: '2026-09-07T12:00:01.000Z',
+    leaseVersion: 99,
+    leaseAcquiredAt: '2026-09-07T12:00:01.000Z',
+    leaseExpiresAt: '2026-09-07T13:00:00.000Z',
+    recoveredFromExecutionId: 'spoofed-recovery',
+  })
+
+  assert.equal(record.leaseVersion, 1)
+  assert.equal(record.leaseAcquiredAt, '2026-09-07T12:00:00.000Z')
+  assert.equal(record.leaseExpiresAt, '2026-09-07T12:05:00.000Z')
+  assert.equal(record.recoveredFromExecutionId, null)
+  assert.equal(record.waiterCount, 1)
+  assert.equal(record.latestRole, 'WAITER')
+})
+
 test('corrective migration keeps historical progress semantics and removes misleading defaults additively', () => {
   const migration = readFileSync(
     new URL('../prisma-market-data/migrations/20260906235500_forecast_execution_ledger_stage2_contract_fix/migration.sql', import.meta.url),

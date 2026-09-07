@@ -43,6 +43,7 @@ const marketDataPrisma = new PrismaClient({
 })
 
 let createDefaultForecastPreparationExecutionAdmission: typeof import('../lib/forecast/execution-ledger')['createDefaultForecastPreparationExecutionAdmission']
+let createForecastPreparationExecutionLedger: typeof import('../lib/forecast/execution-ledger')['createForecastPreparationExecutionLedger']
 let createForecastLibraryService: typeof import('../lib/forecast/service')['createForecastLibraryService']
 let setForecastPersistenceTestHooks: typeof import('../lib/forecast/service')['setForecastPersistenceTestHooks']
 let writeCurrentRunWithPrisma: typeof import('../lib/forecast/service')['writeCurrentRunWithPrisma']
@@ -352,6 +353,26 @@ async function waitForExecution(logicalArtifactKey: string, timeoutMs = 5_000) {
   throw new Error(`Timed out waiting for execution ${logicalArtifactKey}.`)
 }
 
+async function waitForExecutionStatus(
+  logicalArtifactKey: string,
+  executionStatus: 'STARTED' | 'COMPLETED' | 'FAILED',
+  timeoutMs = 5_000,
+) {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt < timeoutMs) {
+    const record = await requirePrisma().forecastPreparationExecutionLedger.findFirst({
+      where: { logicalArtifactKey },
+      orderBy: [{ startedAt: 'desc' }, { updatedAt: 'desc' }],
+    })
+    if (record?.executionStatus === executionStatus) {
+      return record
+    }
+    await delay(25)
+  }
+
+  throw new Error(`Timed out waiting for execution ${logicalArtifactKey} to reach ${executionStatus}.`)
+}
+
 function createDbBackedService(bridgeOverrides: Partial<ForecastBridge> = {}) {
   const bridge: ForecastBridge = {
     async exportHistory(input) {
@@ -393,6 +414,7 @@ test.before(async () => {
   const serviceModule = await import('../lib/forecast/service')
 
   createDefaultForecastPreparationExecutionAdmission = executionLedgerModule.createDefaultForecastPreparationExecutionAdmission
+  createForecastPreparationExecutionLedger = executionLedgerModule.createForecastPreparationExecutionLedger
   createForecastLibraryService = serviceModule.createForecastLibraryService
   setForecastPersistenceTestHooks = serviceModule.setForecastPersistenceTestHooks
   writeCurrentRunWithPrisma = serviceModule.writeCurrentRunWithPrisma
@@ -505,6 +527,7 @@ serialTest('db-backed high concurrency produces one authoritative owner, one com
   await writeFile(computeLogPath, '')
 
   try {
+    const logicalArtifactKey = buildCurrentStage3LogicalArtifactKey('stage3-high-concurrency-series')
     const results = await Promise.all(
       Array.from({ length: 20 }, () => runSuccessfulWorker({
         STAGE3_MODE: 'current',
@@ -523,6 +546,7 @@ serialTest('db-backed high concurrency produces one authoritative owner, one com
 
     const runs = await requirePrisma().forecastCurrentRun.findMany({ where: { seriesId: 'stage3-high-concurrency-series' } })
     assert.equal(runs.length, 1)
+    const completedExecution = await waitForExecutionStatus(logicalArtifactKey, 'COMPLETED')
     const executions = await requirePrisma().forecastPreparationExecutionLedger.findMany({
       where: {
         seriesId: 'stage3-high-concurrency-series',
@@ -530,8 +554,8 @@ serialTest('db-backed high concurrency produces one authoritative owner, one com
       },
     })
     assert.equal(executions.length, 1)
-    assert.equal(executions[0]?.executionStatus, 'COMPLETED')
-    assert.ok((executions[0]?.waiterCount ?? 0) >= 1)
+    assert.equal(completedExecution.executionStatus, 'COMPLETED')
+    assert.ok(completedExecution.waiterCount >= 1)
   } finally {
     await rm(tempDir, { recursive: true, force: true })
   }
@@ -793,6 +817,58 @@ serialTest('db-backed long compute heartbeat keeps one global owner and one comp
   } finally {
     await rm(tempDir, { recursive: true, force: true })
   }
+})
+
+serialTest('db-backed passive waiter ledger writes cannot overwrite authoritative lease state', async () => {
+  const executionId = 'b0feef7e-7f90-4f9b-a2aa-4ce0247ea85e'
+  const logicalArtifactIdentity = createCurrentLogicalArtifactIdentity('stage3-passive-ledger-series')
+  const ledger = createForecastPreparationExecutionLedger()
+
+  await ledger.recordEvent({
+    executionId,
+    logicalArtifactKey: buildCurrentStage3LogicalArtifactKey('stage3-passive-ledger-series'),
+    operationFamily: 'CURRENT',
+    logicalArtifactIdentity,
+    requestId: 'stage3-passive-owner',
+    ownerRequestId: 'stage3-passive-owner',
+    role: 'OWNER',
+    eventType: 'single_flight_owner_acquired',
+    observedAt: '2026-09-07T12:10:00.000Z',
+    attemptKind: 'PRIMARY',
+    executionMode: 'PRE_STAGE3_PREPARATION',
+    ownerToken: 'stage3-passive-owner-token',
+    leaseVersion: 1,
+    leaseAcquiredAt: '2026-09-07T12:10:00.000Z',
+    leaseExpiresAt: '2026-09-07T12:15:00.000Z',
+  })
+
+  await ledger.recordEvent({
+    executionId,
+    logicalArtifactKey: buildCurrentStage3LogicalArtifactKey('stage3-passive-ledger-series'),
+    operationFamily: 'CURRENT',
+    logicalArtifactIdentity,
+    requestId: 'stage3-passive-waiter',
+    ownerRequestId: 'stage3-passive-owner',
+    role: 'WAITER',
+    eventType: 'single_flight_waiter_joined',
+    observedAt: '2026-09-07T12:10:01.000Z',
+    leaseVersion: 99,
+    leaseAcquiredAt: '2026-09-07T12:10:01.000Z',
+    leaseExpiresAt: '2026-09-07T13:10:00.000Z',
+    recoveredFromExecutionId: 'spoofed-recovery',
+  })
+
+  const execution = await requirePrisma().forecastPreparationExecutionLedger.findUnique({
+    where: { executionId },
+  })
+
+  assert.ok(execution)
+  assert.equal(execution?.leaseVersion, 1)
+  assert.equal(execution?.leaseAcquiredAt.toISOString(), '2026-09-07T12:10:00.000Z')
+  assert.equal(execution?.leaseExpiresAt.toISOString(), '2026-09-07T12:15:00.000Z')
+  assert.equal(execution?.recoveredFromExecutionId, null)
+  assert.equal(execution?.waiterCount, 1)
+  assert.equal(execution?.latestRole, 'WAITER')
 })
 
 serialTest('db-backed waiter cancellation exits promptly without starting compute or cancelling the owner', async () => {
