@@ -15,6 +15,7 @@ import {
   createInternalForecastCapabilityRouteHandler,
   createInternalProgressiveForecastPreparationRouteHandler,
 } from '../lib/forecast/interactive-route-handlers'
+import type { ForecastPreparationExecutionAdmission } from '../lib/forecast/execution-ledger'
 import type {
   BenchmarkForecastCurrentResult,
   BenchmarkForecastVerificationResult,
@@ -46,6 +47,146 @@ function buildJsonRequest(url: string, body: unknown, headers: Record<string, st
     },
     body: JSON.stringify(body),
   })
+}
+
+function createStubExecutionAdmission(): ForecastPreparationExecutionAdmission {
+  const executions = new Map<string, {
+    executionId: string
+    ownerToken: string
+    ownerRequestId: string
+    leaseVersion: number
+    leaseExpiresAt: string
+    executionStatus: 'STARTED' | 'COMPLETED' | 'FAILED'
+    failureReason: string | null
+  }>()
+
+  return {
+    leaseDurationMs: 1_000,
+    async acquireExecution(input) {
+      const existing = executions.get(input.logicalArtifactKey)
+      if (!existing || existing.executionStatus !== 'STARTED') {
+        const execution = {
+          executionId: `exec-${executions.size + 1}`,
+          ownerToken: `owner-${executions.size + 1}`,
+          ownerRequestId: input.ownerRequestId,
+          leaseVersion: 1,
+          leaseExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+          executionStatus: 'STARTED' as const,
+          failureReason: null,
+        }
+        executions.set(input.logicalArtifactKey, execution)
+        return {
+          role: 'OWNER' as const,
+          ownership: {
+            role: 'OWNER' as const,
+            requestId: input.requestId,
+            operationFamily: input.operationFamily,
+            logicalArtifactKey: input.logicalArtifactKey,
+            executionId: execution.executionId,
+            ownerToken: execution.ownerToken,
+            ownerRequestId: execution.ownerRequestId,
+            attemptKind: 'PRIMARY' as const,
+            executionMode: 'PRE_STAGE3_PREPARATION' as const,
+            leaseVersion: execution.leaseVersion,
+            leaseAcquiredAt: new Date().toISOString(),
+            leaseExpiresAt: execution.leaseExpiresAt,
+            recoveredFromExecutionId: null,
+          },
+        }
+      }
+
+      return {
+        role: 'WAITER' as const,
+        executionId: existing.executionId,
+        ownerRequestId: existing.ownerRequestId,
+        ownerToken: existing.ownerToken,
+        leaseVersion: existing.leaseVersion,
+        leaseExpiresAt: existing.leaseExpiresAt,
+        recoveredFromExecutionId: null,
+      }
+    },
+    async renewLease(input) {
+      const existing = executions.get(input.logicalArtifactKey)
+      if (!existing) throw new Error('missing execution')
+      existing.leaseVersion += 1
+      existing.leaseExpiresAt = new Date(Date.now() + 60_000).toISOString()
+      return {
+        role: 'OWNER' as const,
+        requestId: input.requestId,
+        operationFamily: 'CURRENT',
+        logicalArtifactKey: input.logicalArtifactKey,
+        executionId: existing.executionId,
+        ownerToken: existing.ownerToken,
+        ownerRequestId: existing.ownerRequestId,
+        attemptKind: 'PRIMARY' as const,
+        executionMode: 'PRE_STAGE3_PREPARATION' as const,
+        leaseVersion: existing.leaseVersion,
+        leaseAcquiredAt: new Date().toISOString(),
+        leaseExpiresAt: existing.leaseExpiresAt,
+        recoveredFromExecutionId: null,
+      }
+    },
+    async markExecutionCompleted(input) {
+      const existing = executions.get(input.logicalArtifactKey)
+      if (!existing) throw new Error('missing execution')
+      existing.executionStatus = 'COMPLETED'
+    },
+    async markExecutionFailed(input) {
+      const existing = executions.get(input.logicalArtifactKey)
+      if (!existing) throw new Error('missing execution')
+      existing.executionStatus = 'FAILED'
+      existing.failureReason = input.failureReason
+    },
+    async readLatestExecutionForLogicalArtifact(logicalArtifactKey) {
+      const existing = executions.get(logicalArtifactKey)
+      if (!existing) return null
+      return {
+        executionId: existing.executionId,
+        logicalArtifactKey,
+        operationFamily: 'CURRENT',
+        executionStatus: existing.executionStatus,
+        resultStatus: existing.executionStatus === 'COMPLETED' ? 'AVAILABLE' : existing.executionStatus === 'FAILED' ? 'FAILED' : null,
+        cacheStatus: null,
+        artifactScope: 'CURRENT_FORECAST',
+        trainingWindowPolicyId: 'CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1',
+        seriesId: 'stub-series',
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodVersion: 'rolling-daily-point-in-time-v1',
+        modelId: 'arima',
+        inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+        historyFingerprint: 'stub-history',
+        sourceFrequency: 'DAILY',
+        targetCadence: 'DAILY',
+        frequencyIdentity: 'FORECAST_CADENCE_V1|source=DAILY|target=DAILY',
+        attemptKind: 'PRIMARY',
+        executionMode: 'PRE_STAGE3_PREPARATION',
+        ownerToken: existing.ownerToken,
+        leaseVersion: existing.leaseVersion,
+        leaseAcquiredAt: new Date().toISOString(),
+        leaseExpiresAt: existing.leaseExpiresAt,
+        recoveredFromExecutionId: null,
+        ownerRequestId: existing.ownerRequestId,
+        latestRequestId: existing.ownerRequestId,
+        latestRole: 'OWNER',
+        waiterCount: 0,
+        eventCount: 0,
+        startedAt: new Date().toISOString(),
+        lastEventAt: new Date().toISOString(),
+        lastProgressAt: new Date().toISOString(),
+        completedAt: existing.executionStatus === 'COMPLETED' ? new Date().toISOString() : null,
+        computeStartedAt: null,
+        computeCompletedAt: null,
+        persistenceStartedAt: null,
+        persistenceCompletedAt: null,
+        failurePhase: existing.executionStatus === 'FAILED' ? 'COMPUTE' : null,
+        failureReason: existing.failureReason,
+        logicalArtifactIdentity: {} as never,
+        events: [],
+      }
+    },
+  }
 }
 
 function capabilityIdentity(targetBasis: ForecastRequestInput['targetBasis']) {
@@ -982,7 +1123,9 @@ test('interactive current preparation service reuses ready artifacts without dup
 test('interactive current preparation service delegates monthly and rolling preparation to canonical owners only', async () => {
   let monthlyCalls = 0
   let rollingCalls = 0
+  let snapshotReady = false
   const service = createInteractiveForecastPreparationService({
+    executionAdmission: createStubExecutionAdmission(),
     now: (() => {
       let tick = 0
       return () => ++tick
@@ -1038,6 +1181,7 @@ test('interactive current preparation service delegates monthly and rolling prep
     }),
     prepareRollingCurrent: async (request) => {
       rollingCalls += 1
+      snapshotReady = true
       assert.equal(request.seriesId, 'wocaes0074')
       assert.deepEqual(request.modelIds, ['ets'])
       assert.equal(request.preparedHistory?.seriesId, 'wocaes0074')
@@ -1082,6 +1226,9 @@ test('interactive current preparation service delegates monthly and rolling prep
         }],
       }
     },
+    readRollingCurrentSnapshot: async () => snapshotReady
+      ? { status: 'HIT', payload: {} as never }
+      : { status: 'MISS' },
   })
 
   const monthly = await service.prepareCurrent({
@@ -1103,7 +1250,9 @@ test('interactive current preparation service delegates monthly and rolling prep
 
 test('interactive current preparation service maps rolling daily NO_OP to REUSED and failures to FAILED', async () => {
   let rollingCalls = 0
+  let pendingHitOnce = false
   const service = createInteractiveForecastPreparationService({
+    executionAdmission: createStubExecutionAdmission(),
     now: (() => {
       let tick = 200
       return () => ++tick
@@ -1151,6 +1300,9 @@ test('interactive current preparation service maps rolling daily NO_OP to REUSED
     }),
     prepareRollingCurrent: async () => {
       rollingCalls += 1
+      if (rollingCalls === 1) {
+        pendingHitOnce = true
+      }
       return rollingCalls === 1
         ? {
             status: 'NO_OP',
@@ -1211,6 +1363,13 @@ test('interactive current preparation service maps rolling daily NO_OP to REUSED
               error: 'maintenance failed',
             }],
           }
+    },
+    readRollingCurrentSnapshot: async () => {
+      if (pendingHitOnce) {
+        pendingHitOnce = false
+        return { status: 'HIT', payload: {} as never }
+      }
+      return { status: 'MISS' }
     },
   })
 
@@ -1286,6 +1445,7 @@ test('interactive point-in-time current reuses ready artifacts without owner com
 test('interactive point-in-time current uses canonical single-flight for concurrent same-identity requests', async () => {
   let rollingCalls = 0
   let ownershipCalls = 0
+  let snapshotReady = false
   let releaseRolling: (() => void) | undefined
   const rollingGate = new Promise<void>((resolve) => {
     releaseRolling = resolve
@@ -1311,6 +1471,7 @@ test('interactive point-in-time current uses canonical single-flight for concurr
   })
 
   const service = createInteractiveForecastPreparationService({
+    executionAdmission: createStubExecutionAdmission(),
     now: (() => {
       let tick = 400
       return () => ++tick
@@ -1343,6 +1504,7 @@ test('interactive point-in-time current uses canonical single-flight for concurr
       assert.equal(request.seriesId, 'wocaes0074')
       assert.deepEqual(request.modelIds, ['arima'])
       await rollingGate
+      snapshotReady = true
       return {
         status: 'SUCCEEDED',
         seriesId: 'wocaes0074',
@@ -1384,6 +1546,9 @@ test('interactive point-in-time current uses canonical single-flight for concurr
         }],
       }
     },
+    readRollingCurrentSnapshot: async () => snapshotReady
+      ? { status: 'HIT', payload: {} as never }
+      : { status: 'MISS' },
   })
 
   const first = service.prepareCurrent({
@@ -1405,7 +1570,7 @@ test('interactive point-in-time current uses canonical single-flight for concurr
   const results = await Promise.all([first, second])
 
   assert.equal(rollingCalls, 1)
-  assert.deepEqual(results.map((result) => result.status), ['READY', 'READY'])
+  assert.deepEqual(results.map((result) => result.status), ['READY', 'REUSED'])
   assert.ok(results.every((result) => result.reason === null))
 })
 
@@ -1413,12 +1578,14 @@ test('interactive point-in-time current keeps different lawful identities indepe
   let rollingCalls = 0
   let activeRollingCalls = 0
   let maxActiveRollingCalls = 0
+  const readyByModelId = new Map<string, boolean>()
   let releaseRolling: (() => void) | undefined
   const rollingGate = new Promise<void>((resolve) => {
     releaseRolling = resolve
   })
 
   const service = createInteractiveForecastPreparationService({
+    executionAdmission: createStubExecutionAdmission(),
     now: (() => {
       let tick = 500
       return () => ++tick
@@ -1469,6 +1636,9 @@ test('interactive point-in-time current keeps different lawful identities indepe
       activeRollingCalls += 1
       maxActiveRollingCalls = Math.max(maxActiveRollingCalls, activeRollingCalls)
       await rollingGate
+      for (const modelId of request.modelIds ?? []) {
+        readyByModelId.set(modelId, true)
+      }
       activeRollingCalls -= 1
       return {
         status: 'SUCCEEDED',
@@ -1511,6 +1681,9 @@ test('interactive point-in-time current keeps different lawful identities indepe
         })),
       }
     },
+    readRollingCurrentSnapshot: async ({ modelId }) => readyByModelId.get(modelId)
+      ? { status: 'HIT', payload: {} as never }
+      : { status: 'MISS' },
   })
 
   const first = service.prepareCurrent({

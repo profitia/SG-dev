@@ -10,6 +10,7 @@ import test, { type TestContext } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 import { createForecastCadence } from '../lib/forecast/cadence'
+import { createInteractiveForecastPreparationService } from '../lib/forecast/interactive-preparation'
 import {
   buildCurrentLogicalArtifactKey,
   type CurrentLogicalArtifactIdentity,
@@ -24,10 +25,12 @@ import {
 } from '../lib/forecast/identity'
 import { buildForecastHistoryFingerprint } from '../lib/forecast/history-fingerprint'
 import { buildCurrentHorizonConfigurationId } from '../lib/forecast/live-market-input'
+import { buildRollingDailyCurrentHorizonConfigurationId } from '../lib/forecast/rolling-daily-current-ownership'
 import { PrismaClient } from '../generated/market-data-client'
-import type { ExactForecastCapabilityResolution } from '../lib/forecast/capability-resolver'
+import type { ExactForecastCapabilityResolution, ForecastVariantCapability } from '../lib/forecast/capability-resolver'
 import type { UserFacingForecastModelId } from '../lib/forecast/contracts'
 import type { ForecastPreparationOwnedExecutionContext } from '../lib/forecast/execution-ledger'
+import type { RollingDailyHistoryPayload } from '../lib/forecast/rolling-daily-maintenance'
 import type {
   ForecastBridge,
   ForecastLibraryServiceDependencies,
@@ -639,7 +642,8 @@ async function resetForecastTables() {
       "forecast_verification_points",
       "forecast_verification_metrics",
       "forecast_verification_runs",
-      "forecast_preparation_execution_ledger"
+      "forecast_preparation_execution_ledger",
+      "rolling_daily_current_forecast_snapshots"
     RESTART IDENTITY CASCADE
   `)
 }
@@ -1896,6 +1900,220 @@ serialTest('db-backed policy identity constraints preserve exact coexistence, re
       },
     }),
   )
+})
+
+serialTest('db-backed rolling daily current elects one authoritative owner across service instances and reuses the exact prepared snapshot', async () => {
+  const barrier = createBarrier()
+  let rollingCalls = 0
+  let snapshotReady = false
+  const statisticalCompatibility = createCurrentForecastStatisticalCompatibility({
+    sourceFrequency: 'DAILY',
+    targetCadence: 'DAILY',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+  })
+  const logicalArtifactIdentity = {
+    artifactScope: statisticalCompatibility.artifactScope,
+    seriesId: 'stage3-rolling-daily-series',
+    targetBasis: 'POINT_IN_TIME',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+    methodVersion: 'rolling-daily-point-in-time-v1',
+    trainingWindowPolicyId: statisticalCompatibility.trainingWindowPolicyId,
+    modelId: 'arima',
+    inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+    historyFingerprint: 'stage3-rolling-hist-1',
+    sourceFrequency: 'DAILY',
+    targetCadence: 'DAILY',
+    frequencyIdentity: 'FORECAST_CADENCE_V1|source=DAILY|target=DAILY',
+    forecastOrigin: '2026-08-20',
+    horizonConfigurationId: buildRollingDailyCurrentHorizonConfigurationId('2026-08-20'),
+  } satisfies CurrentLogicalArtifactIdentity
+  const logicalArtifactKey = buildCurrentLogicalArtifactKey(logicalArtifactIdentity)
+
+  const buildService = () => createInteractiveForecastPreparationService({
+    now: (() => {
+      let tick = 0
+      return () => ++tick
+    })(),
+    resolveExactCapability: async () => {
+      const capability: ForecastVariantCapability = {
+        identity: {
+          seriesId: 'stage3-rolling-daily-series',
+          targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+          methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+          methodVersion: 'rolling-daily-point-in-time-v1',
+          modelId: 'arima',
+        },
+        sourceFrequency: 'DAILY',
+        sourceFrequencyRecognized: true,
+        businessTarget: 'DAILY',
+        targetCadence: 'DAILY',
+        targetSemanticsSupported: true,
+        horizonSupportState: 'NOT_REQUESTED' as const,
+        horizonMonths: null,
+        horizonSteps: null,
+        semanticLawfulness: 'LAWFUL' as const,
+        admissionState: 'ADMITTED' as const,
+        provenanceStatus: 'NOT_REQUIRED' as const,
+        implementationState: 'SUPPORTED' as const,
+        historyEligibility: 'ELIGIBLE' as const,
+        minimumRequiredObservations: 60,
+        availableObservations: 6108,
+        modelEligible: true,
+        currentForecastEligible: true,
+        verificationOriginCount: 0,
+        verificationEvidenceState: 'NOT_AVAILABLE' as const,
+        predictionBandResidualCount: 0,
+        predictionBandState: 'NOT_AVAILABLE' as const,
+        targetPreparationState: 'PREPARED' as const,
+        currentPreparedState: 'NOT_PREPARED' as const,
+        historicalPreparedState: 'READY' as const,
+        capabilityState: 'PREPARATION_REQUIRED' as const,
+      }
+
+      return {
+        resolution: {
+          status: 'AVAILABLE',
+          sourceMetadata: {
+            seriesId: 'stage3-rolling-daily-series',
+            providerCode: 'MACROBOND',
+            source: 'DYNAMIC_MARKET_DATA_STORE',
+            sourceFrequency: 'DAILY',
+            rawFrequency: 'DAILY',
+            sourceObservationCount: 6108,
+            fullHistoryObservationCount: 6108,
+          },
+          capabilities: [capability],
+          targetedHydration: {
+            scope: 'SINGLE_SERIES',
+            requestedSeriesId: 'stage3-rolling-daily-series',
+            source: 'postgres',
+            cacheStatus: 'hit',
+          },
+          preparationFailures: {},
+          reason: null,
+        },
+        capability,
+        trace: {} as never,
+      } satisfies ExactForecastCapabilityResolution
+    },
+    prepareRollingDailyOwnership: async () => ({
+      history: {
+        seriesId: 'stage3-rolling-daily-series',
+        displayName: 'Brent',
+        description: 'Brent',
+        frequency: 'DAILY',
+        source: 'DYNAMIC_MARKET_DATA_STORE',
+        points: [{ date: '2026-08-20', value: 89.9 }],
+      } as RollingDailyHistoryPayload,
+      identity: logicalArtifactIdentity,
+      logicalArtifactKey,
+    }),
+    prepareMonthlyCurrent: async () => {
+      throw new Error('should not be called')
+    },
+    prepareRollingCurrent: async () => {
+      rollingCalls += 1
+      await barrier.promise
+      snapshotReady = true
+      await requirePrisma().rollingDailyCurrentForecastSnapshot.create({
+        data: {
+          seriesId: 'stage3-rolling-daily-series',
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          inputRunId: null,
+          targetBasis: 'POINT_IN_TIME',
+          methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+          methodVersion: 'rolling-daily-point-in-time-v1',
+          modelId: 'arima',
+          trainingWindowPolicyId: statisticalCompatibility.trainingWindowPolicyId,
+          effectiveTrainingPolicyId: statisticalCompatibility.effectiveTrainingPolicyId,
+          sourceHistoryFingerprint: 'stage3-rolling-hist-1',
+          contractVersion: '1',
+          status: 'AVAILABLE',
+          reasonCode: null,
+          message: null,
+          forecastOriginAt: new Date('2026-08-20T00:00:00.000Z'),
+          sourceLatestObservationAt: new Date('2026-08-20T00:00:00.000Z'),
+          payloadJson: { status: 'AVAILABLE' },
+        },
+      })
+
+      return {
+        status: 'SUCCEEDED' as const,
+        seriesId: 'stage3-rolling-daily-series',
+        refreshedSnapshotCount: 1,
+        recoveredSnapshotCount: 0,
+        noOpModelCount: 0,
+        failedModelCount: 0,
+        results: [{
+          status: 'SUCCEEDED' as const,
+          modelId: 'arima',
+          maintenance: {
+            status: 'SUCCEEDED' as const,
+            seriesId: 'stage3-rolling-daily-series',
+            modelId: 'arima',
+            targetBasis: 'POINT_IN_TIME' as const,
+            inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+            methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+            methodVersion: 'rolling-daily-point-in-time-v1',
+            reasonCode: null,
+            sourceHistoryFingerprint: 'stage3-rolling-hist-1',
+            latestSourceObservationAt: '2026-08-20',
+            sourceObservationCount: 6108,
+            filteredNullCount: 0,
+            filteredDuplicateCount: 0,
+            newOriginCount: 1,
+            maturedRecordCount: 0,
+            calibrationRefreshCount: 0,
+            affectedCalibrationGroupCount: 0,
+            lastProcessedOriginAt: '2026-08-20',
+            lastMaturedObservedAt: null,
+            runtimeMs: 10,
+          },
+          snapshot: {
+            status: 'REFRESHED_AFTER_MAINTENANCE' as const,
+            reason: 'MAINTENANCE_DELTA_APPLIED' as const,
+            parityStatus: 'MATCHED' as const,
+          },
+          error: null,
+        }],
+      }
+    },
+    readRollingCurrentSnapshot: async () => snapshotReady
+      ? { status: 'HIT', payload: {} as never }
+      : { status: 'MISS' },
+  })
+
+  const firstService = buildService()
+  const secondService = buildService()
+
+  const first = firstService.prepareCurrent({
+    seriesId: 'stage3-rolling-daily-series',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'arima',
+  })
+  await waitForExecutionStatus(logicalArtifactKey, 'STARTED')
+
+  const second = secondService.prepareCurrent({
+    seriesId: 'stage3-rolling-daily-series',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'arima',
+  })
+
+  barrier.release()
+  const [firstResult, secondResult] = await Promise.all([first, second])
+
+  assert.equal(rollingCalls, 1)
+  assert.equal(firstResult.status, 'READY')
+  assert.equal(secondResult.status, 'REUSED')
+
+  const executions = await requirePrisma().forecastPreparationExecutionLedger.findMany({
+    where: { logicalArtifactKey },
+    orderBy: [{ startedAt: 'asc' }, { updatedAt: 'asc' }],
+  })
+  assert.equal(executions.length, 1)
+  assert.equal(executions[0]?.executionStatus, 'COMPLETED')
+  assert.equal(executions[0]?.waiterCount, 1)
 })
 
 serialTest('db-backed simultaneous recovery elects one recovery owner and preserves predecessor lineage', async () => {

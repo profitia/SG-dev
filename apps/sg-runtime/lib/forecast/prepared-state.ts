@@ -7,17 +7,19 @@ import { USER_FACING_FORECAST_MODELS } from '@/lib/forecast/contracts'
 import { buildForecastHistoryFingerprint } from '@/lib/forecast/history-fingerprint'
 import {
   buildForecastArtifactCadenceIdentity,
+  createCurrentForecastStatisticalCompatibility,
   createForecastIdentity,
   LEGACY_MONTHLY_ARTIFACT_FREQUENCY,
 } from '@/lib/forecast/identity'
 import { buildLiveForecastBridgePayloadFromHistory } from '@/lib/forecast/live-market-input'
+import { resolveForecastTechnicalMinimumObservations } from '@/lib/forecast/current-fast-policy'
 import {
   buildRollingDailyHistoryFingerprint,
   ROLLING_DAILY_INPUT_SOURCE,
 } from '@/lib/forecast/rolling-daily-maintenance'
 import type { ForecastPreparedState, ForecastPreparedVariant } from '@/lib/forecast/capability-resolver'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
-import { selectLatestCurrentForecastMonthlyTrainingPayload } from '@/lib/forecast/live-market-input'
+import { selectMinimalLawfulCurrentTrainingPayload } from '@/lib/forecast/live-market-input'
 
 const MONTHLY_TARGETS = ['END_OF_PERIOD', 'MONTHLY_AVERAGE'] as const
 
@@ -98,14 +100,17 @@ export async function readForecastPreparedVariants(
   const acceptedArtifactFrequencies = targetCadence === 'MONTHLY'
     ? [artifactFrequency, LEGACY_MONTHLY_ARTIFACT_FREQUENCY]
     : [artifactFrequency]
-
-  const monthlyCandidates = MONTHLY_TARGETS.map((targetBasis) => {
-    const currentPayload = selectLatestCurrentForecastMonthlyTrainingPayload(buildLiveForecastBridgePayloadFromHistory(seriesId, history, {
+  const currentBasePayloadByTarget = new Map(MONTHLY_TARGETS.map((targetBasis) => [
+    targetBasis,
+    buildLiveForecastBridgePayloadFromHistory(seriesId, history, {
       targetBasis,
       targetCadence,
       now: options.now,
       continuityPolicy: targetCadence === 'MONTHLY' ? 'ALLOW_GAPS' : 'REQUIRE_FULL',
-    }))
+    }),
+  ]))
+
+  const monthlyCandidates = MONTHLY_TARGETS.map((targetBasis) => {
     const historicalPayload = (() => {
       try {
         return buildLiveForecastBridgePayloadFromHistory(seriesId, history, {
@@ -120,13 +125,6 @@ export async function readForecastPreparedVariants(
 
     return {
       targetBasis,
-      currentHistoryFingerprints: {
-        legacy: buildForecastHistoryFingerprint(currentPayload.history),
-        cadence: buildForecastHistoryFingerprint({
-          ...currentPayload.history,
-          cadence: { sourceFrequency, targetCadence },
-        }),
-      },
       historicalHistoryFingerprints: historicalPayload ? {
         legacy: buildForecastHistoryFingerprint(historicalPayload.history),
         cadence: buildForecastHistoryFingerprint({
@@ -150,6 +148,20 @@ export async function readForecastPreparedVariants(
   for (const candidate of monthlyCandidates) {
     for (const modelId of USER_FACING_FORECAST_MODELS) {
       const identity = createForecastIdentity({ seriesId, targetBasis: candidate.targetBasis, modelId })
+      const currentPayload = selectMinimalLawfulCurrentTrainingPayload(
+        currentBasePayloadByTarget.get(candidate.targetBasis)!,
+        resolveForecastTechnicalMinimumObservations({
+          targetSemantics: identity.targetSemantics,
+          modelId,
+        }),
+      )
+      const currentHistoryFingerprints = {
+        legacy: buildForecastHistoryFingerprint(currentPayload.history),
+        cadence: buildForecastHistoryFingerprint({
+          ...currentPayload.history,
+          cadence: { sourceFrequency, targetCadence },
+        }),
+      }
       const [current, historical] = await Promise.all([
         prisma.forecastCurrentRun.findFirst({
           where: {
@@ -188,7 +200,7 @@ export async function readForecastPreparedVariants(
 
       variants.push({
         identity,
-        current: stateForCurrentRun(current, candidate.currentHistoryFingerprints),
+        current: stateForCurrentRun(current, currentHistoryFingerprints),
         historical: candidate.historicalHistoryFingerprints
           ? stateForHistoricalRun(historical, candidate.historicalHistoryFingerprints)
           : 'NOT_PREPARED',
@@ -200,18 +212,27 @@ export async function readForecastPreparedVariants(
 
   for (const modelId of USER_FACING_FORECAST_MODELS) {
     const identity = createForecastIdentity({ seriesId, targetBasis: 'POINT_IN_TIME', modelId })
+    const rollingDailyCompatibility = createCurrentForecastStatisticalCompatibility({
+      sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
+      targetSemantics: identity.targetSemantics,
+    })
     const [snapshot, maintenance, verificationCount] = await Promise.all([
-      prisma.rollingDailyCurrentForecastSnapshot.findFirst({
+      prisma.rollingDailyCurrentForecastSnapshot.findUnique({
         where: {
-          seriesId,
-          inputSource: ROLLING_DAILY_INPUT_SOURCE,
-          targetBasis: 'POINT_IN_TIME',
-          methodId: identity.methodId,
-          methodVersion: identity.methodVersion,
-          modelId,
+          seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint: {
+            seriesId,
+            inputSource: ROLLING_DAILY_INPUT_SOURCE,
+            targetBasis: 'POINT_IN_TIME',
+            methodId: identity.methodId,
+            methodVersion: identity.methodVersion,
+            modelId,
+            trainingWindowPolicyId: rollingDailyCompatibility.trainingWindowPolicyId,
+            effectiveTrainingPolicyId: rollingDailyCompatibility.effectiveTrainingPolicyId,
+            sourceHistoryFingerprint: rollingFingerprint,
+          },
         },
         select: { status: true, payloadJson: true },
-        orderBy: { updatedAt: 'desc' },
       }),
       prisma.rollingDailyMaintenanceState.findUnique({
         where: {

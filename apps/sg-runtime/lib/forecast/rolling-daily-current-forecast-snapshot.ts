@@ -8,6 +8,10 @@ import {
   type RollingDailyHistoryPayload,
 } from '@/lib/forecast/rolling-daily-maintenance'
 import {
+  createCurrentForecastStatisticalCompatibility,
+  type ForecastStatisticalCompatibility,
+} from '@/lib/forecast/identity'
+import {
   ROLLING_DAILY_TARGET_BASIS,
 } from '@/lib/forecast/rolling-daily-policy'
 import {
@@ -68,6 +72,14 @@ export type RollingDailyCurrentForecastSnapshotReadResult =
     }
 
 const SNAPSHOT_NUMERIC_PARITY_EPSILON = 1e-9
+
+function resolveRollingDailyCurrentSnapshotCompatibility(): ForecastStatisticalCompatibility {
+  return createCurrentForecastStatisticalCompatibility({
+    sourceFrequency: 'DAILY',
+    targetCadence: 'DAILY',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+  })
+}
 
 function toDateFromCalendarValue(value: string | null) {
   return value ? new Date(`${value}T00:00:00.000Z`) : null
@@ -142,18 +154,26 @@ export async function persistResolvedRollingDailyCurrentForecastSnapshot(
   const prisma = getSnapshotPrismaClient(dependencies)
   const payload = toSnapshotPayload(result)
   const inputSource = payload.audit.inputSource ?? ROLLING_DAILY_INPUT_SOURCE
+  const statisticalCompatibility = resolveRollingDailyCurrentSnapshotCompatibility()
+  const sourceHistoryFingerprint = payload.audit.sourceHistoryFingerprint
+  if (!sourceHistoryFingerprint) {
+    throw new Error(`Rolling Daily snapshot persistence requires a source history fingerprint for ${request.seriesId}/${request.modelId}.`)
+  }
   const forecastOriginAt = payload.status === 'AVAILABLE' ? toDateFromCalendarValue(payload.origin.date) : null
   const sourceLatestObservationAt = toDateFromCalendarValue(payload.audit.sourceLatestObservationDate)
 
   const persisted = await prisma.rollingDailyCurrentForecastSnapshot.upsert({
     where: {
-      seriesId_inputSource_targetBasis_methodId_methodVersion_modelId: {
+      seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint: {
         seriesId: request.seriesId,
         inputSource,
         targetBasis: ROLLING_DAILY_TARGET_BASIS,
         methodId: ROLLING_DAILY_METHOD_ID,
         methodVersion: payload.forecastMethod.version,
         modelId: request.modelId,
+        trainingWindowPolicyId: statisticalCompatibility.trainingWindowPolicyId,
+        effectiveTrainingPolicyId: statisticalCompatibility.effectiveTrainingPolicyId,
+        sourceHistoryFingerprint,
       },
     },
     create: {
@@ -164,6 +184,9 @@ export async function persistResolvedRollingDailyCurrentForecastSnapshot(
       methodId: ROLLING_DAILY_METHOD_ID,
       methodVersion: payload.forecastMethod.version,
       modelId: request.modelId,
+      trainingWindowPolicyId: statisticalCompatibility.trainingWindowPolicyId,
+      effectiveTrainingPolicyId: statisticalCompatibility.effectiveTrainingPolicyId,
+      sourceHistoryFingerprint,
       contractVersion: payload.contractVersion,
       status: payload.status,
       reasonCode: payload.status === 'AVAILABLE' ? null : payload.reasonCode,
@@ -174,6 +197,9 @@ export async function persistResolvedRollingDailyCurrentForecastSnapshot(
     },
     update: {
       inputRunId: null,
+      trainingWindowPolicyId: statisticalCompatibility.trainingWindowPolicyId,
+      effectiveTrainingPolicyId: statisticalCompatibility.effectiveTrainingPolicyId,
+      sourceHistoryFingerprint,
       contractVersion: payload.contractVersion,
       status: payload.status,
       reasonCode: payload.status === 'AVAILABLE' ? null : payload.reasonCode,
@@ -222,10 +248,27 @@ export async function readRollingDailyCurrentForecastSnapshot(
   dependencies: { prisma?: MarketDataPrismaClient } = {},
 ): Promise<RollingDailyCurrentForecastSnapshotReadResult> {
   const prisma = getSnapshotPrismaClient(dependencies)
+  const statisticalCompatibility = resolveRollingDailyCurrentSnapshotCompatibility()
 
   const snapshot = await prisma.rollingDailyCurrentForecastSnapshot.findUnique({
     where: {
-      seriesId_inputSource_targetBasis_methodId_methodVersion_modelId: {
+      seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint: {
+        seriesId: request.seriesId,
+        inputSource: ROLLING_DAILY_INPUT_SOURCE,
+        targetBasis: ROLLING_DAILY_TARGET_BASIS,
+        methodId: ROLLING_DAILY_METHOD_ID,
+        methodVersion: ROLLING_DAILY_METHOD_VERSION,
+        modelId: request.modelId,
+        trainingWindowPolicyId: statisticalCompatibility.trainingWindowPolicyId,
+        effectiveTrainingPolicyId: statisticalCompatibility.effectiveTrainingPolicyId,
+        sourceHistoryFingerprint: request.sourceHistoryFingerprint,
+      },
+    },
+  })
+
+  if (!snapshot) {
+    const legacySnapshot = await prisma.rollingDailyCurrentForecastSnapshot.findFirst({
+      where: {
         seriesId: request.seriesId,
         inputSource: ROLLING_DAILY_INPUT_SOURCE,
         targetBasis: ROLLING_DAILY_TARGET_BASIS,
@@ -233,31 +276,32 @@ export async function readRollingDailyCurrentForecastSnapshot(
         methodVersion: ROLLING_DAILY_METHOD_VERSION,
         modelId: request.modelId,
       },
-    },
-  })
+      orderBy: { updatedAt: 'desc' },
+    })
 
-  if (!snapshot) {
-    return { status: 'MISS' }
-  }
-
-  const payload = RollingDailyProductionForecastResultSchema.parse(snapshot.payloadJson as unknown)
-  const persistedFingerprint = payload.audit.sourceHistoryFingerprint
-
-  if (!persistedFingerprint) {
-    return {
-      status: 'STALE',
-      reason: 'SOURCE_HISTORY_FINGERPRINT_MISSING',
-      payload,
+    if (!legacySnapshot) {
+      return { status: 'MISS' }
     }
-  }
 
-  if (persistedFingerprint !== request.sourceHistoryFingerprint) {
+    const payload = RollingDailyProductionForecastResultSchema.parse(legacySnapshot.payloadJson as unknown)
+    const persistedFingerprint = payload.audit.sourceHistoryFingerprint
+
+    if (!persistedFingerprint) {
+      return {
+        status: 'STALE',
+        reason: 'SOURCE_HISTORY_FINGERPRINT_MISSING',
+        payload,
+      }
+    }
+
     return {
       status: 'STALE',
       reason: 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
       payload,
     }
   }
+
+  const payload = RollingDailyProductionForecastResultSchema.parse(snapshot.payloadJson as unknown)
 
   return {
     status: 'HIT',

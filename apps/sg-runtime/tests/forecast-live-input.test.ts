@@ -2,10 +2,11 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import type { BenchmarkHistoricalSeriesResult } from '../lib/benchmark/contracts'
+import { resolveForecastTechnicalMinimumObservations } from '../lib/forecast/current-fast-policy'
 import { buildForecastHistoryFingerprint } from '../lib/forecast/service'
 import {
   buildLiveForecastBridgePayloadFromHistory,
-  selectLatestCurrentForecastMonthlyTrainingPayload,
+  selectMinimalLawfulCurrentTrainingPayload,
 } from '../lib/forecast/live-market-input'
 
 function createDailyHistory(
@@ -261,7 +262,10 @@ test('current monthly training payload preserves the exact trailing 12M window e
     },
   )
 
-  const narrowed = selectLatestCurrentForecastMonthlyTrainingPayload(payload)
+  const narrowed = selectMinimalLawfulCurrentTrainingPayload(
+    payload,
+    resolveForecastTechnicalMinimumObservations({ targetSemantics: 'MONTHLY_AVERAGE', modelId: 'naive' }),
+  )
 
   assert.deepEqual(narrowed.execution.historicalPeriodStarts, [
     '2020-01-01T00:00:00.000Z',
@@ -276,7 +280,7 @@ test('current monthly training payload preserves the exact trailing 12M window e
   assert.equal(narrowed.history.observations, 6)
 })
 
-test('current training payload uses the exact trailing 12 calendar months instead of the full lawful history', () => {
+test('current training payload extends backward only until the technical minimum is met', () => {
   const payload = buildLiveForecastBridgePayloadFromHistory(
     'long.monthly.series',
     createDailyHistory([
@@ -315,13 +319,18 @@ test('current training payload uses the exact trailing 12 calendar months instea
     },
   )
 
-  const narrowed = selectLatestCurrentForecastMonthlyTrainingPayload(payload)
+  const narrowed = selectMinimalLawfulCurrentTrainingPayload(
+    payload,
+    resolveForecastTechnicalMinimumObservations({ targetSemantics: 'MONTHLY_AVERAGE', modelId: 'ets' }),
+  )
 
   assert.equal(payload.history.observations, 14)
-  assert.equal(narrowed.history.start, '2023-09-01T00:00:00.000Z')
+  assert.equal(narrowed.history.start, '2023-07-01T00:00:00.000Z')
   assert.equal(narrowed.history.end, '2024-08-01T00:00:00.000Z')
-  assert.equal(narrowed.history.observations, 12)
+  assert.equal(narrowed.history.observations, 14)
   assert.deepEqual(narrowed.execution.historicalPeriodStarts, [
+    '2023-07-01T00:00:00.000Z',
+    '2023-08-01T00:00:00.000Z',
     '2023-09-01T00:00:00.000Z',
     '2023-10-01T00:00:00.000Z',
     '2023-11-01T00:00:00.000Z',
@@ -397,7 +406,7 @@ test('current trailing 12M boundary excludes the exact window-start point and in
     },
   }
 
-  const narrowed = selectLatestCurrentForecastMonthlyTrainingPayload(payload)
+  const narrowed = selectMinimalLawfulCurrentTrainingPayload(payload, 2)
 
   assert.deepEqual(narrowed.history.points.map((point) => point.date), [
     '2024-08-15T00:00:00.000Z',

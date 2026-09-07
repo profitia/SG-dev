@@ -12,6 +12,7 @@ import {
   createLegacyFrequencySpecificCurrentForecastStatisticalCompatibility,
   createLegacyUnresolvedForecastStatisticalCompatibility,
   createLegacyVerificationStatisticalCompatibility,
+  createStrictTrailing12MCurrentForecastStatisticalCompatibility,
 } from '../lib/forecast/identity'
 import type { UserFacingForecastModelId } from '../lib/forecast/contracts'
 import type { ExactForecastCapabilityResolution } from '../lib/forecast/capability-resolver'
@@ -617,7 +618,7 @@ test('forecast library current path returns cached artifact without invoking com
   assert.equal(result.targetSemantics, 'MONTHLY_AVERAGE')
   assert.equal(result.methodId, 'MONTHLY_AVERAGE')
   assert.equal(result.lineage.statisticalCompatibility.artifactScope, 'CURRENT_FORECAST')
-  assert.equal(result.lineage.statisticalCompatibility.trainingWindowPolicyId, 'CURRENT_FAST_TRAILING_12M@current-fast-trailing-12m-v1')
+  assert.equal(result.lineage.statisticalCompatibility.trainingWindowPolicyId, 'CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1')
   assert.equal(result.alignment.status, 'ALIGNED')
   assert.equal(result.alignment.lastHistoricalPeriod, '2026-04-01T00:00:00')
   assert.equal(result.alignment.forecastOrigin, '2026-04-01T00:00:00')
@@ -1192,6 +1193,71 @@ test('prepared-only current read rejects legacy frequency-specific Current artif
           methodId: 'MONTHLY_AVERAGE' as const,
           preparation: null,
           statisticalCompatibility: legacyCurrentCompatibility,
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+          source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: null },
+          historyFingerprint: buildForecastHistoryFingerprint(history.history, {
+            sourceFrequency: 'MONTHLY',
+            targetCadence: 'MONTHLY',
+          }),
+          cadence: { sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' } as const,
+          frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+          history: { frequency: 'MONTHLY', start: '2021-01-01', end: '2026-04-01', observations: 64 },
+          forecastOrigin: '2026-04-01',
+          runtimeSeconds: 1,
+          currentForecast: createCurrentResponse('ets').result.currentForecast,
+        }
+      },
+      async readVerificationRun() { throw new Error('unused') },
+      async writeCurrentRun() { sideEffects += 1 },
+      async writeVerificationRun() { sideEffects += 1 },
+      async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
+      async readLatestVerificationRun() { throw new Error('unused') },
+    },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'wocaes0280',
+      modelId: 'ets',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 64,
+    }),
+    logEvent: () => {},
+  })
+
+  const result = await service.readPreparedCurrentForecastRequest({
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+  })
+
+  assert.equal(result.status, 'NOT_AVAILABLE')
+  if (result.status !== 'NOT_AVAILABLE') return
+  assert.match(result.reason, /training-policy identity is not compatible/)
+  assert.equal(sideEffects, 0)
+})
+
+test('prepared-only current read rejects strict trailing-12M Current artifacts after minimal-lawful-suffix activation', async () => {
+  let sideEffects = 0
+  const history = createHistoryResponse()
+  const strictTrailingCompatibility = createStrictTrailing12MCurrentForecastStatisticalCompatibility({
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: 'MONTHLY_AVERAGE',
+  })
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge(history),
+    repository: {
+      async readCurrentRun() {
+        return {
+          seriesId: 'wocaes0280',
+          modelId: 'ets',
+          displayName: 'FRACHT_DRY',
+          description: null,
+          targetBasis: 'MONTHLY_AVERAGE' as const,
+          targetSemantics: 'MONTHLY_AVERAGE' as const,
+          methodId: 'MONTHLY_AVERAGE' as const,
+          preparation: null,
+          statisticalCompatibility: strictTrailingCompatibility,
           methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
           source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: null },
           historyFingerprint: buildForecastHistoryFingerprint(history.history, {

@@ -63,17 +63,20 @@ import type {
   ForecastVerificationRecord,
 } from '@/lib/forecast/contracts'
 import { DEFAULT_FORECAST_TARGET_BASIS, USER_FACING_FORECAST_MODELS } from '@/lib/forecast/contracts'
+import { resolveForecastTechnicalMinimumObservations } from '@/lib/forecast/current-fast-policy'
 import {
   buildForecastArtifactCadenceIdentity,
   createLegacyVerificationStatisticalCompatibility,
   createLegacyFrequencySpecificCurrentForecastStatisticalCompatibility,
   createLegacyUnresolvedForecastStatisticalCompatibility,
   createCurrentForecastStatisticalCompatibility,
+  createStrictTrailing12MCurrentForecastStatisticalCompatibility,
   createFullVerificationStatisticalCompatibility,
   createRecentVerificationStatisticalCompatibility,
   doesForecastArtifactSatisfyRequest,
   CURRENT_FORECAST_TRAINING_WINDOW_POLICY_ID,
-  CURRENT_FAST_FORECAST_TRAINING_WINDOW_POLICY_ID,
+  CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX_TRAINING_WINDOW_POLICY_ID,
+  CURRENT_FAST_TRAILING_12M_TRAINING_WINDOW_POLICY_ID,
   FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID,
   LEGACY_MONTHLY_ARTIFACT_FREQUENCY,
   parseForecastArtifactCadenceIdentity,
@@ -91,7 +94,7 @@ import {
   buildCurrentForecastExecutionPlan,
   buildCurrentHorizonConfigurationId,
   loadLiveForecastBridgePayload,
-  selectLatestCurrentForecastMonthlyTrainingPayload,
+  selectMinimalLawfulCurrentTrainingPayload,
   type LiveForecastBridgePayload,
 } from '@/lib/forecast/live-market-input'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
@@ -434,8 +437,11 @@ function resolvePersistedForecastStatisticalCompatibility(
   }
 
   const compatibility = (() => {
-    if (record.trainingWindowPolicyId === CURRENT_FAST_FORECAST_TRAINING_WINDOW_POLICY_ID) {
+    if (record.trainingWindowPolicyId === CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX_TRAINING_WINDOW_POLICY_ID) {
       return createCurrentForecastStatisticalCompatibility(context)
+    }
+    if (record.trainingWindowPolicyId === CURRENT_FAST_TRAILING_12M_TRAINING_WINDOW_POLICY_ID) {
+      return createStrictTrailing12MCurrentForecastStatisticalCompatibility(context)
     }
     if (record.trainingWindowPolicyId === CURRENT_FORECAST_TRAINING_WINDOW_POLICY_ID) {
       return createLegacyFrequencySpecificCurrentForecastStatisticalCompatibility(context)
@@ -510,7 +516,7 @@ export type ForecastBridge = {
 }
 
 export type ForecastPreparedExecutionContext = {
-  exportHistory(mode?: 'current' | 'verification'): Promise<ForecastHistoryBridgeResponse>
+  exportHistory(mode?: 'current' | 'verification', modelId?: string): Promise<ForecastHistoryBridgeResponse>
   exportCurrent(modelId: string): Promise<ForecastCurrentBridgeResponse>
   exportVerification(modelId: string): Promise<ForecastVerificationBridgeResponse>
 }
@@ -1383,11 +1389,23 @@ async function prepareExecutionContext(
     return null
   }
 
-  const currentPayload = selectLatestCurrentForecastMonthlyTrainingPayload(currentBasePayload)
-
   return {
-    exportHistory(mode = 'verification') {
+    exportHistory(mode = 'verification', modelId) {
       if (mode === 'current') {
+        if (!modelId || !isUserFacingModel(modelId)) {
+          throw new Error('Prepared Current history requires a user-facing modelId.')
+        }
+
+        const userFacingModelId = modelId as UserFacingForecastModelId
+
+        const currentPayload = selectMinimalLawfulCurrentTrainingPayload(
+          currentBasePayload,
+          resolveForecastTechnicalMinimumObservations({
+            targetSemantics: resolveForecastMethodContract(input.targetBasis).targetSemantics,
+            modelId: userFacingModelId,
+          }),
+        )
+
         return executePreparedLiveForecastBridge(
           configuration,
           currentPayload,
@@ -1420,12 +1438,24 @@ async function prepareExecutionContext(
       })()
     },
     exportCurrent(modelId) {
+      if (!isUserFacingModel(modelId)) {
+        throw new Error('Prepared Current execution requires a user-facing modelId.')
+      }
+
+      const userFacingModelId = modelId as UserFacingForecastModelId
+
       return executePreparedLiveForecastBridge(
         configuration,
-        currentPayload,
+        selectMinimalLawfulCurrentTrainingPayload(
+          currentBasePayload,
+          resolveForecastTechnicalMinimumObservations({
+            targetSemantics: resolveForecastMethodContract(input.targetBasis).targetSemantics,
+            modelId: userFacingModelId,
+          }),
+        ),
         'current',
         input.seriesId,
-        modelId,
+        userFacingModelId,
       ) as Promise<ForecastCurrentBridgeResponse>
     },
     exportVerification(modelId) {
@@ -2604,7 +2634,7 @@ export function createForecastLibraryService(
       }) ?? null
 
       const historyResponse = preparedExecutionContext
-        ? await preparedExecutionContext.exportHistory('current')
+        ? await preparedExecutionContext.exportHistory('current', input.modelId)
         : await resolvedDependencies.bridge.exportHistory({
             seriesId: input.seriesId,
             targetBasis: input.targetBasis,

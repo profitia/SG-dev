@@ -12478,6 +12478,9 @@ export namespace Prisma {
     methodId: string | null
     methodVersion: string | null
     modelId: string | null
+    trainingWindowPolicyId: string | null
+    effectiveTrainingPolicyId: string | null
+    sourceHistoryFingerprint: string | null
     contractVersion: string | null
     status: string | null
     reasonCode: string | null
@@ -12497,6 +12500,9 @@ export namespace Prisma {
     methodId: string | null
     methodVersion: string | null
     modelId: string | null
+    trainingWindowPolicyId: string | null
+    effectiveTrainingPolicyId: string | null
+    sourceHistoryFingerprint: string | null
     contractVersion: string | null
     status: string | null
     reasonCode: string | null
@@ -12516,6 +12522,9 @@ export namespace Prisma {
     methodId: number
     methodVersion: number
     modelId: number
+    trainingWindowPolicyId: number
+    effectiveTrainingPolicyId: number
+    sourceHistoryFingerprint: number
     contractVersion: number
     status: number
     reasonCode: number
@@ -12538,6 +12547,9 @@ export namespace Prisma {
     methodId?: true
     methodVersion?: true
     modelId?: true
+    trainingWindowPolicyId?: true
+    effectiveTrainingPolicyId?: true
+    sourceHistoryFingerprint?: true
     contractVersion?: true
     status?: true
     reasonCode?: true
@@ -12557,6 +12569,9 @@ export namespace Prisma {
     methodId?: true
     methodVersion?: true
     modelId?: true
+    trainingWindowPolicyId?: true
+    effectiveTrainingPolicyId?: true
+    sourceHistoryFingerprint?: true
     contractVersion?: true
     status?: true
     reasonCode?: true
@@ -12576,6 +12591,9 @@ export namespace Prisma {
     methodId?: true
     methodVersion?: true
     modelId?: true
+    trainingWindowPolicyId?: true
+    effectiveTrainingPolicyId?: true
+    sourceHistoryFingerprint?: true
     contractVersion?: true
     status?: true
     reasonCode?: true
@@ -12669,6 +12687,9 @@ export namespace Prisma {
     methodId: string
     methodVersion: string
     modelId: string
+    trainingWindowPolicyId: string | null
+    effectiveTrainingPolicyId: string | null
+    sourceHistoryFingerprint: string | null
     contractVersion: string
     status: string
     reasonCode: string | null
@@ -12706,6 +12727,9 @@ export namespace Prisma {
     methodId?: boolean
     methodVersion?: boolean
     modelId?: boolean
+    trainingWindowPolicyId?: boolean
+    effectiveTrainingPolicyId?: boolean
+    sourceHistoryFingerprint?: boolean
     contractVersion?: boolean
     status?: boolean
     reasonCode?: boolean
@@ -12726,6 +12750,9 @@ export namespace Prisma {
     methodId?: boolean
     methodVersion?: boolean
     modelId?: boolean
+    trainingWindowPolicyId?: boolean
+    effectiveTrainingPolicyId?: boolean
+    sourceHistoryFingerprint?: boolean
     contractVersion?: boolean
     status?: boolean
     reasonCode?: boolean
@@ -12746,6 +12773,9 @@ export namespace Prisma {
     methodId?: boolean
     methodVersion?: boolean
     modelId?: boolean
+    trainingWindowPolicyId?: boolean
+    effectiveTrainingPolicyId?: boolean
+    sourceHistoryFingerprint?: boolean
     contractVersion?: boolean
     status?: boolean
     reasonCode?: boolean
@@ -12770,6 +12800,9 @@ export namespace Prisma {
       methodId: string
       methodVersion: string
       modelId: string
+      trainingWindowPolicyId: string | null
+      effectiveTrainingPolicyId: string | null
+      sourceHistoryFingerprint: string | null
       contractVersion: string
       status: string
       reasonCode: string | null
@@ -13180,6 +13213,9 @@ export namespace Prisma {
     readonly methodId: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
     readonly methodVersion: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
     readonly modelId: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
+    readonly trainingWindowPolicyId: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
+    readonly effectiveTrainingPolicyId: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
+    readonly sourceHistoryFingerprint: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
     readonly contractVersion: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
     readonly status: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
     readonly reasonCode: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
@@ -19390,6 +19426,9 @@ export namespace Prisma {
     methodId: 'methodId',
     methodVersion: 'methodVersion',
     modelId: 'modelId',
+    trainingWindowPolicyId: 'trainingWindowPolicyId',
+    effectiveTrainingPolicyId: 'effectiveTrainingPolicyId',
+    sourceHistoryFingerprint: 'sourceHistoryFingerprint',
     contractVersion: 'contractVersion',
     status: 'status',
     reasonCode: 'reasonCode',
@@ -20868,6 +20907,9 @@ export namespace Prisma {
     methodId?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
     methodVersion?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
     modelId?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    trainingWindowPolicyId?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    effectiveTrainingPolicyId?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    sourceHistoryFingerprint?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
     contractVersion?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
     status?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
     reasonCode?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
@@ -20888,6 +20930,9 @@ export namespace Prisma {
     methodId?: SortOrder
     methodVersion?: SortOrder
     modelId?: SortOrder
+    trainingWindowPolicyId?: SortOrderInput | SortOrder
+    effectiveTrainingPolicyId?: SortOrderInput | SortOrder
+    sourceHistoryFingerprint?: SortOrderInput | SortOrder
     contractVersion?: SortOrder
     status?: SortOrder
     reasonCode?: SortOrderInput | SortOrder
@@ -20901,7 +20946,7 @@ export namespace Prisma {
 
   export type RollingDailyCurrentForecastSnapshotWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    seriesId_inputSource_targetBasis_methodId_methodVersion_modelId?: RollingDailyCurrentForecastSnapshotSeriesIdInputSourceTargetBasisMethodIdMethodVersionModelIdCompoundUniqueInput
+    seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint?: RollingDailyCurrentForecastSnapshotSeriesIdInputSourceTargetBasisMethodIdMethodVersionModelIdTrainingWindowPolicyIdEffectiveTrainingPolicyIdSourceHistoryFingerprintCompoundUniqueInput
     AND?: RollingDailyCurrentForecastSnapshotWhereInput | RollingDailyCurrentForecastSnapshotWhereInput[]
     OR?: RollingDailyCurrentForecastSnapshotWhereInput[]
     NOT?: RollingDailyCurrentForecastSnapshotWhereInput | RollingDailyCurrentForecastSnapshotWhereInput[]
@@ -20912,6 +20957,9 @@ export namespace Prisma {
     methodId?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
     methodVersion?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
     modelId?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    trainingWindowPolicyId?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    effectiveTrainingPolicyId?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    sourceHistoryFingerprint?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
     contractVersion?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
     status?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
     reasonCode?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
@@ -20921,7 +20969,7 @@ export namespace Prisma {
     payloadJson?: JsonFilter<"RollingDailyCurrentForecastSnapshot">
     createdAt?: DateTimeFilter<"RollingDailyCurrentForecastSnapshot"> | Date | string
     updatedAt?: DateTimeFilter<"RollingDailyCurrentForecastSnapshot"> | Date | string
-  }, "id" | "seriesId_inputSource_targetBasis_methodId_methodVersion_modelId">
+  }, "id" | "seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint">
 
   export type RollingDailyCurrentForecastSnapshotOrderByWithAggregationInput = {
     id?: SortOrder
@@ -20932,6 +20980,9 @@ export namespace Prisma {
     methodId?: SortOrder
     methodVersion?: SortOrder
     modelId?: SortOrder
+    trainingWindowPolicyId?: SortOrderInput | SortOrder
+    effectiveTrainingPolicyId?: SortOrderInput | SortOrder
+    sourceHistoryFingerprint?: SortOrderInput | SortOrder
     contractVersion?: SortOrder
     status?: SortOrder
     reasonCode?: SortOrderInput | SortOrder
@@ -20958,6 +21009,9 @@ export namespace Prisma {
     methodId?: StringWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string
     methodVersion?: StringWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string
     modelId?: StringWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    trainingWindowPolicyId?: StringNullableWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    effectiveTrainingPolicyId?: StringNullableWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    sourceHistoryFingerprint?: StringNullableWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
     contractVersion?: StringWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string
     status?: StringWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string
     reasonCode?: StringNullableWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
@@ -23074,6 +23128,9 @@ export namespace Prisma {
     methodId: string
     methodVersion: string
     modelId: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
+    sourceHistoryFingerprint?: string | null
     contractVersion: string
     status: string
     reasonCode?: string | null
@@ -23094,6 +23151,9 @@ export namespace Prisma {
     methodId: string
     methodVersion: string
     modelId: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
+    sourceHistoryFingerprint?: string | null
     contractVersion: string
     status: string
     reasonCode?: string | null
@@ -23114,6 +23174,9 @@ export namespace Prisma {
     methodId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
     modelId?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceHistoryFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
     contractVersion?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
     reasonCode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -23134,6 +23197,9 @@ export namespace Prisma {
     methodId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
     modelId?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceHistoryFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
     contractVersion?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
     reasonCode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -23154,6 +23220,9 @@ export namespace Prisma {
     methodId: string
     methodVersion: string
     modelId: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
+    sourceHistoryFingerprint?: string | null
     contractVersion: string
     status: string
     reasonCode?: string | null
@@ -23174,6 +23243,9 @@ export namespace Prisma {
     methodId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
     modelId?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceHistoryFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
     contractVersion?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
     reasonCode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -23194,6 +23266,9 @@ export namespace Prisma {
     methodId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
     modelId?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceHistoryFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
     contractVersion?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
     reasonCode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -25346,13 +25421,16 @@ export namespace Prisma {
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
   }
 
-  export type RollingDailyCurrentForecastSnapshotSeriesIdInputSourceTargetBasisMethodIdMethodVersionModelIdCompoundUniqueInput = {
+  export type RollingDailyCurrentForecastSnapshotSeriesIdInputSourceTargetBasisMethodIdMethodVersionModelIdTrainingWindowPolicyIdEffectiveTrainingPolicyIdSourceHistoryFingerprintCompoundUniqueInput = {
     seriesId: string
     inputSource: string
     targetBasis: $Enums.ForecastTargetBasis
     methodId: string
     methodVersion: string
     modelId: string
+    trainingWindowPolicyId: string
+    effectiveTrainingPolicyId: string
+    sourceHistoryFingerprint: string
   }
 
   export type RollingDailyCurrentForecastSnapshotCountOrderByAggregateInput = {
@@ -25364,6 +25442,9 @@ export namespace Prisma {
     methodId?: SortOrder
     methodVersion?: SortOrder
     modelId?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    effectiveTrainingPolicyId?: SortOrder
+    sourceHistoryFingerprint?: SortOrder
     contractVersion?: SortOrder
     status?: SortOrder
     reasonCode?: SortOrder
@@ -25384,6 +25465,9 @@ export namespace Prisma {
     methodId?: SortOrder
     methodVersion?: SortOrder
     modelId?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    effectiveTrainingPolicyId?: SortOrder
+    sourceHistoryFingerprint?: SortOrder
     contractVersion?: SortOrder
     status?: SortOrder
     reasonCode?: SortOrder
@@ -25403,6 +25487,9 @@ export namespace Prisma {
     methodId?: SortOrder
     methodVersion?: SortOrder
     modelId?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    effectiveTrainingPolicyId?: SortOrder
+    sourceHistoryFingerprint?: SortOrder
     contractVersion?: SortOrder
     status?: SortOrder
     reasonCode?: SortOrder

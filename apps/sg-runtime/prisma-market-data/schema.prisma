@@ -273,6 +273,9 @@ model RollingDailyCurrentForecastSnapshot {
   methodId                    String
   methodVersion               String
   modelId                     String
+  trainingWindowPolicyId      String?
+  effectiveTrainingPolicyId   String?
+  sourceHistoryFingerprint    String?
   contractVersion             String
   status                      String
   reasonCode                  String?
@@ -283,8 +286,8 @@ model RollingDailyCurrentForecastSnapshot {
   createdAt                   DateTime            @default(now())
   updatedAt                   DateTime            @updatedAt
 
-  @@unique([seriesId, inputSource, targetBasis, methodId, methodVersion, modelId], map: "rolling_daily_current_forecast_snapshots_identity_key")
-  @@index([seriesId, inputSource, targetBasis, methodId, methodVersion, modelId, updatedAt], map: "rolling_daily_current_forecast_snapshots_updated_idx")
+  @@unique([seriesId, inputSource, targetBasis, methodId, methodVersion, modelId, trainingWindowPolicyId, effectiveTrainingPolicyId, sourceHistoryFingerprint], map: "rolling_daily_current_forecast_snapshots_identity_key")
+  @@index([seriesId, inputSource, targetBasis, methodId, methodVersion, modelId, trainingWindowPolicyId, effectiveTrainingPolicyId, sourceHistoryFingerprint, updatedAt], map: "rolling_daily_current_forecast_snapshots_updated_idx")
   @@map("rolling_daily_current_forecast_snapshots")
 }
 

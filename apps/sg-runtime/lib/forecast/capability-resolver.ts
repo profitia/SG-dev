@@ -25,6 +25,7 @@ import {
   type ForecastPreparationIdentity,
   type ForecastTargetSemantics,
 } from '@/lib/forecast/identity'
+import { resolveForecastTechnicalMinimumObservations } from '@/lib/forecast/current-fast-policy'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 import { readForecastPreparedVariants } from '@/lib/forecast/prepared-state'
 import { resolveMacrobondForecastProvenance } from '@/lib/forecast/provider-provenance'
@@ -189,8 +190,6 @@ type TimedAsyncResult<T> = {
   durationMs: number
 }
 
-const MONTHLY_MINIMUM_OBSERVATIONS = 36
-const ROLLING_DAILY_MINIMUM_OBSERVATIONS = 60
 export const MIN_BACKTEST_ORIGINS_POINT_METRICS = 24
 export const MIN_EMPIRICAL_BAND_RESIDUALS = 30
 
@@ -434,9 +433,10 @@ function resolveVariant(
     : 'NOT_REQUIRED'
   const implementationState = resolveImplementationState(input.sourceFrequency, targetSemantics, semanticLawfulness)
   const isRollingDaily = targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
-  const minimumRequiredObservations = isRollingDaily
-    ? ROLLING_DAILY_MINIMUM_OBSERVATIONS
-    : MONTHLY_MINIMUM_OBSERVATIONS
+  const minimumRequiredObservations = resolveForecastTechnicalMinimumObservations({
+    targetSemantics,
+    modelId,
+  })
   const availableObservations = isRollingDaily || targetCadence === input.sourceFrequency
     ? input.sourceObservationCount
     : input.preparedObservationCounts[targetSemantics] ?? 0

@@ -16,6 +16,9 @@ import {
   normalizeForecastSourceFrequency,
   type ForecastTargetCadence,
 } from '@/lib/forecast/cadence'
+import {
+  selectMinimalLawfulCurrentTrainingSuffix,
+} from '@/lib/forecast/current-fast-policy'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 
 type LiveForecastBridgeHistory = {
@@ -68,44 +71,16 @@ export type LiveForecastBridgePayload = {
   history: LiveForecastBridgeHistory
 }
 
-function addCalendarMonthsClamped(value: string, months: number) {
-  const source = new Date(value)
-  const targetMonthIndex = source.getUTCMonth() + months
-  const targetYear = source.getUTCFullYear() + Math.floor(targetMonthIndex / 12)
-  const targetMonth = ((targetMonthIndex % 12) + 12) % 12
-  const lastTargetDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate()
-
-  return new Date(Date.UTC(
-    targetYear,
-    targetMonth,
-    Math.min(source.getUTCDate(), lastTargetDay),
-    source.getUTCHours(),
-    source.getUTCMinutes(),
-    source.getUTCSeconds(),
-    source.getUTCMilliseconds(),
-  )).toISOString()
-}
-
-function selectTrailingCurrentForecastTrainingPoints(
-  points: LiveForecastBridgeHistory['points'],
-) {
-  const lastPoint = points[points.length - 1]
-  if (!lastPoint) {
-    return points
-  }
-
-  const windowStartExclusive = addCalendarMonthsClamped(lastPoint.date, -12)
-  return points.filter((point) => point.date > windowStartExclusive && point.date <= lastPoint.date)
-}
-
-export function selectLatestCurrentForecastMonthlyTrainingPayload(
+export function selectMinimalLawfulCurrentTrainingPayload(
   payload: LiveForecastBridgePayload,
+  minimumRequiredObservations: number,
 ): LiveForecastBridgePayload {
-  if (payload.history.frequency !== 'MONTHLY' && payload.history.frequency !== 'QUARTERLY') {
-    return payload
-  }
-
-  const points = selectTrailingCurrentForecastTrainingPoints(payload.history.points)
+  const selection = selectMinimalLawfulCurrentTrainingSuffix({
+    points: payload.history.points,
+    forecastOrigin: payload.history.end,
+    minimumRequiredObservations,
+  })
+  const points = selection.points
   if (points.length === payload.history.points.length) {
     return payload
   }

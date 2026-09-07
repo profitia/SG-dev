@@ -2,6 +2,11 @@ import {
   createCurrentForecastStatisticalCompatibility,
 } from '@/lib/forecast/identity'
 import {
+  addCalendarMonthsClamped,
+  resolveForecastTechnicalMinimumObservations,
+  selectMinimalLawfulCurrentTrainingSuffix,
+} from '@/lib/forecast/current-fast-policy'
+import {
   buildCurrentLogicalArtifactKey,
   type CurrentLogicalArtifactIdentity,
 } from '@/lib/forecast/current-single-flight'
@@ -29,17 +34,6 @@ function normalizeDailyObservationDay(value: string) {
   return value.trim().slice(0, 10)
 }
 
-function addCalendarMonthsClamped(value: string, months: number) {
-  const source = new Date(`${value}T00:00:00.000Z`)
-  const targetMonthIndex = source.getUTCMonth() + months
-  const targetYear = source.getUTCFullYear() + Math.floor(targetMonthIndex / 12)
-  const targetMonth = ((targetMonthIndex % 12) + 12) % 12
-  const lastTargetDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate()
-  return new Date(Date.UTC(targetYear, targetMonth, Math.min(source.getUTCDate(), lastTargetDay)))
-    .toISOString()
-    .slice(0, 10)
-}
-
 function nextCalendarDay(value: string) {
   const date = new Date(`${value}T00:00:00.000Z`)
   date.setUTCDate(date.getUTCDate() + 1)
@@ -48,14 +42,18 @@ function nextCalendarDay(value: string) {
 
 export function selectTrailingRollingDailyCurrentHistory(history: RollingDailyHistoryPayload): RollingDailyHistoryPayload {
   const forecastOrigin = latestLawfulObservationDate(history)
-  const windowStartExclusive = addCalendarMonthsClamped(forecastOrigin, -12)
+  const selection = selectMinimalLawfulCurrentTrainingSuffix({
+    points: history.points.map((point) => ({ ...point, date: normalizeDailyObservationDay(point.date) })),
+    forecastOrigin,
+    minimumRequiredObservations: resolveForecastTechnicalMinimumObservations({
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      modelId: 'naive',
+    }),
+  })
 
   return {
     ...history,
-    points: history.points.filter((point) => {
-      const day = normalizeDailyObservationDay(point.date)
-      return day > windowStartExclusive && day <= forecastOrigin
-    }),
+    points: selection.points,
   }
 }
 
@@ -63,7 +61,7 @@ export function buildRollingDailyCurrentHorizonConfigurationId(forecastOrigin: s
   const anchorTargetDates = Object.fromEntries(
     Object.entries(ROLLING_DAILY_ANCHOR_HORIZONS).map(([label, months]) => [
       label,
-      addCalendarMonthsClamped(forecastOrigin, months),
+      addCalendarMonthsClamped(forecastOrigin, months).slice(0, 10),
     ]),
   )
 

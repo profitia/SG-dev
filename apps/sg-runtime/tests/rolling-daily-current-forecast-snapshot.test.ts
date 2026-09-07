@@ -188,10 +188,17 @@ test('rolling-daily current snapshot persistence upserts the canonical payload a
   assert.ok(capturedUpsertArgs)
 
   const createArgs = (capturedUpsertArgs as { create: Record<string, unknown> }).create
+  const whereArgs = (capturedUpsertArgs as { where: Record<string, { trainingWindowPolicyId: string, effectiveTrainingPolicyId: string, sourceHistoryFingerprint: string }> }).where
   assert.equal(createArgs.seriesId, 'wocaes0074')
   assert.equal(createArgs.targetBasis, 'POINT_IN_TIME')
   assert.equal(createArgs.methodId, 'ROLLING_DAILY_POINT_IN_TIME')
   assert.equal(createArgs.modelId, 'ets')
+  assert.equal(createArgs.trainingWindowPolicyId, 'CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1')
+  assert.equal(createArgs.sourceHistoryFingerprint, 'history-fingerprint-v1')
+  assert.equal(
+    whereArgs.seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint.trainingWindowPolicyId,
+    'CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1',
+  )
 })
 
 test('rolling-daily current snapshot supports arima and prepared read returns the stored canonical payload without refit', async () => {
@@ -328,6 +335,9 @@ test('rolling-daily current snapshot detects source fingerprint drift and marks 
       prisma: {
         rollingDailyCurrentForecastSnapshot: {
           async findUnique() {
+            return null
+          },
+          async findFirst() {
             return {
               payloadJson: {
                 contractVersion: '1',
