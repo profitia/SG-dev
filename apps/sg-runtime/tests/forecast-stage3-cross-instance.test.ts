@@ -26,11 +26,16 @@ import {
 import { buildForecastHistoryFingerprint } from '../lib/forecast/history-fingerprint'
 import { buildCurrentHorizonConfigurationId } from '../lib/forecast/live-market-input'
 import { buildRollingDailyCurrentHorizonConfigurationId } from '../lib/forecast/rolling-daily-current-ownership'
+import {
+  persistResolvedRollingDailyCurrentForecastSnapshot,
+  readRollingDailyCurrentForecastSnapshot,
+} from '../lib/forecast/rolling-daily-current-forecast-snapshot'
 import { PrismaClient } from '../generated/market-data-client'
 import type { ExactForecastCapabilityResolution, ForecastVariantCapability } from '../lib/forecast/capability-resolver'
 import type { UserFacingForecastModelId } from '../lib/forecast/contracts'
 import type { ForecastPreparationOwnedExecutionContext } from '../lib/forecast/execution-ledger'
-import type { RollingDailyHistoryPayload } from '../lib/forecast/rolling-daily-maintenance'
+import { buildRollingDailyHistoryFingerprint, type RollingDailyHistoryPayload } from '../lib/forecast/rolling-daily-maintenance'
+import type { ProductionForecastResult } from '../lib/forecast/production-routing'
 import type {
   ForecastBridge,
   ForecastLibraryServiceDependencies,
@@ -567,6 +572,221 @@ function createOwnedPersistence(
     requestId: ownership.requestId,
     ownerRequestId: ownership.ownerRequestId,
     role: ownership.role,
+  }
+}
+
+function createRollingDailyPreparedHistory(
+  seriesId: string,
+  latestDate = '2026-08-20',
+): RollingDailyHistoryPayload {
+  return {
+    seriesId,
+    displayName: 'Brent',
+    description: 'Brent',
+    frequency: 'DAILY',
+    source: 'DYNAMIC_MARKET_DATA_STORE',
+    points: [{ date: latestDate, value: 89.9 }],
+  }
+}
+
+function createRollingDailyCurrentIdentity(
+  seriesId: string,
+  modelId: 'naive' | 'damped_holt' | 'ets' | 'arima' = 'arima',
+  latestDate = '2026-08-20',
+) {
+  const history = createRollingDailyPreparedHistory(seriesId, latestDate)
+  const statisticalCompatibility = createCurrentForecastStatisticalCompatibility({
+    sourceFrequency: 'DAILY',
+    targetCadence: 'DAILY',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+  })
+  const sourceHistoryFingerprint = buildRollingDailyHistoryFingerprint(history)
+  const logicalArtifactIdentity = {
+    artifactScope: statisticalCompatibility.artifactScope,
+    seriesId,
+    targetBasis: 'POINT_IN_TIME',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+    methodVersion: 'rolling-daily-point-in-time-v1',
+    trainingWindowPolicyId: statisticalCompatibility.trainingWindowPolicyId,
+    modelId,
+    inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+    historyFingerprint: sourceHistoryFingerprint,
+    sourceFrequency: 'DAILY',
+    targetCadence: 'DAILY',
+    frequencyIdentity: 'FORECAST_CADENCE_V1|source=DAILY|target=DAILY',
+    forecastOrigin: latestDate,
+    horizonConfigurationId: buildRollingDailyCurrentHorizonConfigurationId(latestDate),
+  } satisfies CurrentLogicalArtifactIdentity
+
+  return {
+    history,
+    statisticalCompatibility,
+    sourceHistoryFingerprint,
+    logicalArtifactIdentity,
+    logicalArtifactKey: buildCurrentLogicalArtifactKey(logicalArtifactIdentity),
+  }
+}
+
+function createRollingDailySnapshotResult(
+  seriesId: string,
+  modelId: 'naive' | 'damped_holt' | 'ets' | 'arima',
+  sourceHistoryFingerprint: string,
+  originDate = '2026-08-20',
+): ProductionForecastResult {
+  return {
+    productionMethod: 'ROLLING_DAILY_POINT_IN_TIME',
+    contractVersion: '1',
+    status: 'AVAILABLE',
+    benchmark: {
+      benchmarkId: seriesId,
+      displayName: 'Brent, Spot, FOB North Sea',
+      frequency: 'DAILY',
+      unit: 'USD/bbl',
+      currency: 'USD',
+      provider: 'macrobond',
+      providerSeriesId: seriesId,
+    },
+    forecastMethod: {
+      id: 'ROLLING_DAILY_POINT_IN_TIME',
+      version: 'rolling-daily-point-in-time-v1',
+    },
+    model: {
+      id: modelId,
+      selectedCandidate: modelId === 'arima' ? 'ARIMA_AUTO' : 'ETS_AUTO',
+      selectionMetric: null,
+      selectionScore: null,
+      selectedParameters: null,
+    },
+    origin: {
+      date: originDate,
+      value: 89.9,
+    },
+    maxHorizonMonths: 12,
+    anchors: [
+      {
+        horizon: '1M',
+        horizonMonths: 1,
+        targetCalendarDate: '2026-09-20',
+        pointForecast: 90.1,
+        band: {
+          status: 'AVAILABLE',
+          reasonCode: null,
+          source: 'EMPIRICAL_ANCHOR',
+          lower: 86,
+          upper: 94,
+          sampleCount: 25,
+          p10ResidualOffset: -4,
+          p90ResidualOffset: 4,
+        },
+      },
+      {
+        horizon: '3M',
+        horizonMonths: 3,
+        targetCalendarDate: '2026-11-20',
+        pointForecast: 90.8,
+        band: {
+          status: 'AVAILABLE',
+          reasonCode: null,
+          source: 'EMPIRICAL_ANCHOR',
+          lower: 85,
+          upper: 95,
+          sampleCount: 25,
+          p10ResidualOffset: -5,
+          p90ResidualOffset: 4.2,
+        },
+      },
+      {
+        horizon: '6M',
+        horizonMonths: 6,
+        targetCalendarDate: '2027-02-20',
+        pointForecast: 91.6,
+        band: {
+          status: 'AVAILABLE',
+          reasonCode: null,
+          source: 'EMPIRICAL_ANCHOR',
+          lower: 84,
+          upper: 97,
+          sampleCount: 25,
+          p10ResidualOffset: -6,
+          p90ResidualOffset: 5.4,
+        },
+      },
+      {
+        horizon: '12M',
+        horizonMonths: 12,
+        targetCalendarDate: '2027-08-20',
+        pointForecast: 93.2,
+        band: {
+          status: 'AVAILABLE',
+          reasonCode: null,
+          source: 'EMPIRICAL_ANCHOR',
+          lower: 83,
+          upper: 99,
+          sampleCount: 25,
+          p10ResidualOffset: -7,
+          p90ResidualOffset: 5.8,
+        },
+      },
+    ],
+    path: [
+      {
+        date: '2026-08-21',
+        pointForecast: 90,
+        band: {
+          status: 'NOT_AVAILABLE',
+          reasonCode: 'BEFORE_FIRST_EMPIRICAL_ANCHOR',
+          source: null,
+          lower: null,
+          upper: null,
+        },
+      },
+      {
+        date: '2026-09-20',
+        pointForecast: 90.1,
+        band: {
+          status: 'AVAILABLE',
+          reasonCode: null,
+          source: 'EMPIRICAL_ANCHOR',
+          lower: 86,
+          upper: 94,
+        },
+      },
+      {
+        date: '2027-08-20',
+        pointForecast: 93.2,
+        band: {
+          status: 'AVAILABLE',
+          reasonCode: null,
+          source: 'EMPIRICAL_ANCHOR',
+          lower: 83,
+          upper: 99,
+        },
+      },
+    ],
+    calibration: {
+      availabilityStatus: 'AVAILABLE',
+      freshnessStatus: 'FRESH',
+      quantileConvention: 'HF7_LINEAR_INTERPOLATION',
+      coverageLabel: '80% empirical prediction band',
+      methodologicalMinimumStatus: 'MET',
+      updatedAt: `${originDate}T00:00:00.000Z`,
+      processedThrough: originDate,
+      lastResidualAvailabilityDate: originDate,
+    },
+    audit: {
+      generatedAt: `${originDate}T00:00:00.000Z`,
+      sourceLatestObservationDate: originDate,
+      calendarProjectionMode: 'CALENDAR_MONTH_CLAMP',
+      projectionCalendarStrategy: 'CALENDAR_MONTH_CLAMP',
+      technicalMinimumTrainingObservations: 60,
+      methodologicalTrainingEligibilityStatus: 'ELIGIBLE',
+      calibrationUpdatedAt: `${originDate}T00:00:00.000Z`,
+      calibrationLastResidualAvailabilityDate: originDate,
+      inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+      sourceHistoryFingerprint,
+    },
+    warnings: [],
   }
 }
 
@@ -1902,6 +2122,129 @@ serialTest('db-backed policy identity constraints preserve exact coexistence, re
   )
 })
 
+serialTest('db-backed rolling daily snapshot identity constraints preserve exact coexistence, reject duplicate legacy rows, and reject partial policy identity', async () => {
+  const exact = createRollingDailyCurrentIdentity('rolling-daily-identity-series', 'arima')
+
+  await requirePrisma().rollingDailyCurrentForecastSnapshot.create({
+    data: {
+      seriesId: exact.history.seriesId,
+      inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+      inputRunId: null,
+      targetBasis: 'POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodVersion: 'rolling-daily-point-in-time-v1',
+      modelId: 'arima',
+      trainingWindowPolicyId: null,
+      effectiveTrainingPolicyId: null,
+      sourceHistoryFingerprint: null,
+      contractVersion: '1',
+      status: 'AVAILABLE',
+      reasonCode: null,
+      message: null,
+      forecastOriginAt: new Date('2026-08-20T00:00:00.000Z'),
+      sourceLatestObservationAt: new Date('2026-08-20T00:00:00.000Z'),
+      payloadJson: { status: 'AVAILABLE', lineage: 'legacy' },
+    },
+  })
+
+  await requirePrisma().rollingDailyCurrentForecastSnapshot.create({
+    data: {
+      seriesId: exact.history.seriesId,
+      inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+      inputRunId: null,
+      targetBasis: 'POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodVersion: 'rolling-daily-point-in-time-v1',
+      modelId: 'arima',
+      trainingWindowPolicyId: exact.statisticalCompatibility.trainingWindowPolicyId,
+      effectiveTrainingPolicyId: exact.statisticalCompatibility.effectiveTrainingPolicyId,
+      sourceHistoryFingerprint: exact.sourceHistoryFingerprint,
+      contractVersion: '1',
+      status: 'AVAILABLE',
+      reasonCode: null,
+      message: null,
+      forecastOriginAt: new Date('2026-08-20T00:00:00.000Z'),
+      sourceLatestObservationAt: new Date('2026-08-20T00:00:00.000Z'),
+      payloadJson: { status: 'AVAILABLE', lineage: 'exact' },
+    },
+  })
+
+  assert.equal(
+    await requirePrisma().rollingDailyCurrentForecastSnapshot.count({ where: { seriesId: exact.history.seriesId } }),
+    2,
+  )
+
+  await requirePrisma().rollingDailyCurrentForecastSnapshot.create({
+    data: {
+      seriesId: 'rolling-daily-legacy-duplicate-series',
+      inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+      inputRunId: null,
+      targetBasis: 'POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodVersion: 'rolling-daily-point-in-time-v1',
+      modelId: 'ets',
+      trainingWindowPolicyId: null,
+      effectiveTrainingPolicyId: null,
+      sourceHistoryFingerprint: null,
+      contractVersion: '1',
+      status: 'AVAILABLE',
+      reasonCode: null,
+      message: null,
+      forecastOriginAt: new Date('2026-08-20T00:00:00.000Z'),
+      sourceLatestObservationAt: new Date('2026-08-20T00:00:00.000Z'),
+      payloadJson: { status: 'AVAILABLE' },
+    },
+  })
+
+  await assert.rejects(
+    requirePrisma().rollingDailyCurrentForecastSnapshot.create({
+      data: {
+        seriesId: 'rolling-daily-legacy-duplicate-series',
+        inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+        inputRunId: null,
+        targetBasis: 'POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodVersion: 'rolling-daily-point-in-time-v1',
+        modelId: 'ets',
+        trainingWindowPolicyId: null,
+        effectiveTrainingPolicyId: null,
+        sourceHistoryFingerprint: null,
+        contractVersion: '1',
+        status: 'AVAILABLE',
+        reasonCode: null,
+        message: null,
+        forecastOriginAt: new Date('2026-08-20T00:00:00.000Z'),
+        sourceLatestObservationAt: new Date('2026-08-20T00:00:00.000Z'),
+        payloadJson: { status: 'AVAILABLE' },
+      },
+    }),
+  )
+
+  await assert.rejects(
+    requirePrisma().rollingDailyCurrentForecastSnapshot.create({
+      data: {
+        seriesId: 'rolling-daily-partial-identity-series',
+        inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+        inputRunId: null,
+        targetBasis: 'POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodVersion: 'rolling-daily-point-in-time-v1',
+        modelId: 'naive',
+        trainingWindowPolicyId: 'CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1',
+        effectiveTrainingPolicyId: null,
+        sourceHistoryFingerprint: null,
+        contractVersion: '1',
+        status: 'AVAILABLE',
+        reasonCode: null,
+        message: null,
+        forecastOriginAt: new Date('2026-08-20T00:00:00.000Z'),
+        sourceLatestObservationAt: new Date('2026-08-20T00:00:00.000Z'),
+        payloadJson: { status: 'AVAILABLE' },
+      },
+    }),
+  )
+})
+
 serialTest('db-backed rolling daily current elects one authoritative owner across service instances and reuses the exact prepared snapshot', async () => {
   const barrier = createBarrier()
   let rollingCalls = 0
@@ -2114,6 +2457,265 @@ serialTest('db-backed rolling daily current elects one authoritative owner acros
   assert.equal(executions.length, 1)
   assert.equal(executions[0]?.executionStatus, 'COMPLETED')
   assert.equal(executions[0]?.waiterCount, 1)
+})
+
+serialTest('db-backed rolling daily long compute heartbeat keeps one global owner and one compute beyond the original lease window', async () => {
+  const previousLease = process.env.FORECAST_STAGE3_LEASE_DURATION_MS
+  process.env.FORECAST_STAGE3_LEASE_DURATION_MS = '3000'
+
+  let rollingCalls = 0
+  const identity = createRollingDailyCurrentIdentity('stage3-rolling-heartbeat-series', 'arima')
+
+  const buildService = () => createInteractiveForecastPreparationService({
+    now: (() => {
+      let tick = 0
+      return () => ++tick
+    })(),
+    resolveExactCapability: async () => {
+      const capability: ForecastVariantCapability = {
+        identity: {
+          seriesId: identity.history.seriesId,
+          targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+          methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+          methodVersion: 'rolling-daily-point-in-time-v1',
+          modelId: 'arima',
+        },
+        sourceFrequency: 'DAILY',
+        sourceFrequencyRecognized: true,
+        businessTarget: 'DAILY',
+        targetCadence: 'DAILY',
+        targetSemanticsSupported: true,
+        horizonSupportState: 'NOT_REQUESTED' as const,
+        horizonMonths: null,
+        horizonSteps: null,
+        semanticLawfulness: 'LAWFUL' as const,
+        admissionState: 'ADMITTED' as const,
+        provenanceStatus: 'NOT_REQUIRED' as const,
+        implementationState: 'SUPPORTED' as const,
+        historyEligibility: 'ELIGIBLE' as const,
+        minimumRequiredObservations: 60,
+        availableObservations: 6108,
+        modelEligible: true,
+        currentForecastEligible: true,
+        verificationOriginCount: 0,
+        verificationEvidenceState: 'NOT_AVAILABLE' as const,
+        predictionBandResidualCount: 0,
+        predictionBandState: 'NOT_AVAILABLE' as const,
+        targetPreparationState: 'PREPARED' as const,
+        currentPreparedState: 'NOT_PREPARED' as const,
+        historicalPreparedState: 'READY' as const,
+        capabilityState: 'PREPARATION_REQUIRED' as const,
+      }
+
+      return {
+        resolution: {
+          status: 'AVAILABLE',
+          sourceMetadata: {
+            seriesId: identity.history.seriesId,
+            providerCode: 'MACROBOND',
+            source: 'DYNAMIC_MARKET_DATA_STORE',
+            sourceFrequency: 'DAILY',
+            rawFrequency: 'DAILY',
+            sourceObservationCount: 6108,
+            fullHistoryObservationCount: 6108,
+          },
+          capabilities: [capability],
+          targetedHydration: {
+            scope: 'SINGLE_SERIES',
+            requestedSeriesId: identity.history.seriesId,
+            source: 'postgres',
+            cacheStatus: 'hit',
+          },
+          preparationFailures: {},
+          reason: null,
+        },
+        capability,
+        trace: {} as never,
+      } satisfies ExactForecastCapabilityResolution
+    },
+    prepareRollingDailyOwnership: async () => ({
+      history: identity.history,
+      identity: identity.logicalArtifactIdentity,
+      logicalArtifactKey: identity.logicalArtifactKey,
+    }),
+    prepareMonthlyCurrent: async () => {
+      throw new Error('should not be called')
+    },
+    prepareRollingCurrent: async (request) => {
+      rollingCalls += 1
+      await delay(4_500)
+      const ownership = await request.resolvePersistenceOwnership?.()
+      if (!ownership) {
+        throw new Error('Expected resolvePersistenceOwnership for Rolling Daily owner persistence.')
+      }
+
+      await persistResolvedRollingDailyCurrentForecastSnapshot(
+        {
+          seriesId: request.seriesId,
+          modelId: 'arima',
+          preparedHistory: request.preparedHistory,
+        },
+        createRollingDailySnapshotResult(request.seriesId, 'arima', identity.sourceHistoryFingerprint),
+        { prisma: requirePrisma() },
+        { ownership },
+      )
+
+      return {
+        status: 'SUCCEEDED' as const,
+        seriesId: request.seriesId,
+        refreshedSnapshotCount: 1,
+        recoveredSnapshotCount: 0,
+        noOpModelCount: 0,
+        failedModelCount: 0,
+        results: [{
+          status: 'SUCCEEDED' as const,
+          modelId: 'arima',
+          maintenance: {
+            status: 'SUCCEEDED' as const,
+            seriesId: request.seriesId,
+            modelId: 'arima',
+            targetBasis: 'POINT_IN_TIME' as const,
+            inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+            methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+            methodVersion: 'rolling-daily-point-in-time-v1',
+            reasonCode: null,
+            sourceHistoryFingerprint: identity.sourceHistoryFingerprint,
+            latestSourceObservationAt: '2026-08-20',
+            sourceObservationCount: 6108,
+            filteredNullCount: 0,
+            filteredDuplicateCount: 0,
+            newOriginCount: 1,
+            maturedRecordCount: 0,
+            calibrationRefreshCount: 0,
+            affectedCalibrationGroupCount: 0,
+            lastProcessedOriginAt: '2026-08-20',
+            lastMaturedObservedAt: null,
+            runtimeMs: 4500,
+          },
+          snapshot: {
+            status: 'REFRESHED_AFTER_MAINTENANCE' as const,
+            reason: 'MAINTENANCE_DELTA_APPLIED' as const,
+            parityStatus: 'MATCHED' as const,
+          },
+          error: null,
+        }],
+      }
+    },
+    readRollingCurrentSnapshot: (request) => readRollingDailyCurrentForecastSnapshot(request, { prisma: requirePrisma() }),
+  })
+
+  try {
+    const owner = buildService().prepareCurrent({
+      seriesId: identity.history.seriesId,
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      modelId: 'arima',
+    })
+
+    await waitForExecutionStatus(identity.logicalArtifactKey, 'STARTED')
+    await delay(3_500)
+
+    const contender = buildService().prepareCurrent({
+      seriesId: identity.history.seriesId,
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      modelId: 'arima',
+    })
+
+    const [ownerResult, contenderResult] = await Promise.all([owner, contender])
+
+    assert.equal(rollingCalls, 1)
+    assert.deepEqual([ownerResult.status, contenderResult.status].sort(), ['READY', 'REUSED'])
+
+    const executions = await requirePrisma().forecastPreparationExecutionLedger.findMany({
+      where: { logicalArtifactKey: identity.logicalArtifactKey },
+      orderBy: [{ startedAt: 'asc' }, { updatedAt: 'asc' }],
+    })
+    assert.equal(executions.length, 1)
+    assert.equal(executions[0]?.executionStatus, 'COMPLETED')
+    assert.equal(executions[0]?.attemptKind, 'PRIMARY')
+  } finally {
+    if (previousLease === undefined) {
+      delete process.env.FORECAST_STAGE3_LEASE_DURATION_MS
+    } else {
+      process.env.FORECAST_STAGE3_LEASE_DURATION_MS = previousLease
+    }
+  }
+})
+
+serialTest('db-backed rolling daily stale predecessor persistence is blocked and recovery owner remains authoritative', async () => {
+  const previousLease = process.env.FORECAST_STAGE3_LEASE_DURATION_MS
+  process.env.FORECAST_STAGE3_LEASE_DURATION_MS = '1000'
+
+  const identity = createRollingDailyCurrentIdentity('stage3-rolling-stale-owner-series', 'ets')
+  const admission = createDefaultForecastPreparationExecutionAdmission()
+
+  try {
+    const owner = await admission.acquireExecution({
+      operationFamily: 'CURRENT',
+      logicalArtifactKey: identity.logicalArtifactKey,
+      logicalArtifactIdentity: identity.logicalArtifactIdentity,
+      requestId: 'stage3-rolling-stale-owner',
+      ownerRequestId: 'stage3-rolling-stale-owner',
+      observedAt: new Date().toISOString(),
+    })
+
+    assert.equal(owner.role, 'OWNER')
+    if (owner.role !== 'OWNER') {
+      throw new Error('Expected Rolling Daily primary owner acquisition.')
+    }
+
+    await delay(1_200)
+
+    const recovery = await createDefaultForecastPreparationExecutionAdmission().acquireExecution({
+      operationFamily: 'CURRENT',
+      logicalArtifactKey: identity.logicalArtifactKey,
+      logicalArtifactIdentity: identity.logicalArtifactIdentity,
+      requestId: 'stage3-rolling-recovery-owner',
+      ownerRequestId: 'stage3-rolling-recovery-owner',
+      observedAt: new Date().toISOString(),
+    })
+
+    assert.equal(recovery.role, 'RECOVERY_OWNER')
+    if (recovery.role !== 'RECOVERY_OWNER') {
+      throw new Error('Expected Rolling Daily recovery owner acquisition.')
+    }
+
+    await assert.rejects(
+      persistResolvedRollingDailyCurrentForecastSnapshot(
+        {
+          seriesId: identity.history.seriesId,
+          modelId: 'ets',
+          preparedHistory: identity.history,
+        },
+        createRollingDailySnapshotResult(identity.history.seriesId, 'ets', identity.sourceHistoryFingerprint),
+        { prisma: requirePrisma() },
+        { ownership: createOwnedPersistence(identity.logicalArtifactKey, owner.ownership) },
+      ),
+      (error: unknown) => error instanceof Error && 'code' in error && error.code === 'STALE_OWNER',
+    )
+
+    const persisted = await persistResolvedRollingDailyCurrentForecastSnapshot(
+      {
+        seriesId: identity.history.seriesId,
+        modelId: 'ets',
+        preparedHistory: identity.history,
+      },
+      createRollingDailySnapshotResult(identity.history.seriesId, 'ets', identity.sourceHistoryFingerprint),
+      { prisma: requirePrisma() },
+      { ownership: createOwnedPersistence(identity.logicalArtifactKey, recovery.ownership) },
+    )
+
+    assert.equal(persisted.parityStatus, 'MATCHED')
+    assert.equal(
+      await requirePrisma().rollingDailyCurrentForecastSnapshot.count({ where: { seriesId: identity.history.seriesId } }),
+      1,
+    )
+  } finally {
+    if (previousLease === undefined) {
+      delete process.env.FORECAST_STAGE3_LEASE_DURATION_MS
+    } else {
+      process.env.FORECAST_STAGE3_LEASE_DURATION_MS = previousLease
+    }
+  }
 })
 
 serialTest('db-backed simultaneous recovery elects one recovery owner and preserves predecessor lineage', async () => {

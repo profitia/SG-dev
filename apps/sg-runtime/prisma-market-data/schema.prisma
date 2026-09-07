@@ -273,6 +273,7 @@ model RollingDailyCurrentForecastSnapshot {
   methodId                    String
   methodVersion               String
   modelId                     String
+  /// Database migration additionally enforces this triplet as all-null legacy identity or all-non-null exact identity.
   trainingWindowPolicyId      String?
   effectiveTrainingPolicyId   String?
   sourceHistoryFingerprint    String?

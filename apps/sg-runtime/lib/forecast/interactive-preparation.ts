@@ -17,8 +17,16 @@ import { createRollingDailyProductionOperationsService } from '@/lib/forecast/ro
 import {
   createDefaultForecastPreparationExecutionAdmission,
   type ForecastPreparationExecutionAdmission,
+  type ForecastPreparationOwnedExecutionContext,
 } from '@/lib/forecast/execution-ledger'
-import { resolveBenchmarkCurrentForecast } from '@/lib/forecast/service'
+import {
+  type ForecastPersistenceOwnership,
+  resolveBenchmarkCurrentForecast,
+} from '@/lib/forecast/service'
+import {
+  resolveForecastStage3HeartbeatIntervalMs,
+  startForecastExecutionLeaseHeartbeat,
+} from '@/lib/forecast/stage3-lease-heartbeat'
 
 export const InteractiveForecastIdentitySchema = z.object({
   seriesId: z.string().trim().min(1).refine((seriesId) => seriesId !== '*', 'A concrete seriesId is required.'),
@@ -157,6 +165,20 @@ export function createInteractiveForecastPreparationService(
     now: dependencies.now ?? (() => performance.now()),
   }
 
+  const buildRollingDailyPersistenceOwnership = (
+    logicalArtifactKey: string,
+    ownership: ForecastPreparationOwnedExecutionContext,
+  ): ForecastPersistenceOwnership => ({
+    operationFamily: 'CURRENT',
+    logicalArtifactKey,
+    executionId: ownership.executionId,
+    ownerToken: ownership.ownerToken,
+    leaseVersion: ownership.leaseVersion,
+    requestId: ownership.requestId,
+    ownerRequestId: ownership.ownerRequestId,
+    role: ownership.role,
+  })
+
   async function resolveExact(input: InteractiveForecastIdentity) {
     const exact = await resolvedDependencies.resolveExactCapability(input)
     return {
@@ -232,6 +254,9 @@ export function createInteractiveForecastPreparationService(
       }
 
       if (input.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME') {
+        const rollingDailyStage3HeartbeatIntervalMs = resolveForecastStage3HeartbeatIntervalMs(
+          resolvedDependencies.executionAdmission.leaseDurationMs,
+        )
         const ownership = await resolvedDependencies.prepareRollingDailyOwnership({
           seriesId: input.seriesId,
           modelId: input.modelId,
@@ -308,98 +333,147 @@ export function createInteractiveForecastPreparationService(
             continue
           }
 
-          const snapshotBeforeCompute = await readPreparedSnapshot()
-          if (snapshotBeforeCompute.status === 'HIT') {
+          let currentOwnership = admission.ownership
+          const heartbeat = startForecastExecutionLeaseHeartbeat({
+            executionAdmission: resolvedDependencies.executionAdmission,
+            logicalArtifactKey: ownership.logicalArtifactKey,
+            ownership: currentOwnership,
+            requestId,
+            heartbeatIntervalMs: rollingDailyStage3HeartbeatIntervalMs,
+          })
+          let failurePhase: 'COMPUTE' | 'PERSISTENCE' | 'FINALIZATION' = 'COMPUTE'
+
+          try {
+            const snapshotBeforeCompute = await readPreparedSnapshot()
+            if (snapshotBeforeCompute.status === 'HIT') {
+              currentOwnership = heartbeat.getOwnership()
+              await resolvedDependencies.executionAdmission.markExecutionCompleted({
+                executionId: currentOwnership.executionId,
+                logicalArtifactKey: ownership.logicalArtifactKey,
+                ownerToken: currentOwnership.ownerToken,
+                leaseVersion: currentOwnership.leaseVersion,
+                requestId,
+                ownerRequestId: currentOwnership.ownerRequestId,
+                resultStatus: 'AVAILABLE',
+                cacheStatus: 'hit',
+              })
+
+              return {
+                ...base,
+                status: 'REUSED',
+                timingMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
+                reason: null,
+              }
+            }
+
+            const result = await resolvedDependencies.prepareRollingCurrent({
+              seriesId: input.seriesId,
+              modelIds: [input.modelId],
+              preparedHistory: ownership.history,
+              resolvePersistenceOwnership: async () => {
+                heartbeat.assertActive()
+                currentOwnership = await heartbeat.renewNow()
+                return buildRollingDailyPersistenceOwnership(ownership.logicalArtifactKey, currentOwnership)
+              },
+            })
+            const modelResult = result.results.find((candidate) => candidate.modelId === input.modelId)
+            const failed = result.status === 'FAILED'
+              || !modelResult
+              || modelResult.status === 'FAILED'
+              || modelResult.status === 'REBUILD_REQUIRED'
+
+            if (failed) {
+              heartbeat.assertActive()
+              currentOwnership = heartbeat.getOwnership()
+              await resolvedDependencies.executionAdmission.markExecutionFailed({
+                executionId: currentOwnership.executionId,
+                logicalArtifactKey: ownership.logicalArtifactKey,
+                ownerToken: currentOwnership.ownerToken,
+                leaseVersion: currentOwnership.leaseVersion,
+                requestId,
+                ownerRequestId: currentOwnership.ownerRequestId,
+                failurePhase: 'COMPUTE',
+                failureReason: modelResult?.error ?? 'Rolling Daily production operations did not produce a prepared artifact.',
+                resultStatus: modelResult?.status ?? 'FAILED',
+                cacheStatus: 'miss',
+              })
+
+              return {
+                ...base,
+                status: 'FAILED',
+                timingMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
+                reason: modelResult?.error ?? 'Rolling Daily production operations did not produce a prepared artifact.',
+              }
+            }
+
+            const snapshotAfterCompute = await readPreparedSnapshot()
+            if (snapshotAfterCompute.status !== 'HIT') {
+              failurePhase = 'PERSISTENCE'
+              heartbeat.assertActive()
+              currentOwnership = heartbeat.getOwnership()
+              await resolvedDependencies.executionAdmission.markExecutionFailed({
+                executionId: currentOwnership.executionId,
+                logicalArtifactKey: ownership.logicalArtifactKey,
+                ownerToken: currentOwnership.ownerToken,
+                leaseVersion: currentOwnership.leaseVersion,
+                requestId,
+                ownerRequestId: currentOwnership.ownerRequestId,
+                failurePhase,
+                failureReason: `Rolling Daily production operations completed without persisting the exact prepared snapshot for ${ownership.logicalArtifactKey}.`,
+                resultStatus: modelResult.status,
+                cacheStatus: 'miss',
+              })
+              return {
+                ...base,
+                status: 'FAILED',
+                timingMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
+                reason: `Rolling Daily production operations completed without persisting the exact prepared snapshot for ${ownership.logicalArtifactKey}.`,
+              }
+            }
+
+            failurePhase = 'FINALIZATION'
+            heartbeat.assertActive()
+            currentOwnership = heartbeat.getOwnership()
             await resolvedDependencies.executionAdmission.markExecutionCompleted({
-              executionId: admission.ownership.executionId,
+              executionId: currentOwnership.executionId,
               logicalArtifactKey: ownership.logicalArtifactKey,
-              ownerToken: admission.ownership.ownerToken,
-              leaseVersion: admission.ownership.leaseVersion,
+              ownerToken: currentOwnership.ownerToken,
+              leaseVersion: currentOwnership.leaseVersion,
               requestId,
-              ownerRequestId: admission.ownership.ownerRequestId,
+              ownerRequestId: currentOwnership.ownerRequestId,
               resultStatus: 'AVAILABLE',
-              cacheStatus: 'hit',
+              cacheStatus: modelResult.status === 'NO_OP' ? 'hit' : 'miss',
             })
 
             return {
               ...base,
-              status: 'REUSED',
+              status: modelResult.status === 'NO_OP' ? 'REUSED' : 'READY',
               timingMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
               reason: null,
             }
-          }
-
-          const result = await resolvedDependencies.prepareRollingCurrent({
-            seriesId: input.seriesId,
-            modelIds: [input.modelId],
-            preparedHistory: ownership.history,
-          })
-          const modelResult = result.results.find((candidate) => candidate.modelId === input.modelId)
-          const failed = result.status === 'FAILED'
-            || !modelResult
-            || modelResult.status === 'FAILED'
-            || modelResult.status === 'REBUILD_REQUIRED'
-
-          if (failed) {
-            await resolvedDependencies.executionAdmission.markExecutionFailed({
-              executionId: admission.ownership.executionId,
-              logicalArtifactKey: ownership.logicalArtifactKey,
-              ownerToken: admission.ownership.ownerToken,
-              leaseVersion: admission.ownership.leaseVersion,
-              requestId,
-              ownerRequestId: admission.ownership.ownerRequestId,
-              failurePhase: 'COMPUTE',
-              failureReason: modelResult?.error ?? 'Rolling Daily production operations did not produce a prepared artifact.',
-              resultStatus: modelResult?.status ?? 'FAILED',
-              cacheStatus: 'miss',
-            })
-
-            return {
-              ...base,
-              status: 'FAILED',
-              timingMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
-              reason: modelResult?.error ?? 'Rolling Daily production operations did not produce a prepared artifact.',
+          } catch (error) {
+            try {
+              heartbeat.assertActive()
+              currentOwnership = heartbeat.getOwnership()
+              await resolvedDependencies.executionAdmission.markExecutionFailed({
+                executionId: currentOwnership.executionId,
+                logicalArtifactKey: ownership.logicalArtifactKey,
+                ownerToken: currentOwnership.ownerToken,
+                leaseVersion: currentOwnership.leaseVersion,
+                requestId,
+                ownerRequestId: currentOwnership.ownerRequestId,
+                failurePhase,
+                failureReason: error instanceof Error ? error.message : 'unknown',
+                resultStatus: failurePhase === 'COMPUTE' ? 'FAILED' : 'AVAILABLE',
+                cacheStatus: failurePhase === 'PERSISTENCE' ? 'persist-failed' : 'miss',
+              })
+            } catch {
+              // Preserve the original failure as the surfaced error.
             }
-          }
 
-          const snapshotAfterCompute = await readPreparedSnapshot()
-          if (snapshotAfterCompute.status !== 'HIT') {
-            await resolvedDependencies.executionAdmission.markExecutionFailed({
-              executionId: admission.ownership.executionId,
-              logicalArtifactKey: ownership.logicalArtifactKey,
-              ownerToken: admission.ownership.ownerToken,
-              leaseVersion: admission.ownership.leaseVersion,
-              requestId,
-              ownerRequestId: admission.ownership.ownerRequestId,
-              failurePhase: 'PERSISTENCE',
-              failureReason: `Rolling Daily production operations completed without persisting the exact prepared snapshot for ${ownership.logicalArtifactKey}.`,
-              resultStatus: modelResult.status,
-              cacheStatus: 'miss',
-            })
-            return {
-              ...base,
-              status: 'FAILED',
-              timingMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
-              reason: `Rolling Daily production operations completed without persisting the exact prepared snapshot for ${ownership.logicalArtifactKey}.`,
-            }
-          }
-
-          await resolvedDependencies.executionAdmission.markExecutionCompleted({
-            executionId: admission.ownership.executionId,
-            logicalArtifactKey: ownership.logicalArtifactKey,
-            ownerToken: admission.ownership.ownerToken,
-            leaseVersion: admission.ownership.leaseVersion,
-            requestId,
-            ownerRequestId: admission.ownership.ownerRequestId,
-            resultStatus: 'AVAILABLE',
-            cacheStatus: modelResult.status === 'NO_OP' ? 'hit' : 'miss',
-          })
-
-          return {
-            ...base,
-            status: modelResult.status === 'NO_OP' ? 'REUSED' : 'READY',
-            timingMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
-            reason: null,
+            throw error
+          } finally {
+            await heartbeat.stop()
           }
         }
       }

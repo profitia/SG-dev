@@ -20,6 +20,7 @@ import {
   createRollingDailyProductionForecastService,
   type RollingDailyProductionForecastResult,
 } from '@/lib/forecast/rolling-daily-production-forecast'
+import type { ForecastPersistenceOwnership } from '@/lib/forecast/service'
 
 export const DEFAULT_ROLLING_DAILY_PRODUCTION_OPERATIONS_SERIES_ID = 'wocaes0074'
 export const ROLLING_DAILY_PRODUCTION_OPERATIONS_MODELS = ['naive', 'damped_holt', 'ets', 'arima'] as const
@@ -32,6 +33,7 @@ export type RollingDailyProductionOperationsRequest = {
   preparedHistory?: RollingDailyHistoryPayload
   prepareHistorical?: boolean
   trace?: RollingDailyHistoricalTraceInput | RollingDailyHistoricalTraceConfig
+  resolvePersistenceOwnership?: () => Promise<ForecastPersistenceOwnership>
 }
 
 const ROLLING_DAILY_HISTORICAL_TRACE_PREFIX = '[ROLLING_DAILY_HISTORICAL_TRACE]'
@@ -92,6 +94,7 @@ type RollingDailyProductionOperationsDependencies = {
   persistSnapshot?: (
     request: RollingDailyCurrentForecastSnapshotRequest,
     result: RollingDailyProductionForecastResult & { productionMethod: 'ROLLING_DAILY_POINT_IN_TIME' },
+    options?: { ownership?: ForecastPersistenceOwnership },
   ) => Promise<RollingDailyCurrentForecastSnapshotPersistenceResult>
   readSnapshot?: (request: {
     seriesId: string
@@ -113,6 +116,7 @@ async function refreshSnapshot(
   resolveCurrentForecast: NonNullable<RollingDailyProductionOperationsDependencies['resolveCurrentForecast']>,
   persistSnapshot: NonNullable<RollingDailyProductionOperationsDependencies['persistSnapshot']>,
   request: RollingDailyCurrentForecastSnapshotRequest,
+  options: { resolvePersistenceOwnership?: () => Promise<ForecastPersistenceOwnership> },
   trace: RollingDailyHistoricalTraceConfig | null,
   status: 'REFRESHED_AFTER_MAINTENANCE',
   reason: 'MAINTENANCE_DELTA_APPLIED',
@@ -121,6 +125,7 @@ async function refreshSnapshot(
   resolveCurrentForecast: NonNullable<RollingDailyProductionOperationsDependencies['resolveCurrentForecast']>,
   persistSnapshot: NonNullable<RollingDailyProductionOperationsDependencies['persistSnapshot']>,
   request: RollingDailyCurrentForecastSnapshotRequest,
+  options: { resolvePersistenceOwnership?: () => Promise<ForecastPersistenceOwnership> },
   trace: RollingDailyHistoricalTraceConfig | null,
   status: 'REFRESHED_AFTER_RECOVERY',
   reason: 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
@@ -129,6 +134,7 @@ async function refreshSnapshot(
   resolveCurrentForecast: NonNullable<RollingDailyProductionOperationsDependencies['resolveCurrentForecast']>,
   persistSnapshot: NonNullable<RollingDailyProductionOperationsDependencies['persistSnapshot']>,
   request: RollingDailyCurrentForecastSnapshotRequest,
+  options: { resolvePersistenceOwnership?: () => Promise<ForecastPersistenceOwnership> },
   trace: RollingDailyHistoricalTraceConfig | null,
   status: 'REFRESHED_AFTER_MAINTENANCE' | 'REFRESHED_AFTER_RECOVERY',
   reason: 'MAINTENANCE_DELTA_APPLIED' | 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
@@ -144,10 +150,13 @@ async function refreshSnapshot(
     })}`)
   }
   const result = await resolveCurrentForecast(request)
+  const ownership = options.resolvePersistenceOwnership
+    ? await options.resolvePersistenceOwnership()
+    : undefined
   const persisted = await persistSnapshot(request, {
     ...result,
     productionMethod: 'ROLLING_DAILY_POINT_IN_TIME',
-  })
+  }, ownership ? { ownership } : undefined)
 
   if (trace) {
     console.info(`${ROLLING_DAILY_HISTORICAL_TRACE_PREFIX} ${JSON.stringify({
@@ -249,6 +258,7 @@ export function createRollingDailyProductionOperationsService(
               resolveCurrentForecast,
               persistSnapshot,
               { seriesId: request.seriesId, modelId, preparedHistory: request.preparedHistory },
+              { resolvePersistenceOwnership: request.resolvePersistenceOwnership },
               trace,
               'REFRESHED_AFTER_MAINTENANCE',
               'MAINTENANCE_DELTA_APPLIED',
@@ -289,6 +299,7 @@ export function createRollingDailyProductionOperationsService(
             resolveCurrentForecast,
             persistSnapshot,
             { seriesId: request.seriesId, modelId, preparedHistory: request.preparedHistory },
+            { resolvePersistenceOwnership: request.resolvePersistenceOwnership },
             trace,
             'REFRESHED_AFTER_RECOVERY',
             snapshotState.status === 'MISS' ? 'SNAPSHOT_MISS' : snapshotState.reason,
@@ -392,6 +403,7 @@ export function createRollingDailyProductionOperationsService(
             resolveCurrentForecast,
             persistSnapshot,
             { seriesId: request.seriesId, modelId, preparedHistory: request.preparedHistory },
+            { resolvePersistenceOwnership: request.resolvePersistenceOwnership },
             trace,
             'REFRESHED_AFTER_RECOVERY',
             snapshotState.status === 'MISS' ? 'SNAPSHOT_MISS' : snapshotState.reason,

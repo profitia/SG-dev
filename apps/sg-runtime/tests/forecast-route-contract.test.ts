@@ -61,7 +61,7 @@ function createStubExecutionAdmission(): ForecastPreparationExecutionAdmission {
   }>()
 
   return {
-    leaseDurationMs: 1_000,
+    leaseDurationMs: 2_000,
     async acquireExecution(input) {
       const existing = executions.get(input.logicalArtifactKey)
       if (!existing || existing.executionStatus !== 'STARTED') {

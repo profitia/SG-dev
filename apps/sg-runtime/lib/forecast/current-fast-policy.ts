@@ -1,14 +1,53 @@
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+
 import type { UserFacingForecastModelId } from '@/lib/forecast/contracts'
 import type { ForecastTargetSemantics } from '@/lib/forecast/identity'
 import { ROLLING_DAILY_TECHNICAL_MINIMUM_TRAINING_OBSERVATIONS } from '@/lib/forecast/rolling-daily-policy'
 
-export const PERIOD_FORECAST_TECHNICAL_MINIMUM_OBSERVATIONS = 36
+type PeriodForecastModelTechnicalRequirements = Record<UserFacingForecastModelId, {
+  minimumTrainingObservations: number
+}>
 
-const PERIOD_FORECAST_MODEL_TECHNICAL_MINIMUMS: Record<UserFacingForecastModelId, number> = {
-  naive: PERIOD_FORECAST_TECHNICAL_MINIMUM_OBSERVATIONS,
-  damped_holt: PERIOD_FORECAST_TECHNICAL_MINIMUM_OBSERVATIONS,
-  ets: PERIOD_FORECAST_TECHNICAL_MINIMUM_OBSERVATIONS,
-  arima: PERIOD_FORECAST_TECHNICAL_MINIMUM_OBSERVATIONS,
+const PERIOD_FORECAST_MODEL_TECHNICAL_REQUIREMENTS_PATH = fileURLToPath(new URL(
+  '../../../../tooling/Benchmark-Forecasting/metadata/model-technical-requirements.json',
+  import.meta.url,
+))
+
+let periodForecastModelTechnicalRequirementsCache: PeriodForecastModelTechnicalRequirements | null = null
+
+function loadPeriodForecastModelTechnicalRequirements(): PeriodForecastModelTechnicalRequirements {
+  if (periodForecastModelTechnicalRequirementsCache) {
+    return periodForecastModelTechnicalRequirementsCache
+  }
+
+  const parsed = JSON.parse(readFileSync(PERIOD_FORECAST_MODEL_TECHNICAL_REQUIREMENTS_PATH, 'utf8')) as unknown
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('Forecast model technical requirements must be a JSON object.')
+  }
+
+  const modelIds: UserFacingForecastModelId[] = ['naive', 'damped_holt', 'ets', 'arima']
+  const requirements = Object.fromEntries(modelIds.map((modelId) => {
+    const entry = (parsed as Record<string, unknown>)[modelId]
+    const rawMinimumTrainingObservations = typeof entry === 'object' && entry !== null
+      ? (entry as Record<string, unknown>).minimumTrainingObservations
+      : null
+
+    if (
+      typeof rawMinimumTrainingObservations !== 'number'
+      || !Number.isInteger(rawMinimumTrainingObservations)
+      || rawMinimumTrainingObservations < 1
+    ) {
+      throw new Error(`Forecast model technical requirements are invalid for ${modelId}.`)
+    }
+
+    const minimumTrainingObservations = rawMinimumTrainingObservations as number
+
+    return [modelId, { minimumTrainingObservations }]
+  })) as PeriodForecastModelTechnicalRequirements
+
+  periodForecastModelTechnicalRequirementsCache = requirements
+  return requirements
 }
 
 export type CurrentFastSelectablePoint = {
@@ -41,7 +80,7 @@ export function resolveForecastTechnicalMinimumObservations(input: {
     return ROLLING_DAILY_TECHNICAL_MINIMUM_TRAINING_OBSERVATIONS
   }
 
-  return PERIOD_FORECAST_MODEL_TECHNICAL_MINIMUMS[input.modelId]
+  return loadPeriodForecastModelTechnicalRequirements()[input.modelId].minimumTrainingObservations
 }
 
 export function selectMinimalLawfulCurrentTrainingSuffix<TPoint extends CurrentFastSelectablePoint>(input: {

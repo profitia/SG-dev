@@ -1,6 +1,8 @@
 import { Prisma, type PrismaClient } from '@/generated/market-data-client'
+import { ForecastExecutionControlError } from '@/lib/forecast/execution-ledger'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 import type { ProductionForecastResult } from '@/lib/forecast/production-routing'
+import type { ForecastPersistenceOwnership } from '@/lib/forecast/service'
 import {
   ROLLING_DAILY_INPUT_SOURCE,
   ROLLING_DAILY_METHOD_ID,
@@ -49,6 +51,71 @@ type SnapshotResolver = (input: RollingDailyCurrentForecastSnapshotRequest & {
 type SnapshotPersistenceDependencies = {
   prisma?: MarketDataPrismaClient
   resolveProductionForecast?: SnapshotResolver
+}
+
+type RollingDailySnapshotPersistenceOptions = {
+  ownership?: ForecastPersistenceOwnership
+}
+
+function upsertRollingDailyCurrentForecastSnapshot(
+  tx: Pick<MarketDataPrismaClient, 'rollingDailyCurrentForecastSnapshot'>,
+  input: {
+    request: RollingDailyCurrentForecastSnapshotRequest
+    inputSource: string
+    statisticalCompatibility: ForecastStatisticalCompatibility
+    sourceHistoryFingerprint: string
+    payload: RollingDailyProductionForecastResult
+    forecastOriginAt: Date | null
+    sourceLatestObservationAt: Date | null
+  },
+) {
+  return tx.rollingDailyCurrentForecastSnapshot.upsert({
+    where: {
+      seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint: {
+        seriesId: input.request.seriesId,
+        inputSource: input.inputSource,
+        targetBasis: ROLLING_DAILY_TARGET_BASIS,
+        methodId: ROLLING_DAILY_METHOD_ID,
+        methodVersion: input.payload.forecastMethod.version,
+        modelId: input.request.modelId,
+        trainingWindowPolicyId: input.statisticalCompatibility.trainingWindowPolicyId,
+        effectiveTrainingPolicyId: input.statisticalCompatibility.effectiveTrainingPolicyId,
+        sourceHistoryFingerprint: input.sourceHistoryFingerprint,
+      },
+    },
+    create: {
+      seriesId: input.request.seriesId,
+      inputSource: input.inputSource,
+      inputRunId: null,
+      targetBasis: ROLLING_DAILY_TARGET_BASIS,
+      methodId: ROLLING_DAILY_METHOD_ID,
+      methodVersion: input.payload.forecastMethod.version,
+      modelId: input.request.modelId,
+      trainingWindowPolicyId: input.statisticalCompatibility.trainingWindowPolicyId,
+      effectiveTrainingPolicyId: input.statisticalCompatibility.effectiveTrainingPolicyId,
+      sourceHistoryFingerprint: input.sourceHistoryFingerprint,
+      contractVersion: input.payload.contractVersion,
+      status: input.payload.status,
+      reasonCode: input.payload.status === 'AVAILABLE' ? null : input.payload.reasonCode,
+      message: input.payload.status === 'AVAILABLE' ? null : input.payload.message,
+      forecastOriginAt: input.forecastOriginAt,
+      sourceLatestObservationAt: input.sourceLatestObservationAt,
+      payloadJson: input.payload as unknown as Prisma.InputJsonValue,
+    },
+    update: {
+      inputRunId: null,
+      trainingWindowPolicyId: input.statisticalCompatibility.trainingWindowPolicyId,
+      effectiveTrainingPolicyId: input.statisticalCompatibility.effectiveTrainingPolicyId,
+      sourceHistoryFingerprint: input.sourceHistoryFingerprint,
+      contractVersion: input.payload.contractVersion,
+      status: input.payload.status,
+      reasonCode: input.payload.status === 'AVAILABLE' ? null : input.payload.reasonCode,
+      message: input.payload.status === 'AVAILABLE' ? null : input.payload.message,
+      forecastOriginAt: input.forecastOriginAt,
+      sourceLatestObservationAt: input.sourceLatestObservationAt,
+      payloadJson: input.payload as unknown as Prisma.InputJsonValue,
+    },
+  })
 }
 
 export type RollingDailyCurrentForecastSnapshotReadRequest = {
@@ -150,6 +217,7 @@ export async function persistResolvedRollingDailyCurrentForecastSnapshot(
   request: RollingDailyCurrentForecastSnapshotRequest,
   result: ProductionForecastResult,
   dependencies: Pick<SnapshotPersistenceDependencies, 'prisma'> = {},
+  options: RollingDailySnapshotPersistenceOptions = {},
 ): Promise<RollingDailyCurrentForecastSnapshotPersistenceResult> {
   const prisma = getSnapshotPrismaClient(dependencies)
   const payload = toSnapshotPayload(result)
@@ -162,53 +230,42 @@ export async function persistResolvedRollingDailyCurrentForecastSnapshot(
   const forecastOriginAt = payload.status === 'AVAILABLE' ? toDateFromCalendarValue(payload.origin.date) : null
   const sourceLatestObservationAt = toDateFromCalendarValue(payload.audit.sourceLatestObservationDate)
 
-  const persisted = await prisma.rollingDailyCurrentForecastSnapshot.upsert({
-    where: {
-      seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint: {
-        seriesId: request.seriesId,
-        inputSource,
-        targetBasis: ROLLING_DAILY_TARGET_BASIS,
-        methodId: ROLLING_DAILY_METHOD_ID,
-        methodVersion: payload.forecastMethod.version,
-        modelId: request.modelId,
-        trainingWindowPolicyId: statisticalCompatibility.trainingWindowPolicyId,
-        effectiveTrainingPolicyId: statisticalCompatibility.effectiveTrainingPolicyId,
-        sourceHistoryFingerprint,
-      },
-    },
-    create: {
-      seriesId: request.seriesId,
-      inputSource,
-      inputRunId: null,
-      targetBasis: ROLLING_DAILY_TARGET_BASIS,
-      methodId: ROLLING_DAILY_METHOD_ID,
-      methodVersion: payload.forecastMethod.version,
-      modelId: request.modelId,
-      trainingWindowPolicyId: statisticalCompatibility.trainingWindowPolicyId,
-      effectiveTrainingPolicyId: statisticalCompatibility.effectiveTrainingPolicyId,
-      sourceHistoryFingerprint,
-      contractVersion: payload.contractVersion,
-      status: payload.status,
-      reasonCode: payload.status === 'AVAILABLE' ? null : payload.reasonCode,
-      message: payload.status === 'AVAILABLE' ? null : payload.message,
-      forecastOriginAt,
-      sourceLatestObservationAt,
-      payloadJson: payload as unknown as Prisma.InputJsonValue,
-    },
-    update: {
-      inputRunId: null,
-      trainingWindowPolicyId: statisticalCompatibility.trainingWindowPolicyId,
-      effectiveTrainingPolicyId: statisticalCompatibility.effectiveTrainingPolicyId,
-      sourceHistoryFingerprint,
-      contractVersion: payload.contractVersion,
-      status: payload.status,
-      reasonCode: payload.status === 'AVAILABLE' ? null : payload.reasonCode,
-      message: payload.status === 'AVAILABLE' ? null : payload.message,
-      forecastOriginAt,
-      sourceLatestObservationAt,
-      payloadJson: payload as unknown as Prisma.InputJsonValue,
-    },
-  })
+  const observedAt = new Date().toISOString()
+  const upsertInput = {
+    request,
+    inputSource,
+    statisticalCompatibility,
+    sourceHistoryFingerprint,
+    payload,
+    forecastOriginAt,
+    sourceLatestObservationAt,
+  }
+
+  const persisted = options.ownership && '$transaction' in prisma && typeof prisma.$transaction === 'function'
+    ? await prisma.$transaction(async (tx) => {
+      const ownership = options.ownership as ForecastPersistenceOwnership
+      const fencedOwner = await tx.$queryRaw<Array<{ executionId: string }>>(Prisma.sql`
+        SELECT "executionId"
+        FROM "forecast_preparation_execution_ledger"
+        WHERE "executionId" = ${ownership.executionId}
+          AND "logicalArtifactKey" = ${ownership.logicalArtifactKey}
+          AND "executionStatus" = 'STARTED'
+          AND "ownerToken" = ${ownership.ownerToken}
+          AND "leaseVersion" = ${ownership.leaseVersion}
+          AND "leaseExpiresAt" > CAST(${observedAt} AS timestamp)
+        FOR UPDATE
+      `)
+
+      if (fencedOwner.length !== 1) {
+        throw new ForecastExecutionControlError(
+          'STALE_OWNER',
+          `Execution ${ownership.executionId} lost fenced persistence rights for ${ownership.logicalArtifactKey}.`,
+        )
+      }
+
+      return upsertRollingDailyCurrentForecastSnapshot(tx as MarketDataPrismaClient, upsertInput)
+    })
+    : await upsertRollingDailyCurrentForecastSnapshot(prisma, upsertInput)
 
   const persistedPayload = RollingDailyProductionForecastResultSchema.parse(persisted.payloadJson as unknown)
   if (!areSnapshotPayloadsEquivalent(persistedPayload, payload)) {

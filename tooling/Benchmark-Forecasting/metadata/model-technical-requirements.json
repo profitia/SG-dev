@@ -1,0 +1,14 @@
+{
+  "naive": {
+    "minimumTrainingObservations": 1
+  },
+  "damped_holt": {
+    "minimumTrainingObservations": 36
+  },
+  "ets": {
+    "minimumTrainingObservations": 36
+  },
+  "arima": {
+    "minimumTrainingObservations": 36
+  }
+}

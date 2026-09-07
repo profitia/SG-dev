@@ -102,6 +102,10 @@ import {
   forecastStressTelemetry,
   type ForecastStressTelemetry,
 } from '@/lib/forecast/stress-telemetry'
+import {
+  resolveForecastStage3HeartbeatIntervalMs,
+  startForecastExecutionLeaseHeartbeat,
+} from '@/lib/forecast/stage3-lease-heartbeat'
 
 const execFileAsync = promisify(execFile)
 const DEFAULT_FORECASTING_LAB_ROOT = path.resolve(process.cwd(), '..', '..', 'tooling', 'Benchmark-Forecasting')
@@ -109,8 +113,6 @@ const DEFAULT_FORECASTING_PYTHON = path.join(DEFAULT_FORECASTING_LAB_ROOT, '.ven
 const FORECASTING_BRIDGE_SCRIPT = ['scripts', 'export_forecast_bundle.py']
 const BRIDGE_BUFFER_BYTES = 25 * 1024 * 1024
 const DEFAULT_FORECAST_STAGE3_WAITER_MULTIPLIER = 10
-const MIN_FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS = 1_000
-const MAX_FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS = 15_000
 const currentForecastSingleFlight = new CurrentForecastSingleFlight<unknown>()
 const verificationForecastSingleFlight = new VerificationForecastSingleFlight<BenchmarkForecastVerificationResult>()
 
@@ -168,37 +170,6 @@ function throwIfAborted(signal?: AbortSignal) {
   if (signal?.aborted) {
     throw asAbortError(signal)
   }
-}
-
-function resolveStage3HeartbeatIntervalMs(leaseDurationMs: number) {
-  if (leaseDurationMs <= MIN_FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS) {
-    throw new Error(
-      'FORECAST_STAGE3_LEASE_DURATION_MS must be greater than 1000 milliseconds so heartbeatInterval can remain strictly below leaseDuration.',
-    )
-  }
-
-  const rawValue = process.env.FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS?.trim()
-  if (rawValue) {
-    const parsed = Number.parseInt(rawValue, 10)
-    if (!Number.isFinite(parsed) || parsed < MIN_FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS) {
-      throw new Error('FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS must be an integer >= 1000 milliseconds.')
-    }
-    if (parsed >= leaseDurationMs) {
-      throw new Error('FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS must be strictly less than FORECAST_STAGE3_LEASE_DURATION_MS.')
-    }
-    return parsed
-  }
-
-  const heartbeatIntervalMs = Math.max(
-    MIN_FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS,
-    Math.min(Math.floor(leaseDurationMs / 3), MAX_FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS),
-  )
-
-  if (heartbeatIntervalMs >= leaseDurationMs) {
-    throw new Error('Derived Stage 3 heartbeat interval must remain strictly less than the lease duration.')
-  }
-
-  return heartbeatIntervalMs
 }
 
 function resolveStage3WaiterMaxWaitMs(leaseDurationMs: number) {
@@ -2170,7 +2141,7 @@ export function createForecastLibraryService(
   const isExecutionContextReleaseEvent = (eventType: string) =>
     eventType === 'single_flight_entry_released'
   const durableWaitBackoffMs = [25, 50, 100, 200, 400] as const
-  const stage3HeartbeatIntervalMs = resolveStage3HeartbeatIntervalMs(resolvedDependencies.executionAdmission.leaseDurationMs)
+  const stage3HeartbeatIntervalMs = resolveForecastStage3HeartbeatIntervalMs(resolvedDependencies.executionAdmission.leaseDurationMs)
   const stage3WaiterMaxWaitMs = resolveStage3WaiterMaxWaitMs(resolvedDependencies.executionAdmission.leaseDurationMs)
   const waitForBackoff = (attempt: number, signal?: AbortSignal) =>
     new Promise<void>((resolve, reject) => {
@@ -2268,90 +2239,13 @@ export function createForecastLibraryService(
     logicalArtifactKey: string,
     ownership: ForecastPreparationOwnedExecutionContext,
     requestId: string,
-  ) => {
-    let currentOwnership = ownership
-    let stopped = false
-    let timer: ReturnType<typeof setTimeout> | null = null
-    let activeRenewal: Promise<void> | null = null
-    let ownershipLossError: Error | null = null
-
-    const normalizeOwnershipLoss = (error: unknown) => {
-      if (error instanceof Error) {
-        return error
-      }
-
-      return new ForecastExecutionControlError(
-        'CONTROL_DB_UNAVAILABLE',
-        `Execution ${currentOwnership.executionId} lost PostgreSQL authority for ${logicalArtifactKey}.`,
-      )
-    }
-
-    const schedule = () => {
-      if (stopped) {
-        return
-      }
-
-      timer = setTimeout(() => {
-        activeRenewal = (async () => {
-          try {
-            currentOwnership = await resolvedDependencies.executionAdmission.renewLease({
-              executionId: currentOwnership.executionId,
-              logicalArtifactKey,
-              ownerToken: currentOwnership.ownerToken,
-              leaseVersion: currentOwnership.leaseVersion,
-              requestId,
-            })
-          } catch (error) {
-            ownershipLossError = normalizeOwnershipLoss(error)
-            stopped = true
-            return
-          }
-
-          schedule()
-        })().finally(() => {
-          activeRenewal = null
-        })
-      }, stage3HeartbeatIntervalMs)
-    }
-
-    schedule()
-
-    return {
-      assertActive() {
-        if (ownershipLossError) {
-          throw ownershipLossError
-        }
-      },
-      getOwnership() {
-        if (ownershipLossError) {
-          throw ownershipLossError
-        }
-        return currentOwnership
-      },
-      async renewNow() {
-        if (ownershipLossError) {
-          throw ownershipLossError
-        }
-
-        currentOwnership = await resolvedDependencies.executionAdmission.renewLease({
-          executionId: currentOwnership.executionId,
-          logicalArtifactKey,
-          ownerToken: currentOwnership.ownerToken,
-          leaseVersion: currentOwnership.leaseVersion,
-          requestId,
-        })
-        return currentOwnership
-      },
-      async stop() {
-        stopped = true
-        if (timer) {
-          clearTimeout(timer)
-          timer = null
-        }
-        await activeRenewal
-      },
-    }
-  }
+  ) => startForecastExecutionLeaseHeartbeat({
+    executionAdmission: resolvedDependencies.executionAdmission,
+    logicalArtifactKey,
+    ownership,
+    requestId,
+    heartbeatIntervalMs: stage3HeartbeatIntervalMs,
+  })
 
   return {
     async readPreparedCurrentForecastRequest(input: ForecastServiceRequest): Promise<BenchmarkForecastCurrentResult> {

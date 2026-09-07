@@ -53,6 +53,36 @@ function createWeeklyHistory(
   }
 }
 
+function createMonthlyHistory(observations: number, seriesId = 'monthly.series'): BenchmarkHistoricalSeriesResult {
+  const historical = Array.from({ length: observations }, (_unused, index) => {
+    const month = index + 1
+    const year = 2020 + Math.floor((month - 1) / 12)
+    const monthInYear = ((month - 1) % 12) + 1
+    const monthLabel = String(monthInYear).padStart(2, '0')
+    return {
+      date: `${year}-${monthLabel}-01T00:00:00.000Z`,
+      value: month,
+    }
+  })
+
+  return {
+    providerSeries: {
+      provider: {
+        providerCode: 'MACROBOND',
+        displayName: 'Runtime Snapshot',
+      },
+      providerSeriesId: seriesId,
+      providerSeriesKey: seriesId,
+    },
+    displayName: 'Canonical Monthly Series',
+    frequency: 'MONTHLY',
+    currency: null,
+    unit: 'index',
+    source: 'src_runtime_snapshot',
+    historical,
+  }
+}
+
 test('wocaes0074 live forecast input payload is monthly and provider-neutral at the bridge boundary', () => {
   const payload = buildLiveForecastBridgePayloadFromHistory(
     'wocaes0074',
@@ -344,6 +374,50 @@ test('current training payload extends backward only until the technical minimum
     '2024-07-01T00:00:00.000Z',
     '2024-08-01T00:00:00.000Z',
   ])
+})
+
+test('monthly naive current keeps the complete trailing 12M window when the default window already satisfies the minimum', () => {
+  const payload = buildLiveForecastBridgePayloadFromHistory(
+    'naive.monthly.series',
+    createMonthlyHistory(72, 'naive.monthly.series'),
+    {
+      now: new Date('2026-01-15T00:00:00.000Z'),
+      continuityPolicy: 'ALLOW_GAPS',
+    },
+  )
+
+  const narrowed = selectMinimalLawfulCurrentTrainingPayload(
+    payload,
+    resolveForecastTechnicalMinimumObservations({ targetSemantics: 'MONTHLY_AVERAGE', modelId: 'naive' }),
+  )
+
+  assert.equal(resolveForecastTechnicalMinimumObservations({ targetSemantics: 'MONTHLY_AVERAGE', modelId: 'naive' }), 1)
+  assert.equal(narrowed.history.start, '2025-01-01T00:00:00.000Z')
+  assert.equal(narrowed.history.end, '2025-12-01T00:00:00.000Z')
+  assert.equal(narrowed.history.observations, 12)
+})
+
+test('complex monthly models extend only to the 36-observation technical minimum', () => {
+  const payload = buildLiveForecastBridgePayloadFromHistory(
+    'complex.monthly.series',
+    createMonthlyHistory(72, 'complex.monthly.series'),
+    {
+      now: new Date('2026-01-15T00:00:00.000Z'),
+      continuityPolicy: 'ALLOW_GAPS',
+    },
+  )
+
+  for (const modelId of ['damped_holt', 'ets', 'arima'] as const) {
+    const narrowed = selectMinimalLawfulCurrentTrainingPayload(
+      payload,
+      resolveForecastTechnicalMinimumObservations({ targetSemantics: 'MONTHLY_AVERAGE', modelId }),
+    )
+
+    assert.equal(resolveForecastTechnicalMinimumObservations({ targetSemantics: 'MONTHLY_AVERAGE', modelId }), 36)
+    assert.equal(narrowed.history.start, '2023-01-01T00:00:00.000Z')
+    assert.equal(narrowed.history.end, '2025-12-01T00:00:00.000Z')
+    assert.equal(narrowed.history.observations, 36)
+  }
 })
 
 test('current trailing 12M boundary excludes the exact window-start point and includes later lawful points', () => {

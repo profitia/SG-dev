@@ -201,9 +201,17 @@ test('reports target-specific insufficient history without lowering either minim
     },
   })
 
-  assert.ok(capabilities.every((item) => item.historyEligibility === 'INSUFFICIENT_HISTORY'))
-  assert.ok(capabilities.every((item) => item.capabilityState === 'INSUFFICIENT_HISTORY'))
-  assert.deepEqual(new Set(capabilities.map((item) => item.minimumRequiredObservations)), new Set([36, 60]))
+  const naivePeriodCapabilities = capabilities.filter((item) => (
+    item.identity.modelId === 'naive'
+    && item.identity.targetSemantics !== 'ROLLING_DAILY_POINT_IN_TIME'
+  ))
+  const nonNaiveOrRollingCapabilities = capabilities.filter((item) => !naivePeriodCapabilities.includes(item))
+
+  assert.ok(naivePeriodCapabilities.every((item) => item.historyEligibility === 'ELIGIBLE'))
+  assert.ok(naivePeriodCapabilities.every((item) => item.capabilityState === 'NOT_PREPARED'))
+  assert.ok(nonNaiveOrRollingCapabilities.every((item) => item.historyEligibility === 'INSUFFICIENT_HISTORY'))
+  assert.ok(nonNaiveOrRollingCapabilities.every((item) => item.capabilityState === 'INSUFFICIENT_HISTORY'))
+  assert.deepEqual(new Set(capabilities.map((item) => item.minimumRequiredObservations)), new Set([1, 36, 60]))
 })
 
 test('proves the frozen eight-frequency business target matrix and default target cadence', () => {
@@ -272,9 +280,11 @@ test('keeps sparse semantic support separate from model and real execution eligi
   }).filter((item) => item.businessTarget !== 'DAILY')
 
   assert.ok(annual35.every((item) => item.targetSemanticsSupported))
-  assert.ok(annual35.every((item) => !item.modelEligible))
+  assert.ok(annual35.filter((item) => item.identity.modelId === 'naive').every((item) => item.modelEligible))
+  assert.ok(annual35.filter((item) => item.identity.modelId !== 'naive').every((item) => !item.modelEligible))
   assert.ok(annual35.every((item) => !item.currentForecastEligible))
-  assert.ok(annual35.every((item) => item.historyEligibility === 'INSUFFICIENT_HISTORY'))
+  assert.ok(annual35.filter((item) => item.identity.modelId === 'naive').every((item) => item.historyEligibility === 'ELIGIBLE'))
+  assert.ok(annual35.filter((item) => item.identity.modelId !== 'naive').every((item) => item.historyEligibility === 'INSUFFICIENT_HISTORY'))
   assert.ok(annual36.every((item) => item.modelEligible))
   assert.ok(annual36.every((item) => !item.currentForecastEligible))
   assert.ok(annual36.every((item) => item.implementationState === 'SUPPORTED'))
@@ -339,7 +349,7 @@ test('keeps Current Forecast eligibility independent from verification and band 
     const capability = resolve({
       verificationOriginCounts: { END_OF_PERIOD: sample.origins },
       predictionBandResidualCounts: { END_OF_PERIOD: sample.residuals },
-    }).find((item) => item.businessTarget === 'END_OF_PERIOD')
+    }).find((item) => item.businessTarget === 'END_OF_PERIOD' && item.identity.modelId === 'ets')
     assert.equal(capability?.currentForecastEligible, true)
     assert.equal(capability?.verificationEvidenceState, sample.verification)
     assert.equal(capability?.predictionBandState, sample.bands)
@@ -349,7 +359,7 @@ test('keeps Current Forecast eligibility independent from verification and band 
     preparedObservationCounts: { END_OF_PERIOD: 35 },
     verificationOriginCounts: { END_OF_PERIOD: 24 },
     predictionBandResidualCounts: { END_OF_PERIOD: 30 },
-  }).find((item) => item.businessTarget === 'END_OF_PERIOD')
+  }).find((item) => item.businessTarget === 'END_OF_PERIOD' && item.identity.modelId === 'ets')
   assert.equal(ineligible?.currentForecastEligible, false)
   assert.equal(ineligible?.historyEligibility, 'INSUFFICIENT_HISTORY')
 })
