@@ -29,6 +29,8 @@ export interface BenchmarkForecastCurrentPreparationRequest {
   seriesId: string
   modelId: ForecastPortfolioModelId
   targetBasis: ForecastTargetBasis
+  sourceFrequency?: string
+  targetCadence?: string
 }
 
 export interface InteractiveForecastCapabilityResult {
@@ -36,6 +38,7 @@ export interface InteractiveForecastCapabilityResult {
   targetSemantics: ForecastTargetSemantics
   modelId: ForecastPortfolioModelId
   sourceFrequency: string | null
+  targetCadence: string | null
   sourceAvailability: 'AVAILABLE' | 'DATA_NOT_AVAILABLE' | 'FAILED'
   lawfulTargetSemantics: string | null
   status: InteractiveForecastCapabilityStatus

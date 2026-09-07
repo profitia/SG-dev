@@ -113,11 +113,53 @@ export function createCurrentForecastRouteHandler(
   })
 }
 
+export function createInternalPreparedCurrentForecastRouteHandler(
+  resolveCurrentForecast: CurrentForecastResolver = readPreparedCurrentForecast,
+  telemetry: Pick<ForecastStressTelemetry, 'run' | 'sampleResources'> = forecastStressTelemetry,
+) {
+  return withInternalForecastServiceAuth(async (_principal, request: NextRequest) => {
+    const parsed = parseSearchParams(request, ForecastRouteQuerySchema)
+    if (!parsed.ok) {
+      return cognitionError('VALIDATION_ERROR', parsed.message, 400)
+    }
+
+    const input = toForecastRequestInput(parsed.data)
+    const result = await telemetry.run(forecastStressContextFromHeaders(request, input), async () => {
+      telemetry.sampleResources()
+      const resolved = await resolveCurrentForecast(input)
+      telemetry.sampleResources()
+      return resolved
+    })
+    return cognitionOk(result)
+  })
+}
+
 export function createForecastVerificationRouteHandler(
   resolveForecastVerification: ForecastVerificationResolver = resolvePreparedForecastVerification,
   telemetry: Pick<ForecastStressTelemetry, 'run' | 'sampleResources'> = forecastStressTelemetry,
 ) {
   return withCognitionAuth(async (_auth, request: NextRequest) => {
+    const parsed = parseSearchParams(request, ForecastRouteQuerySchema)
+    if (!parsed.ok) {
+      return cognitionError('VALIDATION_ERROR', parsed.message, 400)
+    }
+
+    const input = toForecastRequestInput(parsed.data)
+    const result = await telemetry.run(forecastStressContextFromHeaders(request, input), async () => {
+      telemetry.sampleResources()
+      const resolved = await resolveForecastVerification(input)
+      telemetry.sampleResources()
+      return resolved
+    })
+    return cognitionOk(result)
+  })
+}
+
+export function createInternalPreparedForecastVerificationRouteHandler(
+  resolveForecastVerification: ForecastVerificationResolver = resolvePreparedForecastVerification,
+  telemetry: Pick<ForecastStressTelemetry, 'run' | 'sampleResources'> = forecastStressTelemetry,
+) {
+  return withInternalForecastServiceAuth(async (_principal, request: NextRequest) => {
     const parsed = parseSearchParams(request, ForecastRouteQuerySchema)
     if (!parsed.ok) {
       return cognitionError('VALIDATION_ERROR', parsed.message, 400)

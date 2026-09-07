@@ -126,6 +126,10 @@ export async function readPreparedCurrentForecastThroughDashboard(
     model: input.modelId,
     targetBasis: input.targetBasis,
   })
+  if (input.sourceFrequency && input.targetCadence) {
+    params.set('sourceFrequency', input.sourceFrequency)
+    params.set('targetCadence', input.targetCadence)
+  }
   const response = await fetchLike(`/api/benchmark-forecast/current?${params.toString()}`, {
     cache: 'no-store',
     signal,
@@ -198,9 +202,16 @@ export async function warmCurrentForecastThroughDashboard(
   }
 
   const capability = await resolvedDependencies.readCapability(input)
+  const preparedReadInput = capability.sourceFrequency && capability.targetCadence
+    ? {
+        ...input,
+        sourceFrequency: capability.sourceFrequency,
+        targetCadence: capability.targetCadence,
+      }
+    : input
 
   if (capability.currentReadiness === 'READY' || capability.status === 'READY') {
-    const currentResult = await resolvedDependencies.readPrepared(input)
+    const currentResult = await resolvedDependencies.readPrepared(preparedReadInput)
     return {
       capability,
       preparation: null,
@@ -237,7 +248,7 @@ export async function warmCurrentForecastThroughDashboard(
     } as const
   }
 
-  const currentResult = await resolvedDependencies.readPrepared(input)
+  const currentResult = await resolvedDependencies.readPrepared(preparedReadInput)
   const currentState = resolveForecastCurrentUiState(currentResult)
 
   return {

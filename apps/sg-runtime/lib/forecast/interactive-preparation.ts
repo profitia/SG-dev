@@ -39,6 +39,7 @@ export type InteractiveForecastCapabilityResult = {
   targetSemantics: ForecastTargetSemantics
   modelId: InteractiveForecastIdentity['modelId']
   sourceFrequency: string | null
+  targetCadence: string | null
   sourceAvailability: 'AVAILABLE' | 'DATA_NOT_AVAILABLE' | 'FAILED'
   lawfulTargetSemantics: ForecastVariantCapability['semanticLawfulness'] | null
   status: ForecastVariantCapability['capabilityState'] | 'FAILED'
@@ -146,6 +147,7 @@ export function createInteractiveForecastPreparationService(
         targetSemantics: input.targetSemantics,
         modelId: input.modelId,
         sourceFrequency: resolution.sourceMetadata.sourceFrequency,
+        targetCadence: capability?.targetCadence ?? null,
         sourceAvailability,
         lawfulTargetSemantics: capability?.semanticLawfulness ?? null,
         status: capability?.capabilityState ?? 'FAILED',

@@ -139,6 +139,33 @@ function createCurrentResponse(modelId = 'ets') {
   }
 }
 
+function createPreparedReadBridge(historyResponse = createHistoryResponse()): ForecastBridge {
+  return {
+    async exportHistory() {
+      throw new Error('prepared reads should use the prepared execution context history export')
+    },
+    async exportCurrent() {
+      throw new Error('unused')
+    },
+    async exportVerification() {
+      throw new Error('unused')
+    },
+    async prepareExecutionContext() {
+      return {
+        async exportHistory() {
+          return historyResponse
+        },
+        async exportCurrent() {
+          throw new Error('unused')
+        },
+        async exportVerification() {
+          throw new Error('unused')
+        },
+      }
+    },
+  }
+}
+
 function createVerificationResponse(modelId = 'ets') {
   return {
     status: 'AVAILABLE' as const,
@@ -498,7 +525,7 @@ test('forecast library current path returns cached artifact without invoking com
   assert.equal(verificationCalls, 0)
 })
 
-test('prepared-only Forecast Library reads never invoke history, model, verification, or writes', async () => {
+test('prepared-only Forecast Library reads exact persisted artifacts without compute or writes', async () => {
   let bridgeCalls = 0
   let writeCalls = 0
   const history = createHistoryResponse()
@@ -525,28 +552,30 @@ test('prepared-only Forecast Library reads never invoke history, model, verifica
   delete (verificationArtifact as { currentForecast?: unknown }).currentForecast
 
   const service = createTestForecastLibraryService({
-    bridge: {
-      async exportHistory() { bridgeCalls += 1; return history },
-      async exportCurrent() { bridgeCalls += 1; return createCurrentResponse('arima') },
-      async exportVerification() { bridgeCalls += 1; return createVerificationResponse('arima') },
-    },
+    bridge: createPreparedReadBridge(history),
     repository: {
-      async readCurrentRun() { throw new Error('exact-history lookup is not a prepared read') },
-      async readVerificationRun() { throw new Error('exact-history lookup is not a prepared read') },
-      async writeCurrentRun() { writeCalls += 1 },
-      async writeVerificationRun() { writeCalls += 1 },
-      async readLatestCurrentRun(key) {
+      async readCurrentRun(key) {
+        bridgeCalls += 1
         assert.equal(key.methodId, 'END_OF_PERIOD')
         assert.equal(key.modelId, 'arima')
         assert.equal(key.frequencyIdentity, 'MONTHLY')
+        assert.equal(key.inputSource, 'POSTGRES_RUNTIME_SNAPSHOT')
+        assert.equal(key.historyFingerprint, buildForecastHistoryFingerprint(history.history))
         return currentArtifact
       },
-      async readLatestVerificationRun(key) {
+      async readVerificationRun(key) {
+        bridgeCalls += 1
         assert.equal(key.methodId, 'END_OF_PERIOD')
         assert.equal(key.modelId, 'arima')
         assert.equal(key.frequencyIdentity, 'MONTHLY')
+        assert.equal(key.inputSource, 'POSTGRES_RUNTIME_SNAPSHOT')
+        assert.equal(key.historyFingerprint, buildForecastHistoryFingerprint(history.history))
         return verificationArtifact
       },
+      async writeCurrentRun() { writeCalls += 1 },
+      async writeVerificationRun() { writeCalls += 1 },
+      async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
+      async readLatestVerificationRun() { throw new Error('prepared reads must not use latest-only lookup') },
     },
     logEvent: () => {},
   })
@@ -556,20 +585,28 @@ test('prepared-only Forecast Library reads never invoke history, model, verifica
 
   assert.equal(current.status, 'AVAILABLE')
   assert.equal(verification.status, 'AVAILABLE')
-  assert.equal(bridgeCalls, 0)
+  assert.equal(bridgeCalls, 2)
   assert.equal(writeCalls, 0)
 })
 
-test('prepared-only lookup selects the exact source-frequency and target-cadence cohort before latest', async () => {
+test('prepared-only lookup selects the exact source-frequency and target-cadence cohort before exact persisted read', async () => {
   let sideEffects = 0
   const expectedFrequencyIdentity = 'FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY'
   const requestedMethodVersion = 'benchmark-forecasting-mvp-phase2-v1'
-  const artifacts = [
-    { frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=QUARTERLY', methodVersion: requestedMethodVersion, updatedAt: 5, marker: 'A' },
-    { frequencyIdentity: expectedFrequencyIdentity, methodVersion: requestedMethodVersion, updatedAt: 1, marker: 'B-OLDER' },
-    { frequencyIdentity: expectedFrequencyIdentity, methodVersion: 'benchmark-forecasting-mvp-phase2-v2', updatedAt: 4, marker: 'C' },
-    { frequencyIdentity: expectedFrequencyIdentity, methodVersion: requestedMethodVersion, updatedAt: 2, marker: 'B-LATEST' },
-  ]
+  const history = {
+    ...createHistoryResponse(),
+    benchmark: {
+      ...createHistoryResponse().benchmark,
+      seriesId: 'generic.series',
+      frequency: 'QUARTERLY',
+    },
+    history: {
+      ...createHistoryResponse().history,
+      seriesId: 'generic.series',
+      frequency: 'QUARTERLY',
+      observations: 40,
+    },
+  }
   const exactArtifact = {
     seriesId: 'generic.series',
     modelId: 'ets',
@@ -587,29 +624,23 @@ test('prepared-only lookup selects the exact source-frequency and target-cadence
     runtimeSeconds: 0.1,
     currentForecast: {},
   }
+  const expectedHistoryFingerprint = buildForecastHistoryFingerprint(history.history, {
+    sourceFrequency: 'QUARTERLY',
+    targetCadence: 'QUARTERLY',
+  })
 
   const service = createTestForecastLibraryService({
-    bridge: {
-      async exportHistory() { sideEffects += 1; return createHistoryResponse() },
-      async exportCurrent() { sideEffects += 1; return createCurrentResponse() },
-      async exportVerification() { sideEffects += 1; return createVerificationResponse() },
-    },
+    bridge: createPreparedReadBridge(history),
     repository: {
-      async readCurrentRun() { throw new Error('unused') },
+      async readCurrentRun(key) {
+        assert.equal(key.frequencyIdentity, expectedFrequencyIdentity)
+        assert.equal(key.historyFingerprint, expectedHistoryFingerprint)
+        return exactArtifact
+      },
       async readVerificationRun() { throw new Error('unused') },
       async writeCurrentRun() { sideEffects += 1 },
       async writeVerificationRun() { sideEffects += 1 },
-      async readLatestCurrentRun(key) {
-        const selected = artifacts
-          .filter((artifact) => (
-            artifact.frequencyIdentity === key.frequencyIdentity
-            && artifact.methodVersion === key.methodVersion
-          ))
-          .sort((left, right) => right.updatedAt - left.updatedAt)
-          .at(0)
-        assert.equal(selected?.marker, 'B-LATEST')
-        return exactArtifact
-      },
+      async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
       async readLatestVerificationRun() { return null },
     },
     logEvent: () => {},
@@ -630,14 +661,230 @@ test('prepared-only lookup selects the exact source-frequency and target-cadence
   assert.equal(result.history.frequency, 'QUARTERLY')
 })
 
+test('prepared-only current lookup resolves the exact cadence cohort when callers omit cadence', async () => {
+  let sideEffects = 0
+  let exactLookup: { frequencyIdentity: string, historyFingerprint: string } | null = null
+  const expectedFrequencyIdentity = 'FORECAST_CADENCE_V1|source=WEEKLY|target=MONTHLY'
+  const history = {
+    ...createHistoryResponse(),
+    benchmark: {
+      ...createHistoryResponse().benchmark,
+      seriesId: 'weekly.series',
+      frequency: 'MONTHLY',
+    },
+    history: {
+      ...createHistoryResponse().history,
+      seriesId: 'weekly.series',
+      frequency: 'MONTHLY',
+      observations: 40,
+    },
+  }
+  const exactArtifact = {
+    seriesId: 'weekly.series',
+    modelId: 'ets',
+    displayName: 'Weekly lawful current',
+    description: null,
+    targetBasis: 'END_OF_PERIOD' as const,
+    ...persistedIdentity('END_OF_PERIOD'),
+    source: { kind: 'CONTROLLED_FIXTURE', runId: null },
+    historyFingerprint: 'weekly-history',
+    cadence: { sourceFrequency: 'WEEKLY', targetCadence: 'MONTHLY' } as const,
+    frequencyIdentity: expectedFrequencyIdentity,
+    history: { frequency: 'MONTHLY', start: '2025-01-01', end: '2025-10-01', observations: 40 },
+    forecastOrigin: '2025-10-01',
+    runtimeSeconds: 0.1,
+    currentForecast: {},
+  }
+  const expectedHistoryFingerprint = buildForecastHistoryFingerprint(history.history, {
+    sourceFrequency: 'WEEKLY',
+    targetCadence: 'MONTHLY',
+  })
+
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge(history),
+    repository: {
+      async readCurrentRun(key) {
+        exactLookup = {
+          frequencyIdentity: key.frequencyIdentity,
+          historyFingerprint: key.historyFingerprint,
+        }
+        return exactArtifact
+      },
+      async readVerificationRun() { throw new Error('unused') },
+      async writeCurrentRun() { sideEffects += 1 },
+      async writeVerificationRun() { sideEffects += 1 },
+      async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
+      async readLatestVerificationRun() { return null },
+    },
+    resolveExactPreparedCapability: async () => ({
+      resolution: {} as never,
+      capability: {
+        identity: {
+          seriesId: 'weekly.series',
+          modelId: 'ets',
+          targetSemantics: 'END_OF_PERIOD',
+          methodId: 'END_OF_PERIOD',
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+        },
+        sourceFrequency: 'WEEKLY',
+        sourceFrequencyRecognized: true,
+        businessTarget: 'END_OF_PERIOD',
+        targetCadence: 'MONTHLY',
+        targetSemanticsSupported: true,
+        horizonSupportState: 'NOT_REQUESTED',
+        horizonMonths: null,
+        horizonSteps: null,
+        semanticLawfulness: 'LAWFUL_WITH_PROVENANCE',
+        admissionState: 'ADMITTED',
+        provenanceStatus: 'PROVEN',
+        implementationState: 'SUPPORTED',
+        historyEligibility: 'ELIGIBLE',
+        minimumRequiredObservations: 36,
+        availableObservations: 40,
+        modelEligible: true,
+        currentForecastEligible: true,
+        verificationOriginCount: 24,
+        verificationEvidenceState: 'SUFFICIENT',
+        predictionBandResidualCount: 30,
+        predictionBandState: 'AVAILABLE',
+        targetPreparationState: 'PREPARED',
+        currentPreparedState: 'READY',
+        historicalPreparedState: 'READY',
+        capabilityState: 'AVAILABLE',
+      },
+      trace: {} as never,
+    }),
+    logEvent: () => {},
+  })
+
+  const result = await service.readPreparedCurrentForecastRequest({
+    seriesId: 'weekly.series',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  assert.deepEqual(exactLookup, {
+    frequencyIdentity: expectedFrequencyIdentity,
+    historyFingerprint: expectedHistoryFingerprint,
+  })
+  assert.equal(sideEffects, 0)
+})
+
+test('prepared-only verification lookup resolves the exact cadence cohort when callers omit cadence', async () => {
+  let sideEffects = 0
+  let exactLookup: { frequencyIdentity: string, historyFingerprint: string } | null = null
+  const expectedFrequencyIdentity = 'FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY'
+  const history = {
+    ...createHistoryResponse(),
+    benchmark: {
+      ...createHistoryResponse().benchmark,
+      seriesId: 'quarterly.series',
+      frequency: 'QUARTERLY',
+    },
+    history: {
+      ...createHistoryResponse().history,
+      seriesId: 'quarterly.series',
+      frequency: 'QUARTERLY',
+      observations: 48,
+    },
+  }
+  const exactArtifact = {
+    seriesId: 'quarterly.series',
+    modelId: 'arima',
+    displayName: 'Quarterly lawful verification',
+    description: null,
+    targetBasis: 'MONTHLY_AVERAGE' as const,
+    ...persistedIdentity('MONTHLY_AVERAGE'),
+    source: { kind: 'CONTROLLED_FIXTURE', runId: null },
+    historyFingerprint: 'quarterly-history',
+    cadence: { sourceFrequency: 'QUARTERLY', targetCadence: 'QUARTERLY' } as const,
+    frequencyIdentity: expectedFrequencyIdentity,
+    history: { frequency: 'QUARTERLY', start: '2025-01-01', end: '2025-10-01', observations: 8 },
+    forecastOrigin: '2025-10-01',
+    runtimeSeconds: 0.1,
+    verification: {},
+  }
+  const expectedHistoryFingerprint = buildForecastHistoryFingerprint(history.history, {
+    sourceFrequency: 'QUARTERLY',
+    targetCadence: 'QUARTERLY',
+  })
+
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge(history),
+    repository: {
+      async readCurrentRun() { throw new Error('unused') },
+      async readVerificationRun(key) {
+        exactLookup = {
+          frequencyIdentity: key.frequencyIdentity,
+          historyFingerprint: key.historyFingerprint,
+        }
+        return exactArtifact
+      },
+      async writeCurrentRun() { sideEffects += 1 },
+      async writeVerificationRun() { sideEffects += 1 },
+      async readLatestCurrentRun() { return null },
+      async readLatestVerificationRun() { throw new Error('prepared reads must not use latest-only lookup') },
+    },
+    resolveExactPreparedCapability: async () => ({
+      resolution: {} as never,
+      capability: {
+        identity: {
+          seriesId: 'quarterly.series',
+          modelId: 'arima',
+          targetSemantics: 'MONTHLY_AVERAGE',
+          methodId: 'MONTHLY_AVERAGE',
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+        },
+        sourceFrequency: 'QUARTERLY',
+        sourceFrequencyRecognized: true,
+        businessTarget: 'AVERAGE',
+        targetCadence: 'QUARTERLY',
+        targetSemanticsSupported: true,
+        horizonSupportState: 'NOT_REQUESTED',
+        horizonMonths: null,
+        horizonSteps: null,
+        semanticLawfulness: 'LAWFUL_WITH_PROVENANCE',
+        admissionState: 'ADMITTED',
+        provenanceStatus: 'PROVEN',
+        implementationState: 'SUPPORTED',
+        historyEligibility: 'ELIGIBLE',
+        minimumRequiredObservations: 36,
+        availableObservations: 48,
+        modelEligible: true,
+        currentForecastEligible: true,
+        verificationOriginCount: 24,
+        verificationEvidenceState: 'SUFFICIENT',
+        predictionBandResidualCount: 30,
+        predictionBandState: 'AVAILABLE',
+        targetPreparationState: 'PREPARED',
+        currentPreparedState: 'READY',
+        historicalPreparedState: 'READY',
+        capabilityState: 'AVAILABLE',
+      },
+      trace: {} as never,
+    }),
+    logEvent: () => {},
+  })
+
+  const result = await service.readPreparedVerificationRequest({
+    seriesId: 'quarterly.series',
+    modelId: 'arima',
+    targetBasis: 'MONTHLY_AVERAGE',
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  assert.deepEqual(exactLookup, {
+    frequencyIdentity: expectedFrequencyIdentity,
+    historyFingerprint: expectedHistoryFingerprint,
+  })
+  assert.equal(sideEffects, 0)
+})
+
 test('prepared-only lookup rejects partial cadence identity without compute or fallback', async () => {
   let sideEffects = 0
   const service = createTestForecastLibraryService({
-    bridge: {
-      async exportHistory() { sideEffects += 1; return createHistoryResponse() },
-      async exportCurrent() { sideEffects += 1; return createCurrentResponse() },
-      async exportVerification() { sideEffects += 1; return createVerificationResponse() },
-    },
+    bridge: createPreparedReadBridge(),
     repository: {
       async readCurrentRun() { throw new Error('unused') },
       async readVerificationRun() { throw new Error('unused') },
@@ -664,18 +911,14 @@ test('prepared-only lookup rejects partial cadence identity without compute or f
 test('prepared-only Forecast Library miss is explicit and performs no compute or write', async () => {
   let sideEffects = 0
   const service = createTestForecastLibraryService({
-    bridge: {
-      async exportHistory() { sideEffects += 1; return createHistoryResponse() },
-      async exportCurrent() { sideEffects += 1; return createCurrentResponse() },
-      async exportVerification() { sideEffects += 1; return createVerificationResponse() },
-    },
+    bridge: createPreparedReadBridge(),
     repository: {
-      async readCurrentRun() { throw new Error('unused') },
-      async readVerificationRun() { throw new Error('unused') },
+      async readCurrentRun() { return null },
+      async readVerificationRun() { return null },
       async writeCurrentRun() { sideEffects += 1 },
       async writeVerificationRun() { sideEffects += 1 },
-      async readLatestCurrentRun() { return null },
-      async readLatestVerificationRun() { return null },
+      async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
+      async readLatestVerificationRun() { throw new Error('prepared reads must not use latest-only lookup') },
     },
     logEvent: () => {},
   })

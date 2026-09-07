@@ -15,7 +15,9 @@ import {
   type CurrentLogicalArtifactIdentity,
 } from '../lib/forecast/current-single-flight'
 import {
+  buildForecastArtifactCadenceIdentity,
   createCurrentForecastStatisticalCompatibility,
+  createFullVerificationStatisticalCompatibility,
   LEGACY_MONTHLY_ARTIFACT_FREQUENCY,
 } from '../lib/forecast/identity'
 import { buildForecastHistoryFingerprint } from '../lib/forecast/history-fingerprint'
@@ -26,6 +28,7 @@ import type {
   ForecastBridge,
   ForecastPersistenceOwnership,
   PersistedCurrentArtifact,
+  PersistedVerificationArtifact,
 } from '../lib/forecast/service'
 
 const marketDataDatabaseUrl = process.env.MARKET_DATA_DATABASE_URL?.trim()
@@ -48,6 +51,7 @@ let setForecastPreparationExecutionLedgerTestHooks: typeof import('../lib/foreca
 let createForecastLibraryService: typeof import('../lib/forecast/service')['createForecastLibraryService']
 let setForecastPersistenceTestHooks: typeof import('../lib/forecast/service')['setForecastPersistenceTestHooks']
 let writeCurrentRunWithPrisma: typeof import('../lib/forecast/service')['writeCurrentRunWithPrisma']
+let writeVerificationRunWithPrisma: typeof import('../lib/forecast/service')['writeVerificationRunWithPrisma']
 
 function requirePrisma() {
   return marketDataPrisma
@@ -163,6 +167,218 @@ function createCurrentResponse(seriesId: string, modelId: string) {
         },
       },
       runtimeSeconds: 0.084,
+    },
+  }
+}
+
+function createPeriodicHistoryResponse(
+  seriesId: string,
+  sourceFrequency: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY',
+  targetCadence: 'MONTHLY' | 'QUARTERLY',
+  targetBasis: 'MONTHLY_AVERAGE' | 'END_OF_PERIOD',
+  observations = 40,
+) {
+  const stepMonths = targetCadence === 'MONTHLY' ? 1 : 3
+  const points = Array.from({ length: observations }, (_, index) => {
+    const date = new Date(Date.UTC(2022, index * stepMonths, 1)).toISOString()
+    return {
+      date,
+      value: 1000 + index,
+      sourceObservedAt: targetBasis === 'END_OF_PERIOD'
+        ? new Date(Date.UTC(2022, index * stepMonths, 28)).toISOString()
+        : undefined,
+    }
+  })
+  const start = points[0]?.date ?? null
+  const end = points[points.length - 1]?.date ?? null
+
+  return {
+    status: 'AVAILABLE' as const,
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: {
+      kind: 'POSTGRES_RUNTIME_SNAPSHOT',
+      runId: `prepared-${seriesId}`,
+    },
+    benchmark: {
+      seriesId,
+      component: 'FRACHT_DRY',
+      description: 'Baltic Exchange, Dry Index (BDI), USD',
+      frequency: targetCadence,
+      expectedObservations: observations,
+    },
+    history: {
+      seriesId,
+      benchmarkName: 'FRACHT_DRY',
+      description: 'Baltic Exchange, Dry Index (BDI), USD',
+      frequency: targetCadence,
+      start,
+      end,
+      observations,
+      points,
+    },
+    sourceFrequency,
+    targetCadence,
+  }
+}
+
+function createPreparedCurrentArtifact(
+  historyResponse: ReturnType<typeof createPeriodicHistoryResponse>,
+  modelId: string,
+  targetBasis: 'MONTHLY_AVERAGE' | 'END_OF_PERIOD',
+  options: {
+    methodVersion?: string
+    historyFingerprint?: string
+  } = {},
+): PersistedCurrentArtifact {
+  const targetSemantics = targetBasis
+  const cadence = createForecastCadence(historyResponse.sourceFrequency, historyResponse.targetCadence)
+  const historyFingerprint = options.historyFingerprint
+    ?? buildForecastHistoryFingerprint({
+      ...historyResponse.history,
+      cadence,
+    })
+
+  return {
+    seriesId: historyResponse.history.seriesId,
+    modelId,
+    displayName: 'FRACHT_DRY',
+    description: 'Baltic Exchange, Dry Index (BDI), USD',
+    targetBasis,
+    targetSemantics,
+    methodId: targetBasis,
+    methodVersion: options.methodVersion ?? historyResponse.methodVersion,
+    source: historyResponse.source,
+    preparation: null,
+    historyFingerprint,
+    cadence,
+    frequencyIdentity: buildForecastArtifactCadenceIdentity(cadence),
+    statisticalCompatibility: createCurrentForecastStatisticalCompatibility({
+      sourceFrequency: historyResponse.sourceFrequency,
+      targetCadence: historyResponse.targetCadence,
+      targetSemantics,
+    }),
+    history: {
+      frequency: historyResponse.history.frequency,
+      start: historyResponse.history.start,
+      end: historyResponse.history.end,
+      observations: historyResponse.history.observations,
+    },
+    forecastOrigin: historyResponse.history.end,
+    runtimeSeconds: 0.084,
+    currentForecast: {
+      [`1${historyResponse.targetCadence === 'MONTHLY' ? 'M' : 'Q'}`]: {
+        horizon: `1${historyResponse.targetCadence === 'MONTHLY' ? 'M' : 'Q'}`,
+        horizonSteps: 1,
+        forecastDate: new Date(Date.UTC(2025, historyResponse.targetCadence === 'MONTHLY' ? 10 : 11, 1)).toISOString(),
+        forecastValue: modelId === 'arima' ? 1151.5 : 1144.5,
+        metadata: {
+          modelFamily: modelId,
+          selectedVariant: modelId === 'arima' ? 'ARIMA(0,1,1)' : 'ETS(A,N,N)',
+          selectedParameters: {},
+          selectionScore: 0.12,
+          selectionMetric: 'rmse',
+          fitStatus: 'SUCCEEDED',
+          failureReason: null,
+        },
+        failureReason: null,
+      },
+    },
+  }
+}
+
+function createPreparedVerificationArtifact(
+  historyResponse: ReturnType<typeof createPeriodicHistoryResponse>,
+  modelId: string,
+  targetBasis: 'MONTHLY_AVERAGE' | 'END_OF_PERIOD',
+  options: {
+    methodVersion?: string
+    historyFingerprint?: string
+  } = {},
+): PersistedVerificationArtifact {
+  const targetSemantics = targetBasis
+  const cadence = createForecastCadence(historyResponse.sourceFrequency, historyResponse.targetCadence)
+  const historyFingerprint = options.historyFingerprint
+    ?? buildForecastHistoryFingerprint({
+      ...historyResponse.history,
+      cadence,
+    })
+
+  return {
+    seriesId: historyResponse.history.seriesId,
+    modelId,
+    displayName: 'FRACHT_DRY',
+    description: 'Baltic Exchange, Dry Index (BDI), USD',
+    targetBasis,
+    targetSemantics,
+    methodId: targetBasis,
+    methodVersion: options.methodVersion ?? historyResponse.methodVersion,
+    source: historyResponse.source,
+    preparation: null,
+    historyFingerprint,
+    cadence,
+    frequencyIdentity: buildForecastArtifactCadenceIdentity(cadence),
+    statisticalCompatibility: createFullVerificationStatisticalCompatibility({
+      sourceFrequency: historyResponse.sourceFrequency,
+      targetCadence: historyResponse.targetCadence,
+      targetSemantics,
+    }),
+    history: {
+      frequency: historyResponse.history.frequency,
+      start: historyResponse.history.start,
+      end: historyResponse.history.end,
+      observations: historyResponse.history.observations,
+    },
+    forecastOrigin: historyResponse.history.end,
+    runtimeSeconds: 0.084,
+    verification: {
+      [`1${historyResponse.targetCadence === 'MONTHLY' ? 'M' : 'Q'}`]: {
+        horizon: `1${historyResponse.targetCadence === 'MONTHLY' ? 'M' : 'Q'}`,
+        horizonSteps: 1,
+        origins: 24,
+        expectedOrigins: 24,
+        successfulOrigins: 24,
+        failedOrigins: 0,
+        coverage: 1,
+        metrics: {
+          mae: 1,
+          rmse: 1.2,
+          mase: 0.4,
+          smape: 0.02,
+          directionalAccuracy: 0.75,
+          bias: 0.1,
+        },
+        records: [
+          {
+            benchmarkId: historyResponse.history.seriesId,
+            modelId,
+            forecastOrigin: historyResponse.history.end ?? '2025-10-01T00:00:00.000Z',
+            horizon: `1${historyResponse.targetCadence === 'MONTHLY' ? 'M' : 'Q'}`,
+            horizonSteps: 1,
+            forecastDate: new Date(Date.UTC(2025, historyResponse.targetCadence === 'MONTHLY' ? 10 : 11, 1)).toISOString(),
+            actualObservedAt: targetBasis === 'END_OF_PERIOD'
+              ? new Date(Date.UTC(2025, historyResponse.targetCadence === 'MONTHLY' ? 10 : 11, 28)).toISOString()
+              : null,
+            originValue: 1100,
+            forecastValue: 1110,
+            actualValue: 1112,
+            error: -2,
+            absoluteError: 2,
+            delta: 10,
+            deltaPct: 0.009,
+            maseScale: 5,
+            metadata: {
+              modelFamily: modelId,
+              selectedVariant: modelId === 'arima' ? 'ARIMA(0,1,1)' : 'ETS(A,N,N)',
+              selectedParameters: {},
+              selectionScore: 0.12,
+              selectionMetric: 'rmse',
+              fitStatus: 'SUCCEEDED',
+              failureReason: null,
+            },
+          },
+        ],
+        failures: [],
+      },
     },
   }
 }
@@ -388,7 +604,10 @@ function createBarrier() {
   }
 }
 
-function createDbBackedService(bridgeOverrides: Partial<ForecastBridge> = {}) {
+function createDbBackedService(
+  bridgeOverrides: Partial<ForecastBridge> = {},
+  serviceOverrides: Partial<Parameters<typeof createForecastLibraryService>[0]> = {},
+) {
   const bridge: ForecastBridge = {
     async exportHistory(input) {
       return createHistoryResponse(input.seriesId)
@@ -413,12 +632,61 @@ function createDbBackedService(bridgeOverrides: Partial<ForecastBridge> = {}) {
   }
 
   return createForecastLibraryService({
+    ...serviceOverrides,
     bridge,
     logEvent: () => {},
     telemetry: {
       emit() {},
     },
   })
+}
+
+function createExactPreparedCapability(
+  seriesId: string,
+  modelId: string,
+  targetSemantics: 'MONTHLY_AVERAGE' | 'END_OF_PERIOD',
+  sourceFrequency: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY',
+  targetCadence: 'MONTHLY' | 'QUARTERLY',
+  availableObservations: number,
+) {
+  return {
+    resolution: {} as never,
+    capability: {
+      identity: {
+        seriesId,
+        modelId,
+        targetSemantics,
+        methodId: targetSemantics,
+        methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+      },
+      sourceFrequency,
+      sourceFrequencyRecognized: true,
+      businessTarget: targetSemantics === 'END_OF_PERIOD' ? 'END_OF_PERIOD' : 'AVERAGE',
+      targetCadence,
+      targetSemanticsSupported: true,
+      horizonSupportState: 'NOT_REQUESTED',
+      horizonMonths: null,
+      horizonSteps: null,
+      semanticLawfulness: sourceFrequency === 'MONTHLY' ? 'LAWFUL_WITH_PROVENANCE' : 'LAWFUL_WITH_PROVENANCE',
+      admissionState: 'ADMITTED',
+      provenanceStatus: 'PROVEN',
+      implementationState: 'SUPPORTED',
+      historyEligibility: 'ELIGIBLE',
+      minimumRequiredObservations: 36,
+      availableObservations,
+      modelEligible: true,
+      currentForecastEligible: true,
+      verificationOriginCount: 24,
+      verificationEvidenceState: 'SUFFICIENT',
+      predictionBandResidualCount: 30,
+      predictionBandState: 'AVAILABLE',
+      targetPreparationState: 'PREPARED',
+      currentPreparedState: 'READY',
+      historicalPreparedState: 'READY',
+      capabilityState: 'AVAILABLE',
+    },
+    trace: {} as never,
+  }
 }
 
 const serialTest = (name: string, fn: (context: TestContext) => Promise<void> | void) =>
@@ -434,6 +702,7 @@ test.before(async () => {
   createForecastLibraryService = serviceModule.createForecastLibraryService
   setForecastPersistenceTestHooks = serviceModule.setForecastPersistenceTestHooks
   writeCurrentRunWithPrisma = serviceModule.writeCurrentRunWithPrisma
+  writeVerificationRunWithPrisma = serviceModule.writeVerificationRunWithPrisma
 })
 
 test.beforeEach(async () => {
@@ -653,6 +922,171 @@ serialTest('db-backed prepared artifact hits require zero compute and zero new e
   } finally {
     await rm(tempDir, { recursive: true, force: true })
   }
+})
+
+serialTest('db-backed prepared current reads surface weekly, native monthly, and quarterly artifacts with zero compute and zero execution rows', async () => {
+  const weeklyHistory = createPeriodicHistoryResponse('stage4-weekly-current-series', 'WEEKLY', 'MONTHLY', 'END_OF_PERIOD')
+  const monthlyHistory = createPeriodicHistoryResponse('stage4-native-monthly-current-series', 'MONTHLY', 'MONTHLY', 'MONTHLY_AVERAGE')
+  const quarterlyHistory = createPeriodicHistoryResponse('stage4-quarterly-current-series', 'QUARTERLY', 'QUARTERLY', 'MONTHLY_AVERAGE')
+
+  await writeCurrentRunWithPrisma(createPreparedCurrentArtifact(weeklyHistory, 'ets', 'END_OF_PERIOD'))
+  await writeCurrentRunWithPrisma(createPreparedCurrentArtifact(monthlyHistory, 'ets', 'MONTHLY_AVERAGE'))
+  await writeCurrentRunWithPrisma(createPreparedCurrentArtifact(quarterlyHistory, 'ets', 'MONTHLY_AVERAGE'))
+
+  const service = createDbBackedService({
+    async exportHistory(input) {
+      if (input.seriesId === weeklyHistory.history.seriesId) return weeklyHistory
+      if (input.seriesId === monthlyHistory.history.seriesId) return monthlyHistory
+      if (input.seriesId === quarterlyHistory.history.seriesId) return quarterlyHistory
+      throw new Error(`Unexpected prepared current history lookup for ${input.seriesId}.`)
+    },
+    async exportCurrent() {
+      throw new Error('Prepared current read must not invoke compute exportCurrent.')
+    },
+    async exportVerification() {
+      throw new Error('Prepared current read must not invoke compute exportVerification.')
+    },
+  })
+
+  const weekly = await service.readPreparedCurrentForecastRequest({
+    seriesId: weeklyHistory.history.seriesId,
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+    sourceFrequency: 'WEEKLY',
+    targetCadence: 'MONTHLY',
+  })
+  const monthly = await service.readPreparedCurrentForecastRequest({
+    seriesId: monthlyHistory.history.seriesId,
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  })
+  const quarterly = await service.readPreparedCurrentForecastRequest({
+    seriesId: quarterlyHistory.history.seriesId,
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'QUARTERLY',
+    targetCadence: 'QUARTERLY',
+  })
+
+  assert.equal(weekly.status, 'AVAILABLE')
+  assert.equal(monthly.status, 'AVAILABLE')
+  assert.equal(quarterly.status, 'AVAILABLE')
+
+  if (weekly.status === 'AVAILABLE') {
+    assert.equal(weekly.lineage.sourceFrequency, 'WEEKLY')
+    assert.equal(weekly.history.frequency, 'MONTHLY')
+    assert.ok(Object.values(weekly.currentForecast).some((point) => point.forecastValue !== null))
+  }
+
+  if (monthly.status === 'AVAILABLE') {
+    assert.equal(monthly.lineage.sourceFrequency, 'MONTHLY')
+    assert.equal(monthly.history.frequency, 'MONTHLY')
+    assert.ok(Object.values(monthly.currentForecast).some((point) => point.forecastValue !== null))
+  }
+
+  if (quarterly.status === 'AVAILABLE') {
+    assert.equal(quarterly.lineage.sourceFrequency, 'QUARTERLY')
+    assert.equal(quarterly.history.frequency, 'QUARTERLY')
+    assert.ok(Object.values(quarterly.currentForecast).some((point) => point.forecastValue !== null))
+  }
+
+  const executionCount = await requirePrisma().forecastPreparationExecutionLedger.count()
+  assert.equal(executionCount, 0)
+})
+
+serialTest('db-backed prepared verification reads require exact identity and create zero execution rows on hits or misses', async () => {
+  const exactHistory = createPeriodicHistoryResponse('stage4-quarterly-verification-series', 'QUARTERLY', 'QUARTERLY', 'MONTHLY_AVERAGE', 48)
+  const exactMonthlyHistory = createPeriodicHistoryResponse('stage4-quarterly-verification-series', 'MONTHLY', 'MONTHLY', 'MONTHLY_AVERAGE', 48)
+  const staleHistory = createPeriodicHistoryResponse('stage4-stale-history-series', 'QUARTERLY', 'QUARTERLY', 'MONTHLY_AVERAGE', 48)
+  const wrongMethodHistory = createPeriodicHistoryResponse('stage4-wrong-method-series', 'QUARTERLY', 'QUARTERLY', 'MONTHLY_AVERAGE', 48)
+
+  await writeVerificationRunWithPrisma(createPreparedVerificationArtifact(exactHistory, 'arima', 'MONTHLY_AVERAGE'))
+  await writeVerificationRunWithPrisma(createPreparedVerificationArtifact(staleHistory, 'arima', 'MONTHLY_AVERAGE', {
+    historyFingerprint: 'stale-history-fingerprint',
+  }))
+  await writeVerificationRunWithPrisma(createPreparedVerificationArtifact(wrongMethodHistory, 'arima', 'MONTHLY_AVERAGE', {
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v2',
+  }))
+
+  const service = createDbBackedService({
+    async exportHistory(input) {
+      if (input.seriesId === exactHistory.history.seriesId) {
+        return input.sourceFrequency === 'MONTHLY' && input.targetCadence === 'MONTHLY'
+          ? exactMonthlyHistory
+          : exactHistory
+      }
+      if (input.seriesId === staleHistory.history.seriesId) return staleHistory
+      if (input.seriesId === wrongMethodHistory.history.seriesId) return wrongMethodHistory
+      throw new Error(`Unexpected prepared verification history lookup for ${input.seriesId}.`)
+    },
+    async exportCurrent() {
+      throw new Error('Prepared verification read must not invoke compute exportCurrent.')
+    },
+    async exportVerification() {
+      throw new Error('Prepared verification read must not invoke compute exportVerification.')
+    },
+  })
+
+  const exact = await service.readPreparedVerificationRequest({
+    seriesId: exactHistory.history.seriesId,
+    modelId: 'arima',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'QUARTERLY',
+    targetCadence: 'QUARTERLY',
+  })
+  const wrongModel = await service.readPreparedVerificationRequest({
+    seriesId: exactHistory.history.seriesId,
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'QUARTERLY',
+    targetCadence: 'QUARTERLY',
+  })
+  const wrongTarget = await service.readPreparedVerificationRequest({
+    seriesId: exactHistory.history.seriesId,
+    modelId: 'arima',
+    targetBasis: 'END_OF_PERIOD',
+    sourceFrequency: 'QUARTERLY',
+    targetCadence: 'QUARTERLY',
+  })
+  const wrongSourceFrequency = await service.readPreparedVerificationRequest({
+    seriesId: exactHistory.history.seriesId,
+    modelId: 'arima',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  })
+  const wrongHistoryFingerprint = await service.readPreparedVerificationRequest({
+    seriesId: staleHistory.history.seriesId,
+    modelId: 'arima',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'QUARTERLY',
+    targetCadence: 'QUARTERLY',
+  })
+  const wrongMethodVersion = await service.readPreparedVerificationRequest({
+    seriesId: wrongMethodHistory.history.seriesId,
+    modelId: 'arima',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'QUARTERLY',
+    targetCadence: 'QUARTERLY',
+  })
+
+  assert.equal(exact.status, 'AVAILABLE')
+  if (exact.status === 'AVAILABLE') {
+    assert.equal(exact.lineage.sourceFrequency, 'QUARTERLY')
+    assert.equal(exact.history.frequency, 'QUARTERLY')
+    assert.ok(Object.values(exact.verification).length > 0)
+  }
+
+  assert.equal(wrongModel.status, 'NOT_AVAILABLE')
+  assert.equal(wrongTarget.status, 'NOT_AVAILABLE')
+  assert.equal(wrongSourceFrequency.status, 'NOT_AVAILABLE')
+  assert.equal(wrongHistoryFingerprint.status, 'NOT_AVAILABLE')
+  assert.equal(wrongMethodVersion.status, 'NOT_AVAILABLE')
+
+  const executionCount = await requirePrisma().forecastPreparationExecutionLedger.count()
+  assert.equal(executionCount, 0)
 })
 
 serialTest('db-backed simultaneous recovery elects one recovery owner and preserves predecessor lineage', async () => {

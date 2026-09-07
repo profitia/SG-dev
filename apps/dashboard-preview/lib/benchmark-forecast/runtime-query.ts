@@ -24,6 +24,8 @@ import { phase22cDiagnosticSpan } from '@/lib/phase-2-2c/diagnostics'
 const LOCAL_SG_RUNTIME_BASE_URL = 'http://localhost:3001'
 const INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH = '/api/internal/forecast/capability'
 const INTERNAL_FORECAST_ROUTE_PATH = '/api/internal/forecast/production'
+const INTERNAL_PREPARED_CURRENT_ROUTE_PATH = '/api/internal/forecast/prepared/current'
+const INTERNAL_PREPARED_VERIFICATION_ROUTE_PATH = '/api/internal/forecast/prepared/verification'
 const INTERNAL_FORECAST_TIMEOUT_MS = 20_000
 const ROLLING_DAILY_INPUT_SOURCE = 'DYNAMIC_MARKET_DATA_STORE'
 const ROLLING_DAILY_METHOD_ID = 'ROLLING_DAILY_POINT_IN_TIME'
@@ -811,6 +813,60 @@ async function fetchSgRuntimeJson<T extends object>(pathname: string, params: Re
   return payload as T
 }
 
+async function fetchInternalPreparedForecast<T extends object>(
+  pathname: string,
+  params: Record<string, string>,
+  correlationHeaders: Record<string, string> = {},
+) {
+  const token = readSgRuntimeInternalForecastServiceToken()
+
+  if (!token) {
+    throw new Error('SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN is not configured.')
+  }
+
+  const url = new URL(pathname, resolveSgRuntimeBaseUrl())
+
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value)
+  }
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), INTERNAL_FORECAST_TIMEOUT_MS)
+
+  try {
+    const response = await fetch(url, {
+      cache: 'no-store',
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+        ...correlationHeaders,
+      },
+    })
+
+    const payload = await response.json() as T | { error?: string }
+    if (!response.ok) {
+      const message = 'error' in payload ? payload.error ?? 'SG Runtime prepared forecast request failed.' : 'SG Runtime prepared forecast request failed.'
+
+      if (response.status === 401 || response.status === 403) {
+        throw new SgRuntimeForecastAuthError(message, response.status)
+      }
+
+      throw new Error(message)
+    }
+
+    return payload as T
+  } catch (error) {
+    if ((error as Error).name === 'AbortError') {
+      throw new Error('SG Runtime prepared forecast request timed out.')
+    }
+
+    throw error
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
 export async function getRollingDailyPointInTimeProductionForecast(
   seriesId: string,
   model: ForecastPortfolioModelId,
@@ -933,7 +989,27 @@ export async function getBenchmarkForecastCurrent(
   seriesId: string,
   model: ForecastPortfolioModelId,
   targetBasis: ForecastTargetBasis = DEFAULT_FORECAST_TARGET_BASIS,
+  cadence?: { sourceFrequency: string, targetCadence: string },
+  correlationHeaders: Record<string, string> = {},
 ) {
+  if (targetBasis !== 'POINT_IN_TIME' && readSgRuntimeInternalForecastServiceToken()) {
+    const params: Record<string, string> = {
+      seriesId,
+      model,
+      targetBasis,
+    }
+    if (cadence) {
+      params.sourceFrequency = cadence.sourceFrequency
+      params.targetCadence = cadence.targetCadence
+    }
+
+    return fetchInternalPreparedForecast<BenchmarkForecastCurrentResult>(
+      INTERNAL_PREPARED_CURRENT_ROUTE_PATH,
+      params,
+      correlationHeaders,
+    )
+  }
+
   if (targetBasis === 'POINT_IN_TIME') {
     assertPointInTimeSnapshotDatastoreAvailable()
 
@@ -979,6 +1055,8 @@ type ShowForecastDependencies = {
     seriesId: string,
     model: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
+    cadence?: { sourceFrequency: string, targetCadence: string },
+    correlationHeaders?: Record<string, string>,
   ) => Promise<{ status: string }>
 }
 
@@ -991,15 +1069,37 @@ export async function resolveShowForecastCurrent(
   model: ForecastPortfolioModelId,
   targetBasis: ForecastTargetBasis = DEFAULT_FORECAST_TARGET_BASIS,
   dependencies: ShowForecastDependencies = showForecastDependencies,
+  cadence?: { sourceFrequency: string, targetCadence: string },
+  correlationHeaders: Record<string, string> = {},
 ) {
-  return dependencies.readPrepared(seriesId, model, targetBasis)
+  return dependencies.readPrepared(seriesId, model, targetBasis, cadence, correlationHeaders)
 }
 
 export async function getBenchmarkForecastVerification(
   seriesId: string,
   model: ForecastPortfolioModelId,
   targetBasis: ForecastTargetBasis = DEFAULT_FORECAST_TARGET_BASIS,
+  cadence?: { sourceFrequency: string, targetCadence: string },
+  correlationHeaders: Record<string, string> = {},
 ) {
+  if (targetBasis !== 'POINT_IN_TIME' && readSgRuntimeInternalForecastServiceToken()) {
+    const params: Record<string, string> = {
+      seriesId,
+      model,
+      targetBasis,
+    }
+    if (cadence) {
+      params.sourceFrequency = cadence.sourceFrequency
+      params.targetCadence = cadence.targetCadence
+    }
+
+    return fetchInternalPreparedForecast<BenchmarkForecastVerificationResult>(
+      INTERNAL_PREPARED_VERIFICATION_ROUTE_PATH,
+      params,
+      correlationHeaders,
+    )
+  }
+
   if (targetBasis === 'POINT_IN_TIME') {
     assertPointInTimeSnapshotDatastoreAvailable()
     return getPersistedRollingDailyForecastVerification(seriesId, model)

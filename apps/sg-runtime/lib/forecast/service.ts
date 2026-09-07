@@ -8,6 +8,7 @@ import { promisify } from 'node:util'
 
 import { Prisma } from '@/generated/market-data-client'
 import { serverEnv } from '@/lib/env'
+import { resolveExactForecastCapability } from '@/lib/forecast/capability-resolver'
 import { buildForecastHistoryFingerprint as buildCanonicalForecastHistoryFingerprint } from '@/lib/forecast/history-fingerprint'
 import {
   createForecastCadence,
@@ -460,6 +461,7 @@ export type ForecastLibraryServiceDependencies = {
   executionLedger: ForecastPreparationExecutionLedger
   executionContextRegistry: ForecastPreparationExecutionContextRegistry
   executionAdmission: ForecastPreparationExecutionAdmission
+  resolveExactPreparedCapability: typeof resolveExactForecastCapability
 }
 
 function buildDefaultLogPayload(data: Record<string, string | number | boolean | null>) {
@@ -528,6 +530,63 @@ function resolveArtifactCadenceContext(input: ForecastServiceRequest): {
       ? 'DAILY'
       : LEGACY_MONTHLY_ARTIFACT_FREQUENCY,
   }
+}
+
+async function resolvePreparedReadCadenceContext(
+  input: ForecastServiceRequest,
+  targetSemantics: ForecastTargetSemantics,
+  resolveExactPreparedCapability: ForecastLibraryServiceDependencies['resolveExactPreparedCapability'],
+): Promise<ReturnType<typeof resolveArtifactCadenceContext>> {
+  const explicitContext = resolveArtifactCadenceContext(input)
+
+  if (explicitContext.cadence || input.targetBasis === 'POINT_IN_TIME' || !isUserFacingModel(input.modelId)) {
+    return explicitContext
+  }
+
+  const { capability } = await resolveExactPreparedCapability({
+    seriesId: input.seriesId,
+    modelId: input.modelId,
+    targetSemantics,
+  })
+
+  if (!capability?.sourceFrequency || !capability.targetCadence) {
+    return explicitContext
+  }
+
+  const cadence = createForecastCadence(capability.sourceFrequency, capability.targetCadence)
+
+  return {
+    cadence,
+    frequencyIdentity: buildForecastArtifactCadenceIdentity(cadence),
+  }
+}
+
+function resolvePreparedReadInput(
+  input: ForecastServiceRequest,
+  cadenceContext: ReturnType<typeof resolveArtifactCadenceContext>,
+): Pick<ForecastServiceRequest, 'seriesId' | 'targetBasis' | 'sourceFrequency' | 'targetCadence'> {
+  return {
+    seriesId: input.seriesId,
+    targetBasis: input.targetBasis,
+    sourceFrequency: cadenceContext.cadence?.sourceFrequency ?? input.sourceFrequency,
+    targetCadence: cadenceContext.cadence?.targetCadence ?? input.targetCadence,
+  }
+}
+
+async function readPreparedHistoryForLookup(
+  input: ForecastServiceRequest,
+  cadenceContext: ReturnType<typeof resolveArtifactCadenceContext>,
+  bridge: ForecastBridge,
+  mode: 'current' | 'verification',
+): Promise<ForecastHistoryBridgeResponse> {
+  const preparedReadInput = resolvePreparedReadInput(input, cadenceContext)
+  const preparedExecutionContext = await bridge.prepareExecutionContext?.(preparedReadInput) ?? null
+
+  if (preparedExecutionContext) {
+    return preparedExecutionContext.exportHistory(mode)
+  }
+
+  return bridge.exportHistory(preparedReadInput)
 }
 
 function preparationIdentityFromHistory(history: ForecastBridgeHistory): ForecastPreparationIdentity | null {
@@ -1802,6 +1861,7 @@ export function createForecastLibraryService(
     executionLedger: dependencies.executionLedger ?? createDefaultForecastPreparationExecutionLedger(),
     executionContextRegistry: dependencies.executionContextRegistry ?? createForecastPreparationExecutionContextRegistry(),
     executionAdmission: dependencies.executionAdmission ?? createDefaultForecastPreparationExecutionAdmission(),
+    resolveExactPreparedCapability: dependencies.resolveExactPreparedCapability ?? resolveExactForecastCapability,
   }
   const isExecutionContextReleaseEvent = (eventType: string) =>
     eventType === 'single_flight_entry_released'
@@ -1992,15 +2052,60 @@ export function createForecastLibraryService(
   return {
     async readPreparedCurrentForecastRequest(input: ForecastServiceRequest): Promise<BenchmarkForecastCurrentResult> {
       const startedAt = performance.now()
-      const identity = resolveCapabilityIdentity(input.targetBasis)
-      const cadenceContext = resolveArtifactCadenceContext(input)
-      const prepared = await resolvedDependencies.repository.readLatestCurrentRun?.({
+      const cadenceContext = await resolvePreparedReadCadenceContext(
+        input,
+        resolveCapabilityIdentity(input.targetBasis).targetSemantics,
+        resolvedDependencies.resolveExactPreparedCapability,
+      )
+      const historyResponse = await readPreparedHistoryForLookup(
+        input,
+        cadenceContext,
+        resolvedDependencies.bridge,
+        'current',
+      )
+
+      if (historyResponse.status === 'NOT_AVAILABLE') {
+        const identity = resolveCapabilityIdentity(input.targetBasis)
+        return {
+          status: 'NOT_AVAILABLE',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: historyResponse.reason,
+        }
+      }
+
+      if (historyResponse.status === 'UNSUPPORTED') {
+        return toUnsupportedResult(historyResponse, input)
+      }
+
+      if (historyResponse.status === 'FAILED') {
+        const identity = resolveCapabilityIdentity(input.targetBasis, historyResponse.methodVersion)
+        return {
+          status: 'FAILED',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: historyResponse.reason,
+          methodVersion: historyResponse.methodVersion,
+          source: historyResponse.source,
+        }
+      }
+
+      const identity = resolveCapabilityIdentity(input.targetBasis, historyResponse.methodVersion)
+      const prepared = await resolvedDependencies.repository.readCurrentRun({
         seriesId: input.seriesId,
         modelId: input.modelId,
         targetBasis: input.targetBasis,
         frequencyIdentity: cadenceContext.frequencyIdentity,
+        inputSource: historyResponse.source.kind,
+        historyFingerprint: buildForecastHistoryFingerprint(historyResponse.history, cadenceContext.cadence ?? undefined),
         ...identity,
-      }) ?? null
+      })
 
       resolvedDependencies.telemetry.emit('prepared_read', {
         kind: 'current',
@@ -2025,15 +2130,60 @@ export function createForecastLibraryService(
 
     async readPreparedVerificationRequest(input: ForecastServiceRequest): Promise<BenchmarkForecastVerificationResult> {
       const startedAt = performance.now()
-      const identity = resolveCapabilityIdentity(input.targetBasis)
-      const cadenceContext = resolveArtifactCadenceContext(input)
-      const prepared = await resolvedDependencies.repository.readLatestVerificationRun?.({
+      const cadenceContext = await resolvePreparedReadCadenceContext(
+        input,
+        resolveCapabilityIdentity(input.targetBasis).targetSemantics,
+        resolvedDependencies.resolveExactPreparedCapability,
+      )
+      const historyResponse = await readPreparedHistoryForLookup(
+        input,
+        cadenceContext,
+        resolvedDependencies.bridge,
+        'verification',
+      )
+
+      if (historyResponse.status === 'NOT_AVAILABLE') {
+        const identity = resolveCapabilityIdentity(input.targetBasis)
+        return {
+          status: 'NOT_AVAILABLE',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: historyResponse.reason,
+        }
+      }
+
+      if (historyResponse.status === 'UNSUPPORTED') {
+        return toUnsupportedResult(historyResponse, input)
+      }
+
+      if (historyResponse.status === 'FAILED') {
+        const identity = resolveCapabilityIdentity(input.targetBasis, historyResponse.methodVersion)
+        return {
+          status: 'FAILED',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: historyResponse.reason,
+          methodVersion: historyResponse.methodVersion,
+          source: historyResponse.source,
+        }
+      }
+
+      const identity = resolveCapabilityIdentity(input.targetBasis, historyResponse.methodVersion)
+      const prepared = await resolvedDependencies.repository.readVerificationRun({
         seriesId: input.seriesId,
         modelId: input.modelId,
         targetBasis: input.targetBasis,
         frequencyIdentity: cadenceContext.frequencyIdentity,
+        inputSource: historyResponse.source.kind,
+        historyFingerprint: buildForecastHistoryFingerprint(historyResponse.history, cadenceContext.cadence ?? undefined),
         ...identity,
-      }) ?? null
+      })
 
       resolvedDependencies.telemetry.emit('prepared_read', {
         kind: 'verification',
