@@ -67,7 +67,7 @@ export interface BenchmarkForecastCurrentPreparationResult {
   targetSemantics: ForecastTargetSemantics
   state: BenchmarkForecastPreparationState
   capabilityStatus: InteractiveForecastCapabilityStatus
-  currentReadiness: 'READY' | 'NOT_PREPARED'
+  currentReadiness: 'READY' | 'NOT_PREPARED' | 'STALE'
   prepareAttempted: boolean
   prepareStatus: InteractiveForecastPreparationStatus | null
   reason: string | null

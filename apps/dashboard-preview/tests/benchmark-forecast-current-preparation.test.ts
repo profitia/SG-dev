@@ -9,6 +9,7 @@ import {
   readInteractiveForecastCapability,
   requestInteractiveForecastCurrentPreparation,
 } from '@/lib/benchmark-forecast/interactive-current-preparation'
+import type { BenchmarkForecastCurrentPreparationRequest } from '@/lib/benchmark-forecast/forecast-contract'
 import { createReadCurrentForecastCapabilityRouteHandler } from '@/app/api/benchmark-forecast/current/capability/route'
 import { createPrepareCurrentForecastRouteHandler } from '@/app/api/benchmark-forecast/current/prepare/route'
 import { createProgressiveForecastPreparationRouteHandler } from '@/app/api/benchmark-forecast/progressive/route'
@@ -25,6 +26,7 @@ test('interactive current preparation gateway reuses ready variants without prep
       targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
       modelId: 'arima',
       sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'LAWFUL',
       status: 'READY',
@@ -64,6 +66,7 @@ test('interactive current preparation gateway fails closed on unsupported capabi
       targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
       modelId: 'arima',
       sourceFrequency: 'QUARTERLY',
+      targetCadence: 'QUARTERLY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'NOT_LAWFUL',
       status: 'NOT_LAWFUL',
@@ -93,8 +96,8 @@ test('interactive current preparation gateway fails closed on unsupported capabi
 })
 
 test('interactive current preparation gateway prepares exactly the requested variant', async () => {
-  const capabilityInputs: Array<Record<string, string>> = []
-  const prepareInputs: Array<Record<string, string>> = []
+  const capabilityInputs: BenchmarkForecastCurrentPreparationRequest[] = []
+  const prepareInputs: BenchmarkForecastCurrentPreparationRequest[] = []
   const prepareCurrent = createInteractiveCurrentPreparationGateway({
     now: (() => {
       let tick = 30
@@ -107,6 +110,7 @@ test('interactive current preparation gateway prepares exactly the requested var
         targetSemantics: 'MONTHLY_AVERAGE',
         modelId: input.modelId,
         sourceFrequency: 'MONTHLY',
+        targetCadence: 'MONTHLY',
         sourceAvailability: 'AVAILABLE',
         lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
         status: 'NOT_PREPARED',
@@ -164,6 +168,7 @@ test('interactive current preparation gateway reports failed preparation truthfu
       targetSemantics: 'MONTHLY_AVERAGE',
       modelId: 'ets',
       sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
       status: 'PREPARATION_REQUIRED',
@@ -208,6 +213,7 @@ test('interactive current preparation gateway falls back to progressive state af
       targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
       modelId: 'arima',
       sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'LAWFUL',
       status: 'PREPARATION_REQUIRED',
@@ -326,6 +332,7 @@ test('interactive current capability route forwards request abort signal to the 
       targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
       modelId: 'arima',
       sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'LAWFUL',
       status: 'READY',
@@ -483,6 +490,7 @@ test('interactive current capability bridge keeps private auth server-side and f
       targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
       modelId: 'arima',
       sourceFrequency: 'QUARTERLY',
+      targetCadence: 'QUARTERLY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'NOT_LAWFUL',
       status: 'NOT_LAWFUL',
@@ -517,13 +525,16 @@ test('interactive current capability bridge keeps private auth server-side and f
     throw new Error('Expected capability bridge to issue a server-side SG Runtime request.')
   }
 
-  assert.equal(capturedUrl.pathname, '/api/internal/forecast/capability')
-  assert.equal(capturedUrl.searchParams.get('seriesId'), 'usnaac0169')
-  assert.equal(capturedUrl.searchParams.get('modelId'), 'arima')
-  assert.equal(capturedUrl.searchParams.get('targetSemantics'), 'ROLLING_DAILY_POINT_IN_TIME')
-  assert.equal(capturedUrl.searchParams.get('token'), null)
-  assert.equal((capturedInit.headers as Record<string, string>).Authorization, 'Bearer dashboard-preview-token')
-  assert.equal((capturedInit.headers as Record<string, string>)[FORECAST_TRACE_HEADER], undefined)
+  const resolvedCapabilityUrl = capturedUrl as URL
+  const resolvedCapabilityInit = capturedInit as RequestInit
+
+  assert.equal(resolvedCapabilityUrl.pathname, '/api/internal/forecast/capability')
+  assert.equal(resolvedCapabilityUrl.searchParams.get('seriesId'), 'usnaac0169')
+  assert.equal(resolvedCapabilityUrl.searchParams.get('modelId'), 'arima')
+  assert.equal(resolvedCapabilityUrl.searchParams.get('targetSemantics'), 'ROLLING_DAILY_POINT_IN_TIME')
+  assert.equal(resolvedCapabilityUrl.searchParams.get('token'), null)
+  assert.equal((resolvedCapabilityInit.headers as Record<string, string>).Authorization, 'Bearer dashboard-preview-token')
+  assert.equal((resolvedCapabilityInit.headers as Record<string, string>)[FORECAST_TRACE_HEADER], undefined)
 })
 
 test('interactive current prepare bridge keeps private auth server-side and forwards exact identity', async () => {
@@ -573,10 +584,13 @@ test('interactive current prepare bridge keeps private auth server-side and forw
     throw new Error('Expected prepare bridge to issue a server-side SG Runtime request.')
   }
 
-  assert.equal(capturedUrl.pathname, '/api/internal/forecast/prepare/current')
-  assert.equal(capturedUrl.searchParams.get('token'), null)
-  assert.equal((capturedInit.headers as Record<string, string>).Authorization, 'Bearer dashboard-preview-token')
-  const body = JSON.parse(String(capturedInit.body)) as Record<string, string>
+  const resolvedPrepareUrl = capturedUrl as URL
+  const resolvedPrepareInit = capturedInit as RequestInit
+
+  assert.equal(resolvedPrepareUrl.pathname, '/api/internal/forecast/prepare/current')
+  assert.equal(resolvedPrepareUrl.searchParams.get('token'), null)
+  assert.equal((resolvedPrepareInit.headers as Record<string, string>).Authorization, 'Bearer dashboard-preview-token')
+  const body = JSON.parse(String(resolvedPrepareInit.body)) as Record<string, string>
   assert.deepEqual(body, {
     seriesId: 'wocaes0280',
     modelId: 'ets',
@@ -653,6 +667,7 @@ test('interactive capability bridge falls back to the public SG Runtime deployme
       targetSemantics: 'MONTHLY_AVERAGE',
       modelId: 'arima',
       sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
       status: 'NOT_PREPARED',

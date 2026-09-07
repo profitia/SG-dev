@@ -6,7 +6,13 @@ import {
   createInMemoryForecastPreparationExecutionAdmission,
   createNoopForecastPreparationExecutionLedger,
 } from '../lib/forecast/execution-ledger'
-import { createCurrentForecastStatisticalCompatibility, createFullVerificationStatisticalCompatibility } from '../lib/forecast/identity'
+import {
+  createCurrentForecastStatisticalCompatibility,
+  createFullVerificationStatisticalCompatibility,
+  createLegacyVerificationStatisticalCompatibility,
+} from '../lib/forecast/identity'
+import type { UserFacingForecastModelId } from '../lib/forecast/contracts'
+import type { ExactForecastCapabilityResolution } from '../lib/forecast/capability-resolver'
 import { createForecastLibraryService, type ForecastBridge, type ForecastLibraryRepository, buildForecastHistoryFingerprint } from '../lib/forecast/service'
 
 function createTestForecastLibraryService(
@@ -162,6 +168,99 @@ function createPreparedReadBridge(historyResponse = createHistoryResponse()): Fo
           throw new Error('unused')
         },
       }
+    },
+  }
+}
+
+function createPreparedCapability(params: {
+  seriesId: string
+  modelId: UserFacingForecastModelId
+  targetSemantics: 'END_OF_PERIOD' | 'MONTHLY_AVERAGE'
+  sourceFrequency: 'MONTHLY' | 'WEEKLY' | 'QUARTERLY'
+  targetCadence: 'MONTHLY' | 'QUARTERLY'
+  availableObservations: number
+}): ExactForecastCapabilityResolution {
+  const businessTarget = params.targetSemantics === 'END_OF_PERIOD' ? 'END_OF_PERIOD' : 'AVERAGE'
+
+  return {
+    resolution: {} as never,
+    capability: {
+      identity: {
+        seriesId: params.seriesId,
+        modelId: params.modelId,
+        targetSemantics: params.targetSemantics,
+        methodId: params.targetSemantics,
+        methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+      },
+      sourceFrequency: params.sourceFrequency,
+      sourceFrequencyRecognized: true,
+      businessTarget,
+      targetCadence: params.targetCadence,
+      targetSemanticsSupported: true,
+      horizonSupportState: 'NOT_REQUESTED' as const,
+      horizonMonths: null,
+      horizonSteps: null,
+      semanticLawfulness: 'LAWFUL_WITH_PROVENANCE' as const,
+      admissionState: 'ADMITTED' as const,
+      provenanceStatus: 'PROVEN' as const,
+      implementationState: 'SUPPORTED' as const,
+      historyEligibility: 'ELIGIBLE' as const,
+      minimumRequiredObservations: 36,
+      availableObservations: params.availableObservations,
+      modelEligible: true,
+      currentForecastEligible: true,
+      verificationOriginCount: 24,
+      verificationEvidenceState: 'SUFFICIENT' as const,
+      predictionBandResidualCount: 30,
+      predictionBandState: 'AVAILABLE' as const,
+      targetPreparationState: 'PREPARED' as const,
+      currentPreparedState: 'READY' as const,
+      historicalPreparedState: 'READY' as const,
+      capabilityState: 'AVAILABLE' as const,
+    },
+    trace: {} as never,
+  }
+}
+
+function createPersistedVerificationPayload(modelId = 'ets') {
+  return {
+    '1M': {
+      horizon: '1M',
+      horizonSteps: 1,
+      origins: 28,
+      expectedOrigins: 28,
+      successfulOrigins: 28,
+      failedOrigins: 0,
+      coverage: 1,
+      metrics: {
+        mae: 10.5,
+        rmse: 12.4,
+        mase: 0.81,
+        smape: 0.073,
+        directionalAccuracy: 0.64,
+        bias: -1.2,
+      },
+      records: [
+        {
+          benchmarkId: 'wocaes0280',
+          modelId,
+          forecastOrigin: '2025-01-01T00:00:00',
+          horizon: '1M',
+          horizonSteps: 1,
+          forecastDate: '2025-02-01T00:00:00',
+          actualObservedAt: '2025-02-28T00:00:00',
+          originValue: 1000,
+          forecastValue: 1012,
+          actualValue: 1008,
+          error: 4,
+          absoluteError: 4,
+          delta: 12,
+          deltaPct: 0.012,
+          maseScale: 14.2,
+          metadata: null,
+        },
+      ],
+      failures: [],
     },
   }
 }
@@ -539,6 +638,14 @@ test('prepared-only Forecast Library reads exact persisted artifacts without com
     methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
     source: { kind: 'DYNAMIC_MARKET_DATA_STORE', runId: null },
     historyFingerprint: 'prepared-eop',
+    cadence: { sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' } as const,
+    frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+    statisticalCompatibility: createCurrentForecastStatisticalCompatibility({
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'END_OF_PERIOD',
+    }),
+    preparation: null,
     history: { frequency: 'MONTHLY', start: '2021-01-01', end: '2026-04-01', observations: 64 },
     forecastOrigin: '2026-04-01',
     runtimeSeconds: 1,
@@ -547,7 +654,12 @@ test('prepared-only Forecast Library reads exact persisted artifacts without com
   const verificationArtifact = {
     ...currentArtifact,
     currentForecast: undefined,
-    verification: {},
+    statisticalCompatibility: createFullVerificationStatisticalCompatibility({
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'END_OF_PERIOD',
+    }),
+    verification: createPersistedVerificationPayload('arima'),
   }
   delete (verificationArtifact as { currentForecast?: unknown }).currentForecast
 
@@ -558,18 +670,24 @@ test('prepared-only Forecast Library reads exact persisted artifacts without com
         bridgeCalls += 1
         assert.equal(key.methodId, 'END_OF_PERIOD')
         assert.equal(key.modelId, 'arima')
-        assert.equal(key.frequencyIdentity, 'MONTHLY')
+        assert.equal(key.frequencyIdentity, 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY')
         assert.equal(key.inputSource, 'POSTGRES_RUNTIME_SNAPSHOT')
-        assert.equal(key.historyFingerprint, buildForecastHistoryFingerprint(history.history))
+        assert.equal(key.historyFingerprint, buildForecastHistoryFingerprint(history.history, {
+          sourceFrequency: 'MONTHLY',
+          targetCadence: 'MONTHLY',
+        }))
         return currentArtifact
       },
       async readVerificationRun(key) {
         bridgeCalls += 1
         assert.equal(key.methodId, 'END_OF_PERIOD')
         assert.equal(key.modelId, 'arima')
-        assert.equal(key.frequencyIdentity, 'MONTHLY')
+        assert.equal(key.frequencyIdentity, 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY')
         assert.equal(key.inputSource, 'POSTGRES_RUNTIME_SNAPSHOT')
-        assert.equal(key.historyFingerprint, buildForecastHistoryFingerprint(history.history))
+        assert.equal(key.historyFingerprint, buildForecastHistoryFingerprint(history.history, {
+          sourceFrequency: 'MONTHLY',
+          targetCadence: 'MONTHLY',
+        }))
         return verificationArtifact
       },
       async writeCurrentRun() { writeCalls += 1 },
@@ -577,6 +695,14 @@ test('prepared-only Forecast Library reads exact persisted artifacts without com
       async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
       async readLatestVerificationRun() { throw new Error('prepared reads must not use latest-only lookup') },
     },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'wocaes0280',
+      modelId: 'arima',
+      targetSemantics: 'END_OF_PERIOD',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 64,
+    }),
     logEvent: () => {},
   })
 
@@ -619,10 +745,25 @@ test('prepared-only lookup selects the exact source-frequency and target-cadence
     historyFingerprint: 'quarterly-history',
     cadence: { sourceFrequency: 'QUARTERLY', targetCadence: 'QUARTERLY' } as const,
     frequencyIdentity: expectedFrequencyIdentity,
+    statisticalCompatibility: createCurrentForecastStatisticalCompatibility({
+      sourceFrequency: 'QUARTERLY',
+      targetCadence: 'QUARTERLY',
+      targetSemantics: 'MONTHLY_AVERAGE',
+    }),
+    preparation: null,
     history: { frequency: 'QUARTERLY', start: '2025-01-01', end: '2025-10-01', observations: 4 },
     forecastOrigin: '2025-10-01',
     runtimeSeconds: 0.1,
-    currentForecast: {},
+    currentForecast: {
+      '1Q': {
+        horizon: '1Q',
+        horizonSteps: 1,
+        forecastDate: '2025-12-01T00:00:00.000Z',
+        forecastValue: 101,
+        metadata: null,
+        failureReason: null,
+      },
+    },
   }
   const expectedHistoryFingerprint = buildForecastHistoryFingerprint(history.history, {
     sourceFrequency: 'QUARTERLY',
@@ -643,6 +784,14 @@ test('prepared-only lookup selects the exact source-frequency and target-cadence
       async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
       async readLatestVerificationRun() { return null },
     },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'generic.series',
+      modelId: 'ets',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      sourceFrequency: 'QUARTERLY',
+      targetCadence: 'QUARTERLY',
+      availableObservations: 40,
+    }),
     logEvent: () => {},
   })
 
@@ -686,14 +835,30 @@ test('prepared-only current lookup resolves the exact cadence cohort when caller
     description: null,
     targetBasis: 'END_OF_PERIOD' as const,
     ...persistedIdentity('END_OF_PERIOD'),
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
     source: { kind: 'CONTROLLED_FIXTURE', runId: null },
     historyFingerprint: 'weekly-history',
     cadence: { sourceFrequency: 'WEEKLY', targetCadence: 'MONTHLY' } as const,
     frequencyIdentity: expectedFrequencyIdentity,
+    statisticalCompatibility: createCurrentForecastStatisticalCompatibility({
+      sourceFrequency: 'WEEKLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'END_OF_PERIOD',
+    }),
+    preparation: null,
     history: { frequency: 'MONTHLY', start: '2025-01-01', end: '2025-10-01', observations: 40 },
     forecastOrigin: '2025-10-01',
     runtimeSeconds: 0.1,
-    currentForecast: {},
+    currentForecast: {
+      '1M': {
+        horizon: '1M',
+        horizonSteps: 1,
+        forecastDate: '2025-11-01T00:00:00.000Z',
+        forecastValue: 1001,
+        metadata: null,
+        failureReason: null,
+      },
+    },
   }
   const expectedHistoryFingerprint = buildForecastHistoryFingerprint(history.history, {
     sourceFrequency: 'WEEKLY',
@@ -716,43 +881,13 @@ test('prepared-only current lookup resolves the exact cadence cohort when caller
       async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
       async readLatestVerificationRun() { return null },
     },
-    resolveExactPreparedCapability: async () => ({
-      resolution: {} as never,
-      capability: {
-        identity: {
-          seriesId: 'weekly.series',
-          modelId: 'ets',
-          targetSemantics: 'END_OF_PERIOD',
-          methodId: 'END_OF_PERIOD',
-          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
-        },
-        sourceFrequency: 'WEEKLY',
-        sourceFrequencyRecognized: true,
-        businessTarget: 'END_OF_PERIOD',
-        targetCadence: 'MONTHLY',
-        targetSemanticsSupported: true,
-        horizonSupportState: 'NOT_REQUESTED',
-        horizonMonths: null,
-        horizonSteps: null,
-        semanticLawfulness: 'LAWFUL_WITH_PROVENANCE',
-        admissionState: 'ADMITTED',
-        provenanceStatus: 'PROVEN',
-        implementationState: 'SUPPORTED',
-        historyEligibility: 'ELIGIBLE',
-        minimumRequiredObservations: 36,
-        availableObservations: 40,
-        modelEligible: true,
-        currentForecastEligible: true,
-        verificationOriginCount: 24,
-        verificationEvidenceState: 'SUFFICIENT',
-        predictionBandResidualCount: 30,
-        predictionBandState: 'AVAILABLE',
-        targetPreparationState: 'PREPARED',
-        currentPreparedState: 'READY',
-        historicalPreparedState: 'READY',
-        capabilityState: 'AVAILABLE',
-      },
-      trace: {} as never,
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'weekly.series',
+      modelId: 'ets',
+      targetSemantics: 'END_OF_PERIOD',
+      sourceFrequency: 'WEEKLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 40,
     }),
     logEvent: () => {},
   })
@@ -796,14 +931,21 @@ test('prepared-only verification lookup resolves the exact cadence cohort when c
     description: null,
     targetBasis: 'MONTHLY_AVERAGE' as const,
     ...persistedIdentity('MONTHLY_AVERAGE'),
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
     source: { kind: 'CONTROLLED_FIXTURE', runId: null },
     historyFingerprint: 'quarterly-history',
     cadence: { sourceFrequency: 'QUARTERLY', targetCadence: 'QUARTERLY' } as const,
     frequencyIdentity: expectedFrequencyIdentity,
+    statisticalCompatibility: createFullVerificationStatisticalCompatibility({
+      sourceFrequency: 'QUARTERLY',
+      targetCadence: 'QUARTERLY',
+      targetSemantics: 'MONTHLY_AVERAGE',
+    }),
+    preparation: null,
     history: { frequency: 'QUARTERLY', start: '2025-01-01', end: '2025-10-01', observations: 8 },
     forecastOrigin: '2025-10-01',
     runtimeSeconds: 0.1,
-    verification: {},
+    verification: createPersistedVerificationPayload('arima'),
   }
   const expectedHistoryFingerprint = buildForecastHistoryFingerprint(history.history, {
     sourceFrequency: 'QUARTERLY',
@@ -826,43 +968,13 @@ test('prepared-only verification lookup resolves the exact cadence cohort when c
       async readLatestCurrentRun() { return null },
       async readLatestVerificationRun() { throw new Error('prepared reads must not use latest-only lookup') },
     },
-    resolveExactPreparedCapability: async () => ({
-      resolution: {} as never,
-      capability: {
-        identity: {
-          seriesId: 'quarterly.series',
-          modelId: 'arima',
-          targetSemantics: 'MONTHLY_AVERAGE',
-          methodId: 'MONTHLY_AVERAGE',
-          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
-        },
-        sourceFrequency: 'QUARTERLY',
-        sourceFrequencyRecognized: true,
-        businessTarget: 'AVERAGE',
-        targetCadence: 'QUARTERLY',
-        targetSemanticsSupported: true,
-        horizonSupportState: 'NOT_REQUESTED',
-        horizonMonths: null,
-        horizonSteps: null,
-        semanticLawfulness: 'LAWFUL_WITH_PROVENANCE',
-        admissionState: 'ADMITTED',
-        provenanceStatus: 'PROVEN',
-        implementationState: 'SUPPORTED',
-        historyEligibility: 'ELIGIBLE',
-        minimumRequiredObservations: 36,
-        availableObservations: 48,
-        modelEligible: true,
-        currentForecastEligible: true,
-        verificationOriginCount: 24,
-        verificationEvidenceState: 'SUFFICIENT',
-        predictionBandResidualCount: 30,
-        predictionBandState: 'AVAILABLE',
-        targetPreparationState: 'PREPARED',
-        currentPreparedState: 'READY',
-        historicalPreparedState: 'READY',
-        capabilityState: 'AVAILABLE',
-      },
-      trace: {} as never,
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'quarterly.series',
+      modelId: 'arima',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      sourceFrequency: 'QUARTERLY',
+      targetCadence: 'QUARTERLY',
+      availableObservations: 48,
     }),
     logEvent: () => {},
   })
@@ -930,6 +1042,182 @@ test('prepared-only Forecast Library miss is explicit and performs no compute or
   assert.equal(verification.status, 'NOT_AVAILABLE')
   assert.match(current.reason, /PREPARATION_REQUIRED/)
   assert.match(verification.reason, /PREPARATION_REQUIRED/)
+  assert.equal(sideEffects, 0)
+})
+
+test('prepared-only current read rejects explicit cadence that does not match the canonical capability without compute or writes', async () => {
+  let sideEffects = 0
+  let repositoryReads = 0
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge({
+      ...createHistoryResponse(),
+      benchmark: {
+        ...createHistoryResponse().benchmark,
+        seriesId: 'cadence-mismatch.series',
+        frequency: 'QUARTERLY',
+      },
+      history: {
+        ...createHistoryResponse().history,
+        seriesId: 'cadence-mismatch.series',
+        frequency: 'QUARTERLY',
+        observations: 48,
+      },
+    }),
+    repository: {
+      async readCurrentRun() { repositoryReads += 1; return null },
+      async readVerificationRun() { throw new Error('unused') },
+      async writeCurrentRun() { sideEffects += 1 },
+      async writeVerificationRun() { sideEffects += 1 },
+      async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
+      async readLatestVerificationRun() { throw new Error('unused') },
+    },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'cadence-mismatch.series',
+      modelId: 'ets',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 48,
+    }),
+    logEvent: () => {},
+  })
+
+  const result = await service.readPreparedCurrentForecastRequest({
+    seriesId: 'cadence-mismatch.series',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'QUARTERLY',
+    targetCadence: 'QUARTERLY',
+  })
+
+  assert.equal(result.status, 'NOT_AVAILABLE')
+  if (result.status !== 'NOT_AVAILABLE') return
+  assert.match(result.reason, /Explicit cadence does not match the canonical prepared-read capability/)
+  assert.equal(repositoryReads, 0)
+  assert.equal(sideEffects, 0)
+})
+
+test('prepared-only current read rejects mismatched training-window policy identity without compute or writes', async () => {
+  let sideEffects = 0
+  const history = createHistoryResponse()
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge(history),
+    repository: {
+      async readCurrentRun() {
+        return {
+          seriesId: 'wocaes0280',
+          modelId: 'ets',
+          displayName: 'FRACHT_DRY',
+          description: null,
+          targetBasis: 'MONTHLY_AVERAGE' as const,
+          ...persistedIdentity('MONTHLY_AVERAGE'),
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+          source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: null },
+          historyFingerprint: buildForecastHistoryFingerprint(history.history, {
+            sourceFrequency: 'MONTHLY',
+            targetCadence: 'MONTHLY',
+          }),
+          cadence: { sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' } as const,
+          frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+          statisticalCompatibility: createFullVerificationStatisticalCompatibility({
+            sourceFrequency: 'MONTHLY',
+            targetCadence: 'MONTHLY',
+            targetSemantics: 'MONTHLY_AVERAGE',
+          }),
+          preparation: null,
+          history: { frequency: 'MONTHLY', start: '2021-01-01', end: '2026-04-01', observations: 64 },
+          forecastOrigin: '2026-04-01',
+          runtimeSeconds: 1,
+          currentForecast: createCurrentResponse('ets').result.currentForecast,
+        }
+      },
+      async readVerificationRun() { throw new Error('unused') },
+      async writeCurrentRun() { sideEffects += 1 },
+      async writeVerificationRun() { sideEffects += 1 },
+      async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
+      async readLatestVerificationRun() { throw new Error('unused') },
+    },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'wocaes0280',
+      modelId: 'ets',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 64,
+    }),
+    logEvent: () => {},
+  })
+
+  const result = await service.readPreparedCurrentForecastRequest({
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+  })
+
+  assert.equal(result.status, 'NOT_AVAILABLE')
+  if (result.status !== 'NOT_AVAILABLE') return
+  assert.match(result.reason, /training-policy identity is not compatible/)
+  assert.equal(sideEffects, 0)
+})
+
+test('prepared-only verification read preserves lawful legacy full-verification reuse for current Stage 4 scope', async () => {
+  let sideEffects = 0
+  const history = createHistoryResponse()
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge(history),
+    repository: {
+      async readCurrentRun() { throw new Error('unused') },
+      async readVerificationRun() {
+        return {
+          seriesId: 'wocaes0280',
+          modelId: 'ets',
+          displayName: 'FRACHT_DRY',
+          description: null,
+          targetBasis: 'MONTHLY_AVERAGE' as const,
+          ...persistedIdentity('MONTHLY_AVERAGE', 'VERIFICATION'),
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+          source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: null },
+          historyFingerprint: buildForecastHistoryFingerprint(history.history, {
+            sourceFrequency: 'MONTHLY',
+            targetCadence: 'MONTHLY',
+          }),
+          cadence: { sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' } as const,
+          frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+          statisticalCompatibility: createLegacyVerificationStatisticalCompatibility({
+            sourceFrequency: 'MONTHLY',
+            targetCadence: 'MONTHLY',
+            targetSemantics: 'MONTHLY_AVERAGE',
+          }),
+          preparation: null,
+          history: { frequency: 'MONTHLY', start: '2021-01-01', end: '2026-04-01', observations: 64 },
+          forecastOrigin: '2026-04-01',
+          runtimeSeconds: 1,
+          verification: createPersistedVerificationPayload('ets'),
+        }
+      },
+      async writeCurrentRun() { sideEffects += 1 },
+      async writeVerificationRun() { sideEffects += 1 },
+      async readLatestCurrentRun() { throw new Error('unused') },
+      async readLatestVerificationRun() { throw new Error('prepared reads must not use latest-only lookup') },
+    },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'wocaes0280',
+      modelId: 'ets',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 64,
+    }),
+    logEvent: () => {},
+  })
+
+  const result = await service.readPreparedVerificationRequest({
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
   assert.equal(sideEffects, 0)
 })
 

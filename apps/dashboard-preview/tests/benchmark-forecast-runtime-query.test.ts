@@ -137,6 +137,122 @@ test('runtime query returns preparation-required without fetching when verificat
   assert.equal(fetchCalls, 0)
 })
 
+test('deployed non-point-in-time current reads fail closed when the SG Runtime internal token is missing', async () => {
+  const previousMarketDataUrl = process.env.MARKET_DATA_DATABASE_URL
+  const previousDatabaseUrl = process.env.DATABASE_URL
+  const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const originalFetch = global.fetch
+  const marketDataGlobal = globalThis as typeof globalThis & {
+    dashboardPreviewMarketDataPrisma?: {
+      forecastCurrentRun: { findFirst: () => Promise<Record<string, unknown> | null> }
+    }
+    dashboardPreviewMarketDataPrismaConnectionString?: string
+  }
+  const previousPrisma = marketDataGlobal.dashboardPreviewMarketDataPrisma
+  const previousConnectionString = marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString
+  let localReads = 0
+  let fetchCalls = 0
+
+  process.env.RENDER_EXTERNAL_URL = 'https://profitia-pl.onrender.com'
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://deployed-non-pit-current'
+  delete process.env.DATABASE_URL
+  delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+
+  marketDataGlobal.dashboardPreviewMarketDataPrisma = {
+    forecastCurrentRun: {
+      async findFirst() {
+        localReads += 1
+        throw new Error('deployed non-PIT current read must not fall back to local latest-by-cohort')
+      },
+    },
+  }
+  marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = process.env.MARKET_DATA_DATABASE_URL
+  global.fetch = (async () => {
+    fetchCalls += 1
+    throw new Error('deployed non-PIT current read must not hit internal fetch without a token')
+  }) as typeof fetch
+
+  try {
+    await assert.rejects(
+      () => getBenchmarkForecastCurrent('wocaes0074', 'ets', 'END_OF_PERIOD'),
+      /SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN is required in deployed dashboard-preview environments for non-POINT_IN_TIME prepared reads/,
+    )
+    assert.equal(localReads, 0)
+    assert.equal(fetchCalls, 0)
+  } finally {
+    global.fetch = originalFetch
+    if (previousMarketDataUrl === undefined) delete process.env.MARKET_DATA_DATABASE_URL
+    else process.env.MARKET_DATA_DATABASE_URL = previousMarketDataUrl
+    if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL
+    else process.env.DATABASE_URL = previousDatabaseUrl
+    if (previousRenderExternalUrl === undefined) delete process.env.RENDER_EXTERNAL_URL
+    else process.env.RENDER_EXTERNAL_URL = previousRenderExternalUrl
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    marketDataGlobal.dashboardPreviewMarketDataPrisma = previousPrisma
+    marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = previousConnectionString
+  }
+})
+
+test('deployed non-point-in-time verification reads fail closed when the SG Runtime internal token is missing', async () => {
+  const previousMarketDataUrl = process.env.MARKET_DATA_DATABASE_URL
+  const previousDatabaseUrl = process.env.DATABASE_URL
+  const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const originalFetch = global.fetch
+  const marketDataGlobal = globalThis as typeof globalThis & {
+    dashboardPreviewMarketDataPrisma?: {
+      forecastVerificationRun: { findFirst: () => Promise<Record<string, unknown> | null> }
+    }
+    dashboardPreviewMarketDataPrismaConnectionString?: string
+  }
+  const previousPrisma = marketDataGlobal.dashboardPreviewMarketDataPrisma
+  const previousConnectionString = marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString
+  let localReads = 0
+  let fetchCalls = 0
+
+  process.env.RENDER_EXTERNAL_URL = 'https://profitia-pl.onrender.com'
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://deployed-non-pit-verification'
+  delete process.env.DATABASE_URL
+  delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+
+  marketDataGlobal.dashboardPreviewMarketDataPrisma = {
+    forecastVerificationRun: {
+      async findFirst() {
+        localReads += 1
+        throw new Error('deployed non-PIT verification read must not fall back to local latest-by-cohort')
+      },
+    },
+  }
+  marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = process.env.MARKET_DATA_DATABASE_URL
+  global.fetch = (async () => {
+    fetchCalls += 1
+    throw new Error('deployed non-PIT verification read must not hit internal fetch without a token')
+  }) as typeof fetch
+
+  try {
+    await assert.rejects(
+      () => getBenchmarkForecastVerification('wocaes0074', 'ets', 'END_OF_PERIOD'),
+      /SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN is required in deployed dashboard-preview environments for non-POINT_IN_TIME prepared reads/,
+    )
+    assert.equal(localReads, 0)
+    assert.equal(fetchCalls, 0)
+  } finally {
+    global.fetch = originalFetch
+    if (previousMarketDataUrl === undefined) delete process.env.MARKET_DATA_DATABASE_URL
+    else process.env.MARKET_DATA_DATABASE_URL = previousMarketDataUrl
+    if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL
+    else process.env.DATABASE_URL = previousDatabaseUrl
+    if (previousRenderExternalUrl === undefined) delete process.env.RENDER_EXTERNAL_URL
+    else process.env.RENDER_EXTERNAL_URL = previousRenderExternalUrl
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    marketDataGlobal.dashboardPreviewMarketDataPrisma = previousPrisma
+    marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = previousConnectionString
+  }
+})
+
 test('point-in-time current forecast fails closed as unsupported for non-daily capability before snapshot lookup', async () => {
   const originalFetch = global.fetch
   const previousMarketDataUrl = process.env.MARKET_DATA_DATABASE_URL

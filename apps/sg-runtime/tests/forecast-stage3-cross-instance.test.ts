@@ -23,9 +23,12 @@ import {
 import { buildForecastHistoryFingerprint } from '../lib/forecast/history-fingerprint'
 import { buildCurrentHorizonConfigurationId } from '../lib/forecast/live-market-input'
 import { PrismaClient } from '../generated/market-data-client'
+import type { ExactForecastCapabilityResolution } from '../lib/forecast/capability-resolver'
+import type { UserFacingForecastModelId } from '../lib/forecast/contracts'
 import type { ForecastPreparationOwnedExecutionContext } from '../lib/forecast/execution-ledger'
 import type {
   ForecastBridge,
+  ForecastLibraryServiceDependencies,
   ForecastPersistenceOwnership,
   PersistedCurrentArtifact,
   PersistedVerificationArtifact,
@@ -223,7 +226,7 @@ function createPeriodicHistoryResponse(
 
 function createPreparedCurrentArtifact(
   historyResponse: ReturnType<typeof createPeriodicHistoryResponse>,
-  modelId: string,
+  modelId: UserFacingForecastModelId,
   targetBasis: 'MONTHLY_AVERAGE' | 'END_OF_PERIOD',
   options: {
     methodVersion?: string
@@ -288,7 +291,7 @@ function createPreparedCurrentArtifact(
 
 function createPreparedVerificationArtifact(
   historyResponse: ReturnType<typeof createPeriodicHistoryResponse>,
-  modelId: string,
+  modelId: UserFacingForecastModelId,
   targetBasis: 'MONTHLY_AVERAGE' | 'END_OF_PERIOD',
   options: {
     methodVersion?: string
@@ -606,7 +609,7 @@ function createBarrier() {
 
 function createDbBackedService(
   bridgeOverrides: Partial<ForecastBridge> = {},
-  serviceOverrides: Partial<Parameters<typeof createForecastLibraryService>[0]> = {},
+  serviceOverrides: Partial<ForecastLibraryServiceDependencies> = {},
 ) {
   const bridge: ForecastBridge = {
     async exportHistory(input) {
@@ -631,9 +634,30 @@ function createDbBackedService(
     ...bridgeOverrides,
   }
 
+  const resolveExactPreparedCapability: ForecastLibraryServiceDependencies['resolveExactPreparedCapability'] = serviceOverrides.resolveExactPreparedCapability ?? (async ({ seriesId, modelId, targetSemantics }) => {
+      const historyResponse = await bridge.exportHistory({
+        seriesId,
+        targetBasis: targetSemantics === 'END_OF_PERIOD' ? 'END_OF_PERIOD' : 'MONTHLY_AVERAGE',
+      }) as ReturnType<typeof createPeriodicHistoryResponse>
+
+      if (historyResponse.status !== 'AVAILABLE') {
+        throw new Error(`Expected AVAILABLE history response for exact prepared capability on ${seriesId}.`)
+      }
+
+      return createExactPreparedCapability(
+        seriesId,
+        modelId,
+        targetSemantics as 'MONTHLY_AVERAGE' | 'END_OF_PERIOD',
+        historyResponse.sourceFrequency as 'WEEKLY' | 'MONTHLY' | 'QUARTERLY',
+        historyResponse.targetCadence as 'MONTHLY' | 'QUARTERLY',
+        historyResponse.history.observations,
+      )
+    })
+
   return createForecastLibraryService({
     ...serviceOverrides,
     bridge,
+    resolveExactPreparedCapability,
     logEvent: () => {},
     telemetry: {
       emit() {},
@@ -643,12 +667,14 @@ function createDbBackedService(
 
 function createExactPreparedCapability(
   seriesId: string,
-  modelId: string,
+  modelId: UserFacingForecastModelId,
   targetSemantics: 'MONTHLY_AVERAGE' | 'END_OF_PERIOD',
   sourceFrequency: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY',
   targetCadence: 'MONTHLY' | 'QUARTERLY',
   availableObservations: number,
-) {
+): ExactForecastCapabilityResolution {
+  const businessTarget = targetSemantics === 'END_OF_PERIOD' ? 'END_OF_PERIOD' : 'AVERAGE'
+
   return {
     resolution: {} as never,
     capability: {
@@ -661,7 +687,7 @@ function createExactPreparedCapability(
       },
       sourceFrequency,
       sourceFrequencyRecognized: true,
-      businessTarget: targetSemantics === 'END_OF_PERIOD' ? 'END_OF_PERIOD' : 'AVERAGE',
+      businessTarget,
       targetCadence,
       targetSemanticsSupported: true,
       horizonSupportState: 'NOT_REQUESTED',
@@ -996,6 +1022,104 @@ serialTest('db-backed prepared current reads surface weekly, native monthly, and
   assert.equal(executionCount, 0)
 })
 
+serialTest('db-backed prepared current reads fail closed for unlawful explicit cadence and non-renderable payloads without compute or execution rows', async () => {
+  const unlawfulHistory = createPeriodicHistoryResponse('stage4-unlawful-explicit-current-series', 'QUARTERLY', 'QUARTERLY', 'MONTHLY_AVERAGE', 48)
+  const emptyArtifact = {
+    ...createPreparedCurrentArtifact(
+      createPeriodicHistoryResponse('stage4-empty-current-series', 'MONTHLY', 'MONTHLY', 'MONTHLY_AVERAGE', 48),
+      'ets',
+      'MONTHLY_AVERAGE',
+    ),
+    currentForecast: {},
+  }
+  const nullPointArtifactBase = createPreparedCurrentArtifact(
+    createPeriodicHistoryResponse('stage4-null-point-current-series', 'MONTHLY', 'MONTHLY', 'END_OF_PERIOD', 48),
+    'ets',
+    'END_OF_PERIOD',
+  )
+  const nullPointArtifact = {
+    ...nullPointArtifactBase,
+    currentForecast: {
+      '1M': {
+        ...nullPointArtifactBase.currentForecast['1M'],
+        forecastValue: null,
+      },
+    },
+  }
+
+  await writeCurrentRunWithPrisma(createPreparedCurrentArtifact(unlawfulHistory, 'ets', 'MONTHLY_AVERAGE'))
+  await writeCurrentRunWithPrisma(emptyArtifact)
+  await writeCurrentRunWithPrisma(nullPointArtifact)
+
+  const service = createDbBackedService({
+    async exportHistory(input) {
+      if (input.seriesId === unlawfulHistory.history.seriesId) return unlawfulHistory
+      if (input.seriesId === emptyArtifact.seriesId) return createPeriodicHistoryResponse(emptyArtifact.seriesId, 'MONTHLY', 'MONTHLY', 'MONTHLY_AVERAGE', 48)
+      if (input.seriesId === nullPointArtifact.seriesId) return createPeriodicHistoryResponse(nullPointArtifact.seriesId, 'MONTHLY', 'MONTHLY', 'END_OF_PERIOD', 48)
+      throw new Error(`Unexpected prepared current history lookup for ${input.seriesId}.`)
+    },
+    async exportCurrent() {
+      throw new Error('Prepared current read must not invoke compute exportCurrent.')
+    },
+    async exportVerification() {
+      throw new Error('Prepared current read must not invoke compute exportVerification.')
+    },
+  }, {
+    resolveExactPreparedCapability: async ({ seriesId, modelId, targetSemantics }) => {
+      if (seriesId === unlawfulHistory.history.seriesId) {
+        return createExactPreparedCapability(seriesId, modelId, targetSemantics as 'MONTHLY_AVERAGE', 'MONTHLY', 'MONTHLY', 48)
+      }
+
+      return createExactPreparedCapability(
+        seriesId,
+        modelId,
+        targetSemantics as 'MONTHLY_AVERAGE' | 'END_OF_PERIOD',
+        'MONTHLY',
+        'MONTHLY',
+        48,
+      )
+    },
+  })
+
+  const unlawfulCadence = await service.readPreparedCurrentForecastRequest({
+    seriesId: unlawfulHistory.history.seriesId,
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'QUARTERLY',
+    targetCadence: 'QUARTERLY',
+  })
+  const emptyCurrent = await service.readPreparedCurrentForecastRequest({
+    seriesId: emptyArtifact.seriesId,
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  })
+  const nullPointCurrent = await service.readPreparedCurrentForecastRequest({
+    seriesId: nullPointArtifact.seriesId,
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  })
+
+  assert.equal(unlawfulCadence.status, 'NOT_AVAILABLE')
+  assert.equal(emptyCurrent.status, 'NOT_AVAILABLE')
+  assert.equal(nullPointCurrent.status, 'NOT_AVAILABLE')
+  if (unlawfulCadence.status === 'NOT_AVAILABLE') {
+    assert.match(unlawfulCadence.reason, /Explicit cadence does not match the canonical prepared-read capability/)
+  }
+  if (emptyCurrent.status === 'NOT_AVAILABLE') {
+    assert.match(emptyCurrent.reason, /not renderable/i)
+  }
+  if (nullPointCurrent.status === 'NOT_AVAILABLE') {
+    assert.match(nullPointCurrent.reason, /not renderable/i)
+  }
+
+  const executionCount = await requirePrisma().forecastPreparationExecutionLedger.count()
+  assert.equal(executionCount, 0)
+})
+
 serialTest('db-backed prepared verification reads require exact identity and create zero execution rows on hits or misses', async () => {
   const exactHistory = createPeriodicHistoryResponse('stage4-quarterly-verification-series', 'QUARTERLY', 'QUARTERLY', 'MONTHLY_AVERAGE', 48)
   const exactMonthlyHistory = createPeriodicHistoryResponse('stage4-quarterly-verification-series', 'MONTHLY', 'MONTHLY', 'MONTHLY_AVERAGE', 48)
@@ -1084,6 +1208,57 @@ serialTest('db-backed prepared verification reads require exact identity and cre
   assert.equal(wrongSourceFrequency.status, 'NOT_AVAILABLE')
   assert.equal(wrongHistoryFingerprint.status, 'NOT_AVAILABLE')
   assert.equal(wrongMethodVersion.status, 'NOT_AVAILABLE')
+
+  const executionCount = await requirePrisma().forecastPreparationExecutionLedger.count()
+  assert.equal(executionCount, 0)
+})
+
+serialTest('db-backed prepared verification reads fail closed for empty payloads and preserve lawful non-daily prepared hits', async () => {
+  const exactHistory = createPeriodicHistoryResponse('stage4-verification-renderable-series', 'QUARTERLY', 'QUARTERLY', 'MONTHLY_AVERAGE', 48)
+  const emptyVerificationHistory = createPeriodicHistoryResponse('stage4-verification-empty-series', 'QUARTERLY', 'QUARTERLY', 'MONTHLY_AVERAGE', 48)
+  const renderableArtifact = createPreparedVerificationArtifact(exactHistory, 'arima', 'MONTHLY_AVERAGE')
+  const emptyArtifact = {
+    ...createPreparedVerificationArtifact(emptyVerificationHistory, 'arima', 'MONTHLY_AVERAGE'),
+    verification: {},
+  }
+
+  await writeVerificationRunWithPrisma(renderableArtifact)
+  await writeVerificationRunWithPrisma(emptyArtifact)
+
+  const service = createDbBackedService({
+    async exportHistory(input) {
+      if (input.seriesId === exactHistory.history.seriesId) return exactHistory
+      if (input.seriesId === emptyVerificationHistory.history.seriesId) return emptyVerificationHistory
+      throw new Error(`Unexpected prepared verification history lookup for ${input.seriesId}.`)
+    },
+    async exportCurrent() {
+      throw new Error('Prepared verification read must not invoke compute exportCurrent.')
+    },
+    async exportVerification() {
+      throw new Error('Prepared verification read must not invoke compute exportVerification.')
+    },
+  })
+
+  const renderable = await service.readPreparedVerificationRequest({
+    seriesId: exactHistory.history.seriesId,
+    modelId: 'arima',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'QUARTERLY',
+    targetCadence: 'QUARTERLY',
+  })
+  const empty = await service.readPreparedVerificationRequest({
+    seriesId: emptyVerificationHistory.history.seriesId,
+    modelId: 'arima',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'QUARTERLY',
+    targetCadence: 'QUARTERLY',
+  })
+
+  assert.equal(renderable.status, 'AVAILABLE')
+  assert.equal(empty.status, 'NOT_AVAILABLE')
+  if (empty.status === 'NOT_AVAILABLE') {
+    assert.match(empty.reason, /not renderable/i)
+  }
 
   const executionCount = await requirePrisma().forecastPreparationExecutionLedger.count()
   assert.equal(executionCount, 0)

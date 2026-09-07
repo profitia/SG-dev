@@ -86,14 +86,17 @@ type GatewayDependencies = {
   resolveCapability: (
     input: BenchmarkForecastCurrentPreparationRequest,
     traceOptions?: TraceOptions,
+    requestOptions?: ForecastBridgeRequestOptions,
   ) => Promise<InteractiveForecastCapabilityResult>
   prepareCurrent: (
     input: BenchmarkForecastCurrentPreparationRequest,
     traceOptions?: TraceOptions,
+    requestOptions?: ForecastBridgeRequestOptions,
   ) => Promise<InteractiveForecastPreparationResult>
   readProgressiveSnapshot: (
     input: BenchmarkForecastCurrentPreparationRequest,
     traceOptions?: TraceOptions,
+    requestOptions?: ForecastBridgeRequestOptions,
   ) => Promise<ProgressiveForecastPreparationSnapshot>
   now: () => number
 }

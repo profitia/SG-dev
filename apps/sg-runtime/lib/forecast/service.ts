@@ -65,8 +65,10 @@ import type {
 import { DEFAULT_FORECAST_TARGET_BASIS, USER_FACING_FORECAST_MODELS } from '@/lib/forecast/contracts'
 import {
   buildForecastArtifactCadenceIdentity,
+  createLegacyVerificationStatisticalCompatibility,
   createCurrentForecastStatisticalCompatibility,
   createFullVerificationStatisticalCompatibility,
+  doesForecastArtifactSatisfyRequest,
   LEGACY_MONTHLY_ARTIFACT_FREQUENCY,
   parseForecastArtifactCadenceIdentity,
   resolveForecastMethodContract,
@@ -394,6 +396,10 @@ type ForecastPreparedLookupKey = Pick<
   'seriesId' | 'modelId' | 'targetSemantics' | 'methodId' | 'methodVersion' | 'targetBasis' | 'frequencyIdentity'
 >
 
+type PreparedReadCadenceContext = ReturnType<typeof resolveArtifactCadenceContext> & {
+  blockedReason: string | null
+}
+
 type ForecastBridgeReadyConfiguration = {
   ok: true
   labRoot: string
@@ -536,34 +542,62 @@ async function resolvePreparedReadCadenceContext(
   input: ForecastServiceRequest,
   targetSemantics: ForecastTargetSemantics,
   resolveExactPreparedCapability: ForecastLibraryServiceDependencies['resolveExactPreparedCapability'],
-): Promise<ReturnType<typeof resolveArtifactCadenceContext>> {
+): Promise<PreparedReadCadenceContext> {
   const explicitContext = resolveArtifactCadenceContext(input)
-
-  if (explicitContext.cadence || input.targetBasis === 'POINT_IN_TIME' || !isUserFacingModel(input.modelId)) {
-    return explicitContext
+  if (input.targetBasis === 'POINT_IN_TIME' || !isUserFacingModel(input.modelId)) {
+    return {
+      ...explicitContext,
+      blockedReason: null,
+    }
   }
+
+  const modelId = input.modelId as UserFacingForecastModelId
 
   const { capability } = await resolveExactPreparedCapability({
     seriesId: input.seriesId,
-    modelId: input.modelId,
+    modelId,
     targetSemantics,
   })
 
-  if (!capability?.sourceFrequency || !capability.targetCadence) {
-    return explicitContext
+  if (
+    !capability?.sourceFrequency
+    || !capability.targetCadence
+    || capability.admissionState !== 'ADMITTED'
+    || capability.implementationState !== 'SUPPORTED'
+    || capability.historyEligibility !== 'ELIGIBLE'
+  ) {
+    return {
+      ...explicitContext,
+      blockedReason: 'PREPARATION_REQUIRED: Canonical prepared-read capability is not lawfully production-readable for this identity.',
+    }
   }
 
   const cadence = createForecastCadence(capability.sourceFrequency, capability.targetCadence)
 
+  if (
+    explicitContext.cadence
+    && (
+      explicitContext.cadence.sourceFrequency !== cadence.sourceFrequency
+      || explicitContext.cadence.targetCadence !== cadence.targetCadence
+    )
+  ) {
+    return {
+      cadence,
+      frequencyIdentity: buildForecastArtifactCadenceIdentity(cadence),
+      blockedReason: 'PREPARATION_REQUIRED: Explicit cadence does not match the canonical prepared-read capability.',
+    }
+  }
+
   return {
     cadence,
     frequencyIdentity: buildForecastArtifactCadenceIdentity(cadence),
+    blockedReason: null,
   }
 }
 
 function resolvePreparedReadInput(
   input: ForecastServiceRequest,
-  cadenceContext: ReturnType<typeof resolveArtifactCadenceContext>,
+  cadenceContext: PreparedReadCadenceContext,
 ): Pick<ForecastServiceRequest, 'seriesId' | 'targetBasis' | 'sourceFrequency' | 'targetCadence'> {
   return {
     seriesId: input.seriesId,
@@ -575,7 +609,7 @@ function resolvePreparedReadInput(
 
 async function readPreparedHistoryForLookup(
   input: ForecastServiceRequest,
-  cadenceContext: ReturnType<typeof resolveArtifactCadenceContext>,
+  cadenceContext: PreparedReadCadenceContext,
   bridge: ForecastBridge,
   mode: 'current' | 'verification',
 ): Promise<ForecastHistoryBridgeResponse> {
@@ -721,6 +755,129 @@ function resolveFirstCurrentForecastPoint(currentForecast: Record<string, Foreca
       const rightTime = parseIsoDate(right.forecastDate)?.getTime() ?? Number.POSITIVE_INFINITY
       return leftTime - rightTime
     })[0] ?? null
+  )
+}
+
+function hasRequiredArtifactIdentity(artifact: ForecastPersistedArtifactBase) {
+  return typeof artifact.seriesId === 'string'
+    && artifact.seriesId.trim().length > 0
+    && typeof artifact.modelId === 'string'
+    && artifact.modelId.trim().length > 0
+    && typeof artifact.methodId === 'string'
+    && artifact.methodId.trim().length > 0
+    && typeof artifact.methodVersion === 'string'
+    && artifact.methodVersion.trim().length > 0
+    && typeof artifact.historyFingerprint === 'string'
+    && artifact.historyFingerprint.trim().length > 0
+}
+
+function hasRenderableCurrentPoint(point: ForecastCurrentPoint) {
+  return point.horizon.trim().length > 0
+    && Number.isInteger(point.horizonSteps)
+    && point.horizonSteps > 0
+    && parseIsoDate(point.forecastDate) !== null
+    && typeof point.forecastValue === 'number'
+    && Number.isFinite(point.forecastValue)
+}
+
+function isRenderableCurrentArtifact(artifact: PersistedCurrentArtifact) {
+  if (!hasRequiredArtifactIdentity(artifact) || parseIsoDate(artifact.forecastOrigin) === null) {
+    return false
+  }
+
+  const points = Object.values(artifact.currentForecast)
+  if (points.length === 0) {
+    return false
+  }
+
+  return points.some((point) => hasRenderableCurrentPoint(point))
+}
+
+function hasRenderableVerificationRecord(record: ForecastVerificationRecord) {
+  return Number.isInteger(record.horizonSteps)
+    && record.horizonSteps > 0
+    && parseIsoDate(record.forecastOrigin) !== null
+    && parseIsoDate(record.forecastDate) !== null
+    && Number.isFinite(record.originValue)
+    && Number.isFinite(record.forecastValue)
+    && Number.isFinite(record.actualValue)
+}
+
+function hasRenderableVerificationHorizon(horizon: ForecastVerificationHorizon) {
+  return horizon.horizon.trim().length > 0
+    && Number.isInteger(horizon.horizonSteps)
+    && horizon.horizonSteps > 0
+    && (
+      horizon.records.some((record) => hasRenderableVerificationRecord(record))
+      || horizon.metrics !== null
+    )
+}
+
+function isRenderableVerificationArtifact(artifact: PersistedVerificationArtifact) {
+  if (!hasRequiredArtifactIdentity(artifact) || parseIsoDate(artifact.forecastOrigin) === null) {
+    return false
+  }
+
+  const horizons = Object.values(artifact.verification)
+  if (horizons.length === 0) {
+    return false
+  }
+
+  return horizons.some((horizon) => hasRenderableVerificationHorizon(horizon))
+}
+
+function resolveArtifactTrainingPolicyContext(
+  artifact: ForecastPersistedArtifactBase,
+  targetSemantics: ForecastTargetSemantics,
+) {
+  const sourceFrequency = artifact.cadence?.sourceFrequency
+    ?? normalizeForecastSourceFrequency(artifact.history.frequency)
+  const targetCadence = artifact.cadence?.targetCadence
+    ?? normalizeForecastSourceFrequency(artifact.history.frequency)
+
+  if (!sourceFrequency || !targetCadence) {
+    return null
+  }
+
+  return {
+    sourceFrequency,
+    targetCadence,
+    targetSemantics,
+  }
+}
+
+function satisfiesCurrentPreparedTrainingPolicy(
+  artifact: PersistedCurrentArtifact,
+  targetSemantics: ForecastTargetSemantics,
+) {
+  const context = resolveArtifactTrainingPolicyContext(artifact, targetSemantics)
+  if (!context) {
+    return false
+  }
+
+  return doesForecastArtifactSatisfyRequest(
+    artifact.statisticalCompatibility,
+    createCurrentForecastStatisticalCompatibility(context),
+  )
+}
+
+function satisfiesVerificationPreparedTrainingPolicy(
+  artifact: PersistedVerificationArtifact,
+  targetSemantics: ForecastTargetSemantics,
+) {
+  const context = resolveArtifactTrainingPolicyContext(artifact, targetSemantics)
+  if (!context) {
+    return false
+  }
+
+  const requested = createFullVerificationStatisticalCompatibility(context)
+  if (doesForecastArtifactSatisfyRequest(artifact.statisticalCompatibility, requested)) {
+    return true
+  }
+
+  return doesForecastArtifactSatisfyRequest(
+    artifact.statisticalCompatibility,
+    createLegacyVerificationStatisticalCompatibility(context),
   )
 }
 
@@ -2057,6 +2214,20 @@ export function createForecastLibraryService(
         resolveCapabilityIdentity(input.targetBasis).targetSemantics,
         resolvedDependencies.resolveExactPreparedCapability,
       )
+
+      if (cadenceContext.blockedReason) {
+        const identity = resolveCapabilityIdentity(input.targetBasis)
+        return {
+          status: 'NOT_AVAILABLE',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: cadenceContext.blockedReason,
+        }
+      }
+
       const historyResponse = await readPreparedHistoryForLookup(
         input,
         cadenceContext,
@@ -2125,6 +2296,30 @@ export function createForecastLibraryService(
         }
       }
 
+      if (!isRenderableCurrentArtifact(prepared)) {
+        return {
+          status: 'NOT_AVAILABLE',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: 'PREPARATION_REQUIRED: Prepared Current Forecast artifact is present but not renderable.',
+        }
+      }
+
+      if (!satisfiesCurrentPreparedTrainingPolicy(prepared, identity.targetSemantics)) {
+        return {
+          status: 'NOT_AVAILABLE',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: 'PREPARATION_REQUIRED: Prepared Current Forecast training-policy identity is not compatible.',
+        }
+      }
+
       return toCurrentAvailable(prepared, 'hit')
     },
 
@@ -2135,6 +2330,20 @@ export function createForecastLibraryService(
         resolveCapabilityIdentity(input.targetBasis).targetSemantics,
         resolvedDependencies.resolveExactPreparedCapability,
       )
+
+      if (cadenceContext.blockedReason) {
+        const identity = resolveCapabilityIdentity(input.targetBasis)
+        return {
+          status: 'NOT_AVAILABLE',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: cadenceContext.blockedReason,
+        }
+      }
+
       const historyResponse = await readPreparedHistoryForLookup(
         input,
         cadenceContext,
@@ -2200,6 +2409,30 @@ export function createForecastLibraryService(
           targetSemantics: identity.targetSemantics,
           methodId: identity.methodId,
           reason: 'PREPARATION_REQUIRED: No exact-identity prepared Historical Verification is available.',
+        }
+      }
+
+      if (!isRenderableVerificationArtifact(prepared)) {
+        return {
+          status: 'NOT_AVAILABLE',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: 'PREPARATION_REQUIRED: Prepared Historical Verification artifact is present but not renderable.',
+        }
+      }
+
+      if (!satisfiesVerificationPreparedTrainingPolicy(prepared, identity.targetSemantics)) {
+        return {
+          status: 'NOT_AVAILABLE',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: 'PREPARATION_REQUIRED: Prepared Historical Verification training-policy identity is not compatible.',
         }
       }
 

@@ -790,6 +790,10 @@ function readSgRuntimeInternalForecastServiceToken() {
   return process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN?.trim() ?? ''
 }
 
+function isDeployedDashboardEnvironment() {
+  return Boolean(process.env.RENDER_EXTERNAL_URL?.trim() || process.env.VERCEL_URL?.trim())
+}
+
 async function fetchSgRuntimeJson<T extends object>(pathname: string, params: Record<string, string>) {
   const url = new URL(pathname, resolveSgRuntimeBaseUrl())
 
@@ -1010,6 +1014,10 @@ export async function getBenchmarkForecastCurrent(
     )
   }
 
+  if (targetBasis !== 'POINT_IN_TIME' && isDeployedDashboardEnvironment()) {
+    throw new Error('SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN is required in deployed dashboard-preview environments for non-POINT_IN_TIME prepared reads.')
+  }
+
   if (targetBasis === 'POINT_IN_TIME') {
     assertPointInTimeSnapshotDatastoreAvailable()
 
@@ -1098,6 +1106,10 @@ export async function getBenchmarkForecastVerification(
       params,
       correlationHeaders,
     )
+  }
+
+  if (targetBasis !== 'POINT_IN_TIME' && isDeployedDashboardEnvironment()) {
+    throw new Error('SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN is required in deployed dashboard-preview environments for non-POINT_IN_TIME prepared reads.')
   }
 
   if (targetBasis === 'POINT_IN_TIME') {
