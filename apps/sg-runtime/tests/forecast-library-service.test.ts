@@ -2306,6 +2306,47 @@ test('forecast library current path reuses prepared selected live history and ex
   assert.equal(verificationCalls, 0)
 })
 
+test('forecast library cold current miss succeeds without invoking verification inline', async () => {
+  let currentCalls = 0
+
+  const bridge: ForecastBridge = {
+    async exportHistory() {
+      return createHistoryResponse()
+    },
+    async exportCurrent() {
+      currentCalls += 1
+      return createCurrentResponse('ets')
+    },
+    async exportVerification() {
+      throw new Error('Current miss must not invoke verification inline.')
+    },
+  }
+
+  const repository: ForecastLibraryRepository = {
+    async readCurrentRun() {
+      return null
+    },
+    async writeCurrentRun() {},
+    async readVerificationRun() {
+      return null
+    },
+    async writeVerificationRun() {
+      throw new Error('unused')
+    },
+  }
+
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const result = await service.resolveCurrentForecastRequest({
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  assert.equal(result.cacheStatus, 'miss')
+  assert.equal(currentCalls, 1)
+})
+
 test('forecast library verification path reuses prepared selected live history and does not invoke unrelated current compute', async () => {
   let prepareCalls = 0
   let historyCalls = 0

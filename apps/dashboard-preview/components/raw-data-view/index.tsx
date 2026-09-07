@@ -716,6 +716,34 @@ export function resolveDisplayedRenderableCurrentResult(options: {
   return null
 }
 
+export function shouldApplyCurrentResultForActiveRequest(options: {
+  requestId: number
+  activeRequestId: number
+  cancelled: boolean
+  requestedIdentity: {
+    seriesId: string
+    modelId: ForecastPortfolioModelId
+    targetBasis: ForecastTargetBasis
+  }
+  payload: BenchmarkForecastCurrentResult
+}) {
+  const {
+    requestId,
+    activeRequestId,
+    cancelled,
+    requestedIdentity,
+    payload,
+  } = options
+
+  if (cancelled || requestId !== activeRequestId) {
+    return false
+  }
+
+  return payload.seriesId === requestedIdentity.seriesId
+    && payload.modelId === requestedIdentity.modelId
+    && payload.targetBasis === requestedIdentity.targetBasis
+}
+
 export function resolveForecastVerificationBannerState(options: {
   forecastVerificationState: LoadState
   forecastVerificationResult: BenchmarkForecastVerificationResult | null
@@ -3207,6 +3235,12 @@ export function RawDataView({
 
     const activeSeriesId = benchmarkSeriesId
     forecastPreparationRequestRef.current += 1
+    const requestId = forecastPreparationRequestRef.current
+    const requestIdentity = {
+      seriesId: activeSeriesId,
+      modelId: forecastModel,
+      targetBasis: selectedForecastTargetBasis,
+    } as const
 
     if (!shouldReadCurrentForecast({ showForecast, isForecastPortfolioVariant, seriesId: activeSeriesId })) {
       forecastCurrentAbortRef.current?.abort()
@@ -3239,18 +3273,18 @@ export function RawDataView({
 
       try {
         const payload = await readPreparedCurrentForecastThroughDashboard(fetch, {
-          seriesId: activeSeriesId,
-          modelId: forecastModel,
-          targetBasis: selectedForecastTargetBasis,
+          seriesId: requestIdentity.seriesId,
+          modelId: requestIdentity.modelId,
+          targetBasis: requestIdentity.targetBasis,
         }, controller.signal)
 
-        if (cancelled) {
-          return
-        }
-
-        if (payload.seriesId !== activeSeriesId
-          || payload.modelId !== forecastModel
-          || payload.targetBasis !== selectedForecastTargetBasis) {
+        if (!shouldApplyCurrentResultForActiveRequest({
+          requestId,
+          activeRequestId: forecastPreparationRequestRef.current,
+          cancelled,
+          requestedIdentity: requestIdentity,
+          payload,
+        })) {
           return
         }
 
@@ -3263,7 +3297,7 @@ export function RawDataView({
         setForecastCurrentState(nextState)
         setForecastErrorState(null)
       } catch (error) {
-        if (cancelled || (error as Error).name === 'AbortError') {
+        if (requestId !== forecastPreparationRequestRef.current || cancelled || (error as Error).name === 'AbortError') {
           return
         }
 

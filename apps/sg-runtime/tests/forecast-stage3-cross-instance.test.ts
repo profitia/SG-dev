@@ -178,6 +178,83 @@ function createCurrentResponse(seriesId: string, modelId: string) {
   }
 }
 
+function createVerificationResponse(seriesId: string, modelId: string) {
+  return {
+    status: 'AVAILABLE' as const,
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: {
+      kind: 'POSTGRES_RUNTIME_SNAPSHOT',
+      runId: 'cmrd3xvlu0000cedt8gczw378',
+    },
+    benchmark: {
+      seriesId,
+      component: 'FRACHT_DRY',
+      description: 'Baltic Exchange, Dry Index (BDI), USD',
+      frequency: 'MONTHLY',
+      expectedObservations: 64,
+    },
+    model: {
+      id: modelId,
+      userFacing: true,
+    },
+    result: {
+      benchmarkId: seriesId,
+      component: 'FRACHT_DRY',
+      description: 'Baltic Exchange, Dry Index (BDI), USD',
+      frequency: 'MONTHLY',
+      model: modelId,
+      history: createHistoryResponse(seriesId).history,
+      backtest: {
+        '1M': {
+          origins: 28,
+          expectedOrigins: 28,
+          successfulOrigins: 28,
+          failedOrigins: 0,
+          coverage: 1,
+          metrics: {
+            mae: 10.5,
+            rmse: 12.4,
+            mase: 0.81,
+            smape: 0.073,
+            directional_accuracy: 0.64,
+            bias: -1.2,
+          },
+          records: [
+            {
+              benchmarkId: seriesId,
+              modelId,
+              forecastOrigin: '2025-01-31T00:00:00',
+              horizon: '1M',
+              horizonSteps: 1,
+              forecastDate: '2025-02-28T00:00:00',
+              actualObservedAt: '2025-02-28T00:00:00',
+              originValue: 1000,
+              forecastValue: 1008,
+              actualValue: 1004,
+              error: 4,
+              absoluteError: 4,
+              delta: 12,
+              deltaPct: 0.012,
+              maseScale: 14.2,
+              metadata: {
+                modelFamily: 'ets',
+                selectedVariant: 'ETS(A,N,N)',
+                selectedParameters: {},
+                selectionScore: 0.12,
+                selectionMetric: 'rmse',
+                fitStatus: 'SUCCEEDED',
+                failureReason: null,
+              },
+            },
+          ],
+          failures: [],
+        },
+      },
+      runtimeSeconds: 2.48,
+    },
+  }
+}
+
 function createPeriodicHistoryResponse(
   seriesId: string,
   sourceFrequency: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY',
@@ -902,6 +979,61 @@ serialTest('db-backed verification requests use the production composition and c
   } finally {
     await rm(tempDir, { recursive: true, force: true })
   }
+})
+
+serialTest('db-backed current and verification execution identities stay separate for the same benchmark model and target', async () => {
+  let currentComputeCount = 0
+  let verificationComputeCount = 0
+  const seriesId = 'stage5-current-vs-verification-series'
+
+  const service = createDbBackedService({
+    async exportHistory(input) {
+      return createPeriodicHistoryResponse(input.seriesId, 'MONTHLY', 'MONTHLY', 'MONTHLY_AVERAGE', 48)
+    },
+    async exportCurrent(input) {
+      currentComputeCount += 1
+      return createCurrentResponse(input.seriesId, String(input.modelId))
+    },
+    async exportVerification(input) {
+      verificationComputeCount += 1
+      return createVerificationResponse(input.seriesId, String(input.modelId))
+    },
+  })
+
+  const current = await service.resolveCurrentForecastRequest({
+    seriesId,
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  })
+  const verification = await service.resolveVerificationRequest({
+    seriesId,
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  })
+
+  assert.equal(current.status, 'AVAILABLE')
+  assert.equal(verification.status, 'AVAILABLE')
+  assert.equal(currentComputeCount, 1)
+  assert.equal(verificationComputeCount, 1)
+
+  const executions = await requirePrisma().forecastPreparationExecutionLedger.findMany({
+    where: { seriesId },
+    select: {
+      logicalArtifactKey: true,
+      operationFamily: true,
+      executionStatus: true,
+    },
+    orderBy: [{ startedAt: 'asc' }, { updatedAt: 'asc' }],
+  })
+
+  assert.equal(executions.length, 2)
+  assert.deepEqual(executions.map((execution) => execution.operationFamily).sort(), ['CURRENT', 'VERIFICATION'])
+  assert.equal(executions.every((execution) => execution.executionStatus === 'COMPLETED'), true)
+  assert.notEqual(executions[0]?.logicalArtifactKey, executions[1]?.logicalArtifactKey)
 })
 
 serialTest('db-backed high concurrency produces one authoritative owner, one compute, and one artifact across twenty requests', async () => {

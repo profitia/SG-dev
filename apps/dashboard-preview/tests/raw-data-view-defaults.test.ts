@@ -15,6 +15,7 @@ import {
   resolveInitialForecastVerificationVisibility,
   resolveInitialForecastVisibility,
   resolveForecastVerificationUnavailableState,
+  shouldApplyCurrentResultForActiveRequest,
   shouldHideEmbeddedBenchmarkShell,
 } from '@/components/raw-data-view/index'
 import type { BenchmarkForecastCurrentAvailableResult } from '@/lib/benchmark-forecast/forecast-contract'
@@ -273,6 +274,161 @@ test('displayed current forecast stays on the chart until the requested identity
     requestedResult: requestedNotRenderable,
     displayedResult: displayed,
   }), null)
+})
+
+test('displayed current forecast stays visible when the requested replacement fails', () => {
+  const displayed: BenchmarkForecastCurrentAvailableResult = {
+    status: 'AVAILABLE',
+    seriesId: 'wocaes0074',
+    modelId: 'naive',
+    targetBasis: 'POINT_IN_TIME',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+    displayName: 'Brent',
+    description: null,
+    methodVersion: 'rolling-daily-point-in-time-v1',
+    lineage: {
+      inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+      inputRunId: null,
+      sourceSeriesId: 'wocaes0074',
+      sourceFrequency: 'DAILY',
+      historyFingerprint: 'history-1',
+      preparation: null,
+    },
+    history: {
+      frequency: 'DAILY',
+      start: '2026-01-01',
+      end: '2026-09-01',
+      observations: 200,
+    },
+    forecastOrigin: '2026-09-01',
+    currentForecast: {
+      '1M': {
+        horizon: '1M',
+        horizonSteps: 1,
+        forecastDate: '2026-10-01',
+        forecastValue: 72,
+      },
+    },
+    rollingDailySnapshot: {
+      productionMethod: 'ROLLING_DAILY_POINT_IN_TIME',
+      contractVersion: '1',
+      status: 'AVAILABLE',
+      benchmark: {
+        benchmarkId: 'wocaes0074',
+        unit: null,
+        currency: null,
+        provider: null,
+        providerSeriesId: 'wocaes0074',
+        displayName: 'Brent',
+        frequency: 'DAILY',
+      },
+      model: { id: 'naive', selectedCandidate: null },
+      origin: { date: '2026-09-01', value: 71 },
+      forecastMethod: { id: 'ROLLING_DAILY_POINT_IN_TIME', version: 'rolling-daily-point-in-time-v1' },
+      maxHorizonMonths: 12,
+      audit: {
+        generatedAt: '2026-09-01T00:00:00.000Z',
+        inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+        sourceHistoryFingerprint: 'history-1',
+        sourceLatestObservationDate: '2026-09-01',
+        calendarProjectionMode: 'OBSERVED_WEEKDAY_SET_V1',
+        projectionCalendarStrategy: 'OBSERVED_WEEKDAY_SET_V1',
+        technicalMinimumTrainingObservations: 60,
+        methodologicalTrainingEligibilityStatus: 'OPEN_REQUIRES_CROSS_BENCHMARK_VALIDATION',
+        calibrationUpdatedAt: null,
+        calibrationLastResidualAvailabilityDate: null,
+      },
+      anchors: [],
+      path: [
+        {
+          date: '2026-09-02',
+          pointForecast: 72,
+          band: { status: 'NOT_AVAILABLE', reasonCode: 'CALIBRATION_NOT_AVAILABLE', source: null, lower: null, upper: null },
+        },
+      ],
+      calibration: {
+        availabilityStatus: 'NOT_AVAILABLE',
+        freshnessStatus: null,
+        quantileConvention: 'HF7_LINEAR_INTERPOLATION',
+        coverageLabel: '80% empirical prediction band',
+        methodologicalMinimumStatus: 'OPEN_REQUIRES_CROSS_BENCHMARK_VALIDATION',
+        updatedAt: null,
+        processedThrough: null,
+        lastResidualAvailabilityDate: null,
+      },
+      warnings: [],
+    },
+  }
+
+  const requestedFailed = {
+    status: 'NOT_AVAILABLE' as const,
+    seriesId: 'wocaes0074',
+    modelId: 'arima' as const,
+    targetBasis: 'POINT_IN_TIME' as const,
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME' as const,
+    methodId: 'ROLLING_DAILY_POINT_IN_TIME' as const,
+    reason: 'PREPARATION_REQUIRED: Requested replacement is still preparing.',
+  }
+
+  assert.equal(resolveDisplayedRenderableCurrentResult({
+    showForecast: true,
+    requestedIdentity: {
+      seriesId: 'wocaes0074',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+    },
+    requestedResult: requestedFailed,
+    displayedResult: displayed,
+  }), displayed)
+})
+
+test('stale current response cannot replace a newer active request', () => {
+  assert.equal(shouldApplyCurrentResultForActiveRequest({
+    requestId: 2,
+    activeRequestId: 3,
+    cancelled: false,
+    requestedIdentity: {
+      seriesId: 'wocaes0074',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+    },
+    payload: {
+      status: 'AVAILABLE',
+      seriesId: 'wocaes0074',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      displayName: 'Brent',
+      description: null,
+      methodVersion: 'rolling-daily-point-in-time-v1',
+      lineage: {
+        inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+        inputRunId: null,
+        sourceSeriesId: 'wocaes0074',
+        sourceFrequency: 'DAILY',
+        historyFingerprint: 'history-b',
+        preparation: null,
+      },
+      history: {
+        frequency: 'DAILY',
+        start: '2026-01-01',
+        end: '2026-09-01',
+        observations: 200,
+      },
+      forecastOrigin: '2026-09-01',
+      currentForecast: {
+        '1M': {
+          horizon: '1M',
+          horizonSteps: 1,
+          forecastDate: '2026-10-01',
+          forecastValue: 75,
+        },
+      },
+      rollingDailySnapshot: null,
+    },
+  }), false)
 })
 
 test('displayed current forecast switches exactly Naive to ARIMA to Naive without blanking once both identities are renderable', () => {
