@@ -236,6 +236,115 @@ test('production operations forwards prepared history into naive snapshot refres
   assert.deepEqual(preparedFlags, [true])
 })
 
+test('current-only production refresh bypasses maintenance and still serves Current from prepared history', async () => {
+  let maintenanceCalls = 0
+  const preparedFlags: boolean[] = []
+
+  const service = createRollingDailyProductionOperationsService({
+    async runMaintenance() {
+      maintenanceCalls += 1
+      throw new Error('current-only refresh must not run maintenance')
+    },
+    async readSnapshot() {
+      return {
+        status: 'MISS',
+      }
+    },
+    async resolveCurrentForecast(request) {
+      preparedFlags.push(Boolean(request.preparedHistory))
+      return {
+        contractVersion: '1',
+        status: 'AVAILABLE',
+        benchmark: {
+          benchmarkId: request.seriesId,
+          displayName: 'Brent',
+          frequency: 'DAILY',
+          unit: 'USD/bbl',
+          currency: 'USD',
+          provider: 'macrobond',
+          providerSeriesId: request.seriesId,
+        },
+        forecastMethod: {
+          id: 'ROLLING_DAILY_POINT_IN_TIME',
+          version: 'rolling-daily-point-in-time-v1',
+        },
+        model: {
+          id: request.modelId,
+          selectedCandidate: 'stub',
+          selectionMetric: null,
+          selectionScore: null,
+          selectedParameters: {},
+        },
+        origin: {
+          date: '2026-08-18',
+          value: 89.9,
+        },
+        maxHorizonMonths: 12,
+        anchors: [],
+        path: [],
+        calibration: {
+          availabilityStatus: 'NOT_AVAILABLE',
+          freshnessStatus: null,
+          quantileConvention: 'HF7_LINEAR_INTERPOLATION',
+          coverageLabel: '80% empirical prediction band',
+          methodologicalMinimumStatus: 'OPEN_REQUIRES_MORE_BENCHMARK_VALIDATION',
+          updatedAt: null,
+          processedThrough: null,
+          lastResidualAvailabilityDate: null,
+        },
+        audit: {
+          sourceHistoryFingerprint: 'hist-1',
+          generatedAt: '2026-08-18T12:00:00.000Z',
+          sourceLatestObservationDate: '2026-08-18',
+          calendarProjectionMode: 'ROLLING_DAILY_BUSINESS_CALENDAR_V1',
+          projectionCalendarStrategy: 'ROLLING_DAILY_BUSINESS_CALENDAR_V1',
+          technicalMinimumTrainingObservations: 60,
+          methodologicalTrainingEligibilityStatus: 'OPEN_REQUIRES_CROSS_BENCHMARK_VALIDATION',
+          calibrationUpdatedAt: null,
+          calibrationLastResidualAvailabilityDate: null,
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+        },
+        warnings: [],
+      }
+    },
+    async persistSnapshot(request) {
+      return {
+        seriesId: request.seriesId,
+        modelId: request.modelId,
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodVersion: 'rolling-daily-point-in-time-v1',
+        contractVersion: '1',
+        status: 'AVAILABLE',
+        reasonCode: null,
+        parityStatus: 'MATCHED',
+      }
+    },
+    logEvent: () => {},
+  })
+
+  const result = await service.runCurrentOnly({
+    seriesId: 'wocaes0074',
+    modelIds: ['naive'],
+    preparedHistory: {
+      seriesId: 'wocaes0074',
+      displayName: 'Brent',
+      description: 'Brent',
+      frequency: 'DAILY',
+      source: 'DYNAMIC_MARKET_DATA_STORE',
+      points: [{ date: '2026-08-18', value: 89.9 }],
+    },
+  })
+
+  assert.equal(maintenanceCalls, 0)
+  assert.deepEqual(preparedFlags, [true])
+  assert.equal(result.status, 'SUCCEEDED')
+  assert.equal(result.recoveredSnapshotCount, 1)
+  assert.equal(result.results[0]?.status, 'RECOVERED')
+  assert.equal(result.results[0]?.snapshot.status, 'REFRESHED_AFTER_RECOVERY')
+})
+
 test('production operations returns NO_OP when maintenance is idle and snapshots are already fresh', async () => {
   let snapshotRefreshes = 0
 

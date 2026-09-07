@@ -65,7 +65,7 @@ export type InteractiveForecastPreparationResult = {
 type InteractiveForecastPreparationDependencies = {
   resolveExactCapability: typeof resolveExactForecastCapability
   prepareMonthlyCurrent: typeof resolveBenchmarkCurrentForecast
-  prepareRollingCurrent: ReturnType<typeof createRollingDailyProductionOperationsService>['run']
+  prepareRollingCurrent: ReturnType<typeof createRollingDailyProductionOperationsService>['runCurrentOnly']
   prepareRollingDailyOwnership: typeof prepareRollingDailyCurrentOwnership
   now: () => number
 }
@@ -118,7 +118,7 @@ export function createInteractiveForecastPreparationService(
   const resolvedDependencies: InteractiveForecastPreparationDependencies = {
     resolveExactCapability: dependencies.resolveExactCapability ?? resolveExactForecastCapability,
     prepareMonthlyCurrent: dependencies.prepareMonthlyCurrent ?? resolveBenchmarkCurrentForecast,
-    prepareRollingCurrent: dependencies.prepareRollingCurrent ?? ((request) => rollingDaily.run(request)),
+    prepareRollingCurrent: dependencies.prepareRollingCurrent ?? ((request) => rollingDaily.runCurrentOnly(request)),
     prepareRollingDailyOwnership: dependencies.prepareRollingDailyOwnership ?? prepareRollingDailyCurrentOwnership,
     now: dependencies.now ?? (() => performance.now()),
   }

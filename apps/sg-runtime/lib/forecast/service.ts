@@ -66,12 +66,14 @@ import { DEFAULT_FORECAST_TARGET_BASIS, USER_FACING_FORECAST_MODELS } from '@/li
 import {
   buildForecastArtifactCadenceIdentity,
   createLegacyVerificationStatisticalCompatibility,
+  createLegacyFrequencySpecificCurrentForecastStatisticalCompatibility,
   createLegacyUnresolvedForecastStatisticalCompatibility,
   createCurrentForecastStatisticalCompatibility,
   createFullVerificationStatisticalCompatibility,
   createRecentVerificationStatisticalCompatibility,
   doesForecastArtifactSatisfyRequest,
   CURRENT_FORECAST_TRAINING_WINDOW_POLICY_ID,
+  CURRENT_FAST_FORECAST_TRAINING_WINDOW_POLICY_ID,
   FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID,
   LEGACY_MONTHLY_ARTIFACT_FREQUENCY,
   parseForecastArtifactCadenceIdentity,
@@ -432,8 +434,11 @@ function resolvePersistedForecastStatisticalCompatibility(
   }
 
   const compatibility = (() => {
-    if (record.trainingWindowPolicyId === CURRENT_FORECAST_TRAINING_WINDOW_POLICY_ID) {
+    if (record.trainingWindowPolicyId === CURRENT_FAST_FORECAST_TRAINING_WINDOW_POLICY_ID) {
       return createCurrentForecastStatisticalCompatibility(context)
+    }
+    if (record.trainingWindowPolicyId === CURRENT_FORECAST_TRAINING_WINDOW_POLICY_ID) {
+      return createLegacyFrequencySpecificCurrentForecastStatisticalCompatibility(context)
     }
     if (record.trainingWindowPolicyId === RECENT_VERIFICATION_TRAINING_WINDOW_POLICY_ID) {
       return createRecentVerificationStatisticalCompatibility(context)

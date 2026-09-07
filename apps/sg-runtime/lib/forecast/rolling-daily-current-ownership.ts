@@ -46,6 +46,19 @@ function nextCalendarDay(value: string) {
   return date.toISOString().slice(0, 10)
 }
 
+export function selectTrailingRollingDailyCurrentHistory(history: RollingDailyHistoryPayload): RollingDailyHistoryPayload {
+  const forecastOrigin = latestLawfulObservationDate(history)
+  const windowStartExclusive = addCalendarMonthsClamped(forecastOrigin, -12)
+
+  return {
+    ...history,
+    points: history.points.filter((point) => {
+      const day = normalizeDailyObservationDay(point.date)
+      return day > windowStartExclusive && day <= forecastOrigin
+    }),
+  }
+}
+
 export function buildRollingDailyCurrentHorizonConfigurationId(forecastOrigin: string) {
   const anchorTargetDates = Object.fromEntries(
     Object.entries(ROLLING_DAILY_ANCHOR_HORIZONS).map(([label, months]) => [
@@ -89,10 +102,11 @@ export async function prepareRollingDailyCurrentOwnership(input: {
   modelId: string
   loadHistory?: (seriesId: string) => Promise<RollingDailyHistoryPayload>
 }) {
-  const history = await (input.loadHistory ?? loadRollingDailyHistory)(input.seriesId)
-  if (history.frequency.trim().toUpperCase() !== 'DAILY') {
+  const fullHistory = await (input.loadHistory ?? loadRollingDailyHistory)(input.seriesId)
+  if (fullHistory.frequency.trim().toUpperCase() !== 'DAILY') {
     throw new Error(`Rolling Daily Current ownership requires DAILY history for ${input.seriesId}.`)
   }
+  const history = selectTrailingRollingDailyCurrentHistory(fullHistory)
   const forecastOrigin = latestLawfulObservationDate(history)
   const statisticalCompatibility = createCurrentForecastStatisticalCompatibility({
     sourceFrequency: 'DAILY',

@@ -30,6 +30,8 @@ export const FORECAST_ARTIFACT_SCOPES = [
 ] as const
 export const CURRENT_FORECAST_TRAINING_WINDOW_POLICY_ID =
   'CURRENT_POLICY_FREQUENCY_SPECIFIC@current-policy-frequency-specific-v1'
+export const CURRENT_FAST_FORECAST_TRAINING_WINDOW_POLICY_ID =
+  'CURRENT_FAST_TRAILING_12M@current-fast-trailing-12m-v1'
 export const RECENT_VERIFICATION_TRAINING_WINDOW_POLICY_ID =
   'RECENT_SAME_POLICY_AS_CURRENT@recent-same-policy-as-current-v1'
 export const FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID =
@@ -46,6 +48,7 @@ export type ForecastMethodId = (typeof FORECAST_METHOD_IDS)[number]
 export type ForecastArtifactScope = (typeof FORECAST_ARTIFACT_SCOPES)[number]
 export type ForecastTrainingWindowPolicyId =
   | typeof CURRENT_FORECAST_TRAINING_WINDOW_POLICY_ID
+  | typeof CURRENT_FAST_FORECAST_TRAINING_WINDOW_POLICY_ID
   | typeof RECENT_VERIFICATION_TRAINING_WINDOW_POLICY_ID
   | typeof FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID
   | typeof LEGACY_UNRESOLVED_TRAINING_WINDOW_POLICY_ID
@@ -319,7 +322,7 @@ export function buildForecastArtifactIdentityKey(identity: ForecastArtifactIdent
 }
 
 function buildEffectiveTrainingPolicyId(
-  policyFamily: 'CURRENT_FREQUENCY_SPECIFIC' | 'FULL_EXPANDING_HISTORY_PER_ORIGIN',
+  policyFamily: 'CURRENT_FREQUENCY_SPECIFIC' | 'CURRENT_FAST_TRAILING_12M' | 'FULL_EXPANDING_HISTORY_PER_ORIGIN',
   context: ForecastTrainingPolicyResolutionContext,
 ): ForecastEffectiveTrainingPolicyId {
   return [
@@ -335,8 +338,14 @@ export function resolveEffectiveTrainingPolicyId(
   context: ForecastTrainingPolicyResolutionContext,
 ): ForecastEffectiveTrainingPolicyId {
   if (
-    trainingWindowPolicyId === CURRENT_FORECAST_TRAINING_WINDOW_POLICY_ID
+    trainingWindowPolicyId === CURRENT_FAST_FORECAST_TRAINING_WINDOW_POLICY_ID
     || trainingWindowPolicyId === RECENT_VERIFICATION_TRAINING_WINDOW_POLICY_ID
+  ) {
+    return buildEffectiveTrainingPolicyId('CURRENT_FAST_TRAILING_12M', context)
+  }
+
+  if (
+    trainingWindowPolicyId === CURRENT_FORECAST_TRAINING_WINDOW_POLICY_ID
   ) {
     return buildEffectiveTrainingPolicyId('CURRENT_FREQUENCY_SPECIFIC', context)
   }
@@ -354,6 +363,20 @@ export function resolveEffectiveTrainingPolicyId(
 }
 
 export function createCurrentForecastStatisticalCompatibility(
+  context: ForecastTrainingPolicyResolutionContext,
+): ForecastStatisticalCompatibility {
+  return {
+    artifactScope: 'CURRENT_FORECAST',
+    trainingWindowPolicyId: CURRENT_FAST_FORECAST_TRAINING_WINDOW_POLICY_ID,
+    effectiveTrainingPolicyId: resolveEffectiveTrainingPolicyId(
+      CURRENT_FAST_FORECAST_TRAINING_WINDOW_POLICY_ID,
+      context,
+    ),
+    calibrationPolicy: 'EXACT_STATISTICAL_MATCH_ONLY',
+  }
+}
+
+export function createLegacyFrequencySpecificCurrentForecastStatisticalCompatibility(
   context: ForecastTrainingPolicyResolutionContext,
 ): ForecastStatisticalCompatibility {
   return {

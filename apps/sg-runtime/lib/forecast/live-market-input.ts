@@ -8,7 +8,6 @@ import {
   canonicalizeDailyMarketPriceHistory,
   canonicalizeProvenanceQualifiedWeeklyEndOfPeriod,
   canonicalizeProvenanceQualifiedNativePeriod,
-  selectLatestContiguousMonthlySuffix,
 } from '@/lib/forecast/canonical-history'
 import { DEFAULT_FORECAST_TARGET_BASIS, type ForecastTargetBasis } from '@/lib/forecast/contracts'
 import {
@@ -69,17 +68,44 @@ export type LiveForecastBridgePayload = {
   history: LiveForecastBridgeHistory
 }
 
+function addCalendarMonthsClamped(value: string, months: number) {
+  const source = new Date(value)
+  const targetMonthIndex = source.getUTCMonth() + months
+  const targetYear = source.getUTCFullYear() + Math.floor(targetMonthIndex / 12)
+  const targetMonth = ((targetMonthIndex % 12) + 12) % 12
+  const lastTargetDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate()
+
+  return new Date(Date.UTC(
+    targetYear,
+    targetMonth,
+    Math.min(source.getUTCDate(), lastTargetDay),
+    source.getUTCHours(),
+    source.getUTCMinutes(),
+    source.getUTCSeconds(),
+    source.getUTCMilliseconds(),
+  )).toISOString()
+}
+
+function selectTrailingCurrentForecastTrainingPoints(
+  points: LiveForecastBridgeHistory['points'],
+) {
+  const lastPoint = points[points.length - 1]
+  if (!lastPoint) {
+    return points
+  }
+
+  const windowStartExclusive = addCalendarMonthsClamped(lastPoint.date, -12)
+  return points.filter((point) => point.date > windowStartExclusive && point.date <= lastPoint.date)
+}
+
 export function selectLatestCurrentForecastMonthlyTrainingPayload(
   payload: LiveForecastBridgePayload,
 ): LiveForecastBridgePayload {
-  if (payload.history.frequency !== 'MONTHLY') {
+  if (payload.history.frequency !== 'MONTHLY' && payload.history.frequency !== 'QUARTERLY') {
     return payload
   }
 
-  const points = selectLatestContiguousMonthlySuffix(payload.history.points.map((point) => ({
-    ...point,
-    sourceObservedAt: point.sourceObservedAt ?? null,
-  })))
+  const points = selectTrailingCurrentForecastTrainingPoints(payload.history.points)
   if (points.length === payload.history.points.length) {
     return payload
   }

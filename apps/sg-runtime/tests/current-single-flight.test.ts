@@ -15,7 +15,7 @@ const identity: CurrentLogicalArtifactIdentity = {
   targetSemantics: 'MONTHLY_AVERAGE',
   methodId: 'MONTHLY_AVERAGE',
   methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
-  trainingWindowPolicyId: 'CURRENT_POLICY_FREQUENCY_SPECIFIC@current-policy-frequency-specific-v1',
+  trainingWindowPolicyId: 'CURRENT_FAST_TRAILING_12M@current-fast-trailing-12m-v1',
   modelId: 'naive',
   inputSource: 'DYNAMIC_MARKET_DATA_STORE',
   historyFingerprint: 'history-a',
