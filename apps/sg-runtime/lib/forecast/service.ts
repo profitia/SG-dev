@@ -68,14 +68,20 @@ import {
   createLegacyVerificationStatisticalCompatibility,
   createCurrentForecastStatisticalCompatibility,
   createFullVerificationStatisticalCompatibility,
+  createRecentVerificationStatisticalCompatibility,
   doesForecastArtifactSatisfyRequest,
+  CURRENT_FORECAST_TRAINING_WINDOW_POLICY_ID,
+  FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID,
   LEGACY_MONTHLY_ARTIFACT_FREQUENCY,
   parseForecastArtifactCadenceIdentity,
+  RECENT_VERIFICATION_TRAINING_WINDOW_POLICY_ID,
   resolveForecastMethodContract,
   resolveLegacyForecastStatisticalCompatibility,
+  type ForecastEffectiveTrainingPolicyId,
   type ForecastMethodId,
   type ForecastPreparationIdentity,
   type ForecastStatisticalCompatibility,
+  type ForecastTrainingWindowPolicyId,
   type ForecastTargetSemantics,
 } from '@/lib/forecast/identity'
 import {
@@ -389,6 +395,8 @@ export type ForecastCacheLookupKey = {
   historyFingerprint: string
   targetBasis: ForecastTargetBasis
   frequencyIdentity: string
+  trainingWindowPolicyId: ForecastTrainingWindowPolicyId
+  effectiveTrainingPolicyId: ForecastEffectiveTrainingPolicyId
 }
 
 type ForecastPreparedLookupKey = Pick<
@@ -398,6 +406,48 @@ type ForecastPreparedLookupKey = Pick<
 
 type PreparedReadCadenceContext = ReturnType<typeof resolveArtifactCadenceContext> & {
   blockedReason: string | null
+}
+
+type PersistedTrainingPolicyIdentityRecord = {
+  trainingWindowPolicyId: string | null
+  effectiveTrainingPolicyId: string | null
+}
+
+function resolvePersistedForecastStatisticalCompatibility(
+  artifactFamily: 'CURRENT' | 'VERIFICATION',
+  record: PersistedTrainingPolicyIdentityRecord,
+  context: {
+    sourceFrequency: ForecastSourceFrequency
+    targetCadence: ForecastTargetCadence
+    targetSemantics: ForecastTargetSemantics
+  },
+): ForecastStatisticalCompatibility | null {
+  if (!record.trainingWindowPolicyId && !record.effectiveTrainingPolicyId) {
+    return resolveLegacyForecastStatisticalCompatibility(artifactFamily, context)
+  }
+
+  if (!record.trainingWindowPolicyId || !record.effectiveTrainingPolicyId) {
+    return null
+  }
+
+  const compatibility = (() => {
+    if (record.trainingWindowPolicyId === CURRENT_FORECAST_TRAINING_WINDOW_POLICY_ID) {
+      return createCurrentForecastStatisticalCompatibility(context)
+    }
+    if (record.trainingWindowPolicyId === RECENT_VERIFICATION_TRAINING_WINDOW_POLICY_ID) {
+      return createRecentVerificationStatisticalCompatibility(context)
+    }
+    if (record.trainingWindowPolicyId === FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID) {
+      return createFullVerificationStatisticalCompatibility(context)
+    }
+    return null
+  })()
+
+  if (!compatibility || compatibility.effectiveTrainingPolicyId !== record.effectiveTrainingPolicyId) {
+    return null
+  }
+
+  return compatibility
 }
 
 type ForecastBridgeReadyConfiguration = {
@@ -1442,25 +1492,39 @@ export async function readCurrentRunFromPrisma(key: ForecastCacheLookupKey): Pro
     throw new Error('Forecast library datastore is unavailable.')
   }
 
+  const where = {
+    seriesId: key.seriesId,
+    inputSource: key.inputSource,
+    historyFingerprint: key.historyFingerprint,
+    targetBasis: key.targetBasis,
+    methodId: key.methodId,
+    modelId: key.modelId,
+    methodVersion: key.methodVersion,
+    frequency: key.frequencyIdentity,
+  } as const
+  const include = {
+    points: {
+      orderBy: [
+        { horizonSteps: 'asc' as const },
+        { forecastDate: 'asc' as const },
+      ],
+    },
+  }
+
   const run = await prisma.forecastCurrentRun.findFirst({
     where: {
-      seriesId: key.seriesId,
-      inputSource: key.inputSource,
-      historyFingerprint: key.historyFingerprint,
-      targetBasis: key.targetBasis,
-      methodId: key.methodId,
-      modelId: key.modelId,
-      methodVersion: key.methodVersion,
-      frequency: key.frequencyIdentity,
+      ...where,
+      trainingWindowPolicyId: key.trainingWindowPolicyId,
+      effectiveTrainingPolicyId: key.effectiveTrainingPolicyId,
     },
-    include: {
-      points: {
-        orderBy: [
-          { horizonSteps: 'asc' },
-          { forecastDate: 'asc' },
-        ],
-      },
+    include,
+  }) ?? await prisma.forecastCurrentRun.findFirst({
+    where: {
+      ...where,
+      trainingWindowPolicyId: null,
+      effectiveTrainingPolicyId: null,
     },
+    include,
   })
 
   if (!run) {
@@ -1492,6 +1556,15 @@ export async function readCurrentRunFromPrisma(key: ForecastCacheLookupKey): Pro
     throw new Error('Stored Current artifact requires lawful source and target cadence.')
   }
 
+  const resolvedCompatibility = resolvePersistedForecastStatisticalCompatibility('CURRENT', run, {
+    sourceFrequency,
+    targetCadence,
+    targetSemantics: key.targetSemantics,
+  })
+  if (!resolvedCompatibility) {
+    return null
+  }
+
   return {
     seriesId: run.seriesId,
     modelId: run.modelId,
@@ -1510,11 +1583,7 @@ export async function readCurrentRunFromPrisma(key: ForecastCacheLookupKey): Pro
       ? createForecastCadence(storedCadence.sourceFrequency, storedCadence.targetCadence)
       : null,
     frequencyIdentity: run.frequency ?? key.frequencyIdentity,
-    statisticalCompatibility: resolveLegacyForecastStatisticalCompatibility('CURRENT', {
-      sourceFrequency,
-      targetCadence,
-      targetSemantics: key.targetSemantics,
-    }),
+    statisticalCompatibility: resolvedCompatibility,
     preparation: null,
     history: {
       frequency: storedCadence?.targetCadence ?? run.frequency,
@@ -1566,7 +1635,7 @@ export async function writeCurrentRunWithPrisma(
 
     const run = await tx.forecastCurrentRun.upsert({
       where: {
-        seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion: {
+        seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId: {
           seriesId: artifact.seriesId,
           inputSource: artifact.source.kind,
           historyFingerprint: artifact.historyFingerprint,
@@ -1574,6 +1643,8 @@ export async function writeCurrentRunWithPrisma(
           methodId: artifact.methodId,
           modelId: artifact.modelId,
           methodVersion: artifact.methodVersion,
+          trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
+          effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
         },
       },
       create: {
@@ -1595,6 +1666,8 @@ export async function writeCurrentRunWithPrisma(
         forecastOriginAt: artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null,
         modelId: artifact.modelId,
         methodVersion: artifact.methodVersion,
+        trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
+        effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
         status: 'AVAILABLE',
         failureReason: null,
         runtimeSeconds: artifact.runtimeSeconds,
@@ -1610,6 +1683,8 @@ export async function writeCurrentRunWithPrisma(
         targetBasis: artifact.targetBasis,
         methodId: artifact.methodId,
         forecastOriginAt: artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null,
+        trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
+        effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
         status: 'AVAILABLE',
         failureReason: null,
         runtimeSeconds: artifact.runtimeSeconds,
@@ -1649,31 +1724,45 @@ export async function readVerificationRunFromPrisma(key: ForecastCacheLookupKey)
     throw new Error('Forecast library datastore is unavailable.')
   }
 
+  const where = {
+    seriesId: key.seriesId,
+    inputSource: key.inputSource,
+    historyFingerprint: key.historyFingerprint,
+    targetBasis: key.targetBasis,
+    methodId: key.methodId,
+    modelId: key.modelId,
+    methodVersion: key.methodVersion,
+    frequency: key.frequencyIdentity,
+  } as const
+  const include = {
+    metrics: {
+      orderBy: {
+        horizonSteps: 'asc' as const,
+      },
+    },
+    points: {
+      orderBy: [
+        { horizonSteps: 'asc' as const },
+        { forecastOriginAt: 'asc' as const },
+        { targetDate: 'asc' as const },
+      ],
+    },
+  }
+
   const run = await prisma.forecastVerificationRun.findFirst({
     where: {
-      seriesId: key.seriesId,
-      inputSource: key.inputSource,
-      historyFingerprint: key.historyFingerprint,
-      targetBasis: key.targetBasis,
-      methodId: key.methodId,
-      modelId: key.modelId,
-      methodVersion: key.methodVersion,
-      frequency: key.frequencyIdentity,
+      ...where,
+      trainingWindowPolicyId: key.trainingWindowPolicyId,
+      effectiveTrainingPolicyId: key.effectiveTrainingPolicyId,
     },
-    include: {
-      metrics: {
-        orderBy: {
-          horizonSteps: 'asc',
-        },
-      },
-      points: {
-        orderBy: [
-          { horizonSteps: 'asc' },
-          { forecastOriginAt: 'asc' },
-          { targetDate: 'asc' },
-        ],
-      },
+    include,
+  }) ?? await prisma.forecastVerificationRun.findFirst({
+    where: {
+      ...where,
+      trainingWindowPolicyId: null,
+      effectiveTrainingPolicyId: null,
     },
+    include,
   })
 
   if (!run) {
@@ -1747,6 +1836,15 @@ export async function readVerificationRunFromPrisma(key: ForecastCacheLookupKey)
     throw new Error('Stored Verification artifact requires lawful source and target cadence.')
   }
 
+  const resolvedCompatibility = resolvePersistedForecastStatisticalCompatibility('VERIFICATION', run, {
+    sourceFrequency,
+    targetCadence,
+    targetSemantics: key.targetSemantics,
+  })
+  if (!resolvedCompatibility) {
+    return null
+  }
+
   return {
     seriesId: run.seriesId,
     modelId: run.modelId,
@@ -1765,11 +1863,7 @@ export async function readVerificationRunFromPrisma(key: ForecastCacheLookupKey)
       ? createForecastCadence(storedCadence.sourceFrequency, storedCadence.targetCadence)
       : null,
     frequencyIdentity: run.frequency ?? key.frequencyIdentity,
-    statisticalCompatibility: resolveLegacyForecastStatisticalCompatibility('VERIFICATION', {
-      sourceFrequency,
-      targetCadence,
-      targetSemantics: key.targetSemantics,
-    }),
+    statisticalCompatibility: resolvedCompatibility,
     preparation: null,
     history: {
       frequency: storedCadence?.targetCadence ?? run.frequency,
@@ -1821,7 +1915,7 @@ export async function writeVerificationRunWithPrisma(
 
     const run = await tx.forecastVerificationRun.upsert({
       where: {
-        seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion: {
+        seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId: {
           seriesId: artifact.seriesId,
           inputSource: artifact.source.kind,
           historyFingerprint: artifact.historyFingerprint,
@@ -1829,6 +1923,8 @@ export async function writeVerificationRunWithPrisma(
           methodId: artifact.methodId,
           modelId: artifact.modelId,
           methodVersion: artifact.methodVersion,
+          trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
+          effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
         },
       },
       create: {
@@ -1850,6 +1946,8 @@ export async function writeVerificationRunWithPrisma(
         forecastOriginAt: artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null,
         modelId: artifact.modelId,
         methodVersion: artifact.methodVersion,
+        trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
+        effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
         status: 'AVAILABLE',
         failureReason: null,
         runtimeSeconds: artifact.runtimeSeconds,
@@ -1865,6 +1963,8 @@ export async function writeVerificationRunWithPrisma(
         targetBasis: artifact.targetBasis,
         methodId: artifact.methodId,
         forecastOriginAt: artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null,
+        trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
+        effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
         status: 'AVAILABLE',
         failureReason: null,
         runtimeSeconds: artifact.runtimeSeconds,
@@ -2501,6 +2601,15 @@ export function createForecastLibraryService(
 
       const historyFingerprint = buildForecastHistoryFingerprint(historyResponse.history, cadenceContext.cadence ?? undefined)
       const methodIdentity = resolveCapabilityIdentity(input.targetBasis, historyResponse.methodVersion)
+      const cacheStatisticalCompatibility = createCurrentForecastStatisticalCompatibility({
+        sourceFrequency: cadenceContext.cadence?.sourceFrequency
+          ?? normalizeForecastSourceFrequency(historyResponse.history.frequency)
+          ?? 'MONTHLY',
+        targetCadence: cadenceContext.cadence?.targetCadence
+          ?? normalizeForecastSourceFrequency(historyResponse.history.frequency)
+          ?? 'MONTHLY',
+        targetSemantics: methodIdentity.targetSemantics,
+      })
       const cacheKey: ForecastCacheLookupKey = {
         seriesId: input.seriesId,
         modelId: input.modelId,
@@ -2511,6 +2620,8 @@ export function createForecastLibraryService(
         historyFingerprint,
         targetBasis: input.targetBasis,
         frequencyIdentity: cadenceContext.frequencyIdentity,
+        trainingWindowPolicyId: cacheStatisticalCompatibility.trainingWindowPolicyId,
+        effectiveTrainingPolicyId: cacheStatisticalCompatibility.effectiveTrainingPolicyId,
       }
 
       let dbReadFailed = false
@@ -2687,6 +2798,17 @@ export function createForecastLibraryService(
                   }
                 }
                 if (latestExecution.executionStatus === 'COMPLETED') {
+                  const persistedAfterCompletion = await resolvedDependencies.repository.readCurrentRun(cacheKey)
+                  if (persistedAfterCompletion) {
+                    resolvedDependencies.logEvent('FORECAST_LIBRARY_CURRENT', {
+                      seriesId: input.seriesId,
+                      modelId: input.modelId,
+                      cacheStatus: 'hit',
+                      totalMs: Math.round(performance.now() - startedAt),
+                      dbFailure: false,
+                    })
+                    return toCurrentAvailable(persistedAfterCompletion, 'hit')
+                  }
                   throw new Error(`Current execution completed without a canonical artifact for ${logicalArtifactKey}.`)
                 }
                 if (new Date(latestExecution.leaseExpiresAt).getTime() <= Date.now()) {
@@ -3093,6 +3215,15 @@ export function createForecastLibraryService(
 
       const historyFingerprint = buildForecastHistoryFingerprint(historyResponse.history, cadenceContext.cadence ?? undefined)
       const methodIdentity = resolveCapabilityIdentity(input.targetBasis, historyResponse.methodVersion)
+      const cacheStatisticalCompatibility = createFullVerificationStatisticalCompatibility({
+        sourceFrequency: cadenceContext.cadence?.sourceFrequency
+          ?? normalizeForecastSourceFrequency(historyResponse.history.frequency)
+          ?? 'MONTHLY',
+        targetCadence: cadenceContext.cadence?.targetCadence
+          ?? normalizeForecastSourceFrequency(historyResponse.history.frequency)
+          ?? 'MONTHLY',
+        targetSemantics: methodIdentity.targetSemantics,
+      })
       const cacheKey: ForecastCacheLookupKey = {
         seriesId: input.seriesId,
         modelId: input.modelId,
@@ -3103,6 +3234,8 @@ export function createForecastLibraryService(
         historyFingerprint,
         targetBasis: input.targetBasis,
         frequencyIdentity: cadenceContext.frequencyIdentity,
+        trainingWindowPolicyId: cacheStatisticalCompatibility.trainingWindowPolicyId,
+        effectiveTrainingPolicyId: cacheStatisticalCompatibility.effectiveTrainingPolicyId,
       }
 
       let dbReadFailed = false
@@ -3290,6 +3423,17 @@ export function createForecastLibraryService(
                   }
                 }
                 if (latestExecution.executionStatus === 'COMPLETED') {
+                  const persistedAfterCompletion = await resolvedDependencies.repository.readVerificationRun(cacheKey)
+                  if (persistedAfterCompletion) {
+                    resolvedDependencies.logEvent('FORECAST_LIBRARY_VERIFICATION', {
+                      seriesId: input.seriesId,
+                      modelId: input.modelId,
+                      cacheStatus: 'hit',
+                      totalMs: Math.round(performance.now() - startedAt),
+                      dbFailure: false,
+                    })
+                    return toVerificationAvailable(persistedAfterCompletion, 'hit')
+                  }
                   throw new Error(`Verification execution completed without a canonical artifact for ${logicalArtifactKey}.`)
                 }
                 if (new Date(latestExecution.leaseExpiresAt).getTime() <= Date.now()) {

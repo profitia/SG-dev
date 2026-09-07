@@ -5277,6 +5277,8 @@ export namespace Prisma {
     forecastOriginAt: Date | null
     modelId: string | null
     methodVersion: string | null
+    trainingWindowPolicyId: string | null
+    effectiveTrainingPolicyId: string | null
     status: string | null
     failureReason: string | null
     runtimeSeconds: number | null
@@ -5304,6 +5306,8 @@ export namespace Prisma {
     forecastOriginAt: Date | null
     modelId: string | null
     methodVersion: string | null
+    trainingWindowPolicyId: string | null
+    effectiveTrainingPolicyId: string | null
     status: string | null
     failureReason: string | null
     runtimeSeconds: number | null
@@ -5331,6 +5335,8 @@ export namespace Prisma {
     forecastOriginAt: number
     modelId: number
     methodVersion: number
+    trainingWindowPolicyId: number
+    effectiveTrainingPolicyId: number
     status: number
     failureReason: number
     runtimeSeconds: number
@@ -5370,6 +5376,8 @@ export namespace Prisma {
     forecastOriginAt?: true
     modelId?: true
     methodVersion?: true
+    trainingWindowPolicyId?: true
+    effectiveTrainingPolicyId?: true
     status?: true
     failureReason?: true
     runtimeSeconds?: true
@@ -5397,6 +5405,8 @@ export namespace Prisma {
     forecastOriginAt?: true
     modelId?: true
     methodVersion?: true
+    trainingWindowPolicyId?: true
+    effectiveTrainingPolicyId?: true
     status?: true
     failureReason?: true
     runtimeSeconds?: true
@@ -5424,6 +5434,8 @@ export namespace Prisma {
     forecastOriginAt?: true
     modelId?: true
     methodVersion?: true
+    trainingWindowPolicyId?: true
+    effectiveTrainingPolicyId?: true
     status?: true
     failureReason?: true
     runtimeSeconds?: true
@@ -5538,6 +5550,8 @@ export namespace Prisma {
     forecastOriginAt: Date | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId: string | null
+    effectiveTrainingPolicyId: string | null
     status: string
     failureReason: string | null
     runtimeSeconds: number | null
@@ -5584,6 +5598,8 @@ export namespace Prisma {
     forecastOriginAt?: boolean
     modelId?: boolean
     methodVersion?: boolean
+    trainingWindowPolicyId?: boolean
+    effectiveTrainingPolicyId?: boolean
     status?: boolean
     failureReason?: boolean
     runtimeSeconds?: boolean
@@ -5613,6 +5629,8 @@ export namespace Prisma {
     forecastOriginAt?: boolean
     modelId?: boolean
     methodVersion?: boolean
+    trainingWindowPolicyId?: boolean
+    effectiveTrainingPolicyId?: boolean
     status?: boolean
     failureReason?: boolean
     runtimeSeconds?: boolean
@@ -5640,6 +5658,8 @@ export namespace Prisma {
     forecastOriginAt?: boolean
     modelId?: boolean
     methodVersion?: boolean
+    trainingWindowPolicyId?: boolean
+    effectiveTrainingPolicyId?: boolean
     status?: boolean
     failureReason?: boolean
     runtimeSeconds?: boolean
@@ -5678,6 +5698,8 @@ export namespace Prisma {
       forecastOriginAt: Date | null
       modelId: string
       methodVersion: string
+      trainingWindowPolicyId: string | null
+      effectiveTrainingPolicyId: string | null
       status: string
       failureReason: string | null
       runtimeSeconds: number | null
@@ -6096,6 +6118,8 @@ export namespace Prisma {
     readonly forecastOriginAt: FieldRef<"ForecastCurrentRun", 'DateTime'>
     readonly modelId: FieldRef<"ForecastCurrentRun", 'String'>
     readonly methodVersion: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly trainingWindowPolicyId: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly effectiveTrainingPolicyId: FieldRef<"ForecastCurrentRun", 'String'>
     readonly status: FieldRef<"ForecastCurrentRun", 'String'>
     readonly failureReason: FieldRef<"ForecastCurrentRun", 'String'>
     readonly runtimeSeconds: FieldRef<"ForecastCurrentRun", 'Float'>
@@ -7570,6 +7594,8 @@ export namespace Prisma {
     forecastOriginAt: Date | null
     modelId: string | null
     methodVersion: string | null
+    trainingWindowPolicyId: string | null
+    effectiveTrainingPolicyId: string | null
     status: string | null
     failureReason: string | null
     runtimeSeconds: number | null
@@ -7597,6 +7623,8 @@ export namespace Prisma {
     forecastOriginAt: Date | null
     modelId: string | null
     methodVersion: string | null
+    trainingWindowPolicyId: string | null
+    effectiveTrainingPolicyId: string | null
     status: string | null
     failureReason: string | null
     runtimeSeconds: number | null
@@ -7624,6 +7652,8 @@ export namespace Prisma {
     forecastOriginAt: number
     modelId: number
     methodVersion: number
+    trainingWindowPolicyId: number
+    effectiveTrainingPolicyId: number
     status: number
     failureReason: number
     runtimeSeconds: number
@@ -7663,6 +7693,8 @@ export namespace Prisma {
     forecastOriginAt?: true
     modelId?: true
     methodVersion?: true
+    trainingWindowPolicyId?: true
+    effectiveTrainingPolicyId?: true
     status?: true
     failureReason?: true
     runtimeSeconds?: true
@@ -7690,6 +7722,8 @@ export namespace Prisma {
     forecastOriginAt?: true
     modelId?: true
     methodVersion?: true
+    trainingWindowPolicyId?: true
+    effectiveTrainingPolicyId?: true
     status?: true
     failureReason?: true
     runtimeSeconds?: true
@@ -7717,6 +7751,8 @@ export namespace Prisma {
     forecastOriginAt?: true
     modelId?: true
     methodVersion?: true
+    trainingWindowPolicyId?: true
+    effectiveTrainingPolicyId?: true
     status?: true
     failureReason?: true
     runtimeSeconds?: true
@@ -7831,6 +7867,8 @@ export namespace Prisma {
     forecastOriginAt: Date | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId: string | null
+    effectiveTrainingPolicyId: string | null
     status: string
     failureReason: string | null
     runtimeSeconds: number | null
@@ -7877,6 +7915,8 @@ export namespace Prisma {
     forecastOriginAt?: boolean
     modelId?: boolean
     methodVersion?: boolean
+    trainingWindowPolicyId?: boolean
+    effectiveTrainingPolicyId?: boolean
     status?: boolean
     failureReason?: boolean
     runtimeSeconds?: boolean
@@ -7907,6 +7947,8 @@ export namespace Prisma {
     forecastOriginAt?: boolean
     modelId?: boolean
     methodVersion?: boolean
+    trainingWindowPolicyId?: boolean
+    effectiveTrainingPolicyId?: boolean
     status?: boolean
     failureReason?: boolean
     runtimeSeconds?: boolean
@@ -7934,6 +7976,8 @@ export namespace Prisma {
     forecastOriginAt?: boolean
     modelId?: boolean
     methodVersion?: boolean
+    trainingWindowPolicyId?: boolean
+    effectiveTrainingPolicyId?: boolean
     status?: boolean
     failureReason?: boolean
     runtimeSeconds?: boolean
@@ -7974,6 +8018,8 @@ export namespace Prisma {
       forecastOriginAt: Date | null
       modelId: string
       methodVersion: string
+      trainingWindowPolicyId: string | null
+      effectiveTrainingPolicyId: string | null
       status: string
       failureReason: string | null
       runtimeSeconds: number | null
@@ -8393,6 +8439,8 @@ export namespace Prisma {
     readonly forecastOriginAt: FieldRef<"ForecastVerificationRun", 'DateTime'>
     readonly modelId: FieldRef<"ForecastVerificationRun", 'String'>
     readonly methodVersion: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly trainingWindowPolicyId: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly effectiveTrainingPolicyId: FieldRef<"ForecastVerificationRun", 'String'>
     readonly status: FieldRef<"ForecastVerificationRun", 'String'>
     readonly failureReason: FieldRef<"ForecastVerificationRun", 'String'>
     readonly runtimeSeconds: FieldRef<"ForecastVerificationRun", 'Float'>
@@ -19179,6 +19227,8 @@ export namespace Prisma {
     forecastOriginAt: 'forecastOriginAt',
     modelId: 'modelId',
     methodVersion: 'methodVersion',
+    trainingWindowPolicyId: 'trainingWindowPolicyId',
+    effectiveTrainingPolicyId: 'effectiveTrainingPolicyId',
     status: 'status',
     failureReason: 'failureReason',
     runtimeSeconds: 'runtimeSeconds',
@@ -19229,6 +19279,8 @@ export namespace Prisma {
     forecastOriginAt: 'forecastOriginAt',
     modelId: 'modelId',
     methodVersion: 'methodVersion',
+    trainingWindowPolicyId: 'trainingWindowPolicyId',
+    effectiveTrainingPolicyId: 'effectiveTrainingPolicyId',
     status: 'status',
     failureReason: 'failureReason',
     runtimeSeconds: 'runtimeSeconds',
@@ -19939,6 +19991,8 @@ export namespace Prisma {
     forecastOriginAt?: DateTimeNullableFilter<"ForecastCurrentRun"> | Date | string | null
     modelId?: StringFilter<"ForecastCurrentRun"> | string
     methodVersion?: StringFilter<"ForecastCurrentRun"> | string
+    trainingWindowPolicyId?: StringNullableFilter<"ForecastCurrentRun"> | string | null
+    effectiveTrainingPolicyId?: StringNullableFilter<"ForecastCurrentRun"> | string | null
     status?: StringFilter<"ForecastCurrentRun"> | string
     failureReason?: StringNullableFilter<"ForecastCurrentRun"> | string | null
     runtimeSeconds?: FloatNullableFilter<"ForecastCurrentRun"> | number | null
@@ -19967,6 +20021,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrderInput | SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrderInput | SortOrder
+    effectiveTrainingPolicyId?: SortOrderInput | SortOrder
     status?: SortOrder
     failureReason?: SortOrderInput | SortOrder
     runtimeSeconds?: SortOrderInput | SortOrder
@@ -19977,7 +20033,7 @@ export namespace Prisma {
 
   export type ForecastCurrentRunWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion?: ForecastCurrentRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionCompoundUniqueInput
+    seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId?: ForecastCurrentRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionTrainingWindowPolicyIdEffectiveTrainingPolicyIdCompoundUniqueInput
     AND?: ForecastCurrentRunWhereInput | ForecastCurrentRunWhereInput[]
     OR?: ForecastCurrentRunWhereInput[]
     NOT?: ForecastCurrentRunWhereInput | ForecastCurrentRunWhereInput[]
@@ -19999,13 +20055,15 @@ export namespace Prisma {
     forecastOriginAt?: DateTimeNullableFilter<"ForecastCurrentRun"> | Date | string | null
     modelId?: StringFilter<"ForecastCurrentRun"> | string
     methodVersion?: StringFilter<"ForecastCurrentRun"> | string
+    trainingWindowPolicyId?: StringNullableFilter<"ForecastCurrentRun"> | string | null
+    effectiveTrainingPolicyId?: StringNullableFilter<"ForecastCurrentRun"> | string | null
     status?: StringFilter<"ForecastCurrentRun"> | string
     failureReason?: StringNullableFilter<"ForecastCurrentRun"> | string | null
     runtimeSeconds?: FloatNullableFilter<"ForecastCurrentRun"> | number | null
     createdAt?: DateTimeFilter<"ForecastCurrentRun"> | Date | string
     updatedAt?: DateTimeFilter<"ForecastCurrentRun"> | Date | string
     points?: ForecastCurrentPointListRelationFilter
-  }, "id" | "seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion">
+  }, "id" | "seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId">
 
   export type ForecastCurrentRunOrderByWithAggregationInput = {
     id?: SortOrder
@@ -20027,6 +20085,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrderInput | SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrderInput | SortOrder
+    effectiveTrainingPolicyId?: SortOrderInput | SortOrder
     status?: SortOrder
     failureReason?: SortOrderInput | SortOrder
     runtimeSeconds?: SortOrderInput | SortOrder
@@ -20062,6 +20122,8 @@ export namespace Prisma {
     forecastOriginAt?: DateTimeNullableWithAggregatesFilter<"ForecastCurrentRun"> | Date | string | null
     modelId?: StringWithAggregatesFilter<"ForecastCurrentRun"> | string
     methodVersion?: StringWithAggregatesFilter<"ForecastCurrentRun"> | string
+    trainingWindowPolicyId?: StringNullableWithAggregatesFilter<"ForecastCurrentRun"> | string | null
+    effectiveTrainingPolicyId?: StringNullableWithAggregatesFilter<"ForecastCurrentRun"> | string | null
     status?: StringWithAggregatesFilter<"ForecastCurrentRun"> | string
     failureReason?: StringNullableWithAggregatesFilter<"ForecastCurrentRun"> | string | null
     runtimeSeconds?: FloatNullableWithAggregatesFilter<"ForecastCurrentRun"> | number | null
@@ -20195,6 +20257,8 @@ export namespace Prisma {
     forecastOriginAt?: DateTimeNullableFilter<"ForecastVerificationRun"> | Date | string | null
     modelId?: StringFilter<"ForecastVerificationRun"> | string
     methodVersion?: StringFilter<"ForecastVerificationRun"> | string
+    trainingWindowPolicyId?: StringNullableFilter<"ForecastVerificationRun"> | string | null
+    effectiveTrainingPolicyId?: StringNullableFilter<"ForecastVerificationRun"> | string | null
     status?: StringFilter<"ForecastVerificationRun"> | string
     failureReason?: StringNullableFilter<"ForecastVerificationRun"> | string | null
     runtimeSeconds?: FloatNullableFilter<"ForecastVerificationRun"> | number | null
@@ -20224,6 +20288,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrderInput | SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrderInput | SortOrder
+    effectiveTrainingPolicyId?: SortOrderInput | SortOrder
     status?: SortOrder
     failureReason?: SortOrderInput | SortOrder
     runtimeSeconds?: SortOrderInput | SortOrder
@@ -20235,7 +20301,7 @@ export namespace Prisma {
 
   export type ForecastVerificationRunWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion?: ForecastVerificationRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionCompoundUniqueInput
+    seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId?: ForecastVerificationRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionTrainingWindowPolicyIdEffectiveTrainingPolicyIdCompoundUniqueInput
     AND?: ForecastVerificationRunWhereInput | ForecastVerificationRunWhereInput[]
     OR?: ForecastVerificationRunWhereInput[]
     NOT?: ForecastVerificationRunWhereInput | ForecastVerificationRunWhereInput[]
@@ -20257,6 +20323,8 @@ export namespace Prisma {
     forecastOriginAt?: DateTimeNullableFilter<"ForecastVerificationRun"> | Date | string | null
     modelId?: StringFilter<"ForecastVerificationRun"> | string
     methodVersion?: StringFilter<"ForecastVerificationRun"> | string
+    trainingWindowPolicyId?: StringNullableFilter<"ForecastVerificationRun"> | string | null
+    effectiveTrainingPolicyId?: StringNullableFilter<"ForecastVerificationRun"> | string | null
     status?: StringFilter<"ForecastVerificationRun"> | string
     failureReason?: StringNullableFilter<"ForecastVerificationRun"> | string | null
     runtimeSeconds?: FloatNullableFilter<"ForecastVerificationRun"> | number | null
@@ -20264,7 +20332,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"ForecastVerificationRun"> | Date | string
     metrics?: ForecastVerificationMetricListRelationFilter
     points?: ForecastVerificationPointListRelationFilter
-  }, "id" | "seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion">
+  }, "id" | "seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId">
 
   export type ForecastVerificationRunOrderByWithAggregationInput = {
     id?: SortOrder
@@ -20286,6 +20354,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrderInput | SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrderInput | SortOrder
+    effectiveTrainingPolicyId?: SortOrderInput | SortOrder
     status?: SortOrder
     failureReason?: SortOrderInput | SortOrder
     runtimeSeconds?: SortOrderInput | SortOrder
@@ -20321,6 +20391,8 @@ export namespace Prisma {
     forecastOriginAt?: DateTimeNullableWithAggregatesFilter<"ForecastVerificationRun"> | Date | string | null
     modelId?: StringWithAggregatesFilter<"ForecastVerificationRun"> | string
     methodVersion?: StringWithAggregatesFilter<"ForecastVerificationRun"> | string
+    trainingWindowPolicyId?: StringNullableWithAggregatesFilter<"ForecastVerificationRun"> | string | null
+    effectiveTrainingPolicyId?: StringNullableWithAggregatesFilter<"ForecastVerificationRun"> | string | null
     status?: StringWithAggregatesFilter<"ForecastVerificationRun"> | string
     failureReason?: StringNullableWithAggregatesFilter<"ForecastVerificationRun"> | string | null
     runtimeSeconds?: FloatNullableWithAggregatesFilter<"ForecastVerificationRun"> | number | null
@@ -21912,6 +21984,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -21940,6 +22014,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -21968,6 +22044,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -21996,6 +22074,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -22024,6 +22104,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -22051,6 +22133,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -22078,6 +22162,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -22223,6 +22309,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -22252,6 +22340,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -22281,6 +22371,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -22310,6 +22402,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -22339,6 +22433,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -22366,6 +22462,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -22393,6 +22491,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -24404,7 +24504,7 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
-  export type ForecastCurrentRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionCompoundUniqueInput = {
+  export type ForecastCurrentRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionTrainingWindowPolicyIdEffectiveTrainingPolicyIdCompoundUniqueInput = {
     seriesId: string
     inputSource: string
     historyFingerprint: string
@@ -24412,6 +24512,8 @@ export namespace Prisma {
     methodId: string
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId: string
+    effectiveTrainingPolicyId: string
   }
 
   export type ForecastCurrentRunCountOrderByAggregateInput = {
@@ -24434,6 +24536,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    effectiveTrainingPolicyId?: SortOrder
     status?: SortOrder
     failureReason?: SortOrder
     runtimeSeconds?: SortOrder
@@ -24466,6 +24570,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    effectiveTrainingPolicyId?: SortOrder
     status?: SortOrder
     failureReason?: SortOrder
     runtimeSeconds?: SortOrder
@@ -24493,6 +24599,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    effectiveTrainingPolicyId?: SortOrder
     status?: SortOrder
     failureReason?: SortOrder
     runtimeSeconds?: SortOrder
@@ -24685,7 +24793,7 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
-  export type ForecastVerificationRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionCompoundUniqueInput = {
+  export type ForecastVerificationRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionTrainingWindowPolicyIdEffectiveTrainingPolicyIdCompoundUniqueInput = {
     seriesId: string
     inputSource: string
     historyFingerprint: string
@@ -24693,6 +24801,8 @@ export namespace Prisma {
     methodId: string
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId: string
+    effectiveTrainingPolicyId: string
   }
 
   export type ForecastVerificationRunCountOrderByAggregateInput = {
@@ -24715,6 +24825,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    effectiveTrainingPolicyId?: SortOrder
     status?: SortOrder
     failureReason?: SortOrder
     runtimeSeconds?: SortOrder
@@ -24747,6 +24859,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    effectiveTrainingPolicyId?: SortOrder
     status?: SortOrder
     failureReason?: SortOrder
     runtimeSeconds?: SortOrder
@@ -24774,6 +24888,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    effectiveTrainingPolicyId?: SortOrder
     status?: SortOrder
     failureReason?: SortOrder
     runtimeSeconds?: SortOrder
@@ -26923,6 +27039,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -26950,6 +27068,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -26993,6 +27113,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -27020,6 +27142,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -27233,6 +27357,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -27261,6 +27387,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -27305,6 +27433,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -27333,6 +27463,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -27361,6 +27493,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -27389,6 +27523,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -27433,6 +27569,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -27461,6 +27599,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null

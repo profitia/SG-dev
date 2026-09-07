@@ -95,6 +95,8 @@ model ForecastCurrentRun {
   forecastOriginAt   DateTime?
   modelId            String
   methodVersion      String
+  trainingWindowPolicyId String?
+  effectiveTrainingPolicyId String?
   status             String
   failureReason      String?
   runtimeSeconds     Float?
@@ -102,8 +104,8 @@ model ForecastCurrentRun {
   updatedAt          DateTime               @updatedAt
   points             ForecastCurrentPoint[]
 
-  @@unique([seriesId, inputSource, historyFingerprint, targetBasis, methodId, modelId, methodVersion])
-  @@index([seriesId, targetBasis, methodId, modelId, updatedAt])
+  @@unique([seriesId, inputSource, historyFingerprint, targetBasis, methodId, modelId, methodVersion, trainingWindowPolicyId, effectiveTrainingPolicyId], map: "forecast_current_runs_identity_key")
+  @@index([seriesId, targetBasis, methodId, modelId, trainingWindowPolicyId, effectiveTrainingPolicyId, updatedAt], map: "forecast_current_runs_lookup_idx")
   @@map("forecast_current_runs")
 }
 
@@ -149,6 +151,8 @@ model ForecastVerificationRun {
   forecastOriginAt   DateTime?
   modelId            String
   methodVersion      String
+  trainingWindowPolicyId String?
+  effectiveTrainingPolicyId String?
   status             String
   failureReason      String?
   runtimeSeconds     Float?
@@ -157,8 +161,8 @@ model ForecastVerificationRun {
   metrics            ForecastVerificationMetric[]
   points             ForecastVerificationPoint[]
 
-  @@unique([seriesId, inputSource, historyFingerprint, targetBasis, methodId, modelId, methodVersion])
-  @@index([seriesId, targetBasis, methodId, modelId, updatedAt])
+  @@unique([seriesId, inputSource, historyFingerprint, targetBasis, methodId, modelId, methodVersion, trainingWindowPolicyId, effectiveTrainingPolicyId], map: "forecast_verification_runs_identity_key")
+  @@index([seriesId, targetBasis, methodId, modelId, trainingWindowPolicyId, effectiveTrainingPolicyId, updatedAt], map: "forecast_verification_runs_lookup_idx")
   @@map("forecast_verification_runs")
 }
 
