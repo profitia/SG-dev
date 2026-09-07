@@ -191,6 +191,8 @@ function lookupKey(artifact: PersistedCurrentArtifact | PersistedVerificationArt
     historyFingerprint: artifact.historyFingerprint,
     targetBasis: artifact.targetBasis,
     frequencyIdentity: artifact.frequencyIdentity,
+    trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
+    effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
   }
 }
 

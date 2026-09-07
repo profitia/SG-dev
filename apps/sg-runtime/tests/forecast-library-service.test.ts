@@ -9,6 +9,7 @@ import {
 import {
   createCurrentForecastStatisticalCompatibility,
   createFullVerificationStatisticalCompatibility,
+  createLegacyUnresolvedForecastStatisticalCompatibility,
   createLegacyVerificationStatisticalCompatibility,
 } from '../lib/forecast/identity'
 import type { UserFacingForecastModelId } from '../lib/forecast/contracts'
@@ -672,6 +673,8 @@ test('prepared-only Forecast Library reads exact persisted artifacts without com
         assert.equal(key.modelId, 'arima')
         assert.equal(key.frequencyIdentity, 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY')
         assert.equal(key.inputSource, 'POSTGRES_RUNTIME_SNAPSHOT')
+        assert.equal(key.trainingWindowPolicyId, currentArtifact.statisticalCompatibility.trainingWindowPolicyId)
+        assert.equal(key.effectiveTrainingPolicyId, currentArtifact.statisticalCompatibility.effectiveTrainingPolicyId)
         assert.equal(key.historyFingerprint, buildForecastHistoryFingerprint(history.history, {
           sourceFrequency: 'MONTHLY',
           targetCadence: 'MONTHLY',
@@ -684,6 +687,8 @@ test('prepared-only Forecast Library reads exact persisted artifacts without com
         assert.equal(key.modelId, 'arima')
         assert.equal(key.frequencyIdentity, 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY')
         assert.equal(key.inputSource, 'POSTGRES_RUNTIME_SNAPSHOT')
+        assert.equal(key.trainingWindowPolicyId, verificationArtifact.statisticalCompatibility.trainingWindowPolicyId)
+        assert.equal(key.effectiveTrainingPolicyId, verificationArtifact.statisticalCompatibility.effectiveTrainingPolicyId)
         assert.equal(key.historyFingerprint, buildForecastHistoryFingerprint(history.history, {
           sourceFrequency: 'MONTHLY',
           targetCadence: 'MONTHLY',
@@ -873,6 +878,8 @@ test('prepared-only current lookup resolves the exact cadence cohort when caller
           frequencyIdentity: key.frequencyIdentity,
           historyFingerprint: key.historyFingerprint,
         }
+        assert.equal(key.trainingWindowPolicyId, exactArtifact.statisticalCompatibility.trainingWindowPolicyId)
+        assert.equal(key.effectiveTrainingPolicyId, exactArtifact.statisticalCompatibility.effectiveTrainingPolicyId)
         return exactArtifact
       },
       async readVerificationRun() { throw new Error('unused') },
@@ -961,6 +968,8 @@ test('prepared-only verification lookup resolves the exact cadence cohort when c
           frequencyIdentity: key.frequencyIdentity,
           historyFingerprint: key.historyFingerprint,
         }
+        assert.equal(key.trainingWindowPolicyId, exactArtifact.statisticalCompatibility.trainingWindowPolicyId)
+        assert.equal(key.effectiveTrainingPolicyId, exactArtifact.statisticalCompatibility.effectiveTrainingPolicyId)
         return exactArtifact
       },
       async writeCurrentRun() { sideEffects += 1 },
@@ -1218,6 +1227,78 @@ test('prepared-only verification read preserves lawful legacy full-verification 
   })
 
   assert.equal(result.status, 'AVAILABLE')
+  assert.equal(sideEffects, 0)
+})
+
+test('prepared-only current read preserves lawful legacy unresolved reuse until refresh without claiming exact policy provenance', async () => {
+  let sideEffects = 0
+  const history = createHistoryResponse()
+  const currentCompatibility = createCurrentForecastStatisticalCompatibility({
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: 'MONTHLY_AVERAGE',
+  })
+
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge(history),
+    repository: {
+      async readCurrentRun(key) {
+        assert.equal(key.trainingWindowPolicyId, currentCompatibility.trainingWindowPolicyId)
+        assert.equal(key.effectiveTrainingPolicyId, currentCompatibility.effectiveTrainingPolicyId)
+        return {
+          seriesId: 'wocaes0280',
+          modelId: 'ets',
+          displayName: 'FRACHT_DRY',
+          description: null,
+          targetBasis: 'MONTHLY_AVERAGE' as const,
+          ...persistedIdentity('MONTHLY_AVERAGE'),
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+          source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: null },
+          historyFingerprint: buildForecastHistoryFingerprint(history.history, {
+            sourceFrequency: 'MONTHLY',
+            targetCadence: 'MONTHLY',
+          }),
+          cadence: { sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' } as const,
+          frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+          statisticalCompatibility: createLegacyUnresolvedForecastStatisticalCompatibility('CURRENT', {
+            sourceFrequency: 'MONTHLY',
+            targetCadence: 'MONTHLY',
+            targetSemantics: 'MONTHLY_AVERAGE',
+          }),
+          preparation: null,
+          history: { frequency: 'MONTHLY', start: '2021-01-01', end: '2026-04-01', observations: 64 },
+          forecastOrigin: '2026-04-01',
+          runtimeSeconds: 1,
+          currentForecast: createCurrentResponse('ets').result.currentForecast,
+        }
+      },
+      async readVerificationRun() { throw new Error('unused') },
+      async writeCurrentRun() { sideEffects += 1 },
+      async writeVerificationRun() { sideEffects += 1 },
+      async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
+      async readLatestVerificationRun() { throw new Error('unused') },
+    },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'wocaes0280',
+      modelId: 'ets',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 64,
+    }),
+    logEvent: () => {},
+  })
+
+  const result = await service.readPreparedCurrentForecastRequest({
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  if (result.status !== 'AVAILABLE') return
+  assert.equal(result.lineage.statisticalCompatibility.trainingWindowPolicyId, 'LEGACY_UNRESOLVED')
+  assert.equal(result.lineage.statisticalCompatibility.calibrationPolicy, 'CONDITIONAL_POLICY_MATCH_ONLY')
   assert.equal(sideEffects, 0)
 })
 

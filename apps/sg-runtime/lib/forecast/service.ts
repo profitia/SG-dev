@@ -66,6 +66,7 @@ import { DEFAULT_FORECAST_TARGET_BASIS, USER_FACING_FORECAST_MODELS } from '@/li
 import {
   buildForecastArtifactCadenceIdentity,
   createLegacyVerificationStatisticalCompatibility,
+  createLegacyUnresolvedForecastStatisticalCompatibility,
   createCurrentForecastStatisticalCompatibility,
   createFullVerificationStatisticalCompatibility,
   createRecentVerificationStatisticalCompatibility,
@@ -401,7 +402,7 @@ export type ForecastCacheLookupKey = {
 
 type ForecastPreparedLookupKey = Pick<
   ForecastCacheLookupKey,
-  'seriesId' | 'modelId' | 'targetSemantics' | 'methodId' | 'methodVersion' | 'targetBasis' | 'frequencyIdentity'
+  'seriesId' | 'modelId' | 'targetSemantics' | 'methodId' | 'methodVersion' | 'targetBasis' | 'frequencyIdentity' | 'trainingWindowPolicyId' | 'effectiveTrainingPolicyId'
 >
 
 type PreparedReadCadenceContext = ReturnType<typeof resolveArtifactCadenceContext> & {
@@ -905,9 +906,16 @@ function satisfiesCurrentPreparedTrainingPolicy(
     return false
   }
 
-  return doesForecastArtifactSatisfyRequest(
+  if (doesForecastArtifactSatisfyRequest(
     artifact.statisticalCompatibility,
     createCurrentForecastStatisticalCompatibility(context),
+  )) {
+    return true
+  }
+
+  return doesForecastArtifactSatisfyRequest(
+    artifact.statisticalCompatibility,
+    createLegacyUnresolvedForecastStatisticalCompatibility('CURRENT', context),
   )
 }
 
@@ -927,7 +935,7 @@ function satisfiesVerificationPreparedTrainingPolicy(
 
   return doesForecastArtifactSatisfyRequest(
     artifact.statisticalCompatibility,
-    createLegacyVerificationStatisticalCompatibility(context),
+    createLegacyUnresolvedForecastStatisticalCompatibility('VERIFICATION', context),
   )
 }
 
@@ -2054,6 +2062,8 @@ async function readLatestCurrentRunFromPrisma(key: ForecastPreparedLookupKey) {
       modelId: key.modelId,
       methodVersion: key.methodVersion,
       frequency: key.frequencyIdentity,
+      trainingWindowPolicyId: key.trainingWindowPolicyId,
+      effectiveTrainingPolicyId: key.effectiveTrainingPolicyId,
       status: 'AVAILABLE',
     },
     select: {
@@ -2082,6 +2092,8 @@ async function readLatestVerificationRunFromPrisma(key: ForecastPreparedLookupKe
       modelId: key.modelId,
       methodVersion: key.methodVersion,
       frequency: key.frequencyIdentity,
+      trainingWindowPolicyId: key.trainingWindowPolicyId,
+      effectiveTrainingPolicyId: key.effectiveTrainingPolicyId,
       status: 'AVAILABLE',
     },
     select: {
@@ -2368,6 +2380,18 @@ export function createForecastLibraryService(
       }
 
       const identity = resolveCapabilityIdentity(input.targetBasis, historyResponse.methodVersion)
+      const sourceFrequency = cadenceContext.cadence?.sourceFrequency
+        ?? normalizeForecastSourceFrequency(historyResponse.history.frequency)
+      const targetCadence = cadenceContext.cadence?.targetCadence
+        ?? normalizeForecastSourceFrequency(historyResponse.history.frequency)
+      if (!sourceFrequency || !targetCadence) {
+        throw new Error('Prepared Current lookup requires lawful source and target cadence.')
+      }
+      const expectedCompatibility = createCurrentForecastStatisticalCompatibility({
+        sourceFrequency,
+        targetCadence,
+        targetSemantics: identity.targetSemantics,
+      })
       const prepared = await resolvedDependencies.repository.readCurrentRun({
         seriesId: input.seriesId,
         modelId: input.modelId,
@@ -2375,6 +2399,8 @@ export function createForecastLibraryService(
         frequencyIdentity: cadenceContext.frequencyIdentity,
         inputSource: historyResponse.source.kind,
         historyFingerprint: buildForecastHistoryFingerprint(historyResponse.history, cadenceContext.cadence ?? undefined),
+        trainingWindowPolicyId: expectedCompatibility.trainingWindowPolicyId,
+        effectiveTrainingPolicyId: expectedCompatibility.effectiveTrainingPolicyId,
         ...identity,
       })
 
@@ -2484,6 +2510,18 @@ export function createForecastLibraryService(
       }
 
       const identity = resolveCapabilityIdentity(input.targetBasis, historyResponse.methodVersion)
+      const sourceFrequency = cadenceContext.cadence?.sourceFrequency
+        ?? normalizeForecastSourceFrequency(historyResponse.history.frequency)
+      const targetCadence = cadenceContext.cadence?.targetCadence
+        ?? normalizeForecastSourceFrequency(historyResponse.history.frequency)
+      if (!sourceFrequency || !targetCadence) {
+        throw new Error('Prepared Verification lookup requires lawful source and target cadence.')
+      }
+      const expectedCompatibility = createFullVerificationStatisticalCompatibility({
+        sourceFrequency,
+        targetCadence,
+        targetSemantics: identity.targetSemantics,
+      })
       const prepared = await resolvedDependencies.repository.readVerificationRun({
         seriesId: input.seriesId,
         modelId: input.modelId,
@@ -2491,6 +2529,8 @@ export function createForecastLibraryService(
         frequencyIdentity: cadenceContext.frequencyIdentity,
         inputSource: historyResponse.source.kind,
         historyFingerprint: buildForecastHistoryFingerprint(historyResponse.history, cadenceContext.cadence ?? undefined),
+        trainingWindowPolicyId: expectedCompatibility.trainingWindowPolicyId,
+        effectiveTrainingPolicyId: expectedCompatibility.effectiveTrainingPolicyId,
         ...identity,
       })
 

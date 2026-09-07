@@ -398,11 +398,18 @@ export function createFullVerificationStatisticalCompatibility(
 export function createLegacyVerificationStatisticalCompatibility(
   context: ForecastTrainingPolicyResolutionContext,
 ): ForecastStatisticalCompatibility {
+  return createLegacyUnresolvedForecastStatisticalCompatibility('VERIFICATION', context)
+}
+
+export function createLegacyUnresolvedForecastStatisticalCompatibility(
+  artifactFamily: 'CURRENT' | 'VERIFICATION',
+  context: ForecastTrainingPolicyResolutionContext,
+): ForecastStatisticalCompatibility {
   return {
-    artifactScope: 'FULL_VERIFICATION',
-    trainingWindowPolicyId: FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID,
+    artifactScope: artifactFamily === 'CURRENT' ? 'CURRENT_FORECAST' : 'FULL_VERIFICATION',
+    trainingWindowPolicyId: LEGACY_UNRESOLVED_TRAINING_WINDOW_POLICY_ID,
     effectiveTrainingPolicyId: resolveEffectiveTrainingPolicyId(
-      FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID,
+      LEGACY_UNRESOLVED_TRAINING_WINDOW_POLICY_ID,
       context,
     ),
     calibrationPolicy: 'CONDITIONAL_POLICY_MATCH_ONLY',
@@ -413,9 +420,7 @@ export function resolveLegacyForecastStatisticalCompatibility(
   artifactFamily: 'CURRENT' | 'VERIFICATION',
   context: ForecastTrainingPolicyResolutionContext,
 ): ForecastStatisticalCompatibility {
-  return artifactFamily === 'CURRENT'
-    ? createCurrentForecastStatisticalCompatibility(context)
-    : createLegacyVerificationStatisticalCompatibility(context)
+  return createLegacyUnresolvedForecastStatisticalCompatibility(artifactFamily, context)
 }
 
 export function areForecastStatisticalCompatibilitiesEqual(

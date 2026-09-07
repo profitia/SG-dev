@@ -10,6 +10,7 @@ import {
   canResidualCalibrateCurrent,
   createCurrentForecastStatisticalCompatibility,
   createFullVerificationStatisticalCompatibility,
+  createLegacyUnresolvedForecastStatisticalCompatibility,
   createLegacyVerificationStatisticalCompatibility,
   createRecentVerificationStatisticalCompatibility,
   createForecastIdentity,
@@ -172,23 +173,31 @@ test('statistical compatibility keeps Current, Recent Verification, and Full Ver
 
 test('legacy verification mapping stays deterministic while calibration remains conditional', () => {
   const legacyVerification = createLegacyVerificationStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
-  const full = createFullVerificationStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
 
   assert.equal(legacyVerification.artifactScope, 'FULL_VERIFICATION')
-  assert.equal(legacyVerification.trainingWindowPolicyId, FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID)
-  assert.equal(legacyVerification.effectiveTrainingPolicyId, full.effectiveTrainingPolicyId)
+  assert.equal(legacyVerification.trainingWindowPolicyId, 'LEGACY_UNRESOLVED')
   assert.equal(legacyVerification.calibrationPolicy, 'CONDITIONAL_POLICY_MATCH_ONLY')
-  assert.equal(areForecastStatisticalCompatibilitiesEqual(legacyVerification, full), false)
+  assert.equal(legacyVerification.effectiveTrainingPolicyId.includes('LEGACY_UNRESOLVED@'), true)
+})
+
+test('legacy current mapping stays explicit and unresolved instead of being reconstructed as exact current policy', () => {
+  const legacyCurrent = createLegacyUnresolvedForecastStatisticalCompatibility('CURRENT', MONTHLY_AVERAGE_POLICY_CONTEXT)
+  const exactCurrent = createCurrentForecastStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
+
+  assert.equal(legacyCurrent.artifactScope, 'CURRENT_FORECAST')
+  assert.equal(legacyCurrent.trainingWindowPolicyId, 'LEGACY_UNRESOLVED')
+  assert.equal(legacyCurrent.calibrationPolicy, 'CONDITIONAL_POLICY_MATCH_ONLY')
+  assert.equal(areForecastStatisticalCompatibilitiesEqual(legacyCurrent, exactCurrent), false)
 })
 
 test('legacy statistical compatibility mapping is deterministic by artifact family', () => {
   assert.deepEqual(
     resolveLegacyForecastStatisticalCompatibility('CURRENT', MONTHLY_AVERAGE_POLICY_CONTEXT),
-    createCurrentForecastStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT),
+    createLegacyUnresolvedForecastStatisticalCompatibility('CURRENT', MONTHLY_AVERAGE_POLICY_CONTEXT),
   )
   assert.deepEqual(
     resolveLegacyForecastStatisticalCompatibility('VERIFICATION', MONTHLY_AVERAGE_POLICY_CONTEXT),
-    createLegacyVerificationStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT),
+    createLegacyUnresolvedForecastStatisticalCompatibility('VERIFICATION', MONTHLY_AVERAGE_POLICY_CONTEXT),
   )
 })
 

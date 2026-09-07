@@ -18,6 +18,7 @@ import {
   buildForecastArtifactCadenceIdentity,
   createCurrentForecastStatisticalCompatibility,
   createFullVerificationStatisticalCompatibility,
+  createLegacyUnresolvedForecastStatisticalCompatibility,
   createRecentVerificationStatisticalCompatibility,
   LEGACY_MONTHLY_ARTIFACT_FREQUENCY,
 } from '../lib/forecast/identity'
@@ -54,6 +55,7 @@ let createForecastPreparationExecutionLedger: typeof import('../lib/forecast/exe
 let setForecastPreparationExecutionLedgerTestHooks: typeof import('../lib/forecast/execution-ledger')['setForecastPreparationExecutionLedgerTestHooks']
 let createForecastLibraryService: typeof import('../lib/forecast/service')['createForecastLibraryService']
 let readCurrentRunFromPrisma: typeof import('../lib/forecast/service')['readCurrentRunFromPrisma']
+let readVerificationRunFromPrisma: typeof import('../lib/forecast/service')['readVerificationRunFromPrisma']
 let setForecastPersistenceTestHooks: typeof import('../lib/forecast/service')['setForecastPersistenceTestHooks']
 let writeCurrentRunWithPrisma: typeof import('../lib/forecast/service')['writeCurrentRunWithPrisma']
 let writeVerificationRunWithPrisma: typeof import('../lib/forecast/service')['writeVerificationRunWithPrisma']
@@ -504,6 +506,54 @@ function buildCurrentCacheLookupKey(artifact: PersistedCurrentArtifact) {
   } as const
 }
 
+function buildVerificationCacheLookupKey(artifact: PersistedVerificationArtifact) {
+  return {
+    seriesId: artifact.seriesId,
+    modelId: artifact.modelId,
+    targetSemantics: artifact.targetSemantics,
+    methodId: artifact.methodId,
+    methodVersion: artifact.methodVersion,
+    inputSource: artifact.source.kind,
+    historyFingerprint: artifact.historyFingerprint,
+    targetBasis: artifact.targetBasis,
+    frequencyIdentity: artifact.frequencyIdentity,
+    trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
+    effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
+  } as const
+}
+
+async function nullCurrentRunPolicyIdentity(seriesId: string) {
+  const run = await requirePrisma().forecastCurrentRun.findFirstOrThrow({
+    where: { seriesId },
+    orderBy: { updatedAt: 'desc' },
+    select: { id: true },
+  })
+
+  await requirePrisma().forecastCurrentRun.update({
+    where: { id: run.id },
+    data: {
+      trainingWindowPolicyId: null,
+      effectiveTrainingPolicyId: null,
+    },
+  })
+}
+
+async function nullVerificationRunPolicyIdentity(seriesId: string) {
+  const run = await requirePrisma().forecastVerificationRun.findFirstOrThrow({
+    where: { seriesId },
+    orderBy: { updatedAt: 'desc' },
+    select: { id: true },
+  })
+
+  await requirePrisma().forecastVerificationRun.update({
+    where: { id: run.id },
+    data: {
+      trainingWindowPolicyId: null,
+      effectiveTrainingPolicyId: null,
+    },
+  })
+}
+
 async function resetForecastTables() {
   await requirePrisma().$executeRawUnsafe(`
     TRUNCATE TABLE
@@ -745,6 +795,7 @@ test.before(async () => {
   setForecastPreparationExecutionLedgerTestHooks = executionLedgerModule.setForecastPreparationExecutionLedgerTestHooks
   createForecastLibraryService = serviceModule.createForecastLibraryService
   readCurrentRunFromPrisma = serviceModule.readCurrentRunFromPrisma
+  readVerificationRunFromPrisma = serviceModule.readVerificationRunFromPrisma
   setForecastPersistenceTestHooks = serviceModule.setForecastPersistenceTestHooks
   writeCurrentRunWithPrisma = serviceModule.writeCurrentRunWithPrisma
   writeVerificationRunWithPrisma = serviceModule.writeVerificationRunWithPrisma
@@ -1010,6 +1061,74 @@ serialTest('db-backed current persistence keeps policy-distinct artifacts separa
   assert.equal(exactRecent?.currentForecast['1M']?.forecastValue, 2048.25)
 })
 
+serialTest('db-backed verification persistence round-trips exact policy identity through PostgreSQL', async () => {
+  const history = createPeriodicHistoryResponse('stage4-verification-policy-roundtrip-series', 'QUARTERLY', 'QUARTERLY', 'MONTHLY_AVERAGE', 48)
+  const artifact = createPreparedVerificationArtifact(history, 'arima', 'MONTHLY_AVERAGE')
+
+  await writeVerificationRunWithPrisma(artifact)
+
+  const roundtrip = await readVerificationRunFromPrisma(buildVerificationCacheLookupKey(artifact))
+
+  assert.ok(roundtrip)
+  assert.equal(roundtrip?.statisticalCompatibility.trainingWindowPolicyId, artifact.statisticalCompatibility.trainingWindowPolicyId)
+  assert.equal(roundtrip?.statisticalCompatibility.effectiveTrainingPolicyId, artifact.statisticalCompatibility.effectiveTrainingPolicyId)
+  assert.equal(roundtrip?.verification['1Q']?.records[0]?.forecastValue, artifact.verification['1Q']?.records[0]?.forecastValue)
+})
+
+serialTest('db-backed prepared current selects the exact policy A artifact over policy B without compute or execution rows', async () => {
+  const history = createPeriodicHistoryResponse('stage4-current-policy-ab-series', 'MONTHLY', 'MONTHLY', 'MONTHLY_AVERAGE', 48)
+  const exactArtifact = createPreparedCurrentArtifact(history, 'ets', 'MONTHLY_AVERAGE')
+  const alternateArtifact: PersistedCurrentArtifact = {
+    ...exactArtifact,
+    statisticalCompatibility: createRecentVerificationStatisticalCompatibility({
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'MONTHLY_AVERAGE',
+    }),
+    currentForecast: {
+      ...exactArtifact.currentForecast,
+      '1M': {
+        ...exactArtifact.currentForecast['1M'],
+        forecastValue: 7777,
+      },
+    },
+  }
+
+  await writeCurrentRunWithPrisma(exactArtifact)
+  await writeCurrentRunWithPrisma(alternateArtifact)
+
+  const service = createDbBackedService({
+    async exportHistory(input) {
+      if (input.seriesId === history.history.seriesId) return history
+      throw new Error(`Unexpected prepared current history lookup for ${input.seriesId}.`)
+    },
+    async exportCurrent() {
+      throw new Error('Prepared current read must not invoke compute exportCurrent.')
+    },
+    async exportVerification() {
+      throw new Error('Prepared current read must not invoke compute exportVerification.')
+    },
+  })
+
+  const result = await service.readPreparedCurrentForecastRequest({
+    seriesId: history.history.seriesId,
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  if (result.status !== 'AVAILABLE') return
+  assert.equal(result.lineage.statisticalCompatibility.trainingWindowPolicyId, exactArtifact.statisticalCompatibility.trainingWindowPolicyId)
+  assert.equal(result.currentForecast['1M']?.forecastValue, exactArtifact.currentForecast['1M']?.forecastValue)
+
+  const executionCount = await requirePrisma().forecastPreparationExecutionLedger.count({
+    where: { seriesId: history.history.seriesId },
+  })
+  assert.equal(executionCount, 0)
+})
+
 serialTest('db-backed prepared current reads surface weekly, native monthly, and quarterly artifacts with zero compute and zero execution rows', async () => {
   const weeklyHistory = createPeriodicHistoryResponse('stage4-weekly-current-series', 'WEEKLY', 'MONTHLY', 'END_OF_PERIOD')
   const monthlyHistory = createPeriodicHistoryResponse('stage4-native-monthly-current-series', 'MONTHLY', 'MONTHLY', 'MONTHLY_AVERAGE')
@@ -1117,6 +1236,52 @@ serialTest('db-backed prepared current reads fail closed for persisted training 
   })
 
   assert.equal(result.status, 'NOT_AVAILABLE')
+
+  const executionCount = await requirePrisma().forecastPreparationExecutionLedger.count({
+    where: { seriesId: history.history.seriesId },
+  })
+  assert.equal(executionCount, 0)
+})
+
+serialTest('db-backed legacy current rows remain unresolved while reusing prepared reads until refresh', async () => {
+  const history = createPeriodicHistoryResponse('stage4-legacy-current-series', 'MONTHLY', 'MONTHLY', 'MONTHLY_AVERAGE', 48)
+  const artifact = createPreparedCurrentArtifact(history, 'ets', 'MONTHLY_AVERAGE')
+  await writeCurrentRunWithPrisma(artifact)
+  await nullCurrentRunPolicyIdentity(history.history.seriesId)
+
+  const direct = await readCurrentRunFromPrisma(buildCurrentCacheLookupKey(artifact))
+  assert.ok(direct)
+  assert.equal(direct?.statisticalCompatibility.trainingWindowPolicyId, createLegacyUnresolvedForecastStatisticalCompatibility('CURRENT', {
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: 'MONTHLY_AVERAGE',
+  }).trainingWindowPolicyId)
+
+  const service = createDbBackedService({
+    async exportHistory(input) {
+      if (input.seriesId === history.history.seriesId) return history
+      throw new Error(`Unexpected prepared current history lookup for ${input.seriesId}.`)
+    },
+    async exportCurrent() {
+      throw new Error('Prepared current read must not invoke compute exportCurrent.')
+    },
+    async exportVerification() {
+      throw new Error('Prepared current read must not invoke compute exportVerification.')
+    },
+  })
+
+  const result = await service.readPreparedCurrentForecastRequest({
+    seriesId: history.history.seriesId,
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  if (result.status !== 'AVAILABLE') return
+  assert.equal(result.lineage.statisticalCompatibility.trainingWindowPolicyId, 'LEGACY_UNRESOLVED')
+  assert.equal(result.lineage.statisticalCompatibility.calibrationPolicy, 'CONDITIONAL_POLICY_MATCH_ONLY')
 
   const executionCount = await requirePrisma().forecastPreparationExecutionLedger.count({
     where: { seriesId: history.history.seriesId },
@@ -1382,6 +1547,223 @@ serialTest('db-backed prepared verification reads fail closed for empty payloads
 
   const executionCount = await requirePrisma().forecastPreparationExecutionLedger.count()
   assert.equal(executionCount, 0)
+})
+
+serialTest('db-backed legacy full verification reuse remains unresolved and never becomes recent-comparable identity', async () => {
+  const history = createPeriodicHistoryResponse('stage4-legacy-verification-series', 'QUARTERLY', 'QUARTERLY', 'MONTHLY_AVERAGE', 48)
+  const artifact = createPreparedVerificationArtifact(history, 'arima', 'MONTHLY_AVERAGE')
+  await writeVerificationRunWithPrisma(artifact)
+  await nullVerificationRunPolicyIdentity(history.history.seriesId)
+
+  const direct = await readVerificationRunFromPrisma(buildVerificationCacheLookupKey(artifact))
+  assert.ok(direct)
+  assert.equal(direct?.statisticalCompatibility.trainingWindowPolicyId, 'LEGACY_UNRESOLVED')
+  assert.notEqual(
+    direct?.statisticalCompatibility.trainingWindowPolicyId,
+    createRecentVerificationStatisticalCompatibility({
+      sourceFrequency: 'QUARTERLY',
+      targetCadence: 'QUARTERLY',
+      targetSemantics: 'MONTHLY_AVERAGE',
+    }).trainingWindowPolicyId,
+  )
+
+  const service = createDbBackedService({
+    async exportHistory(input) {
+      if (input.seriesId === history.history.seriesId) return history
+      throw new Error(`Unexpected prepared verification history lookup for ${input.seriesId}.`)
+    },
+    async exportCurrent() {
+      throw new Error('Prepared verification read must not invoke compute exportCurrent.')
+    },
+    async exportVerification() {
+      throw new Error('Prepared verification read must not invoke compute exportVerification.')
+    },
+  })
+
+  const result = await service.readPreparedVerificationRequest({
+    seriesId: history.history.seriesId,
+    modelId: 'arima',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'QUARTERLY',
+    targetCadence: 'QUARTERLY',
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  if (result.status !== 'AVAILABLE') return
+  assert.equal(result.lineage.statisticalCompatibility.trainingWindowPolicyId, 'LEGACY_UNRESOLVED')
+  assert.equal(result.lineage.statisticalCompatibility.calibrationPolicy, 'CONDITIONAL_POLICY_MATCH_ONLY')
+
+  const executionCount = await requirePrisma().forecastPreparationExecutionLedger.count({
+    where: { seriesId: history.history.seriesId },
+  })
+  assert.equal(executionCount, 0)
+})
+
+serialTest('db-backed policy identity constraints preserve exact coexistence, reject duplicate legacy rows, and reject partial policy identity', async () => {
+  const exactHistory = createPeriodicHistoryResponse('stage4-constraint-exact-series', 'MONTHLY', 'MONTHLY', 'MONTHLY_AVERAGE', 48)
+  const exactA = createPreparedCurrentArtifact(exactHistory, 'ets', 'MONTHLY_AVERAGE')
+  const exactB: PersistedCurrentArtifact = {
+    ...exactA,
+    statisticalCompatibility: createRecentVerificationStatisticalCompatibility({
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'MONTHLY_AVERAGE',
+    }),
+  }
+
+  await writeCurrentRunWithPrisma(exactA)
+  await writeCurrentRunWithPrisma(exactB)
+
+  const exactCount = await requirePrisma().forecastCurrentRun.count({
+    where: { seriesId: exactHistory.history.seriesId },
+  })
+  assert.equal(exactCount, 2)
+
+  await requirePrisma().forecastCurrentRun.create({
+    data: {
+      seriesId: 'legacy-current-duplicate-series',
+      displayName: 'Legacy current duplicate',
+      description: null,
+      frequency: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+      currency: null,
+      unit: null,
+      sourceLabel: null,
+      inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+      inputRunId: null,
+      historyFingerprint: 'legacy-current-fingerprint',
+      targetBasis: 'MONTHLY_AVERAGE',
+      methodId: 'MONTHLY_AVERAGE',
+      historyStartAt: new Date('2021-01-01T00:00:00.000Z'),
+      historyEndAt: new Date('2026-04-01T00:00:00.000Z'),
+      observationCount: 64,
+      forecastOriginAt: new Date('2026-04-01T00:00:00.000Z'),
+      modelId: 'ets',
+      methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+      trainingWindowPolicyId: null,
+      effectiveTrainingPolicyId: null,
+      status: 'AVAILABLE',
+      failureReason: null,
+      runtimeSeconds: 0.1,
+    },
+  })
+
+  await assert.rejects(
+    requirePrisma().forecastCurrentRun.create({
+      data: {
+        seriesId: 'legacy-current-duplicate-series',
+        displayName: 'Legacy current duplicate',
+        description: null,
+        frequency: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+        currency: null,
+        unit: null,
+        sourceLabel: null,
+        inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+        inputRunId: null,
+        historyFingerprint: 'legacy-current-fingerprint',
+        targetBasis: 'MONTHLY_AVERAGE',
+        methodId: 'MONTHLY_AVERAGE',
+        historyStartAt: new Date('2021-01-01T00:00:00.000Z'),
+        historyEndAt: new Date('2026-04-01T00:00:00.000Z'),
+        observationCount: 64,
+        forecastOriginAt: new Date('2026-04-01T00:00:00.000Z'),
+        modelId: 'ets',
+        methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+        trainingWindowPolicyId: null,
+        effectiveTrainingPolicyId: null,
+        status: 'AVAILABLE',
+        failureReason: null,
+        runtimeSeconds: 0.1,
+      },
+    }),
+  )
+
+  await requirePrisma().forecastVerificationRun.create({
+    data: {
+      seriesId: 'legacy-verification-duplicate-series',
+      displayName: 'Legacy verification duplicate',
+      description: null,
+      frequency: 'FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY',
+      currency: null,
+      unit: null,
+      sourceLabel: null,
+      inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+      inputRunId: null,
+      historyFingerprint: 'legacy-verification-fingerprint',
+      targetBasis: 'MONTHLY_AVERAGE',
+      methodId: 'MONTHLY_AVERAGE',
+      historyStartAt: new Date('2021-01-01T00:00:00.000Z'),
+      historyEndAt: new Date('2026-04-01T00:00:00.000Z'),
+      observationCount: 64,
+      forecastOriginAt: new Date('2026-04-01T00:00:00.000Z'),
+      modelId: 'arima',
+      methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+      trainingWindowPolicyId: null,
+      effectiveTrainingPolicyId: null,
+      status: 'AVAILABLE',
+      failureReason: null,
+      runtimeSeconds: 0.1,
+    },
+  })
+
+  await assert.rejects(
+    requirePrisma().forecastVerificationRun.create({
+      data: {
+        seriesId: 'legacy-verification-duplicate-series',
+        displayName: 'Legacy verification duplicate',
+        description: null,
+        frequency: 'FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY',
+        currency: null,
+        unit: null,
+        sourceLabel: null,
+        inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+        inputRunId: null,
+        historyFingerprint: 'legacy-verification-fingerprint',
+        targetBasis: 'MONTHLY_AVERAGE',
+        methodId: 'MONTHLY_AVERAGE',
+        historyStartAt: new Date('2021-01-01T00:00:00.000Z'),
+        historyEndAt: new Date('2026-04-01T00:00:00.000Z'),
+        observationCount: 64,
+        forecastOriginAt: new Date('2026-04-01T00:00:00.000Z'),
+        modelId: 'arima',
+        methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+        trainingWindowPolicyId: null,
+        effectiveTrainingPolicyId: null,
+        status: 'AVAILABLE',
+        failureReason: null,
+        runtimeSeconds: 0.1,
+      },
+    }),
+  )
+
+  await assert.rejects(
+    requirePrisma().forecastCurrentRun.create({
+      data: {
+        seriesId: 'partial-policy-current-series',
+        displayName: 'Partial policy current',
+        description: null,
+        frequency: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+        currency: null,
+        unit: null,
+        sourceLabel: null,
+        inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+        inputRunId: null,
+        historyFingerprint: 'partial-policy-current-fingerprint',
+        targetBasis: 'MONTHLY_AVERAGE',
+        methodId: 'MONTHLY_AVERAGE',
+        historyStartAt: new Date('2021-01-01T00:00:00.000Z'),
+        historyEndAt: new Date('2026-04-01T00:00:00.000Z'),
+        observationCount: 64,
+        forecastOriginAt: new Date('2026-04-01T00:00:00.000Z'),
+        modelId: 'ets',
+        methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+        trainingWindowPolicyId: 'CURRENT_POLICY_FREQUENCY_SPECIFIC@current-policy-frequency-specific-v1',
+        effectiveTrainingPolicyId: null,
+        status: 'AVAILABLE',
+        failureReason: null,
+        runtimeSeconds: 0.1,
+      },
+    }),
+  )
 })
 
 serialTest('db-backed simultaneous recovery elects one recovery owner and preserves predecessor lineage', async () => {
