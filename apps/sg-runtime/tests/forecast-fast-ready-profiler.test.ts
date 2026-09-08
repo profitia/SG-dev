@@ -4,16 +4,26 @@ import test from 'node:test'
 import {
   classifyDominantBottleneck,
   evaluateRecentBudgetCandidates,
+  FINAL_PROFILE_COLD_SAMPLES,
+  FINAL_PROFILE_RECENT_CANDIDATES,
+  FINAL_PROFILE_WARM_SAMPLES,
   NOT_SEPARATELY_MEASURABLE,
   NOT_STATISTICALLY_MEANINGFUL,
+  resolveConcurrentGlobalComputeGate,
   resolveConservativeLatencyMs,
+  resolveEvidenceBasedServingHeadroom,
   resolveFastReadyProfilerGate,
   resolveGlobalNFastDecision,
+  resolveProfilerConfigurationContract,
   resolveRollingDailyExactReadGate,
+  resolveStage6FinalDecision,
   resolveWarmReuseGate,
   summarizeNumericSamples,
   summarizeOptionalPhaseSamples,
+  validateProfileEnvironmentMetadata,
 } from '../lib/forecast/fast-ready-profiler'
+import { prepareRollingDailyCurrentOwnership, selectTrailingRollingDailyCurrentHistory } from '../lib/forecast/rolling-daily-current-ownership'
+import { buildRollingDailyHistoryFingerprint } from '../lib/forecast/rolling-daily-maintenance'
 
 test('summarizeNumericSamples marks p95 as not statistically meaningful below twenty samples', () => {
   const summary = summarizeNumericSamples([100, 200, 300, 400, 500])
@@ -136,6 +146,40 @@ test('resolveRollingDailyExactReadGate only accepts HIT as renderable', () => {
   })
 })
 
+test('Rolling Daily canonical ownership fingerprint uses the selected current-fast input, not full history', async () => {
+  const fullHistory = {
+    seriesId: 'rolling-daily-fingerprint-test',
+    displayName: 'Rolling Daily Fingerprint Test',
+    description: null,
+    frequency: 'DAILY',
+    source: 'TEST',
+    points: Array.from({ length: 500 }, (_, index) => {
+      const date = new Date('2024-01-01T00:00:00.000Z')
+      date.setUTCDate(date.getUTCDate() + index)
+      return {
+        date: date.toISOString().slice(0, 10),
+        value: index + 1,
+      }
+    }),
+  }
+
+  const selectedHistory = selectTrailingRollingDailyCurrentHistory(fullHistory)
+  const ownership = await prepareRollingDailyCurrentOwnership({
+    seriesId: fullHistory.seriesId,
+    modelId: 'arima',
+    loadHistory: async () => fullHistory,
+  })
+
+  assert.equal(
+    ownership.identity.historyFingerprint,
+    buildRollingDailyHistoryFingerprint(selectedHistory),
+  )
+  assert.notEqual(
+    ownership.identity.historyFingerprint,
+    buildRollingDailyHistoryFingerprint(fullHistory),
+  )
+})
+
 test('resolveWarmReuseGate requires zero compute and zero new execution', () => {
   assert.deepEqual(resolveWarmReuseGate({
     modelComputeCount: 0,
@@ -173,7 +217,7 @@ test('resolveFastReadyProfilerGate rejects zero serving headroom', () => {
     stage7ScopeLeakage: false,
   }), {
     fastReadyProfilerGate: 'FAIL',
-    performanceCorrectiveRequired: true,
+    performanceCorrectiveRequired: false,
   })
 })
 
@@ -194,4 +238,178 @@ test('resolveFastReadyProfilerGate passes only when all required gates hold', ()
     fastReadyProfilerGate: 'PASS',
     performanceCorrectiveRequired: false,
   })
+})
+
+test('resolveEvidenceBasedServingHeadroom derives a positive measured reserve instead of leftover budget', () => {
+  const currentSummary = summarizeNumericSamples([1000, 1200, 1800, 2500, 3200])
+  const exactPreparedReadSummary = summarizeNumericSamples([30, 35, 40, 60, 80])
+
+  const decision = resolveEvidenceBasedServingHeadroom({
+    currentSummary,
+    exactPreparedReadSummary,
+  })
+
+  assert.equal(decision.reservedServingOverheadBasis, 'MEASURED_EVIDENCE')
+  assert.equal(decision.servingHeadroomDoubleCounted, false)
+  assert.equal(decision.reservedServingOverheadMs, 1480)
+  assert.notEqual(decision.reservedServingOverheadMs, 15_000 - 3_200 - 900)
+})
+
+test('resolveProfilerConfigurationContract blocks Stage 6 closeout for smoke mode', () => {
+  assert.deepEqual(resolveProfilerConfigurationContract({
+    profileMode: 'SMOKE',
+    coldSamples: 1,
+    warmSamples: 1,
+    recentCandidates: [1],
+  }), {
+    profileMode: 'SMOKE',
+    coldSamples: 1,
+    warmSamples: 1,
+    recentCandidates: [1],
+    validForRequestedMode: true,
+    stage6ClosureAllowed: false,
+    reason: 'Smoke mode is diagnostic only and cannot close Stage 6.',
+  })
+})
+
+test('resolveProfilerConfigurationContract requires exact final sample counts', () => {
+  assert.deepEqual(resolveProfilerConfigurationContract({
+    profileMode: 'FINAL',
+    coldSamples: FINAL_PROFILE_COLD_SAMPLES,
+    warmSamples: FINAL_PROFILE_WARM_SAMPLES,
+    recentCandidates: FINAL_PROFILE_RECENT_CANDIDATES,
+  }), {
+    profileMode: 'FINAL',
+    coldSamples: 5,
+    warmSamples: 20,
+    recentCandidates: [1, 3, 6, 12],
+    validForRequestedMode: true,
+    stage6ClosureAllowed: true,
+    reason: null,
+  })
+
+  assert.equal(resolveProfilerConfigurationContract({
+    profileMode: 'FINAL',
+    coldSamples: 1,
+    warmSamples: 20,
+    recentCandidates: [1, 3, 6, 12],
+  }).validForRequestedMode, false)
+})
+
+test('resolveConcurrentGlobalComputeGate accepts one-owner one-artifact convergence', () => {
+  assert.deepEqual(resolveConcurrentGlobalComputeGate({
+    requestCount: 5,
+    ownerCount: 1,
+    waiterCount: 4,
+    modelComputeCount: 1,
+    bridgeComputeCount: 1,
+    artifactWriteCount: 1,
+    terminalArtifactCount: 1,
+    allRequestsSucceeded: true,
+    finalExactReadStatus: 'HIT',
+    expectedFinalExactReadStatus: 'HIT',
+  }), {
+    gate: 'PASS',
+    reasons: [],
+  })
+})
+
+test('validateProfileEnvironmentMetadata requires the full environment contract', () => {
+  const result = validateProfileEnvironmentMetadata({
+    profileEnvironmentClass: 'CONTROLLED_SYNTHETIC_DB_BACKED',
+    nodeVersion: 'v24.7.0',
+    pythonVersion: 'Python 3.12.1',
+    platform: 'darwin',
+    architecture: 'arm64',
+    databaseClassification: 'CONTROLLED_SYNTHETIC_DB_BACKED',
+    processConcurrency: 1,
+    forecastLeaseDurationMs: 10_000,
+    forecastHeartbeatIntervalMs: 3_000,
+    workingTreeCleanAtProfileStart: true,
+    profileCommand: 'npm run forecast:profile:fast-ready',
+    profileMode: 'FINAL',
+    coldSamples: 5,
+    warmSamples: 20,
+    recentCandidates: [1, 3, 6, 12],
+    syntheticSeriesDefinitions: ['daily', 'weekly'],
+  })
+
+  assert.equal(result.complete, true)
+  assert.deepEqual(result.missingFields, [])
+})
+
+test('resolveStage6FinalDecision prevents smoke-mode success and permits complete final pass', () => {
+  const smokeConfig = resolveProfilerConfigurationContract({
+    profileMode: 'SMOKE',
+    coldSamples: 1,
+    warmSamples: 1,
+    recentCandidates: [1],
+  })
+  const finalConfig = resolveProfilerConfigurationContract({
+    profileMode: 'FINAL',
+    coldSamples: 5,
+    warmSamples: 20,
+    recentCandidates: [1, 3, 6, 12],
+  })
+
+  assert.equal(resolveStage6FinalDecision({
+    profileMode: 'SMOKE',
+    configurationContract: smokeConfig,
+    currentFastLatencyGate: 'PASS',
+    rollingDailyExactReadGate: 'PASS',
+    warmReuseGate: 'PASS',
+    concurrentOneGlobalComputeGate: 'PASS',
+    currentIsolationGate: 'PASS',
+    recentProfileGate: 'PASS',
+    fastReadyProfilerGate: 'PASS',
+    globalNFastRecommendation: 1,
+    profileSpecificNFastRequired: false,
+    recentSyncRecommendation: 'INLINE_WITH_GLOBAL_N_FAST',
+    reservedServingOverheadMs: 250,
+    reservedServingOverheadBasis: 'MEASURED_EVIDENCE',
+    profileArtifactSourceShaMatch: true,
+    fastInputMetadataComplete: true,
+    profileEnvironmentMetadataComplete: true,
+    stage4NonRegression: 'PASS',
+    stage5NonRegression: 'PASS',
+    currentFastPolicyChanged: false,
+    modelMinHistoryChanged: false,
+    methodVersionChanged: false,
+    recentVerificationProductionActivated: false,
+    stage7ScopeLeakage: false,
+    stage8PlusScopeLeakage: false,
+  }).stage6Completion, 'FAIL')
+
+  const finalDecision = resolveStage6FinalDecision({
+    profileMode: 'FINAL',
+    configurationContract: finalConfig,
+    currentFastLatencyGate: 'PASS',
+    rollingDailyExactReadGate: 'PASS',
+    warmReuseGate: 'PASS',
+    concurrentOneGlobalComputeGate: 'PASS',
+    currentIsolationGate: 'PASS',
+    recentProfileGate: 'PASS',
+    fastReadyProfilerGate: 'PASS',
+    globalNFastRecommendation: 3,
+    profileSpecificNFastRequired: false,
+    recentSyncRecommendation: 'INLINE_WITH_GLOBAL_N_FAST',
+    reservedServingOverheadMs: 250,
+    reservedServingOverheadBasis: 'MEASURED_EVIDENCE',
+    profileArtifactSourceShaMatch: true,
+    fastInputMetadataComplete: true,
+    profileEnvironmentMetadataComplete: true,
+    stage4NonRegression: 'PASS',
+    stage5NonRegression: 'PASS',
+    currentFastPolicyChanged: false,
+    modelMinHistoryChanged: false,
+    methodVersionChanged: false,
+    recentVerificationProductionActivated: false,
+    stage7ScopeLeakage: false,
+    stage8PlusScopeLeakage: false,
+  })
+
+  assert.equal(finalDecision.stage6Completion, 'PASS')
+  assert.equal(finalDecision.readyForStage7, true)
+  assert.equal(finalDecision.performanceCorrectiveRequired, false)
+  assert.equal(finalDecision.profilerEvidenceCorrectiveRequired, false)
 })

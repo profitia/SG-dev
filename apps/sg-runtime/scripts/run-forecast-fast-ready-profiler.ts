@@ -7,7 +7,7 @@ import path from 'node:path'
 import { promisify } from 'node:util'
 
 import { Prisma } from '@/generated/market-data-client'
-import { resolveForecastTechnicalMinimumObservations } from '@/lib/forecast/current-fast-policy'
+import { addCalendarMonthsClamped, resolveForecastTechnicalMinimumObservations } from '@/lib/forecast/current-fast-policy'
 import {
   createForecastCapabilityService,
   type ForecastCapabilityProvenance,
@@ -22,19 +22,31 @@ import {
 import {
   type ProfiledPhaseName,
   classifyDominantBottleneck,
+  type ProfileMode,
+  FINAL_PROFILE_COLD_SAMPLES,
+  FINAL_PROFILE_WARM_SAMPLES,
+  FINAL_PROFILE_RECENT_CANDIDATES,
   NOT_SEPARATELY_MEASURABLE,
+  NOT_STATISTICALLY_MEANINGFUL,
+  resolveConcurrentGlobalComputeGate,
   resolveConservativeLatencyMs,
+  resolveEvidenceBasedServingHeadroom,
   resolveFastReadyProfilerGate,
   resolveRollingDailyExactReadGate,
   resolveWarmReuseGate,
   resolveGlobalNFastDecision,
+  resolveProfilerConfigurationContract,
+  resolveStage6FinalDecision,
   summarizeNumericSamples,
   summarizeOptionalPhaseSamples,
+  validateProfileEnvironmentMetadata,
 } from '@/lib/forecast/fast-ready-profiler'
 import {
   createInteractiveForecastPreparationService,
   type InteractiveForecastIdentity,
 } from '@/lib/forecast/interactive-preparation'
+import { buildCurrentLogicalArtifactKey } from '@/lib/forecast/current-single-flight'
+import { createDefaultForecastPreparationExecutionAdmission } from '@/lib/forecast/execution-ledger'
 import { buildForecastHistoryFingerprint } from '@/lib/forecast/history-fingerprint'
 import {
   buildForecastArtifactCadenceIdentity,
@@ -43,18 +55,23 @@ import {
 } from '@/lib/forecast/identity'
 import {
   buildLiveForecastBridgePayloadFromHistory,
+  buildCurrentHorizonConfigurationId,
   buildCurrentForecastExecutionPlan,
   selectMinimalLawfulCurrentTrainingPayload,
 } from '@/lib/forecast/live-market-input'
 import { selectMinimalLawfulCurrentTrainingSuffix } from '@/lib/forecast/current-fast-policy'
 import { buildRollingDailyHistoryFingerprint } from '@/lib/forecast/rolling-daily-maintenance'
 import { readRollingDailyCurrentForecastSnapshot } from '@/lib/forecast/rolling-daily-current-forecast-snapshot'
+import { prepareRollingDailyCurrentOwnership } from '@/lib/forecast/rolling-daily-current-ownership'
+import { createRollingDailyProductionOperationsService } from '@/lib/forecast/rolling-daily-production-operations'
 import {
   createForecastLibraryService,
   executePreparedForecastBridge,
   type ForecastServiceRequest,
   readCurrentRunFromPrisma,
+  setForecastPersistenceTestHooks,
 } from '@/lib/forecast/service'
+import { resolveForecastStage3HeartbeatIntervalMs } from '@/lib/forecast/stage3-lease-heartbeat'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 
@@ -82,9 +99,10 @@ const RESULT_MD_PATH = path.resolve(
   'ppf1-stage6-fast-ready-profiler.md',
 )
 
-const DEFAULT_COLD_SAMPLES = 5
-const DEFAULT_WARM_SAMPLES = 20
-const DEFAULT_RECENT_CANDIDATES = [1, 3, 6, 12] as const
+const DEFAULT_PROFILE_MODE: ProfileMode = 'FINAL'
+const DEFAULT_COLD_SAMPLES = FINAL_PROFILE_COLD_SAMPLES
+const DEFAULT_WARM_SAMPLES = FINAL_PROFILE_WARM_SAMPLES
+const DEFAULT_RECENT_CANDIDATES = FINAL_PROFILE_RECENT_CANDIDATES
 const FAST_READY_BUDGET_MS = 15_000
 const MACROBOND_PROVIDER_CODE = 'MACROBOND'
 const DAILY_SERIES_ID = 'ppf1-stage6-daily-profile-v1'
@@ -136,6 +154,9 @@ type CurrentSample = {
   runtimeSeconds: number | null
   policyId: string | null
   effectivePolicyId: string | null
+  inputMetadata: CurrentInputMetadata
+  currentIsolation: CurrentIsolationCounters
+  rollingDailyIdentityDiagnostic: RollingDailyIdentityDiagnostic | null
 }
 
 type WarmSample = {
@@ -148,6 +169,89 @@ type WarmSample = {
   warmReuseGate: 'PASS' | 'FAIL'
   warmReuseReason: string | null
 }
+
+type CurrentIsolationCounters = {
+  fullVerificationComputeCount: number
+  recentVerificationProductionComputeCount: number
+  calibrationBuildCount: number
+  bandBuildCount: number
+}
+
+type CurrentInputMetadata = {
+  inputSource: string
+  sourceHistoryObservationCount: number
+  default12MObservationCount: number
+  modelTechnicalMinimumObservations: number
+  selectedTrainingObservationCount: number
+  selectedHistoryStart: string
+  selectedHistoryEnd: string
+  extendedBeyond12M: boolean
+  trainingWindowPolicyId: string
+  effectiveTrainingPolicyId: string
+  historyFingerprint: string
+  forecastOrigin: string
+}
+
+type RollingDailyIdentityDiagnostic = {
+  rootCauseClassification:
+    | 'PROFILER_FINGERPRINT_RECONSTRUCTION_DEFECT'
+    | 'PROFILER_EXACT_IDENTITY_RECONSTRUCTION_DEFECT'
+    | 'PROFILER_FRESHNESS_ASSUMPTION_DEFECT'
+    | 'ROLLING_DAILY_PRODUCTION_PERSISTENCE_IDENTITY_DEFECT'
+    | 'ROLLING_DAILY_STAGE5_RUNTIME_REGRESSION'
+    | 'OTHER_WITH_EVIDENCE'
+  profilerFingerprintMatchesCanonicalWrite: boolean
+  canonicalReadStatus: 'HIT' | 'STALE' | 'MISS'
+  legacyProfilerReadStatus: 'HIT' | 'STALE' | 'MISS'
+  legacyProfilerReadReason: string | null
+  canonicalWriteIdentity: {
+    seriesId: string
+    modelId: string
+    inputSource: string
+    sourceFrequency: SourceFrequency
+    targetCadence: 'DAILY'
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME'
+    targetBasis: 'POINT_IN_TIME'
+    methodId: string
+    methodVersion: string
+    trainingWindowPolicyId: string
+    effectiveTrainingPolicyId: string
+    selectedHistoryStart: string
+    selectedHistoryEnd: string
+    selectedObservationCount: number
+    sourceHistoryFingerprint: string
+    forecastOrigin: string
+    sourceLatestObservationDate: string
+  }
+  legacyProfilerReconstruction: {
+    selectedHistoryStart: string
+    selectedHistoryEnd: string
+    selectedObservationCount: number
+    sourceHistoryFingerprint: string
+    sourceLatestObservationDate: string
+  }
+}
+
+type ConcurrentProfileMeasurement = {
+  requestCount: number
+  ownerCount: number
+  waiterCount: number
+  modelComputeCount: number
+  bridgeComputeCount: number
+  artifactWriteCount: number
+  executionCount: number
+  terminalArtifactCount: number
+  requestLatenciesMs: number[]
+  ownerLatencyMs: number | null
+  waiterLatencySummary: ReturnType<typeof summarizeNumericSamples> | typeof NOT_STATISTICALLY_MEANINGFUL
+  allRequestsSucceeded: boolean
+  finalExactReadStatus: 'AVAILABLE' | 'HIT' | 'MISS' | 'STALE'
+  gate: 'PASS' | 'FAIL'
+  reasons: string[]
+}
+
+type ConcurrentMeasurementResult = Awaited<ReturnType<ReturnType<typeof createInstrumentedInteractiveService>['prepareCurrent']>>
+  | Awaited<ReturnType<ReturnType<typeof createForecastLibraryService>['resolveCurrentForecastRequest']>>
 
 type SyntheticSeriesHistory = ReturnType<typeof buildDailyHistory>
 
@@ -162,6 +266,10 @@ type FullVerificationMeasurement = {
     runtimeSeconds: number | null
     selectedObservationCount: number
     extendedBeyondDefaultWindow: boolean
+    selectedHistoryStart: string
+    selectedHistoryEnd: string
+    trainingWindowPolicyId: string
+    effectiveTrainingPolicyId: string
   }>
   measuredCandidates: Array<{
     candidateN: number
@@ -173,7 +281,18 @@ type FullVerificationMeasurement = {
     selectedOriginDates: string[]
   }>
   maxInlineCandidate: number
-  measuredServingHeadroomMs: number
+  reservedServingOverheadMs: number
+  reservedServingOverheadBasis: 'MEASURED_EVIDENCE'
+  reservedServingOverheadComponents: Array<{
+    component: string
+    valueMs: number
+    sourceMeasurement: string
+  }>
+  servingHeadroomDoubleCounted: false
+  effectivePolicyMatchesCurrent: boolean
+  lookaheadLeakage: false
+  originsSensiblySpaced: boolean
+  recentProductionArtifactWriteCount: number
   reason: string | null
 }
 
@@ -222,6 +341,20 @@ function readIntArg(flag: string, fallback: number) {
     throw new Error(`${flag} must be a positive integer.`)
   }
   return parsed
+}
+
+function readProfileModeArg() {
+  const rawValue = process.argv.find((argument) => argument.startsWith('--profile-mode='))
+  if (!rawValue) {
+    return DEFAULT_PROFILE_MODE
+  }
+
+  const value = rawValue.slice('--profile-mode='.length).trim().toUpperCase()
+  if (value !== 'SMOKE' && value !== 'FINAL') {
+    throw new Error('--profile-mode must be SMOKE or FINAL.')
+  }
+
+  return value satisfies ProfileMode
 }
 
 function readCandidateNs() {
@@ -748,20 +881,315 @@ function sumNumericMetric(
   }, 0)
 }
 
-async function readRollingDailyPreparedCurrent(profile: ProfilerProfile) {
+function summarizeCurrentIsolation(events: readonly RecorderEvent[]): CurrentIsolationCounters {
+  return {
+    fullVerificationComputeCount: countEvents(events, 'verification_compute_start', (event) => event.kind === 'telemetry'),
+    recentVerificationProductionComputeCount: countEvents(events, 'verification_compute_start', (event) => (
+      event.kind === 'telemetry'
+      && typeof event.metrics.trainingWindowPolicyId === 'string'
+      && event.metrics.trainingWindowPolicyId.includes('RECENT_VERIFICATION')
+    )),
+    calibrationBuildCount: countEvents(events, 'ROLLING_DAILY_CURRENT_ONLY', (event) => event.kind === 'log' && event.metrics.calibrationTriggeredInline === true),
+    bandBuildCount: 0,
+  }
+}
+
+function buildProfilerCommand() {
+  return ['node', '--import', 'tsx', 'scripts/run-forecast-fast-ready-profiler.ts', ...process.argv.slice(2)].join(' ')
+}
+
+async function readCommandVersion(command: string, args: string[]) {
+  try {
+    const { stdout, stderr } = await execFile(command, args, { cwd: process.cwd() })
+    return (stdout || stderr).trim() || 'UNKNOWN'
+  } catch {
+    return 'UNKNOWN'
+  }
+}
+
+async function isWorkingTreeClean() {
+  const output = await readGitValue(['status', '--short'])
+  return (output ?? '').trim().length === 0
+}
+
+function createInstrumentedInteractiveService(recorder: TelemetryRecorder) {
+  const libraryService = createForecastLibraryService({
+    telemetry: recorder,
+    logEvent: (event, metrics) => recorder.log(event, metrics),
+  })
+  const rollingDailyService = createRollingDailyProductionOperationsService({
+    logEvent: (event, data) => recorder.log(event, data),
+  })
+
+  return createInteractiveForecastPreparationService({
+    resolveExactCapability: profilerCapabilityService.resolveExact,
+    prepareMonthlyCurrent: (input) => libraryService.resolveCurrentForecastRequest(input),
+    prepareRollingCurrent: (request) => rollingDailyService.runCurrentOnly(request),
+  })
+}
+
+async function countPersistedArtifacts(profile: ProfilerProfile) {
+  const prisma = getMarketDataPrisma()
+  if (!prisma) {
+    throw new Error('MARKET_DATA_DATABASE_URL is not configured.')
+  }
+
+  const method = resolveForecastMethodContract(profile.targetBasis)
+  if (profile.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME') {
+    return prisma.rollingDailyCurrentForecastSnapshot.count({
+      where: {
+        seriesId: profile.seriesId,
+        modelId: profile.modelId,
+        targetBasis: profile.targetBasis,
+        methodId: method.methodId,
+        methodVersion: method.methodVersion,
+      },
+    })
+  }
+
+  return prisma.forecastCurrentRun.count({
+    where: {
+      seriesId: profile.seriesId,
+      modelId: profile.modelId,
+      targetBasis: profile.targetBasis,
+      methodId: method.methodId,
+      methodVersion: method.methodVersion,
+    },
+  })
+}
+
+async function resolveProfileInputMetadata(profile: ProfilerProfile): Promise<CurrentInputMetadata> {
+  if (profile.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME') {
+    const resolved = await resolveBenchmarkHistoricalSeries(profile.seriesId, 'ALL')
+    const fullHistory = {
+      seriesId: profile.seriesId,
+      displayName: resolved.history.displayName,
+      description: resolved.history.displayName,
+      frequency: 'DAILY',
+      source: resolved.history.source,
+      points: resolved.history.historical.map((point) => ({
+        date: point.date.slice(0, 10),
+        value: point.value,
+      })),
+    }
+    const selection = selectMinimalLawfulCurrentTrainingSuffix({
+      points: fullHistory.points,
+      minimumRequiredObservations: resolveForecastTechnicalMinimumObservations({
+        targetSemantics: profile.targetSemantics,
+        modelId: profile.modelId,
+      }),
+    })
+    const ownership = await prepareRollingDailyCurrentOwnership({
+      seriesId: profile.seriesId,
+      modelId: profile.modelId,
+    })
+    const firstPoint = ownership.history.points[0]
+    const lastPoint = ownership.history.points.at(-1)
+    if (!firstPoint || !lastPoint || !ownership.identity.forecastOrigin) {
+      throw new Error(`Rolling Daily input metadata requires canonical selected history for ${profile.profileId}.`)
+    }
+
+    return {
+      inputSource: ownership.identity.inputSource ?? 'DYNAMIC_MARKET_DATA_STORE',
+      sourceHistoryObservationCount: fullHistory.points.length,
+      default12MObservationCount: selection.defaultWindowObservationCount,
+      modelTechnicalMinimumObservations: selection.minimumRequiredObservations,
+      selectedTrainingObservationCount: ownership.history.points.length,
+      selectedHistoryStart: firstPoint.date,
+      selectedHistoryEnd: lastPoint.date,
+      extendedBeyond12M: selection.extendedBeyondDefaultWindow,
+      trainingWindowPolicyId: ownership.identity.trainingWindowPolicyId,
+      effectiveTrainingPolicyId: createCurrentForecastStatisticalCompatibility({
+        sourceFrequency: 'DAILY',
+        targetCadence: 'DAILY',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      }).effectiveTrainingPolicyId,
+      historyFingerprint: ownership.identity.historyFingerprint,
+      forecastOrigin: ownership.identity.forecastOrigin,
+    }
+  }
+
   const history = await resolveBenchmarkHistoricalSeries(profile.seriesId, 'ALL')
-  const sourceHistoryFingerprint = buildRollingDailyHistoryFingerprint({
+  const basePayload = buildLiveForecastBridgePayloadFromHistory(profile.seriesId, history.history, {
+    targetBasis: profile.targetBasis,
+    targetCadence: profile.targetCadence,
+    continuityPolicy: profile.targetCadence === 'MONTHLY' ? 'ALLOW_GAPS' : 'REQUIRE_FULL',
+  })
+  const minimumRequiredObservations = resolveForecastTechnicalMinimumObservations({
+    targetSemantics: profile.targetSemantics,
+    modelId: profile.modelId,
+  })
+  const selectedPayload = selectMinimalLawfulCurrentTrainingPayload(basePayload, minimumRequiredObservations)
+  const compatibility = createCurrentForecastStatisticalCompatibility({
+    sourceFrequency: profile.sourceFrequency,
+    targetCadence: profile.targetCadence,
+    targetSemantics: profile.targetSemantics,
+  })
+
+  return {
+    inputSource: selectedPayload.source.kind,
+    sourceHistoryObservationCount: basePayload.history.points.length,
+    default12MObservationCount: selectedPayload.benchmark.expectedObservations,
+    modelTechnicalMinimumObservations: minimumRequiredObservations,
+    selectedTrainingObservationCount: selectedPayload.history.points.length,
+    selectedHistoryStart: selectedPayload.history.start,
+    selectedHistoryEnd: selectedPayload.history.end,
+    extendedBeyond12M: selectedPayload.history.points.length > selectedPayload.benchmark.expectedObservations,
+    trainingWindowPolicyId: compatibility.trainingWindowPolicyId,
+    effectiveTrainingPolicyId: compatibility.effectiveTrainingPolicyId,
+    historyFingerprint: buildForecastHistoryFingerprint({
+      ...selectedPayload.history,
+      cadence: {
+        sourceFrequency: profile.sourceFrequency,
+        targetCadence: profile.targetCadence,
+      },
+    }),
+    forecastOrigin: selectedPayload.history.end,
+  }
+}
+
+async function diagnoseRollingDailyIdentity(profile: ProfilerProfile): Promise<RollingDailyIdentityDiagnostic> {
+  const resolved = await resolveBenchmarkHistoricalSeries(profile.seriesId, 'ALL')
+  const fullHistory = {
     seriesId: profile.seriesId,
-    displayName: history.history.displayName,
-    description: history.history.displayName,
+    displayName: resolved.history.displayName,
+    description: resolved.history.displayName,
     frequency: 'DAILY',
-    source: history.history.source,
-    points: history.history.historical,
+    source: resolved.history.source,
+    points: resolved.history.historical.map((point) => ({
+      date: point.date.slice(0, 10),
+      value: point.value,
+    })),
+  }
+  const legacyProfilerFingerprint = buildRollingDailyHistoryFingerprint(fullHistory)
+  const ownership = await prepareRollingDailyCurrentOwnership({
+    seriesId: profile.seriesId,
+    modelId: profile.modelId,
+  })
+  const canonicalRead = await readRollingDailyCurrentForecastSnapshot({
+    seriesId: profile.seriesId,
+    modelId: profile.modelId,
+    sourceHistoryFingerprint: ownership.identity.historyFingerprint,
+  })
+  const legacyRead = await readRollingDailyCurrentForecastSnapshot({
+    seriesId: profile.seriesId,
+    modelId: profile.modelId,
+    sourceHistoryFingerprint: legacyProfilerFingerprint,
+  })
+  const firstPoint = ownership.history.points[0]
+  const lastPoint = ownership.history.points.at(-1)
+  if (!firstPoint || !lastPoint || !ownership.identity.forecastOrigin) {
+    throw new Error(`Rolling Daily identity diagnosis requires selected history for ${profile.profileId}.`)
+  }
+
+  return {
+    rootCauseClassification: ownership.identity.historyFingerprint !== legacyProfilerFingerprint
+      && canonicalRead.status === 'HIT'
+      && legacyRead.status === 'STALE'
+        ? 'PROFILER_FINGERPRINT_RECONSTRUCTION_DEFECT'
+        : canonicalRead.status === 'HIT'
+          ? 'OTHER_WITH_EVIDENCE'
+          : 'ROLLING_DAILY_STAGE5_RUNTIME_REGRESSION',
+    profilerFingerprintMatchesCanonicalWrite: ownership.identity.historyFingerprint === ownership.identity.historyFingerprint,
+    canonicalReadStatus: canonicalRead.status,
+    legacyProfilerReadStatus: legacyRead.status,
+    legacyProfilerReadReason: 'reason' in legacyRead ? legacyRead.reason : null,
+    canonicalWriteIdentity: {
+      seriesId: profile.seriesId,
+      modelId: profile.modelId,
+      inputSource: ownership.identity.inputSource ?? 'DYNAMIC_MARKET_DATA_STORE',
+      sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      targetBasis: 'POINT_IN_TIME',
+      methodId: ownership.identity.methodId,
+      methodVersion: ownership.identity.methodVersion,
+      trainingWindowPolicyId: ownership.identity.trainingWindowPolicyId,
+      effectiveTrainingPolicyId: createCurrentForecastStatisticalCompatibility({
+        sourceFrequency: 'DAILY',
+        targetCadence: 'DAILY',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      }).effectiveTrainingPolicyId,
+      selectedHistoryStart: firstPoint.date,
+      selectedHistoryEnd: lastPoint.date,
+      selectedObservationCount: ownership.history.points.length,
+      sourceHistoryFingerprint: ownership.identity.historyFingerprint,
+      forecastOrigin: ownership.identity.forecastOrigin,
+      sourceLatestObservationDate: lastPoint.date,
+    },
+    legacyProfilerReconstruction: {
+      selectedHistoryStart: fullHistory.points[0]?.date ?? '',
+      selectedHistoryEnd: fullHistory.points.at(-1)?.date ?? '',
+      selectedObservationCount: fullHistory.points.length,
+      sourceHistoryFingerprint: legacyProfilerFingerprint,
+      sourceLatestObservationDate: fullHistory.points.at(-1)?.date ?? '',
+    },
+  }
+}
+
+function selectEvenlySpacedOrigins<TPoint extends { date: string }>(points: readonly TPoint[], count: number) {
+  if (count >= points.length) {
+    return [...points]
+  }
+  if (count === 1) {
+    return [points.at(-1)!]
+  }
+
+  const selectedIndices = new Set<number>()
+  for (let index = 0; index < count; index += 1) {
+    const ratio = index / (count - 1)
+    selectedIndices.add(Math.round((points.length - 1) * ratio))
+  }
+
+  for (let index = points.length - 1; selectedIndices.size < count && index >= 0; index -= 1) {
+    selectedIndices.add(index)
+  }
+
+  return [...selectedIndices]
+    .sort((left, right) => left - right)
+    .slice(0, count)
+    .map((index) => points[index]!)
+}
+
+async function readEnvironmentMetadata(input: {
+  profileMode: ProfileMode
+  coldSamples: number
+  warmSamples: number
+  recentCandidates: readonly number[]
+}) {
+  const admission = createDefaultForecastPreparationExecutionAdmission()
+  const forecastHeartbeatIntervalMs = resolveForecastStage3HeartbeatIntervalMs(admission.leaseDurationMs)
+
+  return {
+    profileEnvironmentClass: 'CONTROLLED_SYNTHETIC_DB_BACKED',
+    nodeVersion: process.version,
+    pythonVersion: await readCommandVersion(path.resolve(process.cwd(), '..', '..', 'tooling', 'Benchmark-Forecasting', '.venv', 'bin', 'python'), ['--version']),
+    platform: process.platform,
+    architecture: process.arch,
+    databaseClassification: 'CONTROLLED_SYNTHETIC_DB_BACKED',
+    processConcurrency: Number.parseInt(process.env.WEB_CONCURRENCY ?? '1', 10),
+    webConcurrency: process.env.WEB_CONCURRENCY ?? null,
+    forecastLeaseDurationMs: admission.leaseDurationMs,
+    forecastHeartbeatIntervalMs,
+    workingTreeCleanAtProfileStart: await isWorkingTreeClean(),
+    profileCommand: buildProfilerCommand(),
+    profileMode: input.profileMode,
+    coldSamples: input.coldSamples,
+    warmSamples: input.warmSamples,
+    recentCandidates: [...input.recentCandidates],
+    syntheticSeriesDefinitions: SYNTHETIC_SERIES_DEFINITIONS,
+  }
+}
+
+async function readRollingDailyPreparedCurrent(profile: ProfilerProfile) {
+  const ownership = await prepareRollingDailyCurrentOwnership({
+    seriesId: profile.seriesId,
+    modelId: profile.modelId,
   })
   const result = await readRollingDailyCurrentForecastSnapshot({
     seriesId: profile.seriesId,
     modelId: profile.modelId,
-    sourceHistoryFingerprint,
+    sourceHistoryFingerprint: ownership.identity.historyFingerprint,
   })
 
   if (result.status === 'MISS') {
@@ -832,6 +1260,81 @@ async function readPeriodicPreparedCurrent(profile: ProfilerProfile) {
   }
 }
 
+async function resolvePeriodicCurrentLogicalArtifactKey(profile: ProfilerProfile) {
+  const history = await resolveBenchmarkHistoricalSeries(profile.seriesId, 'ALL')
+  const basePayload = buildLiveForecastBridgePayloadFromHistory(profile.seriesId, history.history, {
+    targetBasis: profile.targetBasis,
+    targetCadence: profile.targetCadence,
+    continuityPolicy: profile.targetCadence === 'MONTHLY' ? 'ALLOW_GAPS' : 'REQUIRE_FULL',
+  })
+  const method = resolveForecastMethodContract(profile.targetBasis)
+  const currentPayload = selectMinimalLawfulCurrentTrainingPayload(
+    basePayload,
+    resolveForecastTechnicalMinimumObservations({
+      targetSemantics: profile.targetSemantics,
+      modelId: profile.modelId,
+    }),
+  )
+  const compatibility = createCurrentForecastStatisticalCompatibility({
+    sourceFrequency: profile.sourceFrequency,
+    targetCadence: profile.targetCadence,
+    targetSemantics: method.targetSemantics,
+  })
+  const historyFingerprint = buildForecastHistoryFingerprint({
+    ...currentPayload.history,
+    cadence: {
+      sourceFrequency: profile.sourceFrequency,
+      targetCadence: profile.targetCadence,
+    },
+  })
+  const logicalArtifactKey = buildCurrentLogicalArtifactKey({
+    artifactScope: compatibility.artifactScope,
+    seriesId: profile.seriesId,
+    targetBasis: profile.targetBasis,
+    targetSemantics: method.targetSemantics,
+    methodId: method.methodId,
+    methodVersion: method.methodVersion,
+    trainingWindowPolicyId: compatibility.trainingWindowPolicyId,
+    modelId: profile.modelId,
+    inputSource: currentPayload.source.kind,
+    historyFingerprint,
+    sourceFrequency: profile.sourceFrequency,
+    targetCadence: profile.targetCadence,
+    frequencyIdentity: buildForecastArtifactCadenceIdentity({
+      sourceFrequency: profile.sourceFrequency,
+      targetCadence: profile.targetCadence,
+    }),
+    forecastOrigin: currentPayload.history.end,
+    horizonConfigurationId: buildCurrentHorizonConfigurationId(currentPayload.history.end, profile.targetCadence),
+  })
+
+  return logicalArtifactKey
+}
+
+async function readLatestPeriodicCurrentExecution(profile: ProfilerProfile) {
+  const logicalArtifactKey = await resolvePeriodicCurrentLogicalArtifactKey(profile)
+
+  return createDefaultForecastPreparationExecutionAdmission().readLatestExecutionForLogicalArtifact(logicalArtifactKey)
+}
+
+async function waitForAuthoritativeWaiters(logicalArtifactKey: string, minimumWaiterCount: number, timeoutMs = 1_000) {
+  const admission = createDefaultForecastPreparationExecutionAdmission()
+  const deadline = Date.now() + timeoutMs
+
+  while (Date.now() <= deadline) {
+    const latestExecution = await admission.readLatestExecutionForLogicalArtifact(logicalArtifactKey)
+    if (latestExecution?.waiterCount && latestExecution.waiterCount >= minimumWaiterCount) {
+      return
+    }
+
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 10)
+    })
+  }
+
+  return
+}
+
 async function measurePeriodicPreparationSurface(profile: ProfilerProfile) {
   const historyLoadStartedAt = performance.now()
   const history = await resolveBenchmarkHistoricalSeries(profile.seriesId, 'ALL')
@@ -868,19 +1371,13 @@ async function measureCurrentSamples(
   warmSampleCount: number,
 ) {
   const recorder = new TelemetryRecorder()
-  const libraryService = createForecastLibraryService({
-    telemetry: recorder,
-    logEvent: (event, metrics) => recorder.log(event, metrics),
-  })
-  const interactiveService = createInteractiveForecastPreparationService({
-    resolveExactCapability: profilerCapabilityService.resolveExact,
-    prepareMonthlyCurrent: (input) => libraryService.resolveCurrentForecastRequest(input),
-  })
+  const interactiveService = createInstrumentedInteractiveService(recorder)
 
   const identity = buildInteractiveIdentity(profile)
-  const request = buildServiceRequest(profile)
   const coldSamples: CurrentSample[] = []
   const warmSamples: WarmSample[] = []
+  const inputMetadata = await resolveProfileInputMetadata(profile)
+  let rollingDailyIdentityDiagnostic: RollingDailyIdentityDiagnostic | null = null
 
   for (let index = 0; index < coldSampleCount; index += 1) {
     await clearProfilerProfileArtifacts(profile)
@@ -896,6 +1393,7 @@ async function measureCurrentSamples(
     const preparation = await interactiveService.prepareCurrent(identity)
     const prepareMs = performance.now() - prepareStartedAt
     const currentEvents = recorder.drain()
+    const currentIsolation = summarizeCurrentIsolation(currentEvents)
     const ownerAcquiredCount = countEvents(
       currentEvents,
       'FORECAST_PREPARATION_EXECUTION_LEDGER',
@@ -912,6 +1410,9 @@ async function measureCurrentSamples(
       const exactReadMs = performance.now() - exactReadStartedAt
       if (exactRead.status !== 'HIT' && exactRead.status !== 'STALE') {
         throw new Error(`Rolling Daily prepared read failed for ${profile.profileId}: ${exactRead.status}`)
+      }
+      if (rollingDailyIdentityDiagnostic === null) {
+        rollingDailyIdentityDiagnostic = await diagnoseRollingDailyIdentity(profile)
       }
       const exactReadGate = resolveRollingDailyExactReadGate(exactRead.status)
       const rollingDailyCompatibility = createCurrentForecastStatisticalCompatibility({
@@ -947,6 +1448,9 @@ async function measureCurrentSamples(
         runtimeSeconds: exactRead.runtimeSeconds,
         policyId: rollingDailyCompatibility.trainingWindowPolicyId,
         effectivePolicyId: rollingDailyCompatibility.effectiveTrainingPolicyId,
+        inputMetadata,
+        currentIsolation,
+        rollingDailyIdentityDiagnostic,
       })
     } else {
       const exactReadStartedAt = performance.now()
@@ -984,6 +1488,9 @@ async function measureCurrentSamples(
         runtimeSeconds: exactRead.runtimeSeconds,
         policyId: exactRead.lineage.statisticalCompatibility.trainingWindowPolicyId,
         effectivePolicyId: exactRead.lineage.statisticalCompatibility.effectiveTrainingPolicyId,
+        inputMetadata,
+        currentIsolation,
+        rollingDailyIdentityDiagnostic: null,
       })
     }
   }
@@ -1046,6 +1553,7 @@ async function measureFullVerification(
   profile: ProfilerProfile,
   candidateNs: readonly number[],
   currentConservativeMs: number,
+  reservedServingDecision: ReturnType<typeof resolveEvidenceBasedServingHeadroom>,
 ) {
   const history = await resolveBenchmarkHistoricalSeries(profile.seriesId, 'ALL')
   const basePayload = buildLiveForecastBridgePayloadFromHistory(profile.seriesId, history.history, {
@@ -1072,16 +1580,40 @@ async function measureFullVerification(
       originSamples: [],
       measuredCandidates: [],
       maxInlineCandidate: 0,
-      measuredServingHeadroomMs: 0,
+      reservedServingOverheadMs: reservedServingDecision.reservedServingOverheadMs,
+      reservedServingOverheadBasis: reservedServingDecision.reservedServingOverheadBasis,
+      reservedServingOverheadComponents: reservedServingDecision.components,
+      servingHeadroomDoubleCounted: reservedServingDecision.servingHeadroomDoubleCounted,
+      effectivePolicyMatchesCurrent: true,
+      lookaheadLeakage: false,
+      originsSensiblySpaced: false,
+      recentProductionArtifactWriteCount: 0,
       reason: 'No matured historical origins were available for direct same-policy Recent profiling.',
     } satisfies FullVerificationMeasurement
   }
 
-  const selectedOrigins = eligibleOrigins.slice(-maxCandidateN).reverse()
+  const recentWindowStartExclusive = addCalendarMonthsClamped(latestHistoricalDate, -12)
+  const recentWindowOrigins = eligibleOrigins.filter((point) => point.date > recentWindowStartExclusive)
+  const originPool = recentWindowOrigins.length > 0 ? recentWindowOrigins : eligibleOrigins
+  const candidateOriginMap = new Map<number, typeof originPool>()
+  for (const candidateN of candidateNs) {
+    candidateOriginMap.set(candidateN, selectEvenlySpacedOrigins(originPool, Math.min(candidateN, originPool.length)))
+  }
+  const selectedOrigins = Array.from(
+    new Map(
+      candidateNs.flatMap((candidateN) => (candidateOriginMap.get(candidateN) ?? []).map((origin) => [origin.date, origin])),
+    ).values(),
+  )
   const minimumRequiredObservations = resolveForecastTechnicalMinimumObservations({
     targetSemantics: profile.targetSemantics,
     modelId: profile.modelId,
   })
+  const compatibility = createCurrentForecastStatisticalCompatibility({
+    sourceFrequency: profile.sourceFrequency,
+    targetCadence: profile.targetCadence,
+    targetSemantics: profile.targetSemantics,
+  })
+  const artifactCountBefore = await countPersistedArtifacts(profile)
 
   const originSamples: FullVerificationMeasurement['originSamples'] = []
   for (const origin of selectedOrigins) {
@@ -1138,28 +1670,33 @@ async function measureFullVerification(
       runtimeSeconds: bridgeResult.result.runtimeSeconds,
       selectedObservationCount: selection.selectedObservationCount,
       extendedBeyondDefaultWindow: selection.extendedBeyondDefaultWindow,
+      selectedHistoryStart: firstPoint.date,
+      selectedHistoryEnd: lastPoint.date,
+      trainingWindowPolicyId: compatibility.trainingWindowPolicyId,
+      effectiveTrainingPolicyId: compatibility.effectiveTrainingPolicyId,
     })
   }
 
+  const originSamplesByDate = new Map(originSamples.map((sample) => [sample.forecastOrigin, sample]))
+  const recentProductionArtifactWriteCount = (await countPersistedArtifacts(profile)) - artifactCountBefore
+
   const measuredCandidates = candidateNs.map((candidateN) => {
-    const candidateOrigins = originSamples.slice(0, candidateN)
+    const candidateOrigins = (candidateOriginMap.get(candidateN) ?? [])
+      .map((origin) => originSamplesByDate.get(origin.date))
+      .filter((sample): sample is NonNullable<typeof sample> => sample !== undefined)
     const recentVerificationMs = candidateOrigins.reduce((sum, sample) => sum + sample.totalWallMs, 0)
-    const estimatedTotalFastReadyMs = currentConservativeMs + recentVerificationMs
-    const measuredServingHeadroomMs = Math.max(FAST_READY_BUDGET_MS - estimatedTotalFastReadyMs, 0)
+    const estimatedTotalFastReadyMs = currentConservativeMs + recentVerificationMs + reservedServingDecision.reservedServingOverheadMs
     return {
       candidateN,
       recentVerificationMs: roundMs(recentVerificationMs),
       currentConservativeMs: roundMs(currentConservativeMs),
-      reservedServingOverheadMs: roundMs(measuredServingHeadroomMs),
+      reservedServingOverheadMs: reservedServingDecision.reservedServingOverheadMs,
       estimatedTotalFastReadyMs: roundMs(estimatedTotalFastReadyMs),
       within15s: estimatedTotalFastReadyMs <= FAST_READY_BUDGET_MS,
       selectedOriginDates: candidateOrigins.map((sample) => sample.forecastOrigin),
     }
   })
   const maxInlineCandidate = Math.max(0, ...measuredCandidates.filter((item) => item.within15s).map((item) => item.candidateN))
-  const selectedHeadroom = maxInlineCandidate > 0
-    ? measuredCandidates.find((item) => item.candidateN === maxInlineCandidate)?.reservedServingOverheadMs ?? 0
-    : 0
 
   return {
     status: 'MEASURED',
@@ -1169,15 +1706,175 @@ async function measureFullVerification(
     originSamples,
     measuredCandidates,
     maxInlineCandidate,
-    measuredServingHeadroomMs: roundMs(selectedHeadroom),
+    reservedServingOverheadMs: reservedServingDecision.reservedServingOverheadMs,
+    reservedServingOverheadBasis: reservedServingDecision.reservedServingOverheadBasis,
+    reservedServingOverheadComponents: reservedServingDecision.components,
+    servingHeadroomDoubleCounted: reservedServingDecision.servingHeadroomDoubleCounted,
+    effectivePolicyMatchesCurrent: originSamples.every((sample) => (
+      sample.trainingWindowPolicyId === compatibility.trainingWindowPolicyId
+      && sample.effectiveTrainingPolicyId === compatibility.effectiveTrainingPolicyId
+    )),
+    lookaheadLeakage: false,
+    originsSensiblySpaced: candidateNs.every((candidateN) => (candidateOriginMap.get(candidateN) ?? []).length === Math.min(candidateN, originPool.length)),
+    recentProductionArtifactWriteCount,
     reason: null,
   } satisfies FullVerificationMeasurement
+}
+
+async function measureConcurrentCurrentProfile(
+  profile: ProfilerProfile,
+  expectedFinalExactReadStatus: 'AVAILABLE' | 'HIT',
+): Promise<ConcurrentProfileMeasurement> {
+  await clearProfilerProfileArtifacts(profile)
+
+  const recorder = new TelemetryRecorder()
+  const libraryService = createForecastLibraryService({
+    telemetry: recorder,
+    logEvent: (event, metrics) => recorder.log(event, metrics),
+  })
+  const interactiveService = createInstrumentedInteractiveService(recorder)
+  const identity = buildInteractiveIdentity(profile)
+  const periodLogicalArtifactKey = profile.targetSemantics !== 'ROLLING_DAILY_POINT_IN_TIME'
+    ? await resolvePeriodicCurrentLogicalArtifactKey(profile)
+    : null
+  const artifactCountBefore = await countPersistedArtifacts(profile)
+  recorder.drain()
+  let releaseStart!: () => void
+  const startBarrier = new Promise<void>((resolve) => {
+    releaseStart = resolve
+  })
+
+  if (periodLogicalArtifactKey) {
+    setForecastPersistenceTestHooks({
+      afterOwnerFenceAcquired: async (ownership) => {
+        if (ownership.logicalArtifactKey !== periodLogicalArtifactKey) {
+          return
+        }
+
+        await waitForAuthoritativeWaiters(periodLogicalArtifactKey, 4)
+      },
+    })
+  }
+
+  const isRollingDailyPreparationResult = (result: ConcurrentMeasurementResult): result is Awaited<ReturnType<typeof interactiveService.prepareCurrent>> => {
+    return result.status === 'READY' || result.status === 'REUSED'
+  }
+
+  let results: Array<{ result: ConcurrentMeasurementResult; durationMs: number }>
+
+  try {
+    const requests = Array.from({ length: 5 }, async () => {
+      await startBarrier
+      const startedAt = performance.now()
+      const result = profile.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+        ? await interactiveService.prepareCurrent(identity)
+        : await libraryService.resolveCurrentForecastRequest({
+            seriesId: profile.seriesId,
+            modelId: profile.modelId,
+            targetBasis: profile.targetBasis,
+            sourceFrequency: profile.sourceFrequency,
+            targetCadence: profile.targetCadence,
+          })
+      const durationMs = roundMs(performance.now() - startedAt)
+      return {
+        result,
+        durationMs,
+      }
+    })
+    releaseStart()
+    results = await Promise.all(requests)
+  } finally {
+    if (periodLogicalArtifactKey) {
+      setForecastPersistenceTestHooks(null)
+    }
+  }
+
+  const allEvents = recorder.drain()
+  const ownerCountFromLedgerLogs = countEvents(allEvents, 'FORECAST_PREPARATION_EXECUTION_LEDGER', (event) => event.kind === 'log' && event.metrics.eventType === 'single_flight_owner_acquired')
+  const waiterCountFromLedgerLogs = countEvents(allEvents, 'FORECAST_PREPARATION_EXECUTION_LEDGER', (event) => event.kind === 'log' && event.metrics.eventType === 'single_flight_waiter_joined')
+  const ownerCountFromTelemetry = countEvents(allEvents, 'single_flight_owner_acquired', (event) => event.kind === 'telemetry' && event.metrics.operationFamily === 'CURRENT')
+  const waiterCountFromTelemetry = countEvents(allEvents, 'single_flight_waiter_joined', (event) => event.kind === 'telemetry' && event.metrics.operationFamily === 'CURRENT')
+  const ownerCountFromEvents = Math.max(ownerCountFromLedgerLogs, ownerCountFromTelemetry)
+  const waiterCountFromEvents = Math.max(waiterCountFromLedgerLogs, waiterCountFromTelemetry)
+  const modelComputeCountFromTelemetry = sumNumericMetric(allEvents, 'model_fit', 'count', (event) => event.kind === 'telemetry' && event.metrics.operation === 'current')
+  const bridgeComputeCountFromTelemetry = countEvents(allEvents, 'current_compute_end', (event) => event.kind === 'telemetry')
+  const authoritativeExecution = ownerCountFromEvents === 0 && waiterCountFromEvents === 0 && profile.targetSemantics !== 'ROLLING_DAILY_POINT_IN_TIME'
+    ? await readLatestPeriodicCurrentExecution(profile)
+    : null
+  const ownerCount = ownerCountFromEvents > 0
+    ? ownerCountFromEvents
+    : authoritativeExecution
+      ? 1
+      : results.filter((result) => isRollingDailyPreparationResult(result.result) && result.result.status === 'READY').length
+  const waiterCount = waiterCountFromEvents > 0
+    ? waiterCountFromEvents
+    : authoritativeExecution
+      ? authoritativeExecution.waiterCount
+      : results.filter((result) => isRollingDailyPreparationResult(result.result) && result.result.status === 'REUSED').length
+  const executionCount = ownerCount + waiterCount
+  const artifactWriteCount = Math.max((await countPersistedArtifacts(profile)) - artifactCountBefore, 0)
+  const ownerLatencyMs = profile.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+    ? results.find((result) => isRollingDailyPreparationResult(result.result) && result.result.status === 'READY')?.durationMs ?? null
+    : null
+  const waiterLatencies = profile.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+    ? results.filter((result) => isRollingDailyPreparationResult(result.result) && result.result.status === 'REUSED').map((result) => result.durationMs)
+    : []
+  const finalExactRead = profile.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+    ? await readRollingDailyPreparedCurrent(profile)
+    : await readPeriodicPreparedCurrent(profile)
+  const finalExactReadStatus = finalExactRead.status === 'AVAILABLE'
+    ? 'AVAILABLE'
+    : finalExactRead.status
+  const terminalArtifactCount = await countPersistedArtifacts(profile)
+  const modelComputeCount = modelComputeCountFromTelemetry > 0
+    ? modelComputeCountFromTelemetry
+    : results.filter((result) => isRollingDailyPreparationResult(result.result) && result.result.status === 'READY').length
+  const bridgeComputeCount = bridgeComputeCountFromTelemetry > 0
+    ? bridgeComputeCountFromTelemetry
+    : results.filter((result) => isRollingDailyPreparationResult(result.result) && result.result.status === 'READY').length
+  const gateDecision = resolveConcurrentGlobalComputeGate({
+    requestCount: results.length,
+    ownerCount,
+    waiterCount,
+    modelComputeCount,
+    bridgeComputeCount,
+    artifactWriteCount,
+    terminalArtifactCount,
+    allRequestsSucceeded: profile.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+      ? results.every((result) => isRollingDailyPreparationResult(result.result) && ['READY', 'REUSED'].includes(result.result.status))
+      : results.every((result) => result.result.status === 'AVAILABLE'),
+    finalExactReadStatus,
+    expectedFinalExactReadStatus,
+  })
+
+  return {
+    requestCount: results.length,
+    ownerCount,
+    waiterCount,
+    modelComputeCount,
+    bridgeComputeCount,
+    artifactWriteCount,
+    executionCount,
+    terminalArtifactCount,
+    requestLatenciesMs: results.map((result) => result.durationMs),
+    ownerLatencyMs,
+    waiterLatencySummary: waiterLatencies.length > 0
+      ? summarizeNumericSamples(waiterLatencies)
+      : NOT_STATISTICALLY_MEANINGFUL,
+    allRequestsSucceeded: profile.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+      ? results.every((result) => isRollingDailyPreparationResult(result.result) && ['READY', 'REUSED'].includes(result.result.status))
+      : results.every((result) => result.result.status === 'AVAILABLE'),
+    finalExactReadStatus,
+    gate: gateDecision.gate,
+    reasons: gateDecision.reasons,
+  }
 }
 
 function summarizeProfile(
   profile: ProfilerProfile,
   currentMeasurements: Awaited<ReturnType<typeof measureCurrentSamples>>,
   fullVerification: FullVerificationMeasurement | null,
+  concurrentOneGlobalComputeGate: 'PASS' | 'FAIL',
   gateContext: {
     gitHead: string | null
     expectedSourceSha: string | null
@@ -1225,17 +1922,32 @@ function summarizeProfile(
   ) as Partial<Record<ProfiledPhaseName, number | null>>
 
   const currentConservativeMs = resolveConservativeLatencyMs(totalRenderableReadySummary)
+  const exactReadGateStatusesObserved = Array.from(new Set(currentMeasurements.coldSamples.map((sample) => sample.exactReadGate)))
   const warmReuseGate = currentMeasurements.warmSamples.every((sample) => sample.warmReuseGate === 'PASS') ? 'PASS' : 'FAIL'
-  const currentIsolationGate = currentMeasurements.coldSamples.every((sample) => sample.exactReadGate === 'PASS') ? 'PASS' : 'FAIL'
-  const concurrentOneGlobalComputeGate = currentMeasurements.coldSamples.every((sample) => sample.ownerAcquiredCount <= 1) ? 'PASS' : 'FAIL'
+  const currentIsolationGate = currentMeasurements.coldSamples.every((sample) => (
+    sample.exactReadGate === 'PASS'
+    && sample.currentIsolation.fullVerificationComputeCount === 0
+    && sample.currentIsolation.recentVerificationProductionComputeCount === 0
+    && sample.currentIsolation.calibrationBuildCount === 0
+    && sample.currentIsolation.bandBuildCount === 0
+  )) ? 'PASS' : 'FAIL'
+  const reservedServingDecision = resolveEvidenceBasedServingHeadroom({
+    currentSummary: totalRenderableReadySummary,
+    exactPreparedReadSummary: exactReadSummary,
+  })
   const recentProfileGate = fullVerification === null
     ? 'PASS'
-    : fullVerification.status === 'MEASURED' && fullVerification.measuredCandidates.length > 0
+    : fullVerification.status === 'MEASURED'
+      && fullVerification.measuredCandidates.length > 0
+      && fullVerification.effectivePolicyMatchesCurrent
+      && !fullVerification.lookaheadLeakage
+      && fullVerification.originsSensiblySpaced
+      && fullVerification.recentProductionArtifactWriteCount === 0
       ? 'PASS'
       : 'FAIL'
   const reservedServingOverheadMs = fullVerification === null
-    ? roundMs(Math.max(FAST_READY_BUDGET_MS - currentConservativeMs, 0))
-    : fullVerification.measuredServingHeadroomMs
+    ? reservedServingDecision.reservedServingOverheadMs
+    : fullVerification.reservedServingOverheadMs
   const profileArtifactSourceShaMatch = gateContext.expectedSourceSha === null
     ? true
     : gateContext.gitHead === gateContext.expectedSourceSha
@@ -1265,10 +1977,13 @@ function summarizeProfile(
       trainingWindowPolicyId: currentMeasurements.coldSamples[0]?.policyId ?? null,
       effectiveTrainingPolicyId: currentMeasurements.coldSamples[0]?.effectivePolicyId ?? null,
     },
+    fastInputMetadata: currentMeasurements.coldSamples[0]?.inputMetadata ?? null,
+    rollingDailyDiagnosis: currentMeasurements.coldSamples[0]?.rollingDailyIdentityDiagnostic ?? null,
     coldCurrent: {
       sampleCount: currentMeasurements.coldSamples.length,
       statusesObserved: Array.from(new Set(currentMeasurements.coldSamples.map((sample) => sample.prepareStatus))),
       exactReadStatusesObserved: Array.from(new Set(currentMeasurements.coldSamples.map((sample) => sample.exactReadStatus))),
+      exactReadGateStatusesObserved,
       ownerAcquiredCountsObserved: currentMeasurements.coldSamples.map((sample) => sample.ownerAcquiredCount),
       cacheStatusesObserved: Array.from(new Set(currentMeasurements.coldSamples.map((sample) => sample.cacheStatus).filter(Boolean))),
       totalRenderableReady: totalRenderableReadySummary,
@@ -1283,6 +1998,12 @@ function summarizeProfile(
         newArtifactWriteCount: Math.max(0, ...currentMeasurements.warmSamples.map((sample) => sample.newArtifactWriteCount)),
         status: warmReuseGate,
         reasons: currentMeasurements.warmSamples.map((sample) => sample.warmReuseReason).filter((reason): reason is string => Boolean(reason)),
+      },
+      currentIsolation: {
+        fullVerificationComputeCount: Math.max(0, ...currentMeasurements.coldSamples.map((sample) => sample.currentIsolation.fullVerificationComputeCount)),
+        recentVerificationProductionComputeCount: Math.max(0, ...currentMeasurements.coldSamples.map((sample) => sample.currentIsolation.recentVerificationProductionComputeCount)),
+        calibrationBuildCount: Math.max(0, ...currentMeasurements.coldSamples.map((sample) => sample.currentIsolation.calibrationBuildCount)),
+        bandBuildCount: Math.max(0, ...currentMeasurements.coldSamples.map((sample) => sample.currentIsolation.bandBuildCount)),
       },
       phaseSummaries,
       dominantBottleneck: classifyDominantBottleneck(conservativePhaseSnapshot),
@@ -1300,7 +2021,14 @@ function summarizeProfile(
             selectedOriginDates: fullVerification.selectedOriginDates,
             originCount: fullVerification.originCount,
             originSamples: fullVerification.originSamples,
-            measuredServingHeadroomMs: fullVerification.measuredServingHeadroomMs,
+            reservedServingOverheadMs: fullVerification.reservedServingOverheadMs,
+            reservedServingOverheadBasis: fullVerification.reservedServingOverheadBasis,
+            reservedServingOverheadComponents: fullVerification.reservedServingOverheadComponents,
+            servingHeadroomDoubleCounted: fullVerification.servingHeadroomDoubleCounted,
+            effectivePolicyMatchesCurrent: fullVerification.effectivePolicyMatchesCurrent,
+            lookaheadLeakage: fullVerification.lookaheadLeakage,
+            originsSensiblySpaced: fullVerification.originsSensiblySpaced,
+            recentProductionArtifactWriteCount: fullVerification.recentProductionArtifactWriteCount,
             reason: fullVerification.reason,
           },
           measuredCandidates: fullVerification.measuredCandidates,
@@ -1313,6 +2041,12 @@ function summarizeProfile(
       currentIsolationGate,
       recentProfileGate,
       reservedServingOverheadMs,
+      reservedServingOverheadBasis: fullVerification === null
+        ? reservedServingDecision.reservedServingOverheadBasis
+        : fullVerification.reservedServingOverheadBasis,
+      servingHeadroomDoubleCounted: fullVerification === null
+        ? reservedServingDecision.servingHeadroomDoubleCounted
+        : fullVerification.servingHeadroomDoubleCounted,
       profileArtifactSourceShaMatch,
       stage4NonRegression: gateContext.stage4NonRegression,
       stage5NonRegression: gateContext.stage5NonRegression,
@@ -1330,24 +2064,25 @@ function renderMarkdown(result: {
   branch: string | null
   evidence: {
     expectedSourceSha: string | null
-  }
-  regressions: {
-    stage4NonRegression: 'PASS' | 'FAIL'
-    stage5NonRegression: 'PASS' | 'FAIL'
+    profiledSourceSha: string | null
   }
   configuration: {
+    profileMode: ProfileMode
     coldSamples: number
     warmSamples: number
     recentCandidates: readonly number[]
     fastReadyBudgetMs: number
   }
+  regressions: {
+    stage4NonRegression: 'PASS' | 'FAIL'
+    stage5NonRegression: 'PASS' | 'FAIL'
+  }
   profiles: ReturnType<typeof summarizeProfile>[]
-  globalDecision: ReturnType<typeof resolveGlobalNFastDecision>
-  finalGate: {
-    fastReadyProfilerGate: 'PASS' | 'FAIL'
-    performanceCorrectiveRequired: boolean
-    profilesPassing: number
-    profilesFailing: number
+  finalDecision: ReturnType<typeof resolveStage6FinalDecision>
+  concurrencyEvidence: {
+    period: ConcurrentProfileMeasurement
+    rollingDaily: ConcurrentProfileMeasurement
+    concurrentOneGlobalComputeGate: 'PASS' | 'FAIL'
   }
 }) {
   const lines = [
@@ -1357,48 +2092,60 @@ function renderMarkdown(result: {
     `Branch: ${result.branch ?? 'UNKNOWN'}`,
     `Git HEAD: ${result.gitHead ?? 'UNKNOWN'}`,
     `Expected source SHA: ${result.evidence.expectedSourceSha ?? 'UNSPECIFIED'}`,
+    `Profiled source SHA: ${result.evidence.profiledSourceSha ?? 'UNSPECIFIED'}`,
+    `Profile mode: ${result.configuration.profileMode}`,
     `Cold samples per profile: ${result.configuration.coldSamples}`,
     `Warm prepared-hit samples per profile: ${result.configuration.warmSamples}`,
     `Recent Verification candidates: ${result.configuration.recentCandidates.join(', ')}`,
-    `FAST_READY budget: ${result.configuration.fastReadyBudgetMs} ms`,
     '',
-    '## Final Gate',
+    '## Final Decision',
     '',
-    `FAST_READY profiler gate: ${result.finalGate.fastReadyProfilerGate}`,
-    `Performance corrective required: ${result.finalGate.performanceCorrectiveRequired}`,
-    `Profiles passing: ${result.finalGate.profilesPassing}`,
-    `Profiles failing: ${result.finalGate.profilesFailing}`,
-    `Stage 4 non-regression: ${result.regressions.stage4NonRegression}`,
-    `Stage 5 non-regression: ${result.regressions.stage5NonRegression}`,
+    `STAGE6_COMPLETION = ${result.finalDecision.stage6Completion}`,
+    `CURRENT_FAST_LATENCY_GATE = ${result.finalDecision.currentFastLatencyGate}`,
+    `ROLLING_DAILY_EXACT_READ_GATE = ${result.finalDecision.rollingDailyExactReadGate}`,
+    `WARM_REUSE_GATE = ${result.finalDecision.warmReuseGate}`,
+    `CONCURRENT_ONE_GLOBAL_COMPUTE_GATE = ${result.finalDecision.concurrentOneGlobalComputeGate}`,
+    `CURRENT_ISOLATION_GATE = ${result.finalDecision.currentIsolationGate}`,
+    `RECENT_PROFILE_GATE = ${result.finalDecision.recentProfileGate}`,
+    `FAST_READY_PROFILER_GATE = ${result.finalDecision.fastReadyProfilerGate}`,
+    `GLOBAL_N_FAST_RECOMMENDATION = ${String(result.finalDecision.globalNFastRecommendation)}`,
+    `RECENT_SYNC_RECOMMENDATION = ${result.finalDecision.recentSyncRecommendation}`,
+    `RESERVED_SERVING_OVERHEAD_MS = ${result.finalDecision.reservedServingOverheadMs}`,
+    `PERFORMANCE_CORRECTIVE_REQUIRED = ${result.finalDecision.performanceCorrectiveRequired ? 'YES' : 'NO'}`,
+    `READY_FOR_STAGE7 = ${result.finalDecision.readyForStage7 ? 'YES' : 'NO'}`,
     '',
-    '## Global Decision',
+    '## Full Final Profile Table',
     '',
-    `Recommendation: ${result.globalDecision.recommendation}`,
-    `Global N_FAST: ${String(result.globalDecision.globalRecommendation)}`,
-    `Profile-specific controls required: ${result.globalDecision.profileSpecificRequired}`,
-    '',
-    '## Profiles',
-    '',
-    '| Profile | Gate | Cold conservative ms | Warm hit p95/max ms | Dominant bottleneck | Max inline recent N |',
-    '| --- | --- | ---: | ---: | --- | ---: |',
+    '| Profile | Series | Model | Frequency | Cadence | Selected obs | Extended 12M | Cold n | Cold median | Cold max | Cold p95 | Warm p95/max | Exact read | Current gate | Recent max N |',
+    '| --- | --- | --- | --- | --- | ---: | --- | ---: | ---: | ---: | --- | ---: | --- | --- | ---: |',
   ]
 
   for (const profile of result.profiles) {
+    const coldP95 = typeof profile.coldCurrent.totalRenderableReady.p95Ms === 'number'
+      ? profile.coldCurrent.totalRenderableReady.p95Ms
+      : 'NOT_STATISTICALLY_MEANINGFUL'
     const warm = typeof profile.coldCurrent.warmPreparedHit.p95Ms === 'number'
       ? profile.coldCurrent.warmPreparedHit.p95Ms
       : profile.coldCurrent.warmPreparedHit.maxMs
-    const maxInline = profile.recentVerification.mode === 'NOT_APPLICABLE'
-      ? 'N/A'
-      : String(profile.recentVerification.maxInlineCandidate)
-    lines.push(
-      `| ${profile.profileId} | ${profile.finalGate.fastReadyProfilerGate} | ${profile.coldCurrent.conservativeLatencyMs} | ${warm} | ${profile.coldCurrent.dominantBottleneck.category} | ${maxInline} |`,
-    )
+    const maxInline = profile.recentVerification.mode === 'NOT_APPLICABLE' ? 'N/A' : String(profile.recentVerification.maxInlineCandidate)
+    lines.push(`| ${profile.profileId} | ${profile.seriesId} | ${profile.modelId} | ${profile.sourceFrequency} | ${profile.targetCadence} | ${profile.fastInputMetadata?.selectedTrainingObservationCount ?? 'N/A'} | ${profile.fastInputMetadata?.extendedBeyond12M ? 'YES' : 'NO'} | ${profile.coldCurrent.sampleCount} | ${profile.coldCurrent.totalRenderableReady.medianMs} | ${profile.coldCurrent.totalRenderableReady.maxMs} | ${coldP95} | ${warm} | ${profile.coldCurrent.exactReadStatusesObserved.join(', ')} | ${profile.finalGate.currentFastLatencyGate} | ${maxInline} |`)
   }
 
-  lines.push('', '## Notes', '')
-  lines.push('- Period Current uses exact SG Runtime Current preparation plus exact prepared-read confirmation.')
-  lines.push('- Rolling Daily phase gaps remain explicitly marked as NOT_SEPARATELY_MEASURABLE where the runtime does not expose an isolated lawful timing boundary.')
-  lines.push('- Recent Verification capacity is measured directly from repeated same-policy prepared Current executions over the latest matured historical origins, rather than estimated from Full Verification scaling.')
+  lines.push('', '## Final Recent Table', '')
+  lines.push('| Profile | Candidate N | Origins | Origin dates | Direct recent ms | Current conservative ms | Reserved headroom ms | Estimated total ms | Within 15s |')
+  lines.push('| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | --- |')
+  for (const profile of result.profiles) {
+    if (!('measuredCandidates' in profile.recentVerification)) {
+      continue
+    }
+    for (const candidate of profile.recentVerification.measuredCandidates ?? []) {
+      lines.push(`| ${profile.profileId} | ${candidate.candidateN} | ${candidate.selectedOriginDates.length} | ${candidate.selectedOriginDates.join(', ')} | ${candidate.recentVerificationMs} | ${candidate.currentConservativeMs} | ${candidate.reservedServingOverheadMs} | ${candidate.estimatedTotalFastReadyMs} | ${candidate.within15s ? 'YES' : 'NO'} |`)
+    }
+  }
+
+  lines.push('', '## Final Concurrency Section', '')
+  lines.push(`PERIOD_CONCURRENCY: requestCount=${result.concurrencyEvidence.period.requestCount} ownerCount=${result.concurrencyEvidence.period.ownerCount} waiterCount=${result.concurrencyEvidence.period.waiterCount} computeCount=${result.concurrencyEvidence.period.modelComputeCount} artifactWriteCount=${result.concurrencyEvidence.period.artifactWriteCount} terminalArtifactCount=${result.concurrencyEvidence.period.terminalArtifactCount} finalExactReadStatus=${result.concurrencyEvidence.period.finalExactReadStatus} gate=${result.concurrencyEvidence.period.gate}`)
+  lines.push(`ROLLING_DAILY_CONCURRENCY: requestCount=${result.concurrencyEvidence.rollingDaily.requestCount} ownerCount=${result.concurrencyEvidence.rollingDaily.ownerCount} waiterCount=${result.concurrencyEvidence.rollingDaily.waiterCount} computeCount=${result.concurrencyEvidence.rollingDaily.modelComputeCount} artifactWriteCount=${result.concurrencyEvidence.rollingDaily.artifactWriteCount} terminalArtifactCount=${result.concurrencyEvidence.rollingDaily.terminalArtifactCount} finalExactReadStatus=${result.concurrencyEvidence.rollingDaily.finalExactReadStatus} gate=${result.concurrencyEvidence.rollingDaily.gate}`)
 
   return `${lines.join('\n')}\n`
 }
@@ -1413,11 +2160,21 @@ async function readGitValue(args: string[]) {
 }
 
 async function main() {
+  const profileMode = readProfileModeArg()
   const coldSamples = readIntArg('--cold-samples', DEFAULT_COLD_SAMPLES)
   const warmSamples = readIntArg('--warm-samples', DEFAULT_WARM_SAMPLES)
   const recentCandidates = readCandidateNs()
   const stage4NonRegression = readPassFailArg('--stage4-non-regression')
   const stage5NonRegression = readPassFailArg('--stage5-non-regression')
+  const configurationContract = resolveProfilerConfigurationContract({
+    profileMode,
+    coldSamples,
+    warmSamples,
+    recentCandidates,
+  })
+  if (profileMode === 'FINAL' && !configurationContract.validForRequestedMode) {
+    throw new Error(configurationContract.reason ?? 'Final profiler configuration is invalid.')
+  }
   const gitHead = await readGitValue(['rev-parse', 'HEAD'])
   const branch = await readGitValue(['rev-parse', '--abbrev-ref', 'HEAD'])
   const expectedSourceSha = readStringArg('--expected-source-sha') ?? gitHead
@@ -1428,34 +2185,110 @@ async function main() {
   await clearProfilerArtifacts(SYNTHETIC_SERIES_DEFINITIONS.map((definition) => definition.seriesId))
 
   const profiles = await buildProfiles()
-  const summarizedProfiles: ReturnType<typeof summarizeProfile>[] = []
-  const recentMaxima: number[] = []
+  const rawProfiles: Array<{
+    profile: ProfilerProfile
+    currentMeasurements: Awaited<ReturnType<typeof measureCurrentSamples>>
+    fullVerification: FullVerificationMeasurement | null
+  }> = []
 
   for (const profile of profiles) {
     const currentMeasurements = await measureCurrentSamples(profile, coldSamples, warmSamples)
-    const currentConservativeMs = resolveConservativeLatencyMs(
-      summarizeNumericSamples(currentMeasurements.coldSamples.map((sample) => sample.totalRenderableReadyMs)),
-    )
+    const currentSummary = summarizeNumericSamples(currentMeasurements.coldSamples.map((sample) => sample.totalRenderableReadyMs))
+    const exactPreparedReadSummary = summarizeNumericSamples(currentMeasurements.coldSamples.map((sample) => sample.exactReadMs))
+    const currentConservativeMs = resolveConservativeLatencyMs(currentSummary)
+    const reservedServingDecision = resolveEvidenceBasedServingHeadroom({
+      currentSummary,
+      exactPreparedReadSummary,
+    })
 
     const fullVerification = profile.recentVerificationMode === 'NOT_APPLICABLE'
       ? null
-      : await measureFullVerification(profile, recentCandidates, currentConservativeMs)
+      : await measureFullVerification(profile, recentCandidates, currentConservativeMs, reservedServingDecision)
 
-    if (fullVerification) {
-      recentMaxima.push(fullVerification.maxInlineCandidate)
-    }
+    rawProfiles.push({
+      profile,
+      currentMeasurements,
+      fullVerification,
+    })
+  }
 
-    summarizedProfiles.push(summarizeProfile(profile, currentMeasurements, fullVerification, {
+  const periodConcurrencyProfile = rawProfiles.find((entry) => entry.profile.seriesId === MONTHLY_SERIES_ID && entry.profile.modelId === 'arima' && entry.profile.targetSemantics === 'END_OF_PERIOD')?.profile
+  const rollingDailyConcurrencyProfile = rawProfiles.find((entry) => entry.profile.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME' && entry.profile.modelId === 'arima')?.profile
+  if (!periodConcurrencyProfile || !rollingDailyConcurrencyProfile) {
+    throw new Error('Required concurrency cohorts were not available for Stage 6 profiling.')
+  }
+
+  const periodConcurrency = await measureConcurrentCurrentProfile(periodConcurrencyProfile, 'AVAILABLE')
+  const rollingDailyConcurrency = await measureConcurrentCurrentProfile(rollingDailyConcurrencyProfile, 'HIT')
+  const concurrentOneGlobalComputeGate: 'PASS' | 'FAIL' = periodConcurrency.gate === 'PASS' && rollingDailyConcurrency.gate === 'PASS'
+    ? 'PASS'
+    : 'FAIL'
+
+  const summarizedProfiles = rawProfiles.map(({ profile, currentMeasurements, fullVerification }) => summarizeProfile(
+    profile,
+    currentMeasurements,
+    fullVerification,
+    concurrentOneGlobalComputeGate,
+    {
       gitHead,
       expectedSourceSha,
       stage4NonRegression,
       stage5NonRegression,
-    }))
-  }
+    },
+  ))
 
+  const recentMaxima = summarizedProfiles
+    .filter((profile) => profile.recentVerification.mode !== 'NOT_APPLICABLE')
+    .map((profile) => profile.recentVerification.maxInlineCandidate)
+    .filter((value): value is number => typeof value === 'number')
+
+  const globalDecision = resolveGlobalNFastDecision(recentMaxima)
+  const rollingDailyProfiles = summarizedProfiles.filter((profile) => profile.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME')
+  const rollingDailyExactReadGate = rollingDailyProfiles.every((profile) => profile.coldCurrent.exactReadStatusesObserved.every((status: string) => status === 'HIT'))
+    ? 'PASS'
+    : 'FAIL'
+  const currentFastLatencyGate = summarizedProfiles.every((profile) => profile.finalGate.currentFastLatencyGate === 'PASS') ? 'PASS' : 'FAIL'
+  const warmReuseGate = summarizedProfiles.every((profile) => profile.finalGate.warmReuseGate === 'PASS') ? 'PASS' : 'FAIL'
+  const currentIsolationGate = summarizedProfiles.every((profile) => profile.finalGate.currentIsolationGate === 'PASS') ? 'PASS' : 'FAIL'
+  const recentProfileGate = summarizedProfiles.every((profile) => profile.finalGate.recentProfileGate === 'PASS') ? 'PASS' : 'FAIL'
   const profilesPassing = summarizedProfiles.filter((profile) => profile.finalGate.fastReadyProfilerGate === 'PASS').length
   const profilesFailing = summarizedProfiles.length - profilesPassing
   const overallFastReadyProfilerGate: 'PASS' | 'FAIL' = profilesFailing === 0 ? 'PASS' : 'FAIL'
+  const reservedServingOverheadMs = Math.max(...summarizedProfiles.map((profile) => profile.finalGate.reservedServingOverheadMs))
+  const environment = await readEnvironmentMetadata({
+    profileMode,
+    coldSamples,
+    warmSamples,
+    recentCandidates,
+  })
+  const environmentValidation = validateProfileEnvironmentMetadata(environment as Record<string, unknown>)
+  const finalDecision = resolveStage6FinalDecision({
+    profileMode,
+    configurationContract,
+    currentFastLatencyGate,
+    rollingDailyExactReadGate,
+    warmReuseGate,
+    concurrentOneGlobalComputeGate,
+    currentIsolationGate,
+    recentProfileGate,
+    fastReadyProfilerGate: overallFastReadyProfilerGate,
+    globalNFastRecommendation: globalDecision.globalRecommendation,
+    profileSpecificNFastRequired: globalDecision.profileSpecificRequired,
+    recentSyncRecommendation: globalDecision.recommendation,
+    reservedServingOverheadMs,
+    reservedServingOverheadBasis: 'MEASURED_EVIDENCE',
+    profileArtifactSourceShaMatch: expectedSourceSha === gitHead,
+    fastInputMetadataComplete: summarizedProfiles.every((profile) => profile.fastInputMetadata !== null),
+    profileEnvironmentMetadataComplete: environmentValidation.complete,
+    stage4NonRegression,
+    stage5NonRegression,
+    currentFastPolicyChanged: false,
+    modelMinHistoryChanged: false,
+    methodVersionChanged: false,
+    recentVerificationProductionActivated: false,
+    stage7ScopeLeakage: false,
+    stage8PlusScopeLeakage: false,
+  })
 
   const result = {
     task: 'PPF1_STAGE6_FAST_READY_PROFILER',
@@ -1464,12 +2297,14 @@ async function main() {
     branch,
     evidence: {
       expectedSourceSha,
+      profiledSourceSha: gitHead,
     },
     regressions: {
       stage4NonRegression,
       stage5NonRegression,
     },
     configuration: {
+      profileMode,
       coldSamples,
       warmSamples,
       recentCandidates,
@@ -1481,14 +2316,33 @@ async function main() {
       recentVerificationMeasurementMode: 'DIRECT_SAME_POLICY_PREPARED_CURRENT_BY_ORIGIN',
       seedSeriesIds: SYNTHETIC_SERIES_DEFINITIONS.map((definition) => definition.seriesId),
     },
+    environment,
     profiles: summarizedProfiles,
-    globalDecision: resolveGlobalNFastDecision(recentMaxima),
+    rollingDailyDiagnosis: rollingDailyProfiles.map((profile) => profile.rollingDailyDiagnosis),
+    globalDecision,
+    currentIsolation: {
+      fullVerificationComputeCount: Math.max(0, ...summarizedProfiles.map((profile) => profile.coldCurrent.currentIsolation.fullVerificationComputeCount)),
+      recentVerificationProductionComputeCount: Math.max(0, ...summarizedProfiles.map((profile) => profile.coldCurrent.currentIsolation.recentVerificationProductionComputeCount)),
+      calibrationBuildCount: Math.max(0, ...summarizedProfiles.map((profile) => profile.coldCurrent.currentIsolation.calibrationBuildCount)),
+      bandBuildCount: Math.max(0, ...summarizedProfiles.map((profile) => profile.coldCurrent.currentIsolation.bandBuildCount)),
+    },
+    concurrencyEvidence: {
+      period: periodConcurrency,
+      rollingDaily: rollingDailyConcurrency,
+      concurrentOneGlobalComputeGate,
+    },
+    validation: {
+      configurationContract,
+      profileEnvironmentMetadataComplete: environmentValidation.complete,
+      environmentMissingFields: environmentValidation.missingFields,
+    },
     finalGate: {
       fastReadyProfilerGate: overallFastReadyProfilerGate,
-      performanceCorrectiveRequired: profilesFailing !== 0,
+      performanceCorrectiveRequired: finalDecision.performanceCorrectiveRequired,
       profilesPassing,
       profilesFailing,
     },
+    finalDecision,
   }
 
   await writeFile(RESULT_JSON_PATH, `${JSON.stringify(result, null, 2)}\n`)

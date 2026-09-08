@@ -20,7 +20,7 @@ export type ProfiledPhaseName =
 
 export type BottleneckCategory =
   | 'MODEL_COMPUTE'
-  | 'PYTHON_PROCESS_STARTUP'
+  | 'PYTHON_BRIDGE_OR_PROCESS_OVERHEAD'
   | 'HISTORY_PREPARATION'
   | 'DATABASE_ADMISSION'
   | 'DATABASE_PERSISTENCE'
@@ -28,6 +28,12 @@ export type BottleneckCategory =
   | 'CONSUMER_ADAPTER'
   | 'NETWORK_OR_EXTERNAL_DEPENDENCY'
   | 'OTHER'
+
+export type ProfileMode = 'SMOKE' | 'FINAL'
+
+export const FINAL_PROFILE_COLD_SAMPLES = 5
+export const FINAL_PROFILE_WARM_SAMPLES = 20
+export const FINAL_PROFILE_RECENT_CANDIDATES = [1, 3, 6, 12] as const
 
 export type NumericSummary = {
   sampleCount: number
@@ -50,6 +56,68 @@ export type RecentRecommendation =
   | 'PROFILE_SPECIFIC_CONTROL_REQUIRED'
   | 'BACKGROUND_REQUIRED'
   | 'INSUFFICIENT_PROFILE_EVIDENCE'
+
+export type ServingHeadroomComponent = {
+  component: 'POST_PERSIST_EXACT_READ_PROXY_MS' | 'RUNTIME_VARIANCE_ALLOWANCE_MS'
+  valueMs: number
+  sourceMeasurement: string
+}
+
+export type ServingHeadroomDecision = {
+  reservedServingOverheadMs: number
+  reservedServingOverheadBasis: 'MEASURED_EVIDENCE'
+  components: ServingHeadroomComponent[]
+  doubleCountGuard: 'POST_PERSIST_READ_PROXY_APPLIES_ONLY_TO_DIRECT_RECENT_AND_FINAL_HANDOFF'
+  servingHeadroomDoubleCounted: false
+}
+
+export type ProfilerConfigurationContract = {
+  profileMode: ProfileMode
+  coldSamples: number
+  warmSamples: number
+  recentCandidates: number[]
+  validForRequestedMode: boolean
+  stage6ClosureAllowed: boolean
+  reason: string | null
+}
+
+export type ConcurrentProfileGateInput = {
+  requestCount: number
+  ownerCount: number
+  waiterCount: number
+  modelComputeCount: number
+  bridgeComputeCount: number
+  artifactWriteCount: number
+  terminalArtifactCount: number
+  allRequestsSucceeded: boolean
+  finalExactReadStatus: string
+  expectedFinalExactReadStatus: 'AVAILABLE' | 'HIT'
+}
+
+export type ConcurrentProfileGateDecision = {
+  gate: 'PASS' | 'FAIL'
+  reasons: string[]
+}
+
+export type Stage6FinalDecision = {
+  currentFastLatencyGate: 'PASS' | 'FAIL'
+  rollingDailyExactReadGate: 'PASS' | 'FAIL'
+  warmReuseGate: 'PASS' | 'FAIL'
+  concurrentOneGlobalComputeGate: 'PASS' | 'FAIL'
+  currentIsolationGate: 'PASS' | 'FAIL'
+  recentProfileGate: 'PASS' | 'FAIL'
+  fastReadyProfilerGate: 'PASS' | 'FAIL'
+  globalNFastRecommendation: number | 'NONE'
+  profileSpecificNFastRequired: boolean
+  recentSyncRecommendation: RecentRecommendation
+  reservedServingOverheadMs: number
+  reservedServingOverheadBasis: 'MEASURED_EVIDENCE' | 'OTHER'
+  performanceCorrectiveRequired: boolean
+  performanceCorrectiveReason: string | null
+  profilerEvidenceCorrectiveRequired: boolean
+  stage6Completion: 'PASS' | 'PARTIAL' | 'FAIL'
+  readyForStage7: boolean
+}
 
 export type GlobalNFastDecision = {
   globalRecommendation: number | 'NONE'
@@ -96,7 +164,7 @@ const BOTTLENECK_CATEGORY_BY_PHASE: Record<ProfiledPhaseName, BottleneckCategory
   PREPARED_LOOKUP_MS: 'DATABASE_ADMISSION',
   EXECUTION_ADMISSION_MS: 'DATABASE_ADMISSION',
   OWNER_WAIT_MS: 'WAITING_FOR_GLOBAL_OWNER',
-  MODEL_BRIDGE_MS: 'PYTHON_PROCESS_STARTUP',
+  MODEL_BRIDGE_MS: 'PYTHON_BRIDGE_OR_PROCESS_OVERHEAD',
   MODEL_COMPUTE_MS: 'MODEL_COMPUTE',
   PERSISTENCE_MS: 'DATABASE_PERSISTENCE',
   POST_PERSIST_EXACT_READ_MS: 'DATABASE_PERSISTENCE',
@@ -244,6 +312,133 @@ export function resolveGlobalNFastDecision(profileMaxima: readonly number[]) {
   } satisfies GlobalNFastDecision
 }
 
+export function resolveProfilerConfigurationContract(input: {
+  profileMode: ProfileMode
+  coldSamples: number
+  warmSamples: number
+  recentCandidates: readonly number[]
+}): ProfilerConfigurationContract {
+  const recentCandidates = [...input.recentCandidates]
+  const isExactFinalConfiguration = input.coldSamples === FINAL_PROFILE_COLD_SAMPLES
+    && input.warmSamples === FINAL_PROFILE_WARM_SAMPLES
+    && recentCandidates.length === FINAL_PROFILE_RECENT_CANDIDATES.length
+    && recentCandidates.every((value, index) => value === FINAL_PROFILE_RECENT_CANDIDATES[index])
+
+  if (input.profileMode === 'SMOKE') {
+    return {
+      profileMode: input.profileMode,
+      coldSamples: input.coldSamples,
+      warmSamples: input.warmSamples,
+      recentCandidates,
+      validForRequestedMode: true,
+      stage6ClosureAllowed: false,
+      reason: 'Smoke mode is diagnostic only and cannot close Stage 6.',
+    }
+  }
+
+  return {
+    profileMode: input.profileMode,
+    coldSamples: input.coldSamples,
+    warmSamples: input.warmSamples,
+    recentCandidates,
+    validForRequestedMode: isExactFinalConfiguration,
+    stage6ClosureAllowed: isExactFinalConfiguration,
+    reason: isExactFinalConfiguration
+      ? null
+      : 'Final mode requires cold=5, warm=20, recentCandidates=[1,3,6,12].',
+  }
+}
+
+export function resolveEvidenceBasedServingHeadroom(input: {
+  currentSummary: NumericSummary
+  exactPreparedReadSummary: NumericSummary
+}): ServingHeadroomDecision {
+  const postPersistExactReadProxyMs = resolveConservativeLatencyMs(input.exactPreparedReadSummary)
+  const runtimeVarianceAllowanceMs = roundMs(Math.max(input.currentSummary.maxMs - input.currentSummary.medianMs, 0))
+  const components: ServingHeadroomComponent[] = [
+    {
+      component: 'POST_PERSIST_EXACT_READ_PROXY_MS',
+      valueMs: roundMs(postPersistExactReadProxyMs),
+      sourceMeasurement: 'coldCurrent.exactPreparedRead.p95OrMax',
+    },
+    {
+      component: 'RUNTIME_VARIANCE_ALLOWANCE_MS',
+      valueMs: runtimeVarianceAllowanceMs,
+      sourceMeasurement: 'coldCurrent.totalRenderableReady.maxMinusMedian',
+    },
+  ]
+
+  return {
+    reservedServingOverheadMs: roundMs(components.reduce((sum, component) => sum + component.valueMs, 0)),
+    reservedServingOverheadBasis: 'MEASURED_EVIDENCE',
+    components,
+    doubleCountGuard: 'POST_PERSIST_READ_PROXY_APPLIES_ONLY_TO_DIRECT_RECENT_AND_FINAL_HANDOFF',
+    servingHeadroomDoubleCounted: false,
+  }
+}
+
+export function resolveConcurrentGlobalComputeGate(input: ConcurrentProfileGateInput): ConcurrentProfileGateDecision {
+  const reasons: string[] = []
+
+  if (!input.allRequestsSucceeded) {
+    reasons.push('Not all concurrent requests succeeded.')
+  }
+  if (input.ownerCount !== 1) {
+    reasons.push(`Expected one owner, received ${input.ownerCount}.`)
+  }
+  if (input.waiterCount !== Math.max(input.requestCount - 1, 0)) {
+    reasons.push(`Expected ${Math.max(input.requestCount - 1, 0)} waiters, received ${input.waiterCount}.`)
+  }
+  if (input.modelComputeCount !== 1) {
+    reasons.push(`Expected one model compute, received ${input.modelComputeCount}.`)
+  }
+  if (input.artifactWriteCount !== 1) {
+    reasons.push(`Expected one artifact write, received ${input.artifactWriteCount}.`)
+  }
+  if (input.terminalArtifactCount !== 1) {
+    reasons.push(`Expected one terminal artifact, received ${input.terminalArtifactCount}.`)
+  }
+  if (input.finalExactReadStatus !== input.expectedFinalExactReadStatus) {
+    reasons.push(`Expected final exact read ${input.expectedFinalExactReadStatus}, received ${input.finalExactReadStatus}.`)
+  }
+
+  return {
+    gate: reasons.length === 0 ? 'PASS' : 'FAIL',
+    reasons,
+  }
+}
+
+export function validateProfileEnvironmentMetadata(input: Record<string, unknown>) {
+  const requiredFields = [
+    'profileEnvironmentClass',
+    'nodeVersion',
+    'pythonVersion',
+    'platform',
+    'architecture',
+    'databaseClassification',
+    'processConcurrency',
+    'forecastLeaseDurationMs',
+    'forecastHeartbeatIntervalMs',
+    'workingTreeCleanAtProfileStart',
+    'profileCommand',
+    'profileMode',
+    'coldSamples',
+    'warmSamples',
+    'recentCandidates',
+    'syntheticSeriesDefinitions',
+  ]
+
+  const missingFields = requiredFields.filter((field) => {
+    const value = input[field]
+    return value === null || value === undefined || value === ''
+  })
+
+  return {
+    complete: missingFields.length === 0,
+    missingFields,
+  }
+}
+
 export function resolveRollingDailyExactReadGate(exactReadStatus: string): RollingDailyExactReadGate {
   if (exactReadStatus === 'HIT') {
     return {
@@ -315,6 +510,90 @@ export function resolveFastReadyProfilerGate(input: FastReadyProfilerGateInput):
 
   return {
     fastReadyProfilerGate,
-    performanceCorrectiveRequired: fastReadyProfilerGate !== 'PASS',
+    performanceCorrectiveRequired: input.currentFastLatencyGate === 'FAIL',
+  }
+}
+
+export function resolveStage6FinalDecision(input: {
+  profileMode: ProfileMode
+  configurationContract: ProfilerConfigurationContract
+  currentFastLatencyGate: 'PASS' | 'FAIL'
+  rollingDailyExactReadGate: 'PASS' | 'FAIL'
+  warmReuseGate: 'PASS' | 'FAIL'
+  concurrentOneGlobalComputeGate: 'PASS' | 'FAIL'
+  currentIsolationGate: 'PASS' | 'FAIL'
+  recentProfileGate: 'PASS' | 'FAIL'
+  fastReadyProfilerGate: 'PASS' | 'FAIL'
+  globalNFastRecommendation: number | 'NONE'
+  profileSpecificNFastRequired: boolean
+  recentSyncRecommendation: RecentRecommendation
+  reservedServingOverheadMs: number
+  reservedServingOverheadBasis: 'MEASURED_EVIDENCE' | 'OTHER'
+  profileArtifactSourceShaMatch: boolean
+  fastInputMetadataComplete: boolean
+  profileEnvironmentMetadataComplete: boolean
+  stage4NonRegression: 'PASS' | 'FAIL'
+  stage5NonRegression: 'PASS' | 'FAIL'
+  currentFastPolicyChanged: boolean
+  modelMinHistoryChanged: boolean
+  methodVersionChanged: boolean
+  recentVerificationProductionActivated: boolean
+  stage7ScopeLeakage: boolean
+  stage8PlusScopeLeakage: boolean
+}): Stage6FinalDecision {
+  const profilerEvidenceCorrectiveRequired = (
+    !input.configurationContract.stage6ClosureAllowed
+    || input.reservedServingOverheadMs <= 0
+    || input.reservedServingOverheadBasis !== 'MEASURED_EVIDENCE'
+    || !input.profileArtifactSourceShaMatch
+    || !input.fastInputMetadataComplete
+    || !input.profileEnvironmentMetadataComplete
+    || input.stage4NonRegression !== 'PASS'
+    || input.stage5NonRegression !== 'PASS'
+    || input.currentFastPolicyChanged
+    || input.modelMinHistoryChanged
+    || input.methodVersionChanged
+    || input.recentVerificationProductionActivated
+    || input.stage7ScopeLeakage
+    || input.stage8PlusScopeLeakage
+  )
+  const performanceCorrectiveRequired = input.currentFastLatencyGate === 'FAIL'
+  const performanceCorrectiveReason = input.currentFastLatencyGate === 'FAIL'
+    ? 'Measured Current FAST latency exceeds the 15s target.'
+    : null
+  const stage6Completion = input.fastReadyProfilerGate === 'PASS'
+    && input.profileMode === 'FINAL'
+    && input.configurationContract.stage6ClosureAllowed
+    && input.currentFastLatencyGate === 'PASS'
+    && input.rollingDailyExactReadGate === 'PASS'
+    && input.warmReuseGate === 'PASS'
+    && input.concurrentOneGlobalComputeGate === 'PASS'
+    && input.currentIsolationGate === 'PASS'
+    && input.recentProfileGate === 'PASS'
+    && !performanceCorrectiveRequired
+    && !profilerEvidenceCorrectiveRequired
+      ? 'PASS'
+      : input.profileMode === 'FINAL'
+        ? 'PARTIAL'
+        : 'FAIL'
+
+  return {
+    currentFastLatencyGate: input.currentFastLatencyGate,
+    rollingDailyExactReadGate: input.rollingDailyExactReadGate,
+    warmReuseGate: input.warmReuseGate,
+    concurrentOneGlobalComputeGate: input.concurrentOneGlobalComputeGate,
+    currentIsolationGate: input.currentIsolationGate,
+    recentProfileGate: input.recentProfileGate,
+    fastReadyProfilerGate: input.fastReadyProfilerGate,
+    globalNFastRecommendation: input.globalNFastRecommendation,
+    profileSpecificNFastRequired: input.profileSpecificNFastRequired,
+    recentSyncRecommendation: input.recentSyncRecommendation,
+    reservedServingOverheadMs: input.reservedServingOverheadMs,
+    reservedServingOverheadBasis: input.reservedServingOverheadBasis,
+    performanceCorrectiveRequired,
+    performanceCorrectiveReason,
+    profilerEvidenceCorrectiveRequired,
+    stage6Completion,
+    readyForStage7: stage6Completion === 'PASS',
   }
 }

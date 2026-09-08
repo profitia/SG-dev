@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+const mutableEnv = process.env as Record<string, string | undefined>
+
 test('analytics URL keeps warm-up off by default for Finder embeds', async () => {
   process.env.SG_RUNTIME_PORR_DEMO = 'false'
-  process.env.NODE_ENV = 'production'
+  mutableEnv.NODE_ENV = 'production'
   const { buildDashboardPreviewAnalyticsUrl } = await import('@/lib/benchmark/analytics')
   const url = new URL(buildDashboardPreviewAnalyticsUrl('pl', 'wocaes0074', 'Brent'))
 
@@ -19,7 +21,7 @@ test('analytics URL keeps warm-up off by default for Finder embeds', async () =>
 
 test('analytics URL auto-enables warm-up for the PORR demo profile', async () => {
   process.env.SG_RUNTIME_PORR_DEMO = 'true'
-  process.env.NODE_ENV = 'production'
+  mutableEnv.NODE_ENV = 'production'
   const { buildDashboardPreviewAnalyticsUrl, resolveBenchmarkAnalyticsEligibility } = await import('@/lib/benchmark/analytics')
   const url = new URL(buildDashboardPreviewAnalyticsUrl('pl', 'wocaes0074', 'Brent'))
   const eligibility = await resolveBenchmarkAnalyticsEligibility('pl', 'wocaes0074', 'Brent')
@@ -33,7 +35,7 @@ test('analytics URL auto-enables warm-up for the PORR demo profile', async () =>
 
 test('analytics URL propagates the warm-up flag for explicit experiment requests without duplication', async () => {
   process.env.SG_RUNTIME_PORR_DEMO = 'false'
-  process.env.NODE_ENV = 'production'
+  mutableEnv.NODE_ENV = 'production'
   const { buildDashboardPreviewAnalyticsUrl, normalizeForecastWarmupExperiment } = await import('@/lib/benchmark/analytics')
   const url = new URL(buildDashboardPreviewAnalyticsUrl('pl', 'wocaes0074', 'Brent', {
     warmCurrentForecast: normalizeForecastWarmupExperiment('single') === 'single',
