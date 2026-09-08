@@ -57,6 +57,37 @@ export type GlobalNFastDecision = {
   recommendation: RecentRecommendation
 }
 
+export type RollingDailyExactReadGate = {
+  acceptedStatuses: 'HIT_ONLY'
+  staleCountsAsRenderable: false
+  status: 'PASS' | 'FAIL'
+  reason: string | null
+}
+
+export type WarmReuseGate = {
+  status: 'PASS' | 'FAIL'
+  reason: string | null
+}
+
+export type FastReadyProfilerGateInput = {
+  currentFastLatencyGate: 'PASS' | 'FAIL'
+  warmReuseGate: 'PASS' | 'FAIL'
+  concurrentOneGlobalComputeGate: 'PASS' | 'FAIL'
+  currentIsolationGate: 'PASS' | 'FAIL'
+  recentProfileGate: 'PASS' | 'FAIL'
+  reservedServingOverheadMs: number
+  profileArtifactSourceShaMatch: boolean
+  stage5NonRegression: 'PASS' | 'FAIL'
+  stage4NonRegression: 'PASS' | 'FAIL'
+  currentFastPolicyChanged: boolean
+  stage7ScopeLeakage: boolean
+}
+
+export type FastReadyProfilerGateDecision = {
+  fastReadyProfilerGate: 'PASS' | 'FAIL'
+  performanceCorrectiveRequired: boolean
+}
+
 const BOTTLENECK_CATEGORY_BY_PHASE: Record<ProfiledPhaseName, BottleneckCategory> = {
   CAPABILITY_RESOLUTION_MS: 'OTHER',
   HISTORY_LOAD_MS: 'NETWORK_OR_EXTERNAL_DEPENDENCY',
@@ -211,4 +242,79 @@ export function resolveGlobalNFastDecision(profileMaxima: readonly number[]) {
     profileSpecificRequired: profileMaxima.some((value) => value !== globalRecommendation),
     recommendation: 'INLINE_WITH_GLOBAL_N_FAST',
   } satisfies GlobalNFastDecision
+}
+
+export function resolveRollingDailyExactReadGate(exactReadStatus: string): RollingDailyExactReadGate {
+  if (exactReadStatus === 'HIT') {
+    return {
+      acceptedStatuses: 'HIT_ONLY',
+      staleCountsAsRenderable: false,
+      status: 'PASS',
+      reason: null,
+    }
+  }
+
+  return {
+    acceptedStatuses: 'HIT_ONLY',
+    staleCountsAsRenderable: false,
+    status: 'FAIL',
+    reason: `Rolling Daily exact read must be HIT, received ${exactReadStatus}.`,
+  }
+}
+
+export function resolveWarmReuseGate(input: {
+  modelComputeCount: number
+  bridgeCurrentComputeCount: number
+  newExecutionCount: number
+  newArtifactWriteCount: number
+}): WarmReuseGate {
+  const violations: string[] = []
+
+  if (input.modelComputeCount !== 0) {
+    violations.push(`modelComputeCount=${input.modelComputeCount}`)
+  }
+  if (input.bridgeCurrentComputeCount !== 0) {
+    violations.push(`bridgeCurrentComputeCount=${input.bridgeCurrentComputeCount}`)
+  }
+  if (input.newExecutionCount !== 0) {
+    violations.push(`newExecutionCount=${input.newExecutionCount}`)
+  }
+  if (input.newArtifactWriteCount !== 0) {
+    violations.push(`newArtifactWriteCount=${input.newArtifactWriteCount}`)
+  }
+
+  if (violations.length === 0) {
+    return {
+      status: 'PASS',
+      reason: null,
+    }
+  }
+
+  return {
+    status: 'FAIL',
+    reason: `Warm canonical reuse created work: ${violations.join(', ')}`,
+  }
+}
+
+export function resolveFastReadyProfilerGate(input: FastReadyProfilerGateInput): FastReadyProfilerGateDecision {
+  const fastReadyProfilerGate = (
+    input.currentFastLatencyGate === 'PASS'
+    && input.warmReuseGate === 'PASS'
+    && input.concurrentOneGlobalComputeGate === 'PASS'
+    && input.currentIsolationGate === 'PASS'
+    && input.recentProfileGate === 'PASS'
+    && input.reservedServingOverheadMs > 0
+    && input.profileArtifactSourceShaMatch
+    && input.stage5NonRegression === 'PASS'
+    && input.stage4NonRegression === 'PASS'
+    && !input.currentFastPolicyChanged
+    && !input.stage7ScopeLeakage
+  )
+    ? 'PASS'
+    : 'FAIL'
+
+  return {
+    fastReadyProfilerGate,
+    performanceCorrectiveRequired: fastReadyProfilerGate !== 'PASS',
+  }
 }

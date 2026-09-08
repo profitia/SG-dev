@@ -1325,7 +1325,7 @@ async function executeLiveForecastBridge(
   }
 }
 
-async function executePreparedLiveForecastBridge(
+export async function executePreparedLiveForecastBridge(
   configuration: ForecastBridgeReadyConfiguration,
   payload: LiveForecastBridgePayload,
   mode: ForecastBridgeMode,
@@ -1341,6 +1341,23 @@ async function executePreparedLiveForecastBridge(
   } finally {
     await rm(tempDir, { recursive: true, force: true })
   }
+}
+
+export async function executePreparedForecastBridge(
+  payload: LiveForecastBridgePayload,
+  mode: ForecastBridgeMode,
+  seriesId: string,
+  modelId?: string,
+): Promise<ForecastHistoryBridgeResponse | ForecastCurrentBridgeResponse | ForecastVerificationBridgeResponse> {
+  const configuration = resolveForecastBridgeConfiguration()
+  if (!configuration.ok) {
+    return {
+      status: 'NOT_AVAILABLE',
+      reason: configuration.reason,
+    }
+  }
+
+  return executePreparedLiveForecastBridge(configuration, payload, mode, seriesId, modelId)
 }
 
 async function prepareExecutionContext(

@@ -7,7 +7,10 @@ import {
   NOT_SEPARATELY_MEASURABLE,
   NOT_STATISTICALLY_MEANINGFUL,
   resolveConservativeLatencyMs,
+  resolveFastReadyProfilerGate,
   resolveGlobalNFastDecision,
+  resolveRollingDailyExactReadGate,
+  resolveWarmReuseGate,
   summarizeNumericSamples,
   summarizeOptionalPhaseSamples,
 } from '../lib/forecast/fast-ready-profiler'
@@ -114,5 +117,81 @@ test('resolveGlobalNFastDecision distinguishes global, profile-specific, and bac
     globalRecommendation: 'NONE',
     profileSpecificRequired: false,
     recommendation: 'BACKGROUND_REQUIRED',
+  })
+})
+
+test('resolveRollingDailyExactReadGate only accepts HIT as renderable', () => {
+  assert.deepEqual(resolveRollingDailyExactReadGate('HIT'), {
+    acceptedStatuses: 'HIT_ONLY',
+    staleCountsAsRenderable: false,
+    status: 'PASS',
+    reason: null,
+  })
+
+  assert.deepEqual(resolveRollingDailyExactReadGate('STALE'), {
+    acceptedStatuses: 'HIT_ONLY',
+    staleCountsAsRenderable: false,
+    status: 'FAIL',
+    reason: 'Rolling Daily exact read must be HIT, received STALE.',
+  })
+})
+
+test('resolveWarmReuseGate requires zero compute and zero new execution', () => {
+  assert.deepEqual(resolveWarmReuseGate({
+    modelComputeCount: 0,
+    bridgeCurrentComputeCount: 0,
+    newExecutionCount: 0,
+    newArtifactWriteCount: 0,
+  }), {
+    status: 'PASS',
+    reason: null,
+  })
+
+  assert.deepEqual(resolveWarmReuseGate({
+    modelComputeCount: 1,
+    bridgeCurrentComputeCount: 0,
+    newExecutionCount: 1,
+    newArtifactWriteCount: 0,
+  }), {
+    status: 'FAIL',
+    reason: 'Warm canonical reuse created work: modelComputeCount=1, newExecutionCount=1',
+  })
+})
+
+test('resolveFastReadyProfilerGate rejects zero serving headroom', () => {
+  assert.deepEqual(resolveFastReadyProfilerGate({
+    currentFastLatencyGate: 'PASS',
+    warmReuseGate: 'PASS',
+    concurrentOneGlobalComputeGate: 'PASS',
+    currentIsolationGate: 'PASS',
+    recentProfileGate: 'PASS',
+    reservedServingOverheadMs: 0,
+    profileArtifactSourceShaMatch: true,
+    stage5NonRegression: 'PASS',
+    stage4NonRegression: 'PASS',
+    currentFastPolicyChanged: false,
+    stage7ScopeLeakage: false,
+  }), {
+    fastReadyProfilerGate: 'FAIL',
+    performanceCorrectiveRequired: true,
+  })
+})
+
+test('resolveFastReadyProfilerGate passes only when all required gates hold', () => {
+  assert.deepEqual(resolveFastReadyProfilerGate({
+    currentFastLatencyGate: 'PASS',
+    warmReuseGate: 'PASS',
+    concurrentOneGlobalComputeGate: 'PASS',
+    currentIsolationGate: 'PASS',
+    recentProfileGate: 'PASS',
+    reservedServingOverheadMs: 250,
+    profileArtifactSourceShaMatch: true,
+    stage5NonRegression: 'PASS',
+    stage4NonRegression: 'PASS',
+    currentFastPolicyChanged: false,
+    stage7ScopeLeakage: false,
+  }), {
+    fastReadyProfilerGate: 'PASS',
+    performanceCorrectiveRequired: false,
   })
 })

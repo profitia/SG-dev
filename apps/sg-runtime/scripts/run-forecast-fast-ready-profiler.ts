@@ -9,6 +9,10 @@ import { promisify } from 'node:util'
 import { Prisma } from '@/generated/market-data-client'
 import { resolveForecastTechnicalMinimumObservations } from '@/lib/forecast/current-fast-policy'
 import {
+  createForecastCapabilityService,
+  type ForecastCapabilityProvenance,
+} from '@/lib/forecast/capability-resolver'
+import {
   type BenchmarkForecastCurrentResult,
   type BenchmarkForecastVerificationResult,
   type ForecastTargetBasis,
@@ -18,9 +22,11 @@ import {
 import {
   type ProfiledPhaseName,
   classifyDominantBottleneck,
-  evaluateRecentBudgetCandidates,
   NOT_SEPARATELY_MEASURABLE,
   resolveConservativeLatencyMs,
+  resolveFastReadyProfilerGate,
+  resolveRollingDailyExactReadGate,
+  resolveWarmReuseGate,
   resolveGlobalNFastDecision,
   summarizeNumericSamples,
   summarizeOptionalPhaseSamples,
@@ -28,7 +34,6 @@ import {
 import {
   createInteractiveForecastPreparationService,
   type InteractiveForecastIdentity,
-  resolveInteractiveForecastCapability,
 } from '@/lib/forecast/interactive-preparation'
 import { buildForecastHistoryFingerprint } from '@/lib/forecast/history-fingerprint'
 import {
@@ -38,12 +43,15 @@ import {
 } from '@/lib/forecast/identity'
 import {
   buildLiveForecastBridgePayloadFromHistory,
+  buildCurrentForecastExecutionPlan,
   selectMinimalLawfulCurrentTrainingPayload,
 } from '@/lib/forecast/live-market-input'
+import { selectMinimalLawfulCurrentTrainingSuffix } from '@/lib/forecast/current-fast-policy'
 import { buildRollingDailyHistoryFingerprint } from '@/lib/forecast/rolling-daily-maintenance'
 import { readRollingDailyCurrentForecastSnapshot } from '@/lib/forecast/rolling-daily-current-forecast-snapshot'
 import {
   createForecastLibraryService,
+  executePreparedForecastBridge,
   type ForecastServiceRequest,
   readCurrentRunFromPrisma,
 } from '@/lib/forecast/service'
@@ -75,14 +83,29 @@ const RESULT_MD_PATH = path.resolve(
 )
 
 const DEFAULT_COLD_SAMPLES = 5
-const DEFAULT_WARM_SAMPLES = 10
+const DEFAULT_WARM_SAMPLES = 20
 const DEFAULT_RECENT_CANDIDATES = [1, 3, 6, 12] as const
 const FAST_READY_BUDGET_MS = 15_000
-const RESERVED_SERVING_OVERHEAD_MS = 0
 const MACROBOND_PROVIDER_CODE = 'MACROBOND'
 const DAILY_SERIES_ID = 'ppf1-stage6-daily-profile-v1'
+const WEEKLY_SERIES_ID = 'ppf1-stage6-weekly-profile-v1'
+const MONTHLY_SERIES_ID = 'ppf1-stage6-monthly-profile-v1'
+const QUARTERLY_SERIES_ID = 'ppf1-stage6-quarterly-profile-v1'
+const SEMIANNUAL_SERIES_ID = 'ppf1-stage6-semiannual-profile-v1'
 
 type TargetSemantics = 'MONTHLY_AVERAGE' | 'END_OF_PERIOD' | 'ROLLING_DAILY_POINT_IN_TIME'
+
+type SourceFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'SEMIANNUAL'
+
+type RecentVerificationMode = 'DIRECT_SAME_POLICY_PREPARED_CURRENT_BY_ORIGIN' | 'NOT_APPLICABLE'
+
+type SyntheticSeriesDefinition = {
+  seriesId: string
+  displayName: string
+  frequency: SourceFrequency
+  observationCount: number
+  startDate: string
+}
 
 type ProfilerProfile = {
   profileId: string
@@ -90,12 +113,13 @@ type ProfilerProfile = {
   modelId: UserFacingForecastModelId
   targetSemantics: TargetSemantics
   targetBasis: ForecastTargetBasis
-  sourceFrequency: 'MONTHLY' | 'DAILY'
-  targetCadence: 'MONTHLY' | 'DAILY'
-  recentVerificationMode: 'LINEAR_FULL_VERIFICATION_ORIGIN_SCALING' | 'NOT_APPLICABLE'
+  sourceFrequency: SourceFrequency
+  targetCadence: 'MONTHLY' | 'DAILY' | 'QUARTERLY' | 'SEMIANNUAL'
+  recentVerificationMode: RecentVerificationMode
 }
 
 type RecorderEvent = {
+  kind: 'telemetry' | 'log'
   event: string
   metrics: Record<string, unknown>
 }
@@ -103,6 +127,8 @@ type RecorderEvent = {
 type CurrentSample = {
   prepareStatus: string
   exactReadStatus: string
+  exactReadGate: 'PASS' | 'FAIL'
+  ownerAcquiredCount: number
   cacheStatus: string | null
   totalRenderableReadyMs: number
   exactReadMs: number
@@ -112,16 +138,42 @@ type CurrentSample = {
   effectivePolicyId: string | null
 }
 
+type WarmSample = {
+  prepareStatus: string
+  durationMs: number
+  modelComputeCount: number
+  bridgeCurrentComputeCount: number
+  newExecutionCount: number
+  newArtifactWriteCount: number
+  warmReuseGate: 'PASS' | 'FAIL'
+  warmReuseReason: string | null
+}
+
+type SyntheticSeriesHistory = ReturnType<typeof buildDailyHistory>
+
 type FullVerificationMeasurement = {
-  status: 'MEASURED' | 'ZERO_ORIGIN_DIAGNOSTIC'
-  totalWallMs: number
-  computeMs: number
-  persistenceMs: number | null
+  status: 'MEASURED' | 'INSUFFICIENT_ORIGIN_DIAGNOSTIC'
+  measurementMode: 'DIRECT_SAME_POLICY_PREPARED_CURRENT_BY_ORIGIN'
+  selectedOriginDates: string[]
   originCount: number
-  cacheStatus: string
-  runtimeSeconds: number | null
-  estimatedRecentCandidates: ReturnType<typeof evaluateRecentBudgetCandidates>
+  originSamples: Array<{
+    forecastOrigin: string
+    totalWallMs: number
+    runtimeSeconds: number | null
+    selectedObservationCount: number
+    extendedBeyondDefaultWindow: boolean
+  }>
+  measuredCandidates: Array<{
+    candidateN: number
+    recentVerificationMs: number
+    currentConservativeMs: number
+    reservedServingOverheadMs: number
+    estimatedTotalFastReadyMs: number
+    within15s: boolean
+    selectedOriginDates: string[]
+  }>
   maxInlineCandidate: number
+  measuredServingHeadroomMs: number
   reason: string | null
 }
 
@@ -141,7 +193,11 @@ class TelemetryRecorder {
   }
 
   emit(event: string, metrics: Record<string, unknown> = {}) {
-    this.events.push({ event, metrics })
+    this.events.push({ kind: 'telemetry', event, metrics })
+  }
+
+  log(event: string, metrics: Record<string, unknown> = {}) {
+    this.events.push({ kind: 'log', event, metrics })
   }
 
   drain() {
@@ -187,6 +243,30 @@ function readCandidateNs() {
   return Array.from(new Set(parsed)).sort((left, right) => left - right)
 }
 
+function readPassFailArg(flag: string, fallback: 'PASS' | 'FAIL' = 'FAIL') {
+  const rawValue = process.argv.find((argument) => argument.startsWith(`${flag}=`))
+  if (!rawValue) {
+    return fallback
+  }
+
+  const value = rawValue.slice(flag.length + 1).trim().toUpperCase()
+  if (value !== 'PASS' && value !== 'FAIL') {
+    throw new Error(`${flag} must be PASS or FAIL.`)
+  }
+
+  return value
+}
+
+function readStringArg(flag: string) {
+  const rawValue = process.argv.find((argument) => argument.startsWith(`${flag}=`))
+  if (!rawValue) {
+    return null
+  }
+
+  const value = rawValue.slice(flag.length + 1).trim()
+  return value.length > 0 ? value : null
+}
+
 function buildDailyHistory() {
   const start = new Date(Date.UTC(2021, 0, 1))
   const historical = Array.from({ length: 1825 }, (_, index) => {
@@ -220,7 +300,137 @@ function buildDailyHistory() {
   }
 }
 
-async function seedHistory(history: ReturnType<typeof buildMonthlyHistory> | ReturnType<typeof buildDailyHistory>) {
+function addFrequencyStep(date: Date, frequency: Exclude<SourceFrequency, 'DAILY'>) {
+  const next = new Date(date)
+  if (frequency === 'WEEKLY') {
+    next.setUTCDate(next.getUTCDate() + 7)
+    return next
+  }
+
+  const months = frequency === 'MONTHLY'
+    ? 1
+    : frequency === 'QUARTERLY'
+      ? 3
+      : 6
+  next.setUTCMonth(next.getUTCMonth() + months)
+  return next
+}
+
+function buildNativeHistory(definition: SyntheticSeriesDefinition): SyntheticSeriesHistory {
+  const start = new Date(definition.startDate)
+  const historical = Array.from({ length: definition.observationCount }, (_, index) => {
+    const observedAt = new Date(start)
+    if (definition.frequency === 'DAILY') {
+      observedAt.setUTCDate(start.getUTCDate() + index)
+    } else {
+      let cursor = new Date(start)
+      for (let step = 0; step < index; step += 1) {
+        cursor = addFrequencyStep(cursor, definition.frequency)
+      }
+      observedAt.setTime(cursor.getTime())
+    }
+    const seasonal = Math.sin(index / 4) * 1.2
+    const longerCycle = Math.cos(index / 9) * 0.8
+    const drift = index * 0.35
+    return {
+      date: observedAt.toISOString(),
+      value: roundMs(75 + drift + seasonal + longerCycle),
+    }
+  })
+
+  return {
+    providerSeries: {
+      provider: {
+        providerCode: MACROBOND_PROVIDER_CODE,
+        displayName: 'Macrobond',
+      },
+      providerSeriesId: definition.seriesId,
+      providerSeriesKey: definition.seriesId.toUpperCase().replace(/-/g, '_'),
+    },
+    displayName: definition.displayName,
+    frequency: definition.frequency,
+    currency: 'INDEX',
+    unit: 'pts',
+    source: 'PPF1_STAGE6_PROFILER_SEED',
+    historical,
+  }
+}
+
+const SYNTHETIC_SERIES_DEFINITIONS: readonly SyntheticSeriesDefinition[] = [
+  { seriesId: DAILY_SERIES_ID, displayName: 'PPF1 Stage 6 Daily Profile', frequency: 'DAILY', observationCount: 1825, startDate: '2021-01-01T00:00:00.000Z' },
+  { seriesId: WEEKLY_SERIES_ID, displayName: 'PPF1 Stage 6 Weekly Profile', frequency: 'WEEKLY', observationCount: 260, startDate: '2021-01-04T00:00:00.000Z' },
+  { seriesId: MONTHLY_SERIES_ID, displayName: 'PPF1 Stage 6 Monthly Profile', frequency: 'MONTHLY', observationCount: 72, startDate: '2019-01-01T00:00:00.000Z' },
+  { seriesId: QUARTERLY_SERIES_ID, displayName: 'PPF1 Stage 6 Quarterly Profile', frequency: 'QUARTERLY', observationCount: 48, startDate: '2013-01-01T00:00:00.000Z' },
+  { seriesId: SEMIANNUAL_SERIES_ID, displayName: 'PPF1 Stage 6 Semiannual Profile', frequency: 'SEMIANNUAL', observationCount: 40, startDate: '2006-01-01T00:00:00.000Z' },
+] as const
+
+function buildSyntheticHistory(definition: SyntheticSeriesDefinition) {
+  return definition.frequency === 'DAILY'
+    ? buildDailyHistory()
+    : buildNativeHistory(definition)
+}
+
+function buildSyntheticProvenance(seriesId: string, frequency: SourceFrequency): ForecastCapabilityProvenance[] {
+  if (frequency === 'DAILY') {
+    return []
+  }
+
+  const endOfPeriod: ForecastCapabilityProvenance = {
+    sourceFrequency: frequency,
+    targetSemantics: 'END_OF_PERIOD',
+    preparation: {
+      method: `PPF1_SYNTHETIC_${frequency}_END_OF_PERIOD`,
+      version: 'ppf1-stage6-synthetic-provenance-v1',
+      provenanceStatus: 'PROVEN',
+    },
+    sourceLineage: `PPF1_SYNTHETIC_CONTROLLED_SERIES:${seriesId}:${frequency}`,
+    closedPeriod: true,
+    levelAtTimestamp: true,
+    exactSourceObservedAt: true,
+    aggregation: null,
+    underlyingObservationFrequency: null,
+    missingObservationPolicy: null,
+    syntheticObservations: false,
+  }
+
+  if (frequency === 'WEEKLY') {
+    return [endOfPeriod]
+  }
+
+  return [
+    endOfPeriod,
+    {
+      sourceFrequency: frequency,
+      targetSemantics: 'MONTHLY_AVERAGE',
+      preparation: {
+        method: `PPF1_SYNTHETIC_${frequency}_AVERAGE`,
+        version: 'ppf1-stage6-synthetic-provenance-v1',
+        provenanceStatus: 'PROVEN',
+      },
+      sourceLineage: `PPF1_SYNTHETIC_CONTROLLED_SERIES:${seriesId}:${frequency}`,
+      closedPeriod: true,
+      levelAtTimestamp: null,
+      exactSourceObservedAt: null,
+      aggregation: 'ARITHMETIC_MEAN',
+      underlyingObservationFrequency: frequency,
+      missingObservationPolicy: 'USE_AVAILABLE_LAWFUL_OBSERVATIONS_ONLY',
+      syntheticObservations: false,
+    },
+  ]
+}
+
+const profilerCapabilityService = createForecastCapabilityService({
+  resolveProvenance: async (seriesId, history) => {
+    const synthetic = SYNTHETIC_SERIES_DEFINITIONS.find((definition) => definition.seriesId === seriesId)
+    if (!synthetic) {
+      return []
+    }
+
+    return buildSyntheticProvenance(seriesId, synthetic.frequency)
+  },
+})
+
+async function seedHistory(history: SyntheticSeriesHistory) {
   const prisma = getMarketDataPrisma()
   if (!prisma) {
     throw new Error('MARKET_DATA_DATABASE_URL is not configured.')
@@ -314,40 +524,153 @@ async function clearProfilerArtifacts(seriesIds: readonly string[]) {
   })
 }
 
-function buildProfiles() {
+async function clearProfilerProfileArtifacts(profile: ProfilerProfile) {
+  const prisma = getMarketDataPrisma()
+  if (!prisma) {
+    throw new Error('MARKET_DATA_DATABASE_URL is not configured.')
+  }
+
+  const method = resolveForecastMethodContract(profile.targetBasis)
+
+  await prisma.$transaction(async (tx) => {
+    await tx.rollingDailyCurrentForecastSnapshot.deleteMany({
+      where: {
+        seriesId: profile.seriesId,
+        modelId: profile.modelId,
+        targetBasis: profile.targetBasis,
+        methodId: method.methodId,
+        methodVersion: method.methodVersion,
+      },
+    })
+    await tx.forecastVerificationRun.deleteMany({
+      where: {
+        seriesId: profile.seriesId,
+        modelId: profile.modelId,
+        targetBasis: profile.targetBasis,
+        methodId: method.methodId,
+        methodVersion: method.methodVersion,
+      },
+    })
+    await tx.forecastCurrentRun.deleteMany({
+      where: {
+        seriesId: profile.seriesId,
+        modelId: profile.modelId,
+        targetBasis: profile.targetBasis,
+        methodId: method.methodId,
+        methodVersion: method.methodVersion,
+      },
+    })
+    await tx.forecastPreparationExecutionLedger.deleteMany({
+      where: {
+        seriesId: profile.seriesId,
+        modelId: profile.modelId,
+        targetBasis: profile.targetBasis,
+        targetSemantics: profile.targetSemantics,
+        methodId: method.methodId,
+        methodVersion: method.methodVersion,
+      },
+    })
+  })
+}
+
+async function buildProfiles() {
   const profiles: ProfilerProfile[] = []
 
-  for (const modelId of USER_FACING_FORECAST_MODELS) {
-    profiles.push({
-      profileId: `${DAILY_SERIES_ID}|MONTHLY_AVERAGE|${modelId}`,
+  const candidates: Array<Pick<ProfilerProfile, 'seriesId' | 'sourceFrequency' | 'targetCadence' | 'targetSemantics' | 'targetBasis' | 'recentVerificationMode'>> = [
+    {
       seriesId: DAILY_SERIES_ID,
-      modelId,
+      sourceFrequency: 'DAILY',
+      targetCadence: 'MONTHLY',
       targetSemantics: 'MONTHLY_AVERAGE',
       targetBasis: 'MONTHLY_AVERAGE',
+      recentVerificationMode: 'DIRECT_SAME_POLICY_PREPARED_CURRENT_BY_ORIGIN',
+    },
+    {
+      seriesId: DAILY_SERIES_ID,
       sourceFrequency: 'DAILY',
       targetCadence: 'MONTHLY',
-      recentVerificationMode: 'LINEAR_FULL_VERIFICATION_ORIGIN_SCALING',
-    })
-    profiles.push({
-      profileId: `${DAILY_SERIES_ID}|END_OF_PERIOD|${modelId}`,
-      seriesId: DAILY_SERIES_ID,
-      modelId,
       targetSemantics: 'END_OF_PERIOD',
       targetBasis: 'END_OF_PERIOD',
-      sourceFrequency: 'DAILY',
-      targetCadence: 'MONTHLY',
-      recentVerificationMode: 'LINEAR_FULL_VERIFICATION_ORIGIN_SCALING',
-    })
-    profiles.push({
-      profileId: `${DAILY_SERIES_ID}|ROLLING_DAILY_POINT_IN_TIME|${modelId}`,
+      recentVerificationMode: 'DIRECT_SAME_POLICY_PREPARED_CURRENT_BY_ORIGIN',
+    },
+    {
       seriesId: DAILY_SERIES_ID,
-      modelId,
-      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
-      targetBasis: 'POINT_IN_TIME',
       sourceFrequency: 'DAILY',
       targetCadence: 'DAILY',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      targetBasis: 'POINT_IN_TIME',
       recentVerificationMode: 'NOT_APPLICABLE',
-    })
+    },
+    {
+      seriesId: WEEKLY_SERIES_ID,
+      sourceFrequency: 'WEEKLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'END_OF_PERIOD',
+      targetBasis: 'END_OF_PERIOD',
+      recentVerificationMode: 'DIRECT_SAME_POLICY_PREPARED_CURRENT_BY_ORIGIN',
+    },
+    {
+      seriesId: MONTHLY_SERIES_ID,
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'END_OF_PERIOD',
+      targetBasis: 'END_OF_PERIOD',
+      recentVerificationMode: 'DIRECT_SAME_POLICY_PREPARED_CURRENT_BY_ORIGIN',
+    },
+    {
+      seriesId: MONTHLY_SERIES_ID,
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      targetBasis: 'MONTHLY_AVERAGE',
+      recentVerificationMode: 'DIRECT_SAME_POLICY_PREPARED_CURRENT_BY_ORIGIN',
+    },
+    {
+      seriesId: QUARTERLY_SERIES_ID,
+      sourceFrequency: 'QUARTERLY',
+      targetCadence: 'QUARTERLY',
+      targetSemantics: 'END_OF_PERIOD',
+      targetBasis: 'END_OF_PERIOD',
+      recentVerificationMode: 'DIRECT_SAME_POLICY_PREPARED_CURRENT_BY_ORIGIN',
+    },
+    {
+      seriesId: SEMIANNUAL_SERIES_ID,
+      sourceFrequency: 'SEMIANNUAL',
+      targetCadence: 'SEMIANNUAL',
+      targetSemantics: 'END_OF_PERIOD',
+      targetBasis: 'END_OF_PERIOD',
+      recentVerificationMode: 'DIRECT_SAME_POLICY_PREPARED_CURRENT_BY_ORIGIN',
+    },
+  ]
+
+  for (const candidate of candidates) {
+    for (const modelId of USER_FACING_FORECAST_MODELS) {
+      const capability = await profilerCapabilityService.resolveExact({
+        seriesId: candidate.seriesId,
+        targetSemantics: candidate.targetSemantics,
+        modelId,
+      })
+      if (!capability.capability) {
+        continue
+      }
+      if (capability.capability.admissionState !== 'ADMITTED' || capability.capability.implementationState !== 'SUPPORTED') {
+        continue
+      }
+      if (capability.capability.historyEligibility !== 'ELIGIBLE') {
+        continue
+      }
+
+      profiles.push({
+        profileId: `${candidate.seriesId}|${candidate.targetSemantics}|${modelId}`,
+        seriesId: candidate.seriesId,
+        modelId,
+        targetSemantics: candidate.targetSemantics,
+        targetBasis: candidate.targetBasis,
+        sourceFrequency: candidate.sourceFrequency,
+        targetCadence: candidate.targetCadence,
+        recentVerificationMode: candidate.recentVerificationMode,
+      })
+    }
   }
 
   return profiles
@@ -400,6 +723,31 @@ function findLatestNumericMetric(events: readonly RecorderEvent[], eventName: st
   return null
 }
 
+function countEvents(
+  events: readonly RecorderEvent[],
+  eventName: string,
+  predicate?: (event: RecorderEvent) => boolean,
+) {
+  return events.filter((event) => event.event === eventName && (predicate ? predicate(event) : true)).length
+}
+
+function sumNumericMetric(
+  events: readonly RecorderEvent[],
+  eventName: string,
+  metricName: string,
+  predicate?: (event: RecorderEvent) => boolean,
+) {
+  return events.reduce((sum, event) => {
+    if (event.event !== eventName || (predicate && !predicate(event))) {
+      return sum
+    }
+    const value = event.metrics[metricName]
+    return typeof value === 'number' && Number.isFinite(value)
+      ? sum + value
+      : sum
+  }, 0)
+}
+
 async function readRollingDailyPreparedCurrent(profile: ProfilerProfile) {
   const history = await resolveBenchmarkHistoricalSeries(profile.seriesId, 'ALL')
   const sourceHistoryFingerprint = buildRollingDailyHistoryFingerprint({
@@ -407,14 +755,24 @@ async function readRollingDailyPreparedCurrent(profile: ProfilerProfile) {
     displayName: history.history.displayName,
     description: history.history.displayName,
     frequency: 'DAILY',
-    source: history.source,
+    source: history.history.source,
     points: history.history.historical,
   })
-  return readRollingDailyCurrentForecastSnapshot({
+  const result = await readRollingDailyCurrentForecastSnapshot({
     seriesId: profile.seriesId,
     modelId: profile.modelId,
     sourceHistoryFingerprint,
   })
+
+  if (result.status === 'MISS') {
+    return result
+  }
+
+  return {
+    status: result.status,
+    cacheStatus: 'hit' as const,
+    runtimeSeconds: null,
+  }
 }
 
 async function readPeriodicPreparedCurrent(profile: ProfilerProfile) {
@@ -512,21 +870,22 @@ async function measureCurrentSamples(
   const recorder = new TelemetryRecorder()
   const libraryService = createForecastLibraryService({
     telemetry: recorder,
-    logEvent: () => {},
+    logEvent: (event, metrics) => recorder.log(event, metrics),
   })
   const interactiveService = createInteractiveForecastPreparationService({
+    resolveExactCapability: profilerCapabilityService.resolveExact,
     prepareMonthlyCurrent: (input) => libraryService.resolveCurrentForecastRequest(input),
   })
 
   const identity = buildInteractiveIdentity(profile)
   const request = buildServiceRequest(profile)
   const coldSamples: CurrentSample[] = []
-  const warmReadSamples: number[] = []
+  const warmSamples: WarmSample[] = []
 
   for (let index = 0; index < coldSampleCount; index += 1) {
-    await clearProfilerArtifacts([profile.seriesId])
+    await clearProfilerProfileArtifacts(profile)
 
-    const capability = await resolveInteractiveForecastCapability(identity)
+    const capability = await interactiveService.capability(identity)
     const periodicSurface = profile.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
       ? null
       : await measurePeriodicPreparationSurface(profile)
@@ -537,21 +896,24 @@ async function measureCurrentSamples(
     const preparation = await interactiveService.prepareCurrent(identity)
     const prepareMs = performance.now() - prepareStartedAt
     const currentEvents = recorder.drain()
+    const ownerAcquiredCount = countEvents(
+      currentEvents,
+      'FORECAST_PREPARATION_EXECUTION_LEDGER',
+      (event) => event.kind === 'log' && event.metrics.eventType === 'single_flight_owner_acquired',
+    )
 
     if (!['READY', 'REUSED'].includes(preparation.status)) {
       throw new Error(`Current preparation failed for ${profile.profileId}: ${preparation.status} ${preparation.reason ?? ''}`.trim())
     }
 
-    const exactReadStartedAt = performance.now()
-    const exactRead = profile.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
-      ? await readRollingDailyPreparedCurrent(profile)
-      : await readPeriodicPreparedCurrent(profile)
-    const exactReadMs = performance.now() - exactReadStartedAt
-
     if (profile.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME') {
+      const exactReadStartedAt = performance.now()
+      const exactRead = await readRollingDailyPreparedCurrent(profile)
+      const exactReadMs = performance.now() - exactReadStartedAt
       if (exactRead.status !== 'HIT' && exactRead.status !== 'STALE') {
         throw new Error(`Rolling Daily prepared read failed for ${profile.profileId}: ${exactRead.status}`)
       }
+      const exactReadGate = resolveRollingDailyExactReadGate(exactRead.status)
       const rollingDailyCompatibility = createCurrentForecastStatisticalCompatibility({
         sourceFrequency: 'DAILY',
         targetCadence: 'DAILY',
@@ -560,7 +922,9 @@ async function measureCurrentSamples(
       coldSamples.push({
         prepareStatus: preparation.status,
         exactReadStatus: exactRead.status,
-        cacheStatus: exactRead.payload.cacheStatus,
+        exactReadGate: exactReadGate.status,
+        ownerAcquiredCount,
+        cacheStatus: exactRead.cacheStatus,
         totalRenderableReadyMs: roundMs(prepareMs + exactReadMs),
         exactReadMs: roundMs(exactReadMs),
         phases: {
@@ -572,7 +936,7 @@ async function measureCurrentSamples(
           EXECUTION_ADMISSION_MS: null,
           OWNER_WAIT_MS: null,
           MODEL_BRIDGE_MS: null,
-          MODEL_COMPUTE_MS: exactRead.payload.runtimeSeconds === null ? null : roundMs(exactRead.payload.runtimeSeconds * 1000),
+          MODEL_COMPUTE_MS: exactRead.runtimeSeconds === null ? null : roundMs(exactRead.runtimeSeconds * 1000),
           PERSISTENCE_MS: null,
           POST_PERSIST_EXACT_READ_MS: roundMs(exactReadMs),
           CONSUMER_ADAPTER_MS: null,
@@ -580,11 +944,14 @@ async function measureCurrentSamples(
           ROLLING_DAILY_OWNERSHIP_PREPARATION_MS: capability.timingMs,
           ROLLING_DAILY_SNAPSHOT_PERSIST_MS: null,
         },
-        runtimeSeconds: exactRead.payload.runtimeSeconds,
+        runtimeSeconds: exactRead.runtimeSeconds,
         policyId: rollingDailyCompatibility.trainingWindowPolicyId,
         effectivePolicyId: rollingDailyCompatibility.effectiveTrainingPolicyId,
       })
     } else {
+      const exactReadStartedAt = performance.now()
+      const exactRead = await readPeriodicPreparedCurrent(profile)
+      const exactReadMs = performance.now() - exactReadStartedAt
       const computeDurationMs = findLatestNumericMetric(currentEvents, 'current_compute_end', 'durationMs')
       const persistenceDurationMs = findLatestNumericMetric(currentEvents, 'persistence', 'durationMs')
       const runtimeMs = exactRead.runtimeSeconds === null ? null : roundMs(exactRead.runtimeSeconds * 1000)
@@ -592,6 +959,8 @@ async function measureCurrentSamples(
       coldSamples.push({
         prepareStatus: preparation.status,
         exactReadStatus: exactRead.status,
+        exactReadGate: 'PASS',
+        ownerAcquiredCount,
         cacheStatus: exactRead.cacheStatus,
         totalRenderableReadyMs: roundMs(prepareMs + exactReadMs),
         exactReadMs: roundMs(exactReadMs),
@@ -620,21 +989,56 @@ async function measureCurrentSamples(
   }
 
   for (let index = 0; index < warmSampleCount; index += 1) {
-    const warmReadStartedAt = performance.now()
-    if (profile.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME') {
-      const exactRead = await readRollingDailyPreparedCurrent(profile)
-      if (exactRead.status !== 'HIT' && exactRead.status !== 'STALE') {
-        throw new Error(`Rolling Daily warm prepared read failed for ${profile.profileId}: ${exactRead.status}`)
-      }
-    } else {
-      await readPeriodicPreparedCurrent(profile)
+    recorder.drain()
+    const warmStartedAt = performance.now()
+    const warmPreparation = await interactiveService.prepareCurrent(identity)
+    const warmDurationMs = performance.now() - warmStartedAt
+    const warmEvents = recorder.drain()
+
+    if (warmPreparation.status !== 'REUSED') {
+      throw new Error(`Warm Current preparation did not reuse prepared state for ${profile.profileId}: ${warmPreparation.status} ${warmPreparation.reason ?? ''}`.trim())
     }
-    warmReadSamples.push(roundMs(performance.now() - warmReadStartedAt))
+
+    const warmReuseGate = resolveWarmReuseGate({
+      modelComputeCount: sumNumericMetric(warmEvents, 'model_fit', 'count', (event) => event.kind === 'telemetry' && event.metrics.operation === 'current'),
+      bridgeCurrentComputeCount: countEvents(warmEvents, 'current_compute_end', (event) => event.kind === 'telemetry'),
+      newExecutionCount: countEvents(
+        warmEvents,
+        'FORECAST_PREPARATION_EXECUTION_LEDGER',
+        (event) => event.kind === 'log' && event.metrics.eventType === 'single_flight_owner_acquired',
+      ),
+      newArtifactWriteCount: sumNumericMetric(
+        warmEvents,
+        'persistence',
+        'artifactWrites',
+        (event) => event.kind === 'telemetry' && event.metrics.operation === 'current',
+      ),
+    })
+
+    warmSamples.push({
+      prepareStatus: warmPreparation.status,
+      durationMs: roundMs(warmDurationMs),
+      modelComputeCount: sumNumericMetric(warmEvents, 'model_fit', 'count', (event) => event.kind === 'telemetry' && event.metrics.operation === 'current'),
+      bridgeCurrentComputeCount: countEvents(warmEvents, 'current_compute_end', (event) => event.kind === 'telemetry'),
+      newExecutionCount: countEvents(
+        warmEvents,
+        'FORECAST_PREPARATION_EXECUTION_LEDGER',
+        (event) => event.kind === 'log' && event.metrics.eventType === 'single_flight_owner_acquired',
+      ),
+      newArtifactWriteCount: sumNumericMetric(
+        warmEvents,
+        'persistence',
+        'artifactWrites',
+        (event) => event.kind === 'telemetry' && event.metrics.operation === 'current',
+      ),
+      warmReuseGate: warmReuseGate.status,
+      warmReuseReason: warmReuseGate.reason,
+    })
   }
 
   return {
     coldSamples,
-    warmReadSamples,
+    warmSamples,
   }
 }
 
@@ -643,79 +1047,151 @@ async function measureFullVerification(
   candidateNs: readonly number[],
   currentConservativeMs: number,
 ) {
-  const recorder = new TelemetryRecorder()
-  const libraryService = createForecastLibraryService({
-    telemetry: recorder,
-    logEvent: () => {},
+  const history = await resolveBenchmarkHistoricalSeries(profile.seriesId, 'ALL')
+  const basePayload = buildLiveForecastBridgePayloadFromHistory(profile.seriesId, history.history, {
+    targetBasis: profile.targetBasis,
+    targetCadence: profile.targetCadence,
+    continuityPolicy: profile.targetCadence === 'MONTHLY' ? 'ALLOW_GAPS' : 'REQUIRE_FULL',
   })
+  const latestHistoricalDate = basePayload.history.end
+  const maxCandidateN = Math.max(...candidateNs)
+  const eligibleOrigins = basePayload.history.points
+    .slice(0, -1)
+    .filter((point) => {
+      const plan = buildCurrentForecastExecutionPlan(point.date, profile.targetCadence)
+      const farthestTargetDate = plan.currentTargetDates['12M']
+      return typeof farthestTargetDate === 'string' && farthestTargetDate <= latestHistoricalDate
+    })
 
-  await clearProfilerArtifacts([profile.seriesId])
-
-  const verificationStartedAt = performance.now()
-  const verificationResult = await libraryService.resolveVerificationRequest(buildServiceRequest(profile))
-  const totalWallMs = performance.now() - verificationStartedAt
-  const verificationEvents = recorder.drain()
-  const available = requireAvailableVerification(verificationResult, profile)
-  const verificationComputeMs = findLatestNumericMetric(verificationEvents, 'verification_compute_end', 'durationMs')
-  const persistenceMs = findLatestNumericMetric(verificationEvents, 'persistence', 'durationMs')
-  const eventOriginCount = findLatestNumericMetric(verificationEvents, 'verification_compute_end', 'originCount')
-  const originCount = eventOriginCount === null
-    ? Object.values(available.verification).reduce((sum, horizon) => sum + horizon.origins, 0)
-    : eventOriginCount
-  const computeMs = verificationComputeMs === null ? totalWallMs : verificationComputeMs
-
-  if (originCount <= 0) {
+  if (eligibleOrigins.length === 0) {
     return {
-      status: 'ZERO_ORIGIN_DIAGNOSTIC',
-      totalWallMs: roundMs(totalWallMs),
-      computeMs: roundMs(computeMs),
-      persistenceMs: persistenceMs === null ? null : roundMs(persistenceMs),
-      originCount,
-      cacheStatus: available.cacheStatus,
-      runtimeSeconds: available.runtimeSeconds,
-      estimatedRecentCandidates: [],
+      status: 'INSUFFICIENT_ORIGIN_DIAGNOSTIC',
+      measurementMode: 'DIRECT_SAME_POLICY_PREPARED_CURRENT_BY_ORIGIN',
+      selectedOriginDates: [],
+      originCount: 0,
+      originSamples: [],
+      measuredCandidates: [],
       maxInlineCandidate: 0,
-      reason: 'Full Verification resolved with zero origins on the profiled seeded path.',
+      measuredServingHeadroomMs: 0,
+      reason: 'No matured historical origins were available for direct same-policy Recent profiling.',
     } satisfies FullVerificationMeasurement
   }
 
-  const fixedVerificationOverheadMs = Math.max(totalWallMs - computeMs, 0)
-  const recentVerificationMsByCandidate = new Map<number, number>(
-    candidateNs.map((candidateN) => [
-      candidateN,
-      fixedVerificationOverheadMs + ((computeMs / originCount) * candidateN),
-    ]),
-  )
-  const estimatedRecentCandidates = evaluateRecentBudgetCandidates({
-    candidateNs,
-    recentVerificationMsByCandidate,
-    currentConservativeMs,
-    reservedServingOverheadMs: RESERVED_SERVING_OVERHEAD_MS,
-    totalBudgetMs: FAST_READY_BUDGET_MS,
+  const selectedOrigins = eligibleOrigins.slice(-maxCandidateN).reverse()
+  const minimumRequiredObservations = resolveForecastTechnicalMinimumObservations({
+    targetSemantics: profile.targetSemantics,
+    modelId: profile.modelId,
   })
+
+  const originSamples: FullVerificationMeasurement['originSamples'] = []
+  for (const origin of selectedOrigins) {
+    const selection = selectMinimalLawfulCurrentTrainingSuffix({
+      points: basePayload.history.points,
+      forecastOrigin: origin.date,
+      minimumRequiredObservations,
+    })
+    if (!selection.minimumRequirementSatisfied) {
+      throw new Error(`Recent same-policy origin ${origin.date} does not satisfy the minimum training requirement for ${profile.profileId}.`)
+    }
+
+    const firstPoint = selection.points[0]
+    const lastPoint = selection.points.at(-1)
+    if (!firstPoint || !lastPoint) {
+      throw new Error(`Recent same-policy origin ${origin.date} produced an empty training suffix for ${profile.profileId}.`)
+    }
+
+    const executionPlan = buildCurrentForecastExecutionPlan(origin.date, profile.targetCadence)
+    const preparedPayload = {
+      ...basePayload,
+      benchmark: {
+        ...basePayload.benchmark,
+        expectedObservations: selection.points.length,
+      },
+      execution: {
+        ...basePayload.execution,
+        historicalPeriodStarts: selection.points.map((point) => point.date),
+        horizons: executionPlan.horizons,
+        currentTargetDates: executionPlan.currentTargetDates,
+      },
+      history: {
+        ...basePayload.history,
+        start: firstPoint.date,
+        end: lastPoint.date,
+        observations: selection.points.length,
+        points: selection.points,
+      },
+    }
+
+    const startedAt = performance.now()
+    const bridgeResult = await executePreparedForecastBridge(preparedPayload, 'current', profile.seriesId, profile.modelId)
+    const totalWallMs = performance.now() - startedAt
+    if (bridgeResult.status !== 'AVAILABLE') {
+      throw new Error(`Recent same-policy direct Current execution failed for ${profile.profileId} at origin ${origin.date}: ${bridgeResult.reason}`)
+    }
+    if (!('result' in bridgeResult)) {
+      throw new Error(`Recent same-policy direct Current execution returned a non-current payload for ${profile.profileId} at origin ${origin.date}.`)
+    }
+
+    originSamples.push({
+      forecastOrigin: origin.date,
+      totalWallMs: roundMs(totalWallMs),
+      runtimeSeconds: bridgeResult.result.runtimeSeconds,
+      selectedObservationCount: selection.selectedObservationCount,
+      extendedBeyondDefaultWindow: selection.extendedBeyondDefaultWindow,
+    })
+  }
+
+  const measuredCandidates = candidateNs.map((candidateN) => {
+    const candidateOrigins = originSamples.slice(0, candidateN)
+    const recentVerificationMs = candidateOrigins.reduce((sum, sample) => sum + sample.totalWallMs, 0)
+    const estimatedTotalFastReadyMs = currentConservativeMs + recentVerificationMs
+    const measuredServingHeadroomMs = Math.max(FAST_READY_BUDGET_MS - estimatedTotalFastReadyMs, 0)
+    return {
+      candidateN,
+      recentVerificationMs: roundMs(recentVerificationMs),
+      currentConservativeMs: roundMs(currentConservativeMs),
+      reservedServingOverheadMs: roundMs(measuredServingHeadroomMs),
+      estimatedTotalFastReadyMs: roundMs(estimatedTotalFastReadyMs),
+      within15s: estimatedTotalFastReadyMs <= FAST_READY_BUDGET_MS,
+      selectedOriginDates: candidateOrigins.map((sample) => sample.forecastOrigin),
+    }
+  })
+  const maxInlineCandidate = Math.max(0, ...measuredCandidates.filter((item) => item.within15s).map((item) => item.candidateN))
+  const selectedHeadroom = maxInlineCandidate > 0
+    ? measuredCandidates.find((item) => item.candidateN === maxInlineCandidate)?.reservedServingOverheadMs ?? 0
+    : 0
 
   return {
     status: 'MEASURED',
-    totalWallMs: roundMs(totalWallMs),
-    computeMs: roundMs(computeMs),
-    persistenceMs: persistenceMs === null ? null : roundMs(persistenceMs),
-    originCount,
-    cacheStatus: available.cacheStatus,
-    runtimeSeconds: available.runtimeSeconds,
-    estimatedRecentCandidates,
-    maxInlineCandidate: Math.max(0, ...estimatedRecentCandidates.filter((item) => item.within15s).map((item) => item.candidateN)),
+    measurementMode: 'DIRECT_SAME_POLICY_PREPARED_CURRENT_BY_ORIGIN',
+    selectedOriginDates: originSamples.map((sample) => sample.forecastOrigin),
+    originCount: originSamples.length,
+    originSamples,
+    measuredCandidates,
+    maxInlineCandidate,
+    measuredServingHeadroomMs: roundMs(selectedHeadroom),
     reason: null,
   } satisfies FullVerificationMeasurement
 }
 
-function summarizeProfile(profile: ProfilerProfile, currentMeasurements: Awaited<ReturnType<typeof measureCurrentSamples>>, fullVerification: FullVerificationMeasurement | null) {
+function summarizeProfile(
+  profile: ProfilerProfile,
+  currentMeasurements: Awaited<ReturnType<typeof measureCurrentSamples>>,
+  fullVerification: FullVerificationMeasurement | null,
+  gateContext: {
+    gitHead: string | null
+    expectedSourceSha: string | null
+    stage4NonRegression: 'PASS' | 'FAIL'
+    stage5NonRegression: 'PASS' | 'FAIL'
+  },
+) {
   const totalRenderableReadySummary = summarizeNumericSamples(
     currentMeasurements.coldSamples.map((sample) => sample.totalRenderableReadyMs),
   )
   const exactReadSummary = summarizeNumericSamples(
     currentMeasurements.coldSamples.map((sample) => sample.exactReadMs),
   )
-  const warmPreparedHitSummary = summarizeNumericSamples(currentMeasurements.warmReadSamples)
+  const warmPreparedHitSummary = summarizeNumericSamples(currentMeasurements.warmSamples.map((sample) => sample.durationMs))
 
   const summarizePhase = (phase: ProfiledPhaseName) => summarizeOptionalPhaseSamples(
     currentMeasurements.coldSamples.map((sample) => sample.phases[phase] ?? null),
@@ -749,6 +1225,33 @@ function summarizeProfile(profile: ProfilerProfile, currentMeasurements: Awaited
   ) as Partial<Record<ProfiledPhaseName, number | null>>
 
   const currentConservativeMs = resolveConservativeLatencyMs(totalRenderableReadySummary)
+  const warmReuseGate = currentMeasurements.warmSamples.every((sample) => sample.warmReuseGate === 'PASS') ? 'PASS' : 'FAIL'
+  const currentIsolationGate = currentMeasurements.coldSamples.every((sample) => sample.exactReadGate === 'PASS') ? 'PASS' : 'FAIL'
+  const concurrentOneGlobalComputeGate = currentMeasurements.coldSamples.every((sample) => sample.ownerAcquiredCount <= 1) ? 'PASS' : 'FAIL'
+  const recentProfileGate = fullVerification === null
+    ? 'PASS'
+    : fullVerification.status === 'MEASURED' && fullVerification.measuredCandidates.length > 0
+      ? 'PASS'
+      : 'FAIL'
+  const reservedServingOverheadMs = fullVerification === null
+    ? roundMs(Math.max(FAST_READY_BUDGET_MS - currentConservativeMs, 0))
+    : fullVerification.measuredServingHeadroomMs
+  const profileArtifactSourceShaMatch = gateContext.expectedSourceSha === null
+    ? true
+    : gateContext.gitHead === gateContext.expectedSourceSha
+  const finalGateDecision = resolveFastReadyProfilerGate({
+    currentFastLatencyGate: currentConservativeMs <= FAST_READY_BUDGET_MS ? 'PASS' : 'FAIL',
+    warmReuseGate,
+    concurrentOneGlobalComputeGate,
+    currentIsolationGate,
+    recentProfileGate,
+    reservedServingOverheadMs,
+    profileArtifactSourceShaMatch,
+    stage5NonRegression: gateContext.stage5NonRegression,
+    stage4NonRegression: gateContext.stage4NonRegression,
+    currentFastPolicyChanged: false,
+    stage7ScopeLeakage: false,
+  })
 
   return {
     profileId: profile.profileId,
@@ -766,10 +1269,21 @@ function summarizeProfile(profile: ProfilerProfile, currentMeasurements: Awaited
       sampleCount: currentMeasurements.coldSamples.length,
       statusesObserved: Array.from(new Set(currentMeasurements.coldSamples.map((sample) => sample.prepareStatus))),
       exactReadStatusesObserved: Array.from(new Set(currentMeasurements.coldSamples.map((sample) => sample.exactReadStatus))),
+      ownerAcquiredCountsObserved: currentMeasurements.coldSamples.map((sample) => sample.ownerAcquiredCount),
       cacheStatusesObserved: Array.from(new Set(currentMeasurements.coldSamples.map((sample) => sample.cacheStatus).filter(Boolean))),
       totalRenderableReady: totalRenderableReadySummary,
       exactPreparedRead: exactReadSummary,
       warmPreparedHit: warmPreparedHitSummary,
+      warmReuseStatusesObserved: Array.from(new Set(currentMeasurements.warmSamples.map((sample) => sample.warmReuseGate))),
+      warmPrepareStatusesObserved: Array.from(new Set(currentMeasurements.warmSamples.map((sample) => sample.prepareStatus))),
+      warmReuseProof: {
+        modelComputeCount: Math.max(0, ...currentMeasurements.warmSamples.map((sample) => sample.modelComputeCount)),
+        bridgeCurrentComputeCount: Math.max(0, ...currentMeasurements.warmSamples.map((sample) => sample.bridgeCurrentComputeCount)),
+        newExecutionCount: Math.max(0, ...currentMeasurements.warmSamples.map((sample) => sample.newExecutionCount)),
+        newArtifactWriteCount: Math.max(0, ...currentMeasurements.warmSamples.map((sample) => sample.newArtifactWriteCount)),
+        status: warmReuseGate,
+        reasons: currentMeasurements.warmSamples.map((sample) => sample.warmReuseReason).filter((reason): reason is string => Boolean(reason)),
+      },
       phaseSummaries,
       dominantBottleneck: classifyDominantBottleneck(conservativePhaseSnapshot),
       conservativeLatencyMs: currentConservativeMs,
@@ -779,20 +1293,34 @@ function summarizeProfile(profile: ProfilerProfile, currentMeasurements: Awaited
           mode: 'NOT_APPLICABLE',
         }
       : {
-          mode: profile.recentVerificationMode,
-          fullVerification: {
+          mode: fullVerification.measurementMode,
+          directMeasurement: {
             status: fullVerification.status,
-            totalWallMs: fullVerification.totalWallMs,
-            computeMs: fullVerification.computeMs,
-            persistenceMs: fullVerification.persistenceMs,
+            measurementMode: fullVerification.measurementMode,
+            selectedOriginDates: fullVerification.selectedOriginDates,
             originCount: fullVerification.originCount,
-            cacheStatus: fullVerification.cacheStatus,
-            runtimeSeconds: fullVerification.runtimeSeconds,
+            originSamples: fullVerification.originSamples,
+            measuredServingHeadroomMs: fullVerification.measuredServingHeadroomMs,
             reason: fullVerification.reason,
           },
-          estimatedCandidates: fullVerification.estimatedRecentCandidates,
+          measuredCandidates: fullVerification.measuredCandidates,
           maxInlineCandidate: fullVerification.maxInlineCandidate,
         },
+    finalGate: {
+      currentFastLatencyGate: currentConservativeMs <= FAST_READY_BUDGET_MS ? 'PASS' : 'FAIL',
+      warmReuseGate,
+      concurrentOneGlobalComputeGate,
+      currentIsolationGate,
+      recentProfileGate,
+      reservedServingOverheadMs,
+      profileArtifactSourceShaMatch,
+      stage4NonRegression: gateContext.stage4NonRegression,
+      stage5NonRegression: gateContext.stage5NonRegression,
+      currentFastPolicyChanged: false,
+      stage7ScopeLeakage: false,
+      fastReadyProfilerGate: finalGateDecision.fastReadyProfilerGate,
+      performanceCorrectiveRequired: finalGateDecision.performanceCorrectiveRequired,
+    },
   }
 }
 
@@ -800,15 +1328,27 @@ function renderMarkdown(result: {
   generatedAt: string
   gitHead: string | null
   branch: string | null
+  evidence: {
+    expectedSourceSha: string | null
+  }
+  regressions: {
+    stage4NonRegression: 'PASS' | 'FAIL'
+    stage5NonRegression: 'PASS' | 'FAIL'
+  }
   configuration: {
     coldSamples: number
     warmSamples: number
     recentCandidates: readonly number[]
     fastReadyBudgetMs: number
-    reservedServingOverheadMs: number
   }
   profiles: ReturnType<typeof summarizeProfile>[]
   globalDecision: ReturnType<typeof resolveGlobalNFastDecision>
+  finalGate: {
+    fastReadyProfilerGate: 'PASS' | 'FAIL'
+    performanceCorrectiveRequired: boolean
+    profilesPassing: number
+    profilesFailing: number
+  }
 }) {
   const lines = [
     '# PPF-1 Stage 6 FAST_READY Profiler',
@@ -816,10 +1356,20 @@ function renderMarkdown(result: {
     `Generated at: ${result.generatedAt}`,
     `Branch: ${result.branch ?? 'UNKNOWN'}`,
     `Git HEAD: ${result.gitHead ?? 'UNKNOWN'}`,
+    `Expected source SHA: ${result.evidence.expectedSourceSha ?? 'UNSPECIFIED'}`,
     `Cold samples per profile: ${result.configuration.coldSamples}`,
     `Warm prepared-hit samples per profile: ${result.configuration.warmSamples}`,
     `Recent Verification candidates: ${result.configuration.recentCandidates.join(', ')}`,
     `FAST_READY budget: ${result.configuration.fastReadyBudgetMs} ms`,
+    '',
+    '## Final Gate',
+    '',
+    `FAST_READY profiler gate: ${result.finalGate.fastReadyProfilerGate}`,
+    `Performance corrective required: ${result.finalGate.performanceCorrectiveRequired}`,
+    `Profiles passing: ${result.finalGate.profilesPassing}`,
+    `Profiles failing: ${result.finalGate.profilesFailing}`,
+    `Stage 4 non-regression: ${result.regressions.stage4NonRegression}`,
+    `Stage 5 non-regression: ${result.regressions.stage5NonRegression}`,
     '',
     '## Global Decision',
     '',
@@ -829,8 +1379,8 @@ function renderMarkdown(result: {
     '',
     '## Profiles',
     '',
-    '| Profile | Cold conservative ms | Warm hit p95/max ms | Dominant bottleneck | Max inline recent N |',
-    '| --- | ---: | ---: | --- | ---: |',
+    '| Profile | Gate | Cold conservative ms | Warm hit p95/max ms | Dominant bottleneck | Max inline recent N |',
+    '| --- | --- | ---: | ---: | --- | ---: |',
   ]
 
   for (const profile of result.profiles) {
@@ -841,14 +1391,14 @@ function renderMarkdown(result: {
       ? 'N/A'
       : String(profile.recentVerification.maxInlineCandidate)
     lines.push(
-      `| ${profile.profileId} | ${profile.coldCurrent.conservativeLatencyMs} | ${warm} | ${profile.coldCurrent.dominantBottleneck.category} | ${maxInline} |`,
+      `| ${profile.profileId} | ${profile.finalGate.fastReadyProfilerGate} | ${profile.coldCurrent.conservativeLatencyMs} | ${warm} | ${profile.coldCurrent.dominantBottleneck.category} | ${maxInline} |`,
     )
   }
 
   lines.push('', '## Notes', '')
   lines.push('- Period Current uses exact SG Runtime Current preparation plus exact prepared-read confirmation.')
   lines.push('- Rolling Daily phase gaps remain explicitly marked as NOT_SEPARATELY_MEASURABLE where the runtime does not expose an isolated lawful timing boundary.')
-  lines.push('- Recent Verification capacity is estimated from measured full Verification wall time and explicit origin-count scaling, matching the existing repository rule that validation-origin count is a workload bound and does not alter the full training history.')
+  lines.push('- Recent Verification capacity is measured directly from repeated same-policy prepared Current executions over the latest matured historical origins, rather than estimated from Full Verification scaling.')
 
   return `${lines.join('\n')}\n`
 }
@@ -866,11 +1416,18 @@ async function main() {
   const coldSamples = readIntArg('--cold-samples', DEFAULT_COLD_SAMPLES)
   const warmSamples = readIntArg('--warm-samples', DEFAULT_WARM_SAMPLES)
   const recentCandidates = readCandidateNs()
+  const stage4NonRegression = readPassFailArg('--stage4-non-regression')
+  const stage5NonRegression = readPassFailArg('--stage5-non-regression')
+  const gitHead = await readGitValue(['rev-parse', 'HEAD'])
+  const branch = await readGitValue(['rev-parse', '--abbrev-ref', 'HEAD'])
+  const expectedSourceSha = readStringArg('--expected-source-sha') ?? gitHead
 
-  await seedHistory(buildDailyHistory())
-  await clearProfilerArtifacts([DAILY_SERIES_ID])
+  for (const definition of SYNTHETIC_SERIES_DEFINITIONS) {
+    await seedHistory(buildSyntheticHistory(definition))
+  }
+  await clearProfilerArtifacts(SYNTHETIC_SERIES_DEFINITIONS.map((definition) => definition.seriesId))
 
-  const profiles = buildProfiles()
+  const profiles = await buildProfiles()
   const summarizedProfiles: ReturnType<typeof summarizeProfile>[] = []
   const recentMaxima: number[] = []
 
@@ -888,29 +1445,50 @@ async function main() {
       recentMaxima.push(fullVerification.maxInlineCandidate)
     }
 
-    summarizedProfiles.push(summarizeProfile(profile, currentMeasurements, fullVerification))
+    summarizedProfiles.push(summarizeProfile(profile, currentMeasurements, fullVerification, {
+      gitHead,
+      expectedSourceSha,
+      stage4NonRegression,
+      stage5NonRegression,
+    }))
   }
+
+  const profilesPassing = summarizedProfiles.filter((profile) => profile.finalGate.fastReadyProfilerGate === 'PASS').length
+  const profilesFailing = summarizedProfiles.length - profilesPassing
+  const overallFastReadyProfilerGate: 'PASS' | 'FAIL' = profilesFailing === 0 ? 'PASS' : 'FAIL'
 
   const result = {
     task: 'PPF1_STAGE6_FAST_READY_PROFILER',
     generatedAt: new Date().toISOString(),
-    gitHead: await readGitValue(['rev-parse', 'HEAD']),
-    branch: await readGitValue(['rev-parse', '--abbrev-ref', 'HEAD']),
+    gitHead,
+    branch,
+    evidence: {
+      expectedSourceSha,
+    },
+    regressions: {
+      stage4NonRegression,
+      stage5NonRegression,
+    },
     configuration: {
       coldSamples,
       warmSamples,
       recentCandidates,
       fastReadyBudgetMs: FAST_READY_BUDGET_MS,
-      reservedServingOverheadMs: RESERVED_SERVING_OVERHEAD_MS,
     },
     methodology: {
       currentMeasurementMode: 'CANONICAL_PREPARE_CURRENT_PLUS_EXACT_PREPARED_READ',
       rollingDailyPhaseIsolation: 'BEST_EFFORT_WITH_EXPLICIT_NOT_SEPARATELY_MEASURABLE_GAPS',
-      recentVerificationMeasurementMode: 'MEASURED_FULL_VERIFICATION_WITH_LINEAR_ORIGIN_SCALING',
-      seedSeriesIds: [DAILY_SERIES_ID],
+      recentVerificationMeasurementMode: 'DIRECT_SAME_POLICY_PREPARED_CURRENT_BY_ORIGIN',
+      seedSeriesIds: SYNTHETIC_SERIES_DEFINITIONS.map((definition) => definition.seriesId),
     },
     profiles: summarizedProfiles,
     globalDecision: resolveGlobalNFastDecision(recentMaxima),
+    finalGate: {
+      fastReadyProfilerGate: overallFastReadyProfilerGate,
+      performanceCorrectiveRequired: profilesFailing !== 0,
+      profilesPassing,
+      profilesFailing,
+    },
   }
 
   await writeFile(RESULT_JSON_PATH, `${JSON.stringify(result, null, 2)}\n`)
