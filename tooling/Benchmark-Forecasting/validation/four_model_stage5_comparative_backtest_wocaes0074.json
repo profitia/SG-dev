@@ -35,6 +35,60 @@
     "seriesId": "wocaes0074",
     "targetBasis": "POINT_IN_TIME"
   },
+  "corpusIdentityGate": {
+    "comparisons": {
+      "effectiveSourceHistoryEndDate": {
+        "generated": "2026-08-18",
+        "nonArimaAccepted": "2026-08-18",
+        "stage4": "2026-08-18",
+        "status": "PASS"
+      },
+      "lastHistoricalOrigin": {
+        "generated": "2026-08-18",
+        "nonArimaAcceptedEquivalent": "2026-08-18",
+        "stage4": "2026-08-18",
+        "status": "PASS"
+      },
+      "lawfulHistoricalOriginCount": {
+        "generated": 681,
+        "nonArimaAccepted": null,
+        "stage4": 681,
+        "status": "PASS"
+      },
+      "seriesId": {
+        "generated": "wocaes0074",
+        "nonArimaAccepted": "wocaes0074",
+        "stage4": "wocaes0074",
+        "status": "PASS"
+      }
+    },
+    "generated": {
+      "effectiveSourceHistoryEndDate": "2026-08-18",
+      "lastHistoricalOrigin": "2026-08-18",
+      "lawfulHistoricalOriginCount": 681,
+      "seriesId": "wocaes0074",
+      "sourceHistoryFingerprint": null
+    },
+    "limitations": [
+      "Accepted non-ARIMA artifact does not expose lawful historical origin count.",
+      "Accepted non-ARIMA artifact does not expose a source history fingerprint."
+    ],
+    "nonArimaAccepted": {
+      "effectiveSourceHistoryEndDate": "2026-08-18",
+      "lastHistoricalOriginEquivalent": "2026-08-18",
+      "lawfulHistoricalOriginCount": null,
+      "seriesId": "wocaes0074",
+      "sourceHistoryFingerprint": null
+    },
+    "stage4": {
+      "effectiveSourceHistoryEndDate": "2026-08-18",
+      "lastHistoricalOrigin": "2026-08-18",
+      "lawfulHistoricalOriginCount": 681,
+      "seriesId": "wocaes0074",
+      "sourceHistoryFingerprint": "35ecf750e4998799462a2fa9a57758f048695b26892c5fca6436669e32138f82"
+    },
+    "status": "PASS"
+  },
   "coverageSummary": {
     "arima": {
       "available": 681,
@@ -72,7 +126,7 @@
     "ETS and Damped Holt retain materially higher Directional Accuracy than Naive on the strict common cohort across all four horizons."
   ],
   "fourModelComparativeBacktest": "PASS",
-  "generatedAt": "2026-08-21T09:20:20Z",
+  "generatedAt": "2026-09-08T17:34:21Z",
   "horizonFindings": {
     "12M": [
       "ETS has the lowest MAE on the strict common cohort.",

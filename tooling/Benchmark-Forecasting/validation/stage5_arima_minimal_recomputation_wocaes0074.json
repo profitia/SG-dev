@@ -1,0 +1,1063 @@
+{
+  "coverageReconciliation": {
+    "completedAfter": 681,
+    "completedBefore": 681,
+    "duplicates": 0,
+    "expected": 681,
+    "missing": 0,
+    "remaining": 0,
+    "unexpected": 0
+  },
+  "displayName": "Brent, Spot, FOB North Sea",
+  "execution": {
+    "batchCount": 36,
+    "batches": [
+      {
+        "batchIndex": 1,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2024-01-02",
+        "elapsedSeconds": 10.148322332999669,
+        "lastProcessedOriginDate": "2024-01-02",
+        "maturedRecordCount": 0,
+        "newOriginCount": 1,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": null,
+          "lastProcessedOriginAt": "2024-01-02",
+          "maturedRecordCount": 0,
+          "newRecordCount": 4,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 2,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2024-01-03",
+        "elapsedSeconds": 9.322419415984768,
+        "lastProcessedOriginDate": "2024-01-03",
+        "maturedRecordCount": 0,
+        "newOriginCount": 1,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": null,
+          "lastProcessedOriginAt": "2024-01-03",
+          "maturedRecordCount": 0,
+          "newRecordCount": 4,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 3,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2024-01-31",
+        "elapsedSeconds": 191.56942841695854,
+        "lastProcessedOriginDate": "2024-01-31",
+        "maturedRecordCount": 0,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": null,
+          "lastProcessedOriginAt": "2024-01-31",
+          "maturedRecordCount": 0,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 4,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2024-02-28",
+        "elapsedSeconds": 195.77026408398524,
+        "lastProcessedOriginDate": "2024-02-28",
+        "maturedRecordCount": 17,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2024-02-26",
+          "lastProcessedOriginAt": "2024-02-28",
+          "maturedRecordCount": 17,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 5,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2024-03-27",
+        "elapsedSeconds": 192.77980020898394,
+        "lastProcessedOriginDate": "2024-03-27",
+        "maturedRecordCount": 22,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2024-03-27",
+          "lastProcessedOriginAt": "2024-03-27",
+          "maturedRecordCount": 22,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 6,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2024-04-24",
+        "elapsedSeconds": 190.47475212498102,
+        "lastProcessedOriginDate": "2024-04-24",
+        "maturedRecordCount": 33,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2024-04-24",
+          "lastProcessedOriginAt": "2024-04-24",
+          "maturedRecordCount": 33,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 7,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2024-05-22",
+        "elapsedSeconds": 189.93200812500436,
+        "lastProcessedOriginDate": "2024-05-22",
+        "maturedRecordCount": 42,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2024-05-22",
+          "lastProcessedOriginAt": "2024-05-22",
+          "maturedRecordCount": 42,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 8,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2024-06-19",
+        "elapsedSeconds": 198.20480199996382,
+        "lastProcessedOriginDate": "2024-06-19",
+        "maturedRecordCount": 37,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2024-06-19",
+          "lastProcessedOriginAt": "2024-06-19",
+          "maturedRecordCount": 37,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 9,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2024-07-17",
+        "elapsedSeconds": 201.78028754203115,
+        "lastProcessedOriginDate": "2024-07-17",
+        "maturedRecordCount": 52,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2024-07-17",
+          "lastProcessedOriginAt": "2024-07-17",
+          "maturedRecordCount": 52,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 10,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2024-08-14",
+        "elapsedSeconds": 202.27045820798958,
+        "lastProcessedOriginDate": "2024-08-14",
+        "maturedRecordCount": 58,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2024-08-14",
+          "lastProcessedOriginAt": "2024-08-14",
+          "maturedRecordCount": 58,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 11,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2024-09-11",
+        "elapsedSeconds": 202.3924620419857,
+        "lastProcessedOriginDate": "2024-09-11",
+        "maturedRecordCount": 58,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2024-09-11",
+          "lastProcessedOriginAt": "2024-09-11",
+          "maturedRecordCount": 58,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 12,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2024-10-09",
+        "elapsedSeconds": 204.60521883401088,
+        "lastProcessedOriginDate": "2024-10-09",
+        "maturedRecordCount": 62,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2024-10-09",
+          "lastProcessedOriginAt": "2024-10-09",
+          "maturedRecordCount": 62,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 13,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2024-11-06",
+        "elapsedSeconds": 206.1793600419769,
+        "lastProcessedOriginDate": "2024-11-06",
+        "maturedRecordCount": 58,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2024-11-06",
+          "lastProcessedOriginAt": "2024-11-06",
+          "maturedRecordCount": 58,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 14,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2024-12-04",
+        "elapsedSeconds": 201.97098858404206,
+        "lastProcessedOriginDate": "2024-12-04",
+        "maturedRecordCount": 63,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2024-12-04",
+          "lastProcessedOriginAt": "2024-12-04",
+          "maturedRecordCount": 63,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 15,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2025-01-02",
+        "elapsedSeconds": 195.04833312495612,
+        "lastProcessedOriginDate": "2025-01-02",
+        "maturedRecordCount": 60,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2025-01-02",
+          "lastProcessedOriginAt": "2025-01-02",
+          "maturedRecordCount": 60,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 16,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2025-01-30",
+        "elapsedSeconds": 199.48203650000505,
+        "lastProcessedOriginDate": "2025-01-30",
+        "maturedRecordCount": 78,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2025-01-30",
+          "lastProcessedOriginAt": "2025-01-30",
+          "maturedRecordCount": 78,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 17,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2025-02-27",
+        "elapsedSeconds": 202.6597552500316,
+        "lastProcessedOriginDate": "2025-02-27",
+        "maturedRecordCount": 80,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2025-02-27",
+          "lastProcessedOriginAt": "2025-02-27",
+          "maturedRecordCount": 80,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 18,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2025-03-27",
+        "elapsedSeconds": 206.47764412499964,
+        "lastProcessedOriginDate": "2025-03-27",
+        "maturedRecordCount": 88,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2025-03-27",
+          "lastProcessedOriginAt": "2025-03-27",
+          "maturedRecordCount": 88,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 19,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2025-04-25",
+        "elapsedSeconds": 211.6389265000471,
+        "lastProcessedOriginDate": "2025-04-25",
+        "maturedRecordCount": 79,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2025-04-25",
+          "lastProcessedOriginAt": "2025-04-25",
+          "maturedRecordCount": 79,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 20,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2025-05-23",
+        "elapsedSeconds": 208.14287449995754,
+        "lastProcessedOriginDate": "2025-05-23",
+        "maturedRecordCount": 80,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2025-05-23",
+          "lastProcessedOriginAt": "2025-05-23",
+          "maturedRecordCount": 80,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 21,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2025-06-20",
+        "elapsedSeconds": 204.93937504198402,
+        "lastProcessedOriginDate": "2025-06-20",
+        "maturedRecordCount": 78,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2025-06-20",
+          "lastProcessedOriginAt": "2025-06-20",
+          "maturedRecordCount": 78,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 22,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2025-07-18",
+        "elapsedSeconds": 209.28653041599318,
+        "lastProcessedOriginDate": "2025-07-18",
+        "maturedRecordCount": 80,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2025-07-18",
+          "lastProcessedOriginAt": "2025-07-18",
+          "maturedRecordCount": 80,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 23,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2025-08-15",
+        "elapsedSeconds": 202.99153183301678,
+        "lastProcessedOriginDate": "2025-08-15",
+        "maturedRecordCount": 78,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2025-08-15",
+          "lastProcessedOriginAt": "2025-08-15",
+          "maturedRecordCount": 78,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 24,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2025-09-12",
+        "elapsedSeconds": 210.7169569999678,
+        "lastProcessedOriginDate": "2025-09-12",
+        "maturedRecordCount": 78,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2025-09-12",
+          "lastProcessedOriginAt": "2025-09-12",
+          "maturedRecordCount": 78,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 25,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2025-10-10",
+        "elapsedSeconds": 196.8318109169486,
+        "lastProcessedOriginDate": "2025-10-10",
+        "maturedRecordCount": 82,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2025-10-10",
+          "lastProcessedOriginAt": "2025-10-10",
+          "maturedRecordCount": 82,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 26,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2025-11-07",
+        "elapsedSeconds": 190.61859620799078,
+        "lastProcessedOriginDate": "2025-11-07",
+        "maturedRecordCount": 77,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2025-11-07",
+          "lastProcessedOriginAt": "2025-11-07",
+          "maturedRecordCount": 77,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 27,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2025-12-05",
+        "elapsedSeconds": 188.71343533298932,
+        "lastProcessedOriginDate": "2025-12-05",
+        "maturedRecordCount": 83,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2025-12-05",
+          "lastProcessedOriginAt": "2025-12-05",
+          "maturedRecordCount": 83,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 28,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2026-01-06",
+        "elapsedSeconds": 202.00062087498372,
+        "lastProcessedOriginDate": "2026-01-06",
+        "maturedRecordCount": 85,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2026-01-06",
+          "lastProcessedOriginAt": "2026-01-06",
+          "maturedRecordCount": 85,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 29,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2026-02-03",
+        "elapsedSeconds": 201.6696454579942,
+        "lastProcessedOriginDate": "2026-02-03",
+        "maturedRecordCount": 78,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2026-02-03",
+          "lastProcessedOriginAt": "2026-02-03",
+          "maturedRecordCount": 78,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 30,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2026-03-03",
+        "elapsedSeconds": 215.77845220797462,
+        "lastProcessedOriginDate": "2026-03-03",
+        "maturedRecordCount": 87,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2026-03-03",
+          "lastProcessedOriginAt": "2026-03-03",
+          "maturedRecordCount": 87,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 31,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2026-03-31",
+        "elapsedSeconds": 229.3101633329643,
+        "lastProcessedOriginDate": "2026-03-31",
+        "maturedRecordCount": 76,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2026-03-31",
+          "lastProcessedOriginAt": "2026-03-31",
+          "maturedRecordCount": 76,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 32,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2026-04-29",
+        "elapsedSeconds": 214.87976016598986,
+        "lastProcessedOriginDate": "2026-04-29",
+        "maturedRecordCount": 81,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2026-04-29",
+          "lastProcessedOriginAt": "2026-04-29",
+          "maturedRecordCount": 81,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 33,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2026-05-27",
+        "elapsedSeconds": 225.6732890419662,
+        "lastProcessedOriginDate": "2026-05-27",
+        "maturedRecordCount": 82,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2026-05-27",
+          "lastProcessedOriginAt": "2026-05-27",
+          "maturedRecordCount": 82,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 34,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2026-06-24",
+        "elapsedSeconds": 207.8817867920152,
+        "lastProcessedOriginDate": "2026-06-24",
+        "maturedRecordCount": 75,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2026-06-24",
+          "lastProcessedOriginAt": "2026-06-24",
+          "maturedRecordCount": 75,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 35,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2026-07-22",
+        "elapsedSeconds": 216.67341099999612,
+        "lastProcessedOriginDate": "2026-07-22",
+        "maturedRecordCount": 80,
+        "newOriginCount": 20,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2026-07-22",
+          "lastProcessedOriginAt": "2026-07-22",
+          "maturedRecordCount": 80,
+          "newRecordCount": 80,
+          "status": "SUCCEEDED"
+        }
+      },
+      {
+        "batchIndex": 36,
+        "calibrationRefreshCount": 4,
+        "cutoffDate": "2026-08-18",
+        "elapsedSeconds": 218.594911082997,
+        "lastProcessedOriginDate": "2026-08-18",
+        "maturedRecordCount": 75,
+        "newOriginCount": 19,
+        "persisted": {
+          "calibrationGroupCount": 4,
+          "identity": {
+            "inputSource": "DYNAMIC_MARKET_DATA_STORE",
+            "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+            "methodVersion": "rolling-daily-point-in-time-v1",
+            "modelId": "arima",
+            "seriesId": "wocaes0074",
+            "targetBasis": "POINT_IN_TIME"
+          },
+          "lastMaturedObservedAt": "2026-08-18",
+          "lastProcessedOriginAt": "2026-08-18",
+          "maturedRecordCount": 75,
+          "newRecordCount": 76,
+          "status": "SUCCEEDED"
+        }
+      }
+    ],
+    "completedAfterContinuation": 681,
+    "completedBeforeContinuation": 681,
+    "fetchSeconds": 1.1518059579539113,
+    "immatureRecords": 474,
+    "matureRecords": 2250,
+    "processedDuringContinuation": 0,
+    "recomputationSeconds": 3.3387682079919614,
+    "totalVerificationRecords": 2724
+  },
+  "firstHistoricalOrigin": "2024-01-02",
+  "forecastMethod": "ROLLING_DAILY_POINT_IN_TIME",
+  "historicalOriginFloor": "2024-01-01",
+  "horizonSummary": {
+    "12M": {
+      "failures": 0,
+      "generatedOrigins": 681,
+      "immature": 258,
+      "mature": 423,
+      "metrics": {
+        "bias": 2.191068121796691,
+        "directional_accuracy": 0.3049645390070922,
+        "mae": 16.047546032387707,
+        "mase": 23.01583689055598,
+        "rmse": 18.960406816558983,
+        "smape": 20.618786946038128
+      },
+      "verified": 423
+    },
+    "1M": {
+      "failures": 0,
+      "generatedOrigins": 681,
+      "immature": 22,
+      "mature": 659,
+      "metrics": {
+        "bias": -0.026742784203338126,
+        "directional_accuracy": 0.47040971168437024,
+        "mae": 5.794185554400608,
+        "mase": 8.206393366126747,
+        "rmse": 8.874769253629276,
+        "smape": 7.210178382606082
+      },
+      "verified": 659
+    },
+    "3M": {
+      "failures": 0,
+      "generatedOrigins": 681,
+      "immature": 66,
+      "mature": 615,
+      "metrics": {
+        "bias": -0.07822664964227649,
+        "directional_accuracy": 0.4065040650406504,
+        "mae": 9.731616568699186,
+        "mase": 13.835596779919006,
+        "rmse": 14.78355455407172,
+        "smape": 12.149204573028225
+      },
+      "verified": 615
+    },
+    "6M": {
+      "failures": 0,
+      "generatedOrigins": 681,
+      "immature": 128,
+      "mature": 553,
+      "metrics": {
+        "bias": -1.3935076744303811,
+        "directional_accuracy": 0.325497287522604,
+        "mae": 11.62529182607595,
+        "mase": 16.596548412604523,
+        "rmse": 15.976483505764302,
+        "smape": 14.971099981223333
+      },
+      "verified": 553
+    }
+  },
+  "lastHistoricalOrigin": "2026-08-18",
+  "lawfulHistoricalOrigins": 681,
+  "modelId": "arima",
+  "parity": {
+    "acceptedGeneratedOriginAggregate": true,
+    "acceptedSelectedOrderDistribution": true,
+    "acceptedStage4Coverage": {
+      "completed": true,
+      "expected": true,
+      "remaining": true
+    },
+    "acceptedStage4HorizonSummary": {
+      "12M": {
+        "generatedOrigins": true,
+        "immature": true,
+        "mature": true,
+        "metrics": true
+      },
+      "1M": {
+        "generatedOrigins": true,
+        "immature": true,
+        "mature": true,
+        "metrics": true
+      },
+      "3M": {
+        "generatedOrigins": true,
+        "immature": true,
+        "mature": true,
+        "metrics": true
+      },
+      "6M": {
+        "generatedOrigins": true,
+        "immature": true,
+        "mature": true,
+        "metrics": true
+      }
+    },
+    "persistedRuntimeRecordSurface": true
+  },
+  "remainingOrigins": [],
+  "selectedOrderDistribution": [
+    {
+      "order": "ARIMA(1,1,2)",
+      "selectedOrigins": 9,
+      "share": 0.013215859030837005
+    },
+    {
+      "order": "ARIMA(2,1,0)",
+      "selectedOrigins": 17,
+      "share": 0.024963289280469897
+    },
+    {
+      "order": "ARIMA(2,1,1)",
+      "selectedOrigins": 115,
+      "share": 0.16886930983847284
+    },
+    {
+      "order": "ARIMA(2,1,2)",
+      "selectedOrigins": 540,
+      "share": 0.7929515418502202
+    }
+  ],
+  "seriesId": "wocaes0074",
+  "sourceHistory": {
+    "historyFingerprint": "35ecf750e4998799462a2fa9a57758f048695b26892c5fca6436669e32138f82",
+    "latestObservationDate": "2026-08-18",
+    "observationCount": 10460,
+    "startDate": "1985-10-01"
+  },
+  "status": "COMPLETE",
+  "successfulArimaOrigins": 681,
+  "targetBasis": "POINT_IN_TIME",
+  "trainingHistoryFloor": "1985-10-01"
+}

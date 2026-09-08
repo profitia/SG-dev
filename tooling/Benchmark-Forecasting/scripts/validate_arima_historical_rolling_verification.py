@@ -33,6 +33,9 @@ class VerificationBacktestRecord:
     origin_value: float
 
 
+HISTORICAL_ORIGIN_FLOOR = "2024-01-01"
+
+
 def build_payload(history_payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "seriesId": "wocaes0074",
@@ -70,6 +73,32 @@ def build_history_prefix(history_payload: dict[str, Any], through_date: str) -> 
             for point in history_payload["points"]
             if str(point["date"]).strip()[:10] <= through_date
         ],
+    }
+
+
+def resolve_corpus_boundary(history_payload: dict[str, Any], through_date: str | None) -> dict[str, Any]:
+    full_lawful_dates = build_lawful_observation_dates(history_payload)
+    if not full_lawful_dates:
+        raise RuntimeError("No lawful source observations are available for Stage 4 ARIMA verification.")
+
+    latest_available_date = full_lawful_dates[-1]
+    if through_date is not None and through_date > latest_available_date:
+        raise RuntimeError(
+            f"Requested through-date {through_date} exceeds latest available lawful source date {latest_available_date}."
+        )
+
+    effective_history_payload = build_history_prefix(history_payload, through_date) if through_date is not None else history_payload
+    effective_lawful_dates = build_lawful_observation_dates(effective_history_payload)
+    if not effective_lawful_dates:
+        raise RuntimeError("No lawful source observations remain after applying the requested through-date.")
+
+    return {
+        "history": effective_history_payload,
+        "lawfulDates": effective_lawful_dates,
+        "requestedThroughDate": through_date,
+        "effectiveSourceHistoryEndDate": effective_lawful_dates[-1],
+        "latestAvailableLawfulSourceDate": latest_available_date,
+        "corpusBoundaryMode": "EXPLICIT_UPPER_BOUND" if through_date is not None else "LIVE_CURRENT",
     }
 
 
@@ -184,6 +213,50 @@ def load_existing_checkpoint(output_path: Path | None) -> dict[str, Any] | None:
     return payload
 
 
+def build_requested_corpus_identity(
+    *,
+    series_id: str,
+    requested_through_date: str | None,
+    effective_source_history_end_date: str,
+    lawful_historical_origin_count: int,
+) -> dict[str, Any]:
+    return {
+        "seriesId": series_id,
+        "historicalOriginFloor": HISTORICAL_ORIGIN_FLOOR,
+        "requestedThroughDate": requested_through_date,
+        "effectiveSourceHistoryEndDate": effective_source_history_end_date,
+        "lawfulHistoricalOriginCount": lawful_historical_origin_count,
+    }
+
+
+def assert_checkpoint_matches_corpus_identity(existing_checkpoint: dict[str, Any], expected_identity: dict[str, Any]) -> None:
+    observed_identity = {
+        "seriesId": existing_checkpoint.get("seriesId"),
+        "historicalOriginFloor": existing_checkpoint.get("historicalOriginFloor"),
+        "requestedThroughDate": existing_checkpoint.get("requestedThroughDate"),
+        "effectiveSourceHistoryEndDate": existing_checkpoint.get("effectiveSourceHistoryEndDate")
+        or (existing_checkpoint.get("sourceHistory") or {}).get("endDate")
+        or existing_checkpoint.get("lastHistoricalOrigin"),
+        "lawfulHistoricalOriginCount": existing_checkpoint.get("lawfulHistoricalOriginCount")
+        or existing_checkpoint.get("lawfulHistoricalOrigins")
+        or len(existing_checkpoint.get("expectedOrigins") or []),
+    }
+    mismatches = [
+        key
+        for key, expected_value in expected_identity.items()
+        if observed_identity.get(key) != expected_value
+    ]
+    if mismatches:
+        mismatch_details = ", ".join(
+            f"{key} expected={expected_identity[key]!r} observed={observed_identity.get(key)!r}"
+            for key in mismatches
+        )
+        raise RuntimeError(
+            "Existing checkpoint corpus identity does not match the requested run. "
+            f"Use a fresh output path. {mismatch_details}"
+        )
+
+
 def write_checkpoint(output_path: Path | None, payload: dict[str, Any]) -> None:
     if output_path is None:
         return
@@ -195,6 +268,7 @@ def main() -> int:
     parser.add_argument("--base-url", default="http://localhost:3001")
     parser.add_argument("--series-id", default="wocaes0074")
     parser.add_argument("--output", default=None)
+    parser.add_argument("--through-date", default=None)
     parser.add_argument("--batch-observations", type=int, default=160)
     parser.add_argument("--max-batches", type=int, default=None)
     args = parser.parse_args()
@@ -209,14 +283,25 @@ def main() -> int:
         "points": payload.get("historical") or [],
     }
 
-    output_path = Path(args.output) if args.output else None
-    existing_checkpoint = load_existing_checkpoint(output_path)
-
-    lawful_dates = build_lawful_observation_dates(bridge_payload)
+    corpus_boundary = resolve_corpus_boundary(bridge_payload, args.through_date)
+    bounded_bridge_payload = corpus_boundary["history"]
+    lawful_dates = corpus_boundary["lawfulDates"]
     minimum_training_observations = 60
-    expected_origins = build_expected_origins(lawful_dates, minimum_training_observations, "2024-01-01")
+    expected_origins = build_expected_origins(lawful_dates, minimum_training_observations, HISTORICAL_ORIGIN_FLOOR)
     if not expected_origins:
         raise RuntimeError("No lawful historical origins available for Stage 4 ARIMA verification.")
+
+    requested_identity = build_requested_corpus_identity(
+        series_id=args.series_id,
+        requested_through_date=corpus_boundary["requestedThroughDate"],
+        effective_source_history_end_date=corpus_boundary["effectiveSourceHistoryEndDate"],
+        lawful_historical_origin_count=len(expected_origins),
+    )
+
+    output_path = Path(args.output) if args.output else None
+    existing_checkpoint = load_existing_checkpoint(output_path)
+    if existing_checkpoint is not None:
+        assert_checkpoint_matches_corpus_identity(existing_checkpoint, requested_identity)
 
     started_at = perf_counter()
     batch_summaries: list[dict[str, Any]] = list(existing_checkpoint.get("execution", {}).get("batches", [])) if existing_checkpoint else []
@@ -245,7 +330,7 @@ def main() -> int:
         if args.max_batches is not None and batches_executed_this_run >= args.max_batches:
             break
 
-        batch_payload = build_payload(build_history_prefix(bridge_payload, cutoff_date))
+        batch_payload = build_payload(build_history_prefix(bounded_bridge_payload, cutoff_date))
         batch_payload["existingRecords"] = filter_records_through_origin(merged_records, resume_cursor)
         batch_payload["lastProcessedOriginDate"] = resume_cursor
 
@@ -280,7 +365,11 @@ def main() -> int:
             "displayName": bridge_payload["displayName"],
             "forecastMethod": "ROLLING_DAILY_POINT_IN_TIME",
             "targetBasis": "POINT_IN_TIME",
-            "historicalOriginFloor": "2024-01-01",
+            "historicalOriginFloor": HISTORICAL_ORIGIN_FLOOR,
+            "requestedThroughDate": corpus_boundary["requestedThroughDate"],
+            "effectiveSourceHistoryEndDate": corpus_boundary["effectiveSourceHistoryEndDate"],
+            "lawfulHistoricalOriginCount": len(expected_origins),
+            "corpusBoundaryMode": corpus_boundary["corpusBoundaryMode"],
             "trainingHistoryFloor": output["sourceHistory"]["startDate"],
             "firstHistoricalOrigin": expected_origins[0],
             "lastHistoricalOrigin": expected_origins[-1],
@@ -323,6 +412,8 @@ def main() -> int:
             "sourceHistory": {
                 "startDate": existing_checkpoint.get("trainingHistoryFloor"),
                 "historyFingerprint": existing_checkpoint.get("sourceHistoryFingerprint"),
+                "endDate": existing_checkpoint.get("effectiveSourceHistoryEndDate"),
+                "latestObservationDate": existing_checkpoint.get("effectiveSourceHistoryEndDate"),
             },
             "maintenance": {
                 "newOriginCount": 0,
@@ -352,21 +443,30 @@ def main() -> int:
     latest_record = max(records, key=lambda record: (record["forecastOriginAt"], int(record["horizonMonths"])))
     mature_records = [record for record in records if record["maturityStatus"] == "MATURED"]
     immature_records = [record for record in records if record["maturityStatus"] == "NOT_YET_MATURED"]
+    source_history = {
+        **output["sourceHistory"],
+        "endDate": output["sourceHistory"].get("endDate") or corpus_boundary["effectiveSourceHistoryEndDate"],
+        "latestObservationDate": output["sourceHistory"].get("latestObservationDate") or corpus_boundary["effectiveSourceHistoryEndDate"],
+    }
 
     summary = {
         "seriesId": args.series_id,
         "displayName": bridge_payload["displayName"],
         "forecastMethod": "ROLLING_DAILY_POINT_IN_TIME",
         "targetBasis": "POINT_IN_TIME",
-        "historicalOriginFloor": "2024-01-01",
-        "trainingHistoryFloor": output["sourceHistory"]["startDate"],
+        "historicalOriginFloor": HISTORICAL_ORIGIN_FLOOR,
+        "requestedThroughDate": corpus_boundary["requestedThroughDate"],
+        "effectiveSourceHistoryEndDate": corpus_boundary["effectiveSourceHistoryEndDate"],
+        "corpusBoundaryMode": corpus_boundary["corpusBoundaryMode"],
+        "trainingHistoryFloor": source_history["startDate"],
         "firstHistoricalOrigin": expected_origins[0],
         "lastHistoricalOrigin": expected_origins[-1],
         "lawfulHistoricalOrigins": len(expected_origins),
+        "lawfulHistoricalOriginCount": len(expected_origins),
         "successfulArimaOrigins": len(completed_after),
         "failedOrUnavailableOrigins": 0,
-        "sourceHistoryFingerprint": output["sourceHistory"]["historyFingerprint"],
-        "sourceHistory": output["sourceHistory"],
+        "sourceHistoryFingerprint": source_history["historyFingerprint"],
+        "sourceHistory": source_history,
         "expectedOrigins": expected_origins,
         "completedOrigins": completed_after,
         "remainingOrigins": remaining_after,

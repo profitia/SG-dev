@@ -81,6 +81,42 @@ def load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def filter_records_through_origin(records: list[dict[str, Any]], through_origin: str | None) -> list[dict[str, Any]]:
+    if through_origin is None:
+        return list(records)
+    filtered_records: list[dict[str, Any]] = []
+    for record in records:
+        if str(record["forecastOriginAt"]).strip()[:10] > through_origin:
+            continue
+        verification_observed_at = record.get("verificationObservedAt")
+        if verification_observed_at is not None and str(verification_observed_at).strip()[:10] > through_origin:
+            filtered_records.append(
+                {
+                    **record,
+                    "maturityStatus": "NOT_YET_MATURED",
+                    "actualValue": None,
+                    "errorValue": None,
+                    "absoluteErrorValue": None,
+                    "verificationObservedAt": None,
+                }
+            )
+            continue
+        filtered_records.append(record)
+    return filtered_records
+
+
+def filter_model_payloads_through_origin(model_payloads: dict[str, Any], through_origin: str | None) -> dict[str, Any]:
+    if through_origin is None:
+        return model_payloads
+    return {
+        model: {
+            **payload,
+            "records": filter_records_through_origin(list(payload.get("records", [])), through_origin),
+        }
+        for model, payload in model_payloads.items()
+    }
+
+
 def normalize_day(value: Any) -> date | None:
     if value is None:
         return None
@@ -225,10 +261,115 @@ def find_model_metrics_node(node: Any) -> dict[str, Any] | None:
     return None
 
 
-def build_native_metric_parity(native_metrics: dict[str, dict[str, Any]]) -> dict[str, Any]:
-    arima_stage4 = load_json(ARIMA_STAGE4_JSON)
-    non_arima = load_json(NON_ARIMA_ACCEPTED_JSON)
-    non_arima_metrics_node = find_model_metrics_node(non_arima)
+def build_stage4_corpus_identity(stage4_payload: dict[str, Any]) -> dict[str, Any]:
+    source_history = stage4_payload.get("sourceHistory") or {}
+    effective_end_date = (
+        stage4_payload.get("effectiveSourceHistoryEndDate")
+        or source_history.get("endDate")
+        or source_history.get("latestObservationDate")
+        or stage4_payload.get("lastHistoricalOrigin")
+    )
+    lawful_origin_count = (
+        stage4_payload.get("lawfulHistoricalOriginCount")
+        or stage4_payload.get("lawfulHistoricalOrigins")
+        or len(stage4_payload.get("expectedOrigins") or [])
+    )
+    return {
+        "seriesId": stage4_payload.get("seriesId"),
+        "lastHistoricalOrigin": stage4_payload.get("lastHistoricalOrigin"),
+        "effectiveSourceHistoryEndDate": effective_end_date,
+        "lawfulHistoricalOriginCount": int(lawful_origin_count),
+        "sourceHistoryFingerprint": stage4_payload.get("sourceHistoryFingerprint") or source_history.get("historyFingerprint"),
+    }
+
+
+def build_non_arima_corpus_identity(non_arima_payload: dict[str, Any]) -> dict[str, Any]:
+    source_performance = non_arima_payload.get("sourcePerformance") or {}
+    return {
+        "seriesId": non_arima_payload.get("seriesId"),
+        "effectiveSourceHistoryEndDate": source_performance.get("seriesEnd"),
+        "lastHistoricalOriginEquivalent": source_performance.get("seriesEnd"),
+        "lawfulHistoricalOriginCount": None,
+        "sourceHistoryFingerprint": None,
+    }
+
+
+def build_generated_corpus_identity(comparable_records: list[ComparableVerificationRecord]) -> dict[str, Any]:
+    origin_dates = sorted({record.forecast_origin_at.isoformat() for record in comparable_records if record.forecast_origin_at is not None})
+    series_ids = {record.benchmark_id for record in comparable_records}
+    return {
+        "seriesId": next(iter(series_ids)) if len(series_ids) == 1 else None,
+        "lastHistoricalOrigin": origin_dates[-1] if origin_dates else None,
+        "effectiveSourceHistoryEndDate": origin_dates[-1] if origin_dates else None,
+        "lawfulHistoricalOriginCount": len(origin_dates),
+        "sourceHistoryFingerprint": None,
+    }
+
+
+def build_stage5_corpus_identity_gate(*, stage4_payload: dict[str, Any], non_arima_payload: dict[str, Any], comparable_records: list[ComparableVerificationRecord]) -> dict[str, Any]:
+    stage4_identity = build_stage4_corpus_identity(stage4_payload)
+    non_arima_identity = build_non_arima_corpus_identity(non_arima_payload)
+    generated_identity = build_generated_corpus_identity(comparable_records)
+
+    comparisons = {
+        "seriesId": {
+            "status": status_label(
+                generated_identity["seriesId"] == stage4_identity["seriesId"] == non_arima_identity["seriesId"]
+            ),
+            "generated": generated_identity["seriesId"],
+            "stage4": stage4_identity["seriesId"],
+            "nonArimaAccepted": non_arima_identity["seriesId"],
+        },
+        "lastHistoricalOrigin": {
+            "status": status_label(
+                generated_identity["lastHistoricalOrigin"] == stage4_identity["lastHistoricalOrigin"]
+                and non_arima_identity["lastHistoricalOriginEquivalent"] == stage4_identity["lastHistoricalOrigin"]
+            ),
+            "generated": generated_identity["lastHistoricalOrigin"],
+            "stage4": stage4_identity["lastHistoricalOrigin"],
+            "nonArimaAcceptedEquivalent": non_arima_identity["lastHistoricalOriginEquivalent"],
+        },
+        "effectiveSourceHistoryEndDate": {
+            "status": status_label(
+                generated_identity["effectiveSourceHistoryEndDate"] == stage4_identity["effectiveSourceHistoryEndDate"]
+                and non_arima_identity["effectiveSourceHistoryEndDate"] == stage4_identity["effectiveSourceHistoryEndDate"]
+            ),
+            "generated": generated_identity["effectiveSourceHistoryEndDate"],
+            "stage4": stage4_identity["effectiveSourceHistoryEndDate"],
+            "nonArimaAccepted": non_arima_identity["effectiveSourceHistoryEndDate"],
+        },
+        "lawfulHistoricalOriginCount": {
+            "status": status_label(
+                generated_identity["lawfulHistoricalOriginCount"] == stage4_identity["lawfulHistoricalOriginCount"]
+            ),
+            "generated": generated_identity["lawfulHistoricalOriginCount"],
+            "stage4": stage4_identity["lawfulHistoricalOriginCount"],
+            "nonArimaAccepted": non_arima_identity["lawfulHistoricalOriginCount"],
+        },
+    }
+    limitations: list[str] = []
+    if non_arima_identity["lawfulHistoricalOriginCount"] is None:
+        limitations.append("Accepted non-ARIMA artifact does not expose lawful historical origin count.")
+    if non_arima_identity["sourceHistoryFingerprint"] is None:
+        limitations.append("Accepted non-ARIMA artifact does not expose a source history fingerprint.")
+
+    overall = all(item["status"] == "PASS" for item in comparisons.values())
+    return {
+        "status": status_label(overall),
+        "comparisons": comparisons,
+        "limitations": limitations,
+        "generated": generated_identity,
+        "stage4": stage4_identity,
+        "nonArimaAccepted": non_arima_identity,
+    }
+
+
+def build_native_metric_parity(
+    native_metrics: dict[str, dict[str, Any]],
+    *,
+    arima_stage4: dict[str, Any],
+    non_arima_metrics_node: dict[str, Any],
+) -> dict[str, Any]:
     if non_arima_metrics_node is None:
         raise Stage5EvidenceError("Could not locate accepted non-ARIMA metrics node in Stage 7 performance artifact.")
 
@@ -393,12 +534,24 @@ def build_json_payload(
     strict_view: dict[str, Any],
     model_payloads: dict[str, Any],
     compatibility: dict[str, Any],
+    arima_stage4: dict[str, Any],
+    non_arima: dict[str, Any],
 ) -> dict[str, Any]:
     native_metrics = {horizon: {model: metric_row(native_view[horizon][model]) for model in MODELS} for horizon in HORIZONS}
     strict_metrics = flatten_strict_common_metrics(strict_view)
     identity_set_equality = build_identity_set_equality(comparable_records)
     metric_completeness = validate_metric_completeness(native_metrics, strict_metrics)
-    native_metric_parity = build_native_metric_parity(native_metrics)
+    non_arima_metrics_node = find_model_metrics_node(non_arima)
+    corpus_identity_gate = build_stage5_corpus_identity_gate(
+        stage4_payload=arima_stage4,
+        non_arima_payload=non_arima,
+        comparable_records=comparable_records,
+    )
+    native_metric_parity = build_native_metric_parity(
+        native_metrics,
+        arima_stage4=arima_stage4,
+        non_arima_metrics_node=non_arima_metrics_node,
+    )
     path_context = parse_path_context()
     arima_fit_provenance = build_arima_fit_provenance()
     metric_leaders = build_metric_leaders(strict_metrics)
@@ -407,6 +560,8 @@ def build_json_payload(
 
     if not all(identity_set_equality[horizon]["equal"] for horizon in HORIZONS):
         raise Stage5EvidenceError("Identity-set equality failed; Stage 5 final evidence completion must fail closed.")
+    if corpus_identity_gate["status"] != "PASS":
+        raise Stage5EvidenceError("Stage 5 corpus identity gate failed.")
     if not native_metric_parity["overall"]:
         raise Stage5EvidenceError("Native metric parity against accepted historical evidence failed.")
 
@@ -455,6 +610,7 @@ def build_json_payload(
             horizon: {"status": status_label(identity_set_equality[horizon]["equal"]), **identity_set_equality[horizon]}
             for horizon in HORIZONS
         },
+        "corpusIdentityGate": corpus_identity_gate,
         "metricCompleteness": metric_completeness,
         "nativeMetricParity": {
             "status": status_label(native_metric_parity["overall"]),
@@ -659,9 +815,17 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate Stage 5 four-model comparative backtest artifacts from canonical runtime persistence.")
+    parser.add_argument("--arima-stage4-json", default=str(ARIMA_STAGE4_JSON))
     parser.parse_args()
 
-    model_payloads = {model: inspect_model(model) for model in MODELS}
+    args = parser.parse_args()
+    arima_stage4 = load_json(Path(args.arima_stage4_json))
+    non_arima = load_json(NON_ARIMA_ACCEPTED_JSON)
+    stage4_corpus_identity = build_stage4_corpus_identity(arima_stage4)
+    model_payloads = filter_model_payloads_through_origin(
+        {model: inspect_model(model) for model in MODELS},
+        stage4_corpus_identity["lastHistoricalOrigin"],
+    )
     comparable_records = [
         to_comparable_record(record)
         for model in MODELS
@@ -677,6 +841,8 @@ def main() -> int:
         strict_view=strict_view,
         model_payloads=model_payloads,
         compatibility=compatibility,
+        arima_stage4=arima_stage4,
+        non_arima=non_arima,
     )
 
     write_json(OUTPUT_JSON, json_payload)
