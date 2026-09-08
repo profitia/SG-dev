@@ -1562,13 +1562,24 @@ async function measureFullVerification(
     continuityPolicy: profile.targetCadence === 'MONTHLY' ? 'ALLOW_GAPS' : 'REQUIRE_FULL',
   })
   const latestHistoricalDate = basePayload.history.end
-  const maxCandidateN = Math.max(...candidateNs)
+  const minimumRequiredObservations = resolveForecastTechnicalMinimumObservations({
+    targetSemantics: profile.targetSemantics,
+    modelId: profile.modelId,
+  })
   const eligibleOrigins = basePayload.history.points
     .slice(0, -1)
     .filter((point) => {
       const plan = buildCurrentForecastExecutionPlan(point.date, profile.targetCadence)
       const farthestTargetDate = plan.currentTargetDates['12M']
-      return typeof farthestTargetDate === 'string' && farthestTargetDate <= latestHistoricalDate
+      if (!(typeof farthestTargetDate === 'string' && farthestTargetDate <= latestHistoricalDate)) {
+        return false
+      }
+
+      return selectMinimalLawfulCurrentTrainingSuffix({
+        points: basePayload.history.points,
+        forecastOrigin: point.date,
+        minimumRequiredObservations,
+      }).minimumRequirementSatisfied
     })
 
   if (eligibleOrigins.length === 0) {
@@ -1604,10 +1615,6 @@ async function measureFullVerification(
       candidateNs.flatMap((candidateN) => (candidateOriginMap.get(candidateN) ?? []).map((origin) => [origin.date, origin])),
     ).values(),
   )
-  const minimumRequiredObservations = resolveForecastTechnicalMinimumObservations({
-    targetSemantics: profile.targetSemantics,
-    modelId: profile.modelId,
-  })
   const compatibility = createCurrentForecastStatisticalCompatibility({
     sourceFrequency: profile.sourceFrequency,
     targetCadence: profile.targetCadence,
