@@ -16,6 +16,7 @@ import {
   resolveEvidenceBasedServingHeadroom,
   resolveFastReadyProfilerGate,
   resolveGlobalNFastDecision,
+  resolveProfileLauncherProvenance,
   resolveProfilerConfigurationContract,
   resolveRollingDailyExactReadGate,
   resolveStage6FinalDecision,
@@ -284,6 +285,32 @@ test('validateExpectedSourceSha requires exact full source SHA matching', () => 
   }).profileArtifactSourceShaMatch, false)
 })
 
+test('resolveProfileLauncherProvenance distinguishes node import tsx from direct tsx', () => {
+  assert.deepEqual(resolveProfileLauncherProvenance({
+    declaredLauncherMode: null,
+    invocationCommand: 'node --import tsx scripts/run-forecast-fast-ready-profiler.ts --profile-mode=FINAL',
+    processArgv: ['/usr/local/bin/node', 'scripts/run-forecast-fast-ready-profiler.ts', '--profile-mode=FINAL'],
+    processExecArgv: ['--import', 'tsx'],
+    nodeExecutable: '/usr/local/bin/node',
+  }), {
+    profileLauncherMode: 'NODE_IMPORT_TSX',
+    profileScript: 'scripts/run-forecast-fast-ready-profiler.ts',
+    profileArguments: ['--profile-mode=FINAL'],
+    nodeExecutable: '/usr/local/bin/node',
+    processArgv: ['/usr/local/bin/node', 'scripts/run-forecast-fast-ready-profiler.ts', '--profile-mode=FINAL'],
+    processExecArgv: ['--import', 'tsx'],
+    invocationCommand: 'node --import tsx scripts/run-forecast-fast-ready-profiler.ts --profile-mode=FINAL',
+  })
+
+  assert.equal(resolveProfileLauncherProvenance({
+    declaredLauncherMode: null,
+    invocationCommand: null,
+    processArgv: ['/usr/local/bin/node', 'scripts/run-forecast-fast-ready-profiler.ts', '--profile-mode=FINAL'],
+    processExecArgv: ['--require', '/repo/node_modules/tsx/dist/preflight.cjs', '--import', 'file:///repo/node_modules/tsx/dist/loader.mjs'],
+    nodeExecutable: '/usr/local/bin/node',
+  }).profileLauncherMode, 'DIRECT_TSX')
+})
+
 test('calculatePhaseAccounting reports accounted and unattributed time explicitly', () => {
   const accounting = calculatePhaseAccounting({
     TOTAL_RENDERABLE_READY_MS: 1000,
@@ -295,9 +322,17 @@ test('calculatePhaseAccounting reports accounted and unattributed time explicitl
   })
 
   assert.deepEqual(accounting, {
-    accountedPhaseTotalMs: 900,
-    unattributedMs: 100,
-    unattributedSharePct: 10,
+    atomicAccountingPhases: [
+      { phase: 'HISTORY_LOAD_MS', valueMs: 200 },
+      { phase: 'MODEL_COMPUTE_MS', valueMs: 500 },
+      { phase: 'PERSISTENCE_WRITE_MS', valueMs: 50 },
+      { phase: 'POST_PERSIST_EXACT_READ_MS', valueMs: 50 },
+    ],
+    accountedPhaseTotalMs: 800,
+    unattributedMs: 200,
+    unattributedSharePct: 20,
+    accountedExceedsTotalByMoreThanTolerance: false,
+    roundingToleranceMs: 1,
   })
 })
 
@@ -394,7 +429,12 @@ test('validateProfileEnvironmentMetadata requires the full environment contract'
     workingTreeCleanAtProfileStart: true,
     gitDiffAtProfileStart: 'EMPTY',
     profileWorktreeMode: 'CLEAN_DEDICATED_WORKTREE',
-    profileCommand: 'npm run forecast:profile:fast-ready',
+    profileLauncherMode: 'DIRECT_TSX',
+    profileScript: 'scripts/run-forecast-fast-ready-profiler.ts',
+    profileArguments: ['--mode=final'],
+    nodeExecutable: '/opt/homebrew/bin/node',
+    processArgv: ['/opt/homebrew/bin/node', 'scripts/run-forecast-fast-ready-profiler.ts', '--mode=final'],
+    processExecArgv: ['--require', '/repo/node_modules/tsx/dist/preflight.cjs', '--import', 'file:///repo/node_modules/tsx/dist/loader.mjs'],
     profileMode: 'FINAL',
     coldSamples: 5,
     warmSamples: 20,

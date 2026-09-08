@@ -37,6 +37,7 @@ import {
   resolveRollingDailyExactReadGate,
   resolveWarmReuseGate,
   resolveGlobalNFastDecision,
+  resolveProfileLauncherProvenance,
   resolveProfilerConfigurationContract,
   resolveStage6FinalDecision,
   summarizeNumericSamples,
@@ -326,6 +327,30 @@ type FocusedQuarterlyDiagnostic = {
   rootCauseResolution: 'RESOLVED' | 'UNRESOLVED'
   performanceCorrectiveRequired: boolean
   slowestSample: CurrentSample | null
+}
+
+type FocusedCurrentDiagnostic = {
+  profileId: string
+  sampleCount: number
+  medianMs: number
+  maxMs: number
+  countOver15s: number
+  countOver30s: number
+  dominantBottleneck: ReturnType<typeof classifyDominantBottleneck>
+  accountedPhaseTotalMs: number
+  unattributedMs: number
+  unattributedSharePct: number
+  accountedExceedsTotalByMoreThanTolerance: boolean
+  slowestSample: CurrentSample | null
+}
+
+type FocusedRecentCandidateDiagnostic = {
+  profileId: string
+  candidateN: number
+  currentConservativeMs: number
+  reservedServingOverheadMs: number
+  directMeasurement: FullVerificationMeasurement
+  candidateMeasurement: FullVerificationMeasurement['measuredCandidates'][number] | null
 }
 
 class TelemetryRecorder {
@@ -952,10 +977,6 @@ function summarizeCurrentIsolation(events: readonly RecorderEvent[]): CurrentIso
   }
 }
 
-function buildProfilerCommand() {
-  return ['node', '--import', 'tsx', 'scripts/run-forecast-fast-ready-profiler.ts', ...process.argv.slice(2)].join(' ')
-}
-
 async function readCommandVersion(command: string, args: string[]) {
   try {
     const { stdout, stderr } = await execFile(command, args, { cwd: process.cwd() })
@@ -1241,6 +1262,13 @@ async function readEnvironmentMetadata(input: {
   const forecastHeartbeatIntervalMs = resolveForecastStage3HeartbeatIntervalMs(admission.leaseDurationMs)
   const workingTreeCleanAtProfileStart = await isWorkingTreeClean()
   const gitDiffAtProfileStart = await readGitDiffAtProfileStart()
+  const launcherProvenance = resolveProfileLauncherProvenance({
+    declaredLauncherMode: null,
+    invocationCommand: process.env.npm_lifecycle_script ?? null,
+    processArgv: process.argv,
+    processExecArgv: process.execArgv,
+    nodeExecutable: process.execPath,
+  })
   const inferredWorktreeMode: ProfileWorktreeMode = workingTreeCleanAtProfileStart
     ? 'CLEAN_PRIMARY_WORKTREE'
     : 'DIRTY_PRIMARY_WORKTREE'
@@ -1259,7 +1287,13 @@ async function readEnvironmentMetadata(input: {
     workingTreeCleanAtProfileStart,
     gitDiffAtProfileStart,
     profileWorktreeMode: input.profileWorktreeMode ?? inferredWorktreeMode,
-    profileCommand: buildProfilerCommand(),
+    profileLauncherMode: launcherProvenance.profileLauncherMode,
+    profileScript: launcherProvenance.profileScript,
+    profileArguments: launcherProvenance.profileArguments,
+    nodeExecutable: launcherProvenance.nodeExecutable,
+    processArgv: launcherProvenance.processArgv,
+    processExecArgv: launcherProvenance.processExecArgv,
+    invocationCommand: launcherProvenance.invocationCommand,
     profileMode: input.profileMode,
     coldSamples: input.coldSamples,
     warmSamples: input.warmSamples,
@@ -1300,6 +1334,68 @@ async function runFocusedQuarterlyArimaDiagnostic(profile: ProfilerProfile): Pro
     rootCauseResolution: accounting.unattributedSharePct <= 20 ? 'RESOLVED' : 'UNRESOLVED',
     performanceCorrectiveRequired: summary.maxMs > FAST_READY_BUDGET_MS,
     slowestSample,
+  }
+}
+
+async function runFocusedCurrentDiagnostic(profile: ProfilerProfile, sampleCount = 10): Promise<FocusedCurrentDiagnostic> {
+  const measurement = await measureCurrentSamples(profile, sampleCount, 0)
+  const totals = measurement.coldSamples.map((sample) => sample.totalRenderableReadyMs)
+  const summary = summarizeNumericSamples(totals)
+  const slowestSample = [...measurement.coldSamples].sort((left, right) => right.totalRenderableReadyMs - left.totalRenderableReadyMs)[0] ?? null
+  const accounting = slowestSample === null
+    ? {
+        accountedPhaseTotalMs: 0,
+        unattributedMs: 0,
+        unattributedSharePct: 0,
+        accountedExceedsTotalByMoreThanTolerance: false,
+      }
+    : calculatePhaseAccounting(slowestSample.phases)
+  const dominantBottleneck = slowestSample === null
+    ? classifyDominantBottleneck({})
+    : classifyDominantBottleneck(slowestSample.phases)
+
+  return {
+    profileId: profile.profileId,
+    sampleCount: measurement.coldSamples.length,
+    medianMs: summary.medianMs,
+    maxMs: summary.maxMs,
+    countOver15s: totals.filter((value) => value > 15_000).length,
+    countOver30s: totals.filter((value) => value > 30_000).length,
+    dominantBottleneck,
+    accountedPhaseTotalMs: accounting.accountedPhaseTotalMs,
+    unattributedMs: accounting.unattributedMs,
+    unattributedSharePct: accounting.unattributedSharePct,
+    accountedExceedsTotalByMoreThanTolerance: accounting.accountedExceedsTotalByMoreThanTolerance,
+    slowestSample,
+  }
+}
+
+async function runFocusedRecentCandidateDiagnostic(
+  profile: ProfilerProfile,
+  candidateN: number,
+): Promise<FocusedRecentCandidateDiagnostic> {
+  const currentMeasurements = await measureCurrentSamples(profile, 5, 0)
+  const currentSummary = summarizeNumericSamples(currentMeasurements.coldSamples.map((sample) => sample.totalRenderableReadyMs))
+  const exactPreparedReadSummary = summarizeNumericSamples(currentMeasurements.coldSamples.map((sample) => sample.exactReadMs))
+  const currentConservativeMs = resolveConservativeLatencyMs(currentSummary)
+  const reservedServingDecision = resolveEvidenceBasedServingHeadroom({
+    currentSummary,
+    exactPreparedReadSummary,
+  })
+  const directMeasurement = await measureFullVerification(
+    profile,
+    [candidateN],
+    currentConservativeMs,
+    reservedServingDecision,
+  )
+
+  return {
+    profileId: profile.profileId,
+    candidateN,
+    currentConservativeMs,
+    reservedServingOverheadMs: reservedServingDecision.reservedServingOverheadMs,
+    directMeasurement,
+    candidateMeasurement: directMeasurement.measuredCandidates.find((candidate) => candidate.candidateN === candidateN) ?? null,
   }
 }
 
@@ -2317,6 +2413,9 @@ function renderMarkdown(result: {
   profiles: ReturnType<typeof summarizeProfile>[]
   finalDecision: ReturnType<typeof resolveStage6FinalDecision>
   focusedQuarterlyDiagnostic: FocusedQuarterlyDiagnostic
+  focusedDailyEtsDiagnostic: FocusedCurrentDiagnostic
+  focusedDailyArimaDiagnostic: FocusedCurrentDiagnostic
+  focusedDailyArimaRecentN1Diagnostic: FocusedRecentCandidateDiagnostic
   concurrencyEvidence: {
     period: ConcurrentProfileMeasurement
     rollingDaily: ConcurrentProfileMeasurement
@@ -2367,6 +2466,42 @@ function renderMarkdown(result: {
     `Unattributed ms: ${result.focusedQuarterlyDiagnostic.unattributedMs}`,
     `Unattributed share pct: ${result.focusedQuarterlyDiagnostic.unattributedSharePct}`,
     `Root cause resolution: ${result.focusedQuarterlyDiagnostic.rootCauseResolution}`,
+    '',
+    '## Focused Daily EOP ETS Diagnostic',
+    '',
+    `Sample count: ${result.focusedDailyEtsDiagnostic.sampleCount}`,
+    `Median ms: ${result.focusedDailyEtsDiagnostic.medianMs}`,
+    `Max ms: ${result.focusedDailyEtsDiagnostic.maxMs}`,
+    `Over 15s: ${result.focusedDailyEtsDiagnostic.countOver15s}`,
+    `Over 30s: ${result.focusedDailyEtsDiagnostic.countOver30s}`,
+    `Dominant bottleneck: ${result.focusedDailyEtsDiagnostic.dominantBottleneck.phase ?? 'UNRESOLVED'} (${result.focusedDailyEtsDiagnostic.dominantBottleneck.category})`,
+    `Accounted phase total ms: ${result.focusedDailyEtsDiagnostic.accountedPhaseTotalMs}`,
+    `Unattributed ms: ${result.focusedDailyEtsDiagnostic.unattributedMs}`,
+    `Unattributed share pct: ${result.focusedDailyEtsDiagnostic.unattributedSharePct}`,
+    `Accounted exceeds total beyond tolerance: ${result.focusedDailyEtsDiagnostic.accountedExceedsTotalByMoreThanTolerance ? 'YES' : 'NO'}`,
+    '',
+    '## Focused Daily EOP ARIMA Diagnostic',
+    '',
+    `Sample count: ${result.focusedDailyArimaDiagnostic.sampleCount}`,
+    `Median ms: ${result.focusedDailyArimaDiagnostic.medianMs}`,
+    `Max ms: ${result.focusedDailyArimaDiagnostic.maxMs}`,
+    `Over 15s: ${result.focusedDailyArimaDiagnostic.countOver15s}`,
+    `Over 30s: ${result.focusedDailyArimaDiagnostic.countOver30s}`,
+    `Dominant bottleneck: ${result.focusedDailyArimaDiagnostic.dominantBottleneck.phase ?? 'UNRESOLVED'} (${result.focusedDailyArimaDiagnostic.dominantBottleneck.category})`,
+    `Accounted phase total ms: ${result.focusedDailyArimaDiagnostic.accountedPhaseTotalMs}`,
+    `Unattributed ms: ${result.focusedDailyArimaDiagnostic.unattributedMs}`,
+    `Unattributed share pct: ${result.focusedDailyArimaDiagnostic.unattributedSharePct}`,
+    `Accounted exceeds total beyond tolerance: ${result.focusedDailyArimaDiagnostic.accountedExceedsTotalByMoreThanTolerance ? 'YES' : 'NO'}`,
+    '',
+    '## Focused Daily EOP ARIMA Recent N=1 Diagnostic',
+    '',
+    `Current conservative ms: ${result.focusedDailyArimaRecentN1Diagnostic.currentConservativeMs}`,
+    `Reserved serving overhead ms: ${result.focusedDailyArimaRecentN1Diagnostic.reservedServingOverheadMs}`,
+    `Measurement status: ${result.focusedDailyArimaRecentN1Diagnostic.directMeasurement.status}`,
+    `Candidate N=1 status: ${result.focusedDailyArimaRecentN1Diagnostic.candidateMeasurement?.status ?? 'UNAVAILABLE'}`,
+    `Candidate N=1 recent verification ms: ${result.focusedDailyArimaRecentN1Diagnostic.candidateMeasurement?.recentVerificationMs ?? 'N/A'}`,
+    `Candidate N=1 estimated total ms: ${result.focusedDailyArimaRecentN1Diagnostic.candidateMeasurement?.estimatedTotalFastReadyMs ?? 'N/A'}`,
+    `Candidate N=1 within 15s: ${result.focusedDailyArimaRecentN1Diagnostic.candidateMeasurement?.within15s === null ? 'N/A' : result.focusedDailyArimaRecentN1Diagnostic.candidateMeasurement?.within15s ? 'YES' : 'NO'}`,
     '',
     '## Full Final Profile Table',
     '',
@@ -2421,6 +2556,8 @@ async function main() {
   const stage4NonRegression = readPassFailArg('--stage4-non-regression')
   const stage5NonRegression = readPassFailArg('--stage5-non-regression')
   const focusedQuarterlyDiagnosticOnly = readBooleanArg('--focused-quarterly-diagnostic-only')
+  const focusedDailyEtsDiagnosticOnly = readBooleanArg('--focused-daily-ets-diagnostic-only')
+  const focusedDailyArimaDiagnosticOnly = readBooleanArg('--focused-daily-arima-diagnostic-only')
   const skipRecentVerification = readBooleanArg('--skip-recent-verification')
   const requestedProfileWorktreeMode = readProfileWorktreeModeArg()
   const configurationContract = resolveProfilerConfigurationContract({
@@ -2450,14 +2587,34 @@ async function main() {
 
   const profiles = await buildProfiles()
   const quarterlyArimaProfile = profiles.find((profile) => profile.profileId === `${QUARTERLY_SERIES_ID}|END_OF_PERIOD|arima`)
+  const dailyEtsProfile = profiles.find((profile) => profile.profileId === `${DAILY_SERIES_ID}|END_OF_PERIOD|ets`)
+  const dailyArimaProfile = profiles.find((profile) => profile.profileId === `${DAILY_SERIES_ID}|END_OF_PERIOD|arima`)
   if (!quarterlyArimaProfile) {
     throw new Error('Required quarterly ARIMA profile is unavailable for the Stage 6 diagnostic.')
   }
-  const focusedQuarterlyDiagnostic = await runFocusedQuarterlyArimaDiagnostic(quarterlyArimaProfile)
+  if (!dailyEtsProfile || !dailyArimaProfile) {
+    throw new Error('Required Daily EOP profiles are unavailable for the Stage 6 diagnostics.')
+  }
   if (focusedQuarterlyDiagnosticOnly) {
+    const focusedQuarterlyDiagnostic = await runFocusedQuarterlyArimaDiagnostic(quarterlyArimaProfile)
     process.stdout.write(`${JSON.stringify({ status: 'PASS', focusedQuarterlyDiagnostic }, null, 2)}\n`)
     return
   }
+  if (focusedDailyEtsDiagnosticOnly) {
+    const focusedDailyEtsDiagnostic = await runFocusedCurrentDiagnostic(dailyEtsProfile)
+    process.stdout.write(`${JSON.stringify({ status: 'PASS', focusedDailyEtsDiagnostic }, null, 2)}\n`)
+    return
+  }
+  if (focusedDailyArimaDiagnosticOnly) {
+    const focusedDailyArimaDiagnostic = await runFocusedCurrentDiagnostic(dailyArimaProfile)
+    const focusedDailyArimaRecentN1Diagnostic = await runFocusedRecentCandidateDiagnostic(dailyArimaProfile, 1)
+    process.stdout.write(`${JSON.stringify({ status: 'PASS', focusedDailyArimaDiagnostic, focusedDailyArimaRecentN1Diagnostic }, null, 2)}\n`)
+    return
+  }
+  const focusedQuarterlyDiagnostic = await runFocusedQuarterlyArimaDiagnostic(quarterlyArimaProfile)
+  const focusedDailyEtsDiagnostic = await runFocusedCurrentDiagnostic(dailyEtsProfile)
+  const focusedDailyArimaDiagnostic = await runFocusedCurrentDiagnostic(dailyArimaProfile)
+  const focusedDailyArimaRecentN1Diagnostic = await runFocusedRecentCandidateDiagnostic(dailyArimaProfile, 1)
   const rawProfiles: Array<{
     profile: ProfilerProfile
     currentMeasurements: Awaited<ReturnType<typeof measureCurrentSamples>>
@@ -2598,6 +2755,9 @@ async function main() {
     environment,
     profiles: summarizedProfiles,
     focusedQuarterlyDiagnostic,
+    focusedDailyEtsDiagnostic,
+    focusedDailyArimaDiagnostic,
+    focusedDailyArimaRecentN1Diagnostic,
     rollingDailyDiagnosis: rollingDailyProfiles.map((profile) => profile.rollingDailyDiagnosis),
     globalDecision,
     currentIsolation: {

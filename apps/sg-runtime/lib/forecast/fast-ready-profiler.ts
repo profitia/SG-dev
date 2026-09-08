@@ -95,10 +95,25 @@ export type SourceShaValidation = {
   sourceTreeExactlyMatchesProfiledSourceSha: boolean
 }
 
+export type ProfileLauncherMode = 'NODE_IMPORT_TSX' | 'DIRECT_TSX' | 'OTHER_EXPLICIT'
+
+export type ProfileLauncherProvenance = {
+  profileLauncherMode: ProfileLauncherMode
+  profileScript: string
+  profileArguments: string[]
+  nodeExecutable: string
+  processArgv: string[]
+  processExecArgv: string[]
+  invocationCommand: string | null
+}
+
 export type PhaseAccounting = {
+  atomicAccountingPhases: Array<{ phase: ProfiledPhaseName; valueMs: number }>
   accountedPhaseTotalMs: number
   unattributedMs: number
   unattributedSharePct: number
+  accountedExceedsTotalByMoreThanTolerance: boolean
+  roundingToleranceMs: number
 }
 
 export type QuarterlyArimaOutlierClassification =
@@ -231,6 +246,25 @@ const BOTTLENECK_CATEGORY_BY_PHASE: Record<ProfiledPhaseName, BottleneckCategory
 }
 
 const FULL_GIT_SHA_PATTERN = /^[0-9a-f]{40}$/i
+export const PHASE_ACCOUNTING_ROUNDING_TOLERANCE_MS = 1
+export const ATOMIC_NON_OVERLAPPING_ACCOUNTING_PHASES: readonly ProfiledPhaseName[] = [
+  'HISTORY_LOAD_MS',
+  'HISTORY_PREPARATION_MS',
+  'FAST_SUFFIX_SELECTION_MS',
+  'PREPARED_LOOKUP_MS',
+  'EXECUTION_OWNER_ACQUIRE_MS',
+  'EXECUTION_WAITER_OR_RECOVERY_WAIT_MS',
+  'MODEL_BRIDGE_MS',
+  'MODEL_COMPUTE_MS',
+  'PERSISTENCE_FENCE_MS',
+  'PERSISTENCE_WRITE_MS',
+  'EXECUTION_TERMINAL_MARK_MS',
+  'POST_PERSIST_EXACT_READ_MS',
+  'RETURN_PATH_MS',
+  'CONSUMER_ADAPTER_MS',
+  'ROLLING_DAILY_OWNERSHIP_PREPARATION_MS',
+  'ROLLING_DAILY_SNAPSHOT_PERSIST_MS',
+] as const
 
 function roundMs(value: number) {
   return Number(value.toFixed(3))
@@ -457,17 +491,51 @@ export function calculatePhaseAccounting(phases: Partial<Record<ProfiledPhaseNam
   const total = typeof phases.TOTAL_RENDERABLE_READY_MS === 'number' && Number.isFinite(phases.TOTAL_RENDERABLE_READY_MS)
     ? phases.TOTAL_RENDERABLE_READY_MS
     : 0
-  const accountedPhaseTotalMs = roundMs(
-    Object.entries(phases)
-      .filter(([phase, value]) => phase !== 'TOTAL_RENDERABLE_READY_MS' && typeof value === 'number' && Number.isFinite(value))
-      .reduce((sum, [, value]) => sum + (value as number), 0),
-  )
-  const unattributedMs = roundMs(Math.max(total - accountedPhaseTotalMs, 0))
+  const atomicAccountingPhases = ATOMIC_NON_OVERLAPPING_ACCOUNTING_PHASES.flatMap((phase) => {
+    const value = phases[phase]
+    return typeof value === 'number' && Number.isFinite(value)
+      ? [{ phase, valueMs: roundMs(value) }]
+      : []
+  })
+  const rawAccountedPhaseTotalMs = atomicAccountingPhases.reduce((sum, entry) => sum + entry.valueMs, 0)
+  const accountedPhaseTotalMs = roundMs(rawAccountedPhaseTotalMs)
+  const accountedExceedsTotalByMoreThanTolerance = rawAccountedPhaseTotalMs > total + PHASE_ACCOUNTING_ROUNDING_TOLERANCE_MS
+  const unattributedMs = roundMs(Math.max(total - rawAccountedPhaseTotalMs, 0))
 
   return {
+    atomicAccountingPhases,
     accountedPhaseTotalMs,
     unattributedMs,
     unattributedSharePct: total > 0 ? roundMs((unattributedMs / total) * 100) : 0,
+    accountedExceedsTotalByMoreThanTolerance,
+    roundingToleranceMs: PHASE_ACCOUNTING_ROUNDING_TOLERANCE_MS,
+  }
+}
+
+export function resolveProfileLauncherProvenance(input: {
+  declaredLauncherMode: ProfileLauncherMode | null
+  invocationCommand: string | null
+  processArgv: string[]
+  processExecArgv: string[]
+  nodeExecutable: string
+}): ProfileLauncherProvenance {
+  const profileScript = input.processArgv[1] ?? 'UNKNOWN'
+  const profileArguments = input.processArgv.slice(2)
+  const inferredLauncherMode: ProfileLauncherMode = input.processExecArgv.includes('tsx')
+    || input.processExecArgv.some((entry) => entry === '--import=tsx')
+      ? 'NODE_IMPORT_TSX'
+      : input.processExecArgv.some((entry) => entry.includes('/tsx/dist/loader.mjs') || entry.includes('\\tsx\\dist\\loader.mjs'))
+        ? 'DIRECT_TSX'
+        : 'OTHER_EXPLICIT'
+
+  return {
+    profileLauncherMode: input.declaredLauncherMode ?? inferredLauncherMode,
+    profileScript,
+    profileArguments,
+    nodeExecutable: input.nodeExecutable,
+    processArgv: [...input.processArgv],
+    processExecArgv: [...input.processExecArgv],
+    invocationCommand: input.invocationCommand,
   }
 }
 
@@ -567,7 +635,12 @@ export function validateProfileEnvironmentMetadata(input: Record<string, unknown
     'workingTreeCleanAtProfileStart',
     'gitDiffAtProfileStart',
     'profileWorktreeMode',
-    'profileCommand',
+    'profileLauncherMode',
+    'profileScript',
+    'profileArguments',
+    'nodeExecutable',
+    'processArgv',
+    'processExecArgv',
     'profileMode',
     'coldSamples',
     'warmSamples',
