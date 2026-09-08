@@ -1,0 +1,117 @@
+{
+  "task": "PPF1_STAGE7_RECENT_VERIFICATION_CONTROLLED_ACTIVATION",
+  "generatedAt": "2026-09-08T19:16:40.000Z",
+  "branch": "ppf1/stage7-recent-verification-controlled-activation-20260908",
+  "baseEvidenceHead": "1f7529301bf0613096cbd65056226d6ac41e65bf",
+  "finalSourceSha": "c4873f778163629ed61eabe35ccada0ba87f1cb2",
+  "sourceCommitChain": [
+    "10aafec0b4baaac219f9dfeaf12882034e3c52cf",
+    "c4873f778163629ed61eabe35ccada0ba87f1cb2"
+  ],
+  "stage6Authority": {
+    "acceptedEvidenceHead": "1f7529301bf0613096cbd65056226d6ac41e65bf",
+    "profiledSourceSha": "5dd96de8b3890830784fede4a46b767e4204095b",
+    "globalNFastRecommendation": 1,
+    "readyForStage7": true,
+    "preservedReadOnly": true
+  },
+  "scope": {
+    "methodologyChanged": false,
+    "stage8PlusSurfacesChanged": false,
+    "changedSourceFiles": [
+      "apps/sg-runtime/lib/forecast/service.ts",
+      "apps/sg-runtime/lib/forecast/progressive-preparation.ts",
+      "apps/sg-runtime/lib/forecast/prepared-state.ts",
+      "apps/sg-runtime/tests/forecast-library-service.test.ts",
+      "apps/sg-runtime/tests/forecast-prepared-state.test.ts"
+    ],
+    "evidenceFiles": [
+      "tooling/Benchmark-Forecasting/validation/ppf1-stage7-recent-verification-controlled-activation.json",
+      "tooling/Benchmark-Forecasting/validation/ppf1-stage7-recent-verification-controlled-activation.md"
+    ]
+  },
+  "implementation": {
+    "recentVerificationActivation": "DEDICATED_PREPARED_VERIFICATION_PATH",
+    "globalNFast": 1,
+    "historicalPolicy": "FAST_READY_MEANS_CURRENT_PLUS_RECENT_RENDERABLE",
+    "recentVerificationTrainingPolicyId": "RECENT_SAME_POLICY_AS_CURRENT@recent-same-policy-as-current-v1",
+    "historicalPreparationRoute": "progressive-preparation monthly historical work resolves recent verification instead of full verification",
+    "preparedStateRequirement": "periodic READY requires recent-policy verification identity compatibility"
+  },
+  "validationEnvironment": {
+    "cleanEvidenceWorktree": "/Users/tomaszuscinski/Documents/Visual Code Studio/.tmp-ppf1-stage7-final-evidence-clean-source-c4873f7-20260908",
+    "cleanEvidenceWorktreeHead": "c4873f778163629ed61eabe35ccada0ba87f1cb2",
+    "cleanEvidenceWorktreeStatus": "EMPTY",
+    "testRunner": "/Users/tomaszuscinski/Documents/Klienci/Profitia/SG 2.0/SG-dev-ARCHIVE-DO-NOT-USE/apps/sg-runtime/node_modules/.bin/tsx",
+    "nodePath": "/Users/tomaszuscinski/Documents/Klienci/Profitia/SG 2.0/SG-dev-ARCHIVE-DO-NOT-USE/apps/sg-runtime/node_modules",
+    "reason": "fresh Stage 7 worktrees do not contain a complete local dependency install"
+  },
+  "validation": {
+    "command": "cd apps/sg-runtime && NODE_PATH='<trusted sg-runtime node_modules>' '<trusted tsx>' --test tests/forecast-library-service.test.ts tests/forecast-prepared-state.test.ts tests/forecast-progressive-preparation.test.ts",
+    "result": {
+      "tests": 55,
+      "pass": 55,
+      "fail": 0,
+      "durationMs": 523.71775
+    },
+    "gates": {
+      "currentOnlyIsolation": {
+        "status": "PASS",
+        "evidence": [
+          "forecast library cold current miss succeeds without invoking verification inline",
+          "snapshotAndKickoff prioritizes current work before verification and elevates the selected identity"
+        ]
+      },
+      "warmReuse": {
+        "status": "PASS",
+        "evidence": [
+          "forecast library current path returns cached artifact without invoking compute bridge",
+          "prepared-only Forecast Library reads exact persisted artifacts without compute or writes"
+        ]
+      },
+      "concurrency": {
+        "status": "PASS",
+        "evidence": [
+          "forecast library Current exact-key misses use one owner, nine waiters, and one write",
+          "forecast library Verification exact-key misses use one owner, one waiter, and one write",
+          "same identity requested twice does not duplicate compute"
+        ]
+      },
+      "durability": {
+        "status": "PASS",
+        "evidence": [
+          "forecast library current path computes and persists on cache miss",
+          "forecast library current miss records a durable execution ledger without changing result semantics",
+          "forecast library verification path normalizes metrics and persists heavier results separately"
+        ]
+      },
+      "noLookahead": {
+        "status": "PASS",
+        "evidence": [
+          "recent verification artifact uses the latest lawful matured origin, same effective policy, and N=1",
+          "recent verification artifact fails closed when no lawful matured recent origin exists"
+        ]
+      },
+      "recentPreparedIdentity": {
+        "status": "PASS",
+        "evidence": [
+          "prepared recent verification lookup uses the recent policy identity and current-mode prepared history",
+          "prepared-state binding is exact across semantics, models, versions, and current/historical truth",
+          "LEGACY_UNRESOLVED rows cannot satisfy canonical monthly prepared-state readiness"
+        ]
+      },
+      "noStage8PlusLeakage": {
+        "status": "PASS",
+        "evidence": [
+          "Only apps/sg-runtime forecast service, progressive preparation, prepared-state, and focused tests changed",
+          "No tooling/Benchmark-Forecasting methodology source changed for activation behavior"
+        ]
+      }
+    }
+  },
+  "conclusion": {
+    "stage7Activation": "PASS",
+    "summary": "Stage 7 activates dedicated Recent Verification prepared truth with GLOBAL N_FAST = 1 on top of accepted Stage 6 evidence, preserves Current-only serving isolation, reuses persisted exact identities, fails closed when no lawful recent origin exists, and leaves Stage 6 evidence and forecast methodology unchanged.",
+    "readyForPush": true
+  }
+}
