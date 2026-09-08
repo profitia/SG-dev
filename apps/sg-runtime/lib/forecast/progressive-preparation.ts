@@ -11,6 +11,7 @@ import {
 import { createRollingDailyProductionOperationsService } from '@/lib/forecast/rolling-daily-production-operations'
 import {
   resolveBenchmarkCurrentForecast,
+  resolveBenchmarkRecentForecastVerification,
   resolveBenchmarkForecastVerification,
 } from '@/lib/forecast/service'
 
@@ -307,7 +308,7 @@ export function createProgressiveForecastPreparationService(
   const resolvedDependencies: ProgressiveForecastPreparationDependencies = {
     resolveCapabilities: dependencies.resolveCapabilities ?? resolveForecastCapabilitiesBySeriesId,
     prepareMonthlyCurrent: dependencies.prepareMonthlyCurrent ?? resolveBenchmarkCurrentForecast,
-    prepareMonthlyHistorical: dependencies.prepareMonthlyHistorical ?? resolveBenchmarkForecastVerification,
+    prepareMonthlyHistorical: dependencies.prepareMonthlyHistorical ?? resolveBenchmarkRecentForecastVerification,
     runRollingDaily: dependencies.runRollingDaily ?? ((request) => rollingDaily.run(request)),
   }
 

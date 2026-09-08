@@ -63,7 +63,11 @@ import type {
   ForecastVerificationRecord,
 } from '@/lib/forecast/contracts'
 import { DEFAULT_FORECAST_TARGET_BASIS, USER_FACING_FORECAST_MODELS } from '@/lib/forecast/contracts'
-import { resolveForecastTechnicalMinimumObservations } from '@/lib/forecast/current-fast-policy'
+import {
+  addCalendarMonthsClamped,
+  resolveForecastTechnicalMinimumObservations,
+  selectMinimalLawfulCurrentTrainingSuffix,
+} from '@/lib/forecast/current-fast-policy'
 import {
   buildForecastArtifactCadenceIdentity,
   createLegacyVerificationStatisticalCompatibility,
@@ -97,6 +101,7 @@ import {
   selectMinimalLawfulCurrentTrainingPayload,
   type LiveForecastBridgePayload,
 } from '@/lib/forecast/live-market-input'
+import { LIVE_FORECAST_INPUT_SOURCE_KIND } from '@/lib/forecast/canonical-history'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 import {
   forecastStressTelemetry,
@@ -136,6 +141,8 @@ export type ForecastServiceRequest = {
   targetCadence?: ForecastTargetCadence
   signal?: AbortSignal
 }
+
+const RECENT_VERIFICATION_MAX_ORIGINS = 1
 
 type Stage3ExecutionLedgerContext = {
   executionId: string
@@ -518,6 +525,10 @@ function normalizeOptionalString(value?: string | null) {
   return trimmed && trimmed.length > 0 ? trimmed : null
 }
 
+function isPreparationRequiredMessage(value: string | null | undefined) {
+  return typeof value === 'string' && value.startsWith('PREPARATION_REQUIRED:')
+}
+
 function isJsonObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -645,12 +656,13 @@ async function readPreparedHistoryForLookup(
   cadenceContext: PreparedReadCadenceContext,
   bridge: ForecastBridge,
   mode: 'current' | 'verification',
+  modelId?: string,
 ): Promise<ForecastHistoryBridgeResponse> {
   const preparedReadInput = resolvePreparedReadInput(input, cadenceContext)
   const preparedExecutionContext = await bridge.prepareExecutionContext?.(preparedReadInput) ?? null
 
   if (preparedExecutionContext) {
-    return preparedExecutionContext.exportHistory(mode)
+    return preparedExecutionContext.exportHistory(mode, modelId)
   }
 
   return bridge.exportHistory(preparedReadInput)
@@ -699,6 +711,313 @@ function normalizeVerificationMetrics(
     smape: metrics.smape,
     directionalAccuracy: metrics.directional_accuracy,
     bias: metrics.bias,
+  }
+}
+
+function average(values: number[]) {
+  return values.length === 0
+    ? null
+    : values.reduce((sum, value) => sum + value, 0) / values.length
+}
+
+function calculateRecentVerificationMetrics(records: ForecastVerificationRecord[]): ForecastVerificationMetrics | null {
+  if (records.length === 0) {
+    return null
+  }
+
+  const rmseBase = average(records.map((record) => record.error ** 2))
+  const maseValues = records
+    .filter((record) => record.maseScale > 0)
+    .map((record) => record.absoluteError / record.maseScale)
+  const smapeValues = records
+    .map((record) => {
+      const denominator = Math.abs(record.forecastValue) + Math.abs(record.actualValue)
+      return denominator === 0 ? null : (2 * record.absoluteError) / denominator
+    })
+    .filter((value): value is number => value !== null && Number.isFinite(value))
+
+  return {
+    mae: average(records.map((record) => record.absoluteError)),
+    rmse: rmseBase === null ? null : Math.sqrt(rmseBase),
+    mase: average(maseValues),
+    smape: average(smapeValues),
+    directionalAccuracy: average(records.map((record) => {
+      const forecastDirection = Math.sign(record.delta)
+      const actualDirection = Math.sign(record.actualValue - record.originValue)
+      return forecastDirection === actualDirection ? 1 : 0
+    })),
+    bias: average(records.map((record) => record.error)),
+  }
+}
+
+function buildCurrentPayloadForSelectedOrigin(input: {
+  benchmark: ForecastBridgeBenchmark
+  source: ForecastBridgeSource
+  authoritativeHistory: ForecastBridgeHistory
+  targetBasis: ForecastTargetBasis
+  targetCadence: ForecastTargetCadence
+  selectedPoints: Array<ForecastHistoryPoint & { value: number }>
+}): LiveForecastBridgePayload {
+  const firstPoint = input.selectedPoints[0]
+  const lastPoint = input.selectedPoints.at(-1)
+
+  if (!firstPoint || !lastPoint) {
+    throw new Error('Recent Verification requires at least one selected historical point.')
+  }
+
+  const executionPlan = buildCurrentForecastExecutionPlan(lastPoint.date, input.targetCadence)
+  const canonicalization = input.authoritativeHistory.canonicalization ?? {
+    method: 'LEGACY_UNRESOLVED',
+    version: 'LEGACY_UNRESOLVED',
+  }
+
+  return {
+    benchmark: {
+      seriesId: input.benchmark.seriesId,
+      component: input.benchmark.component,
+      description: input.benchmark.description,
+      frequency: input.targetCadence,
+      expectedObservations: input.selectedPoints.length,
+    },
+    execution: {
+      frequency: input.targetCadence,
+      historicalPeriodStarts: input.selectedPoints.map((point) => point.date),
+      horizons: executionPlan.horizons,
+      currentTargetDates: executionPlan.currentTargetDates,
+    },
+    source: {
+      kind: LIVE_FORECAST_INPUT_SOURCE_KIND,
+      runId: input.source.runId,
+    },
+    canonicalization: {
+      targetBasis: input.targetBasis,
+      method: canonicalization.method,
+      version: canonicalization.version,
+      partialMonthRule: input.targetCadence === 'MONTHLY'
+        ? 'EXCLUDE_OPEN_CALENDAR_MONTH'
+        : 'EXCLUDE_OPEN_TARGET_PERIOD',
+      missingDayRule: 'USE_AVAILABLE_LAWFUL_OBSERVATIONS_ONLY',
+      sourceObservationCount: input.authoritativeHistory.observations,
+      sourceObservationsUsed: input.selectedPoints.length,
+      excludedPartialPeriods: Math.max(0, input.authoritativeHistory.observations - input.selectedPoints.length),
+    },
+    history: {
+      seriesId: input.authoritativeHistory.seriesId,
+      benchmarkName: input.authoritativeHistory.benchmarkName,
+      description: input.authoritativeHistory.description,
+      frequency: input.targetCadence,
+      start: firstPoint.date,
+      end: lastPoint.date,
+      observations: input.selectedPoints.length,
+      canonicalization,
+      points: input.selectedPoints,
+    },
+  }
+}
+
+async function buildRecentVerificationArtifact(input: {
+  request: ForecastServiceRequest
+  methodVersion: string
+  targetSemantics: ForecastTargetSemantics
+  benchmark: ForecastBridgeBenchmark
+  source: ForecastBridgeSource
+  authoritativeHistory: ForecastBridgeHistory
+  cadenceContext: ReturnType<typeof resolveArtifactCadenceContext>
+}): Promise<PersistedVerificationArtifact> {
+  const sourceFrequency = input.cadenceContext.cadence?.sourceFrequency
+    ?? normalizeForecastSourceFrequency(input.authoritativeHistory.frequency)
+  const targetCadence = input.cadenceContext.cadence?.targetCadence
+    ?? normalizeForecastSourceFrequency(input.authoritativeHistory.frequency)
+
+  if (!sourceFrequency || !targetCadence) {
+    throw new Error('Recent Verification requires lawful source and target cadence.')
+  }
+
+  if (!isUserFacingModel(input.request.modelId)) {
+    throw new Error('Recent Verification requires a user-facing modelId.')
+  }
+
+  const minimumRequiredObservations = resolveForecastTechnicalMinimumObservations({
+    targetSemantics: input.targetSemantics,
+    modelId: input.request.modelId,
+  })
+  const actualObservedAtByTargetDate = buildActualObservedAtByTargetDate(input.authoritativeHistory, input.request.targetBasis)
+  const authoritativePoints = input.authoritativeHistory.points
+    .filter((point): point is ForecastHistoryPoint & { value: number } => typeof point.value === 'number' && Number.isFinite(point.value))
+  const actualsByDate = new Map(
+    authoritativePoints.map((point) => [normalizePeriodIdentityKey(point.date), point] as const)
+      .filter((entry): entry is [string, ForecastHistoryPoint & { value: number }] => entry[0] !== null),
+  )
+  const latestHistoricalDate = input.authoritativeHistory.end
+  const eligibleOrigins = authoritativePoints
+    .slice(0, -1)
+    .filter((point) => {
+      const farthestTargetDate = buildCurrentForecastExecutionPlan(point.date, targetCadence).currentTargetDates['12M']
+      if (!(typeof farthestTargetDate === 'string' && farthestTargetDate <= latestHistoricalDate)) {
+        return false
+      }
+
+      return selectMinimalLawfulCurrentTrainingSuffix({
+        points: authoritativePoints,
+        forecastOrigin: point.date,
+        minimumRequiredObservations,
+      }).minimumRequirementSatisfied
+    })
+
+  const latestLawfulMaturedOrigin = eligibleOrigins.at(-1)?.date ?? null
+  const recentWindowStartExclusive = latestLawfulMaturedOrigin === null
+    ? null
+    : addCalendarMonthsClamped(latestLawfulMaturedOrigin, -12)
+  const selectedOrigins = recentWindowStartExclusive === null
+    ? []
+    : eligibleOrigins.filter((point) => point.date > recentWindowStartExclusive && point.date <= latestLawfulMaturedOrigin).slice(-RECENT_VERIFICATION_MAX_ORIGINS)
+
+  if (selectedOrigins.length !== RECENT_VERIFICATION_MAX_ORIGINS) {
+    throw new Error('PREPARATION_REQUIRED: No exact-identity prepared Recent Verification is available.')
+  }
+
+  const recordsByHorizon = new Map<string, ForecastVerificationRecord[]>()
+
+  for (const origin of selectedOrigins) {
+    const selection = selectMinimalLawfulCurrentTrainingSuffix({
+      points: authoritativePoints,
+      forecastOrigin: origin.date,
+      minimumRequiredObservations,
+    })
+    const preparedPayload = buildCurrentPayloadForSelectedOrigin({
+      benchmark: input.benchmark,
+      source: input.source,
+      authoritativeHistory: input.authoritativeHistory,
+      targetBasis: input.request.targetBasis,
+      targetCadence,
+      selectedPoints: selection.points as Array<ForecastHistoryPoint & { value: number }>,
+    })
+    const originValue = preparedPayload.history.points.at(-1)?.value
+    if (!(typeof originValue === 'number' && Number.isFinite(originValue))) {
+      throw new Error(`Recent Verification origin ${origin.date} is missing a lawful origin value.`)
+    }
+
+    const currentResponse = await executePreparedForecastBridge(
+      preparedPayload,
+      'current',
+      input.request.seriesId,
+      input.request.modelId,
+    )
+
+    if (currentResponse.status !== 'AVAILABLE') {
+      throw new Error(`Recent Verification current execution failed at origin ${origin.date}: ${currentResponse.reason}`)
+    }
+
+    for (const [horizon, point] of Object.entries(currentResponse.result.currentForecast)) {
+      if (!(typeof point.forecastValue === 'number' && Number.isFinite(point.forecastValue))) {
+        continue
+      }
+
+      const targetDateKey = normalizePeriodIdentityKey(point.forecastDate)
+      const actual = targetDateKey ? actualsByDate.get(targetDateKey) : null
+      if (!actual) {
+        continue
+      }
+
+      const naiveScale = selection.points.length < 2
+        ? 0
+        : selection.points.slice(1).reduce((sum, candidate, index) => (
+          sum + Math.abs(candidate.value - selection.points[index]!.value)
+        ), 0) / (selection.points.length - 1)
+      const error = point.forecastValue - actual.value
+      const record: ForecastVerificationRecord = {
+        benchmarkId: input.request.seriesId,
+        modelId: input.request.modelId,
+        forecastOrigin: origin.date,
+        horizon,
+        horizonSteps: point.horizonSteps,
+        forecastDate: point.forecastDate,
+        actualObservedAt: resolveVerificationRecordActualObservedAt({
+          benchmarkId: input.request.seriesId,
+          modelId: input.request.modelId,
+          forecastOrigin: origin.date,
+          horizon,
+          horizonSteps: point.horizonSteps,
+          forecastDate: point.forecastDate,
+          actualObservedAt: actual.sourceObservedAt ?? null,
+          originValue,
+          forecastValue: point.forecastValue,
+          actualValue: actual.value,
+          error,
+          absoluteError: Math.abs(error),
+          delta: point.forecastValue - originValue,
+          deltaPct: originValue === 0 ? null : (point.forecastValue - originValue) / originValue,
+          maseScale: naiveScale,
+          metadata: point.metadata,
+        }, actualObservedAtByTargetDate, input.request.targetBasis),
+        originValue,
+        forecastValue: point.forecastValue,
+        actualValue: actual.value,
+        error,
+        absoluteError: Math.abs(error),
+        delta: point.forecastValue - originValue,
+        deltaPct: originValue === 0 ? null : (point.forecastValue - originValue) / originValue,
+        maseScale: naiveScale,
+        metadata: point.metadata,
+      }
+
+      const existing = recordsByHorizon.get(horizon) ?? []
+      existing.push(record)
+      recordsByHorizon.set(horizon, existing)
+    }
+  }
+
+  const compatibility = createRecentVerificationStatisticalCompatibility({
+    sourceFrequency,
+    targetCadence,
+    targetSemantics: input.targetSemantics,
+  })
+  const verification = Object.fromEntries(
+    [...recordsByHorizon.entries()]
+      .sort(([, left], [, right]) => (left[0]?.horizonSteps ?? 0) - (right[0]?.horizonSteps ?? 0))
+      .map(([horizon, records]) => [
+        horizon,
+        {
+          horizon,
+          horizonSteps: records[0]?.horizonSteps ?? 0,
+          origins: records.length,
+          expectedOrigins: selectedOrigins.length,
+          successfulOrigins: records.length,
+          failedOrigins: 0,
+          coverage: selectedOrigins.length === 0 ? 0 : records.length / selectedOrigins.length,
+          metrics: calculateRecentVerificationMetrics(records),
+          records: [...records].sort((left, right) => left.forecastOrigin.localeCompare(right.forecastOrigin)),
+          failures: [],
+        } satisfies ForecastVerificationHorizon,
+      ]),
+  )
+
+  if (Object.keys(verification).length === 0) {
+    throw new Error('PREPARATION_REQUIRED: Prepared Recent Verification artifact is present but not renderable.')
+  }
+
+  return {
+    seriesId: input.benchmark.seriesId,
+    modelId: input.request.modelId,
+    displayName: input.authoritativeHistory.benchmarkName,
+    description: normalizeOptionalString(input.authoritativeHistory.description),
+    targetBasis: input.request.targetBasis,
+    targetSemantics: input.targetSemantics,
+    methodId: resolveCapabilityIdentity(input.request.targetBasis, input.methodVersion).methodId,
+    methodVersion: input.methodVersion,
+    source: {
+      kind: input.source.kind,
+      runId: input.source.runId,
+    },
+    historyFingerprint: buildForecastHistoryFingerprint(input.authoritativeHistory, input.cadenceContext.cadence ?? undefined),
+    cadence: input.cadenceContext.cadence,
+    frequencyIdentity: input.cadenceContext.frequencyIdentity,
+    statisticalCompatibility: compatibility,
+    preparation: preparationIdentityFromHistory(input.authoritativeHistory),
+    history: historySummaryFromBridge(input.authoritativeHistory),
+    forecastOrigin: latestLawfulMaturedOrigin,
+    runtimeSeconds: null,
+    verification,
   }
 }
 
@@ -2291,6 +2610,7 @@ export function createForecastLibraryService(
         cadenceContext,
         resolvedDependencies.bridge,
         'current',
+        input.modelId,
       )
 
       if (historyResponse.status === 'NOT_AVAILABLE') {
@@ -2519,6 +2839,138 @@ export function createForecastLibraryService(
           targetSemantics: identity.targetSemantics,
           methodId: identity.methodId,
           reason: 'PREPARATION_REQUIRED: Prepared Historical Verification training-policy identity is not compatible.',
+        }
+      }
+
+      return toVerificationAvailable(prepared, 'hit')
+    },
+
+    async readPreparedRecentVerificationRequest(input: ForecastServiceRequest): Promise<BenchmarkForecastVerificationResult> {
+      const startedAt = performance.now()
+      const cadenceContext = await resolvePreparedReadCadenceContext(
+        input,
+        resolveCapabilityIdentity(input.targetBasis).targetSemantics,
+        resolvedDependencies.resolveExactPreparedCapability,
+      )
+
+      if (cadenceContext.blockedReason) {
+        const identity = resolveCapabilityIdentity(input.targetBasis)
+        return {
+          status: 'NOT_AVAILABLE',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: cadenceContext.blockedReason,
+        }
+      }
+
+      const historyResponse = await readPreparedHistoryForLookup(
+        input,
+        cadenceContext,
+        resolvedDependencies.bridge,
+        'current',
+        input.modelId,
+      )
+
+      if (historyResponse.status === 'NOT_AVAILABLE') {
+        const identity = resolveCapabilityIdentity(input.targetBasis)
+        return {
+          status: 'NOT_AVAILABLE',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: historyResponse.reason,
+        }
+      }
+
+      if (historyResponse.status === 'UNSUPPORTED') {
+        return toUnsupportedResult(historyResponse, input)
+      }
+
+      if (historyResponse.status === 'FAILED') {
+        const identity = resolveCapabilityIdentity(input.targetBasis, historyResponse.methodVersion)
+        return {
+          status: 'FAILED',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: historyResponse.reason,
+          methodVersion: historyResponse.methodVersion,
+          source: historyResponse.source,
+        }
+      }
+
+      const identity = resolveCapabilityIdentity(input.targetBasis, historyResponse.methodVersion)
+      const sourceFrequency = cadenceContext.cadence?.sourceFrequency
+        ?? normalizeForecastSourceFrequency(historyResponse.history.frequency)
+      const targetCadence = cadenceContext.cadence?.targetCadence
+        ?? normalizeForecastSourceFrequency(historyResponse.history.frequency)
+      if (!sourceFrequency || !targetCadence) {
+        throw new Error('Prepared Recent Verification lookup requires lawful source and target cadence.')
+      }
+      const expectedCompatibility = createRecentVerificationStatisticalCompatibility({
+        sourceFrequency,
+        targetCadence,
+        targetSemantics: identity.targetSemantics,
+      })
+      const prepared = await resolvedDependencies.repository.readVerificationRun({
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis: input.targetBasis,
+        frequencyIdentity: cadenceContext.frequencyIdentity,
+        inputSource: historyResponse.source.kind,
+        historyFingerprint: buildForecastHistoryFingerprint(historyResponse.history, cadenceContext.cadence ?? undefined),
+        trainingWindowPolicyId: expectedCompatibility.trainingWindowPolicyId,
+        effectiveTrainingPolicyId: expectedCompatibility.effectiveTrainingPolicyId,
+        ...identity,
+      })
+
+      resolvedDependencies.telemetry.emit('prepared_read', {
+        kind: 'verification',
+        hit: prepared !== null,
+        durationMs: performance.now() - startedAt,
+      })
+
+      if (!prepared) {
+        return {
+          status: 'NOT_AVAILABLE',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: 'PREPARATION_REQUIRED: No exact-identity prepared Recent Verification is available.',
+        }
+      }
+
+      if (!isRenderableVerificationArtifact(prepared)) {
+        return {
+          status: 'NOT_AVAILABLE',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: 'PREPARATION_REQUIRED: Prepared Recent Verification artifact is present but not renderable.',
+        }
+      }
+
+      const context = resolveArtifactTrainingPolicyContext(prepared, identity.targetSemantics)
+      if (!context || !doesForecastArtifactSatisfyRequest(prepared.statisticalCompatibility, createRecentVerificationStatisticalCompatibility(context))) {
+        return {
+          status: 'NOT_AVAILABLE',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: 'PREPARATION_REQUIRED: Prepared Recent Verification training-policy identity is not compatible.',
         }
       }
 
@@ -3849,6 +4301,579 @@ export function createForecastLibraryService(
         },
       })
     },
+
+    async resolveRecentVerification(seriesId: string, modelId: string): Promise<BenchmarkForecastVerificationResult> {
+      const input: ForecastServiceRequest = {
+        seriesId,
+        modelId,
+        targetBasis: DEFAULT_FORECAST_TARGET_BASIS,
+      }
+      return this.resolveRecentVerificationRequest(input)
+    },
+
+    async resolveRecentVerificationRequest(input: ForecastServiceRequest): Promise<BenchmarkForecastVerificationResult> {
+      const startedAt = performance.now()
+      const cadenceContext = resolveArtifactCadenceContext(input)
+      const preparedExecutionContext = await resolvedDependencies.bridge.prepareExecutionContext?.({
+        seriesId: input.seriesId,
+        targetBasis: input.targetBasis,
+        sourceFrequency: input.sourceFrequency,
+        targetCadence: input.targetCadence,
+      }) ?? null
+
+      const historyResponse = preparedExecutionContext
+        ? await preparedExecutionContext.exportHistory('current', input.modelId)
+        : await resolvedDependencies.bridge.exportHistory({
+            seriesId: input.seriesId,
+            targetBasis: input.targetBasis,
+            sourceFrequency: input.sourceFrequency,
+            targetCadence: input.targetCadence,
+          })
+
+      if (historyResponse.status === 'NOT_AVAILABLE') {
+        const identity = resolveCapabilityIdentity(input.targetBasis)
+        return {
+          status: 'NOT_AVAILABLE',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: historyResponse.reason,
+        }
+      }
+
+      if (historyResponse.status === 'UNSUPPORTED') {
+        return toUnsupportedResult(historyResponse, input)
+      }
+
+      if (historyResponse.status === 'FAILED') {
+        const identity = resolveCapabilityIdentity(input.targetBasis, historyResponse.methodVersion)
+        return {
+          status: 'FAILED',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: historyResponse.reason,
+          methodVersion: historyResponse.methodVersion,
+          source: historyResponse.source,
+        }
+      }
+
+      const historyFingerprint = buildForecastHistoryFingerprint(historyResponse.history, cadenceContext.cadence ?? undefined)
+      const methodIdentity = resolveCapabilityIdentity(input.targetBasis, historyResponse.methodVersion)
+      const cacheStatisticalCompatibility = createRecentVerificationStatisticalCompatibility({
+        sourceFrequency: cadenceContext.cadence?.sourceFrequency
+          ?? normalizeForecastSourceFrequency(historyResponse.history.frequency)
+          ?? 'MONTHLY',
+        targetCadence: cadenceContext.cadence?.targetCadence
+          ?? normalizeForecastSourceFrequency(historyResponse.history.frequency)
+          ?? 'MONTHLY',
+        targetSemantics: methodIdentity.targetSemantics,
+      })
+      const cacheKey: ForecastCacheLookupKey = {
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetSemantics: methodIdentity.targetSemantics,
+        methodId: methodIdentity.methodId,
+        methodVersion: historyResponse.methodVersion,
+        inputSource: historyResponse.source.kind,
+        historyFingerprint,
+        targetBasis: input.targetBasis,
+        frequencyIdentity: cadenceContext.frequencyIdentity,
+        trainingWindowPolicyId: cacheStatisticalCompatibility.trainingWindowPolicyId,
+        effectiveTrainingPolicyId: cacheStatisticalCompatibility.effectiveTrainingPolicyId,
+      }
+
+      let dbReadFailed = false
+      try {
+        const persisted = await resolvedDependencies.repository.readVerificationRun(cacheKey)
+        if (persisted && !verificationArtifactNeedsRebuild(persisted)) {
+          resolvedDependencies.telemetry.emit('prepared_read', {
+            kind: 'verification',
+            hit: true,
+            durationMs: performance.now() - startedAt,
+          })
+          resolvedDependencies.logEvent('FORECAST_LIBRARY_RECENT_VERIFICATION', {
+            seriesId: input.seriesId,
+            modelId: input.modelId,
+            cacheStatus: 'hit',
+            totalMs: Math.round(performance.now() - startedAt),
+            dbFailure: false,
+          })
+          return toVerificationAvailable(persisted, 'hit')
+        }
+      } catch (error) {
+        dbReadFailed = true
+        resolvedDependencies.logEvent('FORECAST_LIBRARY_RECENT_VERIFICATION', {
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          cacheStatus: 'db-unavailable',
+          totalMs: Math.round(performance.now() - startedAt),
+          dbFailure: true,
+          dbError: error instanceof Error ? error.message : 'unknown',
+        })
+      }
+
+      resolvedDependencies.telemetry.emit('prepared_read', {
+        kind: 'verification',
+        hit: false,
+        durationMs: performance.now() - startedAt,
+      })
+
+      const sourceFrequency = cadenceContext.cadence?.sourceFrequency
+        ?? normalizeForecastSourceFrequency(historyResponse.history.frequency)
+      const targetCadence = cadenceContext.cadence?.targetCadence
+        ?? normalizeForecastSourceFrequency(historyResponse.history.frequency)
+      if (!sourceFrequency || !targetCadence) {
+        throw new Error('Recent Verification single-flight identity requires lawful source and target cadence.')
+      }
+
+      const verificationHorizonSetId = buildVerificationHorizonSetId(
+        buildCurrentForecastExecutionPlan(historyResponse.history.end, targetCadence).horizons,
+      )
+      const verificationStatisticalCompatibility = createRecentVerificationStatisticalCompatibility({
+        sourceFrequency,
+        targetCadence,
+        targetSemantics: methodIdentity.targetSemantics,
+      })
+      const logicalArtifactIdentity: VerificationLogicalArtifactIdentity = {
+        artifactScope: verificationStatisticalCompatibility.artifactScope,
+        seriesId: input.seriesId,
+        targetBasis: input.targetBasis,
+        targetSemantics: methodIdentity.targetSemantics,
+        methodId: methodIdentity.methodId,
+        methodVersion: historyResponse.methodVersion,
+        trainingWindowPolicyId: verificationStatisticalCompatibility.trainingWindowPolicyId,
+        modelId: input.modelId,
+        inputSource: historyResponse.source.kind,
+        historyFingerprint,
+        sourceFrequency,
+        targetCadence,
+        frequencyIdentity: cadenceContext.frequencyIdentity,
+        verificationHorizonSetId,
+        verificationConfigurationId: VERIFICATION_CONFIGURATION_ID,
+        originPolicyId: VERIFICATION_ORIGIN_POLICY_ID,
+      }
+      const logicalArtifactKey = buildVerificationLogicalArtifactKey(logicalArtifactIdentity)
+      const requestId = resolvedDependencies.telemetry.currentContext?.()?.requestId ?? randomUUID()
+      const recordVerificationExecutionEvent = (
+        executionContext: Stage3ExecutionLedgerContext | null,
+        inputEvent: Omit<Parameters<ForecastPreparationExecutionLedger['recordEvent']>[0], 'executionId'>,
+      ) => recordAuthoritativeExecutionEvent(executionContext, inputEvent, {
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+      })
+
+      return verificationForecastSingleFlight.run({
+        logicalArtifactKey,
+        requestId,
+        async emit(event, eventData) {
+          resolvedDependencies.telemetry.emit(event, {
+            logicalArtifactKey: eventData.logicalArtifactKey,
+            operationFamily: eventData.operationFamily,
+            ownerRequestId: eventData.ownerRequestId,
+            requestId: eventData.requestId,
+            role: eventData.role,
+            activeVerificationSingleFlightEntries: eventData.activeVerificationSingleFlightEntries,
+            durationMs: eventData.durationMs ?? null,
+            error: eventData.error ?? null,
+            seriesId: input.seriesId,
+            modelId: input.modelId,
+            targetSemantics: methodIdentity.targetSemantics,
+            sourceFrequency,
+            targetCadence,
+            trainingWindowPolicyId: verificationStatisticalCompatibility.trainingWindowPolicyId,
+          })
+          recordVerificationExecutionEvent(null, {
+            logicalArtifactKey,
+            operationFamily: 'VERIFICATION',
+            logicalArtifactIdentity,
+            requestId: eventData.requestId,
+            ownerRequestId: eventData.ownerRequestId,
+            role: eventData.role,
+            eventType: event,
+            durationMs: eventData.durationMs ?? null,
+            error: eventData.error ?? null,
+            activeSingleFlightEntries: eventData.activeVerificationSingleFlightEntries,
+          })
+        },
+        operation: async () => {
+          if (dbReadFailed) {
+            throw new ForecastExecutionControlError(
+              'CONTROL_DB_UNAVAILABLE',
+              'Recent Verification execution is fail-closed while PostgreSQL authority is unavailable.',
+            )
+          }
+
+          const waitDeadline = Date.now() + stage3WaiterMaxWaitMs
+
+          while (true) {
+            throwIfAborted(input.signal)
+            const admission = await resolvedDependencies.executionAdmission.acquireExecution({
+              operationFamily: 'VERIFICATION',
+              logicalArtifactKey,
+              logicalArtifactIdentity,
+              requestId,
+              ownerRequestId: requestId,
+            })
+
+            if (admission.role === 'WAITER') {
+              recordVerificationExecutionEvent(toWaiterExecutionLedgerContext(admission), {
+                logicalArtifactKey,
+                operationFamily: 'VERIFICATION',
+                logicalArtifactIdentity,
+                requestId,
+                ownerRequestId: admission.ownerRequestId,
+                role: 'WAITER',
+                eventType: 'single_flight_waiter_joined',
+              })
+              let attempt = 0
+
+              while (Date.now() <= waitDeadline) {
+                throwIfAborted(input.signal)
+                const persisted = await resolvedDependencies.repository.readVerificationRun(cacheKey)
+                if (persisted) {
+                  resolvedDependencies.logEvent('FORECAST_LIBRARY_RECENT_VERIFICATION', {
+                    seriesId: input.seriesId,
+                    modelId: input.modelId,
+                    cacheStatus: 'hit',
+                    totalMs: Math.round(performance.now() - startedAt),
+                    dbFailure: false,
+                  })
+                  return toVerificationAvailable(persisted, 'hit')
+                }
+
+                const latestExecution = await resolvedDependencies.executionAdmission.readLatestExecutionForLogicalArtifact(logicalArtifactKey)
+                if (!latestExecution) {
+                  break
+                }
+                if (latestExecution.executionStatus === 'FAILED') {
+                  return {
+                    status: 'FAILED',
+                    seriesId: input.seriesId,
+                    modelId: input.modelId,
+                    targetBasis: input.targetBasis,
+                    targetSemantics: methodIdentity.targetSemantics,
+                    methodId: methodIdentity.methodId,
+                    reason: latestExecution.failureReason ?? 'Authoritative recent verification execution failed before producing an artifact.',
+                    methodVersion: historyResponse.methodVersion,
+                    source: historyResponse.source,
+                    historyFingerprint,
+                  }
+                }
+                if (latestExecution.executionStatus === 'COMPLETED') {
+                  const persistedAfterCompletion = await resolvedDependencies.repository.readVerificationRun(cacheKey)
+                  if (persistedAfterCompletion) {
+                    resolvedDependencies.logEvent('FORECAST_LIBRARY_RECENT_VERIFICATION', {
+                      seriesId: input.seriesId,
+                      modelId: input.modelId,
+                      cacheStatus: 'hit',
+                      totalMs: Math.round(performance.now() - startedAt),
+                      dbFailure: false,
+                    })
+                    return toVerificationAvailable(persistedAfterCompletion, 'hit')
+                  }
+                  throw new Error(`Recent Verification execution completed without a canonical artifact for ${logicalArtifactKey}.`)
+                }
+                if (new Date(latestExecution.leaseExpiresAt).getTime() <= Date.now()) {
+                  break
+                }
+
+                await waitForBackoff(attempt, input.signal)
+                attempt += 1
+              }
+
+              if (Date.now() > waitDeadline) {
+                throw new Error(`Timed out waiting for the authoritative Recent Verification execution for ${logicalArtifactKey}.`)
+              }
+
+              continue
+            }
+
+            let ownership = admission.ownership
+            let executionLedgerContext = toAuthoritativeExecutionLedgerContext(ownership)
+            const heartbeat = startLeaseHeartbeat(logicalArtifactKey, ownership, requestId)
+            let failurePhase: 'COMPUTE' | 'PERSISTENCE' | 'FINALIZATION' = 'COMPUTE'
+
+            try {
+              const persistedAfterAdmission = await resolvedDependencies.repository.readVerificationRun(cacheKey)
+              if (persistedAfterAdmission && !verificationArtifactNeedsRebuild(persistedAfterAdmission)) {
+                await resolvedDependencies.executionAdmission.markExecutionCompleted({
+                  executionId: ownership.executionId,
+                  logicalArtifactKey,
+                  ownerToken: ownership.ownerToken,
+                  leaseVersion: ownership.leaseVersion,
+                  requestId,
+                  ownerRequestId: ownership.ownerRequestId,
+                  resultStatus: 'AVAILABLE',
+                  cacheStatus: 'hit',
+                })
+                recordVerificationExecutionEvent(executionLedgerContext, {
+                  logicalArtifactKey,
+                  operationFamily: 'VERIFICATION',
+                  logicalArtifactIdentity,
+                  requestId,
+                  ownerRequestId: ownership.ownerRequestId,
+                  role: 'OWNER',
+                  eventType: 'execution_completed',
+                  resultStatus: 'AVAILABLE',
+                  cacheStatus: 'hit',
+                })
+                return toVerificationAvailable(persistedAfterAdmission, 'hit')
+              }
+
+              recordVerificationExecutionEvent(executionLedgerContext, {
+                logicalArtifactKey,
+                operationFamily: 'VERIFICATION',
+                logicalArtifactIdentity,
+                requestId,
+                ownerRequestId: ownership.ownerRequestId,
+                role: 'OWNER',
+                eventType: 'single_flight_owner_acquired',
+              })
+              const verificationStartedAt = performance.now()
+              resolvedDependencies.telemetry.emit('verification_compute_start', {
+                modelId: input.modelId,
+                count: 1,
+                logicalArtifactKey,
+                trainingWindowPolicyId: verificationStatisticalCompatibility.trainingWindowPolicyId,
+              })
+              recordVerificationExecutionEvent(executionLedgerContext, {
+                logicalArtifactKey,
+                operationFamily: 'VERIFICATION',
+                logicalArtifactIdentity,
+                requestId,
+                ownerRequestId: requestId,
+                role: 'OWNER',
+                eventType: 'compute_started',
+              })
+
+              let artifact: PersistedVerificationArtifact
+              try {
+                artifact = await buildRecentVerificationArtifact({
+                  request: input,
+                  methodVersion: historyResponse.methodVersion,
+                  targetSemantics: methodIdentity.targetSemantics,
+                  benchmark: historyResponse.benchmark,
+                  source: historyResponse.source,
+                  authoritativeHistory: historyResponse.history,
+                  cadenceContext,
+                })
+              } catch (error) {
+                const message = error instanceof Error ? error.message : 'Recent Verification preparation failed.'
+                if (isPreparationRequiredMessage(message)) {
+                  const identity = resolveCapabilityIdentity(input.targetBasis, historyResponse.methodVersion)
+                  await resolvedDependencies.executionAdmission.markExecutionCompleted({
+                    executionId: ownership.executionId,
+                    logicalArtifactKey,
+                    ownerToken: ownership.ownerToken,
+                    leaseVersion: ownership.leaseVersion,
+                    requestId,
+                    ownerRequestId: ownership.ownerRequestId,
+                    resultStatus: 'NOT_AVAILABLE',
+                    cacheStatus: 'miss',
+                  })
+                  recordVerificationExecutionEvent(executionLedgerContext, {
+                    logicalArtifactKey,
+                    operationFamily: 'VERIFICATION',
+                    logicalArtifactIdentity,
+                    requestId,
+                    ownerRequestId: requestId,
+                    role: 'OWNER',
+                    eventType: 'execution_completed',
+                    resultStatus: 'NOT_AVAILABLE',
+                    cacheStatus: 'miss',
+                    error: message,
+                  })
+                  return {
+                    status: 'NOT_AVAILABLE',
+                    seriesId: input.seriesId,
+                    modelId: input.modelId,
+                    targetBasis: input.targetBasis,
+                    targetSemantics: identity.targetSemantics,
+                    methodId: identity.methodId,
+                    reason: message,
+                    methodVersion: historyResponse.methodVersion,
+                    source: historyResponse.source,
+                  }
+                }
+                throw error
+              }
+
+              const verificationDurationMs = performance.now() - verificationStartedAt
+              const verificationOrigins = new Set(
+                Object.values(artifact.verification)
+                  .flatMap((horizon) => horizon.records.map((record) => record.forecastOrigin)),
+              ).size
+              resolvedDependencies.telemetry.emit('verification_compute_end', {
+                modelId: input.modelId,
+                count: 1,
+                originCount: verificationOrigins,
+                durationMs: verificationDurationMs,
+                status: 'AVAILABLE',
+                logicalArtifactKey,
+                trainingWindowPolicyId: verificationStatisticalCompatibility.trainingWindowPolicyId,
+              })
+              resolvedDependencies.telemetry.emit('model_fit', {
+                operation: 'verification',
+                modelId: input.modelId,
+                count: verificationOrigins,
+                durationMs: verificationDurationMs,
+              })
+              recordVerificationExecutionEvent(executionLedgerContext, {
+                logicalArtifactKey,
+                operationFamily: 'VERIFICATION',
+                logicalArtifactIdentity,
+                requestId,
+                ownerRequestId: requestId,
+                role: 'OWNER',
+                eventType: 'compute_completed',
+                durationMs: verificationDurationMs,
+                resultStatus: 'AVAILABLE',
+                payload: { verificationOrigins },
+              })
+
+              failurePhase = 'PERSISTENCE'
+              const cacheStatus: BenchmarkForecastVerificationAvailableResult['cacheStatus'] = 'miss'
+              const persistStartedAt = performance.now()
+              recordVerificationExecutionEvent(executionLedgerContext, {
+                logicalArtifactKey,
+                operationFamily: 'VERIFICATION',
+                logicalArtifactIdentity,
+                requestId,
+                ownerRequestId: requestId,
+                role: 'OWNER',
+                eventType: 'persistence_started',
+              })
+              ownership = await heartbeat.renewNow()
+              executionLedgerContext = toAuthoritativeExecutionLedgerContext(ownership)
+              await resolvedDependencies.repository.writeVerificationRun(artifact, {
+                ownership: buildPersistenceOwnership('VERIFICATION', logicalArtifactKey, ownership),
+              })
+              const persistenceDurationMs = performance.now() - persistStartedAt
+              const verificationRecordWrites = Object.values(artifact.verification)
+                .reduce((sum, horizon) => sum + horizon.records.length, 0)
+              resolvedDependencies.telemetry.emit('persistence', {
+                operation: 'verification',
+                artifactWrites: 1,
+                pointWrites: 0,
+                verificationRecordWrites,
+                writeFailures: 0,
+                durationMs: persistenceDurationMs,
+              })
+              recordVerificationExecutionEvent(executionLedgerContext, {
+                logicalArtifactKey,
+                operationFamily: 'VERIFICATION',
+                logicalArtifactIdentity,
+                requestId,
+                ownerRequestId: requestId,
+                role: 'OWNER',
+                eventType: 'persistence_completed',
+                durationMs: persistenceDurationMs,
+                artifactWrites: 1,
+                pointWrites: 0,
+                verificationRecordWrites,
+                writeFailures: 0,
+              })
+
+              failurePhase = 'FINALIZATION'
+              heartbeat.assertActive()
+              await resolvedDependencies.executionAdmission.markExecutionCompleted({
+                executionId: ownership.executionId,
+                logicalArtifactKey,
+                ownerToken: ownership.ownerToken,
+                leaseVersion: ownership.leaseVersion,
+                requestId,
+                ownerRequestId: ownership.ownerRequestId,
+                resultStatus: 'AVAILABLE',
+                cacheStatus,
+              })
+              recordVerificationExecutionEvent(executionLedgerContext, {
+                logicalArtifactKey,
+                operationFamily: 'VERIFICATION',
+                logicalArtifactIdentity,
+                requestId,
+                ownerRequestId: requestId,
+                role: 'OWNER',
+                eventType: 'execution_completed',
+                resultStatus: 'AVAILABLE',
+                cacheStatus,
+              })
+              resolvedDependencies.logEvent('FORECAST_LIBRARY_RECENT_VERIFICATION', {
+                seriesId: input.seriesId,
+                modelId: input.modelId,
+                cacheStatus,
+                totalMs: Math.round(performance.now() - startedAt),
+                dbFailure: false,
+              })
+
+              return toVerificationAvailable(artifact, cacheStatus)
+            } catch (error) {
+              if (failurePhase === 'PERSISTENCE') {
+                resolvedDependencies.telemetry.emit('persistence', {
+                  operation: 'verification',
+                  artifactWrites: 0,
+                  pointWrites: 0,
+                  verificationRecordWrites: 0,
+                  writeFailures: 1,
+                })
+                recordVerificationExecutionEvent(executionLedgerContext, {
+                  logicalArtifactKey,
+                  operationFamily: 'VERIFICATION',
+                  logicalArtifactIdentity,
+                  requestId,
+                  ownerRequestId: requestId,
+                  role: 'OWNER',
+                  eventType: 'persistence_failed',
+                  error: error instanceof Error ? error.message : 'unknown',
+                  artifactWrites: 0,
+                  pointWrites: 0,
+                  verificationRecordWrites: 0,
+                  writeFailures: 1,
+                })
+              }
+
+              try {
+                heartbeat.assertActive()
+                await resolvedDependencies.executionAdmission.markExecutionFailed({
+                  executionId: ownership.executionId,
+                  logicalArtifactKey,
+                  ownerToken: ownership.ownerToken,
+                  leaseVersion: ownership.leaseVersion,
+                  requestId,
+                  ownerRequestId: ownership.ownerRequestId,
+                  failurePhase,
+                  failureReason: error instanceof Error ? error.message : 'unknown',
+                  resultStatus: failurePhase === 'COMPUTE' ? 'FAILED' : 'AVAILABLE',
+                  cacheStatus: failurePhase === 'PERSISTENCE' ? 'persist-failed' : 'miss',
+                })
+              } catch {
+                // Preserve the original execution failure as the surfaced error.
+              }
+
+              recordVerificationExecutionEvent(executionLedgerContext, {
+                logicalArtifactKey,
+                operationFamily: 'VERIFICATION',
+                logicalArtifactIdentity,
+                requestId,
+                ownerRequestId: requestId,
+                role: 'OWNER',
+                eventType: 'execution_failed',
+                resultStatus: failurePhase === 'COMPUTE' ? 'FAILED' : 'AVAILABLE',
+                cacheStatus: failurePhase === 'PERSISTENCE' ? 'persist-failed' : 'miss',
+                error: error instanceof Error ? error.message : 'unknown',
+              })
+              throw error
+            } finally {
+              await heartbeat.stop()
+            }
+          }
+        },
+      })
+    },
   }
 }
 
@@ -3862,10 +4887,18 @@ export async function resolveBenchmarkForecastVerification(input: ForecastServic
   return forecastLibraryService.resolveVerificationRequest(input)
 }
 
+export async function resolveBenchmarkRecentForecastVerification(input: ForecastServiceRequest) {
+  return forecastLibraryService.resolveRecentVerificationRequest(input)
+}
+
 export async function readPreparedBenchmarkCurrentForecast(input: ForecastServiceRequest) {
   return forecastLibraryService.readPreparedCurrentForecastRequest(input)
 }
 
 export async function readPreparedBenchmarkForecastVerification(input: ForecastServiceRequest) {
   return forecastLibraryService.readPreparedVerificationRequest(input)
+}
+
+export async function readPreparedBenchmarkRecentForecastVerification(input: ForecastServiceRequest) {
+  return forecastLibraryService.readPreparedRecentVerificationRequest(input)
 }

@@ -9,6 +9,7 @@ import {
   buildForecastArtifactCadenceIdentity,
   createCurrentForecastStatisticalCompatibility,
   createForecastIdentity,
+  createRecentVerificationStatisticalCompatibility,
   LEGACY_MONTHLY_ARTIFACT_FREQUENCY,
 } from '@/lib/forecast/identity'
 import { buildLiveForecastBridgePayloadFromHistory } from '@/lib/forecast/live-market-input'
@@ -162,6 +163,11 @@ export async function readForecastPreparedVariants(
           cadence: { sourceFrequency, targetCadence },
         }),
       }
+      const recentVerificationCompatibility = createRecentVerificationStatisticalCompatibility({
+        sourceFrequency,
+        targetCadence,
+        targetSemantics: identity.targetSemantics,
+      })
       const [current, historical] = await Promise.all([
         prisma.forecastCurrentRun.findFirst({
           where: {
@@ -192,6 +198,8 @@ export async function readForecastPreparedVariants(
             methodId: identity.methodId,
             methodVersion: identity.methodVersion,
             modelId,
+            trainingWindowPolicyId: recentVerificationCompatibility.trainingWindowPolicyId,
+            effectiveTrainingPolicyId: recentVerificationCompatibility.effectiveTrainingPolicyId,
           },
           select: { status: true, historyFingerprint: true, frequency: true },
           orderBy: { updatedAt: 'desc' },

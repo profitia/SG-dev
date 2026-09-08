@@ -4,6 +4,7 @@ import test from 'node:test'
 import type { BenchmarkHistoricalSeriesResult } from '../lib/benchmark/contracts'
 import { buildForecastHistoryFingerprint } from '../lib/forecast/history-fingerprint'
 import { resolveForecastTechnicalMinimumObservations } from '../lib/forecast/current-fast-policy'
+import { createRecentVerificationStatisticalCompatibility } from '../lib/forecast/identity'
 import {
   buildLiveForecastBridgePayloadFromHistory,
   selectMinimalLawfulCurrentTrainingPayload,
@@ -75,6 +76,16 @@ test('prepared-state binding is exact across semantics, models, versions, and cu
       now,
     }).history,
   )
+  const recentEopCompatibility = createRecentVerificationStatisticalCompatibility({
+    sourceFrequency: 'DAILY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: 'END_OF_PERIOD',
+  })
+  const recentMonthlyAverageCompatibility = createRecentVerificationStatisticalCompatibility({
+    sourceFrequency: 'DAILY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: 'MONTHLY_AVERAGE',
+  })
   const rollingFingerprint = buildRollingDailyHistoryFingerprint({
     seriesId: history.providerSeries.providerSeriesId,
     displayName: history.displayName,
@@ -110,10 +121,20 @@ test('prepared-state binding is exact across semantics, models, versions, and cu
       },
       forecastVerificationRun: {
         async findFirst({ where }: { where: Record<string, string> }) {
-          if (where.targetBasis === 'END_OF_PERIOD' && where.modelId === 'arima') {
+          if (
+            where.targetBasis === 'END_OF_PERIOD'
+            && where.modelId === 'arima'
+            && where.trainingWindowPolicyId === recentEopCompatibility.trainingWindowPolicyId
+            && where.effectiveTrainingPolicyId === recentEopCompatibility.effectiveTrainingPolicyId
+          ) {
             return { status: 'AVAILABLE', historyFingerprint: fullEopHistoricalFingerprint, frequency: 'MONTHLY' }
           }
-          if (where.targetBasis === 'MONTHLY_AVERAGE' && where.modelId === 'ets') {
+          if (
+            where.targetBasis === 'MONTHLY_AVERAGE'
+            && where.modelId === 'ets'
+            && where.trainingWindowPolicyId === recentMonthlyAverageCompatibility.trainingWindowPolicyId
+            && where.effectiveTrainingPolicyId === recentMonthlyAverageCompatibility.effectiveTrainingPolicyId
+          ) {
             return { status: 'AVAILABLE', historyFingerprint: monthlyAverageFingerprint, frequency: 'MONTHLY' }
           }
           return null

@@ -12,6 +12,7 @@ import {
   createLegacyFrequencySpecificCurrentForecastStatisticalCompatibility,
   createLegacyUnresolvedForecastStatisticalCompatibility,
   createLegacyVerificationStatisticalCompatibility,
+  createRecentVerificationStatisticalCompatibility,
   createStrictTrailing12MCurrentForecastStatisticalCompatibility,
 } from '../lib/forecast/identity'
 import type { UserFacingForecastModelId } from '../lib/forecast/contracts'
@@ -520,7 +521,7 @@ function createEndOfPeriodVerificationResponse(modelId = 'ets') {
 
 function persistedIdentity(
   targetBasis: 'MONTHLY_AVERAGE' | 'END_OF_PERIOD',
-  artifactFamily: 'CURRENT' | 'VERIFICATION' = 'CURRENT',
+  artifactFamily: 'CURRENT' | 'VERIFICATION' | 'RECENT_VERIFICATION' = 'CURRENT',
 ) {
   const statisticalCompatibility = artifactFamily === 'CURRENT'
     ? createCurrentForecastStatisticalCompatibility({
@@ -528,6 +529,12 @@ function persistedIdentity(
         targetCadence: 'MONTHLY',
         targetSemantics: targetBasis,
       })
+    : artifactFamily === 'RECENT_VERIFICATION'
+      ? createRecentVerificationStatisticalCompatibility({
+          sourceFrequency: 'MONTHLY',
+          targetCadence: 'MONTHLY',
+          targetSemantics: targetBasis,
+        })
     : createFullVerificationStatisticalCompatibility({
         sourceFrequency: 'MONTHLY',
         targetCadence: 'MONTHLY',
@@ -720,6 +727,102 @@ test('prepared-only Forecast Library reads exact persisted artifacts without com
   assert.equal(verification.status, 'AVAILABLE')
   assert.equal(bridgeCalls, 2)
   assert.equal(writeCalls, 0)
+})
+
+test('prepared recent verification lookup uses the recent policy identity and current-mode prepared history', async () => {
+  let historyMode: 'current' | 'verification' | null = null
+  let historyModelId: string | undefined
+
+  const verificationArtifact = {
+    seriesId: 'wocaes0280',
+    modelId: 'arima',
+    displayName: 'Baltic Exchange, Dry Index (BDI), USD',
+    description: 'Baltic Exchange, Dry Index (BDI), USD',
+    targetBasis: 'END_OF_PERIOD' as const,
+    ...persistedIdentity('END_OF_PERIOD', 'RECENT_VERIFICATION'),
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: {
+      kind: 'POSTGRES_RUNTIME_SNAPSHOT',
+      runId: 'cmrd3xvlu0000cedt8gczw378',
+    },
+    historyFingerprint: buildForecastHistoryFingerprint(createHistoryResponse().history, {
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+    }),
+    history: {
+      frequency: 'MONTHLY',
+      start: '2021-01-01T00:00:00',
+      end: '2026-04-01T00:00:00',
+      observations: 64,
+    },
+    forecastOrigin: '2025-04-01T00:00:00.000Z',
+    runtimeSeconds: null,
+    verification: createPersistedVerificationPayload('arima'),
+  }
+
+  const service = createTestForecastLibraryService({
+    bridge: {
+      async exportHistory() {
+        throw new Error('prepared recent verification should use the prepared execution context history export')
+      },
+      async exportCurrent() {
+        throw new Error('unused')
+      },
+      async exportVerification() {
+        throw new Error('unused')
+      },
+      async prepareExecutionContext() {
+        return {
+          async exportHistory(mode, modelId) {
+            historyMode = mode ?? null
+            historyModelId = modelId
+            return createHistoryResponse()
+          },
+          async exportCurrent() {
+            throw new Error('unused')
+          },
+          async exportVerification() {
+            throw new Error('unused')
+          },
+        }
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        return null
+      },
+      async writeCurrentRun() {
+        throw new Error('unused')
+      },
+      async readVerificationRun(key) {
+        assert.equal(key.trainingWindowPolicyId, verificationArtifact.statisticalCompatibility.trainingWindowPolicyId)
+        assert.equal(key.effectiveTrainingPolicyId, verificationArtifact.statisticalCompatibility.effectiveTrainingPolicyId)
+        return verificationArtifact
+      },
+      async writeVerificationRun() {
+        throw new Error('unused')
+      },
+    },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'wocaes0280',
+      modelId: 'arima',
+      targetSemantics: 'END_OF_PERIOD',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 64,
+    }),
+    logEvent: () => {},
+  })
+
+  const verification = await service.readPreparedRecentVerificationRequest({
+    seriesId: 'wocaes0280',
+    modelId: 'arima',
+    targetBasis: 'END_OF_PERIOD',
+  })
+
+  assert.equal(verification.status, 'AVAILABLE')
+  assert.equal(historyMode, 'current')
+  assert.equal(historyModelId, 'arima')
 })
 
 test('prepared-only lookup selects the exact source-frequency and target-cadence cohort before exact persisted read', async () => {
