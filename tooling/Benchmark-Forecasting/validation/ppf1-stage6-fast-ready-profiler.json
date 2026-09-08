@@ -1,0 +1,1725 @@
+{
+  "task": "PPF1_STAGE6_FAST_READY_PROFILER",
+  "generatedAt": "2026-09-08T04:20:15.024Z",
+  "gitHead": "c27a2629e1a188b66751cc962a3807d3a6b60203",
+  "branch": "ppf1/stage6-fast-ready-profiler-gate-20260907",
+  "configuration": {
+    "coldSamples": 5,
+    "warmSamples": 10,
+    "recentCandidates": [
+      1,
+      3,
+      6,
+      12
+    ],
+    "fastReadyBudgetMs": 15000,
+    "reservedServingOverheadMs": 0
+  },
+  "methodology": {
+    "currentMeasurementMode": "CANONICAL_PREPARE_CURRENT_PLUS_EXACT_PREPARED_READ",
+    "rollingDailyPhaseIsolation": "BEST_EFFORT_WITH_EXPLICIT_NOT_SEPARATELY_MEASURABLE_GAPS",
+    "recentVerificationMeasurementMode": "MEASURED_FULL_VERIFICATION_WITH_LINEAR_ORIGIN_SCALING",
+    "seedSeriesIds": [
+      "ppf1-stage6-daily-profile-v1"
+    ]
+  },
+  "profiles": [
+    {
+      "profileId": "ppf1-stage6-daily-profile-v1|MONTHLY_AVERAGE|naive",
+      "seriesId": "ppf1-stage6-daily-profile-v1",
+      "modelId": "naive",
+      "targetSemantics": "MONTHLY_AVERAGE",
+      "targetBasis": "MONTHLY_AVERAGE",
+      "sourceFrequency": "DAILY",
+      "targetCadence": "MONTHLY",
+      "statisticalCompatibility": {
+        "trainingWindowPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1",
+        "effectiveTrainingPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@forecast-effective-training-policy-v1|source=DAILY|target=MONTHLY|semantics=MONTHLY_AVERAGE"
+      },
+      "coldCurrent": {
+        "sampleCount": 5,
+        "statusesObserved": [
+          "READY"
+        ],
+        "exactReadStatusesObserved": [
+          "AVAILABLE"
+        ],
+        "cacheStatusesObserved": [
+          "hit"
+        ],
+        "totalRenderableReady": {
+          "sampleCount": 5,
+          "medianMs": 2560.293,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 2976.526
+        },
+        "exactPreparedRead": {
+          "sampleCount": 5,
+          "medianMs": 20.907,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 24.174
+        },
+        "warmPreparedHit": {
+          "sampleCount": 10,
+          "medianMs": 22.152,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 30.189
+        },
+        "phaseSummaries": {
+          "CAPABILITY_RESOLUTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 59,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 85
+          },
+          "HISTORY_LOAD_MS": {
+            "sampleCount": 5,
+            "medianMs": 14.007,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 15.473
+          },
+          "HISTORY_PREPARATION_MS": {
+            "sampleCount": 5,
+            "medianMs": 6.556,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 6.786
+          },
+          "FAST_SUFFIX_SELECTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 0.039,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 0.21
+          },
+          "PREPARED_LOOKUP_MS": {
+            "sampleCount": 5,
+            "medianMs": 20.907,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 24.174
+          },
+          "EXECUTION_ADMISSION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "OWNER_WAIT_MS": "NOT_SEPARATELY_MEASURABLE",
+          "MODEL_BRIDGE_MS": {
+            "sampleCount": 5,
+            "medianMs": 1187.036,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 1300.584
+          },
+          "MODEL_COMPUTE_MS": {
+            "sampleCount": 5,
+            "medianMs": 0.001,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 0.001
+          },
+          "PERSISTENCE_MS": {
+            "sampleCount": 5,
+            "medianMs": 5.435,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 6.452
+          },
+          "POST_PERSIST_EXACT_READ_MS": {
+            "sampleCount": 5,
+            "medianMs": 20.907,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 24.174
+          },
+          "CONSUMER_ADAPTER_MS": "NOT_SEPARATELY_MEASURABLE",
+          "TOTAL_RENDERABLE_READY_MS": {
+            "sampleCount": 5,
+            "medianMs": 2560.293,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 2976.526
+          },
+          "ROLLING_DAILY_OWNERSHIP_PREPARATION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "ROLLING_DAILY_SNAPSHOT_PERSIST_MS": "NOT_SEPARATELY_MEASURABLE"
+        },
+        "dominantBottleneck": {
+          "phase": "MODEL_BRIDGE_MS",
+          "dominantPhaseMs": 1300.584,
+          "category": "PYTHON_PROCESS_STARTUP",
+          "shareOfTotalPct": 43.695
+        },
+        "conservativeLatencyMs": 2976.526
+      },
+      "recentVerification": {
+        "mode": "LINEAR_FULL_VERIFICATION_ORIGIN_SCALING",
+        "fullVerification": {
+          "status": "MEASURED",
+          "totalWallMs": 2471.062,
+          "computeMs": 1201.361,
+          "persistenceMs": 16.61,
+          "originCount": 78,
+          "cacheStatus": "miss",
+          "runtimeSeconds": 0.0010441249760333449,
+          "reason": null
+        },
+        "estimatedCandidates": [
+          {
+            "candidateN": 1,
+            "recentVerificationMs": 1285.103,
+            "currentConservativeMs": 2976.526,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 4261.629,
+            "within15s": true
+          },
+          {
+            "candidateN": 3,
+            "recentVerificationMs": 1315.908,
+            "currentConservativeMs": 2976.526,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 4292.434,
+            "within15s": true
+          },
+          {
+            "candidateN": 6,
+            "recentVerificationMs": 1362.114,
+            "currentConservativeMs": 2976.526,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 4338.64,
+            "within15s": true
+          },
+          {
+            "candidateN": 12,
+            "recentVerificationMs": 1454.526,
+            "currentConservativeMs": 2976.526,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 4431.052,
+            "within15s": true
+          }
+        ],
+        "maxInlineCandidate": 12
+      }
+    },
+    {
+      "profileId": "ppf1-stage6-daily-profile-v1|END_OF_PERIOD|naive",
+      "seriesId": "ppf1-stage6-daily-profile-v1",
+      "modelId": "naive",
+      "targetSemantics": "END_OF_PERIOD",
+      "targetBasis": "END_OF_PERIOD",
+      "sourceFrequency": "DAILY",
+      "targetCadence": "MONTHLY",
+      "statisticalCompatibility": {
+        "trainingWindowPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1",
+        "effectiveTrainingPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@forecast-effective-training-policy-v1|source=DAILY|target=MONTHLY|semantics=END_OF_PERIOD"
+      },
+      "coldCurrent": {
+        "sampleCount": 5,
+        "statusesObserved": [
+          "READY"
+        ],
+        "exactReadStatusesObserved": [
+          "AVAILABLE"
+        ],
+        "cacheStatusesObserved": [
+          "hit"
+        ],
+        "totalRenderableReady": {
+          "sampleCount": 5,
+          "medianMs": 2465.389,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 2502.063
+        },
+        "exactPreparedRead": {
+          "sampleCount": 5,
+          "medianMs": 20.547,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 21.244
+        },
+        "warmPreparedHit": {
+          "sampleCount": 10,
+          "medianMs": 21.315,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 22.701
+        },
+        "phaseSummaries": {
+          "CAPABILITY_RESOLUTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 54,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 58
+          },
+          "HISTORY_LOAD_MS": {
+            "sampleCount": 5,
+            "medianMs": 14.13,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 14.899
+          },
+          "HISTORY_PREPARATION_MS": {
+            "sampleCount": 5,
+            "medianMs": 6.213,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 6.321
+          },
+          "FAST_SUFFIX_SELECTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 0.039,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 0.046
+          },
+          "PREPARED_LOOKUP_MS": {
+            "sampleCount": 5,
+            "medianMs": 20.547,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 21.244
+          },
+          "EXECUTION_ADMISSION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "OWNER_WAIT_MS": "NOT_SEPARATELY_MEASURABLE",
+          "MODEL_BRIDGE_MS": {
+            "sampleCount": 5,
+            "medianMs": 1176.98,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 1181.782
+          },
+          "MODEL_COMPUTE_MS": {
+            "sampleCount": 5,
+            "medianMs": 0.001,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 0.001
+          },
+          "PERSISTENCE_MS": {
+            "sampleCount": 5,
+            "medianMs": 4.817,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 5.167
+          },
+          "POST_PERSIST_EXACT_READ_MS": {
+            "sampleCount": 5,
+            "medianMs": 20.547,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 21.244
+          },
+          "CONSUMER_ADAPTER_MS": "NOT_SEPARATELY_MEASURABLE",
+          "TOTAL_RENDERABLE_READY_MS": {
+            "sampleCount": 5,
+            "medianMs": 2465.389,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 2502.063
+          },
+          "ROLLING_DAILY_OWNERSHIP_PREPARATION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "ROLLING_DAILY_SNAPSHOT_PERSIST_MS": "NOT_SEPARATELY_MEASURABLE"
+        },
+        "dominantBottleneck": {
+          "phase": "MODEL_BRIDGE_MS",
+          "dominantPhaseMs": 1181.782,
+          "category": "PYTHON_PROCESS_STARTUP",
+          "shareOfTotalPct": 47.232
+        },
+        "conservativeLatencyMs": 2502.063
+      },
+      "recentVerification": {
+        "mode": "LINEAR_FULL_VERIFICATION_ORIGIN_SCALING",
+        "fullVerification": {
+          "status": "MEASURED",
+          "totalWallMs": 2450.96,
+          "computeMs": 1207.038,
+          "persistenceMs": 13.488,
+          "originCount": 78,
+          "cacheStatus": "miss",
+          "runtimeSeconds": 0.0010656660015229136,
+          "reason": null
+        },
+        "estimatedCandidates": [
+          {
+            "candidateN": 1,
+            "recentVerificationMs": 1259.396,
+            "currentConservativeMs": 2502.063,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 3761.459,
+            "within15s": true
+          },
+          {
+            "candidateN": 3,
+            "recentVerificationMs": 1290.346,
+            "currentConservativeMs": 2502.063,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 3792.409,
+            "within15s": true
+          },
+          {
+            "candidateN": 6,
+            "recentVerificationMs": 1336.771,
+            "currentConservativeMs": 2502.063,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 3838.834,
+            "within15s": true
+          },
+          {
+            "candidateN": 12,
+            "recentVerificationMs": 1429.62,
+            "currentConservativeMs": 2502.063,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 3931.683,
+            "within15s": true
+          }
+        ],
+        "maxInlineCandidate": 12
+      }
+    },
+    {
+      "profileId": "ppf1-stage6-daily-profile-v1|ROLLING_DAILY_POINT_IN_TIME|naive",
+      "seriesId": "ppf1-stage6-daily-profile-v1",
+      "modelId": "naive",
+      "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+      "targetBasis": "POINT_IN_TIME",
+      "sourceFrequency": "DAILY",
+      "targetCadence": "DAILY",
+      "statisticalCompatibility": {
+        "trainingWindowPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1",
+        "effectiveTrainingPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@forecast-effective-training-policy-v1|source=DAILY|target=DAILY|semantics=ROLLING_DAILY_POINT_IN_TIME"
+      },
+      "coldCurrent": {
+        "sampleCount": 5,
+        "statusesObserved": [
+          "READY"
+        ],
+        "exactReadStatusesObserved": [
+          "STALE"
+        ],
+        "cacheStatusesObserved": [],
+        "totalRenderableReady": {
+          "sampleCount": 5,
+          "medianMs": 108.827,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 115.738
+        },
+        "exactPreparedRead": {
+          "sampleCount": 5,
+          "medianMs": 18.063,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 18.631
+        },
+        "warmPreparedHit": {
+          "sampleCount": 10,
+          "medianMs": 17.97,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 19.319
+        },
+        "phaseSummaries": {
+          "CAPABILITY_RESOLUTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 49,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 50
+          },
+          "HISTORY_LOAD_MS": "NOT_SEPARATELY_MEASURABLE",
+          "HISTORY_PREPARATION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "FAST_SUFFIX_SELECTION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "PREPARED_LOOKUP_MS": {
+            "sampleCount": 5,
+            "medianMs": 18.063,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 18.631
+          },
+          "EXECUTION_ADMISSION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "OWNER_WAIT_MS": "NOT_SEPARATELY_MEASURABLE",
+          "MODEL_BRIDGE_MS": "NOT_SEPARATELY_MEASURABLE",
+          "MODEL_COMPUTE_MS": "NOT_SEPARATELY_MEASURABLE",
+          "PERSISTENCE_MS": "NOT_SEPARATELY_MEASURABLE",
+          "POST_PERSIST_EXACT_READ_MS": {
+            "sampleCount": 5,
+            "medianMs": 18.063,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 18.631
+          },
+          "CONSUMER_ADAPTER_MS": "NOT_SEPARATELY_MEASURABLE",
+          "TOTAL_RENDERABLE_READY_MS": {
+            "sampleCount": 5,
+            "medianMs": 108.827,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 115.738
+          },
+          "ROLLING_DAILY_OWNERSHIP_PREPARATION_MS": {
+            "sampleCount": 5,
+            "medianMs": 49,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 49
+          },
+          "ROLLING_DAILY_SNAPSHOT_PERSIST_MS": "NOT_SEPARATELY_MEASURABLE"
+        },
+        "dominantBottleneck": {
+          "phase": "CAPABILITY_RESOLUTION_MS",
+          "dominantPhaseMs": 50,
+          "category": "OTHER",
+          "shareOfTotalPct": 43.201
+        },
+        "conservativeLatencyMs": 115.738
+      },
+      "recentVerification": {
+        "mode": "NOT_APPLICABLE"
+      }
+    },
+    {
+      "profileId": "ppf1-stage6-daily-profile-v1|MONTHLY_AVERAGE|damped_holt",
+      "seriesId": "ppf1-stage6-daily-profile-v1",
+      "modelId": "damped_holt",
+      "targetSemantics": "MONTHLY_AVERAGE",
+      "targetBasis": "MONTHLY_AVERAGE",
+      "sourceFrequency": "DAILY",
+      "targetCadence": "MONTHLY",
+      "statisticalCompatibility": {
+        "trainingWindowPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1",
+        "effectiveTrainingPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@forecast-effective-training-policy-v1|source=DAILY|target=MONTHLY|semantics=MONTHLY_AVERAGE"
+      },
+      "coldCurrent": {
+        "sampleCount": 5,
+        "statusesObserved": [
+          "READY"
+        ],
+        "exactReadStatusesObserved": [
+          "AVAILABLE"
+        ],
+        "cacheStatusesObserved": [
+          "hit"
+        ],
+        "totalRenderableReady": {
+          "sampleCount": 5,
+          "medianMs": 2521.514,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 2536.316
+        },
+        "exactPreparedRead": {
+          "sampleCount": 5,
+          "medianMs": 21.498,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 22.644
+        },
+        "warmPreparedHit": {
+          "sampleCount": 10,
+          "medianMs": 21.147,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 21.562
+        },
+        "phaseSummaries": {
+          "CAPABILITY_RESOLUTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 55,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 62
+          },
+          "HISTORY_LOAD_MS": {
+            "sampleCount": 5,
+            "medianMs": 13.886,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 15.311
+          },
+          "HISTORY_PREPARATION_MS": {
+            "sampleCount": 5,
+            "medianMs": 6.052,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 6.431
+          },
+          "FAST_SUFFIX_SELECTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 0.039,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 0.056
+          },
+          "PREPARED_LOOKUP_MS": {
+            "sampleCount": 5,
+            "medianMs": 21.498,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 22.644
+          },
+          "EXECUTION_ADMISSION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "OWNER_WAIT_MS": "NOT_SEPARATELY_MEASURABLE",
+          "MODEL_BRIDGE_MS": {
+            "sampleCount": 5,
+            "medianMs": 1205.014,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 1231.022
+          },
+          "MODEL_COMPUTE_MS": {
+            "sampleCount": 5,
+            "medianMs": 0.001,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 0.001
+          },
+          "PERSISTENCE_MS": {
+            "sampleCount": 5,
+            "medianMs": 4.751,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 9.368
+          },
+          "POST_PERSIST_EXACT_READ_MS": {
+            "sampleCount": 5,
+            "medianMs": 21.498,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 22.644
+          },
+          "CONSUMER_ADAPTER_MS": "NOT_SEPARATELY_MEASURABLE",
+          "TOTAL_RENDERABLE_READY_MS": {
+            "sampleCount": 5,
+            "medianMs": 2521.514,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 2536.316
+          },
+          "ROLLING_DAILY_OWNERSHIP_PREPARATION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "ROLLING_DAILY_SNAPSHOT_PERSIST_MS": "NOT_SEPARATELY_MEASURABLE"
+        },
+        "dominantBottleneck": {
+          "phase": "MODEL_BRIDGE_MS",
+          "dominantPhaseMs": 1231.022,
+          "category": "PYTHON_PROCESS_STARTUP",
+          "shareOfTotalPct": 48.536
+        },
+        "conservativeLatencyMs": 2536.316
+      },
+      "recentVerification": {
+        "mode": "LINEAR_FULL_VERIFICATION_ORIGIN_SCALING",
+        "fullVerification": {
+          "status": "MEASURED",
+          "totalWallMs": 2744.623,
+          "computeMs": 1488.032,
+          "persistenceMs": 14.494,
+          "originCount": 78,
+          "cacheStatus": "miss",
+          "runtimeSeconds": 0.27957104198867455,
+          "reason": null
+        },
+        "estimatedCandidates": [
+          {
+            "candidateN": 1,
+            "recentVerificationMs": 1275.668,
+            "currentConservativeMs": 2536.316,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 3811.984,
+            "within15s": true
+          },
+          {
+            "candidateN": 3,
+            "recentVerificationMs": 1313.823,
+            "currentConservativeMs": 2536.316,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 3850.139,
+            "within15s": true
+          },
+          {
+            "candidateN": 6,
+            "recentVerificationMs": 1371.055,
+            "currentConservativeMs": 2536.316,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 3907.371,
+            "within15s": true
+          },
+          {
+            "candidateN": 12,
+            "recentVerificationMs": 1485.519,
+            "currentConservativeMs": 2536.316,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 4021.835,
+            "within15s": true
+          }
+        ],
+        "maxInlineCandidate": 12
+      }
+    },
+    {
+      "profileId": "ppf1-stage6-daily-profile-v1|END_OF_PERIOD|damped_holt",
+      "seriesId": "ppf1-stage6-daily-profile-v1",
+      "modelId": "damped_holt",
+      "targetSemantics": "END_OF_PERIOD",
+      "targetBasis": "END_OF_PERIOD",
+      "sourceFrequency": "DAILY",
+      "targetCadence": "MONTHLY",
+      "statisticalCompatibility": {
+        "trainingWindowPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1",
+        "effectiveTrainingPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@forecast-effective-training-policy-v1|source=DAILY|target=MONTHLY|semantics=END_OF_PERIOD"
+      },
+      "coldCurrent": {
+        "sampleCount": 5,
+        "statusesObserved": [
+          "READY"
+        ],
+        "exactReadStatusesObserved": [
+          "AVAILABLE"
+        ],
+        "cacheStatusesObserved": [
+          "hit"
+        ],
+        "totalRenderableReady": {
+          "sampleCount": 5,
+          "medianMs": 2483.816,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 2545.862
+        },
+        "exactPreparedRead": {
+          "sampleCount": 5,
+          "medianMs": 20.662,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 21.793
+        },
+        "warmPreparedHit": {
+          "sampleCount": 10,
+          "medianMs": 22.546,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 23.363
+        },
+        "phaseSummaries": {
+          "CAPABILITY_RESOLUTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 54,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 55
+          },
+          "HISTORY_LOAD_MS": {
+            "sampleCount": 5,
+            "medianMs": 13.49,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 14.06
+          },
+          "HISTORY_PREPARATION_MS": {
+            "sampleCount": 5,
+            "medianMs": 6.038,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 6.432
+          },
+          "FAST_SUFFIX_SELECTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 0.035,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 0.04
+          },
+          "PREPARED_LOOKUP_MS": {
+            "sampleCount": 5,
+            "medianMs": 20.662,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 21.793
+          },
+          "EXECUTION_ADMISSION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "OWNER_WAIT_MS": "NOT_SEPARATELY_MEASURABLE",
+          "MODEL_BRIDGE_MS": {
+            "sampleCount": 5,
+            "medianMs": 1189.533,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 1248.879
+          },
+          "MODEL_COMPUTE_MS": {
+            "sampleCount": 5,
+            "medianMs": 0.001,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 0.001
+          },
+          "PERSISTENCE_MS": {
+            "sampleCount": 5,
+            "medianMs": 4.093,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 4.931
+          },
+          "POST_PERSIST_EXACT_READ_MS": {
+            "sampleCount": 5,
+            "medianMs": 20.662,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 21.793
+          },
+          "CONSUMER_ADAPTER_MS": "NOT_SEPARATELY_MEASURABLE",
+          "TOTAL_RENDERABLE_READY_MS": {
+            "sampleCount": 5,
+            "medianMs": 2483.816,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 2545.862
+          },
+          "ROLLING_DAILY_OWNERSHIP_PREPARATION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "ROLLING_DAILY_SNAPSHOT_PERSIST_MS": "NOT_SEPARATELY_MEASURABLE"
+        },
+        "dominantBottleneck": {
+          "phase": "MODEL_BRIDGE_MS",
+          "dominantPhaseMs": 1248.879,
+          "category": "PYTHON_PROCESS_STARTUP",
+          "shareOfTotalPct": 49.055
+        },
+        "conservativeLatencyMs": 2545.862
+      },
+      "recentVerification": {
+        "mode": "LINEAR_FULL_VERIFICATION_ORIGIN_SCALING",
+        "fullVerification": {
+          "status": "MEASURED",
+          "totalWallMs": 2926.281,
+          "computeMs": 1601.494,
+          "persistenceMs": 14.375,
+          "originCount": 78,
+          "cacheStatus": "miss",
+          "runtimeSeconds": 0.31379404198378325,
+          "reason": null
+        },
+        "estimatedCandidates": [
+          {
+            "candidateN": 1,
+            "recentVerificationMs": 1345.319,
+            "currentConservativeMs": 2545.862,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 3891.181,
+            "within15s": true
+          },
+          {
+            "candidateN": 3,
+            "recentVerificationMs": 1386.383,
+            "currentConservativeMs": 2545.862,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 3932.245,
+            "within15s": true
+          },
+          {
+            "candidateN": 6,
+            "recentVerificationMs": 1447.979,
+            "currentConservativeMs": 2545.862,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 3993.841,
+            "within15s": true
+          },
+          {
+            "candidateN": 12,
+            "recentVerificationMs": 1571.171,
+            "currentConservativeMs": 2545.862,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 4117.033,
+            "within15s": true
+          }
+        ],
+        "maxInlineCandidate": 12
+      }
+    },
+    {
+      "profileId": "ppf1-stage6-daily-profile-v1|ROLLING_DAILY_POINT_IN_TIME|damped_holt",
+      "seriesId": "ppf1-stage6-daily-profile-v1",
+      "modelId": "damped_holt",
+      "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+      "targetBasis": "POINT_IN_TIME",
+      "sourceFrequency": "DAILY",
+      "targetCadence": "DAILY",
+      "statisticalCompatibility": {
+        "trainingWindowPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1",
+        "effectiveTrainingPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@forecast-effective-training-policy-v1|source=DAILY|target=DAILY|semantics=ROLLING_DAILY_POINT_IN_TIME"
+      },
+      "coldCurrent": {
+        "sampleCount": 5,
+        "statusesObserved": [
+          "READY"
+        ],
+        "exactReadStatusesObserved": [
+          "STALE"
+        ],
+        "cacheStatusesObserved": [],
+        "totalRenderableReady": {
+          "sampleCount": 5,
+          "medianMs": 1401.52,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 1442.083
+        },
+        "exactPreparedRead": {
+          "sampleCount": 5,
+          "medianMs": 18.684,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 22.898
+        },
+        "warmPreparedHit": {
+          "sampleCount": 10,
+          "medianMs": 18.44,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 23.427
+        },
+        "phaseSummaries": {
+          "CAPABILITY_RESOLUTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 51,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 57
+          },
+          "HISTORY_LOAD_MS": "NOT_SEPARATELY_MEASURABLE",
+          "HISTORY_PREPARATION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "FAST_SUFFIX_SELECTION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "PREPARED_LOOKUP_MS": {
+            "sampleCount": 5,
+            "medianMs": 18.684,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 22.898
+          },
+          "EXECUTION_ADMISSION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "OWNER_WAIT_MS": "NOT_SEPARATELY_MEASURABLE",
+          "MODEL_BRIDGE_MS": "NOT_SEPARATELY_MEASURABLE",
+          "MODEL_COMPUTE_MS": "NOT_SEPARATELY_MEASURABLE",
+          "PERSISTENCE_MS": "NOT_SEPARATELY_MEASURABLE",
+          "POST_PERSIST_EXACT_READ_MS": {
+            "sampleCount": 5,
+            "medianMs": 18.684,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 22.898
+          },
+          "CONSUMER_ADAPTER_MS": "NOT_SEPARATELY_MEASURABLE",
+          "TOTAL_RENDERABLE_READY_MS": {
+            "sampleCount": 5,
+            "medianMs": 1401.52,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 1442.083
+          },
+          "ROLLING_DAILY_OWNERSHIP_PREPARATION_MS": {
+            "sampleCount": 5,
+            "medianMs": 51,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 57
+          },
+          "ROLLING_DAILY_SNAPSHOT_PERSIST_MS": "NOT_SEPARATELY_MEASURABLE"
+        },
+        "dominantBottleneck": {
+          "phase": "CAPABILITY_RESOLUTION_MS",
+          "dominantPhaseMs": 57,
+          "category": "OTHER",
+          "shareOfTotalPct": 3.953
+        },
+        "conservativeLatencyMs": 1442.083
+      },
+      "recentVerification": {
+        "mode": "NOT_APPLICABLE"
+      }
+    },
+    {
+      "profileId": "ppf1-stage6-daily-profile-v1|MONTHLY_AVERAGE|ets",
+      "seriesId": "ppf1-stage6-daily-profile-v1",
+      "modelId": "ets",
+      "targetSemantics": "MONTHLY_AVERAGE",
+      "targetBasis": "MONTHLY_AVERAGE",
+      "sourceFrequency": "DAILY",
+      "targetCadence": "MONTHLY",
+      "statisticalCompatibility": {
+        "trainingWindowPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1",
+        "effectiveTrainingPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@forecast-effective-training-policy-v1|source=DAILY|target=MONTHLY|semantics=MONTHLY_AVERAGE"
+      },
+      "coldCurrent": {
+        "sampleCount": 5,
+        "statusesObserved": [
+          "READY"
+        ],
+        "exactReadStatusesObserved": [
+          "AVAILABLE"
+        ],
+        "cacheStatusesObserved": [
+          "hit"
+        ],
+        "totalRenderableReady": {
+          "sampleCount": 5,
+          "medianMs": 3117.717,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 3364.312
+        },
+        "exactPreparedRead": {
+          "sampleCount": 5,
+          "medianMs": 21.542,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 21.734
+        },
+        "warmPreparedHit": {
+          "sampleCount": 10,
+          "medianMs": 21.532,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 22.973
+        },
+        "phaseSummaries": {
+          "CAPABILITY_RESOLUTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 61,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 64
+          },
+          "HISTORY_LOAD_MS": {
+            "sampleCount": 5,
+            "medianMs": 14.394,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 15.549
+          },
+          "HISTORY_PREPARATION_MS": {
+            "sampleCount": 5,
+            "medianMs": 6.421,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 7.109
+          },
+          "FAST_SUFFIX_SELECTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 0.034,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 0.037
+          },
+          "PREPARED_LOOKUP_MS": {
+            "sampleCount": 5,
+            "medianMs": 21.542,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 21.734
+          },
+          "EXECUTION_ADMISSION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "OWNER_WAIT_MS": "NOT_SEPARATELY_MEASURABLE",
+          "MODEL_BRIDGE_MS": {
+            "sampleCount": 5,
+            "medianMs": 1707.812,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 1905.215
+          },
+          "MODEL_COMPUTE_MS": {
+            "sampleCount": 5,
+            "medianMs": 0.001,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 0.001
+          },
+          "PERSISTENCE_MS": {
+            "sampleCount": 5,
+            "medianMs": 3.53,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 3.676
+          },
+          "POST_PERSIST_EXACT_READ_MS": {
+            "sampleCount": 5,
+            "medianMs": 21.542,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 21.734
+          },
+          "CONSUMER_ADAPTER_MS": "NOT_SEPARATELY_MEASURABLE",
+          "TOTAL_RENDERABLE_READY_MS": {
+            "sampleCount": 5,
+            "medianMs": 3117.717,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 3364.312
+          },
+          "ROLLING_DAILY_OWNERSHIP_PREPARATION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "ROLLING_DAILY_SNAPSHOT_PERSIST_MS": "NOT_SEPARATELY_MEASURABLE"
+        },
+        "dominantBottleneck": {
+          "phase": "MODEL_BRIDGE_MS",
+          "dominantPhaseMs": 1905.215,
+          "category": "PYTHON_PROCESS_STARTUP",
+          "shareOfTotalPct": 56.63
+        },
+        "conservativeLatencyMs": 3364.312
+      },
+      "recentVerification": {
+        "mode": "LINEAR_FULL_VERIFICATION_ORIGIN_SCALING",
+        "fullVerification": {
+          "status": "MEASURED",
+          "totalWallMs": 9529.066,
+          "computeMs": 8172.522,
+          "persistenceMs": 18.939,
+          "originCount": 78,
+          "cacheStatus": "miss",
+          "runtimeSeconds": 6.832370541989803,
+          "reason": null
+        },
+        "estimatedCandidates": [
+          {
+            "candidateN": 1,
+            "recentVerificationMs": 1461.32,
+            "currentConservativeMs": 3364.312,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 4825.632,
+            "within15s": true
+          },
+          {
+            "candidateN": 3,
+            "recentVerificationMs": 1670.872,
+            "currentConservativeMs": 3364.312,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 5035.184,
+            "within15s": true
+          },
+          {
+            "candidateN": 6,
+            "recentVerificationMs": 1985.2,
+            "currentConservativeMs": 3364.312,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 5349.512,
+            "within15s": true
+          },
+          {
+            "candidateN": 12,
+            "recentVerificationMs": 2613.855,
+            "currentConservativeMs": 3364.312,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 5978.167,
+            "within15s": true
+          }
+        ],
+        "maxInlineCandidate": 12
+      }
+    },
+    {
+      "profileId": "ppf1-stage6-daily-profile-v1|END_OF_PERIOD|ets",
+      "seriesId": "ppf1-stage6-daily-profile-v1",
+      "modelId": "ets",
+      "targetSemantics": "END_OF_PERIOD",
+      "targetBasis": "END_OF_PERIOD",
+      "sourceFrequency": "DAILY",
+      "targetCadence": "MONTHLY",
+      "statisticalCompatibility": {
+        "trainingWindowPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1",
+        "effectiveTrainingPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@forecast-effective-training-policy-v1|source=DAILY|target=MONTHLY|semantics=END_OF_PERIOD"
+      },
+      "coldCurrent": {
+        "sampleCount": 5,
+        "statusesObserved": [
+          "READY"
+        ],
+        "exactReadStatusesObserved": [
+          "AVAILABLE"
+        ],
+        "cacheStatusesObserved": [
+          "hit"
+        ],
+        "totalRenderableReady": {
+          "sampleCount": 5,
+          "medianMs": 3128.396,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 3509.773
+        },
+        "exactPreparedRead": {
+          "sampleCount": 5,
+          "medianMs": 21.504,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 21.893
+        },
+        "warmPreparedHit": {
+          "sampleCount": 10,
+          "medianMs": 21.078,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 21.811
+        },
+        "phaseSummaries": {
+          "CAPABILITY_RESOLUTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 55,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 56
+          },
+          "HISTORY_LOAD_MS": {
+            "sampleCount": 5,
+            "medianMs": 13.814,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 14.226
+          },
+          "HISTORY_PREPARATION_MS": {
+            "sampleCount": 5,
+            "medianMs": 6.289,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 6.948
+          },
+          "FAST_SUFFIX_SELECTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 0.03,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 0.164
+          },
+          "PREPARED_LOOKUP_MS": {
+            "sampleCount": 5,
+            "medianMs": 21.504,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 21.893
+          },
+          "EXECUTION_ADMISSION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "OWNER_WAIT_MS": "NOT_SEPARATELY_MEASURABLE",
+          "MODEL_BRIDGE_MS": {
+            "sampleCount": 5,
+            "medianMs": 1727.419,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 2102.929
+          },
+          "MODEL_COMPUTE_MS": {
+            "sampleCount": 5,
+            "medianMs": 0.001,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 0.001
+          },
+          "PERSISTENCE_MS": {
+            "sampleCount": 5,
+            "medianMs": 3.611,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 4.67
+          },
+          "POST_PERSIST_EXACT_READ_MS": {
+            "sampleCount": 5,
+            "medianMs": 21.504,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 21.893
+          },
+          "CONSUMER_ADAPTER_MS": "NOT_SEPARATELY_MEASURABLE",
+          "TOTAL_RENDERABLE_READY_MS": {
+            "sampleCount": 5,
+            "medianMs": 3128.396,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 3509.773
+          },
+          "ROLLING_DAILY_OWNERSHIP_PREPARATION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "ROLLING_DAILY_SNAPSHOT_PERSIST_MS": "NOT_SEPARATELY_MEASURABLE"
+        },
+        "dominantBottleneck": {
+          "phase": "MODEL_BRIDGE_MS",
+          "dominantPhaseMs": 2102.929,
+          "category": "PYTHON_PROCESS_STARTUP",
+          "shareOfTotalPct": 59.916
+        },
+        "conservativeLatencyMs": 3509.773
+      },
+      "recentVerification": {
+        "mode": "LINEAR_FULL_VERIFICATION_ORIGIN_SCALING",
+        "fullVerification": {
+          "status": "MEASURED",
+          "totalWallMs": 10539.876,
+          "computeMs": 9303.536,
+          "persistenceMs": 16.602,
+          "originCount": 78,
+          "cacheStatus": "miss",
+          "runtimeSeconds": 8.092042082978878,
+          "reason": null
+        },
+        "estimatedCandidates": [
+          {
+            "candidateN": 1,
+            "recentVerificationMs": 1355.616,
+            "currentConservativeMs": 3509.773,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 4865.389,
+            "within15s": true
+          },
+          {
+            "candidateN": 3,
+            "recentVerificationMs": 1594.168,
+            "currentConservativeMs": 3509.773,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 5103.941,
+            "within15s": true
+          },
+          {
+            "candidateN": 6,
+            "recentVerificationMs": 1951.997,
+            "currentConservativeMs": 3509.773,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 5461.77,
+            "within15s": true
+          },
+          {
+            "candidateN": 12,
+            "recentVerificationMs": 2667.653,
+            "currentConservativeMs": 3509.773,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 6177.426,
+            "within15s": true
+          }
+        ],
+        "maxInlineCandidate": 12
+      }
+    },
+    {
+      "profileId": "ppf1-stage6-daily-profile-v1|ROLLING_DAILY_POINT_IN_TIME|ets",
+      "seriesId": "ppf1-stage6-daily-profile-v1",
+      "modelId": "ets",
+      "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+      "targetBasis": "POINT_IN_TIME",
+      "sourceFrequency": "DAILY",
+      "targetCadence": "DAILY",
+      "statisticalCompatibility": {
+        "trainingWindowPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1",
+        "effectiveTrainingPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@forecast-effective-training-policy-v1|source=DAILY|target=DAILY|semantics=ROLLING_DAILY_POINT_IN_TIME"
+      },
+      "coldCurrent": {
+        "sampleCount": 5,
+        "statusesObserved": [
+          "READY"
+        ],
+        "exactReadStatusesObserved": [
+          "STALE"
+        ],
+        "cacheStatusesObserved": [],
+        "totalRenderableReady": {
+          "sampleCount": 5,
+          "medianMs": 1336.795,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 1768.883
+        },
+        "exactPreparedRead": {
+          "sampleCount": 5,
+          "medianMs": 17.518,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 18.16
+        },
+        "warmPreparedHit": {
+          "sampleCount": 10,
+          "medianMs": 18.916,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 26.771
+        },
+        "phaseSummaries": {
+          "CAPABILITY_RESOLUTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 50,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 54
+          },
+          "HISTORY_LOAD_MS": "NOT_SEPARATELY_MEASURABLE",
+          "HISTORY_PREPARATION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "FAST_SUFFIX_SELECTION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "PREPARED_LOOKUP_MS": {
+            "sampleCount": 5,
+            "medianMs": 17.518,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 18.16
+          },
+          "EXECUTION_ADMISSION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "OWNER_WAIT_MS": "NOT_SEPARATELY_MEASURABLE",
+          "MODEL_BRIDGE_MS": "NOT_SEPARATELY_MEASURABLE",
+          "MODEL_COMPUTE_MS": "NOT_SEPARATELY_MEASURABLE",
+          "PERSISTENCE_MS": "NOT_SEPARATELY_MEASURABLE",
+          "POST_PERSIST_EXACT_READ_MS": {
+            "sampleCount": 5,
+            "medianMs": 17.518,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 18.16
+          },
+          "CONSUMER_ADAPTER_MS": "NOT_SEPARATELY_MEASURABLE",
+          "TOTAL_RENDERABLE_READY_MS": {
+            "sampleCount": 5,
+            "medianMs": 1336.795,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 1768.883
+          },
+          "ROLLING_DAILY_OWNERSHIP_PREPARATION_MS": {
+            "sampleCount": 5,
+            "medianMs": 50,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 55
+          },
+          "ROLLING_DAILY_SNAPSHOT_PERSIST_MS": "NOT_SEPARATELY_MEASURABLE"
+        },
+        "dominantBottleneck": {
+          "phase": "ROLLING_DAILY_OWNERSHIP_PREPARATION_MS",
+          "dominantPhaseMs": 55,
+          "category": "DATABASE_ADMISSION",
+          "shareOfTotalPct": 3.109
+        },
+        "conservativeLatencyMs": 1768.883
+      },
+      "recentVerification": {
+        "mode": "NOT_APPLICABLE"
+      }
+    },
+    {
+      "profileId": "ppf1-stage6-daily-profile-v1|MONTHLY_AVERAGE|arima",
+      "seriesId": "ppf1-stage6-daily-profile-v1",
+      "modelId": "arima",
+      "targetSemantics": "MONTHLY_AVERAGE",
+      "targetBasis": "MONTHLY_AVERAGE",
+      "sourceFrequency": "DAILY",
+      "targetCadence": "MONTHLY",
+      "statisticalCompatibility": {
+        "trainingWindowPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1",
+        "effectiveTrainingPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@forecast-effective-training-policy-v1|source=DAILY|target=MONTHLY|semantics=MONTHLY_AVERAGE"
+      },
+      "coldCurrent": {
+        "sampleCount": 5,
+        "statusesObserved": [
+          "READY"
+        ],
+        "exactReadStatusesObserved": [
+          "AVAILABLE"
+        ],
+        "cacheStatusesObserved": [
+          "hit"
+        ],
+        "totalRenderableReady": {
+          "sampleCount": 5,
+          "medianMs": 3739.189,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 3827.407
+        },
+        "exactPreparedRead": {
+          "sampleCount": 5,
+          "medianMs": 20.791,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 21.298
+        },
+        "warmPreparedHit": {
+          "sampleCount": 10,
+          "medianMs": 21.22,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 22.416
+        },
+        "phaseSummaries": {
+          "CAPABILITY_RESOLUTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 56,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 60
+          },
+          "HISTORY_LOAD_MS": {
+            "sampleCount": 5,
+            "medianMs": 14.128,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 14.559
+          },
+          "HISTORY_PREPARATION_MS": {
+            "sampleCount": 5,
+            "medianMs": 6.069,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 6.346
+          },
+          "FAST_SUFFIX_SELECTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 0.033,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 0.073
+          },
+          "PREPARED_LOOKUP_MS": {
+            "sampleCount": 5,
+            "medianMs": 20.791,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 21.298
+          },
+          "EXECUTION_ADMISSION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "OWNER_WAIT_MS": "NOT_SEPARATELY_MEASURABLE",
+          "MODEL_BRIDGE_MS": {
+            "sampleCount": 5,
+            "medianMs": 2457.522,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 2542.68
+          },
+          "MODEL_COMPUTE_MS": {
+            "sampleCount": 5,
+            "medianMs": 0.001,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 0.001
+          },
+          "PERSISTENCE_MS": {
+            "sampleCount": 5,
+            "medianMs": 4.572,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 5.002
+          },
+          "POST_PERSIST_EXACT_READ_MS": {
+            "sampleCount": 5,
+            "medianMs": 20.791,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 21.298
+          },
+          "CONSUMER_ADAPTER_MS": "NOT_SEPARATELY_MEASURABLE",
+          "TOTAL_RENDERABLE_READY_MS": {
+            "sampleCount": 5,
+            "medianMs": 3739.189,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 3827.407
+          },
+          "ROLLING_DAILY_OWNERSHIP_PREPARATION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "ROLLING_DAILY_SNAPSHOT_PERSIST_MS": "NOT_SEPARATELY_MEASURABLE"
+        },
+        "dominantBottleneck": {
+          "phase": "MODEL_BRIDGE_MS",
+          "dominantPhaseMs": 2542.68,
+          "category": "PYTHON_PROCESS_STARTUP",
+          "shareOfTotalPct": 66.433
+        },
+        "conservativeLatencyMs": 3827.407
+      },
+      "recentVerification": {
+        "mode": "LINEAR_FULL_VERIFICATION_ORIGIN_SCALING",
+        "fullVerification": {
+          "status": "MEASURED",
+          "totalWallMs": 28335.696,
+          "computeMs": 27081.898,
+          "persistenceMs": 17.351,
+          "originCount": 78,
+          "cacheStatus": "miss",
+          "runtimeSeconds": 25.88073354199878,
+          "reason": null
+        },
+        "estimatedCandidates": [
+          {
+            "candidateN": 1,
+            "recentVerificationMs": 1601.002,
+            "currentConservativeMs": 3827.407,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 5428.409,
+            "within15s": true
+          },
+          {
+            "candidateN": 3,
+            "recentVerificationMs": 2295.409,
+            "currentConservativeMs": 3827.407,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 6122.816,
+            "within15s": true
+          },
+          {
+            "candidateN": 6,
+            "recentVerificationMs": 3337.021,
+            "currentConservativeMs": 3827.407,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 7164.428,
+            "within15s": true
+          },
+          {
+            "candidateN": 12,
+            "recentVerificationMs": 5420.244,
+            "currentConservativeMs": 3827.407,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 9247.651,
+            "within15s": true
+          }
+        ],
+        "maxInlineCandidate": 12
+      }
+    },
+    {
+      "profileId": "ppf1-stage6-daily-profile-v1|END_OF_PERIOD|arima",
+      "seriesId": "ppf1-stage6-daily-profile-v1",
+      "modelId": "arima",
+      "targetSemantics": "END_OF_PERIOD",
+      "targetBasis": "END_OF_PERIOD",
+      "sourceFrequency": "DAILY",
+      "targetCadence": "MONTHLY",
+      "statisticalCompatibility": {
+        "trainingWindowPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1",
+        "effectiveTrainingPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@forecast-effective-training-policy-v1|source=DAILY|target=MONTHLY|semantics=END_OF_PERIOD"
+      },
+      "coldCurrent": {
+        "sampleCount": 5,
+        "statusesObserved": [
+          "READY"
+        ],
+        "exactReadStatusesObserved": [
+          "AVAILABLE"
+        ],
+        "cacheStatusesObserved": [
+          "hit"
+        ],
+        "totalRenderableReady": {
+          "sampleCount": 5,
+          "medianMs": 3829.694,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 4166.99
+        },
+        "exactPreparedRead": {
+          "sampleCount": 5,
+          "medianMs": 21.274,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 22.676
+        },
+        "warmPreparedHit": {
+          "sampleCount": 10,
+          "medianMs": 20.677,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 20.907
+        },
+        "phaseSummaries": {
+          "CAPABILITY_RESOLUTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 54,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 62
+          },
+          "HISTORY_LOAD_MS": {
+            "sampleCount": 5,
+            "medianMs": 13.464,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 14.341
+          },
+          "HISTORY_PREPARATION_MS": {
+            "sampleCount": 5,
+            "medianMs": 6.183,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 6.322
+          },
+          "FAST_SUFFIX_SELECTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 0.027,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 0.03
+          },
+          "PREPARED_LOOKUP_MS": {
+            "sampleCount": 5,
+            "medianMs": 21.274,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 22.676
+          },
+          "EXECUTION_ADMISSION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "OWNER_WAIT_MS": "NOT_SEPARATELY_MEASURABLE",
+          "MODEL_BRIDGE_MS": {
+            "sampleCount": 5,
+            "medianMs": 2486.536,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 2811.805
+          },
+          "MODEL_COMPUTE_MS": {
+            "sampleCount": 5,
+            "medianMs": 0.001,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 0.001
+          },
+          "PERSISTENCE_MS": {
+            "sampleCount": 5,
+            "medianMs": 4.717,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 5.422
+          },
+          "POST_PERSIST_EXACT_READ_MS": {
+            "sampleCount": 5,
+            "medianMs": 21.274,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 22.676
+          },
+          "CONSUMER_ADAPTER_MS": "NOT_SEPARATELY_MEASURABLE",
+          "TOTAL_RENDERABLE_READY_MS": {
+            "sampleCount": 5,
+            "medianMs": 3829.694,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 4166.99
+          },
+          "ROLLING_DAILY_OWNERSHIP_PREPARATION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "ROLLING_DAILY_SNAPSHOT_PERSIST_MS": "NOT_SEPARATELY_MEASURABLE"
+        },
+        "dominantBottleneck": {
+          "phase": "MODEL_BRIDGE_MS",
+          "dominantPhaseMs": 2811.805,
+          "category": "PYTHON_PROCESS_STARTUP",
+          "shareOfTotalPct": 67.478
+        },
+        "conservativeLatencyMs": 4166.99
+      },
+      "recentVerification": {
+        "mode": "LINEAR_FULL_VERIFICATION_ORIGIN_SCALING",
+        "fullVerification": {
+          "status": "MEASURED",
+          "totalWallMs": 28571.699,
+          "computeMs": 27325.674,
+          "persistenceMs": 16.848,
+          "originCount": 78,
+          "cacheStatus": "miss",
+          "runtimeSeconds": 26.12291491701035,
+          "reason": null
+        },
+        "estimatedCandidates": [
+          {
+            "candidateN": 1,
+            "recentVerificationMs": 1596.354,
+            "currentConservativeMs": 4166.99,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 5763.344,
+            "within15s": true
+          },
+          {
+            "candidateN": 3,
+            "recentVerificationMs": 2297.012,
+            "currentConservativeMs": 4166.99,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 6464.002,
+            "within15s": true
+          },
+          {
+            "candidateN": 6,
+            "recentVerificationMs": 3348,
+            "currentConservativeMs": 4166.99,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 7514.99,
+            "within15s": true
+          },
+          {
+            "candidateN": 12,
+            "recentVerificationMs": 5449.975,
+            "currentConservativeMs": 4166.99,
+            "reservedServingOverheadMs": 0,
+            "estimatedTotalFastReadyMs": 9616.965,
+            "within15s": true
+          }
+        ],
+        "maxInlineCandidate": 12
+      }
+    },
+    {
+      "profileId": "ppf1-stage6-daily-profile-v1|ROLLING_DAILY_POINT_IN_TIME|arima",
+      "seriesId": "ppf1-stage6-daily-profile-v1",
+      "modelId": "arima",
+      "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+      "targetBasis": "POINT_IN_TIME",
+      "sourceFrequency": "DAILY",
+      "targetCadence": "DAILY",
+      "statisticalCompatibility": {
+        "trainingWindowPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1",
+        "effectiveTrainingPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@forecast-effective-training-policy-v1|source=DAILY|target=DAILY|semantics=ROLLING_DAILY_POINT_IN_TIME"
+      },
+      "coldCurrent": {
+        "sampleCount": 5,
+        "statusesObserved": [
+          "READY"
+        ],
+        "exactReadStatusesObserved": [
+          "STALE"
+        ],
+        "cacheStatusesObserved": [],
+        "totalRenderableReady": {
+          "sampleCount": 5,
+          "medianMs": 2596.675,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 2746.99
+        },
+        "exactPreparedRead": {
+          "sampleCount": 5,
+          "medianMs": 17.589,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 17.922
+        },
+        "warmPreparedHit": {
+          "sampleCount": 10,
+          "medianMs": 17.543,
+          "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+          "maxMs": 18.453
+        },
+        "phaseSummaries": {
+          "CAPABILITY_RESOLUTION_MS": {
+            "sampleCount": 5,
+            "medianMs": 49,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 54
+          },
+          "HISTORY_LOAD_MS": "NOT_SEPARATELY_MEASURABLE",
+          "HISTORY_PREPARATION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "FAST_SUFFIX_SELECTION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "PREPARED_LOOKUP_MS": {
+            "sampleCount": 5,
+            "medianMs": 17.589,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 17.922
+          },
+          "EXECUTION_ADMISSION_MS": "NOT_SEPARATELY_MEASURABLE",
+          "OWNER_WAIT_MS": "NOT_SEPARATELY_MEASURABLE",
+          "MODEL_BRIDGE_MS": "NOT_SEPARATELY_MEASURABLE",
+          "MODEL_COMPUTE_MS": "NOT_SEPARATELY_MEASURABLE",
+          "PERSISTENCE_MS": "NOT_SEPARATELY_MEASURABLE",
+          "POST_PERSIST_EXACT_READ_MS": {
+            "sampleCount": 5,
+            "medianMs": 17.589,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 17.922
+          },
+          "CONSUMER_ADAPTER_MS": "NOT_SEPARATELY_MEASURABLE",
+          "TOTAL_RENDERABLE_READY_MS": {
+            "sampleCount": 5,
+            "medianMs": 2596.675,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 2746.99
+          },
+          "ROLLING_DAILY_OWNERSHIP_PREPARATION_MS": {
+            "sampleCount": 5,
+            "medianMs": 50,
+            "p95Ms": "NOT_STATISTICALLY_MEANINGFUL",
+            "maxMs": 54
+          },
+          "ROLLING_DAILY_SNAPSHOT_PERSIST_MS": "NOT_SEPARATELY_MEASURABLE"
+        },
+        "dominantBottleneck": {
+          "phase": "CAPABILITY_RESOLUTION_MS",
+          "dominantPhaseMs": 54,
+          "category": "OTHER",
+          "shareOfTotalPct": 1.966
+        },
+        "conservativeLatencyMs": 2746.99
+      },
+      "recentVerification": {
+        "mode": "NOT_APPLICABLE"
+      }
+    }
+  ],
+  "globalDecision": {
+    "globalRecommendation": 12,
+    "profileSpecificRequired": false,
+    "recommendation": "INLINE_WITH_GLOBAL_N_FAST"
+  }
+}
