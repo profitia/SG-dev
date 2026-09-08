@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  calculatePhaseAccounting,
+  classifyQuarterlyArimaOutlier,
   classifyDominantBottleneck,
   evaluateRecentBudgetCandidates,
   FINAL_PROFILE_COLD_SAMPLES,
@@ -20,6 +22,7 @@ import {
   resolveWarmReuseGate,
   summarizeNumericSamples,
   summarizeOptionalPhaseSamples,
+  validateExpectedSourceSha,
   validateProfileEnvironmentMetadata,
 } from '../lib/forecast/fast-ready-profiler'
 import { prepareRollingDailyCurrentOwnership, selectTrailingRollingDailyCurrentHistory } from '../lib/forecast/rolling-daily-current-ownership'
@@ -249,10 +252,73 @@ test('resolveEvidenceBasedServingHeadroom derives a positive measured reserve in
     exactPreparedReadSummary,
   })
 
-  assert.equal(decision.reservedServingOverheadBasis, 'MEASURED_EVIDENCE')
+  assert.equal(decision.reservedServingOverheadBasis, 'MEASURED_CANONICAL_HANDOFF_PROXY')
   assert.equal(decision.servingHeadroomDoubleCounted, false)
-  assert.equal(decision.reservedServingOverheadMs, 1480)
-  assert.notEqual(decision.reservedServingOverheadMs, 15_000 - 3_200 - 900)
+  assert.equal(decision.reservedServingOverheadMs, 80)
+  assert.deepEqual(decision.components, [
+    {
+      component: 'POST_PERSIST_EXACT_READ_PROXY_MS',
+      valueMs: 80,
+      sourceMeasurement: 'coldCurrent.exactPreparedRead.p95OrMax',
+      alreadyIncludedInCurrent: false,
+      alreadyIncludedInRecent: false,
+    },
+  ])
+})
+
+test('validateExpectedSourceSha requires exact full source SHA matching', () => {
+  assert.deepEqual(validateExpectedSourceSha({
+    expectedSourceSha: '2e20b8e02a9cc90ba02873ddd7878e638efefc5a',
+    profiledSourceSha: '2e20b8e02a9cc90ba02873ddd7878e638efefc5a',
+  }), {
+    expectedSourceSha: '2e20b8e02a9cc90ba02873ddd7878e638efefc5a',
+    profiledSourceSha: '2e20b8e02a9cc90ba02873ddd7878e638efefc5a',
+    expectedSourceShaFormat: 'FULL_40_CHAR_SHA',
+    profileArtifactSourceShaMatch: true,
+    sourceTreeExactlyMatchesProfiledSourceSha: true,
+  })
+
+  assert.equal(validateExpectedSourceSha({
+    expectedSourceSha: '2e20b8e',
+    profiledSourceSha: '2e20b8e02a9cc90ba02873ddd7878e638efefc5a',
+  }).profileArtifactSourceShaMatch, false)
+})
+
+test('calculatePhaseAccounting reports accounted and unattributed time explicitly', () => {
+  const accounting = calculatePhaseAccounting({
+    TOTAL_RENDERABLE_READY_MS: 1000,
+    HISTORY_LOAD_MS: 200,
+    EXECUTION_ADMISSION_MS: 100,
+    MODEL_COMPUTE_MS: 500,
+    PERSISTENCE_WRITE_MS: 50,
+    POST_PERSIST_EXACT_READ_MS: 50,
+  })
+
+  assert.deepEqual(accounting, {
+    accountedPhaseTotalMs: 900,
+    unattributedMs: 100,
+    unattributedSharePct: 10,
+  })
+})
+
+test('classifyQuarterlyArimaOutlier fails closed when unattributed share is too large', () => {
+  assert.equal(classifyQuarterlyArimaOutlier({
+    phases: {
+      TOTAL_RENDERABLE_READY_MS: 1000,
+      EXECUTION_ADMISSION_MS: 100,
+      MODEL_COMPUTE_MS: 200,
+    },
+    unattributedSharePct: 45,
+  }), 'UNRESOLVED')
+
+  assert.equal(classifyQuarterlyArimaOutlier({
+    phases: {
+      TOTAL_RENDERABLE_READY_MS: 1000,
+      EXECUTION_ADMISSION_MS: 700,
+      MODEL_COMPUTE_MS: 200,
+    },
+    unattributedSharePct: 10,
+  }), 'EXECUTION_ADMISSION')
 })
 
 test('resolveProfilerConfigurationContract blocks Stage 6 closeout for smoke mode', () => {
@@ -326,11 +392,15 @@ test('validateProfileEnvironmentMetadata requires the full environment contract'
     forecastLeaseDurationMs: 10_000,
     forecastHeartbeatIntervalMs: 3_000,
     workingTreeCleanAtProfileStart: true,
+    gitDiffAtProfileStart: 'EMPTY',
+    profileWorktreeMode: 'CLEAN_DEDICATED_WORKTREE',
     profileCommand: 'npm run forecast:profile:fast-ready',
     profileMode: 'FINAL',
     coldSamples: 5,
     warmSamples: 20,
     recentCandidates: [1, 3, 6, 12],
+    expectedSourceSha: '2e20b8e02a9cc90ba02873ddd7878e638efefc5a',
+    profiledSourceSha: '2e20b8e02a9cc90ba02873ddd7878e638efefc5a',
     syntheticSeriesDefinitions: ['daily', 'weekly'],
   })
 
@@ -366,7 +436,7 @@ test('resolveStage6FinalDecision prevents smoke-mode success and permits complet
     profileSpecificNFastRequired: false,
     recentSyncRecommendation: 'INLINE_WITH_GLOBAL_N_FAST',
     reservedServingOverheadMs: 250,
-    reservedServingOverheadBasis: 'MEASURED_EVIDENCE',
+    reservedServingOverheadBasis: 'MEASURED_CANONICAL_HANDOFF_PROXY',
     profileArtifactSourceShaMatch: true,
     fastInputMetadataComplete: true,
     profileEnvironmentMetadataComplete: true,
@@ -394,7 +464,7 @@ test('resolveStage6FinalDecision prevents smoke-mode success and permits complet
     profileSpecificNFastRequired: false,
     recentSyncRecommendation: 'INLINE_WITH_GLOBAL_N_FAST',
     reservedServingOverheadMs: 250,
-    reservedServingOverheadBasis: 'MEASURED_EVIDENCE',
+    reservedServingOverheadBasis: 'MEASURED_CANONICAL_HANDOFF_PROXY',
     profileArtifactSourceShaMatch: true,
     fastInputMetadataComplete: true,
     profileEnvironmentMetadataComplete: true,

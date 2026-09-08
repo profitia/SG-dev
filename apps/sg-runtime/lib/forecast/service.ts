@@ -2536,6 +2536,7 @@ export function createForecastLibraryService(
 
     async resolveCurrentForecastRequest(input: ForecastServiceRequest): Promise<BenchmarkForecastCurrentResult> {
       const startedAt = performance.now()
+      const historyLoadStartedAt = performance.now()
       const cadenceContext = resolveArtifactCadenceContext(input)
       const preparedExecutionContext = await resolvedDependencies.bridge.prepareExecutionContext?.({
         seriesId: input.seriesId,
@@ -2552,6 +2553,14 @@ export function createForecastLibraryService(
           sourceFrequency: input.sourceFrequency,
           targetCadence: input.targetCadence,
           })
+      const historyLoadDurationMs = performance.now() - historyLoadStartedAt
+      resolvedDependencies.telemetry.emit('current_history_load', {
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis: input.targetBasis,
+        durationMs: historyLoadDurationMs,
+        status: historyResponse.status,
+      })
 
       if (historyResponse.status === 'NOT_AVAILABLE') {
         const identity = resolveCapabilityIdentity(input.targetBasis)
@@ -2731,12 +2740,22 @@ export function createForecastLibraryService(
 
           while (true) {
             throwIfAborted(input.signal)
+            const admissionStartedAt = performance.now()
             const admission = await resolvedDependencies.executionAdmission.acquireExecution({
               operationFamily: 'CURRENT',
               logicalArtifactKey,
               logicalArtifactIdentity,
               requestId,
               ownerRequestId: requestId,
+            })
+            const admissionDurationMs = performance.now() - admissionStartedAt
+            resolvedDependencies.telemetry.emit('current_execution_admission', {
+              seriesId: input.seriesId,
+              modelId: input.modelId,
+              logicalArtifactKey,
+              requestId,
+              role: admission.role,
+              durationMs: admissionDurationMs,
             })
 
             if (admission.role === 'WAITER') {
@@ -2749,12 +2768,22 @@ export function createForecastLibraryService(
                 role: 'WAITER',
                 eventType: 'single_flight_waiter_joined',
               })
+              const waiterWaitStartedAt = performance.now()
               let attempt = 0
 
               while (Date.now() <= waitDeadline) {
                 throwIfAborted(input.signal)
                 const persisted = await resolvedDependencies.repository.readCurrentRun(cacheKey)
                 if (persisted) {
+                  resolvedDependencies.telemetry.emit('current_waiter_wait', {
+                    seriesId: input.seriesId,
+                    modelId: input.modelId,
+                    logicalArtifactKey,
+                    requestId,
+                    attemptCount: attempt,
+                    durationMs: performance.now() - waiterWaitStartedAt,
+                    resolution: 'PERSISTED_ARTIFACT_VISIBLE',
+                  })
                   resolvedDependencies.logEvent('FORECAST_LIBRARY_CURRENT', {
                     seriesId: input.seriesId,
                     modelId: input.modelId,
@@ -2770,6 +2799,15 @@ export function createForecastLibraryService(
                   break
                 }
                 if (latestExecution.executionStatus === 'FAILED') {
+                  resolvedDependencies.telemetry.emit('current_waiter_wait', {
+                    seriesId: input.seriesId,
+                    modelId: input.modelId,
+                    logicalArtifactKey,
+                    requestId,
+                    attemptCount: attempt,
+                    durationMs: performance.now() - waiterWaitStartedAt,
+                    resolution: 'AUTHORITATIVE_FAILURE',
+                  })
                   return {
                     status: 'FAILED',
                     seriesId: input.seriesId,
@@ -2786,6 +2824,15 @@ export function createForecastLibraryService(
                 if (latestExecution.executionStatus === 'COMPLETED') {
                   const persistedAfterCompletion = await resolvedDependencies.repository.readCurrentRun(cacheKey)
                   if (persistedAfterCompletion) {
+                    resolvedDependencies.telemetry.emit('current_waiter_wait', {
+                      seriesId: input.seriesId,
+                      modelId: input.modelId,
+                      logicalArtifactKey,
+                      requestId,
+                      attemptCount: attempt,
+                      durationMs: performance.now() - waiterWaitStartedAt,
+                      resolution: 'AUTHORITATIVE_COMPLETION',
+                    })
                     resolvedDependencies.logEvent('FORECAST_LIBRARY_CURRENT', {
                       seriesId: input.seriesId,
                       modelId: input.modelId,
@@ -2805,6 +2852,16 @@ export function createForecastLibraryService(
                 attempt += 1
               }
 
+              resolvedDependencies.telemetry.emit('current_waiter_wait', {
+                seriesId: input.seriesId,
+                modelId: input.modelId,
+                logicalArtifactKey,
+                requestId,
+                attemptCount: attempt,
+                durationMs: performance.now() - waiterWaitStartedAt,
+                resolution: Date.now() > waitDeadline ? 'TIMEOUT' : 'LEASE_RECOVERY_REQUIRED',
+              })
+
               if (Date.now() > waitDeadline) {
                 throw new Error(`Timed out waiting for the authoritative Current execution for ${logicalArtifactKey}.`)
               }
@@ -2820,6 +2877,7 @@ export function createForecastLibraryService(
             try {
               const persistedAfterAdmission = await resolvedDependencies.repository.readCurrentRun(cacheKey)
               if (persistedAfterAdmission) {
+                const terminalMarkStartedAt = performance.now()
                 await resolvedDependencies.executionAdmission.markExecutionCompleted({
                   executionId: ownership.executionId,
                   logicalArtifactKey,
@@ -2829,6 +2887,14 @@ export function createForecastLibraryService(
                   ownerRequestId: ownership.ownerRequestId,
                   resultStatus: 'AVAILABLE',
                   cacheStatus: 'hit',
+                })
+                resolvedDependencies.telemetry.emit('current_terminal_mark', {
+                  seriesId: input.seriesId,
+                  modelId: input.modelId,
+                  logicalArtifactKey,
+                  requestId,
+                  durationMs: performance.now() - terminalMarkStartedAt,
+                  resolution: 'CACHE_HIT_AFTER_ADMISSION',
                 })
                 recordCurrentExecutionEvent(executionLedgerContext, {
                   logicalArtifactKey,
@@ -3045,6 +3111,7 @@ export function createForecastLibraryService(
 
               failurePhase = 'FINALIZATION'
               heartbeat.assertActive()
+              const terminalMarkStartedAt = performance.now()
               await resolvedDependencies.executionAdmission.markExecutionCompleted({
                 executionId: ownership.executionId,
                 logicalArtifactKey,
@@ -3054,6 +3121,14 @@ export function createForecastLibraryService(
                 ownerRequestId: ownership.ownerRequestId,
                 resultStatus: 'AVAILABLE',
                 cacheStatus,
+              })
+              resolvedDependencies.telemetry.emit('current_terminal_mark', {
+                seriesId: input.seriesId,
+                modelId: input.modelId,
+                logicalArtifactKey,
+                requestId,
+                durationMs: performance.now() - terminalMarkStartedAt,
+                resolution: 'PERSISTED_AVAILABLE',
               })
               recordCurrentExecutionEvent(executionLedgerContext, {
                 logicalArtifactKey,

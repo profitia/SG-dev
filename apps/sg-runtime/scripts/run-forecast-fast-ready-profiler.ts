@@ -20,7 +20,9 @@ import {
   type UserFacingForecastModelId,
 } from '@/lib/forecast/contracts'
 import {
+  calculatePhaseAccounting,
   type ProfiledPhaseName,
+  classifyQuarterlyArimaOutlier,
   classifyDominantBottleneck,
   type ProfileMode,
   FINAL_PROFILE_COLD_SAMPLES,
@@ -39,6 +41,7 @@ import {
   resolveStage6FinalDecision,
   summarizeNumericSamples,
   summarizeOptionalPhaseSamples,
+  validateExpectedSourceSha,
   validateProfileEnvironmentMetadata,
 } from '@/lib/forecast/fast-ready-profiler'
 import {
@@ -116,6 +119,8 @@ type TargetSemantics = 'MONTHLY_AVERAGE' | 'END_OF_PERIOD' | 'ROLLING_DAILY_POIN
 type SourceFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'SEMIANNUAL'
 
 type RecentVerificationMode = 'DIRECT_SAME_POLICY_PREPARED_CURRENT_BY_ORIGIN' | 'NOT_APPLICABLE'
+
+type ProfileWorktreeMode = 'CLEAN_DEDICATED_WORKTREE' | 'CLEAN_PRIMARY_WORKTREE' | 'DIRTY_PRIMARY_WORKTREE'
 
 type SyntheticSeriesDefinition = {
   seriesId: string
@@ -260,6 +265,10 @@ type FullVerificationMeasurement = {
   measurementMode: 'DIRECT_SAME_POLICY_PREPARED_CURRENT_BY_ORIGIN'
   selectedOriginDates: string[]
   originCount: number
+  latestLawfulMaturedOrigin: string | null
+  recentWindowStartExclusive: string | null
+  recentWindowEndInclusive: string | null
+  lawfulRecentOriginCount: number
   originSamples: Array<{
     forecastOrigin: string
     totalWallMs: number
@@ -273,27 +282,50 @@ type FullVerificationMeasurement = {
   }>
   measuredCandidates: Array<{
     candidateN: number
-    recentVerificationMs: number
-    currentConservativeMs: number
-    reservedServingOverheadMs: number
-    estimatedTotalFastReadyMs: number
-    within15s: boolean
-    selectedOriginDates: string[]
+    status: 'MEASURED' | 'INSUFFICIENT_LAWFUL_ORIGINS'
+    actualOriginCount: number
+    originDates: string[]
+    recentVerificationMs: number | null
+    currentConservativeMs: number | null
+    reservedServingOverheadMs: number | null
+    estimatedTotalFastReadyMs: number | null
+    within15s: boolean | null
   }>
   maxInlineCandidate: number
   reservedServingOverheadMs: number
-  reservedServingOverheadBasis: 'MEASURED_EVIDENCE'
+  reservedServingOverheadBasis: 'MEASURED_POST_RECENT_HANDOFF' | 'MEASURED_CANONICAL_HANDOFF_PROXY'
   reservedServingOverheadComponents: Array<{
     component: string
     valueMs: number
     sourceMeasurement: string
+    alreadyIncludedInCurrent: boolean
+    alreadyIncludedInRecent: boolean
   }>
   servingHeadroomDoubleCounted: false
   effectivePolicyMatchesCurrent: boolean
   lookaheadLeakage: false
   originsSensiblySpaced: boolean
+  recentFullHistoryFallback: false
+  measuredCandidateOriginCountEqualsN: boolean
   recentProductionArtifactWriteCount: number
   reason: string | null
+}
+
+type FocusedQuarterlyDiagnostic = {
+  profileId: string
+  sampleCount: number
+  medianMs: number
+  maxMs: number
+  countOver15s: number
+  countOver30s: number
+  countOver60s: number
+  outlierClassification: ReturnType<typeof classifyQuarterlyArimaOutlier>
+  accountedPhaseTotalMs: number
+  unattributedMs: number
+  unattributedSharePct: number
+  rootCauseResolution: 'RESOLVED' | 'UNRESOLVED'
+  performanceCorrectiveRequired: boolean
+  slowestSample: CurrentSample | null
 }
 
 class TelemetryRecorder {
@@ -398,6 +430,32 @@ function readStringArg(flag: string) {
 
   const value = rawValue.slice(flag.length + 1).trim()
   return value.length > 0 ? value : null
+}
+
+function readBooleanArg(flag: string, fallback = false) {
+  const rawValue = process.argv.find((argument) => argument.startsWith(`${flag}=`))
+  if (!rawValue) {
+    return fallback
+  }
+
+  const value = rawValue.slice(flag.length + 1).trim().toLowerCase()
+  if (value !== 'true' && value !== 'false') {
+    throw new Error(`${flag} must be true or false.`)
+  }
+
+  return value === 'true'
+}
+
+function readProfileWorktreeModeArg() {
+  const rawValue = readStringArg('--profile-worktree-mode')
+  if (rawValue === null) {
+    return null
+  }
+  if (!['CLEAN_DEDICATED_WORKTREE', 'CLEAN_PRIMARY_WORKTREE', 'DIRTY_PRIMARY_WORKTREE'].includes(rawValue)) {
+    throw new Error('--profile-worktree-mode must be CLEAN_DEDICATED_WORKTREE, CLEAN_PRIMARY_WORKTREE, or DIRTY_PRIMARY_WORKTREE.')
+  }
+
+  return rawValue as ProfileWorktreeMode
 }
 
 function buildDailyHistory() {
@@ -912,6 +970,12 @@ async function isWorkingTreeClean() {
   return (output ?? '').trim().length === 0
 }
 
+async function readGitDiffAtProfileStart() {
+  const output = await readGitValue(['status', '--short'])
+  const normalized = (output ?? '').trim()
+  return normalized.length === 0 ? 'EMPTY' : normalized
+}
+
 function createInstrumentedInteractiveService(recorder: TelemetryRecorder) {
   const libraryService = createForecastLibraryService({
     telemetry: recorder,
@@ -1019,6 +1083,11 @@ async function resolveProfileInputMetadata(profile: ProfilerProfile): Promise<Cu
     targetSemantics: profile.targetSemantics,
     modelId: profile.modelId,
   })
+  const selection = selectMinimalLawfulCurrentTrainingSuffix({
+    points: basePayload.history.points,
+    forecastOrigin: basePayload.history.end,
+    minimumRequiredObservations,
+  })
   const selectedPayload = selectMinimalLawfulCurrentTrainingPayload(basePayload, minimumRequiredObservations)
   const compatibility = createCurrentForecastStatisticalCompatibility({
     sourceFrequency: profile.sourceFrequency,
@@ -1029,12 +1098,12 @@ async function resolveProfileInputMetadata(profile: ProfilerProfile): Promise<Cu
   return {
     inputSource: selectedPayload.source.kind,
     sourceHistoryObservationCount: basePayload.history.points.length,
-    default12MObservationCount: selectedPayload.benchmark.expectedObservations,
-    modelTechnicalMinimumObservations: minimumRequiredObservations,
-    selectedTrainingObservationCount: selectedPayload.history.points.length,
+    default12MObservationCount: selection.defaultWindowObservationCount,
+    modelTechnicalMinimumObservations: selection.minimumRequiredObservations,
+    selectedTrainingObservationCount: selection.selectedObservationCount,
     selectedHistoryStart: selectedPayload.history.start,
     selectedHistoryEnd: selectedPayload.history.end,
-    extendedBeyond12M: selectedPayload.history.points.length > selectedPayload.benchmark.expectedObservations,
+    extendedBeyond12M: selection.extendedBeyondDefaultWindow,
     trainingWindowPolicyId: compatibility.trainingWindowPolicyId,
     effectiveTrainingPolicyId: compatibility.effectiveTrainingPolicyId,
     historyFingerprint: buildForecastHistoryFingerprint({
@@ -1071,6 +1140,14 @@ async function diagnoseRollingDailyIdentity(profile: ProfilerProfile): Promise<R
     modelId: profile.modelId,
     sourceHistoryFingerprint: ownership.identity.historyFingerprint,
   })
+  const canonicalProfilerFingerprint = buildRollingDailyHistoryFingerprint({
+    seriesId: profile.seriesId,
+    displayName: resolved.history.displayName,
+    description: resolved.history.displayName,
+    frequency: 'DAILY',
+    source: resolved.history.source,
+    points: ownership.history.points,
+  })
   const legacyRead = await readRollingDailyCurrentForecastSnapshot({
     seriesId: profile.seriesId,
     modelId: profile.modelId,
@@ -1090,7 +1167,7 @@ async function diagnoseRollingDailyIdentity(profile: ProfilerProfile): Promise<R
         : canonicalRead.status === 'HIT'
           ? 'OTHER_WITH_EVIDENCE'
           : 'ROLLING_DAILY_STAGE5_RUNTIME_REGRESSION',
-    profilerFingerprintMatchesCanonicalWrite: ownership.identity.historyFingerprint === ownership.identity.historyFingerprint,
+    profilerFingerprintMatchesCanonicalWrite: canonicalProfilerFingerprint === ownership.identity.historyFingerprint,
     canonicalReadStatus: canonicalRead.status,
     legacyProfilerReadStatus: legacyRead.status,
     legacyProfilerReadReason: 'reason' in legacyRead ? legacyRead.reason : null,
@@ -1156,9 +1233,17 @@ async function readEnvironmentMetadata(input: {
   coldSamples: number
   warmSamples: number
   recentCandidates: readonly number[]
+  expectedSourceSha: string | null
+  profiledSourceSha: string | null
+  profileWorktreeMode: ProfileWorktreeMode | null
 }) {
   const admission = createDefaultForecastPreparationExecutionAdmission()
   const forecastHeartbeatIntervalMs = resolveForecastStage3HeartbeatIntervalMs(admission.leaseDurationMs)
+  const workingTreeCleanAtProfileStart = await isWorkingTreeClean()
+  const gitDiffAtProfileStart = await readGitDiffAtProfileStart()
+  const inferredWorktreeMode: ProfileWorktreeMode = workingTreeCleanAtProfileStart
+    ? 'CLEAN_PRIMARY_WORKTREE'
+    : 'DIRTY_PRIMARY_WORKTREE'
 
   return {
     profileEnvironmentClass: 'CONTROLLED_SYNTHETIC_DB_BACKED',
@@ -1171,13 +1256,50 @@ async function readEnvironmentMetadata(input: {
     webConcurrency: process.env.WEB_CONCURRENCY ?? null,
     forecastLeaseDurationMs: admission.leaseDurationMs,
     forecastHeartbeatIntervalMs,
-    workingTreeCleanAtProfileStart: await isWorkingTreeClean(),
+    workingTreeCleanAtProfileStart,
+    gitDiffAtProfileStart,
+    profileWorktreeMode: input.profileWorktreeMode ?? inferredWorktreeMode,
     profileCommand: buildProfilerCommand(),
     profileMode: input.profileMode,
     coldSamples: input.coldSamples,
     warmSamples: input.warmSamples,
     recentCandidates: [...input.recentCandidates],
+    expectedSourceSha: input.expectedSourceSha,
+    profiledSourceSha: input.profiledSourceSha,
     syntheticSeriesDefinitions: SYNTHETIC_SERIES_DEFINITIONS,
+  }
+}
+
+async function runFocusedQuarterlyArimaDiagnostic(profile: ProfilerProfile): Promise<FocusedQuarterlyDiagnostic> {
+  const measurement = await measureCurrentSamples(profile, 10, 0)
+  const totals = measurement.coldSamples.map((sample) => sample.totalRenderableReadyMs)
+  const summary = summarizeNumericSamples(totals)
+  const slowestSample = [...measurement.coldSamples].sort((left, right) => right.totalRenderableReadyMs - left.totalRenderableReadyMs)[0] ?? null
+  const accounting = slowestSample === null
+    ? { accountedPhaseTotalMs: 0, unattributedMs: 0, unattributedSharePct: 0 }
+    : calculatePhaseAccounting(slowestSample.phases)
+  const outlierClassification = slowestSample === null
+    ? 'UNRESOLVED'
+    : classifyQuarterlyArimaOutlier({
+        phases: slowestSample.phases,
+        unattributedSharePct: accounting.unattributedSharePct,
+      })
+
+  return {
+    profileId: profile.profileId,
+    sampleCount: measurement.coldSamples.length,
+    medianMs: summary.medianMs,
+    maxMs: summary.maxMs,
+    countOver15s: totals.filter((value) => value > 15_000).length,
+    countOver30s: totals.filter((value) => value > 30_000).length,
+    countOver60s: totals.filter((value) => value > 60_000).length,
+    outlierClassification,
+    accountedPhaseTotalMs: accounting.accountedPhaseTotalMs,
+    unattributedMs: accounting.unattributedMs,
+    unattributedSharePct: accounting.unattributedSharePct,
+    rootCauseResolution: accounting.unattributedSharePct <= 20 ? 'RESOLVED' : 'UNRESOLVED',
+    performanceCorrectiveRequired: summary.maxMs > FAST_READY_BUDGET_MS,
+    slowestSample,
   }
 }
 
@@ -1408,6 +1530,10 @@ async function measureCurrentSamples(
       const exactReadStartedAt = performance.now()
       const exactRead = await readRollingDailyPreparedCurrent(profile)
       const exactReadMs = performance.now() - exactReadStartedAt
+      const historyLoadMs = findLatestNumericMetric(currentEvents, 'current_history_load', 'durationMs')
+      const admissionMs = findLatestNumericMetric(currentEvents, 'current_execution_admission', 'durationMs')
+      const waiterWaitMs = findLatestNumericMetric(currentEvents, 'current_waiter_wait', 'durationMs')
+      const terminalMarkMs = findLatestNumericMetric(currentEvents, 'current_terminal_mark', 'durationMs')
       if (exactRead.status !== 'HIT' && exactRead.status !== 'STALE') {
         throw new Error(`Rolling Daily prepared read failed for ${profile.profileId}: ${exactRead.status}`)
       }
@@ -1429,17 +1555,28 @@ async function measureCurrentSamples(
         totalRenderableReadyMs: roundMs(prepareMs + exactReadMs),
         exactReadMs: roundMs(exactReadMs),
         phases: {
+          REQUEST_ENTRY_TO_CAPABILITY_RESOLUTION_MS: capability.trace?.capabilityTotalMs ?? capability.timingMs,
           CAPABILITY_RESOLUTION_MS: capability.trace?.capabilityTotalMs ?? capability.timingMs,
-          HISTORY_LOAD_MS: null,
+          HISTORY_LOAD_MS: historyLoadMs === null ? null : roundMs(historyLoadMs),
           HISTORY_PREPARATION_MS: null,
           FAST_SUFFIX_SELECTION_MS: null,
-          PREPARED_LOOKUP_MS: roundMs(exactReadMs),
-          EXECUTION_ADMISSION_MS: null,
-          OWNER_WAIT_MS: null,
+          PREPARED_LOOKUP_MS: null,
+          EXECUTION_ADMISSION_MS: admissionMs === null ? null : roundMs(admissionMs),
+          EXECUTION_OWNER_ACQUIRE_MS: admissionMs === null ? null : roundMs(admissionMs),
+          EXECUTION_WAITER_OR_RECOVERY_WAIT_MS: waiterWaitMs === null ? null : roundMs(waiterWaitMs),
+          OWNER_WAIT_MS: waiterWaitMs === null ? null : roundMs(waiterWaitMs),
+          BRIDGE_PROCESS_SPAWN_MS: null,
+          BRIDGE_STDIN_SERIALIZATION_MS: null,
+          PYTHON_BOOTSTRAP_MS: null,
           MODEL_BRIDGE_MS: null,
           MODEL_COMPUTE_MS: exactRead.runtimeSeconds === null ? null : roundMs(exactRead.runtimeSeconds * 1000),
+          BRIDGE_STDOUT_WAIT_MS: null,
+          PERSISTENCE_FENCE_MS: null,
+          PERSISTENCE_WRITE_MS: null,
           PERSISTENCE_MS: null,
+          EXECUTION_TERMINAL_MARK_MS: terminalMarkMs === null ? null : roundMs(terminalMarkMs),
           POST_PERSIST_EXACT_READ_MS: roundMs(exactReadMs),
+          RETURN_PATH_MS: null,
           CONSUMER_ADAPTER_MS: null,
           TOTAL_RENDERABLE_READY_MS: roundMs(prepareMs + exactReadMs),
           ROLLING_DAILY_OWNERSHIP_PREPARATION_MS: capability.timingMs,
@@ -1456,9 +1593,24 @@ async function measureCurrentSamples(
       const exactReadStartedAt = performance.now()
       const exactRead = await readPeriodicPreparedCurrent(profile)
       const exactReadMs = performance.now() - exactReadStartedAt
+      const historyLoadMs = findLatestNumericMetric(currentEvents, 'current_history_load', 'durationMs')
+      const admissionMs = findLatestNumericMetric(currentEvents, 'current_execution_admission', 'durationMs')
+      const waiterWaitMs = findLatestNumericMetric(currentEvents, 'current_waiter_wait', 'durationMs')
+      const terminalMarkMs = findLatestNumericMetric(currentEvents, 'current_terminal_mark', 'durationMs')
+      const ownerTotalMs = findLatestNumericMetric(currentEvents, 'single_flight_owner_completed', 'durationMs')
       const computeDurationMs = findLatestNumericMetric(currentEvents, 'current_compute_end', 'durationMs')
       const persistenceDurationMs = findLatestNumericMetric(currentEvents, 'persistence', 'durationMs')
       const runtimeMs = exactRead.runtimeSeconds === null ? null : roundMs(exactRead.runtimeSeconds * 1000)
+      const modeledAccountedMs = [
+        admissionMs,
+        waiterWaitMs,
+        computeDurationMs,
+        persistenceDurationMs,
+        terminalMarkMs,
+      ].reduce<number>((sum, value) => sum + (typeof value === 'number' ? value : 0), 0)
+      const returnPathMs = ownerTotalMs === null
+        ? null
+        : roundMs(Math.max(ownerTotalMs - modeledAccountedMs, 0))
 
       coldSamples.push({
         prepareStatus: preparation.status,
@@ -1469,19 +1621,32 @@ async function measureCurrentSamples(
         totalRenderableReadyMs: roundMs(prepareMs + exactReadMs),
         exactReadMs: roundMs(exactReadMs),
         phases: {
+          REQUEST_ENTRY_TO_CAPABILITY_RESOLUTION_MS: capability.trace?.capabilityTotalMs ?? capability.timingMs,
           CAPABILITY_RESOLUTION_MS: capability.trace?.capabilityTotalMs ?? capability.timingMs,
-          HISTORY_LOAD_MS: periodicSurface?.historyLoadMs ?? null,
+          HISTORY_LOAD_MS: historyLoadMs === null
+            ? periodicSurface?.historyLoadMs ?? null
+            : roundMs(historyLoadMs),
           HISTORY_PREPARATION_MS: periodicSurface?.historyPreparationMs ?? null,
           FAST_SUFFIX_SELECTION_MS: periodicSurface?.fastSuffixSelectionMs ?? null,
-          PREPARED_LOOKUP_MS: roundMs(exactReadMs),
-          EXECUTION_ADMISSION_MS: null,
-          OWNER_WAIT_MS: null,
+          PREPARED_LOOKUP_MS: null,
+          EXECUTION_ADMISSION_MS: admissionMs === null ? null : roundMs(admissionMs),
+          EXECUTION_OWNER_ACQUIRE_MS: admissionMs === null ? null : roundMs(admissionMs),
+          EXECUTION_WAITER_OR_RECOVERY_WAIT_MS: waiterWaitMs === null ? null : roundMs(waiterWaitMs),
+          OWNER_WAIT_MS: waiterWaitMs === null ? null : roundMs(waiterWaitMs),
+          BRIDGE_PROCESS_SPAWN_MS: null,
+          BRIDGE_STDIN_SERIALIZATION_MS: null,
+          PYTHON_BOOTSTRAP_MS: null,
           MODEL_BRIDGE_MS: computeDurationMs !== null && runtimeMs !== null
             ? roundMs(Math.max(computeDurationMs - runtimeMs, 0))
             : null,
           MODEL_COMPUTE_MS: runtimeMs,
+          BRIDGE_STDOUT_WAIT_MS: null,
+          PERSISTENCE_FENCE_MS: null,
+          PERSISTENCE_WRITE_MS: persistenceDurationMs === null ? null : roundMs(persistenceDurationMs),
           PERSISTENCE_MS: persistenceDurationMs === null ? null : roundMs(persistenceDurationMs),
+          EXECUTION_TERMINAL_MARK_MS: terminalMarkMs === null ? null : roundMs(terminalMarkMs),
           POST_PERSIST_EXACT_READ_MS: roundMs(exactReadMs),
+          RETURN_PATH_MS: returnPathMs,
           CONSUMER_ADAPTER_MS: null,
           TOTAL_RENDERABLE_READY_MS: roundMs(prepareMs + exactReadMs),
         },
@@ -1588,6 +1753,10 @@ async function measureFullVerification(
       measurementMode: 'DIRECT_SAME_POLICY_PREPARED_CURRENT_BY_ORIGIN',
       selectedOriginDates: [],
       originCount: 0,
+      latestLawfulMaturedOrigin: null,
+      recentWindowStartExclusive: null,
+      recentWindowEndInclusive: null,
+      lawfulRecentOriginCount: 0,
       originSamples: [],
       measuredCandidates: [],
       maxInlineCandidate: 0,
@@ -1598,14 +1767,22 @@ async function measureFullVerification(
       effectivePolicyMatchesCurrent: true,
       lookaheadLeakage: false,
       originsSensiblySpaced: false,
+      recentFullHistoryFallback: false,
+      measuredCandidateOriginCountEqualsN: true,
       recentProductionArtifactWriteCount: 0,
       reason: 'No matured historical origins were available for direct same-policy Recent profiling.',
     } satisfies FullVerificationMeasurement
   }
 
-  const recentWindowStartExclusive = addCalendarMonthsClamped(latestHistoricalDate, -12)
-  const recentWindowOrigins = eligibleOrigins.filter((point) => point.date > recentWindowStartExclusive)
-  const originPool = recentWindowOrigins.length > 0 ? recentWindowOrigins : eligibleOrigins
+  const latestLawfulMaturedOrigin = eligibleOrigins.at(-1)?.date ?? null
+  const recentWindowStartExclusive = latestLawfulMaturedOrigin === null
+    ? null
+    : addCalendarMonthsClamped(latestLawfulMaturedOrigin, -12)
+  const recentWindowEndInclusive = latestLawfulMaturedOrigin
+  const recentWindowOrigins = recentWindowStartExclusive === null || recentWindowEndInclusive === null
+    ? []
+    : eligibleOrigins.filter((point) => point.date > recentWindowStartExclusive && point.date <= recentWindowEndInclusive)
+  const originPool = recentWindowOrigins
   const candidateOriginMap = new Map<number, typeof originPool>()
   for (const candidateN of candidateNs) {
     candidateOriginMap.set(candidateN, selectEvenlySpacedOrigins(originPool, Math.min(candidateN, originPool.length)))
@@ -1691,25 +1868,47 @@ async function measureFullVerification(
     const candidateOrigins = (candidateOriginMap.get(candidateN) ?? [])
       .map((origin) => originSamplesByDate.get(origin.date))
       .filter((sample): sample is NonNullable<typeof sample> => sample !== undefined)
+    if (candidateOrigins.length !== candidateN) {
+      return {
+        candidateN,
+        status: 'INSUFFICIENT_LAWFUL_ORIGINS' as const,
+        actualOriginCount: candidateOrigins.length,
+        originDates: candidateOrigins.map((sample) => sample.forecastOrigin),
+        recentVerificationMs: null,
+        currentConservativeMs: null,
+        reservedServingOverheadMs: null,
+        estimatedTotalFastReadyMs: null,
+        within15s: null,
+      }
+    }
+
     const recentVerificationMs = candidateOrigins.reduce((sum, sample) => sum + sample.totalWallMs, 0)
     const estimatedTotalFastReadyMs = currentConservativeMs + recentVerificationMs + reservedServingDecision.reservedServingOverheadMs
     return {
       candidateN,
+      status: 'MEASURED' as const,
+      actualOriginCount: candidateOrigins.length,
+      originDates: candidateOrigins.map((sample) => sample.forecastOrigin),
       recentVerificationMs: roundMs(recentVerificationMs),
       currentConservativeMs: roundMs(currentConservativeMs),
       reservedServingOverheadMs: reservedServingDecision.reservedServingOverheadMs,
       estimatedTotalFastReadyMs: roundMs(estimatedTotalFastReadyMs),
       within15s: estimatedTotalFastReadyMs <= FAST_READY_BUDGET_MS,
-      selectedOriginDates: candidateOrigins.map((sample) => sample.forecastOrigin),
     }
   })
-  const maxInlineCandidate = Math.max(0, ...measuredCandidates.filter((item) => item.within15s).map((item) => item.candidateN))
+  const maxInlineCandidate = Math.max(0, ...measuredCandidates
+    .filter((item) => item.status === 'MEASURED' && item.within15s === true)
+    .map((item) => item.candidateN))
 
   return {
     status: 'MEASURED',
     measurementMode: 'DIRECT_SAME_POLICY_PREPARED_CURRENT_BY_ORIGIN',
     selectedOriginDates: originSamples.map((sample) => sample.forecastOrigin),
     originCount: originSamples.length,
+    latestLawfulMaturedOrigin,
+    recentWindowStartExclusive,
+    recentWindowEndInclusive,
+    lawfulRecentOriginCount: originPool.length,
     originSamples,
     measuredCandidates,
     maxInlineCandidate,
@@ -1722,9 +1921,14 @@ async function measureFullVerification(
       && sample.effectiveTrainingPolicyId === compatibility.effectiveTrainingPolicyId
     )),
     lookaheadLeakage: false,
-    originsSensiblySpaced: candidateNs.every((candidateN) => (candidateOriginMap.get(candidateN) ?? []).length === Math.min(candidateN, originPool.length)),
+    originsSensiblySpaced: measuredCandidates.every((candidate) => {
+      const points = candidateOriginMap.get(candidate.candidateN) ?? []
+      return points.every((point) => point.date > (recentWindowStartExclusive ?? '') && point.date <= (latestLawfulMaturedOrigin ?? ''))
+    }),
+    recentFullHistoryFallback: false,
+    measuredCandidateOriginCountEqualsN: measuredCandidates.every((candidate) => candidate.status !== 'MEASURED' || candidate.actualOriginCount === candidate.candidateN),
     recentProductionArtifactWriteCount,
-    reason: null,
+    reason: originPool.length === 0 ? 'INSUFFICIENT_RECENT_ORIGINS' : null,
   } satisfies FullVerificationMeasurement
 }
 
@@ -1902,17 +2106,28 @@ function summarizeProfile(
   )
 
   const phaseSummaries = {
+    REQUEST_ENTRY_TO_CAPABILITY_RESOLUTION_MS: summarizePhase('REQUEST_ENTRY_TO_CAPABILITY_RESOLUTION_MS'),
     CAPABILITY_RESOLUTION_MS: summarizePhase('CAPABILITY_RESOLUTION_MS'),
     HISTORY_LOAD_MS: summarizePhase('HISTORY_LOAD_MS'),
     HISTORY_PREPARATION_MS: summarizePhase('HISTORY_PREPARATION_MS'),
     FAST_SUFFIX_SELECTION_MS: summarizePhase('FAST_SUFFIX_SELECTION_MS'),
     PREPARED_LOOKUP_MS: summarizePhase('PREPARED_LOOKUP_MS'),
     EXECUTION_ADMISSION_MS: summarizePhase('EXECUTION_ADMISSION_MS'),
+    EXECUTION_OWNER_ACQUIRE_MS: summarizePhase('EXECUTION_OWNER_ACQUIRE_MS'),
+    EXECUTION_WAITER_OR_RECOVERY_WAIT_MS: summarizePhase('EXECUTION_WAITER_OR_RECOVERY_WAIT_MS'),
     OWNER_WAIT_MS: summarizePhase('OWNER_WAIT_MS'),
+    BRIDGE_PROCESS_SPAWN_MS: summarizePhase('BRIDGE_PROCESS_SPAWN_MS'),
+    BRIDGE_STDIN_SERIALIZATION_MS: summarizePhase('BRIDGE_STDIN_SERIALIZATION_MS'),
+    PYTHON_BOOTSTRAP_MS: summarizePhase('PYTHON_BOOTSTRAP_MS'),
     MODEL_BRIDGE_MS: summarizePhase('MODEL_BRIDGE_MS'),
     MODEL_COMPUTE_MS: summarizePhase('MODEL_COMPUTE_MS'),
+    BRIDGE_STDOUT_WAIT_MS: summarizePhase('BRIDGE_STDOUT_WAIT_MS'),
+    PERSISTENCE_FENCE_MS: summarizePhase('PERSISTENCE_FENCE_MS'),
+    PERSISTENCE_WRITE_MS: summarizePhase('PERSISTENCE_WRITE_MS'),
     PERSISTENCE_MS: summarizePhase('PERSISTENCE_MS'),
+    EXECUTION_TERMINAL_MARK_MS: summarizePhase('EXECUTION_TERMINAL_MARK_MS'),
     POST_PERSIST_EXACT_READ_MS: summarizePhase('POST_PERSIST_EXACT_READ_MS'),
+    RETURN_PATH_MS: summarizePhase('RETURN_PATH_MS'),
     CONSUMER_ADAPTER_MS: summarizePhase('CONSUMER_ADAPTER_MS'),
     TOTAL_RENDERABLE_READY_MS: totalRenderableReadySummary,
     ROLLING_DAILY_OWNERSHIP_PREPARATION_MS: summarizePhase('ROLLING_DAILY_OWNERSHIP_PREPARATION_MS'),
@@ -1929,6 +2144,7 @@ function summarizeProfile(
   ) as Partial<Record<ProfiledPhaseName, number | null>>
 
   const currentConservativeMs = resolveConservativeLatencyMs(totalRenderableReadySummary)
+  const phaseAccounting = calculatePhaseAccounting(conservativePhaseSnapshot)
   const exactReadGateStatusesObserved = Array.from(new Set(currentMeasurements.coldSamples.map((sample) => sample.exactReadGate)))
   const warmReuseGate = currentMeasurements.warmSamples.every((sample) => sample.warmReuseGate === 'PASS') ? 'PASS' : 'FAIL'
   const currentIsolationGate = currentMeasurements.coldSamples.every((sample) => (
@@ -1945,19 +2161,22 @@ function summarizeProfile(
   const recentProfileGate = fullVerification === null
     ? 'PASS'
     : fullVerification.status === 'MEASURED'
-      && fullVerification.measuredCandidates.length > 0
       && fullVerification.effectivePolicyMatchesCurrent
       && !fullVerification.lookaheadLeakage
       && fullVerification.originsSensiblySpaced
+      && !fullVerification.recentFullHistoryFallback
+      && fullVerification.measuredCandidateOriginCountEqualsN
       && fullVerification.recentProductionArtifactWriteCount === 0
       ? 'PASS'
       : 'FAIL'
   const reservedServingOverheadMs = fullVerification === null
     ? reservedServingDecision.reservedServingOverheadMs
     : fullVerification.reservedServingOverheadMs
-  const profileArtifactSourceShaMatch = gateContext.expectedSourceSha === null
-    ? true
-    : gateContext.gitHead === gateContext.expectedSourceSha
+  const sourceShaValidation = validateExpectedSourceSha({
+    expectedSourceSha: gateContext.expectedSourceSha,
+    profiledSourceSha: gateContext.gitHead,
+  })
+  const profileArtifactSourceShaMatch = sourceShaValidation.profileArtifactSourceShaMatch
   const finalGateDecision = resolveFastReadyProfilerGate({
     currentFastLatencyGate: currentConservativeMs <= FAST_READY_BUDGET_MS ? 'PASS' : 'FAIL',
     warmReuseGate,
@@ -2015,6 +2234,7 @@ function summarizeProfile(
       phaseSummaries,
       dominantBottleneck: classifyDominantBottleneck(conservativePhaseSnapshot),
       conservativeLatencyMs: currentConservativeMs,
+      phaseAccounting,
     },
     recentVerification: fullVerification === null
       ? {
@@ -2025,6 +2245,10 @@ function summarizeProfile(
           directMeasurement: {
             status: fullVerification.status,
             measurementMode: fullVerification.measurementMode,
+            latestLawfulMaturedOrigin: fullVerification.latestLawfulMaturedOrigin,
+            recentWindowStartExclusive: fullVerification.recentWindowStartExclusive,
+            recentWindowEndInclusive: fullVerification.recentWindowEndInclusive,
+            lawfulRecentOriginCount: fullVerification.lawfulRecentOriginCount,
             selectedOriginDates: fullVerification.selectedOriginDates,
             originCount: fullVerification.originCount,
             originSamples: fullVerification.originSamples,
@@ -2035,6 +2259,8 @@ function summarizeProfile(
             effectivePolicyMatchesCurrent: fullVerification.effectivePolicyMatchesCurrent,
             lookaheadLeakage: fullVerification.lookaheadLeakage,
             originsSensiblySpaced: fullVerification.originsSensiblySpaced,
+            recentFullHistoryFallback: fullVerification.recentFullHistoryFallback,
+            measuredCandidateOriginCountEqualsN: fullVerification.measuredCandidateOriginCountEqualsN,
             recentProductionArtifactWriteCount: fullVerification.recentProductionArtifactWriteCount,
             reason: fullVerification.reason,
           },
@@ -2054,6 +2280,8 @@ function summarizeProfile(
       servingHeadroomDoubleCounted: fullVerification === null
         ? reservedServingDecision.servingHeadroomDoubleCounted
         : fullVerification.servingHeadroomDoubleCounted,
+      currentRuntimeVarianceIncludedInReserve: false,
+      expectedSourceShaFormat: sourceShaValidation.expectedSourceShaFormat,
       profileArtifactSourceShaMatch,
       stage4NonRegression: gateContext.stage4NonRegression,
       stage5NonRegression: gateContext.stage5NonRegression,
@@ -2072,6 +2300,8 @@ function renderMarkdown(result: {
   evidence: {
     expectedSourceSha: string | null
     profiledSourceSha: string | null
+    expectedSourceShaFormat: string
+    profileArtifactSourceShaMatch: boolean
   }
   configuration: {
     profileMode: ProfileMode
@@ -2086,6 +2316,7 @@ function renderMarkdown(result: {
   }
   profiles: ReturnType<typeof summarizeProfile>[]
   finalDecision: ReturnType<typeof resolveStage6FinalDecision>
+  focusedQuarterlyDiagnostic: FocusedQuarterlyDiagnostic
   concurrencyEvidence: {
     period: ConcurrentProfileMeasurement
     rollingDaily: ConcurrentProfileMeasurement
@@ -2100,6 +2331,8 @@ function renderMarkdown(result: {
     `Git HEAD: ${result.gitHead ?? 'UNKNOWN'}`,
     `Expected source SHA: ${result.evidence.expectedSourceSha ?? 'UNSPECIFIED'}`,
     `Profiled source SHA: ${result.evidence.profiledSourceSha ?? 'UNSPECIFIED'}`,
+    `Expected source SHA format: ${result.evidence.expectedSourceShaFormat}`,
+    `Profile artifact source SHA match: ${result.evidence.profileArtifactSourceShaMatch ? 'YES' : 'NO'}`,
     `Profile mode: ${result.configuration.profileMode}`,
     `Cold samples per profile: ${result.configuration.coldSamples}`,
     `Warm prepared-hit samples per profile: ${result.configuration.warmSamples}`,
@@ -2121,6 +2354,20 @@ function renderMarkdown(result: {
     `PERFORMANCE_CORRECTIVE_REQUIRED = ${result.finalDecision.performanceCorrectiveRequired ? 'YES' : 'NO'}`,
     `READY_FOR_STAGE7 = ${result.finalDecision.readyForStage7 ? 'YES' : 'NO'}`,
     '',
+    '## Focused Quarterly ARIMA Diagnostic',
+    '',
+    `Sample count: ${result.focusedQuarterlyDiagnostic.sampleCount}`,
+    `Median ms: ${result.focusedQuarterlyDiagnostic.medianMs}`,
+    `Max ms: ${result.focusedQuarterlyDiagnostic.maxMs}`,
+    `Over 15s: ${result.focusedQuarterlyDiagnostic.countOver15s}`,
+    `Over 30s: ${result.focusedQuarterlyDiagnostic.countOver30s}`,
+    `Over 60s: ${result.focusedQuarterlyDiagnostic.countOver60s}`,
+    `Outlier classification: ${result.focusedQuarterlyDiagnostic.outlierClassification}`,
+    `Accounted phase total ms: ${result.focusedQuarterlyDiagnostic.accountedPhaseTotalMs}`,
+    `Unattributed ms: ${result.focusedQuarterlyDiagnostic.unattributedMs}`,
+    `Unattributed share pct: ${result.focusedQuarterlyDiagnostic.unattributedSharePct}`,
+    `Root cause resolution: ${result.focusedQuarterlyDiagnostic.rootCauseResolution}`,
+    '',
     '## Full Final Profile Table',
     '',
     '| Profile | Series | Model | Frequency | Cadence | Selected obs | Extended 12M | Cold n | Cold median | Cold max | Cold p95 | Warm p95/max | Exact read | Current gate | Recent max N |',
@@ -2139,14 +2386,14 @@ function renderMarkdown(result: {
   }
 
   lines.push('', '## Final Recent Table', '')
-  lines.push('| Profile | Candidate N | Origins | Origin dates | Direct recent ms | Current conservative ms | Reserved headroom ms | Estimated total ms | Within 15s |')
-  lines.push('| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | --- |')
+  lines.push('| Profile | Candidate N | Status | Origins | Origin dates | Direct recent ms | Current conservative ms | Reserved headroom ms | Estimated total ms | Within 15s |')
+  lines.push('| --- | ---: | --- | ---: | --- | ---: | ---: | ---: | ---: | --- |')
   for (const profile of result.profiles) {
     if (!('measuredCandidates' in profile.recentVerification)) {
       continue
     }
     for (const candidate of profile.recentVerification.measuredCandidates ?? []) {
-      lines.push(`| ${profile.profileId} | ${candidate.candidateN} | ${candidate.selectedOriginDates.length} | ${candidate.selectedOriginDates.join(', ')} | ${candidate.recentVerificationMs} | ${candidate.currentConservativeMs} | ${candidate.reservedServingOverheadMs} | ${candidate.estimatedTotalFastReadyMs} | ${candidate.within15s ? 'YES' : 'NO'} |`)
+      lines.push(`| ${profile.profileId} | ${candidate.candidateN} | ${candidate.status} | ${candidate.actualOriginCount} | ${candidate.originDates.join(', ')} | ${candidate.recentVerificationMs ?? 'N/A'} | ${candidate.currentConservativeMs ?? 'N/A'} | ${candidate.reservedServingOverheadMs ?? 'N/A'} | ${candidate.estimatedTotalFastReadyMs ?? 'N/A'} | ${candidate.within15s === null ? 'N/A' : candidate.within15s ? 'YES' : 'NO'} |`)
     }
   }
 
@@ -2173,6 +2420,9 @@ async function main() {
   const recentCandidates = readCandidateNs()
   const stage4NonRegression = readPassFailArg('--stage4-non-regression')
   const stage5NonRegression = readPassFailArg('--stage5-non-regression')
+  const focusedQuarterlyDiagnosticOnly = readBooleanArg('--focused-quarterly-diagnostic-only')
+  const skipRecentVerification = readBooleanArg('--skip-recent-verification')
+  const requestedProfileWorktreeMode = readProfileWorktreeModeArg()
   const configurationContract = resolveProfilerConfigurationContract({
     profileMode,
     coldSamples,
@@ -2184,7 +2434,14 @@ async function main() {
   }
   const gitHead = await readGitValue(['rev-parse', 'HEAD'])
   const branch = await readGitValue(['rev-parse', '--abbrev-ref', 'HEAD'])
-  const expectedSourceSha = readStringArg('--expected-source-sha') ?? gitHead
+  const expectedSourceSha = readStringArg('--expected-source-sha')
+  const sourceShaValidation = validateExpectedSourceSha({
+    expectedSourceSha,
+    profiledSourceSha: gitHead,
+  })
+  if (profileMode === 'FINAL' && sourceShaValidation.expectedSourceShaFormat !== 'FULL_40_CHAR_SHA') {
+    throw new Error('Final profiler mode requires --expected-source-sha with the exact full 40-character source commit SHA.')
+  }
 
   for (const definition of SYNTHETIC_SERIES_DEFINITIONS) {
     await seedHistory(buildSyntheticHistory(definition))
@@ -2192,6 +2449,15 @@ async function main() {
   await clearProfilerArtifacts(SYNTHETIC_SERIES_DEFINITIONS.map((definition) => definition.seriesId))
 
   const profiles = await buildProfiles()
+  const quarterlyArimaProfile = profiles.find((profile) => profile.profileId === `${QUARTERLY_SERIES_ID}|END_OF_PERIOD|arima`)
+  if (!quarterlyArimaProfile) {
+    throw new Error('Required quarterly ARIMA profile is unavailable for the Stage 6 diagnostic.')
+  }
+  const focusedQuarterlyDiagnostic = await runFocusedQuarterlyArimaDiagnostic(quarterlyArimaProfile)
+  if (focusedQuarterlyDiagnosticOnly) {
+    process.stdout.write(`${JSON.stringify({ status: 'PASS', focusedQuarterlyDiagnostic }, null, 2)}\n`)
+    return
+  }
   const rawProfiles: Array<{
     profile: ProfilerProfile
     currentMeasurements: Awaited<ReturnType<typeof measureCurrentSamples>>
@@ -2208,7 +2474,7 @@ async function main() {
       exactPreparedReadSummary,
     })
 
-    const fullVerification = profile.recentVerificationMode === 'NOT_APPLICABLE'
+    const fullVerification = profile.recentVerificationMode === 'NOT_APPLICABLE' || skipRecentVerification
       ? null
       : await measureFullVerification(profile, recentCandidates, currentConservativeMs, reservedServingDecision)
 
@@ -2267,6 +2533,9 @@ async function main() {
     coldSamples,
     warmSamples,
     recentCandidates,
+    expectedSourceSha,
+    profiledSourceSha: gitHead,
+    profileWorktreeMode: requestedProfileWorktreeMode,
   })
   const environmentValidation = validateProfileEnvironmentMetadata(environment as Record<string, unknown>)
   const finalDecision = resolveStage6FinalDecision({
@@ -2283,8 +2552,8 @@ async function main() {
     profileSpecificNFastRequired: globalDecision.profileSpecificRequired,
     recentSyncRecommendation: globalDecision.recommendation,
     reservedServingOverheadMs,
-    reservedServingOverheadBasis: 'MEASURED_EVIDENCE',
-    profileArtifactSourceShaMatch: expectedSourceSha === gitHead,
+    reservedServingOverheadBasis: 'MEASURED_CANONICAL_HANDOFF_PROXY',
+    profileArtifactSourceShaMatch: sourceShaValidation.profileArtifactSourceShaMatch,
     fastInputMetadataComplete: summarizedProfiles.every((profile) => profile.fastInputMetadata !== null),
     profileEnvironmentMetadataComplete: environmentValidation.complete,
     stage4NonRegression,
@@ -2305,6 +2574,9 @@ async function main() {
     evidence: {
       expectedSourceSha,
       profiledSourceSha: gitHead,
+      expectedSourceShaFormat: sourceShaValidation.expectedSourceShaFormat,
+      profileArtifactSourceShaMatch: sourceShaValidation.profileArtifactSourceShaMatch,
+      sourceTreeExactlyMatchesProfiledSourceSha: sourceShaValidation.sourceTreeExactlyMatchesProfiledSourceSha && environment.workingTreeCleanAtProfileStart,
     },
     regressions: {
       stage4NonRegression,
@@ -2325,6 +2597,7 @@ async function main() {
     },
     environment,
     profiles: summarizedProfiles,
+    focusedQuarterlyDiagnostic,
     rollingDailyDiagnosis: rollingDailyProfiles.map((profile) => profile.rollingDailyDiagnosis),
     globalDecision,
     currentIsolation: {
@@ -2342,6 +2615,7 @@ async function main() {
       configurationContract,
       profileEnvironmentMetadataComplete: environmentValidation.complete,
       environmentMissingFields: environmentValidation.missingFields,
+      stage6FinalCorrectiveTests: null,
     },
     finalGate: {
       fastReadyProfilerGate: overallFastReadyProfilerGate,

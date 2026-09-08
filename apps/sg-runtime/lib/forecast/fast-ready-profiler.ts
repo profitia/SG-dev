@@ -2,17 +2,28 @@ export const NOT_STATISTICALLY_MEANINGFUL = 'NOT_STATISTICALLY_MEANINGFUL' as co
 export const NOT_SEPARATELY_MEASURABLE = 'NOT_SEPARATELY_MEASURABLE' as const
 
 export type ProfiledPhaseName =
+  | 'REQUEST_ENTRY_TO_CAPABILITY_RESOLUTION_MS'
   | 'CAPABILITY_RESOLUTION_MS'
   | 'HISTORY_LOAD_MS'
   | 'HISTORY_PREPARATION_MS'
   | 'FAST_SUFFIX_SELECTION_MS'
   | 'PREPARED_LOOKUP_MS'
   | 'EXECUTION_ADMISSION_MS'
+  | 'EXECUTION_OWNER_ACQUIRE_MS'
+  | 'EXECUTION_WAITER_OR_RECOVERY_WAIT_MS'
   | 'OWNER_WAIT_MS'
+  | 'BRIDGE_PROCESS_SPAWN_MS'
+  | 'BRIDGE_STDIN_SERIALIZATION_MS'
+  | 'PYTHON_BOOTSTRAP_MS'
   | 'MODEL_BRIDGE_MS'
   | 'MODEL_COMPUTE_MS'
+  | 'BRIDGE_STDOUT_WAIT_MS'
+  | 'PERSISTENCE_FENCE_MS'
+  | 'PERSISTENCE_WRITE_MS'
   | 'PERSISTENCE_MS'
+  | 'EXECUTION_TERMINAL_MARK_MS'
   | 'POST_PERSIST_EXACT_READ_MS'
+  | 'RETURN_PATH_MS'
   | 'CONSUMER_ADAPTER_MS'
   | 'TOTAL_RENDERABLE_READY_MS'
   | 'ROLLING_DAILY_OWNERSHIP_PREPARATION_MS'
@@ -44,6 +55,9 @@ export type NumericSummary = {
 
 export type RecentBudgetCandidate = {
   candidateN: number
+  status?: 'MEASURED' | 'INSUFFICIENT_LAWFUL_ORIGINS'
+  actualOriginCount?: number
+  originDates?: string[]
   recentVerificationMs: number
   currentConservativeMs: number
   reservedServingOverheadMs: number
@@ -58,18 +72,49 @@ export type RecentRecommendation =
   | 'INSUFFICIENT_PROFILE_EVIDENCE'
 
 export type ServingHeadroomComponent = {
-  component: 'POST_PERSIST_EXACT_READ_PROXY_MS' | 'RUNTIME_VARIANCE_ALLOWANCE_MS'
+  component: 'POST_PERSIST_EXACT_READ_PROXY_MS' | 'MEASURED_POST_RECENT_FINAL_READY_HANDOFF_MS'
   valueMs: number
   sourceMeasurement: string
+  alreadyIncludedInCurrent: boolean
+  alreadyIncludedInRecent: boolean
 }
 
 export type ServingHeadroomDecision = {
   reservedServingOverheadMs: number
-  reservedServingOverheadBasis: 'MEASURED_EVIDENCE'
+  reservedServingOverheadBasis: 'MEASURED_POST_RECENT_HANDOFF' | 'MEASURED_CANONICAL_HANDOFF_PROXY'
   components: ServingHeadroomComponent[]
-  doubleCountGuard: 'POST_PERSIST_READ_PROXY_APPLIES_ONLY_TO_DIRECT_RECENT_AND_FINAL_HANDOFF'
+  doubleCountGuard: 'ONLY_COMPONENTS_NOT_ALREADY_INCLUDED_IN_CURRENT_OR_RECENT_MAY_BE_RESERVED'
   servingHeadroomDoubleCounted: false
 }
+
+export type SourceShaValidation = {
+  expectedSourceSha: string | null
+  profiledSourceSha: string | null
+  expectedSourceShaFormat: 'FULL_40_CHAR_SHA' | 'MISSING' | 'INVALID'
+  profileArtifactSourceShaMatch: boolean
+  sourceTreeExactlyMatchesProfiledSourceSha: boolean
+}
+
+export type PhaseAccounting = {
+  accountedPhaseTotalMs: number
+  unattributedMs: number
+  unattributedSharePct: number
+}
+
+export type QuarterlyArimaOutlierClassification =
+  | 'MODEL_COMPUTE'
+  | 'PYTHON_PROCESS_STARTUP'
+  | 'PYTHON_BRIDGE_IO'
+  | 'EXECUTION_ADMISSION'
+  | 'OWNER_WAIT'
+  | 'LEASE_OR_RECOVERY_WAIT'
+  | 'DATABASE_LOCK_OR_PERSISTENCE'
+  | 'PROCESS_SCHEDULING'
+  | 'GC_OR_RUNTIME_STALL'
+  | 'TEST_HARNESS_OR_PROFILER_ARTIFACT'
+  | 'OS_LEVEL_TRANSIENT'
+  | 'OTHER_WITH_EVIDENCE'
+  | 'UNRESOLVED'
 
 export type ProfilerConfigurationContract = {
   profileMode: ProfileMode
@@ -111,7 +156,7 @@ export type Stage6FinalDecision = {
   profileSpecificNFastRequired: boolean
   recentSyncRecommendation: RecentRecommendation
   reservedServingOverheadMs: number
-  reservedServingOverheadBasis: 'MEASURED_EVIDENCE' | 'OTHER'
+  reservedServingOverheadBasis: 'MEASURED_POST_RECENT_HANDOFF' | 'MEASURED_CANONICAL_HANDOFF_PROXY' | 'OTHER'
   performanceCorrectiveRequired: boolean
   performanceCorrectiveReason: string | null
   profilerEvidenceCorrectiveRequired: boolean
@@ -157,22 +202,35 @@ export type FastReadyProfilerGateDecision = {
 }
 
 const BOTTLENECK_CATEGORY_BY_PHASE: Record<ProfiledPhaseName, BottleneckCategory> = {
+  REQUEST_ENTRY_TO_CAPABILITY_RESOLUTION_MS: 'OTHER',
   CAPABILITY_RESOLUTION_MS: 'OTHER',
   HISTORY_LOAD_MS: 'NETWORK_OR_EXTERNAL_DEPENDENCY',
   HISTORY_PREPARATION_MS: 'HISTORY_PREPARATION',
   FAST_SUFFIX_SELECTION_MS: 'HISTORY_PREPARATION',
   PREPARED_LOOKUP_MS: 'DATABASE_ADMISSION',
   EXECUTION_ADMISSION_MS: 'DATABASE_ADMISSION',
+  EXECUTION_OWNER_ACQUIRE_MS: 'DATABASE_ADMISSION',
+  EXECUTION_WAITER_OR_RECOVERY_WAIT_MS: 'WAITING_FOR_GLOBAL_OWNER',
   OWNER_WAIT_MS: 'WAITING_FOR_GLOBAL_OWNER',
+  BRIDGE_PROCESS_SPAWN_MS: 'PYTHON_BRIDGE_OR_PROCESS_OVERHEAD',
+  BRIDGE_STDIN_SERIALIZATION_MS: 'PYTHON_BRIDGE_OR_PROCESS_OVERHEAD',
+  PYTHON_BOOTSTRAP_MS: 'PYTHON_BRIDGE_OR_PROCESS_OVERHEAD',
   MODEL_BRIDGE_MS: 'PYTHON_BRIDGE_OR_PROCESS_OVERHEAD',
   MODEL_COMPUTE_MS: 'MODEL_COMPUTE',
+  BRIDGE_STDOUT_WAIT_MS: 'PYTHON_BRIDGE_OR_PROCESS_OVERHEAD',
+  PERSISTENCE_FENCE_MS: 'DATABASE_PERSISTENCE',
+  PERSISTENCE_WRITE_MS: 'DATABASE_PERSISTENCE',
   PERSISTENCE_MS: 'DATABASE_PERSISTENCE',
+  EXECUTION_TERMINAL_MARK_MS: 'DATABASE_PERSISTENCE',
   POST_PERSIST_EXACT_READ_MS: 'DATABASE_PERSISTENCE',
+  RETURN_PATH_MS: 'OTHER',
   CONSUMER_ADAPTER_MS: 'CONSUMER_ADAPTER',
   TOTAL_RENDERABLE_READY_MS: 'OTHER',
   ROLLING_DAILY_OWNERSHIP_PREPARATION_MS: 'DATABASE_ADMISSION',
   ROLLING_DAILY_SNAPSHOT_PERSIST_MS: 'DATABASE_PERSISTENCE',
 }
+
+const FULL_GIT_SHA_PATTERN = /^[0-9a-f]{40}$/i
 
 function roundMs(value: number) {
   return Number(value.toFixed(3))
@@ -354,26 +412,113 @@ export function resolveEvidenceBasedServingHeadroom(input: {
   exactPreparedReadSummary: NumericSummary
 }): ServingHeadroomDecision {
   const postPersistExactReadProxyMs = resolveConservativeLatencyMs(input.exactPreparedReadSummary)
-  const runtimeVarianceAllowanceMs = roundMs(Math.max(input.currentSummary.maxMs - input.currentSummary.medianMs, 0))
   const components: ServingHeadroomComponent[] = [
     {
       component: 'POST_PERSIST_EXACT_READ_PROXY_MS',
       valueMs: roundMs(postPersistExactReadProxyMs),
       sourceMeasurement: 'coldCurrent.exactPreparedRead.p95OrMax',
-    },
-    {
-      component: 'RUNTIME_VARIANCE_ALLOWANCE_MS',
-      valueMs: runtimeVarianceAllowanceMs,
-      sourceMeasurement: 'coldCurrent.totalRenderableReady.maxMinusMedian',
+      alreadyIncludedInCurrent: false,
+      alreadyIncludedInRecent: false,
     },
   ]
 
   return {
     reservedServingOverheadMs: roundMs(components.reduce((sum, component) => sum + component.valueMs, 0)),
-    reservedServingOverheadBasis: 'MEASURED_EVIDENCE',
+    reservedServingOverheadBasis: 'MEASURED_CANONICAL_HANDOFF_PROXY',
     components,
-    doubleCountGuard: 'POST_PERSIST_READ_PROXY_APPLIES_ONLY_TO_DIRECT_RECENT_AND_FINAL_HANDOFF',
+    doubleCountGuard: 'ONLY_COMPONENTS_NOT_ALREADY_INCLUDED_IN_CURRENT_OR_RECENT_MAY_BE_RESERVED',
     servingHeadroomDoubleCounted: false,
+  }
+}
+
+export function validateExpectedSourceSha(input: {
+  expectedSourceSha: string | null
+  profiledSourceSha: string | null
+}): SourceShaValidation {
+  const expectedSourceShaFormat = input.expectedSourceSha === null
+    ? 'MISSING'
+    : FULL_GIT_SHA_PATTERN.test(input.expectedSourceSha)
+      ? 'FULL_40_CHAR_SHA'
+      : 'INVALID'
+  const profiledIsFullSha = input.profiledSourceSha !== null && FULL_GIT_SHA_PATTERN.test(input.profiledSourceSha)
+
+  return {
+    expectedSourceSha: input.expectedSourceSha,
+    profiledSourceSha: input.profiledSourceSha,
+    expectedSourceShaFormat,
+    profileArtifactSourceShaMatch: expectedSourceShaFormat === 'FULL_40_CHAR_SHA'
+      && profiledIsFullSha
+      && input.expectedSourceSha === input.profiledSourceSha,
+    sourceTreeExactlyMatchesProfiledSourceSha: profiledIsFullSha,
+  }
+}
+
+export function calculatePhaseAccounting(phases: Partial<Record<ProfiledPhaseName, number | null | undefined>>): PhaseAccounting {
+  const total = typeof phases.TOTAL_RENDERABLE_READY_MS === 'number' && Number.isFinite(phases.TOTAL_RENDERABLE_READY_MS)
+    ? phases.TOTAL_RENDERABLE_READY_MS
+    : 0
+  const accountedPhaseTotalMs = roundMs(
+    Object.entries(phases)
+      .filter(([phase, value]) => phase !== 'TOTAL_RENDERABLE_READY_MS' && typeof value === 'number' && Number.isFinite(value))
+      .reduce((sum, [, value]) => sum + (value as number), 0),
+  )
+  const unattributedMs = roundMs(Math.max(total - accountedPhaseTotalMs, 0))
+
+  return {
+    accountedPhaseTotalMs,
+    unattributedMs,
+    unattributedSharePct: total > 0 ? roundMs((unattributedMs / total) * 100) : 0,
+  }
+}
+
+export function classifyQuarterlyArimaOutlier(input: {
+  phases: Partial<Record<ProfiledPhaseName, number | null | undefined>>
+  unattributedSharePct: number
+}): QuarterlyArimaOutlierClassification {
+  if (input.unattributedSharePct > 20) {
+    return 'UNRESOLVED'
+  }
+
+  const dominant = classifyDominantBottleneck(input.phases)
+  switch (dominant.phase) {
+    case 'MODEL_COMPUTE_MS':
+      return 'MODEL_COMPUTE'
+    case 'MODEL_BRIDGE_MS':
+    case 'BRIDGE_STDIN_SERIALIZATION_MS':
+    case 'BRIDGE_STDOUT_WAIT_MS':
+      return 'PYTHON_BRIDGE_IO'
+    case 'BRIDGE_PROCESS_SPAWN_MS':
+    case 'PYTHON_BOOTSTRAP_MS':
+      return 'PYTHON_PROCESS_STARTUP'
+    case 'EXECUTION_ADMISSION_MS':
+    case 'EXECUTION_OWNER_ACQUIRE_MS':
+      return 'EXECUTION_ADMISSION'
+    case 'EXECUTION_WAITER_OR_RECOVERY_WAIT_MS':
+      return 'LEASE_OR_RECOVERY_WAIT'
+    case 'OWNER_WAIT_MS':
+      return 'OWNER_WAIT'
+    case 'PERSISTENCE_FENCE_MS':
+    case 'PERSISTENCE_WRITE_MS':
+    case 'PERSISTENCE_MS':
+    case 'EXECUTION_TERMINAL_MARK_MS':
+    case 'POST_PERSIST_EXACT_READ_MS':
+      return 'DATABASE_LOCK_OR_PERSISTENCE'
+    case 'HISTORY_LOAD_MS':
+    case 'HISTORY_PREPARATION_MS':
+    case 'FAST_SUFFIX_SELECTION_MS':
+    case 'PREPARED_LOOKUP_MS':
+    case 'RETURN_PATH_MS':
+    case 'CAPABILITY_RESOLUTION_MS':
+    case 'REQUEST_ENTRY_TO_CAPABILITY_RESOLUTION_MS':
+    case 'ROLLING_DAILY_OWNERSHIP_PREPARATION_MS':
+    case 'ROLLING_DAILY_SNAPSHOT_PERSIST_MS':
+    case 'CONSUMER_ADAPTER_MS':
+      return 'OTHER_WITH_EVIDENCE'
+    case 'TOTAL_RENDERABLE_READY_MS':
+    case null:
+      return 'UNRESOLVED'
+    default:
+      return 'UNRESOLVED'
   }
 }
 
@@ -420,11 +565,15 @@ export function validateProfileEnvironmentMetadata(input: Record<string, unknown
     'forecastLeaseDurationMs',
     'forecastHeartbeatIntervalMs',
     'workingTreeCleanAtProfileStart',
+    'gitDiffAtProfileStart',
+    'profileWorktreeMode',
     'profileCommand',
     'profileMode',
     'coldSamples',
     'warmSamples',
     'recentCandidates',
+    'expectedSourceSha',
+    'profiledSourceSha',
     'syntheticSeriesDefinitions',
   ]
 
@@ -528,7 +677,7 @@ export function resolveStage6FinalDecision(input: {
   profileSpecificNFastRequired: boolean
   recentSyncRecommendation: RecentRecommendation
   reservedServingOverheadMs: number
-  reservedServingOverheadBasis: 'MEASURED_EVIDENCE' | 'OTHER'
+  reservedServingOverheadBasis: 'MEASURED_POST_RECENT_HANDOFF' | 'MEASURED_CANONICAL_HANDOFF_PROXY' | 'OTHER'
   profileArtifactSourceShaMatch: boolean
   fastInputMetadataComplete: boolean
   profileEnvironmentMetadataComplete: boolean
@@ -544,7 +693,7 @@ export function resolveStage6FinalDecision(input: {
   const profilerEvidenceCorrectiveRequired = (
     !input.configurationContract.stage6ClosureAllowed
     || input.reservedServingOverheadMs <= 0
-    || input.reservedServingOverheadBasis !== 'MEASURED_EVIDENCE'
+    || !['MEASURED_POST_RECENT_HANDOFF', 'MEASURED_CANONICAL_HANDOFF_PROXY'].includes(input.reservedServingOverheadBasis)
     || !input.profileArtifactSourceShaMatch
     || !input.fastInputMetadataComplete
     || !input.profileEnvironmentMetadataComplete
