@@ -2,7 +2,7 @@
   "phase": "PHASE_5",
   "workstream": "GENERIC_MULTI_METHOD_FORECAST_PRODUCTION_ENABLEMENT",
   "result": "PASS",
-  "generatedAt": "2026-09-08T08:49:02.291129Z",
+  "generatedAt": "2026-09-08T11:07:03.739974Z",
   "targetSemantics": [
     "END_OF_PERIOD",
     "MONTHLY_AVERAGE",
