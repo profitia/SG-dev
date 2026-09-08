@@ -815,7 +815,7 @@ function buildCurrentPayloadForSelectedOrigin(input: {
   }
 }
 
-async function buildRecentVerificationArtifact(input: {
+export async function buildRecentVerificationArtifact(input: {
   request: ForecastServiceRequest
   methodVersion: string
   targetSemantics: ForecastTargetSemantics
@@ -823,6 +823,7 @@ async function buildRecentVerificationArtifact(input: {
   source: ForecastBridgeSource
   authoritativeHistory: ForecastBridgeHistory
   cadenceContext: ReturnType<typeof resolveArtifactCadenceContext>
+  executePreparedCurrent?: typeof executePreparedForecastBridge
 }): Promise<PersistedVerificationArtifact> {
   const sourceFrequency = input.cadenceContext.cadence?.sourceFrequency
     ?? normalizeForecastSourceFrequency(input.authoritativeHistory.frequency)
@@ -878,6 +879,8 @@ async function buildRecentVerificationArtifact(input: {
 
   const recordsByHorizon = new Map<string, ForecastVerificationRecord[]>()
 
+  const executePreparedCurrent = input.executePreparedCurrent ?? executePreparedForecastBridge
+
   for (const origin of selectedOrigins) {
     const selection = selectMinimalLawfulCurrentTrainingSuffix({
       points: authoritativePoints,
@@ -897,7 +900,7 @@ async function buildRecentVerificationArtifact(input: {
       throw new Error(`Recent Verification origin ${origin.date} is missing a lawful origin value.`)
     }
 
-    const currentResponse = await executePreparedForecastBridge(
+    const currentResponse = await executePreparedCurrent(
       preparedPayload,
       'current',
       input.request.seriesId,

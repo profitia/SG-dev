@@ -17,7 +17,13 @@ import {
 } from '../lib/forecast/identity'
 import type { UserFacingForecastModelId } from '../lib/forecast/contracts'
 import type { ExactForecastCapabilityResolution } from '../lib/forecast/capability-resolver'
-import { createForecastLibraryService, type ForecastBridge, type ForecastLibraryRepository, buildForecastHistoryFingerprint } from '../lib/forecast/service'
+import {
+  buildForecastHistoryFingerprint,
+  buildRecentVerificationArtifact,
+  createForecastLibraryService,
+  type ForecastBridge,
+  type ForecastLibraryRepository,
+} from '../lib/forecast/service'
 
 function createTestForecastLibraryService(
   dependencies: Parameters<typeof createForecastLibraryService>[0] = {},
@@ -823,6 +829,177 @@ test('prepared recent verification lookup uses the recent policy identity and cu
   assert.equal(verification.status, 'AVAILABLE')
   assert.equal(historyMode, 'current')
   assert.equal(historyModelId, 'arima')
+})
+
+test('recent verification artifact uses the latest lawful matured origin, same effective policy, and N=1', async () => {
+  const authoritativeHistory = {
+    seriesId: 'recent.series',
+    benchmarkName: 'Recent series',
+    description: 'Recent series',
+    frequency: 'MONTHLY',
+    start: '2022-01-01T00:00:00.000Z',
+    end: '2026-12-01T00:00:00.000Z',
+    observations: 60,
+    canonicalization: {
+      method: 'VALIDATE_NATIVE_MONTHLY_END_OF_PERIOD',
+      version: 'native-monthly-end-of-period-v1',
+    },
+    points: Array.from({ length: 60 }, (_, index) => {
+      const date = new Date(Date.UTC(2022 + Math.floor(index / 12), index % 12, 1)).toISOString()
+      return {
+        date,
+        value: 100 + index,
+        sourceObservedAt: new Date(Date.UTC(2022 + Math.floor(index / 12), (index % 12) + 1, 0)).toISOString(),
+      }
+    }),
+  }
+  const executedOrigins: string[] = []
+
+  const artifact = await buildRecentVerificationArtifact({
+    request: {
+      seriesId: 'recent.series',
+      modelId: 'arima',
+      targetBasis: 'END_OF_PERIOD',
+    },
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    targetSemantics: 'END_OF_PERIOD',
+    benchmark: {
+      seriesId: 'recent.series',
+      component: 'RECENT_SERIES',
+      description: 'Recent series',
+      frequency: 'MONTHLY',
+      expectedObservations: 60,
+    },
+    source: {
+      kind: 'DYNAMIC_MARKET_DATA_STORE',
+      runId: null,
+    },
+    authoritativeHistory,
+    cadenceContext: {
+      cadence: {
+        sourceFrequency: 'MONTHLY',
+        targetCadence: 'MONTHLY',
+      },
+      frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+    },
+    async executePreparedCurrent(payload) {
+      executedOrigins.push(payload.history.end)
+      return {
+        status: 'AVAILABLE',
+        methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+        source: {
+          kind: 'DYNAMIC_MARKET_DATA_STORE',
+          runId: null,
+        },
+        benchmark: {
+          seriesId: 'recent.series',
+          component: 'RECENT_SERIES',
+          description: 'Recent series',
+          frequency: 'MONTHLY',
+          expectedObservations: payload.history.observations,
+        },
+        model: {
+          id: 'arima',
+          userFacing: true,
+        },
+        result: {
+          benchmarkId: 'recent.series',
+          component: 'RECENT_SERIES',
+          description: 'Recent series',
+          frequency: 'MONTHLY',
+          model: 'arima',
+          history: payload.history,
+          currentForecast: {
+            '1M': {
+              horizon: '1M',
+              horizonSteps: 1,
+              forecastDate: '2026-01-01T00:00:00.000Z',
+              forecastValue: 148,
+              metadata: null,
+              failureReason: null,
+            },
+            '12M': {
+              horizon: '12M',
+              horizonSteps: 12,
+              forecastDate: '2026-12-01T00:00:00.000Z',
+              forecastValue: 159,
+              metadata: null,
+              failureReason: null,
+            },
+          },
+          runtimeSeconds: 0.01,
+        },
+      }
+    },
+  })
+
+  const currentCompatibility = createCurrentForecastStatisticalCompatibility({
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: 'END_OF_PERIOD',
+  })
+
+  assert.deepEqual(executedOrigins, ['2025-12-01T00:00:00.000Z'])
+  assert.equal(artifact.forecastOrigin, '2025-12-01T00:00:00.000Z')
+  assert.equal(artifact.statisticalCompatibility.trainingWindowPolicyId, 'RECENT_SAME_POLICY_AS_CURRENT@recent-same-policy-as-current-v1')
+  assert.equal(artifact.statisticalCompatibility.effectiveTrainingPolicyId, currentCompatibility.effectiveTrainingPolicyId)
+  assert.equal(artifact.verification['1M']?.origins, 1)
+  assert.equal(artifact.verification['12M']?.origins, 1)
+  assert.equal(artifact.verification['12M']?.records[0]?.forecastDate, '2026-12-01T00:00:00.000Z')
+})
+
+test('recent verification artifact fails closed when no lawful matured recent origin exists', async () => {
+  await assert.rejects(
+    buildRecentVerificationArtifact({
+      request: {
+        seriesId: 'recent.series',
+        modelId: 'arima',
+        targetBasis: 'END_OF_PERIOD',
+      },
+      methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+      targetSemantics: 'END_OF_PERIOD',
+      benchmark: {
+        seriesId: 'recent.series',
+        component: 'RECENT_SERIES',
+        description: 'Recent series',
+        frequency: 'MONTHLY',
+        expectedObservations: 10,
+      },
+      source: {
+        kind: 'DYNAMIC_MARKET_DATA_STORE',
+        runId: null,
+      },
+      authoritativeHistory: {
+        seriesId: 'recent.series',
+        benchmarkName: 'Recent series',
+        description: 'Recent series',
+        frequency: 'MONTHLY',
+        start: '2026-01-01T00:00:00.000Z',
+        end: '2026-10-01T00:00:00.000Z',
+        observations: 10,
+        canonicalization: {
+          method: 'VALIDATE_NATIVE_MONTHLY_END_OF_PERIOD',
+          version: 'native-monthly-end-of-period-v1',
+        },
+        points: Array.from({ length: 10 }, (_, index) => ({
+          date: new Date(Date.UTC(2026, index, 1)).toISOString(),
+          value: 100 + index,
+          sourceObservedAt: new Date(Date.UTC(2026, index + 1, 0)).toISOString(),
+        })),
+      },
+      cadenceContext: {
+        cadence: {
+          sourceFrequency: 'MONTHLY',
+          targetCadence: 'MONTHLY',
+        },
+        frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+      },
+      async executePreparedCurrent() {
+        throw new Error('should not execute current when no lawful matured origin exists')
+      },
+    }),
+    /PREPARATION_REQUIRED: No exact-identity prepared Recent Verification is available\./,
+  )
 })
 
 test('prepared-only lookup selects the exact source-frequency and target-cadence cohort before exact persisted read', async () => {
