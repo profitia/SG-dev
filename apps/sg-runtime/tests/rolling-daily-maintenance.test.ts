@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+import '../scripts/load-env'
+
 import { ROLLING_DAILY_TARGET_BASIS } from '../lib/forecast/rolling-daily-policy'
 import {
   buildRollingDailyHistoryFingerprint,
@@ -19,6 +21,9 @@ import {
   type RollingDailyMaintenanceStateArtifact,
   type RollingDailyVerificationRecordArtifact,
 } from '../lib/forecast/rolling-daily-maintenance'
+
+process.env.MARKET_DATA_DATABASE_URL = process.env.MARKET_DATA_DATABASE_URL
+  ?? 'postgresql://phase21@127.0.0.1:55421/sg_phase_2_1_market_data'
 
 function createHistory() {
   return {

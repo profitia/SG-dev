@@ -9,8 +9,11 @@ import { performance } from 'node:perf_hooks'
 import { promisify } from 'node:util'
 
 import { Prisma } from '@/generated/market-data-client'
+import { createForecastCapabilityService } from '@/lib/forecast/capability-resolver'
+import { createForecastLibraryService, type ForecastServiceRequest } from '@/lib/forecast/service'
 import { createInteractiveForecastPreparationService } from '@/lib/forecast/interactive-preparation'
 import { createProgressiveForecastPreparationService } from '@/lib/forecast/progressive-preparation'
+import { createRollingDailyProductionOperationsService } from '@/lib/forecast/rolling-daily-production-operations'
 import { prepareRollingDailyCurrentOwnership } from '@/lib/forecast/rolling-daily-current-ownership'
 import { readRollingDailyCurrentForecastSnapshot } from '@/lib/forecast/rolling-daily-current-forecast-snapshot'
 import {
@@ -316,13 +319,46 @@ async function isGitWorktreeClean() {
   return stdout.trim().length === 0
 }
 
+async function readProcessAncestryPids(startPid: number) {
+  const { stdout } = await execFile('ps', ['-Ao', 'pid=,ppid='], { encoding: 'utf8' })
+  const parentByPid = new Map<number, number>()
+
+  for (const line of stdout.split('\n')) {
+    const [pidRaw, ppidRaw] = line.trim().split(/\s+/)
+    const pid = Number(pidRaw)
+    const ppid = Number(ppidRaw)
+    if (Number.isFinite(pid) && Number.isFinite(ppid)) {
+      parentByPid.set(pid, ppid)
+    }
+  }
+
+  const excluded = new Set<number>()
+  let cursor: number | undefined = startPid
+  while (cursor && Number.isFinite(cursor) && cursor > 0 && !excluded.has(cursor)) {
+    excluded.add(cursor)
+    cursor = parentByPid.get(cursor)
+  }
+
+  return excluded
+}
+
 async function countActiveEvidenceRunners() {
+  const excludedPids = await readProcessAncestryPids(process.pid)
   const { stdout } = await execFile('ps', ['-Ao', 'pid=,command='], { encoding: 'utf8' })
   return stdout
     .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .filter((line) => line.includes('run-forecast-stage8-final-evidence.ts') && !line.startsWith(String(process.pid)))
+    .map((line) => {
+      const trimmed = line.trim()
+      if (!trimmed) {
+        return null
+      }
+      const firstSpace = trimmed.indexOf(' ')
+      const pid = Number(firstSpace === -1 ? trimmed : trimmed.slice(0, firstSpace))
+      const command = firstSpace === -1 ? '' : trimmed.slice(firstSpace + 1)
+      return Number.isFinite(pid) ? { pid, command } : null
+    })
+    .filter((entry): entry is { pid: number, command: string } => entry !== null)
+    .filter((entry) => entry.command.includes('run-forecast-stage8-final-evidence.ts') && !excludedPids.has(entry.pid))
     .length
 }
 
@@ -342,6 +378,21 @@ async function readDatabaseIdentity() {
     port: rows[0]?.port ?? null,
     freeDiskBytes: Number(freeDisk.bavail) * Number(freeDisk.bsize),
   }
+}
+
+async function countExecutionRows(
+  seriesId: string,
+  operationFamily: 'CURRENT' | 'VERIFICATION' | 'HISTORICAL_MAINTENANCE',
+  modelId?: ModelId,
+) {
+  const prisma = requirePrisma()
+  return prisma.forecastPreparationExecutionLedger.count({
+    where: {
+      seriesId,
+      operationFamily,
+      ...(modelId ? { modelId } : {}),
+    },
+  })
 }
 
 async function seedHistory(history: SyntheticHistory) {
@@ -797,58 +848,259 @@ async function runFailureRecovery() {
 
 async function runConcurrencyProbe(history: SyntheticHistory) {
   const modelId = REPRESENTATIVE_CONCURRENCY_MODEL
+  const service = createRollingDailyMaintenanceService()
   await clearSeriesArtifacts(SERIES_ID)
   await seedHistory(history)
-  await runMultiBatchExecution(history)
 
-  const interactive = createInteractiveForecastPreparationService()
-  const ownership = await prepareRollingDailyCurrentOwnership({
+  const requests = Array.from({ length: 5 }, () => service.runIncrementalMaintenance({
     seriesId: SERIES_ID,
     modelId,
-  })
-  const requests = Array.from({ length: 5 }, () => interactive.prepareCurrent({
-    seriesId: SERIES_ID,
-    modelId,
-    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    preparedHistory: toMaintenanceHistory(history),
+    bootstrapHistoricalIfMissing: true,
+    maxOriginsPerRun: 1,
+    trace: { enabled: true, mode: 'detailed', progressEveryOrigins: 1 },
   }))
   const results = await Promise.all(requests)
+  const lineageKey = results[0]?.executionLineage?.logicalArtifactKey ?? null
   const prisma = requirePrisma()
-  const ledgerRows = await prisma.forecastPreparationExecutionLedger.findMany({
-    where: {
-      logicalArtifactKey: ownership.logicalArtifactKey,
-      operationFamily: 'CURRENT',
-    },
-    orderBy: { startedAt: 'asc' },
-  })
-  const ownerCount = ledgerRows.filter((row) => row.latestRole === 'OWNER').length
-  const waiterCount = ledgerRows.filter((row) => row.latestRole === 'WAITER').length
-  const computeCount = ledgerRows.filter((row) => row.latestRole === 'OWNER' && row.executionStatus === 'COMPLETED').length
-  const availability = await readRollingDailyCurrentForecastSnapshot({
-    seriesId: SERIES_ID,
-    modelId,
-    sourceHistoryFingerprint: ownership.identity.historyFingerprint,
-  })
-  const allRequestsSucceeded = results.every((entry) => entry.status === 'READY' || entry.status === 'REUSED')
+  const ledgerRows = lineageKey
+    ? await prisma.forecastPreparationExecutionLedger.findMany({
+        where: {
+          logicalArtifactKey: lineageKey,
+          operationFamily: 'HISTORICAL_MAINTENANCE',
+        },
+        orderBy: { startedAt: 'asc' },
+      })
+    : []
+  const completedRows = ledgerRows.filter((row) => row.executionStatus === 'COMPLETED')
+  const completedRow = completedRows[0]
+  const ownerCount = completedRows.length
+  const waiterCount = completedRow?.waiterCount ?? 0
+  const computeCount = completedRows.length
+  const allRequestsSucceeded = results.every((entry) => entry.status === 'SUCCEEDED' || entry.status === 'NO_OP')
 
   return {
-    proofSurface: 'ROLLING_DAILY_CURRENT_OWNER_WAITER',
+    proofSurface: 'ROLLING_DAILY_HISTORICAL_EXECUTION_LEDGER',
     status: allRequestsSucceeded
-      && availability.status === 'HIT'
+      && lineageKey !== null
       && ownerCount === 1
+      && waiterCount === requests.length - 1
       && computeCount === 1
       ? 'PASS'
       : 'FAIL',
     requestCount: requests.length,
     allRequestsSucceeded: allRequestsSucceeded ? 'YES' : 'NO',
     resultStatuses: results.map((entry) => entry.status),
-    resultReasons: results.map((entry) => entry.reason),
-    rollingDailyCurrentOwnerCount: ownerCount,
-    rollingDailyCurrentWaiterCount: waiterCount,
-    rollingDailyCurrentComputeCount: computeCount,
-    duplicateRollingDailyCurrentComputeCount: Math.max(0, computeCount - 1),
-    durableBatchResultCount: ledgerRows.filter((row) => row.executionStatus === 'COMPLETED').length,
-    availabilityStatus: availability.status,
+    resultReasons: results.map((entry) => entry.reasonCode),
+    rollingDailyHistoricalOwnerCount: ownerCount,
+    rollingDailyHistoricalWaiterCount: waiterCount,
+    rollingDailyHistoricalComputeCount: computeCount,
+    duplicateRollingDailyHistoricalComputeCount: Math.max(0, computeCount - 1),
+    durableExecutionRowCount: ledgerRows.length,
+    lineageLogicalArtifactKey: lineageKey,
   }
+}
+
+async function waitForRepresentativeStage7ProfileReady(progressive: ReturnType<typeof createProgressiveForecastPreparationService>) {
+  const startedAt = performance.now()
+  while (performance.now() - startedAt <= PROGRESSIVE_TIMEOUT_MS) {
+    const snapshot = await progressive.snapshotAndKickoff({
+      seriesId: FAST_READY_SERIES_ID,
+      preferredModelId: MONTHLY_PROBE_MODEL,
+      preferredTargetBasis: 'END_OF_PERIOD',
+    })
+    const exact = snapshot.variants.find((variant) => (
+      variant.seriesId === FAST_READY_SERIES_ID
+      && variant.modelId === MONTHLY_PROBE_MODEL
+      && variant.targetBasis === 'END_OF_PERIOD'
+    ))
+    if (exact?.currentState === 'READY' && exact.verificationState === 'READY') {
+      return snapshot
+    }
+    await sleep(POLL_INTERVAL_MS)
+  }
+
+  throw new Error('Timed out waiting for the representative Stage 7 regression profile to become READY on Stage 8 code.')
+}
+
+async function countRepresentativeStage7PreparedArtifacts() {
+  const prisma = requirePrisma()
+  const [current, verification] = await Promise.all([
+    prisma.forecastCurrentRun.count({
+      where: {
+        seriesId: FAST_READY_SERIES_ID,
+        modelId: MONTHLY_PROBE_MODEL,
+        targetBasis: 'END_OF_PERIOD',
+        methodId: 'END_OF_PERIOD',
+        methodVersion: 'v1',
+      },
+    }),
+    prisma.forecastVerificationRun.count({
+      where: {
+        seriesId: FAST_READY_SERIES_ID,
+        modelId: MONTHLY_PROBE_MODEL,
+        targetBasis: 'END_OF_PERIOD',
+        methodId: 'END_OF_PERIOD',
+        methodVersion: 'v1',
+      },
+    }),
+  ])
+
+  return { current, verification }
+}
+
+async function readRepresentativeStage7PreparedCurrent() {
+  const libraryService = createForecastLibraryService()
+  const request: ForecastServiceRequest = {
+    seriesId: FAST_READY_SERIES_ID,
+    modelId: MONTHLY_PROBE_MODEL,
+    targetBasis: 'END_OF_PERIOD',
+    sourceFrequency: 'DAILY',
+    targetCadence: 'MONTHLY',
+  }
+  return libraryService.readPreparedCurrentForecastRequest(request)
+}
+
+async function readRepresentativeStage7PreparedRecent() {
+  const libraryService = createForecastLibraryService()
+  const request: ForecastServiceRequest = {
+    seriesId: FAST_READY_SERIES_ID,
+    modelId: MONTHLY_PROBE_MODEL,
+    targetBasis: 'END_OF_PERIOD',
+  }
+  return libraryService.readPreparedRecentVerificationRequest(request)
+}
+
+function createRepresentativeStage7Services() {
+  const capabilityService = createForecastCapabilityService()
+  const libraryService = createForecastLibraryService()
+  const rollingDailyService = createRollingDailyProductionOperationsService()
+  const progressiveService = createProgressiveForecastPreparationService({
+    resolveCapabilities: async () => {
+      const resolution = await capabilityService.resolveBySeriesId(FAST_READY_SERIES_ID)
+      return {
+        ...resolution,
+        capabilities: resolution.capabilities.filter((capability) => (
+          capability.identity.modelId === MONTHLY_PROBE_MODEL
+          && capability.identity.targetSemantics === 'END_OF_PERIOD'
+        )),
+      }
+    },
+    prepareMonthlyCurrent: (input) => libraryService.resolveCurrentForecastRequest(input),
+    prepareMonthlyHistorical: (input) => libraryService.resolveRecentVerificationRequest(input),
+    runRollingDaily: (input) => rollingDailyService.run(input),
+  })
+
+  return { progressiveService }
+}
+
+async function runStage7RegressionProbe() {
+  const fastReadyHistory = buildControlledDailyHistory(1825, {
+    seriesId: FAST_READY_SERIES_ID,
+    seriesKey: FAST_READY_SERIES_KEY,
+    displayName: FAST_READY_SERIES_NAME,
+    source: 'PPF1_STAGE8_FAST_READY_CONTROL',
+    startDate: '2021-01-01T00:00:00.000Z',
+  })
+
+  await clearSeriesArtifacts(FAST_READY_SERIES_ID)
+  await seedHistory(fastReadyHistory)
+
+  const currentBeforeCold = await countExecutionRows(FAST_READY_SERIES_ID, 'CURRENT', MONTHLY_PROBE_MODEL)
+  const verificationBeforeCold = await countExecutionRows(FAST_READY_SERIES_ID, 'VERIFICATION', MONTHLY_PROBE_MODEL)
+
+  await waitForRepresentativeStage7ProfileReady(createRepresentativeStage7Services().progressiveService)
+
+  const coldCurrent = await readRepresentativeStage7PreparedCurrent()
+  const coldRecent = await readRepresentativeStage7PreparedRecent()
+
+  const currentAfterCold = await countExecutionRows(FAST_READY_SERIES_ID, 'CURRENT', MONTHLY_PROBE_MODEL)
+  const verificationAfterCold = await countExecutionRows(FAST_READY_SERIES_ID, 'VERIFICATION', MONTHLY_PROBE_MODEL)
+
+  const warmProgressive = createRepresentativeStage7Services().progressiveService
+  const warmBefore = await countRepresentativeStage7PreparedArtifacts()
+  const warmSnapshot = await waitForRepresentativeStage7ProfileReady(warmProgressive)
+  const warmCurrent = await readRepresentativeStage7PreparedCurrent()
+  const warmRecent = await readRepresentativeStage7PreparedRecent()
+  const warmAfter = await countRepresentativeStage7PreparedArtifacts()
+
+  const crossProgressive = createRepresentativeStage7Services().progressiveService
+  const crossBefore = await countRepresentativeStage7PreparedArtifacts()
+  const crossSnapshot = await waitForRepresentativeStage7ProfileReady(crossProgressive)
+  const crossCurrent = await readRepresentativeStage7PreparedCurrent()
+  const crossRecent = await readRepresentativeStage7PreparedRecent()
+  const crossAfter = await countRepresentativeStage7PreparedArtifacts()
+
+  const warmReusePass = warmSnapshot.activeItem === null
+    && warmSnapshot.queuedCount === 0
+    && warmCurrent.status === 'AVAILABLE'
+    && warmRecent.status === 'AVAILABLE'
+    && warmAfter.current === warmBefore.current
+    && warmAfter.verification === warmBefore.verification
+  const crossContextReusePass = crossSnapshot.activeItem === null
+    && crossSnapshot.queuedCount === 0
+    && crossCurrent.status === 'AVAILABLE'
+    && crossRecent.status === 'AVAILABLE'
+    && crossAfter.current === crossBefore.current
+    && crossAfter.verification === crossBefore.verification
+
+  return {
+    status: coldCurrent.status === 'AVAILABLE'
+      && coldRecent.status === 'AVAILABLE'
+      && warmReusePass
+      && crossContextReusePass
+      ? 'PASS'
+      : 'FAIL',
+    currentStatus: coldCurrent.status,
+    recentStatus: coldRecent.status,
+    warmReusePreserved: warmReusePass ? 'PASS' : 'FAIL',
+    crossContextReusePreserved: crossContextReusePass ? 'PASS' : 'FAIL',
+    coldExecutionDelta: {
+      current: currentAfterCold - currentBeforeCold,
+      verification: verificationAfterCold - verificationBeforeCold,
+    },
+    warmExecutionDelta: {
+      current: warmAfter.current - warmBefore.current,
+      verification: warmAfter.verification - warmBefore.verification,
+    },
+    crossContextExecutionDelta: {
+      current: crossAfter.current - crossBefore.current,
+      verification: crossAfter.verification - crossBefore.verification,
+    },
+  }
+}
+
+async function runFocusedValidations() {
+  const testArgs = [
+    '--import', 'tsx',
+    '--test',
+    'tests/rolling-daily-maintenance.test.ts',
+    'tests/rolling-daily-production-operations.test.ts',
+    'tests/rolling-daily-historical-admission.test.ts',
+  ]
+
+  const tests = {
+    focusedTests: 'FAIL',
+    typecheckRegression: 'FAIL',
+    focusedTestCommand: `node ${testArgs.join(' ')}`,
+    typecheckCommand: 'npx tsc --noEmit -p tsconfig.stage8-focused.json',
+  }
+
+  await execFile('node', testArgs, {
+    cwd: process.cwd(),
+    env: process.env,
+    maxBuffer: 20 * 1024 * 1024,
+  })
+  tests.focusedTests = 'PASS'
+
+  await execFile('npx', ['tsc', '--noEmit', '-p', 'tsconfig.stage8-focused.json'], {
+    cwd: process.cwd(),
+    env: process.env,
+    maxBuffer: 20 * 1024 * 1024,
+  })
+  tests.typecheckRegression = 'PASS'
+
+  return tests
 }
 
 function canonicalizePersistedRecord(record: {
@@ -1170,8 +1422,8 @@ function renderMarkdown(result: EvidenceResult) {
     '## Notes',
     '',
     '- Batch execution uses real isolated PostgreSQL persistence and canonical rolling-daily maintenance.',
-    '- Stage 7 accepted evidence remains preserved and is referenced only as accepted baseline evidence.',
-    '- ExecutionId is missing from canonical historical batch telemetry; owner role is derivable from the single authoritative runner topology.',
+    '- Stage 7 accepted evidence remains preserved as baseline reference, but Stage 7 regression gates here are re-proved on current Stage 8 code.',
+    '- Historical concurrency is proven from the durable execution ledger on the historical maintenance owner path, not the Rolling Daily current path.',
     '',
   ]
   return `${lines.join('\n')}\n`
@@ -1190,6 +1442,9 @@ async function main() {
   }
   const databaseIdentity = await readDatabaseIdentity()
   const activeRunnerCountBeforeStart = await countActiveEvidenceRunners()
+  if (activeRunnerCountBeforeStart !== 0) {
+    throw new Error(`Stage 8 final evidence preflight requires zero active evidence runners before start; observed ${activeRunnerCountBeforeStart}.`)
+  }
   const freeDiskOkay = Number((databaseIdentity as { freeDiskBytes: number }).freeDiskBytes) >= MIN_FREE_DISK_BYTES
   const acceptedStage7 = await loadAcceptedStage7Evidence()
 
@@ -1208,6 +1463,7 @@ async function main() {
   await runMultiBatchExecution(appendOnlyDelta.history as SyntheticHistory)
   const statisticalParity = await runStatisticalParity(appendOnlyDelta.history as SyntheticHistory)
   const fastReadyIsolation = await runFastReadyIsolationProbe(buildControlledDailyHistory(78))
+  const stage7Regression = await runStage7RegressionProbe()
 
   const scopeGuards = {
     methodologyChanged: 'NO',
@@ -1221,10 +1477,7 @@ async function main() {
     stage9PlusLeakage: 'NO',
   }
 
-  const tests = {
-    focusedTests: 'NOT_RUN',
-    typecheckRegression: 'NOT_RUN',
-  }
+  const tests = await runFocusedValidations()
 
   const telemetry = {
     durableTelemetryGate: batchExecution.modelBatches.length > 0 ? 'PASS' : 'FAIL',
@@ -1258,13 +1511,15 @@ async function main() {
     FAILURE_RECOVERY_GATE: failureRecovery.status,
     RECOVERY_RESTART_FROM_BEGINNING: failureRecovery.recoveryRestartFromBeginning,
     RECOVERY_DUPLICATE_RECORDS: failureRecovery.recoveryDuplicateRecords,
+    ACTIVE_STAGE8_RUNNER_COUNT_BEFORE_START: activeRunnerCountBeforeStart,
+    ACTIVE_STAGE8_RUNNER_PREFLIGHT: activeRunnerCountBeforeStart === 0 ? 'PASS' : 'FAIL',
     CONCURRENT_ONE_GLOBAL_COMPUTE_GATE: concurrency.status,
     CONCURRENT_REQUEST_COUNT: concurrency.requestCount,
     CONCURRENCY_PROOF_SURFACE: concurrency.proofSurface,
-    ROLLING_DAILY_CURRENT_OWNER_COUNT: concurrency.rollingDailyCurrentOwnerCount,
-    ROLLING_DAILY_CURRENT_WAITER_COUNT: concurrency.rollingDailyCurrentWaiterCount,
-    ROLLING_DAILY_CURRENT_COMPUTE_COUNT: concurrency.rollingDailyCurrentComputeCount,
-    DUPLICATE_ROLLING_DAILY_CURRENT_COMPUTE_COUNT: concurrency.duplicateRollingDailyCurrentComputeCount,
+    ROLLING_DAILY_HISTORICAL_OWNER_COUNT: concurrency.rollingDailyHistoricalOwnerCount,
+    ROLLING_DAILY_HISTORICAL_WAITER_COUNT: concurrency.rollingDailyHistoricalWaiterCount,
+    ROLLING_DAILY_HISTORICAL_COMPUTE_COUNT: concurrency.rollingDailyHistoricalComputeCount,
+    DUPLICATE_ROLLING_DAILY_HISTORICAL_COMPUTE_COUNT: concurrency.duplicateRollingDailyHistoricalComputeCount,
     ALL_CONCURRENT_REQUESTS_SUCCEEDED: concurrency.allRequestsSucceeded,
     EXACT_IDENTITY_GATE: identityRevision.status,
     SOURCE_REVISION_FAIL_CLOSED: identityRevision.sourceRevisionFailClosed,
@@ -1275,10 +1530,10 @@ async function main() {
     STATISTICAL_PARITY_ARIMA: statisticalParity.perModel.arima.status,
     STATISTICAL_PARITY_GATE: statisticalParity.status,
     FAST_READY_ISOLATION_GATE: fastReadyIsolation.status,
-    STAGE7_CURRENT_NON_REGRESSION: acceptedStage7.conclusions.fastReadyExactCurrentAndRequiredRecentRenderable === 'YES' ? 'PASS' : 'FAIL',
-    STAGE7_RECENT_NON_REGRESSION: acceptedStage7.conclusions.fastReadyExactCurrentAndRequiredRecentRenderable === 'YES' ? 'PASS' : 'FAIL',
-    STAGE7_WARM_REUSE_NON_REGRESSION: acceptedStage7.conclusions.warmReusePreserved === 'YES' ? 'PASS' : 'FAIL',
-    STAGE7_CROSS_CONTEXT_REUSE_NON_REGRESSION: acceptedStage7.conclusions.crossContextReusePreserved === 'YES' ? 'PASS' : 'FAIL',
+    STAGE7_CURRENT_NON_REGRESSION: stage7Regression.currentStatus === 'AVAILABLE' ? 'PASS' : 'FAIL',
+    STAGE7_RECENT_NON_REGRESSION: stage7Regression.recentStatus === 'AVAILABLE' ? 'PASS' : 'FAIL',
+    STAGE7_WARM_REUSE_NON_REGRESSION: stage7Regression.warmReusePreserved,
+    STAGE7_CROSS_CONTEXT_REUSE_NON_REGRESSION: stage7Regression.crossContextReusePreserved,
     FULL_HISTORICAL_INLINE_WITH_USER_REQUEST: fastReadyIsolation.fullHistoricalInlineWithUserRequest,
     CALIBRATION_BUILD_TRIGGERED_BY_STAGE8: scopeGuards.calibrationBuildTriggeredByStage8,
     BAND_BUILD_TRIGGERED_BY_STAGE8: scopeGuards.bandBuildTriggeredByStage8,
@@ -1299,10 +1554,14 @@ async function main() {
       warmReuse.status,
       appendOnlyDelta.status,
       failureRecovery.status,
+      activeRunnerCountBeforeStart === 0 ? 'PASS' : 'FAIL',
       concurrency.status,
       identityRevision.status,
       statisticalParity.status,
       fastReadyIsolation.status,
+      stage7Regression.status,
+      tests.focusedTests,
+      tests.typecheckRegression,
       dependencyProvenance.status,
     ].every((status) => status === 'PASS') ? 'PASS' : 'FAIL',
     READY_FOR_STAGE9: [
@@ -1310,10 +1569,14 @@ async function main() {
       warmReuse.status,
       appendOnlyDelta.status,
       failureRecovery.status,
+      activeRunnerCountBeforeStart === 0 ? 'PASS' : 'FAIL',
       concurrency.status,
       identityRevision.status,
       statisticalParity.status,
       fastReadyIsolation.status,
+      stage7Regression.status,
+      tests.focusedTests,
+      tests.typecheckRegression,
     ].every((status) => status === 'PASS') ? 'YES' : 'NO',
   }
 
@@ -1348,8 +1611,9 @@ async function main() {
       acceptedStage7EvidenceHead: '963f9a080d6f2ed242581bedc9ad1f95a976ae1a',
     },
     stage7Regression: {
-      acceptedStage7: acceptedStage7.conclusions,
+      acceptedBaseline: acceptedStage7.conclusions,
       acceptedStage7Concurrency: acceptedStage7.concurrency,
+      currentCodeProbe: stage7Regression,
     },
     scopeGuards,
     telemetry,

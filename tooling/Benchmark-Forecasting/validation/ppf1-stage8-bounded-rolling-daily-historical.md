@@ -1,7 +1,7 @@
 # PPF-1 Stage 8 Final Evidence Closure
 
-STAGE8_SOURCE_CANDIDATE_SHA = 4e86670939e71634333d56818ce33b397cb0a4af
-STAGE8_EVIDENCE_SOURCE_SHA = 4e86670939e71634333d56818ce33b397cb0a4af
+STAGE8_SOURCE_CANDIDATE_SHA = 13b73253f8e6c7be39a6bdea516c9c70d55ada39
+STAGE8_EVIDENCE_SOURCE_SHA = 13b73253f8e6c7be39a6bdea516c9c70d55ada39
 ROLLING_DAILY_SCOPE_ONLY = PASS
 MODELS_TESTED = naive,damped_holt,ets,arima
 EXPECTED_MODELS = naive,damped_holt,ets,arima
@@ -22,13 +22,15 @@ NEW_COMPUTED_ORIGIN_COUNT = 2
 FAILURE_RECOVERY_GATE = PASS
 RECOVERY_RESTART_FROM_BEGINNING = NO
 RECOVERY_DUPLICATE_RECORDS = 0
+ACTIVE_STAGE8_RUNNER_COUNT_BEFORE_START = 0
+ACTIVE_STAGE8_RUNNER_PREFLIGHT = PASS
 CONCURRENT_ONE_GLOBAL_COMPUTE_GATE = PASS
 CONCURRENT_REQUEST_COUNT = 5
-CONCURRENCY_PROOF_SURFACE = ROLLING_DAILY_CURRENT_OWNER_WAITER
-ROLLING_DAILY_CURRENT_OWNER_COUNT = 1
-ROLLING_DAILY_CURRENT_WAITER_COUNT = 0
-ROLLING_DAILY_CURRENT_COMPUTE_COUNT = 1
-DUPLICATE_ROLLING_DAILY_CURRENT_COMPUTE_COUNT = 0
+CONCURRENCY_PROOF_SURFACE = ROLLING_DAILY_HISTORICAL_EXECUTION_LEDGER
+ROLLING_DAILY_HISTORICAL_OWNER_COUNT = 1
+ROLLING_DAILY_HISTORICAL_WAITER_COUNT = 4
+ROLLING_DAILY_HISTORICAL_COMPUTE_COUNT = 1
+DUPLICATE_ROLLING_DAILY_HISTORICAL_COMPUTE_COUNT = 0
 ALL_CONCURRENT_REQUESTS_SUCCEEDED = YES
 EXACT_IDENTITY_GATE = PASS
 SOURCE_REVISION_FAIL_CLOSED = PASS
@@ -53,8 +55,8 @@ CANONICAL_DEPENDENCY_PROVENANCE = PASS
 EVIDENCE_DATABASE_ISOLATED = YES
 PRODUCTION_DATABASE_USED = NO
 EVIDENCE_WORKTREE_CLEAN = NO
-FOCUSED_TESTS = NOT_RUN
-TYPECHECK_REGRESSION = NOT_RUN
+FOCUSED_TESTS = PASS
+TYPECHECK_REGRESSION = PASS
 GITHUB_PUBLICATION = NOT_STARTED
 REMOTE_REREAD = NOT_STARTED
 PMOS_CLOSEOUT_STATE = NOT_STARTED
@@ -63,8 +65,8 @@ READY_FOR_STAGE9 = YES
 
 ## Evidence Summary
 
-Source candidate SHA: 4e86670939e71634333d56818ce33b397cb0a4af
-Evidence worktree head: 4e86670939e71634333d56818ce33b397cb0a4af
+Source candidate SHA: 13b73253f8e6c7be39a6bdea516c9c70d55ada39
+Evidence worktree head: 13b73253f8e6c7be39a6bdea516c9c70d55ada39
 Database: sg_phase_2_1_market_data
 Models tested: naive,damped_holt,ets,arima
 
@@ -77,6 +79,6 @@ Max origins observed: 3
 ## Notes
 
 - Batch execution uses real isolated PostgreSQL persistence and canonical rolling-daily maintenance.
-- Stage 7 accepted evidence remains preserved and is referenced only as accepted baseline evidence.
-- ExecutionId is missing from canonical historical batch telemetry; owner role is derivable from the single authoritative runner topology.
+- Stage 7 accepted evidence remains preserved as baseline reference, but Stage 7 regression gates here are re-proved on current Stage 8 code.
+- Historical concurrency is proven from the durable execution ledger on the historical maintenance owner path, not the Rolling Daily current path.
 

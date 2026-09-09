@@ -1,5 +1,5 @@
 import { execFile, spawn } from 'node:child_process'
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -9,7 +9,19 @@ import { promisify } from 'node:util'
 import { Prisma } from '@/generated/market-data-client'
 import { serverEnv } from '@/lib/env'
 import type { ForecastTargetBasis } from '@/lib/forecast/contracts'
+import {
+  createDefaultForecastPreparationExecutionAdmission,
+  createDefaultForecastPreparationExecutionLedger,
+  type ForecastPreparationExecutionAdmission,
+  type ForecastPreparationExecutionLedger,
+  type ForecastPreparationExecutionRecord,
+  type ForecastPreparationOwnedExecutionContext,
+} from '@/lib/forecast/execution-ledger'
 import { normalizeForecastLibraryDecimal } from '@/lib/forecast/persistence-decimal'
+import {
+  buildHistoricalMaintenanceLogicalArtifactKey,
+  createRollingDailyHistoricalLogicalArtifactIdentity,
+} from '@/lib/forecast/rolling-daily-historical-admission'
 import {
   ROLLING_DAILY_CONFIGURED_CALIBRATION_MINIMUM_SAMPLES,
   ROLLING_DAILY_METHOD_ID,
@@ -17,6 +29,10 @@ import {
   ROLLING_DAILY_TARGET_BASIS,
   ROLLING_DAILY_TECHNICAL_MINIMUM_TRAINING_OBSERVATIONS,
 } from '@/lib/forecast/rolling-daily-policy'
+import {
+  resolveForecastStage3HeartbeatIntervalMs,
+  startForecastExecutionLeaseHeartbeat,
+} from '@/lib/forecast/stage3-lease-heartbeat'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 
@@ -28,6 +44,8 @@ const BRIDGE_BUFFER_BYTES = 25 * 1024 * 1024
 const ROLLING_DAILY_HISTORICAL_TRACE_PREFIX = '[ROLLING_DAILY_HISTORICAL_TRACE]'
 const DEFAULT_HISTORICAL_TRACE_SLOW_FIT_MS = 15_000
 const DEFAULT_HISTORICAL_TRACE_PROGRESS_EVERY_ORIGINS = 25
+const ROLLING_DAILY_HISTORICAL_WAITER_MULTIPLIER = 10
+const HISTORICAL_WAITER_BACKOFF_MS = [25, 50, 100, 200, 400] as const
 
 export {
   ROLLING_DAILY_METHOD_ID,
@@ -234,6 +252,12 @@ export type RollingDailyMaintenanceResult = {
   lastProcessedOriginAt: string | null
   lastMaturedObservedAt: string | null
   runtimeMs: number
+  executionLineage?: {
+    logicalArtifactKey: string
+    executionId: string | null
+    role: 'OWNER' | 'RECOVERY_OWNER' | 'WAITER' | null
+    ownerRequestId: string | null
+  }
 }
 
 export type RollingDailyMaintenanceRepository = {
@@ -325,6 +349,8 @@ type RollingDailyMaintenanceServiceDependencies = {
   loadHistory: (seriesId: string) => Promise<RollingDailyHistoryPayload>
   now: () => Date
   logEvent: (event: string, data: Record<string, string | number | boolean | null>) => void
+  executionAdmission: ForecastPreparationExecutionAdmission
+  executionLedger: ForecastPreparationExecutionLedger
 }
 
 function normalizeOptionalString(value?: string | null) {
@@ -347,6 +373,106 @@ function sanitizePositiveInteger(value: number | undefined, fallback: number) {
     return fallback
   }
   return value
+}
+
+function waitForHistoricalBackoff(attempt: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, HISTORICAL_WAITER_BACKOFF_MS[Math.min(attempt, HISTORICAL_WAITER_BACKOFF_MS.length - 1)])
+  })
+}
+
+function buildMaintenanceExecutionLineage(input: {
+  logicalArtifactKey: string
+  executionId: string | null
+  role: 'OWNER' | 'RECOVERY_OWNER' | 'WAITER' | null
+  ownerRequestId: string | null
+}) {
+  return {
+    logicalArtifactKey: input.logicalArtifactKey,
+    executionId: input.executionId,
+    role: input.role,
+    ownerRequestId: input.ownerRequestId,
+  }
+}
+
+function asOptionalNumber(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const parsed = Number(value)
+    if (Number.isFinite(parsed)) {
+      return parsed
+    }
+  }
+  return null
+}
+
+function asOptionalString(value: unknown) {
+  return typeof value === 'string' && value.trim().length > 0 ? value : null
+}
+
+function summarizeBridgeOutcome(bridgeResponse: RollingDailyMaintenanceBridgeResponse) {
+  const status: RollingDailyMaintenanceResult['status'] = (
+    bridgeResponse.maintenance.newOriginCount === 0
+    && bridgeResponse.maintenance.maturedRecordCount === 0
+    && bridgeResponse.maintenance.calibrationRefreshCount === 0
+  )
+    ? 'NO_OP'
+    : 'SUCCEEDED'
+
+  return {
+    status,
+    sourceHistoryFingerprint: bridgeResponse.sourceHistory.historyFingerprint,
+    latestSourceObservationAt: bridgeResponse.sourceHistory.latestObservationDate,
+    sourceObservationCount: bridgeResponse.sourceHistory.observationCount,
+    filteredNullCount: bridgeResponse.sourceHistory.filteredNullCount,
+    filteredDuplicateCount: bridgeResponse.sourceHistory.filteredDuplicateCount,
+    newOriginCount: bridgeResponse.maintenance.newOriginCount,
+    maturedRecordCount: bridgeResponse.maintenance.maturedRecordCount,
+    calibrationRefreshCount: bridgeResponse.maintenance.calibrationRefreshCount,
+    affectedCalibrationGroupCount: bridgeResponse.maintenance.affectedCalibrationGroupCount,
+    lastProcessedOriginAt: bridgeResponse.maintenance.lastProcessedOriginDate,
+    lastMaturedObservedAt: bridgeResponse.maintenance.lastMaturedObservedAt,
+  }
+}
+
+function readHistoricalExecutionPayload(execution: ForecastPreparationExecutionRecord) {
+  const terminalEvent = [...execution.events].reverse().find((event) => (
+    event.eventType === 'persistence_completed' || event.eventType === 'compute_completed'
+  ))
+  if (!terminalEvent?.payload) {
+    return null
+  }
+
+  return {
+    status: execution.resultStatus === 'NO_OP' ? 'NO_OP' : 'SUCCEEDED' as RollingDailyMaintenanceResult['status'],
+    sourceHistoryFingerprint: asOptionalString(terminalEvent.payload.sourceHistoryFingerprint),
+    latestSourceObservationAt: asOptionalString(terminalEvent.payload.latestSourceObservationAt),
+    sourceObservationCount: asOptionalNumber(terminalEvent.payload.sourceObservationCount),
+    filteredNullCount: asOptionalNumber(terminalEvent.payload.filteredNullCount),
+    filteredDuplicateCount: asOptionalNumber(terminalEvent.payload.filteredDuplicateCount),
+    newOriginCount: asOptionalNumber(terminalEvent.payload.newOriginCount),
+    maturedRecordCount: asOptionalNumber(terminalEvent.payload.maturedRecordCount),
+    calibrationRefreshCount: asOptionalNumber(terminalEvent.payload.calibrationRefreshCount),
+    affectedCalibrationGroupCount: asOptionalNumber(terminalEvent.payload.affectedCalibrationGroupCount),
+    lastProcessedOriginAt: asOptionalString(terminalEvent.payload.lastProcessedOriginAt),
+    lastMaturedObservedAt: asOptionalString(terminalEvent.payload.lastMaturedObservedAt),
+  }
+}
+
+function resolveExecutionFailureResultStatus(failurePhase: 'COMPUTE' | 'PERSISTENCE' | 'FINALIZATION') {
+  return failurePhase === 'COMPUTE' ? 'FAILED' : 'AVAILABLE'
+}
+
+function resolveExecutionFailureCacheStatus(failurePhase: 'COMPUTE' | 'PERSISTENCE' | 'FINALIZATION') {
+  switch (failurePhase) {
+    case 'PERSISTENCE':
+      return 'persist-failed' as const
+    case 'COMPUTE':
+    case 'FINALIZATION':
+      return 'miss' as const
+  }
 }
 
 function readHistoricalTraceModeFromEnv(): RollingDailyHistoricalTraceMode | null {
@@ -1092,6 +1218,8 @@ export function createRollingDailyMaintenanceService(
     loadHistory: dependencies.loadHistory ?? loadRawDailyHistory,
     now: dependencies.now ?? (() => new Date()),
     logEvent: dependencies.logEvent ?? logMaintenanceEvent,
+    executionAdmission: dependencies.executionAdmission ?? createDefaultForecastPreparationExecutionAdmission(),
+    executionLedger: dependencies.executionLedger ?? createDefaultForecastPreparationExecutionLedger(),
   }
 
   return {
@@ -1134,6 +1262,22 @@ export function createRollingDailyMaintenanceService(
         ?? state?.minimumCalibrationSamples
         ?? DEFAULT_ROLLING_DAILY_MINIMUM_CALIBRATION_SAMPLES
       const sourceHistoryFingerprint = buildRollingDailyHistoryFingerprint(history)
+      const historicalIdentity = createRollingDailyHistoricalLogicalArtifactIdentity({
+        seriesId: input.seriesId,
+        targetBasis,
+        methodId: ROLLING_DAILY_METHOD_ID,
+        methodVersion: ROLLING_DAILY_METHOD_VERSION,
+        modelId: input.modelId,
+        inputSource: identity.inputSource,
+        historyFingerprint: sourceHistoryFingerprint,
+        historicalOriginStartDate,
+        minimumTrainingObservations,
+        minimumCalibrationSamples,
+        maxOriginsPerRun: input.maxOriginsPerRun,
+        bootstrapHistoricalIfMissing: input.bootstrapHistoricalIfMissing,
+        fullRebuild: input.fullRebuild,
+      })
+      const logicalArtifactKey = buildHistoricalMaintenanceLogicalArtifactKey(historicalIdentity)
       const historyState = summarizeHistoryState(history)
       const latestPersistedMaturedObservedAt = deriveLatestPersistedMaturedObservedAt(existingRecords)
       const stateLastMaturedObservedAt = state?.lastMaturedObservedAt
@@ -1267,127 +1411,320 @@ export function createRollingDailyMaintenanceService(
         }
       }
 
-      const bridgeResponse = await resolvedDependencies.runner.run({
-        seriesId: input.seriesId,
-        modelId: input.modelId,
-        inputSource: identity.inputSource,
-        targetBasis,
-        methodId: ROLLING_DAILY_METHOD_ID,
-        methodVersion: ROLLING_DAILY_METHOD_VERSION,
-        historicalOriginStartDate,
-        minimumTrainingObservations,
-        minimumCalibrationSamples,
-        history,
-        existingRecords: input.fullRebuild || bootstrapHistoricalIfMissing ? [] : existingRecords,
-        lastProcessedOriginDate: input.fullRebuild || bootstrapHistoricalIfMissing ? null : state?.lastProcessedOriginAt?.slice(0, 10) ?? null,
-        maxOriginsPerRun: input.maxOriginsPerRun,
-        sourceHistoryFingerprint,
-        forceCalibrationRefresh,
-        trace: trace ?? undefined,
-      })
-
-      if (bridgeResponse.status === 'FAILED') {
-        emitRollingDailyHistoricalTrace(trace, 'bridge_failed', {
-          seriesId: input.seriesId,
-          modelId: input.modelId,
-          targetBasis,
-          totalElapsedMs: Math.round(performance.now() - startedAt),
+      const recordHistoricalExecutionEvent = async (
+        executionContext: ForecastPreparationOwnedExecutionContext | { executionId: string, ownerRequestId: string },
+        role: 'OWNER' | 'WAITER',
+        eventType: 'single_flight_owner_acquired' | 'single_flight_waiter_joined' | 'compute_started' | 'compute_completed' | 'persistence_started' | 'persistence_completed' | 'persistence_failed',
+        options: {
+          durationMs?: number
+          error?: string
+          resultStatus?: string
+          cacheStatus?: string
+          payload?: Record<string, unknown>
+        } = {},
+      ) => {
+        await resolvedDependencies.executionLedger.recordEvent({
+          executionId: executionContext.executionId,
+          logicalArtifactKey,
+          operationFamily: 'HISTORICAL_MAINTENANCE',
+          logicalArtifactIdentity: historicalIdentity,
+          requestId,
+          ownerRequestId: executionContext.ownerRequestId,
+          role,
+          eventType,
+          durationMs: options.durationMs ?? null,
+          error: options.error ?? null,
+          resultStatus: options.resultStatus ?? null,
+          cacheStatus: options.cacheStatus ?? null,
+          payload: options.payload ?? null,
+          ...('ownerToken' in executionContext ? {
+            attemptKind: executionContext.attemptKind,
+            executionMode: executionContext.executionMode,
+            ownerToken: executionContext.ownerToken,
+            leaseVersion: executionContext.leaseVersion,
+            leaseAcquiredAt: executionContext.leaseAcquiredAt,
+            leaseExpiresAt: executionContext.leaseExpiresAt,
+            recoveredFromExecutionId: executionContext.recoveredFromExecutionId,
+          } : {}),
         })
-        const failureReason = bridgeResponse.reason ?? 'Rolling daily maintenance bridge failed.'
-        await persistFailureState(failureReason, 'FAILED')
-        throw new Error(failureReason)
       }
 
-      try {
-        const persistStartedAt = performance.now()
-        emitRollingDailyHistoricalTrace(trace, 'verification_persist_started', {
-          seriesId: input.seriesId,
-          modelId: input.modelId,
-          targetBasis,
-          newRecordCount: bridgeResponse.newRecords.length,
-          maturedRecordCount: bridgeResponse.maturedRecords.length,
-          calibrationGroupCount: bridgeResponse.calibrationGroups.length,
-          totalElapsedMs: Math.round(persistStartedAt - startedAt),
-        })
-        await resolvedDependencies.repository.applyMaintenanceUpdate({
-          identity,
-          inputRunId: null,
-          historicalOriginStartAt: `${historicalOriginStartDate}T00:00:00.000Z`,
-          minimumTrainingObservations,
-          minimumCalibrationSamples,
-          latestSourceObservationAt: bridgeResponse.sourceHistory.latestObservationDate,
-          latestSourceHistoryStartAt: bridgeResponse.sourceHistory.startDate,
-          latestSourceObservationCount: bridgeResponse.sourceHistory.observationCount,
-          latestSourceHistoryFingerprint: bridgeResponse.sourceHistory.historyFingerprint,
-          lastProcessedOriginAt: bridgeResponse.maintenance.lastProcessedOriginDate,
-          lastMaturedObservedAt: bridgeResponse.maintenance.lastMaturedObservedAt,
-          newRecords: bridgeResponse.newRecords,
-          maturedRecords: bridgeResponse.maturedRecords,
-          calibrationGroups: bridgeResponse.calibrationGroups,
-        })
-        emitRollingDailyHistoricalTrace(trace, 'verification_persist_completed', {
-          seriesId: input.seriesId,
-          modelId: input.modelId,
-          targetBasis,
-          durationMs: Math.round(performance.now() - persistStartedAt),
-          totalElapsedMs: Math.round(performance.now() - startedAt),
-        })
-      } catch (error) {
-        const failureReason = error instanceof Error ? error.message : 'Rolling daily maintenance persistence failed.'
-        await persistFailureState(failureReason, 'FAILED')
-        throw error
-      }
-
-      const runtimeMs = Math.round(performance.now() - startedAt)
-      const status: RollingDailyMaintenanceResult['status'] = (
-        bridgeResponse.maintenance.newOriginCount === 0
-        && bridgeResponse.maintenance.maturedRecordCount === 0
-        && bridgeResponse.maintenance.calibrationRefreshCount === 0
+      const requestId = randomUUID()
+      const waitDeadline = Date.now() + (resolvedDependencies.executionAdmission.leaseDurationMs * ROLLING_DAILY_HISTORICAL_WAITER_MULTIPLIER)
+      const stage3HeartbeatIntervalMs = resolveForecastStage3HeartbeatIntervalMs(
+        resolvedDependencies.executionAdmission.leaseDurationMs,
       )
-        ? 'NO_OP'
-        : 'SUCCEEDED'
 
-      resolvedDependencies.logEvent('ROLLING_DAILY_INCREMENTAL_MAINTENANCE', {
-        seriesId: input.seriesId,
-        modelId: input.modelId,
-        status,
-        runtimeMs,
-        newOriginCount: bridgeResponse.maintenance.newOriginCount,
-        maturedRecordCount: bridgeResponse.maintenance.maturedRecordCount,
-        calibrationRefreshCount: bridgeResponse.maintenance.calibrationRefreshCount,
-      })
+      while (true) {
+        const admission = await resolvedDependencies.executionAdmission.acquireExecution({
+          operationFamily: 'HISTORICAL_MAINTENANCE',
+          logicalArtifactKey,
+          logicalArtifactIdentity: historicalIdentity,
+          requestId,
+          ownerRequestId: requestId,
+        })
 
-      emitRollingDailyHistoricalTrace(trace, 'bridge_completed', {
-        seriesId: input.seriesId,
-        modelId: input.modelId,
-        targetBasis,
-        totalElapsedMs: runtimeMs,
-        newOriginCount: bridgeResponse.maintenance.newOriginCount,
-        maturedRecordCount: bridgeResponse.maintenance.maturedRecordCount,
-        calibrationRefreshCount: bridgeResponse.maintenance.calibrationRefreshCount,
-      })
+        if (admission.role === 'WAITER') {
+          await recordHistoricalExecutionEvent({
+            executionId: admission.executionId,
+            ownerRequestId: admission.ownerRequestId,
+          }, 'WAITER', 'single_flight_waiter_joined')
+          let attempt = 0
 
-      return {
-        status,
-        seriesId: input.seriesId,
-        modelId: input.modelId,
-        targetBasis,
-        inputSource: identity.inputSource,
-        methodId: bridgeResponse.methodId,
-        methodVersion: bridgeResponse.methodVersion,
-        reasonCode: null,
-        sourceHistoryFingerprint: bridgeResponse.sourceHistory.historyFingerprint,
-        latestSourceObservationAt: bridgeResponse.sourceHistory.latestObservationDate,
-        sourceObservationCount: bridgeResponse.sourceHistory.observationCount,
-        filteredNullCount: bridgeResponse.sourceHistory.filteredNullCount,
-        filteredDuplicateCount: bridgeResponse.sourceHistory.filteredDuplicateCount,
-        newOriginCount: bridgeResponse.maintenance.newOriginCount,
-        maturedRecordCount: bridgeResponse.maintenance.maturedRecordCount,
-        calibrationRefreshCount: bridgeResponse.maintenance.calibrationRefreshCount,
-        affectedCalibrationGroupCount: bridgeResponse.maintenance.affectedCalibrationGroupCount,
-        lastProcessedOriginAt: bridgeResponse.maintenance.lastProcessedOriginDate,
-        lastMaturedObservedAt: bridgeResponse.maintenance.lastMaturedObservedAt,
-        runtimeMs,
+          while (Date.now() <= waitDeadline) {
+            const latestExecution = await resolvedDependencies.executionAdmission.readLatestExecutionForLogicalArtifact(logicalArtifactKey)
+            if (!latestExecution) {
+              break
+            }
+
+            if (latestExecution.executionStatus === 'FAILED') {
+              throw new Error(latestExecution.failureReason ?? `Rolling daily historical maintenance failed for ${logicalArtifactKey}.`)
+            }
+
+            if (latestExecution.executionStatus === 'COMPLETED') {
+              const payload = readHistoricalExecutionPayload(latestExecution)
+              if (!payload) {
+                throw new Error(`Historical maintenance execution completed without durable summary payload for ${logicalArtifactKey}.`)
+              }
+
+              return {
+                status: payload.status,
+                seriesId: input.seriesId,
+                modelId: input.modelId,
+                targetBasis,
+                inputSource: identity.inputSource,
+                methodId: identity.methodId,
+                methodVersion: identity.methodVersion,
+                reasonCode: null,
+                sourceHistoryFingerprint: payload.sourceHistoryFingerprint ?? sourceHistoryFingerprint,
+                latestSourceObservationAt: payload.latestSourceObservationAt ?? historyState.latestSourceObservationAt,
+                sourceObservationCount: payload.sourceObservationCount ?? historyState.latestSourceObservationCount,
+                filteredNullCount: payload.filteredNullCount ?? 0,
+                filteredDuplicateCount: payload.filteredDuplicateCount ?? 0,
+                newOriginCount: payload.newOriginCount ?? 0,
+                maturedRecordCount: payload.maturedRecordCount ?? 0,
+                calibrationRefreshCount: payload.calibrationRefreshCount ?? 0,
+                affectedCalibrationGroupCount: payload.affectedCalibrationGroupCount ?? 0,
+                lastProcessedOriginAt: payload.lastProcessedOriginAt,
+                lastMaturedObservedAt: payload.lastMaturedObservedAt,
+                runtimeMs: Math.round(performance.now() - startedAt),
+                executionLineage: buildMaintenanceExecutionLineage({
+                  logicalArtifactKey,
+                  executionId: latestExecution.executionId,
+                  role: 'WAITER',
+                  ownerRequestId: latestExecution.ownerRequestId,
+                }),
+              }
+            }
+
+            if (new Date(latestExecution.leaseExpiresAt).getTime() <= Date.now()) {
+              break
+            }
+
+            await waitForHistoricalBackoff(attempt)
+            attempt += 1
+          }
+
+          if (Date.now() > waitDeadline) {
+            throw new Error(`Timed out waiting for the authoritative historical maintenance execution for ${logicalArtifactKey}.`)
+          }
+
+          continue
+        }
+
+        let ownership = admission.ownership
+        const heartbeat = startForecastExecutionLeaseHeartbeat({
+          executionAdmission: resolvedDependencies.executionAdmission,
+          logicalArtifactKey,
+          ownership,
+          requestId,
+          heartbeatIntervalMs: stage3HeartbeatIntervalMs,
+        })
+        let failurePhase: 'COMPUTE' | 'PERSISTENCE' | 'FINALIZATION' = 'COMPUTE'
+
+        try {
+          await recordHistoricalExecutionEvent(ownership, 'OWNER', 'single_flight_owner_acquired')
+          await recordHistoricalExecutionEvent(ownership, 'OWNER', 'compute_started')
+          const computeStartedAt = performance.now()
+          const bridgeResponse = await resolvedDependencies.runner.run({
+            seriesId: input.seriesId,
+            modelId: input.modelId,
+            inputSource: identity.inputSource,
+            targetBasis,
+            methodId: ROLLING_DAILY_METHOD_ID,
+            methodVersion: ROLLING_DAILY_METHOD_VERSION,
+            historicalOriginStartDate,
+            minimumTrainingObservations,
+            minimumCalibrationSamples,
+            history,
+            existingRecords: input.fullRebuild || bootstrapHistoricalIfMissing ? [] : existingRecords,
+            lastProcessedOriginDate: input.fullRebuild || bootstrapHistoricalIfMissing ? null : state?.lastProcessedOriginAt?.slice(0, 10) ?? null,
+            maxOriginsPerRun: input.maxOriginsPerRun,
+            sourceHistoryFingerprint,
+            forceCalibrationRefresh,
+            trace: trace ?? undefined,
+          })
+
+          if (bridgeResponse.status === 'FAILED') {
+            emitRollingDailyHistoricalTrace(trace, 'bridge_failed', {
+              seriesId: input.seriesId,
+              modelId: input.modelId,
+              targetBasis,
+              totalElapsedMs: Math.round(performance.now() - startedAt),
+            })
+            const failureReason = bridgeResponse.reason ?? 'Rolling daily maintenance bridge failed.'
+            await persistFailureState(failureReason, 'FAILED')
+            throw new Error(failureReason)
+          }
+
+          const summary = summarizeBridgeOutcome(bridgeResponse)
+          await recordHistoricalExecutionEvent(ownership, 'OWNER', 'compute_completed', {
+            durationMs: performance.now() - computeStartedAt,
+            resultStatus: summary.status,
+            payload: {
+              ...summary,
+            },
+          })
+
+          try {
+            const persistStartedAt = performance.now()
+            emitRollingDailyHistoricalTrace(trace, 'verification_persist_started', {
+              seriesId: input.seriesId,
+              modelId: input.modelId,
+              targetBasis,
+              newRecordCount: bridgeResponse.newRecords.length,
+              maturedRecordCount: bridgeResponse.maturedRecords.length,
+              calibrationGroupCount: bridgeResponse.calibrationGroups.length,
+              totalElapsedMs: Math.round(persistStartedAt - startedAt),
+            })
+            await recordHistoricalExecutionEvent(ownership, 'OWNER', 'persistence_started')
+            ownership = await heartbeat.renewNow()
+            await resolvedDependencies.repository.applyMaintenanceUpdate({
+              identity,
+              inputRunId: null,
+              historicalOriginStartAt: `${historicalOriginStartDate}T00:00:00.000Z`,
+              minimumTrainingObservations,
+              minimumCalibrationSamples,
+              latestSourceObservationAt: bridgeResponse.sourceHistory.latestObservationDate,
+              latestSourceHistoryStartAt: bridgeResponse.sourceHistory.startDate,
+              latestSourceObservationCount: bridgeResponse.sourceHistory.observationCount,
+              latestSourceHistoryFingerprint: bridgeResponse.sourceHistory.historyFingerprint,
+              lastProcessedOriginAt: bridgeResponse.maintenance.lastProcessedOriginDate,
+              lastMaturedObservedAt: bridgeResponse.maintenance.lastMaturedObservedAt,
+              newRecords: bridgeResponse.newRecords,
+              maturedRecords: bridgeResponse.maturedRecords,
+              calibrationGroups: bridgeResponse.calibrationGroups,
+            })
+            emitRollingDailyHistoricalTrace(trace, 'verification_persist_completed', {
+              seriesId: input.seriesId,
+              modelId: input.modelId,
+              targetBasis,
+              durationMs: Math.round(performance.now() - persistStartedAt),
+              totalElapsedMs: Math.round(performance.now() - startedAt),
+            })
+            await recordHistoricalExecutionEvent(ownership, 'OWNER', 'persistence_completed', {
+              durationMs: performance.now() - persistStartedAt,
+              resultStatus: summary.status,
+              payload: {
+                ...summary,
+              },
+            })
+
+            const runtimeMs = Math.round(performance.now() - startedAt)
+            resolvedDependencies.logEvent('ROLLING_DAILY_INCREMENTAL_MAINTENANCE', {
+              seriesId: input.seriesId,
+              modelId: input.modelId,
+              status: summary.status,
+              runtimeMs,
+              newOriginCount: summary.newOriginCount,
+              maturedRecordCount: summary.maturedRecordCount,
+              calibrationRefreshCount: summary.calibrationRefreshCount,
+            })
+
+            emitRollingDailyHistoricalTrace(trace, 'bridge_completed', {
+              seriesId: input.seriesId,
+              modelId: input.modelId,
+              targetBasis,
+              totalElapsedMs: runtimeMs,
+              newOriginCount: summary.newOriginCount,
+              maturedRecordCount: summary.maturedRecordCount,
+              calibrationRefreshCount: summary.calibrationRefreshCount,
+            })
+
+            heartbeat.assertActive()
+            ownership = heartbeat.getOwnership()
+            await resolvedDependencies.executionAdmission.markExecutionCompleted({
+              executionId: ownership.executionId,
+              logicalArtifactKey,
+              ownerToken: ownership.ownerToken,
+              leaseVersion: ownership.leaseVersion,
+              requestId,
+              ownerRequestId: ownership.ownerRequestId,
+              resultStatus: summary.status,
+              cacheStatus: summary.status === 'NO_OP' ? 'hit' : 'miss',
+            })
+
+            return {
+              status: summary.status,
+              seriesId: input.seriesId,
+              modelId: input.modelId,
+              targetBasis,
+              inputSource: identity.inputSource,
+              methodId: bridgeResponse.methodId,
+              methodVersion: bridgeResponse.methodVersion,
+              reasonCode: null,
+              sourceHistoryFingerprint: summary.sourceHistoryFingerprint,
+              latestSourceObservationAt: summary.latestSourceObservationAt,
+              sourceObservationCount: summary.sourceObservationCount,
+              filteredNullCount: summary.filteredNullCount,
+              filteredDuplicateCount: summary.filteredDuplicateCount,
+              newOriginCount: summary.newOriginCount,
+              maturedRecordCount: summary.maturedRecordCount,
+              calibrationRefreshCount: summary.calibrationRefreshCount,
+              affectedCalibrationGroupCount: summary.affectedCalibrationGroupCount,
+              lastProcessedOriginAt: summary.lastProcessedOriginAt,
+              lastMaturedObservedAt: summary.lastMaturedObservedAt,
+              runtimeMs,
+              executionLineage: buildMaintenanceExecutionLineage({
+                logicalArtifactKey,
+                executionId: ownership.executionId,
+                role: ownership.role,
+                ownerRequestId: ownership.ownerRequestId,
+              }),
+            }
+          } catch (error) {
+            failurePhase = 'PERSISTENCE'
+            const failureReason = error instanceof Error ? error.message : 'Rolling daily maintenance persistence failed.'
+            await persistFailureState(failureReason, 'FAILED')
+            await recordHistoricalExecutionEvent(ownership, 'OWNER', 'persistence_failed', {
+              error: failureReason,
+            })
+            throw error
+          }
+        } catch (error) {
+          try {
+            heartbeat.assertActive()
+            ownership = heartbeat.getOwnership()
+            await resolvedDependencies.executionAdmission.markExecutionFailed({
+              executionId: ownership.executionId,
+              logicalArtifactKey,
+              ownerToken: ownership.ownerToken,
+              leaseVersion: ownership.leaseVersion,
+              requestId,
+              ownerRequestId: ownership.ownerRequestId,
+              failurePhase,
+              failureReason: error instanceof Error ? error.message : 'unknown',
+              resultStatus: resolveExecutionFailureResultStatus(failurePhase),
+              cacheStatus: resolveExecutionFailureCacheStatus(failurePhase),
+            })
+          } catch {
+            // Preserve the original failure as the surfaced error.
+          }
+
+          throw error
+        } finally {
+          await heartbeat.stop()
+        }
       }
     },
   }

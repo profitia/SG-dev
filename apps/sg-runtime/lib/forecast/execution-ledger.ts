@@ -9,9 +9,10 @@ import type {
   ForecastTrainingWindowPolicyId,
 } from '@/lib/forecast/identity'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
+import type { HistoricalMaintenanceLogicalArtifactIdentity } from '@/lib/forecast/rolling-daily-historical-admission'
 import type { VerificationLogicalArtifactIdentity } from '@/lib/forecast/verification-single-flight'
 
-export type ForecastPreparationOperationFamily = 'CURRENT' | 'VERIFICATION'
+export type ForecastPreparationOperationFamily = 'CURRENT' | 'VERIFICATION' | 'HISTORICAL_MAINTENANCE'
 export type ForecastPreparationExecutionStatus = 'STARTED' | 'COMPLETED' | 'FAILED'
 export type ForecastPreparationExecutionRole = 'OWNER' | 'WAITER'
 export type ForecastPreparationAttemptKind = 'PRIMARY' | 'RECOVERY'
@@ -36,6 +37,7 @@ export type ForecastPreparationExecutionEventType =
 
 export type ForecastPreparationLogicalArtifactIdentity =
   | CurrentLogicalArtifactIdentity
+  | HistoricalMaintenanceLogicalArtifactIdentity
   | VerificationLogicalArtifactIdentity
 
 export type ForecastPreparationExecutionEventRecord = {
