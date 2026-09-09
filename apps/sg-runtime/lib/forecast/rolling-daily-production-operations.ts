@@ -32,6 +32,7 @@ export type RollingDailyProductionOperationsRequest = {
   modelIds?: readonly RollingDailyProductionOperationsModelId[]
   preparedHistory?: RollingDailyHistoryPayload
   prepareHistorical?: boolean
+  maxOriginsPerRun?: number
   trace?: RollingDailyHistoricalTraceInput | RollingDailyHistoricalTraceConfig
   resolvePersistenceOwnership?: () => Promise<ForecastPersistenceOwnership>
 }
@@ -234,6 +235,7 @@ export function createRollingDailyProductionOperationsService(
             seriesId: request.seriesId,
             modelId,
             preparedHistory: request.preparedHistory,
+            maxOriginsPerRun: request.maxOriginsPerRun,
             bootstrapHistoricalIfMissing: request.prepareHistorical,
             trace: trace ?? undefined,
           })

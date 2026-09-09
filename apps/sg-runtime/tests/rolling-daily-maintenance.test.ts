@@ -6,6 +6,7 @@ import {
   buildRollingDailyHistoryFingerprint,
   createRollingDailyMaintenanceService,
   DEFAULT_ROLLING_DAILY_HISTORICAL_ORIGIN_START_DATE,
+  isRollingDailyHistoricalPreparationComplete,
   normalizePersistedRollingDailyArtifacts,
   type RollingDailyMaintenanceBridgeRequest,
   ROLLING_DAILY_REBUILD_REQUIRED_REASON,
@@ -159,9 +160,11 @@ test('rolling daily maintenance persists incremental updates and forwards the la
   }
 
   let runnerRequestLastProcessedOrigin: string | null = null
+  let runnerRequestMaxOriginsPerRun: number | undefined
   const runner: RollingDailyMaintenanceRunner = {
     async run(request) {
       runnerRequestLastProcessedOrigin = request.lastProcessedOriginDate
+      runnerRequestMaxOriginsPerRun = request.maxOriginsPerRun
       return {
         status: 'AVAILABLE',
         methodId: ROLLING_DAILY_METHOD_ID,
@@ -202,9 +205,11 @@ test('rolling daily maintenance persists incremental updates and forwards the la
   const result = await service.runIncrementalMaintenance({
     seriesId: 'wocaes0074',
     modelId: 'naive',
+    maxOriginsPerRun: 7,
   })
 
   assert.equal(runnerRequestLastProcessedOrigin, '2024-01-04')
+  assert.equal(runnerRequestMaxOriginsPerRun, 7)
   assert.deepEqual(requestedTargetBases, [ROLLING_DAILY_TARGET_BASIS])
   assert.equal(result.status, 'SUCCEEDED')
   assert.equal(result.reasonCode, null)
@@ -915,6 +920,32 @@ test('rolling daily persistence artifacts are normalized to the canonical mainte
   assert.equal(normalized.maturedRecords[0]?.inputSource, ROLLING_DAILY_INPUT_SOURCE)
   assert.equal(normalized.calibrationGroups[0]?.inputSource, ROLLING_DAILY_INPUT_SOURCE)
   assert.equal(normalized.calibrationGroups[0]?.modelId, 'arima')
+})
+
+test('rolling daily historical preparation completeness requires the checkpoint to reach the latest source observation', () => {
+  assert.equal(isRollingDailyHistoricalPreparationComplete({
+    state: {
+      latestSourceHistoryFingerprint: 'hist-1',
+      latestSourceObservationAt: '2024-01-05T00:00:00.000Z',
+      lastProcessedOriginAt: '2024-01-04',
+      lastMaintenanceStatus: 'SUCCEEDED',
+    },
+    expectedSourceHistoryFingerprint: 'hist-1',
+    latestSourceObservationDate: '2024-01-05',
+    verificationRecordCount: 4,
+  }), false)
+
+  assert.equal(isRollingDailyHistoricalPreparationComplete({
+    state: {
+      latestSourceHistoryFingerprint: 'hist-1',
+      latestSourceObservationAt: '2024-01-05T00:00:00.000Z',
+      lastProcessedOriginAt: '2024-01-05',
+      lastMaintenanceStatus: 'NO_OP',
+    },
+    expectedSourceHistoryFingerprint: 'hist-1',
+    latestSourceObservationDate: '2024-01-05',
+    verificationRecordCount: 4,
+  }), true)
 })
 
 test('rolling daily maintenance forwards opt-in trace config and preserves persistence flow', async () => {

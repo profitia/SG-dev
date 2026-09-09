@@ -638,6 +638,8 @@ def main() -> int:
         )
         minimum_training_observations = int(payload["minimumTrainingObservations"])
         minimum_calibration_samples = int(payload["minimumCalibrationSamples"])
+        max_origins_per_run_raw = payload.get("maxOriginsPerRun")
+        max_origins_per_run = None if max_origins_per_run_raw is None else int(max_origins_per_run_raw)
         force_calibration_refresh = bool(payload.get("forceCalibrationRefresh"))
         historical_origin_start_date = date.fromisoformat(str(payload["historicalOriginStartDate"]))
         last_processed_origin_date = payload.get("lastProcessedOriginDate")
@@ -655,6 +657,8 @@ def main() -> int:
             if series.observations[index].date >= historical_origin_start_date
             and (last_processed_origin is None or series.observations[index].date > last_processed_origin)
         ]
+        if max_origins_per_run is not None:
+            eligible_origin_indexes = eligible_origin_indexes[:max_origins_per_run]
 
         new_records = compute_origin_records(
             series=series,
@@ -743,7 +747,11 @@ def main() -> int:
                 "maturedRecordCount": len(matured_records),
                 "affectedCalibrationGroupCount": len(calibration_groups),
                 "calibrationRefreshCount": len(calibration_groups),
-                "lastProcessedOriginDate": None if not eligible_origin_indexes and last_processed_origin is None else series.observations[-1].date.isoformat(),
+                "lastProcessedOriginDate": (
+                    series.observations[eligible_origin_indexes[-1]].date.isoformat()
+                    if eligible_origin_indexes
+                    else None if last_processed_origin is None else last_processed_origin.isoformat()
+                ),
                 "lastMaturedObservedAt": None if latest_matured_observed_at is None else latest_matured_observed_at.isoformat(),
                 "newOriginDates": sorted({record["forecastOriginAt"] for record in new_records}),
             },

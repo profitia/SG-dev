@@ -155,6 +155,7 @@ export type RollingDailyMaintenanceRequest = {
   historicalOriginStartDate?: string
   minimumTrainingObservations?: number
   minimumCalibrationSamples?: number
+  maxOriginsPerRun?: number
   bootstrapHistoricalIfMissing?: boolean
   fullRebuild?: boolean
   trace?: RollingDailyHistoricalTraceInput | RollingDailyHistoricalTraceConfig
@@ -173,10 +174,16 @@ export type RollingDailyMaintenanceBridgeRequest = {
   history: RollingDailyHistoryPayload
   existingRecords: RollingDailyVerificationRecordArtifact[]
   lastProcessedOriginDate: string | null
+  maxOriginsPerRun?: number
   sourceHistoryFingerprint: string
   forceCalibrationRefresh?: boolean
   trace?: RollingDailyHistoricalTraceConfig
 }
+
+export type RollingDailyHistoricalPreparationState = Pick<
+  RollingDailyMaintenanceStateArtifact,
+  'latestSourceHistoryFingerprint' | 'latestSourceObservationAt' | 'lastProcessedOriginAt' | 'lastMaintenanceStatus'
+>
 
 export type RollingDailyMaintenanceBridgeResponse = {
   status: 'AVAILABLE' | 'FAILED'
@@ -449,6 +456,37 @@ async function runBridgeWithStreamingTrace(params: {
 
 function normalizeDailyObservationDay(value: string) {
   return value.trim().slice(0, 10)
+}
+
+export function isRollingDailyHistoricalPreparationComplete(input: {
+  state: RollingDailyHistoricalPreparationState | null | undefined
+  expectedSourceHistoryFingerprint: string
+  latestSourceObservationDate: string | null
+  verificationRecordCount: number
+}) {
+  if (input.verificationRecordCount < 1) {
+    return false
+  }
+
+  if (!input.state) {
+    return false
+  }
+
+  if (input.state.latestSourceHistoryFingerprint !== input.expectedSourceHistoryFingerprint) {
+    return false
+  }
+
+  if (input.state.lastMaintenanceStatus !== 'SUCCEEDED' && input.state.lastMaintenanceStatus !== 'NO_OP') {
+    return false
+  }
+
+  if (!input.latestSourceObservationDate || !input.state.latestSourceObservationAt || !input.state.lastProcessedOriginAt) {
+    return false
+  }
+
+  const latestSourceObservationDate = normalizeDailyObservationDay(input.latestSourceObservationDate)
+  return normalizeDailyObservationDay(input.state.latestSourceObservationAt) === latestSourceObservationDate
+    && normalizeDailyObservationDay(input.state.lastProcessedOriginAt) === latestSourceObservationDate
 }
 
 function serializeFingerprintValue(value: number) {
@@ -1241,6 +1279,7 @@ export function createRollingDailyMaintenanceService(
         history,
         existingRecords: input.fullRebuild || bootstrapHistoricalIfMissing ? [] : existingRecords,
         lastProcessedOriginDate: input.fullRebuild || bootstrapHistoricalIfMissing ? null : state?.lastProcessedOriginAt?.slice(0, 10) ?? null,
+        maxOriginsPerRun: input.maxOriginsPerRun,
         sourceHistoryFingerprint,
         forceCalibrationRefresh,
         trace: trace ?? undefined,

@@ -123,6 +123,7 @@ test('generic operations prepare all selected monthly current variants before op
 test('generic operations delegate Rolling Daily to its existing owner and keep historical opt-in', async () => {
   let rollingCalls = 0
   let capturedPrepareHistorical: boolean | undefined
+  let capturedMaxOriginsPerRun: number | undefined
   const service = createForecastProductionOperationsService({
     async resolveCapabilities(seriesId) {
       return capabilityResolution(seriesId)
@@ -136,6 +137,7 @@ test('generic operations delegate Rolling Daily to its existing owner and keep h
     async runRollingDaily(request) {
       rollingCalls += 1
       capturedPrepareHistorical = request.prepareHistorical
+      capturedMaxOriginsPerRun = request.maxOriginsPerRun
       return {
         status: 'NO_OP',
         seriesId: request.seriesId,
@@ -163,6 +165,7 @@ test('generic operations delegate Rolling Daily to its existing owner and keep h
 
   assert.equal(rollingCalls, 1)
   assert.equal(capturedPrepareHistorical, false)
+  assert.equal(capturedMaxOriginsPerRun, undefined)
   assert.equal(result.status, 'SUCCEEDED')
   assert.equal(result.results[0]?.current, 'REUSED')
   assert.equal(result.results[0]?.historical, 'NOT_REQUESTED')
@@ -170,6 +173,7 @@ test('generic operations delegate Rolling Daily to its existing owner and keep h
 
 test('generic operations request explicit rolling-daily historical bootstrap when historical preparation is enabled', async () => {
   let capturedPrepareHistorical: boolean | undefined
+  let capturedMaxOriginsPerRun: number | undefined
 
   const service = createForecastProductionOperationsService({
     async resolveCapabilities(seriesId) {
@@ -183,6 +187,7 @@ test('generic operations request explicit rolling-daily historical bootstrap whe
     },
     async runRollingDaily(request) {
       capturedPrepareHistorical = request.prepareHistorical
+      capturedMaxOriginsPerRun = request.maxOriginsPerRun
       return {
         status: 'SUCCEEDED',
         seriesId: request.seriesId,
@@ -206,9 +211,11 @@ test('generic operations request explicit rolling-daily historical bootstrap whe
     targetSemantics: ['ROLLING_DAILY_POINT_IN_TIME'],
     modelIds: ['arima'],
     prepareHistorical: true,
+    maxOriginsPerRun: 3,
   })
 
   assert.equal(capturedPrepareHistorical, true)
+  assert.equal(capturedMaxOriginsPerRun, 3)
   assert.equal(result.status, 'SUCCEEDED')
   assert.equal(result.results[0]?.current, 'READY')
   assert.equal(result.results[0]?.historical, 'READY')

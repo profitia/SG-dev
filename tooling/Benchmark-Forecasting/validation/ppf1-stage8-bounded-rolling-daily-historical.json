@@ -1,0 +1,50 @@
+{
+  "identity": {
+    "task": "PPF1_STAGE8_BOUNDED_ROLLING_DAILY_HISTORICAL",
+    "seriesId": "wocaes0074",
+    "forecastMethod": "ROLLING_DAILY_POINT_IN_TIME",
+    "targetBasis": "POINT_IN_TIME",
+    "models": [
+      "naive"
+    ]
+  },
+  "boundedCheckpoint": {
+    "status": "PASS",
+    "requestedMaxOriginsPerRun": 1,
+    "forwardedMaxOriginsPerRun": 1,
+    "previousLastProcessedOriginAt": "2024-01-03",
+    "persistedLastProcessedOriginAt": "2024-01-04",
+    "latestSourceObservationAt": "2024-01-05",
+    "newOriginCount": 1,
+    "maintenanceStatus": "SUCCEEDED"
+  },
+  "preparedReadGuard": {
+    "status": "PASS",
+    "partialPreparedRead": "NOT_AVAILABLE",
+    "partialReason": "PREPARATION_REQUIRED: Prepared Rolling Daily Historical Verification is incomplete for the latest lawful source observation.",
+    "completePreparedRead": "AVAILABLE",
+    "completeCoverage": 1,
+    "readinessAfterPartialCheckpoint": "STALE",
+    "preparedReadTelemetry": [
+      {
+        "event": "prepared_read",
+        "metrics": {
+          "kind": "verification",
+          "store": "rolling_daily_verification_records",
+          "hit": false,
+          "stale": true
+        }
+      }
+    ]
+  },
+  "ownerForwarding": {
+    "status": "PASS",
+    "rollingDailyOwnerForwarding": 1,
+    "productionOwnerForwarding": 1
+  },
+  "overall": {
+    "status": "PASS",
+    "readyForStage9": "YES"
+  },
+  "generatedAt": "2026-09-09T11:20:52.976Z"
+}

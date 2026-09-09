@@ -187,7 +187,12 @@ test('prepared-state binding is exact across semantics, models, versions, and cu
       rollingDailyMaintenanceState: {
         async findUnique({ where }: { where: { seriesId_inputSource_targetBasis_methodId_methodVersion_modelId: Record<string, string> } }) {
           return where.seriesId_inputSource_targetBasis_methodId_methodVersion_modelId.modelId === 'naive'
-            ? { latestSourceHistoryFingerprint: rollingFingerprint }
+            ? {
+                latestSourceHistoryFingerprint: rollingFingerprint,
+                latestSourceObservationAt: '2024-12-20T00:00:00.000Z',
+                lastProcessedOriginAt: '2024-12-20T00:00:00.000Z',
+                lastMaintenanceStatus: 'SUCCEEDED',
+              }
             : null
         },
       },
@@ -391,7 +396,12 @@ test('point-in-time snapshots without a renderable path cannot satisfy READY', a
       },
       rollingDailyMaintenanceState: {
         async findUnique() {
-          return { latestSourceHistoryFingerprint: rollingFingerprint }
+          return {
+            latestSourceHistoryFingerprint: rollingFingerprint,
+            latestSourceObservationAt: '2024-12-20T00:00:00.000Z',
+            lastProcessedOriginAt: '2024-12-20T00:00:00.000Z',
+            lastMaintenanceStatus: 'SUCCEEDED',
+          }
         },
       },
       rollingDailyVerificationRecord: { async count() { return 0 } },
@@ -400,6 +410,47 @@ test('point-in-time snapshots without a renderable path cannot satisfy READY', a
 
   assert.equal(
     variants.find((variant) => variant.identity.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME' && variant.identity.modelId === 'naive')?.current,
+    'STALE',
+  )
+})
+
+test('point-in-time historical variants stay STALE while the maintenance checkpoint is partial', async () => {
+  const history = createHistory()
+  const now = new Date('2025-01-15T00:00:00.000Z')
+  const rollingFingerprint = buildRollingDailyHistoryFingerprint({
+    seriesId: history.providerSeries.providerSeriesId,
+    displayName: history.displayName,
+    description: history.displayName,
+    frequency: 'DAILY',
+    source: history.source,
+    points: history.historical,
+  })
+
+  const variants = await readForecastPreparedVariants(history.providerSeries.providerSeriesId, history, {
+    now,
+    prisma: {
+      forecastCurrentRun: { async findFirst() { return null } },
+      forecastVerificationRun: { async findFirst() { return null } },
+      rollingDailyCurrentForecastSnapshot: {
+        async findUnique() { return null },
+        async findFirst() { return null }
+      },
+      rollingDailyMaintenanceState: {
+        async findUnique() {
+          return {
+            latestSourceHistoryFingerprint: rollingFingerprint,
+            latestSourceObservationAt: '2024-12-20T00:00:00.000Z',
+            lastProcessedOriginAt: '2024-11-20T00:00:00.000Z',
+            lastMaintenanceStatus: 'SUCCEEDED',
+          }
+        },
+      },
+      rollingDailyVerificationRecord: { async count() { return 4 } },
+    } as never,
+  })
+
+  assert.equal(
+    variants.find((variant) => variant.identity.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME' && variant.identity.modelId === 'naive')?.historical,
     'STALE',
   )
 })

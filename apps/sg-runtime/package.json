@@ -17,6 +17,7 @@
     "forecast:python:bootstrap": "cd ../../tooling/Benchmark-Forecasting && ([ -x .venv/bin/python ] || python3 -m venv .venv) && .venv/bin/python -m pip install -r requirements.txt",
     "forecast:profile:fast-ready": "npm run market-data:generate && npm run forecast:python:bootstrap && node --import tsx scripts/run-forecast-fast-ready-profiler.ts",
     "forecast:profile:stage7-evidence": "npm run market-data:generate && npm run forecast:python:bootstrap && node --import tsx scripts/run-forecast-stage7-evidence.ts",
+    "forecast:profile:stage8-bounded-historical": "node --import tsx scripts/run-forecast-stage8-bounded-historical.ts",
     "forecast:operations": "node --import tsx scripts/run-forecast-production-operations.ts",
     "forecast:operations:rolling-daily": "node --import tsx scripts/run-rolling-daily-production-operations.ts",
     "forecast:snapshot:rolling-daily": "node --import tsx scripts/persist-rolling-daily-current-forecast-snapshot.ts",

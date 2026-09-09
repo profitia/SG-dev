@@ -16,6 +16,7 @@ import { buildLiveForecastBridgePayloadFromHistory } from '@/lib/forecast/live-m
 import { resolveForecastTechnicalMinimumObservations } from '@/lib/forecast/current-fast-policy'
 import {
   buildRollingDailyHistoryFingerprint,
+  isRollingDailyHistoricalPreparationComplete,
   ROLLING_DAILY_INPUT_SOURCE,
 } from '@/lib/forecast/rolling-daily-maintenance'
 import { selectTrailingRollingDailyCurrentHistory } from '@/lib/forecast/rolling-daily-current-ownership'
@@ -85,6 +86,31 @@ function stateForFingerprint(
 ): ForecastPreparedState {
   if (!exists) return 'NOT_PREPARED'
   return storedFingerprint === expectedFingerprint ? 'READY' : 'STALE'
+}
+
+function stateForRollingDailyHistoricalRun(input: {
+  maintenance: {
+    latestSourceHistoryFingerprint: string | null
+    latestSourceObservationAt: string | null
+    lastProcessedOriginAt: string | null
+    lastMaintenanceStatus: string | null
+  } | null
+  expectedFingerprint: string
+  latestSourceObservationDate: string | null
+  verificationCount: number
+}): ForecastPreparedState {
+  if (input.verificationCount < 1) {
+    return 'NOT_PREPARED'
+  }
+
+  return isRollingDailyHistoricalPreparationComplete({
+    state: input.maintenance,
+    expectedSourceHistoryFingerprint: input.expectedFingerprint,
+    latestSourceObservationDate: input.latestSourceObservationDate,
+    verificationRecordCount: input.verificationCount,
+  })
+    ? 'READY'
+    : 'STALE'
 }
 
 function resolvePreparedTargetCadence(
@@ -258,7 +284,12 @@ export async function readForecastPreparedVariants(
             modelId,
           },
         },
-        select: { latestSourceHistoryFingerprint: true },
+        select: {
+          latestSourceHistoryFingerprint: true,
+          latestSourceObservationAt: true,
+          lastProcessedOriginAt: true,
+          lastMaintenanceStatus: true,
+        },
       }),
       prisma.rollingDailyVerificationRecord.count({
         where: {
@@ -284,11 +315,12 @@ export async function readForecastPreparedVariants(
         rollingCurrentFingerprint,
         snapshot?.status === 'AVAILABLE',
       ),
-      historical: stateForFingerprint(
-        maintenance?.latestSourceHistoryFingerprint,
-        rollingHistoricalFingerprint,
-        verificationCount > 0,
-      ),
+      historical: stateForRollingDailyHistoricalRun({
+        maintenance,
+        expectedFingerprint: rollingHistoricalFingerprint,
+        latestSourceObservationDate: rollingHistory.points[rollingHistory.points.length - 1]?.date ?? null,
+        verificationCount,
+      }),
     })
   }
 

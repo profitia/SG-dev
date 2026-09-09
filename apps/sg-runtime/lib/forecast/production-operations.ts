@@ -26,6 +26,7 @@ export type ForecastProductionOperationsRequest = {
   targetSemantics?: readonly OperationalForecastTarget[]
   modelIds?: readonly UserFacingForecastModelId[]
   prepareHistorical?: boolean
+  maxOriginsPerRun?: number
 }
 
 export type ForecastProductionOperationItem = {
@@ -183,6 +184,7 @@ export function createForecastProductionOperationsService(
           seriesId: request.seriesId,
           modelIds: requestedModels,
           prepareHistorical,
+          maxOriginsPerRun: request.maxOriginsPerRun,
         })
         for (const modelId of requestedModels) {
           const item = rolling.results.find((candidate) => candidate.modelId === modelId)

@@ -137,9 +137,11 @@ test('production operations refreshes snapshots for the canonical four-model mai
 
 test('production operations forwards prepared history into naive snapshot refresh', async () => {
   const preparedFlags: boolean[] = []
+  const boundedOrigins: Array<number | undefined> = []
 
   const service = createRollingDailyProductionOperationsService({
     async runMaintenance(request) {
+      boundedOrigins.push(request.maxOriginsPerRun)
       return createMaintenanceResult({ modelId: request.modelId, status: 'SUCCEEDED' })
     },
     async resolveCurrentForecast(request) {
@@ -222,6 +224,7 @@ test('production operations forwards prepared history into naive snapshot refres
   const result = await service.run({
     seriesId: 'wocaes0074',
     modelIds: ['naive'],
+    maxOriginsPerRun: 5,
     preparedHistory: {
       seriesId: 'wocaes0074',
       displayName: 'Brent',
@@ -234,6 +237,7 @@ test('production operations forwards prepared history into naive snapshot refres
 
   assert.equal(result.status, 'SUCCEEDED')
   assert.deepEqual(preparedFlags, [true])
+  assert.deepEqual(boundedOrigins, [5])
 })
 
 test('current-only production refresh bypasses maintenance and still serves Current from prepared history', async () => {

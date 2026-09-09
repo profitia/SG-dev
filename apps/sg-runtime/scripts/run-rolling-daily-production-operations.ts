@@ -30,11 +30,25 @@ function readModelArgs(): RollingDailyProductionOperationsModelId[] {
   return requested as RollingDailyProductionOperationsModelId[]
 }
 
+function readOptionalPositiveIntegerArg(name: string) {
+  const value = readArg(name)
+  if (!value) return undefined
+
+  const parsed = Number.parseInt(value, 10)
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new Error(`Invalid --${name}=... value: ${value}`)
+  }
+
+  return parsed
+}
+
 async function main() {
   const service = createRollingDailyProductionOperationsService()
   const seriesId = readArg('seriesId') || DEFAULT_ROLLING_DAILY_PRODUCTION_OPERATIONS_SERIES_ID
   const modelIds = readModelArgs()
-  const result = await service.run({ seriesId, modelIds })
+  const prepareHistorical = readArg('historical') === 'true'
+  const maxOriginsPerRun = readOptionalPositiveIntegerArg('maxOriginsPerRun')
+  const result = await service.run({ seriesId, modelIds, prepareHistorical, maxOriginsPerRun })
   console.log(JSON.stringify(result, null, 2))
 
   if (result.status === 'FAILED') {
