@@ -70,11 +70,21 @@ test('prepared-state binding is exact across semantics, models, versions, and cu
       now,
     }).history,
   )
+  const selectedMonthlyAveragePayload = selectMinimalLawfulCurrentTrainingPayload(
+    buildLiveForecastBridgePayloadFromHistory(history.providerSeries.providerSeriesId, history, {
+      targetBasis: 'MONTHLY_AVERAGE',
+      now,
+    }),
+    resolveForecastTechnicalMinimumObservations({ targetSemantics: 'MONTHLY_AVERAGE', modelId: 'ets' }),
+  )
   const monthlyAverageFingerprint = buildForecastHistoryFingerprint(
     buildLiveForecastBridgePayloadFromHistory(history.providerSeries.providerSeriesId, history, {
       targetBasis: 'MONTHLY_AVERAGE',
       now,
     }).history,
+  )
+  const selectedMonthlyAverageFingerprint = buildForecastHistoryFingerprint(
+    selectedMonthlyAveragePayload.history,
   )
   const recentEopCompatibility = createRecentVerificationStatisticalCompatibility({
     sourceFrequency: 'DAILY',
@@ -127,7 +137,7 @@ test('prepared-state binding is exact across semantics, models, versions, and cu
             && where.trainingWindowPolicyId === recentEopCompatibility.trainingWindowPolicyId
             && where.effectiveTrainingPolicyId === recentEopCompatibility.effectiveTrainingPolicyId
           ) {
-            return { status: 'AVAILABLE', historyFingerprint: fullEopHistoricalFingerprint, frequency: 'MONTHLY' }
+            return { status: 'AVAILABLE', historyFingerprint: eopFingerprint, frequency: 'MONTHLY' }
           }
           if (
             where.targetBasis === 'MONTHLY_AVERAGE'
@@ -135,7 +145,7 @@ test('prepared-state binding is exact across semantics, models, versions, and cu
             && where.trainingWindowPolicyId === recentMonthlyAverageCompatibility.trainingWindowPolicyId
             && where.effectiveTrainingPolicyId === recentMonthlyAverageCompatibility.effectiveTrainingPolicyId
           ) {
-            return { status: 'AVAILABLE', historyFingerprint: monthlyAverageFingerprint, frequency: 'MONTHLY' }
+            return { status: 'AVAILABLE', historyFingerprint: selectedMonthlyAverageFingerprint, frequency: 'MONTHLY' }
           }
           return null
         },
@@ -211,6 +221,8 @@ test('prepared-state binding is exact across semantics, models, versions, and cu
   assert.equal(find('ROLLING_DAILY_POINT_IN_TIME', 'naive')?.current, 'READY')
   assert.equal(find('ROLLING_DAILY_POINT_IN_TIME', 'naive')?.historical, 'READY')
   assert.equal(find('ROLLING_DAILY_POINT_IN_TIME', 'arima')?.current, 'NOT_PREPARED')
+  assert.notEqual(fullEopHistoricalFingerprint, eopFingerprint)
+  assert.notEqual(monthlyAverageFingerprint, selectedMonthlyAverageFingerprint)
 })
 
 test('LEGACY_UNRESOLVED rows cannot satisfy canonical monthly prepared-state readiness', async () => {

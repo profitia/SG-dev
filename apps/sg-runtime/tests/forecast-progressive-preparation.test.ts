@@ -105,6 +105,17 @@ async function flushProgressiveQueue() {
   await new Promise((resolve) => setTimeout(resolve, 0))
 }
 
+async function waitForOperationCount(operationLog: string[], minimumCount: number) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (operationLog.length >= minimumCount) {
+      return
+    }
+    await flushProgressiveQueue()
+  }
+
+  assert.ok(operationLog.length >= minimumCount, `Expected at least ${minimumCount} operations, received ${operationLog.length}.`)
+}
+
 function createMonthlyHarness(options: {
   gateFirstCurrentForSeriesId?: string
   markAllCurrentReadyOnCurrentSuccess?: Set<string>
@@ -318,6 +329,23 @@ test('snapshotAndKickoff prioritizes current work before verification and elevat
     'MONTHLY_AVERAGE:arima',
   ])
   assert.equal(historicalCalls.length, 0)
+})
+
+test('selected verification runs immediately after the selected current instead of waiting behind unrelated current work', async () => {
+  const harness = createMonthlyHarness()
+
+  await harness.service.snapshotAndKickoff({
+    seriesId: 'series-fast-ready',
+    preferredModelId: 'naive',
+    preferredTargetBasis: 'MONTHLY_AVERAGE',
+  })
+
+  await waitForOperationCount(harness.operationLog, 2)
+
+  assert.deepEqual(harness.operationLog.slice(0, 2), [
+    'CURRENT:series-fast-ready:MONTHLY_AVERAGE:naive',
+    'VERIFICATION:series-fast-ready:MONTHLY_AVERAGE:naive',
+  ])
 })
 
 test('snapshot maps unsupported identities without collapsing them into queued work', async () => {

@@ -508,6 +508,7 @@ export type ForecastLibraryServiceDependencies = {
   executionContextRegistry: ForecastPreparationExecutionContextRegistry
   executionAdmission: ForecastPreparationExecutionAdmission
   resolveExactPreparedCapability: typeof resolveExactForecastCapability
+  executePreparedCurrent: typeof executePreparedForecastBridge
 }
 
 function buildDefaultLogPayload(data: Record<string, string | number | boolean | null>) {
@@ -822,9 +823,11 @@ export async function buildRecentVerificationArtifact(input: {
   benchmark: ForecastBridgeBenchmark
   source: ForecastBridgeSource
   authoritativeHistory: ForecastBridgeHistory
+  identityHistory?: ForecastBridgeHistory
   cadenceContext: ReturnType<typeof resolveArtifactCadenceContext>
   executePreparedCurrent?: typeof executePreparedForecastBridge
 }): Promise<PersistedVerificationArtifact> {
+  const identityHistory = input.identityHistory ?? input.authoritativeHistory
   const sourceFrequency = input.cadenceContext.cadence?.sourceFrequency
     ?? normalizeForecastSourceFrequency(input.authoritativeHistory.frequency)
   const targetCadence = input.cadenceContext.cadence?.targetCadence
@@ -1012,12 +1015,12 @@ export async function buildRecentVerificationArtifact(input: {
       kind: input.source.kind,
       runId: input.source.runId,
     },
-    historyFingerprint: buildForecastHistoryFingerprint(input.authoritativeHistory, input.cadenceContext.cadence ?? undefined),
+    historyFingerprint: buildForecastHistoryFingerprint(identityHistory, input.cadenceContext.cadence ?? undefined),
     cadence: input.cadenceContext.cadence,
     frequencyIdentity: input.cadenceContext.frequencyIdentity,
     statisticalCompatibility: compatibility,
-    preparation: preparationIdentityFromHistory(input.authoritativeHistory),
-    history: historySummaryFromBridge(input.authoritativeHistory),
+    preparation: preparationIdentityFromHistory(identityHistory),
+    history: historySummaryFromBridge(identityHistory),
     forecastOrigin: latestLawfulMaturedOrigin,
     runtimeSeconds: null,
     verification,
@@ -2476,6 +2479,7 @@ export function createForecastLibraryService(
     executionContextRegistry: dependencies.executionContextRegistry ?? createForecastPreparationExecutionContextRegistry(),
     executionAdmission: dependencies.executionAdmission ?? createDefaultForecastPreparationExecutionAdmission(),
     resolveExactPreparedCapability: dependencies.resolveExactPreparedCapability ?? resolveExactForecastCapability,
+    executePreparedCurrent: dependencies.executePreparedCurrent ?? executePreparedForecastBridge,
   }
   const isExecutionContextReleaseEvent = (eventType: string) =>
     eventType === 'single_flight_entry_released'
@@ -3895,6 +3899,22 @@ export function createForecastLibraryService(
             })
 
             if (admission.role === 'WAITER') {
+              resolvedDependencies.telemetry.emit('single_flight_waiter_joined', {
+                logicalArtifactKey,
+                operationFamily: 'VERIFICATION',
+                ownerRequestId: admission.ownerRequestId,
+                requestId,
+                role: 'WAITER',
+                activeVerificationSingleFlightEntries: null,
+                durationMs: null,
+                error: null,
+                seriesId: input.seriesId,
+                modelId: input.modelId,
+                targetSemantics: methodIdentity.targetSemantics,
+                sourceFrequency,
+                targetCadence,
+                trainingWindowPolicyId: verificationStatisticalCompatibility.trainingWindowPolicyId,
+              })
               recordVerificationExecutionEvent(toWaiterExecutionLedgerContext(admission), {
                 logicalArtifactKey,
                 operationFamily: 'VERIFICATION',
@@ -4656,14 +4676,24 @@ export function createForecastLibraryService(
 
               let artifact: PersistedVerificationArtifact
               try {
+                const authoritativeHistoryResponse = preparedExecutionContext
+                  ? await preparedExecutionContext.exportHistory('verification', input.modelId)
+                  : historyResponse
+
+                if (authoritativeHistoryResponse.status !== 'AVAILABLE') {
+                  throw new Error('Recent Verification authoritative history is unavailable for computation.')
+                }
+
                 artifact = await buildRecentVerificationArtifact({
                   request: input,
                   methodVersion: historyResponse.methodVersion,
                   targetSemantics: methodIdentity.targetSemantics,
-                  benchmark: historyResponse.benchmark,
-                  source: historyResponse.source,
-                  authoritativeHistory: historyResponse.history,
+                  benchmark: authoritativeHistoryResponse.benchmark,
+                  source: authoritativeHistoryResponse.source,
+                  authoritativeHistory: authoritativeHistoryResponse.history,
+                  identityHistory: historyResponse.history,
                   cadenceContext,
+                  executePreparedCurrent: resolvedDependencies.executePreparedCurrent,
                 })
               } catch (error) {
                 const message = error instanceof Error ? error.message : 'Recent Verification preparation failed.'

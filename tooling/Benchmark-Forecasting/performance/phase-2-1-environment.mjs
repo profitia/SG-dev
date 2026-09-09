@@ -17,6 +17,7 @@ const REPOSITORY_ROOT = path.resolve(PERFORMANCE_DIR, '..', '..', '..')
 const RUNTIME_ROOT = path.join(REPOSITORY_ROOT, '.phase-2-1-runtime')
 const POSTGRES_DATA = path.join(RUNTIME_ROOT, 'postgres')
 const POSTGRES_LOG = path.join(RUNTIME_ROOT, 'postgres.log')
+const POSTGRES_SOCKET_DIR = process.env.PHASE_2_1_SOCKET_DIR ?? '/tmp/sg-phase-2-1-pg'
 const SNAPSHOT_ROOT = path.join(RUNTIME_ROOT, 'snapshots-v1')
 const MC_SNAPSHOT_ROOT = path.join(RUNTIME_ROOT, 'snapshots-mc-r2')
 const ENVIRONMENT_MANIFEST = path.join(PERFORMANCE_DIR, 'phase-2-1-environment.json')
@@ -110,12 +111,13 @@ async function ensurePostgres() {
 
   const ready = spawnSync(pgIsReady, ['-h', HOST, '-p', String(PORT), '-U', USER], { stdio: 'ignore' })
   if (ready.status !== 0) {
+    await mkdir(POSTGRES_SOCKET_DIR, { recursive: true })
     const logHandle = await import('node:fs').then(({ openSync }) => openSync(POSTGRES_LOG, 'a'))
     const child = spawn(postgres, [
       '-D', POSTGRES_DATA,
       '-p', String(PORT),
       '-c', `listen_addresses=${HOST}`,
-      '-c', `unix_socket_directories=${RUNTIME_ROOT}`,
+      '-c', `unix_socket_directories=${POSTGRES_SOCKET_DIR}`,
     ], { detached: true, stdio: ['ignore', logHandle, logHandle] })
     child.unref()
     await waitForPostgres(pgIsReady)

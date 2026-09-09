@@ -99,7 +99,12 @@ function isCurrentPreparationEligible(capability: ForecastVariantCapability) {
 }
 
 function isVerificationPreparationEligible(capability: ForecastVariantCapability) {
+  if (capability.identity.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME') {
+    return false
+  }
+
   return isCurrentPreparationEligible(capability)
+    && capability.currentPreparedState === 'READY'
 }
 
 function buildTargetPriority(preferredTargetBasis: ForecastTargetBasis) {
@@ -124,13 +129,24 @@ function compareQueueItems(
   preferredModelId: UserFacingForecastModelId,
   preferredTargetBasis: ForecastTargetBasis,
 ) {
-  if (left.kind !== right.kind) {
-    return left.kind === 'CURRENT' ? -1 : 1
-  }
-
   const preferredTargetSemantics = preferredTargetBasis === 'POINT_IN_TIME'
     ? 'ROLLING_DAILY_POINT_IN_TIME'
     : preferredTargetBasis
+
+  const resolvePriorityBucket = (item: QueueItem) => {
+    const isExactPreferred = item.modelId === preferredModelId && item.targetSemantics === preferredTargetSemantics
+    if (isExactPreferred) {
+      return item.kind === 'CURRENT' ? 0 : 1
+    }
+    return item.kind === 'CURRENT' ? 2 : 3
+  }
+
+  const leftBucket = resolvePriorityBucket(left)
+  const rightBucket = resolvePriorityBucket(right)
+  if (leftBucket !== rightBucket) {
+    return leftBucket - rightBucket
+  }
+
   const leftIsExactPreferred = left.modelId === preferredModelId && left.targetSemantics === preferredTargetSemantics
   const rightIsExactPreferred = right.modelId === preferredModelId && right.targetSemantics === preferredTargetSemantics
   if (leftIsExactPreferred !== rightIsExactPreferred) {

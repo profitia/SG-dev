@@ -18,6 +18,7 @@ import {
   buildRollingDailyHistoryFingerprint,
   ROLLING_DAILY_INPUT_SOURCE,
 } from '@/lib/forecast/rolling-daily-maintenance'
+import { selectTrailingRollingDailyCurrentHistory } from '@/lib/forecast/rolling-daily-current-ownership'
 import type { ForecastPreparedState, ForecastPreparedVariant } from '@/lib/forecast/capability-resolver'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 import { selectMinimalLawfulCurrentTrainingPayload } from '@/lib/forecast/live-market-input'
@@ -86,6 +87,21 @@ function stateForFingerprint(
   return storedFingerprint === expectedFingerprint ? 'READY' : 'STALE'
 }
 
+function resolvePreparedTargetCadence(
+  sourceFrequency: ReturnType<typeof normalizeForecastSourceFrequency>,
+  targetBasis: (typeof MONTHLY_TARGETS)[number],
+) {
+  if (sourceFrequency === 'DAILY' || sourceFrequency === 'MONTHLY') {
+    return 'MONTHLY' as const
+  }
+
+  if (sourceFrequency === 'WEEKLY' && targetBasis === 'END_OF_PERIOD') {
+    return 'MONTHLY' as const
+  }
+
+  return sourceFrequency
+}
+
 export async function readForecastPreparedVariants(
   seriesId: string,
   history: BenchmarkHistoricalSeriesResult,
@@ -95,46 +111,29 @@ export async function readForecastPreparedVariants(
   if (!prisma) return []
 
   const sourceFrequency = normalizeForecastSourceFrequency(history.frequency)
-  if (sourceFrequency !== 'DAILY' && !isForecastExecutableNativeSparseFrequency(sourceFrequency)) return []
-  const targetCadence = sourceFrequency === 'DAILY' ? 'MONTHLY' : sourceFrequency
-  const artifactFrequency = buildForecastArtifactCadenceIdentity({ sourceFrequency, targetCadence })
-  const acceptedArtifactFrequencies = targetCadence === 'MONTHLY'
-    ? [artifactFrequency, LEGACY_MONTHLY_ARTIFACT_FREQUENCY]
-    : [artifactFrequency]
-  const currentBasePayloadByTarget = new Map(MONTHLY_TARGETS.map((targetBasis) => [
-    targetBasis,
-    buildLiveForecastBridgePayloadFromHistory(seriesId, history, {
-      targetBasis,
-      targetCadence,
-      now: options.now,
-      continuityPolicy: targetCadence === 'MONTHLY' ? 'ALLOW_GAPS' : 'REQUIRE_FULL',
-    }),
-  ]))
+  if (
+    sourceFrequency !== 'DAILY'
+    && sourceFrequency !== 'WEEKLY'
+    && sourceFrequency !== 'MONTHLY'
+    && !isForecastExecutableNativeSparseFrequency(sourceFrequency)
+  ) return []
+  const monthlyCandidates = sourceFrequency === 'WEEKLY'
+    ? [{ targetBasis: 'END_OF_PERIOD' as const }]
+    : MONTHLY_TARGETS.map((targetBasis) => ({ targetBasis }))
+  const currentBasePayloadByTarget = new Map(monthlyCandidates.map(({ targetBasis }) => {
+    const targetCadence = resolvePreparedTargetCadence(sourceFrequency, targetBasis)
 
-  const monthlyCandidates = MONTHLY_TARGETS.map((targetBasis) => {
-    const historicalPayload = (() => {
-      try {
-        return buildLiveForecastBridgePayloadFromHistory(seriesId, history, {
-          targetBasis,
-          targetCadence,
-          now: options.now,
-        })
-      } catch {
-        return null
-      }
-    })()
-
-    return {
+    return [
       targetBasis,
-      historicalHistoryFingerprints: historicalPayload ? {
-        legacy: buildForecastHistoryFingerprint(historicalPayload.history),
-        cadence: buildForecastHistoryFingerprint({
-          ...historicalPayload.history,
-          cadence: { sourceFrequency, targetCadence },
-        }),
-      } : null,
-    }
-  })
+      buildLiveForecastBridgePayloadFromHistory(seriesId, history, {
+        targetBasis,
+        targetCadence,
+        now: options.now,
+        continuityPolicy: targetCadence === 'MONTHLY' ? 'ALLOW_GAPS' : 'REQUIRE_FULL',
+      }),
+    ] as const
+  }))
+
   const rollingHistory = {
     seriesId,
     displayName: history.displayName,
@@ -143,11 +142,19 @@ export async function readForecastPreparedVariants(
     source: history.source,
     points: history.historical,
   }
-  const rollingFingerprint = buildRollingDailyHistoryFingerprint(rollingHistory)
+  const rollingCurrentFingerprint = buildRollingDailyHistoryFingerprint(
+    selectTrailingRollingDailyCurrentHistory(rollingHistory),
+  )
+  const rollingHistoricalFingerprint = buildRollingDailyHistoryFingerprint(rollingHistory)
   const variants: ForecastPreparedVariant[] = []
 
   for (const candidate of monthlyCandidates) {
     for (const modelId of USER_FACING_FORECAST_MODELS) {
+      const targetCadence = resolvePreparedTargetCadence(sourceFrequency, candidate.targetBasis)
+      const artifactFrequency = buildForecastArtifactCadenceIdentity({ sourceFrequency, targetCadence })
+      const acceptedArtifactFrequencies = targetCadence === 'MONTHLY'
+        ? [artifactFrequency, LEGACY_MONTHLY_ARTIFACT_FREQUENCY]
+        : [artifactFrequency]
       const identity = createForecastIdentity({ seriesId, targetBasis: candidate.targetBasis, modelId })
       const currentPayload = selectMinimalLawfulCurrentTrainingPayload(
         currentBasePayloadByTarget.get(candidate.targetBasis)!,
@@ -209,9 +216,7 @@ export async function readForecastPreparedVariants(
       variants.push({
         identity,
         current: stateForCurrentRun(current, currentHistoryFingerprints),
-        historical: candidate.historicalHistoryFingerprints
-          ? stateForHistoricalRun(historical, candidate.historicalHistoryFingerprints)
-          : 'NOT_PREPARED',
+        historical: stateForHistoricalRun(historical, currentHistoryFingerprints),
       })
     }
   }
@@ -237,7 +242,7 @@ export async function readForecastPreparedVariants(
             modelId,
             trainingWindowPolicyId: rollingDailyCompatibility.trainingWindowPolicyId,
             effectiveTrainingPolicyId: rollingDailyCompatibility.effectiveTrainingPolicyId,
-            sourceHistoryFingerprint: rollingFingerprint,
+            sourceHistoryFingerprint: rollingCurrentFingerprint,
           },
         },
         select: { status: true, payloadJson: true },
@@ -276,12 +281,12 @@ export async function readForecastPreparedVariants(
         snapshot?.status === 'AVAILABLE' && hasRenderableRollingDailyPath(snapshot.payloadJson)
           ? snapshotFingerprint
           : null,
-        rollingFingerprint,
+        rollingCurrentFingerprint,
         snapshot?.status === 'AVAILABLE',
       ),
       historical: stateForFingerprint(
         maintenance?.latestSourceHistoryFingerprint,
-        rollingFingerprint,
+        rollingHistoricalFingerprint,
         verificationCount > 0,
       ),
     })

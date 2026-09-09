@@ -11,6 +11,7 @@ import { getMarketDataPrisma } from '@/lib/market-data/client'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 import { serverEnv } from '@/lib/env'
 import type { ForecastTargetBasis } from '@/lib/forecast/contracts'
+import { selectTrailingRollingDailyCurrentHistory } from '@/lib/forecast/rolling-daily-current-ownership'
 import {
   ROLLING_DAILY_INSUFFICIENT_TECHNICAL_TRAINING_REASON,
   ROLLING_DAILY_METHODOLOGICAL_CALIBRATION_MINIMUM_STATUS,
@@ -517,6 +518,19 @@ function buildBenchmarkContextFromPreparedHistory(history: RollingDailyHistoryPa
     sourceLatestObservationDate: latestLawfulPoint ? normalizeDailyObservationDay(latestLawfulPoint.date) : null,
     sourceLatestObservationValue: latestLawfulPoint?.value ?? null,
   }
+}
+
+function normalizeBenchmarkContextForCurrentForecast(
+  benchmarkContext: RollingDailyProductionBenchmarkContext,
+  targetBasis: ForecastTargetBasis,
+): RollingDailyProductionBenchmarkContext {
+  if (targetBasis !== 'POINT_IN_TIME') {
+    return benchmarkContext
+  }
+
+  return buildBenchmarkContextFromPreparedHistory(
+    selectTrailingRollingDailyCurrentHistory(benchmarkContext.history),
+  )
 }
 
 function normalizePreparedHistoryForNaiveCurrent(input: {
@@ -1342,16 +1356,17 @@ export function createRollingDailyProductionForecastService(
           : resolvedDependencies.loadBenchmarkContext(input.seriesId),
         resolvedDependencies.repository.readCalibrationAuthority(identity),
       ])
+      const normalizedBenchmarkContext = normalizeBenchmarkContextForCurrentForecast(benchmarkContext, targetBasis)
 
-      const latestObservationDate = benchmarkContext.sourceLatestObservationDate
-      const latestObservationValue = benchmarkContext.sourceLatestObservationValue
+      const latestObservationDate = normalizedBenchmarkContext.sourceLatestObservationDate
+      const latestObservationValue = normalizedBenchmarkContext.sourceLatestObservationValue
       const generatedAt = resolvedDependencies.now().toISOString()
 
       if (!latestObservationDate || latestObservationValue === null) {
         return RollingDailyProductionForecastUnavailableSchema.parse({
           contractVersion: ROLLING_DAILY_PRODUCTION_CONTRACT_VERSION,
           status: 'FAILED',
-          benchmark: benchmarkContext.benchmark,
+          benchmark: normalizedBenchmarkContext.benchmark,
           forecastMethod: {
             id: ROLLING_DAILY_METHOD_ID,
             version: ROLLING_DAILY_METHOD_VERSION,
@@ -1375,7 +1390,7 @@ export function createRollingDailyProductionForecastService(
             calibrationUpdatedAt: null,
             calibrationLastResidualAvailabilityDate: null,
             inputSource: null,
-            sourceHistoryFingerprint: buildRollingDailyHistoryFingerprint(benchmarkContext.history),
+            sourceHistoryFingerprint: buildRollingDailyHistoryFingerprint(normalizedBenchmarkContext.history),
           },
           warnings: [],
         })
@@ -1388,7 +1403,7 @@ export function createRollingDailyProductionForecastService(
         methodVersion: ROLLING_DAILY_METHOD_VERSION,
         minimumTrainingObservations: input.minimumTrainingObservations ?? DEFAULT_ROLLING_DAILY_MINIMUM_TRAINING_OBSERVATIONS,
         minimumCalibrationSamples: input.minimumCalibrationSamples ?? DEFAULT_ROLLING_DAILY_MINIMUM_CALIBRATION_SAMPLES,
-        history: benchmarkContext.history,
+        history: normalizedBenchmarkContext.history,
         calibrationGroups: calibrationAuthority.groups.map((group) => ({
           horizonLabel: group.horizonLabel,
           horizonMonths: group.horizonMonths,
@@ -1405,8 +1420,8 @@ export function createRollingDailyProductionForecastService(
 
       if (bridgeResponse.status !== 'AVAILABLE') {
         return mapUnavailableResult({
-          benchmark: benchmarkContext.benchmark,
-          benchmarkContext,
+          benchmark: normalizedBenchmarkContext.benchmark,
+          benchmarkContext: normalizedBenchmarkContext,
           bridgeResponse,
           generatedAt,
           sourceLatestObservationDate: latestObservationDate,
@@ -1414,8 +1429,8 @@ export function createRollingDailyProductionForecastService(
       }
 
       return mapAvailableResult({
-        benchmark: benchmarkContext.benchmark,
-        benchmarkContext,
+        benchmark: normalizedBenchmarkContext.benchmark,
+        benchmarkContext: normalizedBenchmarkContext,
         bridgeResponse,
         calibrationGroups: calibrationAuthority.groups,
         maintenanceState: calibrationAuthority.state,

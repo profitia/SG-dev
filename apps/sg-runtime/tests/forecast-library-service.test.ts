@@ -90,6 +90,49 @@ function createHistoryResponse() {
   }
 }
 
+function createMonthlyHistoryResponse(length: number, startYear: number, startMonthIndex: number) {
+  const points = Array.from({ length }, (_, index) => {
+    const monthIndex = startMonthIndex + index
+    const year = startYear + Math.floor(monthIndex / 12)
+    const month = monthIndex % 12
+    return {
+      date: new Date(Date.UTC(year, month, 1)).toISOString(),
+      value: 100 + index,
+      sourceObservedAt: new Date(Date.UTC(year, month + 1, 0)).toISOString(),
+    }
+  })
+
+  return {
+    status: 'AVAILABLE' as const,
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: {
+      kind: 'POSTGRES_RUNTIME_SNAPSHOT' as const,
+      runId: 'cmrd3xvlu0000cedt8gczw378',
+    },
+    benchmark: {
+      seriesId: 'recent.series',
+      component: 'RECENT_SERIES',
+      description: 'Recent series',
+      frequency: 'MONTHLY',
+      expectedObservations: length,
+    },
+    history: {
+      seriesId: 'recent.series',
+      benchmarkName: 'Recent series',
+      description: 'Recent series',
+      frequency: 'MONTHLY',
+      start: points[0]!.date,
+      end: points.at(-1)!.date,
+      observations: length,
+      canonicalization: {
+        method: 'VALIDATE_NATIVE_MONTHLY_END_OF_PERIOD',
+        version: 'native-monthly-end-of-period-v1',
+      },
+      points,
+    },
+  }
+}
+
 function createCurrentResponse(modelId = 'ets') {
   return {
     status: 'AVAILABLE' as const,
@@ -829,6 +872,135 @@ test('prepared recent verification lookup uses the recent policy identity and cu
   assert.equal(verification.status, 'AVAILABLE')
   assert.equal(historyMode, 'current')
   assert.equal(historyModelId, 'arima')
+})
+
+test('recent verification compute uses verification-mode prepared history while lookup keeps current-mode identity', async () => {
+  const currentHistoryResponse = createMonthlyHistoryResponse(10, 2026, 0)
+  const verificationHistoryResponse = createMonthlyHistoryResponse(60, 2022, 0)
+  const historyModes: Array<'current' | 'verification'> = []
+  const executedOrigins: string[] = []
+  let persistedHistoryFingerprint: string | null = null
+  let persistedForecastOrigin: string | null = null
+
+  const service = createTestForecastLibraryService({
+    bridge: {
+      async exportHistory() {
+        throw new Error('prepared recent verification should use the prepared execution context history export')
+      },
+      async exportCurrent() {
+        throw new Error('unused')
+      },
+      async exportVerification() {
+        throw new Error('unused')
+      },
+      async prepareExecutionContext() {
+        return {
+          async exportHistory(mode = 'verification') {
+            historyModes.push(mode)
+            return mode === 'current' ? currentHistoryResponse : verificationHistoryResponse
+          },
+          async exportCurrent() {
+            throw new Error('unused')
+          },
+          async exportVerification() {
+            throw new Error('unused')
+          },
+        }
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        throw new Error('unused')
+      },
+      async writeCurrentRun() {
+        throw new Error('unused')
+      },
+      async readVerificationRun(key) {
+        assert.equal(
+          key.historyFingerprint,
+          buildForecastHistoryFingerprint(currentHistoryResponse.history, {
+            sourceFrequency: 'MONTHLY',
+            targetCadence: 'MONTHLY',
+          }),
+        )
+        return null
+      },
+      async writeVerificationRun(artifact) {
+        persistedHistoryFingerprint = artifact.historyFingerprint
+        persistedForecastOrigin = artifact.forecastOrigin
+      },
+    },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'recent.series',
+      modelId: 'arima',
+      targetSemantics: 'END_OF_PERIOD',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 60,
+    }),
+    executePreparedCurrent: async (payload) => {
+      executedOrigins.push(payload.history.end)
+      return {
+        status: 'AVAILABLE',
+        methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+        source: {
+          kind: 'POSTGRES_RUNTIME_SNAPSHOT',
+          runId: 'cmrd3xvlu0000cedt8gczw378',
+        },
+        benchmark: {
+          seriesId: 'recent.series',
+          component: 'RECENT_SERIES',
+          description: 'Recent series',
+          frequency: 'MONTHLY',
+          expectedObservations: payload.history.observations,
+        },
+        model: {
+          id: 'arima',
+          userFacing: true,
+        },
+        result: {
+          benchmarkId: 'recent.series',
+          component: 'RECENT_SERIES',
+          description: 'Recent series',
+          frequency: 'MONTHLY',
+          model: 'arima',
+          history: payload.history,
+          currentForecast: {
+            '12M': {
+              horizon: '12M',
+              horizonSteps: 12,
+              forecastDate: '2026-12-01T00:00:00.000Z',
+              forecastValue: 159,
+              metadata: null,
+              failureReason: null,
+            },
+          },
+          runtimeSeconds: 0.01,
+        },
+      }
+    },
+    logEvent: () => {},
+  })
+
+  const verification = await service.resolveRecentVerificationRequest({
+    seriesId: 'recent.series',
+    modelId: 'arima',
+    targetBasis: 'END_OF_PERIOD',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  })
+
+  assert.equal(verification.status, 'AVAILABLE')
+  assert.deepEqual(historyModes, ['current', 'verification'])
+  assert.deepEqual(executedOrigins, ['2025-12-01T00:00:00.000Z'])
+  assert.equal(
+    persistedHistoryFingerprint,
+    buildForecastHistoryFingerprint(currentHistoryResponse.history, {
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+    }),
+  )
+  assert.equal(persistedForecastOrigin, '2025-12-01T00:00:00.000Z')
 })
 
 test('recent verification artifact uses the latest lawful matured origin, same effective policy, and N=1', async () => {
