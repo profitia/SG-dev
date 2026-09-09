@@ -436,8 +436,9 @@ function toIsoDateOnly(value: string | null) {
   return value ? value.slice(0, 10) : null
 }
 
-function normalizeDailyObservationDay(value: string) {
-  return value.trim().slice(0, 10)
+function normalizeDailyObservationDay(value: string | Date) {
+  const raw = value instanceof Date ? value.toISOString() : String(value)
+  return raw.trim().slice(0, 10)
 }
 
 function addCalendarMonthsClamped(value: string, months: number) {

@@ -30,8 +30,9 @@ const ROLLING_DAILY_ANCHOR_HORIZONS = {
   '12M': 12,
 } as const
 
-function normalizeDailyObservationDay(value: string) {
-  return value.trim().slice(0, 10)
+function normalizeDailyObservationDay(value: string | Date) {
+  const raw = value instanceof Date ? value.toISOString() : String(value)
+  return raw.trim().slice(0, 10)
 }
 
 function nextCalendarDay(value: string) {

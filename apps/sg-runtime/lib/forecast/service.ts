@@ -1088,17 +1088,18 @@ function parseIsoDate(value: string | null) {
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
-function normalizePeriodIdentityKey(value: string | null) {
+function normalizePeriodIdentityKey(value: string | Date | null) {
   if (!value) {
     return null
   }
 
-  const parsed = parseIsoDate(value)
+  const raw = value instanceof Date ? value.toISOString() : String(value)
+  const parsed = parseIsoDate(raw)
   if (parsed) {
     return parsed.toISOString()
   }
 
-  const trimmed = value.trim()
+  const trimmed = raw.trim()
   return trimmed.length >= 10 ? `${trimmed.slice(0, 10)}T00:00:00.000Z` : trimmed
 }
 

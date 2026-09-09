@@ -14,17 +14,17 @@ type ForecastHistoryCanonicalization = {
 }
 
 type ForecastHistoryPoint = {
-  date: string
+  date: string | Date
   value: number | null
-  sourceObservedAt?: string | null
+  sourceObservedAt?: string | Date | null
 }
 
 export type ForecastHistoryFingerprintInput = {
   seriesId: string
   frequency: string
   cadence?: ForecastCadence
-  start: string
-  end: string
+  start: string | Date
+  end: string | Date
   observations: number
   canonicalization?: ForecastHistoryCanonicalization | null
   points: ForecastHistoryPoint[]
@@ -50,7 +50,7 @@ function resolveHistoryPeriodNormalizer(history: Pick<ForecastHistoryFingerprint
 
   return {
     targetCadence,
-    normalizePeriod: (value: string, label: string) => targetCadence
+    normalizePeriod: (value: string | Date, label: string) => targetCadence
       ? normalizeForecastPeriodIdentity(value, targetCadence, label)
       : normalizeMonthlyPeriodIdentity(value, label),
   }
@@ -58,7 +58,7 @@ function resolveHistoryPeriodNormalizer(history: Pick<ForecastHistoryFingerprint
 
 function normalizeHistoryPoints(
   history: ForecastHistoryFingerprintInput,
-  normalizePeriod: (value: string, label: string) => string,
+  normalizePeriod: (value: string | Date, label: string) => string,
 ) {
   return [...history.points]
     .map((point) => ({
@@ -71,15 +71,16 @@ function normalizeHistoryPoints(
     .sort((left, right) => left.date.localeCompare(right.date))
 }
 
-function parseIsoLikeInstant(value: string, label: string) {
-  const trimmed = value.trim()
+function parseIsoLikeInstant(value: string | Date, label: string) {
+  const raw = value instanceof Date ? value.toISOString() : String(value)
+  const trimmed = raw.trim()
 
   const dateOnlyMatch = DATE_ONLY_PATTERN.exec(trimmed)
   if (dateOnlyMatch) {
     const [, year, month, day] = dateOnlyMatch
     const parsed = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)))
     if (Number.isNaN(parsed.getTime())) {
-      throw new Error(`${label} must be a valid ISO date, received ${value}.`)
+      throw new Error(`${label} must be a valid ISO date, received ${raw}.`)
     }
     return parsed
   }
@@ -99,20 +100,20 @@ function parseIsoLikeInstant(value: string, label: string) {
       ),
     )
     if (Number.isNaN(parsed.getTime())) {
-      throw new Error(`${label} must be a valid ISO timestamp, received ${value}.`)
+      throw new Error(`${label} must be a valid ISO timestamp, received ${raw}.`)
     }
     return parsed
   }
 
   const parsed = new Date(trimmed)
   if (Number.isNaN(parsed.getTime())) {
-    throw new Error(`${label} must be a valid ISO date or timestamp, received ${value}.`)
+    throw new Error(`${label} must be a valid ISO date or timestamp, received ${raw}.`)
   }
 
   return parsed
 }
 
-export function normalizeMonthlyPeriodIdentity(value: string, label: string) {
+export function normalizeMonthlyPeriodIdentity(value: string | Date, label: string) {
   const parsed = parseIsoLikeInstant(value, label)
 
   if (
@@ -131,7 +132,7 @@ export function normalizeMonthlyPeriodIdentity(value: string, label: string) {
 }
 
 export function normalizeForecastPeriodIdentity(
-  value: string,
+  value: string | Date,
   cadence: ForecastTargetCadence,
   label: string,
 ) {
@@ -147,7 +148,7 @@ export function normalizeForecastPeriodIdentity(
   return parsed.toISOString()
 }
 
-export function normalizeSourceObservedAtIdentity(value: string, label: string) {
+export function normalizeSourceObservedAtIdentity(value: string | Date, label: string) {
   return parseIsoLikeInstant(value, label).toISOString()
 }
 
@@ -193,7 +194,7 @@ export function buildForecastHistoryFingerprint(history: ForecastHistoryFingerpr
 
 export function buildOriginBoundForecastHistoryFingerprint(
   history: ForecastHistoryFingerprintInput,
-  forecastOrigin: string,
+  forecastOrigin: string | Date,
 ): string | null {
   const { normalizePeriod } = resolveHistoryPeriodNormalizer(history)
   const normalizedOrigin = normalizePeriod(forecastOrigin, 'Forecast calibration forecastOrigin')

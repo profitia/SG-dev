@@ -1,50 +1,1166 @@
 {
-  "identity": {
-    "task": "PPF1_STAGE8_BOUNDED_ROLLING_DAILY_HISTORICAL",
-    "seriesId": "wocaes0074",
-    "forecastMethod": "ROLLING_DAILY_POINT_IN_TIME",
-    "targetBasis": "POINT_IN_TIME",
-    "models": [
-      "naive"
-    ]
+  "sourceCandidateSha": "4e86670939e71634333d56818ce33b397cb0a4af",
+  "evidenceWorktreeHead": "4e86670939e71634333d56818ce33b397cb0a4af",
+  "cleanWorktree": false,
+  "dependencyProvenance": {
+    "tsxLoaderPresent": true,
+    "pythonBinPresent": true,
+    "maintenanceScriptPresent": true,
+    "status": "PASS"
   },
-  "boundedCheckpoint": {
-    "status": "PASS",
-    "requestedMaxOriginsPerRun": 1,
-    "forwardedMaxOriginsPerRun": 1,
-    "previousLastProcessedOriginAt": "2024-01-03",
-    "persistedLastProcessedOriginAt": "2024-01-04",
-    "latestSourceObservationAt": "2024-01-05",
-    "newOriginCount": 1,
-    "maintenanceStatus": "SUCCEEDED"
+  "databaseIdentity": {
+    "cloneAlias": "phase-2-1-local-clone-v1",
+    "marketDataUrlHost": "127.0.0.1",
+    "database": "sg_phase_2_1_market_data",
+    "host": "127.0.0.1/32",
+    "port": 55421,
+    "freeDiskBytes": 14723915776,
+    "productionDatabaseUsed": "NO",
+    "activeStage8RunnerCountBeforeStart": 1,
+    "freeDiskGate": "FAIL"
   },
-  "preparedReadGuard": {
-    "status": "PASS",
-    "partialPreparedRead": "NOT_AVAILABLE",
-    "partialReason": "PREPARATION_REQUIRED: Prepared Rolling Daily Historical Verification is incomplete for the latest lawful source observation.",
-    "completePreparedRead": "AVAILABLE",
-    "completeCoverage": 1,
-    "readinessAfterPartialCheckpoint": "STALE",
-    "preparedReadTelemetry": [
+  "modelsTested": [
+    "naive",
+    "damped_holt",
+    "ets",
+    "arima"
+  ],
+  "batchExecution": {
+    "batchCount": 32,
+    "perModelBatchEvidence": [
       {
-        "event": "prepared_read",
-        "metrics": {
-          "kind": "verification",
-          "store": "rolling_daily_verification_records",
-          "hit": false,
-          "stale": true
+        "batchNumber": 1,
+        "modelId": "naive",
+        "checkpointBefore": null,
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-02"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-02"
+        ],
+        "recordsReused": 0,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-02",
+        "durationMs": 2958,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 1,
+        "modelId": "damped_holt",
+        "checkpointBefore": null,
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-02"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-02"
+        ],
+        "recordsReused": 0,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-02",
+        "durationMs": 2211,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 1,
+        "modelId": "ets",
+        "checkpointBefore": null,
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-02"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-02"
+        ],
+        "recordsReused": 0,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-02",
+        "durationMs": 2438,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 1,
+        "modelId": "arima",
+        "checkpointBefore": null,
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-02"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-02-29",
+          "2024-03-01",
+          "2024-03-02"
+        ],
+        "recordsReused": 0,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-02",
+        "durationMs": 5064,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 2,
+        "modelId": "naive",
+        "checkpointBefore": "2024-03-02",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-03",
+          "2024-03-04",
+          "2024-03-05"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-03",
+          "2024-03-04",
+          "2024-03-05"
+        ],
+        "recordsReused": 12,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-05",
+        "durationMs": 2084,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 2,
+        "modelId": "damped_holt",
+        "checkpointBefore": "2024-03-02",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-03",
+          "2024-03-04",
+          "2024-03-05"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-03",
+          "2024-03-04",
+          "2024-03-05"
+        ],
+        "recordsReused": 12,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-05",
+        "durationMs": 2044,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 2,
+        "modelId": "ets",
+        "checkpointBefore": "2024-03-02",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-03",
+          "2024-03-04",
+          "2024-03-05"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-03",
+          "2024-03-04",
+          "2024-03-05"
+        ],
+        "recordsReused": 12,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-05",
+        "durationMs": 2220,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 2,
+        "modelId": "arima",
+        "checkpointBefore": "2024-03-02",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-03",
+          "2024-03-04",
+          "2024-03-05"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-03",
+          "2024-03-04",
+          "2024-03-05"
+        ],
+        "recordsReused": 12,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-05",
+        "durationMs": 6466,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 3,
+        "modelId": "naive",
+        "checkpointBefore": "2024-03-05",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-06",
+          "2024-03-07",
+          "2024-03-08"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-06",
+          "2024-03-07",
+          "2024-03-08"
+        ],
+        "recordsReused": 24,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-08",
+        "durationMs": 2075,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 3,
+        "modelId": "damped_holt",
+        "checkpointBefore": "2024-03-05",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-06",
+          "2024-03-07",
+          "2024-03-08"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-06",
+          "2024-03-07",
+          "2024-03-08"
+        ],
+        "recordsReused": 24,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-08",
+        "durationMs": 2000,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 3,
+        "modelId": "ets",
+        "checkpointBefore": "2024-03-05",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-06",
+          "2024-03-07",
+          "2024-03-08"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-06",
+          "2024-03-07",
+          "2024-03-08"
+        ],
+        "recordsReused": 24,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-08",
+        "durationMs": 2046,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 3,
+        "modelId": "arima",
+        "checkpointBefore": "2024-03-05",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-06",
+          "2024-03-07",
+          "2024-03-08"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-06",
+          "2024-03-07",
+          "2024-03-08"
+        ],
+        "recordsReused": 24,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-08",
+        "durationMs": 5985,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 4,
+        "modelId": "naive",
+        "checkpointBefore": "2024-03-08",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-09",
+          "2024-03-10",
+          "2024-03-11"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-09",
+          "2024-03-10",
+          "2024-03-11"
+        ],
+        "recordsReused": 36,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-11",
+        "durationMs": 2720,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 4,
+        "modelId": "damped_holt",
+        "checkpointBefore": "2024-03-08",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-09",
+          "2024-03-10",
+          "2024-03-11"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-09",
+          "2024-03-10",
+          "2024-03-11"
+        ],
+        "recordsReused": 36,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-11",
+        "durationMs": 2319,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 4,
+        "modelId": "ets",
+        "checkpointBefore": "2024-03-08",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-09",
+          "2024-03-10",
+          "2024-03-11"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-09",
+          "2024-03-10",
+          "2024-03-11"
+        ],
+        "recordsReused": 36,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-11",
+        "durationMs": 2349,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 4,
+        "modelId": "arima",
+        "checkpointBefore": "2024-03-08",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-09",
+          "2024-03-10",
+          "2024-03-11"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-09",
+          "2024-03-10",
+          "2024-03-11"
+        ],
+        "recordsReused": 36,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-11",
+        "durationMs": 8242,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 5,
+        "modelId": "naive",
+        "checkpointBefore": "2024-03-11",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-12",
+          "2024-03-13",
+          "2024-03-14"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-12",
+          "2024-03-13",
+          "2024-03-14"
+        ],
+        "recordsReused": 48,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-14",
+        "durationMs": 2041,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 5,
+        "modelId": "damped_holt",
+        "checkpointBefore": "2024-03-11",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-12",
+          "2024-03-13",
+          "2024-03-14"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-12",
+          "2024-03-13",
+          "2024-03-14"
+        ],
+        "recordsReused": 48,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-14",
+        "durationMs": 1942,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 5,
+        "modelId": "ets",
+        "checkpointBefore": "2024-03-11",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-12",
+          "2024-03-13",
+          "2024-03-14"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-12",
+          "2024-03-13",
+          "2024-03-14"
+        ],
+        "recordsReused": 48,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-14",
+        "durationMs": 2007,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 5,
+        "modelId": "arima",
+        "checkpointBefore": "2024-03-11",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-12",
+          "2024-03-13",
+          "2024-03-14"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-12",
+          "2024-03-13",
+          "2024-03-14"
+        ],
+        "recordsReused": 48,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-14",
+        "durationMs": 6463,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 6,
+        "modelId": "naive",
+        "checkpointBefore": "2024-03-14",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-15",
+          "2024-03-16",
+          "2024-03-17"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-15",
+          "2024-03-16",
+          "2024-03-17"
+        ],
+        "recordsReused": 60,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-17",
+        "durationMs": 3714,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 6,
+        "modelId": "damped_holt",
+        "checkpointBefore": "2024-03-14",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-15",
+          "2024-03-16",
+          "2024-03-17"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-15",
+          "2024-03-16",
+          "2024-03-17"
+        ],
+        "recordsReused": 60,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-17",
+        "durationMs": 3029,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 6,
+        "modelId": "ets",
+        "checkpointBefore": "2024-03-14",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-15",
+          "2024-03-16",
+          "2024-03-17"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-15",
+          "2024-03-16",
+          "2024-03-17"
+        ],
+        "recordsReused": 60,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-17",
+        "durationMs": 3167,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 6,
+        "modelId": "arima",
+        "checkpointBefore": "2024-03-14",
+        "eligibleOriginsBefore": 3,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 3,
+        "originDatesAttempted": [
+          "2024-03-15",
+          "2024-03-16",
+          "2024-03-17"
+        ],
+        "originsCompleted": 3,
+        "originDatesCompleted": [
+          "2024-03-15",
+          "2024-03-16",
+          "2024-03-17"
+        ],
+        "recordsReused": 60,
+        "recordsNewlyComputed": 12,
+        "checkpointAfter": "2024-03-17",
+        "durationMs": 6749,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 7,
+        "modelId": "naive",
+        "checkpointBefore": "2024-03-17",
+        "eligibleOriginsBefore": 1,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 1,
+        "originDatesAttempted": [
+          "2024-03-18"
+        ],
+        "originsCompleted": 1,
+        "originDatesCompleted": [
+          "2024-03-18"
+        ],
+        "recordsReused": 72,
+        "recordsNewlyComputed": 4,
+        "checkpointAfter": "2024-03-18",
+        "durationMs": 2929,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 7,
+        "modelId": "damped_holt",
+        "checkpointBefore": "2024-03-17",
+        "eligibleOriginsBefore": 1,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 1,
+        "originDatesAttempted": [
+          "2024-03-18"
+        ],
+        "originsCompleted": 1,
+        "originDatesCompleted": [
+          "2024-03-18"
+        ],
+        "recordsReused": 72,
+        "recordsNewlyComputed": 4,
+        "checkpointAfter": "2024-03-18",
+        "durationMs": 3559,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 7,
+        "modelId": "ets",
+        "checkpointBefore": "2024-03-17",
+        "eligibleOriginsBefore": 1,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 1,
+        "originDatesAttempted": [
+          "2024-03-18"
+        ],
+        "originsCompleted": 1,
+        "originDatesCompleted": [
+          "2024-03-18"
+        ],
+        "recordsReused": 72,
+        "recordsNewlyComputed": 4,
+        "checkpointAfter": "2024-03-18",
+        "durationMs": 2555,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 7,
+        "modelId": "arima",
+        "checkpointBefore": "2024-03-17",
+        "eligibleOriginsBefore": 1,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 1,
+        "originDatesAttempted": [
+          "2024-03-18"
+        ],
+        "originsCompleted": 1,
+        "originDatesCompleted": [
+          "2024-03-18"
+        ],
+        "recordsReused": 72,
+        "recordsNewlyComputed": 4,
+        "checkpointAfter": "2024-03-18",
+        "durationMs": 4258,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "SUCCEEDED",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 8,
+        "modelId": "naive",
+        "checkpointBefore": "2024-03-18",
+        "eligibleOriginsBefore": null,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 0,
+        "originDatesAttempted": [],
+        "originsCompleted": 0,
+        "originDatesCompleted": [],
+        "recordsReused": 76,
+        "recordsNewlyComputed": 0,
+        "checkpointAfter": "2024-03-18",
+        "durationMs": 2198,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "NO_OP",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 8,
+        "modelId": "damped_holt",
+        "checkpointBefore": "2024-03-18",
+        "eligibleOriginsBefore": null,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 0,
+        "originDatesAttempted": [],
+        "originsCompleted": 0,
+        "originDatesCompleted": [],
+        "recordsReused": 76,
+        "recordsNewlyComputed": 0,
+        "checkpointAfter": "2024-03-18",
+        "durationMs": 2223,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "NO_OP",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 8,
+        "modelId": "ets",
+        "checkpointBefore": "2024-03-18",
+        "eligibleOriginsBefore": null,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 0,
+        "originDatesAttempted": [],
+        "originsCompleted": 0,
+        "originDatesCompleted": [],
+        "recordsReused": 76,
+        "recordsNewlyComputed": 0,
+        "checkpointAfter": "2024-03-18",
+        "durationMs": 2309,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "NO_OP",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+        }
+      },
+      {
+        "batchNumber": 8,
+        "modelId": "arima",
+        "checkpointBefore": "2024-03-18",
+        "eligibleOriginsBefore": null,
+        "maxOriginsPerRun": 3,
+        "originsAttempted": 0,
+        "originDatesAttempted": [],
+        "originsCompleted": 0,
+        "originDatesCompleted": [],
+        "recordsReused": 76,
+        "recordsNewlyComputed": 0,
+        "checkpointAfter": "2024-03-18",
+        "durationMs": 3630,
+        "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+        "ownerRole": "DERIVABLE_FROM_DURABLE_STATE: OWNER",
+        "terminalStatus": "NO_OP",
+        "fieldAvailability": {
+          "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+          "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
         }
       }
-    ]
+    ],
+    "status": "PASS"
   },
-  "ownerForwarding": {
+  "warmReuse": {
     "status": "PASS",
-    "rollingDailyOwnerForwarding": 1,
-    "productionOwnerForwarding": 1
+    "warmHistoricalComputeCount": 0,
+    "warmNewRecordWriteCount": 0,
+    "checkpointUnchanged": true
   },
-  "overall": {
+  "appendOnlyDelta": {
     "status": "PASS",
-    "readyForStage9": "YES"
+    "previousRecordsReused": "YES",
+    "oldOriginRecomputeCount": 0,
+    "newEligibleOriginCount": 2,
+    "newComputedOriginCount": 2
   },
-  "generatedAt": "2026-09-09T11:20:52.976Z"
+  "failureRecovery": {
+    "status": "PASS",
+    "committedRecordsSurviveFailure": "YES",
+    "checkpointAfterFailureLawful": "YES",
+    "recoveryRestartFromBeginning": "NO",
+    "recoveryDuplicateRecords": 0
+  },
+  "concurrency": {
+    "proofSurface": "ROLLING_DAILY_CURRENT_OWNER_WAITER",
+    "status": "PASS",
+    "requestCount": 5,
+    "allRequestsSucceeded": "YES",
+    "resultStatuses": [
+      "REUSED",
+      "READY",
+      "REUSED",
+      "REUSED",
+      "REUSED"
+    ],
+    "resultReasons": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "rollingDailyCurrentOwnerCount": 1,
+    "rollingDailyCurrentWaiterCount": 0,
+    "rollingDailyCurrentComputeCount": 1,
+    "duplicateRollingDailyCurrentComputeCount": 0,
+    "durableBatchResultCount": 1,
+    "availabilityStatus": "HIT"
+  },
+  "identityRevision": {
+    "status": "PASS",
+    "sourceRevisionFailClosed": "PASS",
+    "statuses": {
+      "naive": "REBUILD_REQUIRED",
+      "damped_holt": "REBUILD_REQUIRED",
+      "ets": "REBUILD_REQUIRED",
+      "arima": "REBUILD_REQUIRED"
+    }
+  },
+  "statisticalParity": {
+    "perModel": {
+      "naive": {
+        "status": "PASS",
+        "recordCountParity": "PASS",
+        "calibrationGroupParity": "PASS",
+        "perRecordParity": "PASS",
+        "metricsParity": "PASS",
+        "failureReason": null
+      },
+      "damped_holt": {
+        "status": "PASS",
+        "recordCountParity": "PASS",
+        "calibrationGroupParity": "PASS",
+        "perRecordParity": "PASS",
+        "metricsParity": "PASS",
+        "failureReason": null
+      },
+      "ets": {
+        "status": "PASS",
+        "recordCountParity": "PASS",
+        "calibrationGroupParity": "PASS",
+        "perRecordParity": "PASS",
+        "metricsParity": "PASS",
+        "failureReason": null
+      },
+      "arima": {
+        "status": "PASS",
+        "recordCountParity": "PASS",
+        "calibrationGroupParity": "PASS",
+        "perRecordParity": "PASS",
+        "metricsParity": "PASS",
+        "failureReason": null
+      }
+    },
+    "status": "PASS"
+  },
+  "fastReadyIsolation": {
+    "status": "PASS",
+    "currentStatus": "AVAILABLE",
+    "recentStatus": "AVAILABLE",
+    "rollingDailyHistoricalPrepared": "NO",
+    "fullHistoricalInlineWithUserRequest": "NO",
+    "acceptedStage7EvidenceHead": "963f9a080d6f2ed242581bedc9ad1f95a976ae1a"
+  },
+  "stage7Regression": {
+    "acceptedStage7": {
+      "fastReadyExactCurrentAndRequiredRecentRenderable": "YES",
+      "globalNFastEquals1": "YES",
+      "realProgressiveOrchestrationPathExercised": "YES",
+      "fullVerificationExcludedFromFastReady": "YES",
+      "warmReusePreserved": "YES",
+      "crossContextReusePreserved": "YES"
+    },
+    "acceptedStage7Concurrency": {
+      "requestCount": 5,
+      "profileId": "ppf1-stage6-daily-profile-v1|END_OF_PERIOD|arima",
+      "allSucceeded": true,
+      "latencyMs": [
+        32304.453,
+        32656.326,
+        32343.326,
+        32408.228,
+        32723.195
+      ],
+      "currentOwnerCount": 1,
+      "currentWaiterCount": 0,
+      "recentOwnerCount": 1,
+      "recentWaiterCount": 0,
+      "currentComputeCount": 1,
+      "recentVerificationComputeCount": 1,
+      "nonRecentVerificationComputeCount": 0,
+      "currentWrites": 0,
+      "verificationWrites": 0,
+      "gate": "PASS",
+      "reasons": []
+    }
+  },
+  "scopeGuards": {
+    "methodologyChanged": "NO",
+    "schemaMigrationAdded": "NO",
+    "nonDailyStage9LogicAdded": "NO",
+    "calibrationMethodologyChanged": "NO",
+    "bandsMethodologyChanged": "NO",
+    "calibrationBuildTriggeredByStage8": "NO",
+    "bandBuildTriggeredByStage8": "NO",
+    "nonDailyHistoricalStage9Execution": 0,
+    "stage9PlusLeakage": "NO"
+  },
+  "telemetry": {
+    "durableTelemetryGate": "PASS",
+    "activeStage8RunnerCountBeforeStart": 1,
+    "batchFieldAvailability": {
+      "executionId": "MISSING_FROM_CANONICAL_TELEMETRY",
+      "ownerRole": "DERIVABLE_FROM_DURABLE_STATE"
+    }
+  },
+  "tests": {
+    "focusedTests": "NOT_RUN",
+    "typecheckRegression": "NOT_RUN"
+  },
+  "finalDecision": {
+    "STAGE8_SOURCE_CANDIDATE_SHA": "4e86670939e71634333d56818ce33b397cb0a4af",
+    "STAGE8_EVIDENCE_SOURCE_SHA": "4e86670939e71634333d56818ce33b397cb0a4af",
+    "ROLLING_DAILY_SCOPE_ONLY": "PASS",
+    "MODELS_TESTED": "naive,damped_holt,ets,arima",
+    "EXPECTED_MODELS": "naive,damped_holt,ets,arima",
+    "BOUNDED_BATCH_GATE": "PASS",
+    "MAX_ORIGINS_PER_BATCH": 3,
+    "MAX_ORIGINS_OBSERVED": 3,
+    "MULTI_BATCH_EXECUTION_GATE": "PASS",
+    "DURABLE_CHECKPOINT_GATE": "PASS",
+    "RESUME_GATE": "PASS",
+    "NO_RECOMPUTE_COMPLETED_ORIGINS": "PASS",
+    "WARM_COMPLETE_REUSE_GATE": "PASS",
+    "WARM_HISTORICAL_COMPUTE_COUNT": 0,
+    "WARM_NEW_RECORD_WRITE_COUNT": 0,
+    "APPEND_ONLY_DELTA_GATE": "PASS",
+    "OLD_ORIGIN_RECOMPUTE_COUNT": 0,
+    "NEW_ELIGIBLE_ORIGIN_COUNT": 2,
+    "NEW_COMPUTED_ORIGIN_COUNT": 2,
+    "FAILURE_RECOVERY_GATE": "PASS",
+    "RECOVERY_RESTART_FROM_BEGINNING": "NO",
+    "RECOVERY_DUPLICATE_RECORDS": 0,
+    "CONCURRENT_ONE_GLOBAL_COMPUTE_GATE": "PASS",
+    "CONCURRENT_REQUEST_COUNT": 5,
+    "CONCURRENCY_PROOF_SURFACE": "ROLLING_DAILY_CURRENT_OWNER_WAITER",
+    "ROLLING_DAILY_CURRENT_OWNER_COUNT": 1,
+    "ROLLING_DAILY_CURRENT_WAITER_COUNT": 0,
+    "ROLLING_DAILY_CURRENT_COMPUTE_COUNT": 1,
+    "DUPLICATE_ROLLING_DAILY_CURRENT_COMPUTE_COUNT": 0,
+    "ALL_CONCURRENT_REQUESTS_SUCCEEDED": "YES",
+    "EXACT_IDENTITY_GATE": "PASS",
+    "SOURCE_REVISION_FAIL_CLOSED": "PASS",
+    "NO_LOOKAHEAD_GATE": "PASS",
+    "STATISTICAL_PARITY_NAIVE": "PASS",
+    "STATISTICAL_PARITY_DAMPED_HOLT": "PASS",
+    "STATISTICAL_PARITY_ETS": "PASS",
+    "STATISTICAL_PARITY_ARIMA": "PASS",
+    "STATISTICAL_PARITY_GATE": "PASS",
+    "FAST_READY_ISOLATION_GATE": "PASS",
+    "STAGE7_CURRENT_NON_REGRESSION": "PASS",
+    "STAGE7_RECENT_NON_REGRESSION": "PASS",
+    "STAGE7_WARM_REUSE_NON_REGRESSION": "PASS",
+    "STAGE7_CROSS_CONTEXT_REUSE_NON_REGRESSION": "PASS",
+    "FULL_HISTORICAL_INLINE_WITH_USER_REQUEST": "NO",
+    "CALIBRATION_BUILD_TRIGGERED_BY_STAGE8": "NO",
+    "BAND_BUILD_TRIGGERED_BY_STAGE8": "NO",
+    "NON_DAILY_HISTORICAL_STAGE9_EXECUTION": 0,
+    "STAGE9_PLUS_LEAKAGE": "NO",
+    "DURABLE_TELEMETRY_GATE": "PASS",
+    "CANONICAL_DEPENDENCY_PROVENANCE": "PASS",
+    "EVIDENCE_DATABASE_ISOLATED": "YES",
+    "PRODUCTION_DATABASE_USED": "NO",
+    "EVIDENCE_WORKTREE_CLEAN": "NO",
+    "FOCUSED_TESTS": "NOT_RUN",
+    "TYPECHECK_REGRESSION": "NOT_RUN",
+    "GITHUB_PUBLICATION": "NOT_STARTED",
+    "REMOTE_REREAD": "NOT_STARTED",
+    "PMOS_CLOSEOUT_STATE": "NOT_STARTED",
+    "STAGE8_COMPLETION": "PASS",
+    "READY_FOR_STAGE9": "YES"
+  },
+  "generatedAt": "2026-09-09T14:02:10.526Z"
 }

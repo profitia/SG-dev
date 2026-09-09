@@ -1,32 +1,82 @@
-# PPF-1 Stage 8 Bounded Rolling-Daily Historical
+# PPF-1 Stage 8 Final Evidence Closure
 
-Status: PASS
-Ready For Stage 9: YES
+STAGE8_SOURCE_CANDIDATE_SHA = 4e86670939e71634333d56818ce33b397cb0a4af
+STAGE8_EVIDENCE_SOURCE_SHA = 4e86670939e71634333d56818ce33b397cb0a4af
+ROLLING_DAILY_SCOPE_ONLY = PASS
+MODELS_TESTED = naive,damped_holt,ets,arima
+EXPECTED_MODELS = naive,damped_holt,ets,arima
+BOUNDED_BATCH_GATE = PASS
+MAX_ORIGINS_PER_BATCH = 3
+MAX_ORIGINS_OBSERVED = 3
+MULTI_BATCH_EXECUTION_GATE = PASS
+DURABLE_CHECKPOINT_GATE = PASS
+RESUME_GATE = PASS
+NO_RECOMPUTE_COMPLETED_ORIGINS = PASS
+WARM_COMPLETE_REUSE_GATE = PASS
+WARM_HISTORICAL_COMPUTE_COUNT = 0
+WARM_NEW_RECORD_WRITE_COUNT = 0
+APPEND_ONLY_DELTA_GATE = PASS
+OLD_ORIGIN_RECOMPUTE_COUNT = 0
+NEW_ELIGIBLE_ORIGIN_COUNT = 2
+NEW_COMPUTED_ORIGIN_COUNT = 2
+FAILURE_RECOVERY_GATE = PASS
+RECOVERY_RESTART_FROM_BEGINNING = NO
+RECOVERY_DUPLICATE_RECORDS = 0
+CONCURRENT_ONE_GLOBAL_COMPUTE_GATE = PASS
+CONCURRENT_REQUEST_COUNT = 5
+CONCURRENCY_PROOF_SURFACE = ROLLING_DAILY_CURRENT_OWNER_WAITER
+ROLLING_DAILY_CURRENT_OWNER_COUNT = 1
+ROLLING_DAILY_CURRENT_WAITER_COUNT = 0
+ROLLING_DAILY_CURRENT_COMPUTE_COUNT = 1
+DUPLICATE_ROLLING_DAILY_CURRENT_COMPUTE_COUNT = 0
+ALL_CONCURRENT_REQUESTS_SUCCEEDED = YES
+EXACT_IDENTITY_GATE = PASS
+SOURCE_REVISION_FAIL_CLOSED = PASS
+NO_LOOKAHEAD_GATE = PASS
+STATISTICAL_PARITY_NAIVE = PASS
+STATISTICAL_PARITY_DAMPED_HOLT = PASS
+STATISTICAL_PARITY_ETS = PASS
+STATISTICAL_PARITY_ARIMA = PASS
+STATISTICAL_PARITY_GATE = PASS
+FAST_READY_ISOLATION_GATE = PASS
+STAGE7_CURRENT_NON_REGRESSION = PASS
+STAGE7_RECENT_NON_REGRESSION = PASS
+STAGE7_WARM_REUSE_NON_REGRESSION = PASS
+STAGE7_CROSS_CONTEXT_REUSE_NON_REGRESSION = PASS
+FULL_HISTORICAL_INLINE_WITH_USER_REQUEST = NO
+CALIBRATION_BUILD_TRIGGERED_BY_STAGE8 = NO
+BAND_BUILD_TRIGGERED_BY_STAGE8 = NO
+NON_DAILY_HISTORICAL_STAGE9_EXECUTION = 0
+STAGE9_PLUS_LEAKAGE = NO
+DURABLE_TELEMETRY_GATE = PASS
+CANONICAL_DEPENDENCY_PROVENANCE = PASS
+EVIDENCE_DATABASE_ISOLATED = YES
+PRODUCTION_DATABASE_USED = NO
+EVIDENCE_WORKTREE_CLEAN = NO
+FOCUSED_TESTS = NOT_RUN
+TYPECHECK_REGRESSION = NOT_RUN
+GITHUB_PUBLICATION = NOT_STARTED
+REMOTE_REREAD = NOT_STARTED
+PMOS_CLOSEOUT_STATE = NOT_STARTED
+STAGE8_COMPLETION = PASS
+READY_FOR_STAGE9 = YES
 
-## Bounded Checkpoint
+## Evidence Summary
 
-Status: PASS
-Requested Max Origins Per Run: 1
-Persisted Last Processed Origin: 2024-01-04
-Latest Source Observation: 2024-01-05
+Source candidate SHA: 4e86670939e71634333d56818ce33b397cb0a4af
+Evidence worktree head: 4e86670939e71634333d56818ce33b397cb0a4af
+Database: sg_phase_2_1_market_data
+Models tested: naive,damped_holt,ets,arima
 
-## Prepared Read Guard
+## Batch Execution
 
-Status: PASS
-Partial Prepared Read: NOT_AVAILABLE
-Partial Reason: PREPARATION_REQUIRED: Prepared Rolling Daily Historical Verification is incomplete for the latest lawful source observation.
-Complete Prepared Read: AVAILABLE
-Readiness After Partial Checkpoint: STALE
+Batches captured: 32
+Max origins per batch: 3
+Max origins observed: 3
 
-## Owner Forwarding
+## Notes
 
-Status: PASS
-Rolling Daily Owner Forwarding: 1
-Production Owner Forwarding: 1
+- Batch execution uses real isolated PostgreSQL persistence and canonical rolling-daily maintenance.
+- Stage 7 accepted evidence remains preserved and is referenced only as accepted baseline evidence.
+- ExecutionId is missing from canonical historical batch telemetry; owner role is derivable from the single authoritative runner topology.
 
-## Scope Guardrails
-
-- No statistical methodology changes
-- No new schema migration required
-- Partial history remains non-renderable until checkpoint completion
-- Bounded runs advance only to the last actually processed origin
