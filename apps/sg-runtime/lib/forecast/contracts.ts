@@ -15,7 +15,7 @@ export const DEFAULT_FORECAST_TARGET_BASIS: ForecastTargetBasis = 'MONTHLY_AVERA
 
 export type ForecastCapabilityStatus = 'AVAILABLE' | 'NOT_AVAILABLE' | 'UNSUPPORTED' | 'FAILED'
 
-export type ForecastCacheStatus = 'hit' | 'miss' | 'db-unavailable' | 'persist-failed'
+export type ForecastCacheStatus = 'hit' | 'miss' | 'partial' | 'db-unavailable' | 'persist-failed'
 
 export interface ForecastSourceRef {
   kind: string

@@ -67,14 +67,22 @@ function stateForCurrentRun(
 }
 
 function stateForHistoricalRun(
-  run: { status: string, historyFingerprint: string, frequency: string | null } | null,
+  run: {
+    status: string
+    historyFingerprint: string
+    frequency: string | null
+    metrics?: Array<{ origins: number, expectedOrigins: number, failedOrigins: number }>
+  } | null,
   expectedFingerprints: { legacy: string, cadence: string },
 ): ForecastPreparedState {
   if (!run) return 'NOT_PREPARED'
   const expectedFingerprint = run.frequency === LEGACY_MONTHLY_ARTIFACT_FREQUENCY
     ? expectedFingerprints.legacy
     : expectedFingerprints.cadence
-  return run.status === 'AVAILABLE' && run.historyFingerprint === expectedFingerprint
+  const complete = !run.metrics || run.metrics.length === 0
+    ? true
+    : run.metrics.every((metric) => metric.origins + metric.failedOrigins >= metric.expectedOrigins)
+  return run.status === 'AVAILABLE' && run.historyFingerprint === expectedFingerprint && complete
     ? 'READY'
     : 'STALE'
 }
@@ -143,11 +151,12 @@ export async function readForecastPreparedVariants(
     && sourceFrequency !== 'MONTHLY'
     && !isForecastExecutableNativeSparseFrequency(sourceFrequency)
   ) return []
+  const resolvedSourceFrequency = sourceFrequency
   const monthlyCandidates = sourceFrequency === 'WEEKLY'
     ? [{ targetBasis: 'END_OF_PERIOD' as const }]
     : MONTHLY_TARGETS.map((targetBasis) => ({ targetBasis }))
   const currentBasePayloadByTarget = new Map(monthlyCandidates.map(({ targetBasis }) => {
-    const targetCadence = resolvePreparedTargetCadence(sourceFrequency, targetBasis)
+    const targetCadence = resolvePreparedTargetCadence(resolvedSourceFrequency, targetBasis)
 
     return [
       targetBasis,
@@ -176,8 +185,8 @@ export async function readForecastPreparedVariants(
 
   for (const candidate of monthlyCandidates) {
     for (const modelId of USER_FACING_FORECAST_MODELS) {
-      const targetCadence = resolvePreparedTargetCadence(sourceFrequency, candidate.targetBasis)
-      const artifactFrequency = buildForecastArtifactCadenceIdentity({ sourceFrequency, targetCadence })
+      const targetCadence = resolvePreparedTargetCadence(resolvedSourceFrequency, candidate.targetBasis)
+      const artifactFrequency = buildForecastArtifactCadenceIdentity({ sourceFrequency: resolvedSourceFrequency, targetCadence })
       const acceptedArtifactFrequencies = targetCadence === 'MONTHLY'
         ? [artifactFrequency, LEGACY_MONTHLY_ARTIFACT_FREQUENCY]
         : [artifactFrequency]
@@ -193,11 +202,11 @@ export async function readForecastPreparedVariants(
         legacy: buildForecastHistoryFingerprint(currentPayload.history),
         cadence: buildForecastHistoryFingerprint({
           ...currentPayload.history,
-          cadence: { sourceFrequency, targetCadence },
+          cadence: { sourceFrequency: resolvedSourceFrequency, targetCadence },
         }),
       }
       const recentVerificationCompatibility = createRecentVerificationStatisticalCompatibility({
-        sourceFrequency,
+        sourceFrequency: resolvedSourceFrequency,
         targetCadence,
         targetSemantics: identity.targetSemantics,
       })
@@ -234,7 +243,18 @@ export async function readForecastPreparedVariants(
             trainingWindowPolicyId: recentVerificationCompatibility.trainingWindowPolicyId,
             effectiveTrainingPolicyId: recentVerificationCompatibility.effectiveTrainingPolicyId,
           },
-          select: { status: true, historyFingerprint: true, frequency: true },
+          select: {
+            status: true,
+            historyFingerprint: true,
+            frequency: true,
+            metrics: {
+              select: {
+                origins: true,
+                expectedOrigins: true,
+                failedOrigins: true,
+              },
+            },
+          },
           orderBy: { updatedAt: 'desc' },
         }),
       ])
@@ -305,6 +325,12 @@ export async function readForecastPreparedVariants(
     const snapshotFingerprint = (
       snapshot?.payloadJson as { audit?: { sourceHistoryFingerprint?: string | null } } | null
     )?.audit?.sourceHistoryFingerprint
+    const normalizedMaintenance = maintenance ? {
+      latestSourceHistoryFingerprint: maintenance.latestSourceHistoryFingerprint,
+      latestSourceObservationAt: maintenance.latestSourceObservationAt?.toISOString() ?? null,
+      lastProcessedOriginAt: maintenance.lastProcessedOriginAt?.toISOString() ?? null,
+      lastMaintenanceStatus: maintenance.lastMaintenanceStatus,
+    } : null
 
     variants.push({
       identity,
@@ -316,7 +342,7 @@ export async function readForecastPreparedVariants(
         snapshot?.status === 'AVAILABLE',
       ),
       historical: stateForRollingDailyHistoricalRun({
-        maintenance,
+        maintenance: normalizedMaintenance,
         expectedFingerprint: rollingHistoricalFingerprint,
         latestSourceObservationDate: rollingHistory.points[rollingHistory.points.length - 1]?.date ?? null,
         verificationCount,

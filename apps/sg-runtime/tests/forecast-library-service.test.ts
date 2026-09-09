@@ -3049,6 +3049,210 @@ test('forecast library verification path backfills END_OF_PERIOD actualObservedA
   assert.equal(persistedActualObservedAt, '2025-02-28T00:00:00.000Z')
 })
 
+test('forecast library verification path forwards bounded execution options to the direct bridge', async () => {
+  let capturedHistoricalOriginStartDate: string | undefined
+  let capturedLastProcessedOriginDate: string | null | undefined
+  let capturedMaxOriginsPerRun: number | undefined
+
+  const bridge: ForecastBridge = {
+    async exportHistory(input) {
+      assert.equal(input.targetBasis, 'END_OF_PERIOD')
+      return createEndOfPeriodHistoryResponse()
+    },
+    async exportCurrent() {
+      throw new Error('unused')
+    },
+    async exportVerification(input) {
+      capturedHistoricalOriginStartDate = input.historicalOriginStartDate
+      capturedLastProcessedOriginDate = input.lastProcessedOriginDate
+      capturedMaxOriginsPerRun = input.maxOriginsPerRun
+      return createEndOfPeriodVerificationResponse()
+    },
+  }
+
+  const repository: ForecastLibraryRepository = {
+    async readCurrentRun() {
+      return null
+    },
+    async writeCurrentRun() {
+      throw new Error('unused')
+    },
+    async readVerificationRun() {
+      return null
+    },
+    async writeVerificationRun() {},
+  }
+
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const result = await service.resolveVerificationRequest({
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+    historicalOriginStartDate: '2021-01-01',
+    lastProcessedOriginDate: '2024-12-01',
+    maxOriginsPerRun: 5,
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  assert.equal(capturedHistoricalOriginStartDate, '2021-01-01')
+  assert.equal(capturedLastProcessedOriginDate, '2024-12-01')
+  assert.equal(capturedMaxOriginsPerRun, 5)
+})
+
+test('forecast library verification path forwards bounded execution options to the prepared execution context', async () => {
+  let verificationHistoricalOriginStartDate: string | undefined
+  let verificationLastProcessedOriginDate: string | null | undefined
+  let verificationMaxOriginsPerRun: number | undefined
+
+  const bridge: ForecastBridge = {
+    async prepareExecutionContext() {
+      return {
+        async exportHistory() {
+          return createEndOfPeriodHistoryResponse()
+        },
+        async exportCurrent() {
+          throw new Error('unused')
+        },
+        async exportVerification(_modelId, options) {
+          verificationHistoricalOriginStartDate = options?.historicalOriginStartDate
+          verificationLastProcessedOriginDate = options?.lastProcessedOriginDate
+          verificationMaxOriginsPerRun = options?.maxOriginsPerRun
+          return createEndOfPeriodVerificationResponse()
+        },
+      }
+    },
+    async exportHistory() {
+      throw new Error('should use prepared execution context history')
+    },
+    async exportCurrent() {
+      throw new Error('unused')
+    },
+    async exportVerification() {
+      throw new Error('should use prepared execution context verification')
+    },
+  }
+
+  const repository: ForecastLibraryRepository = {
+    async readCurrentRun() {
+      return null
+    },
+    async writeCurrentRun() {
+      throw new Error('unused')
+    },
+    async readVerificationRun() {
+      return null
+    },
+    async writeVerificationRun() {},
+  }
+
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const result = await service.resolveVerificationRequest({
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+    historicalOriginStartDate: '2021-01-01',
+    lastProcessedOriginDate: '2024-12-01',
+    maxOriginsPerRun: 3,
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  assert.equal(verificationHistoricalOriginStartDate, '2021-01-01')
+  assert.equal(verificationLastProcessedOriginDate, '2024-12-01')
+  assert.equal(verificationMaxOriginsPerRun, 3)
+})
+
+test('forecast library verification path persists bounded partial progress and resumes from the latest processed origin', async () => {
+  const firstResponse = createEndOfPeriodVerificationResponse('ets')
+  firstResponse.result.backtest['1M'] = {
+    ...firstResponse.result.backtest['1M'],
+    origins: 1,
+    expectedOrigins: 2,
+    successfulOrigins: 1,
+    coverage: 0.5,
+    records: [
+      {
+        ...firstResponse.result.backtest['1M'].records[0],
+        forecastOrigin: '2025-01-01T00:00:00.000Z',
+        forecastDate: '2025-02-01T00:00:00.000Z',
+      },
+    ],
+  }
+
+  const secondResponse = createEndOfPeriodVerificationResponse('ets')
+  secondResponse.result.backtest['1M'] = {
+    ...secondResponse.result.backtest['1M'],
+    origins: 1,
+    expectedOrigins: 2,
+    successfulOrigins: 1,
+    coverage: 0.5,
+    records: [
+      {
+        ...secondResponse.result.backtest['1M'].records[0],
+        forecastOrigin: '2025-02-01T00:00:00.000Z',
+        forecastDate: '2025-03-01T00:00:00.000Z',
+      },
+    ],
+  }
+
+  let persistedArtifact: Awaited<ReturnType<ForecastLibraryRepository['readVerificationRun']>> = null
+  const capturedLastProcessedOriginDates: Array<string | null | undefined> = []
+
+  const service = createTestForecastLibraryService({
+    bridge: {
+      async exportHistory() {
+        return createEndOfPeriodHistoryResponse()
+      },
+      async exportCurrent() {
+        throw new Error('unused')
+      },
+      async exportVerification(input) {
+        capturedLastProcessedOriginDates.push(input.lastProcessedOriginDate)
+        return capturedLastProcessedOriginDates.length === 1 ? firstResponse : secondResponse
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        throw new Error('unused')
+      },
+      async writeCurrentRun() {
+        throw new Error('unused')
+      },
+      async readVerificationRun() {
+        return persistedArtifact
+      },
+      async writeVerificationRun(artifact) {
+        persistedArtifact = artifact
+      },
+    },
+    logEvent: () => {},
+  })
+
+  const first = await service.resolveVerificationRequest({
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+    maxOriginsPerRun: 1,
+  })
+
+  assert.equal(first.status, 'NOT_AVAILABLE')
+  assert.equal(capturedLastProcessedOriginDates[0], null)
+  assert.equal(persistedArtifact?.verification['1M']?.records.length, 1)
+  assert.equal(persistedArtifact?.verification['1M']?.expectedOrigins, 2)
+
+  const second = await service.resolveVerificationRequest({
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+    maxOriginsPerRun: 1,
+  })
+
+  assert.equal(second.status, 'AVAILABLE')
+  assert.equal(capturedLastProcessedOriginDates[1], '2025-01-01T00:00:00.000Z')
+  assert.equal(second.cacheStatus, 'miss')
+  assert.equal(second.verification['1M']?.records.length, 2)
+  assert.equal(second.verification['1M']?.expectedOrigins, 2)
+})
+
 test('forecast library verification path backfills END_OF_PERIOD actualObservedAt for date-only target periods', async () => {
   let persistedActualObservedAt: string | null = null
 

@@ -33,11 +33,13 @@ export type ForecastProductionOperationItem = {
   targetSemantics: OperationalForecastTarget
   modelId: UserFacingForecastModelId
   current: 'READY' | 'REUSED' | 'FAILED'
-  historical: 'READY' | 'REUSED' | 'NOT_REQUESTED' | 'FAILED'
+  historical: 'READY' | 'REUSED' | 'IN_PROGRESS' | 'NOT_REQUESTED' | 'FAILED'
   currentCacheStatus: string | null
   historicalCacheStatus: string | null
   error: string | null
 }
+
+const HISTORICAL_PREPARATION_IN_PROGRESS_REASON = 'PREPARATION_REQUIRED: Exact-identity prepared Historical Verification is still being built in bounded batches.'
 
 export type ForecastProductionOperationsResult = {
   status: 'SUCCEEDED' | 'PARTIAL' | 'FAILED'
@@ -168,12 +170,17 @@ export function createForecastProductionOperationsService(
             targetBasis,
             sourceFrequency: capability?.sourceFrequency ?? undefined,
             targetCadence: capability?.targetCadence ?? undefined,
+            maxOriginsPerRun: request.maxOriginsPerRun,
           })
           const historicalPersisted = historical.status === 'AVAILABLE'
             && (historical.cacheStatus === 'hit' || historical.cacheStatus === 'miss')
+          const historicalPreparing = historical.status === 'NOT_AVAILABLE'
+            && historical.reason === HISTORICAL_PREPARATION_IN_PROGRESS_REASON
           item.historical = historicalPersisted && historical.status === 'AVAILABLE'
             ? readiness(historical.cacheStatus)
-            : 'FAILED'
+            : historicalPreparing
+              ? 'IN_PROGRESS'
+              : 'FAILED'
           item.historicalCacheStatus = historical.status === 'AVAILABLE' ? historical.cacheStatus : null
           if (historical.status !== 'AVAILABLE') item.error = historical.reason
         }
@@ -205,8 +212,11 @@ export function createForecastProductionOperationsService(
 
       const after = await resolvedDependencies.resolveCapabilities(request.seriesId)
       const failed = results.filter((item) => item.current === 'FAILED' || item.historical === 'FAILED').length
+      const inProgress = results.filter((item) => item.historical === 'IN_PROGRESS').length
       const status: ForecastProductionOperationsResult['status'] = failed === 0
-        ? 'SUCCEEDED'
+        ? inProgress === 0
+          ? 'SUCCEEDED'
+          : 'PARTIAL'
         : failed === results.length
           ? 'FAILED'
           : 'PARTIAL'

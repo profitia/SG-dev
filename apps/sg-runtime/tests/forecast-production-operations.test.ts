@@ -326,3 +326,69 @@ test('generic operations execute admitted Quarterly variants with explicit nativ
   assert.ok(computeCalls.every((call) => call.endsWith(':QUARTERLY:QUARTERLY')))
   assert.ok(result.results.every((item) => item.current === 'READY' && item.historical === 'READY'))
 })
+
+test('generic operations surface bounded non-daily historical work as IN_PROGRESS instead of FAILED', async () => {
+  const service = createForecastProductionOperationsService({
+    async resolveCapabilities(seriesId) {
+      return {
+        ...capabilityResolution(seriesId),
+        sourceMetadata: { ...capabilityResolution(seriesId).sourceMetadata, sourceFrequency: 'QUARTERLY' as const },
+        capabilities: resolveForecastCapabilities({
+          seriesId,
+          sourceFrequency: 'QUARTERLY',
+          sourceObservationCount: 40,
+          preparedObservationCounts: {},
+          provenance: [
+            {
+              sourceFrequency: 'QUARTERLY',
+              targetSemantics: 'END_OF_PERIOD',
+              preparation: { method: 'CONTROLLED_EOP', version: 'test-v1', provenanceStatus: 'PROVEN' },
+              sourceLineage: 'controlled-quarterly-lineage',
+              closedPeriod: true,
+              levelAtTimestamp: true,
+              exactSourceObservedAt: true,
+              aggregation: null,
+              underlyingObservationFrequency: null,
+              missingObservationPolicy: null,
+              syntheticObservations: null,
+            },
+          ],
+          preparedVariants: [],
+        }),
+      }
+    },
+    async prepareMonthlyCurrent(input) {
+      return {
+        ...available(input.targetBasis as 'END_OF_PERIOD', input.modelId, 'miss'),
+        alignment: { status: 'ALIGNED' },
+        currentForecast: {},
+      } as never
+    },
+    async prepareMonthlyHistorical() {
+      return {
+        status: 'NOT_AVAILABLE',
+        seriesId: 'generic.quarterly.series',
+        modelId: 'naive',
+        targetBasis: 'END_OF_PERIOD',
+        targetSemantics: 'END_OF_PERIOD',
+        methodId: 'END_OF_PERIOD',
+        reason: 'PREPARATION_REQUIRED: Exact-identity prepared Historical Verification is still being built in bounded batches.',
+      } as never
+    },
+    async runRollingDaily() {
+      throw new Error('unused')
+    },
+  })
+
+  const result = await service.run({
+    seriesId: 'generic.quarterly.series',
+    targetSemantics: ['END_OF_PERIOD'],
+    modelIds: ['naive'],
+    prepareHistorical: true,
+    maxOriginsPerRun: 1,
+  })
+
+  assert.equal(result.status, 'PARTIAL')
+  assert.equal(result.results[0]?.current, 'READY')
+  assert.equal(result.results[0]?.historical, 'IN_PROGRESS')
+})

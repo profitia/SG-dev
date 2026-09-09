@@ -139,8 +139,16 @@ export type ForecastServiceRequest = {
   targetBasis: ForecastTargetBasis
   sourceFrequency?: ForecastSourceFrequency
   targetCadence?: ForecastTargetCadence
+  historicalOriginStartDate?: string
+  lastProcessedOriginDate?: string | null
+  maxOriginsPerRun?: number
   signal?: AbortSignal
 }
+
+type ForecastVerificationExecutionOptions = Pick<
+  ForecastServiceRequest,
+  'historicalOriginStartDate' | 'lastProcessedOriginDate' | 'maxOriginsPerRun'
+>
 
 const RECENT_VERIFICATION_MAX_ORIGINS = 1
 
@@ -496,7 +504,7 @@ export type ForecastBridge = {
 export type ForecastPreparedExecutionContext = {
   exportHistory(mode?: 'current' | 'verification', modelId?: string): Promise<ForecastHistoryBridgeResponse>
   exportCurrent(modelId: string): Promise<ForecastCurrentBridgeResponse>
-  exportVerification(modelId: string): Promise<ForecastVerificationBridgeResponse>
+  exportVerification(modelId: string, options?: ForecastVerificationExecutionOptions): Promise<ForecastVerificationBridgeResponse>
 }
 
 export type ForecastLibraryServiceDependencies = {
@@ -750,6 +758,141 @@ function calculateRecentVerificationMetrics(records: ForecastVerificationRecord[
     bias: average(records.map((record) => record.error)),
   }
 }
+
+function sortVerificationRecords(records: ForecastVerificationRecord[]) {
+  return [...records].sort((left, right) => {
+    const byOrigin = left.forecastOrigin.localeCompare(right.forecastOrigin)
+    if (byOrigin !== 0) return byOrigin
+    return left.forecastDate.localeCompare(right.forecastDate)
+  })
+}
+
+function sortVerificationFailures(failures: ForecastVerificationFailure[]) {
+  return [...failures].sort((left, right) => {
+    const byOrigin = left.forecastOrigin.localeCompare(right.forecastOrigin)
+    if (byOrigin !== 0) return byOrigin
+    const byTarget = left.forecastDate.localeCompare(right.forecastDate)
+    if (byTarget !== 0) return byTarget
+    return left.failureReason.localeCompare(right.failureReason)
+  })
+}
+
+function countUniqueVerificationOrigins(records: Array<{ forecastOrigin: string }>) {
+  return new Set(records.map((record) => record.forecastOrigin)).size
+}
+
+function isVerificationArtifactComplete(artifact: PersistedVerificationArtifact) {
+  const horizons = Object.values(artifact.verification)
+  return horizons.length > 0 && horizons.every((horizon) => {
+    const successfulOrigins = Math.max(horizon.successfulOrigins, horizon.origins, countUniqueVerificationOrigins(horizon.records))
+    const failedOrigins = Math.max(horizon.failedOrigins, countUniqueVerificationOrigins(horizon.failures))
+    return successfulOrigins + failedOrigins >= horizon.expectedOrigins
+  })
+}
+
+function deriveLastProcessedVerificationOriginDate(artifact: PersistedVerificationArtifact) {
+  const processedOrigins = Object.values(artifact.verification)
+    .flatMap((horizon) => [
+      ...horizon.records.map((record) => record.forecastOrigin),
+      ...horizon.failures.map((failure) => failure.forecastOrigin),
+    ])
+    .filter((value): value is string => value.length > 0)
+
+  if (processedOrigins.length === 0) {
+    return null
+  }
+
+  return processedOrigins.sort((left, right) => left.localeCompare(right)).at(-1) ?? null
+}
+
+function mergeVerificationRecords(
+  existing: ForecastVerificationRecord[],
+  incoming: ForecastVerificationRecord[],
+) {
+  const merged = new Map<string, ForecastVerificationRecord>()
+
+  for (const record of existing) {
+    merged.set(`${record.forecastOrigin}|${record.forecastDate}`, record)
+  }
+
+  for (const record of incoming) {
+    merged.set(`${record.forecastOrigin}|${record.forecastDate}`, record)
+  }
+
+  return sortVerificationRecords([...merged.values()])
+}
+
+function mergeVerificationFailures(
+  existing: ForecastVerificationFailure[],
+  incoming: ForecastVerificationFailure[],
+) {
+  const merged = new Map<string, ForecastVerificationFailure>()
+
+  for (const failure of existing) {
+    merged.set(`${failure.forecastOrigin}|${failure.forecastDate}`, failure)
+  }
+
+  for (const failure of incoming) {
+    merged.set(`${failure.forecastOrigin}|${failure.forecastDate}`, failure)
+  }
+
+  return sortVerificationFailures([...merged.values()])
+}
+
+function mergeVerificationArtifacts(
+  existing: PersistedVerificationArtifact | null,
+  incoming: PersistedVerificationArtifact,
+): PersistedVerificationArtifact {
+  if (!existing) {
+    return incoming
+  }
+
+  const mergedVerification = Object.fromEntries(
+    Object.entries(incoming.verification).map(([horizonLabel, incomingHorizon]) => {
+      const existingHorizon = existing.verification[horizonLabel]
+      const records = mergeVerificationRecords(existingHorizon?.records ?? [], incomingHorizon.records)
+      const failures = mergeVerificationFailures(existingHorizon?.failures ?? [], incomingHorizon.failures)
+      const expectedOrigins = Math.max(existingHorizon?.expectedOrigins ?? 0, incomingHorizon.expectedOrigins)
+      const incomingComplete = incomingHorizon.successfulOrigins + incomingHorizon.failedOrigins >= incomingHorizon.expectedOrigins
+      const existingComplete = (existingHorizon?.successfulOrigins ?? 0) + (existingHorizon?.failedOrigins ?? 0) >= (existingHorizon?.expectedOrigins ?? Number.MAX_SAFE_INTEGER)
+      const successfulOrigins = incomingComplete
+        ? incomingHorizon.successfulOrigins
+        : existingComplete
+          ? existingHorizon!.successfulOrigins
+          : countUniqueVerificationOrigins(records)
+      const failedOrigins = incomingComplete
+        ? incomingHorizon.failedOrigins
+        : existingComplete
+          ? existingHorizon!.failedOrigins
+          : countUniqueVerificationOrigins(failures)
+
+      return [
+        horizonLabel,
+        {
+          horizon: incomingHorizon.horizon,
+          horizonSteps: incomingHorizon.horizonSteps,
+          origins: successfulOrigins,
+          expectedOrigins,
+          successfulOrigins,
+          failedOrigins,
+          coverage: expectedOrigins === 0 ? 0 : successfulOrigins / expectedOrigins,
+          metrics: calculateRecentVerificationMetrics(records),
+          records,
+          failures,
+        } satisfies ForecastVerificationHorizon,
+      ]
+    }),
+  )
+
+  return {
+    ...incoming,
+    runtimeSeconds: (existing.runtimeSeconds ?? 0) + (incoming.runtimeSeconds ?? 0),
+    verification: mergedVerification,
+  }
+}
+
+const PARTIAL_VERIFICATION_CACHE_STATUS = 'partial' as const
+const PARTIAL_VERIFICATION_REASON = 'PREPARATION_REQUIRED: Exact-identity prepared Historical Verification is still being built in bounded batches.'
 
 function buildCurrentPayloadForSelectedOrigin(input: {
   benchmark: ForecastBridgeBenchmark
@@ -1613,12 +1756,31 @@ async function executeForecastBridge(
   }
 }
 
+function buildVerificationBridgeArgs(options: ForecastVerificationExecutionOptions = {}) {
+  const args: string[] = []
+
+  if (options.historicalOriginStartDate) {
+    args.push('--historical-origin-start-date', options.historicalOriginStartDate)
+  }
+
+  if (options.lastProcessedOriginDate) {
+    args.push('--last-processed-origin-date', options.lastProcessedOriginDate)
+  }
+
+  if (options.maxOriginsPerRun != null) {
+    args.push('--max-origins-per-run', String(options.maxOriginsPerRun))
+  }
+
+  return args
+}
+
 async function executeLiveForecastBridge(
   configuration: ForecastBridgeReadyConfiguration,
   mode: ForecastBridgeMode,
   seriesId: string,
   targetBasis: ForecastTargetBasis,
   modelId?: string,
+  options?: ForecastVerificationExecutionOptions,
 ): Promise<ForecastHistoryBridgeResponse | ForecastCurrentBridgeResponse | ForecastVerificationBridgeResponse> {
   try {
     const payload = await loadLiveForecastBridgePayload(seriesId, { targetBasis })
@@ -1637,7 +1799,17 @@ async function executeLiveForecastBridge(
     await writeFile(historyPath, JSON.stringify(payload), 'utf8')
 
     try {
-      return await executeForecastBridge(configuration, mode, seriesId, modelId, ['--history-json', historyPath])
+      return await executeForecastBridge(
+        configuration,
+        mode,
+        seriesId,
+        modelId,
+        [
+          '--history-json',
+          historyPath,
+          ...(mode === 'verification' ? buildVerificationBridgeArgs(options) : []),
+        ],
+      )
     } finally {
       await rm(tempDir, { recursive: true, force: true })
     }
@@ -1657,13 +1829,24 @@ export async function executePreparedLiveForecastBridge(
   mode: ForecastBridgeMode,
   seriesId: string,
   modelId?: string,
+  options?: ForecastVerificationExecutionOptions,
 ): Promise<ForecastHistoryBridgeResponse | ForecastCurrentBridgeResponse | ForecastVerificationBridgeResponse> {
   const tempDir = await mkdtemp(path.join(tmpdir(), 'sg-runtime-forecast-'))
   const historyPath = path.join(tempDir, `${seriesId}.json`)
 
   try {
     await writeFile(historyPath, JSON.stringify(payload), 'utf8')
-    return await executeForecastBridge(configuration, mode, seriesId, modelId, ['--history-json', historyPath])
+    return await executeForecastBridge(
+      configuration,
+      mode,
+      seriesId,
+      modelId,
+      [
+        '--history-json',
+        historyPath,
+        ...(mode === 'verification' ? buildVerificationBridgeArgs(options) : []),
+      ],
+    )
   } finally {
     await rm(tempDir, { recursive: true, force: true })
   }
@@ -1674,6 +1857,7 @@ export async function executePreparedForecastBridge(
   mode: ForecastBridgeMode,
   seriesId: string,
   modelId?: string,
+  options?: ForecastVerificationExecutionOptions,
 ): Promise<ForecastHistoryBridgeResponse | ForecastCurrentBridgeResponse | ForecastVerificationBridgeResponse> {
   const configuration = resolveForecastBridgeConfiguration()
   if (!configuration.ok) {
@@ -1683,7 +1867,7 @@ export async function executePreparedForecastBridge(
     }
   }
 
-  return executePreparedLiveForecastBridge(configuration, payload, mode, seriesId, modelId)
+  return executePreparedLiveForecastBridge(configuration, payload, mode, seriesId, modelId, options)
 }
 
 async function prepareExecutionContext(
@@ -1772,7 +1956,7 @@ async function prepareExecutionContext(
         userFacingModelId,
       ) as Promise<ForecastCurrentBridgeResponse>
     },
-    exportVerification(modelId) {
+    exportVerification(modelId, options) {
       return (async () => {
         const verificationPayload = await loadLiveForecastBridgePayload(input.seriesId, {
           targetBasis: input.targetBasis,
@@ -1794,6 +1978,7 @@ async function prepareExecutionContext(
           'verification',
           input.seriesId,
           modelId,
+          options,
         ) as Promise<ForecastVerificationBridgeResponse>
       })()
     },
@@ -1805,6 +1990,7 @@ async function runForecastBridge(
   seriesId: string,
   targetBasis: ForecastTargetBasis,
   modelId?: string,
+  options?: ForecastVerificationExecutionOptions,
 ): Promise<ForecastHistoryBridgeResponse | ForecastCurrentBridgeResponse | ForecastVerificationBridgeResponse> {
   const configuration = resolveForecastBridgeConfiguration()
   if (!configuration.ok) {
@@ -1814,7 +2000,7 @@ async function runForecastBridge(
     }
   }
 
-  const dailyResult = await executeLiveForecastBridge(configuration, mode, seriesId, targetBasis, modelId)
+  const dailyResult = await executeLiveForecastBridge(configuration, mode, seriesId, targetBasis, modelId, options)
   if (dailyResult.status !== 'UNSUPPORTED') {
     return dailyResult
   }
@@ -1823,7 +2009,13 @@ async function runForecastBridge(
     return dailyResult
   }
 
-  return executeForecastBridge(configuration, mode, seriesId, modelId)
+  return executeForecastBridge(
+    configuration,
+    mode,
+    seriesId,
+    modelId,
+    mode === 'verification' ? buildVerificationBridgeArgs(options) : [],
+  )
 }
 
 function createDefaultBridge(): ForecastBridge {
@@ -1838,7 +2030,17 @@ function createDefaultBridge(): ForecastBridge {
       return runForecastBridge('current', input.seriesId, input.targetBasis, input.modelId) as Promise<ForecastCurrentBridgeResponse>
     },
     exportVerification(input) {
-      return runForecastBridge('verification', input.seriesId, input.targetBasis, input.modelId) as Promise<ForecastVerificationBridgeResponse>
+      return runForecastBridge(
+        'verification',
+        input.seriesId,
+        input.targetBasis,
+        input.modelId,
+        {
+          historicalOriginStartDate: input.historicalOriginStartDate,
+          lastProcessedOriginDate: input.lastProcessedOriginDate,
+          maxOriginsPerRun: input.maxOriginsPerRun,
+        },
+      ) as Promise<ForecastVerificationBridgeResponse>
     },
   }
 }
@@ -2838,6 +3040,18 @@ export function createForecastLibraryService(
         }
       }
 
+      if (!isVerificationArtifactComplete(prepared)) {
+        return {
+          status: 'NOT_AVAILABLE',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: PARTIAL_VERIFICATION_REASON,
+        }
+      }
+
       if (!satisfiesVerificationPreparedTrainingPolicy(prepared, identity.targetSemantics)) {
         return {
           status: 'NOT_AVAILABLE',
@@ -3771,20 +3985,28 @@ export function createForecastLibraryService(
               totalMs: Math.round(performance.now() - startedAt),
               dbFailure: false,
             })
+          } else if (isVerificationArtifactComplete(persisted)) {
+            resolvedDependencies.telemetry.emit('prepared_read', {
+              kind: 'verification',
+              hit: true,
+              durationMs: performance.now() - startedAt,
+            })
+            resolvedDependencies.logEvent('FORECAST_LIBRARY_VERIFICATION', {
+              seriesId: input.seriesId,
+              modelId: input.modelId,
+              cacheStatus: 'hit',
+              totalMs: Math.round(performance.now() - startedAt),
+              dbFailure: false,
+            })
+            return toVerificationAvailable(persisted, 'hit')
           } else {
-          resolvedDependencies.telemetry.emit('prepared_read', {
-            kind: 'verification',
-            hit: true,
-            durationMs: performance.now() - startedAt,
-          })
-          resolvedDependencies.logEvent('FORECAST_LIBRARY_VERIFICATION', {
-            seriesId: input.seriesId,
-            modelId: input.modelId,
-            cacheStatus: 'hit',
-            totalMs: Math.round(performance.now() - startedAt),
-            dbFailure: false,
-          })
-          return toVerificationAvailable(persisted, 'hit')
+            resolvedDependencies.logEvent('FORECAST_LIBRARY_VERIFICATION', {
+              seriesId: input.seriesId,
+              modelId: input.modelId,
+              cacheStatus: PARTIAL_VERIFICATION_CACHE_STATUS,
+              totalMs: Math.round(performance.now() - startedAt),
+              dbFailure: false,
+            })
           }
         }
       } catch (error) {
@@ -3995,7 +4217,11 @@ export function createForecastLibraryService(
 
             try {
               const persistedAfterAdmission = await resolvedDependencies.repository.readVerificationRun(cacheKey)
-              if (persistedAfterAdmission && !verificationArtifactNeedsRebuild(persistedAfterAdmission)) {
+              if (
+                persistedAfterAdmission
+                && !verificationArtifactNeedsRebuild(persistedAfterAdmission)
+                && isVerificationArtifactComplete(persistedAfterAdmission)
+              ) {
                 await resolvedDependencies.executionAdmission.markExecutionCompleted({
                   executionId: ownership.executionId,
                   logicalArtifactKey,
@@ -4044,9 +4270,19 @@ export function createForecastLibraryService(
                 role: 'OWNER',
                 eventType: 'compute_started',
               })
+              const resumeFromOriginDate = persistedAfterAdmission && !verificationArtifactNeedsRebuild(persistedAfterAdmission)
+                ? deriveLastProcessedVerificationOriginDate(persistedAfterAdmission)
+                : null
               const verificationResponse = preparedExecutionContext
-                ? await preparedExecutionContext.exportVerification(input.modelId)
-                : await resolvedDependencies.bridge.exportVerification(input)
+                ? await preparedExecutionContext.exportVerification(input.modelId, {
+                    historicalOriginStartDate: input.historicalOriginStartDate,
+                    lastProcessedOriginDate: input.lastProcessedOriginDate ?? resumeFromOriginDate,
+                    maxOriginsPerRun: input.maxOriginsPerRun,
+                  })
+                : await resolvedDependencies.bridge.exportVerification({
+                    ...input,
+                    lastProcessedOriginDate: input.lastProcessedOriginDate ?? resumeFromOriginDate,
+                  })
               const verificationDurationMs = performance.now() - verificationStartedAt
               const verificationOrigins = verificationResponse.status === 'AVAILABLE'
                 ? Object.values(verificationResponse.result.backtest).reduce((sum, horizon) => sum + horizon.origins, 0)
@@ -4186,7 +4422,11 @@ export function createForecastLibraryService(
                 historyResponse.history,
                 cadenceContext,
               )
-              const cacheStatus: BenchmarkForecastVerificationAvailableResult['cacheStatus'] = 'miss'
+              const mergedArtifact = mergeVerificationArtifacts(persistedAfterAdmission, artifact)
+              const completeArtifact = isVerificationArtifactComplete(mergedArtifact)
+              const cacheStatus: BenchmarkForecastVerificationAvailableResult['cacheStatus'] = completeArtifact
+                ? 'miss'
+                : PARTIAL_VERIFICATION_CACHE_STATUS
               failurePhase = 'PERSISTENCE'
 
               const persistStartedAt = performance.now()
@@ -4201,11 +4441,11 @@ export function createForecastLibraryService(
               })
               ownership = await heartbeat.renewNow()
               executionLedgerContext = toAuthoritativeExecutionLedgerContext(ownership)
-              await resolvedDependencies.repository.writeVerificationRun(artifact, {
+              await resolvedDependencies.repository.writeVerificationRun(mergedArtifact, {
                 ownership: buildPersistenceOwnership('VERIFICATION', logicalArtifactKey, ownership),
               })
               const persistenceDurationMs = performance.now() - persistStartedAt
-              const verificationRecordWrites = Object.values(artifact.verification)
+              const verificationRecordWrites = Object.values(mergedArtifact.verification)
                 .reduce((sum, horizon) => sum + horizon.records.length, 0)
               resolvedDependencies.telemetry.emit('persistence', {
                 operation: 'verification',
@@ -4239,7 +4479,7 @@ export function createForecastLibraryService(
                 leaseVersion: ownership.leaseVersion,
                 requestId,
                 ownerRequestId: ownership.ownerRequestId,
-                resultStatus: 'AVAILABLE',
+                resultStatus: completeArtifact ? 'AVAILABLE' : 'NOT_AVAILABLE',
                 cacheStatus,
               })
               recordVerificationExecutionEvent(executionLedgerContext, {
@@ -4250,7 +4490,7 @@ export function createForecastLibraryService(
                 ownerRequestId: requestId,
                 role: 'OWNER',
                 eventType: 'execution_completed',
-                resultStatus: 'AVAILABLE',
+                resultStatus: completeArtifact ? 'AVAILABLE' : 'NOT_AVAILABLE',
                 cacheStatus,
               })
               resolvedDependencies.logEvent('FORECAST_LIBRARY_VERIFICATION', {
@@ -4261,7 +4501,19 @@ export function createForecastLibraryService(
                 dbFailure: false,
               })
 
-              return toVerificationAvailable(artifact, cacheStatus)
+              if (!completeArtifact) {
+                return {
+                  status: 'NOT_AVAILABLE',
+                  seriesId: input.seriesId,
+                  modelId: input.modelId,
+                  targetBasis: input.targetBasis,
+                  targetSemantics: methodIdentity.targetSemantics,
+                  methodId: methodIdentity.methodId,
+                  reason: PARTIAL_VERIFICATION_REASON,
+                }
+              }
+
+              return toVerificationAvailable(mergedArtifact, cacheStatus)
             } catch (error) {
               if (failurePhase === 'PERSISTENCE') {
                 resolvedDependencies.telemetry.emit('persistence', {

@@ -90,6 +90,15 @@ def parse_history_date(value: Any) -> date:
     return date.fromisoformat(value[:10])
 
 
+def parse_optional_cli_date(value: str | None) -> date | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    if stripped == "":
+        return None
+    return date.fromisoformat(stripped[:10])
+
+
 def load_history_payload_context(history_json_path: str) -> dict[str, Any]:
     payload = json.loads(Path(history_json_path).read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
@@ -341,6 +350,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--series-id", required=True, help="Canonical benchmark series identifier.")
     parser.add_argument("--model", choices=SUPPORTED_MODEL_IDS, help="Forecast model family id.")
     parser.add_argument("--history-json", help="Path to a pre-canonicalized MONTHLY history payload for live forecast input.")
+    parser.add_argument("--historical-origin-start-date", help="Inclusive lower bound for verification forecast origins as an ISO date.")
+    parser.add_argument("--last-processed-origin-date", help="Exclusive resume checkpoint for verification forecast origins as an ISO date.")
+    parser.add_argument("--max-origins-per-run", type=int, help="Maximum number of verification origins to process in this run.")
     args = parser.parse_args()
 
     if args.mode in {"current", "verification", "forecast"} and not args.model:
@@ -348,6 +360,17 @@ def parse_args() -> argparse.Namespace:
 
     if args.mode == "history" and args.model:
         parser.error("--model cannot be used when --mode=history")
+
+    if args.mode != "verification":
+        if args.historical_origin_start_date is not None:
+            parser.error("--historical-origin-start-date is only supported when --mode=verification")
+        if args.last_processed_origin_date is not None:
+            parser.error("--last-processed-origin-date is only supported when --mode=verification")
+        if args.max_origins_per_run is not None:
+            parser.error("--max-origins-per-run is only supported when --mode=verification")
+
+    if args.max_origins_per_run is not None and args.max_origins_per_run < 1:
+        parser.error("--max-origins-per-run must be >= 1")
 
     return args
 
@@ -475,7 +498,12 @@ def main() -> int:
             min_training_window=36,
             current_target_dates=history_payload["current_target_dates"] if history_payload is not None else None,
         )
-        result = service.run_benchmark(benchmark)
+        result = service.run_benchmark(
+            benchmark,
+            historical_origin_start_date=parse_optional_cli_date(args.historical_origin_start_date),
+            last_processed_origin_date=parse_optional_cli_date(args.last_processed_origin_date),
+            max_origins_per_run=args.max_origins_per_run,
+        )
 
         if args.mode == "verification":
             json.dump(

@@ -365,6 +365,49 @@ test('monthly current artifacts without renderable forecast points cannot satisf
   )
 })
 
+test('non-daily historical variants stay STALE while bounded verification metrics remain incomplete', async () => {
+  const history = createNativeSparseHistory('QUARTERLY')
+
+  const variants = await readForecastPreparedVariants(history.providerSeries.providerSeriesId, history, {
+    now: new Date('2025-01-15T00:00:00.000Z'),
+    prisma: {
+      forecastCurrentRun: { async findFirst() { return null } },
+      forecastVerificationRun: {
+        async findFirst({ where }: { where: Record<string, string> }) {
+          return where.targetBasis === 'END_OF_PERIOD' && where.modelId === 'naive'
+            ? {
+                status: 'AVAILABLE',
+                historyFingerprint: buildForecastHistoryFingerprint(
+                  {
+                    ...buildLiveForecastBridgePayloadFromHistory(history.providerSeries.providerSeriesId, history, {
+                      targetBasis: 'END_OF_PERIOD',
+                      targetCadence: 'QUARTERLY',
+                      now: new Date('2025-01-15T00:00:00.000Z'),
+                    }).history,
+                    cadence: { sourceFrequency: 'QUARTERLY', targetCadence: 'QUARTERLY' },
+                  },
+                ),
+                frequency: 'FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY',
+                metrics: [{ origins: 1, expectedOrigins: 3, failedOrigins: 0 }],
+              }
+            : null
+        },
+      },
+      rollingDailyCurrentForecastSnapshot: {
+        async findUnique() { return null },
+        async findFirst() { return null }
+      },
+      rollingDailyMaintenanceState: { async findUnique() { return null } },
+      rollingDailyVerificationRecord: { async count() { return 0 } },
+    } as never,
+  })
+
+  assert.equal(
+    variants.find((variant) => variant.identity.targetSemantics === 'END_OF_PERIOD' && variant.identity.modelId === 'naive')?.historical,
+    'STALE',
+  )
+})
+
 test('point-in-time snapshots without a renderable path cannot satisfy READY', async () => {
   const history = createHistory()
   const now = new Date('2025-01-15T00:00:00.000Z')
