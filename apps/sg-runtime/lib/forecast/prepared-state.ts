@@ -66,6 +66,11 @@ function stateForCurrentRun(
     : 'STALE'
 }
 
+function normalizeOptionalDateTime(value: string | Date | null | undefined) {
+  if (!value) return null
+  return value instanceof Date ? value.toISOString() : value
+}
+
 function stateForHistoricalRun(
   run: {
     status: string
@@ -327,8 +332,8 @@ export async function readForecastPreparedVariants(
     )?.audit?.sourceHistoryFingerprint
     const normalizedMaintenance = maintenance ? {
       latestSourceHistoryFingerprint: maintenance.latestSourceHistoryFingerprint,
-      latestSourceObservationAt: maintenance.latestSourceObservationAt?.toISOString() ?? null,
-      lastProcessedOriginAt: maintenance.lastProcessedOriginAt?.toISOString() ?? null,
+      latestSourceObservationAt: normalizeOptionalDateTime(maintenance.latestSourceObservationAt),
+      lastProcessedOriginAt: normalizeOptionalDateTime(maintenance.lastProcessedOriginAt),
       lastMaintenanceStatus: maintenance.lastMaintenanceStatus,
     } : null
 
