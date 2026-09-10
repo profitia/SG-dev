@@ -6,6 +6,7 @@ import { mkdir, readFile, statfs, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { performance } from 'node:perf_hooks'
+import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 
 import { Prisma } from '@/generated/market-data-client'
@@ -84,6 +85,30 @@ console.info = (...args: unknown[]) => {
   }
 
   originalConsoleInfo(...args)
+}
+
+type Stage9GateStatus = 'PASS' | 'FAIL'
+
+type Stage9PersistedRunLike = {
+  metrics: Array<{
+    origins: number
+    expectedOrigins: number
+    failedOrigins: number
+  }>
+}
+
+type Stage9FinalDecisionInputs = {
+  sourceCandidateSha: string
+  cleanWorktree: boolean
+  databaseHost: string | null
+  capabilityMatrixStatus: Stage9GateStatus
+  runtimeMatrixPass: boolean
+  representativePass: boolean
+  stage7Status: Stage9GateStatus
+  stage8Status: Stage9GateStatus
+  focusedValidationPass: boolean
+  dependencyProvenancePass: boolean
+  lawfulNonDailyPathCount: number
 }
 
 type SourceFrequency = 'WEEKLY' | 'MONTHLY' | 'BIMONTHLY' | 'QUARTERLY' | 'QUADMONTHLY' | 'SEMIANNUAL' | 'ANNUAL'
@@ -252,6 +277,70 @@ function normalizeDate(value: string | Date | null | undefined) {
 function normalizeDateTime(value: string | Date | null | undefined) {
   if (!value) return null
   return value instanceof Date ? value.toISOString() : String(value)
+}
+
+export function isExplicitLoopbackDatabaseHost(host: string | null | undefined) {
+  const normalizedHost = host?.trim().toLowerCase() ?? ''
+  return normalizedHost === '127.0.0.1'
+    || normalizedHost === '127.0.0.1/32'
+    || normalizedHost === '::1'
+    || normalizedHost === '::1/128'
+}
+
+export function isCompleteStage9ExactVerificationRun(run: Stage9PersistedRunLike | null | undefined) {
+  return run !== null
+    && run !== undefined
+    && run.metrics.length > 0
+    && run.metrics.every((metric) => metric.origins === metric.expectedOrigins && metric.failedOrigins === 0)
+}
+
+export async function ensureStage9ParityArtifactsComplete(
+  modelIds: readonly UserFacingForecastModelId[],
+  completeModel: (modelId: UserFacingForecastModelId) => Promise<void>,
+  readPersistedRun: (modelId: UserFacingForecastModelId) => Promise<Stage9PersistedRunLike | null>,
+  contextLabel: string,
+) {
+  for (const modelId of modelIds) {
+    await completeModel(modelId)
+    const persisted = await readPersistedRun(modelId)
+    if (!isCompleteStage9ExactVerificationRun(persisted)) {
+      throw new Error(`Stage 9 parity requires a complete exact persisted verification artifact for ${contextLabel} model=${modelId}.`)
+    }
+  }
+}
+
+export function buildStage9FinalDecision(inputs: Stage9FinalDecisionInputs) {
+  const cleanWorktreePass = inputs.cleanWorktree
+  const isolatedPostgresPass = isExplicitLoopbackDatabaseHost(inputs.databaseHost)
+  const focusedValidationGate = inputs.focusedValidationPass ? 'PASS' : 'FAIL'
+  const runtimeMatrixGate = inputs.runtimeMatrixPass ? 'PASS' : 'FAIL'
+  const representativeRecoveryGate = inputs.representativePass ? 'PASS' : 'FAIL'
+  const overallPass = cleanWorktreePass
+    && isolatedPostgresPass
+    && inputs.capabilityMatrixStatus === 'PASS'
+    && inputs.runtimeMatrixPass
+    && inputs.representativePass
+    && inputs.stage7Status === 'PASS'
+    && inputs.stage8Status === 'PASS'
+    && inputs.focusedValidationPass
+    && inputs.dependencyProvenancePass
+
+  return {
+    STAGE9_SOURCE_CANDIDATE_SHA: inputs.sourceCandidateSha,
+    STAGE9_EVIDENCE_SOURCE_SHA: inputs.sourceCandidateSha,
+    CLEAN_WORKTREE_REQUIRED: cleanWorktreePass ? 'PASS' : 'FAIL',
+    ISOLATED_POSTGRES_REQUIRED: isolatedPostgresPass ? 'PASS' : 'FAIL',
+    CAPABILITY_MATRIX_GATE: inputs.capabilityMatrixStatus,
+    RUNTIME_MATRIX_GATE: runtimeMatrixGate,
+    REPRESENTATIVE_RECOVERY_GATE: representativeRecoveryGate,
+    RUNTIME_EVIDENCE_MODEL: REPRESENTATIVE_MODEL,
+    STAGE7_NON_REGRESSION_GATE: inputs.stage7Status,
+    STAGE8_NON_REGRESSION_GATE: inputs.stage8Status,
+    FOCUSED_VALIDATION_GATE: focusedValidationGate,
+    MAX_ORIGINS_PER_BATCH: MAX_ORIGINS_PER_BATCH,
+    LAWFUL_NON_DAILY_PATH_COUNT: inputs.lawfulNonDailyPathCount,
+    OVERALL_STAGE9_FINAL_ACCEPTANCE: overallPass ? 'PASS' : 'FAIL',
+  }
 }
 
 function toNumber(value: unknown) {
@@ -1133,17 +1222,39 @@ async function ensureCompletedCurrentFingerprint(
   modelIds: readonly UserFacingForecastModelId[] = BATCH_MODELS,
 ) {
   for (const modelId of modelIds) {
-    let attempts = 0
-    while (attempts < MAX_BATCH_ATTEMPTS) {
-      attempts += 1
-      const result = await harness.service.resolveVerificationRequest(buildRequest(pathDefinition, modelId, {
-        maxOriginsPerRun: MAX_ORIGINS_PER_BATCH,
-      }))
-      if (result.status === 'AVAILABLE') {
-        break
-      }
+    await completeCurrentFingerprintForModel(harness, pathDefinition, modelId)
+  }
+}
+
+async function completeCurrentFingerprintForModel(
+  harness: ReturnType<typeof createInstrumentedHarness>,
+  pathDefinition: PathDefinition,
+  modelId: UserFacingForecastModelId,
+) {
+  let attempts = 0
+  while (attempts < MAX_BATCH_ATTEMPTS) {
+    attempts += 1
+    const result = await harness.service.resolveVerificationRequest(buildRequest(pathDefinition, modelId, {
+      maxOriginsPerRun: MAX_ORIGINS_PER_BATCH,
+    }))
+    if (result.status === 'AVAILABLE') {
+      return
     }
   }
+}
+
+async function rebuildExactVerificationArtifactForParity(
+  harness: ReturnType<typeof createInstrumentedHarness>,
+  pathDefinition: PathDefinition,
+) {
+  await clearSeriesArtifacts([pathDefinition.series.seriesId])
+
+  await ensureStage9ParityArtifactsComplete(
+    MODELS,
+    (modelId) => completeCurrentFingerprintForModel(harness, pathDefinition, modelId),
+    (modelId) => readExactVerificationRun(pathDefinition, modelId),
+    pathLabel(pathDefinition),
+  )
 }
 
 async function runAppendOnlyDelta(
@@ -1439,7 +1550,7 @@ async function runStatisticalParity(
   pathDefinition: PathDefinition,
 ) {
   logPhase(`runtime-parity:start ${pathLabel(pathDefinition)}`)
-  await ensureCompletedCurrentFingerprint(harness, pathDefinition, MODELS)
+  await rebuildExactVerificationArtifactForParity(harness, pathDefinition)
   const perModel: Record<string, unknown> = {}
   let status: 'PASS' | 'FAIL' = 'PASS'
 
@@ -1941,30 +2052,19 @@ async function main() {
 
   const runtimeMatrixPass = Object.values(runtimeMatrix).every((entry) => entry.status === 'PASS')
   const representativePass = Object.values(representativeProofs).every((entry) => entry.status === 'PASS')
-  const finalDecision = {
-    STAGE9_SOURCE_CANDIDATE_SHA: sourceCandidateSha,
-    STAGE9_EVIDENCE_SOURCE_SHA: sourceCandidateSha,
-    CLEAN_WORKTREE_REQUIRED: cleanWorktree ? 'PASS' : 'FAIL',
-    ISOLATED_POSTGRES_REQUIRED: (databaseIdentity as { host: string | null }).host === '127.0.0.1' ? 'PASS' : 'FAIL',
-    CAPABILITY_MATRIX_GATE: capabilityMatrix.status,
-    RUNTIME_MATRIX_GATE: runtimeMatrixPass ? 'PASS' : 'FAIL',
-    REPRESENTATIVE_RECOVERY_GATE: representativePass ? 'PASS' : 'FAIL',
-    RUNTIME_EVIDENCE_MODEL: REPRESENTATIVE_MODEL,
-    STAGE7_NON_REGRESSION_GATE: stage7Regression.status,
-    STAGE8_NON_REGRESSION_GATE: stage8Regression.status,
-    FOCUSED_VALIDATION_GATE: Object.values(tests).every((value) => value === 'PASS') ? 'PASS' : 'FAIL',
-    MAX_ORIGINS_PER_BATCH: MAX_ORIGINS_PER_BATCH,
-    LAWFUL_NON_DAILY_PATH_COUNT: Object.keys(runtimeMatrix).length,
-    OVERALL_STAGE9_FINAL_ACCEPTANCE: capabilityMatrix.status === 'PASS'
-      && runtimeMatrixPass
-      && representativePass
-      && stage7Regression.status === 'PASS'
-      && stage8Regression.status === 'PASS'
-      && Object.values(tests).every((value) => value === 'PASS')
-      && dependencyProvenance.status === 'PASS'
-      ? 'PASS'
-      : 'FAIL',
-  }
+  const finalDecision = buildStage9FinalDecision({
+    sourceCandidateSha,
+    cleanWorktree,
+    databaseHost: (databaseIdentity as { host: string | null }).host,
+    capabilityMatrixStatus: capabilityMatrix.status,
+    runtimeMatrixPass,
+    representativePass,
+    stage7Status: stage7Regression.status,
+    stage8Status: stage8Regression.status,
+    focusedValidationPass: Object.values(tests).every((value) => value === 'PASS'),
+    dependencyProvenancePass: dependencyProvenance.status === 'PASS',
+    lawfulNonDailyPathCount: Object.keys(runtimeMatrix).length,
+  })
 
   const result = {
     sourceCandidateSha,
@@ -1989,7 +2089,9 @@ async function main() {
   process.stdout.write(`${JSON.stringify(finalDecision, null, 2)}\n`)
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.stack ?? error.message : String(error))
-  process.exitCode = 1
-})
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.stack ?? error.message : String(error))
+    process.exitCode = 1
+  })
+}
