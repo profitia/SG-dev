@@ -1,84 +1,2693 @@
 {
-  "generatedAt": "2026-09-09T19:16:23.000Z",
-  "sourceCandidateSha": "e32edcd25e5a8b0755bfa1f4551a488c50fc17f0",
-  "stage8AcceptedLineageSha": "17f1cdf13d51101b661c5600b7a26c075044b59c",
-  "objective": "Extend the accepted bounded, resumable, durable, incremental historical execution model from Rolling Daily to lawful non-daily forecast historical verification paths without changing methodology, Current or Recent semantics, Stage 8 accepted evidence, or Stage 10+ behavior.",
-  "scopeGuards": {
-    "forecastMethodologyChanged": "NO",
-    "currentSemanticsChanged": "NO",
-    "recentSemanticsChanged": "NO",
-    "stage8EvidenceMutated": "NO",
-    "stage10PlusBehaviorChanged": "NO",
-    "newSchemaRequired": "NO"
+  "sourceCandidateSha": "2eaedb79beeadb05b163e49791f1adb098b5e292",
+  "evidenceWorktreeHead": "2eaedb79beeadb05b163e49791f1adb098b5e292",
+  "cleanWorktree": true,
+  "dependencyProvenance": {
+    "tsxLoaderPresent": true,
+    "pythonBinPresent": true,
+    "status": "PASS"
   },
-  "implementation": {
-    "boundedVerificationRequestFields": [
-      "historicalOriginStartDate",
-      "lastProcessedOriginDate",
-      "maxOriginsPerRun"
-    ],
-    "durableBehavior": [
-      "bounded verification options are threaded through direct and prepared bridge execution",
-      "non-daily verification batches persist partial progress under the existing exact artifact identity",
-      "resume checkpoint is derived from the latest processed persisted origin",
-      "prepared verification remains unavailable until expected origins are complete",
-      "production operations surface partial non-daily historical work as IN_PROGRESS"
-    ],
-    "pythonBridge": {
-      "selectedOriginBatching": "ENABLED",
-      "fullExpectedOriginCountPreserved": "YES"
-    }
+  "databaseIdentity": {
+    "cloneAlias": "phase-2-1-local-clone-v1",
+    "marketDataUrlHost": "127.0.0.1",
+    "database": "sg_phase_2_1_market_data",
+    "host": "127.0.0.1/32",
+    "port": 55421,
+    "freeDiskBytes": 39687938048
   },
-  "validation": {
-    "focusedTests": [
-      {
-        "command": "cd apps/sg-runtime && npm run test:forecast-library",
-        "status": "PASS",
-        "tests": 47
+  "capabilityMatrix": {
+    "matrix": {
+      "WEEKLY": {
+        "seriesId": "ppf1-stage9-weekly-final-evidence-v1",
+        "resolutionStatus": "AVAILABLE",
+        "sourceMetadata": {
+          "seriesId": "ppf1-stage9-weekly-final-evidence-v1",
+          "providerCode": "MACROBOND",
+          "source": "PPF1_STAGE9_EVIDENCE_SEED",
+          "sourceFrequency": "WEEKLY",
+          "rawFrequency": "WEEKLY",
+          "sourceObservationCount": 260,
+          "fullHistoryObservationCount": 260
+        },
+        "targets": {
+          "END_OF_PERIOD": {
+            "expectedLawful": true,
+            "checkedModels": 4,
+            "expectedTargetCadence": "MONTHLY",
+            "admissionStates": [
+              "ADMITTED"
+            ],
+            "implementationStates": [
+              "SUPPORTED"
+            ],
+            "historyEligibility": [
+              "ELIGIBLE"
+            ],
+            "status": "PASS"
+          },
+          "MONTHLY_AVERAGE": {
+            "expectedLawful": false,
+            "checkedModels": 4,
+            "expectedTargetCadence": null,
+            "admissionStates": [
+              "PROVENANCE_REQUIRED"
+            ],
+            "implementationStates": [
+              "NOT_IMPLEMENTED"
+            ],
+            "historyEligibility": [
+              "ELIGIBLE"
+            ],
+            "status": "PASS"
+          },
+          "ROLLING_DAILY_POINT_IN_TIME": {
+            "expectedLawful": false,
+            "checkedModels": 4,
+            "expectedTargetCadence": null,
+            "admissionStates": [
+              "NOT_LAWFUL"
+            ],
+            "implementationStates": [
+              "NOT_APPLICABLE"
+            ],
+            "historyEligibility": [
+              "ELIGIBLE"
+            ],
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
       },
-      {
-        "command": "cd apps/sg-runtime && node --import tsx --test tests/forecast-production-operations.test.ts",
-        "status": "PASS",
-        "tests": 6
+      "MONTHLY": {
+        "seriesId": "ppf1-stage9-monthly-final-evidence-v1",
+        "resolutionStatus": "AVAILABLE",
+        "sourceMetadata": {
+          "seriesId": "ppf1-stage9-monthly-final-evidence-v1",
+          "providerCode": "MACROBOND",
+          "source": "PPF1_STAGE9_EVIDENCE_SEED",
+          "sourceFrequency": "MONTHLY",
+          "rawFrequency": "MONTHLY",
+          "sourceObservationCount": 72,
+          "fullHistoryObservationCount": 72
+        },
+        "targets": {
+          "END_OF_PERIOD": {
+            "expectedLawful": true,
+            "checkedModels": 4,
+            "expectedTargetCadence": "MONTHLY",
+            "admissionStates": [
+              "ADMITTED"
+            ],
+            "implementationStates": [
+              "SUPPORTED"
+            ],
+            "historyEligibility": [
+              "ELIGIBLE"
+            ],
+            "status": "PASS"
+          },
+          "MONTHLY_AVERAGE": {
+            "expectedLawful": true,
+            "checkedModels": 4,
+            "expectedTargetCadence": "MONTHLY",
+            "admissionStates": [
+              "ADMITTED"
+            ],
+            "implementationStates": [
+              "SUPPORTED"
+            ],
+            "historyEligibility": [
+              "ELIGIBLE"
+            ],
+            "status": "PASS"
+          },
+          "ROLLING_DAILY_POINT_IN_TIME": {
+            "expectedLawful": false,
+            "checkedModels": 4,
+            "expectedTargetCadence": null,
+            "admissionStates": [
+              "NOT_LAWFUL"
+            ],
+            "implementationStates": [
+              "NOT_APPLICABLE"
+            ],
+            "historyEligibility": [
+              "ELIGIBLE"
+            ],
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
       },
-      {
-        "command": "cd apps/sg-runtime && node --import tsx --test tests/forecast-prepared-state.test.ts",
-        "status": "PASS",
-        "tests": 7
+      "BIMONTHLY": {
+        "seriesId": "ppf1-stage9-bimonthly-final-evidence-v1",
+        "resolutionStatus": "AVAILABLE",
+        "sourceMetadata": {
+          "seriesId": "ppf1-stage9-bimonthly-final-evidence-v1",
+          "providerCode": "MACROBOND",
+          "source": "PPF1_STAGE9_EVIDENCE_SEED",
+          "sourceFrequency": "BIMONTHLY",
+          "rawFrequency": "BIMONTHLY",
+          "sourceObservationCount": 60,
+          "fullHistoryObservationCount": 60
+        },
+        "targets": {
+          "END_OF_PERIOD": {
+            "expectedLawful": true,
+            "checkedModels": 4,
+            "expectedTargetCadence": "BIMONTHLY",
+            "admissionStates": [
+              "ADMITTED"
+            ],
+            "implementationStates": [
+              "SUPPORTED"
+            ],
+            "historyEligibility": [
+              "ELIGIBLE"
+            ],
+            "status": "PASS"
+          },
+          "MONTHLY_AVERAGE": {
+            "expectedLawful": true,
+            "checkedModels": 4,
+            "expectedTargetCadence": "BIMONTHLY",
+            "admissionStates": [
+              "ADMITTED"
+            ],
+            "implementationStates": [
+              "SUPPORTED"
+            ],
+            "historyEligibility": [
+              "ELIGIBLE"
+            ],
+            "status": "PASS"
+          },
+          "ROLLING_DAILY_POINT_IN_TIME": {
+            "expectedLawful": false,
+            "checkedModels": 4,
+            "expectedTargetCadence": null,
+            "admissionStates": [
+              "NOT_LAWFUL"
+            ],
+            "implementationStates": [
+              "NOT_APPLICABLE"
+            ],
+            "historyEligibility": [
+              "ELIGIBLE"
+            ],
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
       },
-      {
-        "command": "cd tooling/Benchmark-Forecasting && .venv/bin/python -m unittest tests.test_bounded_non_daily_verification",
-        "status": "PASS",
-        "tests": 1
+      "QUARTERLY": {
+        "seriesId": "ppf1-stage9-quarterly-final-evidence-v1",
+        "resolutionStatus": "AVAILABLE",
+        "sourceMetadata": {
+          "seriesId": "ppf1-stage9-quarterly-final-evidence-v1",
+          "providerCode": "MACROBOND",
+          "source": "PPF1_STAGE9_EVIDENCE_SEED",
+          "sourceFrequency": "QUARTERLY",
+          "rawFrequency": "QUARTERLY",
+          "sourceObservationCount": 48,
+          "fullHistoryObservationCount": 48
+        },
+        "targets": {
+          "END_OF_PERIOD": {
+            "expectedLawful": true,
+            "checkedModels": 4,
+            "expectedTargetCadence": "QUARTERLY",
+            "admissionStates": [
+              "ADMITTED"
+            ],
+            "implementationStates": [
+              "SUPPORTED"
+            ],
+            "historyEligibility": [
+              "ELIGIBLE"
+            ],
+            "status": "PASS"
+          },
+          "MONTHLY_AVERAGE": {
+            "expectedLawful": true,
+            "checkedModels": 4,
+            "expectedTargetCadence": "QUARTERLY",
+            "admissionStates": [
+              "ADMITTED"
+            ],
+            "implementationStates": [
+              "SUPPORTED"
+            ],
+            "historyEligibility": [
+              "ELIGIBLE"
+            ],
+            "status": "PASS"
+          },
+          "ROLLING_DAILY_POINT_IN_TIME": {
+            "expectedLawful": false,
+            "checkedModels": 4,
+            "expectedTargetCadence": null,
+            "admissionStates": [
+              "NOT_LAWFUL"
+            ],
+            "implementationStates": [
+              "NOT_APPLICABLE"
+            ],
+            "historyEligibility": [
+              "INSUFFICIENT_HISTORY"
+            ],
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "QUADMONTHLY": {
+        "seriesId": "ppf1-stage9-quadmonthly-final-evidence-v1",
+        "resolutionStatus": "AVAILABLE",
+        "sourceMetadata": {
+          "seriesId": "ppf1-stage9-quadmonthly-final-evidence-v1",
+          "providerCode": "MACROBOND",
+          "source": "PPF1_STAGE9_EVIDENCE_SEED",
+          "sourceFrequency": "QUADMONTHLY",
+          "rawFrequency": "QUADMONTHLY",
+          "sourceObservationCount": 45,
+          "fullHistoryObservationCount": 45
+        },
+        "targets": {
+          "END_OF_PERIOD": {
+            "expectedLawful": true,
+            "checkedModels": 4,
+            "expectedTargetCadence": "QUADMONTHLY",
+            "admissionStates": [
+              "ADMITTED"
+            ],
+            "implementationStates": [
+              "SUPPORTED"
+            ],
+            "historyEligibility": [
+              "ELIGIBLE"
+            ],
+            "status": "PASS"
+          },
+          "MONTHLY_AVERAGE": {
+            "expectedLawful": true,
+            "checkedModels": 4,
+            "expectedTargetCadence": "QUADMONTHLY",
+            "admissionStates": [
+              "ADMITTED"
+            ],
+            "implementationStates": [
+              "SUPPORTED"
+            ],
+            "historyEligibility": [
+              "ELIGIBLE"
+            ],
+            "status": "PASS"
+          },
+          "ROLLING_DAILY_POINT_IN_TIME": {
+            "expectedLawful": false,
+            "checkedModels": 4,
+            "expectedTargetCadence": null,
+            "admissionStates": [
+              "NOT_LAWFUL"
+            ],
+            "implementationStates": [
+              "NOT_APPLICABLE"
+            ],
+            "historyEligibility": [
+              "INSUFFICIENT_HISTORY"
+            ],
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "SEMIANNUAL": {
+        "seriesId": "ppf1-stage9-semiannual-final-evidence-v1",
+        "resolutionStatus": "AVAILABLE",
+        "sourceMetadata": {
+          "seriesId": "ppf1-stage9-semiannual-final-evidence-v1",
+          "providerCode": "MACROBOND",
+          "source": "PPF1_STAGE9_EVIDENCE_SEED",
+          "sourceFrequency": "SEMIANNUAL",
+          "rawFrequency": "SEMIANNUAL",
+          "sourceObservationCount": 40,
+          "fullHistoryObservationCount": 40
+        },
+        "targets": {
+          "END_OF_PERIOD": {
+            "expectedLawful": true,
+            "checkedModels": 4,
+            "expectedTargetCadence": "SEMIANNUAL",
+            "admissionStates": [
+              "ADMITTED"
+            ],
+            "implementationStates": [
+              "SUPPORTED"
+            ],
+            "historyEligibility": [
+              "ELIGIBLE"
+            ],
+            "status": "PASS"
+          },
+          "MONTHLY_AVERAGE": {
+            "expectedLawful": true,
+            "checkedModels": 4,
+            "expectedTargetCadence": "SEMIANNUAL",
+            "admissionStates": [
+              "ADMITTED"
+            ],
+            "implementationStates": [
+              "SUPPORTED"
+            ],
+            "historyEligibility": [
+              "ELIGIBLE"
+            ],
+            "status": "PASS"
+          },
+          "ROLLING_DAILY_POINT_IN_TIME": {
+            "expectedLawful": false,
+            "checkedModels": 4,
+            "expectedTargetCadence": null,
+            "admissionStates": [
+              "NOT_LAWFUL"
+            ],
+            "implementationStates": [
+              "NOT_APPLICABLE"
+            ],
+            "historyEligibility": [
+              "INSUFFICIENT_HISTORY"
+            ],
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "ANNUAL": {
+        "seriesId": "ppf1-stage9-annual-final-evidence-v1",
+        "resolutionStatus": "AVAILABLE",
+        "sourceMetadata": {
+          "seriesId": "ppf1-stage9-annual-final-evidence-v1",
+          "providerCode": "MACROBOND",
+          "source": "PPF1_STAGE9_EVIDENCE_SEED",
+          "sourceFrequency": "ANNUAL",
+          "rawFrequency": "ANNUAL",
+          "sourceObservationCount": 40,
+          "fullHistoryObservationCount": 40
+        },
+        "targets": {
+          "END_OF_PERIOD": {
+            "expectedLawful": true,
+            "checkedModels": 4,
+            "expectedTargetCadence": "ANNUAL",
+            "admissionStates": [
+              "ADMITTED"
+            ],
+            "implementationStates": [
+              "SUPPORTED"
+            ],
+            "historyEligibility": [
+              "ELIGIBLE"
+            ],
+            "status": "PASS"
+          },
+          "MONTHLY_AVERAGE": {
+            "expectedLawful": true,
+            "checkedModels": 4,
+            "expectedTargetCadence": "ANNUAL",
+            "admissionStates": [
+              "ADMITTED"
+            ],
+            "implementationStates": [
+              "SUPPORTED"
+            ],
+            "historyEligibility": [
+              "ELIGIBLE"
+            ],
+            "status": "PASS"
+          },
+          "ROLLING_DAILY_POINT_IN_TIME": {
+            "expectedLawful": false,
+            "checkedModels": 4,
+            "expectedTargetCadence": null,
+            "admissionStates": [
+              "NOT_LAWFUL"
+            ],
+            "implementationStates": [
+              "NOT_APPLICABLE"
+            ],
+            "historyEligibility": [
+              "INSUFFICIENT_HISTORY"
+            ],
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
       }
-    ],
-    "touchedFilesDiagnostics": "PASS",
-    "broaderTypecheck": {
-      "status": "KNOWN_PREEXISTING_FAILURES_OUTSIDE_STAGE9_SLICE",
-      "note": "apps/sg-runtime npm run typecheck still reports broader repository issues outside the touched Stage 9 implementation slice; no file-scoped diagnostics remained on the Stage 9 touched files."
+    },
+    "status": "PASS"
+  },
+  "runtimeMatrix": {
+    "WEEKLY:END_OF_PERIOD:MONTHLY": {
+      "frequency": "WEEKLY",
+      "targetBasis": "END_OF_PERIOD",
+      "targetCadence": "MONTHLY",
+      "multiBatch": {
+        "perModel": {
+          "arima": [
+            {
+              "batchNumber": 1,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": null,
+              "responseOriginDates": [
+                "2023-12-01",
+                "2024-01-01",
+                "2024-02-01"
+              ],
+              "responseExpectedOrigins": 24,
+              "persistedOriginCount": 3
+            },
+            {
+              "batchNumber": 2,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2024-02-01",
+              "responseOriginDates": [
+                "2024-03-01",
+                "2024-04-01",
+                "2024-05-01"
+              ],
+              "responseExpectedOrigins": 24,
+              "persistedOriginCount": 6
+            },
+            {
+              "batchNumber": 3,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2024-05-01",
+              "responseOriginDates": [
+                "2024-06-01",
+                "2024-07-01",
+                "2024-08-01"
+              ],
+              "responseExpectedOrigins": 24,
+              "persistedOriginCount": 9
+            },
+            {
+              "batchNumber": 4,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2024-08-01",
+              "responseOriginDates": [
+                "2024-09-01",
+                "2024-10-01",
+                "2024-11-01"
+              ],
+              "responseExpectedOrigins": 24,
+              "persistedOriginCount": 12
+            },
+            {
+              "batchNumber": 5,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2024-11-01",
+              "responseOriginDates": [
+                "2024-12-01",
+                "2025-01-01",
+                "2025-02-01"
+              ],
+              "responseExpectedOrigins": 24,
+              "persistedOriginCount": 15
+            },
+            {
+              "batchNumber": 6,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2025-02-01",
+              "responseOriginDates": [
+                "2025-03-01",
+                "2025-04-01",
+                "2025-05-01"
+              ],
+              "responseExpectedOrigins": 24,
+              "persistedOriginCount": 18
+            },
+            {
+              "batchNumber": 7,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2025-05-01",
+              "responseOriginDates": [
+                "2025-06-01",
+                "2025-07-01",
+                "2025-08-01"
+              ],
+              "responseExpectedOrigins": 24,
+              "persistedOriginCount": 21
+            },
+            {
+              "batchNumber": 8,
+              "modelId": "arima",
+              "resultStatus": "AVAILABLE",
+              "cacheStatus": "miss",
+              "resumeFromOriginDate": "2025-08-01",
+              "responseOriginDates": [
+                "2025-09-01",
+                "2025-10-01",
+                "2025-11-01"
+              ],
+              "responseExpectedOrigins": 24,
+              "persistedOriginCount": 24
+            }
+          ]
+        },
+        "batchCount": 8,
+        "durableCheckpoint": "PASS",
+        "resume": "PASS",
+        "noRecompute": "PASS",
+        "preparedReadBlockedWhilePartial": "PASS",
+        "maxObserved": 3,
+        "status": "PASS"
+      },
+      "warmReuse": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "AVAILABLE",
+            "cacheStatus": "hit",
+            "verificationCalls": 0,
+            "pointsUnchanged": true,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "appendOnlyDelta": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "NOT_AVAILABLE",
+            "resumeFromOriginDate": "2025-11-01",
+            "priorCheckpoint": "2025-11-01",
+            "newlyComputedOrigins": [
+              "2025-12-01"
+            ],
+            "oldOriginRecomputeCount": 0,
+            "historyFingerprintChanged": true,
+            "persistedPointDelta": 1,
+            "status": "PASS"
+          }
+        },
+        "extendedObservationCount": 262,
+        "status": "PASS"
+      },
+      "statisticalParity": {
+        "perModel": {
+          "naive": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 82,
+            "bridgeRecordCount": 82,
+            "status": "PASS"
+          },
+          "damped_holt": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 82,
+            "bridgeRecordCount": 82,
+            "status": "PASS"
+          },
+          "ets": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 82,
+            "bridgeRecordCount": 82,
+            "status": "PASS"
+          },
+          "arima": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 82,
+            "bridgeRecordCount": 82,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "status": "PASS"
+    },
+    "MONTHLY:END_OF_PERIOD:MONTHLY": {
+      "frequency": "MONTHLY",
+      "targetBasis": "END_OF_PERIOD",
+      "targetCadence": "MONTHLY",
+      "multiBatch": {
+        "perModel": {
+          "arima": [
+            {
+              "batchNumber": 1,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": null,
+              "responseOriginDates": [
+                "2021-12-01",
+                "2022-01-01",
+                "2022-02-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 3
+            },
+            {
+              "batchNumber": 2,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2022-02-01",
+              "responseOriginDates": [
+                "2022-03-01",
+                "2022-04-01",
+                "2022-05-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 6
+            },
+            {
+              "batchNumber": 3,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2022-05-01",
+              "responseOriginDates": [
+                "2022-06-01",
+                "2022-07-01",
+                "2022-08-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 9
+            },
+            {
+              "batchNumber": 4,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2022-08-01",
+              "responseOriginDates": [
+                "2022-09-01",
+                "2022-10-01",
+                "2022-11-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 12
+            },
+            {
+              "batchNumber": 5,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2022-11-01",
+              "responseOriginDates": [
+                "2022-12-01",
+                "2023-01-01",
+                "2023-02-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 15
+            },
+            {
+              "batchNumber": 6,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2023-02-01",
+              "responseOriginDates": [
+                "2023-03-01",
+                "2023-04-01",
+                "2023-05-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 18
+            },
+            {
+              "batchNumber": 7,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2023-05-01",
+              "responseOriginDates": [
+                "2023-06-01",
+                "2023-07-01",
+                "2023-08-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 21
+            },
+            {
+              "batchNumber": 8,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2023-08-01",
+              "responseOriginDates": [
+                "2023-09-01",
+                "2023-10-01",
+                "2023-11-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 24
+            },
+            {
+              "batchNumber": 9,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2023-11-01",
+              "responseOriginDates": [
+                "2023-12-01",
+                "2024-01-01",
+                "2024-02-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 27
+            },
+            {
+              "batchNumber": 10,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2024-02-01",
+              "responseOriginDates": [
+                "2024-03-01",
+                "2024-04-01",
+                "2024-05-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 30
+            },
+            {
+              "batchNumber": 11,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2024-05-01",
+              "responseOriginDates": [
+                "2024-06-01",
+                "2024-07-01",
+                "2024-08-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 33
+            },
+            {
+              "batchNumber": 12,
+              "modelId": "arima",
+              "resultStatus": "AVAILABLE",
+              "cacheStatus": "miss",
+              "resumeFromOriginDate": "2024-08-01",
+              "responseOriginDates": [
+                "2024-09-01",
+                "2024-10-01",
+                "2024-11-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 36
+            }
+          ]
+        },
+        "batchCount": 12,
+        "durableCheckpoint": "PASS",
+        "resume": "PASS",
+        "noRecompute": "PASS",
+        "preparedReadBlockedWhilePartial": "PASS",
+        "maxObserved": 3,
+        "status": "PASS"
+      },
+      "warmReuse": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "AVAILABLE",
+            "cacheStatus": "hit",
+            "verificationCalls": 0,
+            "pointsUnchanged": true,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "appendOnlyDelta": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "NOT_AVAILABLE",
+            "resumeFromOriginDate": "2024-11-01",
+            "priorCheckpoint": "2024-11-01",
+            "newlyComputedOrigins": [
+              "2024-12-01"
+            ],
+            "oldOriginRecomputeCount": 0,
+            "historyFingerprintChanged": true,
+            "persistedPointDelta": 1,
+            "status": "PASS"
+          }
+        },
+        "extendedObservationCount": 73,
+        "status": "PASS"
+      },
+      "statisticalParity": {
+        "perModel": {
+          "naive": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 130,
+            "bridgeRecordCount": 130,
+            "status": "PASS"
+          },
+          "damped_holt": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 130,
+            "bridgeRecordCount": 130,
+            "status": "PASS"
+          },
+          "ets": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 130,
+            "bridgeRecordCount": 130,
+            "status": "PASS"
+          },
+          "arima": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 130,
+            "bridgeRecordCount": 130,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "status": "PASS"
+    },
+    "MONTHLY:MONTHLY_AVERAGE:MONTHLY": {
+      "frequency": "MONTHLY",
+      "targetBasis": "MONTHLY_AVERAGE",
+      "targetCadence": "MONTHLY",
+      "multiBatch": {
+        "perModel": {
+          "arima": [
+            {
+              "batchNumber": 1,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": null,
+              "responseOriginDates": [
+                "2021-12-01",
+                "2022-01-01",
+                "2022-02-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 3
+            },
+            {
+              "batchNumber": 2,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2022-02-01",
+              "responseOriginDates": [
+                "2022-03-01",
+                "2022-04-01",
+                "2022-05-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 6
+            },
+            {
+              "batchNumber": 3,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2022-05-01",
+              "responseOriginDates": [
+                "2022-06-01",
+                "2022-07-01",
+                "2022-08-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 9
+            },
+            {
+              "batchNumber": 4,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2022-08-01",
+              "responseOriginDates": [
+                "2022-09-01",
+                "2022-10-01",
+                "2022-11-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 12
+            },
+            {
+              "batchNumber": 5,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2022-11-01",
+              "responseOriginDates": [
+                "2022-12-01",
+                "2023-01-01",
+                "2023-02-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 15
+            },
+            {
+              "batchNumber": 6,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2023-02-01",
+              "responseOriginDates": [
+                "2023-03-01",
+                "2023-04-01",
+                "2023-05-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 18
+            },
+            {
+              "batchNumber": 7,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2023-05-01",
+              "responseOriginDates": [
+                "2023-06-01",
+                "2023-07-01",
+                "2023-08-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 21
+            },
+            {
+              "batchNumber": 8,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2023-08-01",
+              "responseOriginDates": [
+                "2023-09-01",
+                "2023-10-01",
+                "2023-11-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 24
+            },
+            {
+              "batchNumber": 9,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2023-11-01",
+              "responseOriginDates": [
+                "2023-12-01",
+                "2024-01-01",
+                "2024-02-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 27
+            },
+            {
+              "batchNumber": 10,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2024-02-01",
+              "responseOriginDates": [
+                "2024-03-01",
+                "2024-04-01",
+                "2024-05-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 30
+            },
+            {
+              "batchNumber": 11,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2024-05-01",
+              "responseOriginDates": [
+                "2024-06-01",
+                "2024-07-01",
+                "2024-08-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 33
+            },
+            {
+              "batchNumber": 12,
+              "modelId": "arima",
+              "resultStatus": "AVAILABLE",
+              "cacheStatus": "miss",
+              "resumeFromOriginDate": "2024-08-01",
+              "responseOriginDates": [
+                "2024-09-01",
+                "2024-10-01",
+                "2024-11-01"
+              ],
+              "responseExpectedOrigins": 36,
+              "persistedOriginCount": 36
+            }
+          ]
+        },
+        "batchCount": 12,
+        "durableCheckpoint": "PASS",
+        "resume": "PASS",
+        "noRecompute": "PASS",
+        "preparedReadBlockedWhilePartial": "PASS",
+        "maxObserved": 3,
+        "status": "PASS"
+      },
+      "warmReuse": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "AVAILABLE",
+            "cacheStatus": "hit",
+            "verificationCalls": 0,
+            "pointsUnchanged": true,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "appendOnlyDelta": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "NOT_AVAILABLE",
+            "resumeFromOriginDate": "2024-11-01",
+            "priorCheckpoint": "2024-11-01",
+            "newlyComputedOrigins": [
+              "2024-12-01"
+            ],
+            "oldOriginRecomputeCount": 0,
+            "historyFingerprintChanged": true,
+            "persistedPointDelta": 1,
+            "status": "PASS"
+          }
+        },
+        "extendedObservationCount": 73,
+        "status": "PASS"
+      },
+      "statisticalParity": {
+        "perModel": {
+          "naive": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 130,
+            "bridgeRecordCount": 130,
+            "status": "PASS"
+          },
+          "damped_holt": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 130,
+            "bridgeRecordCount": 130,
+            "status": "PASS"
+          },
+          "ets": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 130,
+            "bridgeRecordCount": 130,
+            "status": "PASS"
+          },
+          "arima": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 130,
+            "bridgeRecordCount": 130,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "status": "PASS"
+    },
+    "BIMONTHLY:END_OF_PERIOD:BIMONTHLY": {
+      "frequency": "BIMONTHLY",
+      "targetBasis": "END_OF_PERIOD",
+      "targetCadence": "BIMONTHLY",
+      "multiBatch": {
+        "perModel": {
+          "arima": [
+            {
+              "batchNumber": 1,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": null,
+              "responseOriginDates": [
+                "2020-11-01",
+                "2021-01-01",
+                "2021-03-01"
+              ],
+              "responseExpectedOrigins": 22,
+              "persistedOriginCount": 3
+            },
+            {
+              "batchNumber": 2,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2021-03-01",
+              "responseOriginDates": [
+                "2021-05-01",
+                "2021-07-01",
+                "2021-09-01"
+              ],
+              "responseExpectedOrigins": 22,
+              "persistedOriginCount": 6
+            },
+            {
+              "batchNumber": 3,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2021-09-01",
+              "responseOriginDates": [
+                "2021-11-01",
+                "2022-01-01",
+                "2022-03-01"
+              ],
+              "responseExpectedOrigins": 22,
+              "persistedOriginCount": 9
+            },
+            {
+              "batchNumber": 4,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2022-03-01",
+              "responseOriginDates": [
+                "2022-05-01",
+                "2022-07-01",
+                "2022-09-01"
+              ],
+              "responseExpectedOrigins": 22,
+              "persistedOriginCount": 12
+            },
+            {
+              "batchNumber": 5,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2022-09-01",
+              "responseOriginDates": [
+                "2022-11-01",
+                "2023-01-01",
+                "2023-03-01"
+              ],
+              "responseExpectedOrigins": 22,
+              "persistedOriginCount": 15
+            },
+            {
+              "batchNumber": 6,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2023-03-01",
+              "responseOriginDates": [
+                "2023-05-01",
+                "2023-07-01",
+                "2023-09-01"
+              ],
+              "responseExpectedOrigins": 22,
+              "persistedOriginCount": 18
+            },
+            {
+              "batchNumber": 7,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2023-09-01",
+              "responseOriginDates": [
+                "2023-11-01",
+                "2024-01-01",
+                "2024-03-01"
+              ],
+              "responseExpectedOrigins": 22,
+              "persistedOriginCount": 21
+            },
+            {
+              "batchNumber": 8,
+              "modelId": "arima",
+              "resultStatus": "AVAILABLE",
+              "cacheStatus": "miss",
+              "resumeFromOriginDate": "2024-03-01",
+              "responseOriginDates": [
+                "2024-05-01"
+              ],
+              "responseExpectedOrigins": 22,
+              "persistedOriginCount": 22
+            }
+          ]
+        },
+        "batchCount": 8,
+        "durableCheckpoint": "PASS",
+        "resume": "PASS",
+        "noRecompute": "PASS",
+        "preparedReadBlockedWhilePartial": "PASS",
+        "maxObserved": 3,
+        "status": "PASS"
+      },
+      "warmReuse": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "AVAILABLE",
+            "cacheStatus": "hit",
+            "verificationCalls": 0,
+            "pointsUnchanged": true,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "appendOnlyDelta": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "NOT_AVAILABLE",
+            "resumeFromOriginDate": "2024-05-01",
+            "priorCheckpoint": "2024-05-01",
+            "newlyComputedOrigins": [
+              "2024-07-01"
+            ],
+            "oldOriginRecomputeCount": 0,
+            "historyFingerprintChanged": true,
+            "persistedPointDelta": 1,
+            "status": "PASS"
+          }
+        },
+        "extendedObservationCount": 61,
+        "status": "PASS"
+      },
+      "statisticalParity": {
+        "perModel": {
+          "naive": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 43,
+            "bridgeRecordCount": 43,
+            "status": "PASS"
+          },
+          "damped_holt": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 43,
+            "bridgeRecordCount": 43,
+            "status": "PASS"
+          },
+          "ets": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 43,
+            "bridgeRecordCount": 43,
+            "status": "PASS"
+          },
+          "arima": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 43,
+            "bridgeRecordCount": 43,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "status": "PASS"
+    },
+    "BIMONTHLY:MONTHLY_AVERAGE:BIMONTHLY": {
+      "frequency": "BIMONTHLY",
+      "targetBasis": "MONTHLY_AVERAGE",
+      "targetCadence": "BIMONTHLY",
+      "multiBatch": {
+        "perModel": {
+          "arima": [
+            {
+              "batchNumber": 1,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": null,
+              "responseOriginDates": [
+                "2020-11-01",
+                "2021-01-01",
+                "2021-03-01"
+              ],
+              "responseExpectedOrigins": 22,
+              "persistedOriginCount": 3
+            },
+            {
+              "batchNumber": 2,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2021-03-01",
+              "responseOriginDates": [
+                "2021-05-01",
+                "2021-07-01",
+                "2021-09-01"
+              ],
+              "responseExpectedOrigins": 22,
+              "persistedOriginCount": 6
+            },
+            {
+              "batchNumber": 3,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2021-09-01",
+              "responseOriginDates": [
+                "2021-11-01",
+                "2022-01-01",
+                "2022-03-01"
+              ],
+              "responseExpectedOrigins": 22,
+              "persistedOriginCount": 9
+            },
+            {
+              "batchNumber": 4,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2022-03-01",
+              "responseOriginDates": [
+                "2022-05-01",
+                "2022-07-01",
+                "2022-09-01"
+              ],
+              "responseExpectedOrigins": 22,
+              "persistedOriginCount": 12
+            },
+            {
+              "batchNumber": 5,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2022-09-01",
+              "responseOriginDates": [
+                "2022-11-01",
+                "2023-01-01",
+                "2023-03-01"
+              ],
+              "responseExpectedOrigins": 22,
+              "persistedOriginCount": 15
+            },
+            {
+              "batchNumber": 6,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2023-03-01",
+              "responseOriginDates": [
+                "2023-05-01",
+                "2023-07-01",
+                "2023-09-01"
+              ],
+              "responseExpectedOrigins": 22,
+              "persistedOriginCount": 18
+            },
+            {
+              "batchNumber": 7,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2023-09-01",
+              "responseOriginDates": [
+                "2023-11-01",
+                "2024-01-01",
+                "2024-03-01"
+              ],
+              "responseExpectedOrigins": 22,
+              "persistedOriginCount": 21
+            },
+            {
+              "batchNumber": 8,
+              "modelId": "arima",
+              "resultStatus": "AVAILABLE",
+              "cacheStatus": "miss",
+              "resumeFromOriginDate": "2024-03-01",
+              "responseOriginDates": [
+                "2024-05-01"
+              ],
+              "responseExpectedOrigins": 22,
+              "persistedOriginCount": 22
+            }
+          ]
+        },
+        "batchCount": 8,
+        "durableCheckpoint": "PASS",
+        "resume": "PASS",
+        "noRecompute": "PASS",
+        "preparedReadBlockedWhilePartial": "PASS",
+        "maxObserved": 3,
+        "status": "PASS"
+      },
+      "warmReuse": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "AVAILABLE",
+            "cacheStatus": "hit",
+            "verificationCalls": 0,
+            "pointsUnchanged": true,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "appendOnlyDelta": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "NOT_AVAILABLE",
+            "resumeFromOriginDate": "2024-05-01",
+            "priorCheckpoint": "2024-05-01",
+            "newlyComputedOrigins": [
+              "2024-07-01"
+            ],
+            "oldOriginRecomputeCount": 0,
+            "historyFingerprintChanged": true,
+            "persistedPointDelta": 1,
+            "status": "PASS"
+          }
+        },
+        "extendedObservationCount": 61,
+        "status": "PASS"
+      },
+      "statisticalParity": {
+        "perModel": {
+          "naive": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 43,
+            "bridgeRecordCount": 43,
+            "status": "PASS"
+          },
+          "damped_holt": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 43,
+            "bridgeRecordCount": 43,
+            "status": "PASS"
+          },
+          "ets": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 43,
+            "bridgeRecordCount": 43,
+            "status": "PASS"
+          },
+          "arima": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 43,
+            "bridgeRecordCount": 43,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "status": "PASS"
+    },
+    "QUARTERLY:END_OF_PERIOD:QUARTERLY": {
+      "frequency": "QUARTERLY",
+      "targetBasis": "END_OF_PERIOD",
+      "targetCadence": "QUARTERLY",
+      "multiBatch": {
+        "perModel": {
+          "arima": [
+            {
+              "batchNumber": 1,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": null,
+              "responseOriginDates": [
+                "2021-10-01",
+                "2022-01-01",
+                "2022-04-01"
+              ],
+              "responseExpectedOrigins": 12,
+              "persistedOriginCount": 3
+            },
+            {
+              "batchNumber": 2,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2022-04-01",
+              "responseOriginDates": [
+                "2022-07-01",
+                "2022-10-01",
+                "2023-01-01"
+              ],
+              "responseExpectedOrigins": 12,
+              "persistedOriginCount": 6
+            },
+            {
+              "batchNumber": 3,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2023-01-01",
+              "responseOriginDates": [
+                "2023-04-01",
+                "2023-07-01",
+                "2023-10-01"
+              ],
+              "responseExpectedOrigins": 12,
+              "persistedOriginCount": 9
+            },
+            {
+              "batchNumber": 4,
+              "modelId": "arima",
+              "resultStatus": "AVAILABLE",
+              "cacheStatus": "miss",
+              "resumeFromOriginDate": "2023-10-01",
+              "responseOriginDates": [
+                "2024-01-01",
+                "2024-04-01",
+                "2024-07-01"
+              ],
+              "responseExpectedOrigins": 12,
+              "persistedOriginCount": 12
+            }
+          ]
+        },
+        "batchCount": 4,
+        "durableCheckpoint": "PASS",
+        "resume": "PASS",
+        "noRecompute": "PASS",
+        "preparedReadBlockedWhilePartial": "PASS",
+        "maxObserved": 3,
+        "status": "PASS"
+      },
+      "warmReuse": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "AVAILABLE",
+            "cacheStatus": "hit",
+            "verificationCalls": 0,
+            "pointsUnchanged": true,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "appendOnlyDelta": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "NOT_AVAILABLE",
+            "resumeFromOriginDate": "2024-07-01",
+            "priorCheckpoint": "2024-07-01",
+            "newlyComputedOrigins": [
+              "2024-10-01"
+            ],
+            "oldOriginRecomputeCount": 0,
+            "historyFingerprintChanged": true,
+            "persistedPointDelta": 1,
+            "status": "PASS"
+          }
+        },
+        "extendedObservationCount": 49,
+        "status": "PASS"
+      },
+      "statisticalParity": {
+        "perModel": {
+          "naive": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 35,
+            "bridgeRecordCount": 35,
+            "status": "PASS"
+          },
+          "damped_holt": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 35,
+            "bridgeRecordCount": 35,
+            "status": "PASS"
+          },
+          "ets": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 35,
+            "bridgeRecordCount": 35,
+            "status": "PASS"
+          },
+          "arima": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 35,
+            "bridgeRecordCount": 35,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "status": "PASS"
+    },
+    "QUARTERLY:MONTHLY_AVERAGE:QUARTERLY": {
+      "frequency": "QUARTERLY",
+      "targetBasis": "MONTHLY_AVERAGE",
+      "targetCadence": "QUARTERLY",
+      "multiBatch": {
+        "perModel": {
+          "arima": [
+            {
+              "batchNumber": 1,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": null,
+              "responseOriginDates": [
+                "2021-10-01",
+                "2022-01-01",
+                "2022-04-01"
+              ],
+              "responseExpectedOrigins": 12,
+              "persistedOriginCount": 3
+            },
+            {
+              "batchNumber": 2,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2022-04-01",
+              "responseOriginDates": [
+                "2022-07-01",
+                "2022-10-01",
+                "2023-01-01"
+              ],
+              "responseExpectedOrigins": 12,
+              "persistedOriginCount": 6
+            },
+            {
+              "batchNumber": 3,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2023-01-01",
+              "responseOriginDates": [
+                "2023-04-01",
+                "2023-07-01",
+                "2023-10-01"
+              ],
+              "responseExpectedOrigins": 12,
+              "persistedOriginCount": 9
+            },
+            {
+              "batchNumber": 4,
+              "modelId": "arima",
+              "resultStatus": "AVAILABLE",
+              "cacheStatus": "miss",
+              "resumeFromOriginDate": "2023-10-01",
+              "responseOriginDates": [
+                "2024-01-01",
+                "2024-04-01",
+                "2024-07-01"
+              ],
+              "responseExpectedOrigins": 12,
+              "persistedOriginCount": 12
+            }
+          ]
+        },
+        "batchCount": 4,
+        "durableCheckpoint": "PASS",
+        "resume": "PASS",
+        "noRecompute": "PASS",
+        "preparedReadBlockedWhilePartial": "PASS",
+        "maxObserved": 3,
+        "status": "PASS"
+      },
+      "warmReuse": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "AVAILABLE",
+            "cacheStatus": "hit",
+            "verificationCalls": 0,
+            "pointsUnchanged": true,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "appendOnlyDelta": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "NOT_AVAILABLE",
+            "resumeFromOriginDate": "2024-07-01",
+            "priorCheckpoint": "2024-07-01",
+            "newlyComputedOrigins": [
+              "2024-10-01"
+            ],
+            "oldOriginRecomputeCount": 0,
+            "historyFingerprintChanged": true,
+            "persistedPointDelta": 1,
+            "status": "PASS"
+          }
+        },
+        "extendedObservationCount": 49,
+        "status": "PASS"
+      },
+      "statisticalParity": {
+        "perModel": {
+          "naive": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 35,
+            "bridgeRecordCount": 35,
+            "status": "PASS"
+          },
+          "damped_holt": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 35,
+            "bridgeRecordCount": 35,
+            "status": "PASS"
+          },
+          "ets": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 35,
+            "bridgeRecordCount": 35,
+            "status": "PASS"
+          },
+          "arima": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 35,
+            "bridgeRecordCount": 35,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "status": "PASS"
+    },
+    "QUADMONTHLY:END_OF_PERIOD:QUADMONTHLY": {
+      "frequency": "QUADMONTHLY",
+      "targetBasis": "END_OF_PERIOD",
+      "targetCadence": "QUADMONTHLY",
+      "multiBatch": {
+        "perModel": {
+          "arima": [
+            {
+              "batchNumber": 1,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": null,
+              "responseOriginDates": [
+                "2021-09-01",
+                "2022-01-01",
+                "2022-05-01"
+              ],
+              "responseExpectedOrigins": 7,
+              "persistedOriginCount": 3
+            },
+            {
+              "batchNumber": 2,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2022-05-01",
+              "responseOriginDates": [
+                "2022-09-01",
+                "2023-01-01",
+                "2023-05-01"
+              ],
+              "responseExpectedOrigins": 7,
+              "persistedOriginCount": 6
+            },
+            {
+              "batchNumber": 3,
+              "modelId": "arima",
+              "resultStatus": "AVAILABLE",
+              "cacheStatus": "miss",
+              "resumeFromOriginDate": "2023-05-01",
+              "responseOriginDates": [
+                "2023-09-01"
+              ],
+              "responseExpectedOrigins": 7,
+              "persistedOriginCount": 7
+            }
+          ]
+        },
+        "batchCount": 3,
+        "durableCheckpoint": "PASS",
+        "resume": "PASS",
+        "noRecompute": "PASS",
+        "preparedReadBlockedWhilePartial": "PASS",
+        "maxObserved": 3,
+        "status": "PASS"
+      },
+      "warmReuse": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "AVAILABLE",
+            "cacheStatus": "hit",
+            "verificationCalls": 0,
+            "pointsUnchanged": true,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "appendOnlyDelta": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "AVAILABLE",
+            "resumeFromOriginDate": "2023-09-01",
+            "priorCheckpoint": "2023-09-01",
+            "newlyComputedOrigins": [
+              "2024-01-01"
+            ],
+            "oldOriginRecomputeCount": 0,
+            "historyFingerprintChanged": true,
+            "persistedPointDelta": 1,
+            "status": "PASS"
+          }
+        },
+        "extendedObservationCount": 46,
+        "status": "PASS"
+      },
+      "statisticalParity": {
+        "perModel": {
+          "naive": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 8,
+            "bridgeRecordCount": 8,
+            "status": "PASS"
+          },
+          "damped_holt": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 8,
+            "bridgeRecordCount": 8,
+            "status": "PASS"
+          },
+          "ets": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 8,
+            "bridgeRecordCount": 8,
+            "status": "PASS"
+          },
+          "arima": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 8,
+            "bridgeRecordCount": 8,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "status": "PASS"
+    },
+    "QUADMONTHLY:MONTHLY_AVERAGE:QUADMONTHLY": {
+      "frequency": "QUADMONTHLY",
+      "targetBasis": "MONTHLY_AVERAGE",
+      "targetCadence": "QUADMONTHLY",
+      "multiBatch": {
+        "perModel": {
+          "arima": [
+            {
+              "batchNumber": 1,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": null,
+              "responseOriginDates": [
+                "2021-09-01",
+                "2022-01-01",
+                "2022-05-01"
+              ],
+              "responseExpectedOrigins": 7,
+              "persistedOriginCount": 3
+            },
+            {
+              "batchNumber": 2,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": "2022-05-01",
+              "responseOriginDates": [
+                "2022-09-01",
+                "2023-01-01",
+                "2023-05-01"
+              ],
+              "responseExpectedOrigins": 7,
+              "persistedOriginCount": 6
+            },
+            {
+              "batchNumber": 3,
+              "modelId": "arima",
+              "resultStatus": "AVAILABLE",
+              "cacheStatus": "miss",
+              "resumeFromOriginDate": "2023-05-01",
+              "responseOriginDates": [
+                "2023-09-01"
+              ],
+              "responseExpectedOrigins": 7,
+              "persistedOriginCount": 7
+            }
+          ]
+        },
+        "batchCount": 3,
+        "durableCheckpoint": "PASS",
+        "resume": "PASS",
+        "noRecompute": "PASS",
+        "preparedReadBlockedWhilePartial": "PASS",
+        "maxObserved": 3,
+        "status": "PASS"
+      },
+      "warmReuse": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "AVAILABLE",
+            "cacheStatus": "hit",
+            "verificationCalls": 0,
+            "pointsUnchanged": true,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "appendOnlyDelta": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "AVAILABLE",
+            "resumeFromOriginDate": "2023-09-01",
+            "priorCheckpoint": "2023-09-01",
+            "newlyComputedOrigins": [
+              "2024-01-01"
+            ],
+            "oldOriginRecomputeCount": 0,
+            "historyFingerprintChanged": true,
+            "persistedPointDelta": 1,
+            "status": "PASS"
+          }
+        },
+        "extendedObservationCount": 46,
+        "status": "PASS"
+      },
+      "statisticalParity": {
+        "perModel": {
+          "naive": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 8,
+            "bridgeRecordCount": 8,
+            "status": "PASS"
+          },
+          "damped_holt": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 8,
+            "bridgeRecordCount": 8,
+            "status": "PASS"
+          },
+          "ets": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 8,
+            "bridgeRecordCount": 8,
+            "status": "PASS"
+          },
+          "arima": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 8,
+            "bridgeRecordCount": 8,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "status": "PASS"
+    },
+    "SEMIANNUAL:END_OF_PERIOD:SEMIANNUAL": {
+      "frequency": "SEMIANNUAL",
+      "targetBasis": "END_OF_PERIOD",
+      "targetCadence": "SEMIANNUAL",
+      "multiBatch": {
+        "perModel": {
+          "arima": [
+            {
+              "batchNumber": 1,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": null,
+              "responseOriginDates": [
+                "2023-07-01",
+                "2024-01-01",
+                "2024-07-01"
+              ],
+              "responseExpectedOrigins": 4,
+              "persistedOriginCount": 3
+            },
+            {
+              "batchNumber": 2,
+              "modelId": "arima",
+              "resultStatus": "AVAILABLE",
+              "cacheStatus": "miss",
+              "resumeFromOriginDate": "2024-07-01",
+              "responseOriginDates": [
+                "2025-01-01"
+              ],
+              "responseExpectedOrigins": 4,
+              "persistedOriginCount": 4
+            }
+          ]
+        },
+        "batchCount": 2,
+        "durableCheckpoint": "PASS",
+        "resume": "PASS",
+        "noRecompute": "PASS",
+        "preparedReadBlockedWhilePartial": "PASS",
+        "maxObserved": 3,
+        "status": "PASS"
+      },
+      "warmReuse": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "AVAILABLE",
+            "cacheStatus": "hit",
+            "verificationCalls": 0,
+            "pointsUnchanged": true,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "appendOnlyDelta": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "NOT_AVAILABLE",
+            "resumeFromOriginDate": "2025-01-01",
+            "priorCheckpoint": "2025-01-01",
+            "newlyComputedOrigins": [
+              "2025-07-01"
+            ],
+            "oldOriginRecomputeCount": 0,
+            "historyFingerprintChanged": true,
+            "persistedPointDelta": 1,
+            "status": "PASS"
+          }
+        },
+        "extendedObservationCount": 41,
+        "status": "PASS"
+      },
+      "statisticalParity": {
+        "perModel": {
+          "naive": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 9,
+            "bridgeRecordCount": 9,
+            "status": "PASS"
+          },
+          "damped_holt": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 9,
+            "bridgeRecordCount": 9,
+            "status": "PASS"
+          },
+          "ets": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 9,
+            "bridgeRecordCount": 9,
+            "status": "PASS"
+          },
+          "arima": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 9,
+            "bridgeRecordCount": 9,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "status": "PASS"
+    },
+    "SEMIANNUAL:MONTHLY_AVERAGE:SEMIANNUAL": {
+      "frequency": "SEMIANNUAL",
+      "targetBasis": "MONTHLY_AVERAGE",
+      "targetCadence": "SEMIANNUAL",
+      "multiBatch": {
+        "perModel": {
+          "arima": [
+            {
+              "batchNumber": 1,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": null,
+              "responseOriginDates": [
+                "2023-07-01",
+                "2024-01-01",
+                "2024-07-01"
+              ],
+              "responseExpectedOrigins": 4,
+              "persistedOriginCount": 3
+            },
+            {
+              "batchNumber": 2,
+              "modelId": "arima",
+              "resultStatus": "AVAILABLE",
+              "cacheStatus": "miss",
+              "resumeFromOriginDate": "2024-07-01",
+              "responseOriginDates": [
+                "2025-01-01"
+              ],
+              "responseExpectedOrigins": 4,
+              "persistedOriginCount": 4
+            }
+          ]
+        },
+        "batchCount": 2,
+        "durableCheckpoint": "PASS",
+        "resume": "PASS",
+        "noRecompute": "PASS",
+        "preparedReadBlockedWhilePartial": "PASS",
+        "maxObserved": 3,
+        "status": "PASS"
+      },
+      "warmReuse": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "AVAILABLE",
+            "cacheStatus": "hit",
+            "verificationCalls": 0,
+            "pointsUnchanged": true,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "appendOnlyDelta": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "NOT_AVAILABLE",
+            "resumeFromOriginDate": "2025-01-01",
+            "priorCheckpoint": "2025-01-01",
+            "newlyComputedOrigins": [
+              "2025-07-01"
+            ],
+            "oldOriginRecomputeCount": 0,
+            "historyFingerprintChanged": true,
+            "persistedPointDelta": 1,
+            "status": "PASS"
+          }
+        },
+        "extendedObservationCount": 41,
+        "status": "PASS"
+      },
+      "statisticalParity": {
+        "perModel": {
+          "naive": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 9,
+            "bridgeRecordCount": 9,
+            "status": "PASS"
+          },
+          "damped_holt": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 9,
+            "bridgeRecordCount": 9,
+            "status": "PASS"
+          },
+          "ets": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 9,
+            "bridgeRecordCount": 9,
+            "status": "PASS"
+          },
+          "arima": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 9,
+            "bridgeRecordCount": 9,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "status": "PASS"
+    },
+    "ANNUAL:END_OF_PERIOD:ANNUAL": {
+      "frequency": "ANNUAL",
+      "targetBasis": "END_OF_PERIOD",
+      "targetCadence": "ANNUAL",
+      "multiBatch": {
+        "perModel": {
+          "arima": [
+            {
+              "batchNumber": 1,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": null,
+              "responseOriginDates": [
+                "2020-01-01",
+                "2021-01-01",
+                "2022-01-01"
+              ],
+              "responseExpectedOrigins": 4,
+              "persistedOriginCount": 3
+            },
+            {
+              "batchNumber": 2,
+              "modelId": "arima",
+              "resultStatus": "AVAILABLE",
+              "cacheStatus": "miss",
+              "resumeFromOriginDate": "2022-01-01",
+              "responseOriginDates": [
+                "2023-01-01"
+              ],
+              "responseExpectedOrigins": 4,
+              "persistedOriginCount": 4
+            }
+          ]
+        },
+        "batchCount": 2,
+        "durableCheckpoint": "PASS",
+        "resume": "PASS",
+        "noRecompute": "PASS",
+        "preparedReadBlockedWhilePartial": "PASS",
+        "maxObserved": 3,
+        "status": "PASS"
+      },
+      "warmReuse": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "AVAILABLE",
+            "cacheStatus": "hit",
+            "verificationCalls": 0,
+            "pointsUnchanged": true,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "appendOnlyDelta": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "AVAILABLE",
+            "resumeFromOriginDate": "2023-01-01",
+            "priorCheckpoint": "2023-01-01",
+            "newlyComputedOrigins": [
+              "2024-01-01"
+            ],
+            "oldOriginRecomputeCount": 0,
+            "historyFingerprintChanged": true,
+            "persistedPointDelta": 1,
+            "status": "PASS"
+          }
+        },
+        "extendedObservationCount": 41,
+        "status": "PASS"
+      },
+      "statisticalParity": {
+        "perModel": {
+          "naive": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 5,
+            "bridgeRecordCount": 5,
+            "status": "PASS"
+          },
+          "damped_holt": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 5,
+            "bridgeRecordCount": 5,
+            "status": "PASS"
+          },
+          "ets": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 5,
+            "bridgeRecordCount": 5,
+            "status": "PASS"
+          },
+          "arima": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 5,
+            "bridgeRecordCount": 5,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "status": "PASS"
+    },
+    "ANNUAL:MONTHLY_AVERAGE:ANNUAL": {
+      "frequency": "ANNUAL",
+      "targetBasis": "MONTHLY_AVERAGE",
+      "targetCadence": "ANNUAL",
+      "multiBatch": {
+        "perModel": {
+          "arima": [
+            {
+              "batchNumber": 1,
+              "modelId": "arima",
+              "resultStatus": "NOT_AVAILABLE",
+              "cacheStatus": null,
+              "resumeFromOriginDate": null,
+              "responseOriginDates": [
+                "2020-01-01",
+                "2021-01-01",
+                "2022-01-01"
+              ],
+              "responseExpectedOrigins": 4,
+              "persistedOriginCount": 3
+            },
+            {
+              "batchNumber": 2,
+              "modelId": "arima",
+              "resultStatus": "AVAILABLE",
+              "cacheStatus": "miss",
+              "resumeFromOriginDate": "2022-01-01",
+              "responseOriginDates": [
+                "2023-01-01"
+              ],
+              "responseExpectedOrigins": 4,
+              "persistedOriginCount": 4
+            }
+          ]
+        },
+        "batchCount": 2,
+        "durableCheckpoint": "PASS",
+        "resume": "PASS",
+        "noRecompute": "PASS",
+        "preparedReadBlockedWhilePartial": "PASS",
+        "maxObserved": 3,
+        "status": "PASS"
+      },
+      "warmReuse": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "AVAILABLE",
+            "cacheStatus": "hit",
+            "verificationCalls": 0,
+            "pointsUnchanged": true,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "appendOnlyDelta": {
+        "perModel": {
+          "arima": {
+            "resultStatus": "AVAILABLE",
+            "resumeFromOriginDate": "2023-01-01",
+            "priorCheckpoint": "2023-01-01",
+            "newlyComputedOrigins": [
+              "2024-01-01"
+            ],
+            "oldOriginRecomputeCount": 0,
+            "historyFingerprintChanged": true,
+            "persistedPointDelta": 1,
+            "status": "PASS"
+          }
+        },
+        "extendedObservationCount": 41,
+        "status": "PASS"
+      },
+      "statisticalParity": {
+        "perModel": {
+          "naive": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 5,
+            "bridgeRecordCount": 5,
+            "status": "PASS"
+          },
+          "damped_holt": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 5,
+            "bridgeRecordCount": 5,
+            "status": "PASS"
+          },
+          "ets": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 5,
+            "bridgeRecordCount": 5,
+            "status": "PASS"
+          },
+          "arima": {
+            "recordCountParity": "PASS",
+            "perRecordParity": "PASS",
+            "metricParity": "PASS",
+            "persistedRecordCount": 5,
+            "bridgeRecordCount": 5,
+            "status": "PASS"
+          }
+        },
+        "status": "PASS"
+      },
+      "status": "PASS"
     }
   },
-  "changedFiles": [
-    "apps/sg-runtime/lib/forecast/contracts.ts",
-    "apps/sg-runtime/lib/forecast/prepared-state.ts",
-    "apps/sg-runtime/lib/forecast/production-operations.ts",
-    "apps/sg-runtime/lib/forecast/service.ts",
-    "apps/sg-runtime/tests/forecast-library-service.test.ts",
-    "apps/sg-runtime/tests/forecast-prepared-state.test.ts",
-    "apps/sg-runtime/tests/forecast-production-operations.test.ts",
-    "tooling/Benchmark-Forecasting/forecasting/service.py",
-    "tooling/Benchmark-Forecasting/scripts/export_forecast_bundle.py",
-    "tooling/Benchmark-Forecasting/tests/test_bounded_non_daily_verification.py"
-  ],
-  "publication": {
-    "evidenceArtifactsCreated": "YES",
-    "sourceCandidateCommitted": "YES",
-    "remotePublication": "PENDING",
-    "remoteReread": "PENDING",
-    "pmosCloseout": "PENDING"
+  "representativeProofs": {
+    "failureRecovery": {
+      "resultStatus": "NOT_AVAILABLE",
+      "failureMessage": "Injected Stage 9 evidence failure.",
+      "checkpointBeforeFailure": "2022-02-01",
+      "resumeFromOriginDate": "2022-02-01",
+      "pointsAfterFailure": 12,
+      "pointsAfterRecovery": 24,
+      "duplicatePointCount": 0,
+      "status": "PASS"
+    },
+    "concurrency": {
+      "requestCount": 5,
+      "resultStatuses": [
+        "AVAILABLE",
+        "AVAILABLE",
+        "AVAILABLE",
+        "AVAILABLE",
+        "AVAILABLE"
+      ],
+      "ownerCount": 1,
+      "ownerAcquiredCount": 1,
+      "waiterCount": 4,
+      "verificationCalls": 1,
+      "ledgerRowCount": 1,
+      "status": "PASS"
+    },
+    "identityIsolation": {
+      "endOfPeriodRunId": "cmtvv865t212dzfnehwtjvhzp",
+      "monthlyAverageRunId": "cmtvv8dkn212xzfne2hda4cxb",
+      "endOfPeriodResumeFromOriginDate": null,
+      "monthlyAverageResumeFromOriginDate": null,
+      "distinctLogicalArtifactKeys": 2,
+      "status": "PASS"
+    },
+    "sourceRevisionFailClosed": {
+      "resultStatus": "NOT_AVAILABLE",
+      "baselineHistoryFingerprint": "ae16307dc209708731a0578be1446b1f25fe4482678dc350dbabb3d7609c8941",
+      "mutatedHistoryFingerprint": "e3858e840f2fbc5e465201dfbfba7c074ee2ebf8a322ebfc05464f847b1a2fd8",
+      "resumeFromOriginDate": null,
+      "status": "PASS"
+    },
+    "fastReadyIsolation": {
+      "currentStatus": "AVAILABLE",
+      "recentStatus": "AVAILABLE",
+      "boundedHistoricalStatus": "NOT_AVAILABLE",
+      "preparedCurrentStatus": "NOT_AVAILABLE",
+      "preparedRecentStatus": "NOT_AVAILABLE",
+      "preparedHistoricalStatus": "NOT_AVAILABLE",
+      "operationStatus": "PARTIAL",
+      "operationHistoricalState": "IN_PROGRESS",
+      "status": "PASS"
+    }
+  },
+  "stage7Regression": {
+    "status": "PASS",
+    "outputJson": "/var/folders/c6/gt6l739d4f569_ffz159j18r0000gn/T/stage9-stage7-regression/stage7-regression.json",
+    "outputMd": "/var/folders/c6/gt6l739d4f569_ffz159j18r0000gn/T/stage9-stage7-regression/stage7-regression.md",
+    "summary": {
+      "fastReadyExactCurrentAndRequiredRecentRenderable": "YES",
+      "globalNFastEquals1": "YES",
+      "realProgressiveOrchestrationPathExercised": "YES",
+      "fullVerificationExcludedFromFastReady": "YES",
+      "warmReusePreserved": "YES",
+      "crossContextReusePreserved": "YES"
+    }
+  },
+  "stage8Regression": {
+    "status": "PASS",
+    "outputJson": "/var/folders/c6/gt6l739d4f569_ffz159j18r0000gn/T/stage9-stage8-regression/stage8-regression.json",
+    "outputMd": "/var/folders/c6/gt6l739d4f569_ffz159j18r0000gn/T/stage9-stage8-regression/stage8-regression.md",
+    "summary": {
+      "STAGE8_SOURCE_CANDIDATE_SHA": "2eaedb79beeadb05b163e49791f1adb098b5e292",
+      "STAGE8_EVIDENCE_SOURCE_SHA": "2eaedb79beeadb05b163e49791f1adb098b5e292",
+      "ROLLING_DAILY_SCOPE_ONLY": "PASS",
+      "MODELS_TESTED": "naive,damped_holt,ets,arima",
+      "EXPECTED_MODELS": "naive,damped_holt,ets,arima",
+      "BOUNDED_BATCH_GATE": "PASS",
+      "MAX_ORIGINS_PER_BATCH": 3,
+      "MAX_ORIGINS_OBSERVED": 3,
+      "MULTI_BATCH_EXECUTION_GATE": "PASS",
+      "DURABLE_CHECKPOINT_GATE": "PASS",
+      "RESUME_GATE": "PASS",
+      "NO_RECOMPUTE_COMPLETED_ORIGINS": "PASS",
+      "WARM_COMPLETE_REUSE_GATE": "PASS",
+      "WARM_HISTORICAL_COMPUTE_COUNT": 0,
+      "WARM_NEW_RECORD_WRITE_COUNT": 0,
+      "APPEND_ONLY_DELTA_GATE": "PASS",
+      "OLD_ORIGIN_RECOMPUTE_COUNT": 0,
+      "NEW_ELIGIBLE_ORIGIN_COUNT": 2,
+      "NEW_COMPUTED_ORIGIN_COUNT": 2,
+      "FAILURE_RECOVERY_GATE": "PASS",
+      "RECOVERY_RESTART_FROM_BEGINNING": "NO",
+      "RECOVERY_DUPLICATE_RECORDS": 0,
+      "ACTIVE_STAGE8_RUNNER_COUNT_BEFORE_START": 0,
+      "ACTIVE_STAGE8_RUNNER_PREFLIGHT": "PASS",
+      "CONCURRENT_ONE_GLOBAL_COMPUTE_GATE": "PASS",
+      "CONCURRENT_REQUEST_COUNT": 5,
+      "CONCURRENCY_PROOF_SURFACE": "ROLLING_DAILY_HISTORICAL_EXECUTION_LEDGER",
+      "ROLLING_DAILY_HISTORICAL_OWNER_COUNT": 1,
+      "ROLLING_DAILY_HISTORICAL_WAITER_COUNT": 4,
+      "ROLLING_DAILY_HISTORICAL_COMPUTE_COUNT": 1,
+      "DUPLICATE_ROLLING_DAILY_HISTORICAL_COMPUTE_COUNT": 0,
+      "ALL_CONCURRENT_REQUESTS_SUCCEEDED": "YES",
+      "EXACT_IDENTITY_GATE": "PASS",
+      "SOURCE_REVISION_FAIL_CLOSED": "PASS",
+      "NO_LOOKAHEAD_GATE": "PASS",
+      "STATISTICAL_PARITY_NAIVE": "PASS",
+      "STATISTICAL_PARITY_DAMPED_HOLT": "PASS",
+      "STATISTICAL_PARITY_ETS": "PASS",
+      "STATISTICAL_PARITY_ARIMA": "PASS",
+      "STATISTICAL_PARITY_GATE": "PASS",
+      "FAST_READY_ISOLATION_GATE": "PASS",
+      "STAGE7_CURRENT_NON_REGRESSION": "PASS",
+      "STAGE7_RECENT_NON_REGRESSION": "PASS",
+      "STAGE7_WARM_REUSE_NON_REGRESSION": "PASS",
+      "STAGE7_CROSS_CONTEXT_REUSE_NON_REGRESSION": "PASS",
+      "FULL_HISTORICAL_INLINE_WITH_USER_REQUEST": "NO",
+      "CALIBRATION_BUILD_TRIGGERED_BY_STAGE8": "NO",
+      "BAND_BUILD_TRIGGERED_BY_STAGE8": "NO",
+      "NON_DAILY_HISTORICAL_STAGE9_EXECUTION": 0,
+      "STAGE9_PLUS_LEAKAGE": "NO",
+      "DURABLE_TELEMETRY_GATE": "PASS",
+      "CANONICAL_DEPENDENCY_PROVENANCE": "PASS",
+      "EVIDENCE_DATABASE_ISOLATED": "YES",
+      "PRODUCTION_DATABASE_USED": "NO",
+      "EVIDENCE_WORKTREE_CLEAN": "YES",
+      "FOCUSED_TESTS": "PASS",
+      "TYPECHECK_REGRESSION": "PASS",
+      "GITHUB_PUBLICATION": "NOT_STARTED",
+      "REMOTE_REREAD": "NOT_STARTED",
+      "PMOS_CLOSEOUT_STATE": "NOT_STARTED",
+      "STAGE8_COMPLETION": "PASS",
+      "READY_FOR_STAGE9": "YES"
+    }
+  },
+  "tests": {
+    "forecastLibrary": "PASS",
+    "productionOperations": "PASS",
+    "preparedState": "PASS",
+    "pythonBoundedVerification": "PASS"
   },
   "finalDecision": {
-    "stage9Status": "PASS",
-    "releaseReadiness": "READY_FOR_PUBLICATION"
-  }
+    "STAGE9_SOURCE_CANDIDATE_SHA": "2eaedb79beeadb05b163e49791f1adb098b5e292",
+    "STAGE9_EVIDENCE_SOURCE_SHA": "2eaedb79beeadb05b163e49791f1adb098b5e292",
+    "CLEAN_WORKTREE_REQUIRED": "PASS",
+    "ISOLATED_POSTGRES_REQUIRED": "PASS",
+    "CAPABILITY_MATRIX_GATE": "PASS",
+    "RUNTIME_MATRIX_GATE": "PASS",
+    "REPRESENTATIVE_RECOVERY_GATE": "PASS",
+    "RUNTIME_EVIDENCE_MODEL": "arima",
+    "STAGE7_NON_REGRESSION_GATE": "PASS",
+    "STAGE8_NON_REGRESSION_GATE": "PASS",
+    "FOCUSED_VALIDATION_GATE": "PASS",
+    "MAX_ORIGINS_PER_BATCH": 3,
+    "LAWFUL_NON_DAILY_PATH_COUNT": 13,
+    "OVERALL_STAGE9_FINAL_ACCEPTANCE": "PASS"
+  },
+  "generatedAt": "2026-09-10T18:46:08.122Z"
 }
