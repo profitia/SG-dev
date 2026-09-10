@@ -18,6 +18,7 @@
     "forecast:profile:fast-ready": "npm run market-data:generate && npm run forecast:python:bootstrap && node --import tsx scripts/run-forecast-fast-ready-profiler.ts",
     "forecast:profile:stage7-evidence": "npm run market-data:generate && npm run forecast:python:bootstrap && node --import tsx scripts/run-forecast-stage7-evidence.ts",
     "forecast:profile:stage8-bounded-historical": "node scripts/run-with-tsx-loader.mjs scripts/run-forecast-stage8-final-evidence.ts",
+    "forecast:profile:stage9-bounded-non-daily-historical": "node scripts/run-with-tsx-loader.mjs scripts/run-forecast-stage9-final-evidence.ts",
     "forecast:operations": "node --import tsx scripts/run-forecast-production-operations.ts",
     "forecast:operations:rolling-daily": "node --import tsx scripts/run-rolling-daily-production-operations.ts",
     "forecast:snapshot:rolling-daily": "node --import tsx scripts/persist-rolling-daily-current-forecast-snapshot.ts",

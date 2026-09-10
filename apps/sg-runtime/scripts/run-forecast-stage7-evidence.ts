@@ -38,7 +38,12 @@ const execFile = promisify(execFileCallback)
 process.env.MARKET_DATA_DATABASE_URL = process.env.MARKET_DATA_DATABASE_URL
   ?? 'postgresql://phase21@127.0.0.1:55421/sg_phase_2_1_market_data'
 
-const RESULT_JSON_PATH = path.resolve(
+function resolveOutputPath(envName: string, fallbackPath: string) {
+  const override = process.env[envName]?.trim()
+  return override && override.length > 0 ? path.resolve(override) : fallbackPath
+}
+
+const RESULT_JSON_PATH = resolveOutputPath('STAGE7_RESULT_JSON_PATH', path.resolve(
   process.cwd(),
   '..',
   '..',
@@ -46,8 +51,8 @@ const RESULT_JSON_PATH = path.resolve(
   'Benchmark-Forecasting',
   'validation',
   'ppf1-stage7-recent-verification-controlled-activation.json',
-)
-const RESULT_MD_PATH = path.resolve(
+))
+const RESULT_MD_PATH = resolveOutputPath('STAGE7_RESULT_MD_PATH', path.resolve(
   process.cwd(),
   '..',
   '..',
@@ -55,7 +60,7 @@ const RESULT_MD_PATH = path.resolve(
   'Benchmark-Forecasting',
   'validation',
   'ppf1-stage7-recent-verification-controlled-activation.md',
-)
+))
 
 const SUPPRESSED_NOISY_LOG_EVENTS = new Set([
   'BENCHMARK_MARKET_DATA',

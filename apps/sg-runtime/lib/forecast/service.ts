@@ -805,6 +805,84 @@ function deriveLastProcessedVerificationOriginDate(artifact: PersistedVerificati
   return processedOrigins.sort((left, right) => left.localeCompare(right)).at(-1) ?? null
 }
 
+function buildVerificationHistoryPrefix(
+  history: ForecastBridgeHistory,
+  artifact: PersistedVerificationArtifact,
+) {
+  const start = normalizePeriodIdentityKey(artifact.history.start)
+  const end = normalizePeriodIdentityKey(artifact.history.end)
+  if (!start || !end || artifact.history.observations < 1) {
+    return null
+  }
+
+  const points = history.points.filter((point) => {
+    const pointDate = normalizePeriodIdentityKey(point.date)
+    return pointDate !== null && pointDate >= start && pointDate <= end
+  })
+  if (
+    points.length !== artifact.history.observations
+    || normalizePeriodIdentityKey(points[0]?.date ?? null) !== start
+    || normalizePeriodIdentityKey(points.at(-1)?.date ?? null) !== end
+  ) {
+    return null
+  }
+
+  return {
+    ...history,
+    start,
+    end,
+    observations: points.length,
+    points,
+  }
+}
+
+function isAppendOnlyCompatibleVerificationArtifact(
+  artifact: PersistedVerificationArtifact,
+  history: ForecastBridgeHistory,
+  cadence: ForecastCadence | undefined,
+) {
+  const artifactEnd = normalizePeriodIdentityKey(artifact.history.end)
+  const historyEnd = normalizePeriodIdentityKey(history.end)
+  if (
+    verificationArtifactNeedsRebuild(artifact)
+    || !artifact.history.start
+    || !artifact.history.end
+    || !artifactEnd
+    || !historyEnd
+    || artifactEnd >= historyEnd
+    || artifact.history.observations >= history.observations
+  ) {
+    return false
+  }
+
+  const historyPrefix = buildVerificationHistoryPrefix(history, artifact)
+  if (!historyPrefix) {
+    return false
+  }
+
+  return buildForecastHistoryFingerprint(historyPrefix, cadence) === artifact.historyFingerprint
+}
+
+function resolveVerificationResumeArtifact(input: {
+  exactArtifact: PersistedVerificationArtifact | null
+  latestArtifact: PersistedVerificationArtifact | null
+  history: ForecastBridgeHistory
+  cadence: ForecastCadence | undefined
+}) {
+  if (input.exactArtifact && !verificationArtifactNeedsRebuild(input.exactArtifact)) {
+    return input.exactArtifact
+  }
+
+  if (
+    input.latestArtifact
+    && isAppendOnlyCompatibleVerificationArtifact(input.latestArtifact, input.history, input.cadence)
+  ) {
+    return input.latestArtifact
+  }
+
+  return null
+}
+
 function mergeVerificationRecords(
   existing: ForecastVerificationRecord[],
   incoming: ForecastVerificationRecord[],
@@ -855,14 +933,15 @@ function mergeVerificationArtifacts(
       const expectedOrigins = Math.max(existingHorizon?.expectedOrigins ?? 0, incomingHorizon.expectedOrigins)
       const incomingComplete = incomingHorizon.successfulOrigins + incomingHorizon.failedOrigins >= incomingHorizon.expectedOrigins
       const existingComplete = (existingHorizon?.successfulOrigins ?? 0) + (existingHorizon?.failedOrigins ?? 0) >= (existingHorizon?.expectedOrigins ?? Number.MAX_SAFE_INTEGER)
+      const expectedOriginsExpanded = expectedOrigins > (existingHorizon?.expectedOrigins ?? 0)
       const successfulOrigins = incomingComplete
         ? incomingHorizon.successfulOrigins
-        : existingComplete
+        : existingComplete && !expectedOriginsExpanded
           ? existingHorizon!.successfulOrigins
           : countUniqueVerificationOrigins(records)
       const failedOrigins = incomingComplete
         ? incomingHorizon.failedOrigins
-        : existingComplete
+        : existingComplete && !expectedOriginsExpanded
           ? existingHorizon!.failedOrigins
           : countUniqueVerificationOrigins(failures)
 
@@ -870,7 +949,10 @@ function mergeVerificationArtifacts(
         horizonLabel,
         {
           horizon: incomingHorizon.horizon,
-          horizonSteps: incomingHorizon.horizonSteps,
+          horizonSteps: incomingHorizon.horizonSteps > 0
+            ? incomingHorizon.horizonSteps
+            : existingHorizon?.horizonSteps
+              ?? resolveVerificationHorizonStepsFromLabel(horizonLabel),
           origins: successfulOrigins,
           expectedOrigins,
           successfulOrigins,
@@ -1220,6 +1302,11 @@ function resolveVerificationHorizonSteps(payload: {
   failures: ForecastVerificationFailure[]
 }) {
   return payload.records[0]?.horizonSteps ?? payload.failures[0]?.horizonSteps ?? 0
+}
+
+function resolveVerificationHorizonStepsFromLabel(horizonLabel: string) {
+  const parsed = Number.parseInt(horizonLabel, 10)
+  return Number.isFinite(parsed) ? parsed : 0
 }
 
 function parseIsoDate(value: string | null) {
@@ -2757,8 +2844,8 @@ export function createForecastLibraryService(
     }
 
     void resolvedDependencies.executionLedger.recordEvent({
-      ...inputEvent,
       executionId: executionContext.executionId,
+      ...inputEvent,
       ...(isAuthoritativeExecutionLedgerContext(executionContext)
         ? {
             attemptKind: executionContext.attemptKind,
@@ -3974,8 +4061,21 @@ export function createForecastLibraryService(
       }
 
       let dbReadFailed = false
+      let latestReusableArtifact: PersistedVerificationArtifact | null = null
       try {
         const persisted = await resolvedDependencies.repository.readVerificationRun(cacheKey)
+        if (
+          !persisted
+          && input.maxOriginsPerRun != null
+          && resolvedDependencies.repository.readLatestVerificationRun
+        ) {
+          latestReusableArtifact = resolveVerificationResumeArtifact({
+            exactArtifact: null,
+            latestArtifact: await resolvedDependencies.repository.readLatestVerificationRun(cacheKey),
+            history: historyResponse.history,
+            cadence: cadenceContext.cadence ?? undefined,
+          })
+        }
         if (persisted) {
           if (verificationArtifactNeedsRebuild(persisted)) {
             resolvedDependencies.logEvent('FORECAST_LIBRARY_VERIFICATION', {
@@ -4270,18 +4370,33 @@ export function createForecastLibraryService(
                 role: 'OWNER',
                 eventType: 'compute_started',
               })
-              const resumeFromOriginDate = persistedAfterAdmission && !verificationArtifactNeedsRebuild(persistedAfterAdmission)
-                ? deriveLastProcessedVerificationOriginDate(persistedAfterAdmission)
+              const appendOnlyReusableArtifact = !persistedAfterAdmission
+                && input.maxOriginsPerRun != null
+                && resolvedDependencies.repository.readLatestVerificationRun
+                ? resolveVerificationResumeArtifact({
+                    exactArtifact: null,
+                    latestArtifact: await resolvedDependencies.repository.readLatestVerificationRun(cacheKey),
+                    history: historyResponse.history,
+                    cadence: cadenceContext.cadence ?? undefined,
+                  })
                 : null
+              const resumeArtifact = resolveVerificationResumeArtifact({
+                exactArtifact: persistedAfterAdmission,
+                latestArtifact: appendOnlyReusableArtifact ?? latestReusableArtifact,
+                history: historyResponse.history,
+                cadence: cadenceContext.cadence ?? undefined,
+              })
+              const resumeFromOriginDate = input.lastProcessedOriginDate
+                ?? (resumeArtifact ? deriveLastProcessedVerificationOriginDate(resumeArtifact) : null)
               const verificationResponse = preparedExecutionContext
                 ? await preparedExecutionContext.exportVerification(input.modelId, {
                     historicalOriginStartDate: input.historicalOriginStartDate,
-                    lastProcessedOriginDate: input.lastProcessedOriginDate ?? resumeFromOriginDate,
+                    lastProcessedOriginDate: resumeFromOriginDate,
                     maxOriginsPerRun: input.maxOriginsPerRun,
                   })
                 : await resolvedDependencies.bridge.exportVerification({
                     ...input,
-                    lastProcessedOriginDate: input.lastProcessedOriginDate ?? resumeFromOriginDate,
+                    lastProcessedOriginDate: resumeFromOriginDate,
                   })
               const verificationDurationMs = performance.now() - verificationStartedAt
               const verificationOrigins = verificationResponse.status === 'AVAILABLE'
@@ -4422,7 +4537,7 @@ export function createForecastLibraryService(
                 historyResponse.history,
                 cadenceContext,
               )
-              const mergedArtifact = mergeVerificationArtifacts(persistedAfterAdmission, artifact)
+              const mergedArtifact = mergeVerificationArtifacts(resumeArtifact, artifact)
               const completeArtifact = isVerificationArtifactComplete(mergedArtifact)
               const cacheStatus: BenchmarkForecastVerificationAvailableResult['cacheStatus'] = completeArtifact
                 ? 'miss'

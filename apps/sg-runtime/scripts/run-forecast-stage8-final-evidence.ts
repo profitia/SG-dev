@@ -42,11 +42,16 @@ process.env.SG_RUNTIME_DATABASE_URL = process.env.SG_RUNTIME_DATABASE_URL
 process.env.FORECAST_STRESS_DATABASE_CLONE_ALIAS = process.env.FORECAST_STRESS_DATABASE_CLONE_ALIAS
   ?? 'phase-2-1-local-clone-v1'
 
+function resolveOutputPath(envName: string, fallbackPath: string) {
+  const override = process.env[envName]?.trim()
+  return override && override.length > 0 ? path.resolve(override) : fallbackPath
+}
+
 const ROOT = path.resolve(process.cwd(), '..', '..')
 const WORKSPACE_ROOT = path.resolve(ROOT, '..')
 const VALIDATION_ROOT = path.join(ROOT, 'tooling', 'Benchmark-Forecasting', 'validation')
-const OUTPUT_JSON = path.join(VALIDATION_ROOT, 'ppf1-stage8-bounded-rolling-daily-historical.json')
-const OUTPUT_MD = path.join(VALIDATION_ROOT, 'ppf1-stage8-bounded-rolling-daily-historical.md')
+const OUTPUT_JSON = resolveOutputPath('STAGE8_RESULT_JSON_PATH', path.join(VALIDATION_ROOT, 'ppf1-stage8-bounded-rolling-daily-historical.json'))
+const OUTPUT_MD = resolveOutputPath('STAGE8_RESULT_MD_PATH', path.join(VALIDATION_ROOT, 'ppf1-stage8-bounded-rolling-daily-historical.md'))
 const STAGE7_ACCEPTED_JSON = path.join(VALIDATION_ROOT, 'ppf1-stage7-recent-verification-controlled-activation.json')
 const LOCAL_PYTHON_BIN = path.join(ROOT, 'tooling', 'Benchmark-Forecasting', '.venv', 'bin', 'python')
 const PYTHON_MAINTENANCE_SCRIPT = path.join(ROOT, 'tooling', 'Benchmark-Forecasting', 'scripts', 'export_rolling_daily_incremental_maintenance.py')

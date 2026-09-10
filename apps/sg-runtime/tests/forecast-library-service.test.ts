@@ -3253,6 +3253,346 @@ test('forecast library verification path persists bounded partial progress and r
   assert.equal(second.verification['1M']?.expectedOrigins, 2)
 })
 
+test('forecast library verification path reuses the latest append-only artifact across a new history fingerprint', async () => {
+  const baseHistory = createEndOfPeriodHistoryResponse().history
+  const priorHistory = {
+    ...baseHistory,
+    start: baseHistory.points[0]!.date.slice(0, 10),
+    end: baseHistory.points.at(-1)!.date.slice(0, 10),
+    observations: baseHistory.points.length,
+    points: baseHistory.points.map((point) => ({
+      ...point,
+      date: point.date.slice(0, 10),
+    })),
+  }
+  const appendOnlyHistory = {
+    ...priorHistory,
+    end: '2026-05-01',
+    observations: priorHistory.observations + 1,
+    points: [
+      ...priorHistory.points,
+      {
+        date: '2026-05-01',
+        value: 1138,
+        sourceObservedAt: '2026-05-31T00:00:00.000Z',
+      },
+    ],
+  }
+  const priorHistoryFingerprint = buildForecastHistoryFingerprint(priorHistory, {
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  })
+  const exactHistoryFingerprint = buildForecastHistoryFingerprint(appendOnlyHistory, {
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  })
+  const latestArtifact: Awaited<ReturnType<ForecastLibraryRepository['readVerificationRun']>> = {
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    displayName: 'Brent, Spot, FOB North Sea',
+    description: 'Brent, Spot, FOB North Sea',
+    targetBasis: 'END_OF_PERIOD',
+    targetSemantics: 'END_OF_PERIOD',
+    methodId: 'END_OF_PERIOD',
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: { kind: 'DYNAMIC_MARKET_DATA_STORE', runId: null },
+    historyFingerprint: priorHistoryFingerprint,
+    cadence: { sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' },
+    frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+    statisticalCompatibility: createFullVerificationStatisticalCompatibility({
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'END_OF_PERIOD',
+    }),
+    preparation: null,
+    history: {
+      frequency: 'MONTHLY',
+      start: `${priorHistory.start}T00:00:00.000Z`,
+      end: `${priorHistory.end}T00:00:00.000Z`,
+      observations: priorHistory.observations,
+    },
+    forecastOrigin: '2025-02-01T00:00:00.000Z',
+    runtimeSeconds: 1.2,
+    verification: {
+      '1M': {
+        horizon: '1M',
+        horizonSteps: 1,
+        origins: 2,
+        expectedOrigins: 2,
+        successfulOrigins: 2,
+        failedOrigins: 0,
+        coverage: 1,
+        metrics: {
+          mae: 3.5,
+          rmse: 3.5,
+          mase: 0.4,
+          smape: 0.01,
+          directionalAccuracy: 1,
+          bias: 0.5,
+        },
+        records: [
+          {
+            ...createEndOfPeriodVerificationResponse('ets').result.backtest['1M'].records[0],
+            forecastOrigin: '2025-01-01T00:00:00.000Z',
+            forecastDate: '2025-02-01T00:00:00.000Z',
+            actualObservedAt: '2025-02-28T00:00:00.000Z',
+          },
+          {
+            ...createEndOfPeriodVerificationResponse('ets').result.backtest['1M'].records[0],
+            forecastOrigin: '2025-02-01T00:00:00.000Z',
+            forecastDate: '2025-03-01T00:00:00.000Z',
+            actualObservedAt: '2025-03-31T00:00:00.000Z',
+          },
+        ],
+        failures: [],
+      },
+    },
+  }
+
+  const appendOnlyResponse = createEndOfPeriodVerificationResponse('ets')
+  appendOnlyResponse.result.history = appendOnlyHistory
+  appendOnlyResponse.result.backtest['1M'] = {
+    ...appendOnlyResponse.result.backtest['1M'],
+    origins: 1,
+    expectedOrigins: 3,
+    successfulOrigins: 1,
+    failedOrigins: 0,
+    coverage: 1 / 3,
+    records: [
+      {
+        ...appendOnlyResponse.result.backtest['1M'].records[0],
+        forecastOrigin: '2025-03-01T00:00:00.000Z',
+        forecastDate: '2025-04-01T00:00:00.000Z',
+      },
+    ],
+    failures: [],
+  }
+
+  let readLatestCalls = 0
+  let persistedArtifact: Awaited<ReturnType<ForecastLibraryRepository['readVerificationRun']>> = null
+  const capturedLastProcessedOriginDates: Array<string | null | undefined> = []
+
+  const service = createTestForecastLibraryService({
+    bridge: {
+      async exportHistory() {
+        return {
+          ...createEndOfPeriodHistoryResponse(),
+          history: appendOnlyHistory,
+        }
+      },
+      async exportCurrent() {
+        throw new Error('unused')
+      },
+      async exportVerification(input) {
+        capturedLastProcessedOriginDates.push(input.lastProcessedOriginDate)
+        return appendOnlyResponse
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        throw new Error('unused')
+      },
+      async writeCurrentRun() {
+        throw new Error('unused')
+      },
+      async readVerificationRun(key) {
+        if (key.historyFingerprint === exactHistoryFingerprint) {
+          return persistedArtifact
+        }
+        return null
+      },
+      async readLatestVerificationRun() {
+        readLatestCalls += 1
+        return latestArtifact
+      },
+      async writeVerificationRun(artifact) {
+        persistedArtifact = artifact
+      },
+    },
+    logEvent: () => {},
+  })
+
+  const result = await service.resolveVerificationRequest({
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    maxOriginsPerRun: 1,
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  assert.equal(readLatestCalls >= 1, true)
+  assert.equal(capturedLastProcessedOriginDates[0], '2025-02-01T00:00:00.000Z')
+  assert.equal(persistedArtifact?.historyFingerprint, exactHistoryFingerprint)
+  assert.equal(persistedArtifact?.verification['1M']?.expectedOrigins, 3)
+  assert.equal(persistedArtifact?.verification['1M']?.records.length, 3)
+})
+
+test('forecast library verification path preserves longer-horizon steps across bounded partial merges', async () => {
+  const priorHistory = createEndOfPeriodHistoryResponse().history
+  const priorHistoryFingerprint = buildForecastHistoryFingerprint(priorHistory, {
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  })
+
+  const latestArtifact: Awaited<ReturnType<ForecastLibraryRepository['readVerificationRun']>> = {
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    displayName: 'Brent, Spot, FOB North Sea',
+    description: 'Brent, Spot, FOB North Sea',
+    targetBasis: 'END_OF_PERIOD',
+    targetSemantics: 'END_OF_PERIOD',
+    methodId: 'END_OF_PERIOD',
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: { kind: 'DYNAMIC_MARKET_DATA_STORE', runId: null },
+    historyFingerprint: priorHistoryFingerprint,
+    cadence: { sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' },
+    frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+    statisticalCompatibility: createFullVerificationStatisticalCompatibility({
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'END_OF_PERIOD',
+    }),
+    preparation: null,
+    history: {
+      frequency: 'MONTHLY',
+      start: priorHistory.start,
+      end: priorHistory.end,
+      observations: priorHistory.observations,
+    },
+    forecastOrigin: priorHistory.end,
+    runtimeSeconds: 1.2,
+    verification: {
+      '1M': {
+        ...createEndOfPeriodVerificationResponse('ets').result.backtest['1M'],
+        horizon: '1M',
+        horizonSteps: 1,
+        origins: 2,
+        expectedOrigins: 3,
+        successfulOrigins: 2,
+        failedOrigins: 0,
+        coverage: 2 / 3,
+        records: [
+          {
+            ...createEndOfPeriodVerificationResponse('ets').result.backtest['1M'].records[0],
+            actualObservedAt: '2025-02-28T00:00:00.000Z',
+          },
+          {
+            ...createEndOfPeriodVerificationResponse('ets').result.backtest['1M'].records[0],
+            forecastOrigin: '2025-02-01T00:00:00.000Z',
+            forecastDate: '2025-03-01T00:00:00.000Z',
+            actualObservedAt: '2025-03-31T00:00:00.000Z',
+          },
+        ],
+      },
+      '6M': {
+        horizon: '6M',
+        horizonSteps: 6,
+        origins: 2,
+        expectedOrigins: 3,
+        successfulOrigins: 2,
+        failedOrigins: 0,
+        coverage: 2 / 3,
+        metrics: {
+          mae: 7.5,
+          rmse: 8.2,
+          mase: 0.52,
+          smape: 0.031,
+          directionalAccuracy: 0.5,
+          bias: -0.7,
+        },
+        records: [
+          {
+            ...createEndOfPeriodVerificationResponse('ets').result.backtest['1M'].records[0],
+            horizon: '6M',
+            horizonSteps: 6,
+            forecastDate: '2025-07-01T00:00:00.000Z',
+            actualObservedAt: '2025-07-31T00:00:00.000Z',
+          },
+          {
+            ...createEndOfPeriodVerificationResponse('ets').result.backtest['1M'].records[0],
+            forecastOrigin: '2025-02-01T00:00:00.000Z',
+            horizon: '6M',
+            horizonSteps: 6,
+            forecastDate: '2025-08-01T00:00:00.000Z',
+            actualObservedAt: '2025-08-31T00:00:00.000Z',
+          },
+        ],
+        failures: [],
+      },
+    },
+  }
+
+  const partialResponse = createEndOfPeriodVerificationResponse('ets')
+  partialResponse.result.backtest['1M'] = {
+    ...partialResponse.result.backtest['1M'],
+    origins: 1,
+    expectedOrigins: 3,
+    successfulOrigins: 1,
+    failedOrigins: 0,
+    coverage: 1 / 3,
+    records: [partialResponse.result.backtest['1M'].records[0]],
+    failures: [],
+  }
+  partialResponse.result.backtest['6M'] = {
+    origins: 0,
+    expectedOrigins: 3,
+    successfulOrigins: 0,
+    failedOrigins: 0,
+    coverage: 0,
+    metrics: null,
+    records: [],
+    failures: [],
+  }
+
+  let persistedArtifact: Awaited<ReturnType<ForecastLibraryRepository['readVerificationRun']>> = null
+
+  const service = createTestForecastLibraryService({
+    bridge: {
+      async exportHistory() {
+        return createEndOfPeriodHistoryResponse()
+      },
+      async exportCurrent() {
+        throw new Error('unused')
+      },
+      async exportVerification() {
+        return partialResponse
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        throw new Error('unused')
+      },
+      async writeCurrentRun() {
+        throw new Error('unused')
+      },
+      async readVerificationRun() {
+        return latestArtifact
+      },
+      async readLatestVerificationRun() {
+        return latestArtifact
+      },
+      async writeVerificationRun(artifact) {
+        persistedArtifact = artifact
+      },
+    },
+    logEvent: () => {},
+  })
+
+  const result = await service.resolveVerificationRequest({
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    maxOriginsPerRun: 1,
+  })
+
+  assert.equal(result.status, 'NOT_AVAILABLE')
+  assert.equal(persistedArtifact?.verification['6M']?.horizonSteps, 6)
+})
+
 test('forecast library verification path backfills END_OF_PERIOD actualObservedAt for date-only target periods', async () => {
   let persistedActualObservedAt: string | null = null
 
