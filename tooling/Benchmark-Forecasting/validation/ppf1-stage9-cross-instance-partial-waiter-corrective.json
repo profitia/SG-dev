@@ -1,0 +1,91 @@
+{
+  "previousStage9EvidenceHead": "e9da64857c2c97994e9411d6318ed3e207e7f034",
+  "previousStage9SourceCandidate": "2eaedb79beeadb05b163e49791f1adb098b5e292",
+  "correctiveSourceSha": "8a6e738f2de122ba7af74b1c3b348ecb15ea0bca",
+  "evidenceWorktreeHead": "8a6e738f2de122ba7af74b1c3b348ecb15ea0bca",
+  "cleanWorktreeRequired": true,
+  "isolatedPostgresRequired": true,
+  "databaseIdentity": {
+    "host": "127.0.0.1",
+    "port": 55421,
+    "database": "sg_phase_2_1_market_data",
+    "cloneAlias": "phase-2-1-local-clone-v1"
+  },
+  "scope": {
+    "correctiveSurface": "cross-instance partial verification waiter availability",
+    "owner": "apps/sg-runtime",
+    "methodologyChanged": false,
+    "stage10BehaviorTouched": false
+  },
+  "validationBasis": {
+    "stage7Evidence": {
+      "command": "STAGE7_RESULT_JSON_PATH=/tmp/ppf1-stage9-corrective-stage7.json STAGE7_RESULT_MD_PATH=/tmp/ppf1-stage9-corrective-stage7.md npm run forecast:profile:stage7-evidence",
+      "result": "PASS",
+      "gitHead": "8a6e738f2de122ba7af74b1c3b348ecb15ea0bca",
+      "profileCount": 32,
+      "finalGate": "PASS"
+    },
+    "detachedCorrectiveSuites": {
+      "command": "PRISMA_QUERY_ENGINE_LIBRARY=/private/tmp/.tmp-ppf1-stage9-bounded-non-daily-historical-20260909/apps/sg-runtime/generated/market-data-client/libquery_engine-darwin-arm64.dylib.node node --import ./node_modules/tsx/dist/loader.mjs --test tests/forecast-library-service.test.ts tests/forecast-stage3-cross-instance.test.ts tests/forecast-stage9-final-evidence.test.ts",
+      "tests": 92,
+      "pass": 92,
+      "fail": 0,
+      "result": "PASS"
+    },
+    "stage8ScopedRollingDailySuite": {
+      "command": "PRISMA_QUERY_ENGINE_LIBRARY=/private/tmp/.tmp-ppf1-stage9-bounded-non-daily-historical-20260909/apps/sg-runtime/generated/market-data-client/libquery_engine-darwin-arm64.dylib.node node --import ./node_modules/tsx/dist/loader.mjs --test tests/rolling-daily-current-forecast-snapshot.test.ts tests/rolling-daily-current-ownership.test.ts tests/rolling-daily-historical-admission.test.ts tests/rolling-daily-maintenance.test.ts tests/rolling-daily-production-operations.test.ts tests/rolling-daily-verification.test.ts tests/forecast-fast-ready-profiler.test.ts",
+      "tests": 49,
+      "pass": 49,
+      "fail": 0,
+      "result": "PASS",
+      "scopeNote": "ETAP 10 production-forecast contract test excluded because the corrective does not touch Stage 10 behavior."
+    },
+    "stage9Harness": {
+      "command": "node --import ./node_modules/tsx/dist/loader.mjs --test tests/forecast-stage9-final-evidence.test.ts",
+      "tests": 6,
+      "pass": 6,
+      "fail": 0,
+      "result": "PASS"
+    }
+  },
+  "gates": {
+    "CORRECTIVE_FINDING_CONFIRMED": "YES",
+    "CROSS_INSTANCE_PARTIAL_WAITER_GATE": "PASS",
+    "PARTIAL_ARTIFACT_NEVER_AVAILABLE_GATE": "PASS",
+    "CROSS_INSTANCE_SINGLE_COMPUTE_GATE": "PASS",
+    "CROSS_INSTANCE_DUPLICATE_COMPUTE_COUNT": 0,
+    "CROSS_INSTANCE_DUPLICATE_RECORD_COUNT": 0,
+    "BOUNDED_RESUME_PRESERVED": "PASS",
+    "NO_RECOMPUTE_COMPLETED_ORIGINS": "PASS",
+    "COMPLETE_ARTIFACT_AVAILABLE_GATE": "PASS",
+    "WARM_COMPLETE_REUSE_GATE": "PASS",
+    "EXACT_IDENTITY_GATE": "PASS",
+    "SOURCE_REVISION_FAIL_CLOSED": "PASS",
+    "STAGE7_NON_REGRESSION_GATE": "PASS",
+    "STAGE8_NON_REGRESSION_GATE": "PASS",
+    "ORIGINAL_STAGE9_NON_REGRESSION_GATE": "PASS",
+    "METHODOLOGY_UNCHANGED": "PASS",
+    "STAGE10_BEHAVIOR_TOUCHED": "NO",
+    "STAGE9_CROSS_INSTANCE_PARTIAL_WAITER_CORRECTIVE": "PASS",
+    "STAGE9_COMPLETION": "PASS",
+    "READY_FOR_STAGE10": "YES"
+  },
+  "proofPoints": {
+    "waiterVisiblePartialArtifact": "NOT_AVAILABLE",
+    "ownerVisiblePartialArtifact": "NOT_AVAILABLE",
+    "completeArtifactServing": "AVAILABLE",
+    "warmCompleteReuse": "AVAILABLE",
+    "boundedResume": "preserved",
+    "singleAuthoritativeCompute": 1,
+    "singleVerificationArtifact": 1,
+    "singleExecutionRow": 1,
+    "executionResultStatus": "NOT_AVAILABLE",
+    "executionCacheStatus": "partial"
+  },
+  "finalDecision": {
+    "status": "PASS",
+    "summary": "The corrective source SHA fail-closes cross-instance partial verification waiters, preserves bounded resume and complete-artifact availability semantics, introduces no methodology change, and is ready for Stage 10 planning.",
+    "remoteSourceBound": true
+  },
+  "generatedAt": "2026-09-10T20:40:16.000Z"
+}
