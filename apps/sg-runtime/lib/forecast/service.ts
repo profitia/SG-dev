@@ -4252,7 +4252,11 @@ export function createForecastLibraryService(
               while (Date.now() <= waitDeadline) {
                 throwIfAborted(input.signal)
                 const persisted = await resolvedDependencies.repository.readVerificationRun(cacheKey)
-                if (persisted) {
+                if (
+                  persisted
+                  && !verificationArtifactNeedsRebuild(persisted)
+                  && isVerificationArtifactComplete(persisted)
+                ) {
                   resolvedDependencies.logEvent('FORECAST_LIBRARY_VERIFICATION', {
                     seriesId: input.seriesId,
                     modelId: input.modelId,
@@ -4261,6 +4265,24 @@ export function createForecastLibraryService(
                     dbFailure: false,
                   })
                   return toVerificationAvailable(persisted, 'hit')
+                }
+                if (persisted && !verificationArtifactNeedsRebuild(persisted)) {
+                  resolvedDependencies.logEvent('FORECAST_LIBRARY_VERIFICATION', {
+                    seriesId: input.seriesId,
+                    modelId: input.modelId,
+                    cacheStatus: PARTIAL_VERIFICATION_CACHE_STATUS,
+                    totalMs: Math.round(performance.now() - startedAt),
+                    dbFailure: false,
+                  })
+                  return {
+                    status: 'NOT_AVAILABLE',
+                    seriesId: input.seriesId,
+                    modelId: input.modelId,
+                    targetBasis: input.targetBasis,
+                    targetSemantics: methodIdentity.targetSemantics,
+                    methodId: methodIdentity.methodId,
+                    reason: PARTIAL_VERIFICATION_REASON,
+                  }
                 }
 
                 const latestExecution = await resolvedDependencies.executionAdmission.readLatestExecutionForLogicalArtifact(logicalArtifactKey)
@@ -4283,7 +4305,11 @@ export function createForecastLibraryService(
                 }
                 if (latestExecution.executionStatus === 'COMPLETED') {
                   const persistedAfterCompletion = await resolvedDependencies.repository.readVerificationRun(cacheKey)
-                  if (persistedAfterCompletion) {
+                  if (
+                    persistedAfterCompletion
+                    && !verificationArtifactNeedsRebuild(persistedAfterCompletion)
+                    && isVerificationArtifactComplete(persistedAfterCompletion)
+                  ) {
                     resolvedDependencies.logEvent('FORECAST_LIBRARY_VERIFICATION', {
                       seriesId: input.seriesId,
                       modelId: input.modelId,
@@ -4292,6 +4318,27 @@ export function createForecastLibraryService(
                       dbFailure: false,
                     })
                     return toVerificationAvailable(persistedAfterCompletion, 'hit')
+                  }
+                  if (
+                    persistedAfterCompletion
+                    && !verificationArtifactNeedsRebuild(persistedAfterCompletion)
+                  ) {
+                    resolvedDependencies.logEvent('FORECAST_LIBRARY_VERIFICATION', {
+                      seriesId: input.seriesId,
+                      modelId: input.modelId,
+                      cacheStatus: PARTIAL_VERIFICATION_CACHE_STATUS,
+                      totalMs: Math.round(performance.now() - startedAt),
+                      dbFailure: false,
+                    })
+                    return {
+                      status: 'NOT_AVAILABLE',
+                      seriesId: input.seriesId,
+                      modelId: input.modelId,
+                      targetBasis: input.targetBasis,
+                      targetSemantics: methodIdentity.targetSemantics,
+                      methodId: methodIdentity.methodId,
+                      reason: PARTIAL_VERIFICATION_REASON,
+                    }
                   }
                   throw new Error(`Verification execution completed without a canonical artifact for ${logicalArtifactKey}.`)
                 }
@@ -4782,19 +4829,29 @@ export function createForecastLibraryService(
       try {
         const persisted = await resolvedDependencies.repository.readVerificationRun(cacheKey)
         if (persisted && !verificationArtifactNeedsRebuild(persisted)) {
-          resolvedDependencies.telemetry.emit('prepared_read', {
-            kind: 'verification',
-            hit: true,
-            durationMs: performance.now() - startedAt,
-          })
+          if (isVerificationArtifactComplete(persisted)) {
+            resolvedDependencies.telemetry.emit('prepared_read', {
+              kind: 'verification',
+              hit: true,
+              durationMs: performance.now() - startedAt,
+            })
+            resolvedDependencies.logEvent('FORECAST_LIBRARY_RECENT_VERIFICATION', {
+              seriesId: input.seriesId,
+              modelId: input.modelId,
+              cacheStatus: 'hit',
+              totalMs: Math.round(performance.now() - startedAt),
+              dbFailure: false,
+            })
+            return toVerificationAvailable(persisted, 'hit')
+          }
+
           resolvedDependencies.logEvent('FORECAST_LIBRARY_RECENT_VERIFICATION', {
             seriesId: input.seriesId,
             modelId: input.modelId,
-            cacheStatus: 'hit',
+            cacheStatus: PARTIAL_VERIFICATION_CACHE_STATUS,
             totalMs: Math.round(performance.now() - startedAt),
             dbFailure: false,
           })
-          return toVerificationAvailable(persisted, 'hit')
         }
       } catch (error) {
         dbReadFailed = true
@@ -4926,7 +4983,11 @@ export function createForecastLibraryService(
               while (Date.now() <= waitDeadline) {
                 throwIfAborted(input.signal)
                 const persisted = await resolvedDependencies.repository.readVerificationRun(cacheKey)
-                if (persisted) {
+                if (
+                  persisted
+                  && !verificationArtifactNeedsRebuild(persisted)
+                  && isVerificationArtifactComplete(persisted)
+                ) {
                   resolvedDependencies.logEvent('FORECAST_LIBRARY_RECENT_VERIFICATION', {
                     seriesId: input.seriesId,
                     modelId: input.modelId,
@@ -4935,6 +4996,24 @@ export function createForecastLibraryService(
                     dbFailure: false,
                   })
                   return toVerificationAvailable(persisted, 'hit')
+                }
+                if (persisted && !verificationArtifactNeedsRebuild(persisted)) {
+                  resolvedDependencies.logEvent('FORECAST_LIBRARY_RECENT_VERIFICATION', {
+                    seriesId: input.seriesId,
+                    modelId: input.modelId,
+                    cacheStatus: PARTIAL_VERIFICATION_CACHE_STATUS,
+                    totalMs: Math.round(performance.now() - startedAt),
+                    dbFailure: false,
+                  })
+                  return {
+                    status: 'NOT_AVAILABLE',
+                    seriesId: input.seriesId,
+                    modelId: input.modelId,
+                    targetBasis: input.targetBasis,
+                    targetSemantics: methodIdentity.targetSemantics,
+                    methodId: methodIdentity.methodId,
+                    reason: PARTIAL_VERIFICATION_REASON,
+                  }
                 }
 
                 const latestExecution = await resolvedDependencies.executionAdmission.readLatestExecutionForLogicalArtifact(logicalArtifactKey)
@@ -4957,7 +5036,11 @@ export function createForecastLibraryService(
                 }
                 if (latestExecution.executionStatus === 'COMPLETED') {
                   const persistedAfterCompletion = await resolvedDependencies.repository.readVerificationRun(cacheKey)
-                  if (persistedAfterCompletion) {
+                  if (
+                    persistedAfterCompletion
+                    && !verificationArtifactNeedsRebuild(persistedAfterCompletion)
+                    && isVerificationArtifactComplete(persistedAfterCompletion)
+                  ) {
                     resolvedDependencies.logEvent('FORECAST_LIBRARY_RECENT_VERIFICATION', {
                       seriesId: input.seriesId,
                       modelId: input.modelId,
@@ -4966,6 +5049,27 @@ export function createForecastLibraryService(
                       dbFailure: false,
                     })
                     return toVerificationAvailable(persistedAfterCompletion, 'hit')
+                  }
+                  if (
+                    persistedAfterCompletion
+                    && !verificationArtifactNeedsRebuild(persistedAfterCompletion)
+                  ) {
+                    resolvedDependencies.logEvent('FORECAST_LIBRARY_RECENT_VERIFICATION', {
+                      seriesId: input.seriesId,
+                      modelId: input.modelId,
+                      cacheStatus: PARTIAL_VERIFICATION_CACHE_STATUS,
+                      totalMs: Math.round(performance.now() - startedAt),
+                      dbFailure: false,
+                    })
+                    return {
+                      status: 'NOT_AVAILABLE',
+                      seriesId: input.seriesId,
+                      modelId: input.modelId,
+                      targetBasis: input.targetBasis,
+                      targetSemantics: methodIdentity.targetSemantics,
+                      methodId: methodIdentity.methodId,
+                      reason: PARTIAL_VERIFICATION_REASON,
+                    }
                   }
                   throw new Error(`Recent Verification execution completed without a canonical artifact for ${logicalArtifactKey}.`)
                 }
@@ -4991,7 +5095,11 @@ export function createForecastLibraryService(
 
             try {
               const persistedAfterAdmission = await resolvedDependencies.repository.readVerificationRun(cacheKey)
-              if (persistedAfterAdmission && !verificationArtifactNeedsRebuild(persistedAfterAdmission)) {
+              if (
+                persistedAfterAdmission
+                && !verificationArtifactNeedsRebuild(persistedAfterAdmission)
+                && isVerificationArtifactComplete(persistedAfterAdmission)
+              ) {
                 await resolvedDependencies.executionAdmission.markExecutionCompleted({
                   executionId: ownership.executionId,
                   logicalArtifactKey,

@@ -1,11 +1,25 @@
 process.env.MARKET_DATA_DATABASE_URL = process.env.MARKET_DATA_DATABASE_URL ?? 'postgresql://phase21@127.0.0.1:55421/sg_phase_2_1_market_data'
 
+import { existsSync } from 'node:fs'
 import { appendFile } from 'node:fs/promises'
 
-import { createForecastLibraryService } from '../../lib/forecast/service'
+import {
+  createForecastLibraryService,
+  readCurrentRunFromPrisma,
+  readVerificationRunFromPrisma,
+  writeCurrentRunWithPrisma,
+  writeVerificationRunWithPrisma,
+} from '../../lib/forecast/service'
 
 type Stage3Mode = 'current' | 'verification'
 type Stage3ResultMode = 'AVAILABLE' | 'FAILED'
+type Stage3VerificationPartialMode = 'NONE' | 'BOUNDED_ONCE'
+
+async function waitForFile(filePath: string) {
+  while (!existsSync(filePath)) {
+    await new Promise((resolve) => setTimeout(resolve, 25))
+  }
+}
 
 function createHistoryResponse(seriesId: string) {
   return {
@@ -180,6 +194,26 @@ function createVerificationResponse(seriesId: string, modelId: string) {
   }
 }
 
+function createPartialVerificationResponse(seriesId: string, modelId: string) {
+  const response = createVerificationResponse(seriesId, modelId)
+  response.result.backtest['1M'] = {
+    ...response.result.backtest['1M'],
+    origins: 1,
+    expectedOrigins: 2,
+    successfulOrigins: 1,
+    coverage: 0.5,
+    records: [
+      {
+        ...response.result.backtest['1M'].records[0],
+        forecastOrigin: '2025-01-01T00:00:00.000Z',
+        forecastDate: '2025-02-01T00:00:00.000Z',
+      },
+    ],
+  }
+
+  return response
+}
+
 async function main() {
   const mode = (process.env.STAGE3_MODE ?? 'current') as Stage3Mode
   const resultMode = (process.env.STAGE3_RESULT_MODE ?? 'AVAILABLE') as Stage3ResultMode
@@ -188,6 +222,11 @@ async function main() {
   const targetBasis = (process.env.STAGE3_TARGET_BASIS ?? 'MONTHLY_AVERAGE') as 'MONTHLY_AVERAGE' | 'END_OF_PERIOD'
   const computeLogPath = process.env.STAGE3_COMPUTE_LOG_PATH
   const computeDelayMs = Number.parseInt(process.env.STAGE3_COMPUTE_DELAY_MS ?? '200', 10)
+  const verificationPartialMode = (process.env.STAGE3_VERIFICATION_PARTIAL_MODE ?? 'NONE') as Stage3VerificationPartialMode
+  const maxOriginsPerRunRaw = process.env.STAGE3_MAX_ORIGINS_PER_RUN?.trim()
+  const maxOriginsPerRun = maxOriginsPerRunRaw ? Number.parseInt(maxOriginsPerRunRaw, 10) : undefined
+  const verificationPersistenceSignalFile = process.env.STAGE3_VERIFICATION_PERSISTENCE_SIGNAL_FILE?.trim()
+  const verificationPersistenceReleaseFile = process.env.STAGE3_VERIFICATION_PERSISTENCE_RELEASE_FILE?.trim()
 
   const service = createForecastLibraryService({
     bridge: {
@@ -232,7 +271,21 @@ async function main() {
             },
           }
         }
-        return createVerificationResponse(seriesId, modelId)
+        return verificationPartialMode === 'BOUNDED_ONCE'
+          ? createPartialVerificationResponse(seriesId, modelId)
+          : createVerificationResponse(seriesId, modelId)
+      },
+    },
+    repository: {
+      readCurrentRun: readCurrentRunFromPrisma,
+      writeCurrentRun: writeCurrentRunWithPrisma,
+      readVerificationRun: readVerificationRunFromPrisma,
+      async writeVerificationRun(artifact, options) {
+        await writeVerificationRunWithPrisma(artifact, options)
+        if (verificationPersistenceSignalFile && verificationPersistenceReleaseFile) {
+          await appendFile(verificationPersistenceSignalFile, 'persisted\n')
+          await waitForFile(verificationPersistenceReleaseFile)
+        }
       },
     },
     logEvent: () => {},
@@ -242,7 +295,7 @@ async function main() {
   })
 
   const result = mode === 'verification'
-    ? await service.resolveVerificationRequest({ seriesId, modelId, targetBasis })
+    ? await service.resolveVerificationRequest({ seriesId, modelId, targetBasis, ...(maxOriginsPerRun ? { maxOriginsPerRun } : {}) })
     : await service.resolveCurrentForecastRequest({ seriesId, modelId, targetBasis })
 
   process.stdout.write(`${JSON.stringify(result)}\n`)

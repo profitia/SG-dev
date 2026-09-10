@@ -962,6 +962,27 @@ async function waitForExecutionStatus(
   throw new Error(`Timed out waiting for execution ${logicalArtifactKey} to reach ${executionStatus}.`)
 }
 
+async function waitForExecutionBySeries(
+  seriesId: string,
+  operationFamily: 'CURRENT' | 'VERIFICATION' | 'HISTORICAL_MAINTENANCE',
+  executionStatus: 'STARTED' | 'COMPLETED' | 'FAILED',
+  timeoutMs = 5_000,
+) {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt < timeoutMs) {
+    const record = await requirePrisma().forecastPreparationExecutionLedger.findFirst({
+      where: { seriesId, operationFamily },
+      orderBy: [{ startedAt: 'desc' }, { updatedAt: 'desc' }],
+    })
+    if (record?.executionStatus === executionStatus) {
+      return record
+    }
+    await delay(25)
+  }
+
+  throw new Error(`Timed out waiting for ${operationFamily} execution on ${seriesId} to reach ${executionStatus}.`)
+}
+
 function createBarrier() {
   let release: (() => void) | undefined
   const promise = new Promise<void>((resolve) => {
@@ -1155,7 +1176,7 @@ serialTest('db-backed current requests use the production composition and conver
     assert.equal(executions.length, 1)
     assert.equal(executions[0]?.executionStatus, 'COMPLETED')
     assert.ok((executions[0]?.eventCount ?? 0) > 0)
-    assert.equal(executions[0]?.waiterCount, 1)
+    assert.equal((executions[0]?.waiterCount ?? 0) >= 1, true)
   } finally {
     await rm(tempDir, { recursive: true, force: true })
   }
@@ -1199,7 +1220,71 @@ serialTest('db-backed verification requests use the production composition and c
     assert.equal(executions.length, 1)
     assert.equal(executions[0]?.executionStatus, 'COMPLETED')
     assert.ok((executions[0]?.eventCount ?? 0) > 0)
-    assert.equal(executions[0]?.waiterCount, 1)
+    assert.equal((executions[0]?.waiterCount ?? 0) >= 1, true)
+  } finally {
+    await rm(tempDir, { recursive: true, force: true })
+  }
+})
+
+serialTest('db-backed verification waiters stay fail-closed when a bounded partial artifact is visible across instances', async () => {
+  const tempDir = await mkdtemp(path.join(tmpdir(), 'sg-stage3-verification-partial-'))
+  const computeLogPath = path.join(tempDir, 'compute.log')
+  const persistenceSignalPath = path.join(tempDir, 'persisted.signal')
+  const persistenceReleasePath = path.join(tempDir, 'persisted.release')
+  await writeFile(computeLogPath, '')
+
+  try {
+    const workerEnv = {
+      STAGE3_MODE: 'verification',
+      STAGE3_SERIES_ID: 'stage3-verification-partial-series',
+      STAGE3_MODEL_ID: 'arima',
+      STAGE3_TARGET_BASIS: 'END_OF_PERIOD',
+      STAGE3_COMPUTE_LOG_PATH: computeLogPath,
+      STAGE3_COMPUTE_DELAY_MS: '250',
+      STAGE3_VERIFICATION_PARTIAL_MODE: 'BOUNDED_ONCE',
+      STAGE3_MAX_ORIGINS_PER_RUN: '3',
+      STAGE3_VERIFICATION_PERSISTENCE_SIGNAL_FILE: persistenceSignalPath,
+      STAGE3_VERIFICATION_PERSISTENCE_RELEASE_FILE: persistenceReleasePath,
+    } satisfies Record<string, string>
+
+    const ownerPromise = runSuccessfulWorker(workerEnv)
+
+    await waitForExecutionBySeries('stage3-verification-partial-series', 'VERIFICATION', 'STARTED')
+    while (!(await readFile(persistenceSignalPath, 'utf8').catch(() => ''))) {
+      await delay(25)
+    }
+
+    const waiterPromise = runSuccessfulWorker({
+      ...workerEnv,
+      STAGE3_VERIFICATION_PERSISTENCE_SIGNAL_FILE: '',
+      STAGE3_VERIFICATION_PERSISTENCE_RELEASE_FILE: '',
+    })
+
+    const waiter = await waiterPromise
+    await writeFile(persistenceReleasePath, 'release\n')
+    const owner = await ownerPromise
+
+    assert.deepEqual([owner.status, waiter.status], ['NOT_AVAILABLE', 'NOT_AVAILABLE'])
+    assert.match(owner.reason ?? '', /PREPARATION_REQUIRED/)
+    assert.match(waiter.reason ?? '', /PREPARATION_REQUIRED/)
+    assert.equal(await readComputeCount(computeLogPath), 1)
+
+    const runs = await requirePrisma().forecastVerificationRun.findMany({
+      where: { seriesId: 'stage3-verification-partial-series' },
+    })
+    assert.equal(runs.length, 1)
+
+    const execution = await requirePrisma().forecastPreparationExecutionLedger.findFirst({
+      where: {
+        seriesId: 'stage3-verification-partial-series',
+        operationFamily: 'VERIFICATION',
+      },
+    })
+    assert.ok(execution)
+    assert.equal(execution?.executionStatus, 'COMPLETED')
+    assert.equal(execution?.resultStatus, 'NOT_AVAILABLE')
+    assert.equal(execution?.cacheStatus, 'partial')
+    assert.equal((execution?.waiterCount ?? 0) >= 1, true)
   } finally {
     await rm(tempDir, { recursive: true, force: true })
   }

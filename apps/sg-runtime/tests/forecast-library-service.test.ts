@@ -3253,6 +3253,109 @@ test('forecast library verification path persists bounded partial progress and r
   assert.equal(second.verification['1M']?.expectedOrigins, 2)
 })
 
+test('forecast library verification waiter stays fail-closed when a bounded partial artifact is visible before completion', async () => {
+  const historyResponse = createEndOfPeriodHistoryResponse()
+  const partialArtifact = {
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    displayName: 'Brent, Spot, FOB North Sea',
+    description: 'Brent, Spot, FOB North Sea',
+    targetBasis: 'END_OF_PERIOD' as const,
+    targetSemantics: 'END_OF_PERIOD' as const,
+    methodId: 'END_OF_PERIOD' as const,
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: { kind: 'DYNAMIC_MARKET_DATA_STORE' as const, runId: null },
+    historyFingerprint: buildForecastHistoryFingerprint(historyResponse.history, {
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+    }),
+    cadence: { sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' } as const,
+    frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+    statisticalCompatibility: createFullVerificationStatisticalCompatibility({
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'END_OF_PERIOD',
+    }),
+    preparation: null,
+    history: {
+      frequency: 'MONTHLY',
+      start: '2021-01-01',
+      end: '2026-04-01',
+      observations: 64,
+    },
+    forecastOrigin: '2026-04-01',
+    runtimeSeconds: 0.1,
+    verification: {
+      '1M': {
+        ...createPersistedVerificationPayload('ets')['1M'],
+        origins: 1,
+        expectedOrigins: 2,
+        successfulOrigins: 1,
+        coverage: 0.5,
+      },
+    },
+  }
+
+  const executionAdmission = createInMemoryForecastPreparationExecutionAdmission()
+  executionAdmission.acquireExecution = async () => ({
+    role: 'WAITER' as const,
+    executionId: 'verification-partial-waiter-execution',
+    ownerRequestId: 'verification-partial-waiter-owner',
+    ownerToken: 'verification-partial-waiter-token',
+    leaseVersion: 1,
+    leaseExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+    recoveredFromExecutionId: null,
+  })
+  executionAdmission.readLatestExecutionForLogicalArtifact = async () => ({
+    executionStatus: 'STARTED',
+    leaseExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+  } as never)
+
+  let readCount = 0
+  const service = createTestForecastLibraryService({
+    executionAdmission,
+    bridge: {
+      async exportHistory() {
+        return historyResponse
+      },
+      async exportCurrent() {
+        throw new Error('unused')
+      },
+      async exportVerification() {
+        throw new Error('Verification waiter must not start compute while an owner is active.')
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        throw new Error('unused')
+      },
+      async writeCurrentRun() {
+        throw new Error('unused')
+      },
+      async readVerificationRun() {
+        readCount += 1
+        return readCount === 1 ? null : partialArtifact
+      },
+      async writeVerificationRun() {
+        throw new Error('unused')
+      },
+    },
+    logEvent: () => {},
+  })
+
+  const result = await service.resolveVerificationRequest({
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+    maxOriginsPerRun: 1,
+  })
+
+  assert.equal(result.status, 'NOT_AVAILABLE')
+  if (result.status !== 'NOT_AVAILABLE') return
+  assert.match(result.reason, /PREPARATION_REQUIRED: Exact-identity prepared Historical Verification is still being built in bounded batches\./)
+  assert.equal(readCount >= 2, true)
+})
+
 test('forecast library verification path reuses the latest append-only artifact across a new history fingerprint', async () => {
   const baseHistory = createEndOfPeriodHistoryResponse().history
   const priorHistory = {
