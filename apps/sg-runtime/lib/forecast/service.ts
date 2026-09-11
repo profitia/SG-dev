@@ -533,6 +533,233 @@ async function hasForecastRunTrainingPolicyColumns(
   return Number(result[0]?.columnCount ?? 0) === 2
 }
 
+type LegacyForecastRunIdentity = {
+  seriesId: string
+  inputSource: string
+  historyFingerprint: string
+  targetBasis: ForecastTargetBasis
+  methodId: string
+  modelId: string
+  methodVersion: string
+  frequency: string
+}
+
+async function findLegacyCurrentRunId(
+  tx: Prisma.TransactionClient,
+  identity: LegacyForecastRunIdentity,
+) {
+  const rows = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT "id"
+    FROM "forecast_current_runs"
+    WHERE "seriesId" = ${identity.seriesId}
+      AND "inputSource" = ${identity.inputSource}
+      AND "historyFingerprint" = ${identity.historyFingerprint}
+      AND "targetBasis" = CAST(${identity.targetBasis} AS "ForecastTargetBasis")
+      AND "methodId" = ${identity.methodId}
+      AND "modelId" = ${identity.modelId}
+      AND "methodVersion" = ${identity.methodVersion}
+      AND "frequency" = ${identity.frequency}
+    ORDER BY "updatedAt" DESC
+    LIMIT 1
+  `)
+
+  return rows[0]?.id ?? null
+}
+
+async function updateLegacyCurrentRun(
+  tx: Prisma.TransactionClient,
+  runId: string,
+  artifact: PersistedCurrentArtifact,
+) {
+  const rows = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    UPDATE "forecast_current_runs"
+    SET "displayName" = ${artifact.displayName},
+        "description" = ${artifact.description},
+        "frequency" = ${artifact.frequencyIdentity},
+        "inputRunId" = ${artifact.source.runId},
+        "historyStartAt" = ${artifact.history.start ? new Date(artifact.history.start) : null},
+        "historyEndAt" = ${artifact.history.end ? new Date(artifact.history.end) : null},
+        "observationCount" = ${artifact.history.observations},
+        "targetBasis" = CAST(${artifact.targetBasis} AS "ForecastTargetBasis"),
+        "methodId" = ${artifact.methodId},
+        "forecastOriginAt" = ${artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null},
+        "status" = 'AVAILABLE',
+        "failureReason" = NULL,
+        "runtimeSeconds" = ${artifact.runtimeSeconds},
+        "updatedAt" = NOW()
+    WHERE "id" = ${runId}
+    RETURNING "id"
+  `)
+
+  return rows[0]
+}
+
+async function createLegacyCurrentRun(
+  tx: Prisma.TransactionClient,
+  artifact: PersistedCurrentArtifact,
+) {
+  const rows = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    INSERT INTO "forecast_current_runs" (
+      "id",
+      "seriesId",
+      "displayName",
+      "description",
+      "frequency",
+      "currency",
+      "unit",
+      "sourceLabel",
+      "inputSource",
+      "inputRunId",
+      "historyFingerprint",
+      "targetBasis",
+      "methodId",
+      "historyStartAt",
+      "historyEndAt",
+      "observationCount",
+      "forecastOriginAt",
+      "modelId",
+      "methodVersion",
+      "status",
+      "failureReason",
+      "runtimeSeconds"
+    ) VALUES (
+      gen_random_uuid()::text,
+      ${artifact.seriesId},
+      ${artifact.displayName},
+      ${artifact.description},
+      ${artifact.frequencyIdentity},
+      NULL,
+      NULL,
+      NULL,
+      ${artifact.source.kind},
+      ${artifact.source.runId},
+      ${artifact.historyFingerprint},
+      CAST(${artifact.targetBasis} AS "ForecastTargetBasis"),
+      ${artifact.methodId},
+      ${artifact.history.start ? new Date(artifact.history.start) : null},
+      ${artifact.history.end ? new Date(artifact.history.end) : null},
+      ${artifact.history.observations},
+      ${artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null},
+      ${artifact.modelId},
+      ${artifact.methodVersion},
+      'AVAILABLE',
+      NULL,
+      ${artifact.runtimeSeconds}
+    )
+    RETURNING "id"
+  `)
+
+  return rows[0]
+}
+
+async function findLegacyVerificationRunId(
+  tx: Prisma.TransactionClient,
+  identity: LegacyForecastRunIdentity,
+) {
+  const rows = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT "id"
+    FROM "forecast_verification_runs"
+    WHERE "seriesId" = ${identity.seriesId}
+      AND "inputSource" = ${identity.inputSource}
+      AND "historyFingerprint" = ${identity.historyFingerprint}
+      AND "targetBasis" = CAST(${identity.targetBasis} AS "ForecastTargetBasis")
+      AND "methodId" = ${identity.methodId}
+      AND "modelId" = ${identity.modelId}
+      AND "methodVersion" = ${identity.methodVersion}
+      AND "frequency" = ${identity.frequency}
+    ORDER BY "updatedAt" DESC
+    LIMIT 1
+  `)
+
+  return rows[0]?.id ?? null
+}
+
+async function updateLegacyVerificationRun(
+  tx: Prisma.TransactionClient,
+  runId: string,
+  artifact: PersistedVerificationArtifact,
+) {
+  const rows = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    UPDATE "forecast_verification_runs"
+    SET "displayName" = ${artifact.displayName},
+        "description" = ${artifact.description},
+        "frequency" = ${artifact.frequencyIdentity},
+        "inputRunId" = ${artifact.source.runId},
+        "historyStartAt" = ${artifact.history.start ? new Date(artifact.history.start) : null},
+        "historyEndAt" = ${artifact.history.end ? new Date(artifact.history.end) : null},
+        "observationCount" = ${artifact.history.observations},
+        "targetBasis" = CAST(${artifact.targetBasis} AS "ForecastTargetBasis"),
+        "methodId" = ${artifact.methodId},
+        "forecastOriginAt" = ${artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null},
+        "status" = 'AVAILABLE',
+        "failureReason" = NULL,
+        "runtimeSeconds" = ${artifact.runtimeSeconds},
+        "updatedAt" = NOW()
+    WHERE "id" = ${runId}
+    RETURNING "id"
+  `)
+
+  return rows[0]
+}
+
+async function createLegacyVerificationRun(
+  tx: Prisma.TransactionClient,
+  artifact: PersistedVerificationArtifact,
+) {
+  const rows = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    INSERT INTO "forecast_verification_runs" (
+      "id",
+      "seriesId",
+      "displayName",
+      "description",
+      "frequency",
+      "currency",
+      "unit",
+      "sourceLabel",
+      "inputSource",
+      "inputRunId",
+      "historyFingerprint",
+      "targetBasis",
+      "methodId",
+      "historyStartAt",
+      "historyEndAt",
+      "observationCount",
+      "forecastOriginAt",
+      "modelId",
+      "methodVersion",
+      "status",
+      "failureReason",
+      "runtimeSeconds"
+    ) VALUES (
+      gen_random_uuid()::text,
+      ${artifact.seriesId},
+      ${artifact.displayName},
+      ${artifact.description},
+      ${artifact.frequencyIdentity},
+      NULL,
+      NULL,
+      NULL,
+      ${artifact.source.kind},
+      ${artifact.source.runId},
+      ${artifact.historyFingerprint},
+      CAST(${artifact.targetBasis} AS "ForecastTargetBasis"),
+      ${artifact.methodId},
+      ${artifact.history.start ? new Date(artifact.history.start) : null},
+      ${artifact.history.end ? new Date(artifact.history.end) : null},
+      ${artifact.history.observations},
+      ${artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null},
+      ${artifact.modelId},
+      ${artifact.methodVersion},
+      'AVAILABLE',
+      NULL,
+      ${artifact.runtimeSeconds}
+    )
+    RETURNING "id"
+  `)
+
+  return rows[0]
+}
+
 async function assertForecastPersistenceOwnership(
   tx: Prisma.TransactionClient,
   ownership: ForecastPersistenceOwnership | undefined,
@@ -2494,6 +2721,7 @@ export async function writeCurrentRunWithPrisma(
       methodId: artifact.methodId,
       modelId: artifact.modelId,
       methodVersion: artifact.methodVersion,
+      frequency: artifact.frequencyIdentity,
     } as const
     const currentRunCreate = {
       seriesId: artifact.seriesId,
@@ -2579,26 +2807,11 @@ export async function writeCurrentRunWithPrisma(
     let run: { id: string }
 
     if (!supportsTrainingPolicyColumns) {
-      const legacyRun = await tx.forecastCurrentRun.findFirst({
-        where: {
-          ...currentRunIdentityWhere,
-          frequency: artifact.frequencyIdentity,
-        },
-        select: {
-          id: true,
-        },
-      })
+      const legacyRunId = await findLegacyCurrentRunId(tx, currentRunIdentityWhere)
 
-      run = legacyRun
-        ? await tx.forecastCurrentRun.update({
-            where: {
-              id: legacyRun.id,
-            },
-            data: legacyCurrentRunUpdate,
-          })
-        : await tx.forecastCurrentRun.create({
-            data: legacyCurrentRunCreate,
-          })
+      run = legacyRunId
+        ? await updateLegacyCurrentRun(tx, legacyRunId, artifact)
+        : await createLegacyCurrentRun(tx, artifact)
     } else {
       run = await tx.forecastCurrentRun.upsert({
         where: {
@@ -2901,6 +3114,7 @@ export async function writeVerificationRunWithPrisma(
       methodId: artifact.methodId,
       modelId: artifact.modelId,
       methodVersion: artifact.methodVersion,
+      frequency: artifact.frequencyIdentity,
     } as const
     const verificationRunCreate = {
       seriesId: artifact.seriesId,
@@ -2986,26 +3200,11 @@ export async function writeVerificationRunWithPrisma(
     let run: { id: string }
 
     if (!supportsTrainingPolicyColumns) {
-      const legacyRun = await tx.forecastVerificationRun.findFirst({
-        where: {
-          ...verificationRunIdentityWhere,
-          frequency: artifact.frequencyIdentity,
-        },
-        select: {
-          id: true,
-        },
-      })
+      const legacyRunId = await findLegacyVerificationRunId(tx, verificationRunIdentityWhere)
 
-      run = legacyRun
-        ? await tx.forecastVerificationRun.update({
-            where: {
-              id: legacyRun.id,
-            },
-            data: legacyVerificationRunUpdate,
-          })
-        : await tx.forecastVerificationRun.create({
-            data: legacyVerificationRunCreate,
-          })
+      run = legacyRunId
+        ? await updateLegacyVerificationRun(tx, legacyRunId, artifact)
+        : await createLegacyVerificationRun(tx, artifact)
     } else {
       run = await tx.forecastVerificationRun.upsert({
         where: {

@@ -114,31 +114,33 @@ test('writeCurrentRunWithPrisma falls back to legacy writes when training policy
   const previousPrisma = globalThis.__sgRuntimeMarketDataPrisma__
   const artifact = createCurrentArtifact()
   const currentRunCalls: string[] = []
-  let legacyWhere: Record<string, unknown> | undefined
-  let legacyUpdateData: Record<string, unknown> | undefined
+  let queryRawCount = 0
+  let observedQuery = ''
   let deletedRunId: string | undefined
   let createdPointCount = 0
 
   process.env.MARKET_DATA_DATABASE_URL = 'postgresql://legacy-current.invalid/market-data'
   globalThis.__sgRuntimeMarketDataPrisma__ = {
-    async $queryRaw() {
-      return [{ columnCount: 0 }]
+    async $queryRaw(query: { strings?: string[] }) {
+      queryRawCount += 1
+      observedQuery = Array.isArray(query.strings) ? query.strings.join(' ') : ''
+      if (observedQuery.includes('information_schema.columns')) {
+        return [{ columnCount: 0 }]
+      }
+      if (observedQuery.includes('SELECT "id"') && observedQuery.includes('forecast_current_runs')) {
+        return [{ id: 'legacy-current-run' }]
+      }
+      if (observedQuery.includes('UPDATE "forecast_current_runs"')) {
+        return [{ id: 'legacy-current-run' }]
+      }
+      throw new Error(`Unexpected raw query: ${observedQuery}`)
     },
     $transaction: async (callback: (tx: Record<string, unknown>) => Promise<void>) => callback({
+      $queryRaw: async (query: { strings?: string[] }) => globalThis.__sgRuntimeMarketDataPrisma__!.$queryRaw(query),
       forecastCurrentRun: {
         async upsert() {
           currentRunCalls.push('upsert')
           throw new Error('Invalid `prisma.forecastCurrentRun.upsert()` invocation:\n\nThe column `trainingWindowPolicyId` does not exist in the current database.')
-        },
-        async findFirst(input: { where: Record<string, unknown> }) {
-          currentRunCalls.push('findFirst')
-          legacyWhere = input.where
-          return { id: 'legacy-current-run' }
-        },
-        async update(input: { data: Record<string, unknown> }) {
-          currentRunCalls.push('update')
-          legacyUpdateData = input.data
-          return { id: 'legacy-current-run' }
         },
       },
       forecastCurrentPoint: {
@@ -155,12 +157,8 @@ test('writeCurrentRunWithPrisma falls back to legacy writes when training policy
   try {
     await writeCurrentRunWithPrisma(artifact)
 
-    assert.deepEqual(currentRunCalls, ['findFirst', 'update'])
-    assert.equal(legacyWhere?.frequency, artifact.frequencyIdentity)
-    assert.equal('trainingWindowPolicyId' in (legacyWhere ?? {}), false)
-    assert.equal('effectiveTrainingPolicyId' in (legacyWhere ?? {}), false)
-    assert.equal('trainingWindowPolicyId' in (legacyUpdateData ?? {}), false)
-    assert.equal('effectiveTrainingPolicyId' in (legacyUpdateData ?? {}), false)
+    assert.deepEqual(currentRunCalls, [])
+    assert.equal(queryRawCount >= 3, true)
     assert.equal(deletedRunId, 'legacy-current-run')
     assert.equal(createdPointCount, 1)
   } finally {
@@ -179,30 +177,34 @@ test('writeVerificationRunWithPrisma falls back to legacy writes when training p
   const previousPrisma = globalThis.__sgRuntimeMarketDataPrisma__
   const artifact = createVerificationArtifact()
   const verificationRunCalls: string[] = []
-  let legacyCreateData: Record<string, unknown> | undefined
+  let queryRawCount = 0
+  let observedQuery = ''
   let deletedMetricRunId: string | undefined
   let deletedPointRunId: string | undefined
   let createdMetricCount = 0
 
   process.env.MARKET_DATA_DATABASE_URL = 'postgresql://legacy-verification.invalid/market-data'
   globalThis.__sgRuntimeMarketDataPrisma__ = {
-    async $queryRaw() {
-      return [{ columnCount: 0 }]
+    async $queryRaw(query: { strings?: string[] }) {
+      queryRawCount += 1
+      observedQuery = Array.isArray(query.strings) ? query.strings.join(' ') : ''
+      if (observedQuery.includes('information_schema.columns')) {
+        return [{ columnCount: 0 }]
+      }
+      if (observedQuery.includes('SELECT "id"') && observedQuery.includes('forecast_verification_runs')) {
+        return []
+      }
+      if (observedQuery.includes('INSERT INTO "forecast_verification_runs"')) {
+        return [{ id: 'legacy-verification-run' }]
+      }
+      throw new Error(`Unexpected raw query: ${observedQuery}`)
     },
     $transaction: async (callback: (tx: Record<string, unknown>) => Promise<void>) => callback({
+      $queryRaw: async (query: { strings?: string[] }) => globalThis.__sgRuntimeMarketDataPrisma__!.$queryRaw(query),
       forecastVerificationRun: {
         async upsert() {
           verificationRunCalls.push('upsert')
           throw new Error('Invalid `prisma.forecastVerificationRun.upsert()` invocation:\n\nThe column `trainingWindowPolicyId` does not exist in the current database.')
-        },
-        async findFirst() {
-          verificationRunCalls.push('findFirst')
-          return null
-        },
-        async create(input: { data: Record<string, unknown> }) {
-          verificationRunCalls.push('create')
-          legacyCreateData = input.data
-          return { id: 'legacy-verification-run' }
         },
       },
       forecastVerificationMetric: {
@@ -225,9 +227,8 @@ test('writeVerificationRunWithPrisma falls back to legacy writes when training p
   try {
     await writeVerificationRunWithPrisma(artifact)
 
-    assert.deepEqual(verificationRunCalls, ['findFirst', 'create'])
-    assert.equal('trainingWindowPolicyId' in (legacyCreateData ?? {}), false)
-    assert.equal('effectiveTrainingPolicyId' in (legacyCreateData ?? {}), false)
+    assert.deepEqual(verificationRunCalls, [])
+    assert.equal(queryRawCount >= 3, true)
     assert.equal(deletedMetricRunId, 'legacy-verification-run')
     assert.equal(deletedPointRunId, 'legacy-verification-run')
     assert.equal(createdMetricCount, 1)
