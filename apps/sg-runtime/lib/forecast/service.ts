@@ -621,7 +621,8 @@ async function createLegacyCurrentRun(
       "methodVersion",
       "status",
       "failureReason",
-      "runtimeSeconds"
+      "runtimeSeconds",
+      "updatedAt"
     ) VALUES (
       gen_random_uuid()::text,
       ${artifact.seriesId},
@@ -644,7 +645,8 @@ async function createLegacyCurrentRun(
       ${artifact.methodVersion},
       'AVAILABLE',
       NULL,
-      ${artifact.runtimeSeconds}
+      ${artifact.runtimeSeconds},
+      NOW()
     )
     RETURNING "id"
   `)
@@ -729,7 +731,8 @@ async function createLegacyVerificationRun(
       "methodVersion",
       "status",
       "failureReason",
-      "runtimeSeconds"
+      "runtimeSeconds",
+      "updatedAt"
     ) VALUES (
       gen_random_uuid()::text,
       ${artifact.seriesId},
@@ -752,7 +755,8 @@ async function createLegacyVerificationRun(
       ${artifact.methodVersion},
       'AVAILABLE',
       NULL,
-      ${artifact.runtimeSeconds}
+      ${artifact.runtimeSeconds},
+      NOW()
     )
     RETURNING "id"
   `)
