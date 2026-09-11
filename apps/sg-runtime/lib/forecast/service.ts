@@ -550,7 +550,7 @@ function asFailureArray(value: unknown): ForecastVerificationFailure[] {
   return Array.isArray(value) ? (value as ForecastVerificationFailure[]) : []
 }
 
-function isUserFacingModel(modelId: string) {
+function isUserFacingModel(modelId: string): modelId is UserFacingForecastModelId {
   return USER_FACING_FORECAST_MODELS.includes(modelId as (typeof USER_FACING_FORECAST_MODELS)[number])
 }
 
@@ -1013,7 +1013,7 @@ function buildCurrentPayloadForSelectedOrigin(input: {
     },
     source: {
       kind: LIVE_FORECAST_INPUT_SOURCE_KIND,
-      runId: input.source.runId,
+      runId: null,
     },
     canonicalization: {
       targetBasis: input.targetBasis,
@@ -1050,7 +1050,12 @@ export async function buildRecentVerificationArtifact(input: {
   authoritativeHistory: ForecastBridgeHistory
   identityHistory?: ForecastBridgeHistory
   cadenceContext: ReturnType<typeof resolveArtifactCadenceContext>
-  executePreparedCurrent?: typeof executePreparedForecastBridge
+  executePreparedCurrent?: (
+    payload: LiveForecastBridgePayload,
+    mode: 'current',
+    seriesId: string,
+    modelId: string,
+  ) => Promise<ForecastCurrentBridgeResponse>
 }): Promise<PersistedVerificationArtifact> {
   const identityHistory = input.identityHistory ?? input.authoritativeHistory
   const sourceFrequency = input.cadenceContext.cadence?.sourceFrequency
@@ -1097,7 +1102,7 @@ export async function buildRecentVerificationArtifact(input: {
   const recentWindowStartExclusive = latestLawfulMaturedOrigin === null
     ? null
     : addCalendarMonthsClamped(latestLawfulMaturedOrigin, -12)
-  const selectedOrigins = recentWindowStartExclusive === null
+  const selectedOrigins = recentWindowStartExclusive === null || latestLawfulMaturedOrigin === null
     ? []
     : eligibleOrigins.filter((point) => point.date > recentWindowStartExclusive && point.date <= latestLawfulMaturedOrigin).slice(-RECENT_VERIFICATION_MAX_ORIGINS)
 
@@ -1107,7 +1112,8 @@ export async function buildRecentVerificationArtifact(input: {
 
   const recordsByHorizon = new Map<string, ForecastVerificationRecord[]>()
 
-  const executePreparedCurrent = input.executePreparedCurrent ?? executePreparedForecastBridge
+  const executePreparedCurrent = input.executePreparedCurrent
+    ?? ((payload, mode, seriesId, modelId) => executePreparedForecastBridge(payload, mode, seriesId, modelId) as Promise<ForecastCurrentBridgeResponse>)
 
   for (const origin of selectedOrigins) {
     const selection = selectMinimalLawfulCurrentTrainingSuffix({
@@ -5169,7 +5175,9 @@ export function createForecastLibraryService(
                   authoritativeHistory: authoritativeHistoryResponse.history,
                   identityHistory: historyResponse.history,
                   cadenceContext,
-                  executePreparedCurrent: resolvedDependencies.executePreparedCurrent,
+                  executePreparedCurrent: (payload, mode, seriesId, modelId) => (
+                    resolvedDependencies.executePreparedCurrent(payload, mode, seriesId, modelId) as Promise<ForecastCurrentBridgeResponse>
+                  ),
                 })
               } catch (error) {
                 const message = error instanceof Error ? error.message : 'Recent Verification preparation failed.'

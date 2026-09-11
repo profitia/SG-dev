@@ -2,6 +2,8 @@ import type { BenchmarkHistoricalSeriesResult } from '@/lib/benchmark/contracts'
 import {
   isForecastExecutableNativeSparseFrequency,
   normalizeForecastSourceFrequency,
+  type ForecastSourceFrequency,
+  type ForecastTargetCadence,
 } from '@/lib/forecast/cadence'
 import { USER_FACING_FORECAST_MODELS } from '@/lib/forecast/contracts'
 import { buildForecastHistoryFingerprint } from '@/lib/forecast/history-fingerprint'
@@ -127,9 +129,9 @@ function stateForRollingDailyHistoricalRun(input: {
 }
 
 function resolvePreparedTargetCadence(
-  sourceFrequency: ReturnType<typeof normalizeForecastSourceFrequency>,
+  sourceFrequency: ForecastSourceFrequency,
   targetBasis: (typeof MONTHLY_TARGETS)[number],
-) {
+): ForecastTargetCadence {
   if (sourceFrequency === 'DAILY' || sourceFrequency === 'MONTHLY') {
     return 'MONTHLY' as const
   }

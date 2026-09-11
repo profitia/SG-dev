@@ -30,6 +30,14 @@ function asNumber(value: { toString(): string } | number | null) {
   return value === null ? null : Number(value)
 }
 
+function asIsoString(value: Date | string | null) {
+  if (value === null) {
+    return null
+  }
+
+  return value instanceof Date ? value.toISOString() : value
+}
+
 export function createPreparedRollingDailyForecastVerificationReader(
   dependencies: PreparedRollingDailyForecastVerificationDependencies = {},
 ) {
@@ -83,7 +91,14 @@ export function createPreparedRollingDailyForecastVerificationReader(
     })
 
     const prepared = isRollingDailyHistoricalPreparationComplete({
-      state: maintenanceState,
+      state: maintenanceState
+        ? {
+            latestSourceHistoryFingerprint: maintenanceState.latestSourceHistoryFingerprint,
+            latestSourceObservationAt: asIsoString(maintenanceState.latestSourceObservationAt),
+            lastProcessedOriginAt: asIsoString(maintenanceState.lastProcessedOriginAt),
+            lastMaintenanceStatus: maintenanceState.lastMaintenanceStatus,
+          }
+        : null,
       expectedSourceHistoryFingerprint: sourceHistoryFingerprint,
       latestSourceObservationDate: history.historical[history.historical.length - 1]?.date ?? null,
       verificationRecordCount: records.length,

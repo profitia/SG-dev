@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import path from 'node:path'
 
 import type { UserFacingForecastModelId } from '@/lib/forecast/contracts'
 import type { ForecastTargetSemantics } from '@/lib/forecast/identity'
@@ -9,10 +9,10 @@ type PeriodForecastModelTechnicalRequirements = Record<UserFacingForecastModelId
   minimumTrainingObservations: number
 }>
 
-const PERIOD_FORECAST_MODEL_TECHNICAL_REQUIREMENTS_PATH = fileURLToPath(new URL(
-  '../../../../tooling/Benchmark-Forecasting/metadata/model-technical-requirements.json',
-  import.meta.url,
-))
+const PERIOD_FORECAST_MODEL_TECHNICAL_REQUIREMENTS_PATH = path.resolve(
+  process.cwd(),
+  '../../tooling/Benchmark-Forecasting/metadata/model-technical-requirements.json',
+)
 
 let periodForecastModelTechnicalRequirementsCache: PeriodForecastModelTechnicalRequirements | null = null
 

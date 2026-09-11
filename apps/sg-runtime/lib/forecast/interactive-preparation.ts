@@ -11,6 +11,7 @@ import {
   FORECAST_TARGET_SEMANTICS,
   type ForecastTargetSemantics,
 } from '@/lib/forecast/identity'
+import { normalizeForecastSourceFrequency } from '@/lib/forecast/cadence'
 import { readRollingDailyCurrentForecastSnapshot } from '@/lib/forecast/rolling-daily-current-forecast-snapshot'
 import { prepareRollingDailyCurrentOwnership } from '@/lib/forecast/rolling-daily-current-ownership'
 import { createRollingDailyProductionOperationsService } from '@/lib/forecast/rolling-daily-production-operations'
@@ -20,14 +21,16 @@ import {
   type ForecastPreparationOwnedExecutionContext,
 } from '@/lib/forecast/execution-ledger'
 import {
-  type BenchmarkForecastVerificationResult,
-  type ForecastTargetBasis,
   type ForecastPersistenceOwnership,
   readPreparedBenchmarkForecastVerification,
   readPreparedBenchmarkRecentForecastVerification,
   resolveBenchmarkCurrentForecast,
   type ForecastServiceRequest,
 } from '@/lib/forecast/service'
+import {
+  type BenchmarkForecastVerificationResult,
+  type ForecastTargetBasis,
+} from '@/lib/forecast/contracts'
 import {
   resolveForecastStage3HeartbeatIntervalMs,
   startForecastExecutionLeaseHeartbeat,
@@ -195,12 +198,15 @@ function buildPreparedReadRequest(
   sourceFrequency: InteractiveForecastCapabilityResult['sourceFrequency'],
   targetCadence: InteractiveForecastCapabilityResult['targetCadence'],
 ): ForecastServiceRequest {
+  const normalizedSourceFrequency = normalizeForecastSourceFrequency(sourceFrequency)
+  const normalizedTargetCadence = normalizeForecastSourceFrequency(targetCadence)
+
   return {
     seriesId: input.seriesId,
     modelId: input.modelId,
     targetBasis: targetBasisForSemantics(input.targetSemantics),
-    ...(sourceFrequency ? { sourceFrequency } : {}),
-    ...(targetCadence ? { targetCadence } : {}),
+    ...(normalizedSourceFrequency ? { sourceFrequency: normalizedSourceFrequency } : {}),
+    ...(normalizedTargetCadence ? { targetCadence: normalizedTargetCadence } : {}),
   }
 }
 
