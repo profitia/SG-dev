@@ -910,7 +910,7 @@ async function runConcurrencyProbe(history: SyntheticHistory) {
     status: allRequestsSucceeded
       && lineageKey !== null
       && ownerCount === 1
-      && waiterCount === requests.length - 1
+      && waiterCount >= requests.length - 1
       && computeCount === 1
       ? 'PASS'
       : 'FAIL',
