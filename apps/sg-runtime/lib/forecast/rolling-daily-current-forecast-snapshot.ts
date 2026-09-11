@@ -231,6 +231,40 @@ async function upsertLegacyRollingDailyCurrentForecastSnapshot(
   return createLegacyRollingDailyCurrentForecastSnapshot(prisma, input)
 }
 
+async function readLegacyRollingDailyCurrentForecastSnapshot(
+  prisma: MarketDataPrismaClient,
+  request: RollingDailyCurrentForecastSnapshotReadRequest,
+) {
+  if (typeof prisma.$queryRaw !== 'function') {
+    return prisma.rollingDailyCurrentForecastSnapshot.findFirst({
+      where: {
+        seriesId: request.seriesId,
+        inputSource: ROLLING_DAILY_INPUT_SOURCE,
+        targetBasis: ROLLING_DAILY_TARGET_BASIS,
+        methodId: ROLLING_DAILY_METHOD_ID,
+        methodVersion: ROLLING_DAILY_METHOD_VERSION,
+        modelId: request.modelId,
+      },
+      orderBy: { updatedAt: 'desc' },
+    })
+  }
+
+  const rows = await prisma.$queryRaw<Array<LegacyRollingDailyCurrentForecastSnapshot>>(Prisma.sql`
+    SELECT "payloadJson"
+    FROM "rolling_daily_current_forecast_snapshots"
+    WHERE "seriesId" = ${request.seriesId}
+      AND "inputSource" = ${ROLLING_DAILY_INPUT_SOURCE}
+      AND "targetBasis" = CAST(${ROLLING_DAILY_TARGET_BASIS} AS "ForecastTargetBasis")
+      AND "methodId" = ${ROLLING_DAILY_METHOD_ID}
+      AND "methodVersion" = ${ROLLING_DAILY_METHOD_VERSION}
+      AND "modelId" = ${request.modelId}
+    ORDER BY "updatedAt" DESC
+    LIMIT 1
+  `)
+
+  return rows[0] ?? null
+}
+
 function upsertRollingDailyCurrentForecastSnapshot(
   tx: RollingDailySnapshotUpsertClient,
   input: {
@@ -495,17 +529,7 @@ export async function readRollingDailyCurrentForecastSnapshot(
   const prisma = getSnapshotPrismaClient(dependencies)
   const statisticalCompatibility = resolveRollingDailyCurrentSnapshotCompatibility()
 
-  const readLegacySnapshot = async () => prisma.rollingDailyCurrentForecastSnapshot.findFirst({
-    where: {
-      seriesId: request.seriesId,
-      inputSource: ROLLING_DAILY_INPUT_SOURCE,
-      targetBasis: ROLLING_DAILY_TARGET_BASIS,
-      methodId: ROLLING_DAILY_METHOD_ID,
-      methodVersion: ROLLING_DAILY_METHOD_VERSION,
-      modelId: request.modelId,
-    },
-    orderBy: { updatedAt: 'desc' },
-  })
+  const readLegacySnapshot = async () => readLegacyRollingDailyCurrentForecastSnapshot(prisma, request)
 
   let snapshot: Awaited<ReturnType<typeof prisma.rollingDailyCurrentForecastSnapshot.findUnique>> | null
 

@@ -866,6 +866,8 @@ test('rolling-daily current snapshot persistence falls back to legacy SQL when e
 })
 
 test('rolling-daily current snapshot read falls back to legacy lookup when exact identity columns are absent', async () => {
+  let rawLegacyLookupCalled = false
+
   const readResult = await readRollingDailyCurrentForecastSnapshot(
     {
       seriesId: 'wocaes0074',
@@ -874,12 +876,12 @@ test('rolling-daily current snapshot read falls back to legacy lookup when exact
     },
     {
       prisma: {
-        rollingDailyCurrentForecastSnapshot: {
-          async findUnique() {
-            throw new Error('Invalid `prisma.rollingDailyCurrentForecastSnapshot.findUnique()` invocation:\n\nThe column `rolling_daily_current_forecast_snapshots.trainingWindowPolicyId` does not exist in the current database.')
-          },
-          async findFirst() {
-            return {
+        async $queryRaw(query: { strings?: readonly string[] }) {
+          const observedQuery = Array.isArray(query.strings) ? query.strings.join(' ') : String(query)
+
+          if (observedQuery.includes('SELECT "payloadJson"') && observedQuery.includes('rolling_daily_current_forecast_snapshots')) {
+            rawLegacyLookupCalled = true
+            return [{
               payloadJson: {
                 contractVersion: '1',
                 status: 'AVAILABLE',
@@ -942,7 +944,17 @@ test('rolling-daily current snapshot read falls back to legacy lookup when exact
                 },
                 warnings: [],
               },
-            }
+            }]
+          }
+
+          throw new Error(`Unexpected query: ${observedQuery}`)
+        },
+        rollingDailyCurrentForecastSnapshot: {
+          async findUnique() {
+            throw new Error('Invalid `prisma.rollingDailyCurrentForecastSnapshot.findUnique()` invocation:\n\nThe column `rolling_daily_current_forecast_snapshots.trainingWindowPolicyId` does not exist in the current database.')
+          },
+          async findFirst() {
+            throw new Error('findFirst should not be used for legacy rolling-daily snapshot reads when raw SQL fallback is available')
           },
         },
       } as never,
@@ -952,6 +964,7 @@ test('rolling-daily current snapshot read falls back to legacy lookup when exact
   assert.equal(readResult.status, 'HIT')
   if (readResult.status !== 'HIT') throw new Error('Expected HIT.')
   assert.equal(readResult.payload.model.id, 'arima')
+  assert.equal(rawLegacyLookupCalled, true)
 })
 
 test('rolling-daily current snapshot detects source fingerprint drift and marks the prepared payload stale', async () => {
