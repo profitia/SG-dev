@@ -55,12 +55,28 @@ function resolveOutputPath(envName: string, fallbackPath: string) {
   return override && override.length > 0 ? path.resolve(override) : fallbackPath
 }
 
+function resolveNodeModulesArtifact(...relativePath: string[]) {
+  const nodePathEntries = (process.env.NODE_PATH ?? '')
+    .split(path.delimiter)
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0)
+  const candidates = [
+    path.join(process.cwd(), 'node_modules', ...relativePath),
+    ...nodePathEntries.map((entry) => path.join(entry, ...relativePath)),
+  ]
+
+  return candidates.find((candidate) => existsSync(candidate)) ?? path.join(process.cwd(), 'node_modules', ...relativePath)
+}
+
 const ROOT = path.resolve(process.cwd(), '..', '..')
 const VALIDATION_ROOT = path.join(ROOT, 'tooling', 'Benchmark-Forecasting', 'validation')
+const FORECASTING_TOOL_ROOT = path.join(ROOT, 'tooling', 'Benchmark-Forecasting')
 const OUTPUT_JSON = resolveOutputPath('STAGE9_RESULT_JSON_PATH', path.join(VALIDATION_ROOT, 'ppf1-stage9-bounded-non-daily-historical.json'))
 const OUTPUT_MD = resolveOutputPath('STAGE9_RESULT_MD_PATH', path.join(VALIDATION_ROOT, 'ppf1-stage9-bounded-non-daily-historical.md'))
 const LOCAL_PYTHON_BIN = path.join(ROOT, 'tooling', 'Benchmark-Forecasting', '.venv', 'bin', 'python')
-const TSX_LOADER = path.join(process.cwd(), 'node_modules', 'tsx', 'dist', 'loader.mjs')
+const PYTHON_BIN = process.env.FORECASTING_PYTHON_BIN?.trim() || LOCAL_PYTHON_BIN
+const TSX_LOADER = resolveNodeModulesArtifact('tsx', 'dist', 'loader.mjs')
+const TSX_IMPORT_SPECIFIER = existsSync(TSX_LOADER) ? pathToFileURL(TSX_LOADER).href : 'tsx'
 const MODELS = USER_FACING_FORECAST_MODELS
 const REPRESENTATIVE_MODEL: UserFacingForecastModelId = 'arima'
 const BATCH_MODELS = [REPRESENTATIVE_MODEL] as const
@@ -1913,24 +1929,28 @@ async function runRegressionScript(options: {
 
 async function runFocusedValidations() {
   logPhase('focused-validations:start')
-  await execFile('node', ['--import', 'tsx', '--test', 'tests/forecast-library-service.test.ts'], {
+  await execFile('node', ['--import', TSX_IMPORT_SPECIFIER, '--test', 'tests/forecast-library-service.test.ts'], {
     cwd: process.cwd(),
     env: process.env,
     maxBuffer: 20 * 1024 * 1024,
   })
-  await execFile('node', ['--import', 'tsx', '--test', 'tests/forecast-production-operations.test.ts'], {
+  await execFile('node', ['--import', TSX_IMPORT_SPECIFIER, '--test', 'tests/forecast-production-operations.test.ts'], {
     cwd: process.cwd(),
     env: process.env,
     maxBuffer: 20 * 1024 * 1024,
   })
-  await execFile('node', ['--import', 'tsx', '--test', 'tests/forecast-prepared-state.test.ts'], {
+  await execFile('node', ['--import', TSX_IMPORT_SPECIFIER, '--test', 'tests/forecast-prepared-state.test.ts'], {
     cwd: process.cwd(),
     env: process.env,
     maxBuffer: 20 * 1024 * 1024,
   })
-  await execFile(LOCAL_PYTHON_BIN, ['-m', 'unittest', 'tests/test_bounded_non_daily_verification.py'], {
-    cwd: path.join(ROOT, 'tooling', 'Benchmark-Forecasting'),
-    env: process.env,
+  await execFile(PYTHON_BIN, ['-m', 'unittest', 'tests/test_bounded_non_daily_verification.py'], {
+  await execFile(PYTHON_BIN, ['-m', 'unittest', 'discover', '-s', 'tests', '-p', 'test_bounded_non_daily_verification.py'], {
+    cwd: FORECASTING_TOOL_ROOT,
+    env: {
+      ...process.env,
+      PYTHONPATH: [FORECASTING_TOOL_ROOT, process.env.PYTHONPATH ?? ''].filter((value) => value.length > 0).join(path.delimiter),
+    },
     maxBuffer: 20 * 1024 * 1024,
   })
 
@@ -1978,8 +1998,8 @@ async function main() {
   const cleanWorktree = await isGitWorktreeClean()
   const dependencyProvenance = {
     tsxLoaderPresent: existsSync(TSX_LOADER),
-    pythonBinPresent: existsSync(LOCAL_PYTHON_BIN),
-    status: existsSync(TSX_LOADER) && existsSync(LOCAL_PYTHON_BIN) ? 'PASS' as const : 'FAIL' as const,
+    pythonBinPresent: existsSync(PYTHON_BIN),
+    status: existsSync(TSX_LOADER) && existsSync(PYTHON_BIN) ? 'PASS' as const : 'FAIL' as const,
   }
   const databaseIdentity = await readDatabaseIdentity()
   const activeRunnerCountBeforeStart = await countActiveEvidenceRunners()
@@ -2051,7 +2071,7 @@ async function main() {
   const stage7Regression = await runRegressionScript({
     label: 'stage7-regression',
     command: 'node',
-    args: ['--import', 'tsx', 'scripts/run-forecast-stage7-evidence.ts'],
+    args: ['--import', TSX_IMPORT_SPECIFIER, 'scripts/run-forecast-stage7-evidence.ts'],
     outputJsonEnv: 'STAGE7_RESULT_JSON_PATH',
     outputMdEnv: 'STAGE7_RESULT_MD_PATH',
   })

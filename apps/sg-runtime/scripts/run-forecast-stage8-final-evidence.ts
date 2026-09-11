@@ -6,6 +6,7 @@ import { mkdir, readFile, statfs, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { performance } from 'node:perf_hooks'
+import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 
 import { Prisma } from '@/generated/market-data-client'
@@ -47,6 +48,19 @@ function resolveOutputPath(envName: string, fallbackPath: string) {
   return override && override.length > 0 ? path.resolve(override) : fallbackPath
 }
 
+function resolveNodeModulesArtifact(...relativePath: string[]) {
+  const nodePathEntries = (process.env.NODE_PATH ?? '')
+    .split(path.delimiter)
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0)
+  const candidates = [
+    path.join(process.cwd(), 'node_modules', ...relativePath),
+    ...nodePathEntries.map((entry) => path.join(entry, ...relativePath)),
+  ]
+
+  return candidates.find((candidate) => existsSync(candidate)) ?? path.join(process.cwd(), 'node_modules', ...relativePath)
+}
+
 const ROOT = path.resolve(process.cwd(), '..', '..')
 const WORKSPACE_ROOT = path.resolve(ROOT, '..')
 const VALIDATION_ROOT = path.join(ROOT, 'tooling', 'Benchmark-Forecasting', 'validation')
@@ -55,7 +69,9 @@ const OUTPUT_MD = resolveOutputPath('STAGE8_RESULT_MD_PATH', path.join(VALIDATIO
 const STAGE7_ACCEPTED_JSON = path.join(VALIDATION_ROOT, 'ppf1-stage7-recent-verification-controlled-activation.json')
 const LOCAL_PYTHON_BIN = path.join(ROOT, 'tooling', 'Benchmark-Forecasting', '.venv', 'bin', 'python')
 const PYTHON_MAINTENANCE_SCRIPT = path.join(ROOT, 'tooling', 'Benchmark-Forecasting', 'scripts', 'export_rolling_daily_incremental_maintenance.py')
-const TSX_LOADER = path.join(process.cwd(), 'node_modules', 'tsx', 'dist', 'loader.mjs')
+const TSX_LOADER = resolveNodeModulesArtifact('tsx', 'dist', 'loader.mjs')
+const TSX_IMPORT_SPECIFIER = existsSync(TSX_LOADER) ? pathToFileURL(TSX_LOADER).href : 'tsx'
+const TSC_BIN = resolveNodeModulesArtifact('.bin', 'tsc')
 const TRACE_PREFIX = '[ROLLING_DAILY_HISTORICAL_TRACE] '
 const SERIES_ID = 'ppf1-stage8-final-evidence-daily-v1'
 const SERIES_KEY = 'PPF1_STAGE8_FINAL_EVIDENCE_DAILY_V1'
@@ -1082,7 +1098,7 @@ async function runStage7RegressionProbe() {
 
 async function runFocusedValidations() {
   const testArgs = [
-    '--import', 'tsx',
+    '--import', TSX_IMPORT_SPECIFIER,
     '--test',
     'tests/rolling-daily-maintenance.test.ts',
     'tests/rolling-daily-production-operations.test.ts',
@@ -1093,7 +1109,7 @@ async function runFocusedValidations() {
     focusedTests: 'FAIL',
     typecheckRegression: 'FAIL',
     focusedTestCommand: `node ${testArgs.join(' ')}`,
-    typecheckCommand: 'npx tsc --noEmit -p tsconfig.stage8-focused.json',
+    typecheckCommand: `${TSC_BIN} --noEmit -p tsconfig.stage8-focused.json`,
   }
 
   await execFile('node', testArgs, {
@@ -1103,7 +1119,7 @@ async function runFocusedValidations() {
   })
   tests.focusedTests = 'PASS'
 
-  await execFile('npx', ['tsc', '--noEmit', '-p', 'tsconfig.stage8-focused.json'], {
+  await execFile(TSC_BIN, ['--noEmit', '-p', 'tsconfig.stage8-focused.json'], {
     cwd: process.cwd(),
     env: process.env,
     maxBuffer: 20 * 1024 * 1024,
