@@ -1,4 +1,5 @@
 import type { BenchmarkHistoricalSeriesResult } from '@/lib/benchmark/contracts'
+import type { Prisma } from '@/generated/market-data-client'
 import {
   isForecastExecutableNativeSparseFrequency,
   normalizeForecastSourceFrequency,
@@ -30,8 +31,73 @@ const MONTHLY_TARGETS = ['END_OF_PERIOD', 'MONTHLY_AVERAGE'] as const
 
 type MarketDataPrismaClient = NonNullable<ReturnType<typeof getMarketDataPrisma>>
 
+type PreparedHistoricalRun = {
+  status: string
+  historyFingerprint: string
+  frequency: string | null
+  metrics?: Array<{ origins: number, expectedOrigins: number, failedOrigins: number }>
+}
+
 function hasRenderableCurrentPoints(points: Array<{ forecastValue: unknown }> | undefined) {
   return (points ?? []).some((point) => point.forecastValue !== null)
+}
+
+function isMissingVerificationTrainingPolicyColumnError(error: unknown) {
+  return error instanceof Error
+    && error.message.includes('forecast_verification_runs.trainingWindowPolicyId')
+}
+
+async function findPreparedHistoricalVerificationRun(
+  prisma: MarketDataPrismaClient,
+  where: Prisma.ForecastVerificationRunWhereInput,
+  compatibility: {
+    trainingWindowPolicyId: string
+    effectiveTrainingPolicyId: string
+  },
+): Promise<PreparedHistoricalRun | null> {
+  const select = {
+    status: true,
+    historyFingerprint: true,
+    frequency: true,
+    metrics: {
+      select: {
+        origins: true,
+        expectedOrigins: true,
+        failedOrigins: true,
+      },
+    },
+  } as const
+  const orderBy = { updatedAt: 'desc' as const }
+
+  try {
+    return await prisma.forecastVerificationRun.findFirst({
+      where: {
+        ...where,
+        trainingWindowPolicyId: compatibility.trainingWindowPolicyId,
+        effectiveTrainingPolicyId: compatibility.effectiveTrainingPolicyId,
+      },
+      select,
+      orderBy,
+    }) ?? await prisma.forecastVerificationRun.findFirst({
+      where: {
+        ...where,
+        trainingWindowPolicyId: null,
+        effectiveTrainingPolicyId: null,
+      },
+      select,
+      orderBy,
+    })
+  } catch (error) {
+    if (!isMissingVerificationTrainingPolicyColumnError(error)) {
+      throw error
+    }
+
+    return prisma.forecastVerificationRun.findFirst({
+      where,
+      select,
+      orderBy,
+    })
+  }
 }
 
 function hasRenderableRollingDailyPath(payload: unknown) {
@@ -217,6 +283,14 @@ export async function readForecastPreparedVariants(
         targetCadence,
         targetSemantics: identity.targetSemantics,
       })
+      const verificationWhere = {
+        seriesId,
+        frequency: { in: acceptedArtifactFrequencies },
+        targetBasis: candidate.targetBasis,
+        methodId: identity.methodId,
+        methodVersion: identity.methodVersion,
+        modelId,
+      } satisfies Prisma.ForecastVerificationRunWhereInput
       const [current, historical] = await Promise.all([
         prisma.forecastCurrentRun.findFirst({
           where: {
@@ -239,31 +313,11 @@ export async function readForecastPreparedVariants(
           },
           orderBy: { updatedAt: 'desc' },
         }),
-        prisma.forecastVerificationRun.findFirst({
-          where: {
-            seriesId,
-            frequency: { in: acceptedArtifactFrequencies },
-            targetBasis: candidate.targetBasis,
-            methodId: identity.methodId,
-            methodVersion: identity.methodVersion,
-            modelId,
-            trainingWindowPolicyId: recentVerificationCompatibility.trainingWindowPolicyId,
-            effectiveTrainingPolicyId: recentVerificationCompatibility.effectiveTrainingPolicyId,
-          },
-          select: {
-            status: true,
-            historyFingerprint: true,
-            frequency: true,
-            metrics: {
-              select: {
-                origins: true,
-                expectedOrigins: true,
-                failedOrigins: true,
-              },
-            },
-          },
-          orderBy: { updatedAt: 'desc' },
-        }),
+        findPreparedHistoricalVerificationRun(
+          prisma,
+          verificationWhere,
+          recentVerificationCompatibility,
+        ),
       ])
 
       variants.push({
