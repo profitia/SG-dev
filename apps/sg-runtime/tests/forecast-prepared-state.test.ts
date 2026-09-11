@@ -457,6 +457,72 @@ test('point-in-time snapshots without a renderable path cannot satisfy READY', a
   )
 })
 
+test('point-in-time prepared-state falls back when legacy rolling snapshot schema omits training policy columns', async () => {
+  const history = createHistory()
+  const now = new Date('2025-01-15T00:00:00.000Z')
+  const rollingFingerprint = buildRollingDailyHistoryFingerprint({
+    seriesId: history.providerSeries.providerSeriesId,
+    displayName: history.displayName,
+    description: history.displayName,
+    frequency: 'DAILY',
+    source: history.source,
+    points: history.historical,
+  })
+
+  const variants = await readForecastPreparedVariants(history.providerSeries.providerSeriesId, history, {
+    now,
+    prisma: {
+      forecastCurrentRun: { async findFirst() { return null } },
+      forecastVerificationRun: { async findFirst() { return null } },
+      rollingDailyCurrentForecastSnapshot: {
+        async findUnique() {
+          throw new Error([
+            'Invalid `prisma.rollingDailyCurrentForecastSnapshot.findUnique()` invocation:',
+            '',
+            '',
+            'The column `rolling_daily_current_forecast_snapshots.trainingWindowPolicyId` does not exist in the current database.',
+          ].join('\n'))
+        },
+        async findFirst({ where }: { where: Record<string, string> }) {
+          return where.modelId === 'naive'
+            ? {
+                status: 'AVAILABLE',
+                payloadJson: {
+                  audit: { sourceHistoryFingerprint: rollingFingerprint },
+                  path: [{ date: '2025-01-16', pointForecast: 123 }],
+                },
+              }
+            : null
+        },
+      },
+      rollingDailyMaintenanceState: {
+        async findUnique({ where }: { where: { seriesId_inputSource_targetBasis_methodId_methodVersion_modelId: Record<string, string> } }) {
+          return where.seriesId_inputSource_targetBasis_methodId_methodVersion_modelId.modelId === 'naive'
+            ? {
+                latestSourceHistoryFingerprint: rollingFingerprint,
+                latestSourceObservationAt: '2024-12-20T00:00:00.000Z',
+                lastProcessedOriginAt: '2024-12-20T00:00:00.000Z',
+                lastMaintenanceStatus: 'SUCCEEDED',
+              }
+            : null
+        },
+      },
+      rollingDailyVerificationRecord: {
+        async count({ where }: { where: Record<string, string> }) {
+          return where.modelId === 'naive' ? 4 : 0
+        },
+      },
+    } as never,
+  })
+
+  const naivePointInTime = variants.find((variant) => (
+    variant.identity.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME' && variant.identity.modelId === 'naive'
+  ))
+
+  assert.equal(naivePointInTime?.current, 'READY')
+  assert.equal(naivePointInTime?.historical, 'READY')
+})
+
 test('point-in-time historical variants stay STALE while the maintenance checkpoint is partial', async () => {
   const history = createHistory()
   const now = new Date('2025-01-15T00:00:00.000Z')

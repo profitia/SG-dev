@@ -38,6 +38,11 @@ type PreparedHistoricalRun = {
   metrics?: Array<{ origins: number, expectedOrigins: number, failedOrigins: number }>
 }
 
+type PreparedRollingDailySnapshot = {
+  status: string
+  payloadJson: unknown
+}
+
 function hasRenderableCurrentPoints(points: Array<{ forecastValue: unknown }> | undefined) {
   return (points ?? []).some((point) => point.forecastValue !== null)
 }
@@ -45,6 +50,11 @@ function hasRenderableCurrentPoints(points: Array<{ forecastValue: unknown }> | 
 function isMissingVerificationTrainingPolicyColumnError(error: unknown) {
   return error instanceof Error
     && error.message.includes('forecast_verification_runs.trainingWindowPolicyId')
+}
+
+function isMissingRollingDailySnapshotTrainingPolicyColumnError(error: unknown) {
+  return error instanceof Error
+    && error.message.includes('rolling_daily_current_forecast_snapshots.trainingWindowPolicyId')
 }
 
 async function findPreparedHistoricalVerificationRun(
@@ -96,6 +106,34 @@ async function findPreparedHistoricalVerificationRun(
       where,
       select,
       orderBy,
+    })
+  }
+}
+
+async function findPreparedRollingDailySnapshot(
+  prisma: MarketDataPrismaClient,
+  where: Prisma.RollingDailyCurrentForecastSnapshotWhereInput,
+  uniqueWhere: Prisma.RollingDailyCurrentForecastSnapshotWhereUniqueInput,
+): Promise<PreparedRollingDailySnapshot | null> {
+  const select = {
+    status: true,
+    payloadJson: true,
+  } as const
+
+  try {
+    return await prisma.rollingDailyCurrentForecastSnapshot.findUnique({
+      where: uniqueWhere,
+      select,
+    })
+  } catch (error) {
+    if (!isMissingRollingDailySnapshotTrainingPolicyColumnError(error)) {
+      throw error
+    }
+
+    return prisma.rollingDailyCurrentForecastSnapshot.findFirst({
+      where,
+      select,
+      orderBy: { updatedAt: 'desc' },
     })
   }
 }
@@ -337,23 +375,24 @@ export async function readForecastPreparedVariants(
       targetCadence: 'DAILY',
       targetSemantics: identity.targetSemantics,
     })
+    const rollingSnapshotWhere = {
+      seriesId,
+      inputSource: ROLLING_DAILY_INPUT_SOURCE,
+      targetBasis: 'POINT_IN_TIME',
+      methodId: identity.methodId,
+      methodVersion: identity.methodVersion,
+      modelId,
+      sourceHistoryFingerprint: rollingCurrentFingerprint,
+    } satisfies Prisma.RollingDailyCurrentForecastSnapshotWhereInput
+    const rollingSnapshotUniqueWhere = {
+      seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint: {
+        ...rollingSnapshotWhere,
+        trainingWindowPolicyId: rollingDailyCompatibility.trainingWindowPolicyId,
+        effectiveTrainingPolicyId: rollingDailyCompatibility.effectiveTrainingPolicyId,
+      },
+    } satisfies Prisma.RollingDailyCurrentForecastSnapshotWhereUniqueInput
     const [snapshot, maintenance, verificationCount] = await Promise.all([
-      prisma.rollingDailyCurrentForecastSnapshot.findUnique({
-        where: {
-          seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint: {
-            seriesId,
-            inputSource: ROLLING_DAILY_INPUT_SOURCE,
-            targetBasis: 'POINT_IN_TIME',
-            methodId: identity.methodId,
-            methodVersion: identity.methodVersion,
-            modelId,
-            trainingWindowPolicyId: rollingDailyCompatibility.trainingWindowPolicyId,
-            effectiveTrainingPolicyId: rollingDailyCompatibility.effectiveTrainingPolicyId,
-            sourceHistoryFingerprint: rollingCurrentFingerprint,
-          },
-        },
-        select: { status: true, payloadJson: true },
-      }),
+      findPreparedRollingDailySnapshot(prisma, rollingSnapshotWhere, rollingSnapshotUniqueWhere),
       prisma.rollingDailyMaintenanceState.findUnique({
         where: {
           seriesId_inputSource_targetBasis_methodId_methodVersion_modelId: {
