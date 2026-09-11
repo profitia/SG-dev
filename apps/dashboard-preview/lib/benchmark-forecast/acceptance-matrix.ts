@@ -804,18 +804,29 @@ export function createForecastAcceptanceMatrixService(
 
   return {
     async evaluateSeries(seriesId: string, options?: { signal?: AbortSignal }): Promise<ForecastAcceptanceMatrixReport> {
-      const variantResults = await Promise.all(
+      const evaluateVariant = async (modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => ({
+        current: await evaluateCurrentCell(seriesId, modelId, targetBasis, options),
+        verification: await Promise.all(
+          DEFAULT_VERIFICATION_HORIZONS.map((horizon) => (
+            evaluateVerificationCell(seriesId, modelId, targetBasis, horizon, options)
+          )),
+        ),
+      })
+
+      const nonPointInTimeVariantResults = await Promise.all(
         FORECAST_PORTFOLIO_MODELS.flatMap((modelId) => (
-          FORECAST_TARGET_BASES.map(async (targetBasis) => ({
-            current: await evaluateCurrentCell(seriesId, modelId, targetBasis, options),
-            verification: await Promise.all(
-              DEFAULT_VERIFICATION_HORIZONS.map((horizon) => (
-                evaluateVerificationCell(seriesId, modelId, targetBasis, horizon, options)
-              )),
-            ),
-          }))
+          FORECAST_TARGET_BASES
+            .filter((targetBasis) => targetBasis !== 'POINT_IN_TIME')
+            .map((targetBasis) => evaluateVariant(modelId, targetBasis))
         )),
       )
+
+      const pointInTimeVariantResults = [] as Awaited<ReturnType<typeof evaluateVariant>>[]
+      for (const modelId of FORECAST_PORTFOLIO_MODELS) {
+        pointInTimeVariantResults.push(await evaluateVariant(modelId, 'POINT_IN_TIME'))
+      }
+
+      const variantResults = [...nonPointInTimeVariantResults, ...pointInTimeVariantResults]
 
       const currentCells = variantResults.map((result) => result.current)
       const verificationCells = variantResults.flatMap((result) => result.verification)
