@@ -753,3 +753,72 @@ test('interactive capability bridge does not fall back away from an explicit dep
     'https://sg-runtime-primary.example.invalid',
   ])
 })
+
+test('interactive capability bridge falls back after an empty JSON response from the explicit primary SG Runtime base URL', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  const previousVercelUrl = process.env.VERCEL_URL
+  const originalFetch = global.fetch
+  const visited: string[] = []
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime-primary.example.invalid'
+  process.env.RENDER_EXTERNAL_URL = 'https://analytics-demo-sg-porr.spendguru.app'
+  delete process.env.VERCEL_URL
+  global.fetch = (async (input: URL | RequestInfo | string) => {
+    const url = new URL(String(input))
+    visited.push(url.origin)
+
+    if (url.origin === 'https://sg-runtime-primary.example.invalid') {
+      return new Response('', {
+        status: 502,
+        headers: { 'content-type': 'application/json' },
+      })
+    }
+
+    return new Response(JSON.stringify({
+      seriesId: 'wocaes0280',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      modelId: 'arima',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      sourceAvailability: 'AVAILABLE',
+      lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
+      status: 'NOT_PREPARED',
+      currentReadiness: 'NOT_PREPARED',
+      verificationReadiness: 'NOT_PREPARED',
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 4,
+      reason: null,
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }) as typeof fetch
+
+  try {
+    const result = await readInteractiveForecastCapability({
+      seriesId: 'wocaes0280',
+      modelId: 'arima',
+      targetBasis: 'MONTHLY_AVERAGE',
+    })
+
+    assert.equal(result.status, 'NOT_PREPARED')
+  } finally {
+    global.fetch = originalFetch
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+    if (previousRenderExternalUrl === undefined) delete process.env.RENDER_EXTERNAL_URL
+    else process.env.RENDER_EXTERNAL_URL = previousRenderExternalUrl
+    if (previousVercelUrl === undefined) delete process.env.VERCEL_URL
+    else process.env.VERCEL_URL = previousVercelUrl
+  }
+
+  assert.deepEqual(visited, [
+    'https://sg-runtime-primary.example.invalid',
+    'https://benchmark-finder-category-builder.onrender.com',
+  ])
+})

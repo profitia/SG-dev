@@ -22,6 +22,9 @@ import { getMarketDataPrismaClient } from '@/lib/db/market-data-prisma'
 import { phase22cDiagnosticSpan } from '@/lib/phase-2-2c/diagnostics'
 
 const LOCAL_SG_RUNTIME_BASE_URL = 'http://localhost:3001'
+const DEPLOYED_SG_RUNTIME_FALLBACK_BASE_URLS = [
+  'https://benchmark-finder-category-builder.onrender.com',
+]
 const INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH = '/api/internal/forecast/capability'
 const INTERNAL_FORECAST_ROUTE_PATH = '/api/internal/forecast/production'
 const INTERNAL_PREPARED_CURRENT_ROUTE_PATH = '/api/internal/forecast/prepared/current'
@@ -786,12 +789,34 @@ function resolveSgRuntimeBaseUrl() {
   return LOCAL_SG_RUNTIME_BASE_URL
 }
 
+function hasExplicitSgRuntimeBaseUrl() {
+  return Boolean(process.env.SG_RUNTIME_BASE_URL?.trim())
+}
+
+function resolveSgRuntimeBaseUrls() {
+  const primaryBaseUrl = resolveSgRuntimeBaseUrl()
+  const candidates = [primaryBaseUrl]
+
+  for (const fallbackBaseUrl of DEPLOYED_SG_RUNTIME_FALLBACK_BASE_URLS) {
+    if (!candidates.includes(fallbackBaseUrl)) {
+      candidates.push(fallbackBaseUrl)
+    }
+  }
+
+  return candidates
+}
+
 function readSgRuntimeInternalForecastServiceToken() {
   return process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN?.trim() ?? ''
 }
 
 function isDeployedDashboardEnvironment() {
   return Boolean(process.env.RENDER_EXTERNAL_URL?.trim() || process.env.VERCEL_URL?.trim())
+}
+
+function isMalformedJsonResponseError(error: unknown) {
+  return error instanceof Error
+    && (error.message.includes('empty JSON response') || error.message.includes('invalid JSON response'))
 }
 
 async function fetchSgRuntimeJson<T extends object>(pathname: string, params: Record<string, string>) {
@@ -828,47 +853,81 @@ async function fetchInternalPreparedForecast<T extends object>(
     throw new Error('SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN is not configured.')
   }
 
-  const url = new URL(pathname, resolveSgRuntimeBaseUrl())
+  const baseUrls = resolveSgRuntimeBaseUrls()
+  let lastError: unknown = null
 
-  for (const [key, value] of Object.entries(params)) {
-    url.searchParams.set(key, value)
-  }
+  for (const [index, baseUrl] of baseUrls.entries()) {
+    const url = new URL(pathname, baseUrl)
+    for (const [key, value] of Object.entries(params)) {
+      url.searchParams.set(key, value)
+    }
 
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), INTERNAL_FORECAST_TIMEOUT_MS)
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), INTERNAL_FORECAST_TIMEOUT_MS)
 
-  try {
-    const response = await fetch(url, {
-      cache: 'no-store',
-      signal: controller.signal,
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${token}`,
-        ...correlationHeaders,
-      },
-    })
+    try {
+      const response = await fetch(url, {
+        cache: 'no-store',
+        signal: controller.signal,
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+          ...correlationHeaders,
+        },
+      })
 
-    const payload = await response.json() as T | { error?: string }
-    if (!response.ok) {
-      const message = 'error' in payload ? payload.error ?? 'SG Runtime prepared forecast request failed.' : 'SG Runtime prepared forecast request failed.'
-
-      if (response.status === 401 || response.status === 403) {
-        throw new SgRuntimeForecastAuthError(message, response.status)
+      const body = await response.text()
+      if (!body.trim()) {
+        throw new Error(`SG Runtime prepared forecast request returned an empty JSON response from ${baseUrl} with status ${response.status}.`)
       }
 
-      throw new Error(message)
-    }
+      let payload: T | { error?: string }
+      try {
+        payload = JSON.parse(body) as T | { error?: string }
+      } catch {
+        throw new Error(`SG Runtime prepared forecast request returned an invalid JSON response from ${baseUrl} with status ${response.status}.`)
+      }
 
-    return payload as T
-  } catch (error) {
-    if ((error as Error).name === 'AbortError') {
-      throw new Error('SG Runtime prepared forecast request timed out.')
-    }
+      if (!response.ok) {
+        const message = 'error' in payload ? payload.error ?? 'SG Runtime prepared forecast request failed.' : 'SG Runtime prepared forecast request failed.'
 
-    throw error
-  } finally {
-    clearTimeout(timeoutId)
+        if (response.status === 401 || response.status === 403) {
+          throw new SgRuntimeForecastAuthError(message, response.status)
+        }
+
+        throw new Error(message)
+      }
+
+      return payload as T
+    } catch (error) {
+      if ((error as Error).name === 'AbortError') {
+        clearTimeout(timeoutId)
+        if (hasExplicitSgRuntimeBaseUrl()) {
+          throw new Error('SG Runtime prepared forecast request timed out.')
+        }
+        lastError = new Error('SG Runtime prepared forecast request timed out.')
+        continue
+      }
+
+      if (error instanceof SgRuntimeForecastAuthError) {
+        clearTimeout(timeoutId)
+        throw error
+      }
+
+      lastError = error
+      if (isMalformedJsonResponseError(error) && index + 1 < baseUrls.length) {
+        clearTimeout(timeoutId)
+        continue
+      }
+
+      clearTimeout(timeoutId)
+      throw error
+    } finally {
+      clearTimeout(timeoutId)
+    }
   }
+
+  throw lastError instanceof Error ? lastError : new Error('SG Runtime prepared forecast request failed.')
 }
 
 export async function getRollingDailyPointInTimeProductionForecast(

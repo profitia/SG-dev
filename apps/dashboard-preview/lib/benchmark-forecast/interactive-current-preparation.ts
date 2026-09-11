@@ -123,13 +123,13 @@ function resolveSgRuntimeBaseUrl() {
   return LOCAL_SG_RUNTIME_BASE_URL
 }
 
+function hasExplicitSgRuntimeBaseUrl() {
+  return Boolean(process.env.SG_RUNTIME_BASE_URL?.trim())
+}
+
 function resolveSgRuntimeBaseUrls() {
   const primaryBaseUrl = resolveSgRuntimeBaseUrl()
   const candidates = [primaryBaseUrl]
-
-  if (primaryBaseUrl !== LOCAL_SG_RUNTIME_BASE_URL) {
-    return candidates
-  }
 
   for (const fallbackBaseUrl of DEPLOYED_SG_RUNTIME_FALLBACK_BASE_URLS) {
     if (!candidates.includes(fallbackBaseUrl)) {
@@ -138,6 +138,11 @@ function resolveSgRuntimeBaseUrls() {
   }
 
   return candidates
+}
+
+function isMalformedJsonResponseError(error: unknown) {
+  return error instanceof Error
+    && (error.message.includes('empty JSON response') || error.message.includes('invalid JSON response'))
 }
 
 function readSgRuntimeInternalForecastServiceToken() {
@@ -189,7 +194,18 @@ async function readInternalJson<T>(
         },
       })
 
-      const payload = await response.json() as Record<string, unknown>
+      const body = await response.text()
+      if (!body.trim()) {
+        throw new Error(`SG Runtime interactive forecast request returned an empty JSON response from ${baseUrl} with status ${response.status}.`)
+      }
+
+      let payload: Record<string, unknown>
+      try {
+        payload = JSON.parse(body) as Record<string, unknown>
+      } catch {
+        throw new Error(`SG Runtime interactive forecast request returned an invalid JSON response from ${baseUrl} with status ${response.status}.`)
+      }
+
       if (traceOptions?.enabled) {
         traceOptions.attempts.push({
           targetRole: index === 0 ? 'PRIMARY' : 'FALLBACK',
@@ -242,6 +258,12 @@ async function readInternalJson<T>(
       lastError = error
       if (callerAborted) {
         throw error
+      }
+      if ((error as Error).name === 'AbortError' && hasExplicitSgRuntimeBaseUrl()) {
+        throw error
+      }
+      if (isMalformedJsonResponseError(error) && index + 1 < baseUrls.length) {
+        continue
       }
       if ((error as Error).name !== 'AbortError') {
         throw error

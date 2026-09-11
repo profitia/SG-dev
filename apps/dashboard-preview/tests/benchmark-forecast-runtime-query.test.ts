@@ -253,6 +253,86 @@ test('deployed non-point-in-time verification reads fail closed when the SG Runt
   }
 })
 
+test('deployed non-point-in-time prepared current read falls back after an empty JSON response from the explicit primary SG Runtime base URL', async () => {
+  const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const originalFetch = global.fetch
+  const visited: string[] = []
+
+  process.env.RENDER_EXTERNAL_URL = 'https://profitia-pl.onrender.com'
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime-primary.example.invalid'
+
+  global.fetch = (async (input: URL | RequestInfo | string) => {
+    const url = new URL(String(input))
+    visited.push(url.origin)
+
+    if (url.origin === 'https://sg-runtime-primary.example.invalid') {
+      return new Response('', {
+        status: 502,
+        headers: { 'content-type': 'application/json' },
+      })
+    }
+
+    return new Response(JSON.stringify({
+      status: 'AVAILABLE',
+      seriesId: 'wocaes0074',
+      modelId: 'ets',
+      targetBasis: 'END_OF_PERIOD',
+      targetSemantics: 'END_OF_PERIOD',
+      methodId: 'END_OF_PERIOD',
+      displayName: 'Brent',
+      description: null,
+      methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+      lineage: {
+        inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+        inputRunId: null,
+        sourceSeriesId: 'wocaes0074',
+        sourceFrequency: 'MONTHLY',
+        historyFingerprint: 'fp-current',
+        preparation: null,
+      },
+      history: {
+        frequency: 'MONTHLY',
+        start: '2020-01-01T00:00:00.000Z',
+        end: '2024-12-01T00:00:00.000Z',
+        observations: 60,
+      },
+      forecastOrigin: '2025-01-01T00:00:00.000Z',
+      currentForecast: {
+        '1M': {
+          horizon: '1M',
+          horizonSteps: 1,
+          forecastDate: '2025-02-01T00:00:00.000Z',
+          forecastValue: 123,
+        },
+      },
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }) as typeof fetch
+
+  try {
+    const result = await getBenchmarkForecastCurrent('wocaes0074', 'ets', 'END_OF_PERIOD')
+    assert.equal(result.status, 'AVAILABLE')
+  } finally {
+    global.fetch = originalFetch
+    if (previousRenderExternalUrl === undefined) delete process.env.RENDER_EXTERNAL_URL
+    else process.env.RENDER_EXTERNAL_URL = previousRenderExternalUrl
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+  }
+
+  assert.deepEqual(visited, [
+    'https://sg-runtime-primary.example.invalid',
+    'https://benchmark-finder-category-builder.onrender.com',
+  ])
+})
+
 test('point-in-time current forecast fails closed as unsupported for non-daily capability before snapshot lookup', async () => {
   const originalFetch = global.fetch
   const previousMarketDataUrl = process.env.MARKET_DATA_DATABASE_URL
