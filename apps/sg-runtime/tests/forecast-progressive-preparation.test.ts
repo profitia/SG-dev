@@ -534,6 +534,7 @@ test('failed preparation records the exact reason and does not auto-retry on ord
 
 test('point-in-time verification queues and runs through rolling-daily when current is already ready', async () => {
   const rollingCalls: string[] = []
+  const rollingPrepareHistoricalFlags: Array<boolean | undefined> = []
   let historicalReady = false
 
   const service = createProgressiveForecastPreparationService({
@@ -603,6 +604,7 @@ test('point-in-time verification queues and runs through rolling-daily when curr
     },
     async runRollingDaily(request) {
       rollingCalls.push(`${request.seriesId}:${request.modelIds.join(',')}`)
+      rollingPrepareHistoricalFlags.push(request.prepareHistorical)
       historicalReady = true
       return {
         status: 'SUCCEEDED' as const,
@@ -639,4 +641,5 @@ test('point-in-time verification queues and runs through rolling-daily when curr
   assert.equal(secondVariant?.currentState, 'READY')
   assert.equal(secondVariant?.verificationState, 'READY')
   assert.deepEqual(rollingCalls, ['pit.series:arima'])
+  assert.deepEqual(rollingPrepareHistoricalFlags, [true])
 })

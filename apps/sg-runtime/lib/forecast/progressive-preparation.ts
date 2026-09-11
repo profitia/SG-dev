@@ -481,6 +481,7 @@ export function createProgressiveForecastPreparationService(
       const result = await resolvedDependencies.runRollingDaily({
         seriesId: item.seriesId,
         modelIds: [item.modelId],
+        prepareHistorical: item.kind === 'VERIFICATION',
       })
       const modelResult = result.results.find((candidate) => candidate.modelId === item.modelId)
       const failed = result.status === 'FAILED'
