@@ -540,3 +540,52 @@ test('execution ledger relation probe casts regclass to text for Prisma compatib
   assert.match(observedQuery, /FROM information_schema\.tables/)
   assert.match(observedQuery, /table_name = 'forecast_preparation_execution_ledger'/)
 })
+
+test('default execution ledger recordEvent degrades to no-op when the ledger relation is unavailable', async () => {
+  const previousUrl = process.env.MARKET_DATA_DATABASE_URL
+  const previousPrisma = globalThis.__sgRuntimeMarketDataPrisma__
+
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://legacy-ledger.invalid/market-data'
+  globalThis.__sgRuntimeMarketDataPrisma__ = {
+    forecastPreparationExecutionLedger: {
+      async findUnique() {
+        throw new Error('Invalid `prisma.forecastPreparationExecutionLedger.findUnique()` invocation:\n\nThe table `public.forecast_preparation_execution_ledger` does not exist in the current database.')
+      },
+      async upsert() {
+        throw new Error('Invalid `prisma.forecastPreparationExecutionLedger.upsert()` invocation:\n\nThe table `public.forecast_preparation_execution_ledger` does not exist in the current database.')
+      },
+    },
+    async $executeRaw() {
+      throw new Error('executeRaw should not be attempted when the ledger relation is unavailable')
+    },
+  } as never
+
+  try {
+    const ledger = createForecastPreparationExecutionLedger()
+
+    await assert.doesNotReject(() => ledger.recordEvent({
+      executionId: '0db191a1-7934-49d6-864f-590c7650d670',
+      logicalArtifactKey: 'legacy-ledger-current',
+      operationFamily: 'CURRENT',
+      logicalArtifactIdentity: currentIdentity,
+      requestId: 'req-owner',
+      ownerRequestId: 'req-owner',
+      role: 'OWNER',
+      eventType: 'single_flight_owner_acquired',
+      observedAt: '2026-09-11T17:53:13.000Z',
+      attemptKind: 'PRIMARY',
+      executionMode: 'PRE_STAGE3_PREPARATION',
+    }))
+
+    const record = await ledger.readExecution('0db191a1-7934-49d6-864f-590c7650d670')
+    assert.equal(record, null)
+  } finally {
+    if (previousUrl === undefined) {
+      delete process.env.MARKET_DATA_DATABASE_URL
+    } else {
+      process.env.MARKET_DATA_DATABASE_URL = previousUrl
+    }
+
+    globalThis.__sgRuntimeMarketDataPrisma__ = previousPrisma
+  }
+})

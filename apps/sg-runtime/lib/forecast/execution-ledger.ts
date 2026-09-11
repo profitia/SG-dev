@@ -1071,106 +1071,120 @@ function createPrismaStore(): ForecastPreparationExecutionLedgerStore {
 
   return {
     async readExecution(executionId) {
-      const record = await prisma.forecastPreparationExecutionLedger.findUnique({
-        where: { executionId },
-      })
+      try {
+        const record = await prisma.forecastPreparationExecutionLedger.findUnique({
+          where: { executionId },
+        })
 
-      return record ? mapStoredExecutionRecord(record) : null
+        return record ? mapStoredExecutionRecord(record) : null
+      } catch (error) {
+        if (isMissingExecutionLedgerRelationError(error)) {
+          return null
+        }
+        throw error
+      }
     },
 
     async writeExecution(record) {
-      await prisma.forecastPreparationExecutionLedger.upsert({
-        where: { executionId: record.executionId },
-        create: {
-          executionId: record.executionId,
-          logicalArtifactKey: record.logicalArtifactKey,
-          operationFamily: record.operationFamily,
-          executionStatus: record.executionStatus,
-          resultStatus: record.resultStatus,
-          cacheStatus: record.cacheStatus,
-          artifactScope: record.artifactScope,
-          trainingWindowPolicyId: record.trainingWindowPolicyId,
-          seriesId: record.seriesId,
-          targetBasis: record.targetBasis,
-          targetSemantics: record.targetSemantics,
-          methodId: record.methodId,
-          methodVersion: record.methodVersion,
-          modelId: record.modelId,
-          inputSource: record.inputSource,
-          historyFingerprint: record.historyFingerprint,
-          sourceFrequency: record.sourceFrequency,
-          targetCadence: record.targetCadence,
-          frequencyIdentity: record.frequencyIdentity,
-          attemptKind: record.attemptKind,
-          executionMode: record.executionMode,
-          ownerToken: record.ownerToken,
-          leaseVersion: record.leaseVersion,
-          leaseAcquiredAt: new Date(record.leaseAcquiredAt),
-          leaseExpiresAt: new Date(record.leaseExpiresAt),
-          recoveredFromExecutionId: record.recoveredFromExecutionId,
-          ownerRequestId: record.ownerRequestId,
-          latestRequestId: record.latestRequestId,
-          latestRole: record.latestRole,
-          waiterCount: record.waiterCount,
-          eventCount: record.eventCount,
-          startedAt: new Date(record.startedAt),
-          lastEventAt: new Date(record.lastEventAt),
-          lastProgressAt: new Date(record.lastProgressAt),
-          completedAt: record.completedAt ? new Date(record.completedAt) : null,
-          computeStartedAt: record.computeStartedAt ? new Date(record.computeStartedAt) : null,
-          computeCompletedAt: record.computeCompletedAt ? new Date(record.computeCompletedAt) : null,
-          persistenceStartedAt: record.persistenceStartedAt ? new Date(record.persistenceStartedAt) : null,
-          persistenceCompletedAt: record.persistenceCompletedAt ? new Date(record.persistenceCompletedAt) : null,
-          failurePhase: record.failurePhase,
-          failureReason: record.failureReason,
-          logicalArtifactIdentityJson: record.logicalArtifactIdentity as Prisma.InputJsonValue,
-          eventsJson: record.events as Prisma.InputJsonValue,
-        },
-        update: {
-          logicalArtifactKey: record.logicalArtifactKey,
-          operationFamily: record.operationFamily,
-          executionStatus: record.executionStatus,
-          resultStatus: record.resultStatus,
-          cacheStatus: record.cacheStatus,
-          artifactScope: record.artifactScope,
-          trainingWindowPolicyId: record.trainingWindowPolicyId,
-          seriesId: record.seriesId,
-          targetBasis: record.targetBasis,
-          targetSemantics: record.targetSemantics,
-          methodId: record.methodId,
-          methodVersion: record.methodVersion,
-          modelId: record.modelId,
-          inputSource: record.inputSource,
-          historyFingerprint: record.historyFingerprint,
-          sourceFrequency: record.sourceFrequency,
-          targetCadence: record.targetCadence,
-          frequencyIdentity: record.frequencyIdentity,
-          attemptKind: record.attemptKind,
-          executionMode: record.executionMode,
-          ownerToken: record.ownerToken,
-          leaseVersion: record.leaseVersion,
-          leaseAcquiredAt: new Date(record.leaseAcquiredAt),
-          leaseExpiresAt: new Date(record.leaseExpiresAt),
-          recoveredFromExecutionId: record.recoveredFromExecutionId,
-          ownerRequestId: record.ownerRequestId,
-          latestRequestId: record.latestRequestId,
-          latestRole: record.latestRole,
-          waiterCount: record.waiterCount,
-          eventCount: record.eventCount,
-          startedAt: new Date(record.startedAt),
-          lastEventAt: new Date(record.lastEventAt),
-          lastProgressAt: new Date(record.lastProgressAt),
-          completedAt: record.completedAt ? new Date(record.completedAt) : null,
-          computeStartedAt: record.computeStartedAt ? new Date(record.computeStartedAt) : null,
-          computeCompletedAt: record.computeCompletedAt ? new Date(record.computeCompletedAt) : null,
-          persistenceStartedAt: record.persistenceStartedAt ? new Date(record.persistenceStartedAt) : null,
-          persistenceCompletedAt: record.persistenceCompletedAt ? new Date(record.persistenceCompletedAt) : null,
-          failurePhase: record.failurePhase,
-          failureReason: record.failureReason,
-          logicalArtifactIdentityJson: record.logicalArtifactIdentity as Prisma.InputJsonValue,
-          eventsJson: record.events as Prisma.InputJsonValue,
-        },
-      })
+      try {
+        await prisma.forecastPreparationExecutionLedger.upsert({
+          where: { executionId: record.executionId },
+          create: {
+            executionId: record.executionId,
+            logicalArtifactKey: record.logicalArtifactKey,
+            operationFamily: record.operationFamily,
+            executionStatus: record.executionStatus,
+            resultStatus: record.resultStatus,
+            cacheStatus: record.cacheStatus,
+            artifactScope: record.artifactScope,
+            trainingWindowPolicyId: record.trainingWindowPolicyId,
+            seriesId: record.seriesId,
+            targetBasis: record.targetBasis,
+            targetSemantics: record.targetSemantics,
+            methodId: record.methodId,
+            methodVersion: record.methodVersion,
+            modelId: record.modelId,
+            inputSource: record.inputSource,
+            historyFingerprint: record.historyFingerprint,
+            sourceFrequency: record.sourceFrequency,
+            targetCadence: record.targetCadence,
+            frequencyIdentity: record.frequencyIdentity,
+            attemptKind: record.attemptKind,
+            executionMode: record.executionMode,
+            ownerToken: record.ownerToken,
+            leaseVersion: record.leaseVersion,
+            leaseAcquiredAt: new Date(record.leaseAcquiredAt),
+            leaseExpiresAt: new Date(record.leaseExpiresAt),
+            recoveredFromExecutionId: record.recoveredFromExecutionId,
+            ownerRequestId: record.ownerRequestId,
+            latestRequestId: record.latestRequestId,
+            latestRole: record.latestRole,
+            waiterCount: record.waiterCount,
+            eventCount: record.eventCount,
+            startedAt: new Date(record.startedAt),
+            lastEventAt: new Date(record.lastEventAt),
+            lastProgressAt: new Date(record.lastProgressAt),
+            completedAt: record.completedAt ? new Date(record.completedAt) : null,
+            computeStartedAt: record.computeStartedAt ? new Date(record.computeStartedAt) : null,
+            computeCompletedAt: record.computeCompletedAt ? new Date(record.computeCompletedAt) : null,
+            persistenceStartedAt: record.persistenceStartedAt ? new Date(record.persistenceStartedAt) : null,
+            persistenceCompletedAt: record.persistenceCompletedAt ? new Date(record.persistenceCompletedAt) : null,
+            failurePhase: record.failurePhase,
+            failureReason: record.failureReason,
+            logicalArtifactIdentityJson: record.logicalArtifactIdentity as Prisma.InputJsonValue,
+            eventsJson: record.events as Prisma.InputJsonValue,
+          },
+          update: {
+            logicalArtifactKey: record.logicalArtifactKey,
+            operationFamily: record.operationFamily,
+            executionStatus: record.executionStatus,
+            resultStatus: record.resultStatus,
+            cacheStatus: record.cacheStatus,
+            artifactScope: record.artifactScope,
+            trainingWindowPolicyId: record.trainingWindowPolicyId,
+            seriesId: record.seriesId,
+            targetBasis: record.targetBasis,
+            targetSemantics: record.targetSemantics,
+            methodId: record.methodId,
+            methodVersion: record.methodVersion,
+            modelId: record.modelId,
+            inputSource: record.inputSource,
+            historyFingerprint: record.historyFingerprint,
+            sourceFrequency: record.sourceFrequency,
+            targetCadence: record.targetCadence,
+            frequencyIdentity: record.frequencyIdentity,
+            attemptKind: record.attemptKind,
+            executionMode: record.executionMode,
+            ownerToken: record.ownerToken,
+            leaseVersion: record.leaseVersion,
+            leaseAcquiredAt: new Date(record.leaseAcquiredAt),
+            leaseExpiresAt: new Date(record.leaseExpiresAt),
+            recoveredFromExecutionId: record.recoveredFromExecutionId,
+            ownerRequestId: record.ownerRequestId,
+            latestRequestId: record.latestRequestId,
+            latestRole: record.latestRole,
+            waiterCount: record.waiterCount,
+            eventCount: record.eventCount,
+            startedAt: new Date(record.startedAt),
+            lastEventAt: new Date(record.lastEventAt),
+            lastProgressAt: new Date(record.lastProgressAt),
+            completedAt: record.completedAt ? new Date(record.completedAt) : null,
+            computeStartedAt: record.computeStartedAt ? new Date(record.computeStartedAt) : null,
+            computeCompletedAt: record.computeCompletedAt ? new Date(record.computeCompletedAt) : null,
+            persistenceStartedAt: record.persistenceStartedAt ? new Date(record.persistenceStartedAt) : null,
+            persistenceCompletedAt: record.persistenceCompletedAt ? new Date(record.persistenceCompletedAt) : null,
+            failurePhase: record.failurePhase,
+            failureReason: record.failureReason,
+            logicalArtifactIdentityJson: record.logicalArtifactIdentity as Prisma.InputJsonValue,
+            eventsJson: record.events as Prisma.InputJsonValue,
+          },
+        })
+      } catch (error) {
+        if (isMissingExecutionLedgerRelationError(error)) {
+          return
+        }
+        throw error
+      }
     },
 
     async appendExecutionTelemetry({ current, next, input }) {
@@ -1188,34 +1202,41 @@ function createPrismaStore(): ForecastPreparationExecutionLedgerStore {
       const { sequence: _sequence, ...eventWithoutSequence } = event
       const eventJson = JSON.stringify(eventWithoutSequence)
 
-      const updatedRows = await prisma.$executeRaw(Prisma.sql`
-        UPDATE "forecast_preparation_execution_ledger"
-        SET
-          "eventsJson" = COALESCE("eventsJson", '[]'::jsonb) || jsonb_build_array(
-            CAST(${eventJson} AS jsonb) || jsonb_build_object('sequence', "eventCount" + 1)
-          ),
-          "eventCount" = "eventCount" + 1,
-          "latestRequestId" = CASE
-            WHEN ${isNewerOrEqualEvent} THEN ${input.requestId}
-            ELSE "latestRequestId"
-          END,
-          "latestRole" = CASE
-            WHEN ${isNewerOrEqualEvent} THEN ${input.role}
-            ELSE "latestRole"
-          END,
-          "waiterCount" = "waiterCount" + ${waiterIncrement},
-          "lastEventAt" = ${preserveLatestTimestampSql('lastEventAt', observedAt)},
-          "lastProgressAt" = ${progressObservedAt ? preserveLatestTimestampSql('lastProgressAt', progressObservedAt) : Prisma.sql`"lastProgressAt"`},
-          "computeStartedAt" = ${input.eventType === 'compute_started' ? preserveEarliestTimestampSql('computeStartedAt', observedAt) : Prisma.sql`"computeStartedAt"`},
-          "computeCompletedAt" = ${input.eventType === 'compute_completed' ? preserveLatestTimestampSql('computeCompletedAt', observedAt) : Prisma.sql`"computeCompletedAt"`},
-          "persistenceStartedAt" = ${input.eventType === 'persistence_started' ? preserveEarliestTimestampSql('persistenceStartedAt', observedAt) : Prisma.sql`"persistenceStartedAt"`},
-          "persistenceCompletedAt" = ${(input.eventType === 'persistence_completed' || input.eventType === 'persistence_failed') ? preserveLatestTimestampSql('persistenceCompletedAt', observedAt) : Prisma.sql`"persistenceCompletedAt"`},
-          "updatedAt" = NOW()
-        WHERE "executionId" = ${current.executionId}
-      `)
+      try {
+        const updatedRows = await prisma.$executeRaw(Prisma.sql`
+          UPDATE "forecast_preparation_execution_ledger"
+          SET
+            "eventsJson" = COALESCE("eventsJson", '[]'::jsonb) || jsonb_build_array(
+              CAST(${eventJson} AS jsonb) || jsonb_build_object('sequence', "eventCount" + 1)
+            ),
+            "eventCount" = "eventCount" + 1,
+            "latestRequestId" = CASE
+              WHEN ${isNewerOrEqualEvent} THEN ${input.requestId}
+              ELSE "latestRequestId"
+            END,
+            "latestRole" = CASE
+              WHEN ${isNewerOrEqualEvent} THEN ${input.role}
+              ELSE "latestRole"
+            END,
+            "waiterCount" = "waiterCount" + ${waiterIncrement},
+            "lastEventAt" = ${preserveLatestTimestampSql('lastEventAt', observedAt)},
+            "lastProgressAt" = ${progressObservedAt ? preserveLatestTimestampSql('lastProgressAt', progressObservedAt) : Prisma.sql`"lastProgressAt"`},
+            "computeStartedAt" = ${input.eventType === 'compute_started' ? preserveEarliestTimestampSql('computeStartedAt', observedAt) : Prisma.sql`"computeStartedAt"`},
+            "computeCompletedAt" = ${input.eventType === 'compute_completed' ? preserveLatestTimestampSql('computeCompletedAt', observedAt) : Prisma.sql`"computeCompletedAt"`},
+            "persistenceStartedAt" = ${input.eventType === 'persistence_started' ? preserveEarliestTimestampSql('persistenceStartedAt', observedAt) : Prisma.sql`"persistenceStartedAt"`},
+            "persistenceCompletedAt" = ${(input.eventType === 'persistence_completed' || input.eventType === 'persistence_failed') ? preserveLatestTimestampSql('persistenceCompletedAt', observedAt) : Prisma.sql`"persistenceCompletedAt"`},
+            "updatedAt" = NOW()
+          WHERE "executionId" = ${current.executionId}
+        `)
 
-      if (updatedRows !== 1) {
-        throw new Error(`Execution telemetry update expected exactly one row for ${current.executionId}, updated ${updatedRows}.`)
+        if (updatedRows !== 1) {
+          throw new Error(`Execution telemetry update expected exactly one row for ${current.executionId}, updated ${updatedRows}.`)
+        }
+      } catch (error) {
+        if (isMissingExecutionLedgerRelationError(error)) {
+          return
+        }
+        throw error
       }
     },
   }
