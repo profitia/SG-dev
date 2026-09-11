@@ -54,7 +54,11 @@ function isMissingVerificationTrainingPolicyColumnError(error: unknown) {
 
 function isMissingRollingDailySnapshotTrainingPolicyColumnError(error: unknown) {
   return error instanceof Error
-    && error.message.includes('rolling_daily_current_forecast_snapshots.trainingWindowPolicyId')
+    && error.message.includes('rolling_daily_current_forecast_snapshots.')
+    && (
+      error.message.includes('trainingWindowPolicyId')
+      || error.message.includes('sourceHistoryFingerprint')
+    )
 }
 
 async function findPreparedHistoricalVerificationRun(
@@ -112,7 +116,7 @@ async function findPreparedHistoricalVerificationRun(
 
 async function findPreparedRollingDailySnapshot(
   prisma: MarketDataPrismaClient,
-  where: Prisma.RollingDailyCurrentForecastSnapshotWhereInput,
+  where: Prisma.RollingDailyCurrentForecastSnapshotWhereInput & { sourceHistoryFingerprint?: string },
   uniqueWhere: Prisma.RollingDailyCurrentForecastSnapshotWhereUniqueInput,
 ): Promise<PreparedRollingDailySnapshot | null> {
   const select = {
@@ -130,11 +134,24 @@ async function findPreparedRollingDailySnapshot(
       throw error
     }
 
-    return prisma.rollingDailyCurrentForecastSnapshot.findFirst({
-      where,
-      select,
-      orderBy: { updatedAt: 'desc' },
-    })
+    try {
+      return await prisma.rollingDailyCurrentForecastSnapshot.findFirst({
+        where,
+        select,
+        orderBy: { updatedAt: 'desc' },
+      })
+    } catch (fallbackError) {
+      if (!isMissingRollingDailySnapshotTrainingPolicyColumnError(fallbackError)) {
+        throw fallbackError
+      }
+
+      const { sourceHistoryFingerprint: _sourceHistoryFingerprint, ...legacyWhere } = where
+      return prisma.rollingDailyCurrentForecastSnapshot.findFirst({
+        where: legacyWhere,
+        select,
+        orderBy: { updatedAt: 'desc' },
+      })
+    }
   }
 }
 
