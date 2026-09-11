@@ -280,7 +280,7 @@ export async function hasForecastPreparationExecutionLedgerRelation(
   }
 
   const result = await prisma.$queryRaw<Array<{ relation: string | null }>>(Prisma.sql`
-    SELECT to_regclass('public.forecast_preparation_execution_ledger') AS relation
+    SELECT to_regclass('public.forecast_preparation_execution_ledger')::text AS relation
   `)
 
   return typeof result[0]?.relation === 'string' && result[0].relation.length > 0

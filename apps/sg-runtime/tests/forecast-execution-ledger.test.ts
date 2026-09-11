@@ -6,6 +6,7 @@ import {
   createDefaultForecastPreparationExecutionAdmission,
   createForecastPreparationExecutionContextRegistry,
   createForecastPreparationExecutionLedger,
+  hasForecastPreparationExecutionLedgerRelation,
   reduceForecastPreparationExecution,
   STAGE2_NON_AUTHORITATIVE_LEASE_WINDOW_MS,
   type ForecastPreparationExecutionLedgerStore,
@@ -523,4 +524,18 @@ test('default execution admission falls back to in-memory coordination when the 
 
     globalThis.__sgRuntimeMarketDataPrisma__ = previousPrisma
   }
+})
+
+test('execution ledger relation probe casts regclass to text for Prisma compatibility', async () => {
+  let observedQuery = ''
+
+  const available = await hasForecastPreparationExecutionLedgerRelation({
+    async $queryRaw(query) {
+      observedQuery = Array.isArray(query.strings) ? query.strings.join(' ') : String(query)
+      return [{ relation: 'public.forecast_preparation_execution_ledger' }]
+    },
+  } as never)
+
+  assert.equal(available, true)
+  assert.match(observedQuery, /to_regclass\('public\.forecast_preparation_execution_ledger'\)::text AS relation/)
 })
