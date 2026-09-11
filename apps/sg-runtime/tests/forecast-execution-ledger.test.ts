@@ -532,10 +532,11 @@ test('execution ledger relation probe casts regclass to text for Prisma compatib
   const available = await hasForecastPreparationExecutionLedgerRelation({
     async $queryRaw(query) {
       observedQuery = Array.isArray(query.strings) ? query.strings.join(' ') : String(query)
-      return [{ relation: 'public.forecast_preparation_execution_ledger' }]
+      return [{ relationCount: 1 }]
     },
   } as never)
 
   assert.equal(available, true)
-  assert.match(observedQuery, /to_regclass\('public\.forecast_preparation_execution_ledger'\)::text AS relation/)
+  assert.match(observedQuery, /FROM information_schema\.tables/)
+  assert.match(observedQuery, /table_name = 'forecast_preparation_execution_ledger'/)
 })

@@ -2537,6 +2537,44 @@ export async function writeCurrentRunWithPrisma(
       failureReason: null,
       runtimeSeconds: artifact.runtimeSeconds,
     } as const
+    const legacyCurrentRunCreate = {
+      seriesId: artifact.seriesId,
+      displayName: artifact.displayName,
+      description: artifact.description,
+      frequency: artifact.frequencyIdentity,
+      currency: null,
+      unit: null,
+      sourceLabel: null,
+      inputSource: artifact.source.kind,
+      inputRunId: artifact.source.runId,
+      historyFingerprint: artifact.historyFingerprint,
+      targetBasis: artifact.targetBasis,
+      methodId: artifact.methodId,
+      historyStartAt: artifact.history.start ? new Date(artifact.history.start) : null,
+      historyEndAt: artifact.history.end ? new Date(artifact.history.end) : null,
+      observationCount: artifact.history.observations,
+      forecastOriginAt: artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null,
+      modelId: artifact.modelId,
+      methodVersion: artifact.methodVersion,
+      status: 'AVAILABLE',
+      failureReason: null,
+      runtimeSeconds: artifact.runtimeSeconds,
+    } as const
+    const legacyCurrentRunUpdate = {
+      displayName: artifact.displayName,
+      description: artifact.description,
+      frequency: artifact.frequencyIdentity,
+      inputRunId: artifact.source.runId,
+      historyStartAt: artifact.history.start ? new Date(artifact.history.start) : null,
+      historyEndAt: artifact.history.end ? new Date(artifact.history.end) : null,
+      observationCount: artifact.history.observations,
+      targetBasis: artifact.targetBasis,
+      methodId: artifact.methodId,
+      forecastOriginAt: artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null,
+      status: 'AVAILABLE',
+      failureReason: null,
+      runtimeSeconds: artifact.runtimeSeconds,
+    } as const
 
     let run: { id: string }
 
@@ -2556,18 +2594,10 @@ export async function writeCurrentRunWithPrisma(
             where: {
               id: legacyRun.id,
             },
-            data: {
-              ...currentRunUpdate,
-              trainingWindowPolicyId: undefined,
-              effectiveTrainingPolicyId: undefined,
-            },
+            data: legacyCurrentRunUpdate,
           })
         : await tx.forecastCurrentRun.create({
-            data: {
-              ...currentRunCreate,
-              trainingWindowPolicyId: undefined,
-              effectiveTrainingPolicyId: undefined,
-            },
+            data: legacyCurrentRunCreate,
           })
     } else {
       run = await tx.forecastCurrentRun.upsert({
@@ -2914,6 +2944,44 @@ export async function writeVerificationRunWithPrisma(
       failureReason: null,
       runtimeSeconds: artifact.runtimeSeconds,
     } as const
+    const legacyVerificationRunCreate = {
+      seriesId: artifact.seriesId,
+      displayName: artifact.displayName,
+      description: artifact.description,
+      frequency: artifact.frequencyIdentity,
+      currency: null,
+      unit: null,
+      sourceLabel: null,
+      inputSource: artifact.source.kind,
+      inputRunId: artifact.source.runId,
+      historyFingerprint: artifact.historyFingerprint,
+      targetBasis: artifact.targetBasis,
+      methodId: artifact.methodId,
+      historyStartAt: artifact.history.start ? new Date(artifact.history.start) : null,
+      historyEndAt: artifact.history.end ? new Date(artifact.history.end) : null,
+      observationCount: artifact.history.observations,
+      forecastOriginAt: artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null,
+      modelId: artifact.modelId,
+      methodVersion: artifact.methodVersion,
+      status: 'AVAILABLE',
+      failureReason: null,
+      runtimeSeconds: artifact.runtimeSeconds,
+    } as const
+    const legacyVerificationRunUpdate = {
+      displayName: artifact.displayName,
+      description: artifact.description,
+      frequency: artifact.frequencyIdentity,
+      inputRunId: artifact.source.runId,
+      historyStartAt: artifact.history.start ? new Date(artifact.history.start) : null,
+      historyEndAt: artifact.history.end ? new Date(artifact.history.end) : null,
+      observationCount: artifact.history.observations,
+      targetBasis: artifact.targetBasis,
+      methodId: artifact.methodId,
+      forecastOriginAt: artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null,
+      status: 'AVAILABLE',
+      failureReason: null,
+      runtimeSeconds: artifact.runtimeSeconds,
+    } as const
 
     let run: { id: string }
 
@@ -2933,18 +3001,10 @@ export async function writeVerificationRunWithPrisma(
             where: {
               id: legacyRun.id,
             },
-            data: {
-              ...verificationRunUpdate,
-              trainingWindowPolicyId: undefined,
-              effectiveTrainingPolicyId: undefined,
-            },
+            data: legacyVerificationRunUpdate,
           })
         : await tx.forecastVerificationRun.create({
-            data: {
-              ...verificationRunCreate,
-              trainingWindowPolicyId: undefined,
-              effectiveTrainingPolicyId: undefined,
-            },
+            data: legacyVerificationRunCreate,
           })
     } else {
       run = await tx.forecastVerificationRun.upsert({

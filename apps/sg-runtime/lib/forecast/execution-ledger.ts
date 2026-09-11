@@ -279,11 +279,14 @@ export async function hasForecastPreparationExecutionLedgerRelation(
     throw new Error('Forecast execution control datastore is unavailable.')
   }
 
-  const result = await prisma.$queryRaw<Array<{ relation: string | null }>>(Prisma.sql`
-    SELECT to_regclass('public.forecast_preparation_execution_ledger')::text AS relation
+  const result = await prisma.$queryRaw<Array<{ relationCount: number }>>(Prisma.sql`
+    SELECT COUNT(*)::int AS "relationCount"
+    FROM information_schema.tables
+    WHERE table_schema = current_schema()
+      AND table_name = 'forecast_preparation_execution_ledger'
   `)
 
-  return typeof result[0]?.relation === 'string' && result[0].relation.length > 0
+  return Number(result[0]?.relationCount ?? 0) === 1
 }
 
 function getLegacyExecutionAdmissionFallback(leaseDurationMs: number) {

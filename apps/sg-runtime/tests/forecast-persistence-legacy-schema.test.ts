@@ -159,8 +159,8 @@ test('writeCurrentRunWithPrisma falls back to legacy writes when training policy
     assert.equal(legacyWhere?.frequency, artifact.frequencyIdentity)
     assert.equal('trainingWindowPolicyId' in (legacyWhere ?? {}), false)
     assert.equal('effectiveTrainingPolicyId' in (legacyWhere ?? {}), false)
-    assert.equal(legacyUpdateData?.trainingWindowPolicyId, undefined)
-    assert.equal(legacyUpdateData?.effectiveTrainingPolicyId, undefined)
+    assert.equal('trainingWindowPolicyId' in (legacyUpdateData ?? {}), false)
+    assert.equal('effectiveTrainingPolicyId' in (legacyUpdateData ?? {}), false)
     assert.equal(deletedRunId, 'legacy-current-run')
     assert.equal(createdPointCount, 1)
   } finally {
@@ -226,8 +226,8 @@ test('writeVerificationRunWithPrisma falls back to legacy writes when training p
     await writeVerificationRunWithPrisma(artifact)
 
     assert.deepEqual(verificationRunCalls, ['findFirst', 'create'])
-    assert.equal(legacyCreateData?.trainingWindowPolicyId, undefined)
-    assert.equal(legacyCreateData?.effectiveTrainingPolicyId, undefined)
+    assert.equal('trainingWindowPolicyId' in (legacyCreateData ?? {}), false)
+    assert.equal('effectiveTrainingPolicyId' in (legacyCreateData ?? {}), false)
     assert.equal(deletedMetricRunId, 'legacy-verification-run')
     assert.equal(deletedPointRunId, 'legacy-verification-run')
     assert.equal(createdMetricCount, 1)
