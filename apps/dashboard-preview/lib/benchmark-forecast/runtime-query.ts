@@ -387,6 +387,13 @@ async function getPersistedRollingDailyCurrentForecast(
       )
 }
 
+export async function readPointInTimeCurrentForecastSnapshot(
+  seriesId: string,
+  model: ForecastPortfolioModelId,
+) {
+  return getPersistedRollingDailyCurrentForecast(seriesId, model)
+}
+
 async function getPersistedCurrentForecast(
   seriesId: string,
   model: ForecastPortfolioModelId,

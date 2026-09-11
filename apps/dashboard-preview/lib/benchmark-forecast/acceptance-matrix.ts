@@ -18,7 +18,11 @@ import {
   prepareInteractiveCurrentForecast,
   readInteractiveForecastCapability,
 } from './interactive-current-preparation'
-import { getBenchmarkForecastVerification, resolveShowForecastCurrent } from './runtime-query'
+import {
+  getBenchmarkForecastVerification,
+  readPointInTimeCurrentForecastSnapshot,
+  resolveShowForecastCurrent,
+} from './runtime-query'
 
 import { getMarketDataPrismaClient } from '@/lib/db/market-data-prisma'
 
@@ -88,6 +92,7 @@ type AcceptanceMatrixDependencies = {
     targetBasis: ForecastTargetBasis,
     cadence?: { sourceFrequency: string, targetCadence: string },
   ) => Promise<BenchmarkForecastVerificationResult>
+  readPointInTimeCurrent: (seriesId: string, model: ForecastPortfolioModelId) => Promise<BenchmarkForecastCurrentResult>
   getPrisma: () => PrismaClientLike | null
 }
 
@@ -413,6 +418,7 @@ export function createForecastAcceptanceMatrixService(
       resolveShowForecastCurrent(seriesId, model, targetBasis) as Promise<BenchmarkForecastCurrentResult>
     )),
     readVerification: dependencies.readVerification ?? getBenchmarkForecastVerification,
+    readPointInTimeCurrent: dependencies.readPointInTimeCurrent ?? readPointInTimeCurrentForecastSnapshot,
     getPrisma: dependencies.getPrisma ?? getMarketDataPrismaClient,
   }
 
@@ -462,7 +468,9 @@ export function createForecastAcceptanceMatrixService(
       return cached
     }
 
-    const pending = resolvedDependencies.readCurrent(seriesId, modelId, targetBasis, cadence)
+    const pending = targetBasis === 'POINT_IN_TIME'
+      ? resolvedDependencies.readPointInTimeCurrent(seriesId, modelId)
+      : resolvedDependencies.readCurrent(seriesId, modelId, targetBasis, cadence)
     currentReadCache.set(cacheKey, pending)
     return pending
   }
