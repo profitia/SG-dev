@@ -531,3 +531,112 @@ test('failed preparation records the exact reason and does not auto-retry on ord
   assert.equal(polledVariant?.currentReason, 'simulated current failure')
   assert.equal(harness.currentCalls.filter((call) => call === 'series-a:END_OF_PERIOD:arima').length, 1)
 })
+
+test('point-in-time verification queues and runs through rolling-daily when current is already ready', async () => {
+  const rollingCalls: string[] = []
+  let historicalReady = false
+
+  const service = createProgressiveForecastPreparationService({
+    async resolveCapabilities(seriesId) {
+      return {
+        status: 'AVAILABLE' as const,
+        reason: null,
+        sourceMetadata: {
+          seriesId,
+          providerCode: 'MACROBOND',
+          source: 'postgres',
+          sourceFrequency: 'DAILY' as const,
+          rawFrequency: 'daily',
+          sourceObservationCount: 400,
+          fullHistoryObservationCount: 400,
+        },
+        targetedHydration: {
+          scope: 'SINGLE_SERIES' as const,
+          requestedSeriesId: seriesId,
+          source: 'postgres' as const,
+          cacheStatus: 'hit' as const,
+        },
+        preparationFailures: {},
+        capabilities: [
+          {
+            identity: {
+              seriesId,
+              modelId: 'arima',
+              targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME' as const,
+              methodId: 'ROLLING_DAILY_POINT_IN_TIME' as const,
+              methodVersion: 'rolling-daily-point-in-time-v1',
+            },
+            sourceFrequency: 'DAILY' as const,
+            sourceFrequencyRecognized: true,
+            businessTarget: 'DAILY' as const,
+            targetCadence: 'DAILY' as const,
+            targetSemanticsSupported: true,
+            horizonSupportState: 'NOT_REQUESTED' as const,
+            horizonMonths: null,
+            horizonSteps: null,
+            semanticLawfulness: 'LAWFUL' as const,
+            admissionState: 'ADMITTED' as const,
+            provenanceStatus: 'PROVEN' as const,
+            implementationState: 'SUPPORTED' as const,
+            historyEligibility: 'ELIGIBLE' as const,
+            minimumRequiredObservations: 60,
+            availableObservations: 400,
+            modelEligible: true,
+            currentForecastEligible: true,
+            verificationOriginCount: historicalReady ? 24 : 0,
+            verificationEvidenceState: historicalReady ? 'SUFFICIENT' as const : 'NOT_AVAILABLE' as const,
+            predictionBandResidualCount: historicalReady ? 40 : 0,
+            predictionBandState: historicalReady ? 'AVAILABLE' as const : 'NOT_AVAILABLE' as const,
+            targetPreparationState: 'PREPARED' as const,
+            currentPreparedState: 'READY' as const,
+            historicalPreparedState: historicalReady ? 'READY' as const : 'NOT_PREPARED' as const,
+            capabilityState: historicalReady ? 'AVAILABLE' as const : 'PREPARATION_REQUIRED' as const,
+          },
+        ],
+      }
+    },
+    async prepareMonthlyCurrent() {
+      throw new Error('monthly current should not run for point-in-time verification')
+    },
+    async prepareMonthlyHistorical() {
+      throw new Error('monthly verification should not run for point-in-time verification')
+    },
+    async runRollingDaily(request) {
+      rollingCalls.push(`${request.seriesId}:${request.modelIds.join(',')}`)
+      historicalReady = true
+      return {
+        status: 'SUCCEEDED' as const,
+        seriesId: request.seriesId,
+        targetBasis: 'POINT_IN_TIME' as const,
+        results: [{
+          modelId: 'arima' as const,
+          status: 'SUCCEEDED' as const,
+          currentStatus: 'AVAILABLE' as const,
+          verificationStatus: 'AVAILABLE' as const,
+        }],
+      } as never
+    },
+  })
+
+  const first = await service.snapshotAndKickoff({
+    seriesId: 'pit.series',
+    preferredModelId: 'arima',
+    preferredTargetBasis: 'POINT_IN_TIME',
+  })
+
+  const firstVariant = first.variants.find((variant) => variant.modelId === 'arima' && variant.targetBasis === 'POINT_IN_TIME')
+  assert.ok(['QUEUED', 'PREPARING', 'READY'].includes(firstVariant?.verificationState ?? 'FAILED'))
+
+  await flushProgressiveQueue()
+
+  const second = await service.snapshotAndKickoff({
+    seriesId: 'pit.series',
+    preferredModelId: 'arima',
+    preferredTargetBasis: 'POINT_IN_TIME',
+  })
+
+  const secondVariant = second.variants.find((variant) => variant.modelId === 'arima' && variant.targetBasis === 'POINT_IN_TIME')
+  assert.equal(secondVariant?.currentState, 'READY')
+  assert.equal(secondVariant?.verificationState, 'READY')
+  assert.deepEqual(rollingCalls, ['pit.series:arima'])
+})

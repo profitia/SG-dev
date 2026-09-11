@@ -99,10 +99,6 @@ function isCurrentPreparationEligible(capability: ForecastVariantCapability) {
 }
 
 function isVerificationPreparationEligible(capability: ForecastVariantCapability) {
-  if (capability.identity.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME') {
-    return false
-  }
-
   return isCurrentPreparationEligible(capability)
     && capability.currentPreparedState === 'READY'
 }
