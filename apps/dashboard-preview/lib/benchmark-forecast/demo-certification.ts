@@ -663,6 +663,7 @@ export function getDefaultDemoCertificationCohort() {
 export function createDemoCertificationService(
   dependencies: Partial<DemoCertificationDependencies> = {},
 ) {
+  const capabilityCache = new Map<string, Promise<InteractiveForecastCapabilityResult>>()
   const currentReadCache = new Map<string, Promise<BenchmarkForecastCurrentResult>>()
   const verificationReadCache = new Map<string, Promise<BenchmarkForecastVerificationResult>>()
   const preparationCache = new Map<string, Promise<BenchmarkForecastCurrentPreparationResult>>()
@@ -671,7 +672,26 @@ export function createDemoCertificationService(
   )
   const readCurrent = dependencies.readCurrent ?? resolveShowForecastCurrent
   const readVerification = dependencies.readVerification ?? getBenchmarkForecastVerification
+  const readCapability = dependencies.readCapability ?? readInteractiveForecastCapability
   const prepareCurrent = dependencies.prepareCurrent ?? prepareInteractiveCurrentForecast
+
+  const readCapabilityOnce = (
+    input: BenchmarkForecastCurrentPreparationRequest,
+    options?: { signal?: AbortSignal },
+    forceRefresh = false,
+  ) => {
+    const key = createReadKey(input.seriesId, input.modelId, input.targetBasis)
+    if (!forceRefresh) {
+      const cached = capabilityCache.get(key)
+      if (cached) {
+        return cached
+      }
+    }
+
+    const pending = readCapability(input, options)
+    capabilityCache.set(key, pending)
+    return pending
+  }
 
   const prepareCurrentOnce = (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => {
     const key = createReadKey(input.seriesId, input.modelId, input.targetBasis)
@@ -690,7 +710,7 @@ export function createDemoCertificationService(
     benchmarkTimeoutMs: dependencies.benchmarkTimeoutMs ?? DEFAULT_BENCHMARK_TIMEOUT_MS,
     cohort: dependencies.cohort ?? DEFAULT_DEMO_COHORT,
     resolveReleaseSnapshot: dependencies.resolveReleaseSnapshot ?? defaultReleaseSnapshot,
-    readCapability: dependencies.readCapability ?? readInteractiveForecastCapability,
+    readCapability: readCapabilityOnce,
     prepareCurrent: prepareCurrentOnce,
     readCurrent: (seriesId, modelId, targetBasis) => {
       const key = createReadKey(seriesId, modelId, targetBasis)
@@ -715,7 +735,7 @@ export function createDemoCertificationService(
       return pending
     },
     evaluateMatrix: dependencies.evaluateMatrix ?? createMatrixEvaluator({
-      readCapability: dependencies.readCapability ?? readInteractiveForecastCapability,
+      readCapability: readCapabilityOnce,
       prepareCurrent: prepareCurrentOnce,
       readCurrent: (seriesId, modelId, targetBasis) => {
         const key = createReadKey(seriesId, modelId, targetBasis)
@@ -767,7 +787,7 @@ export function createDemoCertificationService(
                 return {
                   input,
                   required: requiredTargetBases.includes(targetBasis),
-                  capability: await resolvedDependencies.readCapability(input, { signal }),
+                  capability: await readCapabilityOnce(input, { signal }),
                 }
               })
             )),
@@ -844,18 +864,19 @@ export function createDemoCertificationService(
             }
 
             const preparation = await resolvedDependencies.prepareCurrent(input, { signal })
+            const warmedCapability = await readCapabilityOnce(input, { signal }, true)
             variants.push({
               seriesId: entry.seriesId,
               modelId: input.modelId,
               targetBasis: input.targetBasis,
               targetSemantics: preparation.targetSemantics,
               required,
-              capabilityStatus: capability.status,
-              currentReadiness: capability.currentReadiness,
-              verificationReadiness: capability.verificationReadiness,
+              capabilityStatus: warmedCapability.status,
+              currentReadiness: warmedCapability.currentReadiness,
+              verificationReadiness: warmedCapability.verificationReadiness,
               preparationStatus: preparation.prepareStatus,
               status: preparation.state === 'READY' ? 'PASS' : 'FAIL',
-              reason: preparation.state === 'READY' ? null : preparation.reason ?? preparation.state,
+              reason: preparation.state === 'READY' ? null : preparation.reason ?? warmedCapability.reason ?? preparation.state,
             })
           }
 

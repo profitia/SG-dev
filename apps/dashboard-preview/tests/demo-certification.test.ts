@@ -685,6 +685,7 @@ test('I6. benchmark evaluations run concurrently across the cohort', async () =>
 test('I7. precompute and matrix reuse the same preparation for a stale variant', async () => {
   const preparedVariants = new Set<string>()
   const prepareCalls: string[] = []
+  const capabilityCalls = new Map<string, number>()
   const keyOf = (input: BenchmarkForecastCurrentPreparationRequest) => `${input.seriesId}:${input.modelId}:${input.targetBasis}`
   const originalRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
 
@@ -710,6 +711,8 @@ test('I7. precompute and matrix reuse the same preparation for a stale variant',
         cohort: cohort.map((entry) => ({ seriesId: entry.seriesId, benchmarkName: entry.benchmarkName, group: entry.group })),
       }),
       readCapability: async (input) => {
+        capabilityCalls.set(keyOf(input), (capabilityCalls.get(keyOf(input)) ?? 0) + 1)
+
         if (input.modelId !== 'naive' || input.targetBasis !== 'MONTHLY_AVERAGE') {
           return capability(input)
         }
@@ -734,6 +737,7 @@ test('I7. precompute and matrix reuse the same preparation for a stale variant',
 
     assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
     assert.deepEqual(prepareCalls, ['wocaes0074:naive:MONTHLY_AVERAGE'])
+    assert.equal(capabilityCalls.get('wocaes0074:naive:MONTHLY_AVERAGE'), 2)
   } finally {
     if (originalRenderExternalUrl === undefined) {
       delete process.env.RENDER_EXTERNAL_URL
