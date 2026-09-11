@@ -121,6 +121,9 @@ test('writeCurrentRunWithPrisma falls back to legacy writes when training policy
 
   process.env.MARKET_DATA_DATABASE_URL = 'postgresql://legacy-current.invalid/market-data'
   globalThis.__sgRuntimeMarketDataPrisma__ = {
+    async $queryRaw() {
+      return [{ columnCount: 0 }]
+    },
     $transaction: async (callback: (tx: Record<string, unknown>) => Promise<void>) => callback({
       forecastCurrentRun: {
         async upsert() {
@@ -152,7 +155,7 @@ test('writeCurrentRunWithPrisma falls back to legacy writes when training policy
   try {
     await writeCurrentRunWithPrisma(artifact)
 
-    assert.deepEqual(currentRunCalls, ['upsert', 'findFirst', 'update'])
+    assert.deepEqual(currentRunCalls, ['findFirst', 'update'])
     assert.equal(legacyWhere?.frequency, artifact.frequencyIdentity)
     assert.equal('trainingWindowPolicyId' in (legacyWhere ?? {}), false)
     assert.equal('effectiveTrainingPolicyId' in (legacyWhere ?? {}), false)
@@ -183,6 +186,9 @@ test('writeVerificationRunWithPrisma falls back to legacy writes when training p
 
   process.env.MARKET_DATA_DATABASE_URL = 'postgresql://legacy-verification.invalid/market-data'
   globalThis.__sgRuntimeMarketDataPrisma__ = {
+    async $queryRaw() {
+      return [{ columnCount: 0 }]
+    },
     $transaction: async (callback: (tx: Record<string, unknown>) => Promise<void>) => callback({
       forecastVerificationRun: {
         async upsert() {
@@ -219,7 +225,7 @@ test('writeVerificationRunWithPrisma falls back to legacy writes when training p
   try {
     await writeVerificationRunWithPrisma(artifact)
 
-    assert.deepEqual(verificationRunCalls, ['upsert', 'findFirst', 'create'])
+    assert.deepEqual(verificationRunCalls, ['findFirst', 'create'])
     assert.equal(legacyCreateData?.trainingWindowPolicyId, undefined)
     assert.equal(legacyCreateData?.effectiveTrainingPolicyId, undefined)
     assert.equal(deletedMetricRunId, 'legacy-verification-run')

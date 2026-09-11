@@ -514,6 +514,25 @@ function isMissingVerificationTrainingPolicyColumnError(error: unknown) {
     )
 }
 
+async function hasForecastRunTrainingPolicyColumns(
+  prisma: ReturnType<typeof getMarketDataPrisma>,
+  tableName: 'forecast_current_runs' | 'forecast_verification_runs',
+) {
+  if (!prisma) {
+    throw new Error('Forecast library datastore is unavailable.')
+  }
+
+  const result = await prisma.$queryRaw<Array<{ columnCount: number }>>(Prisma.sql`
+    SELECT COUNT(*)::int AS "columnCount"
+    FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = ${tableName}
+      AND column_name IN ('trainingWindowPolicyId', 'effectiveTrainingPolicyId')
+  `)
+
+  return Number(result[0]?.columnCount ?? 0) === 2
+}
+
 async function assertForecastPersistenceOwnership(
   tx: Prisma.TransactionClient,
   ownership: ForecastPersistenceOwnership | undefined,
@@ -2460,6 +2479,7 @@ export async function writeCurrentRunWithPrisma(
   const shouldFenceOwnership = options?.ownership
     ? await hasForecastPreparationExecutionLedgerRelation(prisma)
     : false
+  const supportsTrainingPolicyColumns = await hasForecastRunTrainingPolicyColumns(prisma, 'forecast_current_runs')
 
   await prisma.$transaction(async (tx) => {
     if (shouldFenceOwnership) {
@@ -2520,23 +2540,7 @@ export async function writeCurrentRunWithPrisma(
 
     let run: { id: string }
 
-    try {
-      run = await tx.forecastCurrentRun.upsert({
-        where: {
-          seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId: {
-            ...currentRunIdentityWhere,
-            trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
-            effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
-          },
-        },
-        create: currentRunCreate,
-        update: currentRunUpdate,
-      })
-    } catch (error) {
-      if (!isMissingCurrentTrainingPolicyColumnError(error)) {
-        throw error
-      }
-
+    if (!supportsTrainingPolicyColumns) {
       const legacyRun = await tx.forecastCurrentRun.findFirst({
         where: {
           ...currentRunIdentityWhere,
@@ -2565,6 +2569,18 @@ export async function writeCurrentRunWithPrisma(
               effectiveTrainingPolicyId: undefined,
             },
           })
+    } else {
+      run = await tx.forecastCurrentRun.upsert({
+        where: {
+          seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId: {
+            ...currentRunIdentityWhere,
+            trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
+            effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
+          },
+        },
+        create: currentRunCreate,
+        update: currentRunUpdate,
+      })
     }
 
     await tx.forecastCurrentPoint.deleteMany({
@@ -2840,6 +2856,7 @@ export async function writeVerificationRunWithPrisma(
   const shouldFenceOwnership = options?.ownership
     ? await hasForecastPreparationExecutionLedgerRelation(prisma)
     : false
+  const supportsTrainingPolicyColumns = await hasForecastRunTrainingPolicyColumns(prisma, 'forecast_verification_runs')
 
   await prisma.$transaction(async (tx) => {
     if (shouldFenceOwnership) {
@@ -2900,23 +2917,7 @@ export async function writeVerificationRunWithPrisma(
 
     let run: { id: string }
 
-    try {
-      run = await tx.forecastVerificationRun.upsert({
-        where: {
-          seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId: {
-            ...verificationRunIdentityWhere,
-            trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
-            effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
-          },
-        },
-        create: verificationRunCreate,
-        update: verificationRunUpdate,
-      })
-    } catch (error) {
-      if (!isMissingVerificationTrainingPolicyColumnError(error)) {
-        throw error
-      }
-
+    if (!supportsTrainingPolicyColumns) {
       const legacyRun = await tx.forecastVerificationRun.findFirst({
         where: {
           ...verificationRunIdentityWhere,
@@ -2945,6 +2946,18 @@ export async function writeVerificationRunWithPrisma(
               effectiveTrainingPolicyId: undefined,
             },
           })
+    } else {
+      run = await tx.forecastVerificationRun.upsert({
+        where: {
+          seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId: {
+            ...verificationRunIdentityWhere,
+            trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
+            effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
+          },
+        },
+        create: verificationRunCreate,
+        update: verificationRunUpdate,
+      })
     }
 
     await tx.forecastVerificationMetric.deleteMany({
