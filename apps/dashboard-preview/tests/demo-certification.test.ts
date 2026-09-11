@@ -586,6 +586,28 @@ test('I4. one benchmark timeout aborts in-flight SG Runtime-backed capability wo
   assert.equal(capturedSignal?.aborted, true)
 })
 
+test('I4b. timed out benchmark reports the timeout reason instead of leaking abort errors', async () => {
+  const report = await createService({
+    benchmarkTimeoutMs: 1,
+    capabilityResolver: (input, options) => {
+      if (input.seriesId !== 'lmeofcucashask') {
+        return capability(input)
+      }
+
+      return new Promise<InteractiveForecastCapabilityResult>((_resolve, reject) => {
+        options?.signal?.addEventListener('abort', () => {
+          const aborted = new Error('This operation was aborted') as Error & { name: string }
+          aborted.name = 'AbortError'
+          reject(aborted)
+        }, { once: true })
+      }) as never
+    },
+  }).run({ seriesIds: ['wocaes0074', 'lmeofcucashask'] })
+
+  assert.equal(report.benchmarks[1]?.reason, 'ENVIRONMENT_NOT_READY')
+  assert.match(report.benchmarks[1]?.precompute.reason ?? '', /timed out/i)
+})
+
 test('I5. warm rehearsal reuses reads and completes within the benchmark timeout budget', async () => {
   let currentCalls = 0
   let verificationCalls = 0
@@ -610,6 +632,54 @@ test('I5. warm rehearsal reuses reads and completes within the benchmark timeout
   assert.equal(report.benchmarks[0]?.reason, null)
   assert.equal(currentCalls, MODELS.length * TARGET_BASES.length)
   assert.equal(verificationCalls, MODELS.length * TARGET_BASES.length)
+})
+
+test('I6. benchmark evaluations run concurrently across the cohort', async () => {
+  const started: string[] = []
+  const released = new Map<string, () => void>()
+  const matrixCalls = new Map<string, number>()
+
+  const reportPromise = createService({
+    cohort: [
+      { seriesId: 'wocaes0074', benchmarkName: 'Brent', group: 'PRIMARY' },
+      { seriesId: 'lmeofcucashask', benchmarkName: 'Copper', group: 'PRIMARY' },
+    ],
+    matrixResolver: async (seriesId) => {
+      const nextCalls = (matrixCalls.get(seriesId) ?? 0) + 1
+      matrixCalls.set(seriesId, nextCalls)
+
+      if (nextCalls > 1) {
+        return matrixReport(seriesId)
+      }
+
+      started.push(seriesId)
+
+      await new Promise<void>((resolve) => {
+        released.set(seriesId, resolve)
+      })
+
+      return matrixReport(seriesId)
+    },
+  }).run({ includeFallback: false })
+
+  await new Promise<void>((resolve, reject) => {
+    setImmediate(() => {
+      try {
+        assert.deepEqual(started, ['wocaes0074', 'lmeofcucashask'])
+        resolve()
+      } catch (error) {
+        reject(error)
+      }
+    })
+  })
+
+  released.get('wocaes0074')?.()
+  released.get('lmeofcucashask')?.()
+
+  const report = await reportPromise
+  assert.equal(report.summary.demoCohort, 2)
+  assert.equal(report.benchmarks[0]?.seriesId, 'wocaes0074')
+  assert.equal(report.benchmarks[1]?.seriesId, 'lmeofcucashask')
 })
 
 test('J. Stage 3 cohort config does not restrict product capability', async () => {

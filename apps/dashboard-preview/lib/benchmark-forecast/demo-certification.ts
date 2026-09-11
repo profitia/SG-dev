@@ -629,17 +629,26 @@ async function withBenchmarkTimeout<T>(
 
   const controller = new AbortController()
   let timeoutId: ReturnType<typeof setTimeout> | null = null
+  let didTimeout = false
+  const timeoutMessage = `Demo certification benchmark timed out after ${timeoutMs}ms.`
 
   try {
     return await Promise.race([
       operation(controller.signal),
       new Promise<T>((_, reject) => {
         timeoutId = setTimeout(() => {
+          didTimeout = true
           controller.abort()
-          reject(new Error(`Demo certification benchmark timed out after ${timeoutMs}ms.`))
+          reject(new Error(timeoutMessage))
         }, timeoutMs)
       }),
     ])
+  } catch (error) {
+    if (didTimeout) {
+      throw new Error(timeoutMessage)
+    }
+
+    throw error
   } finally {
     if (timeoutId) {
       clearTimeout(timeoutId)
@@ -728,9 +737,7 @@ export function createDemoCertificationService(
       })
       const releaseSnapshot = resolvedDependencies.resolveReleaseSnapshot(selectedCohort, mode)
       const priorBySeriesId = new Map((options.priorSnapshots ?? []).map((snapshot) => [snapshot.seriesId, snapshot]))
-      const benchmarks: DemoBenchmarkCertification[] = []
-
-      for (const entry of selectedCohort) {
+      const benchmarks = await Promise.all(selectedCohort.map(async (entry) => {
         const requiredTargetBases = resolveRequiredTargetBases(entry)
         const optionalTargetBases = resolveOptionalTargetBases(entry)
         const inspectedTargetBases = [...new Set([...requiredTargetBases, ...optionalTargetBases])]
@@ -899,10 +906,10 @@ export function createDemoCertificationService(
           }
           }), resolvedDependencies.benchmarkTimeoutMs)
 
-          benchmarks.push(benchmark)
+          return benchmark
         } catch (error) {
           const reason = error instanceof Error ? error.message : 'Demo certification environment is not ready.'
-          benchmarks.push(createEnvironmentFailureBenchmark(
+          return createEnvironmentFailureBenchmark(
             entry,
             requiredTargetBases,
             optionalTargetBases,
@@ -911,9 +918,9 @@ export function createDemoCertificationService(
             reason,
             resolvedDependencies.now(),
             releaseSnapshot.deployedRevision,
-          ))
+          )
         }
-      }
+      }))
 
       const invalidationReasons = benchmarks.flatMap((benchmark) => (
         benchmark.reason === 'REVISION_CHANGED' || benchmark.reason === 'FINGERPRINT_CHANGED'
