@@ -61,8 +61,178 @@ type RollingDailySnapshotPersistenceOptions = {
   ownership?: ForecastPersistenceOwnership
 }
 
+type RollingDailySnapshotUpsertClient = Pick<MarketDataPrismaClient, 'rollingDailyCurrentForecastSnapshot'>
+
+type RollingDailySnapshotSqlClient = Pick<MarketDataPrismaClient, '$queryRaw'>
+
+type LegacyRollingDailyCurrentForecastSnapshot = {
+  payloadJson: Prisma.JsonValue
+}
+
+function isMissingRollingDailySnapshotTrainingPolicyColumnError(error: unknown) {
+  return error instanceof Error
+    && error.message.includes('rolling_daily_current_forecast_snapshots.')
+    && (
+      error.message.includes('trainingWindowPolicyId')
+      || error.message.includes('effectiveTrainingPolicyId')
+      || error.message.includes('sourceHistoryFingerprint')
+    )
+}
+
+async function hasRollingDailyCurrentForecastSnapshotExactIdentityColumns(
+  prisma: Pick<MarketDataPrismaClient, '$queryRaw'>,
+) {
+  if (typeof prisma.$queryRaw !== 'function') {
+    return true
+  }
+
+  const result = await prisma.$queryRaw<Array<{ columnCount: number }>>(Prisma.sql`
+    SELECT COUNT(*)::int AS "columnCount"
+    FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'rolling_daily_current_forecast_snapshots'
+      AND column_name IN (
+        'trainingWindowPolicyId',
+        'effectiveTrainingPolicyId',
+        'sourceHistoryFingerprint'
+      )
+  `)
+
+  return Number(result[0]?.columnCount ?? 0) === 3
+}
+
+async function findLegacyRollingDailyCurrentForecastSnapshotId(
+  prisma: RollingDailySnapshotSqlClient,
+  input: {
+    seriesId: string
+    inputSource: string
+    modelId: RollingDailyCurrentForecastSnapshotModelId
+    methodVersion: string
+  },
+) {
+  const rows = await prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT "id"
+    FROM "rolling_daily_current_forecast_snapshots"
+    WHERE "seriesId" = ${input.seriesId}
+      AND "inputSource" = ${input.inputSource}
+      AND "targetBasis" = CAST(${ROLLING_DAILY_TARGET_BASIS} AS "ForecastTargetBasis")
+      AND "methodId" = ${ROLLING_DAILY_METHOD_ID}
+      AND "methodVersion" = ${input.methodVersion}
+      AND "modelId" = ${input.modelId}
+    ORDER BY "updatedAt" DESC
+    LIMIT 1
+  `)
+
+  return rows[0]?.id ?? null
+}
+
+async function updateLegacyRollingDailyCurrentForecastSnapshot(
+  prisma: RollingDailySnapshotSqlClient,
+  snapshotId: string,
+  input: {
+    payload: RollingDailyProductionForecastResult
+    forecastOriginAt: Date | null
+    sourceLatestObservationAt: Date | null
+  },
+) {
+  const payloadJson = JSON.stringify(input.payload)
+  const rows = await prisma.$queryRaw<Array<LegacyRollingDailyCurrentForecastSnapshot>>(Prisma.sql`
+    UPDATE "rolling_daily_current_forecast_snapshots"
+    SET "inputRunId" = NULL,
+        "contractVersion" = ${input.payload.contractVersion},
+        "status" = ${input.payload.status},
+        "reasonCode" = ${input.payload.status === 'AVAILABLE' ? null : input.payload.reasonCode},
+        "message" = ${input.payload.status === 'AVAILABLE' ? null : input.payload.message},
+        "forecastOriginAt" = ${input.forecastOriginAt},
+        "sourceLatestObservationAt" = ${input.sourceLatestObservationAt},
+        "payloadJson" = CAST(${payloadJson} AS jsonb),
+        "updatedAt" = NOW()
+    WHERE "id" = ${snapshotId}
+    RETURNING "payloadJson"
+  `)
+
+  return rows[0]
+}
+
+async function createLegacyRollingDailyCurrentForecastSnapshot(
+  prisma: RollingDailySnapshotSqlClient,
+  input: {
+    request: RollingDailyCurrentForecastSnapshotRequest
+    inputSource: string
+    payload: RollingDailyProductionForecastResult
+    forecastOriginAt: Date | null
+    sourceLatestObservationAt: Date | null
+  },
+) {
+  const payloadJson = JSON.stringify(input.payload)
+  const rows = await prisma.$queryRaw<Array<LegacyRollingDailyCurrentForecastSnapshot>>(Prisma.sql`
+    INSERT INTO "rolling_daily_current_forecast_snapshots" (
+      "id",
+      "seriesId",
+      "inputSource",
+      "inputRunId",
+      "targetBasis",
+      "methodId",
+      "methodVersion",
+      "modelId",
+      "contractVersion",
+      "status",
+      "reasonCode",
+      "message",
+      "forecastOriginAt",
+      "sourceLatestObservationAt",
+      "payloadJson",
+      "updatedAt"
+    ) VALUES (
+      gen_random_uuid()::text,
+      ${input.request.seriesId},
+      ${input.inputSource},
+      NULL,
+      CAST(${ROLLING_DAILY_TARGET_BASIS} AS "ForecastTargetBasis"),
+      ${ROLLING_DAILY_METHOD_ID},
+      ${input.payload.forecastMethod.version},
+      ${input.request.modelId},
+      ${input.payload.contractVersion},
+      ${input.payload.status},
+      ${input.payload.status === 'AVAILABLE' ? null : input.payload.reasonCode},
+      ${input.payload.status === 'AVAILABLE' ? null : input.payload.message},
+      ${input.forecastOriginAt},
+      ${input.sourceLatestObservationAt},
+      CAST(${payloadJson} AS jsonb),
+      NOW()
+    )
+    RETURNING "payloadJson"
+  `)
+
+  return rows[0]
+}
+
+async function upsertLegacyRollingDailyCurrentForecastSnapshot(
+  prisma: RollingDailySnapshotSqlClient,
+  input: {
+    request: RollingDailyCurrentForecastSnapshotRequest
+    inputSource: string
+    payload: RollingDailyProductionForecastResult
+    forecastOriginAt: Date | null
+    sourceLatestObservationAt: Date | null
+  },
+) {
+  const snapshotId = await findLegacyRollingDailyCurrentForecastSnapshotId(prisma, {
+    seriesId: input.request.seriesId,
+    inputSource: input.inputSource,
+    modelId: input.request.modelId,
+    methodVersion: input.payload.forecastMethod.version,
+  })
+
+  if (snapshotId) {
+    return updateLegacyRollingDailyCurrentForecastSnapshot(prisma, snapshotId, input)
+  }
+
+  return createLegacyRollingDailyCurrentForecastSnapshot(prisma, input)
+}
+
 function upsertRollingDailyCurrentForecastSnapshot(
-  tx: Pick<MarketDataPrismaClient, 'rollingDailyCurrentForecastSnapshot'>,
+  tx: RollingDailySnapshotUpsertClient,
   input: {
     request: RollingDailyCurrentForecastSnapshotRequest
     inputSource: string
@@ -238,6 +408,7 @@ export async function persistResolvedRollingDailyCurrentForecastSnapshot(
   const shouldFenceOwnership = options.ownership
     ? await hasForecastPreparationExecutionLedgerRelation(prisma)
     : false
+  const hasExactIdentityColumns = await hasRollingDailyCurrentForecastSnapshotExactIdentityColumns(prisma)
   const upsertInput = {
     request,
     inputSource,
@@ -276,9 +447,13 @@ export async function persistResolvedRollingDailyCurrentForecastSnapshot(
         }
       }
 
-      return upsertRollingDailyCurrentForecastSnapshot(tx as MarketDataPrismaClient, upsertInput)
+      return hasExactIdentityColumns
+        ? upsertRollingDailyCurrentForecastSnapshot(tx as MarketDataPrismaClient, upsertInput)
+        : upsertLegacyRollingDailyCurrentForecastSnapshot(tx as MarketDataPrismaClient, upsertInput)
     })
-    : await upsertRollingDailyCurrentForecastSnapshot(prisma, upsertInput)
+    : hasExactIdentityColumns
+      ? await upsertRollingDailyCurrentForecastSnapshot(prisma, upsertInput)
+      : await upsertLegacyRollingDailyCurrentForecastSnapshot(prisma, upsertInput)
 
   const persistedPayload = RollingDailyProductionForecastResultSchema.parse(persisted.payloadJson as unknown)
   if (!areSnapshotPayloadsEquivalent(persistedPayload, payload)) {
@@ -320,34 +495,46 @@ export async function readRollingDailyCurrentForecastSnapshot(
   const prisma = getSnapshotPrismaClient(dependencies)
   const statisticalCompatibility = resolveRollingDailyCurrentSnapshotCompatibility()
 
-  const snapshot = await prisma.rollingDailyCurrentForecastSnapshot.findUnique({
+  const readLegacySnapshot = async () => prisma.rollingDailyCurrentForecastSnapshot.findFirst({
     where: {
-      seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint: {
-        seriesId: request.seriesId,
-        inputSource: ROLLING_DAILY_INPUT_SOURCE,
-        targetBasis: ROLLING_DAILY_TARGET_BASIS,
-        methodId: ROLLING_DAILY_METHOD_ID,
-        methodVersion: ROLLING_DAILY_METHOD_VERSION,
-        modelId: request.modelId,
-        trainingWindowPolicyId: statisticalCompatibility.trainingWindowPolicyId,
-        effectiveTrainingPolicyId: statisticalCompatibility.effectiveTrainingPolicyId,
-        sourceHistoryFingerprint: request.sourceHistoryFingerprint,
-      },
+      seriesId: request.seriesId,
+      inputSource: ROLLING_DAILY_INPUT_SOURCE,
+      targetBasis: ROLLING_DAILY_TARGET_BASIS,
+      methodId: ROLLING_DAILY_METHOD_ID,
+      methodVersion: ROLLING_DAILY_METHOD_VERSION,
+      modelId: request.modelId,
     },
+    orderBy: { updatedAt: 'desc' },
   })
 
-  if (!snapshot) {
-    const legacySnapshot = await prisma.rollingDailyCurrentForecastSnapshot.findFirst({
+  let snapshot: Awaited<ReturnType<typeof prisma.rollingDailyCurrentForecastSnapshot.findUnique>> | null
+
+  try {
+    snapshot = await prisma.rollingDailyCurrentForecastSnapshot.findUnique({
       where: {
-        seriesId: request.seriesId,
-        inputSource: ROLLING_DAILY_INPUT_SOURCE,
-        targetBasis: ROLLING_DAILY_TARGET_BASIS,
-        methodId: ROLLING_DAILY_METHOD_ID,
-        methodVersion: ROLLING_DAILY_METHOD_VERSION,
-        modelId: request.modelId,
+        seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint: {
+          seriesId: request.seriesId,
+          inputSource: ROLLING_DAILY_INPUT_SOURCE,
+          targetBasis: ROLLING_DAILY_TARGET_BASIS,
+          methodId: ROLLING_DAILY_METHOD_ID,
+          methodVersion: ROLLING_DAILY_METHOD_VERSION,
+          modelId: request.modelId,
+          trainingWindowPolicyId: statisticalCompatibility.trainingWindowPolicyId,
+          effectiveTrainingPolicyId: statisticalCompatibility.effectiveTrainingPolicyId,
+          sourceHistoryFingerprint: request.sourceHistoryFingerprint,
+        },
       },
-      orderBy: { updatedAt: 'desc' },
     })
+  } catch (error) {
+    if (!isMissingRollingDailySnapshotTrainingPolicyColumnError(error)) {
+      throw error
+    }
+
+    snapshot = null
+  }
+
+  if (!snapshot) {
+    const legacySnapshot = await readLegacySnapshot()
 
     if (!legacySnapshot) {
       return { status: 'MISS' }
@@ -360,6 +547,13 @@ export async function readRollingDailyCurrentForecastSnapshot(
       return {
         status: 'STALE',
         reason: 'SOURCE_HISTORY_FINGERPRINT_MISSING',
+        payload,
+      }
+    }
+
+    if (persistedFingerprint === request.sourceHistoryFingerprint) {
+      return {
+        status: 'HIT',
         payload,
       }
     }
