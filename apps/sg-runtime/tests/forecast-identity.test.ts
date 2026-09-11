@@ -255,6 +255,7 @@ test('calibration compatibility is exact-contract based rather than scope-based'
   assert.equal(canResidualCalibrateCurrent(exactFullResidual, currentTarget), false)
   assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, targetSemantics: 'END_OF_PERIOD' }, currentTarget), false)
   assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, modelId: 'arima' }, currentTarget), false)
+  assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, methodId: 'END_OF_PERIOD' }, currentTarget), false)
   assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, methodVersion: 'benchmark-forecasting-mvp-phase2-v2' }, currentTarget), false)
   assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, sourceFrequency: 'QUARTERLY' }, currentTarget), false)
   assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, targetCadence: 'QUARTERLY' }, currentTarget), false)

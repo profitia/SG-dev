@@ -133,6 +133,7 @@ test('rolling daily production forecast maps current bridge output into the ETAP
       async run(request) {
         runnerCallCount += 1
         calibrationGroupsPassed = request.calibrationGroups.length
+        const calibrationAvailable = request.calibrationGroups.length > 0
         return {
           status: 'AVAILABLE',
           reason: undefined,
@@ -168,52 +169,52 @@ test('rolling daily production forecast maps current bridge output into the ETAP
               {
                 date: '2024-04-29',
                 pointForecast: 103,
-                lowerP10: 101,
-                upperP90: 106,
-                bandStatus: 'AVAILABLE',
-                bandSource: 'EMPIRICAL_ANCHOR',
-                p10ResidualOffset: -2,
-                p90ResidualOffset: 3,
+                lowerP10: calibrationAvailable ? 101 : null,
+                upperP90: calibrationAvailable ? 106 : null,
+                bandStatus: calibrationAvailable ? 'AVAILABLE' : 'NOT_AVAILABLE',
+                bandSource: calibrationAvailable ? 'EMPIRICAL_ANCHOR' : null,
+                p10ResidualOffset: calibrationAvailable ? -2 : null,
+                p90ResidualOffset: calibrationAvailable ? 3 : null,
               },
               {
                 date: '2024-05-15',
                 pointForecast: 104,
-                lowerP10: 101,
-                upperP90: 108,
-                bandStatus: 'AVAILABLE',
-                bandSource: 'INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS',
-                p10ResidualOffset: -3,
-                p90ResidualOffset: 4,
+                lowerP10: calibrationAvailable ? 101 : null,
+                upperP90: calibrationAvailable ? 108 : null,
+                bandStatus: calibrationAvailable ? 'AVAILABLE' : 'NOT_AVAILABLE',
+                bandSource: calibrationAvailable ? 'INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS' : null,
+                p10ResidualOffset: calibrationAvailable ? -3 : null,
+                p90ResidualOffset: calibrationAvailable ? 4 : null,
               },
               {
                 date: '2024-06-29',
                 pointForecast: 105,
-                lowerP10: 101,
-                upperP90: 110,
-                bandStatus: 'AVAILABLE',
-                bandSource: 'EMPIRICAL_ANCHOR',
-                p10ResidualOffset: -4,
-                p90ResidualOffset: 5,
+                lowerP10: calibrationAvailable ? 101 : null,
+                upperP90: calibrationAvailable ? 110 : null,
+                bandStatus: calibrationAvailable ? 'AVAILABLE' : 'NOT_AVAILABLE',
+                bandSource: calibrationAvailable ? 'EMPIRICAL_ANCHOR' : null,
+                p10ResidualOffset: calibrationAvailable ? -4 : null,
+                p90ResidualOffset: calibrationAvailable ? 5 : null,
               },
               {
                 date: '2024-09-29',
                 pointForecast: 106,
-                lowerP10: 100,
-                upperP90: 113,
-                bandStatus: 'AVAILABLE',
-                bandSource: 'EMPIRICAL_ANCHOR',
-                p10ResidualOffset: -6,
-                p90ResidualOffset: 7,
+                lowerP10: calibrationAvailable ? 100 : null,
+                upperP90: calibrationAvailable ? 113 : null,
+                bandStatus: calibrationAvailable ? 'AVAILABLE' : 'NOT_AVAILABLE',
+                bandSource: calibrationAvailable ? 'EMPIRICAL_ANCHOR' : null,
+                p10ResidualOffset: calibrationAvailable ? -6 : null,
+                p90ResidualOffset: calibrationAvailable ? 7 : null,
               },
               {
                 date: '2025-03-29',
                 pointForecast: 107,
-                lowerP10: 99,
-                upperP90: 116,
-                bandStatus: 'AVAILABLE',
-                bandSource: 'EMPIRICAL_ANCHOR',
-                p10ResidualOffset: -8,
-                p90ResidualOffset: 9,
+                lowerP10: calibrationAvailable ? 99 : null,
+                upperP90: calibrationAvailable ? 116 : null,
+                bandStatus: calibrationAvailable ? 'AVAILABLE' : 'NOT_AVAILABLE',
+                bandSource: calibrationAvailable ? 'EMPIRICAL_ANCHOR' : null,
+                p10ResidualOffset: calibrationAvailable ? -8 : null,
+                p90ResidualOffset: calibrationAvailable ? 9 : null,
               },
             ],
             anchors: [
@@ -223,12 +224,12 @@ test('rolling daily production forecast maps current bridge output into the ETAP
                 targetCalendarDate: '2024-04-29',
                 projectedStepCount: 21,
                 pointForecast: 103,
-                lowerP10: 101,
-                upperP90: 106,
-                bandStatus: 'AVAILABLE',
-                bandSource: 'EMPIRICAL_ANCHOR',
-                p10ResidualOffset: -2,
-                p90ResidualOffset: 3,
+                lowerP10: calibrationAvailable ? 101 : null,
+                upperP90: calibrationAvailable ? 106 : null,
+                bandStatus: calibrationAvailable ? 'AVAILABLE' : 'NOT_AVAILABLE',
+                bandSource: calibrationAvailable ? 'EMPIRICAL_ANCHOR' : null,
+                p10ResidualOffset: calibrationAvailable ? -2 : null,
+                p90ResidualOffset: calibrationAvailable ? 3 : null,
               },
               {
                 horizon: '3M',
@@ -236,12 +237,12 @@ test('rolling daily production forecast maps current bridge output into the ETAP
                 targetCalendarDate: '2024-06-29',
                 projectedStepCount: 64,
                 pointForecast: 105,
-                lowerP10: 101,
-                upperP90: 110,
-                bandStatus: 'AVAILABLE',
-                bandSource: 'EMPIRICAL_ANCHOR',
-                p10ResidualOffset: -4,
-                p90ResidualOffset: 5,
+                lowerP10: calibrationAvailable ? 101 : null,
+                upperP90: calibrationAvailable ? 110 : null,
+                bandStatus: calibrationAvailable ? 'AVAILABLE' : 'NOT_AVAILABLE',
+                bandSource: calibrationAvailable ? 'EMPIRICAL_ANCHOR' : null,
+                p10ResidualOffset: calibrationAvailable ? -4 : null,
+                p90ResidualOffset: calibrationAvailable ? 5 : null,
               },
               {
                 horizon: '6M',
@@ -249,12 +250,12 @@ test('rolling daily production forecast maps current bridge output into the ETAP
                 targetCalendarDate: '2024-09-29',
                 projectedStepCount: 128,
                 pointForecast: 106,
-                lowerP10: 100,
-                upperP90: 113,
-                bandStatus: 'AVAILABLE',
-                bandSource: 'EMPIRICAL_ANCHOR',
-                p10ResidualOffset: -6,
-                p90ResidualOffset: 7,
+                lowerP10: calibrationAvailable ? 100 : null,
+                upperP90: calibrationAvailable ? 113 : null,
+                bandStatus: calibrationAvailable ? 'AVAILABLE' : 'NOT_AVAILABLE',
+                bandSource: calibrationAvailable ? 'EMPIRICAL_ANCHOR' : null,
+                p10ResidualOffset: calibrationAvailable ? -6 : null,
+                p90ResidualOffset: calibrationAvailable ? 7 : null,
               },
               {
                 horizon: '12M',
@@ -262,12 +263,12 @@ test('rolling daily production forecast maps current bridge output into the ETAP
                 targetCalendarDate: '2025-03-29',
                 projectedStepCount: 256,
                 pointForecast: 107,
-                lowerP10: 99,
-                upperP90: 116,
-                bandStatus: 'AVAILABLE',
-                bandSource: 'EMPIRICAL_ANCHOR',
-                p10ResidualOffset: -8,
-                p90ResidualOffset: 9,
+                lowerP10: calibrationAvailable ? 99 : null,
+                upperP90: calibrationAvailable ? 116 : null,
+                bandStatus: calibrationAvailable ? 'AVAILABLE' : 'NOT_AVAILABLE',
+                bandSource: calibrationAvailable ? 'EMPIRICAL_ANCHOR' : null,
+                p10ResidualOffset: calibrationAvailable ? -8 : null,
+                p90ResidualOffset: calibrationAvailable ? 9 : null,
               },
             ],
           },
@@ -283,27 +284,28 @@ test('rolling daily production forecast maps current bridge output into the ETAP
 
   assert.equal(runnerCallCount, 1)
   assert.deepEqual(requestedTargetBases, [ROLLING_DAILY_TARGET_BASIS])
-  assert.equal(calibrationGroupsPassed, 4)
+  assert.equal(calibrationGroupsPassed, 0)
   assert.equal(result.contractVersion, ROLLING_DAILY_PRODUCTION_CONTRACT_VERSION)
   assert.equal(result.status, 'AVAILABLE')
   if (result.status !== 'AVAILABLE') {
     throw new Error('Expected AVAILABLE result.')
   }
 
-  assert.equal(result.benchmark.provider, 'macrobond')
+  assert.equal(result.benchmark.provider, 'Macrobond')
   assert.equal(result.forecastMethod.version, ROLLING_DAILY_METHOD_VERSION)
   assert.equal(result.origin.date, '2024-03-29')
   assert.equal(result.origin.value, 102)
   assert.equal(result.path[0]?.band.status, 'NOT_AVAILABLE')
   assert.equal(result.path[0]?.band.reasonCode, 'BEFORE_FIRST_EMPIRICAL_ANCHOR')
-  assert.equal(result.path[2]?.band.source, 'INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS')
-  assert.equal(result.anchors[0]?.band.sampleCount, 25)
+  assert.equal(result.path[2]?.band.reasonCode, 'CALIBRATION_NOT_AVAILABLE')
+  assert.equal(result.anchors[0]?.band.sampleCount, null)
   assert.equal(result.anchors[3]?.targetCalendarDate, result.path[result.path.length - 1]?.date)
-  assert.equal(result.calibration.freshnessStatus, 'STALE')
+  assert.equal(result.calibration.availabilityStatus, 'NOT_AVAILABLE')
+  assert.equal(result.calibration.freshnessStatus, null)
   assert.equal(result.calibration.methodologicalMinimumStatus, ROLLING_DAILY_METHODOLOGICAL_CALIBRATION_MINIMUM_STATUS)
   assert.equal(result.audit.projectionCalendarStrategy, ROLLING_DAILY_PROJECTION_CALENDAR_STRATEGY)
   assert.ok(result.audit.sourceHistoryFingerprint)
-  assert.equal(result.warnings[0]?.code, 'CALIBRATION_STALE')
+  assert.equal(result.warnings.length, 0)
 })
 
 test('rolling daily production forecast serves naive current from prepared history without bridge runner', async () => {
@@ -341,10 +343,10 @@ test('rolling daily production forecast serves naive current from prepared histo
   assert.equal(result.model.selectedCandidate, 'NAIVE_LAST_VALUE')
   assert.deepEqual(result.model.selectedParameters, {})
   assert.equal(result.path[0]?.pointForecast, 102)
-  assert.equal(result.path[0]?.band.status, 'AVAILABLE')
-  assert.equal(result.path[0]?.band.source, 'INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS')
+  assert.equal(result.path[0]?.band.status, 'NOT_AVAILABLE')
+  assert.equal(result.path[0]?.band.reasonCode, 'BEFORE_FIRST_EMPIRICAL_ANCHOR')
   assert.equal(result.anchors[0]?.pointForecast, 102)
-  assert.equal(result.anchors[0]?.band.status, 'AVAILABLE')
+  assert.equal(result.anchors[0]?.band.status, 'NOT_AVAILABLE')
   assert.equal(result.audit.sourceHistoryFingerprint, buildRollingDailyHistoryFingerprint(createBenchmarkContext().history))
 })
 
@@ -397,4 +399,150 @@ test('rolling daily production forecast maps unavailable bridge states without f
   assert.equal(result.model.selectedParameters, null)
   assert.equal(result.audit.sourceLatestObservationDate, '2024-03-29')
   assert.ok(result.audit.sourceHistoryFingerprint)
+})
+
+test('rolling daily production forecast ignores large incompatible calibration inventories and still serves the base forecast without bands', async () => {
+  let calibrationGroupsPassed = 0
+
+  const service = createRollingDailyProductionForecastService({
+    repository: createRepository({
+      groups: [
+        createCalibrationGroup({ sampleCount: 100, residualP10: -10, residualP90: 10 }),
+        createCalibrationGroup({ horizonLabel: '3M', horizonMonths: 3, sampleCount: 100, residualP10: -12, residualP90: 12 }),
+        createCalibrationGroup({ horizonLabel: '6M', horizonMonths: 6, sampleCount: 100, residualP10: -14, residualP90: 14 }),
+        createCalibrationGroup({ horizonLabel: '12M', horizonMonths: 12, sampleCount: 100, residualP10: -16, residualP90: 16 }),
+      ],
+    }),
+    loadBenchmarkContext: async () => createBenchmarkContext(),
+    now: () => new Date('2024-03-29T12:00:00.000Z'),
+    runner: {
+      async run(request) {
+        calibrationGroupsPassed = request.calibrationGroups.length
+        return {
+          status: 'AVAILABLE',
+          methodId: ROLLING_DAILY_METHOD_ID,
+          methodVersion: ROLLING_DAILY_METHOD_VERSION,
+          modelId: 'naive',
+          sourceHistory: {
+            startDate: '2024-01-01',
+            latestObservationDate: '2024-03-29',
+            observationCount: 64,
+            filteredNullCount: 0,
+            filteredDuplicateCount: 0,
+          },
+          currentForecast: {
+            originDate: '2024-03-29',
+            calendarProjectionMode: ROLLING_DAILY_PROJECTION_CALENDAR_STRATEGY,
+            maxHorizonMonths: 12,
+            selectedCandidate: 'NAIVE_LAST_VALUE',
+            selectionMetric: null,
+            selectionScore: null,
+            selectedParameters: null,
+            path: [
+              {
+                date: '2024-03-30',
+                pointForecast: 102,
+                lowerP10: null,
+                upperP90: null,
+                bandStatus: 'NOT_AVAILABLE_BEFORE_FIRST_EMPIRICAL_ANCHOR',
+                bandSource: null,
+                p10ResidualOffset: null,
+                p90ResidualOffset: null,
+              },
+              {
+                date: '2024-04-29',
+                pointForecast: 103,
+                lowerP10: null,
+                upperP90: null,
+                bandStatus: 'NOT_AVAILABLE',
+                bandSource: null,
+                p10ResidualOffset: null,
+                p90ResidualOffset: null,
+              },
+              {
+                date: '2025-03-29',
+                pointForecast: 107,
+                lowerP10: null,
+                upperP90: null,
+                bandStatus: 'NOT_AVAILABLE',
+                bandSource: null,
+                p10ResidualOffset: null,
+                p90ResidualOffset: null,
+              },
+            ],
+            anchors: [
+              {
+                horizon: '1M',
+                horizonMonths: 1,
+                targetCalendarDate: '2024-04-29',
+                projectedStepCount: 21,
+                pointForecast: 103,
+                lowerP10: null,
+                upperP90: null,
+                bandStatus: 'NOT_AVAILABLE',
+                bandSource: null,
+                p10ResidualOffset: null,
+                p90ResidualOffset: null,
+              },
+              {
+                horizon: '3M',
+                horizonMonths: 3,
+                targetCalendarDate: '2024-06-29',
+                projectedStepCount: 64,
+                pointForecast: 105,
+                lowerP10: null,
+                upperP90: null,
+                bandStatus: 'NOT_AVAILABLE',
+                bandSource: null,
+                p10ResidualOffset: null,
+                p90ResidualOffset: null,
+              },
+              {
+                horizon: '6M',
+                horizonMonths: 6,
+                targetCalendarDate: '2024-09-29',
+                projectedStepCount: 128,
+                pointForecast: 106,
+                lowerP10: null,
+                upperP90: null,
+                bandStatus: 'NOT_AVAILABLE',
+                bandSource: null,
+                p10ResidualOffset: null,
+                p90ResidualOffset: null,
+              },
+              {
+                horizon: '12M',
+                horizonMonths: 12,
+                targetCalendarDate: '2025-03-29',
+                projectedStepCount: 256,
+                pointForecast: 107,
+                lowerP10: null,
+                upperP90: null,
+                bandStatus: 'NOT_AVAILABLE',
+                bandSource: null,
+                p10ResidualOffset: null,
+                p90ResidualOffset: null,
+              },
+            ],
+          },
+        }
+      },
+    },
+  })
+
+  const result = await service.getRollingDailyProductionForecast({
+    seriesId: 'wocaes0074',
+    modelId: 'naive',
+  })
+
+  assert.equal(calibrationGroupsPassed, 0)
+  assert.equal(result.status, 'AVAILABLE')
+  if (result.status !== 'AVAILABLE') {
+    throw new Error('Expected AVAILABLE result.')
+  }
+
+  assert.equal(result.origin.value, 102)
+  assert.equal(result.calibration.availabilityStatus, 'NOT_AVAILABLE')
+  assert.equal(result.path[1]?.band.reasonCode, 'CALIBRATION_NOT_AVAILABLE')
+  assert.equal(result.anchors[0]?.band.sampleCount, null)
 })

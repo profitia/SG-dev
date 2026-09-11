@@ -11,6 +11,7 @@ import { getMarketDataPrisma } from '@/lib/market-data/client'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 import { serverEnv } from '@/lib/env'
 import type { ForecastTargetBasis } from '@/lib/forecast/contracts'
+import { createCurrentForecastStatisticalCompatibility } from '@/lib/forecast/identity'
 import { selectTrailingRollingDailyCurrentHistory } from '@/lib/forecast/rolling-daily-current-ownership'
 import {
   ROLLING_DAILY_INSUFFICIENT_TECHNICAL_TRAINING_REASON,
@@ -426,6 +427,12 @@ type RollingDailyProductionForecastDependencies = {
   loadBenchmarkContext: (seriesId: string) => Promise<RollingDailyProductionBenchmarkContext>
   now: () => Date
 }
+
+const ROLLING_DAILY_CURRENT_CALIBRATION_CONTEXT = {
+  sourceFrequency: 'DAILY',
+  targetCadence: 'DAILY',
+  targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+} as const
 
 function normalizeOptionalString(value?: string | null) {
   const trimmed = value?.trim()
@@ -1134,6 +1141,23 @@ function deriveCalibrationAvailabilityStatus(groups: RollingDailyCalibrationGrou
   return 'NOT_AVAILABLE' as const
 }
 
+function selectEligibleCalibrationGroupsForCurrent(
+  groups: RollingDailyCalibrationGroupArtifact[],
+): RollingDailyCalibrationGroupArtifact[] {
+  const currentCompatibility = createCurrentForecastStatisticalCompatibility(
+    ROLLING_DAILY_CURRENT_CALIBRATION_CONTEXT,
+  )
+
+  if (currentCompatibility.calibrationPolicy !== 'EXACT_STATISTICAL_MATCH_ONLY') {
+    return groups
+  }
+
+  // Persisted rolling-daily calibration groups are full-verification aggregates.
+  // They do not yet carry the exact statistical identity and lineage proof
+  // required to lawfully calibrate current forecasts under Stage 10 rules.
+  return []
+}
+
 function deriveCalibrationFreshnessStatus(
   groups: RollingDailyCalibrationGroupArtifact[],
   state: RollingDailyMaintenanceStateArtifact | null,
@@ -1358,6 +1382,7 @@ export function createRollingDailyProductionForecastService(
         resolvedDependencies.repository.readCalibrationAuthority(identity),
       ])
       const normalizedBenchmarkContext = normalizeBenchmarkContextForCurrentForecast(benchmarkContext, targetBasis)
+      const eligibleCalibrationGroups = selectEligibleCalibrationGroupsForCurrent(calibrationAuthority.groups)
 
       const latestObservationDate = normalizedBenchmarkContext.sourceLatestObservationDate
       const latestObservationValue = normalizedBenchmarkContext.sourceLatestObservationValue
@@ -1405,7 +1430,7 @@ export function createRollingDailyProductionForecastService(
         minimumTrainingObservations: input.minimumTrainingObservations ?? DEFAULT_ROLLING_DAILY_MINIMUM_TRAINING_OBSERVATIONS,
         minimumCalibrationSamples: input.minimumCalibrationSamples ?? DEFAULT_ROLLING_DAILY_MINIMUM_CALIBRATION_SAMPLES,
         history: normalizedBenchmarkContext.history,
-        calibrationGroups: calibrationAuthority.groups.map((group) => ({
+        calibrationGroups: eligibleCalibrationGroups.map((group) => ({
           horizonLabel: group.horizonLabel,
           horizonMonths: group.horizonMonths,
           sampleCount: group.sampleCount,
@@ -1433,7 +1458,7 @@ export function createRollingDailyProductionForecastService(
         benchmark: normalizedBenchmarkContext.benchmark,
         benchmarkContext: normalizedBenchmarkContext,
         bridgeResponse,
-        calibrationGroups: calibrationAuthority.groups,
+        calibrationGroups: eligibleCalibrationGroups,
         maintenanceState: calibrationAuthority.state,
         sourceLatestObservationDate: latestObservationDate,
         sourceLatestObservationValue: latestObservationValue,

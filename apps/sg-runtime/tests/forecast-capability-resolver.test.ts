@@ -339,6 +339,7 @@ test('rejects ambiguous or invalid horizon requests instead of rounding', () => 
 
 test('keeps Current Forecast eligibility independent from verification and band sample thresholds', () => {
   const cases = [
+    { origins: 24, residuals: 31, verification: 'SUFFICIENT', bands: 'AVAILABLE' },
     { origins: 24, residuals: 30, verification: 'SUFFICIENT', bands: 'AVAILABLE' },
     { origins: 23, residuals: 30, verification: 'LIMITED_SAMPLE', bands: 'AVAILABLE' },
     { origins: 24, residuals: 29, verification: 'SUFFICIENT', bands: 'INSUFFICIENT_SAMPLE' },
@@ -362,6 +363,23 @@ test('keeps Current Forecast eligibility independent from verification and band 
   }).find((item) => item.businessTarget === 'END_OF_PERIOD' && item.identity.modelId === 'ets')
   assert.equal(ineligible?.currentForecastEligible, false)
   assert.equal(ineligible?.historyEligibility, 'INSUFFICIENT_HISTORY')
+})
+
+test('prediction band readiness depends on compatible residual count rather than total verification volume', () => {
+  const insufficientCompatible = resolve({
+    verificationOriginCounts: { END_OF_PERIOD: 100 },
+    predictionBandResidualCounts: { END_OF_PERIOD: 29 },
+  }).find((item) => item.businessTarget === 'END_OF_PERIOD' && item.identity.modelId === 'ets')
+
+  const sufficientCompatible = resolve({
+    verificationOriginCounts: { END_OF_PERIOD: 100 },
+    predictionBandResidualCounts: { END_OF_PERIOD: 30 },
+  }).find((item) => item.businessTarget === 'END_OF_PERIOD' && item.identity.modelId === 'ets')
+
+  assert.equal(insufficientCompatible?.verificationEvidenceState, 'SUFFICIENT')
+  assert.equal(insufficientCompatible?.predictionBandState, 'INSUFFICIENT_SAMPLE')
+  assert.equal(sufficientCompatible?.verificationEvidenceState, 'SUFFICIENT')
+  assert.equal(sufficientCompatible?.predictionBandState, 'AVAILABLE')
 })
 
 test('distinguishes no source data from insufficient prepared history', () => {
