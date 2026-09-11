@@ -253,6 +253,11 @@ function isLoopbackDatabaseHost(value: unknown) {
     || host === '::1/128'
 }
 
+function resolveSourceCandidateSha(envName: string, evidenceWorktreeHead: string) {
+  const override = process.env[envName]?.trim()
+  return override && override.length > 0 ? override : evidenceWorktreeHead
+}
+
 function buildControlledDailyHistory(
   observationCount: number,
   options: {
@@ -1437,7 +1442,8 @@ function renderMarkdown(result: EvidenceResult) {
 async function main() {
   await ensureValidationDirectory()
 
-  const sourceCandidateSha = await readGitHead()
+  const evidenceWorktreeHead = await readGitHead()
+  const sourceCandidateSha = resolveSourceCandidateSha('STAGE8_SOURCE_CANDIDATE_SHA', evidenceWorktreeHead)
   const cleanWorktree = await isGitWorktreeClean()
   const dependencyProvenance = {
     tsxLoaderPresent: existsSync(TSX_LOADER),
@@ -1495,7 +1501,7 @@ async function main() {
 
   const finalDecision = {
     STAGE8_SOURCE_CANDIDATE_SHA: sourceCandidateSha,
-    STAGE8_EVIDENCE_SOURCE_SHA: sourceCandidateSha,
+    STAGE8_EVIDENCE_SOURCE_SHA: evidenceWorktreeHead,
     ROLLING_DAILY_SCOPE_ONLY: 'PASS',
     MODELS_TESTED: MODELS.join(','),
     EXPECTED_MODELS: 'naive,damped_holt,ets,arima',
@@ -1587,7 +1593,7 @@ async function main() {
 
   const output: EvidenceResult = {
     sourceCandidateSha,
-    evidenceWorktreeHead: sourceCandidateSha,
+    evidenceWorktreeHead,
     cleanWorktree,
     dependencyProvenance,
     databaseIdentity: {

@@ -99,6 +99,7 @@ type Stage9PersistedRunLike = {
 
 type Stage9FinalDecisionInputs = {
   sourceCandidateSha: string
+  evidenceWorktreeHead: string
   cleanWorktree: boolean
   databaseHost: string | null
   capabilityMatrixStatus: Stage9GateStatus
@@ -279,6 +280,11 @@ function normalizeDateTime(value: string | Date | null | undefined) {
   return value instanceof Date ? value.toISOString() : String(value)
 }
 
+function resolveSourceCandidateSha(envName: string, evidenceWorktreeHead: string) {
+  const override = process.env[envName]?.trim()
+  return override && override.length > 0 ? override : evidenceWorktreeHead
+}
+
 export function isExplicitLoopbackDatabaseHost(host: string | null | undefined) {
   const normalizedHost = host?.trim().toLowerCase() ?? ''
   return normalizedHost === '127.0.0.1'
@@ -327,7 +333,7 @@ export function buildStage9FinalDecision(inputs: Stage9FinalDecisionInputs) {
 
   return {
     STAGE9_SOURCE_CANDIDATE_SHA: inputs.sourceCandidateSha,
-    STAGE9_EVIDENCE_SOURCE_SHA: inputs.sourceCandidateSha,
+    STAGE9_EVIDENCE_SOURCE_SHA: inputs.evidenceWorktreeHead,
     CLEAN_WORKTREE_REQUIRED: cleanWorktreePass ? 'PASS' : 'FAIL',
     ISOLATED_POSTGRES_REQUIRED: isolatedPostgresPass ? 'PASS' : 'FAIL',
     CAPABILITY_MATRIX_GATE: inputs.capabilityMatrixStatus,
@@ -1234,13 +1240,13 @@ async function completeCurrentFingerprintForModel(
   let attempts = 0
   while (attempts < MAX_BATCH_ATTEMPTS) {
     attempts += 1
-    const result = await harness.service.resolveVerificationRequest(buildRequest(pathDefinition, modelId, {
-      maxOriginsPerRun: MAX_ORIGINS_PER_BATCH,
-    }))
+    const result = await harness.service.resolveVerificationRequest(buildRequest(pathDefinition, modelId))
     if (result.status === 'AVAILABLE') {
       return
     }
   }
+
+  throw new Error(`Unable to complete exact verification fingerprint for ${pathLabel(pathDefinition)} model=${modelId} after ${MAX_BATCH_ATTEMPTS} attempts.`)
 }
 
 async function rebuildExactVerificationArtifactForParity(
@@ -1579,7 +1585,14 @@ async function runStatisticalParity(
       expectedOrigins: horizon.expectedOrigins,
       failedOrigins: horizon.failedOrigins,
       coverage: round(horizon.coverage),
-      metrics: calculateParityMetricsFromRecords(horizon.records),
+      metrics: horizon.metrics ? {
+        mae: horizon.metrics.mae,
+        rmse: horizon.metrics.rmse,
+        mase: horizon.metrics.mase,
+        smape: horizon.metrics.smape,
+        directionalAccuracy: horizon.metrics.directional_accuracy,
+        bias: horizon.metrics.bias,
+      } : null,
     }))
       .sort((left, right) => left.horizonSteps - right.horizonSteps || left.horizon.localeCompare(right.horizon))
     const persistedPoints = sortParityPoints(persisted.points.map(canonicalizePersistedPoint))
@@ -1960,7 +1973,8 @@ async function main() {
   await ensureValidationDirectory()
   logPhase('main:start')
 
-  const sourceCandidateSha = await readGitHead()
+  const evidenceWorktreeHead = await readGitHead()
+  const sourceCandidateSha = resolveSourceCandidateSha('STAGE9_SOURCE_CANDIDATE_SHA', evidenceWorktreeHead)
   const cleanWorktree = await isGitWorktreeClean()
   const dependencyProvenance = {
     tsxLoaderPresent: existsSync(TSX_LOADER),
@@ -2054,6 +2068,7 @@ async function main() {
   const representativePass = Object.values(representativeProofs).every((entry) => entry.status === 'PASS')
   const finalDecision = buildStage9FinalDecision({
     sourceCandidateSha,
+    evidenceWorktreeHead,
     cleanWorktree,
     databaseHost: (databaseIdentity as { host: string | null }).host,
     capabilityMatrixStatus: capabilityMatrix.status,
@@ -2068,7 +2083,7 @@ async function main() {
 
   const result = {
     sourceCandidateSha,
-    evidenceWorktreeHead: sourceCandidateSha,
+    evidenceWorktreeHead,
     cleanWorktree,
     dependencyProvenance,
     databaseIdentity,
