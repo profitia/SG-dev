@@ -27,6 +27,7 @@ import {
   createDefaultForecastPreparationExecutionAdmission,
   createDefaultForecastPreparationExecutionLedger,
   ForecastExecutionControlError,
+  isMissingExecutionLedgerRelationError,
   type ForecastPreparationExecutionAdmission,
   type ForecastPreparationExecutionContextRegistry,
   type ForecastPreparationExecutionLedger,
@@ -502,6 +503,44 @@ function isMissingVerificationTrainingPolicyColumnError(error: unknown) {
       error.message.includes('trainingWindowPolicyId')
       || error.message.includes('effectiveTrainingPolicyId')
     )
+}
+
+async function assertForecastPersistenceOwnership(
+  tx: Prisma.TransactionClient,
+  ownership: ForecastPersistenceOwnership | undefined,
+  observedAt: string,
+) {
+  if (!ownership) {
+    return
+  }
+
+  try {
+    const fencedOwner = await tx.$queryRaw<Array<{ executionId: string }>>(Prisma.sql`
+      SELECT "executionId"
+      FROM "forecast_preparation_execution_ledger"
+      WHERE "executionId" = ${ownership.executionId}
+        AND "logicalArtifactKey" = ${ownership.logicalArtifactKey}
+        AND "executionStatus" = 'STARTED'
+        AND "ownerToken" = ${ownership.ownerToken}
+        AND "leaseVersion" = ${ownership.leaseVersion}
+        AND "leaseExpiresAt" > CAST(${observedAt} AS timestamp)
+      FOR UPDATE
+    `)
+
+    if (fencedOwner.length !== 1) {
+      throw new ForecastExecutionControlError(
+        'STALE_OWNER',
+        `Execution ${ownership.executionId} lost fenced persistence rights for ${ownership.logicalArtifactKey}.`,
+      )
+    }
+  } catch (error) {
+    if (isMissingExecutionLedgerRelationError(error)) {
+      return
+    }
+    throw error
+  }
+
+  await forecastPersistenceTestHooks?.afterOwnerFenceAcquired?.(ownership)
 }
 
 function resolvePersistedForecastStatisticalCompatibility(
@@ -2411,29 +2450,7 @@ export async function writeCurrentRunWithPrisma(
   const observedAt = new Date().toISOString()
 
   await prisma.$transaction(async (tx) => {
-    const ownership = options?.ownership
-    if (ownership) {
-      const fencedOwner = await tx.$queryRaw<Array<{ executionId: string }>>(Prisma.sql`
-        SELECT "executionId"
-        FROM "forecast_preparation_execution_ledger"
-        WHERE "executionId" = ${ownership.executionId}
-          AND "logicalArtifactKey" = ${ownership.logicalArtifactKey}
-          AND "executionStatus" = 'STARTED'
-          AND "ownerToken" = ${ownership.ownerToken}
-          AND "leaseVersion" = ${ownership.leaseVersion}
-          AND "leaseExpiresAt" > CAST(${observedAt} AS timestamp)
-        FOR UPDATE
-      `)
-
-      if (fencedOwner.length !== 1) {
-        throw new ForecastExecutionControlError(
-          'STALE_OWNER',
-          `Execution ${ownership.executionId} lost fenced persistence rights for ${ownership.logicalArtifactKey}.`,
-        )
-      }
-
-      await forecastPersistenceTestHooks?.afterOwnerFenceAcquired?.(ownership)
-    }
+    await assertForecastPersistenceOwnership(tx, options?.ownership, observedAt)
 
     const run = await tx.forecastCurrentRun.upsert({
       where: {
@@ -2765,29 +2782,7 @@ export async function writeVerificationRunWithPrisma(
   const observedAt = new Date().toISOString()
 
   await prisma.$transaction(async (tx) => {
-    const ownership = options?.ownership
-    if (ownership) {
-      const fencedOwner = await tx.$queryRaw<Array<{ executionId: string }>>(Prisma.sql`
-        SELECT "executionId"
-        FROM "forecast_preparation_execution_ledger"
-        WHERE "executionId" = ${ownership.executionId}
-          AND "logicalArtifactKey" = ${ownership.logicalArtifactKey}
-          AND "executionStatus" = 'STARTED'
-          AND "ownerToken" = ${ownership.ownerToken}
-          AND "leaseVersion" = ${ownership.leaseVersion}
-          AND "leaseExpiresAt" > CAST(${observedAt} AS timestamp)
-        FOR UPDATE
-      `)
-
-      if (fencedOwner.length !== 1) {
-        throw new ForecastExecutionControlError(
-          'STALE_OWNER',
-          `Execution ${ownership.executionId} lost fenced persistence rights for ${ownership.logicalArtifactKey}.`,
-        )
-      }
-
-      await forecastPersistenceTestHooks?.afterOwnerFenceAcquired?.(ownership)
-    }
+    await assertForecastPersistenceOwnership(tx, options?.ownership, observedAt)
 
     const run = await tx.forecastVerificationRun.upsert({
       where: {

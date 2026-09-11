@@ -12,6 +12,8 @@ import { getMarketDataPrisma } from '@/lib/market-data/client'
 import type { HistoricalMaintenanceLogicalArtifactIdentity } from '@/lib/forecast/rolling-daily-historical-admission'
 import type { VerificationLogicalArtifactIdentity } from '@/lib/forecast/verification-single-flight'
 
+let legacyExecutionAdmissionFallback: ForecastPreparationExecutionAdmission | null = null
+
 export type ForecastPreparationOperationFamily = 'CURRENT' | 'VERIFICATION' | 'HISTORICAL_MAINTENANCE'
 export type ForecastPreparationExecutionStatus = 'STARTED' | 'COMPLETED' | 'FAILED'
 export type ForecastPreparationExecutionRole = 'OWNER' | 'WAITER'
@@ -258,6 +260,24 @@ export class ForecastExecutionControlError extends Error {
     super(message)
     this.name = 'ForecastExecutionControlError'
   }
+}
+
+export function isMissingExecutionLedgerRelationError(error: unknown) {
+  return error instanceof Error
+    && error.message.includes('forecast_preparation_execution_ledger')
+    && (
+      error.message.includes('does not exist')
+      || error.message.includes('does not exist in the current database')
+      || error.message.includes('Code: `42P01`')
+    )
+}
+
+function getLegacyExecutionAdmissionFallback(leaseDurationMs: number) {
+  if (!legacyExecutionAdmissionFallback) {
+    legacyExecutionAdmissionFallback = createInMemoryForecastPreparationExecutionAdmission({ leaseDurationMs })
+  }
+
+  return legacyExecutionAdmissionFallback
 }
 
 export type ForecastPreparationExecutionContextRegistry = {
@@ -1256,33 +1276,44 @@ export function createDefaultForecastPreparationExecutionAdmission(): ForecastPr
   }
 
   async function readLatestExecutionForLogicalArtifact(logicalArtifactKey: string) {
-    const prisma = requirePrisma()
-    const active = await prisma.forecastPreparationExecutionLedger.findFirst({
-      where: {
-        logicalArtifactKey,
-        executionStatus: 'STARTED',
-      },
-      orderBy: [
-        { startedAt: 'desc' },
-        { updatedAt: 'desc' },
-      ],
-    })
-
-    if (active) {
-      return mapStoredExecutionRecord(active)
+    if (legacyExecutionAdmissionFallback) {
+      return getLegacyExecutionAdmissionFallback(leaseDurationMs).readLatestExecutionForLogicalArtifact(logicalArtifactKey)
     }
 
-    const latest = await prisma.forecastPreparationExecutionLedger.findFirst({
-      where: {
-        logicalArtifactKey,
-      },
-      orderBy: [
-        { startedAt: 'desc' },
-        { updatedAt: 'desc' },
-      ],
-    })
+    const prisma = requirePrisma()
+    try {
+      const active = await prisma.forecastPreparationExecutionLedger.findFirst({
+        where: {
+          logicalArtifactKey,
+          executionStatus: 'STARTED',
+        },
+        orderBy: [
+          { startedAt: 'desc' },
+          { updatedAt: 'desc' },
+        ],
+      })
 
-    return latest ? mapStoredExecutionRecord(latest) : null
+      if (active) {
+        return mapStoredExecutionRecord(active)
+      }
+
+      const latest = await prisma.forecastPreparationExecutionLedger.findFirst({
+        where: {
+          logicalArtifactKey,
+        },
+        orderBy: [
+          { startedAt: 'desc' },
+          { updatedAt: 'desc' },
+        ],
+      })
+
+      return latest ? mapStoredExecutionRecord(latest) : null
+    } catch (error) {
+      if (isMissingExecutionLedgerRelationError(error)) {
+        return getLegacyExecutionAdmissionFallback(leaseDurationMs).readLatestExecutionForLogicalArtifact(logicalArtifactKey)
+      }
+      throw error
+    }
   }
 
   async function lockActiveExecutionForUpdate(
@@ -1316,6 +1347,10 @@ export function createDefaultForecastPreparationExecutionAdmission(): ForecastPr
     leaseDurationMs,
 
     async acquireExecution(input) {
+      if (legacyExecutionAdmissionFallback) {
+        return getLegacyExecutionAdmissionFallback(leaseDurationMs).acquireExecution(input)
+      }
+
       const prisma = requirePrisma()
       const observedAt = input.observedAt ?? nowIso()
       const observedDate = new Date(observedAt)
@@ -1462,6 +1497,9 @@ export function createDefaultForecastPreparationExecutionAdmission(): ForecastPr
           return createOwnedExecution(tx, active)
         })
       } catch (error) {
+        if (isMissingExecutionLedgerRelationError(error)) {
+          return getLegacyExecutionAdmissionFallback(leaseDurationMs).acquireExecution(input)
+        }
         if (isUniqueViolation(error)) {
           const latest = await readLatestExecutionForLogicalArtifact(input.logicalArtifactKey)
           if (latest && latest.executionStatus === 'STARTED') {
@@ -1473,6 +1511,10 @@ export function createDefaultForecastPreparationExecutionAdmission(): ForecastPr
     },
 
     async renewLease(input) {
+      if (legacyExecutionAdmissionFallback) {
+        return getLegacyExecutionAdmissionFallback(leaseDurationMs).renewLease(input)
+      }
+
       const prisma = requirePrisma()
       const observedAt = input.observedAt ?? nowIso()
       const nextLeaseExpiresAt = addLeaseWindow(observedAt, leaseDurationMs)
@@ -1508,6 +1550,10 @@ export function createDefaultForecastPreparationExecutionAdmission(): ForecastPr
     },
 
     async markExecutionFailed(input) {
+      if (legacyExecutionAdmissionFallback) {
+        return getLegacyExecutionAdmissionFallback(leaseDurationMs).markExecutionFailed(input)
+      }
+
       const prisma = requirePrisma()
       const observedAt = input.observedAt ?? nowIso()
       const updated = await prisma.$executeRaw(Prisma.sql`
@@ -1537,6 +1583,10 @@ export function createDefaultForecastPreparationExecutionAdmission(): ForecastPr
     },
 
     async markExecutionCompleted(input) {
+      if (legacyExecutionAdmissionFallback) {
+        return getLegacyExecutionAdmissionFallback(leaseDurationMs).markExecutionCompleted(input)
+      }
+
       const prisma = requirePrisma()
       const observedAt = input.observedAt ?? nowIso()
       const updated = await prisma.$executeRaw(Prisma.sql`

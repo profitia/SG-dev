@@ -1,5 +1,8 @@
 import { Prisma, type PrismaClient } from '@/generated/market-data-client'
-import { ForecastExecutionControlError } from '@/lib/forecast/execution-ledger'
+import {
+  ForecastExecutionControlError,
+  isMissingExecutionLedgerRelationError,
+} from '@/lib/forecast/execution-ledger'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 import type { ProductionForecastResult } from '@/lib/forecast/production-routing'
 import type { ForecastPersistenceOwnership } from '@/lib/forecast/service'
@@ -244,23 +247,29 @@ export async function persistResolvedRollingDailyCurrentForecastSnapshot(
   const persisted = options.ownership && '$transaction' in prisma && typeof prisma.$transaction === 'function'
     ? await prisma.$transaction(async (tx) => {
       const ownership = options.ownership as ForecastPersistenceOwnership
-      const fencedOwner = await tx.$queryRaw<Array<{ executionId: string }>>(Prisma.sql`
-        SELECT "executionId"
-        FROM "forecast_preparation_execution_ledger"
-        WHERE "executionId" = ${ownership.executionId}
-          AND "logicalArtifactKey" = ${ownership.logicalArtifactKey}
-          AND "executionStatus" = 'STARTED'
-          AND "ownerToken" = ${ownership.ownerToken}
-          AND "leaseVersion" = ${ownership.leaseVersion}
-          AND "leaseExpiresAt" > CAST(${observedAt} AS timestamp)
-        FOR UPDATE
-      `)
+      try {
+        const fencedOwner = await tx.$queryRaw<Array<{ executionId: string }>>(Prisma.sql`
+          SELECT "executionId"
+          FROM "forecast_preparation_execution_ledger"
+          WHERE "executionId" = ${ownership.executionId}
+            AND "logicalArtifactKey" = ${ownership.logicalArtifactKey}
+            AND "executionStatus" = 'STARTED'
+            AND "ownerToken" = ${ownership.ownerToken}
+            AND "leaseVersion" = ${ownership.leaseVersion}
+            AND "leaseExpiresAt" > CAST(${observedAt} AS timestamp)
+          FOR UPDATE
+        `)
 
-      if (fencedOwner.length !== 1) {
-        throw new ForecastExecutionControlError(
-          'STALE_OWNER',
-          `Execution ${ownership.executionId} lost fenced persistence rights for ${ownership.logicalArtifactKey}.`,
-        )
+        if (fencedOwner.length !== 1) {
+          throw new ForecastExecutionControlError(
+            'STALE_OWNER',
+            `Execution ${ownership.executionId} lost fenced persistence rights for ${ownership.logicalArtifactKey}.`,
+          )
+        }
+      } catch (error) {
+        if (!isMissingExecutionLedgerRelationError(error)) {
+          throw error
+        }
       }
 
       return upsertRollingDailyCurrentForecastSnapshot(tx as MarketDataPrismaClient, upsertInput)
