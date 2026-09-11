@@ -369,6 +369,95 @@ test('rolling daily maintenance bootstraps missing historical artifacts when exp
   assert.deepEqual(issuedRunnerRequest.existingRecords, [])
 })
 
+test('rolling daily incremental maintenance resumes prior bootstrap progress when state exists without persisted records', async () => {
+  let runnerRequest: RollingDailyMaintenanceBridgeRequest | null = null
+
+  const repository: RollingDailyMaintenanceRepository = {
+    async readState() {
+      return {
+        seriesId: 'wocaes0074',
+        inputSource: ROLLING_DAILY_INPUT_SOURCE,
+        inputRunId: null,
+        targetBasis: ROLLING_DAILY_TARGET_BASIS,
+        methodId: ROLLING_DAILY_METHOD_ID,
+        methodVersion: ROLLING_DAILY_METHOD_VERSION,
+        modelId: 'naive',
+        historicalOriginStartAt: `${DEFAULT_ROLLING_DAILY_HISTORICAL_ORIGIN_START_DATE}T00:00:00.000Z`,
+        minimumTrainingObservations: 5,
+        minimumCalibrationSamples: 20,
+        latestSourceObservationAt: '2024-01-05T00:00:00.000Z',
+        latestSourceHistoryStartAt: '2024-01-01T00:00:00.000Z',
+        latestSourceObservationCount: 5,
+        latestSourceHistoryFingerprint: createHistoryFingerprint(),
+        lastProcessedOriginAt: '2024-01-04',
+        lastMaturedObservedAt: null,
+        lastMaintenanceAt: '2024-01-05T00:00:00.000Z',
+        lastMaintenanceStatus: 'SUCCEEDED',
+        lastFailureReason: null,
+      }
+    },
+    async listVerificationRecords() {
+      return []
+    },
+    async applyMaintenanceUpdate() {},
+    async recordMaintenanceFailure() {
+      throw new Error('recordMaintenanceFailure should not be called for resumable bootstrap progress')
+    },
+  }
+
+  const runner: RollingDailyMaintenanceRunner = {
+    async run(request) {
+      runnerRequest = request
+      return {
+        status: 'AVAILABLE',
+        methodId: ROLLING_DAILY_METHOD_ID,
+        methodVersion: ROLLING_DAILY_METHOD_VERSION,
+        sourceHistory: {
+          startDate: '2024-01-01',
+          endDate: '2024-01-05',
+          latestObservationDate: '2024-01-05',
+          observationCount: 5,
+          filteredNullCount: 0,
+          filteredDuplicateCount: 0,
+          historyFingerprint: 'hist-1',
+        },
+        maintenance: {
+          newOriginCount: 0,
+          maturedRecordCount: 0,
+          affectedCalibrationGroupCount: 0,
+          calibrationRefreshCount: 0,
+          lastProcessedOriginDate: '2024-01-05',
+          lastMaturedObservedAt: null,
+          newOriginDates: [],
+        },
+        newRecords: [],
+        maturedRecords: [],
+        calibrationGroups: [],
+      }
+    },
+  }
+
+  const service = createRollingDailyMaintenanceService({
+    repository,
+    runner,
+    loadHistory: async () => createHistory(),
+    logEvent: () => {},
+  })
+
+  const result = await service.runIncrementalMaintenance({
+    seriesId: 'wocaes0074',
+    modelId: 'naive',
+    minimumTrainingObservations: 5,
+    bootstrapHistoricalIfMissing: true,
+  })
+
+  assert.equal(result.status, 'NO_OP')
+  assert.ok(runnerRequest)
+  const issuedRunnerRequest = runnerRequest as RollingDailyMaintenanceBridgeRequest
+  assert.equal(issuedRunnerRequest.lastProcessedOriginDate, '2024-01-04')
+  assert.deepEqual(issuedRunnerRequest.existingRecords, [])
+})
+
 test('rolling daily incremental maintenance does not bootstrap full replay for an unseeded identity', async () => {
   let runnerCalled = false
   let applyCalled = false
