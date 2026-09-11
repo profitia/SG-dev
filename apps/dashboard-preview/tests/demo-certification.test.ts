@@ -682,6 +682,67 @@ test('I6. benchmark evaluations run concurrently across the cohort', async () =>
   assert.equal(report.benchmarks[1]?.seriesId, 'lmeofcucashask')
 })
 
+test('I7. precompute and matrix reuse the same preparation for a stale variant', async () => {
+  const preparedVariants = new Set<string>()
+  const prepareCalls: string[] = []
+  const keyOf = (input: BenchmarkForecastCurrentPreparationRequest) => `${input.seriesId}:${input.modelId}:${input.targetBasis}`
+  const originalRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+
+  process.env.RENDER_EXTERNAL_URL = 'https://dashboards-library.onrender.com'
+
+  try {
+    const report = await createDemoCertificationService({
+      now: () => '2026-09-04T18:30:00.000Z',
+      benchmarkTimeoutMs: 100,
+      cohort: [{
+        seriesId: 'wocaes0074',
+        benchmarkName: 'Brent',
+        group: 'PRIMARY',
+        requiredModels: ['naive'],
+        requiredTargetBases: ['MONTHLY_AVERAGE'],
+      }],
+      resolveReleaseSnapshot: (cohort) => ({
+        sourceRevision: 'rev-a',
+        deployedRevision: 'rev-a',
+        environment: 'render',
+        environmentUrl: 'https://dashboards-library.onrender.com',
+        acceptedAt: '2026-09-04T18:30:00.000Z',
+        cohort: cohort.map((entry) => ({ seriesId: entry.seriesId, benchmarkName: entry.benchmarkName, group: entry.group })),
+      }),
+      readCapability: async (input) => {
+        if (input.modelId !== 'naive' || input.targetBasis !== 'MONTHLY_AVERAGE') {
+          return capability(input)
+        }
+
+        return preparedVariants.has(keyOf(input))
+          ? capability(input)
+          : capability(input, {
+              status: 'STALE' as never,
+              currentReadiness: 'STALE',
+              verificationReadiness: 'STALE',
+              reason: 'STALE',
+            })
+      },
+      prepareCurrent: async (input) => {
+        prepareCalls.push(keyOf(input))
+        preparedVariants.add(keyOf(input))
+        return preparation(input)
+      },
+      readCurrent: async (seriesId, modelId, targetBasis) => currentResult({ seriesId, modelId, targetBasis }),
+      readVerification: async (seriesId, modelId, targetBasis) => verificationResult({ seriesId, modelId, targetBasis }),
+    }).run({ includeFallback: false })
+
+    assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
+    assert.deepEqual(prepareCalls, ['wocaes0074:naive:MONTHLY_AVERAGE'])
+  } finally {
+    if (originalRenderExternalUrl === undefined) {
+      delete process.env.RENDER_EXTERNAL_URL
+    } else {
+      process.env.RENDER_EXTERNAL_URL = originalRenderExternalUrl
+    }
+  }
+})
+
 test('J. Stage 3 cohort config does not restrict product capability', async () => {
   const report = await createService({}).run({ includeFallback: true, seriesIds: ['custom-non-cohort-series'] })
   const defaultCohort = getDefaultDemoCertificationCohort()

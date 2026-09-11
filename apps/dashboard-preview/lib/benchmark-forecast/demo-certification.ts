@@ -665,11 +665,25 @@ export function createDemoCertificationService(
 ) {
   const currentReadCache = new Map<string, Promise<BenchmarkForecastCurrentResult>>()
   const verificationReadCache = new Map<string, Promise<BenchmarkForecastVerificationResult>>()
+  const preparationCache = new Map<string, Promise<BenchmarkForecastCurrentPreparationResult>>()
   const createReadKey = (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => (
     `${seriesId}::${modelId}::${targetBasis}`
   )
   const readCurrent = dependencies.readCurrent ?? resolveShowForecastCurrent
   const readVerification = dependencies.readVerification ?? getBenchmarkForecastVerification
+  const prepareCurrent = dependencies.prepareCurrent ?? prepareInteractiveCurrentForecast
+
+  const prepareCurrentOnce = (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => {
+    const key = createReadKey(input.seriesId, input.modelId, input.targetBasis)
+    const cached = preparationCache.get(key)
+    if (cached) {
+      return cached
+    }
+
+    const pending = prepareCurrent(input, options)
+    preparationCache.set(key, pending)
+    return pending
+  }
 
   const resolvedDependencies: DemoCertificationDependencies = {
     now: dependencies.now ?? (() => new Date().toISOString()),
@@ -677,7 +691,7 @@ export function createDemoCertificationService(
     cohort: dependencies.cohort ?? DEFAULT_DEMO_COHORT,
     resolveReleaseSnapshot: dependencies.resolveReleaseSnapshot ?? defaultReleaseSnapshot,
     readCapability: dependencies.readCapability ?? readInteractiveForecastCapability,
-    prepareCurrent: dependencies.prepareCurrent ?? prepareInteractiveCurrentForecast,
+    prepareCurrent: prepareCurrentOnce,
     readCurrent: (seriesId, modelId, targetBasis) => {
       const key = createReadKey(seriesId, modelId, targetBasis)
       const cached = currentReadCache.get(key)
@@ -702,7 +716,7 @@ export function createDemoCertificationService(
     },
     evaluateMatrix: dependencies.evaluateMatrix ?? createMatrixEvaluator({
       readCapability: dependencies.readCapability ?? readInteractiveForecastCapability,
-      prepareCurrent: dependencies.prepareCurrent ?? prepareInteractiveCurrentForecast,
+      prepareCurrent: prepareCurrentOnce,
       readCurrent: (seriesId, modelId, targetBasis) => {
         const key = createReadKey(seriesId, modelId, targetBasis)
         const cached = currentReadCache.get(key)
