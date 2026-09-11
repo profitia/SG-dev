@@ -1285,7 +1285,10 @@ export function createRollingDailyMaintenanceService(
         : null
       const forceCalibrationRefresh = latestPersistedMaturedObservedAt !== null
         && latestPersistedMaturedObservedAt !== stateLastMaturedObservedAt
-      const bootstrapHistoricalIfMissing = input.bootstrapHistoricalIfMissing === true && existingRecords.length === 0
+      const hasResumableHistoricalState = state?.lastProcessedOriginAt != null
+      const bootstrapHistoricalIfMissing = input.bootstrapHistoricalIfMissing === true
+        && existingRecords.length === 0
+        && !hasResumableHistoricalState
 
       if (!input.fullRebuild && !bootstrapHistoricalIfMissing && state === null && existingRecords.length === 0) {
         const runtimeMs = Math.round(performance.now() - startedAt)
