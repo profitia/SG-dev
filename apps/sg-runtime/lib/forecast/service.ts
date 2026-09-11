@@ -405,6 +405,105 @@ type PersistedTrainingPolicyIdentityRecord = {
   effectiveTrainingPolicyId: string | null
 }
 
+type PersistedCurrentRunPointRecord = {
+  horizonLabel: string
+  horizonSteps: number
+  forecastDate: Date
+  forecastValue: Prisma.Decimal | number | null
+  metadataJson: Prisma.JsonValue | null
+  failureReason: string | null
+}
+
+type PersistedCurrentRunRecord = PersistedTrainingPolicyIdentityRecord & {
+  seriesId: string
+  modelId: string
+  displayName: string
+  description: string | null
+  targetBasis: ForecastTargetBasis
+  methodVersion: string
+  inputSource: string
+  inputRunId: string | null
+  historyFingerprint: string
+  frequency: string | null
+  historyStartAt: Date | null
+  historyEndAt: Date | null
+  observationCount: number
+  forecastOriginAt: Date | null
+  runtimeSeconds: number | null
+  points: PersistedCurrentRunPointRecord[]
+}
+
+type PersistedVerificationMetricRecord = {
+  horizonLabel: string
+  horizonSteps: number
+  origins: number
+  expectedOrigins: number
+  failedOrigins: number
+  coverage: number
+  mae: number | null
+  rmse: number | null
+  mase: number | null
+  smape: number | null
+  directionalAccuracy: number | null
+  bias: number | null
+  failureSummaryJson: Prisma.JsonValue | null
+}
+
+type PersistedVerificationPointRecord = {
+  horizonLabel: string
+  horizonSteps: number
+  forecastOriginAt: Date
+  targetDate: Date
+  actualObservedAt: Date | null
+  originValue: Prisma.Decimal | number
+  forecastValue: Prisma.Decimal | number
+  actualValue: Prisma.Decimal | number
+  errorValue: Prisma.Decimal | number
+  absoluteErrorValue: Prisma.Decimal | number
+  deltaValue: Prisma.Decimal | number
+  deltaPct: number | null
+  maseScale: number
+  metadataJson: Prisma.JsonValue | null
+}
+
+type PersistedVerificationRunRecord = PersistedTrainingPolicyIdentityRecord & {
+  seriesId: string
+  modelId: string
+  displayName: string
+  description: string | null
+  targetBasis: ForecastTargetBasis
+  methodVersion: string
+  inputSource: string
+  inputRunId: string | null
+  historyFingerprint: string
+  frequency: string | null
+  historyStartAt: Date | null
+  historyEndAt: Date | null
+  observationCount: number
+  forecastOriginAt: Date | null
+  runtimeSeconds: number | null
+  metrics: PersistedVerificationMetricRecord[]
+  points: PersistedVerificationPointRecord[]
+}
+
+function isMissingCurrentTrainingPolicyColumnError(error: unknown) {
+  return error instanceof Error
+    && error.message.includes('forecast_current_runs.')
+    && (
+      error.message.includes('trainingWindowPolicyId')
+      || error.message.includes('effectiveTrainingPolicyId')
+    )
+}
+
+function isMissingVerificationTrainingPolicyColumnError(error: unknown) {
+  return error instanceof Error
+    && error.message.includes('forecast_verification_runs.')
+    && (
+      error.message.includes('trainingWindowPolicyId')
+      || error.message.includes('effectiveTrainingPolicyId')
+    )
+}
+
 function resolvePersistedForecastStatisticalCompatibility(
   artifactFamily: 'CURRENT' | 'VERIFICATION',
   record: PersistedTrainingPolicyIdentityRecord,
@@ -2154,30 +2253,81 @@ export async function readCurrentRunFromPrisma(key: ForecastCacheLookupKey): Pro
     methodVersion: key.methodVersion,
     frequency: key.frequencyIdentity,
   } as const
-  const include = {
+  const select: Prisma.ForecastCurrentRunSelect = {
+    seriesId: true,
+    modelId: true,
+    displayName: true,
+    description: true,
+    targetBasis: true,
+    methodVersion: true,
+    inputSource: true,
+    inputRunId: true,
+    historyFingerprint: true,
+    frequency: true,
+    trainingWindowPolicyId: true,
+    effectiveTrainingPolicyId: true,
+    historyStartAt: true,
+    historyEndAt: true,
+    observationCount: true,
+    forecastOriginAt: true,
+    runtimeSeconds: true,
     points: {
+      select: {
+        horizonLabel: true,
+        horizonSteps: true,
+        forecastDate: true,
+        forecastValue: true,
+        metadataJson: true,
+        failureReason: true,
+      },
       orderBy: [
-        { horizonSteps: 'asc' as const },
-        { forecastDate: 'asc' as const },
+        { horizonSteps: 'asc' },
+        { forecastDate: 'asc' },
       ],
     },
   }
+  const legacySelect: Prisma.ForecastCurrentRunSelect = {
+    ...select,
+    trainingWindowPolicyId: false,
+    effectiveTrainingPolicyId: false,
+  }
 
-  const run = await prisma.forecastCurrentRun.findFirst({
-    where: {
-      ...where,
-      trainingWindowPolicyId: key.trainingWindowPolicyId,
-      effectiveTrainingPolicyId: key.effectiveTrainingPolicyId,
-    },
-    include,
-  }) ?? await prisma.forecastCurrentRun.findFirst({
-    where: {
-      ...where,
-      trainingWindowPolicyId: null,
-      effectiveTrainingPolicyId: null,
-    },
-    include,
-  })
+  let run: PersistedCurrentRunRecord | null
+
+  try {
+    run = await prisma.forecastCurrentRun.findFirst({
+      where: {
+        ...where,
+        trainingWindowPolicyId: key.trainingWindowPolicyId,
+        effectiveTrainingPolicyId: key.effectiveTrainingPolicyId,
+      },
+      select,
+    }) as PersistedCurrentRunRecord | null ?? await prisma.forecastCurrentRun.findFirst({
+      where: {
+        ...where,
+        trainingWindowPolicyId: null,
+        effectiveTrainingPolicyId: null,
+      },
+      select,
+    }) as PersistedCurrentRunRecord | null
+  } catch (error) {
+    if (!isMissingCurrentTrainingPolicyColumnError(error)) {
+      throw error
+    }
+
+    const legacyRun = await prisma.forecastCurrentRun.findFirst({
+      where,
+      select: legacySelect,
+    }) as Omit<PersistedCurrentRunRecord, 'trainingWindowPolicyId' | 'effectiveTrainingPolicyId'> | null
+
+    run = legacyRun
+      ? {
+          ...legacyRun,
+          trainingWindowPolicyId: null,
+          effectiveTrainingPolicyId: null,
+        }
+      : null
+  }
 
   if (!run) {
     return null
@@ -2386,36 +2536,110 @@ export async function readVerificationRunFromPrisma(key: ForecastCacheLookupKey)
     methodVersion: key.methodVersion,
     frequency: key.frequencyIdentity,
   } as const
-  const include = {
+  const select: Prisma.ForecastVerificationRunSelect = {
+    seriesId: true,
+    modelId: true,
+    displayName: true,
+    description: true,
+    targetBasis: true,
+    methodVersion: true,
+    inputSource: true,
+    inputRunId: true,
+    historyFingerprint: true,
+    frequency: true,
+    trainingWindowPolicyId: true,
+    effectiveTrainingPolicyId: true,
+    historyStartAt: true,
+    historyEndAt: true,
+    observationCount: true,
+    forecastOriginAt: true,
+    runtimeSeconds: true,
     metrics: {
+      select: {
+        horizonLabel: true,
+        horizonSteps: true,
+        origins: true,
+        expectedOrigins: true,
+        failedOrigins: true,
+        coverage: true,
+        mae: true,
+        rmse: true,
+        mase: true,
+        smape: true,
+        directionalAccuracy: true,
+        bias: true,
+        failureSummaryJson: true,
+      },
       orderBy: {
-        horizonSteps: 'asc' as const,
+        horizonSteps: 'asc',
       },
     },
     points: {
+      select: {
+        horizonLabel: true,
+        horizonSteps: true,
+        forecastOriginAt: true,
+        targetDate: true,
+        actualObservedAt: true,
+        originValue: true,
+        forecastValue: true,
+        actualValue: true,
+        errorValue: true,
+        absoluteErrorValue: true,
+        deltaValue: true,
+        deltaPct: true,
+        maseScale: true,
+        metadataJson: true,
+      },
       orderBy: [
-        { horizonSteps: 'asc' as const },
-        { forecastOriginAt: 'asc' as const },
-        { targetDate: 'asc' as const },
+        { horizonSteps: 'asc' },
+        { forecastOriginAt: 'asc' },
+        { targetDate: 'asc' },
       ],
     },
   }
+  const legacySelect: Prisma.ForecastVerificationRunSelect = {
+    ...select,
+    trainingWindowPolicyId: false,
+    effectiveTrainingPolicyId: false,
+  }
 
-  const run = await prisma.forecastVerificationRun.findFirst({
-    where: {
-      ...where,
-      trainingWindowPolicyId: key.trainingWindowPolicyId,
-      effectiveTrainingPolicyId: key.effectiveTrainingPolicyId,
-    },
-    include,
-  }) ?? await prisma.forecastVerificationRun.findFirst({
-    where: {
-      ...where,
-      trainingWindowPolicyId: null,
-      effectiveTrainingPolicyId: null,
-    },
-    include,
-  })
+  let run: PersistedVerificationRunRecord | null
+
+  try {
+    run = await prisma.forecastVerificationRun.findFirst({
+      where: {
+        ...where,
+        trainingWindowPolicyId: key.trainingWindowPolicyId,
+        effectiveTrainingPolicyId: key.effectiveTrainingPolicyId,
+      },
+      select,
+    }) as PersistedVerificationRunRecord | null ?? await prisma.forecastVerificationRun.findFirst({
+      where: {
+        ...where,
+        trainingWindowPolicyId: null,
+        effectiveTrainingPolicyId: null,
+      },
+      select,
+    }) as PersistedVerificationRunRecord | null
+  } catch (error) {
+    if (!isMissingVerificationTrainingPolicyColumnError(error)) {
+      throw error
+    }
+
+    const legacyRun = await prisma.forecastVerificationRun.findFirst({
+      where,
+      select: legacySelect,
+    }) as Omit<PersistedVerificationRunRecord, 'trainingWindowPolicyId' | 'effectiveTrainingPolicyId'> | null
+
+    run = legacyRun
+      ? {
+          ...legacyRun,
+          trainingWindowPolicyId: null,
+          effectiveTrainingPolicyId: null,
+        }
+      : null
+  }
 
   if (!run) {
     return null
