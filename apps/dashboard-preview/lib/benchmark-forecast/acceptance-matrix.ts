@@ -92,7 +92,11 @@ type AcceptanceMatrixDependencies = {
     targetBasis: ForecastTargetBasis,
     cadence?: { sourceFrequency: string, targetCadence: string },
   ) => Promise<BenchmarkForecastVerificationResult>
-  readPointInTimeCurrent: (seriesId: string, model: ForecastPortfolioModelId) => Promise<BenchmarkForecastCurrentResult>
+  readPointInTimeCurrent: (
+    seriesId: string,
+    model: ForecastPortfolioModelId,
+    capability?: Pick<InteractiveForecastCapabilityResult, 'currentReadiness'>,
+  ) => Promise<BenchmarkForecastCurrentResult>
   getPrisma: () => PrismaClientLike | null
 }
 
@@ -460,6 +464,7 @@ export function createForecastAcceptanceMatrixService(
     seriesId: string,
     modelId: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
+    capability?: Pick<InteractiveForecastCapabilityResult, 'currentReadiness'>,
     cadence?: { sourceFrequency: string, targetCadence: string },
   ): Promise<BenchmarkForecastCurrentResult> {
     const cacheKey = createVariantKey(seriesId, modelId, targetBasis)
@@ -469,7 +474,7 @@ export function createForecastAcceptanceMatrixService(
     }
 
     const pending = targetBasis === 'POINT_IN_TIME'
-      ? resolvedDependencies.readPointInTimeCurrent(seriesId, modelId)
+      ? resolvedDependencies.readPointInTimeCurrent(seriesId, modelId, capability)
       : resolvedDependencies.readCurrent(seriesId, modelId, targetBasis, cadence)
     currentReadCache.set(cacheKey, pending)
     return pending
@@ -603,7 +608,7 @@ export function createForecastAcceptanceMatrixService(
         }
       }
 
-      const current = await readCurrentOnce(seriesId, modelId, targetBasis, cadence)
+      const current = await readCurrentOnce(seriesId, modelId, targetBasis, effectiveCapability, cadence)
       if (current.status !== 'AVAILABLE') {
         return {
           identity: { ...identityBase, kind: 'CURRENT', historyFingerprint: persisted.historyFingerprint, verificationHorizon: null },

@@ -231,7 +231,13 @@ function evaluateRollingDailyCurrentForecastFreshness(
 async function getRollingDailyCurrentSourceHistoryFingerprint(
   seriesId: string,
   model: ForecastPortfolioModelId,
+  capability?: Pick<InteractiveForecastCapabilityResult, 'currentReadiness'> | null,
+  snapshotSourceHistoryFingerprint?: string | null,
 ): Promise<string | null> {
+  if (capability?.currentReadiness === 'READY') {
+    return snapshotSourceHistoryFingerprint ?? null
+  }
+
   const prisma = getMarketDataPrismaClient()
 
   if (!prisma) {
@@ -318,6 +324,7 @@ function toCurrentNotAvailableReason(
 async function getPersistedRollingDailyCurrentForecast(
   seriesId: string,
   model: ForecastPortfolioModelId,
+  capability?: Pick<InteractiveForecastCapabilityResult, 'currentReadiness'> | null,
 ): Promise<BenchmarkForecastCurrentResult> {
   const prisma = getMarketDataPrismaClient()
 
@@ -373,7 +380,12 @@ async function getPersistedRollingDailyCurrentForecast(
       seriesId,
       model,
       payload,
-      await getRollingDailyCurrentSourceHistoryFingerprint(seriesId, model),
+      await getRollingDailyCurrentSourceHistoryFingerprint(
+        seriesId,
+        model,
+        capability,
+        payload.audit.sourceHistoryFingerprint ?? null,
+      ),
     ),
   )
 
@@ -390,8 +402,9 @@ async function getPersistedRollingDailyCurrentForecast(
 export async function readPointInTimeCurrentForecastSnapshot(
   seriesId: string,
   model: ForecastPortfolioModelId,
+  capability?: Pick<InteractiveForecastCapabilityResult, 'currentReadiness'> | null,
 ) {
-  return getPersistedRollingDailyCurrentForecast(seriesId, model)
+  return getPersistedRollingDailyCurrentForecast(seriesId, model, capability)
 }
 
 async function getPersistedCurrentForecast(
@@ -1105,7 +1118,7 @@ export async function getBenchmarkForecastCurrent(
       } satisfies BenchmarkForecastCurrentResult
     }
 
-    return getPersistedRollingDailyCurrentForecast(seriesId, model)
+    return getPersistedRollingDailyCurrentForecast(seriesId, model, capability)
   }
 
   if (getMarketDataPrismaClient()) {

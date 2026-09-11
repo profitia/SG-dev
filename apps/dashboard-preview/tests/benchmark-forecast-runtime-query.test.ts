@@ -431,6 +431,154 @@ test('point-in-time current forecast fails closed as unsupported for non-daily c
   }
 })
 
+test('point-in-time current freshness trusts READY capability for the current snapshot contract', async () => {
+  const originalFetch = global.fetch
+  const previousMarketDataUrl = process.env.MARKET_DATA_DATABASE_URL
+  const previousDatabaseUrl = process.env.DATABASE_URL
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const marketDataGlobal = globalThis as typeof globalThis & {
+    dashboardPreviewMarketDataPrisma?: {
+      rollingDailyCurrentForecastSnapshot: {
+        findFirst: () => Promise<Record<string, unknown> | null>
+      }
+      rollingDailyMaintenanceState: {
+        findUnique: () => Promise<Record<string, unknown> | null>
+      }
+    }
+    dashboardPreviewMarketDataPrismaConnectionString?: string
+  }
+  const previousPrisma = marketDataGlobal.dashboardPreviewMarketDataPrisma
+  const previousPrismaConnectionString = marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString
+  let maintenanceReads = 0
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://market-data-present'
+  delete process.env.DATABASE_URL
+
+  marketDataGlobal.dashboardPreviewMarketDataPrisma = {
+    rollingDailyCurrentForecastSnapshot: {
+      async findFirst() {
+        return {
+          payloadJson: {
+            status: 'AVAILABLE',
+            contractVersion: '1',
+            benchmark: {
+              benchmarkId: 'wocaes0074',
+              displayName: 'Brent',
+              frequency: 'DAILY',
+              unit: 'USD/bbl',
+              currency: 'USD',
+              provider: 'macrobond',
+              providerSeriesId: 'wocaes0074',
+            },
+            forecastMethod: {
+              id: 'ROLLING_DAILY_POINT_IN_TIME',
+              version: 'rolling-daily-point-in-time-v1',
+            },
+            model: {
+              id: 'naive',
+            },
+            origin: {
+              date: '2026-09-10',
+              value: 90.1,
+            },
+            anchors: [
+              {
+                horizon: '1M',
+                horizonMonths: 1,
+                targetCalendarDate: '2026-10-10',
+                pointForecast: 91.5,
+              },
+            ],
+            path: [
+              {
+                date: '2026-09-11',
+                pointForecast: 90.2,
+              },
+            ],
+            audit: {
+              inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+              sourceLatestObservationDate: '2026-09-10',
+              sourceHistoryFingerprint: 'current-contract-fingerprint',
+            },
+            warnings: [],
+          },
+          status: 'AVAILABLE',
+          message: null,
+          reasonCode: null,
+        }
+      },
+    },
+    rollingDailyMaintenanceState: {
+      async findUnique() {
+        maintenanceReads += 1
+        return {
+          latestSourceHistoryFingerprint: 'historical-maintenance-fingerprint',
+        }
+      },
+    },
+  }
+  marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = process.env.MARKET_DATA_DATABASE_URL
+
+  global.fetch = (async () => new Response(JSON.stringify({
+    seriesId: 'wocaes0074',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'naive',
+    sourceFrequency: 'DAILY',
+    targetCadence: 'DAILY',
+    sourceAvailability: 'AVAILABLE',
+    lawfulTargetSemantics: 'LAWFUL',
+    status: 'AVAILABLE',
+    currentReadiness: 'READY',
+    verificationReadiness: 'READY',
+    recentVerificationReadiness: 'READY',
+    fullVerificationReadiness: 'READY',
+    predictionBandResidualCount: 40,
+    predictionBandState: 'AVAILABLE',
+    readiness: {
+      fastReady: true,
+      calibratedReady: true,
+      fullReady: true,
+      blockers: [],
+    },
+    targetedDataScope: 'SINGLE_SERIES',
+    timingMs: 12,
+    reason: null,
+  }), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  })) as typeof fetch
+
+  try {
+    const result = await getBenchmarkForecastCurrent('wocaes0074', 'naive', 'POINT_IN_TIME')
+    assert.equal(result.status, 'AVAILABLE')
+    if (result.status !== 'AVAILABLE') return
+    assert.equal(result.freshness?.status, 'FRESH')
+    assert.equal(result.freshness?.snapshotSourceHistoryFingerprint, 'current-contract-fingerprint')
+    assert.equal(result.freshness?.currentSourceHistoryFingerprint, 'current-contract-fingerprint')
+    assert.equal(maintenanceReads, 0)
+  } finally {
+    global.fetch = originalFetch
+    if (previousMarketDataUrl === undefined) {
+      delete process.env.MARKET_DATA_DATABASE_URL
+    } else {
+      process.env.MARKET_DATA_DATABASE_URL = previousMarketDataUrl
+    }
+    if (previousDatabaseUrl === undefined) {
+      delete process.env.DATABASE_URL
+    } else {
+      process.env.DATABASE_URL = previousDatabaseUrl
+    }
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+    marketDataGlobal.dashboardPreviewMarketDataPrisma = previousPrisma
+    marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = previousPrismaConnectionString
+  }
+})
+
 test('monthly prepared read filters by canonical method identity and returns an unambiguous DTO', async () => {
   const previousMarketDataUrl = process.env.MARKET_DATA_DATABASE_URL
   const previousDatabaseUrl = process.env.DATABASE_URL
