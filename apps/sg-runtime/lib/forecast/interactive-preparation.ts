@@ -20,8 +20,13 @@ import {
   type ForecastPreparationOwnedExecutionContext,
 } from '@/lib/forecast/execution-ledger'
 import {
+  type BenchmarkForecastVerificationResult,
+  type ForecastTargetBasis,
   type ForecastPersistenceOwnership,
+  readPreparedBenchmarkForecastVerification,
+  readPreparedBenchmarkRecentForecastVerification,
   resolveBenchmarkCurrentForecast,
+  type ForecastServiceRequest,
 } from '@/lib/forecast/service'
 import {
   resolveForecastStage3HeartbeatIntervalMs,
@@ -58,11 +63,39 @@ export type InteractiveForecastCapabilityResult = {
   status: ForecastVariantCapability['capabilityState'] | 'FAILED'
   currentReadiness: ForecastVariantCapability['currentPreparedState'] | 'NOT_PREPARED'
   verificationReadiness: ForecastVariantCapability['historicalPreparedState'] | 'NOT_PREPARED'
+  recentVerificationReadiness: ForecastVariantCapability['historicalPreparedState'] | 'NOT_PREPARED'
+  fullVerificationReadiness: 'READY' | 'NOT_PREPARED' | 'STALE'
+  predictionBandResidualCount: number
+  predictionBandState: ForecastVariantCapability['predictionBandState']
+  readiness: {
+    fastReady: boolean
+    calibratedReady: boolean
+    fullReady: boolean
+    blockers: InteractiveForecastReadinessBlocker[]
+  }
   targetedDataScope: 'SINGLE_SERIES'
   timingMs: number
   reason: string | null
   trace?: ExactForecastCapabilityTrace
 }
+
+export type InteractiveForecastReadinessBlocker =
+  | 'CURRENT_MISSING'
+  | 'CURRENT_STALE'
+  | 'RECENT_MISSING'
+  | 'RECENT_PARTIAL'
+  | 'RECENT_STALE'
+  | 'FULL_HISTORICAL_MISSING'
+  | 'FULL_HISTORICAL_PARTIAL'
+  | 'FULL_HISTORICAL_STALE'
+  | 'CALIBRATION_INSUFFICIENT_SAMPLES'
+  | 'BANDS_NOT_AVAILABLE'
+  | 'SOURCE_REVISION_REBUILD_REQUIRED'
+  | 'DATA_NOT_AVAILABLE'
+  | 'INSUFFICIENT_HISTORY'
+  | 'PROVENANCE_REQUIRED'
+  | 'NOT_IMPLEMENTED'
+  | 'NOT_LAWFUL'
 
 export type InteractiveForecastPreparationResult = {
   seriesId: string
@@ -81,6 +114,8 @@ type InteractiveForecastPreparationDependencies = {
   prepareRollingCurrent: ReturnType<typeof createRollingDailyProductionOperationsService>['runCurrentOnly']
   prepareRollingDailyOwnership: typeof prepareRollingDailyCurrentOwnership
   readRollingCurrentSnapshot: typeof readRollingDailyCurrentForecastSnapshot
+  readPreparedFullVerification: typeof readPreparedBenchmarkForecastVerification
+  readPreparedRecentVerification: typeof readPreparedBenchmarkRecentForecastVerification
   executionAdmission: ForecastPreparationExecutionAdmission
   now: () => number
 }
@@ -151,6 +186,159 @@ function formatInteractiveCapabilityReason(capability: ForecastVariantCapability
   return fallback
 }
 
+function targetBasisForSemantics(targetSemantics: ForecastTargetSemantics): ForecastTargetBasis {
+  return TARGET_BASIS_BY_SEMANTICS[targetSemantics]
+}
+
+function buildPreparedReadRequest(
+  input: InteractiveForecastIdentity,
+  sourceFrequency: InteractiveForecastCapabilityResult['sourceFrequency'],
+  targetCadence: InteractiveForecastCapabilityResult['targetCadence'],
+): ForecastServiceRequest {
+  return {
+    seriesId: input.seriesId,
+    modelId: input.modelId,
+    targetBasis: targetBasisForSemantics(input.targetSemantics),
+    ...(sourceFrequency ? { sourceFrequency } : {}),
+    ...(targetCadence ? { targetCadence } : {}),
+  }
+}
+
+function isPreparedVerificationAvailable(result: BenchmarkForecastVerificationResult) {
+  return result.status === 'AVAILABLE'
+}
+
+function normalizeVerificationReadiness(input: {
+  result: BenchmarkForecastVerificationResult
+  missing: InteractiveForecastReadinessBlocker
+  partial: InteractiveForecastReadinessBlocker
+  stale: InteractiveForecastReadinessBlocker
+}): {
+  readiness: 'READY' | 'NOT_PREPARED' | 'STALE'
+  blockers: InteractiveForecastReadinessBlocker[]
+} {
+  if (isPreparedVerificationAvailable(input.result)) {
+    return { readiness: 'READY', blockers: [] }
+  }
+
+  if (input.result.status === 'FAILED') {
+    return {
+      readiness: 'STALE',
+      blockers: [input.stale, 'SOURCE_REVISION_REBUILD_REQUIRED'],
+    }
+  }
+
+  const reason = input.result.reason?.toUpperCase() ?? ''
+  if (reason.includes('NO EXACT-IDENTITY PREPARED')) {
+    return { readiness: 'NOT_PREPARED', blockers: [input.missing] }
+  }
+
+  if (reason.includes('NOT RENDERABLE') || reason.includes('PARTIAL')) {
+    return { readiness: 'NOT_PREPARED', blockers: [input.partial] }
+  }
+
+  if (reason.includes('NOT COMPATIBLE') || reason.includes('FINGERPRINT')) {
+    return {
+      readiness: 'STALE',
+      blockers: [input.stale, 'SOURCE_REVISION_REBUILD_REQUIRED'],
+    }
+  }
+
+  return { readiness: 'NOT_PREPARED', blockers: [input.missing] }
+}
+
+async function resolveInteractiveForecastReadiness(
+  dependencies: Pick<InteractiveForecastPreparationDependencies, 'readPreparedFullVerification' | 'readPreparedRecentVerification'>,
+  input: InteractiveForecastIdentity,
+  capability: ForecastVariantCapability | null,
+  sourceFrequency: InteractiveForecastCapabilityResult['sourceFrequency'],
+): Promise<Pick<InteractiveForecastCapabilityResult, 'recentVerificationReadiness' | 'fullVerificationReadiness' | 'predictionBandResidualCount' | 'predictionBandState' | 'readiness'>> {
+  const blockers = new Set<InteractiveForecastReadinessBlocker>()
+  const addBlockers = (next: InteractiveForecastReadinessBlocker[]) => {
+    for (const blocker of next) blockers.add(blocker)
+  }
+
+  if (!capability) {
+    addBlockers(['CURRENT_MISSING'])
+    return {
+      recentVerificationReadiness: 'NOT_PREPARED',
+      fullVerificationReadiness: 'NOT_PREPARED',
+      predictionBandResidualCount: 0,
+      predictionBandState: 'NOT_AVAILABLE',
+      readiness: {
+        fastReady: false,
+        calibratedReady: false,
+        fullReady: false,
+        blockers: [...blockers],
+      },
+    }
+  }
+
+  if (capability.capabilityState === 'NOT_LAWFUL') addBlockers(['NOT_LAWFUL'])
+  if (capability.capabilityState === 'PROVENANCE_REQUIRED') addBlockers(['PROVENANCE_REQUIRED'])
+  if (capability.capabilityState === 'NOT_IMPLEMENTED') addBlockers(['NOT_IMPLEMENTED'])
+  if (capability.capabilityState === 'DATA_NOT_AVAILABLE') addBlockers(['DATA_NOT_AVAILABLE'])
+  if (capability.capabilityState === 'INSUFFICIENT_HISTORY') addBlockers(['INSUFFICIENT_HISTORY'])
+
+  if (capability.currentPreparedState === 'STALE') {
+    addBlockers(['CURRENT_STALE', 'SOURCE_REVISION_REBUILD_REQUIRED'])
+  } else if (capability.currentPreparedState !== 'READY') {
+    addBlockers(['CURRENT_MISSING'])
+  }
+
+  let recentVerificationReadiness: InteractiveForecastCapabilityResult['recentVerificationReadiness'] = capability.historicalPreparedState
+  let fullVerificationReadiness: InteractiveForecastCapabilityResult['fullVerificationReadiness'] = 'NOT_PREPARED'
+
+  if (capability.currentPreparedState === 'READY' && capability.capabilityState !== 'NOT_LAWFUL' && capability.capabilityState !== 'NOT_IMPLEMENTED') {
+    const request = buildPreparedReadRequest(input, sourceFrequency, capability.targetCadence)
+    const [recentVerification, fullVerification] = await Promise.all([
+      dependencies.readPreparedRecentVerification(request),
+      dependencies.readPreparedFullVerification(request),
+    ])
+    const normalizedRecent = normalizeVerificationReadiness({
+      result: recentVerification,
+      missing: 'RECENT_MISSING',
+      partial: 'RECENT_PARTIAL',
+      stale: 'RECENT_STALE',
+    })
+    const normalizedFull = normalizeVerificationReadiness({
+      result: fullVerification,
+      missing: 'FULL_HISTORICAL_MISSING',
+      partial: 'FULL_HISTORICAL_PARTIAL',
+      stale: 'FULL_HISTORICAL_STALE',
+    })
+    recentVerificationReadiness = normalizedRecent.readiness
+    fullVerificationReadiness = normalizedFull.readiness
+    addBlockers(normalizedRecent.blockers)
+    addBlockers(normalizedFull.blockers)
+  }
+
+  const fastReady = capability.currentPreparedState === 'READY' && recentVerificationReadiness === 'READY'
+  const calibratedReady = fastReady && capability.predictionBandState === 'AVAILABLE'
+  const fullReady = capability.currentPreparedState === 'READY' && fullVerificationReadiness === 'READY'
+
+  if (!calibratedReady) {
+    if (capability.predictionBandState === 'INSUFFICIENT_SAMPLE') {
+      addBlockers(['CALIBRATION_INSUFFICIENT_SAMPLES'])
+    } else if (capability.predictionBandState === 'NOT_AVAILABLE') {
+      addBlockers(['BANDS_NOT_AVAILABLE'])
+    }
+  }
+
+  return {
+    recentVerificationReadiness,
+    fullVerificationReadiness,
+    predictionBandResidualCount: capability.predictionBandResidualCount,
+    predictionBandState: capability.predictionBandState,
+    readiness: {
+      fastReady,
+      calibratedReady,
+      fullReady,
+      blockers: [...blockers],
+    },
+  }
+}
+
 export function createInteractiveForecastPreparationService(
   dependencies: Partial<InteractiveForecastPreparationDependencies> = {},
 ) {
@@ -161,6 +349,8 @@ export function createInteractiveForecastPreparationService(
     prepareRollingCurrent: dependencies.prepareRollingCurrent ?? ((request) => rollingDaily.runCurrentOnly(request)),
     prepareRollingDailyOwnership: dependencies.prepareRollingDailyOwnership ?? prepareRollingDailyCurrentOwnership,
     readRollingCurrentSnapshot: dependencies.readRollingCurrentSnapshot ?? readRollingDailyCurrentForecastSnapshot,
+    readPreparedFullVerification: dependencies.readPreparedFullVerification ?? readPreparedBenchmarkForecastVerification,
+    readPreparedRecentVerification: dependencies.readPreparedRecentVerification ?? readPreparedBenchmarkRecentForecastVerification,
     executionAdmission: dependencies.executionAdmission ?? createDefaultForecastPreparationExecutionAdmission(),
     now: dependencies.now ?? (() => performance.now()),
   }
@@ -197,6 +387,15 @@ export function createInteractiveForecastPreparationService(
         : resolution.sourceMetadata.sourceObservationCount === 0
           ? 'DATA_NOT_AVAILABLE'
           : 'AVAILABLE'
+      const readiness = await resolveInteractiveForecastReadiness(
+        {
+          readPreparedFullVerification: resolvedDependencies.readPreparedFullVerification,
+          readPreparedRecentVerification: resolvedDependencies.readPreparedRecentVerification,
+        },
+        input,
+        capability,
+        resolution.sourceMetadata.sourceFrequency,
+      )
 
       return {
         seriesId: input.seriesId,
@@ -209,6 +408,11 @@ export function createInteractiveForecastPreparationService(
         status: capability?.capabilityState ?? 'FAILED',
         currentReadiness: capability?.currentPreparedState ?? 'NOT_PREPARED',
         verificationReadiness: capability?.historicalPreparedState ?? 'NOT_PREPARED',
+        recentVerificationReadiness: readiness.recentVerificationReadiness,
+        fullVerificationReadiness: readiness.fullVerificationReadiness,
+        predictionBandResidualCount: readiness.predictionBandResidualCount,
+        predictionBandState: readiness.predictionBandState,
+        readiness: readiness.readiness,
         targetedDataScope: 'SINGLE_SERIES',
         timingMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
         reason: formatInteractiveCapabilityReason(capability, resolution.reason ?? (capability ? null : 'Exact Forecast capability was not resolved.')),

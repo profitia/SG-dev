@@ -728,6 +728,16 @@ test('internal capability route returns supported capability in legacy-compatibl
       status: 'AVAILABLE',
       currentReadiness: 'READY',
       verificationReadiness: 'READY',
+      recentVerificationReadiness: 'READY',
+      fullVerificationReadiness: 'READY',
+      predictionBandResidualCount: 30,
+      predictionBandState: 'AVAILABLE',
+      readiness: {
+        fastReady: true,
+        calibratedReady: true,
+        fullReady: true,
+        blockers: [],
+      },
       targetedDataScope: 'SINGLE_SERIES',
       timingMs: 7,
       reason: null,
@@ -751,6 +761,16 @@ test('internal capability route returns supported capability in legacy-compatibl
       status: 'AVAILABLE',
       currentReadiness: 'READY',
       verificationReadiness: 'READY',
+      recentVerificationReadiness: 'READY',
+      fullVerificationReadiness: 'READY',
+      predictionBandResidualCount: 30,
+      predictionBandState: 'AVAILABLE',
+      readiness: {
+        fastReady: true,
+        calibratedReady: true,
+        fullReady: true,
+        blockers: [],
+      },
       targetedDataScope: 'SINGLE_SERIES',
       timingMs: 7,
       reason: null,
@@ -780,6 +800,16 @@ test('internal capability route returns unavailable capability without changing 
       status: 'PREPARATION_REQUIRED',
       currentReadiness: 'NOT_PREPARED',
       verificationReadiness: 'NOT_PREPARED',
+      recentVerificationReadiness: 'NOT_PREPARED',
+      fullVerificationReadiness: 'NOT_PREPARED',
+      predictionBandResidualCount: 0,
+      predictionBandState: 'NOT_AVAILABLE',
+      readiness: {
+        fastReady: false,
+        calibratedReady: false,
+        fullReady: false,
+        blockers: ['CURRENT_MISSING', 'RECENT_MISSING', 'FULL_HISTORICAL_MISSING', 'BANDS_NOT_AVAILABLE'],
+      },
       targetedDataScope: 'SINGLE_SERIES',
       timingMs: 5,
       reason: 'Prepared artifacts are missing.',
@@ -794,6 +824,12 @@ test('internal capability route returns unavailable capability without changing 
     assert.equal(response.status, 200)
     assert.equal(payload.status, 'PREPARATION_REQUIRED')
     assert.equal(payload.currentReadiness, 'NOT_PREPARED')
+    assert.deepEqual(payload.readiness, {
+      fastReady: false,
+      calibratedReady: false,
+      fullReady: false,
+      blockers: ['CURRENT_MISSING', 'RECENT_MISSING', 'FULL_HISTORICAL_MISSING', 'BANDS_NOT_AVAILABLE'],
+    })
     assert.equal(payload.reason, 'Prepared artifacts are missing.')
   } finally {
     if (previousToken === undefined) {
@@ -820,6 +856,16 @@ test('internal capability route emits timing header only when trace is requested
       status: 'NOT_LAWFUL',
       currentReadiness: 'NOT_PREPARED',
       verificationReadiness: 'READY',
+      recentVerificationReadiness: 'READY',
+      fullVerificationReadiness: 'NOT_PREPARED',
+      predictionBandResidualCount: 0,
+      predictionBandState: 'NOT_AVAILABLE',
+      readiness: {
+        fastReady: false,
+        calibratedReady: false,
+        fullReady: false,
+        blockers: ['NOT_LAWFUL', 'CURRENT_MISSING', 'BANDS_NOT_AVAILABLE'],
+      },
       targetedDataScope: 'SINGLE_SERIES',
       timingMs: 37,
       reason: 'NOT_LAWFUL',
@@ -852,6 +898,534 @@ test('internal capability route emits timing header only when trace is requested
       process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
     }
   }
+})
+
+test('interactive capability derives fast, calibrated, and full readiness independently from owner-side persisted truth', async () => {
+  const service = createInteractiveForecastPreparationService({
+    now: (() => {
+      let tick = 100
+      return () => ++tick
+    })(),
+    resolveExactCapability: async () => {
+      const capability: ForecastVariantCapability = {
+        identity: {
+          seriesId: 'wocaes0280',
+          targetSemantics: 'END_OF_PERIOD',
+          methodId: 'END_OF_PERIOD',
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+          modelId: 'ets',
+        },
+        sourceFrequency: 'MONTHLY',
+        sourceFrequencyRecognized: true,
+        businessTarget: 'END_OF_PERIOD',
+        targetCadence: 'MONTHLY',
+        targetSemanticsSupported: true,
+        horizonSupportState: 'NOT_REQUESTED',
+        horizonMonths: null,
+        horizonSteps: null,
+        semanticLawfulness: 'LAWFUL_WITH_PROVENANCE',
+        admissionState: 'ADMITTED',
+        provenanceStatus: 'PROVEN',
+        implementationState: 'SUPPORTED',
+        historyEligibility: 'ELIGIBLE',
+        minimumRequiredObservations: 36,
+        availableObservations: 64,
+        modelEligible: true,
+        currentForecastEligible: true,
+        verificationOriginCount: 28,
+        verificationEvidenceState: 'SUFFICIENT',
+        predictionBandResidualCount: 29,
+        predictionBandState: 'INSUFFICIENT_SAMPLE',
+        targetPreparationState: 'PREPARED',
+        currentPreparedState: 'READY',
+        historicalPreparedState: 'READY',
+        capabilityState: 'AVAILABLE',
+      }
+
+      const resolution: ForecastCapabilityResolution = {
+        status: 'AVAILABLE',
+        reason: null,
+        sourceMetadata: {
+          seriesId: 'wocaes0280',
+          providerCode: 'MACROBOND',
+          source: 'DYNAMIC_MARKET_DATA_STORE',
+          sourceFrequency: 'MONTHLY',
+          rawFrequency: 'MONTHLY',
+          sourceObservationCount: 64,
+          fullHistoryObservationCount: 64,
+        },
+        targetedHydration: {
+          scope: 'SINGLE_SERIES',
+          requestedSeriesId: 'wocaes0280',
+          source: 'postgres',
+          cacheStatus: 'hit',
+        },
+        preparationFailures: {},
+        capabilities: [capability],
+      }
+
+      return {
+        resolution,
+        capability,
+        trace: undefined,
+      }
+    },
+    readPreparedRecentVerification: async () => ({
+      status: 'AVAILABLE',
+      seriesId: 'wocaes0280',
+      modelId: 'ets',
+      targetBasis: 'END_OF_PERIOD',
+      targetSemantics: 'END_OF_PERIOD',
+      methodId: 'END_OF_PERIOD',
+      displayName: 'Test',
+      description: null,
+      userFacingModel: true,
+      methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+      source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: 'run-1' },
+      lineage: {
+        inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+        inputRunId: 'run-1',
+        sourceSeriesId: 'wocaes0280',
+        sourceFrequency: 'MONTHLY',
+        historyFingerprint: 'hist-1',
+        preparation: { method: 'MONTHLY_END_OF_PERIOD', version: 'v1', provenanceStatus: 'PROVEN' },
+      },
+      historyFingerprint: 'hist-1',
+      history: { frequency: 'MONTHLY', start: '2020-01-01', end: '2025-04-01', observations: 64 },
+      forecastOrigin: '2025-03-01T00:00:00.000Z',
+      runtimeSeconds: 1,
+      cacheStatus: 'hit',
+      verification: {},
+    }),
+    readPreparedFullVerification: async () => ({
+      status: 'AVAILABLE',
+      seriesId: 'wocaes0280',
+      modelId: 'ets',
+      targetBasis: 'END_OF_PERIOD',
+      targetSemantics: 'END_OF_PERIOD',
+      methodId: 'END_OF_PERIOD',
+      displayName: 'Test',
+      description: null,
+      userFacingModel: true,
+      methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+      source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: 'run-2' },
+      lineage: {
+        inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+        inputRunId: 'run-2',
+        sourceSeriesId: 'wocaes0280',
+        sourceFrequency: 'MONTHLY',
+        historyFingerprint: 'hist-1',
+        preparation: { method: 'MONTHLY_END_OF_PERIOD', version: 'v1', provenanceStatus: 'PROVEN' },
+      },
+      historyFingerprint: 'hist-1',
+      history: { frequency: 'MONTHLY', start: '2020-01-01', end: '2025-04-01', observations: 64 },
+      forecastOrigin: '2025-03-01T00:00:00.000Z',
+      runtimeSeconds: 1,
+      cacheStatus: 'hit',
+      verification: {},
+    }),
+  })
+
+  const result = await service.capability({
+    seriesId: 'wocaes0280',
+    targetSemantics: 'END_OF_PERIOD',
+    modelId: 'ets',
+  })
+
+  assert.deepEqual(result.readiness, {
+    fastReady: true,
+    calibratedReady: false,
+    fullReady: true,
+    blockers: ['CALIBRATION_INSUFFICIENT_SAMPLES'],
+  })
+  assert.equal(result.recentVerificationReadiness, 'READY')
+  assert.equal(result.fullVerificationReadiness, 'READY')
+  assert.equal(result.predictionBandResidualCount, 29)
+  assert.equal(result.predictionBandState, 'INSUFFICIENT_SAMPLE')
+})
+
+test('interactive capability readiness is restart-safe and does not start compute', async () => {
+  let monthlyCalls = 0
+  let rollingCalls = 0
+  let recentReads = 0
+  let fullReads = 0
+
+  const buildService = () => createInteractiveForecastPreparationService({
+    now: (() => {
+      let tick = 200
+      return () => ++tick
+    })(),
+    resolveExactCapability: async () => {
+      const capability: ForecastVariantCapability = {
+        identity: {
+          seriesId: 'restart-ready-series',
+          targetSemantics: 'MONTHLY_AVERAGE',
+          methodId: 'MONTHLY_AVERAGE',
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+          modelId: 'arima',
+        },
+        sourceFrequency: 'MONTHLY',
+        sourceFrequencyRecognized: true,
+        businessTarget: 'AVERAGE',
+        targetCadence: 'MONTHLY',
+        targetSemanticsSupported: true,
+        horizonSupportState: 'NOT_REQUESTED',
+        horizonMonths: null,
+        horizonSteps: null,
+        semanticLawfulness: 'LAWFUL_WITH_PROVENANCE',
+        admissionState: 'ADMITTED',
+        provenanceStatus: 'PROVEN',
+        implementationState: 'SUPPORTED',
+        historyEligibility: 'ELIGIBLE',
+        minimumRequiredObservations: 36,
+        availableObservations: 72,
+        modelEligible: true,
+        currentForecastEligible: true,
+        verificationOriginCount: 28,
+        verificationEvidenceState: 'SUFFICIENT',
+        predictionBandResidualCount: 31,
+        predictionBandState: 'AVAILABLE',
+        targetPreparationState: 'PREPARED',
+        currentPreparedState: 'READY',
+        historicalPreparedState: 'READY',
+        capabilityState: 'AVAILABLE',
+      }
+
+      return {
+        resolution: {
+          status: 'AVAILABLE',
+          reason: null,
+          sourceMetadata: {
+            seriesId: 'restart-ready-series',
+            providerCode: 'MACROBOND',
+            source: 'DYNAMIC_MARKET_DATA_STORE',
+            sourceFrequency: 'MONTHLY',
+            rawFrequency: 'MONTHLY',
+            sourceObservationCount: 72,
+            fullHistoryObservationCount: 72,
+          },
+          targetedHydration: {
+            scope: 'SINGLE_SERIES',
+            requestedSeriesId: 'restart-ready-series',
+            source: 'postgres',
+            cacheStatus: 'hit',
+          },
+          preparationFailures: {},
+          capabilities: [capability],
+        },
+        capability,
+        trace: undefined,
+      }
+    },
+    prepareMonthlyCurrent: async () => {
+      monthlyCalls += 1
+      throw new Error('readiness should not start monthly compute')
+    },
+    prepareRollingCurrent: async () => {
+      rollingCalls += 1
+      throw new Error('readiness should not start rolling compute')
+    },
+    readPreparedRecentVerification: async () => {
+      recentReads += 1
+      return {
+        status: 'AVAILABLE',
+        seriesId: 'restart-ready-series',
+        modelId: 'arima',
+        targetBasis: 'MONTHLY_AVERAGE',
+        targetSemantics: 'MONTHLY_AVERAGE',
+        methodId: 'MONTHLY_AVERAGE',
+        displayName: 'Restart Ready',
+        description: null,
+        userFacingModel: true,
+        methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+        source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: 'recent-ready-1' },
+        lineage: {
+          inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+          inputRunId: 'recent-ready-1',
+          sourceSeriesId: 'restart-ready-series',
+          sourceFrequency: 'MONTHLY',
+          historyFingerprint: 'hist-restart-1',
+          preparation: { method: 'MONTHLY_AVERAGE', version: 'v1', provenanceStatus: 'PROVEN' },
+        },
+        historyFingerprint: 'hist-restart-1',
+        history: { frequency: 'MONTHLY', start: '2019-01-01', end: '2025-12-01', observations: 72 },
+        forecastOrigin: '2025-11-01T00:00:00.000Z',
+        runtimeSeconds: 1,
+        cacheStatus: 'hit',
+        verification: {},
+      }
+    },
+    readPreparedFullVerification: async () => {
+      fullReads += 1
+      return {
+        status: 'AVAILABLE',
+        seriesId: 'restart-ready-series',
+        modelId: 'arima',
+        targetBasis: 'MONTHLY_AVERAGE',
+        targetSemantics: 'MONTHLY_AVERAGE',
+        methodId: 'MONTHLY_AVERAGE',
+        displayName: 'Restart Ready',
+        description: null,
+        userFacingModel: true,
+        methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+        source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: 'full-ready-1' },
+        lineage: {
+          inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+          inputRunId: 'full-ready-1',
+          sourceSeriesId: 'restart-ready-series',
+          sourceFrequency: 'MONTHLY',
+          historyFingerprint: 'hist-restart-1',
+          preparation: { method: 'MONTHLY_AVERAGE', version: 'v1', provenanceStatus: 'PROVEN' },
+        },
+        historyFingerprint: 'hist-restart-1',
+        history: { frequency: 'MONTHLY', start: '2019-01-01', end: '2025-12-01', observations: 72 },
+        forecastOrigin: '2025-11-01T00:00:00.000Z',
+        runtimeSeconds: 1,
+        cacheStatus: 'hit',
+        verification: {},
+      }
+    },
+  })
+
+  const first = await buildService().capability({
+    seriesId: 'restart-ready-series',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'arima',
+  })
+  const second = await buildService().capability({
+    seriesId: 'restart-ready-series',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'arima',
+  })
+
+  assert.deepEqual(first.readiness, second.readiness)
+  assert.deepEqual(first.readiness, {
+    fastReady: true,
+    calibratedReady: true,
+    fullReady: true,
+    blockers: [],
+  })
+  assert.equal(monthlyCalls, 0)
+  assert.equal(rollingCalls, 0)
+  assert.equal(recentReads, 2)
+  assert.equal(fullReads, 2)
+})
+
+test('interactive capability does not mark active execution as ready without persisted current truth', async () => {
+  let recentReads = 0
+  let fullReads = 0
+  const service = createInteractiveForecastPreparationService({
+    now: (() => {
+      let tick = 300
+      return () => ++tick
+    })(),
+    resolveExactCapability: async () => {
+      const capability: ForecastVariantCapability = {
+        identity: {
+          seriesId: 'active-owner-series',
+          targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+          methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+          methodVersion: 'rolling-daily-point-in-time-v1',
+          modelId: 'ets',
+        },
+        sourceFrequency: 'DAILY',
+        sourceFrequencyRecognized: true,
+        businessTarget: 'DAILY',
+        targetCadence: 'DAILY',
+        targetSemanticsSupported: true,
+        horizonSupportState: 'NOT_REQUESTED',
+        horizonMonths: null,
+        horizonSteps: null,
+        semanticLawfulness: 'LAWFUL',
+        admissionState: 'ADMITTED',
+        provenanceStatus: 'NOT_REQUIRED',
+        implementationState: 'SUPPORTED',
+        historyEligibility: 'ELIGIBLE',
+        minimumRequiredObservations: 60,
+        availableObservations: 6108,
+        modelEligible: true,
+        currentForecastEligible: true,
+        verificationOriginCount: 48,
+        verificationEvidenceState: 'SUFFICIENT',
+        predictionBandResidualCount: 48,
+        predictionBandState: 'AVAILABLE',
+        targetPreparationState: 'PREPARED',
+        currentPreparedState: 'NOT_PREPARED',
+        historicalPreparedState: 'READY',
+        capabilityState: 'PREPARATION_REQUIRED',
+      }
+
+      return {
+        resolution: {
+          status: 'AVAILABLE',
+          reason: null,
+          sourceMetadata: {
+            seriesId: 'active-owner-series',
+            providerCode: 'MACROBOND',
+            source: 'DYNAMIC_MARKET_DATA_STORE',
+            sourceFrequency: 'DAILY',
+            rawFrequency: 'DAILY',
+            sourceObservationCount: 6108,
+            fullHistoryObservationCount: 6108,
+          },
+          targetedHydration: {
+            scope: 'SINGLE_SERIES',
+            requestedSeriesId: 'active-owner-series',
+            source: 'postgres',
+            cacheStatus: 'hit',
+          },
+          preparationFailures: {},
+          capabilities: [capability],
+        },
+        capability,
+        trace: undefined,
+      }
+    },
+    readPreparedRecentVerification: async () => {
+      recentReads += 1
+      throw new Error('should not read recent verification when current is not prepared')
+    },
+    readPreparedFullVerification: async () => {
+      fullReads += 1
+      throw new Error('should not read full verification when current is not prepared')
+    },
+  })
+
+  const result = await service.capability({
+    seriesId: 'active-owner-series',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'ets',
+  })
+
+  assert.deepEqual(result.readiness, {
+    fastReady: false,
+    calibratedReady: false,
+    fullReady: false,
+    blockers: ['CURRENT_MISSING'],
+  })
+  assert.equal(recentReads, 0)
+  assert.equal(fullReads, 0)
+})
+
+test('interactive capability downgrades full readiness when exact historical identity is stale', async () => {
+  const service = createInteractiveForecastPreparationService({
+    now: (() => {
+      let tick = 400
+      return () => ++tick
+    })(),
+    resolveExactCapability: async () => {
+      const capability: ForecastVariantCapability = {
+        identity: {
+          seriesId: 'stale-historical-series',
+          targetSemantics: 'END_OF_PERIOD',
+          methodId: 'END_OF_PERIOD',
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+          modelId: 'naive',
+        },
+        sourceFrequency: 'MONTHLY',
+        sourceFrequencyRecognized: true,
+        businessTarget: 'END_OF_PERIOD',
+        targetCadence: 'MONTHLY',
+        targetSemanticsSupported: true,
+        horizonSupportState: 'NOT_REQUESTED',
+        horizonMonths: null,
+        horizonSteps: null,
+        semanticLawfulness: 'LAWFUL_WITH_PROVENANCE',
+        admissionState: 'ADMITTED',
+        provenanceStatus: 'PROVEN',
+        implementationState: 'SUPPORTED',
+        historyEligibility: 'ELIGIBLE',
+        minimumRequiredObservations: 36,
+        availableObservations: 80,
+        modelEligible: true,
+        currentForecastEligible: true,
+        verificationOriginCount: 80,
+        verificationEvidenceState: 'SUFFICIENT',
+        predictionBandResidualCount: 40,
+        predictionBandState: 'AVAILABLE',
+        targetPreparationState: 'PREPARED',
+        currentPreparedState: 'READY',
+        historicalPreparedState: 'READY',
+        capabilityState: 'AVAILABLE',
+      }
+
+      return {
+        resolution: {
+          status: 'AVAILABLE',
+          reason: null,
+          sourceMetadata: {
+            seriesId: 'stale-historical-series',
+            providerCode: 'MACROBOND',
+            source: 'DYNAMIC_MARKET_DATA_STORE',
+            sourceFrequency: 'MONTHLY',
+            rawFrequency: 'MONTHLY',
+            sourceObservationCount: 80,
+            fullHistoryObservationCount: 80,
+          },
+          targetedHydration: {
+            scope: 'SINGLE_SERIES',
+            requestedSeriesId: 'stale-historical-series',
+            source: 'postgres',
+            cacheStatus: 'hit',
+          },
+          preparationFailures: {},
+          capabilities: [capability],
+        },
+        capability,
+        trace: undefined,
+      }
+    },
+    readPreparedRecentVerification: async () => ({
+      status: 'AVAILABLE',
+      seriesId: 'stale-historical-series',
+      modelId: 'naive',
+      targetBasis: 'END_OF_PERIOD',
+      targetSemantics: 'END_OF_PERIOD',
+      methodId: 'END_OF_PERIOD',
+      displayName: 'Stale Historical',
+      description: null,
+      userFacingModel: true,
+      methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+      source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: 'recent-stale-ok' },
+      lineage: {
+        inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+        inputRunId: 'recent-stale-ok',
+        sourceSeriesId: 'stale-historical-series',
+        sourceFrequency: 'MONTHLY',
+        historyFingerprint: 'hist-stale-1',
+        preparation: { method: 'MONTHLY_END_OF_PERIOD', version: 'v1', provenanceStatus: 'PROVEN' },
+      },
+      historyFingerprint: 'hist-stale-1',
+      history: { frequency: 'MONTHLY', start: '2018-01-01', end: '2025-12-01', observations: 80 },
+      forecastOrigin: '2025-11-01T00:00:00.000Z',
+      runtimeSeconds: 1,
+      cacheStatus: 'hit',
+      verification: {},
+    }),
+    readPreparedFullVerification: async () => ({
+      status: 'NOT_AVAILABLE',
+      seriesId: 'stale-historical-series',
+      modelId: 'naive',
+      targetBasis: 'END_OF_PERIOD',
+      targetSemantics: 'END_OF_PERIOD',
+      methodId: 'END_OF_PERIOD',
+      reason: 'PREPARATION_REQUIRED: Prepared Historical Verification training-policy identity is not compatible.',
+    }),
+  })
+
+  const result = await service.capability({
+    seriesId: 'stale-historical-series',
+    targetSemantics: 'END_OF_PERIOD',
+    modelId: 'naive',
+  })
+
+  assert.deepEqual(result.readiness, {
+    fastReady: true,
+    calibratedReady: true,
+    fullReady: false,
+    blockers: ['FULL_HISTORICAL_STALE', 'SOURCE_REVISION_REBUILD_REQUIRED'],
+  })
+  assert.equal(result.fullVerificationReadiness, 'STALE')
 })
 
 test('internal prepare-current route denies invalid bearer credential', async () => {

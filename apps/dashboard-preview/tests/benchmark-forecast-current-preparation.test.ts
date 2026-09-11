@@ -202,7 +202,7 @@ test('interactive current preparation gateway reports failed preparation truthfu
   assert.equal(result.reason, 'MODEL_FIT_FAILED')
 })
 
-test('interactive current preparation gateway falls back to progressive state after timeout', async () => {
+test('interactive current preparation gateway treats progressive timeout status as observational in-progress state', async () => {
   const prepareCurrent = createInteractiveCurrentPreparationGateway({
     now: (() => {
       let tick = 50
@@ -256,10 +256,10 @@ test('interactive current preparation gateway falls back to progressive state af
     targetBasis: 'POINT_IN_TIME',
   })
 
-  assert.equal(result.state, 'PREPARING')
+  assert.equal(result.state, 'NOT_PREPARED')
   assert.equal(result.prepareAttempted, true)
   assert.equal(result.prepareStatus, null)
-  assert.equal(result.reason, null)
+  assert.equal(result.reason, 'PREPARATION_IN_PROGRESS')
 })
 
 test('interactive current preparation route rejects invalid input before gateway execution', async () => {

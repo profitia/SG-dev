@@ -66,19 +66,20 @@ export function resolveForecastCurrentDisplayState(
   currentState: ForecastCurrentUiState,
   variant: ProgressiveForecastVariantSnapshot | null,
 ): ForecastCurrentUiState {
-  if (currentState === 'AVAILABLE' || currentState === 'FAILED' || currentState === 'READING' || currentState === 'IDLE') {
-    return currentState
-  }
+  return currentState
+}
 
-  if (!variant) {
-    return currentState
+export function resolveForecastCurrentObservedProgressState(
+  currentState: ForecastCurrentUiState,
+  variant: ProgressiveForecastVariantSnapshot | null,
+): Extract<ForecastCurrentUiState, 'PREPARING' | 'QUEUED'> | null {
+  if (currentState !== 'NOT_PREPARED' || !variant) {
+    return null
   }
 
   if (variant.currentState === 'PREPARING') return 'PREPARING'
   if (variant.currentState === 'QUEUED') return 'QUEUED'
-  if (variant.currentState === 'UNSUPPORTED') return 'UNSUPPORTED'
-  if (variant.currentState === 'FAILED') return 'FAILED'
-  return currentState
+  return null
 }
 
 export function shouldShowExplicitCurrentPreparation(

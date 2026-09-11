@@ -27,6 +27,7 @@ import {
 import {
   explicitlyPrepareForecastCurrent,
   readProgressiveForecastPreparationThroughDashboard,
+  resolveForecastCurrentObservedProgressState,
   readPreparedCurrentForecastThroughDashboard,
   requestExplicitCurrentForecastPreparationThroughDashboard,
   resolveForecastCurrentDisplayState,
@@ -2627,6 +2628,10 @@ export function RawDataView({
     targetBasis: selectedForecastTargetBasis,
   })
   const forecastCurrentDisplayState = resolveForecastCurrentDisplayState(forecastCurrentState, selectedProgressiveVariant)
+  const forecastCurrentObservedProgressState = resolveForecastCurrentObservedProgressState(
+    forecastCurrentState,
+    selectedProgressiveVariant,
+  )
   const selectedForecastIdentity = benchmarkSeriesId
     ? {
         seriesId: benchmarkSeriesId,
@@ -4057,7 +4062,7 @@ export function RawDataView({
             </div>
           </div>
         ) : null}
-        {isForecastPortfolioVariant && forecastCurrentDisplayState === 'NOT_PREPARED' ? (
+        {isForecastPortfolioVariant && forecastCurrentDisplayState === 'NOT_PREPARED' && !forecastCurrentObservedProgressState ? (
           <div className="callout" role="status" aria-live="polite">
             <strong>{t('forecastPreparationRequired')}</strong>
             <p>{t('forecastPreparationRequiredHint')}</p>
@@ -4068,13 +4073,13 @@ export function RawDataView({
             </div>
           </div>
         ) : null}
-        {isForecastPortfolioVariant && forecastCurrentDisplayState === 'PREPARING' ? (
+        {isForecastPortfolioVariant && forecastCurrentObservedProgressState === 'PREPARING' ? (
           <div className="callout" role="status" aria-live="polite">
             <strong>{t('forecastPreparing')}</strong>
             <p>{t('forecastPreparingHint')}</p>
           </div>
         ) : null}
-        {isForecastPortfolioVariant && forecastCurrentDisplayState === 'QUEUED' ? (
+        {isForecastPortfolioVariant && forecastCurrentObservedProgressState === 'QUEUED' ? (
           <div className="callout" role="status" aria-live="polite">
             <strong>{t('forecastQueued')}</strong>
             <p>{t('forecastQueuedHint')}</p>

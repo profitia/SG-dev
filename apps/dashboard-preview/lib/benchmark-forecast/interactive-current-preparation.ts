@@ -347,8 +347,7 @@ function resolvePreparationStateFromProgressiveVariant(
   variant: ProgressiveForecastVariantSnapshot,
 ): BenchmarkForecastPreparationState {
   if (variant.currentState === 'READY') return 'READY'
-  if (variant.currentState === 'PREPARING') return 'PREPARING'
-  if (variant.currentState === 'QUEUED') return 'QUEUED'
+  if (variant.currentState === 'PREPARING' || variant.currentState === 'QUEUED') return 'NOT_PREPARED'
   if (variant.currentState === 'FAILED') return 'FAILED'
   return 'UNSUPPORTED'
 }
@@ -455,9 +454,13 @@ export function createInteractiveCurrentPreparationGateway(
         return {
           ...baseResult,
           state,
-          prepareAttempted: true,
+          prepareAttempted: state === 'READY' || variant.currentState === 'PREPARING' || variant.currentState === 'QUEUED',
           prepareStatus: state === 'READY' ? 'READY' : null,
-          reason: state === 'FAILED' || state === 'UNSUPPORTED' ? variant.currentReason ?? capability.reason ?? capability.status : null,
+          reason: state === 'NOT_PREPARED'
+            ? 'PREPARATION_IN_PROGRESS'
+            : state === 'FAILED' || state === 'UNSUPPORTED'
+              ? variant.currentReason ?? capability.reason ?? capability.status
+              : null,
           timingMs: totalMs,
           ...buildTracePayload(traceEnabled, attempts, totalMs),
         }

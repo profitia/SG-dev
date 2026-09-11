@@ -44,6 +44,16 @@ export interface InteractiveForecastCapabilityResult {
   status: InteractiveForecastCapabilityStatus
   currentReadiness: 'READY' | 'NOT_PREPARED' | 'STALE'
   verificationReadiness: 'READY' | 'NOT_PREPARED' | 'STALE'
+  recentVerificationReadiness?: 'READY' | 'NOT_PREPARED' | 'STALE'
+  fullVerificationReadiness?: 'READY' | 'NOT_PREPARED' | 'STALE'
+  predictionBandResidualCount?: number
+  predictionBandState?: 'AVAILABLE' | 'INSUFFICIENT_SAMPLE' | 'NOT_AVAILABLE'
+  readiness?: {
+    fastReady: boolean
+    calibratedReady: boolean
+    fullReady: boolean
+    blockers: string[]
+  }
   targetedDataScope: 'SINGLE_SERIES'
   timingMs: number
   reason: string | null

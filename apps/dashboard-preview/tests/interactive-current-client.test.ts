@@ -8,6 +8,7 @@ import {
   readPreparedCurrentForecastThroughDashboard,
   requestExplicitCurrentForecastPreparationThroughDashboard,
   resolveForecastCurrentDisplayState,
+  resolveForecastCurrentObservedProgressState,
   resolveForecastCurrentUiState,
   resolveSelectedProgressiveVariant,
   shouldReadCurrentForecast,
@@ -466,7 +467,7 @@ test('stale point-in-time current result falls back to not-prepared UI state', (
   assert.equal(state, 'NOT_PREPARED')
 })
 
-test('progressive snapshot keeps lawful cold misses out of unsupported state', () => {
+test('progressive snapshot is observational and does not override owner-derived readiness state', () => {
   const variant = resolveSelectedProgressiveVariant({
     seriesId: 'wocaes0280',
     variants: [{
@@ -490,8 +491,10 @@ test('progressive snapshot keeps lawful cold misses out of unsupported state', (
     targetBasis: 'END_OF_PERIOD',
   })
 
-  assert.equal(resolveForecastCurrentDisplayState('NOT_PREPARED', variant), 'QUEUED')
-  assert.equal(resolveForecastCurrentDisplayState('UNSUPPORTED', variant), 'QUEUED')
+  assert.equal(resolveForecastCurrentDisplayState('NOT_PREPARED', variant), 'NOT_PREPARED')
+  assert.equal(resolveForecastCurrentDisplayState('UNSUPPORTED', variant), 'UNSUPPORTED')
+  assert.equal(resolveForecastCurrentObservedProgressState('NOT_PREPARED', variant), 'QUEUED')
+  assert.equal(resolveForecastCurrentObservedProgressState('UNSUPPORTED', variant), null)
 })
 
 test('dashboard progressive preparation route forwards exact model and target identity', async () => {
