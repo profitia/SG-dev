@@ -1340,8 +1340,6 @@ async function runAppendOnlyDelta(
     }
   }
 
-  await ensureCompletedCurrentFingerprint(harness, pathDefinition)
-
   const result = {
     perModel,
     extendedObservationCount: extendedHistory.historical.length,
