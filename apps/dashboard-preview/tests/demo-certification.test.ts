@@ -586,6 +586,32 @@ test('I4. one benchmark timeout aborts in-flight SG Runtime-backed capability wo
   assert.equal(capturedSignal?.aborted, true)
 })
 
+test('I5. warm rehearsal reuses reads and completes within the benchmark timeout budget', async () => {
+  let currentCalls = 0
+  let verificationCalls = 0
+
+  const report = await createService({
+    benchmarkTimeoutMs: 80,
+    currentResolver: async (input) => {
+      currentCalls += 1
+      return await new Promise<BenchmarkForecastCurrentResult>((resolve) => {
+        setTimeout(() => resolve(currentResult(input)), 10)
+      })
+    },
+    verificationResolver: async (input) => {
+      verificationCalls += 1
+      return await new Promise<BenchmarkForecastVerificationResult>((resolve) => {
+        setTimeout(() => resolve(verificationResult(input)), 10)
+      })
+    },
+  }).run({ includeFallback: false })
+
+  assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
+  assert.equal(report.benchmarks[0]?.reason, null)
+  assert.equal(currentCalls, MODELS.length * TARGET_BASES.length)
+  assert.equal(verificationCalls, MODELS.length * TARGET_BASES.length)
+})
+
 test('J. Stage 3 cohort config does not restrict product capability', async () => {
   const report = await createService({}).run({ includeFallback: true, seriesIds: ['custom-non-cohort-series'] })
   const defaultCohort = getDefaultDemoCertificationCohort()

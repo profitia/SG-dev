@@ -454,30 +454,44 @@ async function runWarmRehearsal(
   for (const modelId of requiredModels) {
     for (const targetBasis of requiredTargetBases) {
       currentInputs.push({ seriesId: entry.seriesId, modelId, targetBasis })
+    }
+  }
 
-      const current = await dependencies.readCurrent(entry.seriesId, modelId, targetBasis)
-      if (!isRenderableCurrentResult(current)) {
-        currentFailures.push(`${modelId}/${targetBasis}: current not renderable`)
-        continue
-      }
+  const rehearsalChecks = await Promise.all(currentInputs.map(async (input) => {
+    const [current, verification] = await Promise.all([
+      dependencies.readCurrent(input.seriesId, input.modelId, input.targetBasis),
+      dependencies.readVerification(input.seriesId, input.modelId, input.targetBasis),
+    ])
 
-      if (targetBasis === 'POINT_IN_TIME' && current.freshness?.status === 'STALE') {
-        currentFailures.push(`${modelId}/${targetBasis}: point-in-time current is stale`)
-      }
+    const nextCurrentFailures: string[] = []
+    const nextVerificationFailures: string[] = []
 
-      const verification = await dependencies.readVerification(entry.seriesId, modelId, targetBasis)
-      if (!isAvailableVerificationResult(verification)) {
-        verificationFailures.push(`${modelId}/${targetBasis}: verification unavailable`)
-        continue
-      }
+    if (!isRenderableCurrentResult(current)) {
+      nextCurrentFailures.push(`${input.modelId}/${input.targetBasis}: current not renderable`)
+    } else if (input.targetBasis === 'POINT_IN_TIME' && current.freshness?.status === 'STALE') {
+      nextCurrentFailures.push(`${input.modelId}/${input.targetBasis}: point-in-time current is stale`)
+    }
 
+    if (!isAvailableVerificationResult(verification)) {
+      nextVerificationFailures.push(`${input.modelId}/${input.targetBasis}: verification unavailable`)
+    } else {
       for (const horizon of requiredHorizons) {
         const selected = verification.verification[horizon]
         if (!selected || selected.records.length === 0) {
-          verificationFailures.push(`${modelId}/${targetBasis}/${horizon}: verification horizon unavailable`)
+          nextVerificationFailures.push(`${input.modelId}/${input.targetBasis}/${horizon}: verification horizon unavailable`)
         }
       }
     }
+
+    return {
+      currentFailures: nextCurrentFailures,
+      verificationFailures: nextVerificationFailures,
+    }
+  }))
+
+  for (const result of rehearsalChecks) {
+    currentFailures.push(...result.currentFailures)
+    verificationFailures.push(...result.verificationFailures)
   }
 
   const firstInput = currentInputs[0] ?? null
@@ -640,6 +654,14 @@ export function getDefaultDemoCertificationCohort() {
 export function createDemoCertificationService(
   dependencies: Partial<DemoCertificationDependencies> = {},
 ) {
+  const currentReadCache = new Map<string, Promise<BenchmarkForecastCurrentResult>>()
+  const verificationReadCache = new Map<string, Promise<BenchmarkForecastVerificationResult>>()
+  const createReadKey = (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => (
+    `${seriesId}::${modelId}::${targetBasis}`
+  )
+  const readCurrent = dependencies.readCurrent ?? resolveShowForecastCurrent
+  const readVerification = dependencies.readVerification ?? getBenchmarkForecastVerification
+
   const resolvedDependencies: DemoCertificationDependencies = {
     now: dependencies.now ?? (() => new Date().toISOString()),
     benchmarkTimeoutMs: dependencies.benchmarkTimeoutMs ?? DEFAULT_BENCHMARK_TIMEOUT_MS,
@@ -647,13 +669,53 @@ export function createDemoCertificationService(
     resolveReleaseSnapshot: dependencies.resolveReleaseSnapshot ?? defaultReleaseSnapshot,
     readCapability: dependencies.readCapability ?? readInteractiveForecastCapability,
     prepareCurrent: dependencies.prepareCurrent ?? prepareInteractiveCurrentForecast,
-    readCurrent: dependencies.readCurrent ?? resolveShowForecastCurrent,
-    readVerification: dependencies.readVerification ?? getBenchmarkForecastVerification,
+    readCurrent: (seriesId, modelId, targetBasis) => {
+      const key = createReadKey(seriesId, modelId, targetBasis)
+      const cached = currentReadCache.get(key)
+      if (cached) {
+        return cached
+      }
+
+      const pending = readCurrent(seriesId, modelId, targetBasis)
+      currentReadCache.set(key, pending)
+      return pending
+    },
+    readVerification: (seriesId, modelId, targetBasis) => {
+      const key = createReadKey(seriesId, modelId, targetBasis)
+      const cached = verificationReadCache.get(key)
+      if (cached) {
+        return cached
+      }
+
+      const pending = readVerification(seriesId, modelId, targetBasis)
+      verificationReadCache.set(key, pending)
+      return pending
+    },
     evaluateMatrix: dependencies.evaluateMatrix ?? createMatrixEvaluator({
       readCapability: dependencies.readCapability ?? readInteractiveForecastCapability,
       prepareCurrent: dependencies.prepareCurrent ?? prepareInteractiveCurrentForecast,
-      readCurrent: dependencies.readCurrent ?? resolveShowForecastCurrent,
-      readVerification: dependencies.readVerification ?? getBenchmarkForecastVerification,
+      readCurrent: (seriesId, modelId, targetBasis) => {
+        const key = createReadKey(seriesId, modelId, targetBasis)
+        const cached = currentReadCache.get(key)
+        if (cached) {
+          return cached
+        }
+
+        const pending = readCurrent(seriesId, modelId, targetBasis)
+        currentReadCache.set(key, pending)
+        return pending
+      },
+      readVerification: (seriesId, modelId, targetBasis) => {
+        const key = createReadKey(seriesId, modelId, targetBasis)
+        const cached = verificationReadCache.get(key)
+        if (cached) {
+          return cached
+        }
+
+        const pending = readVerification(seriesId, modelId, targetBasis)
+        verificationReadCache.set(key, pending)
+        return pending
+      },
     }),
   }
 
