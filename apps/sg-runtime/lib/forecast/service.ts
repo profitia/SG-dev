@@ -490,7 +490,11 @@ type PersistedVerificationRunRecord = PersistedTrainingPolicyIdentityRecord & {
 
 function isMissingCurrentTrainingPolicyColumnError(error: unknown) {
   return error instanceof Error
-    && error.message.includes('forecast_current_runs.')
+    && (
+      error.message.includes('forecast_current_runs.')
+      || error.message.includes('The column `trainingWindowPolicyId` does not exist in the current database.')
+      || error.message.includes('The column `effectiveTrainingPolicyId` does not exist in the current database.')
+    )
     && (
       error.message.includes('trainingWindowPolicyId')
       || error.message.includes('effectiveTrainingPolicyId')
@@ -499,7 +503,11 @@ function isMissingCurrentTrainingPolicyColumnError(error: unknown) {
 
 function isMissingVerificationTrainingPolicyColumnError(error: unknown) {
   return error instanceof Error
-    && error.message.includes('forecast_verification_runs.')
+    && (
+      error.message.includes('forecast_verification_runs.')
+      || error.message.includes('The column `trainingWindowPolicyId` does not exist in the current database.')
+      || error.message.includes('The column `effectiveTrainingPolicyId` does not exist in the current database.')
+    )
     && (
       error.message.includes('trainingWindowPolicyId')
       || error.message.includes('effectiveTrainingPolicyId')
@@ -2458,63 +2466,106 @@ export async function writeCurrentRunWithPrisma(
       await assertForecastPersistenceOwnership(tx, options?.ownership, observedAt)
     }
 
-    const run = await tx.forecastCurrentRun.upsert({
-      where: {
-        seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId: {
-          seriesId: artifact.seriesId,
-          inputSource: artifact.source.kind,
-          historyFingerprint: artifact.historyFingerprint,
-          targetBasis: artifact.targetBasis,
-          methodId: artifact.methodId,
-          modelId: artifact.modelId,
-          methodVersion: artifact.methodVersion,
-          trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
-          effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
+    const currentRunIdentityWhere = {
+      seriesId: artifact.seriesId,
+      inputSource: artifact.source.kind,
+      historyFingerprint: artifact.historyFingerprint,
+      targetBasis: artifact.targetBasis,
+      methodId: artifact.methodId,
+      modelId: artifact.modelId,
+      methodVersion: artifact.methodVersion,
+    } as const
+    const currentRunCreate = {
+      seriesId: artifact.seriesId,
+      displayName: artifact.displayName,
+      description: artifact.description,
+      frequency: artifact.frequencyIdentity,
+      currency: null,
+      unit: null,
+      sourceLabel: null,
+      inputSource: artifact.source.kind,
+      inputRunId: artifact.source.runId,
+      historyFingerprint: artifact.historyFingerprint,
+      targetBasis: artifact.targetBasis,
+      methodId: artifact.methodId,
+      historyStartAt: artifact.history.start ? new Date(artifact.history.start) : null,
+      historyEndAt: artifact.history.end ? new Date(artifact.history.end) : null,
+      observationCount: artifact.history.observations,
+      forecastOriginAt: artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null,
+      modelId: artifact.modelId,
+      methodVersion: artifact.methodVersion,
+      trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
+      effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
+      status: 'AVAILABLE',
+      failureReason: null,
+      runtimeSeconds: artifact.runtimeSeconds,
+    } as const
+    const currentRunUpdate = {
+      displayName: artifact.displayName,
+      description: artifact.description,
+      frequency: artifact.frequencyIdentity,
+      inputRunId: artifact.source.runId,
+      historyStartAt: artifact.history.start ? new Date(artifact.history.start) : null,
+      historyEndAt: artifact.history.end ? new Date(artifact.history.end) : null,
+      observationCount: artifact.history.observations,
+      targetBasis: artifact.targetBasis,
+      methodId: artifact.methodId,
+      forecastOriginAt: artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null,
+      trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
+      effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
+      status: 'AVAILABLE',
+      failureReason: null,
+      runtimeSeconds: artifact.runtimeSeconds,
+    } as const
+
+    let run: { id: string }
+
+    try {
+      run = await tx.forecastCurrentRun.upsert({
+        where: {
+          seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId: {
+            ...currentRunIdentityWhere,
+            trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
+            effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
+          },
         },
-      },
-      create: {
-        seriesId: artifact.seriesId,
-        displayName: artifact.displayName,
-        description: artifact.description,
-        frequency: artifact.frequencyIdentity,
-        currency: null,
-        unit: null,
-        sourceLabel: null,
-        inputSource: artifact.source.kind,
-        inputRunId: artifact.source.runId,
-        historyFingerprint: artifact.historyFingerprint,
-        targetBasis: artifact.targetBasis,
-        methodId: artifact.methodId,
-        historyStartAt: artifact.history.start ? new Date(artifact.history.start) : null,
-        historyEndAt: artifact.history.end ? new Date(artifact.history.end) : null,
-        observationCount: artifact.history.observations,
-        forecastOriginAt: artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null,
-        modelId: artifact.modelId,
-        methodVersion: artifact.methodVersion,
-        trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
-        effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
-        status: 'AVAILABLE',
-        failureReason: null,
-        runtimeSeconds: artifact.runtimeSeconds,
-      },
-      update: {
-        displayName: artifact.displayName,
-        description: artifact.description,
-        frequency: artifact.frequencyIdentity,
-        inputRunId: artifact.source.runId,
-        historyStartAt: artifact.history.start ? new Date(artifact.history.start) : null,
-        historyEndAt: artifact.history.end ? new Date(artifact.history.end) : null,
-        observationCount: artifact.history.observations,
-        targetBasis: artifact.targetBasis,
-        methodId: artifact.methodId,
-        forecastOriginAt: artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null,
-        trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
-        effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
-        status: 'AVAILABLE',
-        failureReason: null,
-        runtimeSeconds: artifact.runtimeSeconds,
-      },
-    })
+        create: currentRunCreate,
+        update: currentRunUpdate,
+      })
+    } catch (error) {
+      if (!isMissingCurrentTrainingPolicyColumnError(error)) {
+        throw error
+      }
+
+      const legacyRun = await tx.forecastCurrentRun.findFirst({
+        where: {
+          ...currentRunIdentityWhere,
+          frequency: artifact.frequencyIdentity,
+        },
+        select: {
+          id: true,
+        },
+      })
+
+      run = legacyRun
+        ? await tx.forecastCurrentRun.update({
+            where: {
+              id: legacyRun.id,
+            },
+            data: {
+              ...currentRunUpdate,
+              trainingWindowPolicyId: undefined,
+              effectiveTrainingPolicyId: undefined,
+            },
+          })
+        : await tx.forecastCurrentRun.create({
+            data: {
+              ...currentRunCreate,
+              trainingWindowPolicyId: undefined,
+              effectiveTrainingPolicyId: undefined,
+            },
+          })
+    }
 
     await tx.forecastCurrentPoint.deleteMany({
       where: {
@@ -2795,63 +2846,106 @@ export async function writeVerificationRunWithPrisma(
       await assertForecastPersistenceOwnership(tx, options?.ownership, observedAt)
     }
 
-    const run = await tx.forecastVerificationRun.upsert({
-      where: {
-        seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId: {
-          seriesId: artifact.seriesId,
-          inputSource: artifact.source.kind,
-          historyFingerprint: artifact.historyFingerprint,
-          targetBasis: artifact.targetBasis,
-          methodId: artifact.methodId,
-          modelId: artifact.modelId,
-          methodVersion: artifact.methodVersion,
-          trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
-          effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
+    const verificationRunIdentityWhere = {
+      seriesId: artifact.seriesId,
+      inputSource: artifact.source.kind,
+      historyFingerprint: artifact.historyFingerprint,
+      targetBasis: artifact.targetBasis,
+      methodId: artifact.methodId,
+      modelId: artifact.modelId,
+      methodVersion: artifact.methodVersion,
+    } as const
+    const verificationRunCreate = {
+      seriesId: artifact.seriesId,
+      displayName: artifact.displayName,
+      description: artifact.description,
+      frequency: artifact.frequencyIdentity,
+      currency: null,
+      unit: null,
+      sourceLabel: null,
+      inputSource: artifact.source.kind,
+      inputRunId: artifact.source.runId,
+      historyFingerprint: artifact.historyFingerprint,
+      targetBasis: artifact.targetBasis,
+      methodId: artifact.methodId,
+      historyStartAt: artifact.history.start ? new Date(artifact.history.start) : null,
+      historyEndAt: artifact.history.end ? new Date(artifact.history.end) : null,
+      observationCount: artifact.history.observations,
+      forecastOriginAt: artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null,
+      modelId: artifact.modelId,
+      methodVersion: artifact.methodVersion,
+      trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
+      effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
+      status: 'AVAILABLE',
+      failureReason: null,
+      runtimeSeconds: artifact.runtimeSeconds,
+    } as const
+    const verificationRunUpdate = {
+      displayName: artifact.displayName,
+      description: artifact.description,
+      frequency: artifact.frequencyIdentity,
+      inputRunId: artifact.source.runId,
+      historyStartAt: artifact.history.start ? new Date(artifact.history.start) : null,
+      historyEndAt: artifact.history.end ? new Date(artifact.history.end) : null,
+      observationCount: artifact.history.observations,
+      targetBasis: artifact.targetBasis,
+      methodId: artifact.methodId,
+      forecastOriginAt: artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null,
+      trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
+      effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
+      status: 'AVAILABLE',
+      failureReason: null,
+      runtimeSeconds: artifact.runtimeSeconds,
+    } as const
+
+    let run: { id: string }
+
+    try {
+      run = await tx.forecastVerificationRun.upsert({
+        where: {
+          seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId: {
+            ...verificationRunIdentityWhere,
+            trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
+            effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
+          },
         },
-      },
-      create: {
-        seriesId: artifact.seriesId,
-        displayName: artifact.displayName,
-        description: artifact.description,
-        frequency: artifact.frequencyIdentity,
-        currency: null,
-        unit: null,
-        sourceLabel: null,
-        inputSource: artifact.source.kind,
-        inputRunId: artifact.source.runId,
-        historyFingerprint: artifact.historyFingerprint,
-        targetBasis: artifact.targetBasis,
-        methodId: artifact.methodId,
-        historyStartAt: artifact.history.start ? new Date(artifact.history.start) : null,
-        historyEndAt: artifact.history.end ? new Date(artifact.history.end) : null,
-        observationCount: artifact.history.observations,
-        forecastOriginAt: artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null,
-        modelId: artifact.modelId,
-        methodVersion: artifact.methodVersion,
-        trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
-        effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
-        status: 'AVAILABLE',
-        failureReason: null,
-        runtimeSeconds: artifact.runtimeSeconds,
-      },
-      update: {
-        displayName: artifact.displayName,
-        description: artifact.description,
-        frequency: artifact.frequencyIdentity,
-        inputRunId: artifact.source.runId,
-        historyStartAt: artifact.history.start ? new Date(artifact.history.start) : null,
-        historyEndAt: artifact.history.end ? new Date(artifact.history.end) : null,
-        observationCount: artifact.history.observations,
-        targetBasis: artifact.targetBasis,
-        methodId: artifact.methodId,
-        forecastOriginAt: artifact.forecastOrigin ? new Date(artifact.forecastOrigin) : null,
-        trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
-        effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
-        status: 'AVAILABLE',
-        failureReason: null,
-        runtimeSeconds: artifact.runtimeSeconds,
-      },
-    })
+        create: verificationRunCreate,
+        update: verificationRunUpdate,
+      })
+    } catch (error) {
+      if (!isMissingVerificationTrainingPolicyColumnError(error)) {
+        throw error
+      }
+
+      const legacyRun = await tx.forecastVerificationRun.findFirst({
+        where: {
+          ...verificationRunIdentityWhere,
+          frequency: artifact.frequencyIdentity,
+        },
+        select: {
+          id: true,
+        },
+      })
+
+      run = legacyRun
+        ? await tx.forecastVerificationRun.update({
+            where: {
+              id: legacyRun.id,
+            },
+            data: {
+              ...verificationRunUpdate,
+              trainingWindowPolicyId: undefined,
+              effectiveTrainingPolicyId: undefined,
+            },
+          })
+        : await tx.forecastVerificationRun.create({
+            data: {
+              ...verificationRunCreate,
+              trainingWindowPolicyId: undefined,
+              effectiveTrainingPolicyId: undefined,
+            },
+          })
+    }
 
     await tx.forecastVerificationMetric.deleteMany({
       where: {
