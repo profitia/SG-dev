@@ -1944,7 +1944,6 @@ async function runFocusedValidations() {
     env: process.env,
     maxBuffer: 20 * 1024 * 1024,
   })
-  await execFile(PYTHON_BIN, ['-m', 'unittest', 'tests/test_bounded_non_daily_verification.py'], {
   await execFile(PYTHON_BIN, ['-m', 'unittest', 'discover', '-s', 'tests', '-p', 'test_bounded_non_daily_verification.py'], {
     cwd: FORECASTING_TOOL_ROOT,
     env: {
