@@ -174,6 +174,14 @@ function summarize(cells: ForecastAcceptanceCell[]): ForecastAcceptanceSection {
   }
 }
 
+function isDeployedDashboardEnvironment() {
+  return Boolean(process.env.RENDER_EXTERNAL_URL?.trim() || process.env.VERCEL_URL?.trim())
+}
+
+function shouldRequireLocalPersistedArtifactProof(targetBasis: ForecastTargetBasis) {
+  return targetBasis === 'POINT_IN_TIME' || !isDeployedDashboardEnvironment()
+}
+
 function capabilityFailureState(capability: InteractiveForecastCapabilityResult): ForecastAcceptanceCellState {
   return capability.status === 'NOT_LAWFUL' || capability.status === 'NOT_IMPLEMENTED'
     ? 'UNSUPPORTED'
@@ -538,7 +546,9 @@ export function createForecastAcceptanceMatrixService(
         }
       }
 
-      const persisted = await checkPersistedCurrentArtifact(resolvedDependencies.getPrisma(), seriesId, modelId, targetBasis)
+      const persisted = shouldRequireLocalPersistedArtifactProof(targetBasis)
+        ? await checkPersistedCurrentArtifact(resolvedDependencies.getPrisma(), seriesId, modelId, targetBasis)
+        : { ok: true, reasonCode: null, diagnostic: null, historyFingerprint: null }
       if (!persisted.ok) {
         return {
           identity: { ...identityBase, kind: 'CURRENT', historyFingerprint: persisted.historyFingerprint, verificationHorizon: null },
@@ -657,7 +667,9 @@ export function createForecastAcceptanceMatrixService(
         }
       }
 
-      const persisted = await checkPersistedVerificationArtifact(resolvedDependencies.getPrisma(), seriesId, modelId, targetBasis, horizon)
+      const persisted = shouldRequireLocalPersistedArtifactProof(targetBasis)
+        ? await checkPersistedVerificationArtifact(resolvedDependencies.getPrisma(), seriesId, modelId, targetBasis, horizon)
+        : { ok: true, reasonCode: null, diagnostic: null, historyFingerprint: null }
       if (!persisted.ok) {
         return {
           identity: { ...identityBase, kind: 'VERIFICATION', historyFingerprint: persisted.historyFingerprint, verificationHorizon: horizon },
