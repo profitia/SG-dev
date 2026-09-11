@@ -228,6 +228,7 @@ function uniqueStrings(values: readonly string[]) {
 function isCapabilityLawful(capability: InteractiveForecastCapabilityResult) {
   return capability.status === 'AVAILABLE'
     || capability.status === 'READY'
+    || capability.status === 'STALE'
     || capability.status === 'NOT_PREPARED'
     || capability.status === 'PREPARATION_REQUIRED'
 }
@@ -269,8 +270,8 @@ function createWarmOnlyPreparationResult(
 }
 
 function isPrepareEligible(capability: InteractiveForecastCapabilityResult) {
-  return capability.currentReadiness === 'NOT_PREPARED'
-    && (capability.status === 'PREPARATION_REQUIRED' || capability.status === 'NOT_PREPARED')
+  return (capability.currentReadiness === 'NOT_PREPARED' || capability.currentReadiness === 'STALE')
+    && (capability.status === 'PREPARATION_REQUIRED' || capability.status === 'NOT_PREPARED' || capability.status === 'STALE')
 }
 
 function createMatrixEvaluator(

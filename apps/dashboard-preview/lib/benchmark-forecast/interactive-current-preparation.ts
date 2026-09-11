@@ -439,8 +439,8 @@ export function createInteractiveCurrentPreparationGateway(
       }
     }
 
-    const prepareEligible = capability.currentReadiness === 'NOT_PREPARED'
-      && (capability.status === 'PREPARATION_REQUIRED' || capability.status === 'NOT_PREPARED')
+    const prepareEligible = (capability.currentReadiness === 'NOT_PREPARED' || capability.currentReadiness === 'STALE')
+      && (capability.status === 'PREPARATION_REQUIRED' || capability.status === 'NOT_PREPARED' || capability.status === 'STALE')
 
     if (!prepareEligible) {
       const totalMs = Math.max(0, Math.round(resolvedDependencies.now() - startedAt))

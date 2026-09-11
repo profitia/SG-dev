@@ -190,6 +190,10 @@ function capabilityFailureState(capability: InteractiveForecastCapabilityResult)
 
 function capabilityFailureReason(capability: InteractiveForecastCapabilityResult): ForecastAcceptanceReasonCode {
   switch (capability.status) {
+    case 'STALE':
+      return capability.currentReadiness === 'STALE' || capability.verificationReadiness === 'STALE'
+        ? 'PREPARED_STATE_NOT_READY'
+        : 'UNEXPECTED_RUNTIME_ERROR'
     case 'NOT_LAWFUL':
       return 'UNSUPPORTED_COMBINATION'
     case 'NOT_IMPLEMENTED':
@@ -208,6 +212,7 @@ function capabilityFailureReason(capability: InteractiveForecastCapabilityResult
 function capabilityAllowsMatrixEvaluation(capability: InteractiveForecastCapabilityResult) {
   return capability.status === 'AVAILABLE'
     || capability.status === 'READY'
+    || capability.status === 'STALE'
     || capability.status === 'PREPARATION_REQUIRED'
     || capability.status === 'NOT_PREPARED'
 }
@@ -480,10 +485,22 @@ export function createForecastAcceptanceMatrixService(
     const pending = (async () => {
       const initialCapability = await resolvedDependencies.readCapability(input, options)
 
-      if (
-        (initialCapability.currentReadiness === 'READY' || initialCapability.verificationReadiness === 'READY')
-        || (initialCapability.status !== 'PREPARATION_REQUIRED' && initialCapability.status !== 'NOT_PREPARED')
-      ) {
+      const readinessAlreadyUsable = initialCapability.currentReadiness === 'READY'
+        || initialCapability.verificationReadiness === 'READY'
+      const warmablePreparedState = initialCapability.status === 'PREPARATION_REQUIRED'
+        || initialCapability.status === 'NOT_PREPARED'
+        || initialCapability.status === 'STALE'
+      const staleNeedsWarmup = initialCapability.currentReadiness === 'STALE'
+        || initialCapability.verificationReadiness === 'STALE'
+
+      if (readinessAlreadyUsable && !staleNeedsWarmup) {
+        return {
+          capability: initialCapability,
+          preparation: null,
+        }
+      }
+
+      if (!warmablePreparedState) {
         return {
           capability: initialCapability,
           preparation: null,

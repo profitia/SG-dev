@@ -246,6 +246,36 @@ test('matrix fails the current cell when readiness stays not prepared after capa
   assert.equal(currentCell?.reasonCode, 'PREPARED_STATE_NOT_READY')
 })
 
+test('matrix warms stale variants before failing the current cell', async () => {
+  let prepareCalls = 0
+  const service = createForecastAcceptanceMatrixService({
+    readCapability: async () => capability({ status: 'STALE', currentReadiness: 'STALE', verificationReadiness: 'STALE', reason: 'STALE' }),
+    prepareCurrent: async () => {
+      prepareCalls += 1
+      return preparationResult({
+        state: 'NOT_PREPARED',
+        capabilityStatus: 'STALE',
+        currentReadiness: 'STALE',
+        prepareAttempted: true,
+        prepareStatus: 'STALE',
+        reason: 'STALE',
+      })
+    },
+    readCurrent: async () => currentResult(),
+    readVerification: async () => verificationResult(),
+    getPrisma: () => null,
+  })
+
+  const report = await service.evaluateSeries('brent')
+  const currentCell = report.current.cells.find((cell) => cell.identity.modelId === 'naive' && cell.identity.targetBasis === 'MONTHLY_AVERAGE')
+
+  assert.equal(currentCell?.state, 'FAIL')
+  assert.equal(currentCell?.failingLayer, 'PREPARED_STATE')
+  assert.equal(currentCell?.reasonCode, 'PREPARED_STATE_NOT_READY')
+  assert.equal(currentCell?.preparation.attempted, true)
+  assert.equal(prepareCalls, 12)
+})
+
 test('matrix fails the verification cell when verification readiness stays not prepared', async () => {
   const service = createForecastAcceptanceMatrixService({
     readCapability: async () => capability({ status: 'AVAILABLE' as never, currentReadiness: 'READY', verificationReadiness: 'NOT_PREPARED' }),

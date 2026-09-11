@@ -462,7 +462,7 @@ test('G. warm revalidation stays pass without new prepare calls', async () => {
   assert.deepEqual(prepareCalls, [])
 })
 
-test('G2. stale capability fails precompute without redundant prepare calls', async () => {
+test('G2. stale capability triggers preparation and can recover precompute', async () => {
   const prepareCalls: string[] = []
   const report = await createService({
     prepareCalls,
@@ -474,10 +474,23 @@ test('G2. stale capability fails precompute without redundant prepare calls', as
     }),
   }).run({ includeFallback: false })
 
-  assert.equal(report.benchmarks[0]?.demoSafe, 'NO')
-  assert.equal(report.benchmarks[0]?.reason, 'PRECOMPUTE_FAIL')
-  assert.equal(report.benchmarks[0]?.precompute.status, 'FAIL')
-  assert.deepEqual(prepareCalls, [])
+  assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
+  assert.equal(report.benchmarks[0]?.reason, null)
+  assert.equal(report.benchmarks[0]?.precompute.status, 'PASS')
+  assert.deepEqual(prepareCalls, [
+    'wocaes0074:naive:MONTHLY_AVERAGE',
+    'wocaes0074:naive:POINT_IN_TIME',
+    'wocaes0074:naive:END_OF_PERIOD',
+    'wocaes0074:damped_holt:MONTHLY_AVERAGE',
+    'wocaes0074:damped_holt:POINT_IN_TIME',
+    'wocaes0074:damped_holt:END_OF_PERIOD',
+    'wocaes0074:ets:MONTHLY_AVERAGE',
+    'wocaes0074:ets:POINT_IN_TIME',
+    'wocaes0074:ets:END_OF_PERIOD',
+    'wocaes0074:arima:MONTHLY_AVERAGE',
+    'wocaes0074:arima:POINT_IN_TIME',
+    'wocaes0074:arima:END_OF_PERIOD',
+  ])
 })
 
 test('H. rehearsal failure blocks demo certification', async () => {

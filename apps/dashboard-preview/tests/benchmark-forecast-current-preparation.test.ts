@@ -157,6 +157,55 @@ test('interactive current preparation gateway prepares exactly the requested var
   }])
 })
 
+test('interactive current preparation gateway warms stale variants through the prepare route', async () => {
+  let prepareCalls = 0
+  const prepareCurrent = createInteractiveCurrentPreparationGateway({
+    now: (() => {
+      let tick = 40
+      return () => tick += 5
+    })(),
+    resolveCapability: async (input) => ({
+      seriesId: input.seriesId,
+      targetSemantics: 'MONTHLY_AVERAGE',
+      modelId: input.modelId,
+      sourceFrequency: 'DAILY',
+      targetCadence: 'MONTHLY',
+      sourceAvailability: 'AVAILABLE',
+      lawfulTargetSemantics: 'LAWFUL',
+      status: 'STALE',
+      currentReadiness: 'STALE',
+      verificationReadiness: 'STALE',
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 4,
+      reason: 'STALE',
+    }),
+    prepareCurrent: async (input) => {
+      prepareCalls += 1
+      return {
+        seriesId: input.seriesId,
+        targetSemantics: 'MONTHLY_AVERAGE',
+        modelId: input.modelId,
+        operation: 'CURRENT_FORECAST',
+        status: 'READY',
+        targetedDataScope: 'SINGLE_SERIES',
+        timingMs: 12,
+        reason: null,
+      }
+    },
+  })
+
+  const result = await prepareCurrent({
+    seriesId: 'wocaes0074',
+    modelId: 'arima',
+    targetBasis: 'MONTHLY_AVERAGE',
+  })
+
+  assert.equal(result.state, 'READY')
+  assert.equal(result.prepareAttempted, true)
+  assert.equal(result.prepareStatus, 'READY')
+  assert.equal(prepareCalls, 1)
+})
+
 test('interactive current preparation gateway reports failed preparation truthfully', async () => {
   const prepareCurrent = createInteractiveCurrentPreparationGateway({
     now: (() => {
