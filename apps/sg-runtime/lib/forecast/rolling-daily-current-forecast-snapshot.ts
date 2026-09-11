@@ -1,6 +1,7 @@
 import { Prisma, type PrismaClient } from '@/generated/market-data-client'
 import {
   ForecastExecutionControlError,
+  hasForecastPreparationExecutionLedgerRelation,
   isMissingExecutionLedgerRelationError,
 } from '@/lib/forecast/execution-ledger'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
@@ -234,6 +235,9 @@ export async function persistResolvedRollingDailyCurrentForecastSnapshot(
   const sourceLatestObservationAt = toDateFromCalendarValue(payload.audit.sourceLatestObservationDate)
 
   const observedAt = new Date().toISOString()
+  const shouldFenceOwnership = options.ownership
+    ? await hasForecastPreparationExecutionLedgerRelation(prisma)
+    : false
   const upsertInput = {
     request,
     inputSource,
@@ -244,7 +248,7 @@ export async function persistResolvedRollingDailyCurrentForecastSnapshot(
     sourceLatestObservationAt,
   }
 
-  const persisted = options.ownership && '$transaction' in prisma && typeof prisma.$transaction === 'function'
+  const persisted = shouldFenceOwnership && '$transaction' in prisma && typeof prisma.$transaction === 'function'
     ? await prisma.$transaction(async (tx) => {
       const ownership = options.ownership as ForecastPersistenceOwnership
       try {

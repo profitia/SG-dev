@@ -272,6 +272,20 @@ export function isMissingExecutionLedgerRelationError(error: unknown) {
     )
 }
 
+export async function hasForecastPreparationExecutionLedgerRelation(
+  prisma = getMarketDataPrisma(),
+) {
+  if (!prisma) {
+    throw new Error('Forecast execution control datastore is unavailable.')
+  }
+
+  const result = await prisma.$queryRaw<Array<{ relation: string | null }>>(Prisma.sql`
+    SELECT to_regclass('public.forecast_preparation_execution_ledger') AS relation
+  `)
+
+  return typeof result[0]?.relation === 'string' && result[0].relation.length > 0
+}
+
 function getLegacyExecutionAdmissionFallback(leaseDurationMs: number) {
   if (!legacyExecutionAdmissionFallback) {
     legacyExecutionAdmissionFallback = createInMemoryForecastPreparationExecutionAdmission({ leaseDurationMs })

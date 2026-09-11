@@ -27,6 +27,7 @@ import {
   createDefaultForecastPreparationExecutionAdmission,
   createDefaultForecastPreparationExecutionLedger,
   ForecastExecutionControlError,
+  hasForecastPreparationExecutionLedgerRelation,
   isMissingExecutionLedgerRelationError,
   type ForecastPreparationExecutionAdmission,
   type ForecastPreparationExecutionContextRegistry,
@@ -2448,9 +2449,14 @@ export async function writeCurrentRunWithPrisma(
   }
 
   const observedAt = new Date().toISOString()
+  const shouldFenceOwnership = options?.ownership
+    ? await hasForecastPreparationExecutionLedgerRelation(prisma)
+    : false
 
   await prisma.$transaction(async (tx) => {
-    await assertForecastPersistenceOwnership(tx, options?.ownership, observedAt)
+    if (shouldFenceOwnership) {
+      await assertForecastPersistenceOwnership(tx, options?.ownership, observedAt)
+    }
 
     const run = await tx.forecastCurrentRun.upsert({
       where: {
@@ -2780,9 +2786,14 @@ export async function writeVerificationRunWithPrisma(
   }
 
   const observedAt = new Date().toISOString()
+  const shouldFenceOwnership = options?.ownership
+    ? await hasForecastPreparationExecutionLedgerRelation(prisma)
+    : false
 
   await prisma.$transaction(async (tx) => {
-    await assertForecastPersistenceOwnership(tx, options?.ownership, observedAt)
+    if (shouldFenceOwnership) {
+      await assertForecastPersistenceOwnership(tx, options?.ownership, observedAt)
+    }
 
     const run = await tx.forecastVerificationRun.upsert({
       where: {
