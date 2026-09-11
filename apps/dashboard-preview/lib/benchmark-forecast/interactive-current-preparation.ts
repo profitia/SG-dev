@@ -20,7 +20,7 @@ const DEPLOYED_SG_RUNTIME_FALLBACK_BASE_URLS = [
 const INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH = '/api/internal/forecast/capability'
 const INTERNAL_FORECAST_PREPARE_CURRENT_ROUTE_PATH = '/api/internal/forecast/prepare/current'
 const INTERNAL_FORECAST_PROGRESSIVE_ROUTE_PATH = '/api/internal/forecast/progressive'
-const INTERNAL_FORECAST_TIMEOUT_MS = 45_000
+const INTERNAL_FORECAST_TIMEOUT_MS = 75_000
 export const FORECAST_TRACE_HEADER = 'x-sg-forecast-trace'
 
 export type ForecastBridgeAttemptTrace = {
@@ -259,7 +259,7 @@ async function readInternalJson<T>(
       if (callerAborted) {
         throw error
       }
-      if ((error as Error).name === 'AbortError' && hasExplicitSgRuntimeBaseUrl()) {
+      if ((error as Error).name === 'AbortError' && hasExplicitSgRuntimeBaseUrl() && !timedOut) {
         throw error
       }
       if (isMalformedJsonResponseError(error) && index + 1 < baseUrls.length) {
