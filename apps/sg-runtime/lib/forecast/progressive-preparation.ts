@@ -48,6 +48,8 @@ export type ProgressiveForecastPreparationSnapshot = {
   verificationReadyCount: number
 }
 
+const POINT_IN_TIME_VERIFICATION_MAX_ORIGINS_PER_RUN = 1
+
 type QueueItemKind = 'CURRENT' | 'VERIFICATION'
 
 type QueueItem = {
@@ -482,6 +484,7 @@ export function createProgressiveForecastPreparationService(
         seriesId: item.seriesId,
         modelIds: [item.modelId],
         prepareHistorical: item.kind === 'VERIFICATION',
+        maxOriginsPerRun: item.kind === 'VERIFICATION' ? POINT_IN_TIME_VERIFICATION_MAX_ORIGINS_PER_RUN : undefined,
       })
       const modelResult = result.results.find((candidate) => candidate.modelId === item.modelId)
       const failed = result.status === 'FAILED'
