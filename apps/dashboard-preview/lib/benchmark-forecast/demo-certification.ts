@@ -195,8 +195,18 @@ type DemoCertificationDependencies = {
   resolveReleaseSnapshot: (cohort: readonly DemoCohortEntry[], mode: DemoCertificationMode) => DemoReleaseSnapshot
   readCapability: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => Promise<InteractiveForecastCapabilityResult>
   prepareCurrent: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => Promise<BenchmarkForecastCurrentPreparationResult>
-  readCurrent: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => Promise<BenchmarkForecastCurrentResult>
-  readVerification: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => Promise<BenchmarkForecastVerificationResult>
+  readCurrent: (
+    seriesId: string,
+    modelId: ForecastPortfolioModelId,
+    targetBasis: ForecastTargetBasis,
+    cadence?: { sourceFrequency: string, targetCadence: string },
+  ) => Promise<BenchmarkForecastCurrentResult>
+  readVerification: (
+    seriesId: string,
+    modelId: ForecastPortfolioModelId,
+    targetBasis: ForecastTargetBasis,
+    cadence?: { sourceFrequency: string, targetCadence: string },
+  ) => Promise<BenchmarkForecastVerificationResult>
   evaluateMatrix: (seriesId: string, allowPrepare: boolean, options?: { signal?: AbortSignal }) => Promise<ForecastAcceptanceMatrixReport>
 }
 
@@ -444,7 +454,7 @@ async function runWarmRehearsal(
   requiredTargetBases: readonly ForecastTargetBasis[],
   requiredModels: readonly ForecastPortfolioModelId[],
   requiredHorizons: readonly string[],
-  dependencies: Pick<DemoCertificationDependencies, 'readCurrent' | 'readVerification' | 'evaluateMatrix'>,
+  dependencies: Pick<DemoCertificationDependencies, 'readCapability' | 'readCurrent' | 'readVerification' | 'evaluateMatrix'>,
   options?: { signal?: AbortSignal },
 ): Promise<DemoWarmRehearsal> {
   const currentInputs: BenchmarkForecastCurrentPreparationRequest[] = []
@@ -458,9 +468,16 @@ async function runWarmRehearsal(
   }
 
   const rehearsalChecks = await Promise.all(currentInputs.map(async (input) => {
+    const capability = await dependencies.readCapability(input, options)
+    const cadence = capability.sourceFrequency && capability.targetCadence
+      ? {
+          sourceFrequency: capability.sourceFrequency,
+          targetCadence: capability.targetCadence,
+        }
+      : undefined
     const [current, verification] = await Promise.all([
-      dependencies.readCurrent(input.seriesId, input.modelId, input.targetBasis),
-      dependencies.readVerification(input.seriesId, input.modelId, input.targetBasis),
+      dependencies.readCurrent(input.seriesId, input.modelId, input.targetBasis, cadence),
+      dependencies.readVerification(input.seriesId, input.modelId, input.targetBasis, cadence),
     ])
 
     const nextCurrentFailures: string[] = []
@@ -667,20 +684,32 @@ export function createDemoCertificationService(
   const currentReadCache = new Map<string, Promise<BenchmarkForecastCurrentResult>>()
   const verificationReadCache = new Map<string, Promise<BenchmarkForecastVerificationResult>>()
   const preparationCache = new Map<string, Promise<BenchmarkForecastCurrentPreparationResult>>()
-  const createReadKey = (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => (
+  const createVariantKey = (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => (
     `${seriesId}::${modelId}::${targetBasis}`
   )
-  const readCurrent = dependencies.readCurrent ?? resolveShowForecastCurrent
+  const createPreparedReadKey = (
+    seriesId: string,
+    modelId: ForecastPortfolioModelId,
+    targetBasis: ForecastTargetBasis,
+    cadence?: { sourceFrequency: string, targetCadence: string },
+  ) => `${seriesId}::${modelId}::${targetBasis}::${cadence?.sourceFrequency ?? ''}::${cadence?.targetCadence ?? ''}`
+  const readCurrent = dependencies.readCurrent ?? ((seriesId, modelId, targetBasis, cadence) => (
+    resolveShowForecastCurrent(seriesId, modelId, targetBasis, undefined, cadence) as Promise<BenchmarkForecastCurrentResult>
+  ))
   const readVerification = dependencies.readVerification ?? getBenchmarkForecastVerification
-  const readCapability = dependencies.readCapability ?? readInteractiveForecastCapability
-  const prepareCurrent = dependencies.prepareCurrent ?? prepareInteractiveCurrentForecast
+  const readCapability = dependencies.readCapability ?? ((input, options) => (
+    readInteractiveForecastCapability(input, undefined, options)
+  ))
+  const prepareCurrent = dependencies.prepareCurrent ?? ((input, options) => (
+    prepareInteractiveCurrentForecast(input, false, options?.signal)
+  ))
 
   const readCapabilityOnce = (
     input: BenchmarkForecastCurrentPreparationRequest,
     options?: { signal?: AbortSignal },
     forceRefresh = false,
   ) => {
-    const key = createReadKey(input.seriesId, input.modelId, input.targetBasis)
+    const key = createVariantKey(input.seriesId, input.modelId, input.targetBasis)
     if (!forceRefresh) {
       const cached = capabilityCache.get(key)
       if (cached) {
@@ -694,7 +723,7 @@ export function createDemoCertificationService(
   }
 
   const prepareCurrentOnce = (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => {
-    const key = createReadKey(input.seriesId, input.modelId, input.targetBasis)
+    const key = createVariantKey(input.seriesId, input.modelId, input.targetBasis)
     const cached = preparationCache.get(key)
     if (cached) {
       return cached
@@ -712,50 +741,50 @@ export function createDemoCertificationService(
     resolveReleaseSnapshot: dependencies.resolveReleaseSnapshot ?? defaultReleaseSnapshot,
     readCapability: readCapabilityOnce,
     prepareCurrent: prepareCurrentOnce,
-    readCurrent: (seriesId, modelId, targetBasis) => {
-      const key = createReadKey(seriesId, modelId, targetBasis)
+    readCurrent: (seriesId, modelId, targetBasis, cadence) => {
+      const key = createPreparedReadKey(seriesId, modelId, targetBasis, cadence)
       const cached = currentReadCache.get(key)
       if (cached) {
         return cached
       }
 
-      const pending = readCurrent(seriesId, modelId, targetBasis)
+      const pending = readCurrent(seriesId, modelId, targetBasis, cadence)
       currentReadCache.set(key, pending)
       return pending
     },
-    readVerification: (seriesId, modelId, targetBasis) => {
-      const key = createReadKey(seriesId, modelId, targetBasis)
+    readVerification: (seriesId, modelId, targetBasis, cadence) => {
+      const key = createPreparedReadKey(seriesId, modelId, targetBasis, cadence)
       const cached = verificationReadCache.get(key)
       if (cached) {
         return cached
       }
 
-      const pending = readVerification(seriesId, modelId, targetBasis)
+      const pending = readVerification(seriesId, modelId, targetBasis, cadence)
       verificationReadCache.set(key, pending)
       return pending
     },
     evaluateMatrix: dependencies.evaluateMatrix ?? createMatrixEvaluator({
       readCapability: readCapabilityOnce,
       prepareCurrent: prepareCurrentOnce,
-      readCurrent: (seriesId, modelId, targetBasis) => {
-        const key = createReadKey(seriesId, modelId, targetBasis)
+      readCurrent: (seriesId, modelId, targetBasis, cadence) => {
+        const key = createPreparedReadKey(seriesId, modelId, targetBasis, cadence)
         const cached = currentReadCache.get(key)
         if (cached) {
           return cached
         }
 
-        const pending = readCurrent(seriesId, modelId, targetBasis)
+        const pending = readCurrent(seriesId, modelId, targetBasis, cadence)
         currentReadCache.set(key, pending)
         return pending
       },
-      readVerification: (seriesId, modelId, targetBasis) => {
-        const key = createReadKey(seriesId, modelId, targetBasis)
+      readVerification: (seriesId, modelId, targetBasis, cadence) => {
+        const key = createPreparedReadKey(seriesId, modelId, targetBasis, cadence)
         const cached = verificationReadCache.get(key)
         if (cached) {
           return cached
         }
 
-        const pending = readVerification(seriesId, modelId, targetBasis)
+        const pending = readVerification(seriesId, modelId, targetBasis, cadence)
         verificationReadCache.set(key, pending)
         return pending
       },
@@ -901,6 +930,7 @@ export function createDemoCertificationService(
             requiredModels,
             requiredVerificationHorizons,
             {
+              readCapability: resolvedDependencies.readCapability,
               readCurrent: resolvedDependencies.readCurrent,
               readVerification: resolvedDependencies.readVerification,
               evaluateMatrix: resolvedDependencies.evaluateMatrix,

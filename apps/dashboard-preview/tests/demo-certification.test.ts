@@ -22,6 +22,7 @@ import type { ForecastAcceptanceCell, ForecastAcceptanceMatrixReport } from '@/l
 const MODELS: readonly ForecastPortfolioModelId[] = ['naive', 'damped_holt', 'ets', 'arima']
 const TARGET_BASES: readonly ForecastTargetBasis[] = ['MONTHLY_AVERAGE', 'POINT_IN_TIME', 'END_OF_PERIOD']
 const HORIZONS = ['1M', '3M', '6M', '12M'] as const
+type MaybePromise<T> = T | Promise<T>
 
 function semantics(targetBasis: ForecastTargetBasis): ForecastTargetSemantics {
   if (targetBasis === 'POINT_IN_TIME') return 'ROLLING_DAILY_POINT_IN_TIME'
@@ -35,6 +36,7 @@ function capability(input: BenchmarkForecastCurrentPreparationRequest, overrides
     modelId: input.modelId,
     targetSemantics: semantics(input.targetBasis),
     sourceFrequency: input.targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
+    targetCadence: null,
     sourceAvailability: 'AVAILABLE',
     lawfulTargetSemantics: semantics(input.targetBasis),
     status: 'READY',
@@ -291,11 +293,17 @@ function matrixReport(seriesId: string, overrides?: {
 
 function createService(options: {
   cohort?: DemoCohortEntry[]
-  capabilityResolver?: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => InteractiveForecastCapabilityResult
-  prepareResolver?: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => BenchmarkForecastCurrentPreparationResult
-  currentResolver?: (input: BenchmarkForecastCurrentPreparationRequest) => BenchmarkForecastCurrentResult
-  verificationResolver?: (input: BenchmarkForecastCurrentPreparationRequest) => BenchmarkForecastVerificationResult
-  matrixResolver?: (seriesId: string, allowPrepare: boolean, options?: { signal?: AbortSignal }) => ForecastAcceptanceMatrixReport
+  capabilityResolver?: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => MaybePromise<InteractiveForecastCapabilityResult>
+  prepareResolver?: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => MaybePromise<BenchmarkForecastCurrentPreparationResult>
+  currentResolver?: (
+    input: BenchmarkForecastCurrentPreparationRequest,
+    cadence?: { sourceFrequency: string, targetCadence: string },
+  ) => MaybePromise<BenchmarkForecastCurrentResult>
+  verificationResolver?: (
+    input: BenchmarkForecastCurrentPreparationRequest,
+    cadence?: { sourceFrequency: string, targetCadence: string },
+  ) => MaybePromise<BenchmarkForecastVerificationResult>
+  matrixResolver?: (seriesId: string, allowPrepare: boolean, options?: { signal?: AbortSignal }) => MaybePromise<ForecastAcceptanceMatrixReport>
   benchmarkTimeoutMs?: number
   deployedRevision?: string | null
   prepareCalls?: string[]
@@ -317,14 +325,14 @@ function createService(options: {
       options.prepareCalls?.push(`${input.seriesId}:${input.modelId}:${input.targetBasis}`)
       return options.prepareResolver ? options.prepareResolver(input, requestOptions) : preparation(input)
     },
-    readCurrent: async (seriesId, modelId, targetBasis) => (
+    readCurrent: async (seriesId, modelId, targetBasis, cadence) => (
       options.currentResolver
-        ? options.currentResolver({ seriesId, modelId, targetBasis })
+        ? options.currentResolver({ seriesId, modelId, targetBasis }, cadence)
         : currentResult({ seriesId, modelId, targetBasis })
     ),
-    readVerification: async (seriesId, modelId, targetBasis) => (
+    readVerification: async (seriesId, modelId, targetBasis, cadence) => (
       options.verificationResolver
-        ? options.verificationResolver({ seriesId, modelId, targetBasis })
+        ? options.verificationResolver({ seriesId, modelId, targetBasis }, cadence)
         : verificationResult({ seriesId, modelId, targetBasis })
     ),
     evaluateMatrix: async (seriesId, allowPrepare, requestOptions) => (
@@ -517,6 +525,80 @@ test('I. Stage 2 verification regression blocks demo certification', async () =>
 
   assert.equal(report.benchmarks[0]?.demoSafe, 'NO')
   assert.equal(report.benchmarks[0]?.matrix.status, 'FAIL')
+})
+
+test('J. sparse-series cadence is preserved for certification rereads', async () => {
+  const currentCadenceCalls: string[] = []
+  const verificationCadenceCalls: string[] = []
+
+  const report = await createService({
+    cohort: [{
+      seriesId: 'lmeofcucashask',
+      benchmarkName: 'Copper',
+      group: 'PRIMARY',
+      requiredModels: ['naive'],
+      requiredTargetBases: ['MONTHLY_AVERAGE', 'END_OF_PERIOD'],
+      requiredVerificationHorizons: ['1M'],
+    }],
+    capabilityResolver: (input) => capability(input, {
+      sourceFrequency: input.targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'WEEKLY',
+      targetCadence: input.targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
+    }),
+    currentResolver: (input, cadence) => {
+      currentCadenceCalls.push(`${input.modelId}:${input.targetBasis}:${cadence?.sourceFrequency ?? 'none'}:${cadence?.targetCadence ?? 'none'}`)
+      return currentResult(input, {
+        lineage: {
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          inputRunId: null,
+          sourceSeriesId: input.seriesId,
+          sourceFrequency: cadence?.sourceFrequency ?? (input.targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY'),
+          historyFingerprint: `${input.seriesId}:${input.modelId}:${input.targetBasis}:fp`,
+          preparation: {
+            method: 'prepare',
+            version: 'v1',
+            provenanceStatus: 'PROVEN',
+          },
+        },
+      })
+    },
+    verificationResolver: (input, cadence) => {
+      verificationCadenceCalls.push(`${input.modelId}:${input.targetBasis}:${cadence?.sourceFrequency ?? 'none'}:${cadence?.targetCadence ?? 'none'}`)
+      if (input.targetBasis !== 'POINT_IN_TIME' && (!cadence || cadence.sourceFrequency !== 'WEEKLY' || cadence.targetCadence !== 'MONTHLY')) {
+        return {
+          status: 'NOT_AVAILABLE',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: semantics(input.targetBasis),
+          methodId: semantics(input.targetBasis),
+          reason: 'PREPARATION_REQUIRED: Missing sparse-series cadence identity.',
+        }
+      }
+
+      return verificationResult(input, {
+        lineage: {
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          inputRunId: null,
+          sourceSeriesId: input.seriesId,
+          sourceFrequency: cadence?.sourceFrequency ?? (input.targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY'),
+          historyFingerprint: `${input.seriesId}:${input.modelId}:${input.targetBasis}:fp`,
+          preparation: {
+            method: 'prepare',
+            version: 'v1',
+            provenanceStatus: 'PROVEN',
+          },
+        },
+      })
+    },
+  }).run({ seriesIds: ['lmeofcucashask'], includeFallback: false })
+
+  assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
+  assert.equal(report.benchmarks[0]?.matrix.status, 'PASS')
+  assert.equal(report.benchmarks[0]?.warmRehearsal.verification, 'PASS')
+  assert.ok(currentCadenceCalls.includes('naive:MONTHLY_AVERAGE:WEEKLY:MONTHLY'))
+  assert.ok(currentCadenceCalls.includes('naive:END_OF_PERIOD:WEEKLY:MONTHLY'))
+  assert.ok(verificationCadenceCalls.includes('naive:MONTHLY_AVERAGE:WEEKLY:MONTHLY'))
+  assert.ok(verificationCadenceCalls.includes('naive:END_OF_PERIOD:WEEKLY:MONTHLY'))
 })
 
 test('I2. one benchmark runtime failure degrades to ENVIRONMENT_NOT_READY instead of aborting the report', async () => {
