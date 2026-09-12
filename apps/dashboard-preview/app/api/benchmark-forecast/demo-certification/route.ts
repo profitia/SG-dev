@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import {
   createDemoCertificationService,
+  type DemoCertificationDiagnosticsOptions,
   type DemoCertificationMode,
   type DemoCertificationSnapshot,
 } from '@/lib/benchmark-forecast/demo-certification'
@@ -13,6 +14,21 @@ type DemoCertificationRequestBody = {
   seriesIds?: string[]
   includeFallback?: boolean
   priorSnapshots?: DemoCertificationSnapshot[]
+  diagnostics?: DemoCertificationDiagnosticsOptions
+}
+
+function normalizeDiagnostics(input: unknown): DemoCertificationDiagnosticsOptions | undefined {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return undefined
+  }
+
+  const candidate = input as Record<string, unknown>
+  return {
+    enabled: candidate.enabled === true,
+    maxConcurrentRemoteReads: typeof candidate.maxConcurrentRemoteReads === 'number'
+      ? candidate.maxConcurrentRemoteReads
+      : undefined,
+  }
 }
 
 function isMode(value: unknown): value is DemoCertificationMode {
@@ -38,6 +54,7 @@ function normalizeBody(body: unknown): DemoCertificationRequestBody {
         && typeof (snapshot as DemoCertificationSnapshot).seriesId === 'string'
       ))
       : undefined,
+    diagnostics: normalizeDiagnostics(candidate.diagnostics),
   }
 }
 

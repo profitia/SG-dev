@@ -45,6 +45,7 @@ export type ForecastBridgeTrace = {
 
 type ForecastBridgeRequestOptions = {
   signal?: AbortSignal
+  headers?: Record<string, string>
 }
 type TraceOptions = {
   enabled: boolean
@@ -288,7 +289,7 @@ async function readInternalJson<T>(
   throw lastError instanceof Error ? lastError : new Error('SG Runtime interactive forecast request failed.')
 }
 
-function resolveAuthorizedHeaders() {
+function resolveAuthorizedHeaders(additionalHeaders: Record<string, string> = {}) {
   const token = readSgRuntimeInternalForecastServiceToken()
   if (!token) {
     throw new Error('SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN is not configured.')
@@ -296,7 +297,22 @@ function resolveAuthorizedHeaders() {
 
   return {
     Authorization: `Bearer ${token}`,
+    ...additionalHeaders,
   }
+}
+
+function normalizeForecastBridgeRequestOptions(
+  requestOptions?: AbortSignal | ForecastBridgeRequestOptions,
+): ForecastBridgeRequestOptions | undefined {
+  if (!requestOptions) {
+    return undefined
+  }
+
+  if (requestOptions instanceof AbortSignal) {
+    return { signal: requestOptions }
+  }
+
+  return requestOptions
 }
 
 export async function readInteractiveForecastCapability(
@@ -313,7 +329,7 @@ export async function readInteractiveForecastCapability(
   return readInternalJson<InteractiveForecastCapabilityResult>(url.pathname + url.search, {
     method: 'GET',
     signal: options?.signal,
-    headers: resolveAuthorizedHeaders(),
+    headers: resolveAuthorizedHeaders(options?.headers),
   }, traceOptions)
 }
 
@@ -326,7 +342,7 @@ export async function requestInteractiveForecastCurrentPreparation(
     method: 'POST',
     signal: options?.signal,
     headers: {
-      ...resolveAuthorizedHeaders(),
+      ...resolveAuthorizedHeaders(options?.headers),
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -346,7 +362,7 @@ export async function requestProgressiveForecastPreparationSnapshot(
     method: 'POST',
     signal: options?.signal,
     headers: {
-      ...resolveAuthorizedHeaders(),
+      ...resolveAuthorizedHeaders(options?.headers),
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -376,7 +392,7 @@ export async function requestInteractiveForecastVerificationPreparation(
   return readInternalJson<BenchmarkForecastVerificationResult>(url.pathname + url.search, {
     method: 'GET',
     signal: options?.signal,
-    headers: resolveAuthorizedHeaders(),
+    headers: resolveAuthorizedHeaders(options?.headers),
   }, traceOptions)
 }
 
@@ -435,7 +451,7 @@ export function createInteractiveCurrentPreparationGateway(
   return async function prepareCurrent(
     input: BenchmarkForecastCurrentPreparationRequest,
     traceEnabled = false,
-    signal?: AbortSignal,
+    requestOptions?: AbortSignal | ForecastBridgeRequestOptions,
   ): Promise<BenchmarkForecastCurrentPreparationResult & { trace?: ForecastBridgeTrace }> {
     const startedAt = resolvedDependencies.now()
     const targetSemantics = resolveForecastTargetSemantics(input.targetBasis)
@@ -443,8 +459,8 @@ export function createInteractiveCurrentPreparationGateway(
     const traceOptions: TraceOptions | undefined = traceEnabled
       ? { enabled: true, attempts }
       : undefined
-    const requestOptions = signal ? { signal } : undefined
-    const capability = await resolvedDependencies.resolveCapability(input, traceOptions, requestOptions)
+    const normalizedRequestOptions = normalizeForecastBridgeRequestOptions(requestOptions)
+    const capability = await resolvedDependencies.resolveCapability(input, traceOptions, normalizedRequestOptions)
 
     const baseResult = {
       seriesId: input.seriesId,
@@ -488,14 +504,14 @@ export function createInteractiveCurrentPreparationGateway(
     let preparation: InteractiveForecastPreparationResult
 
     try {
-      preparation = await resolvedDependencies.prepareCurrent(input, traceOptions, requestOptions)
+      preparation = await resolvedDependencies.prepareCurrent(input, traceOptions, normalizedRequestOptions)
     } catch (error) {
       if (!isInteractiveForecastTimeoutError(error)) {
         throw error
       }
 
       try {
-        const progressiveSnapshot = await resolvedDependencies.readProgressiveSnapshot(input, traceOptions, requestOptions)
+        const progressiveSnapshot = await resolvedDependencies.readProgressiveSnapshot(input, traceOptions, normalizedRequestOptions)
         const variant = resolveRequestedProgressiveVariant(progressiveSnapshot, input)
         if (!variant) {
           throw error

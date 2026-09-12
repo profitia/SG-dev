@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+
 import {
   createForecastAcceptanceMatrixService,
   type ForecastAcceptanceCell,
@@ -22,6 +24,8 @@ import {
   prepareInteractiveCurrentForecast,
   readInteractiveForecastCapability,
   requestInteractiveForecastVerificationPreparation,
+  type ForecastBridgeAttemptTrace,
+  type ForecastBridgeTrace,
 } from './interactive-current-preparation'
 import { getBenchmarkForecastVerification, resolveShowForecastCurrent } from './runtime-query'
 
@@ -32,6 +36,14 @@ const DEFAULT_DEPLOYED_REVISION_ENV_KEYS = [
   'NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA',
 ] as const
 const DEFAULT_BENCHMARK_TIMEOUT_MS = 75_000
+const DEMO_CERTIFICATION_PHASES = ['PRECOMPUTE', 'MATRIX', 'WARM_REHEARSAL'] as const
+const DEMO_REMOTE_OPERATIONS = [
+  'READ_CAPABILITY',
+  'PREPARE_CURRENT',
+  'PREPARE_VERIFICATION',
+  'READ_CURRENT',
+  'READ_VERIFICATION',
+] as const
 
 export type DemoCertificationMode = 'CERTIFY' | 'REVALIDATE'
 export type DemoCohortGroup = 'PRIMARY' | 'FALLBACK'
@@ -64,6 +76,74 @@ export type DemoCertificationSnapshot = {
   seriesId: string
   deployedRevision: string | null
   fingerprintDigest: string | null
+}
+
+export type DemoCertificationDiagnosticsOptions = {
+  enabled?: boolean
+  maxConcurrentRemoteReads?: number
+}
+
+export type DemoBenchmarkDiagnosticPhase = (typeof DEMO_CERTIFICATION_PHASES)[number]
+export type DemoBenchmarkRemoteOperation = (typeof DEMO_REMOTE_OPERATIONS)[number]
+
+export type DemoBenchmarkPhaseDiagnostic = {
+  eventType: 'PHASE'
+  phase: DemoBenchmarkDiagnosticPhase
+  startedAt: string
+  completedAt: string
+  elapsedMs: number
+  outcome: 'SUCCESS' | 'ERROR' | 'TIMEOUT'
+  reason: string | null
+}
+
+export type DemoBenchmarkRemoteRequestDiagnostic = {
+  eventType: 'REMOTE_REQUEST'
+  phase: DemoBenchmarkDiagnosticPhase
+  operation: DemoBenchmarkRemoteOperation
+  requestId: string
+  seriesId: string
+  modelId: ForecastPortfolioModelId
+  targetBasis: ForecastTargetBasis
+  targetSemantics: ForecastTargetSemantics
+  sourceFrequency: string | null
+  targetCadence: string | null
+  cacheStatus: 'hit' | 'miss'
+  startedAt: string
+  completedAt: string
+  elapsedMs: number
+  outcome: 'SUCCESS' | 'ERROR' | 'TIMEOUT'
+  status: string | null
+  reason: string | null
+  bridgeTrace: ForecastBridgeTrace | null
+  bridgeAttempts: ForecastBridgeAttemptTrace[]
+}
+
+export type DemoBenchmarkTimeoutSnapshot = {
+  capturedAt: string
+  activeRequests: Array<{
+    phase: DemoBenchmarkDiagnosticPhase
+    operation: DemoBenchmarkRemoteOperation
+    requestId: string
+    seriesId: string
+    modelId: ForecastPortfolioModelId
+    targetBasis: ForecastTargetBasis
+    targetSemantics: ForecastTargetSemantics
+    sourceFrequency: string | null
+    targetCadence: string | null
+    cacheStatus: 'hit' | 'miss'
+    startedAt: string
+    elapsedMsAtTimeout: number
+  }>
+}
+
+export type DemoBenchmarkDiagnostics = {
+  benchmarkExecutionId: string
+  timeoutMs: number
+  maxConcurrentRemoteReads: number | null
+  peakConcurrentRemoteReads: number
+  totalRemoteRequests: number
+  timeoutSnapshot: DemoBenchmarkTimeoutSnapshot | null
+  timeline: Array<DemoBenchmarkPhaseDiagnostic | DemoBenchmarkRemoteRequestDiagnostic>
 }
 
 export type DemoReleaseSnapshot = {
@@ -150,6 +230,7 @@ export type DemoBenchmarkCertification = {
   lastVerifiedAt: string
   deployedRevision: string | null
   fingerprintDigest: string | null
+  diagnostics?: DemoBenchmarkDiagnostics
 }
 
 export type DemoCertificationReport = {
@@ -195,24 +276,26 @@ type DemoCertificationDependencies = {
   benchmarkTimeoutMs: number
   cohort: readonly DemoCohortEntry[]
   resolveReleaseSnapshot: (cohort: readonly DemoCohortEntry[], mode: DemoCertificationMode) => DemoReleaseSnapshot
-  readCapability: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => Promise<InteractiveForecastCapabilityResult>
-  prepareCurrent: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => Promise<BenchmarkForecastCurrentPreparationResult>
+  readCapability: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal, requestHeaders?: Record<string, string> }) => Promise<InteractiveForecastCapabilityResult>
+  prepareCurrent: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal, requestHeaders?: Record<string, string> }) => Promise<BenchmarkForecastCurrentPreparationResult>
   prepareVerification: (
     input: BenchmarkForecastCurrentPreparationRequest,
     cadence?: { sourceFrequency: string, targetCadence: string },
-    options?: { signal?: AbortSignal },
+    options?: { signal?: AbortSignal, requestHeaders?: Record<string, string> },
   ) => Promise<BenchmarkForecastVerificationResult>
   readCurrent: (
     seriesId: string,
     modelId: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
     cadence?: { sourceFrequency: string, targetCadence: string },
+    correlationHeaders?: Record<string, string>,
   ) => Promise<BenchmarkForecastCurrentResult>
   readVerification: (
     seriesId: string,
     modelId: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
     cadence?: { sourceFrequency: string, targetCadence: string },
+    correlationHeaders?: Record<string, string>,
   ) => Promise<BenchmarkForecastVerificationResult>
   evaluateMatrix: (seriesId: string, allowPrepare: boolean, options?: { signal?: AbortSignal }) => Promise<ForecastAcceptanceMatrixReport>
 }
@@ -222,6 +305,28 @@ type DemoCertificationOptions = {
   seriesIds?: readonly string[]
   includeFallback?: boolean
   priorSnapshots?: readonly DemoCertificationSnapshot[]
+  diagnostics?: DemoCertificationDiagnosticsOptions
+}
+
+type DemoCertificationRequestOptions = {
+  signal?: AbortSignal
+  requestHeaders?: Record<string, string>
+}
+
+type DemoRemoteOperationIdentity = {
+  phase: DemoBenchmarkDiagnosticPhase
+  operation: DemoBenchmarkRemoteOperation
+  input: BenchmarkForecastCurrentPreparationRequest
+  cadence?: { sourceFrequency: string, targetCadence: string }
+  cacheStatus: 'hit' | 'miss'
+}
+
+type DemoRemoteOperationResult<T> = {
+  result: T
+  status: string | null
+  reason: string | null
+  bridgeTrace?: ForecastBridgeTrace | null
+  bridgeAttempts?: ForecastBridgeAttemptTrace[]
 }
 
 const DEFAULT_DEMO_COHORT: readonly DemoCohortEntry[] = [
@@ -305,6 +410,270 @@ function hasExactVerificationReadiness(capability: InteractiveForecastCapability
   }
 
   return capability.verificationReadiness === 'READY'
+}
+
+function normalizeMaxConcurrentRemoteReads(value: number | undefined) {
+  if (!Number.isFinite(value)) {
+    return null
+  }
+
+  const normalized = Math.floor(value ?? 0)
+  return normalized > 0 ? normalized : null
+}
+
+function isTimeoutError(error: unknown) {
+  return error instanceof Error && error.message.toLowerCase().includes('timed out')
+}
+
+function createRemoteRequestHeaders(
+  benchmarkExecutionId: string,
+  requestId: string,
+  phase: DemoBenchmarkDiagnosticPhase,
+  operation: DemoBenchmarkRemoteOperation,
+  input: BenchmarkForecastCurrentPreparationRequest,
+) {
+  return {
+    'x-request-id': requestId,
+    'x-sg-certification-execution-id': benchmarkExecutionId,
+    'x-sg-certification-phase': phase,
+    'x-sg-certification-operation': operation,
+    'x-sg-certification-series-id': input.seriesId,
+    'x-sg-certification-model-id': input.modelId,
+    'x-sg-certification-target-basis': input.targetBasis,
+  }
+}
+
+function createRemoteReadLimiter(maxConcurrentRemoteReads: number | null) {
+  let activeCount = 0
+  const waiters: Array<() => void> = []
+
+  return async function run<T>(operation: () => Promise<T>) {
+    if (maxConcurrentRemoteReads) {
+      if (activeCount >= maxConcurrentRemoteReads) {
+        await new Promise<void>((resolve) => {
+          waiters.push(resolve)
+        })
+      }
+
+      activeCount += 1
+    }
+
+    try {
+      return await operation()
+    } finally {
+      if (maxConcurrentRemoteReads) {
+        activeCount = Math.max(0, activeCount - 1)
+        waiters.shift()?.()
+      }
+    }
+  }
+}
+
+function createBenchmarkDiagnosticsTracker(
+  timeoutMs: number,
+  options?: DemoCertificationDiagnosticsOptions,
+) {
+  const enabled = options?.enabled === true
+  const benchmarkExecutionId = `demo-certification-${randomUUID()}`
+  const maxConcurrentRemoteReads = enabled ? normalizeMaxConcurrentRemoteReads(options?.maxConcurrentRemoteReads) : null
+  const limitRemoteRead = createRemoteReadLimiter(maxConcurrentRemoteReads)
+  const timeline: Array<DemoBenchmarkPhaseDiagnostic | DemoBenchmarkRemoteRequestDiagnostic> = []
+  const activeRequests = new Map<string, DemoRemoteOperationIdentity & { startedAt: string, startedAtMs: number, requestId: string }>()
+  let peakConcurrentRemoteReads = 0
+  let totalRemoteRequests = 0
+  let timeoutSnapshot: DemoBenchmarkTimeoutSnapshot | null = null
+  let sequence = 0
+
+  const nextRequestId = (operation: DemoBenchmarkRemoteOperation) => {
+    sequence += 1
+    return `${benchmarkExecutionId}:${String(sequence).padStart(3, '0')}:${operation.toLowerCase()}`
+  }
+
+  return {
+    enabled,
+    benchmarkExecutionId,
+    async tracePhase<T>(phase: DemoBenchmarkDiagnosticPhase, operation: () => Promise<T>) {
+      if (!enabled) {
+        return operation()
+      }
+
+      const startedAt = new Date().toISOString()
+      const startedAtMs = Date.now()
+
+      try {
+        const result = await operation()
+        timeline.push({
+          eventType: 'PHASE',
+          phase,
+          startedAt,
+          completedAt: new Date().toISOString(),
+          elapsedMs: Math.max(0, Date.now() - startedAtMs),
+          outcome: 'SUCCESS',
+          reason: null,
+        })
+        return result
+      } catch (error) {
+        timeline.push({
+          eventType: 'PHASE',
+          phase,
+          startedAt,
+          completedAt: new Date().toISOString(),
+          elapsedMs: Math.max(0, Date.now() - startedAtMs),
+          outcome: isTimeoutError(error) ? 'TIMEOUT' : 'ERROR',
+          reason: error instanceof Error ? error.message : String(error),
+        })
+        throw error
+      }
+    },
+    snapshotTimeout() {
+      if (!enabled) {
+        return
+      }
+
+      timeoutSnapshot = {
+        capturedAt: new Date().toISOString(),
+        activeRequests: Array.from(activeRequests.values()).map((request) => ({
+          phase: request.phase,
+          operation: request.operation,
+          requestId: request.requestId,
+          seriesId: request.input.seriesId,
+          modelId: request.input.modelId,
+          targetBasis: request.input.targetBasis,
+          targetSemantics: resolveForecastTargetSemantics(request.input.targetBasis),
+          sourceFrequency: request.cadence?.sourceFrequency ?? null,
+          targetCadence: request.cadence?.targetCadence ?? null,
+          cacheStatus: request.cacheStatus,
+          startedAt: request.startedAt,
+          elapsedMsAtTimeout: Math.max(0, Date.now() - request.startedAtMs),
+        })),
+      }
+    },
+    recordCacheHit(identity: DemoRemoteOperationIdentity) {
+      if (!enabled) {
+        return
+      }
+
+      const timestamp = new Date().toISOString()
+      timeline.push({
+        eventType: 'REMOTE_REQUEST',
+        phase: identity.phase,
+        operation: identity.operation,
+        requestId: `${benchmarkExecutionId}:cache:${identity.operation.toLowerCase()}`,
+        seriesId: identity.input.seriesId,
+        modelId: identity.input.modelId,
+        targetBasis: identity.input.targetBasis,
+        targetSemantics: resolveForecastTargetSemantics(identity.input.targetBasis),
+        sourceFrequency: identity.cadence?.sourceFrequency ?? null,
+        targetCadence: identity.cadence?.targetCadence ?? null,
+        cacheStatus: 'hit',
+        startedAt: timestamp,
+        completedAt: timestamp,
+        elapsedMs: 0,
+        outcome: 'SUCCESS',
+        status: 'CACHE_REUSED',
+        reason: null,
+        bridgeTrace: null,
+        bridgeAttempts: [],
+      })
+    },
+    async traceRemoteRequest<T>(
+      identity: DemoRemoteOperationIdentity,
+      operation: (requestOptions: DemoCertificationRequestOptions) => Promise<DemoRemoteOperationResult<T>>,
+    ) {
+      if (!enabled) {
+        const outcome = await operation({})
+        return outcome.result
+      }
+
+      const requestId = nextRequestId(identity.operation)
+      const requestHeaders = createRemoteRequestHeaders(
+        benchmarkExecutionId,
+        requestId,
+        identity.phase,
+        identity.operation,
+        identity.input,
+      )
+      const startedAt = new Date().toISOString()
+      const startedAtMs = Date.now()
+
+      return limitRemoteRead(async () => {
+        activeRequests.set(requestId, {
+          ...identity,
+          requestId,
+          startedAt,
+          startedAtMs,
+        })
+        peakConcurrentRemoteReads = Math.max(peakConcurrentRemoteReads, activeRequests.size)
+        totalRemoteRequests += 1
+
+        try {
+          const outcome = await operation({ requestHeaders })
+          timeline.push({
+            eventType: 'REMOTE_REQUEST',
+            phase: identity.phase,
+            operation: identity.operation,
+            requestId,
+            seriesId: identity.input.seriesId,
+            modelId: identity.input.modelId,
+            targetBasis: identity.input.targetBasis,
+            targetSemantics: resolveForecastTargetSemantics(identity.input.targetBasis),
+            sourceFrequency: identity.cadence?.sourceFrequency ?? null,
+            targetCadence: identity.cadence?.targetCadence ?? null,
+            cacheStatus: identity.cacheStatus,
+            startedAt,
+            completedAt: new Date().toISOString(),
+            elapsedMs: Math.max(0, Date.now() - startedAtMs),
+            outcome: 'SUCCESS',
+            status: outcome.status,
+            reason: outcome.reason,
+            bridgeTrace: outcome.bridgeTrace ?? null,
+            bridgeAttempts: outcome.bridgeAttempts ?? [],
+          })
+          return outcome.result
+        } catch (error) {
+          timeline.push({
+            eventType: 'REMOTE_REQUEST',
+            phase: identity.phase,
+            operation: identity.operation,
+            requestId,
+            seriesId: identity.input.seriesId,
+            modelId: identity.input.modelId,
+            targetBasis: identity.input.targetBasis,
+            targetSemantics: resolveForecastTargetSemantics(identity.input.targetBasis),
+            sourceFrequency: identity.cadence?.sourceFrequency ?? null,
+            targetCadence: identity.cadence?.targetCadence ?? null,
+            cacheStatus: identity.cacheStatus,
+            startedAt,
+            completedAt: new Date().toISOString(),
+            elapsedMs: Math.max(0, Date.now() - startedAtMs),
+            outcome: isTimeoutError(error) ? 'TIMEOUT' : 'ERROR',
+            status: null,
+            reason: error instanceof Error ? error.message : String(error),
+            bridgeTrace: null,
+            bridgeAttempts: [],
+          })
+          throw error
+        } finally {
+          activeRequests.delete(requestId)
+        }
+      })
+    },
+    build() {
+      if (!enabled) {
+        return undefined
+      }
+
+      return {
+        benchmarkExecutionId,
+        timeoutMs,
+        maxConcurrentRemoteReads,
+        peakConcurrentRemoteReads,
+        totalRemoteRequests,
+        timeoutSnapshot,
+        timeline,
+      } satisfies DemoBenchmarkDiagnostics
+    },
+  }
 }
 
 function createMatrixEvaluator(
@@ -611,6 +980,7 @@ function createEnvironmentFailureBenchmark(
   reason: string,
   now: string,
   deployedRevision: string | null,
+  diagnostics?: DemoBenchmarkDiagnostics,
 ): DemoBenchmarkCertification {
   return {
     seriesId: entry.seriesId,
@@ -656,12 +1026,14 @@ function createEnvironmentFailureBenchmark(
     lastVerifiedAt: now,
     deployedRevision,
     fingerprintDigest: null,
+    diagnostics,
   }
 }
 
 async function withBenchmarkTimeout<T>(
   operation: (signal: AbortSignal) => Promise<T>,
   timeoutMs: number,
+  onTimeout?: () => void,
 ): Promise<T> {
   if (timeoutMs <= 0) {
     return operation(new AbortController().signal)
@@ -678,6 +1050,7 @@ async function withBenchmarkTimeout<T>(
       new Promise<T>((_, reject) => {
         timeoutId = setTimeout(() => {
           didTimeout = true
+          onTimeout?.()
           controller.abort()
           reject(new Error(timeoutMessage))
         }, timeoutMs)
@@ -708,6 +1081,7 @@ export function createDemoCertificationService(
   const verificationReadCache = new Map<string, Promise<BenchmarkForecastVerificationResult>>()
   const preparationCache = new Map<string, Promise<BenchmarkForecastCurrentPreparationResult>>()
   const verificationPreparationCache = new Map<string, Promise<BenchmarkForecastVerificationResult>>()
+
   const createVariantKey = (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => (
     `${seriesId}::${modelId}::${targetBasis}`
   )
@@ -717,71 +1091,64 @@ export function createDemoCertificationService(
     targetBasis: ForecastTargetBasis,
     cadence?: { sourceFrequency: string, targetCadence: string },
   ) => `${seriesId}::${modelId}::${targetBasis}::${cadence?.sourceFrequency ?? ''}::${cadence?.targetCadence ?? ''}`
-  const readCurrent = dependencies.readCurrent ?? ((seriesId, modelId, targetBasis, cadence) => (
-    resolveShowForecastCurrent(seriesId, modelId, targetBasis, undefined, cadence) as Promise<BenchmarkForecastCurrentResult>
+  const now = dependencies.now ?? (() => new Date().toISOString())
+  const benchmarkTimeoutMs = dependencies.benchmarkTimeoutMs ?? DEFAULT_BENCHMARK_TIMEOUT_MS
+  const cohort = dependencies.cohort ?? DEFAULT_DEMO_COHORT
+  const resolveReleaseSnapshot = dependencies.resolveReleaseSnapshot ?? defaultReleaseSnapshot
+  const readCurrent = dependencies.readCurrent ?? ((seriesId, modelId, targetBasis, cadence, correlationHeaders) => (
+    resolveShowForecastCurrent(seriesId, modelId, targetBasis, undefined, cadence, correlationHeaders) as Promise<BenchmarkForecastCurrentResult>
   ))
   const readVerification = dependencies.readVerification ?? getBenchmarkForecastVerification
   const readCapability = dependencies.readCapability ?? ((input, options) => (
-    readInteractiveForecastCapability(input, undefined, options)
+    readInteractiveForecastCapability(
+      input,
+      undefined,
+      options ? { signal: options.signal, headers: options.requestHeaders } : undefined,
+    )
   ))
   const prepareCurrent = dependencies.prepareCurrent ?? ((input, options) => (
-    prepareInteractiveCurrentForecast(input, false, options?.signal)
+    prepareInteractiveCurrentForecast(
+      input,
+      Boolean(options?.requestHeaders),
+      options ? { signal: options.signal, headers: options.requestHeaders } : undefined,
+    )
   ))
   const prepareVerification = dependencies.prepareVerification ?? ((input, cadence, options) => (
-    requestInteractiveForecastVerificationPreparation(input, cadence, undefined, options)
+    requestInteractiveForecastVerificationPreparation(
+      input,
+      cadence,
+      undefined,
+      options ? { signal: options.signal, headers: options.requestHeaders } : undefined,
+    )
   ))
 
-  const readCapabilityOnce = (
-    input: BenchmarkForecastCurrentPreparationRequest,
-    options?: { signal?: AbortSignal },
-    forceRefresh = false,
-  ) => {
-    const key = createVariantKey(input.seriesId, input.modelId, input.targetBasis)
-    if (!forceRefresh) {
-      const cached = capabilityCache.get(key)
-      if (cached) {
-        return cached
-      }
-    }
-
-    const pending = readCapability(input, options)
-    capabilityCache.set(key, pending)
-    return pending
-  }
-
-  const prepareCurrentOnce = (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => {
-    const key = createVariantKey(input.seriesId, input.modelId, input.targetBasis)
-    const cached = preparationCache.get(key)
-    if (cached) {
-      return cached
-    }
-
-    const pending = prepareCurrent(input, options)
-    preparationCache.set(key, pending)
-    return pending
-  }
-
-  const prepareVerificationOnce = (
-    input: BenchmarkForecastCurrentPreparationRequest,
-    cadence?: { sourceFrequency: string, targetCadence: string },
-    options?: { signal?: AbortSignal },
-  ) => {
-    const key = createPreparedReadKey(input.seriesId, input.modelId, input.targetBasis, cadence)
-    const cached = verificationPreparationCache.get(key)
-    if (cached) {
-      return cached
-    }
-
-    const pending = prepareVerification(input, cadence, options)
-    verificationPreparationCache.set(key, pending)
-    return pending
-  }
+  const mergeRequestHeaders = (
+    left?: Record<string, string>,
+    right?: Record<string, string>,
+  ) => ({
+    ...(left ?? {}),
+    ...(right ?? {}),
+  })
 
   const prepareExactVerificationIfNeeded = async (
     input: BenchmarkForecastCurrentPreparationRequest,
     capability: InteractiveForecastCapabilityResult,
     mode: DemoCertificationMode,
-    options?: { signal?: AbortSignal },
+    helpers: {
+      readCapabilityOnce: (
+        input: BenchmarkForecastCurrentPreparationRequest,
+        phase: DemoBenchmarkDiagnosticPhase,
+        options?: DemoCertificationRequestOptions,
+        forceRefresh?: boolean,
+      ) => Promise<InteractiveForecastCapabilityResult>
+      prepareVerificationOnce: (
+        input: BenchmarkForecastCurrentPreparationRequest,
+        phase: DemoBenchmarkDiagnosticPhase,
+        cadence?: { sourceFrequency: string, targetCadence: string },
+        options?: DemoCertificationRequestOptions,
+      ) => Promise<BenchmarkForecastVerificationResult>
+    },
+    options?: DemoCertificationRequestOptions,
   ) => {
     if (
       mode === 'REVALIDATE'
@@ -799,265 +1166,435 @@ export function createDemoCertificationService(
         }
       : undefined
 
-    const prepared = await prepareVerificationOnce(input, cadence, options)
+    const prepared = await helpers.prepareVerificationOnce(input, 'PRECOMPUTE', cadence, options)
     verificationReadCache.set(
       createPreparedReadKey(input.seriesId, input.modelId, input.targetBasis, cadence),
       Promise.resolve(prepared),
     )
 
-    return readCapabilityOnce(input, options, true)
-  }
-
-  const resolvedDependencies: DemoCertificationDependencies = {
-    now: dependencies.now ?? (() => new Date().toISOString()),
-    benchmarkTimeoutMs: dependencies.benchmarkTimeoutMs ?? DEFAULT_BENCHMARK_TIMEOUT_MS,
-    cohort: dependencies.cohort ?? DEFAULT_DEMO_COHORT,
-    resolveReleaseSnapshot: dependencies.resolveReleaseSnapshot ?? defaultReleaseSnapshot,
-    readCapability: readCapabilityOnce,
-    prepareCurrent: prepareCurrentOnce,
-    prepareVerification: prepareVerificationOnce,
-    readCurrent: (seriesId, modelId, targetBasis, cadence) => {
-      const key = createPreparedReadKey(seriesId, modelId, targetBasis, cadence)
-      const cached = currentReadCache.get(key)
-      if (cached) {
-        return cached
-      }
-
-      const pending = readCurrent(seriesId, modelId, targetBasis, cadence)
-      currentReadCache.set(key, pending)
-      return pending
-    },
-    readVerification: (seriesId, modelId, targetBasis, cadence) => {
-      const key = createPreparedReadKey(seriesId, modelId, targetBasis, cadence)
-      const cached = verificationReadCache.get(key)
-      if (cached) {
-        return cached
-      }
-
-      const pending = readVerification(seriesId, modelId, targetBasis, cadence)
-      verificationReadCache.set(key, pending)
-      return pending
-    },
-    evaluateMatrix: dependencies.evaluateMatrix ?? createMatrixEvaluator({
-      readCapability: readCapabilityOnce,
-      prepareCurrent: prepareCurrentOnce,
-      readCurrent: (seriesId, modelId, targetBasis, cadence) => {
-        const key = createPreparedReadKey(seriesId, modelId, targetBasis, cadence)
-        const cached = currentReadCache.get(key)
-        if (cached) {
-          return cached
-        }
-
-        const pending = readCurrent(seriesId, modelId, targetBasis, cadence)
-        currentReadCache.set(key, pending)
-        return pending
-      },
-      readVerification: (seriesId, modelId, targetBasis, cadence) => {
-        const key = createPreparedReadKey(seriesId, modelId, targetBasis, cadence)
-        const cached = verificationReadCache.get(key)
-        if (cached) {
-          return cached
-        }
-
-        const pending = readVerification(seriesId, modelId, targetBasis, cadence)
-        verificationReadCache.set(key, pending)
-        return pending
-      },
-    }),
+    return helpers.readCapabilityOnce(input, 'PRECOMPUTE', options, true)
   }
 
   return {
     async run(options: DemoCertificationOptions = {}): Promise<DemoCertificationReport> {
       const mode = options.mode ?? 'CERTIFY'
-      const selectedCohort = selectCohortEntries(resolvedDependencies.cohort, {
+      const selectedCohort = selectCohortEntries(cohort, {
         includeFallback: true,
         ...options,
       })
-      const releaseSnapshot = resolvedDependencies.resolveReleaseSnapshot(selectedCohort, mode)
+      const releaseSnapshot = resolveReleaseSnapshot(selectedCohort, mode)
       const priorBySeriesId = new Map((options.priorSnapshots ?? []).map((snapshot) => [snapshot.seriesId, snapshot]))
+
       const benchmarks = await Promise.all(selectedCohort.map(async (entry) => {
         const requiredTargetBases = resolveRequiredTargetBases(entry)
         const optionalTargetBases = resolveOptionalTargetBases(entry)
         const inspectedTargetBases = [...new Set([...requiredTargetBases, ...optionalTargetBases])]
         const requiredModels = resolveRequiredModels(entry)
         const requiredVerificationHorizons = resolveRequiredHorizons(entry)
+        const diagnostics = createBenchmarkDiagnosticsTracker(benchmarkTimeoutMs, options.diagnostics)
+
+        const readCapabilityOnce = (
+          input: BenchmarkForecastCurrentPreparationRequest,
+          phase: DemoBenchmarkDiagnosticPhase,
+          requestOptions?: DemoCertificationRequestOptions,
+          forceRefresh = false,
+        ) => {
+          const key = createVariantKey(input.seriesId, input.modelId, input.targetBasis)
+          if (!forceRefresh) {
+            const cached = capabilityCache.get(key)
+            if (cached) {
+              diagnostics.recordCacheHit({ phase, operation: 'READ_CAPABILITY', input, cacheStatus: 'hit' })
+              return cached
+            }
+          }
+
+          const pending = diagnostics.traceRemoteRequest({
+            phase,
+            operation: 'READ_CAPABILITY',
+            input,
+            cacheStatus: 'miss',
+          }, async (trackedRequestOptions) => {
+            const result = await readCapability(input, {
+              signal: requestOptions?.signal,
+              requestHeaders: mergeRequestHeaders(requestOptions?.requestHeaders, trackedRequestOptions.requestHeaders),
+            })
+            return {
+              result,
+              status: result.status,
+              reason: result.reason,
+            }
+          })
+          capabilityCache.set(key, pending)
+          return pending
+        }
+
+        const prepareCurrentOnce = (
+          input: BenchmarkForecastCurrentPreparationRequest,
+          phase: DemoBenchmarkDiagnosticPhase,
+          requestOptions?: DemoCertificationRequestOptions,
+        ) => {
+          const key = createVariantKey(input.seriesId, input.modelId, input.targetBasis)
+          const cached = preparationCache.get(key)
+          if (cached) {
+            diagnostics.recordCacheHit({ phase, operation: 'PREPARE_CURRENT', input, cacheStatus: 'hit' })
+            return cached
+          }
+
+          const pending = diagnostics.traceRemoteRequest({
+            phase,
+            operation: 'PREPARE_CURRENT',
+            input,
+            cacheStatus: 'miss',
+          }, async (trackedRequestOptions) => {
+            const result = await prepareCurrent(input, {
+              signal: requestOptions?.signal,
+              requestHeaders: mergeRequestHeaders(requestOptions?.requestHeaders, trackedRequestOptions.requestHeaders),
+            })
+            return {
+              result,
+              status: result.prepareStatus ?? result.state,
+              reason: result.reason,
+              bridgeTrace: result.trace ?? null,
+            }
+          })
+          preparationCache.set(key, pending)
+          return pending
+        }
+
+        const prepareVerificationOnce = (
+          input: BenchmarkForecastCurrentPreparationRequest,
+          phase: DemoBenchmarkDiagnosticPhase,
+          cadence?: { sourceFrequency: string, targetCadence: string },
+          requestOptions?: DemoCertificationRequestOptions,
+        ) => {
+          const key = createPreparedReadKey(input.seriesId, input.modelId, input.targetBasis, cadence)
+          const cached = verificationPreparationCache.get(key)
+          if (cached) {
+            diagnostics.recordCacheHit({ phase, operation: 'PREPARE_VERIFICATION', input, cadence, cacheStatus: 'hit' })
+            return cached
+          }
+
+          const pending = diagnostics.traceRemoteRequest({
+            phase,
+            operation: 'PREPARE_VERIFICATION',
+            input,
+            cadence,
+            cacheStatus: 'miss',
+          }, async (trackedRequestOptions) => {
+            const result = await prepareVerification(input, cadence, {
+              signal: requestOptions?.signal,
+              requestHeaders: mergeRequestHeaders(requestOptions?.requestHeaders, trackedRequestOptions.requestHeaders),
+            })
+            return {
+              result,
+              status: result.status,
+              reason: 'reason' in result ? result.reason ?? null : null,
+            }
+          })
+          verificationPreparationCache.set(key, pending)
+          return pending
+        }
+
+        const readCurrentOnce = (
+          seriesId: string,
+          modelId: ForecastPortfolioModelId,
+          targetBasis: ForecastTargetBasis,
+          phase: DemoBenchmarkDiagnosticPhase,
+          cadence?: { sourceFrequency: string, targetCadence: string },
+          requestOptions?: DemoCertificationRequestOptions,
+        ) => {
+          const key = createPreparedReadKey(seriesId, modelId, targetBasis, cadence)
+          const input = { seriesId, modelId, targetBasis }
+          const cached = currentReadCache.get(key)
+          if (cached) {
+            diagnostics.recordCacheHit({ phase, operation: 'READ_CURRENT', input, cadence, cacheStatus: 'hit' })
+            return cached
+          }
+
+          const pending = diagnostics.traceRemoteRequest({
+            phase,
+            operation: 'READ_CURRENT',
+            input,
+            cadence,
+            cacheStatus: 'miss',
+          }, async (trackedRequestOptions) => {
+            const result = await readCurrent(
+              seriesId,
+              modelId,
+              targetBasis,
+              cadence,
+              mergeRequestHeaders(requestOptions?.requestHeaders, trackedRequestOptions.requestHeaders),
+            )
+            return {
+              result,
+              status: result.status,
+              reason: 'reason' in result ? result.reason ?? null : null,
+            }
+          })
+          currentReadCache.set(key, pending)
+          return pending
+        }
+
+        const readVerificationOnce = (
+          seriesId: string,
+          modelId: ForecastPortfolioModelId,
+          targetBasis: ForecastTargetBasis,
+          phase: DemoBenchmarkDiagnosticPhase,
+          cadence?: { sourceFrequency: string, targetCadence: string },
+          requestOptions?: DemoCertificationRequestOptions,
+        ) => {
+          const key = createPreparedReadKey(seriesId, modelId, targetBasis, cadence)
+          const input = { seriesId, modelId, targetBasis }
+          const cached = verificationReadCache.get(key)
+          if (cached) {
+            diagnostics.recordCacheHit({ phase, operation: 'READ_VERIFICATION', input, cadence, cacheStatus: 'hit' })
+            return cached
+          }
+
+          const pending = diagnostics.traceRemoteRequest({
+            phase,
+            operation: 'READ_VERIFICATION',
+            input,
+            cadence,
+            cacheStatus: 'miss',
+          }, async (trackedRequestOptions) => {
+            const result = await readVerification(
+              seriesId,
+              modelId,
+              targetBasis,
+              cadence,
+              mergeRequestHeaders(requestOptions?.requestHeaders, trackedRequestOptions.requestHeaders),
+            )
+            return {
+              result,
+              status: result.status,
+              reason: 'reason' in result ? result.reason ?? null : null,
+            }
+          })
+          verificationReadCache.set(key, pending)
+          return pending
+        }
+
+        const matrixEvaluator = dependencies.evaluateMatrix ?? createMatrixEvaluator({
+          readCapability: (input, requestOptions) => readCapabilityOnce(input, 'MATRIX', requestOptions),
+          prepareCurrent: (input, requestOptions) => prepareCurrentOnce(input, 'MATRIX', requestOptions),
+          readCurrent: (seriesId, modelId, targetBasis, cadence, correlationHeaders) => (
+            readCurrentOnce(seriesId, modelId, targetBasis, 'MATRIX', cadence, { requestHeaders: correlationHeaders })
+          ),
+          readVerification: (seriesId, modelId, targetBasis, cadence, correlationHeaders) => (
+            readVerificationOnce(seriesId, modelId, targetBasis, 'MATRIX', cadence, { requestHeaders: correlationHeaders })
+          ),
+        })
+
+        const warmMatrixEvaluator = dependencies.evaluateMatrix ?? createMatrixEvaluator({
+          readCapability: (input, requestOptions) => readCapabilityOnce(input, 'WARM_REHEARSAL', requestOptions),
+          prepareCurrent: (input, requestOptions) => prepareCurrentOnce(input, 'WARM_REHEARSAL', requestOptions),
+          readCurrent: (seriesId, modelId, targetBasis, cadence, correlationHeaders) => (
+            readCurrentOnce(seriesId, modelId, targetBasis, 'WARM_REHEARSAL', cadence, { requestHeaders: correlationHeaders })
+          ),
+          readVerification: (seriesId, modelId, targetBasis, cadence, correlationHeaders) => (
+            readVerificationOnce(seriesId, modelId, targetBasis, 'WARM_REHEARSAL', cadence, { requestHeaders: correlationHeaders })
+          ),
+        })
+
         try {
           const benchmark = await withBenchmarkTimeout((async (signal): Promise<DemoBenchmarkCertification> => {
-          const variants: DemoVariantPreparationRecord[] = []
-          const capabilityChecks = await Promise.all(
-            requiredModels.flatMap((modelId) => (
-              inspectedTargetBases.map(async (targetBasis) => {
-                const input = { seriesId: entry.seriesId, modelId, targetBasis }
-                return {
-                  input,
-                  required: requiredTargetBases.includes(targetBasis),
-                  capability: await readCapabilityOnce(input, { signal }),
-                }
-              })
-            )),
-          )
+            const variants: DemoVariantPreparationRecord[] = []
+            const capabilityChecks = await diagnostics.tracePhase('PRECOMPUTE', async () => Promise.all(
+              requiredModels.flatMap((modelId) => (
+                inspectedTargetBases.map(async (targetBasis) => {
+                  const input = { seriesId: entry.seriesId, modelId, targetBasis }
+                  return {
+                    input,
+                    required: requiredTargetBases.includes(targetBasis),
+                    capability: await readCapabilityOnce(input, 'PRECOMPUTE', { signal }),
+                  }
+                })
+              )),
+            ))
 
-          for (const { input, required, capability } of capabilityChecks) {
-            if (!isCapabilityLawful(capability)) {
+            for (const { input, required, capability } of capabilityChecks) {
+              if (!isCapabilityLawful(capability)) {
+                variants.push({
+                  seriesId: entry.seriesId,
+                  modelId: input.modelId,
+                  targetBasis: input.targetBasis,
+                  targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
+                  required,
+                  capabilityStatus: capability.status,
+                  currentReadiness: capability.currentReadiness,
+                  verificationReadiness: capability.verificationReadiness,
+                  fullVerificationReadiness: capability.fullVerificationReadiness,
+                  preparationStatus: null,
+                  status: required ? 'FAIL' : 'UNSUPPORTED',
+                  reason: capability.reason ?? capability.status,
+                })
+                continue
+              }
+
+              const exactCapability = await prepareExactVerificationIfNeeded(
+                input,
+                capability,
+                mode,
+                { readCapabilityOnce, prepareVerificationOnce },
+                { signal },
+              )
+
+              if (mode === 'REVALIDATE') {
+                const warmReady = hasExactVerificationReadiness(exactCapability)
+                variants.push({
+                  seriesId: entry.seriesId,
+                  modelId: input.modelId,
+                  targetBasis: input.targetBasis,
+                  targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
+                  required,
+                  capabilityStatus: exactCapability.status,
+                  currentReadiness: exactCapability.currentReadiness,
+                  verificationReadiness: exactCapability.verificationReadiness,
+                  fullVerificationReadiness: exactCapability.fullVerificationReadiness,
+                  preparationStatus: null,
+                  status: warmReady ? 'PASS' : 'FAIL',
+                  reason: warmReady ? null : 'Warm revalidation requires both current readiness and exact historical verification readiness to remain READY.',
+                })
+                continue
+              }
+
+              if (hasExactVerificationReadiness(exactCapability)) {
+                variants.push({
+                  seriesId: entry.seriesId,
+                  modelId: input.modelId,
+                  targetBasis: input.targetBasis,
+                  targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
+                  required,
+                  capabilityStatus: exactCapability.status,
+                  currentReadiness: exactCapability.currentReadiness,
+                  verificationReadiness: exactCapability.verificationReadiness,
+                  fullVerificationReadiness: exactCapability.fullVerificationReadiness,
+                  preparationStatus: null,
+                  status: 'PASS',
+                  reason: null,
+                })
+                continue
+              }
+
+              if (!isPrepareEligible(exactCapability)) {
+                variants.push({
+                  seriesId: entry.seriesId,
+                  modelId: input.modelId,
+                  targetBasis: input.targetBasis,
+                  targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
+                  required,
+                  capabilityStatus: exactCapability.status,
+                  currentReadiness: exactCapability.currentReadiness,
+                  verificationReadiness: exactCapability.verificationReadiness,
+                  fullVerificationReadiness: exactCapability.fullVerificationReadiness,
+                  preparationStatus: null,
+                  status: 'FAIL',
+                  reason: exactCapability.reason ?? exactCapability.status,
+                })
+                continue
+              }
+
+              const preparation = await prepareCurrentOnce(input, 'PRECOMPUTE', { signal })
+              const warmedCapability = await readCapabilityOnce(input, 'PRECOMPUTE', { signal }, true)
+              const exactCapabilityAfterPreparation = await prepareExactVerificationIfNeeded(
+                input,
+                warmedCapability,
+                mode,
+                { readCapabilityOnce, prepareVerificationOnce },
+                { signal },
+              )
+              const exactReadyAfterPreparation = hasExactVerificationReadiness(exactCapabilityAfterPreparation)
               variants.push({
                 seriesId: entry.seriesId,
                 modelId: input.modelId,
                 targetBasis: input.targetBasis,
-                targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
+                targetSemantics: preparation.targetSemantics,
                 required,
-                capabilityStatus: capability.status,
-                currentReadiness: capability.currentReadiness,
-                verificationReadiness: capability.verificationReadiness,
-                fullVerificationReadiness: capability.fullVerificationReadiness,
-                preparationStatus: null,
-                status: required ? 'FAIL' : 'UNSUPPORTED',
-                reason: capability.reason ?? capability.status,
+                capabilityStatus: exactCapabilityAfterPreparation.status,
+                currentReadiness: exactCapabilityAfterPreparation.currentReadiness,
+                verificationReadiness: exactCapabilityAfterPreparation.verificationReadiness,
+                fullVerificationReadiness: exactCapabilityAfterPreparation.fullVerificationReadiness,
+                preparationStatus: preparation.prepareStatus,
+                status: preparation.state === 'READY' && exactReadyAfterPreparation ? 'PASS' : 'FAIL',
+                reason: preparation.state !== 'READY'
+                  ? preparation.reason ?? exactCapabilityAfterPreparation.reason ?? preparation.state
+                  : exactReadyAfterPreparation
+                    ? null
+                    : exactCapabilityAfterPreparation.reason ?? 'Exact historical verification readiness is not READY after current preparation.',
               })
-              continue
             }
 
-            const exactCapability = await prepareExactVerificationIfNeeded(input, capability, mode, { signal })
-
-            if (mode === 'REVALIDATE') {
-              const warmReady = hasExactVerificationReadiness(exactCapability)
-              variants.push({
-                seriesId: entry.seriesId,
-                modelId: input.modelId,
-                targetBasis: input.targetBasis,
-                targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
-                required,
-                capabilityStatus: exactCapability.status,
-                currentReadiness: exactCapability.currentReadiness,
-                verificationReadiness: exactCapability.verificationReadiness,
-                fullVerificationReadiness: exactCapability.fullVerificationReadiness,
-                preparationStatus: null,
-                status: warmReady ? 'PASS' : 'FAIL',
-                reason: warmReady ? null : 'Warm revalidation requires both current readiness and exact historical verification readiness to remain READY.',
-              })
-              continue
+            const requiredVariants = variants.filter((variant) => variant.required)
+            const precompute = {
+              status: requiredVariants.every((variant) => variant.status === 'PASS') ? 'PASS' as DemoStatus : 'FAIL' as DemoStatus,
+              variants,
+              reason: requiredVariants.find((variant) => variant.status !== 'PASS')?.reason ?? null,
             }
 
-            if (hasExactVerificationReadiness(exactCapability)) {
-              variants.push({
-                seriesId: entry.seriesId,
-                modelId: input.modelId,
-                targetBasis: input.targetBasis,
-                targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
-                required,
-                capabilityStatus: exactCapability.status,
-                currentReadiness: exactCapability.currentReadiness,
-                verificationReadiness: exactCapability.verificationReadiness,
-                fullVerificationReadiness: exactCapability.fullVerificationReadiness,
-                preparationStatus: null,
-                status: 'PASS',
-                reason: null,
-              })
-              continue
+            const matrixReport = await diagnostics.tracePhase('MATRIX', async () => (
+              matrixEvaluator(entry.seriesId, mode === 'CERTIFY', { signal })
+            ))
+            const requiredCells = filterRequiredCells(matrixReport, requiredTargetBases, requiredVerificationHorizons)
+            const matrix = resolveMatrixGate(requiredCells.current, requiredCells.verification)
+            const freshness = resolveFreshnessGate(requiredCells.current, requiredCells.verification)
+            const reread = {
+              status: matrix.status === 'PASS' ? 'PASS' as DemoStatus : 'FAIL' as DemoStatus,
+              reason: matrix.status === 'PASS' ? null : matrix.failingReasons[0] ?? 'Stage 2 matrix did not stay fully PASS.',
             }
+            const warmRehearsal = await diagnostics.tracePhase('WARM_REHEARSAL', async () => runWarmRehearsal(
+              entry,
+              requiredTargetBases,
+              requiredModels,
+              requiredVerificationHorizons,
+              {
+                readCapability: (input, requestOptions) => readCapabilityOnce(input, 'WARM_REHEARSAL', requestOptions),
+                readCurrent: (seriesId, modelId, targetBasis, cadence, correlationHeaders) => (
+                  readCurrentOnce(seriesId, modelId, targetBasis, 'WARM_REHEARSAL', cadence, { signal, requestHeaders: correlationHeaders })
+                ),
+                readVerification: (seriesId, modelId, targetBasis, cadence, correlationHeaders) => (
+                  readVerificationOnce(seriesId, modelId, targetBasis, 'WARM_REHEARSAL', cadence, { signal, requestHeaders: correlationHeaders })
+                ),
+                evaluateMatrix: (seriesId, allowPrepare, requestOptions) => (
+                  warmMatrixEvaluator(seriesId, allowPrepare, requestOptions)
+                ),
+              },
+              { signal },
+            ))
+            const fingerprintDigest = resolveFingerprintDigest(freshness.fingerprintRefs)
+            const priorSnapshot = priorBySeriesId.get(entry.seriesId)
+            const reason = resolveDemoSafeReason(
+              precompute,
+              reread,
+              matrix,
+              freshness,
+              warmRehearsal,
+              priorSnapshot,
+              fingerprintDigest,
+              releaseSnapshot.deployedRevision,
+            )
 
-            if (!isPrepareEligible(exactCapability)) {
-              variants.push({
-                seriesId: entry.seriesId,
-                modelId: input.modelId,
-                targetBasis: input.targetBasis,
-                targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
-                required,
-                capabilityStatus: exactCapability.status,
-                currentReadiness: exactCapability.currentReadiness,
-                verificationReadiness: exactCapability.verificationReadiness,
-                fullVerificationReadiness: exactCapability.fullVerificationReadiness,
-                preparationStatus: null,
-                status: 'FAIL',
-                reason: exactCapability.reason ?? exactCapability.status,
-              })
-              continue
-            }
-
-            const preparation = await resolvedDependencies.prepareCurrent(input, { signal })
-            const warmedCapability = await readCapabilityOnce(input, { signal }, true)
-            const exactCapabilityAfterPreparation = await prepareExactVerificationIfNeeded(input, warmedCapability, mode, { signal })
-            const exactReadyAfterPreparation = hasExactVerificationReadiness(exactCapabilityAfterPreparation)
-            variants.push({
+            return {
               seriesId: entry.seriesId,
-              modelId: input.modelId,
-              targetBasis: input.targetBasis,
-              targetSemantics: preparation.targetSemantics,
-              required,
-              capabilityStatus: exactCapabilityAfterPreparation.status,
-              currentReadiness: exactCapabilityAfterPreparation.currentReadiness,
-              verificationReadiness: exactCapabilityAfterPreparation.verificationReadiness,
-              fullVerificationReadiness: exactCapabilityAfterPreparation.fullVerificationReadiness,
-              preparationStatus: preparation.prepareStatus,
-              status: preparation.state === 'READY' && exactReadyAfterPreparation ? 'PASS' : 'FAIL',
-              reason: preparation.state !== 'READY'
-                ? preparation.reason ?? exactCapabilityAfterPreparation.reason ?? preparation.state
-                : exactReadyAfterPreparation
-                  ? null
-                  : exactCapabilityAfterPreparation.reason ?? 'Exact historical verification readiness is not READY after current preparation.',
-            })
-          }
-
-          const requiredVariants = variants.filter((variant) => variant.required)
-          const precompute = {
-            status: requiredVariants.every((variant) => variant.status === 'PASS') ? 'PASS' as DemoStatus : 'FAIL' as DemoStatus,
-            variants,
-            reason: requiredVariants.find((variant) => variant.status !== 'PASS')?.reason ?? null,
-          }
-
-          const matrixReport = await resolvedDependencies.evaluateMatrix(entry.seriesId, mode === 'CERTIFY', { signal })
-          const requiredCells = filterRequiredCells(matrixReport, requiredTargetBases, requiredVerificationHorizons)
-          const matrix = resolveMatrixGate(requiredCells.current, requiredCells.verification)
-          const freshness = resolveFreshnessGate(requiredCells.current, requiredCells.verification)
-          const reread = {
-            status: matrix.status === 'PASS' ? 'PASS' as DemoStatus : 'FAIL' as DemoStatus,
-            reason: matrix.status === 'PASS' ? null : matrix.failingReasons[0] ?? 'Stage 2 matrix did not stay fully PASS.',
-          }
-          const warmRehearsal = await runWarmRehearsal(
-            entry,
-            requiredTargetBases,
-            requiredModels,
-            requiredVerificationHorizons,
-            {
-              readCapability: resolvedDependencies.readCapability,
-              readCurrent: resolvedDependencies.readCurrent,
-              readVerification: resolvedDependencies.readVerification,
-              evaluateMatrix: resolvedDependencies.evaluateMatrix,
-            },
-            { signal },
-          )
-          const fingerprintDigest = resolveFingerprintDigest(freshness.fingerprintRefs)
-          const priorSnapshot = priorBySeriesId.get(entry.seriesId)
-          const reason = resolveDemoSafeReason(
-            precompute,
-            reread,
-            matrix,
-            freshness,
-            warmRehearsal,
-            priorSnapshot,
-            fingerprintDigest,
-            releaseSnapshot.deployedRevision,
-          )
-
-          return {
-            seriesId: entry.seriesId,
-            benchmarkName: entry.benchmarkName,
-            group: entry.group,
-            requiredTargetBases,
-            optionalTargetBases,
-            requiredModels,
-            requiredVerificationHorizons,
-            precompute,
-            reread,
-            matrix,
-            freshness,
-            warmRehearsal,
-            demoSafe: reason ? 'NO' : 'YES',
-            reason,
-            lastVerifiedAt: resolvedDependencies.now(),
-            deployedRevision: releaseSnapshot.deployedRevision,
-            fingerprintDigest,
-          }
-          }), resolvedDependencies.benchmarkTimeoutMs)
+              benchmarkName: entry.benchmarkName,
+              group: entry.group,
+              requiredTargetBases,
+              optionalTargetBases,
+              requiredModels,
+              requiredVerificationHorizons,
+              precompute,
+              reread,
+              matrix,
+              freshness,
+              warmRehearsal,
+              demoSafe: reason ? 'NO' : 'YES',
+              reason,
+              lastVerifiedAt: now(),
+              deployedRevision: releaseSnapshot.deployedRevision,
+              fingerprintDigest,
+              diagnostics: diagnostics.build(),
+            }
+          }), benchmarkTimeoutMs, () => diagnostics.snapshotTimeout())
 
           return benchmark
         } catch (error) {
@@ -1069,8 +1606,9 @@ export function createDemoCertificationService(
             requiredModels,
             requiredVerificationHorizons,
             reason,
-            resolvedDependencies.now(),
+            now(),
             releaseSnapshot.deployedRevision,
+            diagnostics.build(),
           )
         }
       }))

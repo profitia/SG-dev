@@ -1021,6 +1021,7 @@ async function readInteractiveForecastCapability(
   seriesId: string,
   model: ForecastPortfolioModelId,
   targetBasis: ForecastTargetBasis,
+  correlationHeaders: Record<string, string> = {},
 ): Promise<InteractiveForecastCapabilityResult> {
   const token = readSgRuntimeInternalForecastServiceToken()
 
@@ -1043,6 +1044,7 @@ async function readInteractiveForecastCapability(
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,
+        ...correlationHeaders,
       },
     })
 
@@ -1103,7 +1105,7 @@ export async function getBenchmarkForecastCurrent(
 
     let capability: InteractiveForecastCapabilityResult | null = null
     if (readSgRuntimeInternalForecastServiceToken()) {
-      capability = await readInteractiveForecastCapability(seriesId, model, targetBasis)
+      capability = await readInteractiveForecastCapability(seriesId, model, targetBasis, correlationHeaders)
     }
 
     if (capability && (capability.status === 'NOT_LAWFUL' || capability.reason === 'NOT_LAWFUL')) {
