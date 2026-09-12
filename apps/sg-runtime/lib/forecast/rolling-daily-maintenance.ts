@@ -33,6 +33,10 @@ import {
   resolveForecastStage3HeartbeatIntervalMs,
   startForecastExecutionLeaseHeartbeat,
 } from '@/lib/forecast/stage3-lease-heartbeat'
+import {
+  traceForecastRequestDiagnosticsSpan,
+  updateForecastRequestDiagnosticsIdentity,
+} from '@/lib/forecast/request-diagnostics'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 
@@ -1546,27 +1550,45 @@ export function createRollingDailyMaintenanceService(
         let failurePhase: 'COMPUTE' | 'PERSISTENCE' | 'FINALIZATION' = 'COMPUTE'
 
         try {
+          updateForecastRequestDiagnosticsIdentity({
+            seriesId: input.seriesId,
+            modelId: input.modelId,
+            targetBasis,
+            targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+            sourceFrequency: 'DAILY',
+            targetCadence: 'DAILY',
+          })
           await recordHistoricalExecutionEvent(ownership, 'OWNER', 'single_flight_owner_acquired')
           await recordHistoricalExecutionEvent(ownership, 'OWNER', 'compute_started')
           const computeStartedAt = performance.now()
-          const bridgeResponse = await resolvedDependencies.runner.run({
-            seriesId: input.seriesId,
-            modelId: input.modelId,
-            inputSource: identity.inputSource,
-            targetBasis,
-            methodId: ROLLING_DAILY_METHOD_ID,
-            methodVersion: ROLLING_DAILY_METHOD_VERSION,
-            historicalOriginStartDate,
-            minimumTrainingObservations,
-            minimumCalibrationSamples,
-            history,
-            existingRecords: input.fullRebuild || bootstrapHistoricalIfMissing ? [] : existingRecords,
-            lastProcessedOriginDate: input.fullRebuild || bootstrapHistoricalIfMissing ? null : state?.lastProcessedOriginAt?.slice(0, 10) ?? null,
-            maxOriginsPerRun: input.maxOriginsPerRun,
-            sourceHistoryFingerprint,
-            forceCalibrationRefresh,
-            trace: trace ?? undefined,
-          })
+          const bridgeResponse = await traceForecastRequestDiagnosticsSpan(
+            'rolling_daily_historical_compute',
+            'COMPUTE',
+            () => resolvedDependencies.runner.run({
+              seriesId: input.seriesId,
+              modelId: input.modelId,
+              inputSource: identity.inputSource,
+              targetBasis,
+              methodId: ROLLING_DAILY_METHOD_ID,
+              methodVersion: ROLLING_DAILY_METHOD_VERSION,
+              historicalOriginStartDate,
+              minimumTrainingObservations,
+              minimumCalibrationSamples,
+              history,
+              existingRecords: input.fullRebuild || bootstrapHistoricalIfMissing ? [] : existingRecords,
+              lastProcessedOriginDate: input.fullRebuild || bootstrapHistoricalIfMissing ? null : state?.lastProcessedOriginAt?.slice(0, 10) ?? null,
+              maxOriginsPerRun: input.maxOriginsPerRun,
+              sourceHistoryFingerprint,
+              forceCalibrationRefresh,
+              trace: trace ?? undefined,
+            }),
+            {
+              seriesId: input.seriesId,
+              modelId: input.modelId,
+              targetBasis,
+              maxOriginsPerRun: input.maxOriginsPerRun ?? null,
+            },
+          )
 
           if (bridgeResponse.status === 'FAILED') {
             emitRollingDailyHistoricalTrace(trace, 'bridge_failed', {
@@ -1602,22 +1624,34 @@ export function createRollingDailyMaintenanceService(
             })
             await recordHistoricalExecutionEvent(ownership, 'OWNER', 'persistence_started')
             ownership = await heartbeat.renewNow()
-            await resolvedDependencies.repository.applyMaintenanceUpdate({
-              identity,
-              inputRunId: null,
-              historicalOriginStartAt: `${historicalOriginStartDate}T00:00:00.000Z`,
-              minimumTrainingObservations,
-              minimumCalibrationSamples,
-              latestSourceObservationAt: bridgeResponse.sourceHistory.latestObservationDate,
-              latestSourceHistoryStartAt: bridgeResponse.sourceHistory.startDate,
-              latestSourceObservationCount: bridgeResponse.sourceHistory.observationCount,
-              latestSourceHistoryFingerprint: bridgeResponse.sourceHistory.historyFingerprint,
-              lastProcessedOriginAt: bridgeResponse.maintenance.lastProcessedOriginDate,
-              lastMaturedObservedAt: bridgeResponse.maintenance.lastMaturedObservedAt,
-              newRecords: bridgeResponse.newRecords,
-              maturedRecords: bridgeResponse.maturedRecords,
-              calibrationGroups: bridgeResponse.calibrationGroups,
-            })
+            await traceForecastRequestDiagnosticsSpan(
+              'rolling_daily_historical_persist',
+              'PERSISTENCE',
+              () => resolvedDependencies.repository.applyMaintenanceUpdate({
+                identity,
+                inputRunId: null,
+                historicalOriginStartAt: `${historicalOriginStartDate}T00:00:00.000Z`,
+                minimumTrainingObservations,
+                minimumCalibrationSamples,
+                latestSourceObservationAt: bridgeResponse.sourceHistory.latestObservationDate,
+                latestSourceHistoryStartAt: bridgeResponse.sourceHistory.startDate,
+                latestSourceObservationCount: bridgeResponse.sourceHistory.observationCount,
+                latestSourceHistoryFingerprint: bridgeResponse.sourceHistory.historyFingerprint,
+                lastProcessedOriginAt: bridgeResponse.maintenance.lastProcessedOriginDate,
+                lastMaturedObservedAt: bridgeResponse.maintenance.lastMaturedObservedAt,
+                newRecords: bridgeResponse.newRecords,
+                maturedRecords: bridgeResponse.maturedRecords,
+                calibrationGroups: bridgeResponse.calibrationGroups,
+              }),
+              {
+                seriesId: input.seriesId,
+                modelId: input.modelId,
+                targetBasis,
+                newRecordCount: bridgeResponse.newRecords.length,
+                maturedRecordCount: bridgeResponse.maturedRecords.length,
+                calibrationGroupCount: bridgeResponse.calibrationGroups.length,
+              },
+            )
             emitRollingDailyHistoricalTrace(trace, 'verification_persist_completed', {
               seriesId: input.seriesId,
               modelId: input.modelId,

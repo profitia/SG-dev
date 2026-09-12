@@ -11,6 +11,7 @@ import {
   forecastStressTelemetry,
   type ForecastStressTelemetry,
 } from '@/lib/forecast/stress-telemetry'
+import { traceForecastRequestDiagnosticsSpan } from '@/lib/forecast/request-diagnostics'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 
 type MarketDataSource = 'postgres' | 'macrobond'
@@ -413,7 +414,12 @@ export function createBenchmarkMarketDataService(
 
       try {
         const dbReadStartedAt = performance.now()
-        snapshot = await readStoredSeries(seriesId)
+        snapshot = await traceForecastRequestDiagnosticsSpan(
+          'market_data_stored_series_read',
+          'SOURCE_DATA',
+          () => readStoredSeries(seriesId),
+          { seriesId, requestedRange },
+        )
         dbReadMs = performance.now() - dbReadStartedAt
         resolvedDependencies.telemetry.emit('database_read', {
           operation: 'market_history',
@@ -476,7 +482,12 @@ export function createBenchmarkMarketDataService(
         const providerFetchStartedAt = performance.now()
         let providerHistory: BenchmarkHistoricalSeriesResult
         try {
-          providerHistory = await resolvedDependencies.fetchProviderSeriesHistory(seriesId)
+          providerHistory = await traceForecastRequestDiagnosticsSpan(
+            'market_data_provider_fetch',
+            'SOURCE_DATA',
+            () => resolvedDependencies.fetchProviderSeriesHistory(seriesId),
+            { seriesId, requestedRange, provider: 'macrobond' },
+          )
         } catch (error) {
           providerFetchMs = performance.now() - providerFetchStartedAt
           resolvedDependencies.telemetry.emit('provider_call', {
@@ -503,7 +514,12 @@ export function createBenchmarkMarketDataService(
         if (!dbReadFailed) {
           try {
             const persistStartedAt = performance.now()
-            const persisted = await resolvedDependencies.repository.upsertSeriesHistory(history)
+            const persisted = await traceForecastRequestDiagnosticsSpan(
+              'market_data_history_persist',
+              'PERSISTENCE',
+              () => resolvedDependencies.repository.upsertSeriesHistory(history),
+              { seriesId, requestedRange },
+            )
             persistMs = performance.now() - persistStartedAt
             hydratedObservationCount = persisted.hydratedObservationCount
             resolvedDependencies.telemetry.emit('persistence', {

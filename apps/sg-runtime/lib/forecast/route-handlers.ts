@@ -29,6 +29,14 @@ import {
   forecastStressTelemetry,
   type ForecastStressTelemetry,
 } from '@/lib/forecast/stress-telemetry'
+import {
+  appendForecastRequestDiagnosticsHeader,
+  isForecastRequestDiagnosticsEnabled,
+  noteForecastRequestDiagnosticsEvent,
+  runWithForecastRequestDiagnostics,
+  traceForecastRequestDiagnosticsSpan,
+  updateForecastRequestDiagnosticsIdentity,
+} from '@/lib/forecast/request-diagnostics'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 
 type PreparedCurrentResult = BenchmarkForecastCurrentResult | Awaited<ReturnType<typeof readPreparedRollingDailyCurrentForecast>>
@@ -118,13 +126,52 @@ export function createInternalForecastVerificationResolver(
       return resolveGenericPeriodVerification(input)
     }
 
-    await preparePointInTimeVerification({
+    updateForecastRequestDiagnosticsIdentity({
+      operationType: 'VERIFICATION_MATERIALIZATION',
       seriesId: input.seriesId,
       modelId: input.modelId,
+      targetBasis: input.targetBasis,
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
     })
 
-    return readPointInTimeVerification(input)
+    await traceForecastRequestDiagnosticsSpan(
+      'point_in_time_verification_prepare',
+      'APPLICATION',
+      () => preparePointInTimeVerification({
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+      }),
+      { seriesId: input.seriesId, modelId: input.modelId },
+    )
+
+    return traceForecastRequestDiagnosticsSpan(
+      'point_in_time_verification_read',
+      'DB_OPERATION',
+      () => readPointInTimeVerification(input),
+      { seriesId: input.seriesId, modelId: input.modelId },
+    )
   }
+}
+
+async function runForecastRouteWithDiagnostics(
+  request: NextRequest,
+  requestId: string,
+  operationType: 'READ_ONLY_PREPARED' | 'VERIFICATION_MATERIALIZATION' | 'PRODUCTION',
+  operation: () => Promise<ReturnType<typeof cognitionOk>>,
+) {
+  return runWithForecastRequestDiagnostics({
+    enabled: isForecastRequestDiagnosticsEnabled(request.headers),
+    requestId,
+    route: request.nextUrl.pathname,
+    method: request.method,
+    operationType,
+  }, async () => {
+    noteForecastRequestDiagnosticsEvent('handler_entered', 'HTTP', { requestId })
+    const response = await operation()
+    return appendForecastRequestDiagnosticsHeader(response)
+  })
 }
 
 export function createCurrentForecastRouteHandler(
@@ -132,19 +179,27 @@ export function createCurrentForecastRouteHandler(
   telemetry: Pick<ForecastStressTelemetry, 'run' | 'sampleResources'> = forecastStressTelemetry,
 ) {
   return withCognitionAuth(async (_auth, request: NextRequest) => {
-    const parsed = parseSearchParams(request, ForecastRouteQuerySchema)
-    if (!parsed.ok) {
-      return cognitionError('VALIDATION_ERROR', parsed.message, 400)
-    }
+    return runForecastRouteWithDiagnostics(request, request.headers.get('x-request-id') ?? _auth.requestId, 'READ_ONLY_PREPARED', async () => {
+      const parsed = parseSearchParams(request, ForecastRouteQuerySchema)
+      if (!parsed.ok) {
+        return cognitionError('VALIDATION_ERROR', parsed.message, 400)
+      }
 
-    const input = toForecastRequestInput(parsed.data)
-    const result = await telemetry.run(forecastStressContextFromHeaders(request, input), async () => {
-      telemetry.sampleResources()
-      const resolved = await resolveCurrentForecast(input)
-      telemetry.sampleResources()
-      return resolved
+      const input = toForecastRequestInput(parsed.data)
+      updateForecastRequestDiagnosticsIdentity({
+        operationType: 'READ_ONLY_PREPARED',
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis: input.targetBasis,
+      })
+      const result = await telemetry.run(forecastStressContextFromHeaders(request, input), async () => {
+        telemetry.sampleResources()
+        const resolved = await resolveCurrentForecast(input)
+        telemetry.sampleResources()
+        return resolved
+      })
+      return cognitionOk(result)
     })
-    return cognitionOk(result)
   })
 }
 
@@ -153,19 +208,27 @@ export function createInternalPreparedCurrentForecastRouteHandler(
   telemetry: Pick<ForecastStressTelemetry, 'run' | 'sampleResources'> = forecastStressTelemetry,
 ) {
   return withInternalForecastServiceAuth(async (_principal, request: NextRequest) => {
-    const parsed = parseSearchParams(request, ForecastRouteQuerySchema)
-    if (!parsed.ok) {
-      return cognitionError('VALIDATION_ERROR', parsed.message, 400)
-    }
+    return runForecastRouteWithDiagnostics(request, request.headers.get('x-request-id') ?? _principal.requestId, 'READ_ONLY_PREPARED', async () => {
+      const parsed = parseSearchParams(request, ForecastRouteQuerySchema)
+      if (!parsed.ok) {
+        return cognitionError('VALIDATION_ERROR', parsed.message, 400)
+      }
 
-    const input = toForecastRequestInput(parsed.data)
-    const result = await telemetry.run(forecastStressContextFromHeaders(request, input), async () => {
-      telemetry.sampleResources()
-      const resolved = await resolveCurrentForecast(input)
-      telemetry.sampleResources()
-      return resolved
+      const input = toForecastRequestInput(parsed.data)
+      updateForecastRequestDiagnosticsIdentity({
+        operationType: 'READ_ONLY_PREPARED',
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis: input.targetBasis,
+      })
+      const result = await telemetry.run(forecastStressContextFromHeaders(request, input), async () => {
+        telemetry.sampleResources()
+        const resolved = await resolveCurrentForecast(input)
+        telemetry.sampleResources()
+        return resolved
+      })
+      return cognitionOk(result)
     })
-    return cognitionOk(result)
   })
 }
 
@@ -174,19 +237,27 @@ export function createForecastVerificationRouteHandler(
   telemetry: Pick<ForecastStressTelemetry, 'run' | 'sampleResources'> = forecastStressTelemetry,
 ) {
   return withCognitionAuth(async (_auth, request: NextRequest) => {
-    const parsed = parseSearchParams(request, ForecastRouteQuerySchema)
-    if (!parsed.ok) {
-      return cognitionError('VALIDATION_ERROR', parsed.message, 400)
-    }
+    return runForecastRouteWithDiagnostics(request, request.headers.get('x-request-id') ?? _auth.requestId, 'READ_ONLY_PREPARED', async () => {
+      const parsed = parseSearchParams(request, ForecastRouteQuerySchema)
+      if (!parsed.ok) {
+        return cognitionError('VALIDATION_ERROR', parsed.message, 400)
+      }
 
-    const input = toForecastRequestInput(parsed.data)
-    const result = await telemetry.run(forecastStressContextFromHeaders(request, input), async () => {
-      telemetry.sampleResources()
-      const resolved = await resolveForecastVerification(input)
-      telemetry.sampleResources()
-      return resolved
+      const input = toForecastRequestInput(parsed.data)
+      updateForecastRequestDiagnosticsIdentity({
+        operationType: 'READ_ONLY_PREPARED',
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis: input.targetBasis,
+      })
+      const result = await telemetry.run(forecastStressContextFromHeaders(request, input), async () => {
+        telemetry.sampleResources()
+        const resolved = await resolveForecastVerification(input)
+        telemetry.sampleResources()
+        return resolved
+      })
+      return cognitionOk(result)
     })
-    return cognitionOk(result)
   })
 }
 
@@ -195,19 +266,27 @@ export function createInternalPreparedForecastVerificationRouteHandler(
   telemetry: Pick<ForecastStressTelemetry, 'run' | 'sampleResources'> = forecastStressTelemetry,
 ) {
   return withInternalForecastServiceAuth(async (_principal, request: NextRequest) => {
-    const parsed = parseSearchParams(request, ForecastRouteQuerySchema)
-    if (!parsed.ok) {
-      return cognitionError('VALIDATION_ERROR', parsed.message, 400)
-    }
+    return runForecastRouteWithDiagnostics(request, request.headers.get('x-request-id') ?? _principal.requestId, 'READ_ONLY_PREPARED', async () => {
+      const parsed = parseSearchParams(request, ForecastRouteQuerySchema)
+      if (!parsed.ok) {
+        return cognitionError('VALIDATION_ERROR', parsed.message, 400)
+      }
 
-    const input = toForecastRequestInput(parsed.data)
-    const result = await telemetry.run(forecastStressContextFromHeaders(request, input), async () => {
-      telemetry.sampleResources()
-      const resolved = await resolveForecastVerification(input)
-      telemetry.sampleResources()
-      return resolved
+      const input = toForecastRequestInput(parsed.data)
+      updateForecastRequestDiagnosticsIdentity({
+        operationType: 'READ_ONLY_PREPARED',
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis: input.targetBasis,
+      })
+      const result = await telemetry.run(forecastStressContextFromHeaders(request, input), async () => {
+        telemetry.sampleResources()
+        const resolved = await resolveForecastVerification(input)
+        telemetry.sampleResources()
+        return resolved
+      })
+      return cognitionOk(result)
     })
-    return cognitionOk(result)
   })
 }
 
@@ -216,19 +295,27 @@ export function createInternalForecastVerificationRouteHandler(
   telemetry: Pick<ForecastStressTelemetry, 'run' | 'sampleResources'> = forecastStressTelemetry,
 ) {
   return withInternalForecastServiceAuth(async (_principal, request: NextRequest) => {
-    const parsed = parseSearchParams(request, ForecastRouteQuerySchema)
-    if (!parsed.ok) {
-      return cognitionError('VALIDATION_ERROR', parsed.message, 400)
-    }
+    return runForecastRouteWithDiagnostics(request, request.headers.get('x-request-id') ?? _principal.requestId, 'VERIFICATION_MATERIALIZATION', async () => {
+      const parsed = parseSearchParams(request, ForecastRouteQuerySchema)
+      if (!parsed.ok) {
+        return cognitionError('VALIDATION_ERROR', parsed.message, 400)
+      }
 
-    const input = toForecastRequestInput(parsed.data)
-    const result = await telemetry.run(forecastStressContextFromHeaders(request, input), async () => {
-      telemetry.sampleResources()
-      const resolved = await resolveForecastVerification(input)
-      telemetry.sampleResources()
-      return resolved
+      const input = toForecastRequestInput(parsed.data)
+      updateForecastRequestDiagnosticsIdentity({
+        operationType: 'VERIFICATION_MATERIALIZATION',
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis: input.targetBasis,
+      })
+      const result = await telemetry.run(forecastStressContextFromHeaders(request, input), async () => {
+        telemetry.sampleResources()
+        const resolved = await resolveForecastVerification(input)
+        telemetry.sampleResources()
+        return resolved
+      })
+      return cognitionOk(result)
     })
-    return cognitionOk(result)
   })
 }
 
@@ -237,22 +324,35 @@ export function createInternalProductionForecastRouteHandler(
   telemetry: Pick<ForecastStressTelemetry, 'run' | 'sampleResources'> = forecastStressTelemetry,
 ) {
   return withInternalForecastServiceAuth(async (_principal, request: NextRequest) => {
-    const parsed = parseSearchParams(request, ProductionForecastRouteQuerySchema)
-    if (!parsed.ok) {
-      return cognitionError('VALIDATION_ERROR', parsed.message, 400)
-    }
+    return runForecastRouteWithDiagnostics(request, request.headers.get('x-request-id') ?? _principal.requestId, 'PRODUCTION', async () => {
+      const parsed = parseSearchParams(request, ProductionForecastRouteQuerySchema)
+      if (!parsed.ok) {
+        return cognitionError('VALIDATION_ERROR', parsed.message, 400)
+      }
 
-    const input = toProductionForecastRequestInput(parsed.data)
-    const result = await telemetry.run(forecastStressContextFromHeaders(request, {
-      seriesId: input.seriesId,
-      modelId: input.modelId,
-      targetBasis: input.forecastMethod,
-    }), async () => {
-      telemetry.sampleResources()
-      const resolved = await resolveInternalProductionForecast(input)
-      telemetry.sampleResources()
-      return resolved
+      const input = toProductionForecastRequestInput(parsed.data)
+      updateForecastRequestDiagnosticsIdentity({
+        operationType: 'PRODUCTION',
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis: input.forecastMethod,
+      })
+      const result = await telemetry.run(forecastStressContextFromHeaders(request, {
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis: input.forecastMethod,
+      }), async () => {
+        telemetry.sampleResources()
+        const resolved = await traceForecastRequestDiagnosticsSpan(
+          'production_forecast_resolution',
+          'APPLICATION',
+          () => resolveInternalProductionForecast(input),
+          { seriesId: input.seriesId, modelId: input.modelId, targetBasis: input.forecastMethod },
+        )
+        telemetry.sampleResources()
+        return resolved
+      })
+      return cognitionOk(result)
     })
-    return cognitionOk(result)
   })
 }

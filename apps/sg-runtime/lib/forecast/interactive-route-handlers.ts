@@ -15,6 +15,14 @@ import {
   type ProgressiveForecastPreparationRequest,
   type ProgressiveForecastPreparationSnapshot,
 } from '@/lib/forecast/progressive-preparation'
+import {
+  appendForecastRequestDiagnosticsHeader,
+  isForecastRequestDiagnosticsEnabled,
+  noteForecastRequestDiagnosticsEvent,
+  runWithForecastRequestDiagnostics,
+  traceForecastRequestDiagnosticsSpan,
+  updateForecastRequestDiagnosticsIdentity,
+} from '@/lib/forecast/request-diagnostics'
 
 type CapabilityResolver = (input: InteractiveForecastIdentity) => Promise<InteractiveForecastCapabilityResult>
 type CurrentPreparationResolver = (input: InteractiveForecastIdentity) => Promise<InteractiveForecastPreparationResult>
@@ -35,19 +43,44 @@ export function createInternalForecastCapabilityRouteHandler(
   resolveCapability: CapabilityResolver = resolveInteractiveForecastCapability,
 ) {
   return withInternalForecastServiceAuth(async (principal, request: NextRequest) => {
-    const parsed = parseSearchParams(request, InteractiveForecastIdentitySchema)
-    if (!parsed.ok) return cognitionError('VALIDATION_ERROR', parsed.message, 400, principal.requestId)
+    return runWithForecastRequestDiagnostics({
+      enabled: isForecastRequestDiagnosticsEnabled(request.headers),
+      requestId: principal.requestId,
+      route: request.nextUrl.pathname,
+      method: request.method,
+      operationType: 'CAPABILITY',
+    }, async () => {
+      noteForecastRequestDiagnosticsEvent('handler_entered', 'HTTP', { requestId: principal.requestId })
+      const parsed = parseSearchParams(request, InteractiveForecastIdentitySchema)
+      if (!parsed.ok) return appendForecastRequestDiagnosticsHeader(cognitionError('VALIDATION_ERROR', parsed.message, 400, principal.requestId))
 
-    try {
-      const result = await resolveCapability(parsed.data)
-      const response = cognitionOk(result)
-      if (request.headers.get(FORECAST_TRACE_HEADER) === '1') {
-        response.headers.set(SG_RUNTIME_CAPABILITY_TOTAL_MS_HEADER, String(result.timingMs))
+      updateForecastRequestDiagnosticsIdentity({
+        operationType: 'CAPABILITY',
+        seriesId: parsed.data.seriesId,
+        modelId: parsed.data.modelId,
+        targetSemantics: parsed.data.targetSemantics,
+      })
+
+      try {
+        const result = await traceForecastRequestDiagnosticsSpan(
+          'capability_resolution',
+          'APPLICATION',
+          () => resolveCapability(parsed.data),
+          {
+            seriesId: parsed.data.seriesId,
+            modelId: parsed.data.modelId,
+            targetSemantics: parsed.data.targetSemantics,
+          },
+        )
+        const response = cognitionOk(result)
+        if (request.headers.get(FORECAST_TRACE_HEADER) === '1') {
+          response.headers.set(SG_RUNTIME_CAPABILITY_TOTAL_MS_HEADER, String(result.timingMs))
+        }
+        return appendForecastRequestDiagnosticsHeader(response)
+      } catch (error) {
+        return appendForecastRequestDiagnosticsHeader(internalRouteError(error, principal.requestId))
       }
-      return response
-    } catch (error) {
-      return internalRouteError(error, principal.requestId)
-    }
+    })
   })
 }
 
@@ -55,14 +88,40 @@ export function createInternalCurrentForecastPreparationRouteHandler(
   prepareCurrent: CurrentPreparationResolver = prepareInteractiveCurrentForecast,
 ) {
   return withInternalForecastServiceAuth(async (principal, request: NextRequest) => {
-    const parsed = await parseJsonBody(request, InteractiveForecastIdentitySchema)
-    if (!parsed.ok) return cognitionError('VALIDATION_ERROR', parsed.message, 400, principal.requestId)
+    return runWithForecastRequestDiagnostics({
+      enabled: isForecastRequestDiagnosticsEnabled(request.headers),
+      requestId: principal.requestId,
+      route: request.nextUrl.pathname,
+      method: request.method,
+      operationType: 'CURRENT_MATERIALIZATION',
+    }, async () => {
+      noteForecastRequestDiagnosticsEvent('handler_entered', 'HTTP', { requestId: principal.requestId })
+      const parsed = await parseJsonBody(request, InteractiveForecastIdentitySchema)
+      if (!parsed.ok) return appendForecastRequestDiagnosticsHeader(cognitionError('VALIDATION_ERROR', parsed.message, 400, principal.requestId))
 
-    try {
-      return cognitionOk(await prepareCurrent(parsed.data))
-    } catch (error) {
-      return internalRouteError(error, principal.requestId)
-    }
+      updateForecastRequestDiagnosticsIdentity({
+        operationType: 'CURRENT_MATERIALIZATION',
+        seriesId: parsed.data.seriesId,
+        modelId: parsed.data.modelId,
+        targetSemantics: parsed.data.targetSemantics,
+      })
+
+      try {
+        const result = await traceForecastRequestDiagnosticsSpan(
+          'current_materialization',
+          'APPLICATION',
+          () => prepareCurrent(parsed.data),
+          {
+            seriesId: parsed.data.seriesId,
+            modelId: parsed.data.modelId,
+            targetSemantics: parsed.data.targetSemantics,
+          },
+        )
+        return appendForecastRequestDiagnosticsHeader(cognitionOk(result))
+      } catch (error) {
+        return appendForecastRequestDiagnosticsHeader(internalRouteError(error, principal.requestId))
+      }
+    })
   })
 }
 
@@ -70,19 +129,45 @@ export function createInternalProgressiveForecastPreparationRouteHandler(
   prepareProgressively: ProgressivePreparationResolver = progressiveForecastPreparationService.snapshotAndKickoff,
 ) {
   return withInternalForecastServiceAuth(async (principal, request: NextRequest) => {
-    const parsed = await parseJsonBody(request, InteractiveForecastIdentitySchema)
-    if (!parsed.ok) return cognitionError('VALIDATION_ERROR', parsed.message, 400, principal.requestId)
+    return runWithForecastRequestDiagnostics({
+      enabled: isForecastRequestDiagnosticsEnabled(request.headers),
+      requestId: principal.requestId,
+      route: request.nextUrl.pathname,
+      method: request.method,
+      operationType: 'OTHER',
+    }, async () => {
+      noteForecastRequestDiagnosticsEvent('handler_entered', 'HTTP', { requestId: principal.requestId })
+      const parsed = await parseJsonBody(request, InteractiveForecastIdentitySchema)
+      if (!parsed.ok) return appendForecastRequestDiagnosticsHeader(cognitionError('VALIDATION_ERROR', parsed.message, 400, principal.requestId))
 
-    try {
-      return cognitionOk(await prepareProgressively({
+      updateForecastRequestDiagnosticsIdentity({
+        operationType: 'OTHER',
         seriesId: parsed.data.seriesId,
-        preferredModelId: parsed.data.modelId,
-        preferredTargetBasis: parsed.data.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
-          ? 'POINT_IN_TIME'
-          : parsed.data.targetSemantics,
-      }))
-    } catch (error) {
-      return internalRouteError(error, principal.requestId)
-    }
+        modelId: parsed.data.modelId,
+        targetSemantics: parsed.data.targetSemantics,
+      })
+
+      try {
+        const result = await traceForecastRequestDiagnosticsSpan(
+          'progressive_preparation_snapshot',
+          'APPLICATION',
+          () => prepareProgressively({
+            seriesId: parsed.data.seriesId,
+            preferredModelId: parsed.data.modelId,
+            preferredTargetBasis: parsed.data.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+              ? 'POINT_IN_TIME'
+              : parsed.data.targetSemantics,
+          }),
+          {
+            seriesId: parsed.data.seriesId,
+            modelId: parsed.data.modelId,
+            targetSemantics: parsed.data.targetSemantics,
+          },
+        )
+        return appendForecastRequestDiagnosticsHeader(cognitionOk(result))
+      } catch (error) {
+        return appendForecastRequestDiagnosticsHeader(internalRouteError(error, principal.requestId))
+      }
+    })
   })
 }

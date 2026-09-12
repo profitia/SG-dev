@@ -21,6 +21,10 @@ import {
   type RollingDailyProductionForecastResult,
 } from '@/lib/forecast/rolling-daily-production-forecast'
 import type { ForecastPersistenceOwnership } from '@/lib/forecast/service'
+import {
+  traceForecastRequestDiagnosticsSpan,
+  updateForecastRequestDiagnosticsIdentity,
+} from '@/lib/forecast/request-diagnostics'
 
 export const DEFAULT_ROLLING_DAILY_PRODUCTION_OPERATIONS_SERIES_ID = 'wocaes0074'
 export const ROLLING_DAILY_PRODUCTION_OPERATIONS_MODELS = ['naive', 'damped_holt', 'ets', 'arima'] as const
@@ -141,6 +145,14 @@ async function refreshSnapshot(
   reason: 'MAINTENANCE_DELTA_APPLIED' | 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
 ): Promise<Extract<RollingDailyProductionOperationsSnapshotResult, { status: 'REFRESHED_AFTER_MAINTENANCE' | 'REFRESHED_AFTER_RECOVERY' }>> {
   const refreshStartedAt = performance.now()
+  updateForecastRequestDiagnosticsIdentity({
+    seriesId: request.seriesId,
+    modelId: request.modelId,
+    targetBasis: 'POINT_IN_TIME',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    sourceFrequency: 'DAILY',
+    targetCadence: 'DAILY',
+  })
   if (trace) {
     console.info(`${ROLLING_DAILY_HISTORICAL_TRACE_PREFIX} ${JSON.stringify({
       event: 'current_refresh_started',
@@ -150,14 +162,34 @@ async function refreshSnapshot(
       refreshStatus: status,
     })}`)
   }
-  const result = await resolveCurrentForecast(request)
+  const result = await traceForecastRequestDiagnosticsSpan(
+    'rolling_daily_snapshot_compute',
+    'COMPUTE',
+    () => resolveCurrentForecast(request),
+    {
+      seriesId: request.seriesId,
+      modelId: request.modelId,
+      reason,
+      refreshStatus: status,
+    },
+  )
   const ownership = options.resolvePersistenceOwnership
     ? await options.resolvePersistenceOwnership()
     : undefined
-  const persisted = await persistSnapshot(request, {
-    ...result,
-    productionMethod: 'ROLLING_DAILY_POINT_IN_TIME',
-  }, ownership ? { ownership } : undefined)
+  const persisted = await traceForecastRequestDiagnosticsSpan(
+    'rolling_daily_snapshot_persist',
+    'PERSISTENCE',
+    () => persistSnapshot(request, {
+      ...result,
+      productionMethod: 'ROLLING_DAILY_POINT_IN_TIME',
+    }, ownership ? { ownership } : undefined),
+    {
+      seriesId: request.seriesId,
+      modelId: request.modelId,
+      reason,
+      refreshStatus: status,
+    },
+  )
 
   if (trace) {
     console.info(`${ROLLING_DAILY_HISTORICAL_TRACE_PREFIX} ${JSON.stringify({
