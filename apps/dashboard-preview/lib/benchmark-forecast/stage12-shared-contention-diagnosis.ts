@@ -479,16 +479,25 @@ export async function runStage12SharedContentionDiagnosis(options: {
     scenarioId: ScenarioId
     requests: ScenarioRequestRecord[]
     ownerWaiterRows: ExecutionLedgerRow[]
+    ownerWaiterLookupError: string | null
   }>
 
   for (const scenarioId of scenarioIds) {
     const requests = await runScenario(scenarioId, seriesId, staggerMs)
-    const ownerWaiterRows = await readExecutionLedger(
-      requests
-        .filter((request) => request.operationKind === 'PREPARE_VERIFICATION')
-        .map((request) => request.requestId),
-    )
-    scenarios.push({ scenarioId, requests, ownerWaiterRows })
+    const ownerRequestIds = requests
+      .filter((request) => request.operationKind === 'PREPARE_VERIFICATION')
+      .map((request) => request.requestId)
+
+    let ownerWaiterRows: ExecutionLedgerRow[] = []
+    let ownerWaiterLookupError: string | null = null
+
+    try {
+      ownerWaiterRows = await readExecutionLedger(ownerRequestIds)
+    } catch (error) {
+      ownerWaiterLookupError = error instanceof Error ? error.message : 'Execution ledger lookup failed.'
+    }
+
+    scenarios.push({ scenarioId, requests, ownerWaiterRows, ownerWaiterLookupError })
   }
 
   return {
@@ -502,6 +511,7 @@ export async function runStage12SharedContentionDiagnosis(options: {
         .map((request) => request.requestId),
       requestGraph: scenario.requests,
       ownerWaiterTable: scenario.ownerWaiterRows,
+      ownerWaiterLookupError: scenario.ownerWaiterLookupError,
       currentPreparedReadComparison: summarizeOperation(scenario.requests, 'READ_CURRENT'),
       verificationPreparedReadComparison: summarizeOperation(scenario.requests, 'READ_VERIFICATION'),
       pitMaterializationComparison: summarizeOperation(scenario.requests, 'PREPARE_VERIFICATION'),
