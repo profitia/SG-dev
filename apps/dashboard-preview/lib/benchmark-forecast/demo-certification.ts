@@ -5,6 +5,7 @@ import {
   type ForecastAcceptanceCell,
   type ForecastAcceptanceMatrixDiagnostics,
   type ForecastAcceptanceMatrixDiagnosticsRecorder,
+  type ForecastAcceptanceMatrixEvaluationOptions,
   type ForecastAcceptanceMatrixReport,
 } from './acceptance-matrix'
 import {
@@ -38,7 +39,7 @@ const DEFAULT_DEPLOYED_REVISION_ENV_KEYS = [
   'NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA',
 ] as const
 const DEFAULT_BENCHMARK_TIMEOUT_MS = 75_000
-const DEMO_CERTIFICATION_PHASES = ['PRECOMPUTE', 'MATRIX', 'WARM_REHEARSAL'] as const
+const DEMO_CERTIFICATION_PHASES = ['PRECOMPUTE', 'PIT_MATERIALIZATION', 'MATRIX', 'WARM_REHEARSAL'] as const
 const DEMO_REMOTE_OPERATIONS = [
   'READ_CAPABILITY',
   'PREPARE_CURRENT',
@@ -306,7 +307,7 @@ type DemoCertificationDependencies = {
     cadence?: { sourceFrequency: string, targetCadence: string },
     correlationHeaders?: Record<string, string>,
   ) => Promise<BenchmarkForecastVerificationResult>
-  evaluateMatrix: (seriesId: string, allowPrepare: boolean, options?: { signal?: AbortSignal }) => Promise<ForecastAcceptanceMatrixReport>
+  evaluateMatrix: (seriesId: string, allowPrepare: boolean, options?: ForecastAcceptanceMatrixEvaluationOptions) => Promise<ForecastAcceptanceMatrixReport>
 }
 
 type DemoCertificationOptions = {
@@ -524,7 +525,9 @@ function createBenchmarkDiagnosticsTracker(
     let phaseStartedAt: string | null = null
     let phaseStartedAtMs: number | null = null
     let phaseCompletedAt: string | null = null
+    let nonPointInTimeCompletedAt: string | null = null
     let pointInTimeEvaluationStartedAt: string | null = null
+    let pointInTimeEvaluationCompletedAt: string | null = null
     let pointInTimeEvaluationBegan = false
     let activeVariantCount = 0
     let peakVariantConcurrency = 0
@@ -640,6 +643,13 @@ function createBenchmarkDiagnosticsTracker(
 
         phaseCompletedAt = new Date().toISOString()
       },
+      noteNonPointInTimeEnd() {
+        if (!enabled || nonPointInTimeCompletedAt) {
+          return
+        }
+
+        nonPointInTimeCompletedAt = new Date().toISOString()
+      },
       notePointInTimeStart() {
         if (!enabled || pointInTimeEvaluationBegan) {
           return
@@ -647,6 +657,13 @@ function createBenchmarkDiagnosticsTracker(
 
         pointInTimeEvaluationBegan = true
         pointInTimeEvaluationStartedAt = new Date().toISOString()
+      },
+      notePointInTimeEnd() {
+        if (!enabled) {
+          return
+        }
+
+        pointInTimeEvaluationCompletedAt = new Date().toISOString()
       },
       noteVariantScheduled(seriesId, modelId, targetBasis) {
         if (!enabled) {
@@ -787,8 +804,10 @@ function createBenchmarkDiagnosticsTracker(
           maxConcurrentVariants: maxConcurrentMatrixVariants,
           peakVariantConcurrency,
           variantsCompletedBeforeTimeout: [...variants.values()].filter((variant) => variant.completedAt !== null).length,
+          nonPointInTimeCompletedAt,
           pointInTimeEvaluationBegan,
           pointInTimeEvaluationStartedAt,
+          pointInTimeEvaluationCompletedAt,
           firstCurrentDispatchAt: firstDispatchAt('currentRead'),
           lastCurrentCompletionAt: lastCompletionAt('currentRead'),
           firstVerificationDispatchAt: firstDispatchAt('verificationRead'),
@@ -1068,7 +1087,7 @@ function createBenchmarkDiagnosticsTracker(
 function createMatrixEvaluator(
   dependencies: Pick<DemoCertificationDependencies, 'readCapability' | 'prepareCurrent' | 'readCurrent' | 'readVerification'>,
 ) {
-  return async (seriesId: string, allowPrepare: boolean, options?: { signal?: AbortSignal }) => {
+  return async (seriesId: string, allowPrepare: boolean, options?: ForecastAcceptanceMatrixEvaluationOptions) => {
     const service = createForecastAcceptanceMatrixService({
       readCapability: dependencies.readCapability,
       prepareCurrent: allowPrepare
@@ -1079,6 +1098,43 @@ function createMatrixEvaluator(
     })
 
     return service.evaluateSeries(seriesId, options)
+  }
+}
+
+function shouldPipelinePointInTimeExactVerification(
+  input: BenchmarkForecastCurrentPreparationRequest,
+  capability: InteractiveForecastCapabilityResult,
+  mode: DemoCertificationMode,
+) {
+  return input.targetBasis === 'POINT_IN_TIME'
+    && mode !== 'REVALIDATE'
+    && isCapabilityLawful(capability)
+    && capability.currentReadiness === 'READY'
+    && !hasExactVerificationReadiness(capability)
+}
+
+function buildVariantPreparationRecord(
+  input: BenchmarkForecastCurrentPreparationRequest,
+  required: boolean,
+  capability: InteractiveForecastCapabilityResult,
+  preparationStatus: BenchmarkForecastCurrentPreparationResult['prepareStatus'] | null,
+  status: DemoStatus | 'UNSUPPORTED',
+  reason: string | null,
+  targetSemantics = resolveForecastTargetSemantics(input.targetBasis),
+): DemoVariantPreparationRecord {
+  return {
+    seriesId: input.seriesId,
+    modelId: input.modelId,
+    targetBasis: input.targetBasis,
+    targetSemantics,
+    required,
+    capabilityStatus: capability.status,
+    currentReadiness: capability.currentReadiness,
+    verificationReadiness: capability.verificationReadiness,
+    fullVerificationReadiness: capability.fullVerificationReadiness,
+    preparationStatus,
+    status,
+    reason,
   }
 }
 
@@ -1612,6 +1668,9 @@ export function createDemoCertificationService(
               status: result.status,
               reason: result.reason,
             }
+          }).catch((error) => {
+            capabilityCache.delete(key)
+            throw error
           })
           capabilityCache.set(key, pending)
           return pending
@@ -1645,6 +1704,9 @@ export function createDemoCertificationService(
               reason: result.reason,
               bridgeTrace: result.trace ?? null,
             }
+          }).catch((error) => {
+            preparationCache.delete(key)
+            throw error
           })
           preparationCache.set(key, pending)
           return pending
@@ -1679,6 +1741,9 @@ export function createDemoCertificationService(
               status: result.status,
               reason: 'reason' in result ? result.reason ?? null : null,
             }
+          }).catch((error) => {
+            verificationPreparationCache.delete(key)
+            throw error
           })
           verificationPreparationCache.set(key, pending)
           return pending
@@ -1719,6 +1784,9 @@ export function createDemoCertificationService(
               status: result.status,
               reason: 'reason' in result ? result.reason ?? null : null,
             }
+          }).catch((error) => {
+            currentReadCache.delete(key)
+            throw error
           })
           currentReadCache.set(key, pending)
           return pending
@@ -1776,6 +1844,9 @@ export function createDemoCertificationService(
               status: result.status,
               reason: 'reason' in result ? result.reason ?? null : null,
             }
+          }).catch((error) => {
+            currentReadCache.delete(key)
+            throw error
           })
           currentReadCache.set(key, Promise.resolve(outcome.result))
           return outcome
@@ -1816,6 +1887,9 @@ export function createDemoCertificationService(
               status: result.status,
               reason: 'reason' in result ? result.reason ?? null : null,
             }
+          }).catch((error) => {
+            verificationReadCache.delete(key)
+            throw error
           })
           verificationReadCache.set(key, pending)
           return pending
@@ -1873,6 +1947,9 @@ export function createDemoCertificationService(
               status: result.status,
               reason: 'reason' in result ? result.reason ?? null : null,
             }
+          }).catch((error) => {
+            verificationReadCache.delete(key)
+            throw error
           })
           verificationReadCache.set(key, Promise.resolve(outcome.result))
           return outcome
@@ -1977,7 +2054,15 @@ export function createDemoCertificationService(
         try {
           diagnostics.markBenchmarkStart()
           const benchmark = await withBenchmarkTimeout((async (signal): Promise<DemoBenchmarkCertification> => {
-            const variants: DemoVariantPreparationRecord[] = []
+            const immediateVariants: DemoVariantPreparationRecord[] = []
+            const pendingPointInTimeVariants: Array<{
+              input: BenchmarkForecastCurrentPreparationRequest
+              required: boolean
+              capability: InteractiveForecastCapabilityResult
+              preparationStatus: BenchmarkForecastCurrentPreparationResult['prepareStatus'] | null
+              targetSemantics: ForecastTargetSemantics
+            }> = []
+
             const capabilityChecks = await diagnostics.tracePhase('PRECOMPUTE', async () => Promise.all(
               requiredModels.flatMap((modelId) => (
                 inspectedTargetBases.map(async (targetBasis) => {
@@ -1993,116 +2078,152 @@ export function createDemoCertificationService(
 
             for (const { input, required, capability } of capabilityChecks) {
               if (!isCapabilityLawful(capability)) {
-                variants.push({
-                  seriesId: entry.seriesId,
-                  modelId: input.modelId,
-                  targetBasis: input.targetBasis,
-                  targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
+                immediateVariants.push(buildVariantPreparationRecord(
+                  input,
                   required,
-                  capabilityStatus: capability.status,
-                  currentReadiness: capability.currentReadiness,
-                  verificationReadiness: capability.verificationReadiness,
-                  fullVerificationReadiness: capability.fullVerificationReadiness,
-                  preparationStatus: null,
-                  status: required ? 'FAIL' : 'UNSUPPORTED',
-                  reason: capability.reason ?? capability.status,
+                  capability,
+                  null,
+                  required ? 'FAIL' : 'UNSUPPORTED',
+                  capability.reason ?? capability.status,
+                ))
+                continue
+              }
+
+              if (mode === 'REVALIDATE') {
+                const warmReady = hasExactVerificationReadiness(capability)
+                immediateVariants.push(buildVariantPreparationRecord(
+                  input,
+                  required,
+                  capability,
+                  null,
+                  warmReady ? 'PASS' : 'FAIL',
+                  warmReady ? null : 'Warm revalidation requires both current readiness and exact historical verification readiness to remain READY.',
+                ))
+                continue
+              }
+
+              let effectiveCapability = capability
+              let preparationStatus: BenchmarkForecastCurrentPreparationResult['prepareStatus'] | null = null
+              let targetSemantics = resolveForecastTargetSemantics(input.targetBasis)
+
+              if (!hasExactVerificationReadiness(effectiveCapability) && isPrepareEligible(effectiveCapability)) {
+                const preparation = await prepareCurrentOnce(input, 'PRECOMPUTE', { signal })
+                const warmedCapability = await readCapabilityOnce(input, 'PRECOMPUTE', { signal }, true)
+
+                effectiveCapability = warmedCapability
+                preparationStatus = preparation.prepareStatus
+                targetSemantics = preparation.targetSemantics
+
+                if (preparation.state !== 'READY') {
+                  immediateVariants.push(buildVariantPreparationRecord(
+                    input,
+                    required,
+                    effectiveCapability,
+                    preparationStatus,
+                    'FAIL',
+                    preparation.reason ?? effectiveCapability.reason ?? preparation.state,
+                    targetSemantics,
+                  ))
+                  continue
+                }
+              }
+
+              if (shouldPipelinePointInTimeExactVerification(input, effectiveCapability, mode)) {
+                pendingPointInTimeVariants.push({
+                  input,
+                  required,
+                  capability: effectiveCapability,
+                  preparationStatus,
+                  targetSemantics,
                 })
                 continue
               }
 
               const exactCapability = await prepareExactVerificationIfNeeded(
                 input,
-                capability,
+                effectiveCapability,
                 mode,
                 { readCapabilityOnce, prepareVerificationOnce },
                 { signal },
               )
-
-              if (mode === 'REVALIDATE') {
-                const warmReady = hasExactVerificationReadiness(exactCapability)
-                variants.push({
-                  seriesId: entry.seriesId,
-                  modelId: input.modelId,
-                  targetBasis: input.targetBasis,
-                  targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
-                  required,
-                  capabilityStatus: exactCapability.status,
-                  currentReadiness: exactCapability.currentReadiness,
-                  verificationReadiness: exactCapability.verificationReadiness,
-                  fullVerificationReadiness: exactCapability.fullVerificationReadiness,
-                  preparationStatus: null,
-                  status: warmReady ? 'PASS' : 'FAIL',
-                  reason: warmReady ? null : 'Warm revalidation requires both current readiness and exact historical verification readiness to remain READY.',
-                })
-                continue
-              }
-
-              if (hasExactVerificationReadiness(exactCapability)) {
-                variants.push({
-                  seriesId: entry.seriesId,
-                  modelId: input.modelId,
-                  targetBasis: input.targetBasis,
-                  targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
-                  required,
-                  capabilityStatus: exactCapability.status,
-                  currentReadiness: exactCapability.currentReadiness,
-                  verificationReadiness: exactCapability.verificationReadiness,
-                  fullVerificationReadiness: exactCapability.fullVerificationReadiness,
-                  preparationStatus: null,
-                  status: 'PASS',
-                  reason: null,
-                })
-                continue
-              }
-
-              if (!isPrepareEligible(exactCapability)) {
-                variants.push({
-                  seriesId: entry.seriesId,
-                  modelId: input.modelId,
-                  targetBasis: input.targetBasis,
-                  targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
-                  required,
-                  capabilityStatus: exactCapability.status,
-                  currentReadiness: exactCapability.currentReadiness,
-                  verificationReadiness: exactCapability.verificationReadiness,
-                  fullVerificationReadiness: exactCapability.fullVerificationReadiness,
-                  preparationStatus: null,
-                  status: 'FAIL',
-                  reason: exactCapability.reason ?? exactCapability.status,
-                })
-                continue
-              }
-
-              const preparation = await prepareCurrentOnce(input, 'PRECOMPUTE', { signal })
-              const warmedCapability = await readCapabilityOnce(input, 'PRECOMPUTE', { signal }, true)
-              const exactCapabilityAfterPreparation = await prepareExactVerificationIfNeeded(
+              const exactReady = hasExactVerificationReadiness(exactCapability)
+              immediateVariants.push(buildVariantPreparationRecord(
                 input,
-                warmedCapability,
-                mode,
-                { readCapabilityOnce, prepareVerificationOnce },
-                { signal },
-              )
-              const exactReadyAfterPreparation = hasExactVerificationReadiness(exactCapabilityAfterPreparation)
-              variants.push({
-                seriesId: entry.seriesId,
-                modelId: input.modelId,
-                targetBasis: input.targetBasis,
-                targetSemantics: preparation.targetSemantics,
                 required,
-                capabilityStatus: exactCapabilityAfterPreparation.status,
-                currentReadiness: exactCapabilityAfterPreparation.currentReadiness,
-                verificationReadiness: exactCapabilityAfterPreparation.verificationReadiness,
-                fullVerificationReadiness: exactCapabilityAfterPreparation.fullVerificationReadiness,
-                preparationStatus: preparation.prepareStatus,
-                status: preparation.state === 'READY' && exactReadyAfterPreparation ? 'PASS' : 'FAIL',
-                reason: preparation.state !== 'READY'
-                  ? preparation.reason ?? exactCapabilityAfterPreparation.reason ?? preparation.state
-                  : exactReadyAfterPreparation
-                    ? null
-                    : exactCapabilityAfterPreparation.reason ?? 'Exact historical verification readiness is not READY after current preparation.',
-              })
+                exactCapability,
+                preparationStatus,
+                exactReady ? 'PASS' : 'FAIL',
+                exactReady ? null : exactCapability.reason ?? 'Exact historical verification readiness is not READY after current preparation.',
+                targetSemantics,
+              ))
             }
 
+            let stopPointInTimeMaterialization = false
+            const pointInTimeMaterializationPromise = pendingPointInTimeVariants.length === 0
+              ? Promise.resolve([] as DemoVariantPreparationRecord[])
+              : diagnostics.tracePhase('PIT_MATERIALIZATION', async () => {
+                  const variants = [] as DemoVariantPreparationRecord[]
+
+                  for (const pendingVariant of pendingPointInTimeVariants) {
+                    if (stopPointInTimeMaterialization || signal.aborted) {
+                      break
+                    }
+
+                    const exactCapability = await prepareExactVerificationIfNeeded(
+                      pendingVariant.input,
+                      pendingVariant.capability,
+                      mode,
+                      { readCapabilityOnce, prepareVerificationOnce },
+                      { signal },
+                    )
+                    const exactReady = hasExactVerificationReadiness(exactCapability)
+
+                    variants.push(buildVariantPreparationRecord(
+                      pendingVariant.input,
+                      pendingVariant.required,
+                      exactCapability,
+                      pendingVariant.preparationStatus,
+                      exactReady ? 'PASS' : 'FAIL',
+                      exactReady ? null : exactCapability.reason ?? 'Exact historical verification readiness is not READY after point-in-time materialization.',
+                      pendingVariant.targetSemantics,
+                    ))
+                  }
+
+                  return variants
+                })
+            pointInTimeMaterializationPromise.catch(() => undefined)
+
+            let pointInTimeVariants: DemoVariantPreparationRecord[] | null = null
+            const awaitPointInTimeMaterialization = async () => {
+              if (pointInTimeVariants) {
+                return pointInTimeVariants
+              }
+
+              pointInTimeVariants = await pointInTimeMaterializationPromise
+              return pointInTimeVariants
+            }
+
+            let matrixReport: ForecastAcceptanceMatrixReport
+            try {
+              matrixReport = await diagnostics.tracePhase('MATRIX', async () => (
+                matrixEvaluator(entry.seriesId, mode === 'CERTIFY', {
+                  signal,
+                  diagnosticsRecorder: diagnostics.matrixRecorder,
+                  maxConcurrentVariants: diagnostics.maxConcurrentMatrixVariants,
+                  beforePointInTimeEvaluation: pendingPointInTimeVariants.length > 0
+                    ? async () => {
+                        await awaitPointInTimeMaterialization()
+                      }
+                    : undefined,
+                })
+              ))
+            } catch (error) {
+              stopPointInTimeMaterialization = true
+              await pointInTimeMaterializationPromise.catch(() => undefined)
+              throw error
+            }
+
+            const variants = [...immediateVariants, ...await awaitPointInTimeMaterialization()]
             const requiredVariants = variants.filter((variant) => variant.required)
             const precompute = {
               status: requiredVariants.every((variant) => variant.status === 'PASS') ? 'PASS' as DemoStatus : 'FAIL' as DemoStatus,
@@ -2110,13 +2231,6 @@ export function createDemoCertificationService(
               reason: requiredVariants.find((variant) => variant.status !== 'PASS')?.reason ?? null,
             }
 
-            const matrixReport = await diagnostics.tracePhase('MATRIX', async () => (
-              matrixEvaluator(entry.seriesId, mode === 'CERTIFY', {
-                signal,
-                diagnosticsRecorder: diagnostics.matrixRecorder,
-                maxConcurrentVariants: diagnostics.maxConcurrentMatrixVariants,
-              })
-            ))
             diagnostics.setMatrixDiagnostics(diagnostics.matrixRecorder.build())
             const requiredCells = filterRequiredCells(matrixReport, requiredTargetBases, requiredVerificationHorizons)
             const matrix = resolveMatrixGate(requiredCells.current, requiredCells.verification)

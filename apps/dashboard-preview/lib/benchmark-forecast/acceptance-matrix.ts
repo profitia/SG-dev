@@ -195,8 +195,10 @@ export type ForecastAcceptanceMatrixDiagnostics = {
   maxConcurrentVariants: number | null
   peakVariantConcurrency: number
   variantsCompletedBeforeTimeout: number
+  nonPointInTimeCompletedAt: string | null
   pointInTimeEvaluationBegan: boolean
   pointInTimeEvaluationStartedAt: string | null
+  pointInTimeEvaluationCompletedAt: string | null
   firstCurrentDispatchAt: string | null
   lastCurrentCompletionAt: string | null
   firstVerificationDispatchAt: string | null
@@ -209,7 +211,9 @@ export type ForecastAcceptanceMatrixDiagnosticsRecorder = {
   maxConcurrentVariants: number | null
   notePhaseStart: () => void
   notePhaseEnd: () => void
+  noteNonPointInTimeEnd: () => void
   notePointInTimeStart: () => void
+  notePointInTimeEnd: () => void
   noteVariantScheduled: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => void
   noteVariantStarted: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => void
   noteVariantCompleted: (
@@ -260,7 +264,10 @@ type MatrixEvaluationOptions = {
   signal?: AbortSignal
   diagnosticsRecorder?: ForecastAcceptanceMatrixDiagnosticsRecorder
   maxConcurrentVariants?: number | null
+  beforePointInTimeEvaluation?: () => Promise<void> | void
 }
+
+export type ForecastAcceptanceMatrixEvaluationOptions = MatrixEvaluationOptions
 
 export type ForecastAcceptanceMatrixReport = {
   seriesId: string
@@ -1034,12 +1041,15 @@ export function createForecastAcceptanceMatrixService(
             .map((targetBasis) => evaluateVariant(modelId, targetBasis))
         )),
       )
+      diagnosticsRecorder?.noteNonPointInTimeEnd()
 
       const pointInTimeVariantResults = [] as Awaited<ReturnType<typeof evaluateVariant>>[]
+      await options?.beforePointInTimeEvaluation?.()
       diagnosticsRecorder?.notePointInTimeStart()
       for (const modelId of FORECAST_PORTFOLIO_MODELS) {
         pointInTimeVariantResults.push(await evaluateVariant(modelId, 'POINT_IN_TIME'))
       }
+      diagnosticsRecorder?.notePointInTimeEnd()
 
       const variantResults = [...nonPointInTimeVariantResults, ...pointInTimeVariantResults]
 
