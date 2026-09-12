@@ -30,6 +30,7 @@ const INTERNAL_FORECAST_ROUTE_PATH = '/api/internal/forecast/production'
 const INTERNAL_PREPARED_CURRENT_ROUTE_PATH = '/api/internal/forecast/prepared/current'
 const INTERNAL_PREPARED_VERIFICATION_ROUTE_PATH = '/api/internal/forecast/prepared/verification'
 const INTERNAL_FORECAST_TIMEOUT_MS = 20_000
+const INTERNAL_FORECAST_TIMEOUT_ERROR = 'SG Runtime prepared forecast request timed out.'
 const ROLLING_DAILY_INPUT_SOURCE = 'DYNAMIC_MARKET_DATA_STORE'
 const ROLLING_DAILY_METHOD_ID = 'ROLLING_DAILY_POINT_IN_TIME'
 const ROLLING_DAILY_METHOD_VERSION = 'rolling-daily-point-in-time-v1'
@@ -923,9 +924,9 @@ async function fetchInternalPreparedForecast<T extends object>(
       if ((error as Error).name === 'AbortError') {
         clearTimeout(timeoutId)
         if (hasExplicitSgRuntimeBaseUrl()) {
-          throw new Error('SG Runtime prepared forecast request timed out.')
+          throw new Error(INTERNAL_FORECAST_TIMEOUT_ERROR)
         }
-        lastError = new Error('SG Runtime prepared forecast request timed out.')
+        lastError = new Error(INTERNAL_FORECAST_TIMEOUT_ERROR)
         continue
       }
 

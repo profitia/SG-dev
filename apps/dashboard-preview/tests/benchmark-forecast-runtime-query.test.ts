@@ -333,6 +333,65 @@ test('deployed non-point-in-time prepared current read falls back after an empty
   ])
 })
 
+test('deployed non-point-in-time prepared current read does not fall back after a real timeout from the explicit primary SG Runtime base URL', async () => {
+  const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const originalFetch = global.fetch
+  const originalSetTimeout = global.setTimeout
+  const originalClearTimeout = global.clearTimeout
+  const visited: string[] = []
+
+  process.env.RENDER_EXTERNAL_URL = 'https://profitia-pl.onrender.com'
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime-primary.example.invalid'
+
+  global.setTimeout = (((callback: TimerHandler) => {
+    if (typeof callback === 'function') {
+      callback()
+    }
+    return 1 as unknown as ReturnType<typeof setTimeout>
+  }) as typeof setTimeout)
+  global.clearTimeout = ((() => undefined) as typeof clearTimeout)
+  global.fetch = (async (input: URL | RequestInfo | string, init?: RequestInit) => {
+    const url = new URL(String(input))
+    visited.push(url.origin)
+
+    return new Promise<Response>((_, reject) => {
+      const timeoutError = new Error('timed out') as Error & { name: string }
+      timeoutError.name = 'AbortError'
+
+      if (init?.signal?.aborted) {
+        reject(timeoutError)
+        return
+      }
+
+      init?.signal?.addEventListener('abort', () => reject(timeoutError), { once: true })
+    })
+  }) as typeof fetch
+
+  try {
+    await assert.rejects(
+      () => getBenchmarkForecastCurrent('wocaes0074', 'ets', 'END_OF_PERIOD'),
+      /SG Runtime prepared forecast request timed out\./,
+    )
+  } finally {
+    global.fetch = originalFetch
+    global.setTimeout = originalSetTimeout
+    global.clearTimeout = originalClearTimeout
+    if (previousRenderExternalUrl === undefined) delete process.env.RENDER_EXTERNAL_URL
+    else process.env.RENDER_EXTERNAL_URL = previousRenderExternalUrl
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+  }
+
+  assert.deepEqual(visited, [
+    'https://sg-runtime-primary.example.invalid',
+  ])
+})
+
 test('point-in-time current forecast fails closed as unsupported for non-daily capability before snapshot lookup', async () => {
   const originalFetch = global.fetch
   const previousMarketDataUrl = process.env.MARKET_DATA_DATABASE_URL

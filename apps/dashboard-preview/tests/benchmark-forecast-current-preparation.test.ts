@@ -932,6 +932,73 @@ test('interactive capability bridge does not fall back away from an explicit dep
   ])
 })
 
+test('interactive capability bridge does not fall back away from an explicit deployed SG Runtime base URL after a real timeout', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  const previousVercelUrl = process.env.VERCEL_URL
+  const originalFetch = global.fetch
+  const originalSetTimeout = global.setTimeout
+  const originalClearTimeout = global.clearTimeout
+  const visited: string[] = []
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime-primary.example.invalid'
+  process.env.RENDER_EXTERNAL_URL = 'https://analytics-demo-sg-porr.spendguru.app'
+  delete process.env.VERCEL_URL
+
+  global.setTimeout = (((callback: TimerHandler) => {
+    if (typeof callback === 'function') {
+      callback()
+    }
+    return 1 as unknown as ReturnType<typeof setTimeout>
+  }) as typeof setTimeout)
+  global.clearTimeout = ((() => undefined) as typeof clearTimeout)
+  global.fetch = (async (input: URL | RequestInfo | string, init?: RequestInit) => {
+    const url = new URL(String(input))
+    visited.push(url.origin)
+
+    return new Promise<Response>((_, reject) => {
+      const timeoutError = new Error('timed out') as Error & { name: string }
+      timeoutError.name = 'AbortError'
+
+      if (init?.signal?.aborted) {
+        reject(timeoutError)
+        return
+      }
+
+      init?.signal?.addEventListener('abort', () => reject(timeoutError), { once: true })
+    })
+  }) as typeof fetch
+
+  try {
+    await assert.rejects(
+      () => readInteractiveForecastCapability({
+        seriesId: 'wocaes0280',
+        modelId: 'arima',
+        targetBasis: 'MONTHLY_AVERAGE',
+      }),
+      /timed out/,
+    )
+  } finally {
+    global.fetch = originalFetch
+    global.setTimeout = originalSetTimeout
+    global.clearTimeout = originalClearTimeout
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+    if (previousRenderExternalUrl === undefined) delete process.env.RENDER_EXTERNAL_URL
+    else process.env.RENDER_EXTERNAL_URL = previousRenderExternalUrl
+    if (previousVercelUrl === undefined) delete process.env.VERCEL_URL
+    else process.env.VERCEL_URL = previousVercelUrl
+  }
+
+  assert.deepEqual(visited, [
+    'https://sg-runtime-primary.example.invalid',
+  ])
+})
+
 test('interactive capability bridge falls back after an empty JSON response from the explicit primary SG Runtime base URL', async () => {
   const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
   const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL

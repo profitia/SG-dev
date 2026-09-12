@@ -23,6 +23,7 @@ const INTERNAL_FORECAST_PREPARE_CURRENT_ROUTE_PATH = '/api/internal/forecast/pre
 const INTERNAL_FORECAST_VERIFICATION_ROUTE_PATH = '/api/internal/forecast/verification'
 const INTERNAL_FORECAST_PROGRESSIVE_ROUTE_PATH = '/api/internal/forecast/progressive'
 const INTERNAL_FORECAST_TIMEOUT_MS = 75_000
+const INTERNAL_FORECAST_TIMEOUT_ERROR = 'SG Runtime interactive forecast request timed out.'
 export const FORECAST_TRACE_HEADER = 'x-sg-forecast-trace'
 
 export type ForecastBridgeAttemptTrace = {
@@ -261,7 +262,11 @@ async function readInternalJson<T>(
       if (callerAborted) {
         throw error
       }
-      if ((error as Error).name === 'AbortError' && hasExplicitSgRuntimeBaseUrl() && !timedOut) {
+      if ((error as Error).name === 'AbortError' && hasExplicitSgRuntimeBaseUrl()) {
+        if (timedOut) {
+          throw new Error(INTERNAL_FORECAST_TIMEOUT_ERROR)
+        }
+
         throw error
       }
       if (isMalformedJsonResponseError(error) && index + 1 < baseUrls.length) {
@@ -277,7 +282,7 @@ async function readInternalJson<T>(
   }
 
   if ((lastError as Error | null)?.name === 'AbortError') {
-    throw new Error('SG Runtime interactive forecast request timed out.')
+    throw new Error(INTERNAL_FORECAST_TIMEOUT_ERROR)
   }
 
   throw lastError instanceof Error ? lastError : new Error('SG Runtime interactive forecast request failed.')
@@ -376,7 +381,7 @@ export async function requestInteractiveForecastVerificationPreparation(
 }
 
 function isInteractiveForecastTimeoutError(error: unknown) {
-  return error instanceof Error && error.message === 'SG Runtime interactive forecast request timed out.'
+  return error instanceof Error && error.message === INTERNAL_FORECAST_TIMEOUT_ERROR
 }
 
 function resolveRequestedProgressiveVariant(
