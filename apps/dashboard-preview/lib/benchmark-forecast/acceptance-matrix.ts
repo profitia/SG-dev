@@ -554,7 +554,13 @@ async function checkPersistedVerificationArtifact(
       methodId: resolveForecastTargetSemantics(targetBasis),
       methodVersion: resolveMethodVersion(targetBasis),
     },
-    include: { metrics: true, points: true },
+    select: {
+      status: true,
+      failureReason: true,
+      historyFingerprint: true,
+      metrics: true,
+      points: true,
+    },
     orderBy: [{ updatedAt: 'desc' }],
   })
 

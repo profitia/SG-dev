@@ -563,7 +563,19 @@ async function getPersistedForecastVerification(
       methodVersion: identity.methodVersion,
       status: 'AVAILABLE',
     },
-    include: {
+    select: {
+      seriesId: true,
+      displayName: true,
+      description: true,
+      methodVersion: true,
+      inputSource: true,
+      inputRunId: true,
+      historyFingerprint: true,
+      historyStartAt: true,
+      historyEndAt: true,
+      observationCount: true,
+      forecastOriginAt: true,
+      frequency: true,
       metrics: {
         orderBy: [{ horizonSteps: 'asc' }],
       },
@@ -583,6 +595,10 @@ async function getPersistedForecastVerification(
         targetBasis,
         methodId: identity.methodId,
         methodVersion: identity.methodVersion,
+      },
+      select: {
+        status: true,
+        failureReason: true,
       },
       orderBy: [{ updatedAt: 'desc' }],
     })
