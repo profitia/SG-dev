@@ -1,11 +1,13 @@
 import { type NextRequest } from 'next/server'
+import { z } from 'zod'
 
 import type {
   BenchmarkForecastCurrentResult,
   BenchmarkForecastVerificationResult,
 } from '@/lib/forecast/contracts'
 import { withInternalForecastServiceAuth } from '@/lib/api/internal-forecast-service-auth'
-import { cognitionError, cognitionOk, parseSearchParams, withCognitionAuth } from '@/lib/api/middleware'
+import { cognitionError, cognitionOk, parseJsonBody, parseSearchParams, withCognitionAuth } from '@/lib/api/middleware'
+import { Prisma } from '@/generated/market-data-client'
 import { resolveProductionForecast, type ProductionForecastResult } from '@/lib/forecast/production-routing'
 import { createRollingDailyProductionOperationsService } from '@/lib/forecast/rolling-daily-production-operations'
 import { readRollingDailyCurrentForecastSnapshot } from '@/lib/forecast/rolling-daily-current-forecast-snapshot'
@@ -37,6 +39,7 @@ import {
   traceForecastRequestDiagnosticsSpan,
   updateForecastRequestDiagnosticsIdentity,
 } from '@/lib/forecast/request-diagnostics'
+import { getMarketDataPrisma } from '@/lib/market-data/client'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 
 type PreparedCurrentResult = BenchmarkForecastCurrentResult | Awaited<ReturnType<typeof readPreparedRollingDailyCurrentForecast>>
@@ -54,10 +57,32 @@ type PointInTimeVerificationPreparer = (input: {
   modelId: ForecastRequestInput['modelId']
 }) => Promise<void>
 
+type ExecutionLedgerRow = {
+  executionId: string
+  logicalArtifactKey: string
+  operationFamily: string
+  executionStatus: string
+  ownerRequestId: string
+  latestRequestId: string
+  latestRole: string
+  waiterCount: number
+  startedAt: string
+  computeStartedAt: string | null
+  computeCompletedAt: string | null
+  persistenceStartedAt: string | null
+  persistenceCompletedAt: string | null
+  completedAt: string | null
+  failureReason: string | null
+}
+
 const preparedVerificationDependencies: PreparedVerificationDependencies = {
   readRollingDailyVerification: readPreparedRollingDailyForecastVerification,
   readGenericPeriodVerification: readPreparedBenchmarkForecastVerification,
 }
+
+const executionLedgerLookupSchema = z.object({
+  ownerRequestIds: z.array(z.string().trim().min(1)).max(100),
+})
 
 const rollingDailyProductionOperations = createRollingDailyProductionOperationsService()
 
@@ -174,6 +199,35 @@ async function runForecastRouteWithDiagnostics(
   })
 }
 
+async function readExecutionLedgerRows(ownerRequestIds: string[]) {
+  const prisma = getMarketDataPrisma()
+  if (!prisma || ownerRequestIds.length === 0) {
+    return [] as ExecutionLedgerRow[]
+  }
+
+  return prisma.$queryRaw<ExecutionLedgerRow[]>(Prisma.sql`
+    SELECT
+      "executionId",
+      "logicalArtifactKey",
+      "operationFamily",
+      "executionStatus",
+      "ownerRequestId",
+      "latestRequestId",
+      "latestRole",
+      "waiterCount",
+      "startedAt"::text AS "startedAt",
+      "computeStartedAt"::text AS "computeStartedAt",
+      "computeCompletedAt"::text AS "computeCompletedAt",
+      "persistenceStartedAt"::text AS "persistenceStartedAt",
+      "persistenceCompletedAt"::text AS "persistenceCompletedAt",
+      "completedAt"::text AS "completedAt",
+      "failureReason"
+    FROM "forecast_preparation_execution_ledger"
+    WHERE "ownerRequestId" IN (${Prisma.join(ownerRequestIds)})
+    ORDER BY "startedAt" ASC
+  `)
+}
+
 export function createCurrentForecastRouteHandler(
   resolveCurrentForecast: CurrentForecastResolver = readPreparedCurrentForecast,
   telemetry: Pick<ForecastStressTelemetry, 'run' | 'sampleResources'> = forecastStressTelemetry,
@@ -228,6 +282,26 @@ export function createInternalPreparedCurrentForecastRouteHandler(
         return resolved
       })
       return cognitionOk(result)
+    })
+  })
+}
+
+export function createInternalForecastExecutionLedgerRouteHandler() {
+  return withInternalForecastServiceAuth(async (_principal, request: NextRequest) => {
+    return runForecastRouteWithDiagnostics(request, request.headers.get('x-request-id') ?? _principal.requestId, 'OTHER', async () => {
+      const parsed = await parseJsonBody(request, executionLedgerLookupSchema)
+      if (!parsed.ok) {
+        return cognitionError('VALIDATION_ERROR', parsed.message, 400, _principal.requestId)
+      }
+
+      const rows = await traceForecastRequestDiagnosticsSpan(
+        'execution_ledger_lookup',
+        'DB_OPERATION',
+        () => readExecutionLedgerRows(parsed.data.ownerRequestIds),
+        { ownerRequestCount: parsed.data.ownerRequestIds.length },
+      )
+
+      return cognitionOk({ rows })
     })
   })
 }

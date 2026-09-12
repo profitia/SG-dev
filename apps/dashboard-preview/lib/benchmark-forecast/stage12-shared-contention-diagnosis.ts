@@ -1,7 +1,3 @@
-import { Prisma } from '@/src/generated/market-data-prisma/client'
-
-import { getMarketDataPrismaClient } from '@/lib/db/market-data-prisma'
-
 import {
   FORECAST_PORTFOLIO_MODELS,
   resolveForecastTargetSemantics,
@@ -337,32 +333,31 @@ async function runPitSerialWave(scenarioId: ScenarioId, seriesId: string) {
 }
 
 async function readExecutionLedger(ownerRequestIds: string[]) {
-  const prisma = getMarketDataPrismaClient()
-  if (!prisma || ownerRequestIds.length === 0) {
+  if (ownerRequestIds.length === 0) {
     return [] as ExecutionLedgerRow[]
   }
 
-  return prisma.$queryRaw<ExecutionLedgerRow[]>(Prisma.sql`
-    SELECT
-      "executionId",
-      "logicalArtifactKey",
-      "operationFamily",
-      "executionStatus",
-      "ownerRequestId",
-      "latestRequestId",
-      "latestRole",
-      "waiterCount",
-      "startedAt"::text AS "startedAt",
-      "computeStartedAt"::text AS "computeStartedAt",
-      "computeCompletedAt"::text AS "computeCompletedAt",
-      "persistenceStartedAt"::text AS "persistenceStartedAt",
-      "persistenceCompletedAt"::text AS "persistenceCompletedAt",
-      "completedAt"::text AS "completedAt",
-      "failureReason"
-    FROM "forecast_preparation_execution_ledger"
-    WHERE "ownerRequestId" IN (${Prisma.join(ownerRequestIds)})
-    ORDER BY "startedAt" ASC
-  `)
+  const response = await fetch(new URL('/api/internal/forecast/execution-ledger', resolveSgRuntimeBaseUrl()), {
+    method: 'POST',
+    cache: 'no-store',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${readInternalToken()}`,
+      'content-type': 'application/json',
+      'x-request-id': `stage12-ledger-${Date.now()}`,
+      [TRACE_HEADER]: '1',
+    },
+    body: JSON.stringify({ ownerRequestIds }),
+  })
+
+  const body = await response.text()
+  const payload = body.trim().length > 0 ? JSON.parse(body) as { rows?: ExecutionLedgerRow[]; error?: string } : {}
+
+  if (!response.ok) {
+    throw new Error(typeof payload.error === 'string' ? payload.error : `Execution ledger lookup failed with HTTP ${response.status}.`)
+  }
+
+  return Array.isArray(payload.rows) ? payload.rows : []
 }
 
 function summarizeOperation(records: ScenarioRequestRecord[], operationKind: OperationKind) {
