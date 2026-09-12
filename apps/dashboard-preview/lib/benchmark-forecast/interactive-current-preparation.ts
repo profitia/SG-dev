@@ -1,6 +1,7 @@
 import {
   FORECAST_PORTFOLIO_MODELS,
   FORECAST_TARGET_BASES,
+  type BenchmarkForecastVerificationResult,
   resolveForecastTargetSemantics,
   type BenchmarkForecastCurrentPreparationRequest,
   type BenchmarkForecastCurrentPreparationResult,
@@ -19,6 +20,7 @@ const DEPLOYED_SG_RUNTIME_FALLBACK_BASE_URLS = [
 ]
 const INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH = '/api/internal/forecast/capability'
 const INTERNAL_FORECAST_PREPARE_CURRENT_ROUTE_PATH = '/api/internal/forecast/prepare/current'
+const INTERNAL_FORECAST_VERIFICATION_ROUTE_PATH = '/api/internal/forecast/verification'
 const INTERNAL_FORECAST_PROGRESSIVE_ROUTE_PATH = '/api/internal/forecast/progressive'
 const INTERNAL_FORECAST_TIMEOUT_MS = 75_000
 export const FORECAST_TRACE_HEADER = 'x-sg-forecast-trace'
@@ -347,6 +349,29 @@ export async function requestProgressiveForecastPreparationSnapshot(
       modelId: input.modelId,
       targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
     }),
+  }, traceOptions)
+}
+
+export async function requestInteractiveForecastVerificationPreparation(
+  input: BenchmarkForecastCurrentPreparationRequest,
+  cadence?: { sourceFrequency: string, targetCadence: string },
+  traceOptions?: TraceOptions,
+  options?: ForecastBridgeRequestOptions,
+) {
+  const url = new URL(INTERNAL_FORECAST_VERIFICATION_ROUTE_PATH, LOCAL_SG_RUNTIME_BASE_URL)
+  url.searchParams.set('seriesId', input.seriesId)
+  url.searchParams.set('model', input.modelId)
+  url.searchParams.set('targetBasis', input.targetBasis)
+
+  if (cadence) {
+    url.searchParams.set('sourceFrequency', cadence.sourceFrequency)
+    url.searchParams.set('targetCadence', cadence.targetCadence)
+  }
+
+  return readInternalJson<BenchmarkForecastVerificationResult>(url.pathname + url.search, {
+    method: 'GET',
+    signal: options?.signal,
+    headers: resolveAuthorizedHeaders(),
   }, traceOptions)
 }
 

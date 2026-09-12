@@ -20,6 +20,7 @@ import {
 } from '@/lib/forecast/request-contract'
 import {
   readPreparedBenchmarkCurrentForecast,
+  resolveBenchmarkForecastVerification,
   readPreparedBenchmarkForecastVerification,
 } from '@/lib/forecast/service'
 import {
@@ -157,6 +158,27 @@ export function createForecastVerificationRouteHandler(
 
 export function createInternalPreparedForecastVerificationRouteHandler(
   resolveForecastVerification: ForecastVerificationResolver = resolvePreparedForecastVerification,
+  telemetry: Pick<ForecastStressTelemetry, 'run' | 'sampleResources'> = forecastStressTelemetry,
+) {
+  return withInternalForecastServiceAuth(async (_principal, request: NextRequest) => {
+    const parsed = parseSearchParams(request, ForecastRouteQuerySchema)
+    if (!parsed.ok) {
+      return cognitionError('VALIDATION_ERROR', parsed.message, 400)
+    }
+
+    const input = toForecastRequestInput(parsed.data)
+    const result = await telemetry.run(forecastStressContextFromHeaders(request, input), async () => {
+      telemetry.sampleResources()
+      const resolved = await resolveForecastVerification(input)
+      telemetry.sampleResources()
+      return resolved
+    })
+    return cognitionOk(result)
+  })
+}
+
+export function createInternalForecastVerificationRouteHandler(
+  resolveForecastVerification: ForecastVerificationResolver = resolveBenchmarkForecastVerification,
   telemetry: Pick<ForecastStressTelemetry, 'run' | 'sampleResources'> = forecastStressTelemetry,
 ) {
   return withInternalForecastServiceAuth(async (_principal, request: NextRequest) => {

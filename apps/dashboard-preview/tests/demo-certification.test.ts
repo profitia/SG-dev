@@ -303,6 +303,11 @@ function createService(options: {
   cohort?: DemoCohortEntry[]
   capabilityResolver?: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => MaybePromise<InteractiveForecastCapabilityResult>
   prepareResolver?: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => MaybePromise<BenchmarkForecastCurrentPreparationResult>
+  verificationPrepareResolver?: (
+    input: BenchmarkForecastCurrentPreparationRequest,
+    cadence?: { sourceFrequency: string, targetCadence: string },
+    options?: { signal?: AbortSignal },
+  ) => MaybePromise<BenchmarkForecastVerificationResult>
   currentResolver?: (
     input: BenchmarkForecastCurrentPreparationRequest,
     cadence?: { sourceFrequency: string, targetCadence: string },
@@ -333,6 +338,11 @@ function createService(options: {
       options.prepareCalls?.push(`${input.seriesId}:${input.modelId}:${input.targetBasis}`)
       return options.prepareResolver ? options.prepareResolver(input, requestOptions) : preparation(input)
     },
+    prepareVerification: async (input, cadence, requestOptions) => (
+      options.verificationPrepareResolver
+        ? options.verificationPrepareResolver(input, cadence, requestOptions)
+        : verificationResult(input)
+    ),
     readCurrent: async (seriesId, modelId, targetBasis, cadence) => (
       options.currentResolver
         ? options.currentResolver({ seriesId, modelId, targetBasis }, cadence)
@@ -403,6 +413,48 @@ test('A3. exact full historical verification readiness is required for fast-path
   assert.equal(revalidateReport.benchmarks[0]?.demoSafe, 'NO')
   assert.equal(revalidateReport.benchmarks[0]?.precompute.status, 'FAIL')
   assert.equal(revalidateReport.benchmarks[0]?.reason, 'PRECOMPUTE_FAIL')
+})
+
+test('A4. certify mode can recover exact full historical readiness through SG Runtime verification materialization', async () => {
+  const verifiedVariants = new Set<string>()
+  const verificationPrepareCalls: string[] = []
+  const keyOf = (input: BenchmarkForecastCurrentPreparationRequest) => `${input.seriesId}:${input.modelId}:${input.targetBasis}`
+
+  const report = await createService({
+    cohort: [{
+      seriesId: 'lmeofcucashask',
+      benchmarkName: 'Copper',
+      group: 'PRIMARY',
+      requiredModels: ['naive'],
+      requiredTargetBases: ['MONTHLY_AVERAGE'],
+      requiredVerificationHorizons: ['1M'],
+    }],
+    capabilityResolver: (input) => capability(input, verifiedVariants.has(keyOf(input))
+      ? {}
+      : {
+          sourceFrequency: 'DAILY',
+          targetCadence: 'MONTHLY',
+          verificationReadiness: 'READY',
+          recentVerificationReadiness: 'READY',
+          fullVerificationReadiness: 'NOT_PREPARED',
+          readiness: {
+            fastReady: true,
+            calibratedReady: false,
+            fullReady: false,
+            blockers: ['FULL_HISTORICAL_MISSING'],
+          },
+          reason: 'No exact-identity prepared Historical Verification is available.',
+        }),
+    verificationPrepareResolver: (input, cadence) => {
+      verificationPrepareCalls.push(`${keyOf(input)}:${cadence?.sourceFrequency ?? 'none'}:${cadence?.targetCadence ?? 'none'}`)
+      verifiedVariants.add(keyOf(input))
+      return verificationResult(input)
+    },
+  }).run({ includeFallback: false })
+
+  assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
+  assert.equal(report.benchmarks[0]?.precompute.status, 'PASS')
+  assert.deepEqual(verificationPrepareCalls, ['lmeofcucashask:naive:MONTHLY_AVERAGE:DAILY:MONTHLY'])
 })
 
 test('B. one lawful matrix fail blocks demo certification', async () => {
@@ -606,6 +658,78 @@ test('G3. current preparation does not recover certification when exact historic
   assert.equal(report.benchmarks[0]?.reason, 'PRECOMPUTE_FAIL')
   assert.equal(report.benchmarks[0]?.precompute.variants[0]?.fullVerificationReadiness, 'NOT_PREPARED')
   assert.equal(prepareCalls.length, MODELS.length * TARGET_BASES.length)
+})
+
+test('G4. current preparation can be followed by exact verification materialization to recover certification', async () => {
+  const prepareCalls: string[] = []
+  const verifiedVariants = new Set<string>()
+  const warmedVariants = new Set<string>()
+  const keyOf = (input: BenchmarkForecastCurrentPreparationRequest) => `${input.seriesId}:${input.modelId}:${input.targetBasis}`
+
+  const report = await createService({
+    cohort: [{
+      seriesId: 'lmeofalcashask',
+      benchmarkName: 'Aluminium',
+      group: 'PRIMARY',
+      requiredModels: ['naive'],
+      requiredTargetBases: ['POINT_IN_TIME'],
+      requiredVerificationHorizons: ['1M'],
+    }],
+    prepareCalls,
+    capabilityResolver: (input) => {
+      const key = keyOf(input)
+      if (!warmedVariants.has(key)) {
+        return capability(input, {
+          sourceFrequency: 'DAILY',
+          targetCadence: 'DAILY',
+          status: 'STALE' as never,
+          currentReadiness: 'STALE',
+          verificationReadiness: 'STALE',
+          recentVerificationReadiness: 'STALE',
+          fullVerificationReadiness: 'STALE',
+          readiness: {
+            fastReady: false,
+            calibratedReady: false,
+            fullReady: false,
+            blockers: ['CURRENT_STALE', 'FULL_HISTORICAL_STALE'],
+          },
+          reason: 'STALE',
+        })
+      }
+
+      return capability(input, verifiedVariants.has(key)
+        ? {
+            sourceFrequency: 'DAILY',
+            targetCadence: 'DAILY',
+          }
+        : {
+            sourceFrequency: 'DAILY',
+            targetCadence: 'DAILY',
+            verificationReadiness: 'READY',
+            recentVerificationReadiness: 'READY',
+            fullVerificationReadiness: 'STALE',
+            readiness: {
+              fastReady: true,
+              calibratedReady: false,
+              fullReady: false,
+              blockers: ['FULL_HISTORICAL_STALE'],
+            },
+            reason: 'Prepared Rolling Daily Historical Verification is incomplete for the latest lawful source observation.',
+          })
+    },
+    prepareResolver: (input) => {
+      warmedVariants.add(keyOf(input))
+      return preparation(input)
+    },
+    verificationPrepareResolver: (input) => {
+      verifiedVariants.add(keyOf(input))
+      return verificationResult(input)
+    },
+  }).run({ includeFallback: false })
+
+  assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
+  assert.equal(report.benchmarks[0]?.precompute.status, 'PASS')
+  assert.deepEqual(prepareCalls, ['lmeofalcashask:naive:POINT_IN_TIME'])
 })
 
 test('H. rehearsal failure blocks demo certification', async () => {

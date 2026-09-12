@@ -21,6 +21,7 @@ import {
 import {
   prepareInteractiveCurrentForecast,
   readInteractiveForecastCapability,
+  requestInteractiveForecastVerificationPreparation,
 } from './interactive-current-preparation'
 import { getBenchmarkForecastVerification, resolveShowForecastCurrent } from './runtime-query'
 
@@ -196,6 +197,11 @@ type DemoCertificationDependencies = {
   resolveReleaseSnapshot: (cohort: readonly DemoCohortEntry[], mode: DemoCertificationMode) => DemoReleaseSnapshot
   readCapability: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => Promise<InteractiveForecastCapabilityResult>
   prepareCurrent: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => Promise<BenchmarkForecastCurrentPreparationResult>
+  prepareVerification: (
+    input: BenchmarkForecastCurrentPreparationRequest,
+    cadence?: { sourceFrequency: string, targetCadence: string },
+    options?: { signal?: AbortSignal },
+  ) => Promise<BenchmarkForecastVerificationResult>
   readCurrent: (
     seriesId: string,
     modelId: ForecastPortfolioModelId,
@@ -701,6 +707,7 @@ export function createDemoCertificationService(
   const currentReadCache = new Map<string, Promise<BenchmarkForecastCurrentResult>>()
   const verificationReadCache = new Map<string, Promise<BenchmarkForecastVerificationResult>>()
   const preparationCache = new Map<string, Promise<BenchmarkForecastCurrentPreparationResult>>()
+  const verificationPreparationCache = new Map<string, Promise<BenchmarkForecastVerificationResult>>()
   const createVariantKey = (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => (
     `${seriesId}::${modelId}::${targetBasis}`
   )
@@ -719,6 +726,9 @@ export function createDemoCertificationService(
   ))
   const prepareCurrent = dependencies.prepareCurrent ?? ((input, options) => (
     prepareInteractiveCurrentForecast(input, false, options?.signal)
+  ))
+  const prepareVerification = dependencies.prepareVerification ?? ((input, cadence, options) => (
+    requestInteractiveForecastVerificationPreparation(input, cadence, undefined, options)
   ))
 
   const readCapabilityOnce = (
@@ -751,6 +761,53 @@ export function createDemoCertificationService(
     return pending
   }
 
+  const prepareVerificationOnce = (
+    input: BenchmarkForecastCurrentPreparationRequest,
+    cadence?: { sourceFrequency: string, targetCadence: string },
+    options?: { signal?: AbortSignal },
+  ) => {
+    const key = createPreparedReadKey(input.seriesId, input.modelId, input.targetBasis, cadence)
+    const cached = verificationPreparationCache.get(key)
+    if (cached) {
+      return cached
+    }
+
+    const pending = prepareVerification(input, cadence, options)
+    verificationPreparationCache.set(key, pending)
+    return pending
+  }
+
+  const prepareExactVerificationIfNeeded = async (
+    input: BenchmarkForecastCurrentPreparationRequest,
+    capability: InteractiveForecastCapabilityResult,
+    mode: DemoCertificationMode,
+    options?: { signal?: AbortSignal },
+  ) => {
+    if (
+      mode === 'REVALIDATE'
+      || hasExactVerificationReadiness(capability)
+      || capability.currentReadiness !== 'READY'
+      || !isCapabilityLawful(capability)
+    ) {
+      return capability
+    }
+
+    const cadence = capability.sourceFrequency && capability.targetCadence
+      ? {
+          sourceFrequency: capability.sourceFrequency,
+          targetCadence: capability.targetCadence,
+        }
+      : undefined
+
+    const prepared = await prepareVerificationOnce(input, cadence, options)
+    verificationReadCache.set(
+      createPreparedReadKey(input.seriesId, input.modelId, input.targetBasis, cadence),
+      Promise.resolve(prepared),
+    )
+
+    return readCapabilityOnce(input, options, true)
+  }
+
   const resolvedDependencies: DemoCertificationDependencies = {
     now: dependencies.now ?? (() => new Date().toISOString()),
     benchmarkTimeoutMs: dependencies.benchmarkTimeoutMs ?? DEFAULT_BENCHMARK_TIMEOUT_MS,
@@ -758,6 +815,7 @@ export function createDemoCertificationService(
     resolveReleaseSnapshot: dependencies.resolveReleaseSnapshot ?? defaultReleaseSnapshot,
     readCapability: readCapabilityOnce,
     prepareCurrent: prepareCurrentOnce,
+    prepareVerification: prepareVerificationOnce,
     readCurrent: (seriesId, modelId, targetBasis, cadence) => {
       const key = createPreparedReadKey(seriesId, modelId, targetBasis, cadence)
       const cached = currentReadCache.get(key)
@@ -858,18 +916,20 @@ export function createDemoCertificationService(
               continue
             }
 
+            const exactCapability = await prepareExactVerificationIfNeeded(input, capability, mode, { signal })
+
             if (mode === 'REVALIDATE') {
-              const warmReady = hasExactVerificationReadiness(capability)
+              const warmReady = hasExactVerificationReadiness(exactCapability)
               variants.push({
                 seriesId: entry.seriesId,
                 modelId: input.modelId,
                 targetBasis: input.targetBasis,
                 targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
                 required,
-                capabilityStatus: capability.status,
-                currentReadiness: capability.currentReadiness,
-                verificationReadiness: capability.verificationReadiness,
-                fullVerificationReadiness: capability.fullVerificationReadiness,
+                capabilityStatus: exactCapability.status,
+                currentReadiness: exactCapability.currentReadiness,
+                verificationReadiness: exactCapability.verificationReadiness,
+                fullVerificationReadiness: exactCapability.fullVerificationReadiness,
                 preparationStatus: null,
                 status: warmReady ? 'PASS' : 'FAIL',
                 reason: warmReady ? null : 'Warm revalidation requires both current readiness and exact historical verification readiness to remain READY.',
@@ -877,17 +937,17 @@ export function createDemoCertificationService(
               continue
             }
 
-            if (hasExactVerificationReadiness(capability)) {
+            if (hasExactVerificationReadiness(exactCapability)) {
               variants.push({
                 seriesId: entry.seriesId,
                 modelId: input.modelId,
                 targetBasis: input.targetBasis,
                 targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
                 required,
-                capabilityStatus: capability.status,
-                currentReadiness: capability.currentReadiness,
-                verificationReadiness: capability.verificationReadiness,
-                fullVerificationReadiness: capability.fullVerificationReadiness,
+                capabilityStatus: exactCapability.status,
+                currentReadiness: exactCapability.currentReadiness,
+                verificationReadiness: exactCapability.verificationReadiness,
+                fullVerificationReadiness: exactCapability.fullVerificationReadiness,
                 preparationStatus: null,
                 status: 'PASS',
                 reason: null,
@@ -895,44 +955,45 @@ export function createDemoCertificationService(
               continue
             }
 
-            if (!isPrepareEligible(capability)) {
+            if (!isPrepareEligible(exactCapability)) {
               variants.push({
                 seriesId: entry.seriesId,
                 modelId: input.modelId,
                 targetBasis: input.targetBasis,
                 targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
                 required,
-                capabilityStatus: capability.status,
-                currentReadiness: capability.currentReadiness,
-                verificationReadiness: capability.verificationReadiness,
-                fullVerificationReadiness: capability.fullVerificationReadiness,
+                capabilityStatus: exactCapability.status,
+                currentReadiness: exactCapability.currentReadiness,
+                verificationReadiness: exactCapability.verificationReadiness,
+                fullVerificationReadiness: exactCapability.fullVerificationReadiness,
                 preparationStatus: null,
                 status: 'FAIL',
-                reason: capability.reason ?? capability.status,
+                reason: exactCapability.reason ?? exactCapability.status,
               })
               continue
             }
 
             const preparation = await resolvedDependencies.prepareCurrent(input, { signal })
             const warmedCapability = await readCapabilityOnce(input, { signal }, true)
-            const exactReadyAfterPreparation = hasExactVerificationReadiness(warmedCapability)
+            const exactCapabilityAfterPreparation = await prepareExactVerificationIfNeeded(input, warmedCapability, mode, { signal })
+            const exactReadyAfterPreparation = hasExactVerificationReadiness(exactCapabilityAfterPreparation)
             variants.push({
               seriesId: entry.seriesId,
               modelId: input.modelId,
               targetBasis: input.targetBasis,
               targetSemantics: preparation.targetSemantics,
               required,
-              capabilityStatus: warmedCapability.status,
-              currentReadiness: warmedCapability.currentReadiness,
-              verificationReadiness: warmedCapability.verificationReadiness,
-              fullVerificationReadiness: warmedCapability.fullVerificationReadiness,
+              capabilityStatus: exactCapabilityAfterPreparation.status,
+              currentReadiness: exactCapabilityAfterPreparation.currentReadiness,
+              verificationReadiness: exactCapabilityAfterPreparation.verificationReadiness,
+              fullVerificationReadiness: exactCapabilityAfterPreparation.fullVerificationReadiness,
               preparationStatus: preparation.prepareStatus,
               status: preparation.state === 'READY' && exactReadyAfterPreparation ? 'PASS' : 'FAIL',
               reason: preparation.state !== 'READY'
-                ? preparation.reason ?? warmedCapability.reason ?? preparation.state
+                ? preparation.reason ?? exactCapabilityAfterPreparation.reason ?? preparation.state
                 : exactReadyAfterPreparation
                   ? null
-                  : warmedCapability.reason ?? 'Exact historical verification readiness is not READY after current preparation.',
+                  : exactCapabilityAfterPreparation.reason ?? 'Exact historical verification readiness is not READY after current preparation.',
             })
           }
 
