@@ -20,6 +20,7 @@ import {
   type ForecastPreparationExecutionAdmission,
   type ForecastPreparationOwnedExecutionContext,
 } from '@/lib/forecast/execution-ledger'
+import { readPreparedRollingDailyForecastVerification } from '@/lib/forecast/rolling-daily-verification'
 import {
   type ForecastPersistenceOwnership,
   readPreparedBenchmarkForecastVerification,
@@ -123,6 +124,7 @@ type InteractiveForecastPreparationDependencies = {
   prepareRollingDailyOwnership: typeof prepareRollingDailyCurrentOwnership
   readRollingCurrentSnapshot: typeof readRollingDailyCurrentForecastSnapshot
   readPreparedFullVerification: typeof readPreparedBenchmarkForecastVerification
+  readPreparedRollingDailyFullVerification: typeof readPreparedRollingDailyForecastVerification
   readPreparedRecentVerification: typeof readPreparedBenchmarkRecentForecastVerification
   executionAdmission: ForecastPreparationExecutionAdmission
   now: () => number
@@ -266,6 +268,13 @@ function normalizeVerificationReadiness(input: {
     return { readiness: 'NOT_PREPARED', blockers: [input.partial] }
   }
 
+  if (reason.includes('INCOMPLETE FOR THE LATEST LAWFUL SOURCE OBSERVATION')) {
+    return {
+      readiness: 'STALE',
+      blockers: [input.stale],
+    }
+  }
+
   if (reason.includes('NOT COMPATIBLE') || reason.includes('FINGERPRINT')) {
     return {
       readiness: 'STALE',
@@ -277,7 +286,7 @@ function normalizeVerificationReadiness(input: {
 }
 
 async function resolveInteractiveForecastReadiness(
-  dependencies: Pick<InteractiveForecastPreparationDependencies, 'readPreparedFullVerification' | 'readPreparedRecentVerification'>,
+  dependencies: Pick<InteractiveForecastPreparationDependencies, 'readPreparedFullVerification' | 'readPreparedRollingDailyFullVerification' | 'readPreparedRecentVerification'>,
   input: InteractiveForecastIdentity,
   capability: ForecastVariantCapability | null,
   sourceFrequency: InteractiveForecastCapabilityResult['sourceFrequency'],
@@ -321,9 +330,12 @@ async function resolveInteractiveForecastReadiness(
   if (capability.currentPreparedState === 'READY' && capability.capabilityState !== 'NOT_LAWFUL' && capability.capabilityState !== 'NOT_IMPLEMENTED') {
     const request = buildPreparedReadRequest(input, sourceFrequency, capability.targetCadence)
     const preparedReadAuthority = buildPreparedReadAuthority(input, capability)
+    const fullVerificationReader = input.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+      ? dependencies.readPreparedRollingDailyFullVerification
+      : dependencies.readPreparedFullVerification
     const [recentVerification, fullVerification] = await Promise.all([
       dependencies.readPreparedRecentVerification(request),
-      dependencies.readPreparedFullVerification({
+      fullVerificationReader({
         ...request,
         ...(preparedReadAuthority ? { preparedReadAuthority } : {}),
       }),
@@ -383,6 +395,7 @@ export function createInteractiveForecastPreparationService(
     prepareRollingDailyOwnership: dependencies.prepareRollingDailyOwnership ?? prepareRollingDailyCurrentOwnership,
     readRollingCurrentSnapshot: dependencies.readRollingCurrentSnapshot ?? readRollingDailyCurrentForecastSnapshot,
     readPreparedFullVerification: dependencies.readPreparedFullVerification ?? readPreparedBenchmarkForecastVerification,
+    readPreparedRollingDailyFullVerification: dependencies.readPreparedRollingDailyFullVerification ?? readPreparedRollingDailyForecastVerification,
     readPreparedRecentVerification: dependencies.readPreparedRecentVerification ?? readPreparedBenchmarkRecentForecastVerification,
     executionAdmission: dependencies.executionAdmission ?? createDefaultForecastPreparationExecutionAdmission(),
     now: dependencies.now ?? (() => performance.now()),
@@ -423,6 +436,7 @@ export function createInteractiveForecastPreparationService(
       const readiness = await resolveInteractiveForecastReadiness(
         {
           readPreparedFullVerification: resolvedDependencies.readPreparedFullVerification,
+          readPreparedRollingDailyFullVerification: resolvedDependencies.readPreparedRollingDailyFullVerification,
           readPreparedRecentVerification: resolvedDependencies.readPreparedRecentVerification,
         },
         input,

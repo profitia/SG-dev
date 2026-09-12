@@ -1076,6 +1076,75 @@ test('I7. precompute and matrix reuse the same preparation for a stale variant',
   }
 })
 
+test('I7b. certification does not dispatch point-in-time verification preparation when exact full verification is already ready', async () => {
+  const verificationPrepareCalls: string[] = []
+
+  const report = await createService({
+    cohort: [{
+      seriesId: 'wocaes0074',
+      benchmarkName: 'Brent',
+      group: 'PRIMARY',
+      requiredModels: ['naive'],
+      requiredTargetBases: ['POINT_IN_TIME'],
+    }],
+    capabilityResolver: (input) => capability(input, {
+      sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
+      verificationReadiness: 'READY',
+      fullVerificationReadiness: 'READY',
+      readiness: {
+        fastReady: false,
+        calibratedReady: false,
+        fullReady: true,
+        blockers: ['RECENT_STALE', 'BANDS_NOT_AVAILABLE'],
+      },
+    }),
+    verificationPrepareResolver: async (input) => {
+      verificationPrepareCalls.push(`${input.seriesId}:${input.modelId}:${input.targetBasis}`)
+      return verificationResult(input)
+    },
+  }).run({ includeFallback: false })
+
+  assert.equal(report.benchmarks[0]?.precompute.status, 'PASS')
+  assert.equal(report.benchmarks[0]?.precompute.variants[0]?.fullVerificationReadiness, 'READY')
+  assert.deepEqual(verificationPrepareCalls, [])
+})
+
+test('I7c. certification still dispatches point-in-time verification preparation when exact full verification is not ready', async () => {
+  const verificationPrepareCalls: string[] = []
+  let pitReady = false
+
+  const report = await createService({
+    cohort: [{
+      seriesId: 'wocaes0074',
+      benchmarkName: 'Brent',
+      group: 'PRIMARY',
+      requiredModels: ['naive'],
+      requiredTargetBases: ['POINT_IN_TIME'],
+    }],
+    capabilityResolver: (input) => capability(input, {
+      sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
+      verificationReadiness: pitReady ? 'READY' : 'NOT_PREPARED',
+      fullVerificationReadiness: pitReady ? 'READY' : 'NOT_PREPARED',
+      readiness: {
+        fastReady: false,
+        calibratedReady: false,
+        fullReady: pitReady,
+        blockers: pitReady ? [] : ['FULL_HISTORICAL_MISSING'],
+      },
+    }),
+    verificationPrepareResolver: async (input) => {
+      verificationPrepareCalls.push(`${input.seriesId}:${input.modelId}:${input.targetBasis}`)
+      pitReady = true
+      return verificationResult(input)
+    },
+  }).run({ includeFallback: false })
+
+  assert.equal(report.benchmarks[0]?.precompute.status, 'PASS')
+  assert.deepEqual(verificationPrepareCalls, ['wocaes0074:naive:POINT_IN_TIME'])
+})
+
 test('I8. certification overlaps PIT materialization with non-PIT matrix and waits before PIT evaluation', async () => {
   const events: string[] = []
   const pipelineStarted = createDeferred<void>()

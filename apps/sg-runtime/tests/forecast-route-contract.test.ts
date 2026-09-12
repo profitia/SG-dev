@@ -1430,6 +1430,320 @@ test('interactive capability downgrades full readiness when exact historical ide
   assert.equal(result.fullVerificationReadiness, 'STALE')
 })
 
+test('interactive capability uses rolling-daily authority for point-in-time full verification readiness', async () => {
+  let rollingReads = 0
+  let genericReads = 0
+
+  const capability = buildCapabilityCandidate({
+    identity: {
+      seriesId: 'wocaes0074',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodVersion: 'rolling-daily-point-in-time-v1',
+      modelId: 'arima',
+    },
+    sourceFrequency: 'DAILY',
+    businessTarget: 'DAILY',
+    targetCadence: 'DAILY',
+    semanticLawfulness: 'LAWFUL',
+    currentPreparedState: 'READY',
+    historicalPreparedState: 'READY',
+    predictionBandResidualCount: 48,
+    predictionBandState: 'AVAILABLE',
+    capabilityState: 'AVAILABLE',
+  })
+
+  const service = createInteractiveForecastPreparationService({
+    now: () => 301,
+    resolveExactCapability: async () => ({
+      resolution: buildCapabilityResolution({ capabilities: [capability] }),
+      capability,
+      trace: buildExactCapabilityTrace(),
+    }),
+    readPreparedRecentVerification: async () => ({
+      status: 'AVAILABLE',
+      seriesId: 'wocaes0074',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      verification: {},
+    } as never),
+    readPreparedFullVerification: async () => {
+      genericReads += 1
+      return {
+        status: 'NOT_AVAILABLE',
+        seriesId: 'wocaes0074',
+        modelId: 'arima',
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        reason: 'PREPARATION_REQUIRED: Prepared Historical Verification training-policy identity is not compatible.',
+      }
+    },
+    readPreparedRollingDailyFullVerification: async () => {
+      rollingReads += 1
+      return {
+        status: 'AVAILABLE',
+        seriesId: 'wocaes0074',
+        modelId: 'arima',
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        verification: {},
+      } as never
+    },
+  })
+
+  const result = await service.capability({
+    seriesId: 'wocaes0074',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'arima',
+  })
+
+  assert.equal(rollingReads, 1)
+  assert.equal(genericReads, 0)
+  assert.equal(result.fullVerificationReadiness, 'READY')
+  assert.equal(result.readiness.fullReady, true)
+})
+
+test('interactive capability keeps point-in-time full verification not prepared when rolling-daily authority is missing', async () => {
+  let rollingReads = 0
+  let genericReads = 0
+
+  const capability = buildCapabilityCandidate({
+    identity: {
+      seriesId: 'wocaes0074',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodVersion: 'rolling-daily-point-in-time-v1',
+      modelId: 'arima',
+    },
+    sourceFrequency: 'DAILY',
+    businessTarget: 'DAILY',
+    targetCadence: 'DAILY',
+    semanticLawfulness: 'LAWFUL',
+    currentPreparedState: 'READY',
+    historicalPreparedState: 'READY',
+    predictionBandResidualCount: 48,
+    predictionBandState: 'AVAILABLE',
+    capabilityState: 'AVAILABLE',
+  })
+
+  const service = createInteractiveForecastPreparationService({
+    now: () => 302,
+    resolveExactCapability: async () => ({
+      resolution: buildCapabilityResolution({ capabilities: [capability] }),
+      capability,
+      trace: buildExactCapabilityTrace(),
+    }),
+    readPreparedRecentVerification: async () => ({
+      status: 'AVAILABLE',
+      seriesId: 'wocaes0074',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      verification: {},
+    } as never),
+    readPreparedFullVerification: async () => {
+      genericReads += 1
+      return {
+        status: 'AVAILABLE',
+        seriesId: 'wocaes0074',
+        modelId: 'arima',
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        verification: {},
+      } as never
+    },
+    readPreparedRollingDailyFullVerification: async () => {
+      rollingReads += 1
+      return {
+        status: 'NOT_AVAILABLE',
+        seriesId: 'wocaes0074',
+        modelId: 'arima',
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        reason: 'PREPARATION_REQUIRED: No exact-identity prepared Rolling Daily Historical Verification is available.',
+      }
+    },
+  })
+
+  const result = await service.capability({
+    seriesId: 'wocaes0074',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'arima',
+  })
+
+  assert.equal(rollingReads, 1)
+  assert.equal(genericReads, 0)
+  assert.equal(result.fullVerificationReadiness, 'NOT_PREPARED')
+  assert.equal(result.readiness.fullReady, false)
+  assert.deepEqual(result.readiness.blockers, ['FULL_HISTORICAL_MISSING'])
+})
+
+test('interactive capability keeps point-in-time full verification stale when rolling-daily authority is incomplete', async () => {
+  let rollingReads = 0
+  let genericReads = 0
+
+  const capability = buildCapabilityCandidate({
+    identity: {
+      seriesId: 'wocaes0074',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodVersion: 'rolling-daily-point-in-time-v1',
+      modelId: 'arima',
+    },
+    sourceFrequency: 'DAILY',
+    businessTarget: 'DAILY',
+    targetCadence: 'DAILY',
+    semanticLawfulness: 'LAWFUL',
+    currentPreparedState: 'READY',
+    historicalPreparedState: 'READY',
+    predictionBandResidualCount: 48,
+    predictionBandState: 'AVAILABLE',
+    capabilityState: 'AVAILABLE',
+  })
+
+  const service = createInteractiveForecastPreparationService({
+    now: () => 303,
+    resolveExactCapability: async () => ({
+      resolution: buildCapabilityResolution({ capabilities: [capability] }),
+      capability,
+      trace: buildExactCapabilityTrace(),
+    }),
+    readPreparedRecentVerification: async () => ({
+      status: 'AVAILABLE',
+      seriesId: 'wocaes0074',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      verification: {},
+    } as never),
+    readPreparedFullVerification: async () => {
+      genericReads += 1
+      return {
+        status: 'AVAILABLE',
+        seriesId: 'wocaes0074',
+        modelId: 'arima',
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        verification: {},
+      } as never
+    },
+    readPreparedRollingDailyFullVerification: async () => {
+      rollingReads += 1
+      return {
+        status: 'NOT_AVAILABLE',
+        seriesId: 'wocaes0074',
+        modelId: 'arima',
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        reason: 'PREPARATION_REQUIRED: Prepared Rolling Daily Historical Verification is incomplete for the latest lawful source observation.',
+      }
+    },
+  })
+
+  const result = await service.capability({
+    seriesId: 'wocaes0074',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'arima',
+  })
+
+  assert.equal(rollingReads, 1)
+  assert.equal(genericReads, 0)
+  assert.equal(result.fullVerificationReadiness, 'STALE')
+  assert.equal(result.readiness.fullReady, false)
+  assert.deepEqual(result.readiness.blockers, ['FULL_HISTORICAL_STALE'])
+})
+
+test('interactive capability keeps non-point-in-time full verification authority on the generic prepared reader', async () => {
+  let rollingReads = 0
+  const genericReads: string[] = []
+
+  const service = createInteractiveForecastPreparationService({
+    now: (() => {
+      let tick = 400
+      return () => ++tick
+    })(),
+    resolveExactCapability: async (input) => {
+      const capability = buildCapabilityCandidate({
+        identity: {
+          seriesId: input.seriesId,
+          targetSemantics: input.targetSemantics,
+          methodId: input.targetSemantics,
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+          modelId: input.modelId,
+        },
+        sourceFrequency: 'MONTHLY',
+        businessTarget: input.targetSemantics === 'END_OF_PERIOD' ? 'END_OF_PERIOD' : 'AVERAGE',
+        targetCadence: 'MONTHLY',
+        semanticLawfulness: 'LAWFUL_WITH_PROVENANCE',
+        currentPreparedState: 'READY',
+        historicalPreparedState: 'READY',
+        predictionBandResidualCount: 48,
+        predictionBandState: 'AVAILABLE',
+        capabilityState: 'AVAILABLE',
+      })
+
+      return {
+        resolution: buildCapabilityResolution({ capabilities: [capability] }),
+        capability,
+        trace: buildExactCapabilityTrace(),
+      }
+    },
+    readPreparedRecentVerification: async (request) => ({
+      status: 'AVAILABLE',
+      seriesId: request.seriesId,
+      modelId: request.modelId,
+      targetBasis: request.targetBasis,
+      targetSemantics: request.targetBasis,
+      methodId: request.targetBasis,
+      verification: {},
+    } as never),
+    readPreparedFullVerification: async (request) => {
+      genericReads.push(request.targetBasis)
+      return {
+        status: 'AVAILABLE',
+        seriesId: request.seriesId,
+        modelId: request.modelId,
+        targetBasis: request.targetBasis,
+        targetSemantics: request.targetBasis,
+        methodId: request.targetBasis,
+        verification: {},
+      } as never
+    },
+    readPreparedRollingDailyFullVerification: async () => {
+      rollingReads += 1
+      throw new Error('should not be called for non-point-in-time readiness')
+    },
+  })
+
+  const monthly = await service.capability({
+    seriesId: 'wocaes0280',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'ets',
+  })
+  const endOfPeriod = await service.capability({
+    seriesId: 'wocaes0280',
+    targetSemantics: 'END_OF_PERIOD',
+    modelId: 'ets',
+  })
+
+  assert.deepEqual(genericReads, ['MONTHLY_AVERAGE', 'END_OF_PERIOD'])
+  assert.equal(rollingReads, 0)
+  assert.equal(monthly.fullVerificationReadiness, 'READY')
+  assert.equal(monthly.readiness.fullReady, true)
+  assert.equal(endOfPeriod.fullVerificationReadiness, 'READY')
+  assert.equal(endOfPeriod.readiness.fullReady, true)
+})
+
 test('internal prepare-current route denies invalid bearer credential', async () => {
   const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
