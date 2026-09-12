@@ -6,6 +6,8 @@ import { NextRequest } from 'next/server'
 import {
   createCurrentForecastRouteHandler,
   createForecastVerificationRouteHandler,
+  createInternalForecastVerificationResolver,
+  createInternalForecastVerificationRouteHandler,
   createInternalProductionForecastRouteHandler,
   resolvePreparedForecastVerification,
 } from '../lib/forecast/route-handlers'
@@ -1517,6 +1519,102 @@ test('internal prepare-current route returns reused success in legacy-compatible
       timingMs: 11,
       reason: null,
     })
+  } finally {
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
+})
+
+test('internal verification route runs bounded point-in-time historical preparation before the exact prepared read', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+  let preparedPointInTime: { seriesId: string, modelId: string } | null = null
+
+  try {
+    const resolver = createInternalForecastVerificationResolver(
+      async () => {
+        throw new Error('monthly verification resolver should not be called')
+      },
+      async ({ seriesId, modelId }) => {
+        preparedPointInTime = { seriesId, modelId }
+      },
+      async () => ({
+        status: 'NOT_AVAILABLE',
+        seriesId: 'wocaes0074',
+        modelId: 'arima',
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        reason: 'Prepared Rolling Daily Historical Verification is incomplete for the latest lawful source observation.',
+      }),
+    )
+    const handler = createInternalForecastVerificationRouteHandler(resolver)
+
+    const response = await handler(buildRequest(
+      'http://localhost/api/internal/forecast/verification?seriesId=wocaes0074&model=arima&targetBasis=POINT_IN_TIME',
+      { Authorization: 'Bearer test-internal-token' },
+    ))
+    const payload = await response.json()
+
+    assert.equal(response.status, 200)
+    assert.deepEqual(preparedPointInTime, { seriesId: 'wocaes0074', modelId: 'arima' })
+    assert.equal(payload.status, 'NOT_AVAILABLE')
+    assert.equal(payload.reason, 'Prepared Rolling Daily Historical Verification is incomplete for the latest lawful source observation.')
+  } finally {
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
+})
+
+test('internal verification route keeps monthly exact verification on the generic resolver path', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+  let genericCalls = 0
+  let pointInTimeCalls = 0
+
+  try {
+    const resolver = createInternalForecastVerificationResolver(
+      async () => {
+        genericCalls += 1
+        return {
+          status: 'AVAILABLE',
+          seriesId: 'wocaes0074',
+          modelId: 'ets',
+          targetBasis: 'MONTHLY_AVERAGE',
+          targetSemantics: 'MONTHLY_AVERAGE',
+          methodId: 'MONTHLY_AVERAGE',
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          historyFingerprint: 'fp',
+          history: { frequency: 'MONTHLY', start: '2025-01-01T00:00:00.000Z', end: '2026-01-01T00:00:00.000Z', observations: 12 },
+          forecastOrigin: '2026-01-01T00:00:00.000Z',
+          runtimeSeconds: 1,
+          cacheStatus: 'miss',
+          verification: {},
+        }
+      },
+      async () => {
+        pointInTimeCalls += 1
+      },
+    )
+    const handler = createInternalForecastVerificationRouteHandler(resolver)
+
+    const response = await handler(buildRequest(
+      'http://localhost/api/internal/forecast/verification?seriesId=wocaes0074&model=ets&targetBasis=MONTHLY_AVERAGE&sourceFrequency=MONTHLY&targetCadence=MONTHLY',
+      { Authorization: 'Bearer test-internal-token' },
+    ))
+    const payload = await response.json()
+
+    assert.equal(response.status, 200)
+    assert.equal(genericCalls, 1)
+    assert.equal(pointInTimeCalls, 0)
+    assert.equal(payload.status, 'AVAILABLE')
   } finally {
     if (previousToken === undefined) {
       delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN

@@ -7,6 +7,7 @@ import type {
 import { withInternalForecastServiceAuth } from '@/lib/api/internal-forecast-service-auth'
 import { cognitionError, cognitionOk, parseSearchParams, withCognitionAuth } from '@/lib/api/middleware'
 import { resolveProductionForecast, type ProductionForecastResult } from '@/lib/forecast/production-routing'
+import { createRollingDailyProductionOperationsService } from '@/lib/forecast/rolling-daily-production-operations'
 import { readRollingDailyCurrentForecastSnapshot } from '@/lib/forecast/rolling-daily-current-forecast-snapshot'
 import { buildRollingDailyHistoryFingerprint } from '@/lib/forecast/rolling-daily-maintenance'
 import { readPreparedRollingDailyForecastVerification } from '@/lib/forecast/rolling-daily-verification'
@@ -40,10 +41,17 @@ type PreparedVerificationDependencies = {
   readGenericPeriodVerification: ForecastVerificationResolver
 }
 
+type PointInTimeVerificationPreparer = (input: {
+  seriesId: string
+  modelId: ForecastRequestInput['modelId']
+}) => Promise<void>
+
 const preparedVerificationDependencies: PreparedVerificationDependencies = {
   readRollingDailyVerification: readPreparedRollingDailyForecastVerification,
   readGenericPeriodVerification: readPreparedBenchmarkForecastVerification,
 }
+
+const rollingDailyProductionOperations = createRollingDailyProductionOperationsService()
 
 async function readPreparedRollingDailyCurrentForecast(input: ForecastRequestInput) {
   const { history } = await resolveBenchmarkHistoricalSeries(input.seriesId, 'ALL')
@@ -91,6 +99,32 @@ export async function resolvePreparedForecastVerification(
   return input.targetBasis === 'POINT_IN_TIME'
     ? dependencies.readRollingDailyVerification(input)
     : dependencies.readGenericPeriodVerification(input)
+}
+
+export function createInternalForecastVerificationResolver(
+  resolveGenericPeriodVerification: ForecastVerificationResolver = resolveBenchmarkForecastVerification,
+  preparePointInTimeVerification: PointInTimeVerificationPreparer = async ({ seriesId, modelId }) => {
+    await rollingDailyProductionOperations.run({
+      seriesId,
+      modelIds: [modelId],
+      prepareHistorical: true,
+      maxOriginsPerRun: 1,
+    })
+  },
+  readPointInTimeVerification: ForecastVerificationResolver = readPreparedRollingDailyForecastVerification,
+): ForecastVerificationResolver {
+  return async (input) => {
+    if (input.targetBasis !== 'POINT_IN_TIME') {
+      return resolveGenericPeriodVerification(input)
+    }
+
+    await preparePointInTimeVerification({
+      seriesId: input.seriesId,
+      modelId: input.modelId,
+    })
+
+    return readPointInTimeVerification(input)
+  }
 }
 
 export function createCurrentForecastRouteHandler(
@@ -178,7 +212,7 @@ export function createInternalPreparedForecastVerificationRouteHandler(
 }
 
 export function createInternalForecastVerificationRouteHandler(
-  resolveForecastVerification: ForecastVerificationResolver = resolveBenchmarkForecastVerification,
+  resolveForecastVerification: ForecastVerificationResolver = createInternalForecastVerificationResolver(),
   telemetry: Pick<ForecastStressTelemetry, 'run' | 'sampleResources'> = forecastStressTelemetry,
 ) {
   return withInternalForecastServiceAuth(async (_principal, request: NextRequest) => {

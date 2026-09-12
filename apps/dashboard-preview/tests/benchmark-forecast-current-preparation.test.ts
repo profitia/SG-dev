@@ -715,7 +715,7 @@ test('interactive verification prepare bridge keeps private auth server-side for
   assert.equal((resolvedVerificationInit.headers as Record<string, string>).Authorization, 'Bearer dashboard-preview-token')
 })
 
-test('interactive verification prepare bridge routes point-in-time warm-up through SG Runtime production', async () => {
+test('interactive verification prepare bridge routes point-in-time warm-up through SG Runtime internal verification', async () => {
   const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
   const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
   const originalFetch = global.fetch
@@ -763,17 +763,17 @@ test('interactive verification prepare bridge routes point-in-time warm-up throu
   }
 
   if (!capturedUrl || !capturedInit) {
-    throw new Error('Expected point-in-time warm bridge to issue a server-side SG Runtime request.')
+    throw new Error('Expected point-in-time verification bridge to issue a server-side SG Runtime request.')
   }
 
-  const resolvedProductionUrl = capturedUrl as URL
-  const resolvedProductionInit = capturedInit as RequestInit
+  const resolvedVerificationUrl = capturedUrl as URL
+  const resolvedVerificationInit = capturedInit as RequestInit
 
-  assert.equal(resolvedProductionUrl.pathname, '/api/internal/forecast/production')
-  assert.equal(resolvedProductionUrl.searchParams.get('seriesId'), 'wocaes0074')
-  assert.equal(resolvedProductionUrl.searchParams.get('model'), 'arima')
-  assert.equal(resolvedProductionUrl.searchParams.get('forecastMethod'), 'ROLLING_DAILY_POINT_IN_TIME')
-  assert.equal((resolvedProductionInit.headers as Record<string, string>).Authorization, 'Bearer dashboard-preview-token')
+  assert.equal(resolvedVerificationUrl.pathname, '/api/internal/forecast/verification')
+  assert.equal(resolvedVerificationUrl.searchParams.get('seriesId'), 'wocaes0074')
+  assert.equal(resolvedVerificationUrl.searchParams.get('model'), 'arima')
+  assert.equal(resolvedVerificationUrl.searchParams.get('targetBasis'), 'POINT_IN_TIME')
+  assert.equal((resolvedVerificationInit.headers as Record<string, string>).Authorization, 'Bearer dashboard-preview-token')
 })
 
 test('interactive capability bridge aborts downstream fetch when caller signal aborts', async () => {

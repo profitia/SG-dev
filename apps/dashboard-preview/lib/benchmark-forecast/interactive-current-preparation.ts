@@ -1,5 +1,4 @@
 import {
-  type BenchmarkForecastCurrentResult,
   FORECAST_PORTFOLIO_MODELS,
   FORECAST_TARGET_BASES,
   type BenchmarkForecastVerificationResult,
@@ -22,7 +21,6 @@ const DEPLOYED_SG_RUNTIME_FALLBACK_BASE_URLS = [
 const INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH = '/api/internal/forecast/capability'
 const INTERNAL_FORECAST_PREPARE_CURRENT_ROUTE_PATH = '/api/internal/forecast/prepare/current'
 const INTERNAL_FORECAST_VERIFICATION_ROUTE_PATH = '/api/internal/forecast/verification'
-const INTERNAL_FORECAST_PRODUCTION_ROUTE_PATH = '/api/internal/forecast/production'
 const INTERNAL_FORECAST_PROGRESSIVE_ROUTE_PATH = '/api/internal/forecast/progressive'
 const INTERNAL_FORECAST_TIMEOUT_MS = 75_000
 export const FORECAST_TRACE_HEADER = 'x-sg-forecast-trace'
@@ -359,20 +357,7 @@ export async function requestInteractiveForecastVerificationPreparation(
   cadence?: { sourceFrequency: string, targetCadence: string },
   traceOptions?: TraceOptions,
   options?: ForecastBridgeRequestOptions,
-) : Promise<BenchmarkForecastVerificationResult | BenchmarkForecastCurrentResult> {
-  if (input.targetBasis === 'POINT_IN_TIME') {
-    const url = new URL(INTERNAL_FORECAST_PRODUCTION_ROUTE_PATH, LOCAL_SG_RUNTIME_BASE_URL)
-    url.searchParams.set('seriesId', input.seriesId)
-    url.searchParams.set('model', input.modelId)
-    url.searchParams.set('forecastMethod', 'ROLLING_DAILY_POINT_IN_TIME')
-
-    return readInternalJson<BenchmarkForecastCurrentResult>(url.pathname + url.search, {
-      method: 'GET',
-      signal: options?.signal,
-      headers: resolveAuthorizedHeaders(),
-    }, traceOptions)
-  }
-
+) : Promise<BenchmarkForecastVerificationResult> {
   const url = new URL(INTERNAL_FORECAST_VERIFICATION_ROUTE_PATH, LOCAL_SG_RUNTIME_BASE_URL)
   url.searchParams.set('seriesId', input.seriesId)
   url.searchParams.set('model', input.modelId)
