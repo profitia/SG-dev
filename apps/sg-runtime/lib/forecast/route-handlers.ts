@@ -183,7 +183,7 @@ export function createInternalForecastVerificationResolver(
 async function runForecastRouteWithDiagnostics(
   request: NextRequest,
   requestId: string,
-  operationType: 'READ_ONLY_PREPARED' | 'VERIFICATION_MATERIALIZATION' | 'PRODUCTION',
+  operationType: 'READ_ONLY_PREPARED' | 'VERIFICATION_MATERIALIZATION' | 'PRODUCTION' | 'OTHER',
   operation: () => Promise<ReturnType<typeof cognitionOk>>,
 ) {
   return runWithForecastRequestDiagnostics({
