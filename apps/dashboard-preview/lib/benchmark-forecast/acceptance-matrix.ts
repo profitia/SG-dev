@@ -145,6 +145,123 @@ export type ForecastAcceptanceSection = {
   cells: ForecastAcceptanceCell[]
 }
 
+export type ForecastAcceptanceMatrixRemoteOperation = 'READ_CURRENT' | 'READ_VERIFICATION'
+
+export type ForecastAcceptanceMatrixRemoteStepDiagnostic = {
+  cacheStatus: 'hit' | 'miss' | null
+  queuedAt: string | null
+  dispatchedAt: string | null
+  completedAt: string | null
+  queueWaitMs: number | null
+  remoteElapsedMs: number | null
+  elapsedMs: number | null
+  benchmarkBudgetRemainingMsAtDispatch: number | null
+  outcome: 'SUCCESS' | 'ERROR' | 'TIMEOUT' | null
+  status: string | null
+  reason: string | null
+}
+
+export type ForecastAcceptanceMatrixVariantDiagnostic = {
+  seriesId: string
+  modelId: ForecastPortfolioModelId
+  targetBasis: ForecastTargetBasis
+  targetSemantics: ForecastTargetSemantics
+  isPointInTime: boolean
+  scheduledAt: string | null
+  startedAt: string | null
+  completedAt: string | null
+  elapsedMs: number | null
+  outcome: 'SUCCESS' | 'ERROR' | 'TIMEOUT' | null
+  reason: string | null
+  readinessResolutionStartedAt: string | null
+  readinessResolutionCompletedAt: string | null
+  readinessResolutionElapsedMs: number | null
+  capabilityCacheStatus: 'hit' | 'miss' | null
+  preparationCacheStatus: 'hit' | 'miss' | null
+  persistedCurrentProofStartedAt: string | null
+  persistedCurrentProofCompletedAt: string | null
+  persistedCurrentProofElapsedMs: number | null
+  persistedVerificationProofStartedAt: string | null
+  persistedVerificationProofCompletedAt: string | null
+  persistedVerificationProofElapsedMs: number | null
+  currentRead: ForecastAcceptanceMatrixRemoteStepDiagnostic
+  verificationRead: ForecastAcceptanceMatrixRemoteStepDiagnostic
+}
+
+export type ForecastAcceptanceMatrixDiagnostics = {
+  phaseStartedAt: string | null
+  phaseCompletedAt: string | null
+  elapsedMs: number | null
+  maxConcurrentVariants: number | null
+  peakVariantConcurrency: number
+  variantsCompletedBeforeTimeout: number
+  pointInTimeEvaluationBegan: boolean
+  pointInTimeEvaluationStartedAt: string | null
+  firstCurrentDispatchAt: string | null
+  lastCurrentCompletionAt: string | null
+  firstVerificationDispatchAt: string | null
+  lastVerificationCompletionAt: string | null
+  variants: ForecastAcceptanceMatrixVariantDiagnostic[]
+}
+
+export type ForecastAcceptanceMatrixDiagnosticsRecorder = {
+  enabled: boolean
+  maxConcurrentVariants: number | null
+  notePhaseStart: () => void
+  notePhaseEnd: () => void
+  notePointInTimeStart: () => void
+  noteVariantScheduled: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => void
+  noteVariantStarted: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => void
+  noteVariantCompleted: (
+    seriesId: string,
+    modelId: ForecastPortfolioModelId,
+    targetBasis: ForecastTargetBasis,
+    outcome: 'SUCCESS' | 'ERROR' | 'TIMEOUT',
+    reason?: string | null,
+  ) => void
+  noteReadinessStart: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => void
+  noteReadinessEnd: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => void
+  noteCapabilityCacheStatus: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis, cacheStatus: 'hit' | 'miss') => void
+  notePreparationCacheStatus: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis, cacheStatus: 'hit' | 'miss') => void
+  notePersistedProofStart: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis, kind: 'CURRENT' | 'VERIFICATION') => void
+  notePersistedProofEnd: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis, kind: 'CURRENT' | 'VERIFICATION') => void
+  noteRemoteQueued: (
+    seriesId: string,
+    modelId: ForecastPortfolioModelId,
+    targetBasis: ForecastTargetBasis,
+    operation: ForecastAcceptanceMatrixRemoteOperation,
+    cacheStatus: 'hit' | 'miss',
+  ) => void
+  noteRemoteDispatched: (
+    seriesId: string,
+    modelId: ForecastPortfolioModelId,
+    targetBasis: ForecastTargetBasis,
+    operation: ForecastAcceptanceMatrixRemoteOperation,
+    dispatchedAt: string,
+    queueWaitMs: number,
+    benchmarkBudgetRemainingMsAtDispatch: number | null,
+  ) => void
+  noteRemoteCompleted: (
+    seriesId: string,
+    modelId: ForecastPortfolioModelId,
+    targetBasis: ForecastTargetBasis,
+    operation: ForecastAcceptanceMatrixRemoteOperation,
+    completedAt: string,
+    remoteElapsedMs: number,
+    elapsedMs: number,
+    outcome: 'SUCCESS' | 'ERROR' | 'TIMEOUT',
+    status: string | null,
+    reason: string | null,
+  ) => void
+  build: () => ForecastAcceptanceMatrixDiagnostics
+}
+
+type MatrixEvaluationOptions = {
+  signal?: AbortSignal
+  diagnosticsRecorder?: ForecastAcceptanceMatrixDiagnosticsRecorder
+  maxConcurrentVariants?: number | null
+}
+
 export type ForecastAcceptanceMatrixReport = {
   seriesId: string
   generatedAt: string
@@ -190,6 +307,41 @@ function summarize(cells: ForecastAcceptanceCell[]): ForecastAcceptanceSection {
     fail: cells.filter((cell) => cell.state === 'FAIL').length,
     unsupported: cells.filter((cell) => cell.state === 'UNSUPPORTED').length,
     cells,
+  }
+}
+
+function normalizeMaxConcurrentVariants(value: number | null | undefined) {
+  if (!Number.isFinite(value)) {
+    return null
+  }
+
+  const normalized = Math.floor(value ?? 0)
+  return normalized > 0 ? normalized : null
+}
+
+function createVariantLimiter(maxConcurrentVariants: number | null) {
+  let activeCount = 0
+  const waiters: Array<() => void> = []
+
+  return async function run<T>(operation: () => Promise<T>) {
+    if (maxConcurrentVariants) {
+      if (activeCount >= maxConcurrentVariants) {
+        await new Promise<void>((resolve) => {
+          waiters.push(resolve)
+        })
+      }
+
+      activeCount += 1
+    }
+
+    try {
+      return await operation()
+    } finally {
+      if (maxConcurrentVariants) {
+        activeCount = Math.max(0, activeCount - 1)
+        waiters.shift()?.()
+      }
+    }
   }
 }
 
@@ -441,13 +593,16 @@ export function createForecastAcceptanceMatrixService(
 
   async function ensurePrepared(
     input: BenchmarkForecastCurrentPreparationRequest,
-    options?: { signal?: AbortSignal },
+    options?: MatrixEvaluationOptions,
   ): Promise<PreparationEvidence> {
     const cacheKey = createVariantKey(input.seriesId, input.modelId, input.targetBasis)
     const cached = preparationCache.get(cacheKey)
     if (cached) {
+      options?.diagnosticsRecorder?.notePreparationCacheStatus(input.seriesId, input.modelId, input.targetBasis, 'hit')
       return cached
     }
+
+    options?.diagnosticsRecorder?.notePreparationCacheStatus(input.seriesId, input.modelId, input.targetBasis, 'miss')
 
     const pending = resolvedDependencies.prepareCurrent(input, options)
       .then((result) => ({
@@ -499,15 +654,19 @@ export function createForecastAcceptanceMatrixService(
 
   async function resolveVariantReadiness(
     input: BenchmarkForecastCurrentPreparationRequest,
-    options?: { signal?: AbortSignal },
+    options?: MatrixEvaluationOptions,
   ): Promise<ResolvedVariantReadiness> {
     const cacheKey = createVariantKey(input.seriesId, input.modelId, input.targetBasis)
     const cached = readinessCache.get(cacheKey)
     if (cached) {
+      options?.diagnosticsRecorder?.noteCapabilityCacheStatus(input.seriesId, input.modelId, input.targetBasis, 'hit')
       return cached
     }
 
+    options?.diagnosticsRecorder?.noteCapabilityCacheStatus(input.seriesId, input.modelId, input.targetBasis, 'miss')
+
     const pending = (async () => {
+      options?.diagnosticsRecorder?.noteReadinessStart(input.seriesId, input.modelId, input.targetBasis)
       const initialCapability = await resolvedDependencies.readCapability(input, options)
 
       const readinessAlreadyUsable = initialCapability.currentReadiness === 'READY'
@@ -519,6 +678,7 @@ export function createForecastAcceptanceMatrixService(
         || initialCapability.verificationReadiness === 'STALE'
 
       if (readinessAlreadyUsable && !staleNeedsWarmup) {
+        options?.diagnosticsRecorder?.noteReadinessEnd(input.seriesId, input.modelId, input.targetBasis)
         return {
           capability: initialCapability,
           preparation: null,
@@ -526,6 +686,7 @@ export function createForecastAcceptanceMatrixService(
       }
 
       if (!warmablePreparedState) {
+        options?.diagnosticsRecorder?.noteReadinessEnd(input.seriesId, input.modelId, input.targetBasis)
         return {
           capability: initialCapability,
           preparation: null,
@@ -534,6 +695,8 @@ export function createForecastAcceptanceMatrixService(
 
       const preparation = await ensurePrepared(input, options)
       const warmedCapability = await resolvedDependencies.readCapability(input, options)
+
+      options?.diagnosticsRecorder?.noteReadinessEnd(input.seriesId, input.modelId, input.targetBasis)
 
       return {
         capability: warmedCapability,
@@ -557,7 +720,7 @@ export function createForecastAcceptanceMatrixService(
     seriesId: string,
     modelId: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
-    options?: { signal?: AbortSignal },
+    options?: MatrixEvaluationOptions,
   ): Promise<ForecastAcceptanceCell> {
     try {
       const resolvedReadiness = await resolveVariantReadiness({ seriesId, modelId, targetBasis }, options)
@@ -595,7 +758,14 @@ export function createForecastAcceptanceMatrixService(
       }
 
       const persisted = shouldRequireLocalPersistedArtifactProof(targetBasis)
-        ? await checkPersistedCurrentArtifact(resolvedDependencies.getPrisma(), seriesId, modelId, targetBasis)
+        ? await (async () => {
+            options?.diagnosticsRecorder?.notePersistedProofStart(seriesId, modelId, targetBasis, 'CURRENT')
+            try {
+              return await checkPersistedCurrentArtifact(resolvedDependencies.getPrisma(), seriesId, modelId, targetBasis)
+            } finally {
+              options?.diagnosticsRecorder?.notePersistedProofEnd(seriesId, modelId, targetBasis, 'CURRENT')
+            }
+          })()
         : { ok: true, reasonCode: null, diagnostic: null, historyFingerprint: null }
       if (!persisted.ok) {
         return {
@@ -684,7 +854,7 @@ export function createForecastAcceptanceMatrixService(
     modelId: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
     horizon: string,
-    options?: { signal?: AbortSignal },
+    options?: MatrixEvaluationOptions,
   ): Promise<ForecastAcceptanceCell> {
     try {
       const resolvedReadiness = await resolveVariantReadiness({ seriesId, modelId, targetBasis }, options)
@@ -722,7 +892,14 @@ export function createForecastAcceptanceMatrixService(
       }
 
       const persisted = shouldRequireLocalPersistedArtifactProof(targetBasis)
-        ? await checkPersistedVerificationArtifact(resolvedDependencies.getPrisma(), seriesId, modelId, targetBasis, horizon)
+        ? await (async () => {
+            options?.diagnosticsRecorder?.notePersistedProofStart(seriesId, modelId, targetBasis, 'VERIFICATION')
+            try {
+              return await checkPersistedVerificationArtifact(resolvedDependencies.getPrisma(), seriesId, modelId, targetBasis, horizon)
+            } finally {
+              options?.diagnosticsRecorder?.notePersistedProofEnd(seriesId, modelId, targetBasis, 'VERIFICATION')
+            }
+          })()
         : { ok: true, reasonCode: null, diagnostic: null, historyFingerprint: null }
       if (!persisted.ok) {
         return {
@@ -816,15 +993,39 @@ export function createForecastAcceptanceMatrixService(
   }
 
   return {
-    async evaluateSeries(seriesId: string, options?: { signal?: AbortSignal }): Promise<ForecastAcceptanceMatrixReport> {
-      const evaluateVariant = async (modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => ({
-        current: await evaluateCurrentCell(seriesId, modelId, targetBasis, options),
-        verification: await Promise.all(
-          DEFAULT_VERIFICATION_HORIZONS.map((horizon) => (
-            evaluateVerificationCell(seriesId, modelId, targetBasis, horizon, options)
-          )),
-        ),
-      })
+    async evaluateSeries(seriesId: string, options?: MatrixEvaluationOptions): Promise<ForecastAcceptanceMatrixReport> {
+      const diagnosticsRecorder = options?.diagnosticsRecorder
+      const maxConcurrentVariants = normalizeMaxConcurrentVariants(options?.maxConcurrentVariants ?? diagnosticsRecorder?.maxConcurrentVariants)
+      const runVariant = createVariantLimiter(maxConcurrentVariants)
+
+      const evaluateVariant = async (modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => {
+        diagnosticsRecorder?.noteVariantScheduled(seriesId, modelId, targetBasis)
+
+        return runVariant(async () => {
+          diagnosticsRecorder?.noteVariantStarted(seriesId, modelId, targetBasis)
+
+          try {
+            const result = {
+              current: await evaluateCurrentCell(seriesId, modelId, targetBasis, options),
+              verification: await Promise.all(
+                DEFAULT_VERIFICATION_HORIZONS.map((horizon) => (
+                  evaluateVerificationCell(seriesId, modelId, targetBasis, horizon, options)
+                )),
+              ),
+            }
+
+            diagnosticsRecorder?.noteVariantCompleted(seriesId, modelId, targetBasis, 'SUCCESS')
+            return result
+          } catch (error) {
+            const reason = error instanceof Error ? error.message : String(error)
+            const outcome = reason.toLowerCase().includes('timed out') ? 'TIMEOUT' : 'ERROR'
+            diagnosticsRecorder?.noteVariantCompleted(seriesId, modelId, targetBasis, outcome, reason)
+            throw error
+          }
+        })
+      }
+
+      diagnosticsRecorder?.notePhaseStart()
 
       const nonPointInTimeVariantResults = await Promise.all(
         FORECAST_PORTFOLIO_MODELS.flatMap((modelId) => (
@@ -835,6 +1036,7 @@ export function createForecastAcceptanceMatrixService(
       )
 
       const pointInTimeVariantResults = [] as Awaited<ReturnType<typeof evaluateVariant>>[]
+      diagnosticsRecorder?.notePointInTimeStart()
       for (const modelId of FORECAST_PORTFOLIO_MODELS) {
         pointInTimeVariantResults.push(await evaluateVariant(modelId, 'POINT_IN_TIME'))
       }
@@ -851,6 +1053,8 @@ export function createForecastAcceptanceMatrixService(
         : current.pass + verification.pass === 0 && current.unsupported + verification.unsupported === 0
           ? 'INCOMPLETE'
           : 'FAIL'
+
+      diagnosticsRecorder?.notePhaseEnd()
 
       return {
         seriesId,

@@ -28,6 +28,9 @@ function normalizeDiagnostics(input: unknown): DemoCertificationDiagnosticsOptio
     maxConcurrentRemoteReads: typeof candidate.maxConcurrentRemoteReads === 'number'
       ? candidate.maxConcurrentRemoteReads
       : undefined,
+    maxConcurrentMatrixVariants: typeof candidate.maxConcurrentMatrixVariants === 'number'
+      ? candidate.maxConcurrentMatrixVariants
+      : undefined,
   }
 }
 

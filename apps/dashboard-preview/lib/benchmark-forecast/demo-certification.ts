@@ -3,6 +3,8 @@ import { randomUUID } from 'node:crypto'
 import {
   createForecastAcceptanceMatrixService,
   type ForecastAcceptanceCell,
+  type ForecastAcceptanceMatrixDiagnostics,
+  type ForecastAcceptanceMatrixDiagnosticsRecorder,
   type ForecastAcceptanceMatrixReport,
 } from './acceptance-matrix'
 import {
@@ -81,6 +83,7 @@ export type DemoCertificationSnapshot = {
 export type DemoCertificationDiagnosticsOptions = {
   enabled?: boolean
   maxConcurrentRemoteReads?: number
+  maxConcurrentMatrixVariants?: number
 }
 
 export type DemoBenchmarkDiagnosticPhase = (typeof DEMO_CERTIFICATION_PHASES)[number]
@@ -109,7 +112,12 @@ export type DemoBenchmarkRemoteRequestDiagnostic = {
   targetCadence: string | null
   cacheStatus: 'hit' | 'miss'
   startedAt: string
+  queuedAt: string
+  dispatchedAt: string
   completedAt: string
+  queueWaitMs: number
+  remoteElapsedMs: number
+  benchmarkBudgetRemainingMsAtDispatch: number | null
   elapsedMs: number
   outcome: 'SUCCESS' | 'ERROR' | 'TIMEOUT'
   status: string | null
@@ -143,6 +151,7 @@ export type DemoBenchmarkDiagnostics = {
   peakConcurrentRemoteReads: number
   totalRemoteRequests: number
   timeoutSnapshot: DemoBenchmarkTimeoutSnapshot | null
+  matrix: ForecastAcceptanceMatrixDiagnostics | null
   timeline: Array<DemoBenchmarkPhaseDiagnostic | DemoBenchmarkRemoteRequestDiagnostic>
 }
 
@@ -421,6 +430,15 @@ function normalizeMaxConcurrentRemoteReads(value: number | undefined) {
   return normalized > 0 ? normalized : null
 }
 
+function normalizeMaxConcurrentMatrixVariants(value: number | undefined) {
+  if (!Number.isFinite(value)) {
+    return null
+  }
+
+  const normalized = Math.floor(value ?? 0)
+  return normalized > 0 ? normalized : null
+}
+
 function isTimeoutError(error: unknown) {
   return error instanceof Error && error.message.toLowerCase().includes('timed out')
 }
@@ -476,13 +494,316 @@ function createBenchmarkDiagnosticsTracker(
   const enabled = options?.enabled === true
   const benchmarkExecutionId = `demo-certification-${randomUUID()}`
   const maxConcurrentRemoteReads = enabled ? normalizeMaxConcurrentRemoteReads(options?.maxConcurrentRemoteReads) : null
+  const maxConcurrentMatrixVariants = enabled ? normalizeMaxConcurrentMatrixVariants(options?.maxConcurrentMatrixVariants) : null
   const limitRemoteRead = createRemoteReadLimiter(maxConcurrentRemoteReads)
   const timeline: Array<DemoBenchmarkPhaseDiagnostic | DemoBenchmarkRemoteRequestDiagnostic> = []
   const activeRequests = new Map<string, DemoRemoteOperationIdentity & { startedAt: string, startedAtMs: number, requestId: string }>()
   let peakConcurrentRemoteReads = 0
   let totalRemoteRequests = 0
   let timeoutSnapshot: DemoBenchmarkTimeoutSnapshot | null = null
+  let benchmarkStartedAtMs: number | null = null
+  let matrixDiagnostics: ForecastAcceptanceMatrixDiagnostics | null = null
   let sequence = 0
+
+  const createEmptyRemoteStep = () => ({
+    cacheStatus: null,
+    queuedAt: null,
+    dispatchedAt: null,
+    completedAt: null,
+    queueWaitMs: null,
+    remoteElapsedMs: null,
+    elapsedMs: null,
+    benchmarkBudgetRemainingMsAtDispatch: null,
+    outcome: null,
+    status: null,
+    reason: null,
+  })
+
+  const createMatrixDiagnosticsRecorder = (): ForecastAcceptanceMatrixDiagnosticsRecorder => {
+    const variants = new Map<string, ForecastAcceptanceMatrixDiagnostics['variants'][number]>()
+    let phaseStartedAt: string | null = null
+    let phaseStartedAtMs: number | null = null
+    let phaseCompletedAt: string | null = null
+    let pointInTimeEvaluationStartedAt: string | null = null
+    let pointInTimeEvaluationBegan = false
+    let activeVariantCount = 0
+    let peakVariantConcurrency = 0
+
+    const buildVariantKey = (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => (
+      `${seriesId}::${modelId}::${targetBasis}`
+    )
+
+    const getVariant = (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => {
+      const key = buildVariantKey(seriesId, modelId, targetBasis)
+      const existing = variants.get(key)
+      if (existing) {
+        return existing
+      }
+
+      const created = {
+        seriesId,
+        modelId,
+        targetBasis,
+        targetSemantics: resolveForecastTargetSemantics(targetBasis),
+        isPointInTime: targetBasis === 'POINT_IN_TIME',
+        scheduledAt: null,
+        startedAt: null,
+        completedAt: null,
+        elapsedMs: null,
+        outcome: null,
+        reason: null,
+        readinessResolutionStartedAt: null,
+        readinessResolutionCompletedAt: null,
+        readinessResolutionElapsedMs: null,
+        capabilityCacheStatus: null,
+        preparationCacheStatus: null,
+        persistedCurrentProofStartedAt: null,
+        persistedCurrentProofCompletedAt: null,
+        persistedCurrentProofElapsedMs: null,
+        persistedVerificationProofStartedAt: null,
+        persistedVerificationProofCompletedAt: null,
+        persistedVerificationProofElapsedMs: null,
+        currentRead: createEmptyRemoteStep(),
+        verificationRead: createEmptyRemoteStep(),
+      }
+      variants.set(key, created)
+      return created
+    }
+
+    const markProofStart = (variant: ReturnType<typeof getVariant>, kind: 'CURRENT' | 'VERIFICATION') => {
+      const timestamp = new Date().toISOString()
+      if (kind === 'CURRENT') {
+        if (!variant.persistedCurrentProofStartedAt) {
+          variant.persistedCurrentProofStartedAt = timestamp
+        }
+        return
+      }
+
+      if (!variant.persistedVerificationProofStartedAt) {
+        variant.persistedVerificationProofStartedAt = timestamp
+      }
+    }
+
+    const markProofEnd = (variant: ReturnType<typeof getVariant>, kind: 'CURRENT' | 'VERIFICATION') => {
+      const timestamp = new Date().toISOString()
+      if (kind === 'CURRENT') {
+        variant.persistedCurrentProofCompletedAt = timestamp
+        if (variant.persistedCurrentProofStartedAt) {
+          variant.persistedCurrentProofElapsedMs = Math.max(
+            0,
+            new Date(timestamp).getTime() - new Date(variant.persistedCurrentProofStartedAt).getTime(),
+          )
+        }
+        return
+      }
+
+      variant.persistedVerificationProofCompletedAt = timestamp
+      if (variant.persistedVerificationProofStartedAt) {
+        variant.persistedVerificationProofElapsedMs = Math.max(
+          0,
+          new Date(timestamp).getTime() - new Date(variant.persistedVerificationProofStartedAt).getTime(),
+        )
+      }
+    }
+
+    const firstDispatchAt = (operation: 'currentRead' | 'verificationRead') => {
+      const dispatched = [...variants.values()]
+        .map((variant) => variant[operation].dispatchedAt)
+        .filter((value): value is string => Boolean(value))
+        .sort()[0] ?? null
+      return dispatched
+    }
+
+    const lastCompletionAt = (operation: 'currentRead' | 'verificationRead') => {
+      const completed = [...variants.values()]
+        .map((variant) => variant[operation].completedAt)
+        .filter((value): value is string => Boolean(value))
+        .sort()
+      return completed.length > 0 ? completed[completed.length - 1] : null
+    }
+
+    return {
+      enabled,
+      maxConcurrentVariants: maxConcurrentMatrixVariants,
+      notePhaseStart() {
+        if (!enabled || phaseStartedAt) {
+          return
+        }
+
+        phaseStartedAt = new Date().toISOString()
+        phaseStartedAtMs = Date.now()
+      },
+      notePhaseEnd() {
+        if (!enabled) {
+          return
+        }
+
+        phaseCompletedAt = new Date().toISOString()
+      },
+      notePointInTimeStart() {
+        if (!enabled || pointInTimeEvaluationBegan) {
+          return
+        }
+
+        pointInTimeEvaluationBegan = true
+        pointInTimeEvaluationStartedAt = new Date().toISOString()
+      },
+      noteVariantScheduled(seriesId, modelId, targetBasis) {
+        if (!enabled) {
+          return
+        }
+
+        const variant = getVariant(seriesId, modelId, targetBasis)
+        if (!variant.scheduledAt) {
+          variant.scheduledAt = new Date().toISOString()
+        }
+      },
+      noteVariantStarted(seriesId, modelId, targetBasis) {
+        if (!enabled) {
+          return
+        }
+
+        const variant = getVariant(seriesId, modelId, targetBasis)
+        if (!variant.startedAt) {
+          variant.startedAt = new Date().toISOString()
+        }
+        activeVariantCount += 1
+        peakVariantConcurrency = Math.max(peakVariantConcurrency, activeVariantCount)
+      },
+      noteVariantCompleted(seriesId, modelId, targetBasis, outcome, reason) {
+        if (!enabled) {
+          return
+        }
+
+        const variant = getVariant(seriesId, modelId, targetBasis)
+        variant.completedAt = new Date().toISOString()
+        variant.outcome = outcome
+        variant.reason = reason ?? null
+        if (variant.startedAt) {
+          variant.elapsedMs = Math.max(0, new Date(variant.completedAt).getTime() - new Date(variant.startedAt).getTime())
+        }
+        activeVariantCount = Math.max(0, activeVariantCount - 1)
+      },
+      noteReadinessStart(seriesId, modelId, targetBasis) {
+        if (!enabled) {
+          return
+        }
+
+        const variant = getVariant(seriesId, modelId, targetBasis)
+        if (!variant.readinessResolutionStartedAt) {
+          variant.readinessResolutionStartedAt = new Date().toISOString()
+        }
+      },
+      noteReadinessEnd(seriesId, modelId, targetBasis) {
+        if (!enabled) {
+          return
+        }
+
+        const variant = getVariant(seriesId, modelId, targetBasis)
+        variant.readinessResolutionCompletedAt = new Date().toISOString()
+        if (variant.readinessResolutionStartedAt) {
+          variant.readinessResolutionElapsedMs = Math.max(
+            0,
+            new Date(variant.readinessResolutionCompletedAt).getTime() - new Date(variant.readinessResolutionStartedAt).getTime(),
+          )
+        }
+      },
+      noteCapabilityCacheStatus(seriesId, modelId, targetBasis, cacheStatus) {
+        if (!enabled) {
+          return
+        }
+
+        getVariant(seriesId, modelId, targetBasis).capabilityCacheStatus = cacheStatus
+      },
+      notePreparationCacheStatus(seriesId, modelId, targetBasis, cacheStatus) {
+        if (!enabled) {
+          return
+        }
+
+        getVariant(seriesId, modelId, targetBasis).preparationCacheStatus = cacheStatus
+      },
+      notePersistedProofStart(seriesId, modelId, targetBasis, kind) {
+        if (!enabled) {
+          return
+        }
+
+        markProofStart(getVariant(seriesId, modelId, targetBasis), kind)
+      },
+      notePersistedProofEnd(seriesId, modelId, targetBasis, kind) {
+        if (!enabled) {
+          return
+        }
+
+        markProofEnd(getVariant(seriesId, modelId, targetBasis), kind)
+      },
+      noteRemoteQueued(seriesId, modelId, targetBasis, operation, cacheStatus) {
+        if (!enabled) {
+          return
+        }
+
+        const variant = getVariant(seriesId, modelId, targetBasis)
+        const target = operation === 'READ_CURRENT' ? variant.currentRead : variant.verificationRead
+        if (!target.queuedAt) {
+          target.queuedAt = new Date().toISOString()
+        }
+        target.cacheStatus = cacheStatus
+      },
+      noteRemoteDispatched(seriesId, modelId, targetBasis, operation, dispatchedAt, queueWaitMs, benchmarkBudgetRemainingMsAtDispatch) {
+        if (!enabled) {
+          return
+        }
+
+        const variant = getVariant(seriesId, modelId, targetBasis)
+        const target = operation === 'READ_CURRENT' ? variant.currentRead : variant.verificationRead
+        if (!target.dispatchedAt) {
+          target.dispatchedAt = dispatchedAt
+          target.queueWaitMs = queueWaitMs
+          target.benchmarkBudgetRemainingMsAtDispatch = benchmarkBudgetRemainingMsAtDispatch
+        }
+      },
+      noteRemoteCompleted(seriesId, modelId, targetBasis, operation, completedAt, remoteElapsedMs, elapsedMs, outcome, status, reason) {
+        if (!enabled) {
+          return
+        }
+
+        const variant = getVariant(seriesId, modelId, targetBasis)
+        const target = operation === 'READ_CURRENT' ? variant.currentRead : variant.verificationRead
+        if (!target.completedAt) {
+          target.completedAt = completedAt
+          target.remoteElapsedMs = remoteElapsedMs
+          target.elapsedMs = elapsedMs
+          target.outcome = outcome
+          target.status = status
+          target.reason = reason
+        }
+      },
+      build() {
+        return {
+          phaseStartedAt,
+          phaseCompletedAt,
+          elapsedMs: phaseStartedAtMs && phaseCompletedAt
+            ? Math.max(0, new Date(phaseCompletedAt).getTime() - phaseStartedAtMs)
+            : null,
+          maxConcurrentVariants: maxConcurrentMatrixVariants,
+          peakVariantConcurrency,
+          variantsCompletedBeforeTimeout: [...variants.values()].filter((variant) => variant.completedAt !== null).length,
+          pointInTimeEvaluationBegan,
+          pointInTimeEvaluationStartedAt,
+          firstCurrentDispatchAt: firstDispatchAt('currentRead'),
+          lastCurrentCompletionAt: lastCompletionAt('currentRead'),
+          firstVerificationDispatchAt: firstDispatchAt('verificationRead'),
+          lastVerificationCompletionAt: lastCompletionAt('verificationRead'),
+          variants: [...variants.values()].sort((left, right) => {
+            const leftStarted = left.startedAt ?? left.scheduledAt ?? ''
+            const rightStarted = right.startedAt ?? right.scheduledAt ?? ''
+            return leftStarted.localeCompare(rightStarted)
+          }),
+        }
+      },
+    }
+  }
+
+  const matrixRecorder = createMatrixDiagnosticsRecorder()
 
   const nextRequestId = (operation: DemoBenchmarkRemoteOperation) => {
     sequence += 1
@@ -492,6 +813,16 @@ function createBenchmarkDiagnosticsTracker(
   return {
     enabled,
     benchmarkExecutionId,
+    maxConcurrentMatrixVariants,
+    markBenchmarkStart() {
+      if (benchmarkStartedAtMs === null) {
+        benchmarkStartedAtMs = Date.now()
+      }
+    },
+    matrixRecorder,
+    setMatrixDiagnostics(snapshot: ForecastAcceptanceMatrixDiagnostics) {
+      matrixDiagnostics = snapshot
+    },
     async tracePhase<T>(phase: DemoBenchmarkDiagnosticPhase, operation: () => Promise<T>) {
       if (!enabled) {
         return operation()
@@ -580,9 +911,30 @@ function createBenchmarkDiagnosticsTracker(
       identity: DemoRemoteOperationIdentity,
       operation: (requestOptions: DemoCertificationRequestOptions) => Promise<DemoRemoteOperationResult<T>>,
     ) {
+      const outcome = await this.traceRemoteRequestDetailed(identity, operation)
+      return outcome.result
+    },
+    async traceRemoteRequestDetailed<T>(
+      identity: DemoRemoteOperationIdentity,
+      operation: (requestOptions: DemoCertificationRequestOptions) => Promise<DemoRemoteOperationResult<T>>,
+    ) {
       if (!enabled) {
         const outcome = await operation({})
-        return outcome.result
+        return {
+          result: outcome.result,
+          meta: {
+            queuedAt: null,
+            dispatchedAt: null,
+            completedAt: null,
+            queueWaitMs: 0,
+            remoteElapsedMs: null,
+            elapsedMs: null,
+            outcome: 'SUCCESS' as const,
+            status: outcome.status,
+            reason: outcome.reason,
+            benchmarkBudgetRemainingMsAtDispatch: null,
+          },
+        }
       }
 
       const requestId = nextRequestId(identity.operation)
@@ -593,21 +945,30 @@ function createBenchmarkDiagnosticsTracker(
         identity.operation,
         identity.input,
       )
-      const startedAt = new Date().toISOString()
-      const startedAtMs = Date.now()
+      const queuedAt = new Date().toISOString()
+      const queuedAtMs = Date.now()
 
       return limitRemoteRead(async () => {
+        const dispatchedAt = new Date().toISOString()
+        const dispatchedAtMs = Date.now()
+        const queueWaitMs = Math.max(0, dispatchedAtMs - queuedAtMs)
+        const benchmarkBudgetRemainingMsAtDispatch = benchmarkStartedAtMs === null
+          ? null
+          : Math.max(0, timeoutMs - (dispatchedAtMs - benchmarkStartedAtMs))
         activeRequests.set(requestId, {
           ...identity,
           requestId,
-          startedAt,
-          startedAtMs,
+          startedAt: dispatchedAt,
+          startedAtMs: dispatchedAtMs,
         })
         peakConcurrentRemoteReads = Math.max(peakConcurrentRemoteReads, activeRequests.size)
         totalRemoteRequests += 1
 
         try {
           const outcome = await operation({ requestHeaders })
+          const completedAt = new Date().toISOString()
+          const remoteElapsedMs = Math.max(0, Date.now() - dispatchedAtMs)
+          const elapsedMs = Math.max(0, Date.now() - queuedAtMs)
           timeline.push({
             eventType: 'REMOTE_REQUEST',
             phase: identity.phase,
@@ -620,17 +981,39 @@ function createBenchmarkDiagnosticsTracker(
             sourceFrequency: identity.cadence?.sourceFrequency ?? null,
             targetCadence: identity.cadence?.targetCadence ?? null,
             cacheStatus: identity.cacheStatus,
-            startedAt,
-            completedAt: new Date().toISOString(),
-            elapsedMs: Math.max(0, Date.now() - startedAtMs),
+            startedAt: queuedAt,
+            queuedAt,
+            dispatchedAt,
+            completedAt,
+            queueWaitMs,
+            remoteElapsedMs,
+            benchmarkBudgetRemainingMsAtDispatch,
+            elapsedMs,
             outcome: 'SUCCESS',
             status: outcome.status,
             reason: outcome.reason,
             bridgeTrace: outcome.bridgeTrace ?? null,
             bridgeAttempts: outcome.bridgeAttempts ?? [],
           })
-          return outcome.result
+          return {
+            result: outcome.result,
+            meta: {
+              queuedAt,
+              dispatchedAt,
+              completedAt,
+              queueWaitMs,
+              remoteElapsedMs,
+              elapsedMs,
+              outcome: 'SUCCESS' as const,
+              status: outcome.status,
+              reason: outcome.reason,
+              benchmarkBudgetRemainingMsAtDispatch,
+            },
+          }
         } catch (error) {
+          const completedAt = new Date().toISOString()
+          const remoteElapsedMs = Math.max(0, Date.now() - dispatchedAtMs)
+          const elapsedMs = Math.max(0, Date.now() - queuedAtMs)
           timeline.push({
             eventType: 'REMOTE_REQUEST',
             phase: identity.phase,
@@ -643,9 +1026,14 @@ function createBenchmarkDiagnosticsTracker(
             sourceFrequency: identity.cadence?.sourceFrequency ?? null,
             targetCadence: identity.cadence?.targetCadence ?? null,
             cacheStatus: identity.cacheStatus,
-            startedAt,
-            completedAt: new Date().toISOString(),
-            elapsedMs: Math.max(0, Date.now() - startedAtMs),
+            startedAt: queuedAt,
+            queuedAt,
+            dispatchedAt,
+            completedAt,
+            queueWaitMs,
+            remoteElapsedMs,
+            benchmarkBudgetRemainingMsAtDispatch,
+            elapsedMs,
             outcome: isTimeoutError(error) ? 'TIMEOUT' : 'ERROR',
             status: null,
             reason: error instanceof Error ? error.message : String(error),
@@ -670,6 +1058,7 @@ function createBenchmarkDiagnosticsTracker(
         peakConcurrentRemoteReads,
         totalRemoteRequests,
         timeoutSnapshot,
+        matrix: matrixDiagnostics ?? matrixRecorder.build(),
         timeline,
       } satisfies DemoBenchmarkDiagnostics
     },
@@ -1335,6 +1724,63 @@ export function createDemoCertificationService(
           return pending
         }
 
+        const readCurrentOnceDetailed = async (
+          seriesId: string,
+          modelId: ForecastPortfolioModelId,
+          targetBasis: ForecastTargetBasis,
+          phase: DemoBenchmarkDiagnosticPhase,
+          cadence?: { sourceFrequency: string, targetCadence: string },
+          requestOptions?: DemoCertificationRequestOptions,
+        ) => {
+          const key = createPreparedReadKey(seriesId, modelId, targetBasis, cadence)
+          const input = { seriesId, modelId, targetBasis }
+          const cached = currentReadCache.get(key)
+          if (cached) {
+            diagnostics.recordCacheHit({ phase, operation: 'READ_CURRENT', input, cadence, cacheStatus: 'hit' })
+            const timestamp = new Date().toISOString()
+            return {
+              result: await cached,
+              meta: {
+                queuedAt: timestamp,
+                dispatchedAt: timestamp,
+                completedAt: timestamp,
+                queueWaitMs: 0,
+                remoteElapsedMs: 0,
+                elapsedMs: 0,
+                outcome: 'SUCCESS' as const,
+                status: 'CACHE_REUSED',
+                reason: null,
+                benchmarkBudgetRemainingMsAtDispatch: benchmarkStartedAtMs === null
+                  ? null
+                  : Math.max(0, benchmarkTimeoutMs - (Date.now() - benchmarkStartedAtMs)),
+              },
+            }
+          }
+
+          const outcome = await diagnostics.traceRemoteRequestDetailed({
+            phase,
+            operation: 'READ_CURRENT',
+            input,
+            cadence,
+            cacheStatus: 'miss',
+          }, async (trackedRequestOptions) => {
+            const result = await readCurrent(
+              seriesId,
+              modelId,
+              targetBasis,
+              cadence,
+              mergeRequestHeaders(requestOptions?.requestHeaders, trackedRequestOptions.requestHeaders),
+            )
+            return {
+              result,
+              status: result.status,
+              reason: 'reason' in result ? result.reason ?? null : null,
+            }
+          })
+          currentReadCache.set(key, Promise.resolve(outcome.result))
+          return outcome
+        }
+
         const readVerificationOnce = (
           seriesId: string,
           modelId: ForecastPortfolioModelId,
@@ -1375,14 +1821,145 @@ export function createDemoCertificationService(
           return pending
         }
 
+        const readVerificationOnceDetailed = async (
+          seriesId: string,
+          modelId: ForecastPortfolioModelId,
+          targetBasis: ForecastTargetBasis,
+          phase: DemoBenchmarkDiagnosticPhase,
+          cadence?: { sourceFrequency: string, targetCadence: string },
+          requestOptions?: DemoCertificationRequestOptions,
+        ) => {
+          const key = createPreparedReadKey(seriesId, modelId, targetBasis, cadence)
+          const input = { seriesId, modelId, targetBasis }
+          const cached = verificationReadCache.get(key)
+          if (cached) {
+            diagnostics.recordCacheHit({ phase, operation: 'READ_VERIFICATION', input, cadence, cacheStatus: 'hit' })
+            const timestamp = new Date().toISOString()
+            return {
+              result: await cached,
+              meta: {
+                queuedAt: timestamp,
+                dispatchedAt: timestamp,
+                completedAt: timestamp,
+                queueWaitMs: 0,
+                remoteElapsedMs: 0,
+                elapsedMs: 0,
+                outcome: 'SUCCESS' as const,
+                status: 'CACHE_REUSED',
+                reason: null,
+                benchmarkBudgetRemainingMsAtDispatch: benchmarkStartedAtMs === null
+                  ? null
+                  : Math.max(0, benchmarkTimeoutMs - (Date.now() - benchmarkStartedAtMs)),
+              },
+            }
+          }
+
+          const outcome = await diagnostics.traceRemoteRequestDetailed({
+            phase,
+            operation: 'READ_VERIFICATION',
+            input,
+            cadence,
+            cacheStatus: 'miss',
+          }, async (trackedRequestOptions) => {
+            const result = await readVerification(
+              seriesId,
+              modelId,
+              targetBasis,
+              cadence,
+              mergeRequestHeaders(requestOptions?.requestHeaders, trackedRequestOptions.requestHeaders),
+            )
+            return {
+              result,
+              status: result.status,
+              reason: 'reason' in result ? result.reason ?? null : null,
+            }
+          })
+          verificationReadCache.set(key, Promise.resolve(outcome.result))
+          return outcome
+        }
+
         const matrixEvaluator = dependencies.evaluateMatrix ?? createMatrixEvaluator({
           readCapability: (input, requestOptions) => readCapabilityOnce(input, 'MATRIX', requestOptions),
           prepareCurrent: (input, requestOptions) => prepareCurrentOnce(input, 'MATRIX', requestOptions),
           readCurrent: (seriesId, modelId, targetBasis, cadence, correlationHeaders) => (
-            readCurrentOnce(seriesId, modelId, targetBasis, 'MATRIX', cadence, { requestHeaders: correlationHeaders })
+            (() => {
+              diagnostics.matrixRecorder.noteRemoteQueued(seriesId, modelId, targetBasis, 'READ_CURRENT', currentReadCache.has(createPreparedReadKey(seriesId, modelId, targetBasis, cadence)) ? 'hit' : 'miss')
+              return readCurrentOnceDetailed(
+                seriesId,
+                modelId,
+                targetBasis,
+                'MATRIX',
+                cadence,
+                { requestHeaders: correlationHeaders },
+              ).then((outcome) => {
+                if (outcome.meta.dispatchedAt) {
+                  diagnostics.matrixRecorder.noteRemoteDispatched(
+                    seriesId,
+                    modelId,
+                    targetBasis,
+                    'READ_CURRENT',
+                    outcome.meta.dispatchedAt,
+                    outcome.meta.queueWaitMs,
+                    outcome.meta.benchmarkBudgetRemainingMsAtDispatch,
+                  )
+                }
+                if (outcome.meta.completedAt && outcome.meta.remoteElapsedMs !== null && outcome.meta.elapsedMs !== null) {
+                  diagnostics.matrixRecorder.noteRemoteCompleted(
+                    seriesId,
+                    modelId,
+                    targetBasis,
+                    'READ_CURRENT',
+                    outcome.meta.completedAt,
+                    outcome.meta.remoteElapsedMs,
+                    outcome.meta.elapsedMs,
+                    outcome.meta.outcome,
+                    outcome.meta.status,
+                    outcome.meta.reason,
+                  )
+                }
+                return outcome.result
+              })
+            })()
           ),
           readVerification: (seriesId, modelId, targetBasis, cadence, correlationHeaders) => (
-            readVerificationOnce(seriesId, modelId, targetBasis, 'MATRIX', cadence, { requestHeaders: correlationHeaders })
+            (() => {
+              diagnostics.matrixRecorder.noteRemoteQueued(seriesId, modelId, targetBasis, 'READ_VERIFICATION', verificationReadCache.has(createPreparedReadKey(seriesId, modelId, targetBasis, cadence)) ? 'hit' : 'miss')
+              return readVerificationOnceDetailed(
+                seriesId,
+                modelId,
+                targetBasis,
+                'MATRIX',
+                cadence,
+                { requestHeaders: correlationHeaders },
+              ).then((outcome) => {
+                if (outcome.meta.dispatchedAt) {
+                  diagnostics.matrixRecorder.noteRemoteDispatched(
+                    seriesId,
+                    modelId,
+                    targetBasis,
+                    'READ_VERIFICATION',
+                    outcome.meta.dispatchedAt,
+                    outcome.meta.queueWaitMs,
+                    outcome.meta.benchmarkBudgetRemainingMsAtDispatch,
+                  )
+                }
+                if (outcome.meta.completedAt && outcome.meta.remoteElapsedMs !== null && outcome.meta.elapsedMs !== null) {
+                  diagnostics.matrixRecorder.noteRemoteCompleted(
+                    seriesId,
+                    modelId,
+                    targetBasis,
+                    'READ_VERIFICATION',
+                    outcome.meta.completedAt,
+                    outcome.meta.remoteElapsedMs,
+                    outcome.meta.elapsedMs,
+                    outcome.meta.outcome,
+                    outcome.meta.status,
+                    outcome.meta.reason,
+                  )
+                }
+                return outcome.result
+              })
+            })()
           ),
         })
 
@@ -1398,6 +1975,7 @@ export function createDemoCertificationService(
         })
 
         try {
+          diagnostics.markBenchmarkStart()
           const benchmark = await withBenchmarkTimeout((async (signal): Promise<DemoBenchmarkCertification> => {
             const variants: DemoVariantPreparationRecord[] = []
             const capabilityChecks = await diagnostics.tracePhase('PRECOMPUTE', async () => Promise.all(
@@ -1533,8 +2111,13 @@ export function createDemoCertificationService(
             }
 
             const matrixReport = await diagnostics.tracePhase('MATRIX', async () => (
-              matrixEvaluator(entry.seriesId, mode === 'CERTIFY', { signal })
+              matrixEvaluator(entry.seriesId, mode === 'CERTIFY', {
+                signal,
+                diagnosticsRecorder: diagnostics.matrixRecorder,
+                maxConcurrentVariants: diagnostics.maxConcurrentMatrixVariants,
+              })
             ))
+            diagnostics.setMatrixDiagnostics(diagnostics.matrixRecorder.build())
             const requiredCells = filterRequiredCells(matrixReport, requiredTargetBases, requiredVerificationHorizons)
             const matrix = resolveMatrixGate(requiredCells.current, requiredCells.verification)
             const freshness = resolveFreshnessGate(requiredCells.current, requiredCells.verification)
