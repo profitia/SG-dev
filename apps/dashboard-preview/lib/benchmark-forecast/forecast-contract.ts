@@ -37,6 +37,11 @@ export interface InteractiveForecastCapabilityResult {
   seriesId: string
   targetSemantics: ForecastTargetSemantics
   modelId: ForecastPortfolioModelId
+  preparedReadAuthority?: {
+    sourceFrequency: string
+    targetCadence: string
+    expectedHistoryFingerprint: string
+  } | null
   sourceFrequency: string | null
   targetCadence: string | null
   sourceAvailability: 'AVAILABLE' | 'DATA_NOT_AVAILABLE' | 'FAILED'

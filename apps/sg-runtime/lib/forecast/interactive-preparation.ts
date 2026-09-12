@@ -59,6 +59,11 @@ export type InteractiveForecastCapabilityResult = {
   seriesId: string
   targetSemantics: ForecastTargetSemantics
   modelId: InteractiveForecastIdentity['modelId']
+  preparedReadAuthority: {
+    sourceFrequency: string
+    targetCadence: string
+    expectedHistoryFingerprint: string
+  } | null
   sourceFrequency: string | null
   targetCadence: string | null
   sourceAvailability: 'AVAILABLE' | 'DATA_NOT_AVAILABLE' | 'FAILED'
@@ -210,6 +215,24 @@ function buildPreparedReadRequest(
   }
 }
 
+function buildPreparedReadAuthority(
+  input: InteractiveForecastIdentity,
+  capability: ForecastVariantCapability | null,
+): ForecastServiceRequest['preparedReadAuthority'] {
+  if (!capability?.preparedReadAuthority) {
+    return undefined
+  }
+
+  return {
+    seriesId: input.seriesId,
+    modelId: input.modelId,
+    targetBasis: targetBasisForSemantics(input.targetSemantics),
+    sourceFrequency: capability.preparedReadAuthority.sourceFrequency,
+    targetCadence: capability.preparedReadAuthority.targetCadence,
+    expectedHistoryFingerprint: capability.preparedReadAuthority.expectedHistoryFingerprint,
+  }
+}
+
 function isPreparedVerificationAvailable(result: BenchmarkForecastVerificationResult) {
   return result.status === 'AVAILABLE'
 }
@@ -297,9 +320,13 @@ async function resolveInteractiveForecastReadiness(
 
   if (capability.currentPreparedState === 'READY' && capability.capabilityState !== 'NOT_LAWFUL' && capability.capabilityState !== 'NOT_IMPLEMENTED') {
     const request = buildPreparedReadRequest(input, sourceFrequency, capability.targetCadence)
+    const preparedReadAuthority = buildPreparedReadAuthority(input, capability)
     const [recentVerification, fullVerification] = await Promise.all([
       dependencies.readPreparedRecentVerification(request),
-      dependencies.readPreparedFullVerification(request),
+      dependencies.readPreparedFullVerification({
+        ...request,
+        ...(preparedReadAuthority ? { preparedReadAuthority } : {}),
+      }),
     ])
     const normalizedRecent = normalizeVerificationReadiness({
       result: recentVerification,
@@ -407,6 +434,7 @@ export function createInteractiveForecastPreparationService(
         seriesId: input.seriesId,
         targetSemantics: input.targetSemantics,
         modelId: input.modelId,
+        preparedReadAuthority: capability?.preparedReadAuthority ?? null,
         sourceFrequency: resolution.sourceMetadata.sourceFrequency,
         targetCadence: capability?.targetCadence ?? null,
         sourceAvailability,

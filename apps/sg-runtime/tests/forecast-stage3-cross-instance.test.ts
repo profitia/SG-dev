@@ -1570,6 +1570,59 @@ serialTest('db-backed prepared current selects the exact policy A artifact over 
   assert.equal(executionCount, 0)
 })
 
+serialTest('db-backed prepared current fast path skips source-history lookup and preserves persisted fingerprint and input source', async () => {
+  const history = createPeriodicHistoryResponse('stage12-fast-current-series', 'MONTHLY', 'MONTHLY', 'MONTHLY_AVERAGE', 48)
+  const artifact = createPreparedCurrentArtifact(history, 'ets', 'MONTHLY_AVERAGE')
+  let exportHistoryCalls = 0
+
+  await writeCurrentRunWithPrisma(artifact)
+
+  const service = createDbBackedService({
+    async exportHistory() {
+      exportHistoryCalls += 1
+      throw new Error('Prepared current fast path must not invoke source-history exportHistory.')
+    },
+    async exportCurrent() {
+      throw new Error('Prepared current fast path must not invoke compute exportCurrent.')
+    },
+    async exportVerification() {
+      throw new Error('Prepared current fast path must not invoke compute exportVerification.')
+    },
+  }, {
+    resolveExactPreparedCapability: async () => {
+      throw new Error('Prepared current fast path must not re-resolve exact capability.')
+    },
+  })
+
+  const result = await service.readPreparedCurrentForecastRequest({
+    seriesId: history.history.seriesId,
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    preparedReadAuthority: {
+      seriesId: history.history.seriesId,
+      modelId: 'ets',
+      targetBasis: 'MONTHLY_AVERAGE',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      expectedHistoryFingerprint: artifact.historyFingerprint,
+    },
+  })
+
+  assert.equal(exportHistoryCalls, 0)
+  assert.equal(result.status, 'AVAILABLE')
+  if (result.status !== 'AVAILABLE') return
+  assert.equal(result.lineage.historyFingerprint, artifact.historyFingerprint)
+  assert.equal(result.lineage.inputSource, artifact.source.kind)
+  assert.equal(result.lineage.sourceFrequency, 'MONTHLY')
+
+  const executionCount = await requirePrisma().forecastPreparationExecutionLedger.count({
+    where: { seriesId: history.history.seriesId },
+  })
+  assert.equal(executionCount, 0)
+})
+
 serialTest('db-backed prepared current reads surface weekly, native monthly, and quarterly artifacts with zero compute and zero execution rows', async () => {
   const weeklyHistory = createPeriodicHistoryResponse('stage4-weekly-current-series', 'WEEKLY', 'MONTHLY', 'END_OF_PERIOD')
   const monthlyHistory = createPeriodicHistoryResponse('stage4-native-monthly-current-series', 'MONTHLY', 'MONTHLY', 'MONTHLY_AVERAGE')
@@ -1936,6 +1989,79 @@ serialTest('db-backed prepared verification reads require exact identity and cre
   assert.equal(wrongTrainingPolicy.status, 'NOT_AVAILABLE')
 
   const executionCount = await requirePrisma().forecastPreparationExecutionLedger.count()
+  assert.equal(executionCount, 0)
+})
+
+serialTest('db-backed prepared verification fast path skips source-history lookup, preserves persisted identity, and rejects stale authority', async () => {
+  const history = createPeriodicHistoryResponse('stage12-fast-verification-series', 'QUARTERLY', 'QUARTERLY', 'MONTHLY_AVERAGE', 48)
+  const artifact = createPreparedVerificationArtifact(history, 'arima', 'MONTHLY_AVERAGE')
+  let exportHistoryCalls = 0
+
+  await writeVerificationRunWithPrisma(artifact)
+
+  const service = createDbBackedService({
+    async exportHistory() {
+      exportHistoryCalls += 1
+      throw new Error('Prepared verification fast path must not invoke source-history exportHistory.')
+    },
+    async exportCurrent() {
+      throw new Error('Prepared verification fast path must not invoke compute exportCurrent.')
+    },
+    async exportVerification() {
+      throw new Error('Prepared verification fast path must not invoke compute exportVerification.')
+    },
+  }, {
+    resolveExactPreparedCapability: async () => {
+      throw new Error('Prepared verification fast path must not re-resolve exact capability.')
+    },
+  })
+
+  const exact = await service.readPreparedVerificationRequest({
+    seriesId: history.history.seriesId,
+    modelId: 'arima',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'QUARTERLY',
+    targetCadence: 'QUARTERLY',
+    preparedReadAuthority: {
+      seriesId: history.history.seriesId,
+      modelId: 'arima',
+      targetBasis: 'MONTHLY_AVERAGE',
+      sourceFrequency: 'QUARTERLY',
+      targetCadence: 'QUARTERLY',
+      expectedHistoryFingerprint: artifact.historyFingerprint,
+    },
+  })
+  const stale = await service.readPreparedVerificationRequest({
+    seriesId: history.history.seriesId,
+    modelId: 'arima',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'QUARTERLY',
+    targetCadence: 'QUARTERLY',
+    preparedReadAuthority: {
+      seriesId: history.history.seriesId,
+      modelId: 'arima',
+      targetBasis: 'MONTHLY_AVERAGE',
+      sourceFrequency: 'QUARTERLY',
+      targetCadence: 'QUARTERLY',
+      expectedHistoryFingerprint: 'stale-history-fingerprint',
+    },
+  })
+
+  assert.equal(exportHistoryCalls, 0)
+  assert.equal(exact.status, 'AVAILABLE')
+  if (exact.status === 'AVAILABLE') {
+    assert.equal(exact.lineage.historyFingerprint, artifact.historyFingerprint)
+    assert.equal(exact.lineage.inputSource, artifact.source.kind)
+    assert.equal(exact.lineage.sourceFrequency, 'QUARTERLY')
+  }
+  assert.equal(stale.status, 'NOT_AVAILABLE')
+  if (stale.status === 'NOT_AVAILABLE') {
+    assert.match(stale.reason, /Trusted prepared-read authority does not match/i)
+  }
+
+  const executionCount = await requirePrisma().forecastPreparationExecutionLedger.count({
+    where: { seriesId: history.history.seriesId },
+  })
   assert.equal(executionCount, 0)
 })
 

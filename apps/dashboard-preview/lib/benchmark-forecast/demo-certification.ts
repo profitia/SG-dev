@@ -1772,12 +1772,14 @@ export function createDemoCertificationService(
             cadence,
             cacheStatus: 'miss',
           }, async (trackedRequestOptions) => {
+            const capability = await capabilityCache.get(createVariantKey(seriesId, modelId, targetBasis)) ?? null
             const result = await readCurrent(
               seriesId,
               modelId,
               targetBasis,
               cadence,
               mergeRequestHeaders(requestOptions?.requestHeaders, trackedRequestOptions.requestHeaders),
+              capability,
             )
             return {
               result,
@@ -1832,12 +1834,14 @@ export function createDemoCertificationService(
             cadence,
             cacheStatus: 'miss',
           }, async (trackedRequestOptions) => {
+            const capability = await capabilityCache.get(createVariantKey(seriesId, modelId, targetBasis)) ?? null
             const result = await readCurrent(
               seriesId,
               modelId,
               targetBasis,
               cadence,
               mergeRequestHeaders(requestOptions?.requestHeaders, trackedRequestOptions.requestHeaders),
+              capability,
             )
             return {
               result,
@@ -1875,12 +1879,14 @@ export function createDemoCertificationService(
             cadence,
             cacheStatus: 'miss',
           }, async (trackedRequestOptions) => {
+            const capability = await capabilityCache.get(createVariantKey(seriesId, modelId, targetBasis)) ?? null
             const result = await readVerification(
               seriesId,
               modelId,
               targetBasis,
               cadence,
               mergeRequestHeaders(requestOptions?.requestHeaders, trackedRequestOptions.requestHeaders),
+              capability,
             )
             return {
               result,
@@ -1935,12 +1941,14 @@ export function createDemoCertificationService(
             cadence,
             cacheStatus: 'miss',
           }, async (trackedRequestOptions) => {
+            const capability = await capabilityCache.get(createVariantKey(seriesId, modelId, targetBasis)) ?? null
             const result = await readVerification(
               seriesId,
               modelId,
               targetBasis,
               cadence,
               mergeRequestHeaders(requestOptions?.requestHeaders, trackedRequestOptions.requestHeaders),
+              capability,
             )
             return {
               result,

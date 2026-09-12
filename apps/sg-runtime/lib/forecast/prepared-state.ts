@@ -23,7 +23,11 @@ import {
   ROLLING_DAILY_INPUT_SOURCE,
 } from '@/lib/forecast/rolling-daily-maintenance'
 import { selectTrailingRollingDailyCurrentHistory } from '@/lib/forecast/rolling-daily-current-ownership'
-import type { ForecastPreparedState, ForecastPreparedVariant } from '@/lib/forecast/capability-resolver'
+import type {
+  ForecastPreparedReadAuthority,
+  ForecastPreparedState,
+  ForecastPreparedVariant,
+} from '@/lib/forecast/capability-resolver'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 import { selectMinimalLawfulCurrentTrainingPayload } from '@/lib/forecast/live-market-input'
 
@@ -249,6 +253,18 @@ function stateForRollingDailyHistoricalRun(input: {
     : 'STALE'
 }
 
+function createPreparedReadAuthority(input: {
+  sourceFrequency: ForecastSourceFrequency
+  targetCadence: ForecastTargetCadence
+  expectedHistoryFingerprint: string
+}): ForecastPreparedReadAuthority {
+  return {
+    sourceFrequency: input.sourceFrequency,
+    targetCadence: input.targetCadence,
+    expectedHistoryFingerprint: input.expectedHistoryFingerprint,
+  }
+}
+
 function resolvePreparedTargetCadence(
   sourceFrequency: ForecastSourceFrequency,
   targetBasis: (typeof MONTHLY_TARGETS)[number],
@@ -379,6 +395,11 @@ export async function readForecastPreparedVariants(
         identity,
         current: stateForCurrentRun(current, currentHistoryFingerprints),
         historical: stateForHistoricalRun(historical, currentHistoryFingerprints),
+        preparedReadAuthority: createPreparedReadAuthority({
+          sourceFrequency: resolvedSourceFrequency,
+          targetCadence,
+          expectedHistoryFingerprint: currentHistoryFingerprints.cadence,
+        }),
       })
     }
   }
@@ -464,6 +485,7 @@ export async function readForecastPreparedVariants(
         latestSourceObservationDate: rollingHistory.points[rollingHistory.points.length - 1]?.date ?? null,
         verificationCount,
       }),
+      preparedReadAuthority: null,
     })
   }
 

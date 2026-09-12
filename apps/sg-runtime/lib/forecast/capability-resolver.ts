@@ -39,6 +39,11 @@ export type ForecastImplementationState = 'SUPPORTED' | 'NOT_IMPLEMENTED' | 'NOT
 export type ForecastHistoryEligibilityState = 'ELIGIBLE' | 'INSUFFICIENT_HISTORY' | 'DATA_NOT_AVAILABLE'
 export type ForecastTargetPreparationState = 'PREPARED' | 'PREPARATION_REQUIRED' | 'NOT_SUPPORTED'
 export type ForecastPreparedState = 'READY' | 'NOT_PREPARED' | 'STALE'
+export type ForecastPreparedReadAuthority = {
+  sourceFrequency: ForecastSourceFrequency
+  targetCadence: ForecastTargetCadence
+  expectedHistoryFingerprint: string
+}
 export type ForecastBusinessTarget = 'DAILY' | 'AVERAGE' | 'END_OF_PERIOD'
 export type ForecastHorizonSupportState = 'SUPPORTED' | 'UNSUPPORTED' | 'NOT_REQUESTED'
 export type ForecastVerificationEvidenceState = 'SUFFICIENT' | 'LIMITED_SAMPLE' | 'NOT_AVAILABLE'
@@ -72,6 +77,7 @@ export type ForecastPreparedVariant = {
   identity: ForecastIdentity
   current: ForecastPreparedState
   historical: ForecastPreparedState
+  preparedReadAuthority: ForecastPreparedReadAuthority | null
 }
 
 export type ForecastCapabilityResolverInput = {
@@ -89,6 +95,7 @@ export type ForecastCapabilityResolverInput = {
 
 export type ForecastVariantCapability = {
   identity: ForecastIdentity
+  preparedReadAuthority: ForecastPreparedReadAuthority | null
   sourceFrequency: ForecastSourceFrequency | null
   sourceFrequencyRecognized: boolean
   businessTarget: ForecastBusinessTarget
@@ -471,6 +478,7 @@ function resolveVariant(
 
   return {
     identity,
+    preparedReadAuthority: prepared?.preparedReadAuthority ?? null,
     sourceFrequency: input.sourceFrequency,
     sourceFrequencyRecognized: input.sourceFrequency !== null,
     businessTarget,

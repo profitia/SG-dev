@@ -75,6 +75,43 @@ type ExecutionLedgerRow = {
   failureReason: string | null
 }
 
+const PREPARED_READ_AUTHORITY_SOURCE_FREQUENCY_HEADER = 'x-sg-prepared-source-frequency'
+const PREPARED_READ_AUTHORITY_TARGET_CADENCE_HEADER = 'x-sg-prepared-target-cadence'
+const PREPARED_READ_AUTHORITY_HISTORY_FINGERPRINT_HEADER = 'x-sg-prepared-history-fingerprint'
+
+function readPreparedReadAuthorityFromHeaders(
+  request: NextRequest,
+  input: ForecastRequestInput,
+) {
+  const sourceFrequency = request.headers.get(PREPARED_READ_AUTHORITY_SOURCE_FREQUENCY_HEADER)?.trim()
+  const targetCadence = request.headers.get(PREPARED_READ_AUTHORITY_TARGET_CADENCE_HEADER)?.trim()
+  const expectedHistoryFingerprint = request.headers.get(PREPARED_READ_AUTHORITY_HISTORY_FINGERPRINT_HEADER)?.trim()
+
+  if (!sourceFrequency && !targetCadence && !expectedHistoryFingerprint) {
+    return undefined
+  }
+
+  if (!sourceFrequency || !targetCadence || !expectedHistoryFingerprint) {
+    return {
+      seriesId: input.seriesId,
+      modelId: input.modelId,
+      targetBasis: input.targetBasis,
+      sourceFrequency: input.sourceFrequency ?? 'MONTHLY',
+      targetCadence: input.targetCadence ?? 'MONTHLY',
+      expectedHistoryFingerprint: '',
+    }
+  }
+
+  return {
+    seriesId: input.seriesId,
+    modelId: input.modelId,
+    targetBasis: input.targetBasis,
+    sourceFrequency: sourceFrequency as NonNullable<ForecastRequestInput['sourceFrequency']>,
+    targetCadence: targetCadence as NonNullable<ForecastRequestInput['targetCadence']>,
+    expectedHistoryFingerprint,
+  }
+}
+
 const preparedVerificationDependencies: PreparedVerificationDependencies = {
   readRollingDailyVerification: readPreparedRollingDailyForecastVerification,
   readGenericPeriodVerification: readPreparedBenchmarkForecastVerification,
@@ -240,6 +277,7 @@ export function createCurrentForecastRouteHandler(
       }
 
       const input = toForecastRequestInput(parsed.data)
+      const preparedReadAuthority = readPreparedReadAuthorityFromHeaders(request, input)
       updateForecastRequestDiagnosticsIdentity({
         operationType: 'READ_ONLY_PREPARED',
         seriesId: input.seriesId,
@@ -248,7 +286,10 @@ export function createCurrentForecastRouteHandler(
       })
       const result = await telemetry.run(forecastStressContextFromHeaders(request, input), async () => {
         telemetry.sampleResources()
-        const resolved = await resolveCurrentForecast(input)
+        const resolved = await resolveCurrentForecast({
+          ...input,
+          ...(preparedReadAuthority ? { preparedReadAuthority } : {}),
+        })
         telemetry.sampleResources()
         return resolved
       })
@@ -269,6 +310,7 @@ export function createInternalPreparedCurrentForecastRouteHandler(
       }
 
       const input = toForecastRequestInput(parsed.data)
+      const preparedReadAuthority = readPreparedReadAuthorityFromHeaders(request, input)
       updateForecastRequestDiagnosticsIdentity({
         operationType: 'READ_ONLY_PREPARED',
         seriesId: input.seriesId,
@@ -277,7 +319,10 @@ export function createInternalPreparedCurrentForecastRouteHandler(
       })
       const result = await telemetry.run(forecastStressContextFromHeaders(request, input), async () => {
         telemetry.sampleResources()
-        const resolved = await resolveCurrentForecast(input)
+        const resolved = await resolveCurrentForecast({
+          ...input,
+          ...(preparedReadAuthority ? { preparedReadAuthority } : {}),
+        })
         telemetry.sampleResources()
         return resolved
       })
@@ -318,6 +363,7 @@ export function createForecastVerificationRouteHandler(
       }
 
       const input = toForecastRequestInput(parsed.data)
+      const preparedReadAuthority = readPreparedReadAuthorityFromHeaders(request, input)
       updateForecastRequestDiagnosticsIdentity({
         operationType: 'READ_ONLY_PREPARED',
         seriesId: input.seriesId,
@@ -326,7 +372,10 @@ export function createForecastVerificationRouteHandler(
       })
       const result = await telemetry.run(forecastStressContextFromHeaders(request, input), async () => {
         telemetry.sampleResources()
-        const resolved = await resolveForecastVerification(input)
+        const resolved = await resolveForecastVerification({
+          ...input,
+          ...(preparedReadAuthority ? { preparedReadAuthority } : {}),
+        })
         telemetry.sampleResources()
         return resolved
       })
@@ -347,6 +396,7 @@ export function createInternalPreparedForecastVerificationRouteHandler(
       }
 
       const input = toForecastRequestInput(parsed.data)
+      const preparedReadAuthority = readPreparedReadAuthorityFromHeaders(request, input)
       updateForecastRequestDiagnosticsIdentity({
         operationType: 'READ_ONLY_PREPARED',
         seriesId: input.seriesId,
@@ -355,7 +405,10 @@ export function createInternalPreparedForecastVerificationRouteHandler(
       })
       const result = await telemetry.run(forecastStressContextFromHeaders(request, input), async () => {
         telemetry.sampleResources()
-        const resolved = await resolveForecastVerification(input)
+        const resolved = await resolveForecastVerification({
+          ...input,
+          ...(preparedReadAuthority ? { preparedReadAuthority } : {}),
+        })
         telemetry.sampleResources()
         return resolved
       })

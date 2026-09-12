@@ -64,6 +64,13 @@ test('prepared-state binding is exact across semantics, models, versions, and cu
   const eopFingerprint = buildForecastHistoryFingerprint(
     selectedEopPayload.history,
   )
+  const eopCadenceFingerprint = buildForecastHistoryFingerprint({
+    ...selectedEopPayload.history,
+    cadence: {
+      sourceFrequency: 'DAILY',
+      targetCadence: 'MONTHLY',
+    },
+  })
   const fullEopHistoricalFingerprint = buildForecastHistoryFingerprint(
     buildLiveForecastBridgePayloadFromHistory(history.providerSeries.providerSeriesId, history, {
       targetBasis: 'END_OF_PERIOD',
@@ -219,6 +226,11 @@ test('prepared-state binding is exact across semantics, models, versions, and cu
     },
     current: 'READY',
     historical: 'READY',
+      preparedReadAuthority: {
+        sourceFrequency: 'DAILY',
+        targetCadence: 'MONTHLY',
+        expectedHistoryFingerprint: eopCadenceFingerprint,
+      },
   })
   assert.equal(find('END_OF_PERIOD', 'ets')?.current, 'NOT_PREPARED')
   assert.equal(find('MONTHLY_AVERAGE', 'ets')?.current, 'STALE')

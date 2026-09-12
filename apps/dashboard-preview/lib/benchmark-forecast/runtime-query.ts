@@ -29,6 +29,9 @@ const INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH = '/api/internal/forecast/capabili
 const INTERNAL_FORECAST_ROUTE_PATH = '/api/internal/forecast/production'
 const INTERNAL_PREPARED_CURRENT_ROUTE_PATH = '/api/internal/forecast/prepared/current'
 const INTERNAL_PREPARED_VERIFICATION_ROUTE_PATH = '/api/internal/forecast/prepared/verification'
+const PREPARED_READ_AUTHORITY_SOURCE_FREQUENCY_HEADER = 'x-sg-prepared-source-frequency'
+const PREPARED_READ_AUTHORITY_TARGET_CADENCE_HEADER = 'x-sg-prepared-target-cadence'
+const PREPARED_READ_AUTHORITY_HISTORY_FINGERPRINT_HEADER = 'x-sg-prepared-history-fingerprint'
 const INTERNAL_FORECAST_TIMEOUT_MS = 20_000
 const INTERNAL_FORECAST_TIMEOUT_ERROR = 'SG Runtime prepared forecast request timed out.'
 const ROLLING_DAILY_INPUT_SOURCE = 'DYNAMIC_MARKET_DATA_STORE'
@@ -1071,12 +1074,28 @@ async function readInteractiveForecastCapability(
   }
 }
 
+function buildPreparedReadAuthorityHeaders(
+  capability: InteractiveForecastCapabilityResult | null | undefined,
+): Record<string, string> {
+  const authority = capability?.preparedReadAuthority
+  if (!authority) {
+    return {}
+  }
+
+  return {
+    [PREPARED_READ_AUTHORITY_SOURCE_FREQUENCY_HEADER]: authority.sourceFrequency,
+    [PREPARED_READ_AUTHORITY_TARGET_CADENCE_HEADER]: authority.targetCadence,
+    [PREPARED_READ_AUTHORITY_HISTORY_FINGERPRINT_HEADER]: authority.expectedHistoryFingerprint,
+  }
+}
+
 export async function getBenchmarkForecastCurrent(
   seriesId: string,
   model: ForecastPortfolioModelId,
   targetBasis: ForecastTargetBasis = DEFAULT_FORECAST_TARGET_BASIS,
   cadence?: { sourceFrequency: string, targetCadence: string },
   correlationHeaders: Record<string, string> = {},
+  capability?: InteractiveForecastCapabilityResult | null,
 ) {
   if (targetBasis !== 'POINT_IN_TIME' && readSgRuntimeInternalForecastServiceToken()) {
     const params: Record<string, string> = {
@@ -1092,7 +1111,10 @@ export async function getBenchmarkForecastCurrent(
     return fetchInternalPreparedForecast<BenchmarkForecastCurrentResult>(
       INTERNAL_PREPARED_CURRENT_ROUTE_PATH,
       params,
-      correlationHeaders,
+      {
+        ...correlationHeaders,
+        ...buildPreparedReadAuthorityHeaders(capability),
+      },
     )
   }
 
@@ -1161,8 +1183,9 @@ export async function resolveShowForecastCurrent(
   dependencies: ShowForecastDependencies = showForecastDependencies,
   cadence?: { sourceFrequency: string, targetCadence: string },
   correlationHeaders: Record<string, string> = {},
+  capability?: InteractiveForecastCapabilityResult | null,
 ) {
-  return dependencies.readPrepared(seriesId, model, targetBasis, cadence, correlationHeaders)
+  return dependencies.readPrepared(seriesId, model, targetBasis, cadence, correlationHeaders, capability)
 }
 
 export async function getBenchmarkForecastVerification(
@@ -1171,6 +1194,7 @@ export async function getBenchmarkForecastVerification(
   targetBasis: ForecastTargetBasis = DEFAULT_FORECAST_TARGET_BASIS,
   cadence?: { sourceFrequency: string, targetCadence: string },
   correlationHeaders: Record<string, string> = {},
+  capability?: InteractiveForecastCapabilityResult | null,
 ) {
   if (targetBasis !== 'POINT_IN_TIME' && readSgRuntimeInternalForecastServiceToken()) {
     const params: Record<string, string> = {
@@ -1186,7 +1210,10 @@ export async function getBenchmarkForecastVerification(
     return fetchInternalPreparedForecast<BenchmarkForecastVerificationResult>(
       INTERNAL_PREPARED_VERIFICATION_ROUTE_PATH,
       params,
-      correlationHeaders,
+      {
+        ...correlationHeaders,
+        ...buildPreparedReadAuthorityHeaders(capability),
+      },
     )
   }
 

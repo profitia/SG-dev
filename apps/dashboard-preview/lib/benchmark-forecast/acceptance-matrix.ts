@@ -85,12 +85,16 @@ type AcceptanceMatrixDependencies = {
     model: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
     cadence?: { sourceFrequency: string, targetCadence: string },
+    correlationHeaders?: Record<string, string>,
+    capability?: InteractiveForecastCapabilityResult | null,
   ) => Promise<BenchmarkForecastCurrentResult>
   readVerification: (
     seriesId: string,
     model: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
     cadence?: { sourceFrequency: string, targetCadence: string },
+    correlationHeaders?: Record<string, string>,
+    capability?: InteractiveForecastCapabilityResult | null,
   ) => Promise<BenchmarkForecastVerificationResult>
   readPointInTimeCurrent: (
     seriesId: string,
@@ -577,8 +581,8 @@ export function createForecastAcceptanceMatrixService(
   const resolvedDependencies: AcceptanceMatrixDependencies = {
     readCapability: dependencies.readCapability ?? readInteractiveForecastCapability,
     prepareCurrent: dependencies.prepareCurrent ?? prepareInteractiveCurrentForecast,
-    readCurrent: dependencies.readCurrent ?? ((seriesId, model, targetBasis) => (
-      resolveShowForecastCurrent(seriesId, model, targetBasis) as Promise<BenchmarkForecastCurrentResult>
+    readCurrent: dependencies.readCurrent ?? ((seriesId, model, targetBasis, cadence, correlationHeaders, capability) => (
+      resolveShowForecastCurrent(seriesId, model, targetBasis, undefined, cadence, correlationHeaders, capability) as Promise<BenchmarkForecastCurrentResult>
     )),
     readVerification: dependencies.readVerification ?? getBenchmarkForecastVerification,
     readPointInTimeCurrent: dependencies.readPointInTimeCurrent ?? readPointInTimeCurrentForecastSnapshot,
@@ -637,7 +641,7 @@ export function createForecastAcceptanceMatrixService(
 
     const pending = targetBasis === 'POINT_IN_TIME'
       ? resolvedDependencies.readPointInTimeCurrent(seriesId, modelId, capability)
-      : resolvedDependencies.readCurrent(seriesId, modelId, targetBasis, cadence)
+      : resolvedDependencies.readCurrent(seriesId, modelId, targetBasis, cadence, undefined, capability as InteractiveForecastCapabilityResult | null | undefined)
     currentReadCache.set(cacheKey, pending)
     return pending
   }
@@ -646,6 +650,7 @@ export function createForecastAcceptanceMatrixService(
     seriesId: string,
     modelId: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
+    capability?: InteractiveForecastCapabilityResult | null,
     cadence?: { sourceFrequency: string, targetCadence: string },
   ): Promise<BenchmarkForecastVerificationResult> {
     const cacheKey = createVariantKey(seriesId, modelId, targetBasis)
@@ -654,7 +659,7 @@ export function createForecastAcceptanceMatrixService(
       return cached
     }
 
-    const pending = resolvedDependencies.readVerification(seriesId, modelId, targetBasis, cadence)
+    const pending = resolvedDependencies.readVerification(seriesId, modelId, targetBasis, cadence, undefined, capability)
     verificationReadCache.set(cacheKey, pending)
     return pending
   }
@@ -919,7 +924,7 @@ export function createForecastAcceptanceMatrixService(
         }
       }
 
-      const verification = await readVerificationOnce(seriesId, modelId, targetBasis, cadence)
+      const verification = await readVerificationOnce(seriesId, modelId, targetBasis, effectiveCapability, cadence)
       if (!isAvailableVerificationResult(verification)) {
         return {
           identity: { ...identityBase, kind: 'VERIFICATION', historyFingerprint: persisted.historyFingerprint, verificationHorizon: horizon },
