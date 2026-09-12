@@ -32,6 +32,7 @@ import {
   type BenchmarkForecastVerificationResult,
   type ForecastTargetBasis,
 } from '@/lib/forecast/contracts'
+import type { ForecastRequestInput } from '@/lib/forecast/request-contract'
 import {
   resolveForecastStage3HeartbeatIntervalMs,
   startForecastExecutionLeaseHeartbeat,
@@ -330,15 +331,22 @@ async function resolveInteractiveForecastReadiness(
   if (capability.currentPreparedState === 'READY' && capability.capabilityState !== 'NOT_LAWFUL' && capability.capabilityState !== 'NOT_IMPLEMENTED') {
     const request = buildPreparedReadRequest(input, sourceFrequency, capability.targetCadence)
     const preparedReadAuthority = buildPreparedReadAuthority(input, capability)
-    const fullVerificationReader = input.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
-      ? dependencies.readPreparedRollingDailyFullVerification
-      : dependencies.readPreparedFullVerification
+    const rollingDailyFullVerificationRequest: ForecastRequestInput = {
+      seriesId: request.seriesId,
+      modelId: input.modelId,
+      targetBasis: request.targetBasis,
+      ...(request.sourceFrequency ? { sourceFrequency: request.sourceFrequency } : {}),
+      ...(request.targetCadence ? { targetCadence: request.targetCadence } : {}),
+    }
+    const fullVerificationRequest = {
+      ...request,
+      ...(preparedReadAuthority ? { preparedReadAuthority } : {}),
+    }
     const [recentVerification, fullVerification] = await Promise.all([
       dependencies.readPreparedRecentVerification(request),
-      fullVerificationReader({
-        ...request,
-        ...(preparedReadAuthority ? { preparedReadAuthority } : {}),
-      }),
+      input.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+        ? dependencies.readPreparedRollingDailyFullVerification(rollingDailyFullVerificationRequest)
+        : dependencies.readPreparedFullVerification(fullVerificationRequest),
     ])
     const normalizedRecent = normalizeVerificationReadiness({
       result: recentVerification,
