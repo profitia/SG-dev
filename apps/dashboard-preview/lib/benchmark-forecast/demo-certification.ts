@@ -87,6 +87,7 @@ export type DemoVariantPreparationRecord = {
   capabilityStatus: InteractiveForecastCapabilityResult['status']
   currentReadiness: InteractiveForecastCapabilityResult['currentReadiness']
   verificationReadiness: InteractiveForecastCapabilityResult['verificationReadiness']
+  fullVerificationReadiness: InteractiveForecastCapabilityResult['fullVerificationReadiness']
   preparationStatus: BenchmarkForecastCurrentPreparationResult['prepareStatus'] | null
   status: DemoStatus | 'UNSUPPORTED'
   reason: string | null
@@ -282,6 +283,22 @@ function createWarmOnlyPreparationResult(
 function isPrepareEligible(capability: InteractiveForecastCapabilityResult) {
   return (capability.currentReadiness === 'NOT_PREPARED' || capability.currentReadiness === 'STALE')
     && (capability.status === 'PREPARATION_REQUIRED' || capability.status === 'NOT_PREPARED' || capability.status === 'STALE')
+}
+
+function hasExactVerificationReadiness(capability: InteractiveForecastCapabilityResult) {
+  if (capability.currentReadiness !== 'READY') {
+    return false
+  }
+
+  if (capability.fullVerificationReadiness) {
+    return capability.fullVerificationReadiness === 'READY'
+  }
+
+  if (capability.readiness) {
+    return capability.readiness.fullReady
+  }
+
+  return capability.verificationReadiness === 'READY'
 }
 
 function createMatrixEvaluator(
@@ -833,6 +850,7 @@ export function createDemoCertificationService(
                 capabilityStatus: capability.status,
                 currentReadiness: capability.currentReadiness,
                 verificationReadiness: capability.verificationReadiness,
+                fullVerificationReadiness: capability.fullVerificationReadiness,
                 preparationStatus: null,
                 status: required ? 'FAIL' : 'UNSUPPORTED',
                 reason: capability.reason ?? capability.status,
@@ -841,7 +859,7 @@ export function createDemoCertificationService(
             }
 
             if (mode === 'REVALIDATE') {
-              const warmReady = capability.currentReadiness === 'READY' && capability.verificationReadiness === 'READY'
+              const warmReady = hasExactVerificationReadiness(capability)
               variants.push({
                 seriesId: entry.seriesId,
                 modelId: input.modelId,
@@ -851,14 +869,15 @@ export function createDemoCertificationService(
                 capabilityStatus: capability.status,
                 currentReadiness: capability.currentReadiness,
                 verificationReadiness: capability.verificationReadiness,
+                fullVerificationReadiness: capability.fullVerificationReadiness,
                 preparationStatus: null,
                 status: warmReady ? 'PASS' : 'FAIL',
-                reason: warmReady ? null : 'Warm revalidation requires both current and verification readiness to remain READY.',
+                reason: warmReady ? null : 'Warm revalidation requires both current readiness and exact historical verification readiness to remain READY.',
               })
               continue
             }
 
-            if (capability.currentReadiness === 'READY' && capability.verificationReadiness === 'READY') {
+            if (hasExactVerificationReadiness(capability)) {
               variants.push({
                 seriesId: entry.seriesId,
                 modelId: input.modelId,
@@ -868,6 +887,7 @@ export function createDemoCertificationService(
                 capabilityStatus: capability.status,
                 currentReadiness: capability.currentReadiness,
                 verificationReadiness: capability.verificationReadiness,
+                fullVerificationReadiness: capability.fullVerificationReadiness,
                 preparationStatus: null,
                 status: 'PASS',
                 reason: null,
@@ -885,6 +905,7 @@ export function createDemoCertificationService(
                 capabilityStatus: capability.status,
                 currentReadiness: capability.currentReadiness,
                 verificationReadiness: capability.verificationReadiness,
+                fullVerificationReadiness: capability.fullVerificationReadiness,
                 preparationStatus: null,
                 status: 'FAIL',
                 reason: capability.reason ?? capability.status,
@@ -894,6 +915,7 @@ export function createDemoCertificationService(
 
             const preparation = await resolvedDependencies.prepareCurrent(input, { signal })
             const warmedCapability = await readCapabilityOnce(input, { signal }, true)
+            const exactReadyAfterPreparation = hasExactVerificationReadiness(warmedCapability)
             variants.push({
               seriesId: entry.seriesId,
               modelId: input.modelId,
@@ -903,9 +925,14 @@ export function createDemoCertificationService(
               capabilityStatus: warmedCapability.status,
               currentReadiness: warmedCapability.currentReadiness,
               verificationReadiness: warmedCapability.verificationReadiness,
+              fullVerificationReadiness: warmedCapability.fullVerificationReadiness,
               preparationStatus: preparation.prepareStatus,
-              status: preparation.state === 'READY' ? 'PASS' : 'FAIL',
-              reason: preparation.state === 'READY' ? null : preparation.reason ?? warmedCapability.reason ?? preparation.state,
+              status: preparation.state === 'READY' && exactReadyAfterPreparation ? 'PASS' : 'FAIL',
+              reason: preparation.state !== 'READY'
+                ? preparation.reason ?? warmedCapability.reason ?? preparation.state
+                : exactReadyAfterPreparation
+                  ? null
+                  : warmedCapability.reason ?? 'Exact historical verification readiness is not READY after current preparation.',
             })
           }
 

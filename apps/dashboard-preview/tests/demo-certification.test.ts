@@ -42,6 +42,14 @@ function capability(input: BenchmarkForecastCurrentPreparationRequest, overrides
     status: 'READY',
     currentReadiness: 'READY',
     verificationReadiness: 'READY',
+    recentVerificationReadiness: 'READY',
+    fullVerificationReadiness: 'READY',
+    readiness: {
+      fastReady: true,
+      calibratedReady: true,
+      fullReady: true,
+      blockers: [],
+    },
     targetedDataScope: 'SINGLE_SERIES',
     timingMs: 1,
     reason: null,
@@ -366,6 +374,37 @@ test('A2. available warm-ready capability still certifies as demo-safe', async (
   assert.equal(benchmark.reason, null)
 })
 
+test('A3. exact full historical verification readiness is required for fast-path certification and revalidation', async () => {
+  const capabilityResolver = (input: BenchmarkForecastCurrentPreparationRequest) => capability(input, {
+    verificationReadiness: 'READY',
+    recentVerificationReadiness: 'READY',
+    fullVerificationReadiness: 'NOT_PREPARED',
+    readiness: {
+      fastReady: true,
+      calibratedReady: false,
+      fullReady: false,
+      blockers: ['FULL_HISTORICAL_MISSING'],
+    },
+    reason: 'No exact-identity prepared Historical Verification is available.',
+  })
+
+  const certifyReport = await createService({
+    capabilityResolver,
+  }).run({ includeFallback: false })
+  const revalidateReport = await createService({
+    capabilityResolver,
+  }).run({ mode: 'REVALIDATE', includeFallback: false })
+
+  assert.equal(certifyReport.benchmarks[0]?.demoSafe, 'NO')
+  assert.equal(certifyReport.benchmarks[0]?.precompute.status, 'FAIL')
+  assert.equal(certifyReport.benchmarks[0]?.reason, 'PRECOMPUTE_FAIL')
+  assert.equal(certifyReport.benchmarks[0]?.precompute.variants[0]?.fullVerificationReadiness, 'NOT_PREPARED')
+
+  assert.equal(revalidateReport.benchmarks[0]?.demoSafe, 'NO')
+  assert.equal(revalidateReport.benchmarks[0]?.precompute.status, 'FAIL')
+  assert.equal(revalidateReport.benchmarks[0]?.reason, 'PRECOMPUTE_FAIL')
+})
+
 test('B. one lawful matrix fail blocks demo certification', async () => {
   const report = await createService({
     matrixResolver: (seriesId) => matrixReport(seriesId, {
@@ -472,14 +511,30 @@ test('G. warm revalidation stays pass without new prepare calls', async () => {
 
 test('G2. stale capability triggers preparation and can recover precompute', async () => {
   const prepareCalls: string[] = []
+  const warmedVariants = new Set<string>()
+  const keyOf = (input: BenchmarkForecastCurrentPreparationRequest) => `${input.seriesId}:${input.modelId}:${input.targetBasis}`
   const report = await createService({
     prepareCalls,
     capabilityResolver: (input) => capability(input, {
-      status: 'STALE' as never,
-      currentReadiness: 'STALE',
-      verificationReadiness: 'STALE',
-      reason: 'STALE',
+      ...(warmedVariants.has(keyOf(input)) ? {} : {
+        status: 'STALE' as never,
+        currentReadiness: 'STALE',
+        verificationReadiness: 'STALE',
+        recentVerificationReadiness: 'STALE',
+        fullVerificationReadiness: 'STALE',
+        readiness: {
+          fastReady: false,
+          calibratedReady: false,
+          fullReady: false,
+          blockers: ['CURRENT_STALE', 'FULL_HISTORICAL_STALE'],
+        },
+        reason: 'STALE',
+      }),
     }),
+    prepareResolver: (input) => {
+      warmedVariants.add(keyOf(input))
+      return preparation(input)
+    },
   }).run({ includeFallback: false })
 
   assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
@@ -499,6 +554,58 @@ test('G2. stale capability triggers preparation and can recover precompute', asy
     'wocaes0074:arima:POINT_IN_TIME',
     'wocaes0074:arima:END_OF_PERIOD',
   ])
+})
+
+test('G3. current preparation does not recover certification when exact historical verification remains missing', async () => {
+  const prepareCalls: string[] = []
+  const warmedVariants = new Set<string>()
+  const keyOf = (input: BenchmarkForecastCurrentPreparationRequest) => `${input.seriesId}:${input.modelId}:${input.targetBasis}`
+
+  const report = await createService({
+    prepareCalls,
+    capabilityResolver: (input) => {
+      const key = keyOf(input)
+      if (!warmedVariants.has(key)) {
+        return capability(input, {
+          status: 'STALE' as never,
+          currentReadiness: 'STALE',
+          verificationReadiness: 'STALE',
+          recentVerificationReadiness: 'STALE',
+          fullVerificationReadiness: 'STALE',
+          readiness: {
+            fastReady: false,
+            calibratedReady: false,
+            fullReady: false,
+            blockers: ['CURRENT_STALE', 'FULL_HISTORICAL_STALE'],
+          },
+          reason: 'STALE',
+        })
+      }
+
+      return capability(input, {
+        verificationReadiness: 'READY',
+        recentVerificationReadiness: 'READY',
+        fullVerificationReadiness: 'NOT_PREPARED',
+        readiness: {
+          fastReady: true,
+          calibratedReady: false,
+          fullReady: false,
+          blockers: ['FULL_HISTORICAL_MISSING'],
+        },
+        reason: 'No exact-identity prepared Historical Verification is available.',
+      })
+    },
+    prepareResolver: (input) => {
+      warmedVariants.add(keyOf(input))
+      return preparation(input)
+    },
+  }).run({ includeFallback: false })
+
+  assert.equal(report.benchmarks[0]?.demoSafe, 'NO')
+  assert.equal(report.benchmarks[0]?.precompute.status, 'FAIL')
+  assert.equal(report.benchmarks[0]?.reason, 'PRECOMPUTE_FAIL')
+  assert.equal(report.benchmarks[0]?.precompute.variants[0]?.fullVerificationReadiness, 'NOT_PREPARED')
+  assert.equal(prepareCalls.length, MODELS.length * TARGET_BASES.length)
 })
 
 test('H. rehearsal failure blocks demo certification', async () => {
