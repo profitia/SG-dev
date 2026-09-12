@@ -201,7 +201,7 @@ type DemoCertificationDependencies = {
     input: BenchmarkForecastCurrentPreparationRequest,
     cadence?: { sourceFrequency: string, targetCadence: string },
     options?: { signal?: AbortSignal },
-  ) => Promise<BenchmarkForecastVerificationResult>
+  ) => Promise<BenchmarkForecastVerificationResult | BenchmarkForecastCurrentResult>
   readCurrent: (
     seriesId: string,
     modelId: ForecastPortfolioModelId,
@@ -707,7 +707,7 @@ export function createDemoCertificationService(
   const currentReadCache = new Map<string, Promise<BenchmarkForecastCurrentResult>>()
   const verificationReadCache = new Map<string, Promise<BenchmarkForecastVerificationResult>>()
   const preparationCache = new Map<string, Promise<BenchmarkForecastCurrentPreparationResult>>()
-  const verificationPreparationCache = new Map<string, Promise<BenchmarkForecastVerificationResult>>()
+  const verificationPreparationCache = new Map<string, Promise<BenchmarkForecastVerificationResult | BenchmarkForecastCurrentResult>>()
   const createVariantKey = (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => (
     `${seriesId}::${modelId}::${targetBasis}`
   )
@@ -800,10 +800,12 @@ export function createDemoCertificationService(
       : undefined
 
     const prepared = await prepareVerificationOnce(input, cadence, options)
-    verificationReadCache.set(
-      createPreparedReadKey(input.seriesId, input.modelId, input.targetBasis, cadence),
-      Promise.resolve(prepared),
-    )
+    if (input.targetBasis !== 'POINT_IN_TIME') {
+      verificationReadCache.set(
+        createPreparedReadKey(input.seriesId, input.modelId, input.targetBasis, cadence),
+        Promise.resolve(prepared as BenchmarkForecastVerificationResult),
+      )
+    }
 
     return readCapabilityOnce(input, options, true)
   }
