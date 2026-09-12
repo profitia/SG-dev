@@ -3416,24 +3416,62 @@ async function readLatestCurrentRunFromPrisma(key: ForecastPreparedLookupKey) {
     throw new Error('Forecast library datastore is unavailable.')
   }
 
-  const latest = await prisma.forecastCurrentRun.findFirst({
-    where: {
-      seriesId: key.seriesId,
-      targetBasis: key.targetBasis,
-      methodId: key.methodId,
-      modelId: key.modelId,
-      methodVersion: key.methodVersion,
-      frequency: key.frequencyIdentity,
-      trainingWindowPolicyId: key.trainingWindowPolicyId,
-      effectiveTrainingPolicyId: key.effectiveTrainingPolicyId,
-      status: 'AVAILABLE',
-    },
-    select: {
-      inputSource: true,
-      historyFingerprint: true,
-    },
-    orderBy: { updatedAt: 'desc' },
-  })
+  const select = {
+    inputSource: true,
+    historyFingerprint: true,
+  } as const
+
+  let latest: { inputSource: string, historyFingerprint: string } | null
+
+  try {
+    latest = await prisma.forecastCurrentRun.findFirst({
+      where: {
+        seriesId: key.seriesId,
+        targetBasis: key.targetBasis,
+        methodId: key.methodId,
+        modelId: key.modelId,
+        methodVersion: key.methodVersion,
+        frequency: key.frequencyIdentity,
+        trainingWindowPolicyId: key.trainingWindowPolicyId,
+        effectiveTrainingPolicyId: key.effectiveTrainingPolicyId,
+        status: 'AVAILABLE',
+      },
+      select,
+      orderBy: { updatedAt: 'desc' },
+    }) ?? await prisma.forecastCurrentRun.findFirst({
+      where: {
+        seriesId: key.seriesId,
+        targetBasis: key.targetBasis,
+        methodId: key.methodId,
+        modelId: key.modelId,
+        methodVersion: key.methodVersion,
+        frequency: key.frequencyIdentity,
+        trainingWindowPolicyId: null,
+        effectiveTrainingPolicyId: null,
+        status: 'AVAILABLE',
+      },
+      select,
+      orderBy: { updatedAt: 'desc' },
+    })
+  } catch (error) {
+    if (!isMissingCurrentTrainingPolicyColumnError(error)) {
+      throw error
+    }
+
+    latest = await prisma.forecastCurrentRun.findFirst({
+      where: {
+        seriesId: key.seriesId,
+        targetBasis: key.targetBasis,
+        methodId: key.methodId,
+        modelId: key.modelId,
+        methodVersion: key.methodVersion,
+        frequency: key.frequencyIdentity,
+        status: 'AVAILABLE',
+      },
+      select,
+      orderBy: { updatedAt: 'desc' },
+    })
+  }
 
   return latest
     ? readCurrentRunFromPrisma({ ...key, ...latest })
@@ -3446,24 +3484,62 @@ async function readLatestVerificationRunFromPrisma(key: ForecastPreparedLookupKe
     throw new Error('Forecast library datastore is unavailable.')
   }
 
-  const latest = await prisma.forecastVerificationRun.findFirst({
-    where: {
-      seriesId: key.seriesId,
-      targetBasis: key.targetBasis,
-      methodId: key.methodId,
-      modelId: key.modelId,
-      methodVersion: key.methodVersion,
-      frequency: key.frequencyIdentity,
-      trainingWindowPolicyId: key.trainingWindowPolicyId,
-      effectiveTrainingPolicyId: key.effectiveTrainingPolicyId,
-      status: 'AVAILABLE',
-    },
-    select: {
-      inputSource: true,
-      historyFingerprint: true,
-    },
-    orderBy: { updatedAt: 'desc' },
-  })
+  const select = {
+    inputSource: true,
+    historyFingerprint: true,
+  } as const
+
+  let latest: { inputSource: string, historyFingerprint: string } | null
+
+  try {
+    latest = await prisma.forecastVerificationRun.findFirst({
+      where: {
+        seriesId: key.seriesId,
+        targetBasis: key.targetBasis,
+        methodId: key.methodId,
+        modelId: key.modelId,
+        methodVersion: key.methodVersion,
+        frequency: key.frequencyIdentity,
+        trainingWindowPolicyId: key.trainingWindowPolicyId,
+        effectiveTrainingPolicyId: key.effectiveTrainingPolicyId,
+        status: 'AVAILABLE',
+      },
+      select,
+      orderBy: { updatedAt: 'desc' },
+    }) ?? await prisma.forecastVerificationRun.findFirst({
+      where: {
+        seriesId: key.seriesId,
+        targetBasis: key.targetBasis,
+        methodId: key.methodId,
+        modelId: key.modelId,
+        methodVersion: key.methodVersion,
+        frequency: key.frequencyIdentity,
+        trainingWindowPolicyId: null,
+        effectiveTrainingPolicyId: null,
+        status: 'AVAILABLE',
+      },
+      select,
+      orderBy: { updatedAt: 'desc' },
+    })
+  } catch (error) {
+    if (!isMissingVerificationTrainingPolicyColumnError(error)) {
+      throw error
+    }
+
+    latest = await prisma.forecastVerificationRun.findFirst({
+      where: {
+        seriesId: key.seriesId,
+        targetBasis: key.targetBasis,
+        methodId: key.methodId,
+        modelId: key.modelId,
+        methodVersion: key.methodVersion,
+        frequency: key.frequencyIdentity,
+        status: 'AVAILABLE',
+      },
+      select,
+      orderBy: { updatedAt: 'desc' },
+    })
+  }
 
   return latest
     ? readVerificationRunFromPrisma({ ...key, ...latest })

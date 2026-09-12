@@ -2,10 +2,13 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  buildForecastArtifactCadenceIdentity,
   createCurrentForecastStatisticalCompatibility,
   createFullVerificationStatisticalCompatibility,
 } from '../lib/forecast/identity'
 import {
+  readPreparedBenchmarkCurrentForecast,
+  readPreparedBenchmarkForecastVerification,
   writeCurrentRunWithPrisma,
   writeVerificationRunWithPrisma,
   type PersistedCurrentArtifact,
@@ -121,6 +124,7 @@ test('writeCurrentRunWithPrisma falls back to legacy writes when training policy
 
   process.env.MARKET_DATA_DATABASE_URL = 'postgresql://legacy-current.invalid/market-data'
   globalThis.__sgRuntimeMarketDataPrisma__ = {
+    $on() {},
     async $queryRaw(query: { strings?: string[] }) {
       queryRawCount += 1
       observedQuery = Array.isArray(query.strings) ? query.strings.join(' ') : ''
@@ -185,6 +189,7 @@ test('writeVerificationRunWithPrisma falls back to legacy writes when training p
 
   process.env.MARKET_DATA_DATABASE_URL = 'postgresql://legacy-verification.invalid/market-data'
   globalThis.__sgRuntimeMarketDataPrisma__ = {
+    $on() {},
     async $queryRaw(query: { strings?: string[] }) {
       queryRawCount += 1
       observedQuery = Array.isArray(query.strings) ? query.strings.join(' ') : ''
@@ -232,6 +237,188 @@ test('writeVerificationRunWithPrisma falls back to legacy writes when training p
     assert.equal(deletedMetricRunId, 'legacy-verification-run')
     assert.equal(deletedPointRunId, 'legacy-verification-run')
     assert.equal(createdMetricCount, 1)
+  } finally {
+    if (previousUrl === undefined) {
+      delete process.env.MARKET_DATA_DATABASE_URL
+    } else {
+      process.env.MARKET_DATA_DATABASE_URL = previousUrl
+    }
+
+    globalThis.__sgRuntimeMarketDataPrisma__ = previousPrisma
+  }
+})
+
+test('readPreparedBenchmarkCurrentForecast falls back to legacy latest lookup when training policy columns are absent', async () => {
+  const previousUrl = process.env.MARKET_DATA_DATABASE_URL
+  const previousPrisma = globalThis.__sgRuntimeMarketDataPrisma__
+  const artifact = {
+    ...createCurrentArtifact(),
+    cadence: { sourceFrequency: 'MONTHLY' as const, targetCadence: 'MONTHLY' as const },
+    frequencyIdentity: buildForecastArtifactCadenceIdentity({ sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' }),
+  }
+  const findFirstCalls: Array<Record<string, unknown>> = []
+
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://legacy-current-read.invalid/market-data'
+  globalThis.__sgRuntimeMarketDataPrisma__ = {
+    $on() {},
+    forecastCurrentRun: {
+      async findFirst(input: { where: Record<string, unknown>, select: Record<string, unknown> }) {
+        findFirstCalls.push(input)
+
+        if ('trainingWindowPolicyId' in input.where || 'effectiveTrainingPolicyId' in input.where) {
+          throw new Error('Invalid `prisma.forecastCurrentRun.findFirst()` invocation:\n\nThe column `trainingWindowPolicyId` does not exist in the current database.')
+        }
+
+        if ('displayName' in input.select) {
+          return {
+            seriesId: artifact.seriesId,
+            modelId: artifact.modelId,
+            displayName: artifact.displayName,
+            description: artifact.description,
+            targetBasis: artifact.targetBasis,
+            methodVersion: artifact.methodVersion,
+            inputSource: artifact.source.kind,
+            inputRunId: artifact.source.runId,
+            historyFingerprint: artifact.historyFingerprint,
+            frequency: artifact.frequencyIdentity,
+            historyStartAt: new Date(artifact.history.start),
+            historyEndAt: new Date(artifact.history.end),
+            observationCount: artifact.history.observations,
+            forecastOriginAt: new Date(artifact.forecastOrigin),
+            runtimeSeconds: artifact.runtimeSeconds,
+            points: [{
+              horizonLabel: '1M',
+              horizonSteps: 1,
+              forecastDate: new Date('2026-02-01T00:00:00.000Z'),
+              forecastValue: 95.1,
+              metadataJson: null,
+              failureReason: null,
+            }],
+          }
+        }
+
+        return {
+          inputSource: artifact.source.kind,
+          historyFingerprint: artifact.historyFingerprint,
+        }
+      },
+    },
+  } as never
+
+  try {
+    const result = await readPreparedBenchmarkCurrentForecast({
+      seriesId: artifact.seriesId,
+      modelId: artifact.modelId,
+      targetBasis: artifact.targetBasis,
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      preparedReadAuthority: {
+        seriesId: artifact.seriesId,
+        modelId: artifact.modelId,
+        targetBasis: artifact.targetBasis,
+        sourceFrequency: 'MONTHLY',
+        targetCadence: 'MONTHLY',
+        expectedHistoryFingerprint: artifact.historyFingerprint,
+      },
+    })
+
+    assert.equal(result.status, 'AVAILABLE')
+    assert.equal(findFirstCalls.length, 4)
+  } finally {
+    if (previousUrl === undefined) {
+      delete process.env.MARKET_DATA_DATABASE_URL
+    } else {
+      process.env.MARKET_DATA_DATABASE_URL = previousUrl
+    }
+
+    globalThis.__sgRuntimeMarketDataPrisma__ = previousPrisma
+  }
+})
+
+test('readPreparedBenchmarkForecastVerification falls back to legacy latest lookup when training policy columns are absent', async () => {
+  const previousUrl = process.env.MARKET_DATA_DATABASE_URL
+  const previousPrisma = globalThis.__sgRuntimeMarketDataPrisma__
+  const artifact = {
+    ...createVerificationArtifact(),
+    cadence: { sourceFrequency: 'MONTHLY' as const, targetCadence: 'MONTHLY' as const },
+    frequencyIdentity: buildForecastArtifactCadenceIdentity({ sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' }),
+  }
+  const findFirstCalls: Array<Record<string, unknown>> = []
+
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://legacy-verification-read.invalid/market-data'
+  globalThis.__sgRuntimeMarketDataPrisma__ = {
+    $on() {},
+    forecastVerificationRun: {
+      async findFirst(input: { where: Record<string, unknown>, select: Record<string, unknown> }) {
+        findFirstCalls.push(input)
+
+        if ('trainingWindowPolicyId' in input.where || 'effectiveTrainingPolicyId' in input.where) {
+          throw new Error('Invalid `prisma.forecastVerificationRun.findFirst()` invocation:\n\nThe column `trainingWindowPolicyId` does not exist in the current database.')
+        }
+
+        if ('displayName' in input.select) {
+          return {
+            seriesId: artifact.seriesId,
+            modelId: artifact.modelId,
+            displayName: artifact.displayName,
+            description: artifact.description,
+            targetBasis: artifact.targetBasis,
+            methodVersion: artifact.methodVersion,
+            inputSource: artifact.source.kind,
+            inputRunId: artifact.source.runId,
+            historyFingerprint: artifact.historyFingerprint,
+            frequency: artifact.frequencyIdentity,
+            historyStartAt: new Date(artifact.history.start),
+            historyEndAt: new Date(artifact.history.end),
+            observationCount: artifact.history.observations,
+            forecastOriginAt: new Date(artifact.forecastOrigin),
+            runtimeSeconds: artifact.runtimeSeconds,
+            metrics: [{
+              horizonLabel: '1M',
+              horizonSteps: 1,
+              origins: 2,
+              expectedOrigins: 2,
+              failedOrigins: 0,
+              coverage: 1,
+              mae: 0.1,
+              rmse: 0.2,
+              mase: 0.3,
+              smape: 0.4,
+              directionalAccuracy: 1,
+              bias: 0,
+              failureSummaryJson: [],
+            }],
+            points: [],
+          }
+        }
+
+        return {
+          inputSource: artifact.source.kind,
+          historyFingerprint: artifact.historyFingerprint,
+        }
+      },
+    },
+  } as never
+
+  try {
+    const result = await readPreparedBenchmarkForecastVerification({
+      seriesId: artifact.seriesId,
+      modelId: artifact.modelId,
+      targetBasis: artifact.targetBasis,
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      preparedReadAuthority: {
+        seriesId: artifact.seriesId,
+        modelId: artifact.modelId,
+        targetBasis: artifact.targetBasis,
+        sourceFrequency: 'MONTHLY',
+        targetCadence: 'MONTHLY',
+        expectedHistoryFingerprint: artifact.historyFingerprint,
+      },
+    })
+
+    assert.equal(result.status, 'AVAILABLE')
+    assert.equal(findFirstCalls.length, 4)
   } finally {
     if (previousUrl === undefined) {
       delete process.env.MARKET_DATA_DATABASE_URL
