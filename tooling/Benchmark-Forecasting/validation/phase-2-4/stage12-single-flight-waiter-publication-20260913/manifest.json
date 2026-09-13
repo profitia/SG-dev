@@ -1,0 +1,65 @@
+{
+  "taskId": "ppf-1-stage-12-single-flight-waiter-publication-20260913",
+  "publicationBranch": "ppf1/stage12-live-acceptance-legacy-deprecation-20260911",
+  "publicationBaseSha": "69f3b755317b6d51eaccd16e35412d028abfc99e",
+  "waiterCorrectiveSourceSha": "d4ad71f5a4baf29afb74ba2311191a8ec8cb0896",
+  "sourceValidation": {
+    "focusedTests": "23/23 passed",
+    "typecheck": "passed"
+  },
+  "boundedHistoricalCatchup": {
+    "selectedMaxOriginsPerRun": 50,
+    "identities": [
+      {
+        "benchmark": "Copper",
+        "seriesId": "lmeofcucashask",
+        "modelId": "arima",
+        "startingCheckpoint": "2024-01-25",
+        "finalCheckpoint": "2026-09-11",
+        "runs": 14,
+        "totalOriginsAdvanced": 665,
+        "fullVerificationReadiness": "READY",
+        "fullReady": true,
+        "boundedNoOpConfirmed": true
+      },
+      {
+        "benchmark": "Aluminium",
+        "seriesId": "lmeofalcashask",
+        "modelId": "arima",
+        "startingCheckpoint": "2024-01-12",
+        "finalCheckpoint": "2026-09-11",
+        "runs": 14,
+        "totalOriginsAdvanced": 673,
+        "fullVerificationReadiness": "READY",
+        "fullReady": true,
+        "boundedNoOpConfirmed": true
+      },
+      {
+        "benchmark": "Brent",
+        "seriesId": "wocaes0074",
+        "modelId": "arima",
+        "fullVerificationReadiness": "READY",
+        "fullReady": true,
+        "boundedHistoricalCatchupRequired": false
+      }
+    ]
+  },
+  "singleFlightWaiterProof": {
+    "benchmark": "Aluminium",
+    "seriesId": "lmeofalcashask",
+    "modelId": "arima",
+    "beforeCheckpoint": "2024-01-11",
+    "afterCheckpoint": "2024-01-12",
+    "beforeRows": 20,
+    "afterRows": 24,
+    "firstRequestStatus": "SUCCEEDED",
+    "secondRequestStatus": "SUCCEEDED",
+    "observedRoles": ["OWNER", "WAITER"],
+    "singleOriginAdvanceConfirmed": true
+  },
+  "provenance": {
+    "mode": "transcript-derived",
+    "reason": "The original /tmp/stage12-bg-catchup artifacts had expired before evidence publication.",
+    "transcriptPath": "/Users/tomaszuscinski/Library/Application Support/Code/User/workspaceStorage/b4e3291e63da4ee8aff812d4e67de48b/GitHub.copilot-chat/transcripts/3dec468c-509d-48bf-82eb-e06c6b6f5798.jsonl"
+  }
+}

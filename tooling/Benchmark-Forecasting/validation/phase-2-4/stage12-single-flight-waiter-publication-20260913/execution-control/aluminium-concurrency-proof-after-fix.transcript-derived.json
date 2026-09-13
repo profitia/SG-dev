@@ -1,0 +1,19 @@
+{
+  "benchmark": "Aluminium",
+  "seriesId": "lmeofalcashask",
+  "modelId": "arima",
+  "beforeCheckpoint": "2024-01-11",
+  "afterCheckpoint": "2024-01-12",
+  "beforeRows": 20,
+  "afterRows": 24,
+  "firstRequestStatus": "SUCCEEDED",
+  "secondRequestStatus": "SUCCEEDED",
+  "observedRoles": ["OWNER", "WAITER"],
+  "singleOriginAdvanceConfirmed": true,
+  "summary": "The post-fix same-key overlap returned one owner and one waiter, both requests resolved successfully, and only one additional origin was persisted.",
+  "provenance": {
+    "mode": "transcript-derived",
+    "rawArtifactExpired": true,
+    "originalArtifactPath": "/tmp/stage12-bg-catchup/aluminium-concurrency-proof-after-fix.json"
+  }
+}
