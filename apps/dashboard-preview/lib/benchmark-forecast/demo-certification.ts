@@ -456,6 +456,12 @@ function normalizeMaxConcurrentMatrixVariants(value: number | undefined) {
   return normalized > 0 ? normalized : null
 }
 
+function resolveDefaultMaxConcurrentMatrixVariants() {
+  return trimToNull(process.env.RENDER_EXTERNAL_URL) || trimToNull(process.env.VERCEL_URL)
+    ? 1
+    : null
+}
+
 function isTimeoutError(error: unknown) {
   return error instanceof Error && error.message.toLowerCase().includes('timed out')
 }
@@ -511,7 +517,8 @@ function createBenchmarkDiagnosticsTracker(
   const enabled = options?.enabled === true
   const benchmarkExecutionId = `demo-certification-${randomUUID()}`
   const maxConcurrentRemoteReads = enabled ? normalizeMaxConcurrentRemoteReads(options?.maxConcurrentRemoteReads) : null
-  const maxConcurrentMatrixVariants = enabled ? normalizeMaxConcurrentMatrixVariants(options?.maxConcurrentMatrixVariants) : null
+  const maxConcurrentMatrixVariants = normalizeMaxConcurrentMatrixVariants(options?.maxConcurrentMatrixVariants)
+    ?? resolveDefaultMaxConcurrentMatrixVariants()
   const limitRemoteRead = createRemoteReadLimiter(maxConcurrentRemoteReads)
   const timeline: Array<DemoBenchmarkPhaseDiagnostic | DemoBenchmarkRemoteRequestDiagnostic> = []
   const activeRequests = new Map<string, DemoRemoteOperationIdentity & { startedAt: string, startedAtMs: number, requestId: string }>()

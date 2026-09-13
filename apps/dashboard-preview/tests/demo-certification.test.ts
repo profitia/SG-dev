@@ -1123,6 +1123,52 @@ test('I6. benchmark evaluations run concurrently across the cohort', async () =>
   assert.equal(report.benchmarks[1]?.seriesId, 'lmeofcucashask')
 })
 
+test('I6b. deployed certification defaults matrix evaluation to one concurrent variant and still allows explicit override', async () => {
+  const originalRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  process.env.RENDER_EXTERNAL_URL = 'https://dashboards-library.onrender.com'
+
+  try {
+    const defaultCaps: Array<number | null | undefined> = []
+    const overrideCaps: Array<number | null | undefined> = []
+
+    const service = createService({
+      matrixResolver: async (seriesId, _allowPrepare, requestOptions) => {
+        if (seriesId === 'wocaes0074') {
+          defaultCaps.push(requestOptions?.maxConcurrentVariants)
+        } else {
+          overrideCaps.push(requestOptions?.maxConcurrentVariants)
+        }
+
+        return matrixReport(seriesId)
+      },
+      cohort: [
+        { seriesId: 'wocaes0074', benchmarkName: 'Brent', group: 'PRIMARY' },
+        { seriesId: 'lmeofcucashask', benchmarkName: 'Copper', group: 'PRIMARY' },
+      ],
+    })
+
+    const defaultReport = await service.run({
+      includeFallback: false,
+      diagnostics: { enabled: true },
+    })
+    assert.equal(defaultReport.summary.demoSafe, 2)
+    assert.equal(defaultCaps.includes(1), true)
+
+    const overrideReport = await service.run({
+      includeFallback: false,
+      diagnostics: { enabled: true, maxConcurrentMatrixVariants: 3 },
+    })
+    assert.equal(overrideReport.summary.demoSafe, 2)
+    assert.equal(overrideCaps.includes(3), true)
+  } finally {
+    if (originalRenderExternalUrl === undefined) {
+      delete process.env.RENDER_EXTERNAL_URL
+    } else {
+      process.env.RENDER_EXTERNAL_URL = originalRenderExternalUrl
+    }
+  }
+})
+
 test('I7. precompute and matrix reuse the same preparation for a stale variant', async () => {
   const preparedVariants = new Set<string>()
   const prepareCalls: string[] = []
