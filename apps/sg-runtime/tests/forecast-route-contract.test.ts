@@ -17,6 +17,13 @@ import {
   createInternalForecastCapabilityRouteHandler,
   createInternalProgressiveForecastPreparationRouteHandler,
 } from '../lib/forecast/interactive-route-handlers'
+import {
+  FORECAST_REQUEST_DIAGNOSTICS_HEADER,
+  FORECAST_REQUEST_DIAGNOSTICS_LOG_EVENT,
+  noteForecastRequestDiagnosticsEvent,
+  type ForecastRequestDiagnosticsHeaderSummary,
+  type ForecastRequestDiagnosticsSnapshot,
+} from '../lib/forecast/request-diagnostics'
 import type { ForecastPreparationExecutionAdmission } from '../lib/forecast/execution-ledger'
 import type {
   BenchmarkForecastCurrentResult,
@@ -49,6 +56,14 @@ function buildJsonRequest(url: string, body: unknown, headers: Record<string, st
     },
     body: JSON.stringify(body),
   })
+}
+
+function decodeDiagnosticsHeader(value: string | null) {
+  if (!value) {
+    return null
+  }
+
+  return JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as ForecastRequestDiagnosticsHeaderSummary
 }
 
 function createStubExecutionAdmission(): ForecastPreparationExecutionAdmission {
@@ -752,6 +767,7 @@ test('internal capability route returns supported capability in legacy-compatibl
     const payload = await response.json()
 
     assert.equal(response.status, 200)
+    assert.equal(response.headers.get(FORECAST_REQUEST_DIAGNOSTICS_HEADER), null)
     assert.deepEqual(payload, {
       seriesId: 'wocaes0074',
       targetSemantics: 'MONTHLY_AVERAGE',
@@ -847,6 +863,160 @@ test('internal capability route emits timing header only when trace is requested
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
 
   try {
+
+test('internal capability route keeps traced diagnostics header bounded and logs the full snapshot', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const originalConsoleInfo = console.info
+  const loggedLines: string[] = []
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+  console.info = ((message?: unknown) => {
+    loggedLines.push(String(message ?? ''))
+  }) as unknown as typeof console.info
+
+  try {
+    const handler = createInternalForecastCapabilityRouteHandler(async (input) => {
+      for (let index = 0; index < 220; index += 1) {
+        noteForecastRequestDiagnosticsEvent('capability_path_detail', 'APPLICATION', {
+          index,
+          detail: 'stale-capability-trace-detail'.repeat(6),
+        })
+      }
+
+      return {
+        seriesId: input.seriesId,
+        targetSemantics: input.targetSemantics,
+        modelId: input.modelId,
+        sourceFrequency: 'DAILY',
+        targetCadence: 'DAILY',
+        sourceAvailability: 'AVAILABLE',
+        lawfulTargetSemantics: 'LAWFUL',
+        status: 'STALE',
+        currentReadiness: 'STALE',
+        verificationReadiness: 'NOT_PREPARED',
+        recentVerificationReadiness: 'NOT_PREPARED',
+        fullVerificationReadiness: 'NOT_PREPARED',
+        predictionBandResidualCount: 0,
+        predictionBandState: 'NOT_AVAILABLE',
+        readiness: {
+          fastReady: false,
+          calibratedReady: false,
+          fullReady: false,
+          blockers: ['SOURCE_REVISION_REBUILD_REQUIRED'],
+        },
+        targetedDataScope: 'SINGLE_SERIES',
+        timingMs: 37,
+        reason: null,
+      }
+    })
+
+    const response = await handler(buildRequest(
+      'http://localhost/api/internal/forecast/capability?seriesId=lmeofcucashask&targetSemantics=ROLLING_DAILY_POINT_IN_TIME&modelId=naive',
+      {
+        Authorization: 'Bearer test-internal-token',
+        'x-sg-forecast-trace': '1',
+        'x-request-id': 'req-header-overflow-proof',
+      },
+    ))
+    const payload = await response.json()
+    const diagnosticsHeader = decodeDiagnosticsHeader(response.headers.get(FORECAST_REQUEST_DIAGNOSTICS_HEADER))
+    const loggedSnapshot = JSON.parse(loggedLines.find((line) => line.includes(FORECAST_REQUEST_DIAGNOSTICS_LOG_EVENT)) ?? 'null') as ({ event: string, entryCount: number } & ForecastRequestDiagnosticsSnapshot)
+
+    assert.equal(response.status, 200)
+    assert.equal(response.headers.get('x-sg-runtime-capability-total-ms'), '37')
+    assert.equal(payload.status, 'STALE')
+    assert.ok(diagnosticsHeader)
+    assert.equal(diagnosticsHeader?.schemaVersion, 'bounded-summary-v1')
+    assert.equal(diagnosticsHeader?.requestId, 'req-header-overflow-proof')
+    assert.equal(diagnosticsHeader?.operationType, 'CAPABILITY')
+    assert.equal(diagnosticsHeader?.responseStatus, 200)
+    assert.equal(diagnosticsHeader?.seriesId, 'lmeofcucashask')
+    assert.equal(diagnosticsHeader?.modelId, 'naive')
+    assert.equal(diagnosticsHeader?.targetSemantics, 'ROLLING_DAILY_POINT_IN_TIME')
+    assert.equal(diagnosticsHeader?.fullSnapshotLogged, true)
+    assert.deepEqual(diagnosticsHeader?.entries, [])
+    assert.ok((response.headers.get(FORECAST_REQUEST_DIAGNOSTICS_HEADER) ?? '').length < 1024)
+    assert.equal(loggedSnapshot.event, FORECAST_REQUEST_DIAGNOSTICS_LOG_EVENT)
+    assert.equal(loggedSnapshot.requestId, 'req-header-overflow-proof')
+    assert.equal(loggedSnapshot.responseStatus, 200)
+    assert.ok(loggedSnapshot.entryCount > 220)
+    assert.equal(loggedSnapshot.entryCount, loggedSnapshot.entries.length)
+
+    const { event: _event, entryCount: _entryCount, ...fullSnapshot } = loggedSnapshot
+    const legacyHeaderLength = Buffer.from(JSON.stringify(fullSnapshot), 'utf8').toString('base64url').length
+    assert.ok(legacyHeaderLength > 8192)
+    assert.equal(diagnosticsHeader?.entryCount, loggedSnapshot.entries.length)
+  } finally {
+    console.info = originalConsoleInfo
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
+})
+
+test('internal capability route keeps traced diagnostics header bounded on error responses', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const originalConsoleInfo = console.info
+  const loggedLines: string[] = []
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+  console.info = ((message?: unknown) => {
+    loggedLines.push(String(message ?? ''))
+  }) as unknown as typeof console.info
+
+  try {
+    const handler = createInternalForecastCapabilityRouteHandler(async () => {
+      for (let index = 0; index < 220; index += 1) {
+        noteForecastRequestDiagnosticsEvent('capability_error_detail', 'APPLICATION', {
+          index,
+          detail: 'capability-error-trace-detail'.repeat(6),
+        })
+      }
+
+      throw new Error('synthetic capability failure')
+    })
+
+    const response = await handler(buildRequest(
+      'http://localhost/api/internal/forecast/capability?seriesId=lmeofalcashask&targetSemantics=ROLLING_DAILY_POINT_IN_TIME&modelId=naive',
+      {
+        Authorization: 'Bearer test-internal-token',
+        'x-sg-forecast-trace': '1',
+        'x-request-id': 'req-header-error-proof',
+      },
+    ))
+    const payload = await response.json()
+    const diagnosticsHeader = decodeDiagnosticsHeader(response.headers.get(FORECAST_REQUEST_DIAGNOSTICS_HEADER))
+    const loggedSnapshot = JSON.parse(loggedLines.find((line) => line.includes(FORECAST_REQUEST_DIAGNOSTICS_LOG_EVENT)) ?? 'null') as ({ event: string, entryCount: number } & ForecastRequestDiagnosticsSnapshot)
+
+    assert.equal(response.status, 500)
+    assert.equal(payload.code, 'INTERNAL_FORECAST_OPERATION_FAILED')
+    assert.equal(payload.error, 'synthetic capability failure')
+    assert.ok(diagnosticsHeader)
+    assert.equal(diagnosticsHeader?.schemaVersion, 'bounded-summary-v1')
+    assert.equal(diagnosticsHeader?.requestId, 'req-header-error-proof')
+    assert.equal(diagnosticsHeader?.responseStatus, 500)
+    assert.deepEqual(diagnosticsHeader?.entries, [])
+    assert.ok((response.headers.get(FORECAST_REQUEST_DIAGNOSTICS_HEADER) ?? '').length < 1024)
+    assert.equal(loggedSnapshot.event, FORECAST_REQUEST_DIAGNOSTICS_LOG_EVENT)
+    assert.equal(loggedSnapshot.requestId, 'req-header-error-proof')
+    assert.equal(loggedSnapshot.responseStatus, 500)
+    assert.ok(loggedSnapshot.entryCount > 220)
+
+    const { event: _event, entryCount: _entryCount, ...fullSnapshot } = loggedSnapshot
+    const legacyHeaderLength = Buffer.from(JSON.stringify(fullSnapshot), 'utf8').toString('base64url').length
+    assert.ok(legacyHeaderLength > 8192)
+    assert.equal(diagnosticsHeader?.entryCount, loggedSnapshot.entries.length)
+  } finally {
+    console.info = originalConsoleInfo
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
+})
     const handler = createInternalForecastCapabilityRouteHandler(async () => ({
       seriesId: 'usnaac0169',
       targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',

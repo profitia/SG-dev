@@ -5,6 +5,14 @@ import { type NextResponse } from 'next/server'
 
 export const FORECAST_REQUEST_TRACE_HEADER = 'x-sg-forecast-trace'
 export const FORECAST_REQUEST_DIAGNOSTICS_HEADER = 'x-sg-runtime-request-diagnostics'
+export const FORECAST_REQUEST_DIAGNOSTICS_LOG_EVENT = 'FORECAST_REQUEST_DIAGNOSTICS'
+
+const MAX_DIAGNOSTICS_HEADER_REQUEST_ID_LENGTH = 128
+const MAX_DIAGNOSTICS_HEADER_ROUTE_LENGTH = 96
+const MAX_DIAGNOSTICS_HEADER_METHOD_LENGTH = 16
+const MAX_DIAGNOSTICS_HEADER_IDENTITY_LENGTH = 128
+const MAX_DIAGNOSTICS_HEADER_SEMANTICS_LENGTH = 96
+const MAX_DIAGNOSTICS_HEADER_FREQUENCY_LENGTH = 32
 
 export type ForecastRequestDiagnosticsMetric = string | number | boolean | null
 
@@ -65,6 +73,13 @@ export type ForecastRequestDiagnosticsSnapshot = {
   entries: ForecastRequestDiagnosticsEntry[]
 }
 
+export type ForecastRequestDiagnosticsHeaderSummary = Omit<ForecastRequestDiagnosticsSnapshot, 'entries'> & {
+  schemaVersion: 'bounded-summary-v1'
+  entryCount: number
+  fullSnapshotLogged: true
+  entries: []
+}
+
 type ForecastRequestDiagnosticsState = {
   enabled: boolean
   snapshot: ForecastRequestDiagnosticsSnapshot
@@ -86,6 +101,63 @@ function nowIso() {
 
 function toErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'unknown'
+}
+
+function clampString(value: string, maxLength: number) {
+  return value.length <= maxLength ? value : value.slice(0, maxLength)
+}
+
+function clampNullableString(value: string | null, maxLength: number) {
+  return typeof value === 'string' ? clampString(value, maxLength) : null
+}
+
+function buildForecastRequestDiagnosticsHeaderSummary(
+  snapshot: ForecastRequestDiagnosticsSnapshot,
+): ForecastRequestDiagnosticsHeaderSummary {
+  return {
+    schemaVersion: 'bounded-summary-v1',
+    requestId: clampString(snapshot.requestId, MAX_DIAGNOSTICS_HEADER_REQUEST_ID_LENGTH),
+    route: clampString(snapshot.route, MAX_DIAGNOSTICS_HEADER_ROUTE_LENGTH),
+    method: clampString(snapshot.method, MAX_DIAGNOSTICS_HEADER_METHOD_LENGTH),
+    handlerEnteredAt: snapshot.handlerEnteredAt,
+    responseReadyAt: snapshot.responseReadyAt,
+    responseStatus: snapshot.responseStatus,
+    operationType: snapshot.operationType,
+    seriesId: clampNullableString(snapshot.seriesId, MAX_DIAGNOSTICS_HEADER_IDENTITY_LENGTH),
+    modelId: clampNullableString(snapshot.modelId, MAX_DIAGNOSTICS_HEADER_IDENTITY_LENGTH),
+    targetBasis: clampNullableString(snapshot.targetBasis, MAX_DIAGNOSTICS_HEADER_IDENTITY_LENGTH),
+    targetSemantics: clampNullableString(snapshot.targetSemantics, MAX_DIAGNOSTICS_HEADER_SEMANTICS_LENGTH),
+    sourceFrequency: clampNullableString(snapshot.sourceFrequency, MAX_DIAGNOSTICS_HEADER_FREQUENCY_LENGTH),
+    targetCadence: clampNullableString(snapshot.targetCadence, MAX_DIAGNOSTICS_HEADER_FREQUENCY_LENGTH),
+    dbPoolWaitMs: snapshot.dbPoolWaitMs,
+    dbPoolWaitObservable: snapshot.dbPoolWaitObservable,
+    entryCount: snapshot.entries.length,
+    fullSnapshotLogged: true,
+    entries: [],
+  }
+}
+
+function logForecastRequestDiagnostics(snapshot: ForecastRequestDiagnosticsSnapshot) {
+  console.info(JSON.stringify({
+    event: FORECAST_REQUEST_DIAGNOSTICS_LOG_EVENT,
+    requestId: snapshot.requestId,
+    route: snapshot.route,
+    method: snapshot.method,
+    handlerEnteredAt: snapshot.handlerEnteredAt,
+    responseReadyAt: snapshot.responseReadyAt,
+    responseStatus: snapshot.responseStatus,
+    operationType: snapshot.operationType,
+    seriesId: snapshot.seriesId,
+    modelId: snapshot.modelId,
+    targetBasis: snapshot.targetBasis,
+    targetSemantics: snapshot.targetSemantics,
+    sourceFrequency: snapshot.sourceFrequency,
+    targetCadence: snapshot.targetCadence,
+    dbPoolWaitMs: snapshot.dbPoolWaitMs,
+    dbPoolWaitObservable: snapshot.dbPoolWaitObservable,
+    entryCount: snapshot.entries.length,
+    entries: snapshot.entries,
+  }))
 }
 
 export function runWithForecastRequestDiagnostics<T>(
@@ -252,9 +324,11 @@ export function appendForecastRequestDiagnosticsHeader(response: NextResponse) {
     return response
   }
 
+  logForecastRequestDiagnostics(snapshot)
+
   response.headers.set(
     FORECAST_REQUEST_DIAGNOSTICS_HEADER,
-    Buffer.from(JSON.stringify(snapshot), 'utf8').toString('base64url'),
+    Buffer.from(JSON.stringify(buildForecastRequestDiagnosticsHeaderSummary(snapshot)), 'utf8').toString('base64url'),
   )
   return response
 }
