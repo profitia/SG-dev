@@ -373,6 +373,10 @@ async function resolveInteractiveForecastReadiness(
   if (capability.currentPreparedState === 'READY' && capability.capabilityState !== 'NOT_LAWFUL' && capability.capabilityState !== 'NOT_IMPLEMENTED') {
     const request = buildPreparedReadRequest(input, sourceFrequency, capability.targetCadence)
     const preparedReadAuthority = buildPreparedReadAuthority(input, capability)
+    const recentVerificationRequest = {
+      ...request,
+      ...(preparedReadAuthority ? { preparedReadAuthority } : {}),
+    }
     const rollingDailyFullVerificationRequest: ForecastRequestInput = {
       seriesId: request.seriesId,
       modelId: input.modelId,
@@ -385,7 +389,7 @@ async function resolveInteractiveForecastReadiness(
       ...(preparedReadAuthority ? { preparedReadAuthority } : {}),
     }
     const [recentVerification, fullVerification] = await Promise.all([
-      dependencies.readPreparedRecentVerification(request),
+      dependencies.readPreparedRecentVerification(recentVerificationRequest),
       input.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
         ? dependencies.readPreparedRollingDailyFullVerification(rollingDailyFullVerificationRequest)
         : dependencies.readPreparedFullVerification(fullVerificationRequest),

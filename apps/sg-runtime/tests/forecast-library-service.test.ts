@@ -874,6 +874,112 @@ test('prepared recent verification lookup uses the recent policy identity and cu
   assert.equal(historyModelId, 'arima')
 })
 
+test('prepared recent verification lookup uses trusted prepared-read authority fast path', async () => {
+  let readLatestCalls = 0
+
+  const history = createHistoryResponse()
+  const historyFingerprint = buildForecastHistoryFingerprint(history.history, {
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  })
+  const verificationArtifact = {
+    seriesId: 'wocaes0280',
+    modelId: 'arima',
+    displayName: 'Baltic Exchange, Dry Index (BDI), USD',
+    description: 'Baltic Exchange, Dry Index (BDI), USD',
+    targetBasis: 'END_OF_PERIOD' as const,
+    ...persistedIdentity('END_OF_PERIOD', 'RECENT_VERIFICATION'),
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: {
+      kind: 'POSTGRES_RUNTIME_SNAPSHOT',
+      runId: 'cmrd3xvlu0000cedt8gczw378',
+    },
+    historyFingerprint,
+    cadence: {
+      sourceFrequency: 'MONTHLY' as const,
+      targetCadence: 'MONTHLY' as const,
+    },
+    frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+    statisticalCompatibility: createRecentVerificationStatisticalCompatibility({
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'END_OF_PERIOD',
+    }),
+    preparation: null,
+    history: {
+      frequency: 'MONTHLY',
+      start: '2021-01-01T00:00:00',
+      end: '2026-04-01T00:00:00',
+      observations: 64,
+    },
+    forecastOrigin: '2025-04-01T00:00:00.000Z',
+    runtimeSeconds: null,
+    verification: createPersistedVerificationPayload('arima'),
+  }
+
+  const service = createTestForecastLibraryService({
+    bridge: {
+      async exportHistory() {
+        throw new Error('trusted prepared-read authority should skip prepared recent history export')
+      },
+      async exportCurrent() {
+        throw new Error('unused')
+      },
+      async exportVerification() {
+        throw new Error('unused')
+      },
+      async prepareExecutionContext() {
+        throw new Error('trusted prepared-read authority should skip prepared execution context lookup')
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        throw new Error('unused')
+      },
+      async writeCurrentRun() {
+        throw new Error('unused')
+      },
+      async readVerificationRun() {
+        throw new Error('trusted prepared-read authority should use latest-only verification lookup')
+      },
+      async readLatestVerificationRun(key) {
+        readLatestCalls += 1
+        assert.equal(key.seriesId, 'wocaes0280')
+        assert.equal(key.modelId, 'arima')
+        assert.equal(key.targetBasis, 'END_OF_PERIOD')
+        assert.equal(key.frequencyIdentity, 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY')
+        assert.equal(key.trainingWindowPolicyId, verificationArtifact.statisticalCompatibility.trainingWindowPolicyId)
+        assert.equal(key.effectiveTrainingPolicyId, verificationArtifact.statisticalCompatibility.effectiveTrainingPolicyId)
+        return verificationArtifact
+      },
+      async writeVerificationRun() {
+        throw new Error('unused')
+      },
+    },
+    resolveExactPreparedCapability: async () => {
+      throw new Error('trusted prepared-read authority should skip exact capability resolution')
+    },
+    logEvent: () => {},
+  })
+
+  const verification = await service.readPreparedRecentVerificationRequest({
+    seriesId: 'wocaes0280',
+    modelId: 'arima',
+    targetBasis: 'END_OF_PERIOD',
+    preparedReadAuthority: {
+      seriesId: 'wocaes0280',
+      modelId: 'arima',
+      targetBasis: 'END_OF_PERIOD',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      expectedHistoryFingerprint: historyFingerprint,
+    },
+  })
+
+  assert.equal(verification.status, 'AVAILABLE')
+  assert.equal(readLatestCalls, 1)
+})
+
 test('recent verification compute uses verification-mode prepared history while lookup keeps current-mode identity', async () => {
   const currentHistoryResponse = createMonthlyHistoryResponse(10, 2026, 0)
   const verificationHistoryResponse = createMonthlyHistoryResponse(60, 2022, 0)

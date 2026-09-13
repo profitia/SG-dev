@@ -4120,16 +4120,19 @@ export function createForecastLibraryService(
         modelId: input.modelId,
         targetBasis: input.targetBasis,
       })
-      const cadenceContext = await traceForecastRequestDiagnosticsSpan(
-        'prepared_recent_verification_cadence_resolution',
-        'APPLICATION',
-        () => resolvePreparedReadCadenceContext(
-          input,
-          resolveCapabilityIdentity(input.targetBasis).targetSemantics,
-          resolvedDependencies.resolveExactPreparedCapability,
-        ),
-        { seriesId: input.seriesId, modelId: input.modelId, targetBasis: input.targetBasis },
-      )
+      const fastPathContext = resolvePreparedReadFastPathContext(input)
+      const cadenceContext = fastPathContext
+        ? fastPathContext.cadenceContext
+        : await traceForecastRequestDiagnosticsSpan(
+            'prepared_recent_verification_cadence_resolution',
+            'APPLICATION',
+            () => resolvePreparedReadCadenceContext(
+              input,
+              resolveCapabilityIdentity(input.targetBasis).targetSemantics,
+              resolvedDependencies.resolveExactPreparedCapability,
+            ),
+            { seriesId: input.seriesId, modelId: input.modelId, targetBasis: input.targetBasis },
+          )
 
       if (cadenceContext.blockedReason) {
         const identity = resolveCapabilityIdentity(input.targetBasis)
@@ -4144,20 +4147,22 @@ export function createForecastLibraryService(
         }
       }
 
-      const historyResponse = await traceForecastRequestDiagnosticsSpan(
-        'prepared_recent_verification_history_lookup',
-        'SOURCE_DATA',
-        () => readPreparedHistoryForLookup(
-          input,
-          cadenceContext,
-          resolvedDependencies.bridge,
-          'current',
-          input.modelId,
-        ),
-        { seriesId: input.seriesId, modelId: input.modelId, targetBasis: input.targetBasis },
-      )
+      const historyResponse = fastPathContext
+        ? null
+        : await traceForecastRequestDiagnosticsSpan(
+            'prepared_recent_verification_history_lookup',
+            'SOURCE_DATA',
+            () => readPreparedHistoryForLookup(
+              input,
+              cadenceContext,
+              resolvedDependencies.bridge,
+              'current',
+              input.modelId,
+            ),
+            { seriesId: input.seriesId, modelId: input.modelId, targetBasis: input.targetBasis },
+          )
 
-      if (historyResponse.status === 'NOT_AVAILABLE') {
+      if (historyResponse?.status === 'NOT_AVAILABLE') {
         const identity = resolveCapabilityIdentity(input.targetBasis)
         return {
           status: 'NOT_AVAILABLE',
@@ -4170,11 +4175,11 @@ export function createForecastLibraryService(
         }
       }
 
-      if (historyResponse.status === 'UNSUPPORTED') {
+      if (historyResponse?.status === 'UNSUPPORTED') {
         return toUnsupportedResult(historyResponse, input)
       }
 
-      if (historyResponse.status === 'FAILED') {
+      if (historyResponse?.status === 'FAILED') {
         const identity = resolveCapabilityIdentity(input.targetBasis, historyResponse.methodVersion)
         return {
           status: 'FAILED',
@@ -4189,11 +4194,15 @@ export function createForecastLibraryService(
         }
       }
 
-      const identity = resolveCapabilityIdentity(input.targetBasis, historyResponse.methodVersion)
-      const sourceFrequency = cadenceContext.cadence?.sourceFrequency
-        ?? normalizeForecastSourceFrequency(historyResponse.history.frequency)
-      const targetCadence = cadenceContext.cadence?.targetCadence
-        ?? normalizeForecastSourceFrequency(historyResponse.history.frequency)
+      const identity = resolveCapabilityIdentity(input.targetBasis, historyResponse?.methodVersion)
+      const sourceFrequency = fastPathContext
+        ? fastPathContext.cadenceContext.cadence?.sourceFrequency ?? null
+        : cadenceContext.cadence?.sourceFrequency
+          ?? normalizeForecastSourceFrequency(historyResponse?.history.frequency)
+      const targetCadence = fastPathContext
+        ? fastPathContext.cadenceContext.cadence?.targetCadence ?? null
+        : cadenceContext.cadence?.targetCadence
+          ?? normalizeForecastSourceFrequency(historyResponse?.history.frequency)
       updateForecastRequestDiagnosticsIdentity({
         targetSemantics: identity.targetSemantics,
         sourceFrequency: sourceFrequency ?? null,
@@ -4210,17 +4219,27 @@ export function createForecastLibraryService(
       const prepared = await traceForecastRequestDiagnosticsSpan(
         'prepared_recent_verification_artifact_lookup',
         'DB_OPERATION',
-        () => resolvedDependencies.repository.readVerificationRun({
-          seriesId: input.seriesId,
-          modelId: input.modelId,
-          targetBasis: input.targetBasis,
-          frequencyIdentity: cadenceContext.frequencyIdentity,
-          inputSource: historyResponse.source.kind,
-          historyFingerprint: buildForecastHistoryFingerprint(historyResponse.history, cadenceContext.cadence ?? undefined),
-          trainingWindowPolicyId: expectedCompatibility.trainingWindowPolicyId,
-          effectiveTrainingPolicyId: expectedCompatibility.effectiveTrainingPolicyId,
-          ...identity,
-        }),
+        () => fastPathContext && resolvedDependencies.repository.readLatestVerificationRun
+          ? resolvedDependencies.repository.readLatestVerificationRun({
+              seriesId: input.seriesId,
+              modelId: input.modelId,
+              targetBasis: input.targetBasis,
+              frequencyIdentity: cadenceContext.frequencyIdentity,
+              trainingWindowPolicyId: expectedCompatibility.trainingWindowPolicyId,
+              effectiveTrainingPolicyId: expectedCompatibility.effectiveTrainingPolicyId,
+              ...identity,
+            })
+          : resolvedDependencies.repository.readVerificationRun({
+              seriesId: input.seriesId,
+              modelId: input.modelId,
+              targetBasis: input.targetBasis,
+              frequencyIdentity: cadenceContext.frequencyIdentity,
+              inputSource: historyResponse!.source.kind,
+              historyFingerprint: buildForecastHistoryFingerprint(historyResponse!.history, cadenceContext.cadence ?? undefined),
+              trainingWindowPolicyId: expectedCompatibility.trainingWindowPolicyId,
+              effectiveTrainingPolicyId: expectedCompatibility.effectiveTrainingPolicyId,
+              ...identity,
+            }),
         {
           seriesId: input.seriesId,
           modelId: input.modelId,
@@ -4251,6 +4270,29 @@ export function createForecastLibraryService(
           targetSemantics: identity.targetSemantics,
           methodId: identity.methodId,
           reason: 'PREPARATION_REQUIRED: No exact-identity prepared Recent Verification is available.',
+        }
+      }
+
+      if (fastPathContext && !artifactMatchesPreparedReadAuthority(prepared, {
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis: input.targetBasis,
+        targetSemantics: identity.targetSemantics,
+        methodId: identity.methodId,
+        methodVersion: identity.methodVersion,
+        frequencyIdentity: cadenceContext.frequencyIdentity,
+        sourceFrequency,
+        targetCadence,
+        expectedHistoryFingerprint: fastPathContext.expectedHistoryFingerprint,
+      })) {
+        return {
+          status: 'NOT_AVAILABLE',
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          reason: 'PREPARATION_REQUIRED: Trusted prepared-read authority does not match the persisted Recent Verification artifact.',
         }
       }
 
