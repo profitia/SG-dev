@@ -21,6 +21,9 @@ on:
         type: boolean
         required: false
         default: false
+      maxOriginsPerRun:
+        description: Optional positive limit for bounded historical catch-up per run
+        required: false
 
 jobs:
   forecast-production-operations:
@@ -48,14 +51,20 @@ jobs:
           SERIES_IDS: ${{ github.event.inputs.seriesIds || vars.FORECAST_ENABLED_SERIES_IDS }}
           TARGETS: ${{ github.event.inputs.targets }}
           MODELS: ${{ github.event.inputs.models }}
+          MAX_ORIGINS_PER_RUN: ${{ github.event.inputs.maxOriginsPerRun || vars.FORECAST_MAX_ORIGINS_PER_RUN }}
         run: |
           [[ -n "$MARKET_DATA_DATABASE_URL" ]] || { echo "Missing secret MARKET_DATA_DATABASE_URL"; exit 1; }
           series_ids="${SERIES_IDS:-}"
           targets="${TARGETS:-END_OF_PERIOD,MONTHLY_AVERAGE,ROLLING_DAILY_POINT_IN_TIME}"
           models="${MODELS:-naive,damped_holt,ets,arima}"
+          max_origins_per_run="${MAX_ORIGINS_PER_RUN:-}"
           [[ -n "$series_ids" ]] || { echo "Set workflow input seriesIds or repository variable FORECAST_ENABLED_SERIES_IDS"; exit 1; }
           [[ -n "$targets" ]] || { echo "Targets must not be empty"; exit 1; }
           [[ -n "$models" ]] || { echo "Models must not be empty"; exit 1; }
+          if [[ -n "$max_origins_per_run" && ! "$max_origins_per_run" =~ ^[1-9][0-9]*$ ]]; then
+            echo "maxOriginsPerRun must be a positive integer when provided"
+            exit 1
+          fi
 
       - name: Install sg-runtime dependencies
         working-directory: apps/sg-runtime
@@ -78,12 +87,18 @@ jobs:
           TARGETS: ${{ github.event.inputs.targets }}
           MODELS: ${{ github.event.inputs.models }}
           PREPARE_HISTORICAL: ${{ github.event.inputs.historical || 'false' }}
+          MAX_ORIGINS_PER_RUN: ${{ github.event.inputs.maxOriginsPerRun || vars.FORECAST_MAX_ORIGINS_PER_RUN }}
         run: |
           series_ids="${SERIES_IDS:-}"
           targets="${TARGETS:-END_OF_PERIOD,MONTHLY_AVERAGE,ROLLING_DAILY_POINT_IN_TIME}"
           models="${MODELS:-naive,damped_holt,ets,arima}"
+          max_origins_per_run="${MAX_ORIGINS_PER_RUN:-}"
           IFS=',' read -ra enabled_series <<< "$series_ids"
           for series_id in "${enabled_series[@]}"; do
             [[ -n "$series_id" ]] || continue
-            npm run forecast:operations -- --seriesId="$series_id" --targets="$targets" --models="$models" --historical="$PREPARE_HISTORICAL"
+            command=(npm run forecast:operations -- --seriesId="$series_id" --targets="$targets" --models="$models" --historical="$PREPARE_HISTORICAL")
+            if [[ -n "$max_origins_per_run" ]]; then
+              command+=(--maxOriginsPerRun="$max_origins_per_run")
+            fi
+            "${command[@]}"
           done

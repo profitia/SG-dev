@@ -431,7 +431,7 @@ test('A3. exact full historical verification readiness is required for fast-path
   assert.equal(revalidateReport.benchmarks[0]?.reason, 'PRECOMPUTE_FAIL')
 })
 
-test('A4. certify mode can recover exact full historical readiness through SG Runtime verification materialization', async () => {
+test('A4. certify mode does not recover exact full historical readiness through SG Runtime verification materialization', async () => {
   const verifiedVariants = new Set<string>()
   const verificationPrepareCalls: string[] = []
   const keyOf = (input: BenchmarkForecastCurrentPreparationRequest) => `${input.seriesId}:${input.modelId}:${input.targetBasis}`
@@ -468,9 +468,10 @@ test('A4. certify mode can recover exact full historical readiness through SG Ru
     },
   }).run({ includeFallback: false })
 
-  assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
-  assert.equal(report.benchmarks[0]?.precompute.status, 'PASS')
-  assert.deepEqual(verificationPrepareCalls, ['lmeofcucashask:naive:MONTHLY_AVERAGE:DAILY:MONTHLY'])
+  assert.equal(report.benchmarks[0]?.demoSafe, 'NO')
+  assert.equal(report.benchmarks[0]?.precompute.status, 'FAIL')
+  assert.equal(report.benchmarks[0]?.reason, 'PRECOMPUTE_FAIL')
+  assert.deepEqual(verificationPrepareCalls, [])
 })
 
 test('B. one lawful matrix fail blocks demo certification', async () => {
@@ -676,10 +677,11 @@ test('G3. current preparation does not recover certification when exact historic
   assert.equal(prepareCalls.length, MODELS.length * TARGET_BASES.length)
 })
 
-test('G4. current preparation can be followed by exact verification materialization to recover certification', async () => {
+test('G4. current preparation does not materialize exact verification on the certification request path', async () => {
   const prepareCalls: string[] = []
   const verifiedVariants = new Set<string>()
   const warmedVariants = new Set<string>()
+  const verificationPrepareCalls: string[] = []
   const keyOf = (input: BenchmarkForecastCurrentPreparationRequest) => `${input.seriesId}:${input.modelId}:${input.targetBasis}`
 
   const report = await createService({
@@ -738,14 +740,17 @@ test('G4. current preparation can be followed by exact verification materializat
       return preparation(input)
     },
     verificationPrepareResolver: (input) => {
+      verificationPrepareCalls.push(keyOf(input))
       verifiedVariants.add(keyOf(input))
       return verificationResult(input)
     },
   }).run({ includeFallback: false })
 
-  assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
-  assert.equal(report.benchmarks[0]?.precompute.status, 'PASS')
+  assert.equal(report.benchmarks[0]?.demoSafe, 'NO')
+  assert.equal(report.benchmarks[0]?.precompute.status, 'FAIL')
+  assert.equal(report.benchmarks[0]?.reason, 'PRECOMPUTE_FAIL')
   assert.deepEqual(prepareCalls, ['lmeofalcashask:naive:POINT_IN_TIME'])
+  assert.deepEqual(verificationPrepareCalls, [])
 })
 
 test('H. rehearsal failure blocks demo certification', async () => {
@@ -1110,7 +1115,7 @@ test('I7b. certification does not dispatch point-in-time verification preparatio
   assert.deepEqual(verificationPrepareCalls, [])
 })
 
-test('I7c. certification still dispatches point-in-time verification preparation when exact full verification is not ready', async () => {
+test('I7c. certification does not dispatch point-in-time verification preparation when exact full verification is not ready', async () => {
   const verificationPrepareCalls: string[] = []
   let pitReady = false
 
@@ -1141,17 +1146,17 @@ test('I7c. certification still dispatches point-in-time verification preparation
     },
   }).run({ includeFallback: false })
 
-  assert.equal(report.benchmarks[0]?.precompute.status, 'PASS')
-  assert.deepEqual(verificationPrepareCalls, ['wocaes0074:naive:POINT_IN_TIME'])
+  assert.equal(report.benchmarks[0]?.demoSafe, 'NO')
+  assert.equal(report.benchmarks[0]?.precompute.status, 'FAIL')
+  assert.equal(report.benchmarks[0]?.reason, 'PRECOMPUTE_FAIL')
+  assert.deepEqual(verificationPrepareCalls, [])
 })
 
-test('I8. certification overlaps PIT materialization with non-PIT matrix and waits before PIT evaluation', async () => {
-  const events: string[] = []
-  const pipelineStarted = createDeferred<void>()
-  const releasePipeline = createDeferred<void>()
-  let pitReady = false
+test('I8. certification does not wait on a PIT materialization pipeline before matrix evaluation', async () => {
+  const verificationPrepareCalls: string[] = []
+  let beforePointInTimeEvaluationProvided = false
 
-  const reportPromise = createService({
+  const report = await createService({
     cohort: [{
       seriesId: 'wocaes0074',
       benchmarkName: 'Brent',
@@ -1167,53 +1172,38 @@ test('I8. certification overlaps PIT materialization with non-PIT matrix and wai
       return capability(input, {
         sourceFrequency: 'DAILY',
         targetCadence: 'DAILY',
-        verificationReadiness: pitReady ? 'READY' : 'NOT_PREPARED',
-        fullVerificationReadiness: pitReady ? 'READY' : 'NOT_PREPARED',
+        verificationReadiness: 'NOT_PREPARED',
+        fullVerificationReadiness: 'NOT_PREPARED',
         readiness: {
           fastReady: true,
           calibratedReady: true,
-          fullReady: pitReady,
-          blockers: pitReady ? [] : ['PIT_VERIFICATION_NOT_READY'],
+          fullReady: false,
+          blockers: ['PIT_VERIFICATION_NOT_READY'],
         },
       } as never)
     },
     verificationPrepareResolver: async (input) => {
-      events.push(`pit-pipeline:start:${input.modelId}`)
-      pipelineStarted.resolve()
-      await releasePipeline.promise
-      pitReady = true
-      events.push(`pit-pipeline:end:${input.modelId}`)
+      verificationPrepareCalls.push(`${input.seriesId}:${input.modelId}:${input.targetBasis}`)
       return verificationResult(input)
     },
     matrixResolver: async (seriesId, _allowPrepare, requestOptions) => {
-      events.push('non-pit:start')
-      await pipelineStarted.promise
-      events.push('non-pit:end')
-      await requestOptions?.beforePointInTimeEvaluation?.()
-      events.push('pit:start')
+      beforePointInTimeEvaluationProvided = Boolean(requestOptions?.beforePointInTimeEvaluation)
       return matrixReport(seriesId)
     },
   }).run({ includeFallback: false, diagnostics: { enabled: true } })
 
-  await pipelineStarted.promise
-  await new Promise<void>((resolve) => setImmediate(resolve))
-  releasePipeline.resolve()
-
-  const report = await reportPromise
   const benchmark = report.benchmarks[0]
   const timeline = benchmark?.diagnostics?.timeline ?? []
 
-  assert.equal(benchmark?.demoSafe, 'YES')
-  assert.ok(events.indexOf('pit-pipeline:start:naive') < events.indexOf('non-pit:end'))
-  assert.ok(events.indexOf('pit:start') > events.indexOf('pit-pipeline:end:naive'))
-  assert.equal(timeline.filter((event) => event.eventType === 'PHASE' && event.phase === 'PIT_MATERIALIZATION').length, 1)
+  assert.equal(benchmark?.demoSafe, 'NO')
+  assert.equal(benchmark?.reason, 'PRECOMPUTE_FAIL')
+  assert.equal(beforePointInTimeEvaluationProvided, false)
+  assert.deepEqual(verificationPrepareCalls, [])
+  assert.equal(timeline.filter((event) => event.eventType === 'PHASE' && event.phase === 'PIT_MATERIALIZATION').length, 0)
 })
 
-test('I9. PIT materialization remains serial across models and does not dispatch duplicate preparation', async () => {
-  const prepareCalls: string[] = []
-  let inFlight = 0
-  let maxInFlight = 0
-  const pitReady = new Set<string>()
+test('I9. certification does not dispatch duplicate PIT verification preparation across models', async () => {
+  const verificationPrepareCalls: string[] = []
 
   const report = await createService({
     cohort: [{
@@ -1223,51 +1213,36 @@ test('I9. PIT materialization remains serial across models and does not dispatch
       requiredModels: [...MODELS],
       requiredTargetBases: ['POINT_IN_TIME'],
     }],
-    capabilityResolver: (input) => {
-      if (input.targetBasis !== 'POINT_IN_TIME') {
-        return capability(input)
-      }
-
-      const ready = pitReady.has(input.modelId)
-      return capability(input, {
-        sourceFrequency: 'DAILY',
-        targetCadence: 'DAILY',
-        verificationReadiness: ready ? 'READY' : 'NOT_PREPARED',
-        fullVerificationReadiness: ready ? 'READY' : 'NOT_PREPARED',
-        readiness: {
-          fastReady: true,
-          calibratedReady: true,
-          fullReady: ready,
-          blockers: ready ? [] : ['PIT_VERIFICATION_NOT_READY'],
-        },
-      } as never)
-    },
+    capabilityResolver: (input) => capability(input, {
+      sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
+      verificationReadiness: 'NOT_PREPARED',
+      fullVerificationReadiness: 'NOT_PREPARED',
+      readiness: {
+        fastReady: true,
+        calibratedReady: true,
+        fullReady: false,
+        blockers: ['PIT_VERIFICATION_NOT_READY'],
+      },
+    } as never),
     verificationPrepareResolver: async (input) => {
-      prepareCalls.push(input.modelId)
-      inFlight += 1
-      maxInFlight = Math.max(maxInFlight, inFlight)
-      await Promise.resolve()
-      pitReady.add(input.modelId)
-      inFlight -= 1
+      verificationPrepareCalls.push(input.modelId)
       return verificationResult(input)
     },
-    matrixResolver: async (seriesId, _allowPrepare, requestOptions) => {
-      await requestOptions?.beforePointInTimeEvaluation?.()
-      return matrixReport(seriesId)
-    },
+    matrixResolver: async (seriesId) => matrixReport(seriesId),
   }).run({ includeFallback: false, diagnostics: { enabled: true } })
 
   const benchmark = report.benchmarks[0]
   const timeline = benchmark?.diagnostics?.timeline ?? []
 
-  assert.equal(benchmark?.demoSafe, 'YES')
-  assert.deepEqual(prepareCalls, [...MODELS])
-  assert.equal(maxInFlight, 1)
-  assert.equal(timeline.filter((event) => event.eventType === 'PHASE' && event.phase === 'PIT_MATERIALIZATION').length, 1)
+  assert.equal(benchmark?.demoSafe, 'NO')
+  assert.equal(benchmark?.reason, 'PRECOMPUTE_FAIL')
+  assert.deepEqual(verificationPrepareCalls, [])
+  assert.equal(timeline.filter((event) => event.eventType === 'PHASE' && event.phase === 'PIT_MATERIALIZATION').length, 0)
 })
 
-test('I10. PIT materialization failure propagates and prevents PIT matrix evaluation', async () => {
-  let pitEvaluationStarted = false
+test('I10. unused PIT preparation failures do not affect certification when exact full verification is not ready', async () => {
+  let matrixEvaluated = false
 
   const report = await createService({
     cohort: [{
@@ -1292,67 +1267,19 @@ test('I10. PIT materialization failure propagates and prevents PIT matrix evalua
     verificationPrepareResolver: async () => {
       throw new Error('point-in-time materialization failed')
     },
-    matrixResolver: async (seriesId, _allowPrepare, requestOptions) => {
-      await requestOptions?.beforePointInTimeEvaluation?.()
-      pitEvaluationStarted = true
+    matrixResolver: async (seriesId) => {
+      matrixEvaluated = true
       return matrixReport(seriesId)
     },
   }).run({ includeFallback: false })
 
-  assert.equal(report.benchmarks[0]?.reason, 'ENVIRONMENT_NOT_READY')
-  assert.match(report.benchmarks[0]?.precompute.reason ?? '', /point-in-time materialization failed/i)
-  assert.equal(pitEvaluationStarted, false)
+  assert.equal(report.benchmarks[0]?.reason, 'PRECOMPUTE_FAIL')
+  assert.match(report.benchmarks[0]?.precompute.reason ?? '', /not ready|historical verification/i)
+  assert.equal(matrixEvaluated, true)
 })
 
-test('I11. benchmark timeout aborts the PIT materialization pipeline', async () => {
-  let capturedSignal: AbortSignal | undefined
-
-  const report = await createService({
-    cohort: [{
-      seriesId: 'wocaes0074',
-      benchmarkName: 'Brent',
-      group: 'PRIMARY',
-      requiredModels: ['naive'],
-      requiredTargetBases: ['POINT_IN_TIME'],
-    }],
-    benchmarkTimeoutMs: 1,
-    capabilityResolver: (input) => capability(input, {
-      sourceFrequency: 'DAILY',
-      targetCadence: 'DAILY',
-      verificationReadiness: 'NOT_PREPARED',
-      fullVerificationReadiness: 'NOT_PREPARED',
-      readiness: {
-        fastReady: true,
-        calibratedReady: true,
-        fullReady: false,
-        blockers: ['PIT_VERIFICATION_NOT_READY'],
-      },
-    } as never),
-    verificationPrepareResolver: async (_input, _cadence, requestOptions) => {
-      capturedSignal = requestOptions?.signal
-
-      return await new Promise<BenchmarkForecastVerificationResult>((_resolve, reject) => {
-        requestOptions?.signal?.addEventListener('abort', () => {
-          const aborted = new Error('pit pipeline aborted') as Error & { name: string }
-          aborted.name = 'AbortError'
-          reject(aborted)
-        }, { once: true })
-      })
-    },
-    matrixResolver: async (seriesId, _allowPrepare, requestOptions) => {
-      await requestOptions?.beforePointInTimeEvaluation?.()
-      return matrixReport(seriesId)
-    },
-  }).run({ includeFallback: false })
-
-  assert.equal(report.benchmarks[0]?.reason, 'ENVIRONMENT_NOT_READY')
-  assert.match(report.benchmarks[0]?.precompute.reason ?? '', /timed out/i)
-  assert.equal(capturedSignal?.aborted, true)
-})
-
-test('I12. rejected PIT preparation cache entries do not poison a later lawful certification run', async () => {
-  let failOnce = true
-  const pitReady = new Set<string>()
+test('I11. repeated certification attempts continue to observe missing point-in-time full verification without dispatching preparation', async () => {
+  const verificationPrepareCalls: string[] = []
 
   const service = createDemoCertificationService({
     now: () => '2026-09-04T18:30:00.000Z',
@@ -1372,48 +1299,91 @@ test('I12. rejected PIT preparation cache entries do not poison a later lawful c
       acceptedAt: '2026-09-04T18:30:00.000Z',
       cohort: cohort.map((entry) => ({ seriesId: entry.seriesId, benchmarkName: entry.benchmarkName, group: entry.group })),
     }),
-    readCapability: async (input) => {
-      const ready = pitReady.has(input.modelId)
-      return capability(input, {
-        sourceFrequency: 'DAILY',
-        targetCadence: 'DAILY',
-        verificationReadiness: ready ? 'READY' : 'NOT_PREPARED',
-        fullVerificationReadiness: ready ? 'READY' : 'NOT_PREPARED',
-        readiness: {
-          fastReady: true,
-          calibratedReady: true,
-          fullReady: ready,
-          blockers: ready ? [] : ['PIT_VERIFICATION_NOT_READY'],
-        },
-      } as never)
-    },
+    readCapability: async (input) => capability(input, {
+      sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
+      verificationReadiness: 'NOT_PREPARED',
+      fullVerificationReadiness: 'NOT_PREPARED',
+      readiness: {
+        fastReady: true,
+        calibratedReady: true,
+        fullReady: false,
+        blockers: ['PIT_VERIFICATION_NOT_READY'],
+      },
+    } as never),
     prepareCurrent: async (input) => preparation(input),
     prepareVerification: async (input) => {
-      if (failOnce) {
-        failOnce = false
-        throw new Error('transient pit preparation failure')
-      }
-
-      pitReady.add(input.modelId)
+      verificationPrepareCalls.push(`${input.seriesId}:${input.modelId}:${input.targetBasis}`)
       return verificationResult(input)
     },
     readCurrent: async (seriesId, modelId, targetBasis) => currentResult({ seriesId, modelId, targetBasis }),
     readVerification: async (seriesId, modelId, targetBasis) => verificationResult({ seriesId, modelId, targetBasis }),
-    evaluateMatrix: async (seriesId, _allowPrepare, requestOptions) => {
-      await requestOptions?.beforePointInTimeEvaluation?.()
-      return matrixReport(seriesId)
-    },
+    evaluateMatrix: async (seriesId) => matrixReport(seriesId),
   })
 
   const firstReport = await service.run({ includeFallback: false })
   const secondReport = await service.run({ includeFallback: false })
 
-  assert.equal(firstReport.benchmarks[0]?.reason, 'ENVIRONMENT_NOT_READY')
-  assert.equal(secondReport.benchmarks[0]?.demoSafe, 'YES')
+  assert.equal(firstReport.benchmarks[0]?.reason, 'PRECOMPUTE_FAIL')
+  assert.equal(secondReport.benchmarks[0]?.reason, 'PRECOMPUTE_FAIL')
+  assert.deepEqual(verificationPrepareCalls, [])
 })
 
-test('I13. diagnostics remain optional for the PIT pipeline corrective path', async () => {
+test('I12. certification succeeds only after point-in-time full verification becomes externally ready', async () => {
   let pitReady = false
+  const verificationPrepareCalls: string[] = []
+
+  const createPitService = () => createDemoCertificationService({
+    now: () => '2026-09-04T18:30:00.000Z',
+    benchmarkTimeoutMs: 100,
+    cohort: [{
+      seriesId: 'wocaes0074',
+      benchmarkName: 'Brent',
+      group: 'PRIMARY',
+      requiredModels: ['naive'],
+      requiredTargetBases: ['POINT_IN_TIME'],
+    }],
+    resolveReleaseSnapshot: (cohort) => ({
+      sourceRevision: 'rev-a',
+      deployedRevision: 'rev-a',
+      environment: 'test',
+      environmentUrl: 'https://analytics-demo-sg-porr.spendguru.app',
+      acceptedAt: '2026-09-04T18:30:00.000Z',
+      cohort: cohort.map((entry) => ({ seriesId: entry.seriesId, benchmarkName: entry.benchmarkName, group: entry.group })),
+    }),
+    readCapability: async (input) => capability(input, {
+      sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
+      verificationReadiness: pitReady ? 'READY' : 'NOT_PREPARED',
+      fullVerificationReadiness: pitReady ? 'READY' : 'NOT_PREPARED',
+      readiness: {
+        fastReady: true,
+        calibratedReady: true,
+        fullReady: pitReady,
+        blockers: pitReady ? [] : ['PIT_VERIFICATION_NOT_READY'],
+      },
+    } as never),
+    prepareCurrent: async (input) => preparation(input),
+    prepareVerification: async (input) => {
+      verificationPrepareCalls.push(`${input.seriesId}:${input.modelId}:${input.targetBasis}`)
+      pitReady = true
+      return verificationResult(input)
+    },
+    readCurrent: async (seriesId, modelId, targetBasis) => currentResult({ seriesId, modelId, targetBasis }),
+    readVerification: async (seriesId, modelId, targetBasis) => verificationResult({ seriesId, modelId, targetBasis }),
+    evaluateMatrix: async (seriesId) => matrixReport(seriesId),
+  })
+
+  const firstReport = await createPitService().run({ includeFallback: false })
+  pitReady = true
+  const secondReport = await createPitService().run({ includeFallback: false })
+
+  assert.equal(firstReport.benchmarks[0]?.reason, 'PRECOMPUTE_FAIL')
+  assert.equal(secondReport.benchmarks[0]?.demoSafe, 'YES')
+  assert.deepEqual(verificationPrepareCalls, [])
+})
+
+test('I13. diagnostics remain optional for the observe-only point-in-time readiness path', async () => {
 
   const report = await createService({
     cohort: [{
@@ -1426,26 +1396,23 @@ test('I13. diagnostics remain optional for the PIT pipeline corrective path', as
     capabilityResolver: (input) => capability(input, {
       sourceFrequency: 'DAILY',
       targetCadence: 'DAILY',
-      verificationReadiness: pitReady ? 'READY' : 'NOT_PREPARED',
-      fullVerificationReadiness: pitReady ? 'READY' : 'NOT_PREPARED',
+      verificationReadiness: 'NOT_PREPARED',
+      fullVerificationReadiness: 'NOT_PREPARED',
       readiness: {
         fastReady: true,
         calibratedReady: true,
-        fullReady: pitReady,
-        blockers: pitReady ? [] : ['PIT_VERIFICATION_NOT_READY'],
+        fullReady: false,
+        blockers: ['PIT_VERIFICATION_NOT_READY'],
       },
     } as never),
     verificationPrepareResolver: async (input) => {
-      pitReady = true
       return verificationResult(input)
     },
-    matrixResolver: async (seriesId, _allowPrepare, requestOptions) => {
-      await requestOptions?.beforePointInTimeEvaluation?.()
-      return matrixReport(seriesId)
-    },
+    matrixResolver: async (seriesId) => matrixReport(seriesId),
   }).run({ includeFallback: false })
 
-  assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
+  assert.equal(report.benchmarks[0]?.demoSafe, 'NO')
+  assert.equal(report.benchmarks[0]?.reason, 'PRECOMPUTE_FAIL')
   assert.equal(report.benchmarks[0]?.diagnostics, undefined)
 })
 
