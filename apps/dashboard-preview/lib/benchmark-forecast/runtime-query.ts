@@ -1211,7 +1211,7 @@ export async function getBenchmarkForecastVerification(
   targetBasis: ForecastTargetBasis = DEFAULT_FORECAST_TARGET_BASIS,
   cadence?: { sourceFrequency: string, targetCadence: string },
   correlationHeaders: Record<string, string> = {},
-  capability?: InteractiveForecastCapabilityResult | null,
+  _capability?: InteractiveForecastCapabilityResult | null,
 ) {
   if (targetBasis !== 'POINT_IN_TIME' && readSgRuntimeInternalForecastServiceToken()) {
     const params: Record<string, string> = {
@@ -1227,10 +1227,7 @@ export async function getBenchmarkForecastVerification(
     return fetchInternalPreparedForecast<BenchmarkForecastVerificationResult>(
       INTERNAL_PREPARED_VERIFICATION_ROUTE_PATH,
       params,
-      {
-        ...correlationHeaders,
-        ...buildPreparedReadAuthorityHeaders(capability),
-      },
+      correlationHeaders,
     )
   }
 

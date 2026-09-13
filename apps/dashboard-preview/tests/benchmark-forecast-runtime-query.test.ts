@@ -253,6 +253,100 @@ test('deployed non-point-in-time verification reads fail closed when the SG Runt
   }
 })
 
+test('deployed non-point-in-time verification reads do not forward prepared-read authority headers', async () => {
+  const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const originalFetch = global.fetch
+  let capturedUrl: URL | null = null
+  let capturedInit: RequestInit | undefined
+
+  process.env.RENDER_EXTERNAL_URL = 'https://profitia-pl.onrender.com'
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime-primary.example.invalid'
+
+  global.fetch = (async (input: URL | RequestInfo | string, init?: RequestInit) => {
+    capturedUrl = new URL(String(input))
+    capturedInit = init
+    return new Response(JSON.stringify({
+      status: 'NOT_AVAILABLE',
+      seriesId: 'wocaes0074',
+      modelId: 'ets',
+      targetBasis: 'END_OF_PERIOD',
+      targetSemantics: 'END_OF_PERIOD',
+      methodId: 'END_OF_PERIOD',
+      reason: 'PREPARATION_REQUIRED: No exact-identity prepared Historical Verification is available.',
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }) as typeof fetch
+
+  try {
+    await getBenchmarkForecastVerification(
+      'wocaes0074',
+      'ets',
+      'END_OF_PERIOD',
+      { sourceFrequency: 'DAILY', targetCadence: 'MONTHLY' },
+      { 'x-test-correlation': 'stage12' },
+      {
+        seriesId: 'wocaes0074',
+        modelId: 'ets',
+        targetSemantics: 'END_OF_PERIOD',
+        sourceFrequency: 'DAILY',
+        targetCadence: 'MONTHLY',
+        sourceAvailability: 'AVAILABLE',
+        lawfulTargetSemantics: 'LAWFUL',
+        status: 'AVAILABLE',
+        currentReadiness: 'READY',
+        verificationReadiness: 'READY',
+        recentVerificationReadiness: 'READY',
+        fullVerificationReadiness: 'READY',
+        readiness: {
+          fastReady: true,
+          calibratedReady: true,
+          fullReady: true,
+          blockers: [],
+        },
+        targetedDataScope: 'SINGLE_SERIES',
+        timingMs: 1,
+        reason: null,
+        preparedReadAuthority: {
+          sourceFrequency: 'DAILY',
+          targetCadence: 'MONTHLY',
+          expectedHistoryFingerprint: 'fp-current',
+        },
+      },
+    )
+  } finally {
+    global.fetch = originalFetch
+    if (previousRenderExternalUrl === undefined) delete process.env.RENDER_EXTERNAL_URL
+    else process.env.RENDER_EXTERNAL_URL = previousRenderExternalUrl
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+  }
+
+  if (!capturedUrl || !capturedInit) {
+    throw new Error('Expected runtime query to issue an internal prepared verification request.')
+  }
+
+  const requestUrl = capturedUrl as URL
+  const headers = capturedInit.headers as Record<string, string>
+  assert.equal(requestUrl.pathname, '/api/internal/forecast/prepared/verification')
+  assert.equal(requestUrl.searchParams.get('seriesId'), 'wocaes0074')
+  assert.equal(requestUrl.searchParams.get('model'), 'ets')
+  assert.equal(requestUrl.searchParams.get('targetBasis'), 'END_OF_PERIOD')
+  assert.equal(requestUrl.searchParams.get('sourceFrequency'), 'DAILY')
+  assert.equal(requestUrl.searchParams.get('targetCadence'), 'MONTHLY')
+  assert.equal(headers.Authorization, 'Bearer dashboard-preview-token')
+  assert.equal(headers['x-test-correlation'], 'stage12')
+  assert.equal(headers['x-sg-prepared-source-frequency'], undefined)
+  assert.equal(headers['x-sg-prepared-target-cadence'], undefined)
+  assert.equal(headers['x-sg-prepared-history-fingerprint'], undefined)
+})
+
 test('deployed non-point-in-time prepared current read falls back after an empty JSON response from the explicit primary SG Runtime base URL', async () => {
   const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
   const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
