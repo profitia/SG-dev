@@ -64,6 +64,17 @@ export interface InteractiveForecastCapabilityResult {
   reason: string | null
 }
 
+export interface InteractiveForecastCapabilitySeriesSnapshot {
+  seriesId: string
+  sourceFrequency: string | null
+  sourceAvailability: 'AVAILABLE' | 'DATA_NOT_AVAILABLE' | 'FAILED'
+  status: 'AVAILABLE' | 'FAILED'
+  reason: string | null
+  targetedDataScope: 'SINGLE_SERIES'
+  timingMs: number
+  variants: InteractiveForecastCapabilityResult[]
+}
+
 export interface InteractiveForecastPreparationResult {
   seriesId: string
   targetSemantics: ForecastTargetSemantics

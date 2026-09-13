@@ -22,11 +22,13 @@ import {
   type ForecastTargetBasis,
   type ForecastTargetSemantics,
   type InteractiveForecastCapabilityResult,
+  type InteractiveForecastCapabilitySeriesSnapshot,
 } from './forecast-contract'
 import {
   extractForecastBridgeErrorTrace,
   prepareInteractiveCurrentForecast,
   readInteractiveForecastCapability,
+  readInteractiveForecastCapabilitySnapshotBySeriesId,
   type ForecastBridgeAttemptTrace,
   type ForecastBridgeTrace,
 } from './interactive-current-preparation'
@@ -287,7 +289,8 @@ type DemoCertificationDependencies = {
   cohort: readonly DemoCohortEntry[]
   resolveReleaseSnapshot: (cohort: readonly DemoCohortEntry[], mode: DemoCertificationMode) => DemoReleaseSnapshot
   readCapability: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal, requestHeaders?: Record<string, string> }) => Promise<InteractiveForecastCapabilityResult>
-  prepareCurrent: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal, requestHeaders?: Record<string, string> }) => Promise<BenchmarkForecastCurrentPreparationResult>
+  readCapabilitySnapshot: (seriesId: string, options?: { signal?: AbortSignal, requestHeaders?: Record<string, string> }) => Promise<InteractiveForecastCapabilitySeriesSnapshot>
+  prepareCurrent: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal, requestHeaders?: Record<string, string> }) => Promise<BenchmarkForecastCurrentPreparationResult & { trace?: ForecastBridgeTrace }>
   prepareVerification: (
     input: BenchmarkForecastCurrentPreparationRequest,
     cadence?: { sourceFrequency: string, targetCadence: string },
@@ -299,6 +302,7 @@ type DemoCertificationDependencies = {
     targetBasis: ForecastTargetBasis,
     cadence?: { sourceFrequency: string, targetCadence: string },
     correlationHeaders?: Record<string, string>,
+    capability?: InteractiveForecastCapabilityResult | null,
   ) => Promise<BenchmarkForecastCurrentResult>
   readVerification: (
     seriesId: string,
@@ -306,6 +310,7 @@ type DemoCertificationDependencies = {
     targetBasis: ForecastTargetBasis,
     cadence?: { sourceFrequency: string, targetCadence: string },
     correlationHeaders?: Record<string, string>,
+    capability?: InteractiveForecastCapabilityResult | null,
   ) => Promise<BenchmarkForecastVerificationResult>
   evaluateMatrix: (seriesId: string, allowPrepare: boolean, options?: ForecastAcceptanceMatrixEvaluationOptions) => Promise<ForecastAcceptanceMatrixReport>
 }
@@ -420,6 +425,17 @@ function hasExactVerificationReadiness(capability: InteractiveForecastCapability
   }
 
   return capability.verificationReadiness === 'READY'
+}
+
+function findCapabilitySnapshotVariant(
+  snapshot: InteractiveForecastCapabilitySeriesSnapshot,
+  input: BenchmarkForecastCurrentPreparationRequest,
+) {
+  return snapshot.variants.find((variant) => (
+    variant.seriesId === input.seriesId
+    && variant.modelId === input.modelId
+    && variant.targetSemantics === resolveForecastTargetSemantics(input.targetBasis)
+  )) ?? null
 }
 
 function normalizeMaxConcurrentRemoteReads(value: number | undefined) {
@@ -917,7 +933,12 @@ function createBenchmarkDiagnosticsTracker(
         targetCadence: identity.cadence?.targetCadence ?? null,
         cacheStatus: 'hit',
         startedAt: timestamp,
+        queuedAt: timestamp,
+        dispatchedAt: timestamp,
         completedAt: timestamp,
+        queueWaitMs: 0,
+        remoteElapsedMs: 0,
+        benchmarkBudgetRemainingMsAtDispatch: null,
         elapsedMs: 0,
         outcome: 'SUCCESS',
         status: 'CACHE_REUSED',
@@ -1511,6 +1532,7 @@ export function createDemoCertificationService(
   dependencies: Partial<DemoCertificationDependencies> = {},
 ) {
   const capabilityCache = new Map<string, Promise<InteractiveForecastCapabilityResult>>()
+  const capabilitySeriesSnapshotCache = new Map<string, Promise<InteractiveForecastCapabilitySeriesSnapshot>>()
   const currentReadCache = new Map<string, Promise<BenchmarkForecastCurrentResult>>()
   const verificationReadCache = new Map<string, Promise<BenchmarkForecastVerificationResult>>()
   const preparationCache = new Map<string, Promise<BenchmarkForecastCurrentPreparationResult>>()
@@ -1539,6 +1561,34 @@ export function createDemoCertificationService(
       options ? { signal: options.signal, headers: options.requestHeaders } : undefined,
     )
   ))
+  const readCapabilitySnapshot = dependencies.readCapabilitySnapshot
+    ?? (dependencies.readCapability
+      ? ((seriesId, options) => Promise.all(FORECAST_PORTFOLIO_MODELS.flatMap((modelId) => (
+          FORECAST_TARGET_BASES.map((targetBasis) => readCapability(
+            { seriesId, modelId, targetBasis },
+            options,
+          ))
+        ))).then((variants) => ({
+          seriesId,
+          sourceFrequency: variants[0]?.sourceFrequency ?? null,
+          sourceAvailability: variants.some((variant) => variant.sourceAvailability === 'FAILED')
+            ? 'FAILED'
+            : variants.some((variant) => variant.sourceAvailability === 'DATA_NOT_AVAILABLE')
+              ? 'DATA_NOT_AVAILABLE'
+              : 'AVAILABLE',
+          status: variants.some((variant) => variant.status === 'FAILED') ? 'FAILED' : 'AVAILABLE',
+          reason: variants.find((variant) => variant.reason)?.reason ?? null,
+          targetedDataScope: 'SINGLE_SERIES' as const,
+          timingMs: Math.max(...variants.map((variant) => variant.timingMs), 0),
+          variants,
+        })))
+      : ((seriesId, options) => (
+          readInteractiveForecastCapabilitySnapshotBySeriesId(
+            seriesId,
+            undefined,
+            options ? { signal: options.signal, headers: options.requestHeaders } : undefined,
+          )
+        )))
   const prepareCurrent = dependencies.prepareCurrent ?? ((input, options) => (
     prepareInteractiveCurrentForecast(
       input,
@@ -1609,6 +1659,89 @@ export function createDemoCertificationService(
           })
           capabilityCache.set(key, pending)
           return pending
+        }
+
+        const cacheCapabilitySnapshotVariants = (snapshot: InteractiveForecastCapabilitySeriesSnapshot) => {
+          for (const variant of snapshot.variants) {
+            const targetBasis = variant.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+              ? 'POINT_IN_TIME'
+              : variant.targetSemantics
+            capabilityCache.set(
+              createVariantKey(variant.seriesId, variant.modelId, targetBasis),
+              Promise.resolve(variant),
+            )
+          }
+        }
+
+        const readCapabilitySnapshotOnce = (
+          seriesId: string,
+          phase: DemoBenchmarkDiagnosticPhase,
+          requestOptions?: DemoCertificationRequestOptions,
+          forceRefresh = false,
+        ) => {
+          const representativeInput = {
+            seriesId,
+            modelId: requiredModels[0] ?? 'naive',
+            targetBasis: inspectedTargetBases[0] ?? 'MONTHLY_AVERAGE',
+          } satisfies BenchmarkForecastCurrentPreparationRequest
+
+          if (!forceRefresh) {
+            const cached = capabilitySeriesSnapshotCache.get(seriesId)
+            if (cached) {
+              diagnostics.recordCacheHit({ phase, operation: 'READ_CAPABILITY', input: representativeInput, cacheStatus: 'hit' })
+              return cached
+            }
+          }
+
+          const pending = diagnostics.traceRemoteRequest({
+            phase,
+            operation: 'READ_CAPABILITY',
+            input: representativeInput,
+            cacheStatus: 'miss',
+          }, async (trackedRequestOptions) => {
+            const result = await readCapabilitySnapshot(seriesId, {
+              signal: requestOptions?.signal,
+              requestHeaders: mergeRequestHeaders(requestOptions?.requestHeaders, trackedRequestOptions.requestHeaders),
+            })
+            cacheCapabilitySnapshotVariants(result)
+            return {
+              result,
+              status: result.status,
+              reason: result.reason,
+            }
+          }).catch((error) => {
+            capabilitySeriesSnapshotCache.delete(seriesId)
+            throw error
+          })
+          capabilitySeriesSnapshotCache.set(seriesId, pending)
+          return pending
+        }
+
+        const readPrecomputeCapabilityOnce = (
+          input: BenchmarkForecastCurrentPreparationRequest,
+          phase: DemoBenchmarkDiagnosticPhase,
+          requestOptions?: DemoCertificationRequestOptions,
+          forceRefresh = false,
+        ) => {
+          const key = createVariantKey(input.seriesId, input.modelId, input.targetBasis)
+          if (!forceRefresh) {
+            const cached = capabilityCache.get(key)
+            if (cached) {
+              diagnostics.recordCacheHit({ phase, operation: 'READ_CAPABILITY', input, cacheStatus: 'hit' })
+              return cached
+            }
+          }
+
+          return readCapabilitySnapshotOnce(input.seriesId, phase, requestOptions, forceRefresh).then((snapshot) => {
+            const variant = findCapabilitySnapshotVariant(snapshot, input)
+            if (!variant) {
+              throw new Error(`Interactive Forecast capability snapshot missing exact variant for ${input.seriesId}:${input.modelId}:${input.targetBasis}.`)
+            }
+
+            const resolved = Promise.resolve(variant)
+            capabilityCache.set(key, resolved)
+            return variant
+          })
         }
 
         const prepareCurrentOnce = (
@@ -1718,9 +1851,7 @@ export function createDemoCertificationService(
                 outcome: 'SUCCESS' as const,
                 status: 'CACHE_REUSED',
                 reason: null,
-                benchmarkBudgetRemainingMsAtDispatch: benchmarkStartedAtMs === null
-                  ? null
-                  : Math.max(0, benchmarkTimeoutMs - (Date.now() - benchmarkStartedAtMs)),
+                benchmarkBudgetRemainingMsAtDispatch: null,
               },
             }
           }
@@ -1825,9 +1956,7 @@ export function createDemoCertificationService(
                 outcome: 'SUCCESS' as const,
                 status: 'CACHE_REUSED',
                 reason: null,
-                benchmarkBudgetRemainingMsAtDispatch: benchmarkStartedAtMs === null
-                  ? null
-                  : Math.max(0, benchmarkTimeoutMs - (Date.now() - benchmarkStartedAtMs)),
+                benchmarkBudgetRemainingMsAtDispatch: null,
               },
             }
           }
@@ -1969,7 +2098,7 @@ export function createDemoCertificationService(
                   return {
                     input,
                     required: requiredTargetBases.includes(targetBasis),
-                    capability: await readCapabilityOnce(input, 'PRECOMPUTE', { signal }),
+                    capability: await readPrecomputeCapabilityOnce(input, 'PRECOMPUTE', { signal }),
                   }
                 })
               )),
@@ -2007,7 +2136,7 @@ export function createDemoCertificationService(
 
               if (!hasExactVerificationReadiness(effectiveCapability) && isPrepareEligible(effectiveCapability)) {
                 const preparation = await prepareCurrentOnce(input, 'PRECOMPUTE', { signal })
-                const warmedCapability = await readCapabilityOnce(input, 'PRECOMPUTE', { signal }, true)
+                const warmedCapability = await readPrecomputeCapabilityOnce(input, 'PRECOMPUTE', { signal }, true)
 
                 effectiveCapability = warmedCapability
                 preparationStatus = preparation.prepareStatus

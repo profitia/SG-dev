@@ -27,6 +27,7 @@ function capability(overrides: Partial<InteractiveForecastCapabilityResult> = {}
     targetSemantics: 'MONTHLY_AVERAGE',
     modelId: 'naive',
     sourceFrequency: 'MONTHLY',
+    targetCadence: null,
     sourceAvailability: 'AVAILABLE',
     lawfulTargetSemantics: 'LAWFUL',
     status: 'READY',

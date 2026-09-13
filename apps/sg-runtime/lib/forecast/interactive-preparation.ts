@@ -3,7 +3,9 @@ import { z } from 'zod'
 
 import {
   type ExactForecastCapabilityTrace,
+  type ForecastCapabilityResolution,
   resolveExactForecastCapability,
+  resolveForecastCapabilitiesBySeriesId,
   type ForecastVariantCapability,
 } from '@/lib/forecast/capability-resolver'
 import { USER_FACING_FORECAST_MODELS } from '@/lib/forecast/contracts'
@@ -45,6 +47,12 @@ export const InteractiveForecastIdentitySchema = z.object({
 }).strict()
 
 export type InteractiveForecastIdentity = z.infer<typeof InteractiveForecastIdentitySchema>
+
+export const InteractiveForecastSeriesRequestSchema = z.object({
+  seriesId: z.string().trim().min(1).refine((seriesId) => seriesId !== '*', 'A concrete seriesId is required.'),
+}).strict()
+
+export type InteractiveForecastSeriesRequest = z.infer<typeof InteractiveForecastSeriesRequestSchema>
 
 export type InteractiveForecastOperationStatus =
   | 'READY'
@@ -118,8 +126,20 @@ export type InteractiveForecastPreparationResult = {
   reason: string | null
 }
 
+export type InteractiveForecastCapabilitySeriesSnapshot = {
+  seriesId: string
+  sourceFrequency: string | null
+  sourceAvailability: 'AVAILABLE' | 'DATA_NOT_AVAILABLE' | 'FAILED'
+  status: ForecastCapabilityResolution['status']
+  reason: string | null
+  targetedDataScope: 'SINGLE_SERIES'
+  timingMs: number
+  variants: InteractiveForecastCapabilityResult[]
+}
+
 type InteractiveForecastPreparationDependencies = {
   resolveExactCapability: typeof resolveExactForecastCapability
+  resolveCapabilitiesBySeriesId: typeof resolveForecastCapabilitiesBySeriesId
   prepareMonthlyCurrent: typeof resolveBenchmarkCurrentForecast
   prepareRollingCurrent: ReturnType<typeof createRollingDailyProductionOperationsService>['runCurrentOnly']
   prepareRollingDailyOwnership: typeof prepareRollingDailyCurrentOwnership
@@ -199,6 +219,28 @@ function formatInteractiveCapabilityReason(capability: ForecastVariantCapability
 
 function targetBasisForSemantics(targetSemantics: ForecastTargetSemantics): ForecastTargetBasis {
   return TARGET_BASIS_BY_SEMANTICS[targetSemantics]
+}
+
+function buildAllInteractiveForecastIdentities(seriesId: string): InteractiveForecastIdentity[] {
+  return FORECAST_TARGET_SEMANTICS.flatMap((targetSemantics) => (
+    USER_FACING_FORECAST_MODELS.map((modelId) => ({
+      seriesId,
+      targetSemantics,
+      modelId,
+    }))
+  ))
+}
+
+function resolveInteractiveSourceAvailability(
+  resolution: ForecastCapabilityResolution,
+): InteractiveForecastCapabilityResult['sourceAvailability'] {
+  if (resolution.status !== 'AVAILABLE') {
+    return 'FAILED'
+  }
+
+  return resolution.sourceMetadata.sourceObservationCount === 0
+    ? 'DATA_NOT_AVAILABLE'
+    : 'AVAILABLE'
 }
 
 function buildPreparedReadRequest(
@@ -392,12 +434,52 @@ async function resolveInteractiveForecastReadiness(
   }
 }
 
+async function projectInteractiveForecastCapability(
+  dependencies: Pick<InteractiveForecastPreparationDependencies, 'readPreparedFullVerification' | 'readPreparedRollingDailyFullVerification' | 'readPreparedRecentVerification'>,
+  input: InteractiveForecastIdentity,
+  resolution: ForecastCapabilityResolution,
+  capability: ForecastVariantCapability | null,
+): Promise<Omit<InteractiveForecastCapabilityResult, 'timingMs' | 'trace'>> {
+  const readiness = await resolveInteractiveForecastReadiness(
+    {
+      readPreparedFullVerification: dependencies.readPreparedFullVerification,
+      readPreparedRollingDailyFullVerification: dependencies.readPreparedRollingDailyFullVerification,
+      readPreparedRecentVerification: dependencies.readPreparedRecentVerification,
+    },
+    input,
+    capability,
+    resolution.sourceMetadata.sourceFrequency,
+  )
+
+  return {
+    seriesId: input.seriesId,
+    targetSemantics: input.targetSemantics,
+    modelId: input.modelId,
+    preparedReadAuthority: capability?.preparedReadAuthority ?? null,
+    sourceFrequency: resolution.sourceMetadata.sourceFrequency,
+    targetCadence: capability?.targetCadence ?? null,
+    sourceAvailability: resolveInteractiveSourceAvailability(resolution),
+    lawfulTargetSemantics: capability?.semanticLawfulness ?? null,
+    status: capability?.capabilityState ?? 'FAILED',
+    currentReadiness: capability?.currentPreparedState ?? 'NOT_PREPARED',
+    verificationReadiness: capability?.historicalPreparedState ?? 'NOT_PREPARED',
+    recentVerificationReadiness: readiness.recentVerificationReadiness,
+    fullVerificationReadiness: readiness.fullVerificationReadiness,
+    predictionBandResidualCount: readiness.predictionBandResidualCount,
+    predictionBandState: readiness.predictionBandState,
+    readiness: readiness.readiness,
+    targetedDataScope: 'SINGLE_SERIES',
+    reason: formatInteractiveCapabilityReason(capability, resolution.reason ?? (capability ? null : 'Exact Forecast capability was not resolved.')),
+  }
+}
+
 export function createInteractiveForecastPreparationService(
   dependencies: Partial<InteractiveForecastPreparationDependencies> = {},
 ) {
   const rollingDaily = createRollingDailyProductionOperationsService()
   const resolvedDependencies: InteractiveForecastPreparationDependencies = {
     resolveExactCapability: dependencies.resolveExactCapability ?? resolveExactForecastCapability,
+    resolveCapabilitiesBySeriesId: dependencies.resolveCapabilitiesBySeriesId ?? resolveForecastCapabilitiesBySeriesId,
     prepareMonthlyCurrent: dependencies.prepareMonthlyCurrent ?? resolveBenchmarkCurrentForecast,
     prepareRollingCurrent: dependencies.prepareRollingCurrent ?? ((request) => rollingDaily.runCurrentOnly(request)),
     prepareRollingDailyOwnership: dependencies.prepareRollingDailyOwnership ?? prepareRollingDailyCurrentOwnership,
@@ -436,43 +518,43 @@ export function createInteractiveForecastPreparationService(
     async capability(input: InteractiveForecastIdentity): Promise<InteractiveForecastCapabilityResult> {
       const startedAt = resolvedDependencies.now()
       const { resolution, capability, trace } = await resolveExact(input)
-      const sourceAvailability = resolution.status !== 'AVAILABLE'
-        ? 'FAILED'
-        : resolution.sourceMetadata.sourceObservationCount === 0
-          ? 'DATA_NOT_AVAILABLE'
-          : 'AVAILABLE'
-      const readiness = await resolveInteractiveForecastReadiness(
-        {
-          readPreparedFullVerification: resolvedDependencies.readPreparedFullVerification,
-          readPreparedRollingDailyFullVerification: resolvedDependencies.readPreparedRollingDailyFullVerification,
-          readPreparedRecentVerification: resolvedDependencies.readPreparedRecentVerification,
-        },
+      const projected = await projectInteractiveForecastCapability(
+        resolvedDependencies,
         input,
+        resolution,
         capability,
-        resolution.sourceMetadata.sourceFrequency,
       )
+      const timingMs = Math.max(0, Math.round(resolvedDependencies.now() - startedAt))
 
       return {
-        seriesId: input.seriesId,
-        targetSemantics: input.targetSemantics,
-        modelId: input.modelId,
-        preparedReadAuthority: capability?.preparedReadAuthority ?? null,
-        sourceFrequency: resolution.sourceMetadata.sourceFrequency,
-        targetCadence: capability?.targetCadence ?? null,
-        sourceAvailability,
-        lawfulTargetSemantics: capability?.semanticLawfulness ?? null,
-        status: capability?.capabilityState ?? 'FAILED',
-        currentReadiness: capability?.currentPreparedState ?? 'NOT_PREPARED',
-        verificationReadiness: capability?.historicalPreparedState ?? 'NOT_PREPARED',
-        recentVerificationReadiness: readiness.recentVerificationReadiness,
-        fullVerificationReadiness: readiness.fullVerificationReadiness,
-        predictionBandResidualCount: readiness.predictionBandResidualCount,
-        predictionBandState: readiness.predictionBandState,
-        readiness: readiness.readiness,
-        targetedDataScope: 'SINGLE_SERIES',
-        timingMs: Math.max(0, Math.round(resolvedDependencies.now() - startedAt)),
-        reason: formatInteractiveCapabilityReason(capability, resolution.reason ?? (capability ? null : 'Exact Forecast capability was not resolved.')),
+        ...projected,
+        timingMs,
         trace,
+      }
+    },
+
+    async capabilitySnapshotBySeriesId(seriesId: string): Promise<InteractiveForecastCapabilitySeriesSnapshot> {
+      const startedAt = resolvedDependencies.now()
+      const resolution = await resolvedDependencies.resolveCapabilitiesBySeriesId(seriesId)
+      const identities = buildAllInteractiveForecastIdentities(seriesId)
+      const projectedVariants = await Promise.all(identities.map(async (identity) => {
+        const capability = findExactCapability(resolution, identity)
+        return projectInteractiveForecastCapability(resolvedDependencies, identity, resolution, capability)
+      }))
+      const timingMs = Math.max(0, Math.round(resolvedDependencies.now() - startedAt))
+
+      return {
+        seriesId,
+        sourceFrequency: resolution.sourceMetadata.sourceFrequency,
+        sourceAvailability: resolveInteractiveSourceAvailability(resolution),
+        status: resolution.status,
+        reason: resolution.reason,
+        targetedDataScope: 'SINGLE_SERIES',
+        timingMs,
+        variants: projectedVariants.map((variant) => ({
+          ...variant,
+          timingMs,
+        })),
       }
     },
 
@@ -768,4 +850,5 @@ export function createInteractiveForecastPreparationService(
 const interactiveForecastPreparationService = createInteractiveForecastPreparationService()
 
 export const resolveInteractiveForecastCapability = interactiveForecastPreparationService.capability
+export const resolveInteractiveForecastCapabilitySnapshotBySeriesId = interactiveForecastPreparationService.capabilitySnapshotBySeriesId
 export const prepareInteractiveCurrentForecast = interactiveForecastPreparationService.prepareCurrent

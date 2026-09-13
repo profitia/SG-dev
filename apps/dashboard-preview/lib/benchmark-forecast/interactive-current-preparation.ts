@@ -11,6 +11,7 @@ import {
   type ProgressiveForecastVariantSnapshot,
   type ForecastTargetBasis,
   type InteractiveForecastCapabilityResult,
+  type InteractiveForecastCapabilitySeriesSnapshot,
   type InteractiveForecastPreparationResult,
 } from './forecast-contract'
 
@@ -19,6 +20,7 @@ const DEPLOYED_SG_RUNTIME_FALLBACK_BASE_URLS = [
   'https://benchmark-finder-category-builder.onrender.com',
 ]
 const INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH = '/api/internal/forecast/capability'
+const INTERNAL_FORECAST_CAPABILITIES_ROUTE_PATH = '/api/internal/forecast/capabilities'
 const INTERNAL_FORECAST_PREPARE_CURRENT_ROUTE_PATH = '/api/internal/forecast/prepare/current'
 const INTERNAL_FORECAST_VERIFICATION_ROUTE_PATH = '/api/internal/forecast/verification'
 const INTERNAL_FORECAST_PROGRESSIVE_ROUTE_PATH = '/api/internal/forecast/progressive'
@@ -494,6 +496,21 @@ export async function readInteractiveForecastCapability(
   url.searchParams.set('targetSemantics', targetSemantics)
 
   return readInternalJson<InteractiveForecastCapabilityResult>(url.pathname + url.search, {
+    method: 'GET',
+    signal: options?.signal,
+    headers: resolveAuthorizedHeaders(options?.headers),
+  }, traceOptions)
+}
+
+export async function readInteractiveForecastCapabilitySnapshotBySeriesId(
+  seriesId: string,
+  traceOptions?: TraceOptions,
+  options?: ForecastBridgeRequestOptions,
+) {
+  const url = new URL(INTERNAL_FORECAST_CAPABILITIES_ROUTE_PATH, LOCAL_SG_RUNTIME_BASE_URL)
+  url.searchParams.set('seriesId', seriesId)
+
+  return readInternalJson<InteractiveForecastCapabilitySeriesSnapshot>(url.pathname + url.search, {
     method: 'GET',
     signal: options?.signal,
     headers: resolveAuthorizedHeaders(options?.headers),

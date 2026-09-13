@@ -15,8 +15,10 @@ import { createInteractiveForecastPreparationService } from '../lib/forecast/int
 import {
   createInternalCurrentForecastPreparationRouteHandler,
   createInternalForecastCapabilityRouteHandler,
+  createInternalForecastCapabilitiesRouteHandler,
   createInternalProgressiveForecastPreparationRouteHandler,
 } from '../lib/forecast/interactive-route-handlers'
+import type { InteractiveForecastCapabilitySeriesSnapshot } from '../lib/forecast/interactive-preparation'
 import {
   FORECAST_REQUEST_DIAGNOSTICS_HEADER,
   FORECAST_REQUEST_DIAGNOSTICS_LOG_EVENT,
@@ -322,6 +324,71 @@ function buildExactCapabilityTrace() {
   }
 }
 
+function buildSeriesCapabilityCandidates() {
+  return (['END_OF_PERIOD', 'MONTHLY_AVERAGE', 'ROLLING_DAILY_POINT_IN_TIME'] as const).flatMap((targetSemantics) => (
+    ['naive', 'damped_holt', 'ets', 'arima'].map((modelId) => buildCapabilityCandidate({
+      identity: {
+        seriesId: 'wocaes0074',
+        targetSemantics,
+        methodId: targetSemantics,
+        methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+        modelId,
+      },
+      sourceFrequency: targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
+      businessTarget: targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+        ? 'DAILY'
+        : targetSemantics === 'END_OF_PERIOD'
+          ? 'END_OF_PERIOD'
+          : 'AVERAGE',
+      targetCadence: targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
+      semanticLawfulness: targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME' ? 'LAWFUL' : 'LAWFUL_WITH_PROVENANCE',
+      currentPreparedState: 'READY',
+      historicalPreparedState: 'READY',
+      capabilityState: 'READY',
+      predictionBandResidualCount: 40,
+      predictionBandState: 'AVAILABLE',
+    }))
+  ))
+}
+
+function buildInteractiveCapabilitySeriesSnapshot(): InteractiveForecastCapabilitySeriesSnapshot {
+  return {
+    seriesId: 'wocaes0074',
+    sourceFrequency: 'MONTHLY',
+    sourceAvailability: 'AVAILABLE',
+    status: 'AVAILABLE',
+    reason: null,
+    targetedDataScope: 'SINGLE_SERIES',
+    timingMs: 9,
+    variants: buildSeriesCapabilityCandidates().map((candidate) => ({
+      seriesId: candidate.identity.seriesId,
+      targetSemantics: candidate.identity.targetSemantics,
+      modelId: candidate.identity.modelId,
+      preparedReadAuthority: candidate.preparedReadAuthority,
+      sourceFrequency: candidate.sourceFrequency,
+      targetCadence: candidate.targetCadence,
+      sourceAvailability: 'AVAILABLE',
+      lawfulTargetSemantics: candidate.semanticLawfulness,
+      status: candidate.capabilityState,
+      currentReadiness: candidate.currentPreparedState,
+      verificationReadiness: candidate.historicalPreparedState,
+      recentVerificationReadiness: 'READY',
+      fullVerificationReadiness: 'READY',
+      predictionBandResidualCount: candidate.predictionBandResidualCount,
+      predictionBandState: candidate.predictionBandState,
+      readiness: {
+        fastReady: true,
+        calibratedReady: true,
+        fullReady: true,
+        blockers: [],
+      },
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 9,
+      reason: null,
+    })),
+  }
+}
+
 test('current forecast route defaults missing targetBasis to MONTHLY_AVERAGE', async () => {
   let receivedInput: ForecastRequestInput | null = null
 
@@ -364,6 +431,137 @@ test('current forecast route defaults missing targetBasis to MONTHLY_AVERAGE', a
   const currentInput = receivedInput as ForecastRequestInput
   assert.equal(currentInput.targetBasis, 'MONTHLY_AVERAGE')
   assert.equal(payload.targetBasis, 'MONTHLY_AVERAGE')
+})
+
+test('interactive capability snapshot service resolves a full series through one shared authority call', async () => {
+  let resolveCapabilitiesBySeriesIdCalls = 0
+  const service = createInteractiveForecastPreparationService({
+    resolveCapabilitiesBySeriesId: async () => {
+      resolveCapabilitiesBySeriesIdCalls += 1
+      return buildCapabilityResolution({
+        capabilities: buildSeriesCapabilityCandidates(),
+      })
+    },
+    readPreparedRecentVerification: async () => ({ status: 'AVAILABLE', verification: {} } as BenchmarkForecastVerificationResult),
+    readPreparedFullVerification: async () => ({ status: 'AVAILABLE', verification: {} } as BenchmarkForecastVerificationResult),
+    readPreparedRollingDailyFullVerification: async () => ({ status: 'AVAILABLE', verification: {} } as BenchmarkForecastVerificationResult),
+  })
+
+  const snapshot = await service.capabilitySnapshotBySeriesId('wocaes0074')
+
+  assert.equal(resolveCapabilitiesBySeriesIdCalls, 1)
+  assert.equal(snapshot.status, 'AVAILABLE')
+  assert.equal(snapshot.variants.length, 12)
+  assert.ok(snapshot.variants.every((variant) => variant.status === 'READY'))
+})
+
+test('interactive capability snapshot preserves exact interactive semantics for the same variant', async () => {
+  const capabilityResolution = buildCapabilityResolution({
+    sourceMetadata: {
+      seriesId: 'wocaes0074',
+      providerCode: 'macrobond',
+      source: 'POSTGRES_RUNTIME_SNAPSHOT',
+      sourceFrequency: 'DAILY',
+      rawFrequency: 'DAILY',
+      sourceObservationCount: 96,
+      fullHistoryObservationCount: 96,
+    },
+    capabilities: buildSeriesCapabilityCandidates(),
+  })
+  const exactCapability = capabilityResolution.capabilities.find((candidate) => (
+    candidate.identity.modelId === 'arima' && candidate.identity.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+  ))
+  if (!exactCapability) {
+    throw new Error('Expected exact capability fixture for parity test.')
+  }
+
+  const service = createInteractiveForecastPreparationService({
+    resolveExactCapability: async () => ({
+      resolution: capabilityResolution,
+      capability: exactCapability,
+      trace: buildExactCapabilityTrace(),
+    }),
+    resolveCapabilitiesBySeriesId: async () => capabilityResolution,
+    readPreparedRecentVerification: async () => ({ status: 'AVAILABLE', verification: {} } as BenchmarkForecastVerificationResult),
+    readPreparedFullVerification: async () => ({ status: 'AVAILABLE', verification: {} } as BenchmarkForecastVerificationResult),
+    readPreparedRollingDailyFullVerification: async () => ({ status: 'AVAILABLE', verification: {} } as BenchmarkForecastVerificationResult),
+  })
+
+  const exact = await service.capability({
+    seriesId: 'wocaes0074',
+    modelId: 'arima',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+  })
+  const snapshot = await service.capabilitySnapshotBySeriesId('wocaes0074')
+  const variant = snapshot.variants.find((candidate) => (
+    candidate.modelId === 'arima' && candidate.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+  ))
+
+  assert.deepEqual(variant && {
+    seriesId: variant.seriesId,
+    modelId: variant.modelId,
+    targetSemantics: variant.targetSemantics,
+    sourceFrequency: variant.sourceFrequency,
+    targetCadence: variant.targetCadence,
+    sourceAvailability: variant.sourceAvailability,
+    lawfulTargetSemantics: variant.lawfulTargetSemantics,
+    status: variant.status,
+    currentReadiness: variant.currentReadiness,
+    verificationReadiness: variant.verificationReadiness,
+    recentVerificationReadiness: variant.recentVerificationReadiness,
+    fullVerificationReadiness: variant.fullVerificationReadiness,
+    predictionBandResidualCount: variant.predictionBandResidualCount,
+    predictionBandState: variant.predictionBandState,
+    readiness: variant.readiness,
+    reason: variant.reason,
+  }, {
+    seriesId: exact.seriesId,
+    modelId: exact.modelId,
+    targetSemantics: exact.targetSemantics,
+    sourceFrequency: exact.sourceFrequency,
+    targetCadence: exact.targetCadence,
+    sourceAvailability: exact.sourceAvailability,
+    lawfulTargetSemantics: exact.lawfulTargetSemantics,
+    status: exact.status,
+    currentReadiness: exact.currentReadiness,
+    verificationReadiness: exact.verificationReadiness,
+    recentVerificationReadiness: exact.recentVerificationReadiness,
+    fullVerificationReadiness: exact.fullVerificationReadiness,
+    predictionBandResidualCount: exact.predictionBandResidualCount,
+    predictionBandState: exact.predictionBandState,
+    readiness: exact.readiness,
+    reason: exact.reason,
+  })
+})
+
+test('internal forecast capabilities route accepts valid dashboard-preview service credential', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+  let receivedSeriesId: string | null = null
+
+  try {
+    const handler = createInternalForecastCapabilitiesRouteHandler(async (seriesId) => {
+      receivedSeriesId = seriesId
+      return buildInteractiveCapabilitySeriesSnapshot()
+    })
+
+    const response = await handler(buildRequest(
+      'http://localhost/api/internal/forecast/capabilities?seriesId=wocaes0074',
+      { Authorization: 'Bearer test-internal-token' },
+    ))
+    const payload = await response.json()
+
+    assert.equal(response.status, 200)
+    assert.equal(receivedSeriesId, 'wocaes0074')
+    assert.equal(payload.seriesId, 'wocaes0074')
+    assert.equal(payload.variants.length, 12)
+  } finally {
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
 })
 
 test('current forecast route accepts arima model and forwards it to the service boundary', async () => {

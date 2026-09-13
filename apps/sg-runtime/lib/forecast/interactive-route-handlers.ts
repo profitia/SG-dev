@@ -4,10 +4,13 @@ import { withInternalForecastServiceAuth } from '@/lib/api/internal-forecast-ser
 import { cognitionError, cognitionOk, parseJsonBody, parseSearchParams } from '@/lib/api/middleware'
 import {
   InteractiveForecastIdentitySchema,
+  InteractiveForecastSeriesRequestSchema,
   type InteractiveForecastIdentity,
   prepareInteractiveCurrentForecast,
   resolveInteractiveForecastCapability,
+  resolveInteractiveForecastCapabilitySnapshotBySeriesId,
   type InteractiveForecastCapabilityResult,
+  type InteractiveForecastCapabilitySeriesSnapshot,
   type InteractiveForecastPreparationResult,
 } from '@/lib/forecast/interactive-preparation'
 import {
@@ -25,6 +28,7 @@ import {
 } from '@/lib/forecast/request-diagnostics'
 
 type CapabilityResolver = (input: InteractiveForecastIdentity) => Promise<InteractiveForecastCapabilityResult>
+type CapabilitySnapshotResolver = (seriesId: string) => Promise<InteractiveForecastCapabilitySeriesSnapshot>
 type CurrentPreparationResolver = (input: InteractiveForecastIdentity) => Promise<InteractiveForecastPreparationResult>
 type ProgressivePreparationResolver = (input: ProgressiveForecastPreparationRequest) => Promise<ProgressiveForecastPreparationSnapshot>
 const FORECAST_TRACE_HEADER = 'x-sg-forecast-trace'
@@ -70,6 +74,47 @@ export function createInternalForecastCapabilityRouteHandler(
             seriesId: parsed.data.seriesId,
             modelId: parsed.data.modelId,
             targetSemantics: parsed.data.targetSemantics,
+          },
+        )
+        const response = cognitionOk(result)
+        if (request.headers.get(FORECAST_TRACE_HEADER) === '1') {
+          response.headers.set(SG_RUNTIME_CAPABILITY_TOTAL_MS_HEADER, String(result.timingMs))
+        }
+        return appendForecastRequestDiagnosticsHeader(response)
+      } catch (error) {
+        return appendForecastRequestDiagnosticsHeader(internalRouteError(error, principal.requestId))
+      }
+    })
+  })
+}
+
+export function createInternalForecastCapabilitiesRouteHandler(
+  resolveCapabilities: CapabilitySnapshotResolver = resolveInteractiveForecastCapabilitySnapshotBySeriesId,
+) {
+  return withInternalForecastServiceAuth(async (principal, request: NextRequest) => {
+    return runWithForecastRequestDiagnostics({
+      enabled: isForecastRequestDiagnosticsEnabled(request.headers),
+      requestId: principal.requestId,
+      route: request.nextUrl.pathname,
+      method: request.method,
+      operationType: 'CAPABILITY',
+    }, async () => {
+      noteForecastRequestDiagnosticsEvent('handler_entered', 'HTTP', { requestId: principal.requestId })
+      const parsed = parseSearchParams(request, InteractiveForecastSeriesRequestSchema)
+      if (!parsed.ok) return appendForecastRequestDiagnosticsHeader(cognitionError('VALIDATION_ERROR', parsed.message, 400, principal.requestId))
+
+      updateForecastRequestDiagnosticsIdentity({
+        operationType: 'CAPABILITY',
+        seriesId: parsed.data.seriesId,
+      })
+
+      try {
+        const result = await traceForecastRequestDiagnosticsSpan(
+          'capability_resolution_series_snapshot',
+          'APPLICATION',
+          () => resolveCapabilities(parsed.data.seriesId),
+          {
+            seriesId: parsed.data.seriesId,
           },
         )
         const response = cognitionOk(result)

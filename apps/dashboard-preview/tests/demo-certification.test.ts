@@ -16,6 +16,7 @@ import type {
   ForecastTargetBasis,
   ForecastTargetSemantics,
   InteractiveForecastCapabilityResult,
+  InteractiveForecastCapabilitySeriesSnapshot,
 } from '@/lib/benchmark-forecast/forecast-contract'
 import type {
   ForecastAcceptanceCell,
@@ -86,6 +87,27 @@ function preparation(input: BenchmarkForecastCurrentPreparationRequest, override
     prepareStatus: 'READY',
     reason: null,
     timingMs: 1,
+    ...overrides,
+  }
+}
+
+function capabilitySnapshot(
+  seriesId: string,
+  overrides: Partial<InteractiveForecastCapabilitySeriesSnapshot> = {},
+  resolveVariant?: (input: BenchmarkForecastCurrentPreparationRequest) => InteractiveForecastCapabilityResult,
+): InteractiveForecastCapabilitySeriesSnapshot {
+  return {
+    seriesId,
+    sourceFrequency: 'DAILY',
+    sourceAvailability: 'AVAILABLE',
+    status: 'AVAILABLE',
+    reason: null,
+    targetedDataScope: 'SINGLE_SERIES',
+    timingMs: 1,
+    variants: MODELS.flatMap((modelId) => TARGET_BASES.map((targetBasis) => {
+      const input = { seriesId, modelId, targetBasis } satisfies BenchmarkForecastCurrentPreparationRequest
+      return resolveVariant ? resolveVariant(input) : capability(input)
+    })),
     ...overrides,
   }
 }
@@ -318,6 +340,7 @@ function matrixReport(seriesId: string, overrides?: {
 function createService(options: {
   cohort?: DemoCohortEntry[]
   capabilityResolver?: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => MaybePromise<InteractiveForecastCapabilityResult>
+  capabilitySnapshotResolver?: (seriesId: string, options?: { signal?: AbortSignal }) => MaybePromise<InteractiveForecastCapabilitySeriesSnapshot>
   prepareResolver?: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => MaybePromise<BenchmarkForecastCurrentPreparationResult>
   verificationPrepareResolver?: (
     input: BenchmarkForecastCurrentPreparationRequest,
@@ -350,6 +373,21 @@ function createService(options: {
       cohort: cohort.map((entry) => ({ seriesId: entry.seriesId, benchmarkName: entry.benchmarkName, group: entry.group })),
     }),
     readCapability: async (input, requestOptions) => options.capabilityResolver ? options.capabilityResolver(input, requestOptions) : capability(input),
+    readCapabilitySnapshot: async (seriesId, requestOptions) => {
+      if (options.capabilitySnapshotResolver) {
+        return options.capabilitySnapshotResolver(seriesId, requestOptions)
+      }
+
+      if (!options.capabilityResolver) {
+        return capabilitySnapshot(seriesId)
+      }
+
+      const variants = await Promise.all(MODELS.flatMap((modelId) => TARGET_BASES.map((targetBasis) => (
+        options.capabilityResolver!({ seriesId, modelId, targetBasis }, { signal: requestOptions?.signal })
+      ))))
+
+      return capabilitySnapshot(seriesId, { variants })
+    },
     prepareCurrent: async (input, requestOptions) => {
       options.prepareCalls?.push(`${input.seriesId}:${input.modelId}:${input.targetBasis}`)
       return options.prepareResolver ? options.prepareResolver(input, requestOptions) : preparation(input)
@@ -429,6 +467,75 @@ test('A3. exact full historical verification readiness is required for fast-path
   assert.equal(revalidateReport.benchmarks[0]?.demoSafe, 'NO')
   assert.equal(revalidateReport.benchmarks[0]?.precompute.status, 'FAIL')
   assert.equal(revalidateReport.benchmarks[0]?.reason, 'PRECOMPUTE_FAIL')
+})
+
+test('A3b. PRECOMPUTE reads one series capability snapshot per benchmark instead of twelve exact capability requests', async () => {
+  let exactCapabilityCalls = 0
+  let snapshotCalls = 0
+
+  const report = await createService({
+    capabilityResolver: (input) => {
+      exactCapabilityCalls += 1
+      return capability(input)
+    },
+    capabilitySnapshotResolver: (seriesId) => {
+      snapshotCalls += 1
+      return capabilitySnapshot(seriesId)
+    },
+  }).run({ includeFallback: false, diagnostics: { enabled: true } })
+
+  const precomputeCapabilityMisses = report.benchmarks[0]?.diagnostics?.timeline.filter((event) => (
+    event.eventType === 'REMOTE_REQUEST'
+    && event.phase === 'PRECOMPUTE'
+    && event.operation === 'READ_CAPABILITY'
+    && event.cacheStatus === 'miss'
+  )) ?? []
+
+  assert.equal(report.benchmarks[0]?.precompute.status, 'PASS')
+  assert.equal(snapshotCalls, 1)
+  assert.equal(exactCapabilityCalls, 0)
+  assert.equal(precomputeCapabilityMisses.length, 1)
+})
+
+test('A3c. PRECOMPUTE refreshes the series capability snapshot once after lawful current preparation', async () => {
+  let snapshotCalls = 0
+  const preparedKeys = new Set<string>()
+  const prepareCalls: string[] = []
+  const warmedKey = 'wocaes0074:naive:MONTHLY_AVERAGE'
+
+  const report = await createService({
+    capabilitySnapshotResolver: (seriesId) => {
+      snapshotCalls += 1
+      return capabilitySnapshot(seriesId, {}, (input) => {
+        const key = `${input.seriesId}:${input.modelId}:${input.targetBasis}`
+        const ready = preparedKeys.has(key)
+        return capability(input, key === warmedKey && !ready ? {
+          status: 'PREPARATION_REQUIRED',
+          currentReadiness: 'NOT_PREPARED',
+          verificationReadiness: 'NOT_PREPARED',
+          recentVerificationReadiness: 'NOT_PREPARED',
+          fullVerificationReadiness: 'NOT_PREPARED',
+          readiness: {
+            fastReady: false,
+            calibratedReady: false,
+            fullReady: false,
+            blockers: ['CURRENT_MISSING', 'FULL_HISTORICAL_MISSING'],
+          },
+          reason: 'Prepared artifacts are missing.',
+        } : {})
+      })
+    },
+    prepareResolver: (input) => {
+      preparedKeys.add(`${input.seriesId}:${input.modelId}:${input.targetBasis}`)
+      return preparation(input)
+    },
+    prepareCalls,
+  }).run({ includeFallback: false, diagnostics: { enabled: true } })
+
+  assert.equal(report.benchmarks[0]?.precompute.status, 'PASS')
+  assert.equal(snapshotCalls, 2)
+  assert.equal(prepareCalls.length, 1)
+  assert.deepEqual(prepareCalls, [warmedKey])
 })
 
 test('A4. certify mode does not recover exact full historical readiness through SG Runtime verification materialization', async () => {
@@ -1199,7 +1306,7 @@ test('I8. certification does not wait on a PIT materialization pipeline before m
   assert.equal(benchmark?.reason, 'PRECOMPUTE_FAIL')
   assert.equal(beforePointInTimeEvaluationProvided, false)
   assert.deepEqual(verificationPrepareCalls, [])
-  assert.equal(timeline.filter((event) => event.eventType === 'PHASE' && event.phase === 'PIT_MATERIALIZATION').length, 0)
+  assert.equal(timeline.filter((event) => event.eventType === 'PHASE' && String(event.phase) === 'PIT_MATERIALIZATION').length, 0)
 })
 
 test('I9. certification does not dispatch duplicate PIT verification preparation across models', async () => {
@@ -1238,7 +1345,7 @@ test('I9. certification does not dispatch duplicate PIT verification preparation
   assert.equal(benchmark?.demoSafe, 'NO')
   assert.equal(benchmark?.reason, 'PRECOMPUTE_FAIL')
   assert.deepEqual(verificationPrepareCalls, [])
-  assert.equal(timeline.filter((event) => event.eventType === 'PHASE' && event.phase === 'PIT_MATERIALIZATION').length, 0)
+  assert.equal(timeline.filter((event) => event.eventType === 'PHASE' && String(event.phase) === 'PIT_MATERIALIZATION').length, 0)
 })
 
 test('I10. unused PIT preparation failures do not affect certification when exact full verification is not ready', async () => {

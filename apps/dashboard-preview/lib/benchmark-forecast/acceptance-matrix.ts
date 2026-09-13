@@ -585,8 +585,12 @@ export function createForecastAcceptanceMatrixService(
   dependencies: Partial<AcceptanceMatrixDependencies> = {},
 ) {
   const resolvedDependencies: AcceptanceMatrixDependencies = {
-    readCapability: dependencies.readCapability ?? readInteractiveForecastCapability,
-    prepareCurrent: dependencies.prepareCurrent ?? prepareInteractiveCurrentForecast,
+    readCapability: dependencies.readCapability ?? ((input, options) => (
+      readInteractiveForecastCapability(input, undefined, options ? { signal: options.signal } : undefined)
+    )),
+    prepareCurrent: dependencies.prepareCurrent ?? ((input, options) => (
+      prepareInteractiveCurrentForecast(input, false, options ? { signal: options.signal } : undefined)
+    )),
     readCurrent: dependencies.readCurrent ?? ((seriesId, model, targetBasis, cadence, correlationHeaders, capability) => (
       resolveShowForecastCurrent(seriesId, model, targetBasis, undefined, cadence, correlationHeaders, capability) as Promise<BenchmarkForecastCurrentResult>
     )),
@@ -833,9 +837,10 @@ export function createForecastAcceptanceMatrixService(
         }
       }
 
+      const availableCurrentHistoryFingerprint = availableCurrent.lineage.historyFingerprint
       if (!isRenderableCurrentResult(availableCurrent)) {
         return {
-          identity: { ...identityBase, kind: 'CURRENT', historyFingerprint: availableCurrent.lineage.historyFingerprint, verificationHorizon: null },
+          identity: { ...identityBase, kind: 'CURRENT', historyFingerprint: availableCurrentHistoryFingerprint, verificationHorizon: null },
           state: 'FAIL',
           failingLayer: 'RENDERABLE_PAYLOAD',
           reasonCode: 'INVALID_PAYLOAD',

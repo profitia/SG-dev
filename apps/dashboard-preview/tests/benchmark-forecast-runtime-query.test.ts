@@ -351,7 +351,7 @@ test('deployed non-point-in-time prepared current read does not fall back after 
       callback()
     }
     return 1 as unknown as ReturnType<typeof setTimeout>
-  }) as typeof setTimeout)
+  }) as unknown as typeof setTimeout)
   global.clearTimeout = ((() => undefined) as typeof clearTimeout)
   global.fetch = (async (input: URL | RequestInfo | string, init?: RequestInit) => {
     const url = new URL(String(input))

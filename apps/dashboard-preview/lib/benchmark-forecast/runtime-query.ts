@@ -1185,6 +1185,7 @@ type ShowForecastDependencies = {
     targetBasis: ForecastTargetBasis,
     cadence?: { sourceFrequency: string, targetCadence: string },
     correlationHeaders?: Record<string, string>,
+    capability?: InteractiveForecastCapabilityResult | null,
   ) => Promise<{ status: string }>
 }
 
