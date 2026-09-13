@@ -24,6 +24,7 @@ import {
   type InteractiveForecastCapabilityResult,
 } from './forecast-contract'
 import {
+  extractForecastBridgeErrorTrace,
   prepareInteractiveCurrentForecast,
   readInteractiveForecastCapability,
   requestInteractiveForecastVerificationPreparation,
@@ -1033,6 +1034,7 @@ function createBenchmarkDiagnosticsTracker(
           const completedAt = new Date().toISOString()
           const remoteElapsedMs = Math.max(0, Date.now() - dispatchedAtMs)
           const elapsedMs = Math.max(0, Date.now() - queuedAtMs)
+          const bridgeFailure = extractForecastBridgeErrorTrace(error)
           timeline.push({
             eventType: 'REMOTE_REQUEST',
             phase: identity.phase,
@@ -1056,8 +1058,8 @@ function createBenchmarkDiagnosticsTracker(
             outcome: isTimeoutError(error) ? 'TIMEOUT' : 'ERROR',
             status: null,
             reason: error instanceof Error ? error.message : String(error),
-            bridgeTrace: null,
-            bridgeAttempts: [],
+            bridgeTrace: bridgeFailure.trace,
+            bridgeAttempts: bridgeFailure.attempts,
           })
           throw error
         } finally {

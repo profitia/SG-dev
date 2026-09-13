@@ -68,6 +68,11 @@ export type ForecastBridgeTrace = {
   fallbackUsed: boolean
 }
 
+type ForecastBridgeErrorWithTrace = Error & {
+  forecastBridgeTrace?: ForecastBridgeTrace
+  forecastBridgeAttempts?: ForecastBridgeAttemptTrace[]
+}
+
 type ForecastBridgeRequestOptions = {
   signal?: AbortSignal
   headers?: Record<string, string>
@@ -244,12 +249,58 @@ function buildAttemptDiagnosticContext(pathname: string, baseUrl: string, header
   }
 }
 
+function attachForecastBridgeErrorTrace(
+  error: unknown,
+  traceEnabled: boolean,
+  attempts: ForecastBridgeAttemptTrace[],
+  totalMs: number,
+) {
+  if (!traceEnabled || !(error instanceof Error)) {
+    return error
+  }
+
+  const trace: ForecastBridgeTrace = {
+    dashboardBridgeTotalMs: totalMs,
+    attempts: [...attempts],
+    fallbackUsed: attempts.some((attempt) => attempt.fallbackUsed),
+  }
+
+  const enrichedError = error as ForecastBridgeErrorWithTrace
+  enrichedError.forecastBridgeTrace = trace
+  enrichedError.forecastBridgeAttempts = trace.attempts
+  return enrichedError
+}
+
+export function extractForecastBridgeErrorTrace(error: unknown): {
+  trace: ForecastBridgeTrace | null
+  attempts: ForecastBridgeAttemptTrace[]
+} {
+  if (!(error instanceof Error)) {
+    return { trace: null, attempts: [] }
+  }
+
+  const bridgeError = error as ForecastBridgeErrorWithTrace
+  const attempts = Array.isArray(bridgeError.forecastBridgeAttempts)
+    ? bridgeError.forecastBridgeAttempts
+    : []
+  const trace = bridgeError.forecastBridgeTrace ?? (attempts.length > 0
+    ? {
+        dashboardBridgeTotalMs: Math.max(...attempts.map((attempt) => attempt.durationMs), 0),
+        attempts,
+        fallbackUsed: attempts.some((attempt) => attempt.fallbackUsed),
+      }
+    : null)
+
+  return { trace, attempts }
+}
+
 async function readInternalJson<T>(
   pathname: string,
   init: RequestInit,
   traceOptions?: TraceOptions,
 ) {
   let lastError: unknown = null
+  const requestStartedAtMs = Date.now()
 
   const baseUrls = resolveSgRuntimeBaseUrls()
 
@@ -372,20 +423,20 @@ async function readInternalJson<T>(
 
       lastError = error
       if (callerAborted) {
-        throw error
+        throw attachForecastBridgeErrorTrace(error, traceOptions?.enabled === true, traceOptions?.attempts ?? [], Math.max(0, Date.now() - requestStartedAtMs))
       }
       if ((error as Error).name === 'AbortError' && hasExplicitSgRuntimeBaseUrl()) {
         if (timedOut) {
-          throw new Error(INTERNAL_FORECAST_TIMEOUT_ERROR)
+          throw attachForecastBridgeErrorTrace(new Error(INTERNAL_FORECAST_TIMEOUT_ERROR), traceOptions?.enabled === true, traceOptions?.attempts ?? [], Math.max(0, Date.now() - requestStartedAtMs))
         }
 
-        throw error
+        throw attachForecastBridgeErrorTrace(error, traceOptions?.enabled === true, traceOptions?.attempts ?? [], Math.max(0, Date.now() - requestStartedAtMs))
       }
       if (isMalformedJsonResponseError(error) && index + 1 < baseUrls.length) {
         continue
       }
       if ((error as Error).name !== 'AbortError') {
-        throw error
+        throw attachForecastBridgeErrorTrace(error, traceOptions?.enabled === true, traceOptions?.attempts ?? [], Math.max(0, Date.now() - requestStartedAtMs))
       }
     } finally {
       clearTimeout(timeoutId)
@@ -394,10 +445,15 @@ async function readInternalJson<T>(
   }
 
   if ((lastError as Error | null)?.name === 'AbortError') {
-    throw new Error(INTERNAL_FORECAST_TIMEOUT_ERROR)
+    throw attachForecastBridgeErrorTrace(new Error(INTERNAL_FORECAST_TIMEOUT_ERROR), traceOptions?.enabled === true, traceOptions?.attempts ?? [], Math.max(0, Date.now() - requestStartedAtMs))
   }
 
-  throw lastError instanceof Error ? lastError : new Error('SG Runtime interactive forecast request failed.')
+  throw attachForecastBridgeErrorTrace(
+    lastError instanceof Error ? lastError : new Error('SG Runtime interactive forecast request failed.'),
+    traceOptions?.enabled === true,
+    traceOptions?.attempts ?? [],
+    Math.max(0, Date.now() - requestStartedAtMs),
+  )
 }
 
 function resolveAuthorizedHeaders(additionalHeaders: Record<string, string> = {}) {
