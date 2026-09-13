@@ -12,7 +12,7 @@ import {
   buildForecastArtifactCadenceIdentity,
   createCurrentForecastStatisticalCompatibility,
   createForecastIdentity,
-  createRecentVerificationStatisticalCompatibility,
+  createFullVerificationStatisticalCompatibility,
   LEGACY_MONTHLY_ARTIFACT_FREQUENCY,
 } from '@/lib/forecast/identity'
 import { buildLiveForecastBridgePayloadFromHistory } from '@/lib/forecast/live-market-input'
@@ -349,7 +349,7 @@ export async function readForecastPreparedVariants(
           cadence: { sourceFrequency: resolvedSourceFrequency, targetCadence },
         }),
       }
-      const recentVerificationCompatibility = createRecentVerificationStatisticalCompatibility({
+      const fullVerificationCompatibility = createFullVerificationStatisticalCompatibility({
         sourceFrequency: resolvedSourceFrequency,
         targetCadence,
         targetSemantics: identity.targetSemantics,
@@ -387,7 +387,7 @@ export async function readForecastPreparedVariants(
         findPreparedHistoricalVerificationRun(
           prisma,
           verificationWhere,
-          recentVerificationCompatibility,
+          fullVerificationCompatibility,
         ),
       ])
 

@@ -4,7 +4,7 @@ import test from 'node:test'
 import type { BenchmarkHistoricalSeriesResult } from '../lib/benchmark/contracts'
 import { buildForecastHistoryFingerprint } from '../lib/forecast/history-fingerprint'
 import { resolveForecastTechnicalMinimumObservations } from '../lib/forecast/current-fast-policy'
-import { createRecentVerificationStatisticalCompatibility } from '../lib/forecast/identity'
+import { createFullVerificationStatisticalCompatibility } from '../lib/forecast/identity'
 import {
   buildLiveForecastBridgePayloadFromHistory,
   selectMinimalLawfulCurrentTrainingPayload,
@@ -93,12 +93,12 @@ test('prepared-state binding is exact across semantics, models, versions, and cu
   const selectedMonthlyAverageFingerprint = buildForecastHistoryFingerprint(
     selectedMonthlyAveragePayload.history,
   )
-  const recentEopCompatibility = createRecentVerificationStatisticalCompatibility({
+  const fullEopCompatibility = createFullVerificationStatisticalCompatibility({
     sourceFrequency: 'DAILY',
     targetCadence: 'MONTHLY',
     targetSemantics: 'END_OF_PERIOD',
   })
-  const recentMonthlyAverageCompatibility = createRecentVerificationStatisticalCompatibility({
+  const fullMonthlyAverageCompatibility = createFullVerificationStatisticalCompatibility({
     sourceFrequency: 'DAILY',
     targetCadence: 'MONTHLY',
     targetSemantics: 'MONTHLY_AVERAGE',
@@ -141,16 +141,16 @@ test('prepared-state binding is exact across semantics, models, versions, and cu
           if (
             where.targetBasis === 'END_OF_PERIOD'
             && where.modelId === 'arima'
-            && where.trainingWindowPolicyId === recentEopCompatibility.trainingWindowPolicyId
-            && where.effectiveTrainingPolicyId === recentEopCompatibility.effectiveTrainingPolicyId
+            && where.trainingWindowPolicyId === fullEopCompatibility.trainingWindowPolicyId
+            && where.effectiveTrainingPolicyId === fullEopCompatibility.effectiveTrainingPolicyId
           ) {
             return { status: 'AVAILABLE', historyFingerprint: eopFingerprint, frequency: 'MONTHLY' }
           }
           if (
             where.targetBasis === 'MONTHLY_AVERAGE'
             && where.modelId === 'ets'
-            && where.trainingWindowPolicyId === recentMonthlyAverageCompatibility.trainingWindowPolicyId
-            && where.effectiveTrainingPolicyId === recentMonthlyAverageCompatibility.effectiveTrainingPolicyId
+            && where.trainingWindowPolicyId === fullMonthlyAverageCompatibility.trainingWindowPolicyId
+            && where.effectiveTrainingPolicyId === fullMonthlyAverageCompatibility.effectiveTrainingPolicyId
           ) {
             return { status: 'AVAILABLE', historyFingerprint: selectedMonthlyAverageFingerprint, frequency: 'MONTHLY' }
           }
