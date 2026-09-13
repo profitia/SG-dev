@@ -5,6 +5,7 @@ import test from 'node:test'
 import {
   createDefaultForecastPreparationExecutionAdmission,
   createForecastPreparationExecutionContextRegistry,
+  createInMemoryForecastPreparationExecutionAdmission,
   createForecastPreparationExecutionLedger,
   hasForecastPreparationExecutionLedgerRelation,
   reduceForecastPreparationExecution,
@@ -257,6 +258,51 @@ test('execution context registry mints UUID ids independent from request ids and
   assert.equal(registry.getActiveContextCount(), 1)
 })
 
+test('in-memory admission persists a durable execution_completed payload on terminal completion', async () => {
+  const admission = createInMemoryForecastPreparationExecutionAdmission()
+  const owner = await admission.acquireExecution({
+    operationFamily: 'HISTORICAL_MAINTENANCE',
+    logicalArtifactKey: 'historical-maintenance-payload',
+    logicalArtifactIdentity: verificationIdentity,
+    requestId: 'req-owner',
+    ownerRequestId: 'req-owner',
+    observedAt: '2026-09-13T11:00:00.000Z',
+  })
+
+  assert.equal(owner.role, 'OWNER')
+  if (owner.role !== 'OWNER') {
+    throw new Error('Expected owner admission.')
+  }
+
+  await admission.markExecutionCompleted({
+    executionId: owner.ownership.executionId,
+    logicalArtifactKey: 'historical-maintenance-payload',
+    ownerToken: owner.ownership.ownerToken,
+    leaseVersion: owner.ownership.leaseVersion,
+    requestId: 'req-owner',
+    ownerRequestId: owner.ownership.ownerRequestId,
+    resultStatus: 'SUCCEEDED',
+    cacheStatus: 'miss',
+    payload: {
+      lastProcessedOriginAt: '2026-09-11',
+      newOriginCount: 1,
+      sourceHistoryFingerprint: 'hist-1',
+    },
+    observedAt: '2026-09-13T11:00:01.000Z',
+  })
+
+  const latest = await admission.readLatestExecutionForLogicalArtifact('historical-maintenance-payload')
+  assert.ok(latest)
+  assert.equal(latest?.executionStatus, 'COMPLETED')
+  assert.ok((latest?.eventCount ?? 0) >= 1)
+  assert.equal(latest?.events.at(-1)?.eventType, 'execution_completed')
+  assert.deepEqual(latest?.events.at(-1)?.payload, {
+    lastProcessedOriginAt: '2026-09-11',
+    newOriginCount: 1,
+    sourceHistoryFingerprint: 'hist-1',
+  })
+})
+
 test('execution context registry releases terminal lineage and allows a fresh recovery execution', () => {
   const registry = createForecastPreparationExecutionContextRegistry()
 
@@ -477,6 +523,7 @@ test('default execution admission falls back to in-memory coordination when the 
 
   process.env.MARKET_DATA_DATABASE_URL = 'postgresql://legacy-ledger.invalid/market-data'
   globalThis.__sgRuntimeMarketDataPrisma__ = {
+    $on() {},
     $transaction: async () => {
       transactionAttempts += 1
       throw new Error('Raw query failed. Code: `42P01`. Message: `relation "forecast_preparation_execution_ledger" does not exist`')
@@ -547,6 +594,7 @@ test('default execution ledger recordEvent degrades to no-op when the ledger rel
 
   process.env.MARKET_DATA_DATABASE_URL = 'postgresql://legacy-ledger.invalid/market-data'
   globalThis.__sgRuntimeMarketDataPrisma__ = {
+    $on() {},
     forecastPreparationExecutionLedger: {
       async findUnique() {
         throw new Error('Invalid `prisma.forecastPreparationExecutionLedger.findUnique()` invocation:\n\nThe table `public.forecast_preparation_execution_ledger` does not exist in the current database.')

@@ -443,7 +443,9 @@ function summarizeBridgeOutcome(bridgeResponse: RollingDailyMaintenanceBridgeRes
 
 function readHistoricalExecutionPayload(execution: ForecastPreparationExecutionRecord) {
   const terminalEvent = [...execution.events].reverse().find((event) => (
-    event.eventType === 'persistence_completed' || event.eventType === 'compute_completed'
+    event.eventType === 'execution_completed'
+      || event.eventType === 'persistence_completed'
+      || event.eventType === 'compute_completed'
   ))
   if (!terminalEvent?.payload) {
     return null
@@ -1699,6 +1701,9 @@ export function createRollingDailyMaintenanceService(
               ownerRequestId: ownership.ownerRequestId,
               resultStatus: summary.status,
               cacheStatus: summary.status === 'NO_OP' ? 'hit' : 'miss',
+              payload: {
+                ...summary,
+              },
             })
 
             return {

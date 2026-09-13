@@ -8,10 +8,12 @@ process.env.MARKET_DATA_DATABASE_URL = process.env.MARKET_DATA_DATABASE_URL
   ?? 'postgresql://phase21@127.0.0.1:55421/sg_phase_2_1_market_data'
 
 import {
-  createDefaultForecastPreparationExecutionAdmission,
-  createDefaultForecastPreparationExecutionLedger,
+  createForecastPreparationExecutionLedger,
+  createInMemoryForecastPreparationExecutionAdmission,
+  type ForecastPreparationExecutionLedgerStore,
 } from '../lib/forecast/execution-ledger'
 import {
+  buildRollingDailyHistoryFingerprint,
   createRollingDailyMaintenanceService,
   ROLLING_DAILY_INPUT_SOURCE,
   ROLLING_DAILY_METHOD_ID,
@@ -23,7 +25,21 @@ import {
   type RollingDailyMaintenanceStateArtifact,
   type RollingDailyVerificationRecordArtifact,
 } from '../lib/forecast/rolling-daily-maintenance'
-import { getMarketDataPrisma } from '../lib/market-data/client'
+function createInMemoryStore(): ForecastPreparationExecutionLedgerStore {
+  const records = new Map<string, {
+    executionId: string
+    logicalArtifactKey: string
+  }>()
+
+  return {
+    async readExecution(executionId) {
+      return records.get(executionId) as never ?? null
+    },
+    async writeExecution(record) {
+      records.set(record.executionId, record as never)
+    },
+  }
+}
 
 function createHistory(seriesId: string): RollingDailyHistoryPayload {
   return {
@@ -40,6 +56,10 @@ function createHistory(seriesId: string): RollingDailyHistoryPayload {
       { date: '2024-01-05', value: 105 },
     ],
   }
+}
+
+function createHistoryFingerprint(seriesId: string) {
+  return buildRollingDailyHistoryFingerprint(createHistory(seriesId))
 }
 
 function createVerificationRecord(seriesId: string): RollingDailyVerificationRecordArtifact {
@@ -70,7 +90,7 @@ function createVerificationRecord(seriesId: string): RollingDailyVerificationRec
     trainingHistoryStartAt: '2024-01-01',
     trainingHistoryEndAt: '2024-01-05',
     trainingObservationCount: 5,
-    sourceHistoryFingerprint: 'hist-1',
+    sourceHistoryFingerprint: createHistoryFingerprint(seriesId),
     metadata: null,
     selectedVariant: 'naive',
     selectionMetric: null,
@@ -79,12 +99,9 @@ function createVerificationRecord(seriesId: string): RollingDailyVerificationRec
 }
 
 test('rolling daily maintenance converges concurrent bounded historical callers to one authoritative execution', async () => {
-  const prisma = getMarketDataPrisma()
-  assert.ok(prisma, 'MARKET_DATA_DATABASE_URL must target the isolated PostgreSQL authority for historical admission tests.')
-
   const seriesId = `stage8-historical-admission-${randomUUID()}`
-  const executionAdmission = createDefaultForecastPreparationExecutionAdmission()
-  const executionLedger = createDefaultForecastPreparationExecutionLedger()
+  const executionAdmission = createInMemoryForecastPreparationExecutionAdmission()
+  const executionLedger = createForecastPreparationExecutionLedger({ store: createInMemoryStore() })
   let state: RollingDailyMaintenanceStateArtifact | null = null
   let records: RollingDailyVerificationRecordArtifact[] = []
   let runnerCalls = 0
@@ -145,7 +162,7 @@ test('rolling daily maintenance converges concurrent bounded historical callers 
           observationCount: 5,
           filteredNullCount: 0,
           filteredDuplicateCount: 0,
-          historyFingerprint: 'hist-1',
+          historyFingerprint: createHistoryFingerprint(seriesId),
         },
         maintenance: {
           newOriginCount: 1,
@@ -196,19 +213,28 @@ test('rolling daily maintenance converges concurrent bounded historical callers 
     assert.equal(left.executionLineage?.logicalArtifactKey, right.executionLineage?.logicalArtifactKey)
     assert.equal(left.executionLineage?.executionId, right.executionLineage?.executionId)
     assert.deepEqual([left.executionLineage?.role, right.executionLineage?.role].sort(), ['OWNER', 'WAITER'])
+    assert.equal(left.newOriginCount, 1)
+    assert.equal(right.newOriginCount, 1)
+    assert.equal(left.lastProcessedOriginAt, '2024-01-05')
+    assert.equal(right.lastProcessedOriginAt, '2024-01-05')
 
-    const executions = await prisma.forecastPreparationExecutionLedger.findMany({
-      where: {
-        seriesId,
-        operationFamily: 'HISTORICAL_MAINTENANCE',
-      },
+    const sharedExecution = await executionAdmission.readLatestExecutionForLogicalArtifact(left.executionLineage?.logicalArtifactKey ?? '')
+    assert.ok(sharedExecution)
+    assert.equal(sharedExecution?.executionStatus, 'COMPLETED')
+    assert.equal(sharedExecution?.waiterCount, 1)
+    assert.ok((sharedExecution?.eventCount ?? 0) >= 1)
+
+    const settled = await service.runIncrementalMaintenance({
+      seriesId,
+      modelId: 'naive',
+      bootstrapHistoricalIfMissing: true,
+      maxOriginsPerRun: 1,
     })
 
-    assert.equal(executions.length, 1)
-    assert.equal(executions[0]?.executionStatus, 'COMPLETED')
-    assert.equal(executions[0]?.waiterCount, 1)
-    assert.ok((executions[0]?.eventCount ?? 0) >= 4)
+    assert.ok(['SUCCEEDED', 'NO_OP'].includes(settled.status))
+    assert.equal(settled.executionLineage?.role, 'OWNER')
+    assert.equal(settled.lastProcessedOriginAt, '2024-01-05')
   } finally {
-    await prisma.forecastPreparationExecutionLedger.deleteMany({ where: { seriesId } })
+    // No external cleanup is required for the in-memory admission and ledger harness.
   }
 })

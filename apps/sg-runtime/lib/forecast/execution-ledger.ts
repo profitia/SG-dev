@@ -240,6 +240,7 @@ export type ForecastPreparationMarkCompletedInput = {
   ownerRequestId: string
   resultStatus?: string | null
   cacheStatus?: string | null
+  payload?: Record<string, unknown> | null
   observedAt?: string
 }
 
@@ -950,6 +951,25 @@ export function createInMemoryForecastPreparationExecutionAdmission(
         throw new ForecastExecutionControlError('STALE_OWNER', `Execution ${input.executionId} no longer owns ${input.logicalArtifactKey}.`)
       }
 
+      const completedEvent: ForecastPreparationExecutionEventRecord = {
+        sequence: current.eventCount + 1,
+        eventType: 'execution_completed',
+        requestId: input.requestId,
+        ownerRequestId: input.ownerRequestId,
+        role: 'OWNER',
+        observedAt,
+        durationMs: null,
+        error: null,
+        resultStatus: input.resultStatus ?? current.resultStatus,
+        cacheStatus: input.cacheStatus ?? current.cacheStatus,
+        activeSingleFlightEntries: null,
+        artifactWrites: null,
+        pointWrites: null,
+        verificationRecordWrites: null,
+        writeFailures: null,
+        payload: input.payload ?? null,
+      }
+
       persistRecord({
         ...current,
         executionStatus: 'COMPLETED',
@@ -957,11 +977,13 @@ export function createInMemoryForecastPreparationExecutionAdmission(
         cacheStatus: input.cacheStatus ?? current.cacheStatus,
         latestRequestId: input.requestId,
         latestRole: 'OWNER',
+        eventCount: completedEvent.sequence,
         lastEventAt: observedAt,
         lastProgressAt: observedAt,
         completedAt: observedAt,
         failurePhase: null,
         failureReason: null,
+        events: [...current.events, completedEvent],
       })
     },
 
@@ -1627,9 +1649,30 @@ export function createDefaultForecastPreparationExecutionAdmission(): ForecastPr
 
       const prisma = requirePrisma()
       const observedAt = input.observedAt ?? nowIso()
+      const eventJson = JSON.stringify({
+        eventType: 'execution_completed',
+        requestId: input.requestId,
+        ownerRequestId: input.ownerRequestId,
+        role: 'OWNER',
+        observedAt,
+        durationMs: null,
+        error: null,
+        resultStatus: input.resultStatus ?? null,
+        cacheStatus: input.cacheStatus ?? null,
+        activeSingleFlightEntries: null,
+        artifactWrites: null,
+        pointWrites: null,
+        verificationRecordWrites: null,
+        writeFailures: null,
+        payload: input.payload ?? null,
+      })
       const updated = await prisma.$executeRaw(Prisma.sql`
         UPDATE "forecast_preparation_execution_ledger"
         SET
+          "eventsJson" = COALESCE("eventsJson", '[]'::jsonb) || jsonb_build_array(
+            CAST(${eventJson} AS jsonb) || jsonb_build_object('sequence', "eventCount" + 1)
+          ),
+          "eventCount" = "eventCount" + 1,
           "executionStatus" = 'COMPLETED',
           "resultStatus" = ${input.resultStatus ?? null},
           "cacheStatus" = ${input.cacheStatus ?? null},
