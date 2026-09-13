@@ -2033,7 +2033,7 @@ test('interactive capability keeps point-in-time full verification stale when ro
 
 test('interactive capability keeps non-point-in-time full verification authority on the generic prepared reader', async () => {
   let rollingReads = 0
-  const genericReads: string[] = []
+  const genericReads: Array<{ targetBasis: string, preparedReadAuthority?: unknown }> = []
 
   const service = createInteractiveForecastPreparationService({
     now: (() => {
@@ -2076,7 +2076,10 @@ test('interactive capability keeps non-point-in-time full verification authority
       verification: {},
     } as never),
     readPreparedFullVerification: async (request) => {
-      genericReads.push(request.targetBasis)
+      genericReads.push({
+        targetBasis: request.targetBasis,
+        preparedReadAuthority: 'preparedReadAuthority' in request ? request.preparedReadAuthority : undefined,
+      })
       return {
         status: 'AVAILABLE',
         seriesId: request.seriesId,
@@ -2104,7 +2107,10 @@ test('interactive capability keeps non-point-in-time full verification authority
     modelId: 'ets',
   })
 
-  assert.deepEqual(genericReads, ['MONTHLY_AVERAGE', 'END_OF_PERIOD'])
+  assert.deepEqual(genericReads, [
+    { targetBasis: 'MONTHLY_AVERAGE', preparedReadAuthority: undefined },
+    { targetBasis: 'END_OF_PERIOD', preparedReadAuthority: undefined },
+  ])
   assert.equal(rollingReads, 0)
   assert.equal(monthly.fullVerificationReadiness, 'READY')
   assert.equal(monthly.readiness.fullReady, true)

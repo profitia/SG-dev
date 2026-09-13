@@ -384,15 +384,11 @@ async function resolveInteractiveForecastReadiness(
       ...(request.sourceFrequency ? { sourceFrequency: request.sourceFrequency } : {}),
       ...(request.targetCadence ? { targetCadence: request.targetCadence } : {}),
     }
-    const fullVerificationRequest = {
-      ...request,
-      ...(preparedReadAuthority ? { preparedReadAuthority } : {}),
-    }
     const [recentVerification, fullVerification] = await Promise.all([
       dependencies.readPreparedRecentVerification(recentVerificationRequest),
       input.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
         ? dependencies.readPreparedRollingDailyFullVerification(rollingDailyFullVerificationRequest)
-        : dependencies.readPreparedFullVerification(fullVerificationRequest),
+        : dependencies.readPreparedFullVerification(request),
     ])
     const normalizedRecent = normalizeVerificationReadiness({
       result: recentVerification,
