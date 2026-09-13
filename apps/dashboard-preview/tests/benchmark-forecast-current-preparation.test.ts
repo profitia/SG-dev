@@ -372,6 +372,73 @@ test('interactive current preparation route includes trace payload only when exp
   assert.equal(payload.trace.attempts[0].sgRuntimeCapabilityExecutionMs, 109)
 })
 
+test('interactive capability bridge preserves transport failure cause in trace attempts', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const originalFetch = global.fetch
+  const attempts: import('@/lib/benchmark-forecast/interactive-current-preparation').ForecastBridgeAttemptTrace[] = []
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime.example.invalid'
+  global.fetch = (async () => {
+    const transportError = new Error('fetch failed') as Error & { cause?: unknown; name: string }
+    transportError.name = 'TypeError'
+    transportError.cause = {
+      name: 'SocketError',
+      code: 'UND_ERR_SOCKET',
+      message: 'other side closed',
+    }
+    throw transportError
+  }) as typeof fetch
+
+  try {
+    await assert.rejects(
+      () => readInteractiveForecastCapability({
+        seriesId: 'lmeofcucashask',
+        modelId: 'naive',
+        targetBasis: 'POINT_IN_TIME',
+      }, { enabled: true, attempts }, {
+        headers: {
+          'x-request-id': 'req-bridge-trace',
+          'x-sg-certification-phase': 'PRECOMPUTE',
+          'x-sg-certification-operation': 'PREPARE_CURRENT',
+          'x-sg-certification-series-id': 'lmeofcucashask',
+          'x-sg-certification-model-id': 'naive',
+          'x-sg-certification-target-basis': 'POINT_IN_TIME',
+        },
+      }),
+      /fetch failed/,
+    )
+  } finally {
+    global.fetch = originalFetch
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+  }
+
+  assert.equal(attempts.length, 1)
+  assert.equal(attempts[0]?.targetRole, 'PRIMARY')
+  assert.equal(attempts[0]?.httpStatus, null)
+  assert.equal(attempts[0]?.responseReceived, false)
+  assert.equal(attempts[0]?.callerAborted, false)
+  assert.equal(attempts[0]?.internalTimedOut, false)
+  assert.equal(attempts[0]?.controllerAborted, false)
+  assert.equal(attempts[0]?.errorName, 'TypeError')
+  assert.equal(attempts[0]?.errorMessage, 'fetch failed')
+  assert.equal(attempts[0]?.errorCause?.name, 'SocketError')
+  assert.equal(attempts[0]?.errorCause?.code, 'UND_ERR_SOCKET')
+  assert.equal(attempts[0]?.errorCause?.message, 'other side closed')
+  assert.equal(attempts[0]?.diagnosticContext?.requestId, 'req-bridge-trace')
+  assert.equal(attempts[0]?.diagnosticContext?.phase, 'PRECOMPUTE')
+  assert.equal(attempts[0]?.diagnosticContext?.operation, 'PREPARE_CURRENT')
+  assert.equal(attempts[0]?.diagnosticContext?.seriesId, 'lmeofcucashask')
+  assert.equal(attempts[0]?.diagnosticContext?.modelId, 'naive')
+  assert.equal(attempts[0]?.diagnosticContext?.targetBasis, 'POINT_IN_TIME')
+  assert.equal(attempts[0]?.diagnosticContext?.pathname, '/api/internal/forecast/capability?seriesId=lmeofcucashask&modelId=naive&targetSemantics=ROLLING_DAILY_POINT_IN_TIME')
+  assert.equal(attempts[0]?.diagnosticContext?.baseUrl, 'https://sg-runtime.example.invalid')
+})
+
 test('interactive current capability route forwards request abort signal to the bridge', async () => {
   let capturedSignal: AbortSignal | undefined
   const handler = createReadCurrentForecastCapabilityRouteHandler(async (_input, _traceOptions, options) => {

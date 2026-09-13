@@ -26,15 +26,40 @@ const INTERNAL_FORECAST_TIMEOUT_MS = 75_000
 const INTERNAL_FORECAST_TIMEOUT_ERROR = 'SG Runtime interactive forecast request timed out.'
 export const FORECAST_TRACE_HEADER = 'x-sg-forecast-trace'
 
+export type ForecastBridgeAttemptFailureCause = {
+  name: string | null
+  code: string | null
+  message: string | null
+}
+
+export type ForecastBridgeAttemptDiagnosticContext = {
+  requestId: string | null
+  phase: string | null
+  operation: string | null
+  seriesId: string | null
+  modelId: string | null
+  targetBasis: string | null
+  pathname: string
+  baseUrl: string
+}
+
 export type ForecastBridgeAttemptTrace = {
   targetRole: 'PRIMARY' | 'FALLBACK'
   startedAt: string
   completedAt: string
   durationMs: number
   httpStatus: number | null
+  responseReceived?: boolean
   timeout: boolean
+  callerAborted?: boolean
+  internalTimedOut?: boolean
+  controllerAborted?: boolean
   fallbackUsed: boolean
   sgRuntimeCapabilityExecutionMs: number | null
+  diagnosticContext?: ForecastBridgeAttemptDiagnosticContext
+  errorName?: string | null
+  errorMessage?: string | null
+  errorCause?: ForecastBridgeAttemptFailureCause | null
 }
 
 export type ForecastBridgeTrace = {
@@ -153,6 +178,72 @@ function readSgRuntimeInternalForecastServiceToken() {
   return process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN?.trim() ?? ''
 }
 
+function readHeaderValue(headers: HeadersInit | undefined, headerName: string) {
+  if (!headers) {
+    return null
+  }
+
+  if (headers instanceof Headers) {
+    return headers.get(headerName)
+  }
+
+  if (Array.isArray(headers)) {
+    const match = headers.find(([key]) => key.toLowerCase() === headerName.toLowerCase())
+    return typeof match?.[1] === 'string' ? match[1] : null
+  }
+
+  const value = Object.entries(headers).find(([key]) => key.toLowerCase() === headerName.toLowerCase())?.[1]
+  return typeof value === 'string' ? value : null
+}
+
+function normalizeErrorCode(value: unknown) {
+  if (typeof value === 'string' && value.trim()) {
+    return value.trim()
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value)
+  }
+
+  return null
+}
+
+function resolveErrorCause(error: unknown): ForecastBridgeAttemptFailureCause | null {
+  if (!(error instanceof Error) || !("cause" in error)) {
+    return null
+  }
+
+  const cause = error.cause
+  if (!cause || typeof cause !== 'object') {
+    return null
+  }
+
+  const causeRecord = cause as {
+    name?: unknown
+    code?: unknown
+    message?: unknown
+  }
+
+  return {
+    name: typeof causeRecord.name === 'string' ? causeRecord.name : null,
+    code: normalizeErrorCode(causeRecord.code),
+    message: typeof causeRecord.message === 'string' ? causeRecord.message : null,
+  }
+}
+
+function buildAttemptDiagnosticContext(pathname: string, baseUrl: string, headers: HeadersInit | undefined): ForecastBridgeAttemptDiagnosticContext {
+  return {
+    requestId: readHeaderValue(headers, 'x-request-id'),
+    phase: readHeaderValue(headers, 'x-sg-certification-phase'),
+    operation: readHeaderValue(headers, 'x-sg-certification-operation'),
+    seriesId: readHeaderValue(headers, 'x-sg-certification-series-id'),
+    modelId: readHeaderValue(headers, 'x-sg-certification-model-id'),
+    targetBasis: readHeaderValue(headers, 'x-sg-certification-target-basis'),
+    pathname,
+    baseUrl,
+  }
+}
+
 async function readInternalJson<T>(
   pathname: string,
   init: RequestInit,
@@ -166,6 +257,9 @@ async function readInternalJson<T>(
     const controller = new AbortController()
     let timedOut = false
     let callerAborted = false
+    let responseStatus: number | null = null
+    let responseReceived = false
+    let sgRuntimeCapabilityExecutionMs: number | null = null
     const timeoutId = setTimeout(() => {
       timedOut = true
       controller.abort()
@@ -185,6 +279,7 @@ async function readInternalJson<T>(
     }
     const startedAt = new Date().toISOString()
     const startedAtMs = Date.now()
+    const diagnosticContext = buildAttemptDiagnosticContext(pathname, baseUrl, init.headers)
 
     try {
       const response = await fetch(new URL(pathname, baseUrl), {
@@ -197,6 +292,14 @@ async function readInternalJson<T>(
           ...(init.headers ?? {}),
         },
       })
+      responseReceived = true
+      responseStatus = response.status
+      sgRuntimeCapabilityExecutionMs = (() => {
+        const header = response.headers.get('x-sg-runtime-capability-total-ms')
+        if (!header) return null
+        const parsed = Number.parseInt(header, 10)
+        return Number.isFinite(parsed) ? parsed : null
+      })()
 
       const body = await response.text()
       if (!body.trim()) {
@@ -217,14 +320,14 @@ async function readInternalJson<T>(
           completedAt: new Date().toISOString(),
           durationMs: Math.max(0, Date.now() - startedAtMs),
           httpStatus: response.status,
+          responseReceived: true,
           timeout: false,
+          callerAborted,
+          internalTimedOut: false,
+          controllerAborted: controller.signal.aborted,
           fallbackUsed: index > 0,
-          sgRuntimeCapabilityExecutionMs: (() => {
-            const header = response.headers.get('x-sg-runtime-capability-total-ms')
-            if (!header) return null
-            const parsed = Number.parseInt(header, 10)
-            return Number.isFinite(parsed) ? parsed : null
-          })(),
+          sgRuntimeCapabilityExecutionMs,
+          diagnosticContext,
         })
       }
 
@@ -248,10 +351,18 @@ async function readInternalJson<T>(
           startedAt,
           completedAt: new Date().toISOString(),
           durationMs: Math.max(0, Date.now() - startedAtMs),
-          httpStatus: null,
+          httpStatus: responseStatus,
+          responseReceived,
           timeout: (error as Error).name === 'AbortError',
+          callerAborted,
+          internalTimedOut: timedOut,
+          controllerAborted: controller.signal.aborted,
           fallbackUsed: index > 0,
-          sgRuntimeCapabilityExecutionMs: null,
+          sgRuntimeCapabilityExecutionMs,
+          diagnosticContext,
+          errorName: error instanceof Error ? error.name : null,
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorCause: resolveErrorCause(error),
         })
       }
 
