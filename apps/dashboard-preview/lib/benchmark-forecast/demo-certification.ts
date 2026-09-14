@@ -1302,39 +1302,63 @@ function resolveFreshnessGate(
   }
 }
 
+function formatWarmFailure(cell: ForecastAcceptanceCell) {
+  const parts: string[] = [cell.identity.modelId, cell.identity.targetBasis]
+  if (cell.identity.verificationHorizon) {
+    parts.push(cell.identity.verificationHorizon)
+  }
+
+  return `${parts.join('/')} : ${cell.reasonCode ?? cell.diagnostic ?? 'UNKNOWN_FAILURE'}`
+}
+
+function resolveWarmCadence(cell: ForecastAcceptanceCell | undefined) {
+  return cell?.identity.sourceFrequency && cell.identity.targetCadence
+    ? {
+        sourceFrequency: cell.identity.sourceFrequency,
+        targetCadence: cell.identity.targetCadence,
+      }
+    : undefined
+}
+
 async function runWarmRehearsal(
   entry: DemoCohortEntry,
   requiredTargetBases: readonly ForecastTargetBasis[],
   requiredModels: readonly ForecastPortfolioModelId[],
   requiredHorizons: readonly string[],
-  dependencies: Pick<DemoCertificationDependencies, 'readCapability' | 'readCurrent' | 'readVerification' | 'evaluateMatrix'>,
+  primaryMatrix: ForecastAcceptanceMatrixReport,
+  dependencies: Pick<DemoCertificationDependencies, 'readCurrent'>,
   options?: { signal?: AbortSignal },
 ): Promise<DemoWarmRehearsal> {
-  const currentInputs: BenchmarkForecastCurrentPreparationRequest[] = []
+  const requiredCells = filterRequiredCells(primaryMatrix, requiredTargetBases, requiredHorizons)
+  const currentCellsByVariant = new Map(requiredCells.current.map((cell) => [
+    `${cell.identity.modelId}:${cell.identity.targetBasis}`,
+    cell,
+  ]))
   const currentFailures: string[] = []
-  const verificationFailures: string[] = []
-
-  for (const modelId of requiredModels) {
-    for (const targetBasis of requiredTargetBases) {
-      currentInputs.push({ seriesId: entry.seriesId, modelId, targetBasis })
-    }
-  }
+  const verificationFailures = requiredCells.verification
+    .filter((cell) => cell.state !== 'PASS')
+    .map((cell) => formatWarmFailure(cell))
+  const currentInputs = requiredModels.flatMap((modelId) => (
+    requiredTargetBases.map((targetBasis) => ({ seriesId: entry.seriesId, modelId, targetBasis }))
+  ))
 
   const rehearsalChecks = await Promise.all(currentInputs.map(async (input) => {
-    const capability = await dependencies.readCapability(input, options)
-    const cadence = capability.sourceFrequency && capability.targetCadence
-      ? {
-          sourceFrequency: capability.sourceFrequency,
-          targetCadence: capability.targetCadence,
-        }
-      : undefined
-    const [current, verification] = await Promise.all([
-      dependencies.readCurrent(input.seriesId, input.modelId, input.targetBasis, cadence),
-      dependencies.readVerification(input.seriesId, input.modelId, input.targetBasis, cadence),
-    ])
+    const matrixCurrentCell = currentCellsByVariant.get(`${input.modelId}:${input.targetBasis}`)
+    const nextCurrentFailures: string[] = matrixCurrentCell && matrixCurrentCell.state !== 'PASS'
+      ? [formatWarmFailure(matrixCurrentCell)]
+      : []
 
-    const nextCurrentFailures: string[] = []
-    const nextVerificationFailures: string[] = []
+    if (!matrixCurrentCell) {
+      nextCurrentFailures.push(`${input.modelId}/${input.targetBasis}: missing primary matrix current evidence`)
+      return { currentFailures: nextCurrentFailures }
+    }
+
+    const current = await dependencies.readCurrent(
+      input.seriesId,
+      input.modelId,
+      input.targetBasis,
+      resolveWarmCadence(matrixCurrentCell),
+    )
 
     if (!isRenderableCurrentResult(current)) {
       nextCurrentFailures.push(`${input.modelId}/${input.targetBasis}: current not renderable`)
@@ -1342,40 +1366,31 @@ async function runWarmRehearsal(
       nextCurrentFailures.push(`${input.modelId}/${input.targetBasis}: point-in-time current is stale`)
     }
 
-    if (!isAvailableVerificationResult(verification)) {
-      nextVerificationFailures.push(`${input.modelId}/${input.targetBasis}: verification unavailable`)
-    } else {
-      for (const horizon of requiredHorizons) {
-        const selected = verification.verification[horizon]
-        if (!selected || selected.records.length === 0) {
-          nextVerificationFailures.push(`${input.modelId}/${input.targetBasis}/${horizon}: verification horizon unavailable`)
-        }
-      }
-    }
-
     return {
       currentFailures: nextCurrentFailures,
-      verificationFailures: nextVerificationFailures,
     }
   }))
 
   for (const result of rehearsalChecks) {
     currentFailures.push(...result.currentFailures)
-    verificationFailures.push(...result.verificationFailures)
   }
 
   const firstInput = currentInputs[0] ?? null
   let switchBack: DemoStatus = 'NOT_REQUIRED'
   if (firstInput) {
-    const reread = await dependencies.readCurrent(firstInput.seriesId, firstInput.modelId, firstInput.targetBasis)
+    const firstCell = currentCellsByVariant.get(`${firstInput.modelId}:${firstInput.targetBasis}`)
+    const reread = await dependencies.readCurrent(
+      firstInput.seriesId,
+      firstInput.modelId,
+      firstInput.targetBasis,
+      resolveWarmCadence(firstCell),
+    )
     switchBack = isRenderableCurrentResult(reread)
       && !(firstInput.targetBasis === 'POINT_IN_TIME' && reread.freshness?.status === 'STALE')
       ? 'PASS'
       : 'FAIL'
   }
 
-  const warmMatrix = await dependencies.evaluateMatrix(entry.seriesId, false, options)
-  const requiredCells = filterRequiredCells(warmMatrix, requiredTargetBases, requiredHorizons)
   const warmReuse = [...requiredCells.current, ...requiredCells.verification].every((cell) => cell.state === 'PASS')
     ? 'PASS'
     : 'FAIL'
@@ -1402,7 +1417,7 @@ async function runWarmRehearsal(
     status,
     reason: status === 'PASS'
       ? null
-      : [...currentFailures, ...verificationFailures].join(' | ') || 'Warm-only matrix revalidation did not stay PASS.',
+      : [...currentFailures, ...verificationFailures].join(' | ') || 'Warm rehearsal reuse did not preserve required PASS evidence.',
   }
 }
 
@@ -2101,16 +2116,10 @@ export function createDemoCertificationService(
               requiredTargetBases,
               requiredModels,
               requiredVerificationHorizons,
+              matrixReport,
               {
-                readCapability: (input, requestOptions) => readCapabilityOnce(input, 'WARM_REHEARSAL', requestOptions),
                 readCurrent: (seriesId, modelId, targetBasis, cadence, correlationHeaders) => (
                   readCurrentOnce(seriesId, modelId, targetBasis, 'WARM_REHEARSAL', cadence, { signal, requestHeaders: correlationHeaders })
-                ),
-                readVerification: (seriesId, modelId, targetBasis, cadence, correlationHeaders) => (
-                  readVerificationOnce(seriesId, modelId, targetBasis, 'WARM_REHEARSAL', cadence, { signal, requestHeaders: correlationHeaders })
-                ),
-                evaluateMatrix: (seriesId, allowPrepare, requestOptions) => (
-                  warmMatrixEvaluator(seriesId, allowPrepare, requestOptions)
                 ),
               },
               { signal },

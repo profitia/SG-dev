@@ -598,6 +598,8 @@ test('B. one lawful matrix fail blocks demo certification', async () => {
   assert.equal(report.benchmarks[0]?.demoSafe, 'NO')
   assert.equal(report.benchmarks[0]?.reason, 'REREAD_FAIL')
   assert.equal(report.benchmarks[0]?.matrix.status, 'FAIL')
+  assert.equal(report.benchmarks[0]?.warmRehearsal.status, 'FAIL')
+  assert.equal(report.benchmarks[0]?.warmRehearsal.warmReuse, 'FAIL')
 })
 
 test('C. unsupported non-required identity does not block certification', async () => {
@@ -889,11 +891,52 @@ test('I. Stage 2 verification regression blocks demo certification', async () =>
 
   assert.equal(report.benchmarks[0]?.demoSafe, 'NO')
   assert.equal(report.benchmarks[0]?.matrix.status, 'FAIL')
+  assert.equal(report.benchmarks[0]?.warmRehearsal.status, 'FAIL')
+  assert.equal(report.benchmarks[0]?.warmRehearsal.verification, 'FAIL')
+  assert.equal(report.benchmarks[0]?.warmRehearsal.verificationHorizonSwitch, 'FAIL')
 })
 
 test('J. sparse-series cadence is preserved for certification rereads', async () => {
   const currentCadenceCalls: string[] = []
   const verificationCadenceCalls: string[] = []
+
+  const sparseCadenceMatrix = (seriesId: string) => {
+    const report = matrixReport(seriesId)
+
+    return {
+      ...report,
+      current: {
+        ...report.current,
+        cells: report.current.cells.map((cell) => (
+          cell.identity.targetBasis === 'POINT_IN_TIME'
+            ? cell
+            : {
+                ...cell,
+                identity: {
+                  ...cell.identity,
+                  sourceFrequency: 'WEEKLY',
+                  targetCadence: 'MONTHLY',
+                },
+              }
+        )),
+      },
+      verification: {
+        ...report.verification,
+        cells: report.verification.cells.map((cell) => (
+          cell.identity.targetBasis === 'POINT_IN_TIME'
+            ? cell
+            : {
+                ...cell,
+                identity: {
+                  ...cell.identity,
+                  sourceFrequency: 'WEEKLY',
+                  targetCadence: 'MONTHLY',
+                },
+              }
+        )),
+      },
+    }
+  }
 
   const report = await createService({
     cohort: [{
@@ -954,6 +997,7 @@ test('J. sparse-series cadence is preserved for certification rereads', async ()
         },
       })
     },
+    matrixResolver: (seriesId) => sparseCadenceMatrix(seriesId),
   }).run({ seriesIds: ['lmeofcucashask'], includeFallback: false })
 
   assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
@@ -961,18 +1005,17 @@ test('J. sparse-series cadence is preserved for certification rereads', async ()
   assert.equal(report.benchmarks[0]?.warmRehearsal.verification, 'PASS')
   assert.ok(currentCadenceCalls.includes('naive:MONTHLY_AVERAGE:WEEKLY:MONTHLY'))
   assert.ok(currentCadenceCalls.includes('naive:END_OF_PERIOD:WEEKLY:MONTHLY'))
-  assert.ok(verificationCadenceCalls.includes('naive:MONTHLY_AVERAGE:WEEKLY:MONTHLY'))
-  assert.ok(verificationCadenceCalls.includes('naive:END_OF_PERIOD:WEEKLY:MONTHLY'))
+  assert.equal(verificationCadenceCalls.length, 0)
 })
 
 test('I2. one benchmark runtime failure degrades to ENVIRONMENT_NOT_READY instead of aborting the report', async () => {
   const report = await createService({
-    verificationResolver: (input) => {
-      if (input.seriesId === 'lmeofcucashask' && input.modelId === 'arima' && input.targetBasis === 'POINT_IN_TIME') {
+    matrixResolver: (seriesId) => {
+      if (seriesId === 'lmeofcucashask') {
         throw new Error('No persisted point-in-time forecast verification is available for the selected series and model.')
       }
 
-      return verificationResult(input)
+      return matrixReport(seriesId)
     },
   }).run({ seriesIds: ['wocaes0074', 'lmeofcucashask'] })
 
@@ -989,12 +1032,12 @@ test('I2. one benchmark runtime failure degrades to ENVIRONMENT_NOT_READY instea
 test('I3. one benchmark timeout degrades to ENVIRONMENT_NOT_READY instead of timing out the whole report', async () => {
   const report = await createService({
     benchmarkTimeoutMs: 1,
-    verificationResolver: async (input) => {
-      if (input.seriesId === 'lmeofcucashask') {
-        return new Promise(() => {}) as Promise<BenchmarkForecastVerificationResult>
+    matrixResolver: async (seriesId) => {
+      if (seriesId === 'lmeofcucashask') {
+        return new Promise<ForecastAcceptanceMatrixReport>(() => {})
       }
 
-      return verificationResult(input)
+      return matrixReport(seriesId)
     },
   }).run({ seriesIds: ['wocaes0074', 'lmeofcucashask'] })
 
@@ -1054,12 +1097,17 @@ test('I4b. timed out benchmark reports the timeout reason instead of leaking abo
   assert.match(report.benchmarks[1]?.precompute.reason ?? '', /timed out/i)
 })
 
-test('I5. warm rehearsal reuses reads and completes within the benchmark timeout budget', async () => {
+test('I5. warm rehearsal reuses the primary matrix and does not rerun verification reads', async () => {
   let currentCalls = 0
   let verificationCalls = 0
+  let matrixCalls = 0
 
   const report = await createService({
     benchmarkTimeoutMs: 80,
+    matrixResolver: async (seriesId) => {
+      matrixCalls += 1
+      return matrixReport(seriesId)
+    },
     currentResolver: async (input) => {
       currentCalls += 1
       return await new Promise<BenchmarkForecastCurrentResult>((resolve) => {
@@ -1076,8 +1124,10 @@ test('I5. warm rehearsal reuses reads and completes within the benchmark timeout
 
   assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
   assert.equal(report.benchmarks[0]?.reason, null)
+  assert.equal(report.benchmarks[0]?.warmRehearsal.warmReuse, 'PASS')
+  assert.equal(matrixCalls, 1)
   assert.equal(currentCalls, MODELS.length * TARGET_BASES.length)
-  assert.equal(verificationCalls, MODELS.length * TARGET_BASES.length)
+  assert.equal(verificationCalls, 0)
 })
 
 test('I6. benchmark evaluations run concurrently across the cohort', async () => {
@@ -1126,6 +1176,7 @@ test('I6. benchmark evaluations run concurrently across the cohort', async () =>
   assert.equal(completedReport.summary.demoCohort, 2)
   assert.equal(completedReport.benchmarks[0]?.seriesId, 'wocaes0074')
   assert.equal(completedReport.benchmarks[1]?.seriesId, 'lmeofcucashask')
+  assert.deepEqual([...matrixCalls.entries()].sort(), [['lmeofcucashask', 1], ['wocaes0074', 1]])
 })
 
 test('I6b. deployed certification defaults matrix evaluation to one concurrent variant and still allows explicit override', async () => {
