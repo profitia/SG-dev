@@ -30,6 +30,11 @@ const HORIZONS = ['1M', '3M', '6M', '12M'] as const
 type MaybePromise<T> = T | Promise<T>
 type MatrixPrisma = ReturnType<typeof import('@/lib/db/market-data-prisma').getMarketDataPrismaClient>
 
+type MarketDataPrismaGlobal = {
+  dashboardPreviewMarketDataPrisma?: NonNullable<MatrixPrisma>
+  dashboardPreviewMarketDataPrismaConnectionString?: string
+}
+
 function createDeferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void
   let reject!: (reason?: unknown) => void
@@ -40,6 +45,29 @@ function createDeferred<T>() {
   })
 
   return { promise, resolve, reject }
+}
+
+function withCanonicalMatrixPrisma(prisma: NonNullable<MatrixPrisma>) {
+  const previousUrl = process.env.MARKET_DATA_DATABASE_URL
+  const marketDataGlobal = globalThis as typeof globalThis & MarketDataPrismaGlobal
+  const previousPrisma = marketDataGlobal.dashboardPreviewMarketDataPrisma
+  const previousConnectionString = marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString
+  const connectionString = 'postgresql://dashboard-preview-test'
+
+  process.env.MARKET_DATA_DATABASE_URL = connectionString
+  marketDataGlobal.dashboardPreviewMarketDataPrisma = prisma
+  marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = connectionString
+
+  return () => {
+    if (previousUrl === undefined) {
+      delete process.env.MARKET_DATA_DATABASE_URL
+    } else {
+      process.env.MARKET_DATA_DATABASE_URL = previousUrl
+    }
+
+    marketDataGlobal.dashboardPreviewMarketDataPrisma = previousPrisma
+    marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = previousConnectionString
+  }
 }
 
 function semantics(targetBasis: ForecastTargetBasis): ForecastTargetSemantics {
@@ -1004,6 +1032,126 @@ test('G1d. rejected REVALIDATE verification warm-up promises are evicted and ret
   assert.match(firstRun.benchmarks[0]?.precompute.reason ?? '', /boom:wocaes0074:naive:MONTHLY_AVERAGE/)
   assert.equal(secondRun.benchmarks[0]?.demoSafe, 'YES')
   assert.equal(verificationCalls.get('wocaes0074:naive:MONTHLY_AVERAGE'), 2)
+})
+
+test('G1e. built-in matrix uses canonical Prisma by default for point-in-time persisted proof', async () => {
+  const restore = withCanonicalMatrixPrisma(createMatrixPrisma())
+
+  try {
+    const report = await createService({
+      cohort: [{
+        seriesId: 'wocaes0074',
+        benchmarkName: 'Brent',
+        group: 'PRIMARY',
+        requiredModels: ['naive'],
+        requiredTargetBases: ['POINT_IN_TIME'],
+        requiredVerificationHorizons: ['1M', '3M', '6M', '12M'],
+      }],
+      useBuiltInMatrix: true,
+      pointInTimeCurrentResolver: (seriesId, modelId) => currentResult({ seriesId, modelId, targetBasis: 'POINT_IN_TIME' }, {
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodVersion: 'rolling-daily-point-in-time-v1',
+        lineage: {
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          inputRunId: 'run-1',
+          sourceSeriesId: seriesId,
+          sourceFrequency: 'DAILY',
+          historyFingerprint: `${seriesId}:${modelId}:POINT_IN_TIME:fp`,
+          preparation: null,
+        },
+      }),
+      verificationResolver: (input) => verificationResult(input, {
+        targetSemantics: semantics(input.targetBasis),
+        methodId: semantics(input.targetBasis),
+        methodVersion: input.targetBasis === 'POINT_IN_TIME' ? 'rolling-daily-point-in-time-v1' : 'benchmark-forecasting-mvp-phase2-v1',
+        lineage: {
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          inputRunId: 'verification-1',
+          sourceSeriesId: input.seriesId,
+          sourceFrequency: input.targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
+          historyFingerprint: `${input.seriesId}:${input.modelId}:${input.targetBasis}:fp`,
+          preparation: null,
+        },
+      }),
+    }).run({ includeFallback: false })
+
+    assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
+    assert.equal(report.benchmarks[0]?.matrix.status, 'PASS')
+  } finally {
+    restore()
+  }
+})
+
+test('G1f. custom getMatrixPrisma still overrides the canonical default', async () => {
+  const restore = withCanonicalMatrixPrisma({
+    forecastCurrentRun: {
+      findFirst: async () => {
+        throw new Error('canonical default should not be used when a custom matrix Prisma is supplied')
+      },
+    },
+    rollingDailyCurrentForecastSnapshot: {
+      findFirst: async () => {
+        throw new Error('canonical default should not be used when a custom matrix Prisma is supplied')
+      },
+    },
+    forecastVerificationRun: {
+      findFirst: async () => {
+        throw new Error('canonical default should not be used when a custom matrix Prisma is supplied')
+      },
+    },
+    rollingDailyVerificationRecord: {
+      findMany: async () => {
+        throw new Error('canonical default should not be used when a custom matrix Prisma is supplied')
+      },
+    },
+  } as never)
+
+  try {
+    const report = await createService({
+      cohort: [{
+        seriesId: 'wocaes0074',
+        benchmarkName: 'Brent',
+        group: 'PRIMARY',
+        requiredModels: ['naive'],
+        requiredTargetBases: ['POINT_IN_TIME'],
+        requiredVerificationHorizons: ['1M', '3M', '6M', '12M'],
+      }],
+      useBuiltInMatrix: true,
+      matrixPrisma: createMatrixPrisma(),
+      pointInTimeCurrentResolver: (seriesId, modelId) => currentResult({ seriesId, modelId, targetBasis: 'POINT_IN_TIME' }, {
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodVersion: 'rolling-daily-point-in-time-v1',
+        lineage: {
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          inputRunId: 'run-1',
+          sourceSeriesId: seriesId,
+          sourceFrequency: 'DAILY',
+          historyFingerprint: `${seriesId}:${modelId}:POINT_IN_TIME:fp`,
+          preparation: null,
+        },
+      }),
+      verificationResolver: (input) => verificationResult(input, {
+        targetSemantics: semantics(input.targetBasis),
+        methodId: semantics(input.targetBasis),
+        methodVersion: input.targetBasis === 'POINT_IN_TIME' ? 'rolling-daily-point-in-time-v1' : 'benchmark-forecasting-mvp-phase2-v1',
+        lineage: {
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          inputRunId: 'verification-1',
+          sourceSeriesId: input.seriesId,
+          sourceFrequency: input.targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
+          historyFingerprint: `${input.seriesId}:${input.modelId}:${input.targetBasis}:fp`,
+          preparation: null,
+        },
+      }),
+    }).run({ includeFallback: false })
+
+    assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
+    assert.equal(report.benchmarks[0]?.matrix.status, 'PASS')
+  } finally {
+    restore()
+  }
 })
 
 test('G2. stale capability triggers preparation and can recover precompute', async () => {

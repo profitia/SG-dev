@@ -33,6 +33,8 @@ import {
 } from './interactive-current-preparation'
 import { getBenchmarkForecastVerification, resolveShowForecastCurrent } from './runtime-query'
 
+import { getMarketDataPrismaClient } from '@/lib/db/market-data-prisma'
+
 const DEMO_VERIFICATION_HORIZONS = ['1M', '3M', '6M', '12M'] as const
 const DEFAULT_DEPLOYED_REVISION_ENV_KEYS = [
   'RENDER_GIT_COMMIT',
@@ -1608,7 +1610,7 @@ export function createDemoCertificationService(
       options ? { signal: options.signal, headers: options.requestHeaders } : undefined,
     )
   ))
-  const getMatrixPrisma = dependencies.getMatrixPrisma ?? (() => null)
+  const getMatrixPrisma = dependencies.getMatrixPrisma ?? getMarketDataPrismaClient
 
   const mergeRequestHeaders = (
     left?: Record<string, string>,
