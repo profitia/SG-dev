@@ -28,6 +28,7 @@ const MODELS: readonly ForecastPortfolioModelId[] = ['naive', 'damped_holt', 'et
 const TARGET_BASES: readonly ForecastTargetBasis[] = ['MONTHLY_AVERAGE', 'POINT_IN_TIME', 'END_OF_PERIOD']
 const HORIZONS = ['1M', '3M', '6M', '12M'] as const
 type MaybePromise<T> = T | Promise<T>
+type MatrixPrisma = ReturnType<typeof import('@/lib/db/market-data-prisma').getMarketDataPrismaClient>
 
 function createDeferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void
@@ -337,6 +338,54 @@ function matrixReport(seriesId: string, overrides?: {
   }
 }
 
+function createMatrixPrisma(): NonNullable<MatrixPrisma> {
+  return {
+    forecastCurrentRun: {
+      findFirst: async (args: {
+        where: { seriesId: string, modelId: string, targetBasis: ForecastTargetBasis }
+      }) => ({
+        status: 'AVAILABLE',
+        historyFingerprint: `${args.where.seriesId}:${args.where.modelId}:${args.where.targetBasis}:fp`,
+        points: [{ forecastValue: 100 }],
+      }),
+    },
+    rollingDailyCurrentForecastSnapshot: {
+      findFirst: async (args: {
+        where: { seriesId: string, modelId: string, targetBasis: ForecastTargetBasis }
+      }) => ({
+        status: 'AVAILABLE',
+        payloadJson: {
+          status: 'AVAILABLE',
+          audit: {
+            sourceHistoryFingerprint: `${args.where.seriesId}:${args.where.modelId}:${args.where.targetBasis}:fp`,
+          },
+          path: [{ pointForecast: 100 }],
+        },
+      }),
+    },
+    forecastVerificationRun: {
+      findFirst: async (args: {
+        where: { seriesId: string, modelId: string, targetBasis: ForecastTargetBasis }
+      }) => ({
+        status: 'AVAILABLE',
+        failureReason: null,
+        historyFingerprint: `${args.where.seriesId}:${args.where.modelId}:${args.where.targetBasis}:fp`,
+        metrics: HORIZONS.map((horizonLabel) => ({ horizonLabel })),
+        points: HORIZONS.map((horizonLabel) => ({ horizonLabel })),
+      }),
+    },
+    rollingDailyVerificationRecord: {
+      findMany: async (args: {
+        where: { seriesId: string, modelId: string, targetBasis: ForecastTargetBasis }
+      }) => ([{
+        actualValue: 100,
+        maturityStatus: 'MATURED',
+        sourceHistoryFingerprint: `${args.where.seriesId}:${args.where.modelId}:${args.where.targetBasis}:fp`,
+      }]),
+    },
+  } as never
+}
+
 function createService(options: {
   cohort?: DemoCohortEntry[]
   capabilityResolver?: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => MaybePromise<InteractiveForecastCapabilityResult>
@@ -355,7 +404,14 @@ function createService(options: {
     input: BenchmarkForecastCurrentPreparationRequest,
     cadence?: { sourceFrequency: string, targetCadence: string },
   ) => MaybePromise<BenchmarkForecastVerificationResult>
+  pointInTimeCurrentResolver?: (
+    seriesId: string,
+    modelId: ForecastPortfolioModelId,
+    capability?: Pick<InteractiveForecastCapabilityResult, 'currentReadiness'>,
+  ) => MaybePromise<BenchmarkForecastCurrentResult>
   matrixResolver?: (seriesId: string, allowPrepare: boolean, options?: ForecastAcceptanceMatrixEvaluationOptions) => MaybePromise<ForecastAcceptanceMatrixReport>
+  useBuiltInMatrix?: boolean
+  matrixPrisma?: NonNullable<MatrixPrisma>
   benchmarkTimeoutMs?: number
   deployedRevision?: string | null
   prepareCalls?: string[]
@@ -407,11 +463,27 @@ function createService(options: {
         ? options.verificationResolver({ seriesId, modelId, targetBasis }, cadence)
         : verificationResult({ seriesId, modelId, targetBasis })
     ),
-    evaluateMatrix: async (seriesId, allowPrepare, requestOptions) => (
-      options.matrixResolver
-        ? options.matrixResolver(seriesId, allowPrepare, requestOptions)
-        : matrixReport(seriesId)
-    ),
+    ...(options.pointInTimeCurrentResolver
+      ? {
+          readPointInTimeCurrent: async (seriesId: string, modelId: ForecastPortfolioModelId, capability?: Pick<InteractiveForecastCapabilityResult, 'currentReadiness'>) => (
+            options.pointInTimeCurrentResolver!(seriesId, modelId, capability)
+          ),
+        }
+      : {}),
+    ...(options.matrixPrisma
+      ? {
+          getMatrixPrisma: () => options.matrixPrisma!,
+        }
+      : {}),
+    ...(!options.useBuiltInMatrix
+      ? {
+          evaluateMatrix: async (seriesId: string, allowPrepare: boolean, requestOptions?: ForecastAcceptanceMatrixEvaluationOptions) => (
+            options.matrixResolver
+              ? options.matrixResolver(seriesId, allowPrepare, requestOptions)
+              : matrixReport(seriesId)
+          ),
+        }
+      : {}),
   })
 }
 
@@ -690,6 +762,248 @@ test('G. warm revalidation stays pass without new prepare calls', async () => {
   assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
   assert.equal(report.benchmarks[0]?.warmRehearsal.warmReuse, 'PASS')
   assert.deepEqual(prepareCalls, [])
+})
+
+test('G1. REVALIDATE prewarms the exact non-point-in-time reads and MATRIX reuses them without remote misses', async () => {
+  const currentCadenceCalls: string[] = []
+  const verificationCadenceCalls: string[] = []
+
+  const report = await createService({
+    useBuiltInMatrix: true,
+    matrixPrisma: createMatrixPrisma(),
+    currentResolver: (input, cadence) => {
+      currentCadenceCalls.push(`${input.modelId}:${input.targetBasis}:${cadence?.sourceFrequency ?? 'none'}:${cadence?.targetCadence ?? 'none'}`)
+      return currentResult(input, {
+        lineage: {
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          inputRunId: null,
+          sourceSeriesId: input.seriesId,
+          sourceFrequency: cadence?.sourceFrequency ?? (input.targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY'),
+          historyFingerprint: `${input.seriesId}:${input.modelId}:${input.targetBasis}:fp`,
+          preparation: {
+            method: 'prepare',
+            version: 'v1',
+            provenanceStatus: 'PROVEN',
+          },
+        },
+      })
+    },
+    verificationResolver: (input, cadence) => {
+      verificationCadenceCalls.push(`${input.modelId}:${input.targetBasis}:${cadence?.sourceFrequency ?? 'none'}:${cadence?.targetCadence ?? 'none'}`)
+      return verificationResult(input, {
+        lineage: {
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          inputRunId: null,
+          sourceSeriesId: input.seriesId,
+          sourceFrequency: cadence?.sourceFrequency ?? (input.targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY'),
+          historyFingerprint: `${input.seriesId}:${input.modelId}:${input.targetBasis}:fp`,
+          preparation: {
+            method: 'prepare',
+            version: 'v1',
+            provenanceStatus: 'PROVEN',
+          },
+        },
+      })
+    },
+    pointInTimeCurrentResolver: (seriesId, modelId) => currentResult({ seriesId, modelId, targetBasis: 'POINT_IN_TIME' }),
+  }).run({ mode: 'REVALIDATE', includeFallback: false, diagnostics: { enabled: true } })
+
+  const timeline = report.benchmarks[0]?.diagnostics?.timeline ?? []
+  const precomputeCurrentMisses = timeline.filter((event) => (
+    event.eventType === 'REMOTE_REQUEST'
+    && event.phase === 'PRECOMPUTE'
+    && event.operation === 'READ_CURRENT'
+    && event.targetBasis !== 'POINT_IN_TIME'
+    && event.cacheStatus === 'miss'
+  ))
+  const precomputeVerificationMisses = timeline.filter((event) => (
+    event.eventType === 'REMOTE_REQUEST'
+    && event.phase === 'PRECOMPUTE'
+    && event.operation === 'READ_VERIFICATION'
+    && event.targetBasis !== 'POINT_IN_TIME'
+    && event.cacheStatus === 'miss'
+  ))
+  const matrixCurrentHits = timeline.filter((event) => (
+    event.eventType === 'REMOTE_REQUEST'
+    && event.phase === 'MATRIX'
+    && event.operation === 'READ_CURRENT'
+    && event.targetBasis !== 'POINT_IN_TIME'
+    && event.cacheStatus === 'hit'
+  ))
+  const matrixVerificationHits = timeline.filter((event) => (
+    event.eventType === 'REMOTE_REQUEST'
+    && event.phase === 'MATRIX'
+    && event.operation === 'READ_VERIFICATION'
+    && event.targetBasis !== 'POINT_IN_TIME'
+    && event.cacheStatus === 'hit'
+  ))
+  const matrixCurrentMisses = timeline.filter((event) => (
+    event.eventType === 'REMOTE_REQUEST'
+    && event.phase === 'MATRIX'
+    && event.operation === 'READ_CURRENT'
+    && event.targetBasis !== 'POINT_IN_TIME'
+    && event.cacheStatus === 'miss'
+  ))
+  const matrixVerificationMisses = timeline.filter((event) => (
+    event.eventType === 'REMOTE_REQUEST'
+    && event.phase === 'MATRIX'
+    && event.operation === 'READ_VERIFICATION'
+    && event.targetBasis !== 'POINT_IN_TIME'
+    && event.cacheStatus === 'miss'
+  ))
+  const precomputePointInTimeReads = timeline.filter((event) => (
+    event.eventType === 'REMOTE_REQUEST'
+    && event.phase === 'PRECOMPUTE'
+    && (event.operation === 'READ_CURRENT' || event.operation === 'READ_VERIFICATION')
+    && event.targetBasis === 'POINT_IN_TIME'
+  ))
+  const matrixDiagnostics = report.benchmarks[0]?.diagnostics?.matrix
+
+  assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
+  assert.equal(precomputeCurrentMisses.length, MODELS.length * 2)
+  assert.equal(precomputeVerificationMisses.length, MODELS.length * 2)
+  assert.equal(matrixCurrentHits.length, MODELS.length * 2)
+  assert.equal(matrixVerificationHits.length, MODELS.length * 2)
+  assert.equal(matrixCurrentMisses.length, 0)
+  assert.equal(matrixVerificationMisses.length, 0)
+  assert.equal(precomputePointInTimeReads.length, 0)
+  assert.equal(matrixDiagnostics?.pointInTimeEvaluationBegan, true)
+  assert.equal(matrixDiagnostics?.variantsCompletedBeforeTimeout, MODELS.length * TARGET_BASES.length)
+  assert.equal(currentCadenceCalls.filter((value) => value.includes(':POINT_IN_TIME:')).length, MODELS.length)
+  assert.equal(verificationCadenceCalls.filter((value) => value.includes(':POINT_IN_TIME:')).length, MODELS.length)
+})
+
+test('G1b. REVALIDATE preserves cadence-derived non-point-in-time cache identities during PRECOMPUTE warm-up', async () => {
+  const currentCadenceCalls: string[] = []
+  const verificationCadenceCalls: string[] = []
+
+  const report = await createService({
+    cohort: [{
+      seriesId: 'lmeofcucashask',
+      benchmarkName: 'Copper',
+      group: 'PRIMARY',
+      requiredModels: ['naive'],
+      requiredTargetBases: ['MONTHLY_AVERAGE', 'END_OF_PERIOD'],
+      requiredVerificationHorizons: ['1M'],
+    }],
+    useBuiltInMatrix: true,
+    matrixPrisma: createMatrixPrisma(),
+    capabilityResolver: (input) => capability(input, {
+      sourceFrequency: input.targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'WEEKLY',
+      targetCadence: input.targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
+    }),
+    currentResolver: (input, cadence) => {
+      currentCadenceCalls.push(`${input.modelId}:${input.targetBasis}:${cadence?.sourceFrequency ?? 'none'}:${cadence?.targetCadence ?? 'none'}`)
+      return currentResult(input, {
+        lineage: {
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          inputRunId: null,
+          sourceSeriesId: input.seriesId,
+          sourceFrequency: cadence?.sourceFrequency ?? 'MONTHLY',
+          historyFingerprint: `${input.seriesId}:${input.modelId}:${input.targetBasis}:fp`,
+          preparation: {
+            method: 'prepare',
+            version: 'v1',
+            provenanceStatus: 'PROVEN',
+          },
+        },
+      })
+    },
+    verificationResolver: (input, cadence) => {
+      verificationCadenceCalls.push(`${input.modelId}:${input.targetBasis}:${cadence?.sourceFrequency ?? 'none'}:${cadence?.targetCadence ?? 'none'}`)
+      return verificationResult(input, {
+        lineage: {
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          inputRunId: null,
+          sourceSeriesId: input.seriesId,
+          sourceFrequency: cadence?.sourceFrequency ?? 'MONTHLY',
+          historyFingerprint: `${input.seriesId}:${input.modelId}:${input.targetBasis}:fp`,
+          preparation: {
+            method: 'prepare',
+            version: 'v1',
+            provenanceStatus: 'PROVEN',
+          },
+        },
+      })
+    },
+    pointInTimeCurrentResolver: (seriesId, modelId) => currentResult({ seriesId, modelId, targetBasis: 'POINT_IN_TIME' }),
+  }).run({ mode: 'REVALIDATE', seriesIds: ['lmeofcucashask'], includeFallback: false, diagnostics: { enabled: true } })
+
+  const timeline = report.benchmarks[0]?.diagnostics?.timeline ?? []
+  const warmedCurrent = timeline.filter((event) => (
+    event.eventType === 'REMOTE_REQUEST'
+    && event.phase === 'PRECOMPUTE'
+    && event.operation === 'READ_CURRENT'
+    && event.targetBasis !== 'POINT_IN_TIME'
+  ))
+  const warmedVerification = timeline.filter((event) => (
+    event.eventType === 'REMOTE_REQUEST'
+    && event.phase === 'PRECOMPUTE'
+    && event.operation === 'READ_VERIFICATION'
+    && event.targetBasis !== 'POINT_IN_TIME'
+  ))
+
+  assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
+  assert.equal(warmedCurrent.length, 2)
+  assert.equal(warmedVerification.length, 2)
+  assert.ok(currentCadenceCalls.includes('naive:END_OF_PERIOD:WEEKLY:MONTHLY'))
+  assert.ok(currentCadenceCalls.includes('naive:MONTHLY_AVERAGE:WEEKLY:MONTHLY'))
+  assert.ok(verificationCadenceCalls.includes('naive:END_OF_PERIOD:WEEKLY:MONTHLY'))
+  assert.ok(verificationCadenceCalls.includes('naive:MONTHLY_AVERAGE:WEEKLY:MONTHLY'))
+})
+
+test('G1c. rejected REVALIDATE current warm-up promises are evicted and retry cleanly on the next run', async () => {
+  const failures = new Set(['wocaes0074:naive:MONTHLY_AVERAGE'])
+  const currentCalls = new Map<string, number>()
+  const service = createService({
+    currentResolver: async (input) => {
+      const key = `${input.seriesId}:${input.modelId}:${input.targetBasis}`
+      currentCalls.set(key, (currentCalls.get(key) ?? 0) + 1)
+      if (failures.has(key)) {
+        failures.delete(key)
+        throw new Error(`boom:${key}`)
+      }
+
+      return currentResult(input)
+    },
+  })
+
+  const firstRun = await service.run({ mode: 'REVALIDATE', includeFallback: false })
+
+  const secondRun = await service.run({ mode: 'REVALIDATE', includeFallback: false })
+
+  assert.equal(firstRun.benchmarks[0]?.demoSafe, 'NO')
+  assert.equal(firstRun.benchmarks[0]?.reason, 'ENVIRONMENT_NOT_READY')
+  assert.match(firstRun.benchmarks[0]?.precompute.reason ?? '', /boom:wocaes0074:naive:MONTHLY_AVERAGE/)
+  assert.equal(secondRun.benchmarks[0]?.demoSafe, 'YES')
+  assert.ok((currentCalls.get('wocaes0074:naive:MONTHLY_AVERAGE') ?? 0) >= 2)
+})
+
+test('G1d. rejected REVALIDATE verification warm-up promises are evicted and retry cleanly on the next run', async () => {
+  const failures = new Set(['wocaes0074:naive:MONTHLY_AVERAGE'])
+  const verificationCalls = new Map<string, number>()
+  const service = createService({
+    verificationResolver: async (input) => {
+      const key = `${input.seriesId}:${input.modelId}:${input.targetBasis}`
+      verificationCalls.set(key, (verificationCalls.get(key) ?? 0) + 1)
+      if (failures.has(key)) {
+        failures.delete(key)
+        throw new Error(`boom:${key}`)
+      }
+
+      return verificationResult(input)
+    },
+  })
+
+  const firstRun = await service.run({ mode: 'REVALIDATE', includeFallback: false })
+
+  const secondRun = await service.run({ mode: 'REVALIDATE', includeFallback: false })
+
+  assert.equal(firstRun.benchmarks[0]?.demoSafe, 'NO')
+  assert.equal(firstRun.benchmarks[0]?.reason, 'ENVIRONMENT_NOT_READY')
+  assert.match(firstRun.benchmarks[0]?.precompute.reason ?? '', /boom:wocaes0074:naive:MONTHLY_AVERAGE/)
+  assert.equal(secondRun.benchmarks[0]?.demoSafe, 'YES')
+  assert.equal(verificationCalls.get('wocaes0074:naive:MONTHLY_AVERAGE'), 2)
 })
 
 test('G2. stale capability triggers preparation and can recover precompute', async () => {

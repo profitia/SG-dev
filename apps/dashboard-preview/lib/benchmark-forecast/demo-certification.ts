@@ -311,6 +311,12 @@ type DemoCertificationDependencies = {
     correlationHeaders?: Record<string, string>,
     capability?: InteractiveForecastCapabilityResult | null,
   ) => Promise<BenchmarkForecastVerificationResult>
+  readPointInTimeCurrent: (
+    seriesId: string,
+    modelId: ForecastPortfolioModelId,
+    capability?: Pick<InteractiveForecastCapabilityResult, 'currentReadiness'>,
+  ) => Promise<BenchmarkForecastCurrentResult>
+  getMatrixPrisma: () => ReturnType<typeof import('@/lib/db/market-data-prisma').getMarketDataPrismaClient>
   evaluateMatrix: (seriesId: string, allowPrepare: boolean, options?: ForecastAcceptanceMatrixEvaluationOptions) => Promise<ForecastAcceptanceMatrixReport>
 }
 
@@ -424,6 +430,15 @@ function hasExactVerificationReadiness(capability: InteractiveForecastCapability
   }
 
   return capability.verificationReadiness === 'READY'
+}
+
+function resolvePreparedReadCadence(capability: InteractiveForecastCapabilityResult) {
+  return capability.sourceFrequency && capability.targetCadence
+    ? {
+        sourceFrequency: capability.sourceFrequency,
+        targetCadence: capability.targetCadence,
+      }
+    : undefined
 }
 
 function findCapabilitySnapshotVariant(
@@ -1113,7 +1128,7 @@ function createBenchmarkDiagnosticsTracker(
 }
 
 function createMatrixEvaluator(
-  dependencies: Pick<DemoCertificationDependencies, 'readCapability' | 'prepareCurrent' | 'readCurrent' | 'readVerification'>,
+  dependencies: Pick<DemoCertificationDependencies, 'readCapability' | 'prepareCurrent' | 'readCurrent' | 'readVerification' | 'readPointInTimeCurrent' | 'getMatrixPrisma'>,
 ) {
   return async (seriesId: string, allowPrepare: boolean, options?: ForecastAcceptanceMatrixEvaluationOptions) => {
     const service = createForecastAcceptanceMatrixService({
@@ -1123,6 +1138,8 @@ function createMatrixEvaluator(
         : async (input) => createWarmOnlyPreparationResult(input),
       readCurrent: dependencies.readCurrent,
       readVerification: dependencies.readVerification,
+      readPointInTimeCurrent: dependencies.readPointInTimeCurrent,
+      getPrisma: dependencies.getMatrixPrisma,
     })
 
     return service.evaluateSeries(seriesId, options)
@@ -1574,6 +1591,9 @@ export function createDemoCertificationService(
     resolveShowForecastCurrent(seriesId, modelId, targetBasis, undefined, cadence, correlationHeaders) as Promise<BenchmarkForecastCurrentResult>
   ))
   const readVerification = dependencies.readVerification ?? getBenchmarkForecastVerification
+  const readPointInTimeCurrent = dependencies.readPointInTimeCurrent ?? ((seriesId, modelId) => (
+    resolveShowForecastCurrent(seriesId, modelId, 'POINT_IN_TIME') as Promise<BenchmarkForecastCurrentResult>
+  ))
   const readCapability = dependencies.readCapability ?? ((input, options) => (
     readInteractiveForecastCapability(
       input,
@@ -1588,6 +1608,7 @@ export function createDemoCertificationService(
       options ? { signal: options.signal, headers: options.requestHeaders } : undefined,
     )
   ))
+  const getMatrixPrisma = dependencies.getMatrixPrisma ?? (() => null)
 
   const mergeRequestHeaders = (
     left?: Record<string, string>,
@@ -1991,6 +2012,10 @@ export function createDemoCertificationService(
               })
             })()
           ),
+          readPointInTimeCurrent: (seriesId, modelId, capability) => (
+            readPointInTimeCurrent(seriesId, modelId, capability)
+          ),
+          getMatrixPrisma,
         })
 
         const warmMatrixEvaluator = dependencies.evaluateMatrix ?? createMatrixEvaluator({
@@ -2002,6 +2027,10 @@ export function createDemoCertificationService(
           readVerification: (seriesId, modelId, targetBasis, cadence, correlationHeaders) => (
             readVerificationOnce(seriesId, modelId, targetBasis, 'WARM_REHEARSAL', cadence, { requestHeaders: correlationHeaders })
           ),
+          readPointInTimeCurrent: (seriesId, modelId, capability) => (
+            readPointInTimeCurrent(seriesId, modelId, capability)
+          ),
+          getMatrixPrisma,
         })
 
         try {
@@ -2022,68 +2051,88 @@ export function createDemoCertificationService(
               )),
             ))
 
-            for (const { input, required, capability } of capabilityChecks) {
-              if (!isCapabilityLawful(capability)) {
-                immediateVariants.push(buildVariantPreparationRecord(
-                  input,
-                  required,
-                  capability,
-                  null,
-                  required ? 'FAIL' : 'UNSUPPORTED',
-                  capability.reason ?? capability.status,
-                ))
-                continue
-              }
+            if (mode === 'REVALIDATE') {
+              immediateVariants.push(...await Promise.all(capabilityChecks.map(async ({ input, required, capability }) => {
+                if (!isCapabilityLawful(capability)) {
+                  return buildVariantPreparationRecord(
+                    input,
+                    required,
+                    capability,
+                    null,
+                    required ? 'FAIL' : 'UNSUPPORTED',
+                    capability.reason ?? capability.status,
+                  )
+                }
 
-              if (mode === 'REVALIDATE') {
                 const warmReady = hasExactVerificationReadiness(capability)
-                immediateVariants.push(buildVariantPreparationRecord(
+                if (warmReady && required && input.targetBasis !== 'POINT_IN_TIME') {
+                  const cadence = resolvePreparedReadCadence(capability)
+                  await Promise.all([
+                    readCurrentOnce(input.seriesId, input.modelId, input.targetBasis, 'PRECOMPUTE', cadence, { signal }),
+                    readVerificationOnce(input.seriesId, input.modelId, input.targetBasis, 'PRECOMPUTE', cadence, { signal }),
+                  ])
+                }
+
+                return buildVariantPreparationRecord(
                   input,
                   required,
                   capability,
                   null,
                   warmReady ? 'PASS' : 'FAIL',
                   warmReady ? null : 'Warm revalidation requires both current readiness and exact historical verification readiness to remain READY.',
-                ))
-                continue
-              }
-
-              let effectiveCapability = capability
-              let preparationStatus: BenchmarkForecastCurrentPreparationResult['prepareStatus'] | null = null
-              let targetSemantics = resolveForecastTargetSemantics(input.targetBasis)
-
-              if (!hasExactVerificationReadiness(effectiveCapability) && isPrepareEligible(effectiveCapability)) {
-                const preparation = await prepareCurrentOnce(input, 'PRECOMPUTE', { signal })
-                const warmedCapability = await readPrecomputeCapabilityOnce(input, 'PRECOMPUTE', { signal }, true)
-
-                effectiveCapability = warmedCapability
-                preparationStatus = preparation.prepareStatus
-                targetSemantics = preparation.targetSemantics
-
-                if (preparation.state !== 'READY') {
+                )
+              })))
+            } else {
+              for (const { input, required, capability } of capabilityChecks) {
+                if (!isCapabilityLawful(capability)) {
                   immediateVariants.push(buildVariantPreparationRecord(
                     input,
                     required,
-                    effectiveCapability,
-                    preparationStatus,
-                    'FAIL',
-                    preparation.reason ?? effectiveCapability.reason ?? preparation.state,
-                    targetSemantics,
+                    capability,
+                    null,
+                    required ? 'FAIL' : 'UNSUPPORTED',
+                    capability.reason ?? capability.status,
                   ))
                   continue
                 }
-              }
 
-              const exactReady = hasExactVerificationReadiness(effectiveCapability)
-              immediateVariants.push(buildVariantPreparationRecord(
-                input,
-                required,
-                effectiveCapability,
-                preparationStatus,
-                exactReady ? 'PASS' : 'FAIL',
-                exactReady ? null : effectiveCapability.reason ?? 'Exact historical verification readiness is not READY after current preparation.',
-                targetSemantics,
-              ))
+                let effectiveCapability = capability
+                let preparationStatus: BenchmarkForecastCurrentPreparationResult['prepareStatus'] | null = null
+                let targetSemantics = resolveForecastTargetSemantics(input.targetBasis)
+
+                if (!hasExactVerificationReadiness(effectiveCapability) && isPrepareEligible(effectiveCapability)) {
+                  const preparation = await prepareCurrentOnce(input, 'PRECOMPUTE', { signal })
+                  const warmedCapability = await readPrecomputeCapabilityOnce(input, 'PRECOMPUTE', { signal }, true)
+
+                  effectiveCapability = warmedCapability
+                  preparationStatus = preparation.prepareStatus
+                  targetSemantics = preparation.targetSemantics
+
+                  if (preparation.state !== 'READY') {
+                    immediateVariants.push(buildVariantPreparationRecord(
+                      input,
+                      required,
+                      effectiveCapability,
+                      preparationStatus,
+                      'FAIL',
+                      preparation.reason ?? effectiveCapability.reason ?? preparation.state,
+                      targetSemantics,
+                    ))
+                    continue
+                  }
+                }
+
+                const exactReady = hasExactVerificationReadiness(effectiveCapability)
+                immediateVariants.push(buildVariantPreparationRecord(
+                  input,
+                  required,
+                  effectiveCapability,
+                  preparationStatus,
+                  exactReady ? 'PASS' : 'FAIL',
+                  exactReady ? null : effectiveCapability.reason ?? 'Exact historical verification readiness is not READY after current preparation.',
+                  targetSemantics,
+                ))
+              }
             }
 
             let matrixReport: ForecastAcceptanceMatrixReport
