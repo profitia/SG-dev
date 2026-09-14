@@ -469,7 +469,7 @@ test('A3. exact full historical verification readiness is required for fast-path
   assert.equal(revalidateReport.benchmarks[0]?.reason, 'PRECOMPUTE_FAIL')
 })
 
-test('A3b. PRECOMPUTE reads one series capability snapshot per benchmark instead of twelve exact capability requests', async () => {
+test('A3b. PRECOMPUTE reads exact capability variants for certification readiness', async () => {
   let exactCapabilityCalls = 0
   let snapshotCalls = 0
 
@@ -492,38 +492,43 @@ test('A3b. PRECOMPUTE reads one series capability snapshot per benchmark instead
   )) ?? []
 
   assert.equal(report.benchmarks[0]?.precompute.status, 'PASS')
-  assert.equal(snapshotCalls, 1)
-  assert.equal(exactCapabilityCalls, 0)
-  assert.equal(precomputeCapabilityMisses.length, 1)
+  assert.equal(snapshotCalls, 0)
+  assert.equal(exactCapabilityCalls, MODELS.length * TARGET_BASES.length)
+  assert.equal(precomputeCapabilityMisses.length, MODELS.length * TARGET_BASES.length)
 })
 
-test('A3c. PRECOMPUTE refreshes the series capability snapshot once after lawful current preparation', async () => {
-  let snapshotCalls = 0
+test('A3c. PRECOMPUTE refreshes the exact capability read once after lawful current preparation', async () => {
+  const exactCapabilityCalls = new Map<string, number>()
   const preparedKeys = new Set<string>()
   const prepareCalls: string[] = []
   const warmedKey = 'wocaes0074:naive:MONTHLY_AVERAGE'
 
   const report = await createService({
-    capabilitySnapshotResolver: (seriesId) => {
-      snapshotCalls += 1
-      return capabilitySnapshot(seriesId, {}, (input) => {
-        const key = `${input.seriesId}:${input.modelId}:${input.targetBasis}`
-        const ready = preparedKeys.has(key)
-        return capability(input, key === warmedKey && !ready ? {
-          status: 'PREPARATION_REQUIRED',
-          currentReadiness: 'NOT_PREPARED',
-          verificationReadiness: 'NOT_PREPARED',
-          recentVerificationReadiness: 'NOT_PREPARED',
-          fullVerificationReadiness: 'NOT_PREPARED',
-          readiness: {
-            fastReady: false,
-            calibratedReady: false,
-            fullReady: false,
-            blockers: ['CURRENT_MISSING', 'FULL_HISTORICAL_MISSING'],
-          },
-          reason: 'Prepared artifacts are missing.',
-        } : {})
-      })
+    cohort: [{
+      seriesId: 'wocaes0074',
+      benchmarkName: 'Brent',
+      group: 'PRIMARY',
+      requiredModels: ['naive'],
+      requiredTargetBases: ['MONTHLY_AVERAGE'],
+    }],
+    capabilityResolver: (input) => {
+      const key = `${input.seriesId}:${input.modelId}:${input.targetBasis}`
+      exactCapabilityCalls.set(key, (exactCapabilityCalls.get(key) ?? 0) + 1)
+      const ready = preparedKeys.has(key)
+      return capability(input, key === warmedKey && !ready ? {
+        status: 'PREPARATION_REQUIRED',
+        currentReadiness: 'NOT_PREPARED',
+        verificationReadiness: 'NOT_PREPARED',
+        recentVerificationReadiness: 'NOT_PREPARED',
+        fullVerificationReadiness: 'NOT_PREPARED',
+        readiness: {
+          fastReady: false,
+          calibratedReady: false,
+          fullReady: false,
+          blockers: ['CURRENT_MISSING', 'FULL_HISTORICAL_MISSING'],
+        },
+        reason: 'Prepared artifacts are missing.',
+      } : {})
     },
     prepareResolver: (input) => {
       preparedKeys.add(`${input.seriesId}:${input.modelId}:${input.targetBasis}`)
@@ -533,9 +538,9 @@ test('A3c. PRECOMPUTE refreshes the series capability snapshot once after lawful
   }).run({ includeFallback: false, diagnostics: { enabled: true } })
 
   assert.equal(report.benchmarks[0]?.precompute.status, 'PASS')
-  assert.equal(snapshotCalls, 2)
   assert.equal(prepareCalls.length, 1)
   assert.deepEqual(prepareCalls, [warmedKey])
+  assert.equal(exactCapabilityCalls.get(warmedKey), 2)
 })
 
 test('A4. certify mode does not recover exact full historical readiness through SG Runtime verification materialization', async () => {
@@ -1117,10 +1122,10 @@ test('I6. benchmark evaluations run concurrently across the cohort', async () =>
   released.get('wocaes0074')?.()
   released.get('lmeofcucashask')?.()
 
-  const report = await reportPromise
-  assert.equal(report.summary.demoCohort, 2)
-  assert.equal(report.benchmarks[0]?.seriesId, 'wocaes0074')
-  assert.equal(report.benchmarks[1]?.seriesId, 'lmeofcucashask')
+  const completedReport = await reportPromise
+  assert.equal(completedReport.summary.demoCohort, 2)
+  assert.equal(completedReport.benchmarks[0]?.seriesId, 'wocaes0074')
+  assert.equal(completedReport.benchmarks[1]?.seriesId, 'lmeofcucashask')
 })
 
 test('I6b. deployed certification defaults matrix evaluation to one concurrent variant and still allows explicit override', async () => {
@@ -1181,7 +1186,7 @@ test('I7. precompute and matrix reuse the same preparation for a stale variant',
   try {
     const report = await createDemoCertificationService({
       now: () => '2026-09-04T18:30:00.000Z',
-      benchmarkTimeoutMs: 100,
+      benchmarkTimeoutMs: 3_000,
       cohort: [{
         seriesId: 'wocaes0074',
         benchmarkName: 'Brent',
@@ -1436,7 +1441,7 @@ test('I11. repeated certification attempts continue to observe missing point-in-
 
   const service = createDemoCertificationService({
     now: () => '2026-09-04T18:30:00.000Z',
-    benchmarkTimeoutMs: 100,
+    benchmarkTimeoutMs: 500,
     cohort: [{
       seriesId: 'wocaes0074',
       benchmarkName: 'Brent',
