@@ -2052,16 +2052,17 @@ export function createDemoCertificationService(
             ))
 
             if (mode === 'REVALIDATE') {
-              immediateVariants.push(...await Promise.all(capabilityChecks.map(async ({ input, required, capability }) => {
+              for (const { input, required, capability } of capabilityChecks) {
                 if (!isCapabilityLawful(capability)) {
-                  return buildVariantPreparationRecord(
+                  immediateVariants.push(buildVariantPreparationRecord(
                     input,
                     required,
                     capability,
                     null,
                     required ? 'FAIL' : 'UNSUPPORTED',
                     capability.reason ?? capability.status,
-                  )
+                  ))
+                  continue
                 }
 
                 const warmReady = hasExactVerificationReadiness(capability)
@@ -2073,15 +2074,15 @@ export function createDemoCertificationService(
                   ])
                 }
 
-                return buildVariantPreparationRecord(
+                immediateVariants.push(buildVariantPreparationRecord(
                   input,
                   required,
                   capability,
                   null,
                   warmReady ? 'PASS' : 'FAIL',
                   warmReady ? null : 'Warm revalidation requires both current readiness and exact historical verification readiness to remain READY.',
-                )
-              })))
+                ))
+              }
             } else {
               for (const { input, required, capability } of capabilityChecks) {
                 if (!isCapabilityLawful(capability)) {
