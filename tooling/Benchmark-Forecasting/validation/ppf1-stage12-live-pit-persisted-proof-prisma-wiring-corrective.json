@@ -1,0 +1,187 @@
+{
+  "generatedAt": "2026-09-14T15:12:52.000Z",
+  "taskId": "ppf-1-stage-12-live-pit-persisted-proof-prisma-wiring-corrective-20260914",
+  "scope": "implementation",
+  "conversationId": "60ddb737-d890-4f27-8b10-e31f6b197224",
+  "validationBranch": "ppf1/stage12-live-acceptance-legacy-deprecation-20260911",
+  "productOwner": "apps/dashboard-preview",
+  "source": {
+    "remoteBaseSha": "200c693269728880602feecbd15dae843fde88aa",
+    "finalCommit": {
+      "sha": "8b09a58fd7f2aac42dad431659d43e0be515e36a",
+      "subject": "fix(stage12): wire matrix persisted proof prisma"
+    },
+    "sgRuntimeMutated": false,
+    "matrixSemanticsMutated": false,
+    "pitArtifactsRebuilt": false,
+    "timeoutMutated": false,
+    "filesModified": [
+      "apps/dashboard-preview/lib/benchmark-forecast/demo-certification.ts",
+      "apps/dashboard-preview/tests/demo-certification.test.ts"
+    ]
+  },
+  "deployment": {
+    "dashboardService": "dashboards-library",
+    "dashboardServiceId": "srv-da2i7j9t0dsc73ag7qv0",
+    "dashboardUrl": "https://dashboards-library.onrender.com",
+    "finalDeploy": {
+      "deployId": "dep-dak0q4uq1p3s739ro5ig",
+      "sha": "8b09a58fd7f2aac42dad431659d43e0be515e36a",
+      "status": "SUCCEEDED"
+    },
+    "dashboardDeployedSha": "8b09a58fd7f2aac42dad431659d43e0be515e36a",
+    "sgRuntimeDeployedSha": "f7761cc3ee56dd474667b89132747910d67c2517",
+    "releaseSnapshot": {
+      "sourceRevision": "8b09a58fd7f2aac42dad431659d43e0be515e36a",
+      "deployedRevision": "8b09a58fd7f2aac42dad431659d43e0be515e36a",
+      "environment": "render",
+      "environmentUrl": "https://dashboards-library.onrender.com"
+    }
+  },
+  "localValidation": {
+    "demoCertificationTests": {
+      "command": "cd apps/dashboard-preview && node --import tsx --test tests/demo-certification.test.ts",
+      "passCount": 41,
+      "failCount": 0,
+      "status": "PASS"
+    },
+    "acceptanceMatrixTests": {
+      "command": "cd apps/dashboard-preview && node --import tsx --test tests/forecast-acceptance-matrix.test.ts",
+      "passCount": 19,
+      "failCount": 0,
+      "status": "PASS"
+    },
+    "typecheck": {
+      "command": "cd apps/dashboard-preview && npm run typecheck",
+      "status": "PASS"
+    }
+  },
+  "liveProof": {
+    "brent": {
+      "seriesId": "wocaes0074",
+      "benchmarkName": "Brent",
+      "mode": "REVALIDATE",
+      "requestPayload": {
+        "mode": "REVALIDATE",
+        "seriesIds": ["wocaes0074"],
+        "includeFallback": false,
+        "diagnostics": {
+          "enabled": true,
+          "maxConcurrentMatrixVariants": 1
+        }
+      },
+      "releaseSnapshot": {
+        "sourceRevision": "8b09a58fd7f2aac42dad431659d43e0be515e36a",
+        "deployedRevision": "8b09a58fd7f2aac42dad431659d43e0be515e36a",
+        "environment": "render",
+        "environmentUrl": "https://dashboards-library.onrender.com",
+        "acceptedAt": "2026-09-14T15:09:29.754Z"
+      },
+      "demoSafe": "YES",
+      "reason": null,
+      "precomputeStatus": "PASS",
+      "matrixStatus": "PASS",
+      "warmStatus": "PASS",
+      "peakConcurrentRemoteReads": 12,
+      "precomputeCurrentMissesNonPit": 8,
+      "precomputeVerificationMissesNonPit": 8,
+      "matrixCurrentMissesNonPit": 0,
+      "matrixVerificationMissesNonPit": 0,
+      "matrixCurrentHitsNonPit": 8,
+      "matrixVerificationHitsNonPit": 8,
+      "pointInTimeEvaluationBegan": true,
+      "variantsCompletedBeforeTimeout": 12,
+      "pitFailCount": 0,
+      "pitMissingArtifactCount": 0,
+      "pitPrismaUnavailableCount": 0,
+      "finalGate": "PASS"
+    },
+    "aluminium": {
+      "seriesId": "lmeofalcashask",
+      "benchmarkName": "Aluminium",
+      "mode": "REVALIDATE",
+      "requestPayload": {
+        "mode": "REVALIDATE",
+        "seriesIds": ["lmeofalcashask"],
+        "includeFallback": false,
+        "diagnostics": {
+          "enabled": true,
+          "maxConcurrentMatrixVariants": 1
+        }
+      },
+      "releaseSnapshot": {
+        "sourceRevision": "8b09a58fd7f2aac42dad431659d43e0be515e36a",
+        "deployedRevision": "8b09a58fd7f2aac42dad431659d43e0be515e36a",
+        "environment": "render",
+        "environmentUrl": "https://dashboards-library.onrender.com",
+        "acceptedAt": "2026-09-14T15:10:40.270Z"
+      },
+      "demoSafe": "YES",
+      "reason": null,
+      "precomputeStatus": "PASS",
+      "matrixStatus": "PASS",
+      "warmStatus": "PASS",
+      "peakConcurrentRemoteReads": 12,
+      "precomputeCurrentMissesNonPit": 8,
+      "precomputeVerificationMissesNonPit": 8,
+      "matrixCurrentMissesNonPit": 0,
+      "matrixVerificationMissesNonPit": 0,
+      "matrixCurrentHitsNonPit": 8,
+      "matrixVerificationHitsNonPit": 8,
+      "pointInTimeEvaluationBegan": true,
+      "variantsCompletedBeforeTimeout": 12,
+      "pitFailCount": 0,
+      "pitMissingArtifactCount": 0,
+      "pitPrismaUnavailableCount": 0,
+      "finalGate": "PASS"
+    }
+  },
+  "findings": {
+    "findings": [
+      "The only production change required was restoring the certification matrix default Prisma dependency to the canonical market-data Prisma provider.",
+      "Local regression coverage now proves the default built-in matrix path uses the canonical Prisma while explicit custom injection still overrides it.",
+      "Brent live REVALIDATE now passes PRECOMPUTE, MATRIX, and WARM_REHEARSAL on deployed revision 8b09a58fd7f2aac42dad431659d43e0be515e36a.",
+      "Aluminium live REVALIDATE matches Brent on the same deployed revision and also fully passes.",
+      "The prior POINT_IN_TIME POSTGRES_ARTIFACT / MISSING_ARTIFACT failure class is gone on both validated series.",
+      "No SG Runtime source change, PIT rebuild, timeout change, or matrix semantic change was required."
+    ],
+    "blockers": [],
+    "residualRisks": []
+  },
+  "decisions": {
+    "decisions": [
+      "Keep the corrective inside apps/dashboard-preview and leave acceptance-matrix semantics unchanged.",
+      "Preserve dependency injection by changing only the production default when no custom getMatrixPrisma dependency is supplied.",
+      "Require exact-source dashboard redeploy and live Brent plus Aluminium proof before classifying the task as complete.",
+      "Classify the task as SUCCESS because the audit-proven defect is removed and both targeted live series now fully pass."
+    ]
+  },
+  "actions": {
+    "recommendations": [
+      "Treat the Stage 12 PIT persisted-proof Prisma wiring corrective as complete on deployed revision 8b09a58fd7f2aac42dad431659d43e0be515e36a."
+    ],
+    "validationsExecuted": [
+      "Ran focused dashboard demo certification regression tests and confirmed 41 of 41 passing.",
+      "Ran focused acceptance matrix regression tests and confirmed 19 of 19 passing.",
+      "Ran dashboard typecheck and confirmed PASS.",
+      "Pushed exact source commit 8b09a58fd7f2aac42dad431659d43e0be515e36a.",
+      "Deployed exact commit 8b09a58fd7f2aac42dad431659d43e0be515e36a to dashboards-library on Render.",
+      "Ran Brent-only deployed REVALIDATE diagnostics with maxConcurrentMatrixVariants set to 1.",
+      "Ran Aluminium-only deployed REVALIDATE diagnostics with maxConcurrentMatrixVariants set to 1."
+    ],
+    "validationsNotExecuted": [
+      "No SG Runtime source change was made.",
+      "No PIT artifact rebuild was performed.",
+      "No timeout increase was made."
+    ],
+    "artifactsCreated": [
+      "tooling/Benchmark-Forecasting/validation/ppf1-stage12-live-pit-persisted-proof-prisma-wiring-corrective.md",
+      "tooling/Benchmark-Forecasting/validation/ppf1-stage12-live-pit-persisted-proof-prisma-wiring-corrective.json",
+      "apps/pmos/.pmos/recovery/bootstrap-inputs/2026-09-14_ppf-1-stage-12-live-pit-persisted-proof-prisma-wiring-corrective-20260914.json"
+    ],
+    "artifactsModified": []
+  },
+  "result": {
+    "finalStatus": "SUCCESS"
+  }
+}
