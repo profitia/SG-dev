@@ -2,6 +2,7 @@ import { createHash } from "crypto"
 import type { PrismaClient } from "@prisma/client"
 
 import { createTextIntegrityMetadata } from "../../../../../packages/governance/src/index.ts"
+import { pmosConfig } from "../../../pmos.config"
 
 type RuntimeAuthorityDb = Pick<PrismaClient, "executionLog" | "conversationArtifact" | "canonicalPrinciple" | "architectureWarning">
 
@@ -60,7 +61,7 @@ export function renderRuntimeAuthorityMarkdown(snapshot: RuntimeAuthoritySnapsho
 
   const lines: string[] = [
     `<!-- PMOS Runtime Authority | state-hash: ${runtimeStateHash} -->`,
-    "# PMOS Runtime Context - SpendGuru 2.0",
+    `# PMOS Runtime Context - ${pmosConfig.projectName}`,
     "",
     `> Generated: ${snapshot.generatedAt}`,
     "> Authority: PMOS DB -> runtime authority -> runtime-context.md",

@@ -48,6 +48,20 @@
       "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
     },
     {
+      "id": "SG2-BASE-016",
+      "capability": "SRM Runtime",
+      "name": "SRM Runtime App",
+      "pathPatterns": [
+        "apps/srm/**"
+      ],
+      "currentOwner": "SRM Runtime",
+      "currentResponsibility": "SRM/X-Ray application runtime and future vertical-slice source authority.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
       "id": "SG2-BASE-004",
       "capability": "Dashboard Data Runtime",
       "name": "Dashboard Data Runtime",
@@ -168,6 +182,34 @@
       ],
       "currentOwner": "Forecast Operations",
       "currentResponsibility": "Scheduled forecast production operations workflow.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
+      "id": "SG2-BASE-017",
+      "capability": "SRM Workflow",
+      "name": "SRM CI Workflow",
+      "pathPatterns": [
+        ".github/workflows/srm-ci.yml"
+      ],
+      "currentOwner": "SRM Runtime",
+      "currentResponsibility": "SRM-owned exact-path CI workflow surface.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
+      "id": "SG2-BASE-018",
+      "capability": "SRM Devcontainer",
+      "name": "SRM Codespace Devcontainer",
+      "pathPatterns": [
+        ".devcontainer/srm/**"
+      ],
+      "currentOwner": "SRM Runtime",
+      "currentResponsibility": "SRM-owned Codespace bootstrap and developer environment surface.",
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": null,
       "cleanupReason": null,
