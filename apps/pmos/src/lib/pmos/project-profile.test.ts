@@ -40,8 +40,8 @@ test('project normalization preserves SpendGuru aliases and adds SRM aliases', (
   })
 
   assert.equal(normalizePmosProjectName('SRM'), SRM_PMOS_PROJECT_NAME)
-  assert.equal(normalizePmosProjectName('srm porr'), SRM_PMOS_PROJECT_NAME)
-  assert.equal(normalizePmosProjectName('srm / porr'), SRM_PMOS_PROJECT_NAME)
+  assert.equal(normalizePmosProjectName('srm porr'), 'srm porr')
+  assert.equal(normalizePmosProjectName('srm / porr'), 'srm / porr')
 })
 
 test('workspace normalization accepts SRM Codespaces variants', () => {
@@ -51,7 +51,7 @@ test('workspace normalization accepts SRM Codespaces variants', () => {
 })
 
 test('configured project and workspace default safely', () => {
-  assert.equal(getConfiguredPmosProjectName(makeEnv({})), DEFAULT_PMOS_PROJECT_NAME)
+  assert.equal(getConfiguredPmosProjectName(makeEnv({ PMOS_PROJECT_NAME: undefined })), DEFAULT_PMOS_PROJECT_NAME)
   assert.equal(getConfiguredPmosProjectName(makeEnv({ PMOS_PROJECT_NAME: 'srm' })), SRM_PMOS_PROJECT_NAME)
   assert.equal(getConfiguredPmosWorkspaceName(makeEnv({ PMOS_WORKSPACE_NAME: 'sg dev codespaces srm' })), 'SG-dev Codespaces SRM')
 })
@@ -65,9 +65,9 @@ test('missing PMOS_MEMOROS_MODE defaults to required and preserves SpendGuru beh
   assert.equal(profile.memorosAuditStatus, 'MEMOROS_REQUIRED')
 })
 
-test('disabled Memoros mode is allowed only for SRM / PORR', async () => {
+test('disabled Memoros mode is allowed only for SRM', async () => {
   const profile = resolvePmosProjectProfile({
-    projectName: 'SRM / PORR',
+    projectName: 'SRM',
     workspaceName: 'SG-dev Codespaces SRM',
     memorosMode: 'disabled',
   })
@@ -88,22 +88,22 @@ test('disabled Memoros mode is allowed only for SRM / PORR', async () => {
 test('disabled Memoros mode is rejected for SpendGuru and unknown mode fails closed', () => {
   assert.throws(
     () => resolvePmosProjectProfile({ projectName: 'SpendGuru 2.0', memorosMode: 'disabled' }),
-    /allowed only for project SRM \/ PORR/,
+    /allowed only for project SRM/,
   )
 
   assert.throws(
-    () => resolvePmosProjectProfile({ projectName: 'SRM / PORR', memorosMode: 'shadow' }),
+    () => resolvePmosProjectProfile({ projectName: 'SRM', memorosMode: 'shadow' }),
     /invalid\. Valid values: required, disabled/,
   )
 
   assert.throws(
-    () => resolvePmosProjectProfile({ projectName: 'SRM / PORR', memorosMode: '   ' }),
+    () => resolvePmosProjectProfile({ projectName: 'SRM', memorosMode: '   ' }),
     /set but empty/,
   )
 })
 
 test('SRM closeout requires successful PHR without Memoros while required mode does not tighten PHR gate', () => {
-  const srmProfile = resolvePmosProjectProfile({ projectName: 'SRM / PORR', memorosMode: 'disabled' })
+  const srmProfile = resolvePmosProjectProfile({ projectName: 'SRM', memorosMode: 'disabled' })
   const sgProfile = resolvePmosProjectProfile({ projectName: 'SpendGuru 2.0', memorosMode: 'required' })
 
   assert.equal(isPhrSatisfiedForCloseout(srmProfile, 'FAILED'), false)
