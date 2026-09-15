@@ -5,7 +5,15 @@ import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 
-import { buildPhrPublicationInput, publishPhrPublicationOnCompletedCloseout, validatePhrRepositoryPath, writePhrPublicationAttempt } from './phr-publication'
+import {
+  buildPhrPublicationInput,
+  publishPhrPublicationOnCompletedCloseout,
+  readLatestPhrPublicationStatusFromSidecar,
+  readSuccessfulPhrPublicationStatusFromSidecar,
+  validatePhrRepositoryPath,
+  writePhrPublicationAttempt,
+  writePhrPublicationSidecar,
+} from './phr-publication'
 
 function runGit(cwd: string, args: string[]) {
   const result = spawnSync('git', args, { cwd, encoding: 'utf8' })
@@ -91,44 +99,61 @@ function createReplayableTempPhrRepo(originRemote: string) {
   return { tempRoot, repoPath }
 }
 
+function makeFinalizedHandoff(overrides?: {
+  id?: string
+  taskId?: string
+  conversationId?: string
+  pendingArtifactSlotFinal?: 'CLEAR' | 'OCCUPIED'
+}) {
+  return {
+    id: overrides?.id ?? 'conversation:HANDOFF:v1',
+    artifactKind: 'HANDOFF',
+    artifactNature: 'DERIVED',
+    version: 'v1',
+    status: 'GENERATED',
+    taskId: overrides?.taskId ?? 'phr-adapter-test',
+    conversationId: overrides?.conversationId ?? 'conversation',
+    createdAt: '2026-09-05T12:00:00.000Z',
+    sourceRefs: [],
+    payload: {
+      originalObjective: 'test',
+      currentState: [
+        'closeoutState = CLOSEOUT_COMPLETE',
+        `PENDING_ARTIFACT_SLOT_FINAL = ${overrides?.pendingArtifactSlotFinal ?? 'CLEAR'}`,
+        'FINAL_VERDICT = PASS',
+      ],
+      resultStatus: 'SUCCESS',
+      completedWork: ['Finalized: closeoutState=CLOSEOUT_COMPLETE'],
+      notCompleted: [],
+      keyFindings: [],
+      unresolvedAreas: [],
+      decisions: [],
+      blockers: [],
+      residualRisks: [],
+      recommendedNextDecision: 'test',
+      openQuestions: [],
+      outstandingTopics: [],
+      bridgePayloadText: 'test',
+      copyReadyText: 'test',
+      finalizationContext: {
+        pendingArtifactSlotFinal: overrides?.pendingArtifactSlotFinal ?? 'CLEAR',
+      },
+    },
+  } as never
+}
+
 function makePublication() {
   return buildPhrPublicationInput({
     artifact: {
       metadata: {
         taskId: 'phr-adapter-test',
+        conversationId: 'conversation',
         project: 'Project History Repository',
         timestamp: '2026-09-05T12:00:00.000Z',
       },
       result: { finalStatus: 'SUCCESS' },
     } as never,
-    handoff: {
-      id: 'test:HANDOFF:v1',
-      artifactKind: 'HANDOFF',
-      artifactNature: 'DERIVED',
-      version: 'v1',
-      status: 'GENERATED',
-      taskId: 'phr-adapter-test',
-      conversationId: 'conversation',
-      createdAt: '2026-09-05T12:00:00.000Z',
-      sourceRefs: [],
-      payload: {
-        originalObjective: 'test',
-        currentState: [],
-        resultStatus: 'SUCCESS',
-        completedWork: [],
-        notCompleted: [],
-        keyFindings: [],
-        unresolvedAreas: [],
-        decisions: [],
-        blockers: [],
-        residualRisks: [],
-        recommendedNextDecision: 'test',
-        openQuestions: [],
-        outstandingTopics: [],
-        bridgePayloadText: 'test',
-        copyReadyText: 'test',
-      },
-    },
+    handoff: makeFinalizedHandoff({ id: 'test:HANDOFF:v1' }),
     closeout: {
       closeoutState: 'CLOSEOUT_COMPLETE',
       closeoutCompletedAt: '2026-09-05T12:01:00.000Z',
@@ -143,6 +168,7 @@ function makeRefreshedPublication(options?: { pendingArtifactSlotFinal?: 'CLEAR'
     artifact: {
       metadata: {
         taskId: 'phr-adapter-test',
+        conversationId: 'conversation',
         project: 'Project History Repository',
         timestamp: '2026-09-05T12:00:00.000Z',
       },
@@ -220,6 +246,7 @@ test('publishPhrPublicationOnCompletedCloseout skips incomplete closeouts', () =
     artifact: {
       metadata: {
         taskId: 'phr-adapter-test',
+        conversationId: 'conversation',
         project: 'Project History Repository',
         timestamp: '2026-09-05T12:00:00.000Z',
       },
@@ -248,20 +275,20 @@ test('publishPhrPublicationOnCompletedCloseout skips incomplete closeouts', () =
   assert.equal(sidecarCalls, 0)
 })
 
-test('publishPhrPublicationOnCompletedCloseout writes sidecar on lawful closeout', () => {
-  let attemptCalls = 0
-  let sidecarCalls = 0
+test('publishPhrPublicationOnCompletedCloseout rejects a non-final handoff candidate and records sidecar failure', () => {
+  const sidecarPath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'pmos-phr-invalid-')), 'phr.json')
   const result = publishPhrPublicationOnCompletedCloseout({
     artifact: {
       metadata: {
         taskId: 'phr-adapter-test',
+        conversationId: 'conversation',
         project: 'Project History Repository',
         timestamp: '2026-09-05T12:00:00.000Z',
       },
       result: { finalStatus: 'SUCCESS' },
     } as never,
     handoff: {
-      id: 'test:HANDOFF:v1',
+      id: 'conversation:HANDOFF:v1',
       artifactKind: 'HANDOFF',
       artifactNature: 'DERIVED',
       version: 'v1',
@@ -271,23 +298,42 @@ test('publishPhrPublicationOnCompletedCloseout writes sidecar on lawful closeout
       createdAt: '2026-09-05T12:00:00.000Z',
       sourceRefs: [],
       payload: {
-        originalObjective: 'test',
-        currentState: [],
-        resultStatus: 'SUCCESS',
+        currentState: ['closeoutState = CLOSEOUT_PARTIAL', 'FINAL_VERDICT = WARNING'],
         completedWork: [],
-        notCompleted: [],
-        keyFindings: [],
-        unresolvedAreas: [],
-        decisions: [],
-        blockers: [],
-        residualRisks: [],
-        recommendedNextDecision: 'test',
-        openQuestions: [],
-        outstandingTopics: [],
-        bridgePayloadText: 'test',
-        copyReadyText: 'test',
+        bridgePayloadText: 'invalid',
+        copyReadyText: 'invalid',
       },
     } as never,
+    closeout: {
+      closeoutState: 'CLOSEOUT_COMPLETE',
+      closeoutCompletedAt: '2026-09-05T12:01:00.000Z',
+    } as never,
+    closeoutRef: 'closeout.json',
+    conversationArtifactPath: 'conversation.json',
+    sidecarPath,
+    repositoryPath: '/tmp/phr',
+  })
+
+  assert.equal(result.attempted, true)
+  assert.equal(result.result?.status, 'FAILED')
+  assert.match(result.result?.error ?? '', /HANDOFF built from CLOSEOUT_COMPLETE/)
+  assert.equal(readLatestPhrPublicationStatusFromSidecar(sidecarPath), 'FAILED')
+})
+
+test('publishPhrPublicationOnCompletedCloseout writes sidecar on lawful closeout', () => {
+  let attemptCalls = 0
+  let sidecarCalls = 0
+  const result = publishPhrPublicationOnCompletedCloseout({
+    artifact: {
+      metadata: {
+        taskId: 'phr-adapter-test',
+        conversationId: 'conversation',
+        project: 'Project History Repository',
+        timestamp: '2026-09-05T12:00:00.000Z',
+      },
+      result: { finalStatus: 'SUCCESS' },
+    } as never,
+    handoff: makeFinalizedHandoff({ id: 'test:HANDOFF:v1' }),
     closeout: {
       closeoutState: 'CLOSEOUT_COMPLETE',
       closeoutCompletedAt: '2026-09-05T12:01:00.000Z',
@@ -359,28 +405,13 @@ test('publishPhrPublicationOnCompletedCloseout keeps PMOS closeout independent f
     artifact: {
       metadata: {
         taskId: 'phr-adapter-test',
+        conversationId: 'conversation',
         project: 'Project History Repository',
         timestamp: '2026-09-05T12:00:00.000Z',
       },
       result: { finalStatus: 'SUCCESS' },
     } as never,
-    handoff: {
-      id: 'conversation:HANDOFF:v1',
-      artifactKind: 'HANDOFF',
-      artifactNature: 'DERIVED',
-      version: 'v1',
-      status: 'GENERATED',
-      taskId: 'phr-adapter-test',
-      conversationId: 'conversation',
-      createdAt: '2026-09-05T12:00:00.000Z',
-      sourceRefs: [],
-      payload: {
-        finalizationContext: {
-          pendingArtifactSlotFinal: 'CLEAR',
-        },
-        bridgePayloadText: 'refreshed',
-      },
-    } as never,
+    handoff: makeFinalizedHandoff({ pendingArtifactSlotFinal: 'CLEAR' }),
     closeout: {
       closeoutState: 'CLOSEOUT_COMPLETE',
       closeoutCompletedAt: '2026-09-05T12:01:00.000Z',
@@ -410,6 +441,54 @@ test('publishPhrPublicationOnCompletedCloseout keeps PMOS closeout independent f
   assert.equal(result.attempted, true)
   assert.equal(result.result?.status, 'FAILED')
   assert.equal(attemptCalls, 1)
+})
+
+test('latest successful PHR sidecar status is accepted for refresh and later failures block PASS', () => {
+  const sidecarPath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'pmos-phr-sidecar-')), 'phr.json')
+
+  writePhrPublicationSidecar({
+    sidecarPath,
+    result: {
+      status: 'PUBLISHED',
+      retryable: false,
+      bundlePath: 'history/x',
+      manifestPath: 'history/x/manifest.json',
+      commitSha: 'abc123',
+      publicationId: 'phr-adapter-test',
+      taskId: 'phr-adapter-test',
+      artifactCount: 5,
+      repositoryPath: '/tmp/phr',
+      error: null,
+    },
+    attemptedAt: '2026-09-05T12:02:00.000Z',
+    closeoutRef: 'closeout.json',
+    handoffArtifactId: 'conversation:HANDOFF:v1',
+    conversationArtifactPath: 'conversation.json',
+  })
+  assert.equal(readSuccessfulPhrPublicationStatusFromSidecar(sidecarPath), 'PUBLISHED')
+
+  writePhrPublicationSidecar({
+    sidecarPath,
+    result: {
+      status: 'FAILED_RETRYABLE',
+      retryable: true,
+      bundlePath: null,
+      manifestPath: null,
+      commitSha: null,
+      publicationId: 'phr-adapter-test',
+      taskId: 'phr-adapter-test',
+      artifactCount: 5,
+      repositoryPath: '/tmp/phr',
+      error: 'retry later',
+    },
+    attemptedAt: '2026-09-05T12:03:00.000Z',
+    closeoutRef: 'closeout.json',
+    handoffArtifactId: 'conversation:HANDOFF:v1',
+    conversationArtifactPath: 'conversation.json',
+  })
+
+  assert.equal(readLatestPhrPublicationStatusFromSidecar(sidecarPath), 'FAILED_RETRYABLE')
+  assert.equal(readSuccessfulPhrPublicationStatusFromSidecar(sidecarPath), null)
 })
 
 function makeFailedResult() {

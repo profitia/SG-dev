@@ -34,6 +34,8 @@ next-env.d.ts
 .context/runtime-context.integrity.json
 
 # PMOS Runtime Artifacts (generated locally unless intentionally promoted)
+.pmos/pending-artifact.json
+.pmos/.pmos-save.lock
 .pmos/*bootstrap.json
 .pmos/recovery/
 .pmos/conversations/*.md

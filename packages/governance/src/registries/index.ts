@@ -54,6 +54,8 @@ export const CANONICAL_ETAPS: readonly CanonicalEtapEntry[] = Object.freeze([
   { name: "PCOS-LIVE-7 — Controlled Promotion LAB to PROD", order: 407, roadmapPosition: RoadmapPosition.CRITICAL_PATH_GATE, pipeline: "PCOS-LIVE-EXECUTION" },
   { name: "PCOS-LIVE-8 — SG2 + CIC Runtime Integration", order: 408, roadmapPosition: RoadmapPosition.CRITICAL_PATH, pipeline: "PCOS-LIVE-EXECUTION" },
   { name: "PCOS-LIVE-9 — Continuous Cognition Evolution", order: 409, roadmapPosition: RoadmapPosition.PARALLEL_PATH, pipeline: "PCOS-LIVE-EXECUTION" },
+  { name: "SRM-0 — Bootstrap & PMOS Isolation", order: 410, roadmapPosition: RoadmapPosition.INFRA_FOUNDATION, pipeline: "SRM-XRAY-SEPTEMBER-2026" },
+  { name: "SRM-1 — X-Ray MGBI KRS Vertical Slice", order: 411, roadmapPosition: RoadmapPosition.CRITICAL_PATH, pipeline: "SRM-XRAY-SEPTEMBER-2026" },
 ] as const)
 
 export const CANONICAL_ETAP_NAMES: ReadonlySet<string> = new Set(CANONICAL_ETAPS.map((entry) => entry.name))
@@ -72,6 +74,7 @@ export const CANONICAL_PIPELINES: readonly CanonicalPipelineEntry[] = Object.fre
   { name: "PCOS-RUNTIME", order: 12, status: PipelineStatus.ACTIVE, taskCount: 8, targetDate: "2026-Q4" },
   { name: "PCOS-HYDRATION-LIFECYCLE", order: 13, status: PipelineStatus.COMPLETE, taskCount: 6, targetDate: "2026-05-28" },
   { name: "PCOS-LIVE-EXECUTION", order: 14, status: PipelineStatus.PLANNED, taskCount: 9, targetDate: "2026-Q3" },
+  { name: "SRM-XRAY-SEPTEMBER-2026", order: 15, status: PipelineStatus.ACTIVE, taskCount: 2, targetDate: "2026-09-18" },
 ] as const)
 
 export const CANONICAL_PIPELINE_NAMES: ReadonlySet<string> = new Set(CANONICAL_PIPELINES.map((entry) => entry.name))

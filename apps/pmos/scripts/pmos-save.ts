@@ -28,6 +28,7 @@ import {
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
+import { pathToFileURL } from 'url'
 
 // ── Governance import (canonical single source of truth) ─────────────────────
 import {
@@ -80,8 +81,25 @@ import {
   readJsonFileSafe,
 } from '../src/lib/pmos/atomic-io'
 import { materializePendingArtifactFromBootstrap } from '../src/lib/pmos/completion-authority'
-import { isSuccessfulPhrPublicationStatus, publishPhrPublicationOnCompletedCloseout } from '../src/lib/pmos/phr-publication'
+import {
+  isSuccessfulPhrPublicationStatus,
+  publishPhrPublicationOnCompletedCloseout,
+  readSuccessfulPhrPublicationStatusFromSidecar,
+  type PhrPublicationResult,
+} from '../src/lib/pmos/phr-publication'
 import { repairRuntimeContextArtifacts } from '../src/lib/pmos/runtime-context-write'
+import {
+  CANONICAL_PMOS_PROJECT_NAMES,
+  CANONICAL_PMOS_WORKSPACE_NAMES,
+  getConfiguredPmosWorkspaceName,
+  isPhrSatisfiedForCloseout,
+  normalizePmosProjectName,
+  normalizePmosWorkspaceName,
+  resolvePmosProjectProfile,
+  runMemorosPublicationIfEnabled,
+  type PmosProjectProfile,
+  SRM_PMOS_PROJECT_NAME,
+} from '../src/lib/pmos/project-profile'
 
 const prisma = new PrismaClient()
 const SG_DEV_ROOT = path.resolve(__dirname, '../../..')
@@ -102,14 +120,9 @@ const RUNTIME_CONTEXT_FILE = path.resolve(__dirname, '../.context/runtime-contex
 const RUNTIME_CONTEXT_INTEGRITY_FILE = path.resolve(__dirname, '../.context/runtime-context.integrity.json')
 const MEMOROS_IMPORT_ROUTE = '/api/import/pmos-artifact'
 
-const CANONICAL_PROJECT_NAMES: ReadonlySet<string> = new Set([
-  'SpendGuru 2.0',
-])
+const CANONICAL_PROJECT_NAMES = CANONICAL_PMOS_PROJECT_NAMES
 
-const CANONICAL_WORKSPACE_NAMES: ReadonlySet<string> = new Set([
-  'SG-dev',
-  'sg2-pcog-runtime',
-])
+const CANONICAL_WORKSPACE_NAMES = CANONICAL_PMOS_WORKSPACE_NAMES
 
 const CANONICAL_CONVERSATION_TYPE_NAMES: ReadonlySet<string> = new Set(
   Object.values(ConversationType),
@@ -233,6 +246,20 @@ type HandoffFinalizationContext = {
   publicationArtifact: MemorosPublicationArtifactV1 | null
   publicationAck: MemorosPublicationAck | null
   pendingArtifactSlotFinal: 'CLEAR' | 'OCCUPIED' | 'INVALID' | 'UNKNOWN'
+  memorosMode: 'required' | 'disabled'
+  memorosAuditStatus: 'MEMOROS_REQUIRED' | 'MEMOROS_DISABLED_BY_PROJECT_PROFILE'
+  phrPublicationStatus: PhrPublicationResult['status'] | 'NOT_ATTEMPTED'
+  phrRequiredForCompletion?: boolean
+  phrPublicationPostcondition?: 'SATISFIED_ON_PUBLISHER_SUCCESS'
+}
+
+type ArtifactProjectProfileMetadata = Record<string, unknown> & {
+  project: string
+  workspace?: string
+}
+
+type ArtifactProjectProfileSource = {
+  metadata: ArtifactProjectProfileMetadata
 }
 
 // ── Filename Helpers ──────────────────────────────────────────────────────────
@@ -334,6 +361,42 @@ function normalizeOptionalString(value: string | undefined): string | undefined 
   return normalized.length > 0 ? normalized : undefined
 }
 
+function appendFactPreservationNote(evidence: CloseoutEvidence, note: string): void {
+  if (!evidence.factPreservationNotes.includes(note)) {
+    evidence.factPreservationNotes.push(note)
+  }
+}
+
+function getArtifactWorkspaceName(metadata: Record<string, unknown>): string | undefined {
+  if (typeof metadata.workspace === 'string' && metadata.workspace.trim().length > 0) {
+    return metadata.workspace
+  }
+
+  return getConfiguredPmosWorkspaceName()
+}
+
+function resolveArtifactProjectProfile(artifactLike: ArtifactProjectProfileSource): PmosProjectProfile {
+  return resolvePmosProjectProfile({
+    projectName: artifactLike.metadata.project,
+    workspaceName: getArtifactWorkspaceName(artifactLike.metadata),
+    memorosMode: process.env.PMOS_MEMOROS_MODE,
+  })
+}
+
+function buildDefaultHandoffFinalizationContext(artifact: FlightRecordV1): HandoffFinalizationContext {
+  const profile = resolveArtifactProjectProfile(artifact)
+
+  return {
+    publicationArtifact: null,
+    publicationAck: null,
+    pendingArtifactSlotFinal: fs.existsSync(PENDING_FILE) ? 'OCCUPIED' : 'CLEAR',
+    memorosMode: profile.memorosMode,
+    memorosAuditStatus: profile.memorosAuditStatus,
+    phrPublicationStatus: 'NOT_ATTEMPTED',
+    phrRequiredForCompletion: profile.phrRequiredForCloseout,
+  }
+}
+
 function readLegacyPlanningContext(metadata: Record<string, unknown>): { etap?: string; subetap?: string } {
   const compatibility = typeof metadata.compatibility === 'object' && metadata.compatibility !== null
     ? metadata.compatibility as Record<string, unknown>
@@ -392,6 +455,16 @@ function getMemorosPublicationTargetSnapshot(): MemorosPublicationTargetSnapshot
 }
 
 function getMemorosPublicationConfigOrThrow(): MemorosPublicationConfig {
+  const profile = resolvePmosProjectProfile({
+    projectName: normalizePmosProjectName(process.env.PMOS_PROJECT_NAME ?? 'SpendGuru 2.0'),
+    workspaceName: getConfiguredPmosWorkspaceName(),
+    memorosMode: process.env.PMOS_MEMOROS_MODE,
+  })
+
+  if (!profile.memorosEnabled) {
+    throw new Error('MEMOROS publication is disabled by project profile.')
+  }
+
   const snapshot = getMemorosPublicationTargetSnapshot()
 
   if (!snapshot.baseUrl) {
@@ -433,41 +506,11 @@ function buildPmosConversationArtifactPublicationRecord(
 }
 
 function normalizeProjectName(project: string): string {
-  const normalized = normalizeWhitespace(project).replace(/\s*\[[^\]]+\]\s*$/g, '')
-  const key = normalized.toLowerCase()
-
-  if (
-    key === 'spendguru 2.0'
-    || key === 'spend guru'
-    || key === 'spendguru'
-    || key === 'spendguru 2 0'
-    || key === 'spendguru-2'
-    || key === 'sg2-discovery-runtime'
-    || key === 'sg-dev'
-    || key === 'spendguru 2.0 - pmos'
-    || key === 'spendguru 2.0 - pcos runtime'
-    || key === 'spendguru 2.0 — pmos'
-    || key === 'spendguru 2.0 — pcos runtime'
-  ) {
-    return 'SpendGuru 2.0'
-  }
-
-  return normalized
+  return normalizePmosProjectName(project)
 }
 
 function normalizeWorkspaceName(workspace: string): string {
-  const normalized = normalizeWhitespace(workspace).replace(/\s*\[[^\]]+\]\s*$/g, '')
-  const key = normalized.toLowerCase()
-
-  if (key === 'sg-dev' || key === 'sg dev' || key === 'sgdev') {
-    return 'SG-dev'
-  }
-
-  if (key === 'sg2-pcog-runtime' || key === 'sg2 pcog runtime' || key === 'sg2_pcog_runtime') {
-    return 'sg2-pcog-runtime'
-  }
-
-  return normalized
+  return normalizePmosWorkspaceName(workspace)
 }
 
 function normalizeScopeValue(scope: string): string {
@@ -528,7 +571,7 @@ function validateCanonicalizedMetadata(artifact: PendingArtifact): string[] {
 
 function normalizePendingArtifact(artifact: PendingArtifact): PendingArtifact {
   const rawMetadata = artifact.metadata as Record<string, unknown>
-  const rawWorkspace = typeof rawMetadata.workspace === 'string' ? rawMetadata.workspace : undefined
+  const rawWorkspace = getArtifactWorkspaceName(rawMetadata)
   const compatibility = normalizeLegacyPlanningCompatibility(rawMetadata)
 
   return {
@@ -1355,8 +1398,9 @@ function buildConversationArtifactProjection(
   filesPath: string,
   flightRecordPayload: FlightRecordV1,
   closeout: CloseoutEvidence,
+  finalizationContext?: HandoffFinalizationContext,
 ) {
-  const summary = buildConversationArtifactSummary(artifact, closeout)
+  const summary = buildConversationArtifactSummary(artifact, closeout, finalizationContext)
 
   return {
     timestamp: new Date(artifact.metadata.timestamp),
@@ -1382,8 +1426,9 @@ function buildConversationArtifactMutableProjection(
   artifact: FlightRecordV1,
   filesPath: string,
   closeout: CloseoutEvidence,
+  finalizationContext?: HandoffFinalizationContext,
 ) {
-  const summary = buildConversationArtifactSummary(artifact, closeout)
+  const summary = buildConversationArtifactSummary(artifact, closeout, finalizationContext)
 
   return {
     timestamp: new Date(artifact.metadata.timestamp),
@@ -1515,28 +1560,35 @@ function buildHandoffTextSection(title: string, items: string[]): string {
   return `${title}:\n${items.map((item) => `- ${item}`).join('\n')}`
 }
 
-function buildDerivedHandoffPayload(artifact: FlightRecordV1, closeout: CloseoutEvidence) {
-  return buildDerivedHandoffPayloadWithContext(artifact, closeout, {
-    publicationArtifact: null,
-    publicationAck: null,
-    pendingArtifactSlotFinal: fs.existsSync(PENDING_FILE) ? 'OCCUPIED' : 'CLEAR',
-  })
+function buildDerivedHandoffPayload(
+  artifact: FlightRecordV1,
+  closeout: CloseoutEvidence,
+  finalizationContext?: HandoffFinalizationContext,
+) {
+  return buildDerivedHandoffPayloadWithContext(
+    artifact,
+    closeout,
+    finalizationContext ?? buildDefaultHandoffFinalizationContext(artifact),
+  )
 }
 
-function mapMemorosPublicationStatus(context: HandoffFinalizationContext): 'SUCCEEDED' | 'FAILED' | 'NOT_STARTED' | 'UNKNOWN' {
+function mapMemorosPublicationStatus(context: HandoffFinalizationContext): 'SUCCEEDED' | 'FAILED' | 'NOT_STARTED' | 'UNKNOWN' | 'MEMOROS_DISABLED_BY_PROJECT_PROFILE' {
+  if (context.memorosMode === 'disabled') return 'MEMOROS_DISABLED_BY_PROJECT_PROFILE'
   if (context.publicationArtifact?.status === ArtifactStatus.DELIVERED) return 'SUCCEEDED'
   if (context.publicationArtifact?.status === ArtifactStatus.FAILED) return 'FAILED'
   if (context.publicationArtifact?.status === ArtifactStatus.GENERATED) return 'NOT_STARTED'
   return 'UNKNOWN'
 }
 
-function mapPublicationAck(context: HandoffFinalizationContext): 'YES' | 'NO' | 'UNKNOWN' {
+function mapPublicationAck(context: HandoffFinalizationContext): 'YES' | 'NO' | 'UNKNOWN' | 'NOT_REQUIRED' {
+  if (context.memorosMode === 'disabled') return 'NOT_REQUIRED'
   if (context.publicationAck) return 'YES'
   if (context.publicationArtifact?.status === ArtifactStatus.FAILED) return 'NO'
   return 'UNKNOWN'
 }
 
 function mapKnowledgeProcessingStatus(context: HandoffFinalizationContext): 'STARTED' | 'READY' | 'FAILED' | 'UNKNOWN' | 'NOT_AVAILABLE' {
+  if (context.memorosMode === 'disabled') return 'NOT_AVAILABLE'
   const status = context.publicationAck?.knowledgeProcessingStatus
   if (status === 'knowledge_ready') return 'READY'
   if (status === 'failed') return 'FAILED'
@@ -1546,6 +1598,7 @@ function mapKnowledgeProcessingStatus(context: HandoffFinalizationContext): 'STA
 }
 
 function mapKnowledgeReady(context: HandoffFinalizationContext): 'YES' | 'NO' | 'UNKNOWN' | 'NOT_REQUIRED' {
+  if (context.memorosMode === 'disabled') return 'NOT_REQUIRED'
   const status = context.publicationAck?.knowledgeProcessingStatus
   const readiness = context.publicationAck?.consumerReadinessStatus
   if (status === 'knowledge_ready' || readiness === 'ready') return 'YES'
@@ -1556,6 +1609,7 @@ function mapKnowledgeReady(context: HandoffFinalizationContext): 'YES' | 'NO' | 
 }
 
 function mapPublicationConfiguration(closeout: CloseoutEvidence, context: HandoffFinalizationContext): 'PASS' | 'FAIL' | 'NOT_REQUIRED' {
+  if (context.memorosMode === 'disabled') return 'NOT_REQUIRED'
   if (context.publicationArtifact || context.publicationAck) return 'PASS'
   if (closeout.handoffPublicationStatus === 'FAILED') return 'FAIL'
   return 'NOT_REQUIRED'
@@ -1564,6 +1618,15 @@ function mapPublicationConfiguration(closeout: CloseoutEvidence, context: Handof
 function mapFinalVerdict(closeout: CloseoutEvidence, context: HandoffFinalizationContext): 'PASS' | 'PASS_WITH_DOWNSTREAM_PROCESSING_PENDING' | 'WARNING' | 'BLOCKED' | 'FAIL' {
   if (closeout.pmosSaveStatus !== 'SUCCEEDED') return closeout.pmosSaveStatus === 'FAILED' ? 'FAIL' : 'BLOCKED'
   if (closeout.closeoutState !== CloseoutState.CLOSEOUT_COMPLETE) return 'WARNING'
+  if (context.memorosMode === 'disabled') {
+    if (isPhrSatisfiedForCloseout(resolvePmosProjectProfile({ projectName: SRM_PMOS_PROJECT_NAME, memorosMode: 'disabled' }), context.phrPublicationStatus)) {
+      return 'PASS'
+    }
+
+    return context.phrPublicationPostcondition === 'SATISFIED_ON_PUBLISHER_SUCCESS'
+      ? 'PASS'
+      : 'WARNING'
+  }
   if (mapMemorosPublicationStatus(context) !== 'SUCCEEDED' || mapPublicationAck(context) !== 'YES') return 'WARNING'
   if (mapKnowledgeReady(context) === 'YES') return 'PASS'
   return 'PASS_WITH_DOWNSTREAM_PROCESSING_PENDING'
@@ -1617,6 +1680,12 @@ function buildDerivedHandoffPayloadWithContext(
   if (mapMemorosPublicationStatus(context) === 'SUCCEEDED') {
     completedWork.push('Finalized: MEMOROS publication acknowledged and publication artifact delivered.')
   }
+  if (context.memorosMode === 'disabled') {
+    completedWork.push(`Finalized: ${context.memorosAuditStatus}`)
+    if (context.phrRequiredForCompletion) {
+      completedWork.push('Finalized: PHR publication is the mandatory completion gate for SRM closeout.')
+    }
+  }
 
   const notCompleted = [
     ...artifact.actions.validationsNotExecuted
@@ -1666,8 +1735,12 @@ function buildDerivedHandoffPayloadWithContext(
   }
 }
 
-function buildConversationArtifactSummary(artifact: FlightRecordV1, closeout: CloseoutEvidence): string {
-  const payload = buildDerivedHandoffPayload(artifact, closeout)
+export function buildConversationArtifactSummary(
+  artifact: FlightRecordV1,
+  closeout: CloseoutEvidence,
+  finalizationContext?: HandoffFinalizationContext,
+): string {
+  const payload = buildDerivedHandoffPayload(artifact, closeout, finalizationContext)
 
   return [
     artifact.analysis.reasoningSummary,
@@ -1706,6 +1779,11 @@ function buildCurrentStateSnapshot(
   currentState.push(`PostgreSQL Persistence: ${closeout.pmosSaveStatus === 'SUCCEEDED' ? 'ACTIVE' : closeout.pmosSaveStatus === 'FAILED' ? 'FAILED' : 'PENDING'}`)
   currentState.push(`MEMOROS Publication: ${memorosPublication}`)
   currentState.push(`PUBLICATION_ACK = ${publicationAck}`)
+  currentState.push(`PHR_COMPLETION_GATE = ${context.phrRequiredForCompletion ? 'REQUIRED' : 'NOT_REQUIRED'}`)
+  currentState.push(`PHR Publication: ${context.phrPublicationStatus}`)
+  if (context.phrPublicationPostcondition === 'SATISFIED_ON_PUBLISHER_SUCCESS') {
+    currentState.push('PHR_PUBLICATION_POSTCONDITION = SATISFIED_ON_PUBLISHER_SUCCESS')
+  }
   if (context.publicationAck?.threadId) {
     currentState.push(`MEMOROS_THREAD_ID = ${context.publicationAck.threadId}`)
   }
@@ -1824,30 +1902,121 @@ function readPersistedHandoffArtifactOrThrow(row: {
   }
 }
 
-function buildGptHandoffArtifact(artifact: FlightRecordV1, closeout: CloseoutEvidence, closeoutRef: string): GptHandoffArtifactV1 {
-  const payload = buildDerivedHandoffPayloadWithContext(artifact, closeout, {
-    publicationArtifact: null,
-    publicationAck: null,
-    pendingArtifactSlotFinal: fs.existsSync(PENDING_FILE) ? 'OCCUPIED' : 'CLEAR',
-  })
+function createGptHandoffArtifact(params: {
+  artifact: FlightRecordV1
+  closeout: CloseoutEvidence
+  closeoutRef: string
+  finalizationContext: HandoffFinalizationContext
+}): GptHandoffArtifactV1 {
+  const payload = buildDerivedHandoffPayloadWithContext(params.artifact, params.closeout, params.finalizationContext)
 
   return {
-    id: `${artifact.metadata.conversationId}:${ArtifactKind.HANDOFF}:v1`,
+    id: `${params.artifact.metadata.conversationId}:${ArtifactKind.HANDOFF}:v1`,
     artifactKind: ArtifactKind.HANDOFF,
     artifactNature: ArtifactNature.DERIVED,
     version: 'v1',
     status: ArtifactStatus.GENERATED,
-    taskId: artifact.metadata.taskId,
-    conversationId: artifact.metadata.conversationId,
+    taskId: params.artifact.metadata.taskId,
+    conversationId: params.artifact.metadata.conversationId,
     createdAt: new Date().toISOString(),
     sourceRefs: [
       {
         sourceArtifactKind: ArtifactKind.CLOSEOUT,
-        sourceArtifactRef: closeoutRef,
+        sourceArtifactRef: params.closeoutRef,
       },
+      ...(params.finalizationContext.publicationArtifact
+        ? [{
+            sourceArtifactKind: ArtifactKind.PUBLICATION,
+            sourceArtifactRef: params.finalizationContext.publicationArtifact.id,
+          }]
+        : []),
     ],
     payload,
   }
+}
+
+export function buildSrmPhrPublicationCandidate(params: {
+  artifact: FlightRecordV1
+  closeout: CloseoutEvidence
+  closeoutRef: string
+  pendingArtifactSlotFinal?: HandoffFinalizationContext['pendingArtifactSlotFinal']
+}): { closeout: CloseoutEvidence; handoff: GptHandoffArtifactV1 } {
+  const completedAt = new Date().toISOString()
+  const candidateCloseout: CloseoutEvidence = {
+    ...params.closeout,
+    stateHistory: [...(params.closeout.stateHistory ?? [])],
+    factPreservationNotes: [...(params.closeout.factPreservationNotes ?? [])],
+    handoffPublicationStatus: 'SUCCEEDED',
+    handoffPublicationCompletedAt: completedAt,
+    handoffPublicationError: null,
+    closeoutCompletedAt: completedAt,
+    recoveryRequired: false,
+    recoveryReason: null,
+    manualRecoveryInstructions: [
+      'PHR publication is the mandatory completion gate for SRM closeout.',
+      'This canonical closeout candidate may be materialized only after the publisher returns PUBLISHED or IDEMPOTENT.',
+    ],
+  }
+
+  appendState(candidateCloseout, CloseoutState.HANDOFF_PUBLICATION_SUCCEEDED)
+  appendState(candidateCloseout, CloseoutState.CLOSEOUT_COMPLETE)
+  appendFactPreservationNote(candidateCloseout, 'MEMOROS_DISABLED_BY_PROJECT_PROFILE')
+
+  return {
+    closeout: candidateCloseout,
+    handoff: createGptHandoffArtifact({
+      artifact: params.artifact,
+      closeout: candidateCloseout,
+      closeoutRef: params.closeoutRef,
+      finalizationContext: {
+        publicationArtifact: null,
+        publicationAck: null,
+        pendingArtifactSlotFinal: params.pendingArtifactSlotFinal ?? 'OCCUPIED',
+        memorosMode: 'disabled',
+        memorosAuditStatus: 'MEMOROS_DISABLED_BY_PROJECT_PROFILE',
+        phrPublicationStatus: 'NOT_ATTEMPTED',
+        phrRequiredForCompletion: true,
+        // The bundle can exist only if the publisher succeeds, so the candidate may
+        // express the postcondition without persisting a false success into PMOS.
+        phrPublicationPostcondition: 'SATISFIED_ON_PUBLISHER_SUCCESS',
+      },
+    }),
+  }
+}
+
+export function applySrmPhrPublicationOutcome(params: {
+  evidence: CloseoutEvidence
+  publication: { status: PhrPublicationResult['status']; error: string | null }
+  projectName: string
+}): { canCompleteTask: boolean; canClearPending: boolean } {
+  const completedAt = new Date().toISOString()
+
+  if (isSuccessfulPhrPublicationStatus(params.publication.status)) {
+    params.evidence.handoffPublicationStatus = 'SUCCEEDED'
+    params.evidence.handoffPublicationCompletedAt = completedAt
+    params.evidence.handoffPublicationError = null
+    appendState(params.evidence, CloseoutState.HANDOFF_PUBLICATION_SUCCEEDED)
+    appendState(params.evidence, CloseoutState.CLOSEOUT_COMPLETE)
+    params.evidence.closeoutCompletedAt = completedAt
+    params.evidence.recoveryRequired = false
+    params.evidence.recoveryReason = null
+    params.evidence.manualRecoveryInstructions = ['Closeout completed in PMOS with required PHR publication. No recovery action required.']
+    return { canCompleteTask: true, canClearPending: true }
+  }
+
+  params.evidence.handoffPublicationStatus = 'FAILED'
+  params.evidence.handoffPublicationCompletedAt = completedAt
+  params.evidence.handoffPublicationError = `PHR publication required for ${params.projectName} failed: ${params.publication.error ?? params.publication.status}`
+  params.evidence.recoveryRequired = true
+  params.evidence.recoveryReason = 'PHR publication is mandatory for SRM closeout and did not succeed.'
+  params.evidence.manualRecoveryInstructions = [
+    'Resolve the PHR publication failure and rerun the closeout publication step.',
+    'Do not call task_complete. Task state is INCOMPLETE — RECOVERY REQUIRED.',
+  ]
+  appendState(params.evidence, CloseoutState.HANDOFF_PUBLICATION_FAILED)
+  appendState(params.evidence, CloseoutState.CLOSEOUT_PARTIAL)
+  appendState(params.evidence, CloseoutState.RECOVERY_REQUIRED)
+  return { canCompleteTask: false, canClearPending: false }
 }
 
 async function persistGptHandoffArtifact(params: {
@@ -1857,38 +2026,17 @@ async function persistGptHandoffArtifact(params: {
   finalizationContext?: HandoffFinalizationContext
 }): Promise<GptHandoffArtifactV1> {
   const finalizationContext = params.finalizationContext ?? {
+    ...buildDefaultHandoffFinalizationContext(params.artifact),
     publicationArtifact: null,
     publicationAck: null,
-    pendingArtifactSlotFinal: fs.existsSync(PENDING_FILE) ? 'OCCUPIED' : 'CLEAR',
   }
 
-  const handoffArtifact = (() => {
-    const payload = buildDerivedHandoffPayloadWithContext(params.artifact, params.closeout, finalizationContext)
-
-    return {
-      id: `${params.artifact.metadata.conversationId}:${ArtifactKind.HANDOFF}:v1`,
-      artifactKind: ArtifactKind.HANDOFF,
-      artifactNature: ArtifactNature.DERIVED,
-      version: 'v1',
-      status: ArtifactStatus.GENERATED,
-      taskId: params.artifact.metadata.taskId,
-      conversationId: params.artifact.metadata.conversationId,
-      createdAt: new Date().toISOString(),
-      sourceRefs: [
-        {
-          sourceArtifactKind: ArtifactKind.CLOSEOUT,
-          sourceArtifactRef: params.closeoutRef,
-        },
-        ...(finalizationContext.publicationArtifact
-          ? [{
-              sourceArtifactKind: ArtifactKind.PUBLICATION,
-              sourceArtifactRef: finalizationContext.publicationArtifact.id,
-            }]
-          : []),
-      ],
-      payload,
-    }
-  })()
+  const handoffArtifact = createGptHandoffArtifact({
+    artifact: params.artifact,
+    closeout: params.closeout,
+    closeoutRef: params.closeoutRef,
+    finalizationContext,
+  })
   const validation = validateGptHandoffArtifact(handoffArtifact)
 
   if (!validation.valid) {
@@ -2033,15 +2181,30 @@ async function refreshPersistedHandoffForCompletedTask(taskId: string): Promise<
     throw new Error(`Task ${taskId} is not lawfully complete enough for HANDOFF refresh.`)
   }
 
-  const publicationArtifact = await readMemorosPublicationArtifactByConversationIdOrThrow(conversationArtifact.conversationId)
-  if (publicationArtifact.status !== ArtifactStatus.DELIVERED) {
+  const profile = resolveArtifactProjectProfile(artifact)
+
+  const publicationArtifact = profile.memorosEnabled
+    ? await readMemorosPublicationArtifactByConversationIdOrThrow(conversationArtifact.conversationId)
+    : null
+  if (publicationArtifact && publicationArtifact.status !== ArtifactStatus.DELIVERED) {
     throw new Error(`Task ${taskId} does not have a delivered MEMOROS publication artifact.`)
+  }
+
+  const phrPublicationStatus = profile.memorosEnabled
+    ? 'NOT_ATTEMPTED'
+    : readSuccessfulPhrPublicationStatusFromSidecar(path.join(PHR_PUBLICATIONS_DIR, `${baseName}.json`))
+  if (!profile.memorosEnabled && !phrPublicationStatus) {
+    throw new Error(`Task ${taskId} does not have a successful PHR publication sidecar.`)
   }
 
   const finalizationContext: HandoffFinalizationContext = {
     publicationArtifact,
-    publicationAck: publicationArtifact.payload.ack,
+    publicationAck: publicationArtifact?.payload.ack ?? null,
     pendingArtifactSlotFinal: fs.existsSync(PENDING_FILE) ? 'OCCUPIED' : 'CLEAR',
+    memorosMode: profile.memorosMode,
+    memorosAuditStatus: profile.memorosAuditStatus,
+    phrPublicationStatus,
+    phrRequiredForCompletion: profile.phrRequiredForCloseout,
   }
 
   const refreshedHandoff = await persistGptHandoffArtifact({
@@ -2472,6 +2635,9 @@ async function main() {
 
   console.log(`[pmos-save] Artifact: ${artifact.metadata.conversationId}`)
   console.log(`[pmos-save] Task: ${artifact.metadata.taskId}`)
+  const projectProfile = resolveArtifactProjectProfile(artifact)
+  console.log(`[pmos-save] Project: ${projectProfile.projectName}`)
+  console.log(`[pmos-save] MEMOROS mode: ${projectProfile.memorosMode}`)
   const legacyPlanningContext = readLegacyPlanningContext(artifact.metadata as Record<string, unknown>)
   console.log(`[pmos-save] Legacy ETAP compatibility: ${legacyPlanningContext.etap ?? '<none>'}`)
 
@@ -2914,118 +3080,200 @@ async function main() {
   evidence.handoffPublicationStartedAt = new Date().toISOString()
   evidence.handoffPublicationError = null
   appendState(evidence, CloseoutState.HANDOFF_PUBLICATION_STARTED)
-  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.HANDOFF_PUBLICATION_STARTED, 'MEMOROS publication started after PMOS runtime verification passed.', {
+  appendTrailEventSafe(
+    baseName,
+    artifact.metadata.taskId,
+    ExecutionTrailEventType.HANDOFF_PUBLICATION_STARTED,
+    projectProfile.memorosEnabled
+      ? 'MEMOROS publication started after PMOS runtime verification passed.'
+      : 'PHR publication gate started after PMOS runtime verification passed.',
+    {
     details: { closeoutState: evidence.closeoutState },
     status: ExecutionTrailEventStatus.STARTED,
     source: 'pmos-save/handoff',
-  })
+    },
+  )
+  if (!projectProfile.memorosEnabled) {
+    appendFactPreservationNote(evidence, projectProfile.memorosAuditStatus)
+  }
   syncFactPreservationEvidence(baseName, evidence)
   syncFlightRecordCompletionEvidence(artifact, evidence)
   writeConversationArtifactFiles({ artifact: canonicalFlightRecordPayload, baseName, mdPath, jsonPath, integrityPath, lockPath, traceability })
   syncPendingArtifactSnapshot(canonicalFlightRecordPayload)
   writeJson(closeoutEvidencePath, evidence)
 
-  const persistedHandoff = await persistGptHandoffArtifact({
-    artifact,
-    closeout: evidence,
-    closeoutRef: relativize(closeoutEvidencePath),
-  })
-  persistedHandoffArtifactForPublication = persistedHandoff
+  let persistedHandoff: GptHandoffArtifactV1 | null = null
+  let srmPublicationCandidate: { closeout: CloseoutEvidence; handoff: GptHandoffArtifactV1 } | null = null
+  if (projectProfile.memorosEnabled) {
+    persistedHandoff = await persistGptHandoffArtifact({
+      artifact,
+      closeout: evidence,
+      closeoutRef: relativize(closeoutEvidencePath),
+    })
+    persistedHandoffArtifactForPublication = persistedHandoff
 
-  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.ARTIFACT_CREATED, 'GPT handoff artifact generated from finalized closeout state.', {
-    details: {
-      artifactKind: ArtifactKind.HANDOFF,
-      artifactId: persistedHandoff.id,
-      closeoutState: evidence.closeoutState,
-    },
-    status: ExecutionTrailEventStatus.SUCCEEDED,
-    source: 'pmos-save/handoff',
-  })
-
-  const memorosPublication = await publishConversationArtifactToMemoros({
-    conversationArtifact: persistedConversationArtifactForPublication,
-    handoffArtifactId: persistedHandoff.id,
-    closeoutRef: relativize(closeoutEvidencePath),
-  })
-
-  evidence.handoffPublicationStatus = 'SUCCEEDED'
-  evidence.handoffPublicationCompletedAt = new Date().toISOString()
-  evidence.handoffPublicationError = null
-  appendState(evidence, CloseoutState.HANDOFF_PUBLICATION_SUCCEEDED)
-  appendState(evidence, CloseoutState.CLOSEOUT_COMPLETE)
-  evidence.closeoutCompletedAt = new Date().toISOString()
-  evidence.recoveryRequired = false
-  evidence.recoveryReason = null
-  evidence.manualRecoveryInstructions = ['Closeout completed in PMOS. No recovery action required.']
-
-  writeConversationArtifactFiles({
-    artifact: canonicalFlightRecordPayload,
-    baseName,
-    mdPath,
-    jsonPath,
-    integrityPath,
-    lockPath,
-    recoveryDir: QUARANTINE_DIR,
-    handoff: persistedHandoff,
-    traceability,
-  })
-
-  const postHandoffMirrorDiffs = collectJsonDiffs(canonicalFlightRecordPayload, readConversationJsonArtifactOrThrow(jsonPath), 'conversationJsonMirror')
-  if (postHandoffMirrorDiffs.length > 0) {
-    throw new Error([
-      `Conversation JSON mirror drift detected after GPT handoff persistence for ${artifact.metadata.conversationId}`,
-      ...postHandoffMirrorDiffs.map((diff) => `- ${diff}`),
-    ].join('\n'))
+    appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.ARTIFACT_CREATED, 'GPT handoff artifact generated from finalized closeout state.', {
+      details: {
+        artifactKind: ArtifactKind.HANDOFF,
+        artifactId: persistedHandoff.id,
+        closeoutState: evidence.closeoutState,
+      },
+      status: ExecutionTrailEventStatus.SUCCEEDED,
+      source: 'pmos-save/handoff',
+    })
+  } else {
+    srmPublicationCandidate = buildSrmPhrPublicationCandidate({
+      artifact,
+      closeout: evidence,
+      closeoutRef: relativize(closeoutEvidencePath),
+      pendingArtifactSlotFinal: 'OCCUPIED',
+    })
+    appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.ARTIFACT_CREATED, 'Prepared canonical SRM closeout candidate for the required PHR publication gate.', {
+      details: {
+        artifactKind: ArtifactKind.HANDOFF,
+        artifactId: srmPublicationCandidate.handoff.id,
+        closeoutState: srmPublicationCandidate.closeout.closeoutState,
+      },
+      status: ExecutionTrailEventStatus.SUCCEEDED,
+      source: 'pmos-save/handoff',
+    })
   }
 
-  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.ARTIFACT_CREATED, 'MEMOROS publication record persisted after import ACK.', {
-    details: {
-      artifactKind: ArtifactKind.PUBLICATION,
-      artifactId: memorosPublication.publicationArtifact.id,
-      closeoutState: evidence.closeoutState,
-      threadId: memorosPublication.ack.threadId,
-      sourceRecordId: memorosPublication.ack.sourceRecordId,
-    },
-    status: ExecutionTrailEventStatus.SUCCEEDED,
-    source: 'pmos-save/handoff',
-  })
-  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.HANDOFF_PUBLICATION_SUCCEEDED, 'MEMOROS acknowledged publication after Thread and SourceRecord persistence.', {
-    details: {
-      artifactId: memorosPublication.publicationArtifact.id,
-      closeoutState: evidence.closeoutState,
-      threadId: memorosPublication.ack.threadId,
-      sourceRecordId: memorosPublication.ack.sourceRecordId,
-      alreadyImported: memorosPublication.ack.alreadyImported,
-    },
-    status: ExecutionTrailEventStatus.SUCCEEDED,
-    source: 'pmos-save/handoff',
-  })
-  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.CLOSEOUT_COMPLETED, 'Closeout completed after PMOS save, runtime verification, and handoff publication all passed.', {
-    details: { closeoutState: evidence.closeoutState, handoffPublicationStatus: evidence.handoffPublicationStatus },
-    relatedFiles: [traceability.closeoutEvidencePath, evidence.runtimeContextPath, evidence.runtimeContextIntegrityPath].filter(Boolean) as string[],
-    status: ExecutionTrailEventStatus.SUCCEEDED,
-    source: 'pmos-save/handoff',
-  })
-  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.TASK_COMPLETED, 'Task completed only after PMOS persistence, runtime verification, and persisted handoff publication succeeded.', {
-    details: {
-      closeoutState: evidence.closeoutState,
-      runtimeContextIntegrityStatus: evidence.runtimeContextIntegrityStatus,
-      handoffPublicationStatus: evidence.handoffPublicationStatus,
-    },
-    status: ExecutionTrailEventStatus.SUCCEEDED,
-    source: 'pmos-save/handoff',
-  })
+  const memorosPublicationAttempt = await runMemorosPublicationIfEnabled(projectProfile, async () => publishConversationArtifactToMemoros({
+    conversationArtifact: persistedConversationArtifactForPublication,
+    handoffArtifactId: persistedHandoff?.id ?? null,
+    closeoutRef: relativize(closeoutEvidencePath),
+  }))
+  const memorosPublication = memorosPublicationAttempt.result
+
+  if (persistedHandoff) {
+    writeConversationArtifactFiles({
+      artifact: canonicalFlightRecordPayload,
+      baseName,
+      mdPath,
+      jsonPath,
+      integrityPath,
+      lockPath,
+      recoveryDir: QUARANTINE_DIR,
+      handoff: persistedHandoff,
+      traceability,
+    })
+
+    const postHandoffMirrorDiffs = collectJsonDiffs(canonicalFlightRecordPayload, readConversationJsonArtifactOrThrow(jsonPath), 'conversationJsonMirror')
+    if (postHandoffMirrorDiffs.length > 0) {
+      throw new Error([
+        `Conversation JSON mirror drift detected after GPT handoff persistence for ${artifact.metadata.conversationId}`,
+        ...postHandoffMirrorDiffs.map((diff) => `- ${diff}`),
+      ].join('\n'))
+    }
+  }
+  if (memorosPublication) {
+    evidence.handoffPublicationStatus = 'SUCCEEDED'
+    evidence.handoffPublicationCompletedAt = new Date().toISOString()
+    evidence.handoffPublicationError = null
+    appendState(evidence, CloseoutState.HANDOFF_PUBLICATION_SUCCEEDED)
+
+    appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.ARTIFACT_CREATED, 'MEMOROS publication record persisted after import ACK.', {
+      details: {
+        artifactKind: ArtifactKind.PUBLICATION,
+        artifactId: memorosPublication.publicationArtifact.id,
+        closeoutState: evidence.closeoutState,
+        threadId: memorosPublication.ack.threadId,
+        sourceRecordId: memorosPublication.ack.sourceRecordId,
+      },
+      status: ExecutionTrailEventStatus.SUCCEEDED,
+      source: 'pmos-save/handoff',
+    })
+    appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.HANDOFF_PUBLICATION_SUCCEEDED, 'MEMOROS acknowledged publication after Thread and SourceRecord persistence.', {
+      details: {
+        artifactId: memorosPublication.publicationArtifact.id,
+        closeoutState: evidence.closeoutState,
+        threadId: memorosPublication.ack.threadId,
+        sourceRecordId: memorosPublication.ack.sourceRecordId,
+        alreadyImported: memorosPublication.ack.alreadyImported,
+      },
+      status: ExecutionTrailEventStatus.SUCCEEDED,
+      source: 'pmos-save/handoff',
+    })
+    appendState(evidence, CloseoutState.CLOSEOUT_COMPLETE)
+    evidence.closeoutCompletedAt = new Date().toISOString()
+    evidence.recoveryRequired = false
+    evidence.recoveryReason = null
+    evidence.manualRecoveryInstructions = ['Closeout completed in PMOS. No recovery action required.']
+  }
+
+  let phrPublicationResult: { attempted: boolean; attemptedAt: string | null; result: PhrPublicationResult | null }
+  if (!projectProfile.memorosEnabled) {
+    phrPublicationResult = publishPhrPublicationOnCompletedCloseout({
+      artifact: canonicalFlightRecordPayload,
+      handoff: srmPublicationCandidate?.handoff ?? null,
+      closeout: srmPublicationCandidate?.closeout ?? evidence,
+      closeoutRef: relativize(closeoutEvidencePath),
+      conversationArtifactPath: relativize(jsonPath),
+      sidecarPath: path.join(PHR_PUBLICATIONS_DIR, `${baseName}.json`),
+      repositoryPath: process.env.PHR_REPOSITORY_PATH ?? '',
+    })
+
+    const publicationOutcome = applySrmPhrPublicationOutcome({
+      evidence,
+      publication: {
+        status: phrPublicationResult.result?.status ?? 'FAILED',
+        error: phrPublicationResult.result?.error ?? 'PHR publication did not return a completion result.',
+      },
+      projectName: projectProfile.projectName,
+    })
+
+    if (!publicationOutcome.canCompleteTask) {
+      appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.HANDOFF_PUBLICATION_FAILED, 'PHR publication failed for SRM profile with MEMOROS disabled.', {
+        details: { error: evidence.handoffPublicationError, phrStatus: phrPublicationResult.result?.status ?? 'FAILED' },
+        status: ExecutionTrailEventStatus.FAILED,
+        severity: ExecutionTrailEventSeverity.ERROR,
+        source: 'pmos-save/handoff',
+      })
+      throw new Error(evidence.handoffPublicationError)
+    }
+
+    appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.HANDOFF_PUBLICATION_SUCCEEDED, 'PHR publication satisfied SRM closeout with MEMOROS disabled by project profile.', {
+      details: { phrStatus: phrPublicationResult.result?.status ?? 'FAILED', auditStatus: projectProfile.memorosAuditStatus },
+      status: ExecutionTrailEventStatus.SUCCEEDED,
+      source: 'pmos-save/handoff',
+    })
+  } else {
+    phrPublicationResult = publishPhrPublicationOnCompletedCloseout({
+      artifact: canonicalFlightRecordPayload,
+      handoff: persistedHandoffArtifactForPublication,
+      closeout: evidence,
+      closeoutRef: relativize(closeoutEvidencePath),
+      conversationArtifactPath: relativize(jsonPath),
+      sidecarPath: path.join(PHR_PUBLICATIONS_DIR, `${baseName}.json`),
+      repositoryPath: process.env.PHR_REPOSITORY_PATH ?? '',
+    })
+  }
 
   syncFactPreservationEvidence(baseName, evidence)
+  if (!projectProfile.memorosEnabled) {
+    appendFactPreservationNote(evidence, projectProfile.memorosAuditStatus)
+  }
   syncFlightRecordCompletionEvidence(artifact, evidence)
 
   canonicalFlightRecordPayload = createCanonicalFlightRecordPayload(artifact)
+
+  const finalHandoffContext: HandoffFinalizationContext = {
+    publicationArtifact: memorosPublication?.publicationArtifact ?? null,
+    publicationAck: memorosPublication?.ack ?? null,
+    pendingArtifactSlotFinal: 'CLEAR',
+    memorosMode: projectProfile.memorosMode,
+    memorosAuditStatus: projectProfile.memorosAuditStatus,
+    phrPublicationStatus: phrPublicationResult.result?.status ?? 'NOT_ATTEMPTED',
+    phrRequiredForCompletion: projectProfile.phrRequiredForCloseout,
+  }
 
   const finalPersistenceProjection = buildConversationArtifactProjection(
     artifact,
     conversationMdPath,
     canonicalFlightRecordPayload,
     evidence,
+    finalHandoffContext,
   )
 
   await prisma.conversationArtifact.update({
@@ -3036,7 +3284,6 @@ async function main() {
     },
   })
 
-  // 4. Clear pending artifact
   fs.unlinkSync(PENDING_FILE)
   console.log('[pmos-save] ✓ Cleared pending-artifact.json')
 
@@ -3044,11 +3291,7 @@ async function main() {
     artifact,
     closeout: evidence,
     closeoutRef: relativize(closeoutEvidencePath),
-    finalizationContext: {
-      publicationArtifact: memorosPublication.publicationArtifact,
-      publicationAck: memorosPublication.ack,
-      pendingArtifactSlotFinal: 'CLEAR',
-    },
+    finalizationContext: finalHandoffContext,
   })
   persistedHandoffArtifactForPublication = refreshedHandoff
 
@@ -3066,15 +3309,6 @@ async function main() {
   })
   syncPendingArtifactSnapshot(canonicalFlightRecordPayload)
 
-  const phrPublicationResult = publishPhrPublicationOnCompletedCloseout({
-    artifact: canonicalFlightRecordPayload,
-    handoff: persistedHandoffArtifactForPublication,
-    closeout: evidence,
-    closeoutRef: relativize(closeoutEvidencePath),
-    conversationArtifactPath: relativize(jsonPath),
-    sidecarPath: path.join(PHR_PUBLICATIONS_DIR, `${baseName}.json`),
-    repositoryPath: process.env.PHR_REPOSITORY_PATH ?? '',
-  })
   if (phrPublicationResult.attempted) {
     if (phrPublicationResult.result && isSuccessfulPhrPublicationStatus(phrPublicationResult.result.status)) {
       console.log(`[pmos-save] ✓ PHR publication ${phrPublicationResult.result.status.toLowerCase()} for ${artifact.metadata.conversationId}`)
@@ -3082,6 +3316,22 @@ async function main() {
       console.warn(`[pmos-save] ⚠️  PHR publication ${phrPublicationResult.result.status.toLowerCase()} for ${artifact.metadata.conversationId}: ${phrPublicationResult.result.error ?? 'unknown error'}`)
     }
   }
+
+  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.CLOSEOUT_COMPLETED, 'Closeout completed after PMOS save, runtime verification, and required downstream handoff publication all passed.', {
+    details: { closeoutState: evidence.closeoutState, handoffPublicationStatus: evidence.handoffPublicationStatus },
+    relatedFiles: [traceability.closeoutEvidencePath, evidence.runtimeContextPath, evidence.runtimeContextIntegrityPath].filter(Boolean) as string[],
+    status: ExecutionTrailEventStatus.SUCCEEDED,
+    source: 'pmos-save/handoff',
+  })
+  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.TASK_COMPLETED, 'Task completed only after PMOS persistence, runtime verification, and required downstream handoff publication succeeded.', {
+    details: {
+      closeoutState: evidence.closeoutState,
+      runtimeContextIntegrityStatus: evidence.runtimeContextIntegrityStatus,
+      handoffPublicationStatus: evidence.handoffPublicationStatus,
+    },
+    status: ExecutionTrailEventStatus.SUCCEEDED,
+    source: 'pmos-save/handoff',
+  })
 
   if (fs.existsSync(ACTIVE_CLOSEOUT_FILE)) {
     fs.unlinkSync(ACTIVE_CLOSEOUT_FILE)
@@ -3093,11 +3343,15 @@ async function main() {
   console.log('[pmos-save] PMOS persistence COMPLETE.')
 }
 
-main()
-  .catch((e) => {
-    const error = e as Error
-    if (artifact && evidence && closeoutEvidencePath) {
-      if (persistedConversationArtifactForPublication && evidence.handoffPublicationStatus === 'STARTED') {
+const isDirectExecution = typeof process.argv[1] === 'string'
+  && import.meta.url === pathToFileURL(process.argv[1]).href
+
+if (isDirectExecution) {
+  main()
+    .catch((e) => {
+      const error = e as Error
+      if (artifact && evidence && closeoutEvidencePath) {
+        if (persistedConversationArtifactForPublication && evidence.handoffPublicationStatus === 'STARTED' && resolveArtifactProjectProfile(artifact).memorosEnabled) {
         void persistMemorosPublicationArtifact({
           conversationArtifact: persistedConversationArtifactForPublication,
           handoffArtifactId: persistedHandoffArtifactForPublication?.id ?? null,
@@ -3113,65 +3367,66 @@ main()
         })
       }
 
-      const recoveryCopy = copyToRecoveryTarget(
-        pendingBackupPath ?? PENDING_FILE,
-        evidence.pmosSaveStatus === 'FAILED' ? QUARANTINE_DIR : FAILED_ARTIFACTS_DIR,
-        `${baseName}__recovery_${buildRecoverySuffix()}.json`,
-      )
+        const recoveryCopy = copyToRecoveryTarget(
+          pendingBackupPath ?? PENDING_FILE,
+          evidence.pmosSaveStatus === 'FAILED' ? QUARANTINE_DIR : FAILED_ARTIFACTS_DIR,
+          `${baseName}__recovery_${buildRecoverySuffix()}.json`,
+        )
 
-      if (evidence.pmosSaveStatus !== 'PARTIAL' && evidence.pmosSaveStatus !== 'FAILED') {
-        evidence.pmosSaveStatus = persistedDbRecordId || evidence.pmosSaveConversationMdPath ? 'PARTIAL' : 'FAILED'
-      }
-      if (evidence.handoffPublicationStatus === 'STARTED') {
-        evidence.handoffPublicationStatus = 'FAILED'
-        evidence.handoffPublicationCompletedAt = new Date().toISOString()
-        evidence.handoffPublicationError = error.message
-        appendState(evidence, CloseoutState.HANDOFF_PUBLICATION_FAILED)
-        appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.HANDOFF_PUBLICATION_FAILED, 'MEMOROS publication failed or did not complete.', {
-          details: { error: error.message },
-          status: ExecutionTrailEventStatus.FAILED,
+        if (evidence.pmosSaveStatus !== 'PARTIAL' && evidence.pmosSaveStatus !== 'FAILED') {
+          evidence.pmosSaveStatus = persistedDbRecordId || evidence.pmosSaveConversationMdPath ? 'PARTIAL' : 'FAILED'
+        }
+        if (evidence.handoffPublicationStatus === 'STARTED') {
+          evidence.handoffPublicationStatus = 'FAILED'
+          evidence.handoffPublicationCompletedAt = new Date().toISOString()
+          evidence.handoffPublicationError = error.message
+          appendState(evidence, CloseoutState.HANDOFF_PUBLICATION_FAILED)
+          appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.HANDOFF_PUBLICATION_FAILED, 'Required downstream handoff publication failed or did not complete.', {
+            details: { error: error.message },
+            status: ExecutionTrailEventStatus.FAILED,
+            severity: ExecutionTrailEventSeverity.ERROR,
+          })
+        }
+        if (!evidence.pmosSaveError) evidence.pmosSaveError = error.message
+        evidence.recoveryRequired = true
+        if (!evidence.recoveryReason) evidence.recoveryReason = error.message
+        evidence.manualRecoveryInstructions = [
+          'Inspect the closeout evidence sidecar and archive paths recorded in recovery/closeouts.',
+          pendingBackupPath ? `Restore or inspect backup: ${relativize(pendingBackupPath)}.` : 'Pending-artifact backup unavailable.',
+          recoveryCopy ? `Inspect recovery copy: ${relativize(recoveryCopy)}.` : 'Recovery copy unavailable.',
+          'Do not call task_complete. Task state is INCOMPLETE — RECOVERY REQUIRED.',
+        ]
+
+        if (evidence.pmosSaveStatus === 'PARTIAL') {
+          appendState(evidence, CloseoutState.PMOS_SAVE_PARTIAL)
+          appendState(evidence, CloseoutState.CLOSEOUT_PARTIAL)
+        } else {
+          appendState(evidence, CloseoutState.PMOS_SAVE_FAILED)
+          appendState(evidence, CloseoutState.CLOSEOUT_FAILED)
+        }
+        appendState(evidence, CloseoutState.RECOVERY_REQUIRED)
+        appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.PMOS_SAVE_FAILED, 'PMOS save failed or produced a partial result.', {
+          details: { error: error.message, pmosSaveStatus: evidence.pmosSaveStatus },
+          status: evidence.pmosSaveStatus === 'PARTIAL' ? ExecutionTrailEventStatus.PARTIAL : ExecutionTrailEventStatus.FAILED,
           severity: ExecutionTrailEventSeverity.ERROR,
         })
+        appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.RECOVERY_REQUIRED, 'Recovery required after PMOS save failure or partial state.', {
+          details: { recoveryReason: evidence.recoveryReason },
+          status: ExecutionTrailEventStatus.BLOCKED,
+          severity: ExecutionTrailEventSeverity.CRITICAL,
+        })
+        appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.TASK_INCOMPLETE, 'Task incomplete because PMOS closeout did not complete.', {
+          details: { closeoutEvidencePath: closeoutEvidencePath ? relativize(closeoutEvidencePath) : null },
+          status: ExecutionTrailEventStatus.INCOMPLETE,
+          severity: ExecutionTrailEventSeverity.ERROR,
+        })
+        syncFactPreservationEvidence(baseName, evidence)
+        writeJson(closeoutEvidencePath, evidence)
       }
-      if (!evidence.pmosSaveError) evidence.pmosSaveError = error.message
-      evidence.recoveryRequired = true
-      if (!evidence.recoveryReason) evidence.recoveryReason = error.message
-      evidence.manualRecoveryInstructions = [
-        'Inspect the closeout evidence sidecar and archive paths recorded in recovery/closeouts.',
-        pendingBackupPath ? `Restore or inspect backup: ${relativize(pendingBackupPath)}.` : 'Pending-artifact backup unavailable.',
-        recoveryCopy ? `Inspect recovery copy: ${relativize(recoveryCopy)}.` : 'Recovery copy unavailable.',
-        'Do not call task_complete. Task state is INCOMPLETE — RECOVERY REQUIRED.',
-      ]
 
-      if (evidence.pmosSaveStatus === 'PARTIAL') {
-        appendState(evidence, CloseoutState.PMOS_SAVE_PARTIAL)
-        appendState(evidence, CloseoutState.CLOSEOUT_PARTIAL)
-      } else {
-        appendState(evidence, CloseoutState.PMOS_SAVE_FAILED)
-        appendState(evidence, CloseoutState.CLOSEOUT_FAILED)
-      }
-      appendState(evidence, CloseoutState.RECOVERY_REQUIRED)
-      appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.PMOS_SAVE_FAILED, 'PMOS save failed or produced a partial result.', {
-        details: { error: error.message, pmosSaveStatus: evidence.pmosSaveStatus },
-        status: evidence.pmosSaveStatus === 'PARTIAL' ? ExecutionTrailEventStatus.PARTIAL : ExecutionTrailEventStatus.FAILED,
-        severity: ExecutionTrailEventSeverity.ERROR,
-      })
-      appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.RECOVERY_REQUIRED, 'Recovery required after PMOS save failure or partial state.', {
-        details: { recoveryReason: evidence.recoveryReason },
-        status: ExecutionTrailEventStatus.BLOCKED,
-        severity: ExecutionTrailEventSeverity.CRITICAL,
-      })
-      appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.TASK_INCOMPLETE, 'Task incomplete because PMOS closeout did not complete.', {
-        details: { closeoutEvidencePath: closeoutEvidencePath ? relativize(closeoutEvidencePath) : null },
-        status: ExecutionTrailEventStatus.INCOMPLETE,
-        severity: ExecutionTrailEventSeverity.ERROR,
-      })
-      syncFactPreservationEvidence(baseName, evidence)
-      writeJson(closeoutEvidencePath, evidence)
-    }
-
-    console.error('[pmos-save] FATAL:', e)
-    releaseAdvisoryLock()
-    process.exit(1)
-  })
-  .finally(() => prisma.$disconnect())
+      console.error('[pmos-save] FATAL:', e)
+      releaseAdvisoryLock()
+      process.exit(1)
+    })
+    .finally(() => prisma.$disconnect())
+}

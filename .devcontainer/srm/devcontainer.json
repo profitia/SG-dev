@@ -1,0 +1,20 @@
+{
+  "name": "SG-dev SRM",
+  "customizations": {
+    "codespaces": {
+      "repositories": {
+        "profitia/project-history-repository": {
+          "permissions": {
+            "contents": "write"
+          }
+        }
+      }
+    }
+  },
+  "containerEnv": {
+    "PMOS_PROJECT_NAME": "SRM / PORR",
+    "PMOS_WORKSPACE_NAME": "SG-dev Codespaces SRM",
+    "PMOS_EXECUTION_ENVIRONMENT": "codespaces",
+    "PMOS_MEMOROS_MODE": "disabled"
+  }
+}
