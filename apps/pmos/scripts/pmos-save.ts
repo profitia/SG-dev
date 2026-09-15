@@ -1907,6 +1907,7 @@ function createGptHandoffArtifact(params: {
   closeout: CloseoutEvidence
   closeoutRef: string
   finalizationContext: HandoffFinalizationContext
+  createdAt?: string
 }): GptHandoffArtifactV1 {
   const payload = buildDerivedHandoffPayloadWithContext(params.artifact, params.closeout, params.finalizationContext)
 
@@ -1918,7 +1919,7 @@ function createGptHandoffArtifact(params: {
     status: ArtifactStatus.GENERATED,
     taskId: params.artifact.metadata.taskId,
     conversationId: params.artifact.metadata.conversationId,
-    createdAt: new Date().toISOString(),
+    createdAt: params.createdAt ?? new Date().toISOString(),
     sourceRefs: [
       {
         sourceArtifactKind: ArtifactKind.CLOSEOUT,
@@ -1935,17 +1936,65 @@ function createGptHandoffArtifact(params: {
   }
 }
 
+function buildHandoffFinalizationContext(params: {
+  profile: PmosProjectProfile
+  pendingArtifactSlotFinal: HandoffFinalizationContext['pendingArtifactSlotFinal']
+  phrPublicationStatus: PhrPublicationResult['status'] | 'NOT_ATTEMPTED'
+  publicationArtifact?: MemorosPublicationArtifactV1 | null
+  publicationAck?: MemorosPublicationAck | null
+  phrPublicationPostcondition?: HandoffFinalizationContext['phrPublicationPostcondition']
+}): HandoffFinalizationContext {
+  return {
+    publicationArtifact: params.publicationArtifact ?? null,
+    publicationAck: params.publicationAck ?? null,
+    pendingArtifactSlotFinal: params.pendingArtifactSlotFinal,
+    memorosMode: params.profile.memorosMode,
+    memorosAuditStatus: params.profile.memorosAuditStatus,
+    phrPublicationStatus: params.phrPublicationStatus,
+    phrRequiredForCompletion: params.profile.phrRequiredForCloseout,
+    ...(params.phrPublicationPostcondition
+      ? { phrPublicationPostcondition: params.phrPublicationPostcondition }
+      : {}),
+  }
+}
+
+function getStableSrmPhrPublicationTimestamp(artifact: FlightRecordV1): string {
+  return artifact.metadata.timestamp
+}
+
+export function buildPhrPublicationReadyHandoff(params: {
+  artifact: FlightRecordV1
+  closeout: CloseoutEvidence
+  closeoutRef: string
+  finalizationContext: HandoffFinalizationContext
+  createdAt?: string
+}): GptHandoffArtifactV1 {
+  return createGptHandoffArtifact({
+    artifact: params.artifact,
+    closeout: params.closeout,
+    closeoutRef: params.closeoutRef,
+    finalizationContext: params.finalizationContext,
+    createdAt: params.createdAt,
+  })
+}
+
 export function buildSrmPhrPublicationCandidate(params: {
   artifact: FlightRecordV1
   closeout: CloseoutEvidence
   closeoutRef: string
   pendingArtifactSlotFinal?: HandoffFinalizationContext['pendingArtifactSlotFinal']
 }): { closeout: CloseoutEvidence; handoff: GptHandoffArtifactV1 } {
-  const completedAt = new Date().toISOString()
+  const completedAt = getStableSrmPhrPublicationTimestamp(params.artifact)
+  const stablePmosSaveCompletedAt = params.closeout.pmosSaveStartedAt ?? params.closeout.closeoutStartedAt ?? completedAt
+  const stableHandoffPublicationStartedAt = params.closeout.vectorRebuildCompletedAt
+    ?? params.closeout.vectorRebuildStartedAt
+    ?? stablePmosSaveCompletedAt
   const candidateCloseout: CloseoutEvidence = {
     ...params.closeout,
     stateHistory: [...(params.closeout.stateHistory ?? [])],
     factPreservationNotes: [...(params.closeout.factPreservationNotes ?? [])],
+    pmosSaveCompletedAt: stablePmosSaveCompletedAt,
+    handoffPublicationStartedAt: stableHandoffPublicationStartedAt,
     handoffPublicationStatus: 'SUCCEEDED',
     handoffPublicationCompletedAt: completedAt,
     handoffPublicationError: null,
@@ -1964,22 +2013,17 @@ export function buildSrmPhrPublicationCandidate(params: {
 
   return {
     closeout: candidateCloseout,
-    handoff: createGptHandoffArtifact({
+    handoff: buildPhrPublicationReadyHandoff({
       artifact: params.artifact,
       closeout: candidateCloseout,
       closeoutRef: params.closeoutRef,
-      finalizationContext: {
-        publicationArtifact: null,
-        publicationAck: null,
+      finalizationContext: buildHandoffFinalizationContext({
+        profile: resolvePmosProjectProfile({ projectName: SRM_PMOS_PROJECT_NAME, memorosMode: 'disabled' }),
         pendingArtifactSlotFinal: params.pendingArtifactSlotFinal ?? 'OCCUPIED',
-        memorosMode: 'disabled',
-        memorosAuditStatus: 'MEMOROS_DISABLED_BY_PROJECT_PROFILE',
         phrPublicationStatus: 'NOT_ATTEMPTED',
-        phrRequiredForCompletion: true,
-        // The bundle can exist only if the publisher succeeds, so the candidate may
-        // express the postcondition without persisting a false success into PMOS.
         phrPublicationPostcondition: 'SATISFIED_ON_PUBLISHER_SUCCESS',
-      },
+      }),
+      createdAt: completedAt,
     }),
   }
 }
@@ -3239,9 +3283,23 @@ async function main() {
       source: 'pmos-save/handoff',
     })
   } else {
+    const spendGuruPhrReadyHandoff = buildPhrPublicationReadyHandoff({
+      artifact,
+      closeout: evidence,
+      closeoutRef: relativize(closeoutEvidencePath),
+      finalizationContext: buildHandoffFinalizationContext({
+        profile: projectProfile,
+        publicationArtifact: memorosPublication?.publicationArtifact ?? null,
+        publicationAck: memorosPublication?.ack ?? null,
+        pendingArtifactSlotFinal: 'OCCUPIED',
+        phrPublicationStatus: 'NOT_ATTEMPTED',
+      }),
+      createdAt: evidence.closeoutCompletedAt ?? evidence.handoffPublicationCompletedAt ?? artifact.metadata.timestamp,
+    })
+
     phrPublicationResult = publishPhrPublicationOnCompletedCloseout({
       artifact: canonicalFlightRecordPayload,
-      handoff: persistedHandoffArtifactForPublication,
+      handoff: spendGuruPhrReadyHandoff,
       closeout: evidence,
       closeoutRef: relativize(closeoutEvidencePath),
       conversationArtifactPath: relativize(jsonPath),
@@ -3258,15 +3316,16 @@ async function main() {
 
   canonicalFlightRecordPayload = createCanonicalFlightRecordPayload(artifact)
 
-  const finalHandoffContext: HandoffFinalizationContext = {
+  fs.unlinkSync(PENDING_FILE)
+  console.log('[pmos-save] ✓ Cleared pending-artifact.json')
+
+  const finalHandoffContext = buildHandoffFinalizationContext({
+    profile: projectProfile,
     publicationArtifact: memorosPublication?.publicationArtifact ?? null,
     publicationAck: memorosPublication?.ack ?? null,
     pendingArtifactSlotFinal: 'CLEAR',
-    memorosMode: projectProfile.memorosMode,
-    memorosAuditStatus: projectProfile.memorosAuditStatus,
     phrPublicationStatus: phrPublicationResult.result?.status ?? 'NOT_ATTEMPTED',
-    phrRequiredForCompletion: projectProfile.phrRequiredForCloseout,
-  }
+  })
 
   const finalPersistenceProjection = buildConversationArtifactProjection(
     artifact,
@@ -3283,9 +3342,6 @@ async function main() {
       ...relationUpdateWrites,
     },
   })
-
-  fs.unlinkSync(PENDING_FILE)
-  console.log('[pmos-save] ✓ Cleared pending-artifact.json')
 
   const refreshedHandoff = await persistGptHandoffArtifact({
     artifact,

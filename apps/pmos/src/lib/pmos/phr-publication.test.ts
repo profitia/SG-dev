@@ -70,7 +70,13 @@ function createReplayableTempPhrRepo(originRemote: string) {
     '  process.exit(1)',
     '}',
     'const publication = JSON.parse(fs.readFileSync(process.argv[inputIndex + 1], "utf8"))',
-    'const historyRoot = path.join(process.env.PHR_REPOSITORY_PATH, "history", publication.publicationId)',
+    'const slug = String(publication.publicationId).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")',
+    'const stamp = String(publication.publishedAt).replace(/[:.]/g, "-").replace(/T/g, "__")',
+    'const date = new Date(publication.publishedAt)',
+    'const yyyy = String(date.getUTCFullYear())',
+    'const mm = String(date.getUTCMonth() + 1).padStart(2, "0")',
+    'const dd = String(date.getUTCDate()).padStart(2, "0")',
+    'const historyRoot = path.join(process.env.PHR_REPOSITORY_PATH, "history", yyyy, mm, dd, `${stamp}__${slug}`)',
     'const fingerprint = createHash("sha256").update(JSON.stringify({',
     '  publicationId: publication.publicationId,',
     '  handoff: publication.artifacts.find((artifact) => artifact.type === "handoff.md")?.content ?? null,',
@@ -389,9 +395,12 @@ test('writePhrPublicationAttempt publishes once, replays idempotently, and confl
   const second = writePhrPublicationAttempt({ publication, repositoryPath: repoPath })
   assert.equal(second.status, 'IDEMPOTENT')
 
-  const bundleEntries = fs.readdirSync(path.join(repoPath, 'history', publication.publicationId))
+  const bundlePath = first.bundlePath
+  assert.ok(bundlePath)
+  const bundleEntries = fs.readdirSync(bundlePath)
   assert.equal(bundleEntries.filter((entry) => entry === 'manifest.json').length, 1)
   assert.equal(bundleEntries.filter((entry) => entry === 'fingerprint.json').length, 1)
+  assert.match(bundlePath, /history\/2026\/09\/05\/2026-09-05__12-01-00-000Z__phr-adapter-test$/)
 
   const conflictingPublication = makeRefreshedPublication({ pendingArtifactSlotFinal: 'OCCUPIED' })
   const conflict = writePhrPublicationAttempt({ publication: conflictingPublication, repositoryPath: repoPath })

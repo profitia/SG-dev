@@ -32,7 +32,7 @@ function normalizeLooseIdentifier(value: string): string {
   return normalizeWhitespace(value)
     .replace(/\s*\[[^\]]+\]\s*$/g, '')
     .toLowerCase()
-    .replace(/[\/_-]+/g, ' ')
+    .replace(/[\/_\-\u2010-\u2015\u2212]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
 }

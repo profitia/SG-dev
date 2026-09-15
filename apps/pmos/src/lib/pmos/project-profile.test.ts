@@ -21,7 +21,24 @@ function makeEnv(values: Record<string, string | undefined>): NodeJS.ProcessEnv 
 }
 
 test('project normalization preserves SpendGuru aliases and adds SRM aliases', () => {
-  assert.equal(normalizePmosProjectName('spendguru'), DEFAULT_PMOS_PROJECT_NAME)
+  const spendGuruAliases = [
+    'SpendGuru 2.0',
+    'Spend Guru',
+    'SpendGuru',
+    'SpendGuru 2 0',
+    'SpendGuru-2',
+    'sg2-discovery-runtime',
+    'sg-dev',
+    'SpendGuru 2.0 - PMOS',
+    'SpendGuru 2.0 - PCOS Runtime',
+    'SpendGuru 2.0 — PMOS',
+    'SpendGuru 2.0 — PCOS Runtime',
+  ]
+
+  spendGuruAliases.forEach((alias) => {
+    assert.equal(normalizePmosProjectName(alias), DEFAULT_PMOS_PROJECT_NAME)
+  })
+
   assert.equal(normalizePmosProjectName('SRM'), SRM_PMOS_PROJECT_NAME)
   assert.equal(normalizePmosProjectName('srm porr'), SRM_PMOS_PROJECT_NAME)
   assert.equal(normalizePmosProjectName('srm / porr'), SRM_PMOS_PROJECT_NAME)
