@@ -4249,42 +4249,47 @@ export function createForecastLibraryService(
         },
       )
       const expectedHistoryFingerprint = fastPathContext?.expectedHistoryFingerprint
-      const authorityMismatch = fastPathContext && prepared && !artifactMatchesPreparedReadAuthority(prepared, {
-        seriesId: input.seriesId,
-        modelId: input.modelId,
-        targetBasis: input.targetBasis,
-        targetSemantics: identity.targetSemantics,
-        methodId: identity.methodId,
-        methodVersion: identity.methodVersion,
-        frequencyIdentity: cadenceContext.frequencyIdentity,
-        sourceFrequency,
-        targetCadence,
-        expectedHistoryFingerprint,
-      })
-      const exactPrepared = authorityMismatch
-        ? await traceForecastRequestDiagnosticsSpan(
-            'prepared_recent_verification_exact_fallback_lookup',
-            'DB_OPERATION',
-            () => resolvedDependencies.repository.readVerificationRun({
-              seriesId: input.seriesId,
-              modelId: input.modelId,
-              targetBasis: input.targetBasis,
-              frequencyIdentity: cadenceContext.frequencyIdentity,
-              inputSource: prepared.source.kind,
-              historyFingerprint: expectedHistoryFingerprint,
-              trainingWindowPolicyId: expectedCompatibility.trainingWindowPolicyId,
-              effectiveTrainingPolicyId: expectedCompatibility.effectiveTrainingPolicyId,
-              ...identity,
-            }),
-            {
-              seriesId: input.seriesId,
-              modelId: input.modelId,
-              targetBasis: input.targetBasis,
-              sourceFrequency,
-              targetCadence,
-            },
-          )
-        : prepared
+      let exactPrepared = prepared
+      if (
+        fastPathContext
+        && prepared
+        && expectedHistoryFingerprint
+        && !artifactMatchesPreparedReadAuthority(prepared, {
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis,
+          targetSemantics: identity.targetSemantics,
+          methodId: identity.methodId,
+          methodVersion: identity.methodVersion,
+          frequencyIdentity: cadenceContext.frequencyIdentity,
+          sourceFrequency,
+          targetCadence,
+          expectedHistoryFingerprint,
+        })
+      ) {
+        exactPrepared = await traceForecastRequestDiagnosticsSpan(
+          'prepared_recent_verification_exact_fallback_lookup',
+          'DB_OPERATION',
+          () => resolvedDependencies.repository.readVerificationRun({
+            seriesId: input.seriesId,
+            modelId: input.modelId,
+            targetBasis: input.targetBasis,
+            frequencyIdentity: cadenceContext.frequencyIdentity,
+            inputSource: prepared.source.kind,
+            historyFingerprint: expectedHistoryFingerprint,
+            trainingWindowPolicyId: expectedCompatibility.trainingWindowPolicyId,
+            effectiveTrainingPolicyId: expectedCompatibility.effectiveTrainingPolicyId,
+            ...identity,
+          }),
+          {
+            seriesId: input.seriesId,
+            modelId: input.modelId,
+            targetBasis: input.targetBasis,
+            sourceFrequency,
+            targetCadence,
+          },
+        )
+      }
 
       noteForecastRequestDiagnosticsEvent('prepared_recent_verification_compute_absent', 'COMPUTE', {
         seriesId: input.seriesId,
