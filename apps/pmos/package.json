@@ -66,7 +66,8 @@
     "skills:probe-business-delta-firewall-14m": "tsx scripts/probe-skill-1-business-delta-firewall-14m.ts",
     "skills:check-kill-switch": "tsx scripts/check-skill-kill-switch.ts",
     "skills:check-dry-run": "tsx scripts/check-skill-dry-run.ts",
-    "prebuild": "npm run governance:gate && npm run authority:enforce"
+    "prebuild": "npm run governance:gate && npm run authority:enforce",
+    "db:migrate:deploy": "prisma migrate deploy"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
