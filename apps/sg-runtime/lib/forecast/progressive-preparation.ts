@@ -214,7 +214,7 @@ async function buildQueuedItems(
   dependencies: ProgressiveForecastPreparationDependencies,
   resolution: ForecastCapabilityResolution,
   state: SeriesState,
-): QueueItem[] {
+): Promise<QueueItem[]> {
   const recentVerificationStates = await resolveRecentVerificationPreparedStates(dependencies, resolution)
   const items: QueueItem[] = []
 
