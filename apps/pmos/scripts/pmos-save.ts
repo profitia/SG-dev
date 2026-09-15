@@ -1962,8 +1962,8 @@ function getStableSrmPhrPublicationTimestamp(artifact: FlightRecordV1): string {
   return artifact.metadata.timestamp
 }
 
-function buildDeterministicSrmPhrStateHistory(closeout: CloseoutEvidence): CloseoutState[] {
-  const allowedStates = new Set<CloseoutState>([
+function buildDeterministicSrmPhrStateHistory(): CloseoutState[] {
+  return [
     CloseoutState.INITIATED,
     CloseoutState.PENDING_ARTIFACT_CREATED,
     CloseoutState.PENDING_ARTIFACT_VALIDATED,
@@ -1973,26 +1973,13 @@ function buildDeterministicSrmPhrStateHistory(closeout: CloseoutEvidence): Close
     CloseoutState.VECTOR_REBUILD_SUCCEEDED,
     CloseoutState.RUNTIME_CONTEXT_VERIFIED,
     CloseoutState.HANDOFF_PUBLICATION_STARTED,
-  ])
-
-  const canonicalHistory: CloseoutState[] = []
-  for (const state of closeout.stateHistory ?? []) {
-    if (allowedStates.has(state) && !canonicalHistory.includes(state)) {
-      canonicalHistory.push(state)
-    }
-  }
-
-  if (!canonicalHistory.includes(CloseoutState.HANDOFF_PUBLICATION_STARTED)) {
-    canonicalHistory.push(CloseoutState.HANDOFF_PUBLICATION_STARTED)
-  }
-
-  canonicalHistory.push(CloseoutState.HANDOFF_PUBLICATION_SUCCEEDED)
-  canonicalHistory.push(CloseoutState.CLOSEOUT_COMPLETE)
-  return canonicalHistory
+    CloseoutState.HANDOFF_PUBLICATION_SUCCEEDED,
+    CloseoutState.CLOSEOUT_COMPLETE,
+  ]
 }
 
-function buildDeterministicSrmFactPreservationNotes(closeout: CloseoutEvidence): string[] {
-  return Array.from(new Set([...(closeout.factPreservationNotes ?? []), 'MEMOROS_DISABLED_BY_PROJECT_PROFILE'])).sort()
+function buildDeterministicSrmFactPreservationNotes(): string[] {
+  return ['MEMOROS_DISABLED_BY_PROJECT_PROFILE']
 }
 
 function buildDeterministicSrmPhrCloseoutSnapshot(params: {
@@ -2000,11 +1987,11 @@ function buildDeterministicSrmPhrCloseoutSnapshot(params: {
   closeout: CloseoutEvidence
 }): CloseoutEvidence {
   const completedAt = getStableSrmPhrPublicationTimestamp(params.artifact)
-  const candidateCloseout = {
-    ...params.closeout,
+  const candidateCloseout: CloseoutEvidence = {
     closeoutStartedAt: null,
     closeoutState: CloseoutState.CLOSEOUT_COMPLETE,
     closeoutCompletedAt: completedAt,
+    pmosSaveStatus: params.closeout.pmosSaveStatus,
     pmosSaveStartedAt: null,
     pmosSaveCompletedAt: null,
     pmosSaveError: null,
@@ -2014,6 +2001,7 @@ function buildDeterministicSrmPhrCloseoutSnapshot(params: {
     pmosSaveConversationJsonPath: null,
     pmosSaveIntegrityPath: null,
     pmosSaveLockPath: null,
+    vectorRebuildStatus: params.closeout.vectorRebuildStatus,
     vectorRebuildStartedAt: null,
     vectorRebuildCompletedAt: null,
     vectorRebuildError: null,
@@ -2023,10 +2011,14 @@ function buildDeterministicSrmPhrCloseoutSnapshot(params: {
     handoffPublicationError: null,
     runtimeContextPath: null,
     runtimeContextIntegrityPath: null,
+    runtimeContextIntegrityStatus: params.closeout.runtimeContextIntegrityStatus,
     runtimeContextVerificationSource: null,
+    archiveCompletenessStatus: params.closeout.archiveCompletenessStatus,
     archiveCompletenessErrors: [],
     executionTrailPath: null,
     executionTrailMarkdownPath: null,
+    executionTrailStatus: params.closeout.executionTrailStatus,
+    factPreservationStatus: params.closeout.factPreservationStatus,
     pendingArtifactBackupPath: null,
     recoveryRequired: false,
     recoveryReason: null,
@@ -2034,15 +2026,11 @@ function buildDeterministicSrmPhrCloseoutSnapshot(params: {
       'PHR publication is the mandatory completion gate for SRM closeout.',
       'This canonical closeout candidate may be materialized only after the publisher returns PUBLISHED or IDEMPOTENT.',
     ],
-    stateHistory: buildDeterministicSrmPhrStateHistory(params.closeout),
-    factPreservationNotes: buildDeterministicSrmFactPreservationNotes(params.closeout),
-  } as CloseoutEvidence & Record<string, unknown>
-
-  if ('runtimeContextIntegrityDetails' in candidateCloseout) {
-    candidateCloseout.runtimeContextIntegrityDetails = []
+    stateHistory: buildDeterministicSrmPhrStateHistory(),
+    factPreservationNotes: buildDeterministicSrmFactPreservationNotes(),
   }
 
-  return candidateCloseout as CloseoutEvidence
+  return candidateCloseout
 }
 
 export function buildPhrPublicationReadyHandoff(params: {

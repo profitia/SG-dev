@@ -176,6 +176,9 @@ function makeRetryEvidence(params: {
   executionTrailPath: string
   executionTrailMarkdownPath: string
   dbRecordId: string
+  factPreservationNotes: string[]
+  stateHistory: CloseoutState[]
+  retryTelemetryProbe: string
 }) {
   return {
     ...makeEvidence(),
@@ -189,6 +192,9 @@ function makeRetryEvidence(params: {
     executionTrailPath: params.executionTrailPath,
     executionTrailMarkdownPath: params.executionTrailMarkdownPath,
     pmosSaveDbRecordId: params.dbRecordId,
+    factPreservationNotes: params.factPreservationNotes,
+    stateHistory: params.stateHistory,
+    retryTelemetryProbe: params.retryTelemetryProbe,
   } as never
 }
 
@@ -415,6 +421,24 @@ test('SRM retry builds identical publication input and maps to one history bundl
     executionTrailPath: 'trail-attempt-1.jsonl',
     executionTrailMarkdownPath: 'trail-attempt-1.md',
     dbRecordId: 'db-record-attempt-1',
+    factPreservationNotes: [
+      'runtime quarantine: /attempt-1/quarantine/closeout.json',
+      'MEMOROS_DISABLED_BY_PROJECT_PROFILE',
+      'runtime quarantine: /attempt-1/quarantine/closeout.json',
+    ],
+    stateHistory: [
+      CloseoutState.INITIATED,
+      CloseoutState.PENDING_ARTIFACT_CREATED,
+      CloseoutState.PENDING_ARTIFACT_VALIDATED,
+      CloseoutState.PMOS_SAVE_STARTED,
+      CloseoutState.PMOS_SAVE_SUCCEEDED,
+      CloseoutState.VECTOR_REBUILD_STARTED,
+      CloseoutState.VECTOR_REBUILD_SUCCEEDED,
+      CloseoutState.RUNTIME_CONTEXT_VERIFIED,
+      CloseoutState.HANDOFF_PUBLICATION_STARTED,
+      CloseoutState.HANDOFF_PUBLICATION_STARTED,
+    ],
+    retryTelemetryProbe: 'attempt-1',
   })
   const evidenceTwo = makeRetryEvidence({
     closeoutStartedAt: '2026-09-14T10:10:00.000Z',
@@ -427,9 +451,29 @@ test('SRM retry builds identical publication input and maps to one history bundl
     executionTrailPath: 'trail-attempt-2.jsonl',
     executionTrailMarkdownPath: 'trail-attempt-2.md',
     dbRecordId: 'db-record-attempt-2',
+    factPreservationNotes: [
+      'recovery evidence: /attempt-2/recovery/closeout.json',
+      'MEMOROS_DISABLED_BY_PROJECT_PROFILE',
+    ],
+    stateHistory: [
+      CloseoutState.HANDOFF_PUBLICATION_STARTED,
+      CloseoutState.RUNTIME_CONTEXT_VERIFIED,
+      CloseoutState.VECTOR_REBUILD_SUCCEEDED,
+      CloseoutState.VECTOR_REBUILD_STARTED,
+      CloseoutState.PMOS_SAVE_SUCCEEDED,
+      CloseoutState.PMOS_SAVE_STARTED,
+      CloseoutState.PENDING_ARTIFACT_VALIDATED,
+      CloseoutState.PENDING_ARTIFACT_CREATED,
+      CloseoutState.INITIATED,
+      CloseoutState.PMOS_SAVE_STARTED,
+    ],
+    retryTelemetryProbe: 'attempt-2',
   })
 
   assert.notDeepEqual(evidenceOne, evidenceTwo)
+  assert.notEqual(JSON.stringify(evidenceOne).includes('attempt-1'), JSON.stringify(evidenceTwo).includes('attempt-1'))
+  assert.notEqual(JSON.stringify(evidenceOne).includes('retryTelemetryProbe'), false)
+  assert.notEqual(JSON.stringify(evidenceTwo).includes('retryTelemetryProbe'), false)
 
   const candidateOne = buildSrmPhrPublicationCandidate({
     artifact: makeArtifact(),
@@ -459,7 +503,29 @@ test('SRM retry builds identical publication input and maps to one history bundl
     conversationArtifactPath: 'apps/pmos/.pmos/conversations/test.json',
   })
 
+  assert.deepEqual(candidateOne.closeout, candidateTwo.closeout)
   assert.deepEqual(publicationTwo, publicationOne)
+
+  const serializedPublication = JSON.stringify(publicationOne)
+  assert.equal(serializedPublication.includes('attempt-1'), false)
+  assert.equal(serializedPublication.includes('attempt-2'), false)
+  assert.equal(serializedPublication.includes('retryTelemetryProbe'), false)
+  assert.equal(serializedPublication.includes('runtime quarantine:'), false)
+  assert.equal(serializedPublication.includes('recovery evidence:'), false)
+  assert.deepEqual(candidateOne.closeout.factPreservationNotes, ['MEMOROS_DISABLED_BY_PROJECT_PROFILE'])
+  assert.deepEqual(candidateOne.closeout.stateHistory, [
+    CloseoutState.INITIATED,
+    CloseoutState.PENDING_ARTIFACT_CREATED,
+    CloseoutState.PENDING_ARTIFACT_VALIDATED,
+    CloseoutState.PMOS_SAVE_STARTED,
+    CloseoutState.PMOS_SAVE_SUCCEEDED,
+    CloseoutState.VECTOR_REBUILD_STARTED,
+    CloseoutState.VECTOR_REBUILD_SUCCEEDED,
+    CloseoutState.RUNTIME_CONTEXT_VERIFIED,
+    CloseoutState.HANDOFF_PUBLICATION_STARTED,
+    CloseoutState.HANDOFF_PUBLICATION_SUCCEEDED,
+    CloseoutState.CLOSEOUT_COMPLETE,
+  ])
 
   const { repoPath } = createHistoryLayoutPhrRepo('https://github.com/profitia/project-history-repository.git')
   const first = writePhrPublicationAttempt({ publication: publicationOne, repositoryPath: repoPath })
