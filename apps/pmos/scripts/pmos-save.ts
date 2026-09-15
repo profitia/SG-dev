@@ -1962,6 +1962,89 @@ function getStableSrmPhrPublicationTimestamp(artifact: FlightRecordV1): string {
   return artifact.metadata.timestamp
 }
 
+function buildDeterministicSrmPhrStateHistory(closeout: CloseoutEvidence): CloseoutState[] {
+  const allowedStates = new Set<CloseoutState>([
+    CloseoutState.INITIATED,
+    CloseoutState.PENDING_ARTIFACT_CREATED,
+    CloseoutState.PENDING_ARTIFACT_VALIDATED,
+    CloseoutState.PMOS_SAVE_STARTED,
+    CloseoutState.PMOS_SAVE_SUCCEEDED,
+    CloseoutState.VECTOR_REBUILD_STARTED,
+    CloseoutState.VECTOR_REBUILD_SUCCEEDED,
+    CloseoutState.RUNTIME_CONTEXT_VERIFIED,
+    CloseoutState.HANDOFF_PUBLICATION_STARTED,
+  ])
+
+  const canonicalHistory: CloseoutState[] = []
+  for (const state of closeout.stateHistory ?? []) {
+    if (allowedStates.has(state) && !canonicalHistory.includes(state)) {
+      canonicalHistory.push(state)
+    }
+  }
+
+  if (!canonicalHistory.includes(CloseoutState.HANDOFF_PUBLICATION_STARTED)) {
+    canonicalHistory.push(CloseoutState.HANDOFF_PUBLICATION_STARTED)
+  }
+
+  canonicalHistory.push(CloseoutState.HANDOFF_PUBLICATION_SUCCEEDED)
+  canonicalHistory.push(CloseoutState.CLOSEOUT_COMPLETE)
+  return canonicalHistory
+}
+
+function buildDeterministicSrmFactPreservationNotes(closeout: CloseoutEvidence): string[] {
+  return Array.from(new Set([...(closeout.factPreservationNotes ?? []), 'MEMOROS_DISABLED_BY_PROJECT_PROFILE'])).sort()
+}
+
+function buildDeterministicSrmPhrCloseoutSnapshot(params: {
+  artifact: FlightRecordV1
+  closeout: CloseoutEvidence
+}): CloseoutEvidence {
+  const completedAt = getStableSrmPhrPublicationTimestamp(params.artifact)
+  const candidateCloseout = {
+    ...params.closeout,
+    closeoutStartedAt: null,
+    closeoutState: CloseoutState.CLOSEOUT_COMPLETE,
+    closeoutCompletedAt: completedAt,
+    pmosSaveStartedAt: null,
+    pmosSaveCompletedAt: null,
+    pmosSaveError: null,
+    pmosSaveArtifactPaths: [],
+    pmosSaveDbRecordId: null,
+    pmosSaveConversationMdPath: null,
+    pmosSaveConversationJsonPath: null,
+    pmosSaveIntegrityPath: null,
+    pmosSaveLockPath: null,
+    vectorRebuildStartedAt: null,
+    vectorRebuildCompletedAt: null,
+    vectorRebuildError: null,
+    handoffPublicationStartedAt: null,
+    handoffPublicationStatus: 'SUCCEEDED',
+    handoffPublicationCompletedAt: completedAt,
+    handoffPublicationError: null,
+    runtimeContextPath: null,
+    runtimeContextIntegrityPath: null,
+    runtimeContextVerificationSource: null,
+    archiveCompletenessErrors: [],
+    executionTrailPath: null,
+    executionTrailMarkdownPath: null,
+    pendingArtifactBackupPath: null,
+    recoveryRequired: false,
+    recoveryReason: null,
+    manualRecoveryInstructions: [
+      'PHR publication is the mandatory completion gate for SRM closeout.',
+      'This canonical closeout candidate may be materialized only after the publisher returns PUBLISHED or IDEMPOTENT.',
+    ],
+    stateHistory: buildDeterministicSrmPhrStateHistory(params.closeout),
+    factPreservationNotes: buildDeterministicSrmFactPreservationNotes(params.closeout),
+  } as CloseoutEvidence & Record<string, unknown>
+
+  if ('runtimeContextIntegrityDetails' in candidateCloseout) {
+    candidateCloseout.runtimeContextIntegrityDetails = []
+  }
+
+  return candidateCloseout as CloseoutEvidence
+}
+
 export function buildPhrPublicationReadyHandoff(params: {
   artifact: FlightRecordV1
   closeout: CloseoutEvidence
@@ -1985,31 +2068,10 @@ export function buildSrmPhrPublicationCandidate(params: {
   pendingArtifactSlotFinal?: HandoffFinalizationContext['pendingArtifactSlotFinal']
 }): { closeout: CloseoutEvidence; handoff: GptHandoffArtifactV1 } {
   const completedAt = getStableSrmPhrPublicationTimestamp(params.artifact)
-  const stablePmosSaveCompletedAt = params.closeout.pmosSaveStartedAt ?? params.closeout.closeoutStartedAt ?? completedAt
-  const stableHandoffPublicationStartedAt = params.closeout.vectorRebuildCompletedAt
-    ?? params.closeout.vectorRebuildStartedAt
-    ?? stablePmosSaveCompletedAt
-  const candidateCloseout: CloseoutEvidence = {
-    ...params.closeout,
-    stateHistory: [...(params.closeout.stateHistory ?? [])],
-    factPreservationNotes: [...(params.closeout.factPreservationNotes ?? [])],
-    pmosSaveCompletedAt: stablePmosSaveCompletedAt,
-    handoffPublicationStartedAt: stableHandoffPublicationStartedAt,
-    handoffPublicationStatus: 'SUCCEEDED',
-    handoffPublicationCompletedAt: completedAt,
-    handoffPublicationError: null,
-    closeoutCompletedAt: completedAt,
-    recoveryRequired: false,
-    recoveryReason: null,
-    manualRecoveryInstructions: [
-      'PHR publication is the mandatory completion gate for SRM closeout.',
-      'This canonical closeout candidate may be materialized only after the publisher returns PUBLISHED or IDEMPOTENT.',
-    ],
-  }
-
-  appendState(candidateCloseout, CloseoutState.HANDOFF_PUBLICATION_SUCCEEDED)
-  appendState(candidateCloseout, CloseoutState.CLOSEOUT_COMPLETE)
-  appendFactPreservationNote(candidateCloseout, 'MEMOROS_DISABLED_BY_PROJECT_PROFILE')
+  const candidateCloseout = buildDeterministicSrmPhrCloseoutSnapshot({
+    artifact: params.artifact,
+    closeout: params.closeout,
+  })
 
   return {
     closeout: candidateCloseout,
@@ -2025,6 +2087,58 @@ export function buildSrmPhrPublicationCandidate(params: {
       }),
       createdAt: completedAt,
     }),
+  }
+}
+
+export function publishOptionalSpendGuruPhrAfterPendingClear(params: {
+  pendingArtifactPath: string
+  artifact: FlightRecordV1
+  closeout: CloseoutEvidence
+  closeoutRef: string
+  conversationArtifactPath: string
+  sidecarPath: string
+  repositoryPath: string
+  projectProfile: PmosProjectProfile
+  publicationArtifact?: MemorosPublicationArtifactV1 | null
+  publicationAck?: MemorosPublicationAck | null
+  clearPendingArtifact?: (pendingArtifactPath: string) => void
+  publishPhr?: typeof publishPhrPublicationOnCompletedCloseout
+}): {
+  handoffForPublication: GptHandoffArtifactV1
+  publication: { attempted: boolean; attemptedAt: string | null; result: PhrPublicationResult | null }
+} {
+  const clearPendingArtifact = params.clearPendingArtifact ?? ((pendingArtifactPath) => fs.unlinkSync(pendingArtifactPath))
+  const publishPhr = params.publishPhr ?? publishPhrPublicationOnCompletedCloseout
+
+  clearPendingArtifact(params.pendingArtifactPath)
+
+  const handoffForPublication = buildPhrPublicationReadyHandoff({
+    artifact: params.artifact,
+    closeout: params.closeout,
+    closeoutRef: params.closeoutRef,
+    finalizationContext: buildHandoffFinalizationContext({
+      profile: params.projectProfile,
+      publicationArtifact: params.publicationArtifact ?? null,
+      publicationAck: params.publicationAck ?? null,
+      pendingArtifactSlotFinal: 'CLEAR',
+      phrPublicationStatus: 'NOT_ATTEMPTED',
+    }),
+    createdAt: params.closeout.closeoutCompletedAt ?? params.closeout.handoffPublicationCompletedAt ?? params.artifact.metadata.timestamp,
+  })
+
+  const publication = publishPhr({
+    artifact: params.artifact,
+    handoff: handoffForPublication,
+    closeout: params.closeout,
+    closeoutRef: params.closeoutRef,
+    conversationArtifactPath: params.conversationArtifactPath,
+    sidecarPath: params.sidecarPath,
+    repositoryPath: params.repositoryPath,
+  })
+
+  return {
+    handoffForPublication,
+    publication,
   }
 }
 
@@ -3283,29 +3397,7 @@ async function main() {
       source: 'pmos-save/handoff',
     })
   } else {
-    const spendGuruPhrReadyHandoff = buildPhrPublicationReadyHandoff({
-      artifact,
-      closeout: evidence,
-      closeoutRef: relativize(closeoutEvidencePath),
-      finalizationContext: buildHandoffFinalizationContext({
-        profile: projectProfile,
-        publicationArtifact: memorosPublication?.publicationArtifact ?? null,
-        publicationAck: memorosPublication?.ack ?? null,
-        pendingArtifactSlotFinal: 'OCCUPIED',
-        phrPublicationStatus: 'NOT_ATTEMPTED',
-      }),
-      createdAt: evidence.closeoutCompletedAt ?? evidence.handoffPublicationCompletedAt ?? artifact.metadata.timestamp,
-    })
-
-    phrPublicationResult = publishPhrPublicationOnCompletedCloseout({
-      artifact: canonicalFlightRecordPayload,
-      handoff: spendGuruPhrReadyHandoff,
-      closeout: evidence,
-      closeoutRef: relativize(closeoutEvidencePath),
-      conversationArtifactPath: relativize(jsonPath),
-      sidecarPath: path.join(PHR_PUBLICATIONS_DIR, `${baseName}.json`),
-      repositoryPath: process.env.PHR_REPOSITORY_PATH ?? '',
-    })
+    phrPublicationResult = { attempted: false, attemptedAt: null, result: null }
   }
 
   syncFactPreservationEvidence(baseName, evidence)
@@ -3316,7 +3408,25 @@ async function main() {
 
   canonicalFlightRecordPayload = createCanonicalFlightRecordPayload(artifact)
 
-  fs.unlinkSync(PENDING_FILE)
+  let spendGuruOptionalPhrReadyHandoff: GptHandoffArtifactV1 | null = null
+  if (projectProfile.memorosEnabled) {
+    const spendGuruOptionalPhr = publishOptionalSpendGuruPhrAfterPendingClear({
+      pendingArtifactPath: PENDING_FILE,
+      artifact: canonicalFlightRecordPayload,
+      closeout: evidence,
+      closeoutRef: relativize(closeoutEvidencePath),
+      conversationArtifactPath: relativize(jsonPath),
+      sidecarPath: path.join(PHR_PUBLICATIONS_DIR, `${baseName}.json`),
+      repositoryPath: process.env.PHR_REPOSITORY_PATH ?? '',
+      projectProfile,
+      publicationArtifact: memorosPublication?.publicationArtifact ?? null,
+      publicationAck: memorosPublication?.ack ?? null,
+    })
+    spendGuruOptionalPhrReadyHandoff = spendGuruOptionalPhr.handoffForPublication
+    phrPublicationResult = spendGuruOptionalPhr.publication
+  } else {
+    fs.unlinkSync(PENDING_FILE)
+  }
   console.log('[pmos-save] ✓ Cleared pending-artifact.json')
 
   const finalHandoffContext = buildHandoffFinalizationContext({

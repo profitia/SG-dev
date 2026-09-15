@@ -71,7 +71,7 @@ function createReplayableTempPhrRepo(originRemote: string) {
     '}',
     'const publication = JSON.parse(fs.readFileSync(process.argv[inputIndex + 1], "utf8"))',
     'const slug = String(publication.publicationId).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")',
-    'const stamp = String(publication.publishedAt).replace(/[:.]/g, "-").replace(/T/g, "__")',
+    'const stamp = new Date(publication.publishedAt).toISOString().replace(/\\.\\d{3}Z$/, "Z").replace("T", "-").replace(/:/g, "-")',
     'const date = new Date(publication.publishedAt)',
     'const yyyy = String(date.getUTCFullYear())',
     'const mm = String(date.getUTCMonth() + 1).padStart(2, "0")',
@@ -400,7 +400,7 @@ test('writePhrPublicationAttempt publishes once, replays idempotently, and confl
   const bundleEntries = fs.readdirSync(bundlePath)
   assert.equal(bundleEntries.filter((entry) => entry === 'manifest.json').length, 1)
   assert.equal(bundleEntries.filter((entry) => entry === 'fingerprint.json').length, 1)
-  assert.match(bundlePath, /history\/2026\/09\/05\/2026-09-05__12-01-00-000Z__phr-adapter-test$/)
+  assert.match(bundlePath, /history\/2026\/09\/05\/2026-09-05-12-01-00Z__phr-adapter-test$/)
 
   const conflictingPublication = makeRefreshedPublication({ pendingArtifactSlotFinal: 'OCCUPIED' })
   const conflict = writePhrPublicationAttempt({ publication: conflictingPublication, repositoryPath: repoPath })

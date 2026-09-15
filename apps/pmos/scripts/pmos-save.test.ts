@@ -12,6 +12,7 @@ import {
   buildConversationArtifactSummary,
   buildPhrPublicationReadyHandoff,
   buildSrmPhrPublicationCandidate,
+  publishOptionalSpendGuruPhrAfterPendingClear,
 } from './pmos-save'
 import { buildPhrPublicationInput, publishPhrPublicationOnCompletedCloseout, writePhrPublicationAttempt } from '../src/lib/pmos/phr-publication'
 import { DEFAULT_PMOS_PROJECT_NAME, resolvePmosProjectProfile } from '../src/lib/pmos/project-profile'
@@ -48,7 +49,7 @@ function createHistoryLayoutPhrRepo(originRemote: string) {
     '}',
     'const publication = JSON.parse(fs.readFileSync(process.argv[inputIndex + 1], "utf8"))',
     'const slug = String(publication.publicationId).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")',
-    'const stamp = String(publication.publishedAt).replace(/[:.]/g, "-").replace(/T/g, "__")',
+    'const stamp = new Date(publication.publishedAt).toISOString().replace(/\\.\\d{3}Z$/, "Z").replace("T", "-").replace(/:/g, "-")',
     'const date = new Date(publication.publishedAt)',
     'const yyyy = String(date.getUTCFullYear())',
     'const mm = String(date.getUTCMonth() + 1).padStart(2, "0")',
@@ -164,6 +165,33 @@ function makeEvidence() {
   } as never
 }
 
+function makeRetryEvidence(params: {
+  closeoutStartedAt: string
+  pmosSaveStartedAt: string
+  pmosSaveCompletedAt: string
+  vectorRebuildStartedAt: string
+  vectorRebuildCompletedAt: string
+  handoffPublicationStartedAt: string
+  pendingArtifactBackupPath: string
+  executionTrailPath: string
+  executionTrailMarkdownPath: string
+  dbRecordId: string
+}) {
+  return {
+    ...makeEvidence(),
+    closeoutStartedAt: params.closeoutStartedAt,
+    pmosSaveStartedAt: params.pmosSaveStartedAt,
+    pmosSaveCompletedAt: params.pmosSaveCompletedAt,
+    vectorRebuildStartedAt: params.vectorRebuildStartedAt,
+    vectorRebuildCompletedAt: params.vectorRebuildCompletedAt,
+    handoffPublicationStartedAt: params.handoffPublicationStartedAt,
+    pendingArtifactBackupPath: params.pendingArtifactBackupPath,
+    executionTrailPath: params.executionTrailPath,
+    executionTrailMarkdownPath: params.executionTrailMarkdownPath,
+    pmosSaveDbRecordId: params.dbRecordId,
+  } as never
+}
+
 function makeFinalizationContext(status: 'PUBLISHED' | 'IDEMPOTENT' | 'FAILED' | 'FAILED_RETRYABLE', pending: 'CLEAR' | 'OCCUPIED') {
   return {
     publicationArtifact: null,
@@ -229,57 +257,95 @@ test('SRM bundle passed to PHR is already canonical and gated', () => {
   assert.equal(candidate.handoff.createdAt, '2026-09-14T09:00:00.000Z')
 })
 
-test('SpendGuru publishes optional PHR from final post-MEMOROS handoff and failure stays non-blocking', () => {
+test('SpendGuru publishes one optional PHR handoff only after pending clear and preserves final success', () => {
   const artifact = makeSpendGuruArtifact()
-  const evidence = {
-    ...makeEvidence(),
-    closeoutState: CloseoutState.CLOSEOUT_COMPLETE,
-    closeoutCompletedAt: '2026-09-14T09:03:00.000Z',
-    handoffPublicationStatus: 'SUCCEEDED',
-    handoffPublicationCompletedAt: '2026-09-14T09:03:00.000Z',
-  } as never
-  const handoff = buildPhrPublicationReadyHandoff({
-    artifact,
-    closeout: evidence,
-    closeoutRef: 'apps/pmos/.pmos/recovery/closeouts/test.closeout.json',
-    finalizationContext: makeSpendGuruFinalizationContext({ pendingArtifactSlotFinal: 'OCCUPIED', phrPublicationStatus: 'NOT_ATTEMPTED' }),
-    createdAt: evidence.closeoutCompletedAt,
-  })
-
-  let attemptCalls = 0
-  const publication = publishPhrPublicationOnCompletedCloseout({
-    artifact,
-    handoff,
-    closeout: evidence,
-    closeoutRef: 'apps/pmos/.pmos/recovery/closeouts/test.closeout.json',
-    conversationArtifactPath: 'apps/pmos/.pmos/conversations/test.json',
-    sidecarPath: path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'pmos-spendguru-sidecar-')), 'phr.json'),
-    repositoryPath: '/tmp/phr',
-    writeAttempt: () => {
-      attemptCalls += 1
-      return {
-        status: 'FAILED',
-        retryable: false,
-        bundlePath: null,
-        manifestPath: null,
-        commitSha: null,
-        publicationId: artifact.metadata.taskId,
-        taskId: artifact.metadata.taskId,
-        artifactCount: 5,
-        repositoryPath: '/tmp/phr',
-        error: 'optional downstream failure',
-      }
-    },
-    writeSidecar: () => undefined,
-  })
-
-  assert.equal(handoff.payload.currentState.includes('closeoutState = CLOSEOUT_COMPLETE'), true)
-  assert.equal(handoff.payload.currentState.includes('FINAL_VERDICT = PASS'), true)
-  assert.equal(handoff.payload.currentState.includes('MEMOROS Publication: SUCCEEDED'), true)
-  assert.equal(publication.attempted, true)
-  assert.equal(publication.result?.status, 'FAILED')
-  assert.equal(attemptCalls, 1)
   const spendGuruProfile = resolvePmosProjectProfile({ projectName: DEFAULT_PMOS_PROJECT_NAME })
+  const statuses = ['PUBLISHED', 'IDEMPOTENT', 'FAILED', 'FAILED_RETRYABLE'] as const
+
+  for (const status of statuses) {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), `pmos-spendguru-${status.toLowerCase()}-`))
+    const pendingArtifactPath = path.join(tempDir, 'pending-artifact.json')
+    const sidecarPath = path.join(tempDir, 'phr-sidecar.json')
+    fs.writeFileSync(pendingArtifactPath, '{"pending":true}\n', 'utf8')
+
+    const evidence = {
+      ...makeEvidence(),
+      closeoutState: CloseoutState.CLOSEOUT_COMPLETE,
+      closeoutCompletedAt: '2026-09-14T09:03:00.000Z',
+      handoffPublicationStatus: 'SUCCEEDED',
+      handoffPublicationCompletedAt: '2026-09-14T09:03:00.000Z',
+    } as never
+
+    const phaseOrder: string[] = ['memoros-succeeded']
+    let publisherCalls = 0
+
+    const optionalPhr = publishOptionalSpendGuruPhrAfterPendingClear({
+      pendingArtifactPath,
+      artifact,
+      closeout: evidence,
+      closeoutRef: 'apps/pmos/.pmos/recovery/closeouts/test.closeout.json',
+      conversationArtifactPath: 'apps/pmos/.pmos/conversations/test.json',
+      sidecarPath,
+      repositoryPath: '/tmp/phr',
+      projectProfile: spendGuruProfile,
+      publicationArtifact: makeSpendGuruFinalizationContext().publicationArtifact,
+      publicationAck: makeSpendGuruFinalizationContext().publicationAck,
+      clearPendingArtifact: (targetPath) => {
+        phaseOrder.push('pending-cleared')
+        fs.unlinkSync(targetPath)
+      },
+      publishPhr: (params) => {
+        publisherCalls += 1
+        phaseOrder.push('phr-published')
+        assert.equal(fs.existsSync(pendingArtifactPath), false)
+        assert.equal(params.handoff?.payload.currentState.includes('PENDING_ARTIFACT_SLOT_FINAL = CLEAR'), true)
+        assert.equal(params.handoff?.payload.currentState.includes('FINAL_VERDICT = PASS'), true)
+        assert.equal(params.handoff?.payload.currentState.includes('MEMOROS Publication: SUCCEEDED'), true)
+        return {
+          attempted: true,
+          attemptedAt: '2026-09-14T09:03:30.000Z',
+          result: {
+            status,
+            retryable: status === 'FAILED_RETRYABLE',
+            bundlePath: null,
+            manifestPath: null,
+            commitSha: null,
+            publicationId: artifact.metadata.taskId,
+            taskId: artifact.metadata.taskId,
+            artifactCount: 5,
+            repositoryPath: '/tmp/phr',
+            error: status.startsWith('FAILED') ? 'optional downstream failure' : null,
+          },
+        }
+      },
+    })
+
+    const finalContext = makeSpendGuruFinalizationContext({
+      pendingArtifactSlotFinal: 'CLEAR',
+      phrPublicationStatus: status,
+    })
+    const finalHandoff = buildPhrPublicationReadyHandoff({
+      artifact,
+      closeout: evidence,
+      closeoutRef: 'apps/pmos/.pmos/recovery/closeouts/test.closeout.json',
+      finalizationContext: finalContext,
+      createdAt: evidence.closeoutCompletedAt,
+    })
+    const finalSummary = buildConversationArtifactSummary(artifact, evidence, finalContext)
+
+    assert.deepEqual(phaseOrder, ['memoros-succeeded', 'pending-cleared', 'phr-published'])
+    assert.equal(fs.existsSync(pendingArtifactPath), false)
+    assert.equal(optionalPhr.handoffForPublication.payload.currentState.includes('PENDING_ARTIFACT_SLOT_FINAL = CLEAR'), true)
+    assert.equal(optionalPhr.publication.attempted, true)
+    assert.equal(optionalPhr.publication.result?.status, status)
+    assert.equal(publisherCalls, 1)
+    assert.equal(finalHandoff.payload.currentState.includes('PENDING_ARTIFACT_SLOT_FINAL = CLEAR'), true)
+    assert.equal(finalSummary.includes('PENDING_ARTIFACT_SLOT_FINAL = CLEAR'), true)
+    assert.equal(finalSummary.includes(`PHR Publication: ${status}`), true)
+    assert.equal(finalSummary.includes('FINAL_VERDICT = PASS'), true)
+    assert.equal(evidence.recoveryRequired, false)
+  }
+
   assert.equal(spendGuruProfile.memorosEnabled, true)
   assert.equal(spendGuruProfile.phrRequiredForCloseout, false)
 })
@@ -338,19 +404,42 @@ test('successful SRM publication stays OCCUPIED before pending removal and becom
 })
 
 test('SRM retry builds identical publication input and maps to one history bundle with real layout semantics', () => {
+  const evidenceOne = makeRetryEvidence({
+    closeoutStartedAt: '2026-09-14T09:00:00.000Z',
+    pmosSaveStartedAt: '2026-09-14T09:00:10.000Z',
+    pmosSaveCompletedAt: '2026-09-14T09:00:20.000Z',
+    vectorRebuildStartedAt: '2026-09-14T09:00:30.000Z',
+    vectorRebuildCompletedAt: '2026-09-14T09:00:40.000Z',
+    handoffPublicationStartedAt: '2026-09-14T09:00:50.000Z',
+    pendingArtifactBackupPath: 'pending-attempt-1.json',
+    executionTrailPath: 'trail-attempt-1.jsonl',
+    executionTrailMarkdownPath: 'trail-attempt-1.md',
+    dbRecordId: 'db-record-attempt-1',
+  })
+  const evidenceTwo = makeRetryEvidence({
+    closeoutStartedAt: '2026-09-14T10:10:00.000Z',
+    pmosSaveStartedAt: '2026-09-14T10:10:10.000Z',
+    pmosSaveCompletedAt: '2026-09-14T10:10:20.000Z',
+    vectorRebuildStartedAt: '2026-09-14T10:10:30.000Z',
+    vectorRebuildCompletedAt: '2026-09-14T10:10:40.000Z',
+    handoffPublicationStartedAt: '2026-09-14T10:10:50.000Z',
+    pendingArtifactBackupPath: 'pending-attempt-2.json',
+    executionTrailPath: 'trail-attempt-2.jsonl',
+    executionTrailMarkdownPath: 'trail-attempt-2.md',
+    dbRecordId: 'db-record-attempt-2',
+  })
+
+  assert.notDeepEqual(evidenceOne, evidenceTwo)
+
   const candidateOne = buildSrmPhrPublicationCandidate({
     artifact: makeArtifact(),
-    closeout: makeEvidence(),
+    closeout: evidenceOne,
     closeoutRef: 'apps/pmos/.pmos/recovery/closeouts/test.closeout.json',
     pendingArtifactSlotFinal: 'OCCUPIED',
   })
   const candidateTwo = buildSrmPhrPublicationCandidate({
     artifact: makeArtifact(),
-    closeout: {
-      ...makeEvidence(),
-      handoffPublicationStartedAt: '2026-09-14T10:22:00.000Z',
-      pmosSaveCompletedAt: '2026-09-14T10:55:00.000Z',
-    } as never,
+    closeout: evidenceTwo,
     closeoutRef: 'apps/pmos/.pmos/recovery/closeouts/test.closeout.json',
     pendingArtifactSlotFinal: 'OCCUPIED',
   })
@@ -378,7 +467,7 @@ test('SRM retry builds identical publication input and maps to one history bundl
   assert.equal(first.status, 'PUBLISHED')
   assert.equal(second.status, 'IDEMPOTENT')
   assert.equal(first.bundlePath, second.bundlePath)
-  assert.match(first.bundlePath ?? '', /history\/2026\/09\/14\/2026-09-14__09-00-00-000Z__srm-bootstrap-0001$/)
+  assert.match(first.bundlePath ?? '', /history\/2026\/09\/14\/2026-09-14-09-00-00Z__srm-bootstrap-0001$/)
 
   const conflictingPublication = buildPhrPublicationInput({
     artifact: makeArtifact(),
