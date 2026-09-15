@@ -4248,6 +4248,43 @@ export function createForecastLibraryService(
           targetCadence,
         },
       )
+      const expectedHistoryFingerprint = fastPathContext?.expectedHistoryFingerprint
+      const authorityMismatch = fastPathContext && prepared && !artifactMatchesPreparedReadAuthority(prepared, {
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis: input.targetBasis,
+        targetSemantics: identity.targetSemantics,
+        methodId: identity.methodId,
+        methodVersion: identity.methodVersion,
+        frequencyIdentity: cadenceContext.frequencyIdentity,
+        sourceFrequency,
+        targetCadence,
+        expectedHistoryFingerprint,
+      })
+      const exactPrepared = authorityMismatch
+        ? await traceForecastRequestDiagnosticsSpan(
+            'prepared_recent_verification_exact_fallback_lookup',
+            'DB_OPERATION',
+            () => resolvedDependencies.repository.readVerificationRun({
+              seriesId: input.seriesId,
+              modelId: input.modelId,
+              targetBasis: input.targetBasis,
+              frequencyIdentity: cadenceContext.frequencyIdentity,
+              inputSource: prepared.source.kind,
+              historyFingerprint: expectedHistoryFingerprint,
+              trainingWindowPolicyId: expectedCompatibility.trainingWindowPolicyId,
+              effectiveTrainingPolicyId: expectedCompatibility.effectiveTrainingPolicyId,
+              ...identity,
+            }),
+            {
+              seriesId: input.seriesId,
+              modelId: input.modelId,
+              targetBasis: input.targetBasis,
+              sourceFrequency,
+              targetCadence,
+            },
+          )
+        : prepared
 
       noteForecastRequestDiagnosticsEvent('prepared_recent_verification_compute_absent', 'COMPUTE', {
         seriesId: input.seriesId,
@@ -4257,11 +4294,11 @@ export function createForecastLibraryService(
 
       resolvedDependencies.telemetry.emit('prepared_read', {
         kind: 'verification',
-        hit: prepared !== null,
+        hit: exactPrepared !== null,
         durationMs: performance.now() - startedAt,
       })
 
-      if (!prepared) {
+      if (!exactPrepared) {
         return {
           status: 'NOT_AVAILABLE',
           seriesId: input.seriesId,
@@ -4273,7 +4310,7 @@ export function createForecastLibraryService(
         }
       }
 
-      if (fastPathContext && !artifactMatchesPreparedReadAuthority(prepared, {
+      if (fastPathContext && !artifactMatchesPreparedReadAuthority(exactPrepared, {
         seriesId: input.seriesId,
         modelId: input.modelId,
         targetBasis: input.targetBasis,
@@ -4296,7 +4333,7 @@ export function createForecastLibraryService(
         }
       }
 
-      if (!isRenderableVerificationArtifact(prepared)) {
+      if (!isRenderableVerificationArtifact(exactPrepared)) {
         return {
           status: 'NOT_AVAILABLE',
           seriesId: input.seriesId,
@@ -4308,8 +4345,8 @@ export function createForecastLibraryService(
         }
       }
 
-      const context = resolveArtifactTrainingPolicyContext(prepared, identity.targetSemantics)
-      if (!context || !doesForecastArtifactSatisfyRequest(prepared.statisticalCompatibility, createRecentVerificationStatisticalCompatibility(context))) {
+      const context = resolveArtifactTrainingPolicyContext(exactPrepared, identity.targetSemantics)
+      if (!context || !doesForecastArtifactSatisfyRequest(exactPrepared.statisticalCompatibility, createRecentVerificationStatisticalCompatibility(context))) {
         return {
           status: 'NOT_AVAILABLE',
           seriesId: input.seriesId,
@@ -4321,7 +4358,7 @@ export function createForecastLibraryService(
         }
       }
 
-      return toVerificationAvailable(prepared, 'hit')
+      return toVerificationAvailable(exactPrepared, 'hit')
     },
 
     async resolveCurrentForecast(seriesId: string, modelId: string): Promise<BenchmarkForecastCurrentResult> {
