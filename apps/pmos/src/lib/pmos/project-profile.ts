@@ -1,5 +1,5 @@
 export const DEFAULT_PMOS_PROJECT_NAME = 'SpendGuru 2.0'
-export const SRM_PMOS_PROJECT_NAME = 'SRM / PORR'
+export const SRM_PMOS_PROJECT_NAME = 'SRM'
 
 export const CANONICAL_PMOS_PROJECT_NAMES: ReadonlySet<string> = new Set([
   DEFAULT_PMOS_PROJECT_NAME,
@@ -56,7 +56,7 @@ export function normalizePmosProjectName(projectName: string): string {
     return DEFAULT_PMOS_PROJECT_NAME
   }
 
-  if (key === 'srm' || key === 'srm porr') {
+  if (key === 'srm') {
     return SRM_PMOS_PROJECT_NAME
   }
 
@@ -124,7 +124,7 @@ export function resolvePmosProjectProfile(params: {
   }
 
   if (normalizedMode === 'disabled' && projectName !== SRM_PMOS_PROJECT_NAME) {
-    throw new Error('PMOS_MEMOROS_MODE=disabled is allowed only for project SRM / PORR.')
+    throw new Error('PMOS_MEMOROS_MODE=disabled is allowed only for project SRM.')
   }
 
   return {

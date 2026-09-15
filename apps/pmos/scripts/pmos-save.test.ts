@@ -85,7 +85,7 @@ function makeArtifact() {
     metadata: {
       conversationId: 'conversation',
       taskId: 'SRM-BOOTSTRAP-0001',
-      project: 'SRM / PORR',
+      project: 'SRM',
       timestamp: '2026-09-14T09:00:00.000Z',
       workspace: 'SG-dev Codespaces SRM',
     },
@@ -363,7 +363,7 @@ test('PUBLISHED gives final SRM summary and handoff state with PASS and pending 
   applySrmPhrPublicationOutcome({
     evidence,
     publication: { status: 'PUBLISHED', error: null },
-    projectName: 'SRM / PORR',
+    projectName: 'SRM',
   })
 
   const summary = buildConversationArtifactSummary(artifact, evidence, makeFinalizationContext('PUBLISHED', 'CLEAR'))
@@ -380,7 +380,7 @@ test('IDEMPOTENT gives final SRM summary and handoff state with PASS and pending
   applySrmPhrPublicationOutcome({
     evidence,
     publication: { status: 'IDEMPOTENT', error: null },
-    projectName: 'SRM / PORR',
+    projectName: 'SRM',
   })
 
   const summary = buildConversationArtifactSummary(artifact, evidence, makeFinalizationContext('IDEMPOTENT', 'CLEAR'))
@@ -397,7 +397,7 @@ test('successful SRM publication stays OCCUPIED before pending removal and becom
   applySrmPhrPublicationOutcome({
     evidence,
     publication: { status: 'PUBLISHED', error: null },
-    projectName: 'SRM / PORR',
+    projectName: 'SRM',
   })
 
   const preClearSummary = buildConversationArtifactSummary(artifact, evidence, makeFinalizationContext('PUBLISHED', 'OCCUPIED'))
@@ -557,7 +557,7 @@ test('FAILED and FAILED_RETRYABLE do not satisfy the SRM completion gate', () =>
   const failed = applySrmPhrPublicationOutcome({
     evidence: failedEvidence,
     publication: { status: 'FAILED', error: 'publish failed' },
-    projectName: 'SRM / PORR',
+    projectName: 'SRM',
   })
 
   assert.equal(failed.canCompleteTask, false)
@@ -572,7 +572,7 @@ test('FAILED and FAILED_RETRYABLE do not satisfy the SRM completion gate', () =>
   const retryable = applySrmPhrPublicationOutcome({
     evidence: retryableEvidence,
     publication: { status: 'FAILED_RETRYABLE', error: 'retry later' },
-    projectName: 'SRM / PORR',
+    projectName: 'SRM',
   })
 
   assert.equal(retryable.canCompleteTask, false)
@@ -588,7 +588,7 @@ test('PUBLISHED and IDEMPOTENT satisfy the SRM completion gate and only then all
   const published = applySrmPhrPublicationOutcome({
     evidence: publishedEvidence,
     publication: { status: 'PUBLISHED', error: null },
-    projectName: 'SRM / PORR',
+    projectName: 'SRM',
   })
 
   assert.equal(published.canCompleteTask, true)
@@ -600,7 +600,7 @@ test('PUBLISHED and IDEMPOTENT satisfy the SRM completion gate and only then all
   const idempotent = applySrmPhrPublicationOutcome({
     evidence: idempotentEvidence,
     publication: { status: 'IDEMPOTENT', error: null },
-    projectName: 'SRM / PORR',
+    projectName: 'SRM',
   })
 
   assert.equal(idempotent.canCompleteTask, true)

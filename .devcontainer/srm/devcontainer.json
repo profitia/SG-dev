@@ -12,7 +12,7 @@
     }
   },
   "containerEnv": {
-    "PMOS_PROJECT_NAME": "SRM / PORR",
+    "PMOS_PROJECT_NAME": "SRM",
     "PMOS_WORKSPACE_NAME": "SG-dev Codespaces SRM",
     "PMOS_EXECUTION_ENVIRONMENT": "codespaces",
     "PMOS_MEMOROS_MODE": "disabled"
