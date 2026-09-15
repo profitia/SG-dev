@@ -118,6 +118,20 @@
       "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
     },
     {
+      "id": "SG2-BASE-019",
+      "capability": "Governance",
+      "name": "Governance Canon Authority",
+      "pathPatterns": [
+        "Canon/**"
+      ],
+      "currentOwner": "Governance Source Layer",
+      "currentResponsibility": "Normative architecture and governance documents plus canonical registries.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
       "id": "SG2-BASE-014",
       "capability": "PCOS Contracts",
       "name": "PCOS Shared Contracts Package",
