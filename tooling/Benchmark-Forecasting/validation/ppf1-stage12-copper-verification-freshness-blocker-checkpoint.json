@@ -1,0 +1,338 @@
+{
+  "generatedAt": "2026-09-15T07:21:45.000Z",
+  "taskId": "ppf-1-stage-12-copper-verification-freshness-repair-20260915",
+  "activeConversationId": "bce890ae-d91d-4a14-889c-aab4cf184453",
+  "etap": "MVP-11 - Stabilizacja / Deploy",
+  "canonicalScope": "implementation",
+  "subetap": "PPF-1 Stage 12 - Copper Verification Freshness Repair",
+  "publicationMode": "CHECKPOINT_ONLY",
+  "authority": {
+    "repository": "profitia/SG-dev",
+    "branch": "ppf1/stage12-live-acceptance-legacy-deprecation-20260911",
+    "expectedRemoteHead": "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85",
+    "verifiedRemoteHead": "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85",
+    "remoteHeadVerify": "PASS",
+    "canonicalLocalHeadAtPublicationCapture": "4eab8ce911e73c1ef05787b10415b7bb28079a55",
+    "sourceCorrectiveSha": "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85",
+    "sourceCorrectiveCommitMessage": "fix(stage12): guard exact reread fallback typing",
+    "publicationSurface": {
+      "path": "/tmp/ppf1-stage12-copper-fallback-fix-worktree",
+      "detachedHead": true,
+      "head": "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85"
+    }
+  },
+  "deployment": {
+    "deploymentVerify": "PASS",
+    "sgRuntimeService1": {
+      "serviceName": "benchmark-finder-category-builder",
+      "serviceId": "srv-d9tmgddbedkc739jr24g",
+      "deployedSha": "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85",
+      "deployStatus": "live"
+    },
+    "sgRuntimeService2": {
+      "serviceName": "spendguru-stage",
+      "serviceId": "srv-d98a73btqb8s73fabp90",
+      "deployedSha": "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85",
+      "deployStatus": "live"
+    }
+  },
+  "sourceCorrective": {
+    "changedFiles": [
+      "apps/sg-runtime/lib/forecast/service.ts"
+    ],
+    "purpose": "Guard trusted-authority Recent Verification exact fallback reread typing and selection so exact cohort rereads remain available without violating build-time type narrowing.",
+    "publicationStatus": "PUBLISHED_AND_DEPLOYED",
+    "localValidation": {
+      "typecheck": "PASS",
+      "build": "PASS",
+      "focusedRecentVerificationTests": {
+        "status": "PASS",
+        "passCount": 3,
+        "totalCount": 3,
+        "tests": [
+          "prepared recent verification lookup uses trusted prepared-read authority fast path",
+          "prepared recent verification falls back to exact lookup when latest artifact mismatches trusted authority",
+          "recent verification compute uses verification-mode prepared history while lookup keeps current-mode identity"
+        ]
+      }
+    }
+  },
+  "worktreeState": {
+    "canonicalRepoPath": "/private/tmp/ppf1-stage12-live-acceptance-legacy-deprecation-20260911",
+    "branch": "ppf1/stage12-live-acceptance-legacy-deprecation-20260911",
+    "localHead": "4eab8ce911e73c1ef05787b10415b7bb28079a55",
+    "remoteHead": "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85",
+    "unrelatedWorktreeChangesSurvived": true,
+    "statusShort": [
+      "M apps/sg-runtime/generated/market-data-client/index.d.ts",
+      "M apps/sg-runtime/generated/market-data-client/index.js",
+      "M apps/sg-runtime/lib/forecast/service.ts",
+      "M apps/sg-runtime/tests/forecast-library-service.test.ts",
+      "?? apps/sg-runtime/generated/market-data-client/edge.js",
+      "?? apps/sg-runtime/generated/market-data-client/index-browser.js",
+      "?? apps/sg-runtime/generated/market-data-client/package.json",
+      "?? apps/sg-runtime/generated/market-data-client/runtime/edge-esm.js",
+      "?? apps/sg-runtime/generated/market-data-client/runtime/edge.js",
+      "?? apps/sg-runtime/generated/market-data-client/runtime/index-browser.js",
+      "?? apps/sg-runtime/generated/market-data-client/runtime/react-native.js",
+      "?? apps/sg-runtime/generated/market-data-client/runtime/wasm.js",
+      "?? apps/sg-runtime/generated/market-data-client/schema.prisma",
+      "?? apps/sg-runtime/generated/market-data-client/wasm.js"
+    ]
+  },
+  "copperReadiness": {
+    "seriesId": "lmeofcucashask",
+    "fullVerificationBlocker": "CLOSED",
+    "recentVerificationBlocker": "ACTIVE",
+    "exactIdentityCount": 12,
+    "fullVerificationReadyCount": 12,
+    "recentVerificationStaleCount": 12,
+    "verificationReadinessStaleCount": 5,
+    "verificationReadinessReadyCount": 7,
+    "verificationReadinessStaleIdentities": [
+      "naive / MONTHLY_AVERAGE",
+      "ets / MONTHLY_AVERAGE",
+      "ets / END_OF_PERIOD",
+      "arima / MONTHLY_AVERAGE",
+      "arima / END_OF_PERIOD"
+    ],
+    "verificationReadinessReadyIdentities": [
+      "naive / END_OF_PERIOD",
+      "naive / POINT_IN_TIME",
+      "damped_holt / MONTHLY_AVERAGE",
+      "damped_holt / END_OF_PERIOD",
+      "damped_holt / POINT_IN_TIME",
+      "ets / POINT_IN_TIME",
+      "arima / POINT_IN_TIME"
+    ],
+    "identities": [
+      {
+        "modelId": "naive",
+        "targetBasis": "MONTHLY_AVERAGE",
+        "verificationReadiness": "STALE",
+        "recentVerificationReadiness": "STALE",
+        "fullVerificationReadiness": "READY",
+        "blockers": [
+          "RECENT_STALE",
+          "SOURCE_REVISION_REBUILD_REQUIRED",
+          "BANDS_NOT_AVAILABLE"
+        ]
+      },
+      {
+        "modelId": "naive",
+        "targetBasis": "END_OF_PERIOD",
+        "verificationReadiness": "READY",
+        "recentVerificationReadiness": "STALE",
+        "fullVerificationReadiness": "READY",
+        "blockers": [
+          "RECENT_STALE",
+          "SOURCE_REVISION_REBUILD_REQUIRED",
+          "BANDS_NOT_AVAILABLE"
+        ]
+      },
+      {
+        "modelId": "naive",
+        "targetBasis": "POINT_IN_TIME",
+        "verificationReadiness": "READY",
+        "recentVerificationReadiness": "STALE",
+        "fullVerificationReadiness": "READY",
+        "blockers": [
+          "RECENT_STALE",
+          "SOURCE_REVISION_REBUILD_REQUIRED",
+          "BANDS_NOT_AVAILABLE"
+        ]
+      },
+      {
+        "modelId": "damped_holt",
+        "targetBasis": "MONTHLY_AVERAGE",
+        "verificationReadiness": "READY",
+        "recentVerificationReadiness": "STALE",
+        "fullVerificationReadiness": "READY",
+        "blockers": [
+          "RECENT_STALE",
+          "SOURCE_REVISION_REBUILD_REQUIRED",
+          "BANDS_NOT_AVAILABLE"
+        ]
+      },
+      {
+        "modelId": "damped_holt",
+        "targetBasis": "END_OF_PERIOD",
+        "verificationReadiness": "READY",
+        "recentVerificationReadiness": "STALE",
+        "fullVerificationReadiness": "READY",
+        "blockers": [
+          "RECENT_STALE",
+          "SOURCE_REVISION_REBUILD_REQUIRED",
+          "BANDS_NOT_AVAILABLE"
+        ]
+      },
+      {
+        "modelId": "damped_holt",
+        "targetBasis": "POINT_IN_TIME",
+        "verificationReadiness": "READY",
+        "recentVerificationReadiness": "STALE",
+        "fullVerificationReadiness": "READY",
+        "blockers": [
+          "RECENT_STALE",
+          "SOURCE_REVISION_REBUILD_REQUIRED",
+          "BANDS_NOT_AVAILABLE"
+        ]
+      },
+      {
+        "modelId": "ets",
+        "targetBasis": "MONTHLY_AVERAGE",
+        "verificationReadiness": "STALE",
+        "recentVerificationReadiness": "STALE",
+        "fullVerificationReadiness": "READY",
+        "blockers": [
+          "RECENT_STALE",
+          "SOURCE_REVISION_REBUILD_REQUIRED",
+          "BANDS_NOT_AVAILABLE"
+        ]
+      },
+      {
+        "modelId": "ets",
+        "targetBasis": "END_OF_PERIOD",
+        "verificationReadiness": "STALE",
+        "recentVerificationReadiness": "STALE",
+        "fullVerificationReadiness": "READY",
+        "blockers": [
+          "RECENT_STALE",
+          "SOURCE_REVISION_REBUILD_REQUIRED",
+          "BANDS_NOT_AVAILABLE"
+        ]
+      },
+      {
+        "modelId": "ets",
+        "targetBasis": "POINT_IN_TIME",
+        "verificationReadiness": "READY",
+        "recentVerificationReadiness": "STALE",
+        "fullVerificationReadiness": "READY",
+        "blockers": [
+          "RECENT_STALE",
+          "SOURCE_REVISION_REBUILD_REQUIRED",
+          "BANDS_NOT_AVAILABLE"
+        ]
+      },
+      {
+        "modelId": "arima",
+        "targetBasis": "MONTHLY_AVERAGE",
+        "verificationReadiness": "STALE",
+        "recentVerificationReadiness": "STALE",
+        "fullVerificationReadiness": "READY",
+        "blockers": [
+          "RECENT_STALE",
+          "SOURCE_REVISION_REBUILD_REQUIRED",
+          "BANDS_NOT_AVAILABLE"
+        ]
+      },
+      {
+        "modelId": "arima",
+        "targetBasis": "END_OF_PERIOD",
+        "verificationReadiness": "STALE",
+        "recentVerificationReadiness": "STALE",
+        "fullVerificationReadiness": "READY",
+        "blockers": [
+          "RECENT_STALE",
+          "SOURCE_REVISION_REBUILD_REQUIRED",
+          "BANDS_NOT_AVAILABLE"
+        ]
+      },
+      {
+        "modelId": "arima",
+        "targetBasis": "POINT_IN_TIME",
+        "verificationReadiness": "READY",
+        "recentVerificationReadiness": "STALE",
+        "fullVerificationReadiness": "READY",
+        "blockers": [
+          "RECENT_STALE",
+          "SOURCE_REVISION_REBUILD_REQUIRED",
+          "BANDS_NOT_AVAILABLE"
+        ]
+      }
+    ]
+  },
+  "diagnosticResult": {
+    "beforeCorrective": "Stale state could be obscured by trusted-authority exact fallback reread behavior.",
+    "afterCorrective": {
+      "fullVerificationReadiness": "READY_FOR_ALL_12",
+      "recentVerificationReadiness": "STALE_FOR_ALL_12"
+    },
+    "activeBlocker": "RECENT_VERIFICATION_FRESHNESS",
+    "notActiveBlocker": "FULL_HISTORICAL_VERIFICATION"
+  },
+  "executionAttempts": {
+    "publicProgressiveRoute": {
+      "queuedCount": 12,
+      "verificationReadyCount": 0,
+      "activeOwnerChanged": true,
+      "completion": "NOT_RELIABLE_FOR_THIS_REPAIR"
+    },
+    "localCanonicalExecution": {
+      "target": "resolveBenchmarkRecentForecastVerification",
+      "pythonVenvRestored": true,
+      "credentialBlocker": "BLOCKED_BY_MACROBOND_CREDENTIALS",
+      "requiredCredentials": [
+        "MACROBOND_CLIENT_ID",
+        "MACROBOND_CLIENT_SECRET"
+      ]
+    },
+    "renderExecution": {
+      "nodeExecutionPossible": true,
+      "tsxExecutionPossible": true,
+      "recentVerificationMaterializationBoundaryReached": false,
+      "renderSshAvailable": false,
+      "stuckLiveRepairJobCanceled": true,
+      "canceledRepairJobId": null,
+      "canceledRepairJobIdState": "NOT_RETAINED",
+      "orphanedRepairJobActive": false
+    }
+  },
+  "rootBlocker": {
+    "copperRepairBlockerClass": "EXECUTION_ACCESS",
+    "notBlockedBy": [
+      "unknown_methodology",
+      "full_verification",
+      "dashboard_certification",
+      "timeout_policy",
+      "pit_persisted_proof_wiring",
+      "missing_diagnosis",
+      "duplicate_compute"
+    ],
+    "summary": "There is currently no proven execution surface that can run the canonical exact Recent Verification repair to completion against the real provider-backed environment."
+  },
+  "unblockOptions": [
+    {
+      "option": "LOCAL_PROVIDER_ENV",
+      "description": "Provide a lawful local env source exposing MACROBOND_CLIENT_ID and MACROBOND_CLIENT_SECRET to the task worktree, then run the canonical exact Recent Verification path locally against the real provider-backed environment."
+    },
+    {
+      "option": "LIVE_RENDER_EXECUTION_SURFACE",
+      "description": "Enable or confirm a working live execution surface for SG Runtime, preferably Render SSH, then run the exact Copper Recent Verification repair commands inside the deployed environment."
+    },
+    {
+      "option": "MANUAL_OPERATOR_EXECUTION",
+      "description": "Provide exact repair commands to the operator, let the operator execute them in an environment with lawful credentials and access, then resume from public capability reread and certification proof."
+    }
+  ],
+  "safety": {
+    "activeRepairJob": false,
+    "orphanedRepairJobActive": false,
+    "duplicateComputeStartedDuringBlockerDiagnosis": false,
+    "fullHistoricalRebuildTriggered": false,
+    "currentRepairTriggered": false,
+    "dashboardSourceChanged": false,
+    "methodologyChanged": false,
+    "failedExecutionAttemptsOccurred": true,
+    "localTestsExecuted": true
+  },
+  "continuation": {
+    "taskComplete": false,
+    "taskBlocked": true,
+    "blocker": "EXECUTION_ACCESS",
+    "resumeRequired": true,
+    "nextActionRequiresExecutionAccessUnblock": true,
+    "readyForNextExecutionAccessTask": true,
+    "pmosFinalCloseout": "NOT_RUN_BECAUSE_TASK_INCOMPLETE"
+  }
+}
