@@ -100,6 +100,18 @@ function availableVerification(input: { seriesId: string, modelId: string, targe
   }
 }
 
+function unavailableVerification(input: { seriesId: string, modelId: string, targetBasis: 'END_OF_PERIOD' | 'MONTHLY_AVERAGE' | 'POINT_IN_TIME' }, reason = 'PREPARATION_REQUIRED: recent verification missing.') {
+  return {
+    status: 'NOT_AVAILABLE' as const,
+    seriesId: input.seriesId,
+    modelId: input.modelId,
+    targetBasis: input.targetBasis,
+    targetSemantics: input.targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' as const : input.targetBasis,
+    methodId: input.targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' as const : input.targetBasis,
+    reason,
+  }
+}
+
 async function flushProgressiveQueue() {
   await new Promise((resolve) => setTimeout(resolve, 0))
   await new Promise((resolve) => setTimeout(resolve, 0))
@@ -120,6 +132,7 @@ function createMonthlyHarness(options: {
   gateFirstCurrentForSeriesId?: string
   markAllCurrentReadyOnCurrentSuccess?: Set<string>
   failCurrentOnceByCall?: Map<string, string>
+  recentReadyByCall?: Set<string>
 } = {}) {
   const currentCalls: string[] = []
   const historicalCalls: string[] = []
@@ -223,6 +236,22 @@ function createMonthlyHarness(options: {
         targetBasis: input.targetBasis as 'END_OF_PERIOD' | 'MONTHLY_AVERAGE',
       }) as never
     },
+    async readPreparedRecentVerification(input) {
+      const key = `${input.seriesId}:${input.targetBasis}:${input.modelId}`
+      if (options.recentReadyByCall?.has(key) || getReadySet(historicalReadyBySeries, input.seriesId).has(`${input.targetBasis}:${input.modelId}`)) {
+        return availableVerification({
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis as 'END_OF_PERIOD' | 'MONTHLY_AVERAGE',
+        }) as never
+      }
+
+      return unavailableVerification({
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis: input.targetBasis as 'END_OF_PERIOD' | 'MONTHLY_AVERAGE',
+      }) as never
+    },
     async runRollingDaily() {
       throw new Error('Rolling Daily should not run in this monthly test.')
     },
@@ -293,6 +322,21 @@ test('snapshotAndKickoff prioritizes current work before verification and elevat
         targetBasis: input.targetBasis as 'END_OF_PERIOD' | 'MONTHLY_AVERAGE',
       }) as never
     },
+    async readPreparedRecentVerification(input) {
+      if (prepared.has(`${input.targetBasis}:${input.modelId}`)) {
+        return availableVerification({
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: input.targetBasis as 'END_OF_PERIOD' | 'MONTHLY_AVERAGE',
+        }) as never
+      }
+
+      return unavailableVerification({
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis: input.targetBasis as 'END_OF_PERIOD' | 'MONTHLY_AVERAGE',
+      }) as never
+    },
     async runRollingDaily() {
       throw new Error('Rolling Daily should not run in this monthly test.')
     },
@@ -348,6 +392,27 @@ test('selected verification runs immediately after the selected current instead 
   ])
 })
 
+test('verification queues when recent verification is missing even though historical prepared state is already ready', async () => {
+  const harness = createMonthlyHarness({
+    recentReadyByCall: new Set([
+      'series-recent-gap:END_OF_PERIOD:damped_holt',
+    ]),
+  })
+
+  await harness.service.snapshotAndKickoff({
+    seriesId: 'series-recent-gap',
+    preferredModelId: 'naive',
+    preferredTargetBasis: 'MONTHLY_AVERAGE',
+  })
+
+  await waitForOperationCount(harness.operationLog, 2)
+
+  assert.deepEqual(harness.operationLog.slice(0, 2), [
+    'CURRENT:series-recent-gap:MONTHLY_AVERAGE:naive',
+    'VERIFICATION:series-recent-gap:MONTHLY_AVERAGE:naive',
+  ])
+})
+
 test('snapshot maps unsupported identities without collapsing them into queued work', async () => {
   const service = createProgressiveForecastPreparationService({
     async resolveCapabilities(seriesId) {
@@ -362,6 +427,9 @@ test('snapshot maps unsupported identities without collapsing them into queued w
     },
     async prepareMonthlyHistorical() {
       throw new Error('Should not prepare unsupported capability.')
+    },
+    async readPreparedRecentVerification() {
+      throw new Error('Should not read recent verification for unsupported capability.')
     },
     async runRollingDaily() {
       throw new Error('unused')
@@ -603,6 +671,39 @@ test('point-in-time verification queues and runs through rolling-daily when curr
     async prepareMonthlyHistorical() {
       throw new Error('monthly verification should not run for point-in-time verification')
     },
+    async readPreparedRecentVerification(input) {
+      if (historicalReady) {
+        return {
+          status: 'AVAILABLE' as const,
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: 'POINT_IN_TIME' as const,
+          targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME' as const,
+          methodId: 'ROLLING_DAILY_POINT_IN_TIME' as const,
+          displayName: 'Series',
+          description: null,
+          methodVersion: 'rolling-daily-point-in-time-v1',
+          lineage: {
+            inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+            inputRunId: null,
+            sourceSeriesId: input.seriesId,
+            sourceFrequency: 'DAILY',
+            historyFingerprint: 'pit-history',
+            preparation: null,
+          },
+          history: { frequency: 'DAILY', start: '2026-01-01', end: '2026-09-15', observations: 200 },
+          forecastOrigin: '2026-09-15T00:00:00.000Z',
+          verification: {},
+          cacheStatus: 'hit' as const,
+        } as never
+      }
+
+      return unavailableVerification({
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis: 'POINT_IN_TIME',
+      }) as never
+    },
     async runRollingDaily(request) {
       rollingCalls.push(`${request.seriesId}:${request.modelIds.join(',')}`)
       rollingPrepareHistoricalFlags.push(request.prepareHistorical)
@@ -645,4 +746,149 @@ test('point-in-time verification queues and runs through rolling-daily when curr
   assert.deepEqual(rollingCalls, ['pit.series:arima'])
   assert.deepEqual(rollingPrepareHistoricalFlags, [true])
   assert.deepEqual(rollingMaxOriginsPerRun, [1])
+})
+
+test('point-in-time recent verification queues even when historical prepared state is already ready', async () => {
+  const rollingCalls: string[] = []
+  const rollingPrepareHistoricalFlags: Array<boolean | undefined> = []
+  let recentReady = false
+
+  const service = createProgressiveForecastPreparationService({
+    async resolveCapabilities(seriesId) {
+      return {
+        status: 'AVAILABLE' as const,
+        reason: null,
+        sourceMetadata: {
+          seriesId,
+          providerCode: 'MACROBOND',
+          source: 'postgres',
+          sourceFrequency: 'DAILY' as const,
+          rawFrequency: 'daily',
+          sourceObservationCount: 400,
+          fullHistoryObservationCount: 400,
+        },
+        targetedHydration: {
+          scope: 'SINGLE_SERIES' as const,
+          requestedSeriesId: seriesId,
+          source: 'postgres' as const,
+          cacheStatus: 'hit' as const,
+        },
+        preparationFailures: {},
+        capabilities: [
+          {
+            identity: {
+              seriesId,
+              modelId: 'arima',
+              targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME' as const,
+              methodId: 'ROLLING_DAILY_POINT_IN_TIME' as const,
+              methodVersion: 'rolling-daily-point-in-time-v1',
+            },
+            sourceFrequency: 'DAILY' as const,
+            sourceFrequencyRecognized: true,
+            businessTarget: 'DAILY' as const,
+            targetCadence: 'DAILY' as const,
+            targetSemanticsSupported: true,
+            horizonSupportState: 'NOT_REQUESTED' as const,
+            horizonMonths: null,
+            horizonSteps: null,
+            semanticLawfulness: 'LAWFUL' as const,
+            admissionState: 'ADMITTED' as const,
+            provenanceStatus: 'PROVEN' as const,
+            implementationState: 'SUPPORTED' as const,
+            historyEligibility: 'ELIGIBLE' as const,
+            minimumRequiredObservations: 60,
+            availableObservations: 400,
+            modelEligible: true,
+            currentForecastEligible: true,
+            verificationOriginCount: 24,
+            verificationEvidenceState: 'SUFFICIENT' as const,
+            predictionBandResidualCount: 40,
+            predictionBandState: 'AVAILABLE' as const,
+            targetPreparationState: 'PREPARED' as const,
+            currentPreparedState: 'READY' as const,
+            historicalPreparedState: 'READY' as const,
+            capabilityState: 'AVAILABLE' as const,
+            preparedReadAuthority: null,
+          },
+        ],
+      }
+    },
+    async prepareMonthlyCurrent() {
+      throw new Error('monthly current should not run for point-in-time verification')
+    },
+    async prepareMonthlyHistorical() {
+      throw new Error('monthly verification should not run for point-in-time verification')
+    },
+    async readPreparedRecentVerification(input) {
+      if (recentReady) {
+        return {
+          status: 'AVAILABLE' as const,
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          targetBasis: 'POINT_IN_TIME' as const,
+          targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME' as const,
+          methodId: 'ROLLING_DAILY_POINT_IN_TIME' as const,
+          displayName: 'Series',
+          description: null,
+          methodVersion: 'rolling-daily-point-in-time-v1',
+          lineage: {
+            inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+            inputRunId: null,
+            sourceSeriesId: input.seriesId,
+            sourceFrequency: 'DAILY',
+            historyFingerprint: 'pit-history',
+            preparation: null,
+          },
+          history: { frequency: 'DAILY', start: '2026-01-01', end: '2026-09-15', observations: 200 },
+          forecastOrigin: '2026-09-15T00:00:00.000Z',
+          verification: {},
+          cacheStatus: 'hit' as const,
+        } as never
+      }
+
+      return unavailableVerification({
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis: 'POINT_IN_TIME',
+      }) as never
+    },
+    async runRollingDaily(request) {
+      rollingCalls.push(`${request.seriesId}:${request.modelIds.join(',')}`)
+      rollingPrepareHistoricalFlags.push(request.prepareHistorical)
+      recentReady = true
+      return {
+        status: 'SUCCEEDED' as const,
+        seriesId: request.seriesId,
+        targetBasis: 'POINT_IN_TIME' as const,
+        results: [{
+          modelId: 'arima' as const,
+          status: 'SUCCEEDED' as const,
+          currentStatus: 'AVAILABLE' as const,
+          verificationStatus: 'AVAILABLE' as const,
+        }],
+      } as never
+    },
+  })
+
+  const first = await service.snapshotAndKickoff({
+    seriesId: 'pit-recent-gap',
+    preferredModelId: 'arima',
+    preferredTargetBasis: 'POINT_IN_TIME',
+  })
+
+  const firstVariant = first.variants.find((variant) => variant.modelId === 'arima' && variant.targetBasis === 'POINT_IN_TIME')
+  assert.ok(['QUEUED', 'PREPARING', 'READY'].includes(firstVariant?.verificationState ?? 'FAILED'))
+
+  await flushProgressiveQueue()
+
+  const second = await service.snapshotAndKickoff({
+    seriesId: 'pit-recent-gap',
+    preferredModelId: 'arima',
+    preferredTargetBasis: 'POINT_IN_TIME',
+  })
+
+  const secondVariant = second.variants.find((variant) => variant.modelId === 'arima' && variant.targetBasis === 'POINT_IN_TIME')
+  assert.equal(secondVariant?.verificationState, 'READY')
+  assert.deepEqual(rollingCalls, ['pit-recent-gap:arima'])
+  assert.deepEqual(rollingPrepareHistoricalFlags, [true])
 })
