@@ -1,0 +1,150 @@
+{
+  "generatedAt": "2026-09-15T08:04:08.000Z",
+  "taskId": "ppf-1-stage-12-copper-recent-verification-execution-access-unblock-20260915",
+  "parentTaskId": "ppf-1-stage-12-copper-verification-freshness-repair-20260915",
+  "conversationId": "f6b5bb0d-4c0c-471f-90cd-18c68ec2d92c",
+  "etap": "MVP-11 - Stabilizacja / Deploy",
+  "canonicalScope": "implementation",
+  "subetap": "PPF-1 Stage 12 - Copper Recent Verification Execution Access Unblock",
+  "authority": {
+    "repository": "profitia/SG-dev",
+    "branch": "ppf1/stage12-live-acceptance-legacy-deprecation-20260911",
+    "remoteBaseSha": "f2530848ad99cade66a5296a9f9bd02dfc02353a",
+    "currentRemoteHeadAtTaskPreflight": "f2530848ad99cade66a5296a9f9bd02dfc02353a",
+    "remoteHeadVerify": "PASS",
+    "sourceCorrectiveSha": "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85",
+    "sourceCorrectiveCommitMessage": "fix(stage12): guard exact reread fallback typing",
+    "blockerEvidenceFiles": [
+      "tooling/Benchmark-Forecasting/validation/ppf1-stage12-copper-verification-freshness-blocker-checkpoint.md",
+      "tooling/Benchmark-Forecasting/validation/ppf1-stage12-copper-verification-freshness-blocker-checkpoint.json"
+    ]
+  },
+  "acceptedParentTruth": {
+    "copperRepairBlockerClass": "EXECUTION_ACCESS",
+    "fullVerificationReadyCount": 12,
+    "recentVerificationStaleCount": 12,
+    "verificationReadinessStaleCount": 5,
+    "parentCopperTaskComplete": false,
+    "parentCopperTaskPreviouslyBlocked": true
+  },
+  "preexistingWorktree": {
+    "preserved": true,
+    "canonicalRepoPath": "/private/tmp/ppf1-stage12-live-acceptance-legacy-deprecation-20260911",
+    "statusShort": [
+      "M apps/sg-runtime/generated/market-data-client/index.d.ts",
+      "M apps/sg-runtime/generated/market-data-client/index.js",
+      "M apps/sg-runtime/lib/forecast/service.ts",
+      "M apps/sg-runtime/tests/forecast-library-service.test.ts",
+      "?? apps/sg-runtime/generated/market-data-client/edge.js",
+      "?? apps/sg-runtime/generated/market-data-client/index-browser.js",
+      "?? apps/sg-runtime/generated/market-data-client/package.json",
+      "?? apps/sg-runtime/generated/market-data-client/runtime/edge-esm.js",
+      "?? apps/sg-runtime/generated/market-data-client/runtime/edge.js",
+      "?? apps/sg-runtime/generated/market-data-client/runtime/index-browser.js",
+      "?? apps/sg-runtime/generated/market-data-client/runtime/react-native.js",
+      "?? apps/sg-runtime/generated/market-data-client/runtime/wasm.js",
+      "?? apps/sg-runtime/generated/market-data-client/schema.prisma",
+      "?? apps/sg-runtime/generated/market-data-client/wasm.js"
+    ]
+  },
+  "deployment": {
+    "service1": {
+      "serviceName": "benchmark-finder-category-builder",
+      "serviceId": "srv-d9tmgddbedkc739jr24g",
+      "deployedSha": "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85"
+    },
+    "service2": {
+      "serviceName": "spendguru-stage",
+      "serviceId": "srv-d98a73btqb8s73fabp90",
+      "deployedSha": "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85"
+    },
+    "sourceChangeRequired": false
+  },
+  "local": {
+    "initialTaskWorktreeShellPresence": {
+      "macrobondClientId": "ABSENT",
+      "macrobondClientSecret": "ABSENT",
+      "marketDataDatabaseUrl": "ABSENT",
+      "sgRuntimeDatabaseUrl": "ABSENT",
+      "forecastingLabRoot": "ABSENT",
+      "forecastingPythonBin": "ABSENT"
+    },
+    "lawfulSharedEnvSource": {
+      "path": "/Users/tomaszuscinski/Documents/Klienci/Profitia/SG 2.0/SG-dev-ARCHIVE-DO-NOT-USE/apps/sg-runtime/.env.local",
+      "sameCanonicalIntegration": true,
+      "macrobondClientId": "PRESENT",
+      "macrobondClientSecret": "PRESENT",
+      "marketDataDatabaseUrl": "PRESENT",
+      "sgRuntimeDatabaseUrl": "PRESENT"
+    },
+    "secondaryEnvSource": {
+      "path": "/Users/tomaszuscinski/Documents/Klienci/Profitia/SG 2.0/SG-dev-ARCHIVE-DO-NOT-USE/tooling/Benchmark-Forecasting/.env",
+      "macrobondClientId": "ABSENT",
+      "macrobondClientSecret": "ABSENT",
+      "databaseUrl": "PRESENT"
+    },
+    "executionSurface": {
+      "workingDirectory": "/tmp/ppf1-stage12-copper-fallback-fix-worktree/apps/sg-runtime",
+      "sourceHeadBeforePublication": "f2530848ad99cade66a5296a9f9bd02dfc02353a",
+      "setupSteps": [
+        "npm install --ignore-scripts",
+        "prisma generate",
+        "prisma generate --schema prisma-market-data/schema.prisma"
+      ]
+    },
+    "probes": {
+      "localCanonicalModuleLoad": "PASS",
+      "localMacrobondAccess": "PASS",
+      "localCopperSourceRead": "PASS",
+      "localPreparedStateDbAccess": "PASS",
+      "localMarketDataDbProbe": "PASS",
+      "localForecastingPythonRuntime": {
+        "status": "PASS",
+        "interpreter": "../../tooling/Benchmark-Forecasting/.venv/bin/python",
+        "version": "Python 3.13.0"
+      }
+    }
+  },
+  "render": {
+    "renderSshAvailable": false,
+    "renderMacrobondClientId": "NOT_RUN",
+    "renderMacrobondClientSecret": "NOT_RUN",
+    "renderDbAccessConfig": "NOT_RUN",
+    "renderCanonicalModuleLoad": "NOT_RUN",
+    "renderCopperSourceRead": "NOT_RUN",
+    "renderPreparedStateDbAccess": "NOT_RUN",
+    "reasonNotRun": "Local canonical execution surface satisfied all required gates."
+  },
+  "decision": {
+    "executionSurface": "LOCAL_CANONICAL",
+    "executionAccessUnblock": "PASS",
+    "executionAccessUnblocked": true,
+    "readyToResumeParentCopperRepair": true
+  },
+  "safety": {
+    "secretsExposed": false,
+    "forecastComputeStarted": 0,
+    "recentVerificationMaterializationStarted": 0,
+    "currentComputeStarted": 0,
+    "historicalComputeStarted": 0,
+    "duplicateComputeStarted": 0,
+    "activeRepairJob": false,
+    "orphanedRepairJobActive": false
+  },
+  "continuation": {
+    "parentCopperTaskComplete": false,
+    "parentCopperTaskRemainsBlocked": false,
+    "nextAction": "Resume the parent Copper repair as a separate task using the proven local canonical execution surface, then reread public Copper capability truth before certification.",
+    "doNotDoInThisTask": [
+      "resolveBenchmarkRecentForecastVerification repair execution",
+      "progressive preparation",
+      "Recent Verification materialization",
+      "Copper certification",
+      "deploy"
+    ]
+  },
+  "pmos": {
+    "supportTaskPmosSave": "NOT_RUN_PENDING_ARTIFACT_ABSENT",
+    "supportTaskCloseoutState": "REPOSITORY_EVIDENCE_ONLY"
+  }
+}
