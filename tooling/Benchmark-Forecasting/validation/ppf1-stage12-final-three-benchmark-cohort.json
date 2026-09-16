@@ -1,0 +1,257 @@
+{
+  "taskId": "ppf-1-stage-12-final-three-benchmark-cohort-20260916",
+  "parentTaskId": "ppf-1-stage-12-copper-dashboard-certification-corrective-20260916",
+  "etap": "MVP-11 - Stabilizacja / Deploy",
+  "subetap": "PPF-1 Stage 12 - Final Three-Benchmark Sequential Acceptance Cohort",
+  "status": "FAIL_CLOSED_AT_BRENT",
+  "authority": {
+    "upstreamIdentityAuthority": "EXTERNAL_CHATGPT_PROMPT_AUTHORING_LAYER",
+    "remoteBranchHead": "4e6cc5c5f7339a89ce5df460c3a1c9412aff99ae",
+    "dashboardSourceCommitSha": "79a8a7f6d5b2e6ecf5095a17006b80f288e4e604",
+    "dashboardService": {
+      "serviceId": "srv-da2i7j9t0dsc73ag7qv0",
+      "serviceName": "dashboards-library",
+      "deployId": "dep-dal4b5mk1f9s73dlidb0",
+      "deployedSha": "79a8a7f6d5b2e6ecf5095a17006b80f288e4e604",
+      "deployStatus": "LIVE"
+    },
+    "unchangedSgRuntimeSurfaces": [
+      {
+        "serviceId": "srv-d9tmgddbedkc739jr24g",
+        "serviceName": "benchmark-finder-category-builder",
+        "deployedSha": "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85"
+      },
+      {
+        "serviceId": "srv-d98a73btqb8s73fabp90",
+        "serviceName": "spendguru-stage",
+        "deployedSha": "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85"
+      }
+    ]
+  },
+  "constraints": {
+    "codeChangesAllowed": false,
+    "redeployAllowed": false,
+    "configurationChangesAllowed": false,
+    "acceptanceOnlyTask": true
+  },
+  "preflight": {
+    "repositoryParity": {
+      "localHead": "4e6cc5c5f7339a89ce5df460c3a1c9412aff99ae",
+      "remoteHead": "4e6cc5c5f7339a89ce5df460c3a1c9412aff99ae",
+      "worktreeState": "CLEAN"
+    },
+    "dashboardDeployParity": {
+      "deployId": "dep-dal4b5mk1f9s73dlidb0",
+      "renderStatus": "LIVE",
+      "sourceRevision": "79a8a7f6d5b2e6ecf5095a17006b80f288e4e604",
+      "deployedRevision": "79a8a7f6d5b2e6ecf5095a17006b80f288e4e604"
+    },
+    "standaloneCopperProofStillHeld": "YES",
+    "additionalParityProbe": {
+      "seriesId": "lmeofcucashask",
+      "benchmarkName": "Copper",
+      "httpStatus": 200,
+      "wallTimeSeconds": 58.492787,
+      "sourceRevision": "79a8a7f6d5b2e6ecf5095a17006b80f288e4e604",
+      "deployedRevision": "79a8a7f6d5b2e6ecf5095a17006b80f288e4e604",
+      "countedTowardOfficialCohort": false,
+      "purpose": "pre-execution deployed-sha parity confirmation"
+    }
+  },
+  "officialCohortPlan": {
+    "requiredOrder": [
+      {
+        "benchmarkName": "Brent",
+        "seriesId": "wocaes0074"
+      },
+      {
+        "benchmarkName": "Copper",
+        "seriesId": "lmeofcucashask"
+      },
+      {
+        "benchmarkName": "Aluminium",
+        "seriesId": "lmeofalcashask"
+      }
+    ],
+    "failClosedRule": "Stop immediately on the first benchmark that fails any required acceptance gate."
+  },
+  "executions": [
+    {
+      "benchmarkName": "Brent",
+      "seriesId": "wocaes0074",
+      "attemptOrder": 1,
+      "countedTowardOfficialCohort": true,
+      "endpoint": "https://dashboards-library.onrender.com/api/benchmark-forecast/demo-certification",
+      "requestBody": {
+        "mode": "REVALIDATE",
+        "seriesIds": [
+          "wocaes0074"
+        ],
+        "includeFallback": false,
+        "diagnostics": {
+          "enabled": true
+        }
+      },
+      "httpStatus": 200,
+      "wallTimeSeconds": 55.552319,
+      "renderRequestId": "11fc4252-1cbf-4504",
+      "cloudflareRay": "a3be64b31ed288e8-WAW",
+      "executionId": "demo-certification-4e9f7c52-8790-44b4-b538-cd9395bc7fbf",
+      "releaseSnapshot": {
+        "sourceRevision": "79a8a7f6d5b2e6ecf5095a17006b80f288e4e604",
+        "deployedRevision": "79a8a7f6d5b2e6ecf5095a17006b80f288e4e604",
+        "environment": "render",
+        "environmentUrl": "https://dashboards-library.onrender.com",
+        "acceptedAt": "2026-09-16T08:10:12.420Z"
+      },
+      "result": {
+        "demoSafe": "NO",
+        "reason": "PRECOMPUTE_FAIL",
+        "precompute": "FAIL",
+        "reread": "FAIL",
+        "matrix": "FAIL",
+        "freshness": "PASS",
+        "warmRehearsal": "FAIL"
+      },
+      "phaseTimingsMs": {
+        "precompute": 30329,
+        "matrix": 3,
+        "warmRehearsal": 2136
+      },
+      "matrixTelemetry": {
+        "currentPassCells": 8,
+        "currentFailCells": 4,
+        "verificationPassCells": 32,
+        "verificationFailCells": 16,
+        "failingReasons": [
+          "PREPARED_STATE_NOT_READY",
+          "VERIFICATION_NOT_READY"
+        ],
+        "maxConcurrentVariants": 1,
+        "peakVariantConcurrency": 1
+      },
+      "precomputeFailureVariants": [
+        {
+          "modelId": "naive",
+          "targetBasis": "POINT_IN_TIME",
+          "currentReadiness": "STALE",
+          "verificationReadiness": "STALE",
+          "fullVerificationReadiness": "NOT_PREPARED",
+          "reason": "Warm revalidation requires both current readiness and exact historical verification readiness to remain READY."
+        },
+        {
+          "modelId": "damped_holt",
+          "targetBasis": "POINT_IN_TIME",
+          "currentReadiness": "STALE",
+          "verificationReadiness": "STALE",
+          "fullVerificationReadiness": "NOT_PREPARED",
+          "reason": "Warm revalidation requires both current readiness and exact historical verification readiness to remain READY."
+        },
+        {
+          "modelId": "ets",
+          "targetBasis": "POINT_IN_TIME",
+          "currentReadiness": "STALE",
+          "verificationReadiness": "STALE",
+          "fullVerificationReadiness": "NOT_PREPARED",
+          "reason": "Warm revalidation requires both current readiness and exact historical verification readiness to remain READY."
+        },
+        {
+          "modelId": "arima",
+          "targetBasis": "POINT_IN_TIME",
+          "currentReadiness": "STALE",
+          "verificationReadiness": "STALE",
+          "fullVerificationReadiness": "NOT_PREPARED",
+          "reason": "Warm revalidation requires both current readiness and exact historical verification readiness to remain READY."
+        }
+      ],
+      "warmRehearsalFailure": {
+        "modelSwitch": "FAIL",
+        "targetBasisSwitch": "FAIL",
+        "verification": "FAIL",
+        "verificationHorizonSwitch": "FAIL",
+        "switchBack": "PASS",
+        "hardReload": "FAIL",
+        "warmReuse": "FAIL",
+        "status": "FAIL",
+        "reason": "Point-in-time prepared current and verification readiness did not remain READY for any Brent model during warm revalidation."
+      },
+      "remoteRequests": {
+        "logicalCount": 73,
+        "physicalCount": 32,
+        "peakConcurrentRemoteReads": 12,
+        "byOperation": {
+          "READ_CAPABILITY": 28,
+          "READ_CURRENT": 29,
+          "READ_VERIFICATION": 16
+        },
+        "cacheReuse": {
+          "hit": 41,
+          "miss": 32
+        },
+        "pitCapabilityCacheHits": 8,
+        "boundedPrefetch": {
+          "nonPointInTimePreparedReadMisses": 16,
+          "peakPreparedReadConcurrency": 8,
+          "elapsedWindowMs": 22937,
+          "matrixPreparedReadMissesAfterWarmup": 0
+        }
+      },
+      "safetyTelemetry": {
+        "timeoutSnapshot": null,
+        "abortCount": 0,
+        "activeRequestsAtCompletion": 0,
+        "postResponseSgRuntimeRequests": 0,
+        "prepareRouteCount": 0,
+        "productionForecastComputeStarted": "NO",
+        "secondForecastEngineCreated": "NO",
+        "duplicateComputeRegression": "NO",
+        "canonicalSingleFlightPreserved": "YES",
+        "uncontrolledPrecomputeFanout": "NO",
+        "lastVerifiedAt": "2026-09-16T08:11:07.828Z"
+      },
+      "sgRuntimeCorrelation": {
+        "serviceLevelEvidence": "PARTIAL",
+        "unchangedDeployedShas": [
+          "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85",
+          "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85"
+        ],
+        "requestLevelCorrelation": "Dashboard diagnostics proved that tracked remote requests completed before the dashboard response and that no post-response requests remained active. The in-session Render log UI did not expose a one-to-one join for the Brent executionId or dashboard request id."
+      },
+      "cohortDecision": {
+        "status": "STOP",
+        "reason": "First official cohort benchmark failed acceptance on live point-in-time readiness."
+      }
+    }
+  ],
+  "skippedExecutions": [
+    {
+      "benchmarkName": "Copper",
+      "seriesId": "lmeofcucashask",
+      "reason": "Not run because the official cohort failed closed at Brent."
+    },
+    {
+      "benchmarkName": "Aluminium",
+      "seriesId": "lmeofalcashask",
+      "reason": "Not run because the official cohort failed closed at Brent."
+    }
+  ],
+  "postFailureParity": {
+    "probeSeriesId": "wocaes0074",
+    "httpStatus": 200,
+    "wallTimeSeconds": 42.579176,
+    "sourceRevision": "79a8a7f6d5b2e6ecf5095a17006b80f288e4e604",
+    "deployedRevision": "79a8a7f6d5b2e6ecf5095a17006b80f288e4e604",
+    "interpretation": "Dashboard source and deployed revision remained unchanged after the Brent failure, so the cohort failure is not attributable to deploy drift."
+  },
+  "final": {
+    "fullThreeBenchmarkCohort": "FAIL",
+    "failureBoundary": "BRENT_FIRST_RUN",
+    "dashboardCorrectiveRegression": "NO",
+    "dashboardDeployParityMaintained": "YES",
+    "standaloneCopperProofPreserved": "YES",
+    "nextOwner": "SG Runtime / benchmark data readiness authority",
+    "nextDecision": "Determine whether Brent point-in-time current and exact historical verification readiness should be re-prepared upstream or explicitly excluded from this cohort's acceptance gate.",
+    "pmosSave": "NOT_RUN_PENDING_ARTIFACT_ABSENT",
+    "finalTaskStatus": "INCOMPLETE - COHORT FAILED AND PMOS CLOSEOUT BLOCKED"
+  }
+}
