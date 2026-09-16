@@ -425,6 +425,10 @@ The configured target differs from the public SG Runtime service previously insp
 
 `SOURCE_CHANGE_REQUIRED = NO`
 
+`PUBLICATION_COMMIT_SHA = 611e80c602cb50554342d42a288ca8edbccd0aa8`
+
+`REMOTE_EVIDENCE_VERIFY = PASS`
+
 This diagnostic task publishes repository evidence only.
 
 No business-code files were changed.

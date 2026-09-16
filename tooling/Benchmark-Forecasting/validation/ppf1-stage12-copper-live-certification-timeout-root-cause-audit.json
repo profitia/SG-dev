@@ -351,8 +351,8 @@
   },
   "publication": {
     "sourceChangeRequired": "NO",
-    "publicationCommitSha": null,
-    "remoteEvidenceVerify": "PENDING",
+    "publicationCommitSha": "611e80c602cb50554342d42a288ca8edbccd0aa8",
+    "remoteEvidenceVerify": "PASS",
     "pmosSave": "NOT_RUN_PENDING_ARTIFACT_ABSENT",
     "pmosCloseout": "REPOSITORY_EVIDENCE_ONLY"
   },
