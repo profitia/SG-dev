@@ -1359,7 +1359,22 @@ export async function fetchMacrobondSeriesHistory(seriesName: string): Promise<B
     throw new BenchmarkAppError('PROVIDER_SERIES_NOT_FOUND', `Macrobond series ${seriesName} could not be loaded.`, 404)
   }
 
-  const metadata = item.metadata ?? {}
+  const seriesMetadata = item.metadata ?? {}
+  const seriesDisplayName = getMetadataString(seriesMetadata, ['Title', 'Description', 'PrimName', 'Name']) ?? seriesName
+  const seriesUnit = getMetadataString(seriesMetadata, ['Unit', 'DisplayUnit', 'TitleUnit'])
+  let metadata = seriesMetadata
+
+  if (seriesDisplayName === seriesName || !seriesUnit) {
+    try {
+      const entityMetadata = await fetchMacrobondEntityMetadata(seriesName)
+      metadata = {
+        ...entityMetadata,
+        ...seriesMetadata,
+      }
+    } catch {
+      // History remains lawful provider data even when optional descriptive metadata enrichment is unavailable.
+    }
+  }
   const rawDates = Array.isArray(item.dates) ? item.dates : []
   const rawValues = Array.isArray(item.values) ? item.values : []
   const historical = rawDates
@@ -1367,6 +1382,9 @@ export async function fetchMacrobondSeriesHistory(seriesName: string): Promise<B
     .filter((point): point is BenchmarkPreviewPoint => point !== null)
 
   const displayName = getMetadataString(metadata, ['Title', 'Description', 'PrimName', 'Name']) ?? seriesName
+  const currency = getMetadataString(metadata, ['Currency'])
+  const rawUnit = getMetadataString(metadata, ['Unit', 'DisplayUnit', 'TitleUnit'])
+  const unit = rawUnit?.replace(/^Currency Unit(?=\/|\s|$)/i, currency?.toUpperCase() ?? 'Currency Unit') ?? null
 
   return {
     providerSeries: {
@@ -1376,8 +1394,8 @@ export async function fetchMacrobondSeriesHistory(seriesName: string): Promise<B
     },
     displayName,
     frequency: getMetadataString(metadata, ['Frequency', 'SamplingPeriod']),
-    currency: getMetadataString(metadata, ['Currency']),
-    unit: getMetadataString(metadata, ['Unit']),
+    currency,
+    unit,
     source: getMetadataString(metadata, ['Source']),
     historical,
   }
