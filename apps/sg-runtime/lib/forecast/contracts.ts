@@ -1,5 +1,6 @@
 import type {
   ForecastMethodId,
+  ForecastPredictionBandIdentity,
   ForecastSourceLineage,
   ForecastTargetSemantics,
 } from '@/lib/forecast/identity'
@@ -47,6 +48,26 @@ export interface ForecastSelectionMetadata {
   selectionMetric: string | null
   fitStatus: string
   failureReason: string | null
+  uncertaintyBand?: ForecastUncertaintyBand | null
+}
+
+export type ForecastUncertaintyBandStatus = 'AVAILABLE' | 'NOT_AVAILABLE'
+export type ForecastUncertaintyBandSource = 'EMPIRICAL_EXACT_RESIDUALS' | 'MODEL_NATIVE_SHORT_HISTORY'
+export type ForecastUncertaintyBandCalibrationStatus = 'CALIBRATED' | 'INSUFFICIENT_SAMPLE' | 'NOT_AVAILABLE'
+
+export interface ForecastUncertaintyBand {
+  status: ForecastUncertaintyBandStatus
+  source: ForecastUncertaintyBandSource | null
+  policyVersion: string
+  coverage: 0.8
+  lower: number | null
+  upper: number | null
+  sampleCount: number
+  calibrationStatus: ForecastUncertaintyBandCalibrationStatus
+  calibrationMethod: string | null
+  calibrationVersion: string | null
+  reasonCode: string | null
+  identity?: ForecastPredictionBandIdentity
 }
 
 export interface ForecastCurrentPoint {
@@ -109,6 +130,32 @@ export interface ForecastVerificationHorizon {
   failures: ForecastVerificationFailure[]
 }
 
+export type HistoricalVerificationStatus =
+  | 'AVAILABLE'
+  | 'LIMITED_SAMPLE'
+  | 'INSUFFICIENT_HISTORY'
+  | 'NOT_PREPARED'
+  | 'FAILED'
+
+export interface HistoricalVerificationHorizonSummary {
+  status: Exclude<HistoricalVerificationStatus, 'NOT_PREPARED'>
+  originCount: number
+  expectedOriginCount: number
+  failedOriginCount: number
+  coverage: number
+  warningCode: 'SMALL_SAMPLE' | 'NO_LAWFUL_OUT_OF_SAMPLE_ORIGIN' | 'ALL_ORIGINS_FAILED' | null
+}
+
+export interface HistoricalVerificationSummary {
+  contractVersion: 'HISTORICAL_VERIFICATION_V1'
+  status: HistoricalVerificationStatus
+  originCount: number
+  expectedOriginCount: number
+  failedOriginCount: number
+  coverage: number
+  horizons: Record<string, HistoricalVerificationHorizonSummary>
+}
+
 export interface ForecastCapabilityBase {
   status: ForecastCapabilityStatus
   seriesId: string
@@ -140,11 +187,13 @@ export interface BenchmarkForecastCurrentAvailableResult extends ForecastAvailab
 
 export interface BenchmarkForecastVerificationAvailableResult extends ForecastAvailableBase {
   verification: Record<string, ForecastVerificationHorizon>
+  historicalVerification: HistoricalVerificationSummary
 }
 
 export interface ForecastNotAvailableResult extends ForecastCapabilityBase {
   status: 'NOT_AVAILABLE'
   reason: string
+  historicalVerification?: HistoricalVerificationSummary
 }
 
 export interface ForecastUnsupportedResult extends ForecastCapabilityBase {
@@ -154,6 +203,7 @@ export interface ForecastUnsupportedResult extends ForecastCapabilityBase {
   supportedModels: string[]
   methodVersion?: string
   source?: ForecastSourceRef
+  historicalVerification?: HistoricalVerificationSummary
 }
 
 export interface ForecastFailedResult extends ForecastCapabilityBase {
@@ -162,6 +212,7 @@ export interface ForecastFailedResult extends ForecastCapabilityBase {
   methodVersion?: string
   source?: ForecastSourceRef
   historyFingerprint?: string
+  historicalVerification?: HistoricalVerificationSummary
 }
 
 export type BenchmarkForecastCurrentResult =

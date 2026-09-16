@@ -158,7 +158,7 @@ def generate_current_forecast(
             )
         forecast_date = add_months(history[-1].date, horizon_steps)
     try:
-        model_forecast = model.forecast_with_metadata(history, horizon_steps)
+        model_forecast = model.forecast_with_uncertainty(history, horizon_steps)
     except ModelForecastError as error:
         return CurrentForecast(
             horizon=horizon_label,

@@ -14,6 +14,53 @@ import {
   type PersistedCurrentArtifact,
   type PersistedVerificationArtifact,
 } from '../lib/forecast/service'
+import type { ForecastSelectionMetadata } from '../lib/forecast/contracts'
+
+const CURRENT_BAND_METADATA = {
+  modelFamily: 'ets',
+  selectedVariant: 'ETS(A,A,N)',
+  selectedParameters: {},
+  selectionScore: 1,
+  selectionMetric: 'AICc',
+  fitStatus: 'SUCCEEDED',
+  failureReason: null,
+  uncertaintyBand: {
+    status: 'AVAILABLE',
+    source: 'MODEL_NATIVE_SHORT_HISTORY',
+    policyVersion: 'ADAPTIVE_UNCERTAINTY_BANDS_V1',
+    coverage: 0.8,
+    lower: 90,
+    upper: 100,
+    sampleCount: 12,
+    calibrationStatus: 'INSUFFICIENT_SAMPLE',
+    calibrationMethod: 'STATSMODELS_ETS_SIMULATION',
+    calibrationVersion: 'statsmodels-ets-simulation-seed-1729-r1000-v1',
+    reasonCode: null,
+    identity: {
+      forecastIdentity: {
+        seriesId: 'wocaes0074',
+        modelId: 'ets',
+        targetSemantics: 'MONTHLY_AVERAGE',
+        methodId: 'MONTHLY_AVERAGE',
+        methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+      },
+      inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      horizonLabel: '1M',
+      horizonSteps: 1,
+      targetDate: '2026-02-01T00:00:00.000Z',
+      sourceHistoryFingerprint: 'history-current',
+      trainingWindowPolicyId: 'CURRENT_FORECAST_MINIMAL_LAWFUL_SUFFIX',
+      effectiveTrainingPolicyId: 'CURRENT_FORECAST_MINIMAL_LAWFUL_SUFFIX@v1|policy=ADAPTIVE_SHORT_HISTORY_V1|source=MONTHLY|target=MONTHLY|semantics=MONTHLY_AVERAGE',
+      bandPolicyVersion: 'ADAPTIVE_UNCERTAINTY_BANDS_V1',
+      bandSource: 'MODEL_NATIVE_SHORT_HISTORY',
+      calibrationMethod: 'STATSMODELS_ETS_SIMULATION',
+      calibrationVersion: 'statsmodels-ets-simulation-seed-1729-r1000-v1',
+      calibrationCutoff: '2026-01-01T00:00:00.000Z',
+    },
+  },
+} as const satisfies ForecastSelectionMetadata
 
 function createCurrentArtifact(): PersistedCurrentArtifact {
   return {
@@ -52,6 +99,7 @@ function createCurrentArtifact(): PersistedCurrentArtifact {
         horizonSteps: 1,
         forecastDate: '2026-02-01T00:00:00.000Z',
         forecastValue: 95.1,
+        metadata: CURRENT_BAND_METADATA,
       },
     },
   }
@@ -121,6 +169,7 @@ test('writeCurrentRunWithPrisma falls back to legacy writes when training policy
   let observedQuery = ''
   let deletedRunId: string | undefined
   let createdPointCount = 0
+  let persistedMetadata: unknown = null
 
   process.env.MARKET_DATA_DATABASE_URL = 'postgresql://legacy-current.invalid/market-data'
   globalThis.__sgRuntimeMarketDataPrisma__ = {
@@ -151,8 +200,9 @@ test('writeCurrentRunWithPrisma falls back to legacy writes when training policy
         async deleteMany(input: { where: { runId: string } }) {
           deletedRunId = input.where.runId
         },
-        async createMany(input: { data: unknown[] }) {
+        async createMany(input: { data: Array<{ metadataJson?: unknown }> }) {
           createdPointCount = input.data.length
+          persistedMetadata = input.data[0]?.metadataJson ?? null
         },
       },
     }),
@@ -165,6 +215,7 @@ test('writeCurrentRunWithPrisma falls back to legacy writes when training policy
     assert.equal(queryRawCount >= 3, true)
     assert.equal(deletedRunId, 'legacy-current-run')
     assert.equal(createdPointCount, 1)
+    assert.deepEqual(persistedMetadata, CURRENT_BAND_METADATA)
   } finally {
     if (previousUrl === undefined) {
       delete process.env.MARKET_DATA_DATABASE_URL
@@ -291,7 +342,7 @@ test('readPreparedBenchmarkCurrentForecast falls back to legacy latest lookup wh
               horizonSteps: 1,
               forecastDate: new Date('2026-02-01T00:00:00.000Z'),
               forecastValue: 95.1,
-              metadataJson: null,
+              metadataJson: CURRENT_BAND_METADATA,
               failureReason: null,
             }],
           }
@@ -324,6 +375,9 @@ test('readPreparedBenchmarkCurrentForecast falls back to legacy latest lookup wh
 
     assert.equal(result.status, 'AVAILABLE')
     assert.equal(findFirstCalls.length, 4)
+    if (result.status === 'AVAILABLE') {
+      assert.deepEqual(result.currentForecast['1M']?.metadata, CURRENT_BAND_METADATA)
+    }
   } finally {
     if (previousUrl === undefined) {
       delete process.env.MARKET_DATA_DATABASE_URL

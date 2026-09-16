@@ -41,6 +41,7 @@ import {
 } from '@/lib/forecast/request-diagnostics'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
+import { ensureHistoricalVerificationContract } from '@/lib/forecast/historical-verification-policy'
 
 type PreparedCurrentResult = BenchmarkForecastCurrentResult | Awaited<ReturnType<typeof readPreparedRollingDailyCurrentForecast>>
 type CurrentForecastResolver = (input: ForecastRequestInput) => Promise<PreparedCurrentResult>
@@ -166,9 +167,10 @@ export async function resolvePreparedForecastVerification(
   input: ForecastRequestInput,
   dependencies: PreparedVerificationDependencies = preparedVerificationDependencies,
 ) {
-  return input.targetBasis === 'POINT_IN_TIME'
+  const result = await (input.targetBasis === 'POINT_IN_TIME'
     ? dependencies.readRollingDailyVerification(input)
-    : dependencies.readGenericPeriodVerification(input)
+    : dependencies.readGenericPeriodVerification(input))
+  return ensureHistoricalVerificationContract(result)
 }
 
 export function createInternalForecastVerificationResolver(
@@ -185,7 +187,7 @@ export function createInternalForecastVerificationResolver(
 ): ForecastVerificationResolver {
   return async (input) => {
     if (input.targetBasis !== 'POINT_IN_TIME') {
-      return resolveGenericPeriodVerification(input)
+      return ensureHistoricalVerificationContract(await resolveGenericPeriodVerification(input))
     }
 
     updateForecastRequestDiagnosticsIdentity({
@@ -208,12 +210,12 @@ export function createInternalForecastVerificationResolver(
       { seriesId: input.seriesId, modelId: input.modelId },
     )
 
-    return traceForecastRequestDiagnosticsSpan(
+    return ensureHistoricalVerificationContract(await traceForecastRequestDiagnosticsSpan(
       'point_in_time_verification_read',
       'DB_OPERATION',
       () => readPointInTimeVerification(input),
       { seriesId: input.seriesId, modelId: input.modelId },
-    )
+    ))
   }
 }
 

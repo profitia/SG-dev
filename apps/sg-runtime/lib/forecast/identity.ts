@@ -198,10 +198,40 @@ export type ForecastCapabilityState =
 
 export type ForecastPredictionBandIdentity = {
   forecastIdentity: ForecastIdentity
-  horizon: string
+  inputSource: string
+  sourceFrequency: ForecastSourceFrequency
+  targetCadence: ForecastTargetCadence
+  horizonLabel: string
+  horizonSteps: number
   targetDate: string | null
+  sourceHistoryFingerprint: string
+  trainingWindowPolicyId: ForecastTrainingWindowPolicyId
+  effectiveTrainingPolicyId: ForecastEffectiveTrainingPolicyId
+  bandPolicyVersion: string
+  bandSource: string | null
   calibrationMethod: string
   calibrationVersion: string
+  calibrationCutoff: string | null
+}
+
+export function buildForecastPredictionBandIdentityKey(identity: ForecastPredictionBandIdentity): string {
+  return [
+    buildForecastIdentityKey(identity.forecastIdentity),
+    `input=${identity.inputSource}`,
+    `source=${identity.sourceFrequency}`,
+    `target=${identity.targetCadence}`,
+    `horizon=${identity.horizonLabel}`,
+    `steps=${identity.horizonSteps}`,
+    `targetDate=${identity.targetDate ?? 'null'}`,
+    `history=${identity.sourceHistoryFingerprint}`,
+    `window=${identity.trainingWindowPolicyId}`,
+    `effective=${identity.effectiveTrainingPolicyId}`,
+    `bandPolicy=${identity.bandPolicyVersion}`,
+    `bandSource=${identity.bandSource ?? 'null'}`,
+    `calibrationMethod=${identity.calibrationMethod}`,
+    `calibrationVersion=${identity.calibrationVersion}`,
+    `calibrationCutoff=${identity.calibrationCutoff ?? 'null'}`,
+  ].join('|')
 }
 
 export type ForecastPreparedSnapshotIdentity = {

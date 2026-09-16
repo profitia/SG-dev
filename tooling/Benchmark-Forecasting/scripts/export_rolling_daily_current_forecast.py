@@ -110,6 +110,7 @@ def serialize_status(value: BandStatus | ForecastAvailabilityStatus) -> str:
 def serialize_path_point(point: Any) -> dict[str, Any]:
     return {
         "date": point.date.isoformat(),
+        "projectedStepCount": point.projected_step_count,
         "pointForecast": point.point_forecast,
         "lowerP10": point.lower_p10,
         "upperP90": point.upper_p90,
@@ -117,6 +118,7 @@ def serialize_path_point(point: Any) -> dict[str, Any]:
         "bandSource": serialize_band_source(point.band_source),
         "p10ResidualOffset": point.p10_residual_offset,
         "p90ResidualOffset": point.p90_residual_offset,
+        "uncertaintyBand": None if point.uncertainty_band is None else point.uncertainty_band.to_dict(),
     }
 
 
@@ -133,6 +135,7 @@ def serialize_anchor(horizon: str, anchor: Any) -> dict[str, Any]:
         "bandSource": serialize_band_source(anchor.band_source),
         "p10ResidualOffset": anchor.p10_residual_offset,
         "p90ResidualOffset": anchor.p90_residual_offset,
+        "uncertaintyBand": None if anchor.uncertainty_band is None else anchor.uncertainty_band.to_dict(),
     }
 
 

@@ -118,6 +118,12 @@ import {
   resolveForecastStage3HeartbeatIntervalMs,
   startForecastExecutionLeaseHeartbeat,
 } from '@/lib/forecast/stage3-lease-heartbeat'
+import { attachExactUncertaintyBandIdentity } from '@/lib/forecast/uncertainty-band-policy'
+import {
+  ensureHistoricalVerificationContract,
+  resolveHistoricalVerificationHorizon,
+  resolveHistoricalVerificationSummary,
+} from '@/lib/forecast/historical-verification-policy'
 
 const execFileAsync = promisify(execFile)
 const DEFAULT_FORECASTING_LAB_ROOT = path.resolve(process.cwd(), '..', '..', 'tooling', 'Benchmark-Forecasting')
@@ -1887,6 +1893,7 @@ function hasRenderableVerificationHorizon(horizon: ForecastVerificationHorizon) 
     && (
       horizon.records.some((record) => hasRenderableVerificationRecord(record))
       || horizon.metrics !== null
+      || resolveHistoricalVerificationHorizon(horizon).status === 'INSUFFICIENT_HISTORY'
     )
 }
 
@@ -2100,6 +2107,7 @@ function toVerificationAvailable(
     runtimeSeconds: artifact.runtimeSeconds,
     cacheStatus,
     verification: artifact.verification,
+    historicalVerification: resolveHistoricalVerificationSummary(artifact.verification),
   }
 }
 
@@ -2181,6 +2189,32 @@ function mapCurrentArtifact(
     targetCadence,
     targetSemantics: identity.targetSemantics,
   })
+  const historyFingerprint = buildForecastHistoryFingerprint(response.result.history, cadenceContext.cadence ?? undefined)
+  const forecastOrigin = response.result.history.end
+  const orderedCurrentForecast = Object.fromEntries(
+    Object.entries(response.result.currentForecast).sort(([, left], [, right]) => left.horizonSteps - right.horizonSteps),
+  )
+  const userFacingModelId = isUserFacingModel(response.model.id) ? response.model.id : null
+  const currentForecast = userFacingModelId
+    ? Object.fromEntries(
+        Object.entries(orderedCurrentForecast).map(([horizon, point]) => [
+          horizon,
+          attachExactUncertaintyBandIdentity({
+            seriesId: response.benchmark.seriesId,
+            modelId: userFacingModelId,
+            targetBasis,
+            methodVersion: identity.methodVersion,
+            inputSource: response.source.kind,
+            sourceFrequency,
+            targetCadence,
+            sourceHistoryFingerprint: historyFingerprint,
+            trainingWindowPolicyId: statisticalCompatibility.trainingWindowPolicyId,
+            effectiveTrainingPolicyId: statisticalCompatibility.effectiveTrainingPolicyId,
+            forecastOrigin,
+          }, point),
+        ]),
+      )
+    : orderedCurrentForecast
 
   return {
     seriesId: response.benchmark.seriesId,
@@ -2195,17 +2229,15 @@ function mapCurrentArtifact(
       kind: response.source.kind,
       runId: response.source.runId,
     },
-    historyFingerprint: buildForecastHistoryFingerprint(response.result.history, cadenceContext.cadence ?? undefined),
+    historyFingerprint,
     cadence: cadenceContext.cadence,
     frequencyIdentity: cadenceContext.frequencyIdentity,
     statisticalCompatibility,
     preparation: preparationIdentityFromHistory(response.result.history),
     history: historySummaryFromBridge(response.result.history),
-    forecastOrigin: response.result.history.end,
+    forecastOrigin,
     runtimeSeconds: response.result.runtimeSeconds,
-    currentForecast: Object.fromEntries(
-      Object.entries(response.result.currentForecast).sort(([, left], [, right]) => left.horizonSteps - right.horizonSteps),
-    ),
+    currentForecast,
   }
 }
 
@@ -6475,11 +6507,11 @@ export async function resolveBenchmarkCurrentForecast(input: ForecastServiceRequ
 }
 
 export async function resolveBenchmarkForecastVerification(input: ForecastServiceRequest) {
-  return forecastLibraryService.resolveVerificationRequest(input)
+  return ensureHistoricalVerificationContract(await forecastLibraryService.resolveVerificationRequest(input))
 }
 
 export async function resolveBenchmarkRecentForecastVerification(input: ForecastServiceRequest) {
-  return forecastLibraryService.resolveRecentVerificationRequest(input)
+  return ensureHistoricalVerificationContract(await forecastLibraryService.resolveRecentVerificationRequest(input))
 }
 
 export async function readPreparedBenchmarkCurrentForecast(input: ForecastServiceRequest) {
@@ -6487,9 +6519,9 @@ export async function readPreparedBenchmarkCurrentForecast(input: ForecastServic
 }
 
 export async function readPreparedBenchmarkForecastVerification(input: ForecastServiceRequest) {
-  return forecastLibraryService.readPreparedVerificationRequest(input)
+  return ensureHistoricalVerificationContract(await forecastLibraryService.readPreparedVerificationRequest(input))
 }
 
 export async function readPreparedBenchmarkRecentForecastVerification(input: ForecastServiceRequest) {
-  return forecastLibraryService.readPreparedRecentVerificationRequest(input)
+  return ensureHistoricalVerificationContract(await forecastLibraryService.readPreparedRecentVerificationRequest(input))
 }

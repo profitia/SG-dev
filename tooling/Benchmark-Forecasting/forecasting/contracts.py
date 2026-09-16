@@ -5,6 +5,8 @@ from datetime import date
 from enum import StrEnum
 from typing import Any
 
+from forecasting.uncertainty_bands import ForecastUncertaintyBand
+
 
 class Frequency(StrEnum):
     DAILY = "DAILY"
@@ -77,6 +79,7 @@ class ForecastMetadata:
     selection_metric: str | None = None
     fit_status: str = "SUCCEEDED"
     failure_reason: str | None = None
+    uncertainty_band: ForecastUncertaintyBand | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -87,6 +90,7 @@ class ForecastMetadata:
             "selectionMetric": self.selection_metric,
             "fitStatus": self.fit_status,
             "failureReason": self.failure_reason,
+            "uncertaintyBand": None if self.uncertainty_band is None else self.uncertainty_band.to_dict(),
         }
 
 

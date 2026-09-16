@@ -296,6 +296,36 @@ class RollingDailyBandInterpolationTests(unittest.TestCase):
 
         self.assertEqual(current.forecast_path[-1].date, current.anchors["12M"].target_calendar_date)
         self.assertFalse(any(point.date > current.anchors["12M"].target_calendar_date for point in current.forecast_path))
+        self.assertEqual(current.anchors["1M"].band_source, BandSource.EMPIRICAL_ANCHOR)
+        self.assertEqual(current.anchors["1M"].uncertainty_band.source.value, "EMPIRICAL_EXACT_RESIDUALS")
+        self.assertEqual(current.anchors["1M"].uncertainty_band.calibration_status.value, "CALIBRATED")
+
+    def test_sub_30_empirical_inventory_uses_model_native_fallback_without_changing_point_forecast(self) -> None:
+        series = business_daily_series(70)
+        service = RollingDailyPointInTimeService(
+            NaiveLastValueModel(),
+            RollingDailyPointInTimeConfig(minimum_training_observations=20),
+        )
+        summaries = {
+            label: summary(label, lower, upper, BandStatus.AVAILABLE, sample_count=29)
+            for label, lower, upper in (
+                ("1M", -3.0, 7.0),
+                ("3M", -8.0, 20.0),
+                ("6M", -11.0, 30.0),
+                ("12M", -15.0, 35.0),
+            )
+        }
+
+        with_fallback = service.generate_current_forecast(series, calibration_summaries=summaries)
+        without_calibration = service.generate_current_forecast(series, calibration_summaries=None)
+
+        for horizon, anchor in with_fallback.anchors.items():
+            self.assertEqual(anchor.forecast_value, without_calibration.anchors[horizon].forecast_value)
+            self.assertEqual(anchor.band_source, BandSource.MODEL_NATIVE_SHORT_HISTORY)
+            self.assertEqual(anchor.uncertainty_band.source.value, "MODEL_NATIVE_SHORT_HISTORY")
+            self.assertEqual(anchor.uncertainty_band.calibration_status.value, "INSUFFICIENT_SAMPLE")
+            self.assertIsNone(anchor.p10_residual_offset)
+            self.assertIsNone(anchor.p90_residual_offset)
 
     def test_weekend_presentation_point_gets_interpolated_band_without_additional_fit(self) -> None:
         @dataclass(frozen=True)

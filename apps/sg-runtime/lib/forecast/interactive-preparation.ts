@@ -26,6 +26,7 @@ import { readPreparedRollingDailyForecastVerification } from '@/lib/forecast/rol
 import {
   type ForecastPersistenceOwnership,
   readPreparedBenchmarkForecastVerification,
+  readPreparedBenchmarkCurrentForecast,
   readPreparedBenchmarkRecentForecastVerification,
   resolveBenchmarkCurrentForecast,
   type ForecastServiceRequest,
@@ -87,6 +88,7 @@ export type InteractiveForecastCapabilityResult = {
   predictionBandState: ForecastVariantCapability['predictionBandState']
   readiness: {
     fastReady: boolean
+    bandsReady: boolean
     calibratedReady: boolean
     fullReady: boolean
     blockers: InteractiveForecastReadinessBlocker[]
@@ -145,6 +147,7 @@ type InteractiveForecastPreparationDependencies = {
   prepareRollingDailyOwnership: typeof prepareRollingDailyCurrentOwnership
   readRollingCurrentSnapshot: typeof readRollingDailyCurrentForecastSnapshot
   readPreparedFullVerification: typeof readPreparedBenchmarkForecastVerification
+  readPreparedCurrent: typeof readPreparedBenchmarkCurrentForecast
   readPreparedRollingDailyFullVerification: typeof readPreparedRollingDailyForecastVerification
   readPreparedRecentVerification: typeof readPreparedBenchmarkRecentForecastVerification
   executionAdmission: ForecastPreparationExecutionAdmission
@@ -329,7 +332,7 @@ function normalizeVerificationReadiness(input: {
 }
 
 async function resolveInteractiveForecastReadiness(
-  dependencies: Pick<InteractiveForecastPreparationDependencies, 'readPreparedFullVerification' | 'readPreparedRollingDailyFullVerification' | 'readPreparedRecentVerification'>,
+  dependencies: Pick<InteractiveForecastPreparationDependencies, 'readPreparedCurrent' | 'readRollingCurrentSnapshot' | 'readPreparedFullVerification' | 'readPreparedRollingDailyFullVerification' | 'readPreparedRecentVerification'>,
   input: InteractiveForecastIdentity,
   capability: ForecastVariantCapability | null,
   sourceFrequency: InteractiveForecastCapabilityResult['sourceFrequency'],
@@ -348,6 +351,7 @@ async function resolveInteractiveForecastReadiness(
       predictionBandState: 'NOT_AVAILABLE',
       readiness: {
         fastReady: false,
+        bandsReady: false,
         calibratedReady: false,
         fullReady: false,
         blockers: [...blockers],
@@ -369,6 +373,8 @@ async function resolveInteractiveForecastReadiness(
 
   let recentVerificationReadiness: InteractiveForecastCapabilityResult['recentVerificationReadiness'] = capability.historicalPreparedState
   let fullVerificationReadiness: InteractiveForecastCapabilityResult['fullVerificationReadiness'] = 'NOT_PREPARED'
+  let bandsReady = false
+  let calibratedBandsReady = false
 
   if (capability.currentPreparedState === 'READY' && capability.capabilityState !== 'NOT_LAWFUL' && capability.capabilityState !== 'NOT_IMPLEMENTED') {
     const request = buildPreparedReadRequest(input, sourceFrequency, capability.targetCadence)
@@ -384,12 +390,49 @@ async function resolveInteractiveForecastReadiness(
       ...(request.sourceFrequency ? { sourceFrequency: request.sourceFrequency } : {}),
       ...(request.targetCadence ? { targetCadence: request.targetCadence } : {}),
     }
-    const [recentVerification, fullVerification] = await Promise.all([
+    const bandReadinessPromise = input.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+      ? capability.preparedReadAuthority
+        ? dependencies.readRollingCurrentSnapshot({
+            seriesId: input.seriesId,
+            modelId: input.modelId,
+            sourceHistoryFingerprint: capability.preparedReadAuthority.expectedHistoryFingerprint,
+          }).then((snapshot) => {
+            if (snapshot.status !== 'HIT' || snapshot.payload.status !== 'AVAILABLE' || snapshot.payload.path.length === 0) {
+              return { bandsReady: false, calibratedBandsReady: false }
+            }
+            return {
+              bandsReady: snapshot.payload.path.every((point) => point.band.status === 'AVAILABLE'),
+              calibratedBandsReady: snapshot.payload.path.every((point) => (
+                point.band.status === 'AVAILABLE'
+                && point.band.source === 'EMPIRICAL_EXACT_RESIDUALS'
+                && point.band.calibrationStatus === 'CALIBRATED'
+              )),
+            }
+          })
+        : Promise.resolve({ bandsReady: false, calibratedBandsReady: false })
+      : dependencies.readPreparedCurrent(recentVerificationRequest).then((current) => {
+          if (current.status !== 'AVAILABLE' || Object.values(current.currentForecast).length === 0) {
+            return { bandsReady: false, calibratedBandsReady: false }
+          }
+          const points = Object.values(current.currentForecast)
+          return {
+            bandsReady: points.every((point) => point.metadata?.uncertaintyBand?.status === 'AVAILABLE'),
+            calibratedBandsReady: points.every((point) => (
+              point.metadata?.uncertaintyBand?.status === 'AVAILABLE'
+              && point.metadata.uncertaintyBand.source === 'EMPIRICAL_EXACT_RESIDUALS'
+              && point.metadata.uncertaintyBand.calibrationStatus === 'CALIBRATED'
+            )),
+          }
+        })
+    const [resolvedBandReadiness, recentVerification, fullVerification] = await Promise.all([
+      bandReadinessPromise,
       dependencies.readPreparedRecentVerification(recentVerificationRequest),
       input.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
         ? dependencies.readPreparedRollingDailyFullVerification(rollingDailyFullVerificationRequest)
         : dependencies.readPreparedFullVerification(request),
     ])
+    bandsReady = resolvedBandReadiness.bandsReady
+    calibratedBandsReady = resolvedBandReadiness.calibratedBandsReady
     const normalizedRecent = normalizeVerificationReadiness({
       result: recentVerification,
       missing: 'RECENT_MISSING',
@@ -409,15 +452,12 @@ async function resolveInteractiveForecastReadiness(
   }
 
   const fastReady = capability.currentPreparedState === 'READY' && recentVerificationReadiness === 'READY'
-  const calibratedReady = fastReady && capability.predictionBandState === 'AVAILABLE'
+  const calibratedReady = fastReady && calibratedBandsReady && capability.predictionBandState === 'AVAILABLE'
   const fullReady = capability.currentPreparedState === 'READY' && fullVerificationReadiness === 'READY'
 
-  if (!calibratedReady) {
-    if (capability.predictionBandState === 'INSUFFICIENT_SAMPLE') {
-      addBlockers(['CALIBRATION_INSUFFICIENT_SAMPLES'])
-    } else if (capability.predictionBandState === 'NOT_AVAILABLE') {
-      addBlockers(['BANDS_NOT_AVAILABLE'])
-    }
+  if (capability.currentPreparedState === 'READY' && !bandsReady) addBlockers(['BANDS_NOT_AVAILABLE'])
+  if (capability.predictionBandState !== 'AVAILABLE') {
+    addBlockers(['CALIBRATION_INSUFFICIENT_SAMPLES'])
   }
 
   return {
@@ -427,6 +467,7 @@ async function resolveInteractiveForecastReadiness(
     predictionBandState: capability.predictionBandState,
     readiness: {
       fastReady,
+      bandsReady,
       calibratedReady,
       fullReady,
       blockers: [...blockers],
@@ -435,13 +476,15 @@ async function resolveInteractiveForecastReadiness(
 }
 
 async function projectInteractiveForecastCapability(
-  dependencies: Pick<InteractiveForecastPreparationDependencies, 'readPreparedFullVerification' | 'readPreparedRollingDailyFullVerification' | 'readPreparedRecentVerification'>,
+  dependencies: Pick<InteractiveForecastPreparationDependencies, 'readPreparedCurrent' | 'readRollingCurrentSnapshot' | 'readPreparedFullVerification' | 'readPreparedRollingDailyFullVerification' | 'readPreparedRecentVerification'>,
   input: InteractiveForecastIdentity,
   resolution: ForecastCapabilityResolution,
   capability: ForecastVariantCapability | null,
 ): Promise<Omit<InteractiveForecastCapabilityResult, 'timingMs' | 'trace'>> {
   const readiness = await resolveInteractiveForecastReadiness(
     {
+      readPreparedCurrent: dependencies.readPreparedCurrent,
+      readRollingCurrentSnapshot: dependencies.readRollingCurrentSnapshot,
       readPreparedFullVerification: dependencies.readPreparedFullVerification,
       readPreparedRollingDailyFullVerification: dependencies.readPreparedRollingDailyFullVerification,
       readPreparedRecentVerification: dependencies.readPreparedRecentVerification,
@@ -484,6 +527,7 @@ export function createInteractiveForecastPreparationService(
     prepareRollingCurrent: dependencies.prepareRollingCurrent ?? ((request) => rollingDaily.runCurrentOnly(request)),
     prepareRollingDailyOwnership: dependencies.prepareRollingDailyOwnership ?? prepareRollingDailyCurrentOwnership,
     readRollingCurrentSnapshot: dependencies.readRollingCurrentSnapshot ?? readRollingDailyCurrentForecastSnapshot,
+    readPreparedCurrent: dependencies.readPreparedCurrent ?? readPreparedBenchmarkCurrentForecast,
     readPreparedFullVerification: dependencies.readPreparedFullVerification ?? readPreparedBenchmarkForecastVerification,
     readPreparedRollingDailyFullVerification: dependencies.readPreparedRollingDailyFullVerification ?? readPreparedRollingDailyForecastVerification,
     readPreparedRecentVerification: dependencies.readPreparedRecentVerification ?? readPreparedBenchmarkRecentForecastVerification,

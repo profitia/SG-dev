@@ -1340,6 +1340,20 @@ test('interactive capability derives fast, calibrated, and full readiness indepe
         trace: undefined,
       }
     },
+    readPreparedCurrent: async () => ({
+      status: 'AVAILABLE',
+      currentForecast: {
+        '1M': {
+          metadata: {
+            uncertaintyBand: {
+              status: 'AVAILABLE',
+              source: 'MODEL_NATIVE_SHORT_HISTORY',
+              calibrationStatus: 'INSUFFICIENT_SAMPLE',
+            },
+          },
+        },
+      },
+    } as never),
     readPreparedRecentVerification: async () => ({
       status: 'AVAILABLE',
       seriesId: 'wocaes0280',
@@ -1404,6 +1418,7 @@ test('interactive capability derives fast, calibrated, and full readiness indepe
 
   assert.deepEqual(result.readiness, {
     fastReady: true,
+    bandsReady: true,
     calibratedReady: false,
     fullReady: true,
     blockers: ['CALIBRATION_INSUFFICIENT_SAMPLES'],
@@ -1495,6 +1510,20 @@ test('interactive capability readiness is restart-safe and does not start comput
       rollingCalls += 1
       throw new Error('readiness should not start rolling compute')
     },
+    readPreparedCurrent: async () => ({
+      status: 'AVAILABLE',
+      currentForecast: {
+        '1M': {
+          metadata: {
+            uncertaintyBand: {
+              status: 'AVAILABLE',
+              source: 'EMPIRICAL_EXACT_RESIDUALS',
+              calibrationStatus: 'CALIBRATED',
+            },
+          },
+        },
+      },
+    } as never),
     readPreparedRecentVerification: async () => {
       recentReads += 1
       return {
@@ -1571,6 +1600,7 @@ test('interactive capability readiness is restart-safe and does not start comput
   assert.deepEqual(first.readiness, second.readiness)
   assert.deepEqual(first.readiness, {
     fastReady: true,
+    bandsReady: true,
     calibratedReady: true,
     fullReady: true,
     blockers: [],
@@ -1669,6 +1699,7 @@ test('interactive capability does not mark active execution as ready without per
 
   assert.deepEqual(result.readiness, {
     fastReady: false,
+    bandsReady: false,
     calibratedReady: false,
     fullReady: false,
     blockers: ['CURRENT_MISSING'],
@@ -1745,6 +1776,20 @@ test('interactive capability downgrades full readiness when exact historical ide
         trace: undefined,
       }
     },
+    readPreparedCurrent: async () => ({
+      status: 'AVAILABLE',
+      currentForecast: {
+        '1M': {
+          metadata: {
+            uncertaintyBand: {
+              status: 'AVAILABLE',
+              source: 'EMPIRICAL_EXACT_RESIDUALS',
+              calibrationStatus: 'CALIBRATED',
+            },
+          },
+        },
+      },
+    } as never),
     readPreparedRecentVerification: async () => ({
       status: 'AVAILABLE',
       seriesId: 'stale-historical-series',
@@ -1791,6 +1836,7 @@ test('interactive capability downgrades full readiness when exact historical ide
 
   assert.deepEqual(result.readiness, {
     fastReady: true,
+    bandsReady: true,
     calibratedReady: true,
     fullReady: false,
     blockers: ['FULL_HISTORICAL_STALE', 'SOURCE_REVISION_REBUILD_REQUIRED'],
@@ -1816,6 +1862,11 @@ test('interactive capability uses rolling-daily authority for point-in-time full
     semanticLawfulness: 'LAWFUL',
     currentPreparedState: 'READY',
     historicalPreparedState: 'READY',
+    preparedReadAuthority: {
+      sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
+      expectedHistoryFingerprint: 'rolling-history-1',
+    },
     predictionBandResidualCount: 48,
     predictionBandState: 'AVAILABLE',
     capabilityState: 'AVAILABLE',
@@ -1828,6 +1879,19 @@ test('interactive capability uses rolling-daily authority for point-in-time full
       capability,
       trace: buildExactCapabilityTrace(),
     }),
+    readRollingCurrentSnapshot: async () => ({
+      status: 'HIT',
+      payload: {
+        status: 'AVAILABLE',
+        path: [{
+          band: {
+            status: 'AVAILABLE',
+            source: 'MODEL_NATIVE_SHORT_HISTORY',
+            calibrationStatus: 'INSUFFICIENT_SAMPLE',
+          },
+        }],
+      },
+    } as never),
     readPreparedRecentVerification: async () => ({
       status: 'AVAILABLE',
       seriesId: 'wocaes0074',
@@ -1873,6 +1937,8 @@ test('interactive capability uses rolling-daily authority for point-in-time full
   assert.equal(genericReads, 0)
   assert.equal(result.fullVerificationReadiness, 'READY')
   assert.equal(result.readiness.fullReady, true)
+  assert.equal(result.readiness.bandsReady, true)
+  assert.equal(result.readiness.calibratedReady, false)
 })
 
 test('interactive capability keeps point-in-time full verification not prepared when rolling-daily authority is missing', async () => {
@@ -1893,6 +1959,11 @@ test('interactive capability keeps point-in-time full verification not prepared 
     semanticLawfulness: 'LAWFUL',
     currentPreparedState: 'READY',
     historicalPreparedState: 'READY',
+    preparedReadAuthority: {
+      sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
+      expectedHistoryFingerprint: 'rolling-history-1',
+    },
     predictionBandResidualCount: 48,
     predictionBandState: 'AVAILABLE',
     capabilityState: 'AVAILABLE',
@@ -1905,6 +1976,10 @@ test('interactive capability keeps point-in-time full verification not prepared 
       capability,
       trace: buildExactCapabilityTrace(),
     }),
+    readRollingCurrentSnapshot: async () => ({
+      status: 'HIT',
+      payload: { status: 'AVAILABLE', path: [{ band: { status: 'AVAILABLE' } }] },
+    } as never),
     readPreparedRecentVerification: async () => ({
       status: 'AVAILABLE',
       seriesId: 'wocaes0074',
@@ -1971,6 +2046,11 @@ test('interactive capability keeps point-in-time full verification stale when ro
     semanticLawfulness: 'LAWFUL',
     currentPreparedState: 'READY',
     historicalPreparedState: 'READY',
+    preparedReadAuthority: {
+      sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
+      expectedHistoryFingerprint: 'rolling-history-1',
+    },
     predictionBandResidualCount: 48,
     predictionBandState: 'AVAILABLE',
     capabilityState: 'AVAILABLE',
@@ -1983,6 +2063,10 @@ test('interactive capability keeps point-in-time full verification stale when ro
       capability,
       trace: buildExactCapabilityTrace(),
     }),
+    readRollingCurrentSnapshot: async () => ({
+      status: 'HIT',
+      payload: { status: 'AVAILABLE', path: [{ band: { status: 'AVAILABLE' } }] },
+    } as never),
     readPreparedRecentVerification: async () => ({
       status: 'AVAILABLE',
       seriesId: 'wocaes0074',

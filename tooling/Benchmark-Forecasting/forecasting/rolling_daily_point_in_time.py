@@ -19,6 +19,7 @@ from forecasting.models.damped_holt import fit_damped_holt_endog
 from forecasting.models.ets import ETS_CANDIDATE_CATALOG, fit_selected_ets_endog
 from forecasting.models.statsmodels_utils import validate_history_values
 from forecasting.rolling_daily_contracts import (
+    BandSource,
     BandStatus,
     CalibrationSummary,
     ForecastAnchorPoint,
@@ -36,6 +37,18 @@ from forecasting.rolling_daily_policy import (
     ROLLING_DAILY_DEFAULT_TECHNICAL_MINIMUM_TRAINING_OBSERVATIONS,
     ROLLING_DAILY_POINT_IN_TIME_METHOD_ID,
     ROLLING_DAILY_PROJECTION_CALENDAR_STRATEGY_V1,
+)
+from forecasting.uncertainty_bands import (
+    ForecastUncertaintyBand,
+    UncertaintyBandCalibrationStatus,
+    UncertaintyBandSource,
+    UncertaintyBandStatus,
+    ADAPTIVE_UNCERTAINTY_BANDS_POLICY_VERSION,
+    UNCERTAINTY_BAND_COVERAGE,
+    build_arima_model_native_band_path,
+    build_naive_model_native_band,
+    build_simulated_model_native_band_path,
+    unavailable_model_native_band,
 )
 
 
@@ -230,6 +243,99 @@ def fit_path_model(model: ForecastModel, history: tuple[Observation, ...]) -> _P
     raise ModelForecastError(f"MODEL_NOT_AVAILABLE: {model.model_id} is not enabled for {ROLLING_DAILY_POINT_IN_TIME_METHOD_ID}.")
 
 
+def _build_model_native_band_path(
+    model_id: str,
+    fit: _PathFit,
+    history: tuple[Observation, ...],
+    max_steps: int,
+) -> tuple[ForecastUncertaintyBand, ...]:
+    if max_steps < 1:
+        return ()
+    if model_id == "naive":
+        point_forecast = float(history[-1].value)
+        return tuple(
+            build_naive_model_native_band(
+                history_values=(observation.value for observation in history),
+                point_forecast=point_forecast,
+                horizon_steps=step,
+            )
+            for step in range(1, max_steps + 1)
+        )
+    unavailable = unavailable_model_native_band(
+        sample_count=len(history),
+        reason_code="MODEL_NATIVE_FIT_STATE_MISSING",
+        calibration_method=f"{model_id.upper()}_MODEL_NATIVE_INTERVAL",
+        calibration_version="model-native-fit-state-v1",
+    )
+    if model_id == "damped_holt":
+        fitted = getattr(fit, "fitted", None)
+        if fitted is None:
+            return tuple(unavailable for _ in range(max_steps))
+        return build_simulated_model_native_band_path(
+            fitted=fitted,
+            horizon_steps=max_steps,
+            sample_count=len(history),
+            calibration_method="STATSMODELS_DAMPED_HOLT_SIMULATION",
+            calibration_version="statsmodels-damped-holt-simulation-seed-1729-r1000-v1",
+        )
+    if model_id == "ets":
+        fitted = getattr(getattr(fit, "selected", None), "fitted", None)
+        if fitted is None:
+            return tuple(unavailable for _ in range(max_steps))
+        return build_simulated_model_native_band_path(
+            fitted=fitted,
+            horizon_steps=max_steps,
+            sample_count=len(history),
+            calibration_method="STATSMODELS_ETS_SIMULATION",
+            calibration_version="statsmodels-ets-simulation-seed-1729-r1000-v1",
+        )
+    if model_id == "arima":
+        fitted = getattr(getattr(fit, "selected", None), "fitted", None)
+        if fitted is None:
+            return tuple(unavailable for _ in range(max_steps))
+        return build_arima_model_native_band_path(
+            fitted=fitted,
+            horizon_steps=max_steps,
+            sample_count=len(history),
+        )
+    raise ModelForecastError(f"MODEL_NOT_AVAILABLE: {model_id} has no model-native uncertainty-band path.")
+
+
+def _empirical_band_contract(
+    *,
+    band: object,
+    calibration_summaries: dict[str, CalibrationSummary] | None,
+) -> ForecastUncertaintyBand | None:
+    if band.band_status is not BandStatus.AVAILABLE or band.lower_p10 is None or band.upper_p90 is None:
+        return None
+    labels = {
+        label
+        for label in (band.band_anchor_horizon, band.left_anchor_horizon, band.right_anchor_horizon)
+        if label not in (None, "ORIGIN")
+    }
+    sample_counts = [
+        calibration_summaries[label].sample_count
+        for label in labels
+        if calibration_summaries is not None and label in calibration_summaries
+    ]
+    sample_count = min(sample_counts) if sample_counts else 0
+    if sample_count < 30:
+        return None
+    return ForecastUncertaintyBand(
+        status=UncertaintyBandStatus.AVAILABLE,
+        source=UncertaintyBandSource.EMPIRICAL_EXACT_RESIDUALS,
+        policy_version=ADAPTIVE_UNCERTAINTY_BANDS_POLICY_VERSION,
+        coverage=UNCERTAINTY_BAND_COVERAGE,
+        lower=float(band.lower_p10),
+        upper=float(band.upper_p90),
+        sample_count=sample_count,
+        calibration_status=UncertaintyBandCalibrationStatus.CALIBRATED,
+        calibration_method="EMPIRICAL_RESIDUAL_QUANTILES_HF7",
+        calibration_version="rolling-daily-empirical-residual-quantiles-v1",
+        reason_code=None,
+    )
+
+
 class RollingDailyPointInTimeService:
     def __init__(self, model: ForecastModel, config: RollingDailyPointInTimeConfig | None = None) -> None:
         self._model = model
@@ -420,6 +526,12 @@ class RollingDailyPointInTimeService:
             fit = fit_path_model(self._model, series.observations)
             max_steps = max(step_counts.values(), default=0)
             forecast_values = fit.forecast_path(max_steps) if max_steps > 0 else ()
+            model_native_bands = _build_model_native_band_path(
+                self._model.model_id,
+                fit,
+                series.observations,
+                max_steps,
+            )
         except ModelForecastError as error:
             failure_status = ForecastAvailabilityStatus.MODEL_NOT_AVAILABLE if error.reason.startswith("MODEL_NOT_AVAILABLE") else ForecastAvailabilityStatus.FAILED
             return RollingDailyCurrentForecast(
@@ -455,20 +567,31 @@ class RollingDailyPointInTimeService:
                 calibration_summaries=calibration_summaries,
                 ordered_horizons=ordered_horizons,
             )
+            empirical_band = _empirical_band_contract(
+                band=band,
+                calibration_summaries=calibration_summaries,
+            )
+            native_band = model_native_bands[max(1, projected_steps) - 1] if model_native_bands else None
+            uncertainty_band = empirical_band or native_band
+            use_empirical = empirical_band is not None
+            use_model_native = not use_empirical and native_band is not None and native_band.status is UncertaintyBandStatus.AVAILABLE
+            lawful_band_available = use_empirical or use_model_native
             forecast_path.append(
                 ForecastPathPoint(
                     date=target_date,
+                    projected_step_count=projected_steps,
                     point_forecast=point_forecast,
-                    lower_p10=band.lower_p10,
-                    upper_p90=band.upper_p90,
-                    band_status=band.band_status,
+                    lower_p10=native_band.lower if use_model_native else band.lower_p10 if use_empirical else None,
+                    upper_p90=native_band.upper if use_model_native else band.upper_p90 if use_empirical else None,
+                    band_status=BandStatus.AVAILABLE if lawful_band_available else BandStatus.INSUFFICIENT_CALIBRATION_HISTORY,
                     band_anchor_horizon=band.band_anchor_horizon,
-                    p10_residual_offset=band.p10_residual_offset,
-                    p90_residual_offset=band.p90_residual_offset,
-                    band_source=band.band_source,
+                    p10_residual_offset=band.p10_residual_offset if use_empirical else None,
+                    p90_residual_offset=band.p90_residual_offset if use_empirical else None,
+                    band_source=BandSource.MODEL_NATIVE_SHORT_HISTORY if use_model_native else band.band_source if use_empirical else None,
                     left_anchor_horizon=band.left_anchor_horizon,
                     right_anchor_horizon=band.right_anchor_horizon,
                     interpolation_fraction=band.interpolation_fraction,
+                    uncertainty_band=uncertainty_band,
                 )
             )
 
@@ -485,18 +608,28 @@ class RollingDailyPointInTimeService:
                 calibration_summaries=calibration_summaries,
                 ordered_horizons=ordered_horizons,
             )
+            empirical_band = _empirical_band_contract(
+                band=band,
+                calibration_summaries=calibration_summaries,
+            )
+            native_band = model_native_bands[max(1, projected_steps) - 1] if model_native_bands else None
+            uncertainty_band = empirical_band or native_band
+            use_empirical = empirical_band is not None
+            use_model_native = not use_empirical and native_band is not None and native_band.status is UncertaintyBandStatus.AVAILABLE
+            lawful_band_available = use_empirical or use_model_native
             anchors[horizon_label] = ForecastAnchorPoint(
                 horizon=horizon_label,
                 horizon_months=horizon_months,
                 target_calendar_date=target_date,
                 projected_step_count=projected_steps,
                 forecast_value=forecast_value,
-                lower_p10=band.lower_p10,
-                upper_p90=band.upper_p90,
-                band_status=band.band_status,
-                p10_residual_offset=band.p10_residual_offset,
-                p90_residual_offset=band.p90_residual_offset,
-                band_source=band.band_source,
+                lower_p10=native_band.lower if use_model_native else band.lower_p10 if use_empirical else None,
+                upper_p90=native_band.upper if use_model_native else band.upper_p90 if use_empirical else None,
+                band_status=BandStatus.AVAILABLE if lawful_band_available else BandStatus.INSUFFICIENT_CALIBRATION_HISTORY,
+                p10_residual_offset=band.p10_residual_offset if use_empirical else None,
+                p90_residual_offset=band.p90_residual_offset if use_empirical else None,
+                band_source=BandSource.MODEL_NATIVE_SHORT_HISTORY if use_model_native else band.band_source if use_empirical else None,
+                uncertainty_band=uncertainty_band,
             )
 
         return RollingDailyCurrentForecast(

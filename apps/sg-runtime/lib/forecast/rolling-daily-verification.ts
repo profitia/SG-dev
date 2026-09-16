@@ -14,6 +14,10 @@ import {
 import { forecastStressTelemetry } from '@/lib/forecast/stress-telemetry'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
+import {
+  createUnavailableHistoricalVerificationSummary,
+  resolveHistoricalVerificationSummary,
+} from '@/lib/forecast/historical-verification-policy'
 
 const ROLLING_DAILY_METHOD_ID = 'ROLLING_DAILY_POINT_IN_TIME'
 const ROLLING_DAILY_METHOD_VERSION = 'rolling-daily-point-in-time-v1'
@@ -122,6 +126,7 @@ export function createPreparedRollingDailyForecastVerificationReader(
         reason: records.length === 0
           ? 'PREPARATION_REQUIRED: No exact-identity prepared Rolling Daily Historical Verification is available.'
           : 'PREPARATION_REQUIRED: Prepared Rolling Daily Historical Verification is incomplete for the latest lawful source observation.',
+        historicalVerification: createUnavailableHistoricalVerificationSummary('NOT_PREPARED'),
       }
     }
 
@@ -211,6 +216,7 @@ export function createPreparedRollingDailyForecastVerificationReader(
       runtimeSeconds: null,
       cacheStatus: 'hit',
       verification,
+      historicalVerification: resolveHistoricalVerificationSummary(verification),
     }
   }
 }

@@ -18,6 +18,7 @@ from forecasting.models.statsmodels_utils import (
     validate_regular_history,
 )
 from forecasting.training_policy import resolve_period_model_minimum_training_observations
+from forecasting.uncertainty_bands import build_arima_model_native_band
 
 
 @dataclass(frozen=True)
@@ -144,6 +145,38 @@ class ARIMAModelFamily(ForecastModel):
                 selection_metric="AICc",
                 fit_status="SUCCEEDED",
                 failure_reason=None,
+            ),
+        )
+
+    def forecast_with_uncertainty(self, history: Sequence[Observation], horizon_steps: int) -> ModelForecast:
+        endog = validate_regular_history(
+            history,
+            horizon_steps,
+            self.min_history,
+            "ARIMA",
+            self.frequency,
+            self.cadence_plan,
+        )
+        fit = fit_selected_arima_endog(
+            endog=endog,
+            sample_size=len(history),
+        )
+        forecast_value = fit.forecast_path(horizon_steps)[-1]
+        return ModelForecast(
+            forecast_value=forecast_value,
+            metadata=ForecastMetadata(
+                model_family=fit.metadata.model_family,
+                selected_variant=fit.metadata.selected_variant,
+                selected_parameters=fit.metadata.selected_parameters,
+                selection_score=fit.metadata.selection_score,
+                selection_metric=fit.metadata.selection_metric,
+                fit_status=fit.metadata.fit_status,
+                failure_reason=fit.metadata.failure_reason,
+                uncertainty_band=build_arima_model_native_band(
+                    fitted=fit.selected.fitted,
+                    horizon_steps=horizon_steps,
+                    sample_count=len(history),
+                ),
             ),
         )
 
