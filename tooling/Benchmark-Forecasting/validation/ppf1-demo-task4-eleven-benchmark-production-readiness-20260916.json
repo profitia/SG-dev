@@ -1,0 +1,235 @@
+{
+  "evidenceVersion": "PPF1_DEMO_TASK4_ELEVEN_BENCHMARK_PRODUCTION_READINESS_V1",
+  "generatedAt": "2026-09-16T21:20:00+02:00",
+  "repository": "https://github.com/profitia/SG-dev.git",
+  "branch": "demo/porr-11-benchmark-readiness-20260916",
+  "sourceSha": "9a0ce6bce2c12fd87dd95e9b1204577a40ad8aa4",
+  "frozenStage12Sha": "2f0e93c828fef22241affd4b703fc139b1759ca8",
+  "taskIdentity": {
+    "taskId": "ppf-1-demo-readiness-task-4-production-readiness-20260916",
+    "etap": "MVP-11 — Stabilizacja / Deploy"
+  },
+  "verdict": {
+    "task4Gate": "PARTIAL_AWAITING_OWNER_DECISION",
+    "demoElevenBenchmarksReady": false,
+    "preparedSupportedDemoPathsReady": true,
+    "strictAllModelsAllMethodologiesContractMet": false,
+    "reason": "Four scope gaps remain: Brent continuation period preparation fails with DATA_NOT_AVAILABLE; HWWI Monthly Average requires provenance and Point in Time is unsupported; HRC period Recent Verification is available only for Naive because six closed monthly observations cannot produce a matured origin for the other models; the current WTI continuation candidate requires owner approval because the exact financial continuation is stale."
+  },
+  "deployments": {
+    "sgRuntime": {
+      "serviceName": "spendguru-stage",
+      "serviceId": "srv-d98a73btqb8s73fabp90",
+      "deployId": "dep-dale0iu1egvs73e93mv0",
+      "deployedSha": "9a0ce6bce2c12fd87dd95e9b1204577a40ad8aa4",
+      "status": "live",
+      "autoDeploy": false
+    },
+    "dashboard": {
+      "serviceName": "dashboards-library",
+      "serviceId": "srv-da2i7j9t0dsc73ag7qv0",
+      "deployId": "dep-dale0vm5vjqs73f2e22g",
+      "deployedSha": "9a0ce6bce2c12fd87dd95e9b1204577a40ad8aa4",
+      "status": "live",
+      "autoDeploy": false
+    }
+  },
+  "persistenceAuthority": {
+    "provider": "Neon",
+    "projectName": "Dynamic Market Data Store",
+    "projectId": "autumn-waterfall-65938876",
+    "branchId": "br-purple-shape-b2az1npx",
+    "database": "neondb",
+    "accessMode": "SELECT_ONLY",
+    "writes": false
+  },
+  "candidateBenchmarks": [
+    {
+      "seriesId": "b_c1_cl",
+      "label": "ICE Brent Crude 1st Position Close",
+      "lawfulObservationCount": 9777,
+      "totalObservationCount": 9958,
+      "latestObservation": "2026-09-15",
+      "preparedPeriodCurrentVariants": 8,
+      "preparedPeriodVerificationVariants": 8,
+      "rollingDailyCurrentModels": 4,
+      "supportedDemoPathSmoke": "PASS"
+    },
+    {
+      "seriesId": "cl_c1_cl",
+      "label": "CME Light Sweet WTI Physical 1st Position Close",
+      "lawfulObservationCount": 10917,
+      "totalObservationCount": 11215,
+      "latestObservation": "2026-09-15",
+      "preparedPeriodCurrentVariants": 8,
+      "preparedPeriodVerificationVariants": 8,
+      "rollingDailyCurrentModels": 4,
+      "supportedDemoPathSmoke": "PASS"
+    },
+    {
+      "seriesId": "wocaes0074",
+      "label": "Brent Spot FOB North Sea",
+      "lawfulObservationCount": 10480,
+      "totalObservationCount": 10677,
+      "latestObservation": "2026-09-15",
+      "preparedPeriodCurrentVariants": 8,
+      "preparedPeriodVerificationVariants": 8,
+      "rollingDailyCurrentModels": 4,
+      "supportedDemoPathSmoke": "PASS"
+    },
+    {
+      "seriesId": "hg2027g_cl",
+      "label": "CME Copper February 2027 Close",
+      "lawfulObservationCount": 390,
+      "totalObservationCount": 390,
+      "latestObservation": "2026-09-15",
+      "preparedPeriodCurrentVariants": 8,
+      "preparedPeriodVerificationVariants": 8,
+      "rollingDailyCurrentModels": 4,
+      "supportedDemoPathSmoke": "PASS"
+    },
+    {
+      "seriesId": "lmeofcucashask",
+      "label": "LME Copper Official Cash Seller and Settlement",
+      "lawfulObservationCount": 9796,
+      "totalObservationCount": 10128,
+      "latestObservation": "2026-09-15",
+      "preparedPeriodCurrentVariants": 8,
+      "preparedPeriodVerificationVariants": 8,
+      "rollingDailyCurrentModels": 4,
+      "supportedDemoPathSmoke": "PASS"
+    },
+    {
+      "seriesId": "ehr2027g_cl",
+      "label": "CME North European HRC Steel February 2027 Close",
+      "lawfulObservationCount": 119,
+      "totalObservationCount": 119,
+      "latestObservation": "2026-09-15",
+      "preparedPeriodCurrentVariants": 8,
+      "preparedPeriodVerificationVariants": 2,
+      "periodVerificationGap": "Only Naive has a matured origin for Monthly Average and End of Period; the other models require one more closed month under the accepted minimum-six policy.",
+      "rollingDailyCurrentModels": 4,
+      "supportedDemoPathSmoke": "PASS"
+    },
+    {
+      "seriesId": "hwwi_gb_ironsteel_2021_eur",
+      "label": "HWWI Iron Ore and Steel Scrap Index EUR",
+      "lawfulObservationCount": 144,
+      "totalObservationCount": 144,
+      "latestObservation": "2026-08-31",
+      "preparedPeriodCurrentVariants": 4,
+      "preparedPeriodVerificationVariants": 4,
+      "supportedMethodology": "END_OF_PERIOD",
+      "monthlyAverageStatus": "PROVENANCE_REQUIRED",
+      "pointInTimeStatus": "UNSUPPORTED_FOR_NON_DAILY_SERIES",
+      "supportedDemoPathSmoke": "PASS"
+    },
+    {
+      "seriesId": "lmescusd20270226",
+      "label": "LME Steel Scrap CFR Turkey February 2027 Close",
+      "lawfulObservationCount": 199,
+      "totalObservationCount": 207,
+      "latestObservation": "2026-09-15",
+      "preparedPeriodCurrentVariants": 8,
+      "preparedPeriodVerificationVariants": 8,
+      "rollingDailyCurrentModels": 4,
+      "supportedDemoPathSmoke": "PASS"
+    },
+    {
+      "seriesId": "bz_c1_cl",
+      "label": "ICE Brent continuation",
+      "lawfulObservationCount": 6117,
+      "totalObservationCount": 6405,
+      "latestObservation": "2026-09-15",
+      "preparedPeriodCurrentVariants": 0,
+      "preparedPeriodVerificationVariants": 0,
+      "periodPreparationStatus": "DATA_NOT_AVAILABLE",
+      "rollingDailyCurrentModels": 4,
+      "rollingDailyCalibration": "CALIBRATED_READY",
+      "supportedDemoPathSmoke": "PASS"
+    },
+    {
+      "seriesId": "hg_c1_cl",
+      "label": "Copper continuation",
+      "lawfulObservationCount": 16851,
+      "totalObservationCount": 17273,
+      "latestObservation": "2026-09-15",
+      "preparedPeriodCurrentVariants": 8,
+      "preparedPeriodVerificationVariants": 8,
+      "rollingDailyCurrentModels": 4,
+      "supportedDemoPathSmoke": "PASS"
+    },
+    {
+      "seriesId": "qm_c1_cl",
+      "label": "NYMEX E-mini Crude Oil continuation candidate",
+      "lawfulObservationCount": 6099,
+      "totalObservationCount": 6202,
+      "latestObservation": "2026-09-15",
+      "preparedPeriodCurrentVariants": 8,
+      "preparedPeriodVerificationVariants": 8,
+      "rollingDailyCurrentModels": 4,
+      "rollingDailyMaturedRecordsPerHorizon": 1,
+      "ownerApprovalRequiredAsWtiContinuationSubstitute": true,
+      "supportedDemoPathSmoke": "PASS"
+    }
+  ],
+  "rejectedWtiContinuationCandidate": {
+    "seriesId": "ws_c1_cl",
+    "label": "Financial WTI continuation",
+    "lawfulObservationCount": 8622,
+    "totalObservationCount": 8913,
+    "latestObservation": "2017-07-20",
+    "reason": "STALE_HISTORY"
+  },
+  "preparation": {
+    "canonicalSgRuntimeOwnerUsed": true,
+    "boundedOperatorInvocationUsed": true,
+    "periodCurrentAndRecentPreparedForFullySupportedSeries": true,
+    "rollingDailyPreparedReadsAvailable": true,
+    "manualForecastArtifactSqlUsed": false,
+    "duplicateComputeObserved": false,
+    "clientWasBootstrapTrigger": false
+  },
+  "clientUiSmoke": {
+    "actualProductionDashboardUsed": true,
+    "supportedPathsTested": 11,
+    "supportedPathsPassed": 11,
+    "allFourModelsExplicitlyCheckedOnRepresentativePreparedSeries": true,
+    "forecastVisible": true,
+    "upperBandVisible": true,
+    "lowerBandVisible": true,
+    "historicalVerificationVisible": true,
+    "technicalErrorsVisible": false,
+    "browserConsoleErrors": 0,
+    "dashboardHttpStatus": 200,
+    "dashboardObservedResponseTimeRangeMs": "10-1980",
+    "postRequestsObservedDuringFinalSmoke": 0,
+    "productionComputeStartedByFinalUiReads": false,
+    "prepareRouteInvokedByFinalUiReads": false
+  },
+  "remainingDecisions": [
+    "Approve or reject qm_c1_cl as the current WTI continuation substitute for stale ws_c1_cl.",
+    "Approve a capability-constrained demo in which unsupported or unprepared methodologies are not exposed, or authorize additional high-risk methodology/data work.",
+    "Decide whether the HRC period Recent Verification gap may be presented as limited history or must be closed by changing the accepted training policy."
+  ],
+  "safety": {
+    "destructiveSqlUsed": false,
+    "schemaMutationUsed": false,
+    "manualForecastArtifactSqlUsed": false,
+    "demoOnlySourceCodeCreated": false,
+    "seriesSpecificForecastLogicCreated": false,
+    "secondForecastEngineCreated": false,
+    "canonicalIngestionReused": true,
+    "canonicalPpfPreparationReused": true,
+    "batchPreparationGeneric": true,
+    "batchPreparationIdempotent": true,
+    "fullPpf1ReusePreserved": true,
+    "stage12Modified": false,
+    "stage12CompletionClaimed": false
+  },
+  "governance": {
+    "pmosSave": "DEFERRED_TO_OWNER_REQUESTED_AGGREGATE_CLOSEOUT",
+    "phrPublication": "DEFERRED_TO_OWNER_REQUESTED_AGGREGATE_CLOSEOUT",
+    "pendingArtifactCreatedManually": false
+  }
+}
