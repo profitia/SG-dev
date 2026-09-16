@@ -6,6 +6,7 @@ import type {
   ForecastCurrentFreshness,
   ForecastCapabilityStatus,
   ForecastCurrentPoint,
+  ForecastSelectionMetadata,
   ForecastIdentity,
   ForecastMethodId,
   InteractiveForecastCapabilityResult,
@@ -490,6 +491,7 @@ async function getPersistedCurrentForecast(
         horizonSteps: point.horizonSteps,
         forecastDate: point.forecastDate.toISOString(),
         forecastValue: toNumber(point.forecastValue),
+        metadata: point.metadataJson as ForecastSelectionMetadata | null,
       },
     ]),
   )

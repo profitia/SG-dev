@@ -288,15 +288,20 @@ function buildCurrentForecastSeries(
   locale: TimeSeriesViewerLocale,
   model: ForecastPortfolioModelId,
   result: BenchmarkForecastCurrentAvailableResult,
-): TimeSeriesViewerSeries {
-  const label = locale === 'pl' ? 'Prognoza' : 'Forecast'
+): TimeSeriesViewerSeries[] {
+  const centralLabel = locale === 'pl' ? 'Prognoza' : 'Forecast'
+  const upperLabel = locale === 'pl' ? 'Górna granica prognozy' : 'Forecast Upper Bound'
+  const lowerLabel = locale === 'pl' ? 'Dolna granica prognozy' : 'Forecast Lower Bound'
+  const preparedPoints = sortCurrentForecastPoints(result.currentForecast)
+  const centralPoints = preparedPoints.map((point, index): TimeSeriesViewerPoint => {
+    const band = point.metadata?.uncertaintyBand
+    const bandAvailable = band?.status === 'AVAILABLE'
+      && band.lower !== null
+      && band.upper !== null
+      && Number.isFinite(band.lower)
+      && Number.isFinite(band.upper)
 
-  return {
-    id: `forecast-central-${model}`,
-    kind: 'forecast-central',
-    label,
-    lineStyle: 'dashed',
-    points: sortCurrentForecastPoints(result.currentForecast).map((point, index): TimeSeriesViewerPoint => ({
+    return {
       key: `forecast-central-${model}-${point.horizon}`,
       date: toMonthEndDisplayDate(point.forecastDate),
       value: point.forecastValue,
@@ -307,7 +312,7 @@ function buildCurrentForecastSeries(
         locale,
         componentName: basePayload.title,
         date: point.forecastDate,
-        primarySeriesLabel: label,
+        primarySeriesLabel: centralLabel,
         primaryValue: point.forecastValue,
         rows: [
           { label: locale === 'pl' ? 'Model' : 'Model', value: modelLabel(locale, model) },
@@ -315,9 +320,77 @@ function buildCurrentForecastSeries(
           { label: locale === 'pl' ? 'Horyzont' : 'Horizon', value: point.horizon },
         ],
       }),
-      detailModel: toDetailModel(basePayload, point.forecastDate, point.forecastValue, 'forecast-central'),
-    })),
+      detailModel: toDetailModel(basePayload, point.forecastDate, point.forecastValue, 'forecast-central', {
+        forecastLower: bandAvailable ? band.lower : null,
+        forecastUpper: bandAvailable ? band.upper : null,
+      }),
+    }
+  })
+
+  const buildBandPoints = (
+    kind: 'forecast-upper' | 'forecast-lower',
+    label: string,
+    selectValue: (point: ForecastCurrentPoint) => number | null,
+  ) => preparedPoints.map((point): TimeSeriesViewerPoint => ({
+    key: `${kind}-${model}-${point.horizon}`,
+    date: toMonthEndDisplayDate(point.forecastDate),
+    value: selectValue(point),
+    diff: null,
+    recordId: `forecast-current-${model}-${point.horizon}`,
+    anchor: false,
+    tooltipModel: toTooltipModel({
+      locale,
+      componentName: basePayload.title,
+      date: point.forecastDate,
+      primarySeriesLabel: label,
+      primaryValue: selectValue(point),
+      rows: [
+        { label: locale === 'pl' ? 'Model' : 'Model', value: modelLabel(locale, model) },
+        { label: locale === 'pl' ? 'Baza celu' : 'Target basis', value: targetBasisLabel(locale, result.targetBasis) },
+        { label: locale === 'pl' ? 'Horyzont' : 'Horizon', value: point.horizon },
+      ],
+    }),
+    detailModel: toDetailModel(basePayload, point.forecastDate, selectValue(point), kind),
+  }))
+
+  const lawfulBandValue = (point: ForecastCurrentPoint, edge: 'lower' | 'upper') => {
+    const band = point.metadata?.uncertaintyBand
+    const value = band?.status === 'AVAILABLE' ? band[edge] : null
+    return value !== null && Number.isFinite(value) ? value : null
   }
+  const upperPoints = buildBandPoints('forecast-upper', upperLabel, (point) => lawfulBandValue(point, 'upper'))
+  const lowerPoints = buildBandPoints('forecast-lower', lowerLabel, (point) => lawfulBandValue(point, 'lower'))
+
+  const series: TimeSeriesViewerSeries[] = [{
+    id: `forecast-central-${model}`,
+    kind: 'forecast-central',
+    label: centralLabel,
+    lineStyle: 'dashed',
+    points: centralPoints,
+  }]
+
+  if (upperPoints.some((point) => point.value !== null) && lowerPoints.some((point) => point.value !== null)) {
+    series.push(
+      {
+        id: `forecast-upper-${model}`,
+        kind: 'forecast-upper',
+        label: upperLabel,
+        lineStyle: 'dashed',
+        points: upperPoints,
+        segments: buildNonNullSegments(upperPoints),
+      },
+      {
+        id: `forecast-lower-${model}`,
+        kind: 'forecast-lower',
+        label: lowerLabel,
+        lineStyle: 'dashed',
+        points: lowerPoints,
+        segments: buildNonNullSegments(lowerPoints),
+      },
+    )
+  }
+
+  return series
 }
 
 function buildPointInTimeCurrentForecastSeries(
@@ -1149,7 +1222,7 @@ export function buildForecastPortfolioPayload({
     if (currentResult.targetBasis === 'POINT_IN_TIME' && currentResult.rollingDailySnapshot) {
       series.push(...buildPointInTimeCurrentForecastSeries(basePayload, locale, model, currentResult))
     } else {
-      series.push(buildCurrentForecastSeries(basePayload, locale, model, currentResult))
+      series.push(...buildCurrentForecastSeries(basePayload, locale, model, currentResult))
     }
 
     if (currentResult.forecastOrigin) {

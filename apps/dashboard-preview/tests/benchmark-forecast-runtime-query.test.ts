@@ -304,6 +304,7 @@ test('deployed non-point-in-time verification reads do not forward prepared-read
         fullVerificationReadiness: 'READY',
         readiness: {
           fastReady: true,
+          bandsReady: true,
           calibratedReady: true,
           fullReady: true,
           blockers: [],
@@ -748,6 +749,7 @@ test('point-in-time current freshness trusts READY capability for the current sn
     predictionBandState: 'AVAILABLE',
     readiness: {
       fastReady: true,
+      bandsReady: true,
       calibratedReady: true,
       fullReady: true,
       blockers: [],

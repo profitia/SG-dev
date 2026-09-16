@@ -1,0 +1,100 @@
+{
+  "evidenceVersion": "PPF1_DEMO_TASK3_DASHBOARD_UX_EVIDENCE_V1",
+  "generatedAt": "2026-09-16T17:11:15+02:00",
+  "repository": "https://github.com/profitia/SG-dev.git",
+  "branch": "demo/porr-11-benchmark-readiness-20260916",
+  "baseSha": "a271ac8faf05686a026f6c459b2c1a5fb0e43859",
+  "frozenStage12Sha": "2f0e93c828fef22241affd4b703fc139b1759ca8",
+  "taskIdentity": {
+    "taskId": "ppf-1-demo-readiness-task-3-dashboard-ux-20260916",
+    "etap": "MVP-11 — Stabilizacja / Deploy"
+  },
+  "gates": {
+    "routingGate": "PASS",
+    "codeStateGate": "PASS",
+    "implementationResult": "PASS",
+    "localTestResult": "PASS",
+    "typecheck": "PASS",
+    "productionBuild": "PASS",
+    "responsiveVisualSmoke": "PASS",
+    "task3Gate": "PASS",
+    "proceedToTask4": true
+  },
+  "implemented": {
+    "periodForecastBandsRendered": true,
+    "rollingDailyBandsPreserved": true,
+    "preparedMetadataPreservedByDatabaseFallback": true,
+    "historicalVerificationStatusesRendered": [
+      "LIMITED_SAMPLE",
+      "INSUFFICIENT_HISTORY",
+      "NOT_PREPARED",
+      "FAILED"
+    ],
+    "availableHistoricalVerificationUsesExistingChart": true,
+    "nonDailyPointInTimeMessage": "FRIENDLY_GENERIC_MESSAGE",
+    "controlLayoutAligned": true,
+    "polishCopyCleaned": true,
+    "englishCopyAligned": true
+  },
+  "localValidation": {
+    "dashboardTests": {
+      "passed": 251,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    "typecheck": "PASS",
+    "nextProductionBuild": "PASS",
+    "gitDiffCheck": "PASS",
+    "messageJsonParse": "PASS",
+    "visualSmoke": {
+      "desktop": "PASS",
+      "mobileViewport": "390x844_PASS",
+      "dataAuthority": "LOCAL_LAYOUT_ONLY_NO_PRODUCTION_DATA_AUTHORITY",
+      "productionDataCertificationClaimed": false
+    }
+  },
+  "changedFiles": [
+    "apps/dashboard-preview/app/globals.css",
+    "apps/dashboard-preview/components/raw-data-view/index.tsx",
+    "apps/dashboard-preview/lib/benchmark-forecast/forecast-contract.ts",
+    "apps/dashboard-preview/lib/benchmark-forecast/runtime-query.ts",
+    "apps/dashboard-preview/lib/time-series-viewer/forecast-portfolio-to-time-series-viewer.ts",
+    "apps/dashboard-preview/messages/en.json",
+    "apps/dashboard-preview/messages/pl.json",
+    "apps/dashboard-preview/tests/benchmark-forecast-runtime-query.test.ts",
+    "apps/dashboard-preview/tests/demo-certification.test.ts",
+    "apps/dashboard-preview/tests/forecast-acceptance-matrix.test.ts",
+    "apps/dashboard-preview/tests/forecast-portfolio-to-time-series-viewer.test.ts",
+    "apps/dashboard-preview/tests/raw-data-view-defaults.test.ts",
+    "tooling/Benchmark-Forecasting/validation/ppf1-demo-task3-dashboard-ux-20260916.json",
+    "tooling/Benchmark-Forecasting/validation/ppf1-demo-task3-dashboard-ux-20260916.md"
+  ],
+  "safety": {
+    "forecastMethodologyModified": false,
+    "forecastIdentityModified": false,
+    "schemaMigrationUsed": false,
+    "neonQueried": false,
+    "neonWrites": false,
+    "deploymentPerformed": false,
+    "productionPrewarmPerformed": false,
+    "stage12Modified": false,
+    "stage12CompletionClaimed": false,
+    "demoOnlySourceCodeCreated": false,
+    "seriesSpecificForecastLogicCreated": false,
+    "manualForecastArtifactSqlUsed": false,
+    "secondForecastEngineCreated": false,
+    "fullPpf1ReusePreserved": true
+  },
+  "governance": {
+    "pmosSave": "DEFERRED_TO_OWNER_REQUESTED_AGGREGATE_CLOSEOUT",
+    "phrPublication": "DEFERRED_TO_OWNER_REQUESTED_AGGREGATE_CLOSEOUT",
+    "pendingArtifactCreatedManually": false
+  },
+  "publication": {
+    "commitCreated": true,
+    "remoteBranch": "origin/demo/porr-11-benchmark-readiness-20260916",
+    "remoteBranchPublished": true,
+    "finalCommitShaRecordedInExternalHandoff": true
+  }
+}

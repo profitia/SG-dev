@@ -12,6 +12,7 @@ import {
   resolveDisplayedRenderableCurrentResult,
   resolveDefaultForecastTargetBasis,
   resolveForecastVerificationBannerState,
+  resolveHistoricalVerificationNotice,
   resolveInitialForecastVerificationVisibility,
   resolveInitialForecastVisibility,
   resolveForecastVerificationUnavailableState,
@@ -145,6 +146,71 @@ test('verification banner preserves a truthful preparing state when the exact ar
       targetBasis: 'END_OF_PERIOD',
     },
   }), 'PREPARING')
+})
+
+test('historical verification notice exposes a limited sample without hiding available results', () => {
+  assert.deepEqual(resolveHistoricalVerificationNotice({
+    status: 'AVAILABLE',
+    seriesId: 'hg2027g_cl',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    methodId: 'MONTHLY_AVERAGE',
+    displayName: 'Copper Future',
+    description: null,
+    methodVersion: 'test-method-v1',
+    lineage: {
+      inputSource: 'TEST_SOURCE',
+      inputRunId: null,
+      sourceSeriesId: 'hg2027g_cl',
+      sourceFrequency: 'DAILY',
+      historyFingerprint: 'history-fingerprint',
+      preparation: null,
+    },
+    history: { frequency: 'DAILY', start: '2026-01-01', end: '2026-09-01', observations: 170 },
+    forecastOrigin: '2026-09-01',
+    verification: {},
+    historicalVerification: {
+      contractVersion: 'HISTORICAL_VERIFICATION_V1',
+      status: 'LIMITED_SAMPLE',
+      originCount: 8,
+      expectedOriginCount: 8,
+      failedOriginCount: 0,
+      coverage: 1,
+      horizons: {},
+    },
+  }), {
+    status: 'LIMITED_SAMPLE',
+    originCount: 8,
+    expectedOriginCount: 8,
+    failedOriginCount: 0,
+  })
+})
+
+test('historical verification notice also exposes not-prepared state from an unavailable result', () => {
+  assert.deepEqual(resolveHistoricalVerificationNotice({
+    status: 'NOT_AVAILABLE',
+    seriesId: 'hwwi_gb_ironsteel_2021_eur',
+    modelId: 'naive',
+    targetBasis: 'END_OF_PERIOD',
+    targetSemantics: 'END_OF_PERIOD',
+    methodId: 'END_OF_PERIOD',
+    reason: 'PREPARATION_REQUIRED',
+    historicalVerification: {
+      contractVersion: 'HISTORICAL_VERIFICATION_V1',
+      status: 'NOT_PREPARED',
+      originCount: 0,
+      expectedOriginCount: 0,
+      failedOriginCount: 0,
+      coverage: 0,
+      horizons: {},
+    },
+  }), {
+    status: 'NOT_PREPARED',
+    originCount: 0,
+    expectedOriginCount: 0,
+    failedOriginCount: 0,
+  })
 })
 
 test('displayed current forecast stays on the chart until the requested identity becomes renderable', () => {
@@ -660,5 +726,36 @@ test('verification unavailable state surfaces preparation-required misses', () =
   assert.deepEqual(result, {
     title: 'Forecast verification unavailable',
     message: 'Historical data and current forecast stay available. Historical forecast verification could not be loaded right now.',
+  })
+})
+
+test('verification unavailable state uses the explicit not-prepared historical status', () => {
+  assert.deepEqual(resolveForecastVerificationUnavailableState({
+    status: 'NOT_AVAILABLE',
+    seriesId: 'hg2027g_cl',
+    modelId: 'arima',
+    targetBasis: 'MONTHLY_AVERAGE',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    methodId: 'MONTHLY_AVERAGE',
+    reason: 'PREPARATION_REQUIRED',
+    historicalVerification: {
+      contractVersion: 'HISTORICAL_VERIFICATION_V1',
+      status: 'NOT_PREPARED',
+      originCount: 0,
+      expectedOriginCount: 0,
+      failedOriginCount: 0,
+      coverage: 0,
+      horizons: {},
+    },
+  }, {
+    verificationUnavailable: 'Unavailable',
+    verificationUnavailableHint: 'Unavailable hint',
+    verificationBlocked: 'Blocked',
+    verificationBlockedHint: 'Blocked hint',
+    verificationNotPrepared: 'Not prepared',
+    verificationNotPreparedHint: 'Not prepared hint',
+  }), {
+    title: 'Not prepared',
+    message: 'Not prepared hint',
   })
 })

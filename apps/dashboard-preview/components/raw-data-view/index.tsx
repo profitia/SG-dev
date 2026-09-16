@@ -625,6 +625,10 @@ type ForecastVerificationErrorMessages = {
   verificationUnavailableHint: string
   verificationBlocked: string
   verificationBlockedHint: string
+  verificationNotPrepared?: string
+  verificationNotPreparedHint?: string
+  verificationFailed?: string
+  verificationFailedHint?: string
 }
 
 export function resolveForecastVerificationUnavailableState(
@@ -639,8 +643,12 @@ export function resolveForecastVerificationUnavailableState(
 
   if (reason.includes('PREPARATION_REQUIRED')) {
     return {
-      title: messages.verificationUnavailable,
-      message: messages.verificationUnavailableHint,
+      title: result.historicalVerification?.status === 'NOT_PREPARED'
+        ? messages.verificationNotPrepared ?? messages.verificationUnavailable
+        : messages.verificationUnavailable,
+      message: result.historicalVerification?.status === 'NOT_PREPARED'
+        ? messages.verificationNotPreparedHint ?? messages.verificationUnavailableHint
+        : messages.verificationUnavailableHint,
     }
   }
 
@@ -648,6 +656,13 @@ export function resolveForecastVerificationUnavailableState(
     return {
       title: messages.verificationBlocked,
       message: messages.verificationBlockedHint,
+    }
+  }
+
+  if (result.status === 'FAILED' && result.historicalVerification?.status === 'FAILED') {
+    return {
+      title: messages.verificationFailed ?? messages.verificationUnavailable,
+      message: messages.verificationFailedHint ?? messages.verificationUnavailableHint,
     }
   }
 
@@ -787,6 +802,26 @@ export function resolveForecastVerificationBannerState(options: {
   }
 
   return null
+}
+
+export function resolveHistoricalVerificationNotice(
+  result: BenchmarkForecastVerificationResult | null,
+) {
+  if (!result?.historicalVerification) {
+    return null
+  }
+
+  const summary = result.historicalVerification
+  if (summary.status === 'AVAILABLE') {
+    return null
+  }
+
+  return {
+    status: summary.status,
+    originCount: summary.originCount,
+    expectedOriginCount: summary.expectedOriginCount,
+    failedOriginCount: summary.failedOriginCount,
+  }
 }
 
 function SearchableSelect({
@@ -2648,6 +2683,12 @@ export function RawDataView({
         identity: selectedForecastIdentity,
       })
     : null
+  const historicalVerificationNotice = resolveHistoricalVerificationNotice(forecastVerificationResult)
+  const forecastUnsupportedReason = selectedProgressiveVariant?.currentReason
+    ?? (forecastCurrentResult && !isAvailableCurrentResult(forecastCurrentResult) ? forecastCurrentResult.reason : null)
+  const pointInTimeRequiresDailyHistory = selectedForecastTargetBasis === 'POINT_IN_TIME'
+    && Boolean(forecastUnsupportedReason?.toUpperCase().includes('UNSUPPORTED_FREQUENCY')
+      || forecastUnsupportedReason?.toUpperCase().includes('NOT_LAWFUL'))
 
   useEffect(() => {
     setDisplayedForecastCurrentResult((current) => resolveDisplayedRenderableCurrentResult({
@@ -3651,6 +3692,12 @@ export function RawDataView({
             verificationUnavailableHint: t('verificationUnavailableHint'),
             verificationBlocked: t('verificationBlocked'),
             verificationBlockedHint: t('verificationBlockedHint'),
+            verificationNotPrepared: t('verificationNotPrepared'),
+            verificationNotPreparedHint: t('verificationNotPreparedHint'),
+            verificationFailed: t('verificationFailed'),
+            verificationFailedHint: t('verificationFailedHint', {
+              failedOriginCount: normalizedPayload.historicalVerification?.failedOriginCount ?? 0,
+            }),
           }))
           return
         }
@@ -4087,8 +4134,8 @@ export function RawDataView({
         ) : null}
         {isForecastPortfolioVariant && forecastCurrentDisplayState === 'UNSUPPORTED' ? (
           <div className="callout" role="status" aria-live="polite">
-            <strong>{t('forecastUnsupported')}</strong>
-            <p>{selectedProgressiveVariant?.currentReason ?? (forecastCurrentResult && !isAvailableCurrentResult(forecastCurrentResult) ? forecastCurrentResult.reason : null) ?? t('forecastUnsupportedHint')}</p>
+            <strong>{pointInTimeRequiresDailyHistory ? t('pointInTimeRequiresDailyHistory') : t('forecastUnsupported')}</strong>
+            <p>{pointInTimeRequiresDailyHistory ? t('pointInTimeRequiresDailyHistoryHint') : forecastUnsupportedReason ?? t('forecastUnsupportedHint')}</p>
           </div>
         ) : null}
         {isForecastPortfolioVariant && forecastCurrentDisplayState === 'FAILED' && forecastErrorState ? (
@@ -4101,6 +4148,31 @@ export function RawDataView({
           <div className="callout" role="status" aria-live="polite">
             <strong>{forecastVerificationBannerState === 'PREPARING' ? t('verificationPreparing') : t('verificationQueued')}</strong>
             <p>{forecastVerificationBannerState === 'PREPARING' ? t('verificationPreparingHint') : t('verificationQueuedHint')}</p>
+          </div>
+        ) : null}
+        {isForecastPortfolioVariant && showForecast && showForecastVerification && historicalVerificationNotice ? (
+          <div
+            className={`callout${historicalVerificationNotice.status === 'FAILED' || historicalVerificationNotice.status === 'NOT_PREPARED' ? ' callout-error' : ''}`}
+            role="status"
+            aria-live="polite"
+          >
+            <strong>{historicalVerificationNotice.status === 'LIMITED_SAMPLE'
+              ? t('verificationLimitedSample')
+              : historicalVerificationNotice.status === 'INSUFFICIENT_HISTORY'
+                ? t('verificationInsufficientHistory')
+                : historicalVerificationNotice.status === 'FAILED'
+                  ? t('verificationFailed')
+                  : t('verificationUnavailable')}</strong>
+            <p>{historicalVerificationNotice.status === 'LIMITED_SAMPLE'
+              ? t('verificationLimitedSampleHint', {
+                  originCount: historicalVerificationNotice.originCount,
+                  expectedOriginCount: historicalVerificationNotice.expectedOriginCount,
+                })
+              : historicalVerificationNotice.status === 'INSUFFICIENT_HISTORY'
+                ? t('verificationInsufficientHistoryHint')
+                : historicalVerificationNotice.status === 'FAILED'
+                  ? t('verificationFailedHint', { failedOriginCount: historicalVerificationNotice.failedOriginCount })
+                  : t('verificationUnavailableHint')}</p>
           </div>
         ) : null}
         {isForecastPortfolioVariant && forecastVerificationErrorState ? (

@@ -92,6 +92,7 @@ function capability(input: BenchmarkForecastCurrentPreparationRequest, overrides
     fullVerificationReadiness: 'READY',
     readiness: {
       fastReady: true,
+      bandsReady: true,
       calibratedReady: true,
       fullReady: true,
       blockers: [],
@@ -553,6 +554,7 @@ test('A3. exact full historical verification readiness is required for fast-path
     fullVerificationReadiness: 'NOT_PREPARED',
     readiness: {
       fastReady: true,
+      bandsReady: false,
       calibratedReady: false,
       fullReady: false,
       blockers: ['FULL_HISTORICAL_MISSING'],
@@ -631,6 +633,7 @@ test('A3c. PRECOMPUTE refreshes the exact capability read once after lawful curr
         fullVerificationReadiness: 'NOT_PREPARED',
         readiness: {
           fastReady: false,
+          bandsReady: false,
           calibratedReady: false,
           fullReady: false,
           blockers: ['CURRENT_MISSING', 'FULL_HISTORICAL_MISSING'],
@@ -675,6 +678,7 @@ test('A4. certify mode does not recover exact full historical readiness through 
           fullVerificationReadiness: 'NOT_PREPARED',
           readiness: {
             fastReady: true,
+            bandsReady: false,
             calibratedReady: false,
             fullReady: false,
             blockers: ['FULL_HISTORICAL_MISSING'],
@@ -1255,6 +1259,7 @@ test('G2. stale capability triggers preparation and can recover precompute', asy
         fullVerificationReadiness: 'STALE',
         readiness: {
           fastReady: false,
+          bandsReady: false,
           calibratedReady: false,
           fullReady: false,
           blockers: ['CURRENT_STALE', 'FULL_HISTORICAL_STALE'],
@@ -1305,6 +1310,7 @@ test('G3. current preparation does not recover certification when exact historic
           fullVerificationReadiness: 'STALE',
           readiness: {
             fastReady: false,
+            bandsReady: false,
             calibratedReady: false,
             fullReady: false,
             blockers: ['CURRENT_STALE', 'FULL_HISTORICAL_STALE'],
@@ -1319,6 +1325,7 @@ test('G3. current preparation does not recover certification when exact historic
         fullVerificationReadiness: 'NOT_PREPARED',
         readiness: {
           fastReady: true,
+          bandsReady: false,
           calibratedReady: false,
           fullReady: false,
           blockers: ['FULL_HISTORICAL_MISSING'],
@@ -1369,6 +1376,7 @@ test('G4. current preparation does not materialize exact verification on the cer
           fullVerificationReadiness: 'STALE',
           readiness: {
             fastReady: false,
+            bandsReady: false,
             calibratedReady: false,
             fullReady: false,
             blockers: ['CURRENT_STALE', 'FULL_HISTORICAL_STALE'],
@@ -1390,6 +1398,7 @@ test('G4. current preparation does not materialize exact verification on the cer
             fullVerificationReadiness: 'STALE',
             readiness: {
               fastReady: true,
+              bandsReady: false,
               calibratedReady: false,
               fullReady: false,
               blockers: ['FULL_HISTORICAL_STALE'],
@@ -1898,6 +1907,7 @@ test('I7b. certification does not dispatch point-in-time verification preparatio
       fullVerificationReadiness: 'READY',
       readiness: {
         fastReady: false,
+        bandsReady: false,
         calibratedReady: false,
         fullReady: true,
         blockers: ['RECENT_STALE', 'BANDS_NOT_AVAILABLE'],
@@ -1933,6 +1943,7 @@ test('I7c. certification does not dispatch point-in-time verification preparatio
       fullVerificationReadiness: pitReady ? 'READY' : 'NOT_PREPARED',
       readiness: {
         fastReady: false,
+        bandsReady: false,
         calibratedReady: false,
         fullReady: pitReady,
         blockers: pitReady ? [] : ['FULL_HISTORICAL_MISSING'],
@@ -1975,6 +1986,7 @@ test('I8. certification does not wait on a PIT materialization pipeline before m
         fullVerificationReadiness: 'NOT_PREPARED',
         readiness: {
           fastReady: true,
+          bandsReady: true,
           calibratedReady: true,
           fullReady: false,
           blockers: ['PIT_VERIFICATION_NOT_READY'],
@@ -2019,6 +2031,7 @@ test('I9. certification does not dispatch duplicate PIT verification preparation
       fullVerificationReadiness: 'NOT_PREPARED',
       readiness: {
         fastReady: true,
+        bandsReady: true,
         calibratedReady: true,
         fullReady: false,
         blockers: ['PIT_VERIFICATION_NOT_READY'],
@@ -2058,6 +2071,7 @@ test('I10. unused PIT preparation failures do not affect certification when exac
       fullVerificationReadiness: 'NOT_PREPARED',
       readiness: {
         fastReady: true,
+        bandsReady: true,
         calibratedReady: true,
         fullReady: false,
         blockers: ['PIT_VERIFICATION_NOT_READY'],
@@ -2105,6 +2119,7 @@ test('I11. repeated certification attempts continue to observe missing point-in-
       fullVerificationReadiness: 'NOT_PREPARED',
       readiness: {
         fastReady: true,
+        bandsReady: true,
         calibratedReady: true,
         fullReady: false,
         blockers: ['PIT_VERIFICATION_NOT_READY'],
@@ -2157,6 +2172,7 @@ test('I12. certification succeeds only after point-in-time full verification bec
       fullVerificationReadiness: pitReady ? 'READY' : 'NOT_PREPARED',
       readiness: {
         fastReady: true,
+        bandsReady: true,
         calibratedReady: true,
         fullReady: pitReady,
         blockers: pitReady ? [] : ['PIT_VERIFICATION_NOT_READY'],
@@ -2199,6 +2215,7 @@ test('I13. diagnostics remain optional for the observe-only point-in-time readin
       fullVerificationReadiness: 'NOT_PREPARED',
       readiness: {
         fastReady: true,
+        bandsReady: true,
         calibratedReady: true,
         fullReady: false,
         blockers: ['PIT_VERIFICATION_NOT_READY'],

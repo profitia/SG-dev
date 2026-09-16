@@ -944,6 +944,54 @@ test('current forecast tooltip exposes selected target basis semantics', () => {
   assert.equal(currentSeries?.points[0]?.tooltipModel.rows.find((row) => row.label === 'Target basis')?.value, 'End of period')
 })
 
+test('period current forecast renders truthful upper and lower band series from prepared metadata', () => {
+  const currentResult = createCurrentResult('MONTHLY_AVERAGE')
+  currentResult.currentForecast['1M'] = {
+    ...currentResult.currentForecast['1M'],
+    metadata: {
+      modelFamily: 'damped_holt',
+      selectedVariant: 'DAMPED_HOLT',
+      selectedParameters: {},
+      selectionScore: null,
+      selectionMetric: null,
+      fitStatus: 'SUCCEEDED',
+      failureReason: null,
+      uncertaintyBand: {
+        status: 'AVAILABLE',
+        source: 'MODEL_NATIVE_SHORT_HISTORY',
+        policyVersion: 'ADAPTIVE_UNCERTAINTY_BANDS_V1',
+        coverage: 0.8,
+        lower: 103,
+        upper: 117,
+        sampleCount: 9,
+        calibrationStatus: 'INSUFFICIENT_SAMPLE',
+        calibrationMethod: 'STATSMODELS_DAMPED_HOLT_SIMULATION',
+        calibrationVersion: 'statsmodels-damped-holt-simulation-seed-1729-r1000-v1',
+        reasonCode: null,
+      },
+    },
+  }
+
+  const payload = buildForecastPortfolioPayload({
+    basePayload: createBasePayload(),
+    locale: 'pl',
+    model: 'damped_holt',
+    currentResult,
+    verificationResult: null,
+    verificationHorizon: '1M',
+  })
+
+  const central = payload?.series.find((entry) => entry.kind === 'forecast-central')
+  const upper = payload?.series.find((entry) => entry.kind === 'forecast-upper')
+  const lower = payload?.series.find((entry) => entry.kind === 'forecast-lower')
+
+  assert.deepEqual(central?.points.map((point) => point.value), [110])
+  assert.deepEqual(upper?.points.map((point) => point.value), [117])
+  assert.deepEqual(lower?.points.map((point) => point.value), [103])
+  assert.equal(central?.points[0]?.detailModel.forecastLower, 103)
+  assert.equal(central?.points[0]?.detailModel.forecastUpper, 117)
+})
+
 test('forecast origin marker label stays locale-aware', () => {
   const englishPayload = buildForecastPortfolioPayload({
     basePayload: createBasePayload(),

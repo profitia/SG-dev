@@ -485,8 +485,8 @@ input:focus-visible {
 }
 
 .forecast-portfolio-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(12rem, 14rem) minmax(0, 1fr);
   align-items: flex-start;
   gap: 0.7rem 1rem;
   width: 100%;
@@ -501,7 +501,8 @@ input:focus-visible {
 .forecast-portfolio-controls .forecast-portfolio-toggle {
   min-height: 2.5rem;
   min-width: max-content;
-  align-self: center;
+  align-self: start;
+  padding-top: 1.65rem;
 }
 
 .forecast-portfolio-controls .forecast-portfolio-group {
@@ -513,15 +514,19 @@ input:focus-visible {
 }
 
 .forecast-current-row .forecast-model-group {
-  flex: 1 1 24rem;
+  min-width: 0;
+}
+
+.forecast-current-row {
+  grid-template-columns: minmax(12rem, 14rem) minmax(20rem, 1fr) minmax(18rem, 24rem);
 }
 
 .forecast-current-row .forecast-target-basis-group {
-  flex: 0 1 24rem;
+  min-width: 0;
 }
 
 .forecast-verification-row .forecast-verification-group {
-  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .forecast-portfolio-controls .control-group-label,
@@ -2301,7 +2306,12 @@ body:has(.app-shell.is-embedded) .chart-reset-button {
   }
 
   .forecast-portfolio-row {
+    grid-template-columns: 1fr;
     gap: 0.75rem;
+  }
+
+  .forecast-portfolio-controls .forecast-portfolio-toggle {
+    padding-top: 0;
   }
 
   .forecast-portfolio-controls .forecast-portfolio-group {

@@ -40,6 +40,7 @@ function capability(overrides: Partial<InteractiveForecastCapabilityResult> = {}
     predictionBandState: 'NOT_AVAILABLE',
     readiness: {
       fastReady: true,
+      bandsReady: false,
       calibratedReady: false,
       fullReady: true,
       blockers: [],
