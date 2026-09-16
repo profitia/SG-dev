@@ -100,6 +100,7 @@ import {
   buildCurrentForecastExecutionPlan,
   buildCurrentHorizonConfigurationId,
   loadLiveForecastBridgePayload,
+  selectLatestLawfulVerificationPayload,
   selectMinimalLawfulCurrentTrainingPayload,
   type LiveForecastBridgePayload,
 } from '@/lib/forecast/live-market-input'
@@ -2528,6 +2529,16 @@ async function prepareExecutionContext(
     return null
   }
 
+  const loadVerificationPayload = async () => {
+    const payload = await loadLiveForecastBridgePayload(input.seriesId, {
+      targetBasis: input.targetBasis,
+      targetCadence: input.targetCadence,
+      continuityPolicy: input.targetCadence === 'MONTHLY' || input.targetCadence === undefined ? 'ALLOW_GAPS' : 'REQUIRE_FULL',
+    })
+
+    return payload ? selectLatestLawfulVerificationPayload(payload) : null
+  }
+
   return {
     exportHistory(mode = 'verification', modelId) {
       if (mode === 'current') {
@@ -2554,10 +2565,7 @@ async function prepareExecutionContext(
       }
 
       return (async () => {
-        const verificationPayload = await loadLiveForecastBridgePayload(input.seriesId, {
-          targetBasis: input.targetBasis,
-          targetCadence: input.targetCadence,
-        })
+        const verificationPayload = await loadVerificationPayload()
         if (!verificationPayload) {
           return {
             status: 'UNSUPPORTED',
@@ -2599,10 +2607,7 @@ async function prepareExecutionContext(
     },
     exportVerification(modelId, options) {
       return (async () => {
-        const verificationPayload = await loadLiveForecastBridgePayload(input.seriesId, {
-          targetBasis: input.targetBasis,
-          targetCadence: input.targetCadence,
-        })
+        const verificationPayload = await loadVerificationPayload()
         if (!verificationPayload) {
           return {
             status: 'UNSUPPORTED',

@@ -6,6 +6,7 @@ import { resolveForecastTechnicalMinimumObservations } from '../lib/forecast/cur
 import { buildForecastHistoryFingerprint } from '../lib/forecast/service'
 import {
   buildLiveForecastBridgePayloadFromHistory,
+  selectLatestLawfulVerificationPayload,
   selectMinimalLawfulCurrentTrainingPayload,
 } from '../lib/forecast/live-market-input'
 
@@ -308,6 +309,47 @@ test('current monthly training payload preserves the exact trailing 12M window e
   assert.equal(narrowed.history.start, '2020-01-01T00:00:00.000Z')
   assert.equal(narrowed.history.end, '2020-08-01T00:00:00.000Z')
   assert.equal(narrowed.history.observations, 6)
+})
+
+test('verification payload uses the latest contiguous cadence suffix after a lawful historical gap', () => {
+  const payload = buildLiveForecastBridgePayloadFromHistory(
+    'gappy.verification.series',
+    createDailyHistory([
+      { date: '2020-01-02T00:00:00.000Z', value: 10 },
+      { date: '2020-02-03T00:00:00.000Z', value: 12 },
+      { date: '2020-05-04T00:00:00.000Z', value: 20 },
+      { date: '2020-06-03T00:00:00.000Z', value: 22 },
+      { date: '2020-07-03T00:00:00.000Z', value: 24 },
+      { date: '2020-08-03T00:00:00.000Z', value: 26 },
+    ], 'gappy.verification.series'),
+    {
+      now: new Date('2020-09-15T00:00:00.000Z'),
+      continuityPolicy: 'ALLOW_GAPS',
+    },
+  )
+
+  const narrowed = selectLatestLawfulVerificationPayload(payload)
+
+  assert.deepEqual(narrowed.execution.historicalPeriodStarts, [
+    '2020-05-01T00:00:00.000Z',
+    '2020-06-01T00:00:00.000Z',
+    '2020-07-01T00:00:00.000Z',
+    '2020-08-01T00:00:00.000Z',
+  ])
+  assert.equal(narrowed.benchmark.expectedObservations, 4)
+  assert.equal(narrowed.history.start, '2020-05-01T00:00:00.000Z')
+  assert.equal(narrowed.history.end, '2020-08-01T00:00:00.000Z')
+  assert.equal(narrowed.history.observations, 4)
+})
+
+test('verification payload preserves a fully contiguous history unchanged', () => {
+  const payload = buildLiveForecastBridgePayloadFromHistory(
+    'contiguous.verification.series',
+    createMonthlyHistory(12, 'contiguous.verification.series'),
+    { now: new Date('2021-01-15T00:00:00.000Z') },
+  )
+
+  assert.equal(selectLatestLawfulVerificationPayload(payload), payload)
 })
 
 test('current training payload extends backward only until the technical minimum is met', () => {

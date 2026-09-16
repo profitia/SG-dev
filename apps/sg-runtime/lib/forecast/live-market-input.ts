@@ -71,16 +71,35 @@ export type LiveForecastBridgePayload = {
   history: LiveForecastBridgeHistory
 }
 
-export function selectMinimalLawfulCurrentTrainingPayload(
+function selectLatestContiguousTargetCadenceSuffix<TPoint extends { date: string }>(
+  points: readonly TPoint[],
+  targetCadence: ForecastTargetCadence,
+) {
+  if (points.length < 2) {
+    return [...points]
+  }
+
+  let suffixStartIndex = points.length - 1
+
+  for (let index = points.length - 1; index > 0; index -= 1) {
+    const previous = points[index - 1]
+    const current = points[index]
+    const expectedCurrent = createFutureForecastTargetPeriods(previous.date, targetCadence, 1)[0]?.start
+
+    if (!expectedCurrent || current.date !== expectedCurrent.toISOString()) {
+      break
+    }
+
+    suffixStartIndex = index - 1
+  }
+
+  return points.slice(suffixStartIndex)
+}
+
+function selectForecastBridgePayloadPoints(
   payload: LiveForecastBridgePayload,
-  minimumRequiredObservations: number,
+  points: LiveForecastBridgePayload['history']['points'],
 ): LiveForecastBridgePayload {
-  const selection = selectMinimalLawfulCurrentTrainingSuffix({
-    points: payload.history.points,
-    forecastOrigin: payload.history.end,
-    minimumRequiredObservations,
-  })
-  const points = selection.points
   if (points.length === payload.history.points.length) {
     return payload
   }
@@ -113,6 +132,28 @@ export function selectMinimalLawfulCurrentTrainingPayload(
       points,
     },
   }
+}
+
+export function selectLatestLawfulVerificationPayload(
+  payload: LiveForecastBridgePayload,
+): LiveForecastBridgePayload {
+  return selectForecastBridgePayloadPoints(
+    payload,
+    selectLatestContiguousTargetCadenceSuffix(payload.history.points, payload.execution.frequency),
+  )
+}
+
+export function selectMinimalLawfulCurrentTrainingPayload(
+  payload: LiveForecastBridgePayload,
+  minimumRequiredObservations: number,
+): LiveForecastBridgePayload {
+  const selection = selectMinimalLawfulCurrentTrainingSuffix({
+    points: payload.history.points,
+    forecastOrigin: payload.history.end,
+    minimumRequiredObservations,
+  })
+  const points = selection.points
+  return selectForecastBridgePayloadPoints(payload, points)
 }
 
 export function buildCurrentForecastExecutionPlan(
