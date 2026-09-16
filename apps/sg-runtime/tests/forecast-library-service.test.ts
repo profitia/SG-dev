@@ -683,6 +683,74 @@ test('forecast library current path returns cached artifact without invoking com
   assert.equal(verificationCalls, 0)
 })
 
+test('forecast library force refresh recomputes through the canonical owner instead of reusing a current cache hit', async () => {
+  const history = createHistoryResponse()
+  let currentCalls = 0
+  let writeCalls = 0
+  const cachedArtifact = {
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    displayName: 'FRACHT_DRY',
+    description: 'Baltic Exchange, Dry Index (BDI), USD',
+    targetBasis: 'MONTHLY_AVERAGE' as const,
+    ...persistedIdentity('MONTHLY_AVERAGE'),
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT' as const, runId: 'cached-current-run' },
+    historyFingerprint: buildForecastHistoryFingerprint(history.history),
+    history: {
+      frequency: 'MONTHLY',
+      start: '2021-01-01T00:00:00',
+      end: '2026-04-01T00:00:00',
+      observations: 64,
+    },
+    forecastOrigin: '2026-04-01T00:00:00',
+    runtimeSeconds: 0.02,
+    currentForecast: createCurrentResponse().result.currentForecast,
+  }
+
+  const service = createTestForecastLibraryService({
+    bridge: {
+      async exportHistory() {
+        return history
+      },
+      async exportCurrent() {
+        currentCalls += 1
+        return createCurrentResponse()
+      },
+      async exportVerification() {
+        throw new Error('unused')
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        return cachedArtifact
+      },
+      async writeCurrentRun() {
+        writeCalls += 1
+      },
+      async readVerificationRun() {
+        return null
+      },
+      async writeVerificationRun() {
+        throw new Error('unused')
+      },
+    },
+    logEvent: () => {},
+  })
+
+  const result = await service.resolveCurrentForecastRequest({
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    forceRefresh: true,
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  assert.equal(result.cacheStatus, 'miss')
+  assert.equal(currentCalls, 1)
+  assert.equal(writeCalls, 1)
+})
+
 test('prepared-only Forecast Library reads exact persisted artifacts without compute or writes', async () => {
   let bridgeCalls = 0
   let writeCalls = 0

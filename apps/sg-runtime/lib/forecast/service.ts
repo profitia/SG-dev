@@ -150,6 +150,7 @@ export type ForecastServiceRequest = {
   seriesId: string
   modelId: UserFacingForecastModelId | string
   targetBasis: ForecastTargetBasis
+  forceRefresh?: boolean
   sourceFrequency?: ForecastSourceFrequency
   targetCadence?: ForecastTargetCadence
   preparedReadAuthority?: {
@@ -4495,7 +4496,7 @@ export function createForecastLibraryService(
       let dbReadFailed = false
       try {
         const persisted = await resolvedDependencies.repository.readCurrentRun(cacheKey)
-        if (persisted) {
+        if (persisted && !input.forceRefresh) {
           resolvedDependencies.telemetry.emit('prepared_read', {
             kind: 'current',
             hit: true,
@@ -4749,7 +4750,7 @@ export function createForecastLibraryService(
 
             try {
               const persistedAfterAdmission = await resolvedDependencies.repository.readCurrentRun(cacheKey)
-              if (persistedAfterAdmission) {
+              if (persistedAfterAdmission && !input.forceRefresh) {
                 const terminalMarkStartedAt = performance.now()
                 await resolvedDependencies.executionAdmission.markExecutionCompleted({
                   executionId: ownership.executionId,

@@ -25,6 +25,7 @@ export type ForecastProductionOperationsRequest = {
   seriesId: string
   targetSemantics?: readonly OperationalForecastTarget[]
   modelIds?: readonly UserFacingForecastModelId[]
+  forceCurrent?: boolean
   prepareHistorical?: boolean
   maxOriginsPerRun?: number
 }
@@ -134,6 +135,7 @@ export function createForecastProductionOperationsService(
             seriesId: request.seriesId,
             modelId,
             targetBasis,
+            forceRefresh: request.forceCurrent,
             sourceFrequency: capability.sourceFrequency ?? undefined,
             targetCadence: capability.targetCadence ?? undefined,
           })

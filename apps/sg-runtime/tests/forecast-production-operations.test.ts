@@ -120,6 +120,35 @@ test('generic operations prepare all selected monthly current variants before op
   assert.ok(result.results.every((item) => item.historical === 'READY'))
 })
 
+test('generic operations forward an explicit force-current request only to the canonical monthly owner', async () => {
+  const forceRefreshValues: Array<boolean | undefined> = []
+  const service = createForecastProductionOperationsService({
+    async resolveCapabilities(seriesId) {
+      return capabilityResolution(seriesId)
+    },
+    async prepareMonthlyCurrent(input) {
+      forceRefreshValues.push(input.forceRefresh)
+      return { ...available(input.targetBasis as 'END_OF_PERIOD' | 'MONTHLY_AVERAGE', input.modelId, 'miss'), alignment: { status: 'ALIGNED', trainingFrequency: 'MONTHLY', lastHistoricalPeriod: null, forecastOrigin: null, firstForecastTarget: null }, currentForecast: {} } as never
+    },
+    async prepareMonthlyHistorical() {
+      throw new Error('Historical preparation should not run.')
+    },
+    async runRollingDaily() {
+      throw new Error('Rolling Daily should not run for a monthly-only request.')
+    },
+  })
+
+  const result = await service.run({
+    seriesId: 'generic.operations.series',
+    targetSemantics: ['END_OF_PERIOD', 'MONTHLY_AVERAGE'],
+    modelIds: ['naive'],
+    forceCurrent: true,
+  })
+
+  assert.equal(result.status, 'SUCCEEDED')
+  assert.deepEqual(forceRefreshValues, [true, true])
+})
+
 test('generic operations delegate Rolling Daily to its existing owner and keep historical opt-in', async () => {
   let rollingCalls = 0
   let capturedPrepareHistorical: boolean | undefined

@@ -52,11 +52,13 @@ async function main() {
     USER_FACING_FORECAST_MODELS,
   )
   const prepareHistorical = readArg('historical') === 'true'
+  const forceCurrent = readArg('forceCurrent') === 'true'
   const maxOriginsPerRun = readOptionalPositiveIntegerArg('maxOriginsPerRun')
   const result = await createForecastProductionOperationsService().run({
     seriesId,
     targetSemantics,
     modelIds,
+    forceCurrent,
     prepareHistorical,
     maxOriginsPerRun,
   })
