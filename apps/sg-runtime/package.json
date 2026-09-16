@@ -21,6 +21,7 @@
     "forecast:profile:stage9-bounded-non-daily-historical": "node scripts/run-with-tsx-loader.mjs scripts/run-forecast-stage9-final-evidence.ts",
     "forecast:operations": "node --import tsx scripts/run-forecast-production-operations.ts",
     "forecast:operations:rolling-daily": "node --import tsx scripts/run-rolling-daily-production-operations.ts",
+    "market-data:hydrate": "node --import tsx scripts/run-market-data-hydration.ts",
     "forecast:snapshot:rolling-daily": "node --import tsx scripts/persist-rolling-daily-current-forecast-snapshot.ts",
     "market-data:generate": "prisma generate --schema prisma-market-data/schema.prisma",
     "market-data:migrate": "prisma migrate dev --schema prisma-market-data/schema.prisma",

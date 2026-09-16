@@ -57,6 +57,11 @@ type ResolvedSeriesResult = {
   cacheStatus: MarketDataCacheStatus
 }
 
+type RefreshedSeriesResult = {
+  history: BenchmarkHistoricalSeriesResult
+  hydratedObservationCount: number
+}
+
 const MACROBOND_PROVIDER_CODE = 'MACROBOND'
 const OBSERVATION_UPSERT_CHUNK_SIZE = 5000
 
@@ -403,6 +408,64 @@ export function createBenchmarkMarketDataService(
   }
 
   return {
+    async refreshHistoricalSeries(seriesId: string): Promise<RefreshedSeriesResult> {
+      const startedAt = performance.now()
+      resolvedDependencies.telemetry.assertProviderAllowed(seriesId)
+
+      const providerFetchStartedAt = performance.now()
+      const providerHistory = await traceForecastRequestDiagnosticsSpan(
+        'market_data_provider_refresh',
+        'SOURCE_DATA',
+        () => resolvedDependencies.fetchProviderSeriesHistory(seriesId),
+        { seriesId, requestedRange: 'ALL', provider: 'macrobond' },
+      )
+      const providerFetchMs = performance.now() - providerFetchStartedAt
+      resolvedDependencies.telemetry.emit('provider_call', {
+        provider: 'macrobond',
+        operation: 'history_refresh',
+        count: 1,
+        durationMs: providerFetchMs,
+        failures: 0,
+      })
+
+      const history = normalizeHistoricalSeriesDates(providerHistory)
+      assertExactSeries(seriesId, history)
+
+      const persistStartedAt = performance.now()
+      const persisted = await traceForecastRequestDiagnosticsSpan(
+        'market_data_history_refresh_persist',
+        'PERSISTENCE',
+        () => resolvedDependencies.repository.upsertSeriesHistory(history),
+        { seriesId, requestedRange: 'ALL' },
+      )
+      const persistMs = performance.now() - persistStartedAt
+      resolvedDependencies.telemetry.emit('persistence', {
+        operation: 'market_hydration_refresh',
+        artifactWrites: 1,
+        pointWrites: persisted.hydratedObservationCount,
+        verificationRecordWrites: 0,
+        writeFailures: 0,
+        durationMs: persistMs,
+      })
+      resolvedDependencies.logEvent('BENCHMARK_MARKET_DATA_REFRESH', {
+        seriesId,
+        requestedRange: 'ALL',
+        marketDataSource: 'macrobond',
+        cacheStatus: 'stale',
+        dbReadMs: 0,
+        providerFetchMs: Math.round(providerFetchMs),
+        persistMs: Math.round(persistMs),
+        totalMs: Math.round(performance.now() - startedAt),
+        hydratedObservationCount: persisted.hydratedObservationCount,
+        returnedObservationCount: history.historical.length,
+        dbFailure: false,
+      })
+
+      return {
+        history,
+        hydratedObservationCount: persisted.hydratedObservationCount,
+      }
+    },
     async resolveHistoricalSeries(seriesId: string, requestedRange: BenchmarkRangePreset): Promise<ResolvedSeriesResult> {
       const startedAt = performance.now()
       let dbReadMs = 0
@@ -619,4 +682,8 @@ export async function resolveBenchmarkHistoricalSeries(
   requestedRange: BenchmarkRangePreset,
 ) {
   return benchmarkMarketDataService.resolveHistoricalSeries(seriesId, requestedRange)
+}
+
+export async function refreshBenchmarkHistoricalSeries(seriesId: string) {
+  return benchmarkMarketDataService.refreshHistoricalSeries(seriesId)
 }
