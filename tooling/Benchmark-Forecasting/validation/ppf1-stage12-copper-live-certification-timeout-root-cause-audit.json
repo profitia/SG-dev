@@ -1,0 +1,366 @@
+{
+  "taskId": "ppf-1-stage-12-copper-live-certification-timeout-root-cause-audit-20260916",
+  "parentTaskId": "ppf-1-stage-12-copper-dashboard-certification-corrective-20260916",
+  "etap": "MVP-11 - Stabilizacja / Deploy",
+  "canonicalScope": "diagnosis",
+  "subetap": "PPF-1 Stage 12 - Live Copper Certification 75s Timeout Root-Cause Audit",
+  "authority": {
+    "remoteBaseSha": "25f25c1d143160cf04d0e4d42d3255ac2374a441",
+    "remoteHeadVerify": "PASS",
+    "dashboardDeployedSha": "25f25c1d143160cf04d0e4d42d3255ac2374a441",
+    "dashboardSourceDeployParity": "PASS",
+    "sgRuntimeDeployedSha": "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85",
+    "dashboardService": {
+      "id": "srv-da2i7j9t0dsc73ag7qv0",
+      "name": "dashboards-library",
+      "url": "https://dashboards-library.onrender.com",
+      "deployId": "dep-dal30d0ae00c73fchbm0"
+    },
+    "sgRuntimePrimaryTarget": {
+      "url": "https://sg2-0-charts-preview.onrender.com",
+      "serviceId": "srv-d98a73btqb8s73fabp90",
+      "serviceName": "spendguru-stage",
+      "repo": "https://github.com/profitia/SG-dev",
+      "rootDir": ".",
+      "branch": "main",
+      "deployedSha": "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85"
+    },
+    "fallbackTargetAvailable": "YES",
+    "fallbackTargets": [
+      "https://benchmark-finder-category-builder.onrender.com"
+    ]
+  },
+  "preservedEvidence": {
+    "failedLiveEvidencePreserved": "YES",
+    "inputArtifacts": [
+      "tooling/Benchmark-Forecasting/validation/ppf1-stage12-copper-dashboard-certification-corrective.md",
+      "tooling/Benchmark-Forecasting/validation/ppf1-stage12-copper-dashboard-certification-corrective.json"
+    ],
+    "diagnosticCaptureFiles": [
+      "/tmp/stage12-timeout-audit.json",
+      "/tmp/stage12-timeout-audit-headers.txt",
+      "/tmp/stage12-spendguru-stage-logs.json",
+      "/tmp/stage12-dashboard-request-log.json"
+    ]
+  },
+  "environment": {
+    "secretsExposed": "NO",
+    "dashboardEnvPresence": {
+      "DATABASE_URL": "PRESENT",
+      "MARKET_DATA_DATABASE_URL": "PRESENT",
+      "SG_RUNTIME_BASE_URL": "PRESENT",
+      "SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN": "PRESENT"
+    },
+    "visibleTimeoutOverride": "ABSENT",
+    "visibleConcurrencyOverride": "ABSENT",
+    "linkedEnvironmentGroups": []
+  },
+  "reproduction": {
+    "endpoint": "https://dashboards-library.onrender.com/api/benchmark-forecast/demo-certification",
+    "httpStatus": 200,
+    "mode": "REVALIDATE",
+    "seriesId": "lmeofcucashask",
+    "benchmarkExecutionId": "demo-certification-ed5a3143-895c-4e75-a2ee-6dfdaaf392e4",
+    "benchmarkTimeoutMs": 75000,
+    "releaseSnapshot": {
+      "sourceRevision": "25f25c1d143160cf04d0e4d42d3255ac2374a441",
+      "deployedRevision": "25f25c1d143160cf04d0e4d42d3255ac2374a441",
+      "environment": "render",
+      "environmentUrl": "https://dashboards-library.onrender.com",
+      "acceptedAt": "2026-09-16T06:15:12.154Z"
+    },
+    "summary": {
+      "demoSafe": 0,
+      "reason": "ENVIRONMENT_NOT_READY",
+      "currentPass": 0,
+      "currentRequired": 12,
+      "verificationPass": 0,
+      "verificationRequired": 48,
+      "error": "Demo certification benchmark timed out after 75000ms."
+    }
+  },
+  "diagnostics": {
+    "timeoutPhase": "MATRIX",
+    "timeoutActiveRequestCount": 0,
+    "peakConcurrentRemoteReads": 12,
+    "maxConcurrentRemoteReads": null,
+    "maxConcurrentMatrixVariants": 1,
+    "matrixSerializationObserved": "YES",
+    "matrixSerializationIsRootCause": "NO",
+    "phaseTimings": {
+      "precomputeElapsedMs": 21219,
+      "rereadWallMs": 47159,
+      "matrixElapsedMs": 6686,
+      "warmRehearsalElapsedMs": 0,
+      "timeAccountingCovers75sBudget": "YES",
+      "timeAccountingTotalMs": 75064
+    },
+    "remoteAccounting": {
+      "totalRemoteRequests": 30,
+      "totalQueueWaitMs": 0,
+      "totalRemoteElapsedMs": 276692,
+      "maxSingleRemoteRequestMs": 21212,
+      "missOnlyByPhase": {
+        "PRECOMPUTE": 28,
+        "MATRIX": 2
+      },
+      "logicalOperations": {
+        "READ_CAPABILITY": {
+          "count": 12,
+          "completed": 12,
+          "timedOut": 0,
+          "error": 0,
+          "queueWaitMs": 0,
+          "remoteElapsedMs": 186702,
+          "maxRemoteElapsedMs": 21212
+        },
+        "READ_CURRENT": {
+          "count": 8,
+          "completed": 8,
+          "timedOut": 0,
+          "error": 0,
+          "queueWaitMs": 0,
+          "remoteElapsedMs": 41664,
+          "maxRemoteElapsedMs": 6019
+        },
+        "READ_VERIFICATION": {
+          "count": 10,
+          "completed": 10,
+          "timedOut": 0,
+          "error": 0,
+          "queueWaitMs": 0,
+          "remoteElapsedMs": 49497,
+          "maxRemoteElapsedMs": 6284,
+          "matrixPointInTimeLocalReads": [
+            {
+              "modelId": "naive",
+              "remoteElapsedMs": 568
+            },
+            {
+              "modelId": "damped_holt",
+              "remoteElapsedMs": 603
+            }
+          ]
+        }
+      },
+      "slowCapabilityReads": [
+        {
+          "modelId": "naive",
+          "targetBasis": "END_OF_PERIOD",
+          "remoteElapsedMs": 21212,
+          "status": "AVAILABLE"
+        },
+        {
+          "modelId": "ets",
+          "targetBasis": "MONTHLY_AVERAGE",
+          "remoteElapsedMs": 20841,
+          "status": "STALE"
+        },
+        {
+          "modelId": "naive",
+          "targetBasis": "MONTHLY_AVERAGE",
+          "remoteElapsedMs": 20769,
+          "status": "STALE"
+        },
+        {
+          "modelId": "arima",
+          "targetBasis": "MONTHLY_AVERAGE",
+          "remoteElapsedMs": 20652,
+          "status": "STALE"
+        },
+        {
+          "modelId": "arima",
+          "targetBasis": "END_OF_PERIOD",
+          "remoteElapsedMs": 20106,
+          "status": "STALE"
+        }
+      ],
+      "timeoutSnapshot": {
+        "capturedAt": "2026-09-16T06:16:27.220Z",
+        "activeRequests": []
+      },
+      "matrix": {
+        "phaseStartedAt": "2026-09-16T06:16:20.534Z",
+        "phaseCompletedAt": null,
+        "nonPointInTimeCompletedAt": "2026-09-16T06:16:20.618Z",
+        "pointInTimeEvaluationStartedAt": "2026-09-16T06:16:20.618Z",
+        "pointInTimeEvaluationCompletedAt": null,
+        "variantsCompletedBeforeTimeout": 10,
+        "peakVariantConcurrency": 1,
+        "slowVariants": [
+          {
+            "modelId": "naive",
+            "targetBasis": "POINT_IN_TIME",
+            "elapsedMs": 3414
+          },
+          {
+            "modelId": "damped_holt",
+            "targetBasis": "POINT_IN_TIME",
+            "elapsedMs": 2290
+          },
+          {
+            "modelId": "ets",
+            "targetBasis": "POINT_IN_TIME",
+            "elapsedMs": null,
+            "completed": false
+          }
+        ]
+      }
+    }
+  },
+  "renderCorrelation": {
+    "dashboardRequestsCorrelated": "YES",
+    "sgRuntimeRequestsCorrelated": "YES",
+    "dashboardRequest": {
+      "timestamp": "2026-09-16T06:16:27.266284638Z",
+      "method": "POST",
+      "path": "/api/benchmark-forecast/demo-certification",
+      "status": 200,
+      "responseTimeMs": 75211,
+      "requestId": "c2abd017-a52d-482c"
+    },
+    "sgRuntimeRequestLogSummary": {
+      "resource": "srv-d98a73btqb8s73fabp90",
+      "requestLogCount": 30,
+      "ops": {
+        "READ_CAPABILITY": {
+          "count": 14,
+          "sumResponseTimeMs": 189851,
+          "maxResponseTimeMs": 21104
+        },
+        "READ_CURRENT": {
+          "count": 8,
+          "sumResponseTimeMs": 41515,
+          "maxResponseTimeMs": 6003
+        },
+        "READ_VERIFICATION": {
+          "count": 8,
+          "sumResponseTimeMs": 46679,
+          "maxResponseTimeMs": 6208
+        }
+      },
+      "sampleLogs": [
+        {
+          "timestamp": "2026-09-16T06:15:33.371399146Z",
+          "path": "/api/internal/forecast/capability?seriesId=lmeofcucashask&modelId=naive&targetSemantics=END_OF_PERIOD",
+          "responseTimeMs": 21104
+        },
+        {
+          "timestamp": "2026-09-16T06:15:32.829994213Z",
+          "path": "/api/internal/forecast/capability?seriesId=lmeofcucashask&modelId=arima&targetSemantics=MONTHLY_AVERAGE",
+          "responseTimeMs": 20554
+        },
+        {
+          "timestamp": "2026-09-16T06:15:39.396837404Z",
+          "path": "/api/internal/forecast/prepared/verification?seriesId=lmeofcucashask&model=naive&targetBasis=MONTHLY_AVERAGE&sourceFrequency=DAILY&targetCadence=MONTHLY",
+          "responseTimeMs": 5976
+        },
+        {
+          "timestamp": "2026-09-16T06:16:20.463627332Z",
+          "path": "/api/internal/forecast/prepared/verification?seriesId=lmeofcucashask&model=arima&targetBasis=END_OF_PERIOD&sourceFrequency=DAILY&targetCadence=MONTHLY",
+          "responseTimeMs": 5415
+        }
+      ]
+    }
+  },
+  "runtimeQueryAudit": {
+    "localRuntimeQueryDiffExists": "NO",
+    "localRuntimeQueryDiffCausal": "NO",
+    "fullVerificationReceivesGenericPreparedAuthority": "NO",
+    "remoteAttemptsPerLogicalRead": 1
+  },
+  "liveDependencies": {
+    "marketDataDbLatencyNormal": "NOT_PROVEN",
+    "dashboardPrimarySgRuntimeTarget": "https://sg2-0-charts-preview.onrender.com",
+    "sgRuntimeRequestsCorrelated": "YES"
+  },
+  "computeSafety": {
+    "forecastComputeStarted": 0,
+    "currentComputeStarted": 0,
+    "recentVerificationComputeStarted": 0,
+    "fullHistoricalComputeStarted": 0
+  },
+  "localVsLiveDelta": {
+    "localPassLiveFail": "YES",
+    "deltaRows": [
+      {
+        "surface": "runtimeQueryContent",
+        "local": "same as published",
+        "live": "same as published",
+        "effect": "not causal"
+      },
+      {
+        "surface": "sgRuntimeTarget",
+        "local": "http://localhost:3001",
+        "live": "https://sg2-0-charts-preview.onrender.com",
+        "effect": "material network/runtime delta"
+      },
+      {
+        "surface": "sgRuntimeRevision",
+        "local": "accepted local authority",
+        "live": "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85",
+        "effect": "same code revision"
+      },
+      {
+        "surface": "matrixConcurrencyDefault",
+        "local": "no deployed single-variant default",
+        "live": "1",
+        "effect": "secondary contributor"
+      },
+      {
+        "surface": "capabilityLatency",
+        "local": "completed within local budget",
+        "live": "18.8s to 21.2s for monthly/EOP capability reads",
+        "effect": "material budget delta"
+      },
+      {
+        "surface": "prematrixRereadWall",
+        "local": "completed within benchmark budget",
+        "live": "47159ms",
+        "effect": "material budget delta"
+      }
+    ]
+  },
+  "rootCause": {
+    "primaryRootCause": "CUMULATIVE_BUDGET_EXHAUSTION",
+    "secondaryContributors": [
+      "SG_RUNTIME_PRIMARY_TARGET_LATENCY",
+      "MATRIX_SERIALIZATION_OBSERVED"
+    ],
+    "rootCauseProven": "YES",
+    "explanation": "The deployed dashboard spends about 21.2s in PRECOMPUTE and another 47.2s in successful non-point-in-time rereads against the configured spendguru-stage SG Runtime target before matrix point-in-time evaluation begins. Matrix then starts with only about 6.7s remaining and times out after completing only two point-in-time verification variants.",
+    "notProvenAlternatives": [
+      "SINGLE_REMOTE_REQUEST_STALL",
+      "PRIMARY_TO_FALLBACK_RETRY_MULTIPLICATION",
+      "ENV_CONFIGURATION_DEFECT",
+      "DASHBOARD_DB_PERSISTED_PROOF_LATENCY",
+      "UNPUBLISHED_RUNTIME_QUERY_DELTA",
+      "UNEXPECTED_COMPUTE_ON_CERTIFICATION_PATH"
+    ]
+  },
+  "recommendedCorrective": {
+    "owner": "DASHBOARD_PREVIEW",
+    "statement": "Remove the serial non-point-in-time reread window from the certification benchmark by reusing the already obtained non-point-in-time prepared current and verification results for matrix admission instead of issuing 16 additional live rereads before MATRIX begins.",
+    "whyBounded": [
+      "Targets the observed 47159ms wall-time block directly.",
+      "Does not require changing the 75s timeout.",
+      "Does not require increasing concurrency.",
+      "Does not require SG Runtime source changes.",
+      "Is supported by the captured live diagnostics and backend request logs."
+    ]
+  },
+  "publication": {
+    "sourceChangeRequired": "NO",
+    "publicationCommitSha": null,
+    "remoteEvidenceVerify": "PENDING",
+    "pmosSave": "NOT_RUN_PENDING_ARTIFACT_ABSENT",
+    "pmosCloseout": "REPOSITORY_EVIDENCE_ONLY"
+  },
+  "stageStatus": {
+    "copperDashboardCertificationCorrective": "NOT_YET_LIVE_PROVEN",
+    "readyForFinalThreeBenchmarkCohort": "NO",
+    "durableExecutionLedgerStillPending": "YES",
+    "preDeprecationAcceptance": "BLOCKED",
+    "legacyDeprecationAllowed": "NO"
+  }
+}
