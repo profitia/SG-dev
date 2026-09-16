@@ -37,7 +37,7 @@ const rollingDailyIdentity: VerificationLogicalArtifactIdentity = {
   targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
   methodId: 'ROLLING_DAILY_POINT_IN_TIME',
   methodVersion: 'rolling-daily-point-in-time-v1',
-  trainingWindowPolicyId: 'RECENT_SAME_POLICY_AS_CURRENT@recent-same-policy-as-current-v1',
+  trainingWindowPolicyId: 'RECENT_SAME_POLICY_AS_CURRENT@recent-any-matured-horizon-v2',
   inputSource: 'ROLLING_DAILY_MARKET_DATA_STORE',
   historyFingerprint: 'rolling-history-a',
   sourceFrequency: 'DAILY',

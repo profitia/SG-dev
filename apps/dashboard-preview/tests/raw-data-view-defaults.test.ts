@@ -18,6 +18,7 @@ import {
   resolveForecastVerificationUnavailableState,
   shouldApplyCurrentResultForActiveRequest,
   shouldHideEmbeddedBenchmarkShell,
+  shouldRunProgressiveForecastPreparation,
 } from '@/components/raw-data-view/index'
 import type { BenchmarkForecastCurrentAvailableResult } from '@/lib/benchmark-forecast/forecast-contract'
 import { FORECAST_ACCURACY_HORIZONS } from '@/lib/forecast-accuracy/forecast-accuracy-contract'
@@ -39,6 +40,16 @@ test('forecast-portfolio-v3 stays historical-first when embedded', () => {
 test('forecast-portfolio-v3 still defaults forecast-on in standalone mode', () => {
   assert.equal(resolveInitialForecastVisibility('forecast-portfolio-v3', false), true)
   assert.equal(resolveInitialForecastVerificationVisibility('forecast-portfolio-v3', false), true)
+})
+
+test('client-facing forecast reads do not invoke progressive preparation unless an embedded operator explicitly opts in', () => {
+  const disabled = { get: () => null }
+  const enabled = { get: (key: string) => key === 'progressivePreparation' ? '1' : null }
+
+  assert.equal(shouldRunProgressiveForecastPreparation(disabled, { embedded: false, variant: 'forecast-portfolio-v3' }), false)
+  assert.equal(shouldRunProgressiveForecastPreparation(enabled, { embedded: false, variant: 'forecast-portfolio-v3' }), false)
+  assert.equal(shouldRunProgressiveForecastPreparation(disabled, { embedded: true, variant: 'forecast-portfolio-v3' }), false)
+  assert.equal(shouldRunProgressiveForecastPreparation(enabled, { embedded: true, variant: 'forecast-portfolio-v3' }), true)
 })
 
 test('embedded forecast-portfolio-v3 keeps the benchmark shell visible for controls', () => {

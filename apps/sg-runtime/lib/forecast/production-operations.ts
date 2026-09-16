@@ -11,6 +11,7 @@ import { createRollingDailyProductionOperationsService } from '@/lib/forecast/ro
 import {
   resolveBenchmarkCurrentForecast,
   resolveBenchmarkForecastVerification,
+  resolveBenchmarkRecentForecastVerification,
 } from '@/lib/forecast/service'
 
 export const OPERATIONAL_FORECAST_TARGETS = [
@@ -27,6 +28,7 @@ export type ForecastProductionOperationsRequest = {
   modelIds?: readonly UserFacingForecastModelId[]
   forceCurrent?: boolean
   prepareHistorical?: boolean
+  verificationScope?: 'RECENT' | 'FULL'
   maxOriginsPerRun?: number
 }
 
@@ -48,6 +50,7 @@ export type ForecastProductionOperationsResult = {
   requestedTargets: OperationalForecastTarget[]
   requestedModels: UserFacingForecastModelId[]
   prepareHistorical: boolean
+  verificationScope: 'RECENT' | 'FULL'
   before: ForecastCapabilityResolution
   after: ForecastCapabilityResolution
   results: ForecastProductionOperationItem[]
@@ -57,6 +60,7 @@ type ForecastProductionOperationsDependencies = {
   resolveCapabilities: typeof resolveForecastCapabilitiesBySeriesId
   prepareMonthlyCurrent: typeof resolveBenchmarkCurrentForecast
   prepareMonthlyHistorical: typeof resolveBenchmarkForecastVerification
+  prepareMonthlyRecentVerification: typeof resolveBenchmarkRecentForecastVerification
   runRollingDaily: ReturnType<typeof createRollingDailyProductionOperationsService>['run']
 }
 
@@ -77,6 +81,7 @@ export function createForecastProductionOperationsService(
     resolveCapabilities: dependencies.resolveCapabilities ?? resolveForecastCapabilitiesBySeriesId,
     prepareMonthlyCurrent: dependencies.prepareMonthlyCurrent ?? resolveBenchmarkCurrentForecast,
     prepareMonthlyHistorical: dependencies.prepareMonthlyHistorical ?? resolveBenchmarkForecastVerification,
+    prepareMonthlyRecentVerification: dependencies.prepareMonthlyRecentVerification ?? resolveBenchmarkRecentForecastVerification,
     runRollingDaily: dependencies.runRollingDaily ?? ((request) => rollingDaily.run(request)),
   }
 
@@ -89,6 +94,7 @@ export function createForecastProductionOperationsService(
         ? [...request.modelIds]
         : [...USER_FACING_FORECAST_MODELS]
       const prepareHistorical = request.prepareHistorical ?? false
+      const verificationScope = request.verificationScope ?? 'FULL'
       const before = await resolvedDependencies.resolveCapabilities(request.seriesId)
       const results: ForecastProductionOperationItem[] = []
 
@@ -99,6 +105,7 @@ export function createForecastProductionOperationsService(
           requestedTargets,
           requestedModels,
           prepareHistorical,
+          verificationScope,
           before,
           after: before,
           results,
@@ -166,7 +173,10 @@ export function createForecastProductionOperationsService(
             candidate.identity.targetSemantics === item.targetSemantics
             && candidate.identity.modelId === item.modelId
           ))
-          const historical = await resolvedDependencies.prepareMonthlyHistorical({
+          const prepareVerification = verificationScope === 'RECENT'
+            ? resolvedDependencies.prepareMonthlyRecentVerification
+            : resolvedDependencies.prepareMonthlyHistorical
+          const historical = await prepareVerification({
             seriesId: request.seriesId,
             modelId: item.modelId,
             targetBasis,
@@ -229,6 +239,7 @@ export function createForecastProductionOperationsService(
         requestedTargets,
         requestedModels,
         prepareHistorical,
+        verificationScope,
         before,
         after,
         results,

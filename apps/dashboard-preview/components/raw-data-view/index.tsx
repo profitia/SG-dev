@@ -554,6 +554,18 @@ export function shouldWarmCurrentForecastInBackground(
     && searchParams.get('warmCurrentForecast')?.trim() === '1'
 }
 
+export function shouldRunProgressiveForecastPreparation(
+  searchParams: SearchParamsReader,
+  options: {
+    embedded: boolean
+    variant: DashboardVariantId
+  },
+) {
+  return options.embedded
+    && options.variant === 'forecast-portfolio-v3'
+    && searchParams.get('progressivePreparation')?.trim() === '1'
+}
+
 function getRawDataViewProfiler() {
   if (typeof window === 'undefined') {
     return null
@@ -2588,6 +2600,7 @@ export function RawDataView({
   const benchmarkDisplayName = benchmarkSubject?.displayName ?? null
   const initialRange = readInitialRange(searchParams)
   const backgroundCurrentForecastWarmupEnabled = shouldWarmCurrentForecastInBackground(searchParams, { embedded, variant })
+  const progressiveForecastPreparationEnabled = shouldRunProgressiveForecastPreparation(searchParams, { embedded, variant })
   const defaultForecastTargetBasis = resolveDefaultForecastTargetBasis(variant)
   const initialForecastVisibility = resolveInitialForecastVisibility(variant, embedded)
   const initialForecastVerificationVisibility = resolveInitialForecastVerificationVisibility(variant, embedded)
@@ -3369,7 +3382,7 @@ export function RawDataView({
   }, [benchmarkSeriesId, forecastCurrentReloadNonce, forecastModel, isForecastPortfolioVariant, locale, selectedForecastTargetBasis, showForecast, t])
 
   useEffect(() => {
-    if (!isForecastPortfolioVariant || !benchmarkSeriesId || !showForecast) {
+    if (!progressiveForecastPreparationEnabled || !isForecastPortfolioVariant || !benchmarkSeriesId || !showForecast) {
       setProgressivePreparationSnapshot(null)
       return
     }
@@ -3447,7 +3460,7 @@ export function RawDataView({
       cancelled = true
       controller.abort()
     }
-  }, [benchmarkSeriesId, forecastCurrentState, forecastModel, isForecastPortfolioVariant, locale, selectedForecastTargetBasis, showForecast])
+  }, [benchmarkSeriesId, forecastCurrentState, forecastModel, isForecastPortfolioVariant, locale, progressiveForecastPreparationEnabled, selectedForecastTargetBasis, showForecast])
 
   useEffect(() => {
     if (!backgroundCurrentForecastWarmupEnabled || !benchmarkSeriesId) {

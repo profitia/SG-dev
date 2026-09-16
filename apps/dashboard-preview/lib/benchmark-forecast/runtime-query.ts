@@ -1144,6 +1144,10 @@ export async function getBenchmarkForecastCurrent(
   capability?: InteractiveForecastCapabilityResult | null,
   requestOptions?: RuntimeQueryRequestOptions,
 ) {
+  if (targetBasis !== 'POINT_IN_TIME' && getMarketDataPrismaClient()) {
+    return getPersistedCurrentForecast(seriesId, model, targetBasis)
+  }
+
   if (targetBasis !== 'POINT_IN_TIME' && readSgRuntimeInternalForecastServiceToken()) {
     const params: Record<string, string> = {
       seriesId,
@@ -1192,10 +1196,6 @@ export async function getBenchmarkForecastCurrent(
     }
 
     return getPersistedRollingDailyCurrentForecast(seriesId, model, capability)
-  }
-
-  if (getMarketDataPrismaClient()) {
-    return getPersistedCurrentForecast(seriesId, model, targetBasis)
   }
 
   const identity = resolveForecastMethodIdentity(targetBasis)
@@ -1248,6 +1248,10 @@ export async function getBenchmarkForecastVerification(
   _capability?: InteractiveForecastCapabilityResult | null,
   requestOptions?: RuntimeQueryRequestOptions,
 ) {
+  if (targetBasis !== 'POINT_IN_TIME' && getMarketDataPrismaClient()) {
+    return getPersistedForecastVerification(seriesId, model, targetBasis)
+  }
+
   if (targetBasis !== 'POINT_IN_TIME' && readSgRuntimeInternalForecastServiceToken()) {
     const params: Record<string, string> = {
       seriesId,
@@ -1274,10 +1278,6 @@ export async function getBenchmarkForecastVerification(
   if (targetBasis === 'POINT_IN_TIME') {
     assertPointInTimeSnapshotDatastoreAvailable()
     return getPersistedRollingDailyForecastVerification(seriesId, model)
-  }
-
-  if (getMarketDataPrismaClient()) {
-    return getPersistedForecastVerification(seriesId, model, targetBasis)
   }
 
   const identity = resolveForecastMethodIdentity(targetBasis)

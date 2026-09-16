@@ -52,6 +52,7 @@ async function main() {
     USER_FACING_FORECAST_MODELS,
   )
   const prepareHistorical = readArg('historical') === 'true'
+  const verificationScope = readArg('verificationScope') === 'RECENT' ? 'RECENT' : 'FULL'
   const forceCurrent = readArg('forceCurrent') === 'true'
   const maxOriginsPerRun = readOptionalPositiveIntegerArg('maxOriginsPerRun')
   const result = await createForecastProductionOperationsService().run({
@@ -60,6 +61,7 @@ async function main() {
     modelIds,
     forceCurrent,
     prepareHistorical,
+    verificationScope,
     maxOriginsPerRun,
   })
 

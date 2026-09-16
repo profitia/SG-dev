@@ -1575,8 +1575,8 @@ export async function buildRecentVerificationArtifact(input: {
   const eligibleOrigins = authoritativePoints
     .slice(0, -1)
     .filter((point) => {
-      const farthestTargetDate = buildCurrentForecastExecutionPlan(point.date, targetCadence).currentTargetDates['12M']
-      if (!(typeof farthestTargetDate === 'string' && farthestTargetDate <= latestHistoricalDate)) {
+      const targetDates = Object.values(buildCurrentForecastExecutionPlan(point.date, targetCadence).currentTargetDates)
+      if (!targetDates.some((targetDate) => typeof targetDate === 'string' && targetDate <= latestHistoricalDate)) {
         return false
       }
 

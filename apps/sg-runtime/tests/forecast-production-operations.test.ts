@@ -92,6 +92,9 @@ test('generic operations prepare all selected monthly current variants before op
       calls.push(`historical:${input.targetBasis}:${input.modelId}`)
       return { ...available(input.targetBasis as 'END_OF_PERIOD' | 'MONTHLY_AVERAGE', input.modelId, 'miss'), verification: {} } as never
     },
+    async prepareMonthlyRecentVerification() {
+      throw new Error('Recent verification should not run for the default full scope.')
+    },
     async runRollingDaily() {
       throw new Error('Rolling Daily should not run for monthly-only request.')
     },
@@ -118,6 +121,44 @@ test('generic operations prepare all selected monthly current variants before op
   ])
   assert.ok(result.results.every((item) => item.current === 'READY'))
   assert.ok(result.results.every((item) => item.historical === 'READY'))
+  assert.equal(result.verificationScope, 'FULL')
+})
+
+test('generic operations can prepare bounded recent verification through the canonical owner', async () => {
+  const calls: string[] = []
+  const service = createForecastProductionOperationsService({
+    async resolveCapabilities(seriesId) {
+      return capabilityResolution(seriesId)
+    },
+    async prepareMonthlyCurrent(input) {
+      return { ...available(input.targetBasis as 'END_OF_PERIOD' | 'MONTHLY_AVERAGE', input.modelId, 'hit'), alignment: { status: 'ALIGNED', trainingFrequency: 'MONTHLY', lastHistoricalPeriod: null, forecastOrigin: null, firstForecastTarget: null }, currentForecast: {} } as never
+    },
+    async prepareMonthlyHistorical() {
+      throw new Error('Full verification should not run for the recent scope.')
+    },
+    async prepareMonthlyRecentVerification(input) {
+      calls.push(`recent:${input.targetBasis}:${input.modelId}`)
+      return { ...available(input.targetBasis as 'END_OF_PERIOD' | 'MONTHLY_AVERAGE', input.modelId, 'miss'), verification: {} } as never
+    },
+    async runRollingDaily() {
+      throw new Error('Rolling Daily should not run for monthly-only request.')
+    },
+  })
+
+  const result = await service.run({
+    seriesId: 'generic.operations.series',
+    targetSemantics: ['END_OF_PERIOD', 'MONTHLY_AVERAGE'],
+    modelIds: ['naive'],
+    prepareHistorical: true,
+    verificationScope: 'RECENT',
+  })
+
+  assert.equal(result.status, 'SUCCEEDED')
+  assert.equal(result.verificationScope, 'RECENT')
+  assert.deepEqual(calls, [
+    'recent:END_OF_PERIOD:naive',
+    'recent:MONTHLY_AVERAGE:naive',
+  ])
 })
 
 test('generic operations forward an explicit force-current request only to the canonical monthly owner', async () => {
@@ -132,6 +173,9 @@ test('generic operations forward an explicit force-current request only to the c
     },
     async prepareMonthlyHistorical() {
       throw new Error('Historical preparation should not run.')
+    },
+    async prepareMonthlyRecentVerification() {
+      throw new Error('Recent verification should not run.')
     },
     async runRollingDaily() {
       throw new Error('Rolling Daily should not run for a monthly-only request.')
@@ -162,6 +206,9 @@ test('generic operations delegate Rolling Daily to its existing owner and keep h
     },
     async prepareMonthlyHistorical() {
       throw new Error('Historical preparation should not run.')
+    },
+    async prepareMonthlyRecentVerification() {
+      throw new Error('Recent verification should not run.')
     },
     async runRollingDaily(request) {
       rollingCalls += 1
@@ -214,6 +261,9 @@ test('generic operations request explicit rolling-daily historical bootstrap whe
     async prepareMonthlyHistorical() {
       throw new Error('Monthly historical preparation should not run.')
     },
+    async prepareMonthlyRecentVerification() {
+      throw new Error('Monthly recent verification should not run.')
+    },
     async runRollingDaily(request) {
       capturedPrepareHistorical = request.prepareHistorical
       capturedMaxOriginsPerRun = request.maxOriginsPerRun
@@ -260,6 +310,9 @@ test('generic operations fail closed when current compute is not persisted', asy
     },
     async prepareMonthlyHistorical() {
       throw new Error('Historical preparation must not follow failed persistence.')
+    },
+    async prepareMonthlyRecentVerification() {
+      throw new Error('Recent verification must not follow failed persistence.')
     },
     async runRollingDaily() {
       throw new Error('unused')

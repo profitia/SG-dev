@@ -137,7 +137,7 @@ test('runtime query returns preparation-required without fetching when verificat
   assert.equal(fetchCalls, 0)
 })
 
-test('deployed non-point-in-time current reads fail closed when the SG Runtime internal token is missing', async () => {
+test('deployed non-point-in-time current reads use the prepared datastore when the SG Runtime internal token is missing', async () => {
   const previousMarketDataUrl = process.env.MARKET_DATA_DATABASE_URL
   const previousDatabaseUrl = process.env.DATABASE_URL
   const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
@@ -163,7 +163,7 @@ test('deployed non-point-in-time current reads fail closed when the SG Runtime i
     forecastCurrentRun: {
       async findFirst() {
         localReads += 1
-        throw new Error('deployed non-PIT current read must not fall back to local latest-by-cohort')
+        return null
       },
     },
   }
@@ -174,11 +174,10 @@ test('deployed non-point-in-time current reads fail closed when the SG Runtime i
   }) as typeof fetch
 
   try {
-    await assert.rejects(
-      () => getBenchmarkForecastCurrent('wocaes0074', 'ets', 'END_OF_PERIOD'),
-      /SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN is required in deployed dashboard-preview environments for non-POINT_IN_TIME prepared reads/,
-    )
-    assert.equal(localReads, 0)
+    const result = await getBenchmarkForecastCurrent('wocaes0074', 'ets', 'END_OF_PERIOD')
+    assert.equal(result.status, 'NOT_AVAILABLE')
+    assert.match(result.reason, /No persisted current forecast/)
+    assert.ok(localReads >= 1)
     assert.equal(fetchCalls, 0)
   } finally {
     global.fetch = originalFetch
@@ -195,7 +194,7 @@ test('deployed non-point-in-time current reads fail closed when the SG Runtime i
   }
 })
 
-test('deployed non-point-in-time verification reads fail closed when the SG Runtime internal token is missing', async () => {
+test('deployed non-point-in-time verification reads use the prepared datastore when the SG Runtime internal token is missing', async () => {
   const previousMarketDataUrl = process.env.MARKET_DATA_DATABASE_URL
   const previousDatabaseUrl = process.env.DATABASE_URL
   const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
@@ -221,7 +220,7 @@ test('deployed non-point-in-time verification reads fail closed when the SG Runt
     forecastVerificationRun: {
       async findFirst() {
         localReads += 1
-        throw new Error('deployed non-PIT verification read must not fall back to local latest-by-cohort')
+        return null
       },
     },
   }
@@ -232,11 +231,10 @@ test('deployed non-point-in-time verification reads fail closed when the SG Runt
   }) as typeof fetch
 
   try {
-    await assert.rejects(
-      () => getBenchmarkForecastVerification('wocaes0074', 'ets', 'END_OF_PERIOD'),
-      /SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN is required in deployed dashboard-preview environments for non-POINT_IN_TIME prepared reads/,
-    )
-    assert.equal(localReads, 0)
+    const result = await getBenchmarkForecastVerification('wocaes0074', 'ets', 'END_OF_PERIOD')
+    assert.equal(result.status, 'NOT_AVAILABLE')
+    assert.match(result.reason, /No persisted forecast verification/)
+    assert.ok(localReads >= 1)
     assert.equal(fetchCalls, 0)
   } finally {
     global.fetch = originalFetch

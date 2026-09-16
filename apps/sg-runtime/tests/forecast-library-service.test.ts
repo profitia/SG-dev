@@ -1248,9 +1248,9 @@ test('recent verification compute uses verification-mode prepared history while 
           model: 'arima',
           history: payload.history,
           currentForecast: {
-            '12M': {
-              horizon: '12M',
-              horizonSteps: 12,
+            '1M': {
+              horizon: '1M',
+              horizonSteps: 1,
               forecastDate: '2026-12-01T00:00:00.000Z',
               forecastValue: 159,
               metadata: null,
@@ -1274,7 +1274,7 @@ test('recent verification compute uses verification-mode prepared history while 
 
   assert.equal(verification.status, 'AVAILABLE')
   assert.deepEqual(historyModes, ['current', 'verification'])
-  assert.deepEqual(executedOrigins, ['2025-12-01T00:00:00.000Z'])
+  assert.deepEqual(executedOrigins, ['2026-11-01T00:00:00.000Z'])
   assert.equal(
     persistedHistoryFingerprint,
     buildForecastHistoryFingerprint(currentHistoryResponse.history, {
@@ -1282,10 +1282,10 @@ test('recent verification compute uses verification-mode prepared history while 
       targetCadence: 'MONTHLY',
     }),
   )
-  assert.equal(persistedForecastOrigin, '2025-12-01T00:00:00.000Z')
+  assert.equal(persistedForecastOrigin, '2026-11-01T00:00:00.000Z')
 })
 
-test('recent verification artifact uses the latest lawful matured origin, same effective policy, and N=1', async () => {
+test('recent verification artifact uses the latest lawful origin with any matured horizon, same effective policy, and N=1', async () => {
   const authoritativeHistory = {
     seriesId: 'recent.series',
     benchmarkName: 'Recent series',
@@ -1367,16 +1367,16 @@ test('recent verification artifact uses the latest lawful matured origin, same e
             '1M': {
               horizon: '1M',
               horizonSteps: 1,
-              forecastDate: '2026-01-01T00:00:00.000Z',
-              forecastValue: 148,
+              forecastDate: '2026-12-01T00:00:00.000Z',
+              forecastValue: 159,
               metadata: null,
               failureReason: null,
             },
             '12M': {
               horizon: '12M',
               horizonSteps: 12,
-              forecastDate: '2026-12-01T00:00:00.000Z',
-              forecastValue: 159,
+              forecastDate: '2027-11-01T00:00:00.000Z',
+              forecastValue: 170,
               metadata: null,
               failureReason: null,
             },
@@ -1393,13 +1393,13 @@ test('recent verification artifact uses the latest lawful matured origin, same e
     targetSemantics: 'END_OF_PERIOD',
   })
 
-  assert.deepEqual(executedOrigins, ['2025-12-01T00:00:00.000Z'])
-  assert.equal(artifact.forecastOrigin, '2025-12-01T00:00:00.000Z')
-  assert.equal(artifact.statisticalCompatibility.trainingWindowPolicyId, 'RECENT_SAME_POLICY_AS_CURRENT@recent-same-policy-as-current-v1')
+  assert.deepEqual(executedOrigins, ['2026-11-01T00:00:00.000Z'])
+  assert.equal(artifact.forecastOrigin, '2026-11-01T00:00:00.000Z')
+  assert.equal(artifact.statisticalCompatibility.trainingWindowPolicyId, 'RECENT_SAME_POLICY_AS_CURRENT@recent-any-matured-horizon-v2')
   assert.equal(artifact.statisticalCompatibility.effectiveTrainingPolicyId, currentCompatibility.effectiveTrainingPolicyId)
   assert.equal(artifact.verification['1M']?.origins, 1)
-  assert.equal(artifact.verification['12M']?.origins, 1)
-  assert.equal(artifact.verification['12M']?.records[0]?.forecastDate, '2026-12-01T00:00:00.000Z')
+  assert.equal(artifact.verification['1M']?.records[0]?.forecastDate, '2026-12-01T00:00:00.000Z')
+  assert.equal(artifact.verification['12M'], undefined)
 })
 
 test('recent verification artifact fails closed when no lawful matured recent origin exists', async () => {
@@ -1417,7 +1417,7 @@ test('recent verification artifact fails closed when no lawful matured recent or
         component: 'RECENT_SERIES',
         description: 'Recent series',
         frequency: 'MONTHLY',
-        expectedObservations: 10,
+        expectedObservations: 6,
       },
       source: {
         kind: 'DYNAMIC_MARKET_DATA_STORE',
@@ -1429,13 +1429,13 @@ test('recent verification artifact fails closed when no lawful matured recent or
         description: 'Recent series',
         frequency: 'MONTHLY',
         start: '2026-01-01T00:00:00.000Z',
-        end: '2026-10-01T00:00:00.000Z',
-        observations: 10,
+        end: '2026-06-01T00:00:00.000Z',
+        observations: 6,
         canonicalization: {
           method: 'VALIDATE_NATIVE_MONTHLY_END_OF_PERIOD',
           version: 'native-monthly-end-of-period-v1',
         },
-        points: Array.from({ length: 10 }, (_, index) => ({
+        points: Array.from({ length: 6 }, (_, index) => ({
           date: new Date(Date.UTC(2026, index, 1)).toISOString(),
           value: 100 + index,
           sourceObservedAt: new Date(Date.UTC(2026, index + 1, 0)).toISOString(),
