@@ -1377,7 +1377,9 @@ export async function fetchMacrobondSeriesHistory(seriesName: string): Promise<B
   }
 
   const entityDisplayName = getMetadataString(metadata, ['Title', 'Description', 'PrimName', 'Name']) ?? seriesName
-  if (entityDisplayName === seriesName) {
+  const entitySource = getMetadataString(metadata, ['Source'])
+  const needsDisplayMetadata = entityDisplayName === seriesName || /^src_/i.test(entitySource ?? '')
+  if (needsDisplayMetadata) {
     try {
       const displayPayload = await searchMacrobondDisplayEntities(seriesName)
       const displayResult = (displayPayload.results ?? []).find((result) => getString(result, 'Name') === seriesName)
