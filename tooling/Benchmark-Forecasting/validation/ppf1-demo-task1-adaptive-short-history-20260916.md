@@ -147,8 +147,6 @@ No selected demo series IDs were introduced into the changed generic production 
 
 ## Recommendation
 
-PROCEED_TO_TASK_2 = NO
-
 PROCEED_TO_TASK_2 = YES
 
 Task 1 now authorizes planning of Task 2 only. It does not authorize Task 2 implementation, deployment, production preparation, or any Stage 12 completion claim.
