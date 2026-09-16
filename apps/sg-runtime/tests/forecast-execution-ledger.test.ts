@@ -15,6 +15,7 @@ import {
 } from '../lib/forecast/execution-ledger'
 import type { CurrentLogicalArtifactIdentity } from '../lib/forecast/current-single-flight'
 import type { VerificationLogicalArtifactIdentity } from '../lib/forecast/verification-single-flight'
+import { PERIOD_VERIFICATION_CONFIGURATION_ID } from '../lib/forecast/verification-single-flight'
 
 function createInMemoryStore(): ForecastPreparationExecutionLedgerStore {
   const records = new Map<string, ForecastPreparationExecutionRecord>()
@@ -62,7 +63,7 @@ const verificationIdentity: VerificationLogicalArtifactIdentity = {
   targetCadence: 'MONTHLY',
   frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
   verificationHorizonSetId: '{"1M":1}',
-  verificationConfigurationId: '{"minTrainingWindow":36}',
+  verificationConfigurationId: PERIOD_VERIFICATION_CONFIGURATION_ID,
   originPolicyId: 'EXPANDING_WINDOW_ROLLING_ORIGIN@expanding-window-rolling-origin-v1',
 }
 

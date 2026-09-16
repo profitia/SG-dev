@@ -17,14 +17,16 @@ class ForecastingService:
         model: ForecastModel,
         run_id: str,
         horizons: dict[str, int],
-        min_training_window: int = 36,
+        min_training_window: int | None = None,
+        mase_scale_minimum_observations: int = 2,
         current_target_dates: dict[str, date] | None = None,
     ) -> None:
         self._data_source = data_source
         self._model = model
         self._run_id = run_id
         self._horizons = horizons
-        self._min_training_window = min_training_window
+        self._min_training_window = min_training_window if min_training_window is not None else int(getattr(model, "min_history", 1))
+        self._mase_scale_minimum_observations = mase_scale_minimum_observations
         self._current_target_dates = current_target_dates or {}
 
     def _resolve_validation_origin_dates(
@@ -46,9 +48,10 @@ class ForecastingService:
 
         min_horizon_steps = min(self._horizons.values())
         last_origin_index = len(observations) - min_horizon_steps
+        verification_origin_minimum = max(self._min_training_window, self._mase_scale_minimum_observations)
         candidate_origin_dates = [
             observations[origin_end - 1].date
-            for origin_end in range(self._min_training_window, last_origin_index + 1)
+            for origin_end in range(verification_origin_minimum, last_origin_index + 1)
         ]
 
         filtered_origin_dates = [
@@ -89,11 +92,13 @@ class ForecastingService:
                 horizon_steps=horizon_steps,
                 min_training_window=self._min_training_window,
                 validation_origin_dates=validation_origin_dates,
+                mase_scale_minimum_observations=self._mase_scale_minimum_observations,
             )
             full_expected_origins = expected_origin_count(
                 total_observations=series.observation_count,
                 horizon_steps=horizon_steps,
                 min_training_window=self._min_training_window,
+                mase_scale_minimum_observations=self._mase_scale_minimum_observations,
             )
             expected_origins = full_expected_origins if validation_origin_dates is not None else backtest_run.expected_origins
             coverage = 0.0 if expected_origins == 0 else backtest_run.successful_origins / expected_origins

@@ -355,12 +355,10 @@ test('current training payload extends backward only until the technical minimum
   )
 
   assert.equal(payload.history.observations, 14)
-  assert.equal(narrowed.history.start, '2023-07-01T00:00:00.000Z')
+  assert.equal(narrowed.history.start, '2023-09-01T00:00:00.000Z')
   assert.equal(narrowed.history.end, '2024-08-01T00:00:00.000Z')
-  assert.equal(narrowed.history.observations, 14)
+  assert.equal(narrowed.history.observations, 12)
   assert.deepEqual(narrowed.execution.historicalPeriodStarts, [
-    '2023-07-01T00:00:00.000Z',
-    '2023-08-01T00:00:00.000Z',
     '2023-09-01T00:00:00.000Z',
     '2023-10-01T00:00:00.000Z',
     '2023-11-01T00:00:00.000Z',
@@ -397,7 +395,7 @@ test('monthly naive current keeps the complete trailing 12M window when the defa
   assert.equal(narrowed.history.observations, 12)
 })
 
-test('complex monthly models extend only to the 36-observation technical minimum', () => {
+test('complex monthly models keep the trailing 12M window when it already exceeds the 6-observation technical minimum', () => {
   const payload = buildLiveForecastBridgePayloadFromHistory(
     'complex.monthly.series',
     createMonthlyHistory(72, 'complex.monthly.series'),
@@ -413,10 +411,10 @@ test('complex monthly models extend only to the 36-observation technical minimum
       resolveForecastTechnicalMinimumObservations({ targetSemantics: 'MONTHLY_AVERAGE', modelId }),
     )
 
-    assert.equal(resolveForecastTechnicalMinimumObservations({ targetSemantics: 'MONTHLY_AVERAGE', modelId }), 36)
-    assert.equal(narrowed.history.start, '2023-01-01T00:00:00.000Z')
+    assert.equal(resolveForecastTechnicalMinimumObservations({ targetSemantics: 'MONTHLY_AVERAGE', modelId }), 6)
+    assert.equal(narrowed.history.start, '2025-01-01T00:00:00.000Z')
     assert.equal(narrowed.history.end, '2025-12-01T00:00:00.000Z')
-    assert.equal(narrowed.history.observations, 36)
+    assert.equal(narrowed.history.observations, 12)
   }
 })
 

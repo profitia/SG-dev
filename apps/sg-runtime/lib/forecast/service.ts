@@ -37,8 +37,8 @@ import {
 import {
   buildVerificationHorizonSetId,
   buildVerificationLogicalArtifactKey,
-  VERIFICATION_CONFIGURATION_ID,
   VERIFICATION_ORIGIN_POLICY_ID,
+  resolveVerificationConfigurationId,
   type VerificationLogicalArtifactIdentity,
   VerificationForecastSingleFlight,
 } from '@/lib/forecast/verification-single-flight'
@@ -5236,7 +5236,7 @@ export function createForecastLibraryService(
         targetCadence,
         frequencyIdentity: cadenceContext.frequencyIdentity,
         verificationHorizonSetId,
-        verificationConfigurationId: VERIFICATION_CONFIGURATION_ID,
+        verificationConfigurationId: resolveVerificationConfigurationId(methodIdentity.targetSemantics),
         originPolicyId: VERIFICATION_ORIGIN_POLICY_ID,
       }
       const logicalArtifactKey = buildVerificationLogicalArtifactKey(logicalArtifactIdentity)
@@ -5982,7 +5982,7 @@ export function createForecastLibraryService(
         targetCadence,
         frequencyIdentity: cadenceContext.frequencyIdentity,
         verificationHorizonSetId,
-        verificationConfigurationId: VERIFICATION_CONFIGURATION_ID,
+        verificationConfigurationId: resolveVerificationConfigurationId(methodIdentity.targetSemantics),
         originPolicyId: VERIFICATION_ORIGIN_POLICY_ID,
       }
       const logicalArtifactKey = buildVerificationLogicalArtifactKey(logicalArtifactIdentity)

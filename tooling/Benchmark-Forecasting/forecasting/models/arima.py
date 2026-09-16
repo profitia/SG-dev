@@ -17,6 +17,7 @@ from forecasting.models.statsmodels_utils import (
     has_convergence_warning,
     validate_regular_history,
 )
+from forecasting.training_policy import resolve_period_model_minimum_training_observations
 
 
 @dataclass(frozen=True)
@@ -85,7 +86,7 @@ ARIMA_FIT_IMPLEMENTATION = "STATSMODELS_ARIMA_STATESPACE"
 
 class ARIMAModelFamily(ForecastModel):
     model_id = "arima"
-    min_history = 36
+    min_history = resolve_period_model_minimum_training_observations(model_id)
 
     def __init__(
         self,
@@ -107,7 +108,8 @@ class ARIMAModelFamily(ForecastModel):
 
         failures: list[str] = []
         selected: ARIMACandidateResult | None = None
-        for candidate in ARIMA_CANDIDATE_GRID:
+        eligible_candidates = resolve_sample_feasible_arima_candidates(len(history))
+        for candidate in eligible_candidates:
             try:
                 candidate_result = self.fit_candidate(history, candidate, horizon_steps)
             except ModelForecastError as error:
@@ -126,7 +128,7 @@ class ARIMAModelFamily(ForecastModel):
             "trend": selected.candidate.trend,
             "seasonal_order": list(selected.candidate.seasonal_order),
             "policyIdentity": ARIMA_POLICY_ID,
-            "candidateCount": len(ARIMA_CANDIDATE_GRID),
+            "candidateCount": len(eligible_candidates),
             "tieBreakPolicy": ARIMA_TIE_BREAK_POLICY_ID,
             "fitImplementation": ARIMA_FIT_IMPLEMENTATION,
         }
@@ -225,6 +227,25 @@ def fit_arima_candidate_endog(
         )
 
 
+def is_sample_feasible_arima_candidate(candidate: ARIMACandidate, sample_size: int) -> bool:
+    p, d, q = candidate.order
+    effective_sample_size = sample_size - d
+    if effective_sample_size < 3:
+        return False
+    return effective_sample_size > (p + q + 3)
+
+
+def resolve_sample_feasible_arima_candidates(
+    sample_size: int,
+    candidates: tuple[ARIMACandidate, ...] = ARIMA_CANDIDATE_GRID,
+) -> tuple[ARIMACandidate, ...]:
+    return tuple(
+        candidate
+        for candidate in candidates
+        if is_sample_feasible_arima_candidate(candidate, sample_size)
+    )
+
+
 def fit_selected_arima_endog(
     *,
     endog: np.ndarray,
@@ -233,7 +254,8 @@ def fit_selected_arima_endog(
 ) -> ARIMAPathFit:
     failures: list[str] = []
     selected: ARIMACandidateResult | None = None
-    for candidate in candidates:
+    eligible_candidates = resolve_sample_feasible_arima_candidates(sample_size, candidates)
+    for candidate in eligible_candidates:
         try:
             candidate_result = fit_arima_candidate_endog(
                 endog=endog,
@@ -257,7 +279,7 @@ def fit_selected_arima_endog(
         "trend": selected.candidate.trend,
         "seasonal_order": list(selected.candidate.seasonal_order),
         "policyIdentity": ARIMA_POLICY_ID,
-        "candidateCount": len(candidates),
+        "candidateCount": len(eligible_candidates),
         "tieBreakPolicy": ARIMA_TIE_BREAK_POLICY_ID,
         "fitImplementation": ARIMA_FIT_IMPLEMENTATION,
     }

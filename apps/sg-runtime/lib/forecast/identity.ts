@@ -5,6 +5,7 @@ import type {
   ForecastTargetCadence,
 } from '@/lib/forecast/cadence'
 import { normalizeForecastSourceFrequency } from '@/lib/forecast/cadence'
+import { getPeriodForecastTrainingPolicyVersion } from '@/lib/forecast/period-forecast-policy'
 
 export const FORECAST_TARGET_SEMANTICS = [
   'END_OF_PERIOD',
@@ -328,11 +329,16 @@ function buildEffectiveTrainingPolicyId(
   policyFamily: 'CURRENT_FREQUENCY_SPECIFIC' | 'CURRENT_FAST_TRAILING_12M' | 'CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX' | 'FULL_EXPANDING_HISTORY_PER_ORIGIN',
   context: ForecastTrainingPolicyResolutionContext,
 ): ForecastEffectiveTrainingPolicyId {
+  const policyVersionPart = context.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+    ? []
+    : [`periodPolicy=${getPeriodForecastTrainingPolicyVersion()}`]
+
   return [
     `${policyFamily}@${FORECAST_EFFECTIVE_TRAINING_POLICY_ID_VERSION}`,
     `source=${context.sourceFrequency}`,
     `target=${context.targetCadence}`,
     `semantics=${context.targetSemantics}`,
+    ...policyVersionPart,
   ].join('|')
 }
 

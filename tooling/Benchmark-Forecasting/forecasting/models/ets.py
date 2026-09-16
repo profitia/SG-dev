@@ -17,6 +17,10 @@ from forecasting.models.statsmodels_utils import (
     has_convergence_warning,
     validate_regular_history,
 )
+from forecasting.training_policy import (
+    resolve_ets_seasonal_minimum_training_observations,
+    resolve_period_model_minimum_training_observations,
+)
 
 
 @dataclass(frozen=True)
@@ -67,7 +71,8 @@ ETS_CANDIDATE_CATALOG: tuple[ETSCandidate, ...] = (
 
 class ETSModelFamily(ForecastModel):
     model_id = "ets"
-    min_history = 36
+    min_history = resolve_period_model_minimum_training_observations(model_id)
+    seasonal_min_history = resolve_ets_seasonal_minimum_training_observations()
     seasonal_periods = 12
 
     def __init__(
@@ -118,7 +123,7 @@ class ETSModelFamily(ForecastModel):
         )
 
     def eligible_candidates(self, history: Sequence[Observation]) -> tuple[ETSCandidate, ...]:
-        seasonal_allowed = self.frequency is Frequency.MONTHLY and len(history) >= self.min_history
+        seasonal_allowed = self.frequency is Frequency.MONTHLY and len(history) >= self.seasonal_min_history
         return tuple(
             candidate
             for candidate in ETS_CANDIDATE_CATALOG

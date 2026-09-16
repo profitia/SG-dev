@@ -3,6 +3,8 @@ import test from 'node:test'
 
 import {
   buildVerificationLogicalArtifactKey,
+  PERIOD_VERIFICATION_CONFIGURATION_ID,
+  ROLLING_DAILY_VERIFICATION_CONFIGURATION_ID,
   VerificationForecastSingleFlight,
   type VerificationLogicalArtifactIdentity,
   type VerificationSingleFlightEvent,
@@ -23,8 +25,25 @@ const identity: VerificationLogicalArtifactIdentity = {
   targetCadence: 'MONTHLY',
   frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
   verificationHorizonSetId: '{"1M":1,"3M":3,"6M":6,"12M":12}',
-  verificationConfigurationId: '{"minTrainingWindow":36}',
+  verificationConfigurationId: PERIOD_VERIFICATION_CONFIGURATION_ID,
   originPolicyId: 'EXPANDING_WINDOW_ROLLING_ORIGIN@expanding-window-rolling-origin-v1',
+}
+
+const rollingDailyIdentity: VerificationLogicalArtifactIdentity = {
+  ...identity,
+  artifactScope: 'RECENT_VERIFICATION',
+  seriesId: 'wocaes0074',
+  targetBasis: 'POINT_IN_TIME',
+  targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+  methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+  methodVersion: 'rolling-daily-point-in-time-v1',
+  trainingWindowPolicyId: 'RECENT_SAME_POLICY_AS_CURRENT@recent-same-policy-as-current-v1',
+  inputSource: 'ROLLING_DAILY_MARKET_DATA_STORE',
+  historyFingerprint: 'rolling-history-a',
+  sourceFrequency: 'DAILY',
+  targetCadence: 'DAILY',
+  frequencyIdentity: 'FORECAST_CADENCE_V1|source=DAILY|target=DAILY',
+  verificationConfigurationId: ROLLING_DAILY_VERIFICATION_CONFIGURATION_ID,
 }
 
 test('Verification logical key is deterministic, exact-field isolated, and fail-closed', () => {
@@ -131,6 +150,13 @@ test('different Verification keys run independently', async () => {
   releaseOperations?.()
   assert.deepEqual(await Promise.all([first, second]), ['first', 'second'])
   assert.equal(registry.activeEntryCount, 0)
+})
+
+test('rolling-daily and period verification identities stay exact-match isolated', () => {
+  assert.notEqual(
+    buildVerificationLogicalArtifactKey(identity),
+    buildVerificationLogicalArtifactKey(rollingDailyIdentity),
+  )
 })
 
 test('Verification owner failure is shared, cleaned up, and permits retry', async () => {

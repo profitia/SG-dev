@@ -5,10 +5,12 @@ from collections.abc import Sequence
 from forecasting.contracts import ForecastMetadata, Frequency, ModelForecast, NativeCadenceExecutionPlan, Observation
 from forecasting.models.base import ForecastModel
 from forecasting.models.statsmodels_utils import validate_regular_history
+from forecasting.training_policy import resolve_period_model_minimum_training_observations
 
 
 class NaiveLastValueModel(ForecastModel):
     model_id = "naive"
+    min_history = resolve_period_model_minimum_training_observations(model_id)
 
     def __init__(
         self,
@@ -19,7 +21,7 @@ class NaiveLastValueModel(ForecastModel):
         self.cadence_plan = cadence_plan
 
     def forecast_with_metadata(self, history: Sequence[Observation], horizon_steps: int) -> ModelForecast:
-        validate_regular_history(history, horizon_steps, 1, "Naive", self.frequency, self.cadence_plan)
+        validate_regular_history(history, horizon_steps, self.min_history, "Naive", self.frequency, self.cadence_plan)
         return ModelForecast(
             forecast_value=float(history[-1].value),
             metadata=ForecastMetadata(

@@ -7,9 +7,16 @@ from datetime import date
 from forecasting.backtest import generate_backtest_records
 from forecasting.contracts import ForecastMetadata, Frequency, ModelForecast, Observation, TimeSeries
 from forecasting.models.base import ModelForecastError
-from forecasting.models.arima import ARIMA_CANDIDATE_GRID, ARIMACandidate, ARIMACandidateResult, ARIMAModelFamily
+from forecasting.models.arima import (
+    ARIMA_CANDIDATE_GRID,
+    ARIMACandidate,
+    ARIMACandidateResult,
+    ARIMAModelFamily,
+    resolve_sample_feasible_arima_candidates,
+)
 from forecasting.models.damped_holt import DampedHoltModel
 from forecasting.models.ets import ETSCandidate, ETSCandidateResult, ETS_CANDIDATE_CATALOG, ETSModelFamily
+from forecasting.models.naive import NaiveLastValueModel
 
 
 def monthly_series(length: int, start_value: float = 100.0, step: float = 1.0) -> TimeSeries:
@@ -34,6 +41,23 @@ def monthly_series(length: int, start_value: float = 100.0, step: float = 1.0) -
 
 
 class DampedHoltPhase2Tests(unittest.TestCase):
+    def test_damped_holt_accepts_six_observations_but_not_five(self) -> None:
+        model = DampedHoltModel()
+
+        with self.assertRaisesRegex(ModelForecastError, "INSUFFICIENT_HISTORY"):
+            model.forecast_with_metadata(list(monthly_series(5).observations), 1)
+
+        forecast = model.forecast_with_metadata(list(monthly_series(6, start_value=100.0, step=2.0).observations), 1)
+
+        self.assertEqual(model.min_history, 6)
+        self.assertIsNotNone(forecast.metadata)
+
+    def test_damped_holt_rejects_five_observations_exactly(self) -> None:
+        model = DampedHoltModel()
+
+        with self.assertRaisesRegex(ModelForecastError, "INSUFFICIENT_HISTORY"):
+            model.forecast_with_metadata(list(monthly_series(5).observations), 1)
+
     def test_damped_holt_is_deterministic_on_same_history(self) -> None:
         model = DampedHoltModel()
         history = list(monthly_series(60, start_value=100.0, step=2.0).observations)
@@ -157,6 +181,31 @@ def ar_like_monthly_series(length: int) -> TimeSeries:
 
 
 class ETSPhase2Tests(unittest.TestCase):
+    def test_ets_rejects_five_observations_exactly(self) -> None:
+        model = ETSModelFamily()
+
+        with self.assertRaisesRegex(ModelForecastError, "INSUFFICIENT_HISTORY"):
+            model.forecast_with_metadata(list(monthly_series(5).observations), 1)
+
+    def test_ets_accepts_six_observations_and_disables_seasonality_below_thirty_six(self) -> None:
+        model = ETSModelFamily()
+        history = list(monthly_series(6, start_value=100.0, step=2.0).observations)
+
+        forecast = model.forecast_with_metadata(history, 1)
+
+        self.assertEqual(model.min_history, 6)
+        self.assertEqual(model.seasonal_min_history, 36)
+        self.assertFalse(forecast.metadata.selected_variant.endswith(',A)'))
+        self.assertTrue(all(candidate.seasonal is None for candidate in model.eligible_candidates(history)))
+
+    def test_ets_keeps_non_seasonal_candidates_at_thirty_five_and_enables_seasonal_at_thirty_six(self) -> None:
+        model = ETSModelFamily()
+        history_35 = list(seasonal_monthly_series(35).observations)
+        history_36 = list(seasonal_monthly_series(36).observations)
+
+        self.assertTrue(all(candidate.seasonal is None for candidate in model.eligible_candidates(history_35)))
+        self.assertTrue(any(candidate.seasonal is not None for candidate in model.eligible_candidates(history_36)))
+
     def test_candidate_catalog_matches_canon(self) -> None:
         self.assertEqual(
             [candidate.variant for candidate in ETS_CANDIDATE_CATALOG],
@@ -292,9 +341,35 @@ class ETSPhase2Tests(unittest.TestCase):
 
 
 class ARIMAPhase2Tests(unittest.TestCase):
+    def test_arima_rejects_five_observations_exactly(self) -> None:
+        model = ARIMAModelFamily()
+
+        with self.assertRaisesRegex(ModelForecastError, "INSUFFICIENT_HISTORY"):
+            model.forecast_with_metadata(list(monthly_series(5).observations), 1)
+
+    def test_arima_accepts_six_observations_with_sample_feasible_grid(self) -> None:
+        model = ARIMAModelFamily()
+        history = list(monthly_series(6, start_value=100.0, step=1.5).observations)
+
+        forecast = model.forecast_with_metadata(history, 1)
+
+        self.assertEqual(model.min_history, 6)
+        self.assertIsNotNone(forecast.metadata)
+        self.assertGreaterEqual(forecast.metadata.selected_parameters["candidateCount"], 1)
+        self.assertLess(forecast.metadata.selected_parameters["candidateCount"], len(ARIMA_CANDIDATE_GRID))
+
     def test_candidate_grid_matches_canon(self) -> None:
         self.assertEqual(len(ARIMA_CANDIDATE_GRID), 17)
         self.assertNotIn((0, 0, 0), [candidate.order for candidate in ARIMA_CANDIDATE_GRID])
+
+    def test_sample_feasible_grid_filters_candidates_for_short_histories(self) -> None:
+        candidates = resolve_sample_feasible_arima_candidates(6)
+
+        self.assertGreaterEqual(len(candidates), 1)
+        self.assertLess(len(candidates), len(ARIMA_CANDIDATE_GRID))
+        for candidate in candidates:
+            p, d, q = candidate.order
+            self.assertGreater(6 - d, p + q + 3)
 
     def test_trend_policy_matches_differencing_policy(self) -> None:
         for candidate in ARIMA_CANDIDATE_GRID:
@@ -331,6 +406,36 @@ class ARIMAPhase2Tests(unittest.TestCase):
         forecast = model.forecast_with_metadata(history, 3)
 
         self.assertEqual(forecast.metadata.selected_variant, "ARIMA(0,0,1)")
+
+    def test_arima_short_history_only_attempts_sample_feasible_candidates(self) -> None:
+        attempted: list[ARIMACandidate] = []
+
+        class CapturingARIMA(ARIMAModelFamily):
+            def fit_candidate(self, history, candidate, horizon_steps):  # type: ignore[override]
+                del history, horizon_steps
+                attempted.append(candidate)
+                raise ModelForecastError("FIT_EXCEPTION: forced invalid")
+
+        model = CapturingARIMA()
+        history = list(monthly_series(6).observations)
+
+        with self.assertRaisesRegex(ModelForecastError, "ALL_CANDIDATES_INVALID"):
+            model.forecast_with_metadata(history, 1)
+
+        self.assertEqual(tuple(attempted), resolve_sample_feasible_arima_candidates(len(history)))
+
+
+class NaivePhase2Tests(unittest.TestCase):
+    def test_naive_rejects_zero_observations_and_accepts_one(self) -> None:
+        model = NaiveLastValueModel()
+
+        with self.assertRaisesRegex(ModelForecastError, "INSUFFICIENT_HISTORY"):
+            model.forecast_with_metadata([], 1)
+
+        forecast = model.forecast_with_metadata(list(monthly_series(1, start_value=123.0, step=0.0).observations), 1)
+
+        self.assertEqual(model.min_history, 1)
+        self.assertEqual(forecast.forecast_value, 123.0)
 
     def test_arima_skips_invalid_candidates(self) -> None:
         class SkipFirstARIMA(ARIMAModelFamily):

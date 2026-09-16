@@ -206,12 +206,16 @@ test('reports target-specific insufficient history without lowering either minim
     && item.identity.targetSemantics !== 'ROLLING_DAILY_POINT_IN_TIME'
   ))
   const nonNaiveOrRollingCapabilities = capabilities.filter((item) => !naivePeriodCapabilities.includes(item))
+  const nonNaivePeriodCapabilities = nonNaiveOrRollingCapabilities.filter((item) => item.identity.targetSemantics !== 'ROLLING_DAILY_POINT_IN_TIME')
+  const rollingDailyCapabilities = nonNaiveOrRollingCapabilities.filter((item) => item.identity.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME')
 
   assert.ok(naivePeriodCapabilities.every((item) => item.historyEligibility === 'ELIGIBLE'))
   assert.ok(naivePeriodCapabilities.every((item) => item.capabilityState === 'NOT_PREPARED'))
-  assert.ok(nonNaiveOrRollingCapabilities.every((item) => item.historyEligibility === 'INSUFFICIENT_HISTORY'))
-  assert.ok(nonNaiveOrRollingCapabilities.every((item) => item.capabilityState === 'INSUFFICIENT_HISTORY'))
-  assert.deepEqual(new Set(capabilities.map((item) => item.minimumRequiredObservations)), new Set([1, 36, 60]))
+  assert.ok(nonNaivePeriodCapabilities.every((item) => item.historyEligibility === 'ELIGIBLE'))
+  assert.ok(nonNaivePeriodCapabilities.every((item) => item.capabilityState === 'NOT_PREPARED'))
+  assert.ok(rollingDailyCapabilities.every((item) => item.historyEligibility === 'INSUFFICIENT_HISTORY'))
+  assert.ok(rollingDailyCapabilities.every((item) => item.capabilityState === 'INSUFFICIENT_HISTORY'))
+  assert.deepEqual(new Set(capabilities.map((item) => item.minimumRequiredObservations)), new Set([1, 6, 60]))
 })
 
 test('proves the frozen eight-frequency business target matrix and default target cadence', () => {
@@ -281,10 +285,10 @@ test('keeps sparse semantic support separate from model and real execution eligi
 
   assert.ok(annual35.every((item) => item.targetSemanticsSupported))
   assert.ok(annual35.filter((item) => item.identity.modelId === 'naive').every((item) => item.modelEligible))
-  assert.ok(annual35.filter((item) => item.identity.modelId !== 'naive').every((item) => !item.modelEligible))
+  assert.ok(annual35.filter((item) => item.identity.modelId !== 'naive').every((item) => item.modelEligible))
   assert.ok(annual35.every((item) => !item.currentForecastEligible))
   assert.ok(annual35.filter((item) => item.identity.modelId === 'naive').every((item) => item.historyEligibility === 'ELIGIBLE'))
-  assert.ok(annual35.filter((item) => item.identity.modelId !== 'naive').every((item) => item.historyEligibility === 'INSUFFICIENT_HISTORY'))
+  assert.ok(annual35.filter((item) => item.identity.modelId !== 'naive').every((item) => item.historyEligibility === 'ELIGIBLE'))
   assert.ok(annual36.every((item) => item.modelEligible))
   assert.ok(annual36.every((item) => !item.currentForecastEligible))
   assert.ok(annual36.every((item) => item.implementationState === 'SUPPORTED'))
@@ -357,7 +361,7 @@ test('keeps Current Forecast eligibility independent from verification and band 
   }
 
   const ineligible = resolve({
-    preparedObservationCounts: { END_OF_PERIOD: 35 },
+    preparedObservationCounts: { END_OF_PERIOD: 5 },
     verificationOriginCounts: { END_OF_PERIOD: 24 },
     predictionBandResidualCounts: { END_OF_PERIOD: 30 },
   }).find((item) => item.businessTarget === 'END_OF_PERIOD' && item.identity.modelId === 'ets')
@@ -672,7 +676,7 @@ test('exact monthly-average capability reports insufficient history from the lat
   const service = createForecastCapabilityService({
     async resolveHistoricalSeries(seriesId) {
       return {
-        history: createDailyHistoryWithMonthlyGap(seriesId, { prefixMonths: 24, gapMonths: 2, suffixMonths: 7 }),
+        history: createDailyHistoryWithMonthlyGap(seriesId, { prefixMonths: 24, gapMonths: 2, suffixMonths: 5 }),
         marketDataSource: 'macrobond',
         cacheStatus: 'miss',
       }
@@ -689,7 +693,7 @@ test('exact monthly-average capability reports insufficient history from the lat
     modelId: 'arima',
   })
 
-  assert.equal(exact.capability?.availableObservations, 7)
+  assert.equal(exact.capability?.availableObservations, 5)
   assert.equal(exact.capability?.historyEligibility, 'INSUFFICIENT_HISTORY')
   assert.equal(exact.capability?.capabilityState, 'INSUFFICIENT_HISTORY')
   assert.equal(exact.resolution.preparationFailures.MONTHLY_AVERAGE, undefined)

@@ -495,7 +495,7 @@ def main() -> int:
             model=model,
             run_id=RUN_ID,
             horizons=history_payload["horizons"] if history_payload is not None else HORIZONS,
-            min_training_window=36,
+            min_training_window=model.min_history,
             current_target_dates=history_payload["current_target_dates"] if history_payload is not None else None,
         )
         result = service.run_benchmark(

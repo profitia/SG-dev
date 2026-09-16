@@ -7,6 +7,7 @@ import {
 } from '../lib/forecast/current-single-flight'
 import {
   buildVerificationLogicalArtifactKey,
+  PERIOD_VERIFICATION_CONFIGURATION_ID,
   type VerificationLogicalArtifactIdentity,
 } from '../lib/forecast/verification-single-flight'
 
@@ -76,7 +77,7 @@ const verificationIdentity: VerificationLogicalArtifactIdentity = {
   targetCadence: 'MONTHLY',
   frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
   verificationHorizonSetId: '{"1M":1,"3M":3}',
-  verificationConfigurationId: '{"minTrainingWindow":36}',
+  verificationConfigurationId: PERIOD_VERIFICATION_CONFIGURATION_ID,
   originPolicyId: 'EXPANDING_WINDOW_ROLLING_ORIGIN@expanding-window-rolling-origin-v1',
 }
 

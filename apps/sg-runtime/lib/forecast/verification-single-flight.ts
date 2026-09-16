@@ -1,3 +1,12 @@
+import type { ForecastTargetSemantics } from '@/lib/forecast/identity'
+import { getPeriodForecastTrainingPolicyVersion } from '@/lib/forecast/period-forecast-policy'
+
+export const ROLLING_DAILY_VERIFICATION_CONFIGURATION_ID = JSON.stringify({ minTrainingWindow: 36 })
+export const PERIOD_VERIFICATION_CONFIGURATION_ID = JSON.stringify({
+  periodTrainingPolicyVersion: getPeriodForecastTrainingPolicyVersion(),
+  maseScaleMinimumObservations: 2,
+})
+
 export const VERIFICATION_LOGICAL_ARTIFACT_KEY_FIELDS = [
   'namespace',
   'artifactScope',
@@ -25,7 +34,11 @@ export type VerificationLogicalArtifactIdentity = Record<
   string | null
 >
 
-export const VERIFICATION_CONFIGURATION_ID = JSON.stringify({ minTrainingWindow: 36 })
+export function resolveVerificationConfigurationId(targetSemantics: ForecastTargetSemantics) {
+  return targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+    ? ROLLING_DAILY_VERIFICATION_CONFIGURATION_ID
+    : PERIOD_VERIFICATION_CONFIGURATION_ID
+}
 export const VERIFICATION_ORIGIN_POLICY_ID = 'EXPANDING_WINDOW_ROLLING_ORIGIN@expanding-window-rolling-origin-v1'
 
 export function buildVerificationHorizonSetId(horizons: Record<string, number>) {

@@ -10,6 +10,7 @@ import {
   canResidualCalibrateCurrent,
   createCurrentForecastStatisticalCompatibility,
   createFullVerificationStatisticalCompatibility,
+  createLegacyFrequencySpecificCurrentForecastStatisticalCompatibility,
   createLegacyUnresolvedForecastStatisticalCompatibility,
   createLegacyVerificationStatisticalCompatibility,
   createRecentVerificationStatisticalCompatibility,
@@ -24,6 +25,11 @@ import {
   resolveLegacyForecastStatisticalCompatibility,
   type ForecastVerificationReuseIdentity,
 } from '../lib/forecast/identity'
+import {
+  PERIOD_VERIFICATION_CONFIGURATION_ID,
+  ROLLING_DAILY_VERIFICATION_CONFIGURATION_ID,
+  resolveVerificationConfigurationId,
+} from '../lib/forecast/verification-single-flight'
 
 const MONTHLY_AVERAGE_POLICY_CONTEXT = {
   sourceFrequency: 'MONTHLY',
@@ -165,10 +171,39 @@ test('statistical compatibility keeps Current, Recent Verification, and Full Ver
   ]).size, 3)
   assert.equal(current.effectiveTrainingPolicyId, recent.effectiveTrainingPolicyId)
   assert.notEqual(current.effectiveTrainingPolicyId, full.effectiveTrainingPolicyId)
+  assert.equal(current.effectiveTrainingPolicyId.includes('periodPolicy=ADAPTIVE_SHORT_HISTORY_V1'), true)
+  assert.equal(full.effectiveTrainingPolicyId.includes('periodPolicy=ADAPTIVE_SHORT_HISTORY_V1'), true)
   assert.equal(areForecastStatisticalCompatibilitiesEqual(current, current), true)
   assert.equal(areForecastStatisticalCompatibilitiesEqual(current, full), false)
   assert.equal(doesForecastArtifactSatisfyRequest(full, full), true)
   assert.equal(doesForecastArtifactSatisfyRequest(full, recent), false)
+})
+
+test('adaptive short-history policy version separates legacy and current exact identities', () => {
+  const legacyCurrent = createLegacyFrequencySpecificCurrentForecastStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
+  const adaptiveCurrent = createCurrentForecastStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
+
+  assert.notEqual(legacyCurrent.effectiveTrainingPolicyId, adaptiveCurrent.effectiveTrainingPolicyId)
+  assert.equal(doesForecastArtifactSatisfyRequest(legacyCurrent, adaptiveCurrent), false)
+  assert.equal(doesForecastArtifactSatisfyRequest(adaptiveCurrent, legacyCurrent), false)
+})
+
+test('period verification configuration is versioned by adaptive short-history policy and metric minimum', () => {
+  assert.equal(
+    PERIOD_VERIFICATION_CONFIGURATION_ID,
+    JSON.stringify({ periodTrainingPolicyVersion: 'ADAPTIVE_SHORT_HISTORY_V1', maseScaleMinimumObservations: 2 }),
+  )
+  assert.equal(resolveVerificationConfigurationId('MONTHLY_AVERAGE'), PERIOD_VERIFICATION_CONFIGURATION_ID)
+  assert.equal(resolveVerificationConfigurationId('END_OF_PERIOD'), PERIOD_VERIFICATION_CONFIGURATION_ID)
+})
+
+test('rolling daily verification configuration preserves the legacy exact identity', () => {
+  assert.equal(ROLLING_DAILY_VERIFICATION_CONFIGURATION_ID, JSON.stringify({ minTrainingWindow: 36 }))
+  assert.equal(resolveVerificationConfigurationId('ROLLING_DAILY_POINT_IN_TIME'), ROLLING_DAILY_VERIFICATION_CONFIGURATION_ID)
+})
+
+test('period and rolling-daily verification configurations remain exact-match isolated', () => {
+  assert.notEqual(PERIOD_VERIFICATION_CONFIGURATION_ID, ROLLING_DAILY_VERIFICATION_CONFIGURATION_ID)
 })
 
 test('legacy verification mapping stays deterministic while calibration remains conditional', () => {

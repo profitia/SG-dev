@@ -1,0 +1,350 @@
+{
+  "repository": "profitia/SG-dev",
+  "worktreePath": "/private/tmp/ppf1-stage12-copper-dashboard-publication-20260916",
+  "branch": "demo/porr-11-benchmark-readiness-20260916",
+  "baseSha": "2f0e93c828fef22241affd4b703fc139b1759ca8",
+  "finalHeadSha": "2f0e93c828fef22241affd4b703fc139b1759ca8",
+  "commitCreated": false,
+  "remoteBranchSha": null,
+  "policyVersion": "ADAPTIVE_SHORT_HISTORY_V1",
+  "taskGate": "PASS",
+  "proceedToTask2": "YES",
+  "worktreeStates": {
+    "INITIAL_WORKTREE_STATE": "CLEAN",
+    "PRE_COMMIT_WORKTREE_STATE": "MODIFIED_BY_TASK_1",
+    "FINAL_POST_COMMIT_WORKTREE_STATE": "PENDING_COMMIT"
+  },
+  "continuationResolution": {
+    "ORIGINAL_CODE_STATE_BLOCKER": "CONFIRMED",
+    "DIRTY_MAIN_CHECKOUT_TOUCHED": "NO",
+    "CLEAN_WORKTREE_USED": "YES",
+    "CLEAN_WORKTREE_PATH": "/private/tmp/ppf1-stage12-copper-dashboard-publication-20260916",
+    "CLEAN_WORKTREE_INITIAL_HEAD": "2f0e93c828fef22241affd4b703fc139b1759ca8",
+    "AUTHORIZED_TASK_ID_USED": "YES",
+    "AUTHORIZED_ETAP_USED_EXACTLY": "YES",
+    "PMOS_BOOTSTRAP_CREATED_CANONICALLY": "YES",
+    "PENDING_ARTIFACT_MANUALLY_CREATED": "NO",
+    "BASELINE_AUDIT_REPEATED": "NO",
+    "NEW_DECISION_CHANGING_EVIDENCE_FOUND": "YES",
+    "newEvidence": [
+      "An authorized independent read-only Neon audit executed on 2026-09-16 supplied the missing real-series matrix and long-history regression evidence for this exact task.",
+      "The independent audit confirmed 36 short-history variants PASS and 12 long-history variants PASS without Neon writes, schema changes, deployment, or committed raw market data.",
+      "This VS Code session did not execute the Neon queries directly; it consumed the independent audit as authoritative task input and preserved that provenance explicitly in the evidence files."
+    ]
+  },
+  "modelRequirements": {
+    "naive": 1,
+    "damped_holt": 6,
+    "ets": 6,
+    "etsSeasonalMinimum": 36,
+    "arima": 6
+  },
+  "acceptanceCriteria": {
+    "ADAPTIVE_SHORT_HISTORY_V1_IMPLEMENTED": "YES",
+    "POLICY_HAS_SINGLE_CANONICAL_SOURCE": "YES",
+    "NAIVE_MINIMUM": 1,
+    "DAMPED_HOLT_MINIMUM": 6,
+    "ETS_MINIMUM": 6,
+    "ETS_SEASONAL_BELOW_36": "NO",
+    "ARIMA_MINIMUM": 6,
+    "ARIMA_SAMPLE_FEASIBLE_GRID": "YES",
+    "SILENT_CROSS_MODEL_FALLBACK": "NO",
+    "MODEL_EQUALITY_PRESERVED": "YES",
+    "EXACT_POLICY_IDENTITY_VERSIONED": "YES",
+    "OLD_POLICY_ARTIFACT_REUSED_AS_NEW": "NO",
+    "CROSS_SERIES_REUSE": "NO",
+    "CROSS_METHOD_REUSE": "NO",
+    "TARGET_SPECIFIC_VERIFICATION_IDENTITY": "YES",
+    "ROLLING_DAILY_IDENTITY_PRESERVED": "YES",
+    "PERIOD_IDENTITY_VERSIONED": "YES",
+    "MASE_SCALE_FABRICATED": "NO",
+    "NAIVE_CURRENT_MINIMUM": 1,
+    "NAIVE_VERIFICATION_METRIC_MINIMUM": 2,
+    "NAIVE_EMPTY_HISTORY_FAILS_CLOSED": "YES",
+    "SHORT_HISTORY_VARIANTS_TESTED": 36,
+    "SHORT_HISTORY_VARIANTS_PASS": 36,
+    "SHORT_HISTORY_VARIANTS_FAIL": 0,
+    "LONG_HISTORY_VARIANTS_TESTED": 12,
+    "LONG_HISTORY_VARIANTS_PASS": 12,
+    "LONG_HISTORY_REGRESSION": "PASS",
+    "HWWI_POINT_IN_TIME_SEMANTICS_CHANGED": "NO",
+    "SERIES_SPECIFIC_PRODUCTION_LOGIC_CREATED": "NO",
+    "SECOND_FORECAST_ENGINE_CREATED": "NO",
+    "SCHEMA_MIGRATION_USED": "NO",
+    "MANUAL_FORECAST_ARTIFACT_SQL_USED": "NO",
+    "PRODUCTION_DATABASE_WRITES": "NO",
+    "PRODUCTION_PREPARE_ROUTE_USED": "NO",
+    "RENDER_DEPLOYMENT_PERFORMED": "NO",
+    "STAGE_12_COMPLETION_CLAIMED": "NO",
+    "DEMO_ONLY_SOURCE_CODE_CREATED": "NO",
+    "FULL_PPF1_REUSE_PRESERVED": "YES"
+  },
+  "verificationSummary": {
+    "status": "PASS",
+    "blocker": null,
+    "provenance": {
+      "localImplementationTests": "Executed in VS Code worktree during this task.",
+      "independentLiveMatrix": "Executed independently on 2026-09-16 using authorized read-only Neon access by Codex; consumed here as task input evidence.",
+      "productionPreparationPerformed": false,
+      "productionPersistencePerformed": false,
+      "deploymentPerformed": false
+    },
+    "realSeriesMatrix": {
+      "status": "PASS",
+      "requiredShortSeries": [
+        "ehr2027g_cl",
+        "lmescusd20270226",
+        "hg2027g_cl"
+      ],
+      "requiredLongSeries": [
+        "lmeofcucashask"
+      ],
+      "reason": null,
+      "shortHistoryVariantsTested": 36,
+      "shortHistoryVariantsPass": 36,
+      "shortHistoryVariantsFail": 0,
+      "longHistoryVariantsTested": 12,
+      "longHistoryVariantsPass": 12,
+      "series": {
+        "ehr2027g_cl": {
+          "MONTHLY_AVERAGE": {
+            "observations": 6,
+            "start": "2026-03-01",
+            "end": "2026-08-01",
+            "fingerprint": "2570f7b46a2f44269851c7606cea6d04f27cb3774b42ec2102e0ea81fdd4d085",
+            "variantsPass": 4
+          },
+          "END_OF_PERIOD": {
+            "observations": 6,
+            "start": "2026-03-01",
+            "end": "2026-08-01",
+            "fingerprint": "4f9eb0e90848d32cad39ace57dfbb1c7ab836e0893bcc31d0c01fe1363c3eb0a",
+            "variantsPass": 4
+          },
+          "POINT_IN_TIME": {
+            "observations": 119,
+            "start": "2026-03-13",
+            "end": "2026-09-15",
+            "fingerprint": "6f9510f622c107c4eb7f99efd92ecce5acd430d65e7e00855b97a3c1f0e7eb92",
+            "variantsPass": 4
+          }
+        },
+        "lmescusd20270226": {
+          "MONTHLY_AVERAGE": {
+            "observations": 9,
+            "start": "2025-12-01",
+            "end": "2026-08-01",
+            "fingerprint": "6fd4ea50feb69064a1195a61b3435ab99174ff870448e71a9df348633241a556",
+            "variantsPass": 4
+          },
+          "END_OF_PERIOD": {
+            "observations": 9,
+            "start": "2025-12-01",
+            "end": "2026-08-01",
+            "fingerprint": "30456344b47fe0a10f5e5878f4a19a6c42aba40536f83bf198ca6f3903a319de",
+            "variantsPass": 4
+          },
+          "POINT_IN_TIME": {
+            "observations": 199,
+            "start": "2025-12-01",
+            "end": "2026-09-15",
+            "fingerprint": "096647a7698f3ed9d58a97065a47738fa5465e1108a932d5195196ef8ddf1972",
+            "variantsPass": 4
+          }
+        },
+        "hg2027g_cl": {
+          "MONTHLY_AVERAGE": {
+            "observations": 19,
+            "start": "2025-02-01",
+            "end": "2026-08-01",
+            "fingerprint": "1325789a7073e35850074335a69622c221f3c74199a84bd897bd3695b7ce74a9",
+            "variantsPass": 4
+          },
+          "END_OF_PERIOD": {
+            "observations": 19,
+            "start": "2025-02-01",
+            "end": "2026-08-01",
+            "fingerprint": "d812c24819f620e9ef43dedab0b675fdda3522abee50e3a0aa672098a75d79e8",
+            "variantsPass": 4
+          },
+          "POINT_IN_TIME": {
+            "observations": 390,
+            "start": "2025-02-27",
+            "end": "2026-09-15",
+            "fingerprint": "bb0565f4652bd1468fe824ffc8f97740065bc02428e46f0a6360114b0df63131",
+            "variantsPass": 4
+          }
+        },
+        "lmeofcucashask": {
+          "MONTHLY_AVERAGE": {
+            "observations": 466,
+            "start": "1987-11-01",
+            "end": "2026-08-01",
+            "fingerprint": "1b359371bcbe6d43d57a52b2ff6d62fcff960bb4f7f1401a40bc0365b81cd0d6",
+            "variantsPass": 4
+          },
+          "END_OF_PERIOD": {
+            "observations": 466,
+            "start": "1987-11-01",
+            "end": "2026-08-01",
+            "fingerprint": "1fd86bcab2d381ad0b56e1d86fe9e90b416f9f9b04ec63b99a1bdcde8c191fc0",
+            "variantsPass": 4
+          },
+          "POINT_IN_TIME": {
+            "observations": 9795,
+            "start": "1987-11-20",
+            "end": "2026-09-14",
+            "fingerprint": "ebf838de11abb5f150bd0321f40427672c862d80219a3146aa97578f6eb704c1",
+            "variantsPass": 4,
+            "pathPointsPerModel": 365,
+            "anchors": ["1M", "3M", "6M", "12M"]
+          }
+        }
+      }
+    }
+  },
+  "tests": [
+    {
+      "command": "cd apps/sg-runtime && node --import tsx --test tests/forecast-identity.test.ts tests/forecast-capability-resolver.test.ts",
+      "exitCode": 0,
+      "pass": 40,
+      "fail": 0,
+      "skip": 0,
+      "notes": "Focused SG Runtime identity and capability policy slice."
+    },
+    {
+      "command": "cd apps/sg-runtime && node --import tsx --test tests/forecast-identity.test.ts tests/verification-single-flight.test.ts tests/forecast-execution-ledger.test.ts tests/persistence-ownership.test.ts",
+      "exitCode": 0,
+      "pass": 42,
+      "fail": 0,
+      "skip": 0,
+      "notes": "Target-specific verification identity corrective slice."
+    },
+    {
+      "command": "cd tooling/Benchmark-Forecasting && PYTHONPATH=. .venv/bin/python -m unittest tests.test_phase2 tests.test_live_input tests.test_bounded_non_daily_verification tests.test_generic_cadence_orchestration",
+      "exitCode": 0,
+      "pass": 54,
+      "fail": 0,
+      "skip": 0,
+      "notes": "Forecast Tooling model, boundary, and orchestration regression slice using a local validation venv."
+    },
+    {
+      "command": "cd tooling/Benchmark-Forecasting && PYTHONPATH=. .venv/bin/python -m unittest tests.test_phase1 tests.test_phase2",
+      "exitCode": 0,
+      "pass": 47,
+      "fail": 0,
+      "skip": 0,
+      "notes": "MASE maturity corrective slice and model boundary recheck."
+    },
+    {
+      "command": "cd apps/sg-runtime && node --import tsx --test tests/forecast-live-input.test.ts tests/forecast-library-service.test.ts tests/forecast-route-contract.test.ts",
+      "exitCode": 0,
+      "pass": 109,
+      "fail": 0,
+      "skip": 0,
+      "notes": "Broader SG Runtime live-input, forecast service, and route-contract regression slice."
+    },
+    {
+      "command": "cd apps/sg-runtime && node --import tsx --test tests/forecast-identity.test.ts tests/forecast-capability-resolver.test.ts tests/verification-single-flight.test.ts tests/forecast-live-input.test.ts tests/forecast-library-service.test.ts tests/forecast-route-contract.test.ts && npm run typecheck",
+      "exitCode": 0,
+      "pass": 158,
+      "fail": 0,
+      "skip": 0,
+      "notes": "Required SG Runtime regression set after both corrective fixes."
+    },
+    {
+      "command": "cd tooling/Benchmark-Forecasting && PYTHONPATH=. .venv/bin/python -m unittest tests.test_phase1 tests.test_phase2 tests.test_live_input tests.test_bounded_non_daily_verification tests.test_generic_cadence_orchestration",
+      "exitCode": 0,
+      "pass": 67,
+      "fail": 0,
+      "skip": 0,
+      "notes": "Required Forecast Tooling regression set after both corrective fixes."
+    },
+    {
+      "command": "cd apps/sg-runtime && npm run typecheck",
+      "exitCode": 0,
+      "pass": null,
+      "fail": 0,
+      "skip": null,
+      "notes": "SG Runtime typecheck passed."
+    }
+  ],
+  "boundaryTests": {
+    "naive": [
+      "0 observations -> INSUFFICIENT_HISTORY",
+      "1 observation -> READY/forecastable"
+    ],
+    "dampedHolt": [
+      "5 observations -> INSUFFICIENT_HISTORY",
+      "6 observations -> forecastable"
+    ],
+    "ets": [
+      "5 observations -> INSUFFICIENT_HISTORY",
+      "6 observations -> non-seasonal candidates only",
+      "35 observations -> non-seasonal candidates only",
+      "36 observations -> seasonal candidates eligible"
+    ],
+    "arima": [
+      "5 observations -> INSUFFICIENT_HISTORY",
+      "6 observations -> sample-feasible candidate subset only"
+    ]
+  },
+  "identityTests": {
+    "legacyAndAdaptiveDiffer": true,
+    "adaptivePolicyVersionEmbedded": true,
+    "verificationConfigurationVersioned": true,
+    "rollingDailyVerificationIdentityPreserved": true,
+    "periodVerificationIdentityContainsMetricMinimum": true,
+    "crossModelCollision": false,
+    "crossMethodCollision": false,
+    "crossSeriesCollision": false
+  },
+  "warnings": [
+    "A temporary local Python virtualenv .venv was created under tooling/Benchmark-Forecasting for validation because no committed Python dependency manifest exists in this slice.",
+    "The independent live matrix evidence was supplied by an authorized read-only Neon audit outside this VS Code execution path and was not recomputed locally here."
+  ],
+  "changedFiles": [
+    "apps/sg-runtime/lib/forecast/current-fast-policy.ts",
+    "apps/sg-runtime/lib/forecast/identity.ts",
+    "apps/sg-runtime/lib/forecast/verification-single-flight.ts",
+    "apps/sg-runtime/lib/forecast/period-forecast-policy.ts",
+    "apps/sg-runtime/tests/forecast-capability-resolver.test.ts",
+    "apps/sg-runtime/tests/forecast-identity.test.ts",
+    "apps/sg-runtime/tests/forecast-live-input.test.ts",
+    "tooling/Benchmark-Forecasting/forecasting/backtest.py",
+    "tooling/Benchmark-Forecasting/forecasting/models/arima.py",
+    "tooling/Benchmark-Forecasting/forecasting/models/damped_holt.py",
+    "tooling/Benchmark-Forecasting/forecasting/models/ets.py",
+    "tooling/Benchmark-Forecasting/forecasting/models/naive.py",
+    "tooling/Benchmark-Forecasting/forecasting/service.py",
+    "tooling/Benchmark-Forecasting/forecasting/training_policy.py",
+    "tooling/Benchmark-Forecasting/metadata/model-technical-requirements.json",
+    "tooling/Benchmark-Forecasting/scripts/export_forecast_bundle.py",
+    "tooling/Benchmark-Forecasting/tests/test_live_input.py",
+    "tooling/Benchmark-Forecasting/tests/test_phase1.py",
+    "tooling/Benchmark-Forecasting/tests/test_phase2.py"
+  ],
+  "scopeAndSafety": {
+    "uiChanges": false,
+    "bandsChanges": false,
+    "historicalVerificationProductization": false,
+    "productionPrewarming": false,
+    "neonWrites": false,
+    "schemaMigration": false,
+    "renderDeployment": false,
+    "serviceConfigChanges": false,
+    "seriesSpecificLogic": false,
+    "stage12EvidenceModified": false
+  },
+  "neonAccess": {
+    "mode": "INDEPENDENT_READ_ONLY_AUDIT",
+    "selectOnly": true,
+    "writes": false,
+    "rawMarketDataCommitted": false,
+    "notes": [
+      "Independent authorized Codex audit used read-only Neon SQL against Dynamic Market Data Store / autumn-waterfall-65938876 / production / br-purple-shape-b2az1npx / neondb.",
+      "No Neon writes, schema changes, or raw market-data commits were performed by this VS Code session.",
+      "This VS Code session consumed only the summarized counts, date boundaries, fingerprints, and variant outcomes as task input evidence."
+    ]
+  }
+}

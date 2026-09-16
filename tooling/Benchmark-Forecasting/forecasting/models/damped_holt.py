@@ -12,6 +12,7 @@ from statsmodels.tsa.holtwinters import ExponentialSmoothing
 from forecasting.contracts import ForecastMetadata, Frequency, ModelForecast, NativeCadenceExecutionPlan, Observation
 from forecasting.models.base import ForecastModel, ModelForecastError
 from forecasting.models.statsmodels_utils import fit_converged, validate_regular_history
+from forecasting.training_policy import resolve_period_model_minimum_training_observations
 
 
 @dataclass(frozen=True)
@@ -75,7 +76,7 @@ def fit_damped_holt_endog(endog: np.ndarray) -> DampedHoltPathFit:
 
 class DampedHoltModel(ForecastModel):
     model_id = "damped_holt"
-    min_history = 36
+    min_history = resolve_period_model_minimum_training_observations(model_id)
 
     def __init__(
         self,
