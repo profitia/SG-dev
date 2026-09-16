@@ -145,6 +145,15 @@ No selected demo series IDs were introduced into the changed generic production 
 - No series-specific logic added in the changed production files
 - No Stage 12 evidence modified
 
+## Publication Integrity
+
+- Task 1 implementation remains `PASS`.
+- Independent live verification remains `PASS`.
+- The remote branch `origin/demo/porr-11-benchmark-readiness-20260916` was published successfully.
+- This correction removes stale pre-publication fields from the JSON evidence.
+- The final correction commit SHA is intentionally reported in the external handoff rather than embedded inside the corrected evidence commit itself.
+- No source code, methodology, test logic, deployment state, Neon data, or PMOS state was changed by this correction.
+
 ## Recommendation
 
 PROCEED_TO_TASK_2 = YES
