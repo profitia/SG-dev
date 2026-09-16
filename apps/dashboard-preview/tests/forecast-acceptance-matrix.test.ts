@@ -26,6 +26,7 @@ function capability(overrides: Partial<InteractiveForecastCapabilityResult> = {}
     seriesId: 'brent',
     targetSemantics: 'MONTHLY_AVERAGE',
     modelId: 'naive',
+    preparedReadAuthority: null,
     sourceFrequency: 'MONTHLY',
     targetCadence: null,
     sourceAvailability: 'AVAILABLE',
@@ -33,6 +34,16 @@ function capability(overrides: Partial<InteractiveForecastCapabilityResult> = {}
     status: 'READY',
     currentReadiness: 'READY',
     verificationReadiness: 'READY',
+    recentVerificationReadiness: 'READY',
+    fullVerificationReadiness: 'READY',
+    predictionBandResidualCount: 0,
+    predictionBandState: 'NOT_AVAILABLE',
+    readiness: {
+      fastReady: true,
+      calibratedReady: false,
+      fullReady: true,
+      blockers: [],
+    },
     targetedDataScope: 'SINGLE_SERIES',
     timingMs: 5,
     reason: null,
@@ -329,6 +340,116 @@ test('matrix fails at persisted layer when prepared state is READY but exact art
   assert.equal(currentCell?.reasonCode, 'MISSING_ARTIFACT')
   assert.equal(verificationCell?.state, 'FAIL')
   assert.equal(verificationCell?.reasonCode, 'MISSING_ARTIFACT')
+})
+
+test('matrix accepts full verification when legacy verificationReadiness is stale but fullVerificationReadiness is ready', async () => {
+  const service = createForecastAcceptanceMatrixService({
+    readCapability: async () => capability({
+      status: 'STALE',
+      currentReadiness: 'READY',
+      verificationReadiness: 'STALE',
+      fullVerificationReadiness: 'READY',
+    }),
+    prepareCurrent: async () => preparationResult({ prepareAttempted: false, prepareStatus: null }),
+    readCurrent: async () => currentResult(),
+    readVerification: async () => verificationResult(),
+    getPrisma: () => ({
+      forecastCurrentRun: { findFirst: async () => ({ status: 'AVAILABLE', historyFingerprint: 'fp-current', points: [{ forecastValue: 101 }] }) },
+      rollingDailyCurrentForecastSnapshot: { findFirst: async () => null },
+      forecastVerificationRun: { findFirst: async () => ({ status: 'AVAILABLE', historyFingerprint: 'fp-verification', metrics: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }], points: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }] }) },
+      rollingDailyVerificationRecord: { findMany: async () => [] },
+    } as never),
+  })
+
+  const report = await service.evaluateSeries('brent')
+  const verificationCell = report.verification.cells.find((cell) => cell.identity.modelId === 'naive' && cell.identity.targetBasis === 'MONTHLY_AVERAGE' && cell.identity.verificationHorizon === '1M')
+
+  assert.equal(verificationCell?.state, 'PASS')
+})
+
+test('matrix accepts the exact persisted verification artifact selected by the canonical read even when a newer row exists', async () => {
+  const service = createForecastAcceptanceMatrixService({
+    readCapability: async () => capability(),
+    prepareCurrent: async () => preparationResult(),
+    readCurrent: async () => currentResult(),
+    readVerification: async () => verificationResult({
+      lineage: {
+        inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+        inputRunId: 'verification-exact',
+        sourceSeriesId: 'brent',
+        sourceFrequency: 'MONTHLY',
+        historyFingerprint: 'fp-exact',
+        preparation: null,
+      },
+    }),
+    getPrisma: () => ({
+      forecastCurrentRun: { findFirst: async () => ({ status: 'AVAILABLE', historyFingerprint: 'fp-current', points: [{ forecastValue: 101 }] }) },
+      rollingDailyCurrentForecastSnapshot: { findFirst: async () => null },
+      forecastVerificationRun: {
+        findFirst: async ({ where }: { where: { historyFingerprint?: string } }) => {
+          if (where.historyFingerprint === 'fp-exact') {
+            return {
+              status: 'AVAILABLE',
+              historyFingerprint: 'fp-exact',
+              metrics: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }],
+              points: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }],
+            }
+          }
+
+          return {
+            status: 'AVAILABLE',
+            historyFingerprint: 'fp-latest',
+            metrics: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }],
+            points: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }],
+          }
+        },
+      },
+      rollingDailyVerificationRecord: { findMany: async () => [] },
+    } as never),
+  })
+
+  const report = await service.evaluateSeries('brent')
+  const verificationCell = report.verification.cells.find((cell) => cell.identity.modelId === 'naive' && cell.identity.targetBasis === 'MONTHLY_AVERAGE' && cell.identity.verificationHorizon === '1M')
+
+  assert.equal(verificationCell?.state, 'PASS')
+})
+
+test('matrix still fails when exact persisted verification proof does not match the canonical read fingerprint', async () => {
+  const service = createForecastAcceptanceMatrixService({
+    readCapability: async () => capability(),
+    prepareCurrent: async () => preparationResult(),
+    readCurrent: async () => currentResult(),
+    readVerification: async () => verificationResult({
+      lineage: {
+        inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+        inputRunId: 'verification-exact',
+        sourceSeriesId: 'brent',
+        sourceFrequency: 'MONTHLY',
+        historyFingerprint: 'fp-exact',
+        preparation: null,
+      },
+    }),
+    getPrisma: () => ({
+      forecastCurrentRun: { findFirst: async () => ({ status: 'AVAILABLE', historyFingerprint: 'fp-current', points: [{ forecastValue: 101 }] }) },
+      rollingDailyCurrentForecastSnapshot: { findFirst: async () => null },
+      forecastVerificationRun: {
+        findFirst: async ({ where }: { where: { historyFingerprint?: string } }) => ({
+          status: 'AVAILABLE',
+          historyFingerprint: where.historyFingerprint === 'fp-exact' ? 'fp-wrong' : 'fp-latest',
+          metrics: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }],
+          points: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }],
+        }),
+      },
+      rollingDailyVerificationRecord: { findMany: async () => [] },
+    } as never),
+  })
+
+  const report = await service.evaluateSeries('brent')
+  const verificationCell = report.verification.cells.find((cell) => cell.identity.modelId === 'naive' && cell.identity.targetBasis === 'MONTHLY_AVERAGE' && cell.identity.verificationHorizon === '1M')
+
+  assert.equal(verificationCell?.state, 'FAIL')
+  assert.equal(verificationCell?.failingLayer, 'POSTGRES_ARTIFACT')
+  assert.equal(verificationCell?.reasonCode, 'STALE_FINGERPRINT')
 })
 
 test('matrix surfaces empty point-in-time snapshot paths as EMPTY_PATH without attempting a canonical read', async () => {

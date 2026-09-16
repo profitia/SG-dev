@@ -515,6 +515,7 @@ async function checkPersistedVerificationArtifact(
   modelId: ForecastPortfolioModelId,
   targetBasis: ForecastTargetBasis,
   horizon: string,
+  expectedHistoryFingerprint?: string | null,
 ): Promise<PersistedArtifactCheckResult> {
   if (!prisma) {
     return { ok: false, reasonCode: 'MISSING_ARTIFACT', diagnostic: 'Market-data Prisma client is unavailable.', historyFingerprint: null }
@@ -553,6 +554,7 @@ async function checkPersistedVerificationArtifact(
       targetBasis,
       methodId: resolveForecastTargetSemantics(targetBasis),
       methodVersion: resolveMethodVersion(targetBasis),
+      ...(expectedHistoryFingerprint ? { historyFingerprint: expectedHistoryFingerprint } : {}),
     },
     select: {
       status: true,
@@ -903,7 +905,7 @@ export function createForecastAcceptanceMatrixService(
         }
       }
 
-      if (effectiveCapability.verificationReadiness !== 'READY') {
+      if (effectiveCapability.fullVerificationReadiness !== 'READY') {
         return {
           identity: { ...identityBase, kind: 'VERIFICATION', historyFingerprint: null, verificationHorizon: horizon },
           state: 'FAIL',
@@ -959,7 +961,29 @@ export function createForecastAcceptanceMatrixService(
         }
       }
 
-      const verificationStaleFingerprint = resolvePersistedFingerprintMismatch(persisted.historyFingerprint, verification.lineage.historyFingerprint)
+      const exactPersisted = shouldRequireLocalPersistedArtifactProof(targetBasis)
+        && persisted.historyFingerprint !== verification.lineage.historyFingerprint
+        ? await checkPersistedVerificationArtifact(
+            resolvedDependencies.getPrisma(),
+            seriesId,
+            modelId,
+            targetBasis,
+            horizon,
+            verification.lineage.historyFingerprint,
+          )
+        : persisted
+      if (!exactPersisted.ok) {
+        return {
+          identity: { ...identityBase, kind: 'VERIFICATION', historyFingerprint: verification.lineage.historyFingerprint, verificationHorizon: horizon },
+          state: 'FAIL',
+          failingLayer: 'POSTGRES_ARTIFACT',
+          reasonCode: exactPersisted.reasonCode,
+          diagnostic: exactPersisted.diagnostic,
+          preparation: buildPreparation(Boolean(prepareEvidence), prepareEvidence?.prepareStatus ?? null, Boolean(prepareEvidence)),
+        }
+      }
+
+      const verificationStaleFingerprint = resolvePersistedFingerprintMismatch(exactPersisted.historyFingerprint, verification.lineage.historyFingerprint)
       if (verificationStaleFingerprint) {
         return {
           identity: { ...identityBase, kind: 'VERIFICATION', historyFingerprint: verification.lineage.historyFingerprint, verificationHorizon: horizon },
