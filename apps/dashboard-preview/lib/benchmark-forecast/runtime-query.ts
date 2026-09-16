@@ -58,6 +58,10 @@ const VALID_PREPARED_ARTIFACT_FREQUENCIES = [
   )),
 ]
 
+type RuntimeQueryRequestOptions = {
+  signal?: AbortSignal
+}
+
 function parsePreparedArtifactFrequency(value: string | null | undefined) {
   if (!value) {
     return null
@@ -886,6 +890,7 @@ async function fetchInternalPreparedForecast<T extends object>(
   pathname: string,
   params: Record<string, string>,
   correlationHeaders: Record<string, string> = {},
+  requestOptions?: RuntimeQueryRequestOptions,
 ) {
   const token = readSgRuntimeInternalForecastServiceToken()
 
@@ -903,6 +908,12 @@ async function fetchInternalPreparedForecast<T extends object>(
     }
 
     const controller = new AbortController()
+    const abortFromCaller = () => controller.abort(requestOptions?.signal?.reason)
+    if (requestOptions?.signal?.aborted) {
+      abortFromCaller()
+    } else {
+      requestOptions?.signal?.addEventListener('abort', abortFromCaller, { once: true })
+    }
     const timeoutId = setTimeout(() => controller.abort(), INTERNAL_FORECAST_TIMEOUT_MS)
 
     try {
@@ -964,6 +975,7 @@ async function fetchInternalPreparedForecast<T extends object>(
       throw error
     } finally {
       clearTimeout(timeoutId)
+      requestOptions?.signal?.removeEventListener('abort', abortFromCaller)
     }
   }
 
@@ -983,6 +995,7 @@ export async function getBenchmarkProductionForecast(
   targetBasis: ForecastTargetBasis,
   cadence?: { sourceFrequency: string, targetCadence: string },
   correlationHeaders: Record<string, string> = {},
+  requestOptions?: RuntimeQueryRequestOptions,
 ) {
   const token = readSgRuntimeInternalForecastServiceToken()
 
@@ -1000,6 +1013,12 @@ export async function getBenchmarkProductionForecast(
   }
 
   const controller = new AbortController()
+  const abortFromCaller = () => controller.abort(requestOptions?.signal?.reason)
+  if (requestOptions?.signal?.aborted) {
+    abortFromCaller()
+  } else {
+    requestOptions?.signal?.addEventListener('abort', abortFromCaller, { once: true })
+  }
   const timeoutId = setTimeout(() => controller.abort(), INTERNAL_FORECAST_TIMEOUT_MS)
 
   try {
@@ -1033,6 +1052,7 @@ export async function getBenchmarkProductionForecast(
     throw error
   } finally {
     clearTimeout(timeoutId)
+    requestOptions?.signal?.removeEventListener('abort', abortFromCaller)
   }
 }
 
@@ -1041,6 +1061,7 @@ async function readInteractiveForecastCapability(
   model: ForecastPortfolioModelId,
   targetBasis: ForecastTargetBasis,
   correlationHeaders: Record<string, string> = {},
+  requestOptions?: RuntimeQueryRequestOptions,
 ): Promise<InteractiveForecastCapabilityResult> {
   const token = readSgRuntimeInternalForecastServiceToken()
 
@@ -1054,6 +1075,12 @@ async function readInteractiveForecastCapability(
   url.searchParams.set('targetSemantics', resolveForecastMethodIdentity(targetBasis).targetSemantics)
 
   const controller = new AbortController()
+  const abortFromCaller = () => controller.abort(requestOptions?.signal?.reason)
+  if (requestOptions?.signal?.aborted) {
+    abortFromCaller()
+  } else {
+    requestOptions?.signal?.addEventListener('abort', abortFromCaller, { once: true })
+  }
   const timeoutId = setTimeout(() => controller.abort(), INTERNAL_FORECAST_TIMEOUT_MS)
 
   try {
@@ -1087,6 +1114,7 @@ async function readInteractiveForecastCapability(
     throw error
   } finally {
     clearTimeout(timeoutId)
+    requestOptions?.signal?.removeEventListener('abort', abortFromCaller)
   }
 }
 
@@ -1112,6 +1140,7 @@ export async function getBenchmarkForecastCurrent(
   cadence?: { sourceFrequency: string, targetCadence: string },
   correlationHeaders: Record<string, string> = {},
   capability?: InteractiveForecastCapabilityResult | null,
+  requestOptions?: RuntimeQueryRequestOptions,
 ) {
   if (targetBasis !== 'POINT_IN_TIME' && readSgRuntimeInternalForecastServiceToken()) {
     const params: Record<string, string> = {
@@ -1131,6 +1160,7 @@ export async function getBenchmarkForecastCurrent(
         ...correlationHeaders,
         ...buildPreparedReadAuthorityHeaders(capability),
       },
+      requestOptions,
     )
   }
 
@@ -1143,7 +1173,7 @@ export async function getBenchmarkForecastCurrent(
 
     let capability: InteractiveForecastCapabilityResult | null = null
     if (readSgRuntimeInternalForecastServiceToken()) {
-      capability = await readInteractiveForecastCapability(seriesId, model, targetBasis, correlationHeaders)
+      capability = await readInteractiveForecastCapability(seriesId, model, targetBasis, correlationHeaders, requestOptions)
     }
 
     if (capability && (capability.status === 'NOT_LAWFUL' || capability.reason === 'NOT_LAWFUL')) {
@@ -1186,6 +1216,7 @@ type ShowForecastDependencies = {
     cadence?: { sourceFrequency: string, targetCadence: string },
     correlationHeaders?: Record<string, string>,
     capability?: InteractiveForecastCapabilityResult | null,
+    requestOptions?: RuntimeQueryRequestOptions,
   ) => Promise<{ status: string }>
 }
 
@@ -1201,8 +1232,9 @@ export async function resolveShowForecastCurrent(
   cadence?: { sourceFrequency: string, targetCadence: string },
   correlationHeaders: Record<string, string> = {},
   capability?: InteractiveForecastCapabilityResult | null,
+  requestOptions?: RuntimeQueryRequestOptions,
 ) {
-  return dependencies.readPrepared(seriesId, model, targetBasis, cadence, correlationHeaders, capability)
+  return dependencies.readPrepared(seriesId, model, targetBasis, cadence, correlationHeaders, capability, requestOptions)
 }
 
 export async function getBenchmarkForecastVerification(
@@ -1212,6 +1244,7 @@ export async function getBenchmarkForecastVerification(
   cadence?: { sourceFrequency: string, targetCadence: string },
   correlationHeaders: Record<string, string> = {},
   _capability?: InteractiveForecastCapabilityResult | null,
+  requestOptions?: RuntimeQueryRequestOptions,
 ) {
   if (targetBasis !== 'POINT_IN_TIME' && readSgRuntimeInternalForecastServiceToken()) {
     const params: Record<string, string> = {
@@ -1228,6 +1261,7 @@ export async function getBenchmarkForecastVerification(
       INTERNAL_PREPARED_VERIFICATION_ROUTE_PATH,
       params,
       correlationHeaders,
+      requestOptions,
     )
   }
 

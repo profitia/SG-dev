@@ -42,6 +42,7 @@ const DEFAULT_DEPLOYED_REVISION_ENV_KEYS = [
   'NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA',
 ] as const
 const DEFAULT_BENCHMARK_TIMEOUT_MS = 75_000
+const DEFAULT_MAX_NON_POINT_IN_TIME_PREFETCH_VARIANTS = 4
 const DEMO_CERTIFICATION_PHASES = ['PRECOMPUTE', 'MATRIX', 'WARM_REHEARSAL'] as const
 const DEMO_REMOTE_OPERATIONS = [
   'READ_CAPABILITY',
@@ -294,29 +295,32 @@ type DemoCertificationDependencies = {
   prepareCurrent: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal, requestHeaders?: Record<string, string> }) => Promise<BenchmarkForecastCurrentPreparationResult & { trace?: ForecastBridgeTrace }>
   prepareVerification: (
     input: BenchmarkForecastCurrentPreparationRequest,
-    cadence?: { sourceFrequency: string, targetCadence: string },
+    cadence?: DemoPreparedReadCadence,
     options?: { signal?: AbortSignal, requestHeaders?: Record<string, string> },
   ) => Promise<BenchmarkForecastVerificationResult>
   readCurrent: (
     seriesId: string,
     modelId: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
-    cadence?: { sourceFrequency: string, targetCadence: string },
+    cadence?: DemoPreparedReadCadence,
     correlationHeaders?: Record<string, string>,
     capability?: InteractiveForecastCapabilityResult | null,
+    options?: DemoCertificationRequestOptions,
   ) => Promise<BenchmarkForecastCurrentResult>
   readVerification: (
     seriesId: string,
     modelId: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
-    cadence?: { sourceFrequency: string, targetCadence: string },
+    cadence?: DemoPreparedReadCadence,
     correlationHeaders?: Record<string, string>,
     capability?: InteractiveForecastCapabilityResult | null,
+    options?: DemoCertificationRequestOptions,
   ) => Promise<BenchmarkForecastVerificationResult>
   readPointInTimeCurrent: (
     seriesId: string,
     modelId: ForecastPortfolioModelId,
     capability?: Pick<InteractiveForecastCapabilityResult, 'currentReadiness'>,
+    options?: DemoCertificationRequestOptions,
   ) => Promise<BenchmarkForecastCurrentResult>
   getMatrixPrisma: () => ReturnType<typeof import('@/lib/db/market-data-prisma').getMarketDataPrismaClient>
   evaluateMatrix: (seriesId: string, allowPrepare: boolean, options?: ForecastAcceptanceMatrixEvaluationOptions) => Promise<ForecastAcceptanceMatrixReport>
@@ -335,11 +339,16 @@ type DemoCertificationRequestOptions = {
   requestHeaders?: Record<string, string>
 }
 
+type DemoPreparedReadCadence = {
+  sourceFrequency: string
+  targetCadence: string
+}
+
 type DemoRemoteOperationIdentity = {
   phase: DemoBenchmarkDiagnosticPhase
   operation: DemoBenchmarkRemoteOperation
   input: BenchmarkForecastCurrentPreparationRequest
-  cadence?: { sourceFrequency: string, targetCadence: string }
+  cadence?: DemoPreparedReadCadence
   cacheStatus: 'hit' | 'miss'
 }
 
@@ -519,6 +528,32 @@ function createRemoteReadLimiter(maxConcurrentRemoteReads: number | null) {
       return await operation()
     } finally {
       if (maxConcurrentRemoteReads) {
+        activeCount = Math.max(0, activeCount - 1)
+        waiters.shift()?.()
+      }
+    }
+  }
+}
+
+function createTaskLimiter(maxConcurrentTasks: number | null) {
+  let activeCount = 0
+  const waiters: Array<() => void> = []
+
+  return async function run<T>(operation: () => Promise<T>) {
+    if (maxConcurrentTasks) {
+      if (activeCount >= maxConcurrentTasks) {
+        await new Promise<void>((resolve) => {
+          waiters.push(resolve)
+        })
+      }
+
+      activeCount += 1
+    }
+
+    try {
+      return await operation()
+    } finally {
+      if (maxConcurrentTasks) {
         activeCount = Math.max(0, activeCount - 1)
         waiters.shift()?.()
       }
@@ -1377,6 +1412,9 @@ async function runWarmRehearsal(
       input.modelId,
       input.targetBasis,
       resolveWarmCadence(matrixCurrentCell),
+      undefined,
+      undefined,
+      options,
     )
 
     if (!isRenderableCurrentResult(current)) {
@@ -1403,6 +1441,9 @@ async function runWarmRehearsal(
       firstInput.modelId,
       firstInput.targetBasis,
       resolveWarmCadence(firstCell),
+      undefined,
+      undefined,
+      options,
     )
     switchBack = isRenderableCurrentResult(reread)
       && !(firstInput.targetBasis === 'POINT_IN_TIME' && reread.freshness?.status === 'STALE')
@@ -1583,18 +1624,20 @@ export function createDemoCertificationService(
     seriesId: string,
     modelId: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
-    cadence?: { sourceFrequency: string, targetCadence: string },
+    cadence?: DemoPreparedReadCadence,
   ) => `${seriesId}::${modelId}::${targetBasis}::${cadence?.sourceFrequency ?? ''}::${cadence?.targetCadence ?? ''}`
   const now = dependencies.now ?? (() => new Date().toISOString())
   const benchmarkTimeoutMs = dependencies.benchmarkTimeoutMs ?? DEFAULT_BENCHMARK_TIMEOUT_MS
   const cohort = dependencies.cohort ?? DEFAULT_DEMO_COHORT
   const resolveReleaseSnapshot = dependencies.resolveReleaseSnapshot ?? defaultReleaseSnapshot
-  const readCurrent = dependencies.readCurrent ?? ((seriesId, modelId, targetBasis, cadence, correlationHeaders) => (
-    resolveShowForecastCurrent(seriesId, modelId, targetBasis, undefined, cadence, correlationHeaders) as Promise<BenchmarkForecastCurrentResult>
+  const readCurrent = dependencies.readCurrent ?? ((seriesId, modelId, targetBasis, cadence, correlationHeaders, capability, requestOptions) => (
+    resolveShowForecastCurrent(seriesId, modelId, targetBasis, undefined, cadence, correlationHeaders, capability, requestOptions) as Promise<BenchmarkForecastCurrentResult>
   ))
-  const readVerification = dependencies.readVerification ?? getBenchmarkForecastVerification
-  const readPointInTimeCurrent = dependencies.readPointInTimeCurrent ?? ((seriesId, modelId) => (
-    resolveShowForecastCurrent(seriesId, modelId, 'POINT_IN_TIME') as Promise<BenchmarkForecastCurrentResult>
+  const readVerification = dependencies.readVerification ?? ((seriesId, modelId, targetBasis, cadence, correlationHeaders, capability, requestOptions) => (
+    getBenchmarkForecastVerification(seriesId, modelId, targetBasis, cadence, correlationHeaders, capability, requestOptions)
+  ))
+  const readPointInTimeCurrent = dependencies.readPointInTimeCurrent ?? ((seriesId, modelId, _capability, requestOptions) => (
+    resolveShowForecastCurrent(seriesId, modelId, 'POINT_IN_TIME', undefined, undefined, {}, undefined, requestOptions) as Promise<BenchmarkForecastCurrentResult>
   ))
   const readCapability = dependencies.readCapability ?? ((input, options) => (
     readInteractiveForecastCapability(
@@ -1611,6 +1654,7 @@ export function createDemoCertificationService(
     )
   ))
   const getMatrixPrisma = dependencies.getMatrixPrisma ?? getMarketDataPrismaClient
+  const limitNonPointInTimePrefetch = createTaskLimiter(DEFAULT_MAX_NON_POINT_IN_TIME_PREFETCH_VARIANTS)
 
   const mergeRequestHeaders = (
     left?: Record<string, string>,
@@ -1618,6 +1662,14 @@ export function createDemoCertificationService(
   ) => ({
     ...(left ?? {}),
     ...(right ?? {}),
+  })
+
+  const mergeRequestOptions = (
+    left?: DemoCertificationRequestOptions,
+    right?: DemoCertificationRequestOptions,
+  ): DemoCertificationRequestOptions => ({
+    signal: right?.signal ?? left?.signal,
+    requestHeaders: mergeRequestHeaders(left?.requestHeaders, right?.requestHeaders),
   })
 
   return {
@@ -1726,7 +1778,7 @@ export function createDemoCertificationService(
           modelId: ForecastPortfolioModelId,
           targetBasis: ForecastTargetBasis,
           phase: DemoBenchmarkDiagnosticPhase,
-          cadence?: { sourceFrequency: string, targetCadence: string },
+          cadence?: DemoPreparedReadCadence,
           requestOptions?: DemoCertificationRequestOptions,
         ) => {
           const key = createPreparedReadKey(seriesId, modelId, targetBasis, cadence)
@@ -1752,6 +1804,7 @@ export function createDemoCertificationService(
               cadence,
               mergeRequestHeaders(requestOptions?.requestHeaders, trackedRequestOptions.requestHeaders),
               capability,
+              mergeRequestOptions(requestOptions, trackedRequestOptions),
             )
             return {
               result,
@@ -1771,7 +1824,7 @@ export function createDemoCertificationService(
           modelId: ForecastPortfolioModelId,
           targetBasis: ForecastTargetBasis,
           phase: DemoBenchmarkDiagnosticPhase,
-          cadence?: { sourceFrequency: string, targetCadence: string },
+          cadence?: DemoPreparedReadCadence,
           requestOptions?: DemoCertificationRequestOptions,
         ) => {
           const key = createPreparedReadKey(seriesId, modelId, targetBasis, cadence)
@@ -1812,6 +1865,7 @@ export function createDemoCertificationService(
               cadence,
               mergeRequestHeaders(requestOptions?.requestHeaders, trackedRequestOptions.requestHeaders),
               capability,
+              mergeRequestOptions(requestOptions, trackedRequestOptions),
             )
             return {
               result,
@@ -1831,7 +1885,7 @@ export function createDemoCertificationService(
           modelId: ForecastPortfolioModelId,
           targetBasis: ForecastTargetBasis,
           phase: DemoBenchmarkDiagnosticPhase,
-          cadence?: { sourceFrequency: string, targetCadence: string },
+          cadence?: DemoPreparedReadCadence,
           requestOptions?: DemoCertificationRequestOptions,
         ) => {
           const key = createPreparedReadKey(seriesId, modelId, targetBasis, cadence)
@@ -1857,6 +1911,7 @@ export function createDemoCertificationService(
               cadence,
               mergeRequestHeaders(requestOptions?.requestHeaders, trackedRequestOptions.requestHeaders),
               capability,
+              mergeRequestOptions(requestOptions, trackedRequestOptions),
             )
             return {
               result,
@@ -1876,7 +1931,7 @@ export function createDemoCertificationService(
           modelId: ForecastPortfolioModelId,
           targetBasis: ForecastTargetBasis,
           phase: DemoBenchmarkDiagnosticPhase,
-          cadence?: { sourceFrequency: string, targetCadence: string },
+          cadence?: DemoPreparedReadCadence,
           requestOptions?: DemoCertificationRequestOptions,
         ) => {
           const key = createPreparedReadKey(seriesId, modelId, targetBasis, cadence)
@@ -1917,6 +1972,7 @@ export function createDemoCertificationService(
               cadence,
               mergeRequestHeaders(requestOptions?.requestHeaders, trackedRequestOptions.requestHeaders),
               capability,
+              mergeRequestOptions(requestOptions, trackedRequestOptions),
             )
             return {
               result,
@@ -1934,7 +1990,7 @@ export function createDemoCertificationService(
         const matrixEvaluator = dependencies.evaluateMatrix ?? createMatrixEvaluator({
           readCapability: (input, requestOptions) => readCapabilityOnce(input, 'MATRIX', requestOptions),
           prepareCurrent: (input, requestOptions) => prepareCurrentOnce(input, 'MATRIX', requestOptions),
-          readCurrent: (seriesId, modelId, targetBasis, cadence, correlationHeaders) => (
+          readCurrent: (seriesId, modelId, targetBasis, cadence, correlationHeaders, _capability, requestOptions) => (
             (() => {
               diagnostics.matrixRecorder.noteRemoteQueued(seriesId, modelId, targetBasis, 'READ_CURRENT', currentReadCache.has(createPreparedReadKey(seriesId, modelId, targetBasis, cadence)) ? 'hit' : 'miss')
               return readCurrentOnceDetailed(
@@ -1943,7 +1999,7 @@ export function createDemoCertificationService(
                 targetBasis,
                 'MATRIX',
                 cadence,
-                { requestHeaders: correlationHeaders },
+                mergeRequestOptions(requestOptions, { requestHeaders: correlationHeaders }),
               ).then((outcome) => {
                 if (outcome.meta.dispatchedAt) {
                   diagnostics.matrixRecorder.noteRemoteDispatched(
@@ -1974,7 +2030,7 @@ export function createDemoCertificationService(
               })
             })()
           ),
-          readVerification: (seriesId, modelId, targetBasis, cadence, correlationHeaders) => (
+          readVerification: (seriesId, modelId, targetBasis, cadence, correlationHeaders, _capability, requestOptions) => (
             (() => {
               diagnostics.matrixRecorder.noteRemoteQueued(seriesId, modelId, targetBasis, 'READ_VERIFICATION', verificationReadCache.has(createPreparedReadKey(seriesId, modelId, targetBasis, cadence)) ? 'hit' : 'miss')
               return readVerificationOnceDetailed(
@@ -1983,7 +2039,7 @@ export function createDemoCertificationService(
                 targetBasis,
                 'MATRIX',
                 cadence,
-                { requestHeaders: correlationHeaders },
+                mergeRequestOptions(requestOptions, { requestHeaders: correlationHeaders }),
               ).then((outcome) => {
                 if (outcome.meta.dispatchedAt) {
                   diagnostics.matrixRecorder.noteRemoteDispatched(
@@ -2014,8 +2070,8 @@ export function createDemoCertificationService(
               })
             })()
           ),
-          readPointInTimeCurrent: (seriesId, modelId, capability) => (
-            readPointInTimeCurrent(seriesId, modelId, capability)
+          readPointInTimeCurrent: (seriesId, modelId, capability, requestOptions) => (
+            readPointInTimeCurrent(seriesId, modelId, capability, requestOptions)
           ),
           getMatrixPrisma,
         })
@@ -2023,16 +2079,41 @@ export function createDemoCertificationService(
         const warmMatrixEvaluator = dependencies.evaluateMatrix ?? createMatrixEvaluator({
           readCapability: (input, requestOptions) => readCapabilityOnce(input, 'WARM_REHEARSAL', requestOptions),
           prepareCurrent: (input, requestOptions) => prepareCurrentOnce(input, 'WARM_REHEARSAL', requestOptions),
-          readCurrent: (seriesId, modelId, targetBasis, cadence, correlationHeaders) => (
-            readCurrentOnce(seriesId, modelId, targetBasis, 'WARM_REHEARSAL', cadence, { requestHeaders: correlationHeaders })
+          readCurrent: (seriesId, modelId, targetBasis, cadence, correlationHeaders, _capability, requestOptions) => (
+            readCurrentOnce(
+              seriesId,
+              modelId,
+              targetBasis,
+              'WARM_REHEARSAL',
+              cadence,
+              mergeRequestOptions(requestOptions, { requestHeaders: correlationHeaders }),
+            )
           ),
-          readVerification: (seriesId, modelId, targetBasis, cadence, correlationHeaders) => (
-            readVerificationOnce(seriesId, modelId, targetBasis, 'WARM_REHEARSAL', cadence, { requestHeaders: correlationHeaders })
+          readVerification: (seriesId, modelId, targetBasis, cadence, correlationHeaders, _capability, requestOptions) => (
+            readVerificationOnce(
+              seriesId,
+              modelId,
+              targetBasis,
+              'WARM_REHEARSAL',
+              cadence,
+              mergeRequestOptions(requestOptions, { requestHeaders: correlationHeaders }),
+            )
           ),
-          readPointInTimeCurrent: (seriesId, modelId, capability) => (
-            readPointInTimeCurrent(seriesId, modelId, capability)
+          readPointInTimeCurrent: (seriesId, modelId, capability, requestOptions) => (
+            readPointInTimeCurrent(seriesId, modelId, capability, requestOptions)
           ),
           getMatrixPrisma,
+        })
+
+        const prefetchNonPointInTimeVariant = (
+          input: BenchmarkForecastCurrentPreparationRequest,
+          cadence?: DemoPreparedReadCadence,
+          requestOptions?: DemoCertificationRequestOptions,
+        ) => limitNonPointInTimePrefetch(async () => {
+          await Promise.all([
+            readCurrentOnce(input.seriesId, input.modelId, input.targetBasis, 'PRECOMPUTE', cadence, requestOptions),
+            readVerificationOnce(input.seriesId, input.modelId, input.targetBasis, 'PRECOMPUTE', cadence, requestOptions),
+          ])
         })
 
         try {
@@ -2054,6 +2135,8 @@ export function createDemoCertificationService(
             ))
 
             if (mode === 'REVALIDATE') {
+              const prefetches: Promise<void>[] = []
+
               for (const { input, required, capability } of capabilityChecks) {
                 if (!isCapabilityLawful(capability)) {
                   immediateVariants.push(buildVariantPreparationRecord(
@@ -2070,10 +2153,7 @@ export function createDemoCertificationService(
                 const warmReady = hasExactVerificationReadiness(capability)
                 if (warmReady && required && input.targetBasis !== 'POINT_IN_TIME') {
                   const cadence = resolvePreparedReadCadence(capability)
-                  await Promise.all([
-                    readCurrentOnce(input.seriesId, input.modelId, input.targetBasis, 'PRECOMPUTE', cadence, { signal }),
-                    readVerificationOnce(input.seriesId, input.modelId, input.targetBasis, 'PRECOMPUTE', cadence, { signal }),
-                  ])
+                  prefetches.push(prefetchNonPointInTimeVariant(input, cadence, { signal }))
                 }
 
                 immediateVariants.push(buildVariantPreparationRecord(
@@ -2085,6 +2165,8 @@ export function createDemoCertificationService(
                   warmReady ? null : 'Warm revalidation requires both current readiness and exact historical verification readiness to remain READY.',
                 ))
               }
+
+              await Promise.all(prefetches)
             } else {
               for (const { input, required, capability } of capabilityChecks) {
                 if (!isCapabilityLawful(capability)) {

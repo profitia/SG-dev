@@ -427,15 +427,18 @@ function createService(options: {
   currentResolver?: (
     input: BenchmarkForecastCurrentPreparationRequest,
     cadence?: { sourceFrequency: string, targetCadence: string },
+    options?: { signal?: AbortSignal },
   ) => MaybePromise<BenchmarkForecastCurrentResult>
   verificationResolver?: (
     input: BenchmarkForecastCurrentPreparationRequest,
     cadence?: { sourceFrequency: string, targetCadence: string },
+    options?: { signal?: AbortSignal },
   ) => MaybePromise<BenchmarkForecastVerificationResult>
   pointInTimeCurrentResolver?: (
     seriesId: string,
     modelId: ForecastPortfolioModelId,
     capability?: Pick<InteractiveForecastCapabilityResult, 'currentReadiness'>,
+    options?: { signal?: AbortSignal },
   ) => MaybePromise<BenchmarkForecastCurrentResult>
   matrixResolver?: (seriesId: string, allowPrepare: boolean, options?: ForecastAcceptanceMatrixEvaluationOptions) => MaybePromise<ForecastAcceptanceMatrixReport>
   useBuiltInMatrix?: boolean
@@ -481,20 +484,25 @@ function createService(options: {
         ? options.verificationPrepareResolver(input, cadence, requestOptions)
         : verificationResult(input)
     ),
-    readCurrent: async (seriesId, modelId, targetBasis, cadence) => (
+    readCurrent: async (seriesId, modelId, targetBasis, cadence, _correlationHeaders, _capability, requestOptions) => (
       options.currentResolver
-        ? options.currentResolver({ seriesId, modelId, targetBasis }, cadence)
+        ? options.currentResolver({ seriesId, modelId, targetBasis }, cadence, requestOptions)
         : currentResult({ seriesId, modelId, targetBasis })
     ),
-    readVerification: async (seriesId, modelId, targetBasis, cadence) => (
+    readVerification: async (seriesId, modelId, targetBasis, cadence, _correlationHeaders, _capability, requestOptions) => (
       options.verificationResolver
-        ? options.verificationResolver({ seriesId, modelId, targetBasis }, cadence)
+        ? options.verificationResolver({ seriesId, modelId, targetBasis }, cadence, requestOptions)
         : verificationResult({ seriesId, modelId, targetBasis })
     ),
     ...(options.pointInTimeCurrentResolver
       ? {
-          readPointInTimeCurrent: async (seriesId: string, modelId: ForecastPortfolioModelId, capability?: Pick<InteractiveForecastCapabilityResult, 'currentReadiness'>) => (
-            options.pointInTimeCurrentResolver!(seriesId, modelId, capability)
+          readPointInTimeCurrent: async (
+            seriesId: string,
+            modelId: ForecastPortfolioModelId,
+            capability?: Pick<InteractiveForecastCapabilityResult, 'currentReadiness'>,
+            requestOptions?: { signal?: AbortSignal },
+          ) => (
+            options.pointInTimeCurrentResolver!(seriesId, modelId, capability, requestOptions)
           ),
         }
       : {}),
@@ -1154,6 +1162,84 @@ test('G1f. custom getMatrixPrisma still overrides the canonical default', async 
   }
 })
 
+test('G1g. REVALIDATE bounds non-point-in-time warm prefetch to four variants while preserving full cache warm-up', async () => {
+  let activeReads = 0
+  let maxActiveReads = 0
+
+  const settleRead = <T,>(value: T) => new Promise<T>((resolve) => {
+    activeReads += 1
+    maxActiveReads = Math.max(maxActiveReads, activeReads)
+
+    setImmediate(() => {
+      activeReads -= 1
+      resolve(value)
+    })
+  })
+
+  const report = await createService({
+    useBuiltInMatrix: true,
+    matrixPrisma: createMatrixPrisma(),
+    currentResolver: (input, cadence) => {
+      const result = currentResult(input, {
+        lineage: {
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          inputRunId: null,
+          sourceSeriesId: input.seriesId,
+          sourceFrequency: cadence?.sourceFrequency ?? (input.targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY'),
+          historyFingerprint: `${input.seriesId}:${input.modelId}:${input.targetBasis}:fp`,
+          preparation: {
+            method: 'prepare',
+            version: 'v1',
+            provenanceStatus: 'PROVEN',
+          },
+        },
+      })
+
+      return input.targetBasis === 'POINT_IN_TIME' ? result : settleRead(result)
+    },
+    verificationResolver: (input, cadence) => {
+      const result = verificationResult(input, {
+        lineage: {
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          inputRunId: null,
+          sourceSeriesId: input.seriesId,
+          sourceFrequency: cadence?.sourceFrequency ?? (input.targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY'),
+          historyFingerprint: `${input.seriesId}:${input.modelId}:${input.targetBasis}:fp`,
+          preparation: {
+            method: 'prepare',
+            version: 'v1',
+            provenanceStatus: 'PROVEN',
+          },
+        },
+      })
+
+      return input.targetBasis === 'POINT_IN_TIME' ? result : settleRead(result)
+    },
+    pointInTimeCurrentResolver: (seriesId, modelId) => currentResult({ seriesId, modelId, targetBasis: 'POINT_IN_TIME' }),
+  }).run({ mode: 'REVALIDATE', includeFallback: false, diagnostics: { enabled: true } })
+
+  const timeline = report.benchmarks[0]?.diagnostics?.timeline ?? []
+  const precomputeCurrentMisses = timeline.filter((event) => (
+    event.eventType === 'REMOTE_REQUEST'
+    && event.phase === 'PRECOMPUTE'
+    && event.operation === 'READ_CURRENT'
+    && event.targetBasis !== 'POINT_IN_TIME'
+    && event.cacheStatus === 'miss'
+  ))
+  const precomputeVerificationMisses = timeline.filter((event) => (
+    event.eventType === 'REMOTE_REQUEST'
+    && event.phase === 'PRECOMPUTE'
+    && event.operation === 'READ_VERIFICATION'
+    && event.targetBasis !== 'POINT_IN_TIME'
+    && event.cacheStatus === 'miss'
+  ))
+
+  assert.equal(report.benchmarks[0]?.demoSafe, 'YES')
+  assert.equal(precomputeCurrentMisses.length, MODELS.length * 2)
+  assert.equal(precomputeVerificationMisses.length, MODELS.length * 2)
+  assert.equal(maxActiveReads, 8)
+})
+
 test('G2. stale capability triggers preparation and can recover precompute', async () => {
   const prepareCalls: string[] = []
   const warmedVariants = new Set<string>()
@@ -1557,6 +1643,48 @@ test('I4b. timed out benchmark reports the timeout reason instead of leaking abo
 
   assert.equal(report.benchmarks[1]?.reason, 'ENVIRONMENT_NOT_READY')
   assert.match(report.benchmarks[1]?.precompute.reason ?? '', /timed out/i)
+})
+
+test('I4c. one benchmark timeout aborts in-flight REVALIDATE prepared reads', async () => {
+  let capturedCurrentSignal: AbortSignal | undefined
+  let capturedVerificationSignal: AbortSignal | undefined
+
+  const report = await createService({
+    benchmarkTimeoutMs: 1,
+    cohort: [{
+      seriesId: 'lmeofcucashask',
+      benchmarkName: 'Copper',
+      group: 'PRIMARY',
+      requiredModels: ['naive'],
+      requiredTargetBases: ['MONTHLY_AVERAGE'],
+      requiredVerificationHorizons: ['1M'],
+    }],
+    currentResolver: (_input, _cadence, options) => {
+      capturedCurrentSignal = options?.signal
+      return new Promise<BenchmarkForecastCurrentResult>((_resolve, reject) => {
+        options?.signal?.addEventListener('abort', () => {
+          const aborted = new Error('current aborted') as Error & { name: string }
+          aborted.name = 'AbortError'
+          reject(aborted)
+        }, { once: true })
+      })
+    },
+    verificationResolver: (_input, _cadence, options) => {
+      capturedVerificationSignal = options?.signal
+      return new Promise<BenchmarkForecastVerificationResult>((_resolve, reject) => {
+        options?.signal?.addEventListener('abort', () => {
+          const aborted = new Error('verification aborted') as Error & { name: string }
+          aborted.name = 'AbortError'
+          reject(aborted)
+        }, { once: true })
+      })
+    },
+  }).run({ mode: 'REVALIDATE', includeFallback: false })
+
+  assert.equal(report.benchmarks[0]?.reason, 'ENVIRONMENT_NOT_READY')
+  assert.equal(capturedCurrentSignal?.aborted, true)
+  assert.equal(capturedVerificationSignal?.aborted, true)
+  assert.match(report.benchmarks[0]?.precompute.reason ?? '', /timed out/i)
 })
 
 test('I5. warm rehearsal reuses the primary matrix and does not rerun verification reads', async () => {

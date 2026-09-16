@@ -302,7 +302,12 @@ test('matrix warms stale variants before failing the current cell', async () => 
 
 test('matrix fails the verification cell when verification readiness stays not prepared', async () => {
   const service = createForecastAcceptanceMatrixService({
-    readCapability: async () => capability({ status: 'AVAILABLE' as never, currentReadiness: 'READY', verificationReadiness: 'NOT_PREPARED' }),
+    readCapability: async () => capability({
+      status: 'AVAILABLE' as never,
+      currentReadiness: 'READY',
+      verificationReadiness: 'NOT_PREPARED',
+      fullVerificationReadiness: 'NOT_PREPARED',
+    }),
     prepareCurrent: async () => preparationResult({ prepareAttempted: false, prepareStatus: null }),
     readCurrent: async () => currentResult(),
     readVerification: async () => verificationResult(),
