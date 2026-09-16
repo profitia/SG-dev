@@ -672,6 +672,33 @@ test('exact monthly-average capability uses the latest contiguous monthly suffix
   assert.equal(exact.resolution.preparationFailures.MONTHLY_AVERAGE, undefined)
 })
 
+test('series capability snapshot uses the same latest contiguous suffix policy for both daily-to-monthly targets', async () => {
+  const service = createForecastCapabilityService({
+    async resolveHistoricalSeries(seriesId) {
+      return {
+        history: createDailyHistoryWithMonthlyGap(seriesId, { prefixMonths: 2, gapMonths: 4, suffixMonths: 48 }),
+        marketDataSource: 'postgres',
+        cacheStatus: 'hit',
+      }
+    },
+    async readPreparedVariants() {
+      return []
+    },
+    now: () => new Date('2026-09-15T00:00:00.000Z'),
+  })
+
+  const resolution = await service.resolveBySeriesId('snapshot-suffix-positive')
+  const periodCapabilities = resolution.capabilities.filter((item) => (
+    item.identity.targetSemantics === 'MONTHLY_AVERAGE'
+    || item.identity.targetSemantics === 'END_OF_PERIOD'
+  ))
+
+  assert.deepEqual(resolution.preparationFailures, {})
+  assert.ok(periodCapabilities.every((item) => item.availableObservations === 48))
+  assert.ok(periodCapabilities.every((item) => item.historyEligibility === 'ELIGIBLE'))
+  assert.ok(periodCapabilities.every((item) => item.capabilityState === 'NOT_PREPARED'))
+})
+
 test('exact monthly-average capability reports insufficient history from the latest contiguous monthly suffix', async () => {
   const service = createForecastCapabilityService({
     async resolveHistoricalSeries(seriesId) {

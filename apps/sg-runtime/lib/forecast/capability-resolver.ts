@@ -660,17 +660,23 @@ export function createForecastCapabilityService(
 
       if (sourceFrequency === 'DAILY') {
         try {
-          preparedObservationCounts.END_OF_PERIOD = canonicalizeDailyMarketPriceToEndOfPeriod(history, {
-            now: resolvedDependencies.now(),
-          }).historical.length
+          preparedObservationCounts.END_OF_PERIOD = countLatestContiguousMonthlyObservations(
+            canonicalizeDailyMarketPriceToEndOfPeriod(history, {
+              now: resolvedDependencies.now(),
+              continuityPolicy: 'ALLOW_GAPS',
+            }).historical,
+          )
         } catch (error) {
           preparationFailures.END_OF_PERIOD = error instanceof Error ? error.message : String(error)
         }
 
         try {
-          preparedObservationCounts.MONTHLY_AVERAGE = canonicalizeDailyMarketPriceToMonthly(history, {
-            now: resolvedDependencies.now(),
-          }).historical.length
+          preparedObservationCounts.MONTHLY_AVERAGE = countLatestContiguousMonthlyObservations(
+            canonicalizeDailyMarketPriceToMonthly(history, {
+              now: resolvedDependencies.now(),
+              continuityPolicy: 'ALLOW_GAPS',
+            }).historical,
+          )
         } catch (error) {
           preparationFailures.MONTHLY_AVERAGE = error instanceof Error ? error.message : String(error)
         }
