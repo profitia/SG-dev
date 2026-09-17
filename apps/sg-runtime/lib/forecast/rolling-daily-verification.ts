@@ -11,6 +11,7 @@ import {
 import type { ForecastRequestInput } from '@/lib/forecast/request-contract'
 import {
   buildRollingDailyHistoryFingerprint,
+  filterRollingDailyVerificationRecordsCompatibleWithHistory,
   isRollingDailyHistoricalPreparationComplete,
   ROLLING_DAILY_INPUT_SOURCE,
 } from '@/lib/forecast/rolling-daily-maintenance'
@@ -72,15 +73,16 @@ function createPreparedRollingDailyForecastVerificationReaderForScope(
     const emitPreparedRead = dependencies.emitPreparedRead ?? forecastStressTelemetry.emit.bind(forecastStressTelemetry)
 
     const { history } = await resolveHistory(input.seriesId, 'ALL')
-    const sourceHistoryFingerprint = buildRollingDailyHistoryFingerprint({
+    const rollingDailyHistory = {
       seriesId: input.seriesId,
       displayName: history.displayName,
       description: history.displayName,
       frequency: 'DAILY',
       source: history.source,
       points: history.historical,
-    })
-    const records = await prisma.rollingDailyVerificationRecord.findMany({
+    }
+    const sourceHistoryFingerprint = buildRollingDailyHistoryFingerprint(rollingDailyHistory)
+    const persistedRecords = await prisma.rollingDailyVerificationRecord.findMany({
       where: {
         seriesId: input.seriesId,
         inputSource: ROLLING_DAILY_INPUT_SOURCE,
@@ -88,10 +90,14 @@ function createPreparedRollingDailyForecastVerificationReaderForScope(
         methodId: ROLLING_DAILY_METHOD_ID,
         methodVersion: ROLLING_DAILY_METHOD_VERSION,
         modelId: input.modelId,
-        sourceHistoryFingerprint,
       },
       orderBy: [{ horizonMonths: 'asc' }, { targetCalendarDate: 'asc' }, { forecastOriginAt: 'asc' }],
     })
+    const records = filterRollingDailyVerificationRecordsCompatibleWithHistory(
+      persistedRecords,
+      rollingDailyHistory,
+      sourceHistoryFingerprint,
+    )
 
     const maintenanceState = await prisma.rollingDailyMaintenanceState.findUnique({
       where: {
@@ -208,8 +214,9 @@ function createPreparedRollingDailyForecastVerificationReaderForScope(
         maseScale: record.maseScale,
         metadata: record.metadataJson as ForecastSelectionMetadata | null,
       }))
-      const expectedOrigins = horizonRecords.length
+      const expectedOrigins = maturedRecords.length
       const successfulOrigins = persistedRecords.length
+      const pendingOrigins = horizonRecords.length - maturedRecords.length
       return [horizonLabel, {
         horizon: horizonLabel,
         horizonSteps: horizonRecords[0]?.horizonSteps ?? 0,
@@ -217,6 +224,7 @@ function createPreparedRollingDailyForecastVerificationReaderForScope(
         expectedOrigins,
         successfulOrigins,
         failedOrigins: 0,
+        pendingOrigins,
         coverage: expectedOrigins > 0 ? successfulOrigins / expectedOrigins : 0,
         metrics: null,
         records: persistedRecords,

@@ -88,7 +88,7 @@ test('prepared rolling daily verification stays NOT_AVAILABLE while the checkpoi
     prisma: {
       rollingDailyVerificationRecord: {
         async findMany() {
-          return [createPersistedRecord()]
+          return [{ ...createPersistedRecord(), sourceHistoryFingerprint: exactFingerprint }]
         },
       },
       rollingDailyMaintenanceState: {
@@ -136,7 +136,7 @@ test('prepared rolling daily verification becomes AVAILABLE only after the check
     prisma: {
       rollingDailyVerificationRecord: {
         async findMany() {
-          return [createPersistedRecord()]
+          return [{ ...createPersistedRecord(), sourceHistoryFingerprint: exactFingerprint }]
         },
       },
       rollingDailyMaintenanceState: {

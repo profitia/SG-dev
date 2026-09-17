@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+
 import type {
   BenchmarkForecastCurrentResult,
   BenchmarkForecastCurrentAvailableResult,
@@ -38,6 +40,7 @@ const INTERNAL_FORECAST_TIMEOUT_ERROR = 'SG Runtime prepared forecast request ti
 const ROLLING_DAILY_INPUT_SOURCE = 'DYNAMIC_MARKET_DATA_STORE'
 const ROLLING_DAILY_METHOD_ID = 'ROLLING_DAILY_POINT_IN_TIME'
 const ROLLING_DAILY_METHOD_VERSION = 'rolling-daily-point-in-time-v1'
+const ROLLING_DAILY_VERIFICATION_IDENTITY_VERSION = 'ROLLING_DAILY_VERIFICATION_IDENTITY_V2'
 const MONTHLY_METHOD_VERSION = 'benchmark-forecasting-mvp-phase2-v1'
 const FORECAST_ARTIFACT_CADENCE_IDENTITY_VERSION = 'FORECAST_CADENCE_V1'
 const FORECAST_CADENCES = [
@@ -87,6 +90,35 @@ function parsePreparedArtifactFrequency(value: string | null | undefined) {
   }
 
   return { sourceFrequency, targetCadence }
+}
+
+function serializeRollingDailyFingerprintValue(value: number) {
+  return Number.isInteger(value) ? value.toFixed(1) : String(value)
+}
+
+function buildRollingDailyCompatibilityContext(
+  seriesId: string,
+  observations: Array<{ observedAt: Date, value: { toString(): string } | number }>,
+) {
+  const hash = createHash('sha256')
+  const trainingFingerprints = new Map<string, string>()
+  const actualValues = new Map<string, number>()
+  hash.update(seriesId)
+  hash.update('\n')
+  hash.update('DAILY')
+
+  for (const observation of observations) {
+    const date = observation.observedAt.toISOString().slice(0, 10)
+    const value = Number(observation.value)
+    hash.update('\n')
+    hash.update(date)
+    hash.update('=')
+    hash.update(serializeRollingDailyFingerprintValue(value))
+    trainingFingerprints.set(date, hash.copy().digest('hex'))
+    actualValues.set(date, value)
+  }
+
+  return { trainingFingerprints, actualValues }
 }
 
 function resolveForecastMethodIdentity(targetBasis: ForecastTargetBasis): {
@@ -762,13 +794,60 @@ async function getPersistedRollingDailyForecastVerification(
     }
   }
 
-  const latestRecord = [...records].sort((left, right) => right.forecastOriginAt.getTime() - left.forecastOriginAt.getTime())[0]
   const latestSourceDate = maintenanceState?.latestSourceObservationAt?.toISOString().slice(0, 10) ?? null
   const earliestSourceDate = maintenanceState?.latestSourceHistoryStartAt?.toISOString().slice(0, 10) ?? null
   const lastProcessedDate = maintenanceState?.lastProcessedOriginAt?.toISOString().slice(0, 10) ?? null
-  const currentFingerprintRecords = maintenanceState?.latestSourceHistoryFingerprint
-    ? records.filter((record) => record.sourceHistoryFingerprint === maintenanceState.latestSourceHistoryFingerprint)
+  const hasReusableV2Records = Boolean(maintenanceState?.latestSourceHistoryFingerprint) && records.some((record) => {
+    if (record.sourceHistoryFingerprint === maintenanceState?.latestSourceHistoryFingerprint) {
+      return false
+    }
+    const metadata = record.metadataJson as Record<string, unknown> | null
+    return metadata?.verificationIdentityVersion === ROLLING_DAILY_VERIFICATION_IDENTITY_VERSION
+      && typeof metadata.trainingHistoryFingerprint === 'string'
+  })
+  const observations = hasReusableV2Records
+    ? await prisma.$queryRaw<Array<{ observedAt: Date, value: { toString(): string } | number }>>`
+        SELECT "observedAt", "value"
+        FROM "market_observations"
+        WHERE "seriesId" = ${seriesId}
+          AND "value" IS NOT NULL
+        ORDER BY "observedAt" ASC
+      `
     : []
+  const compatibility = buildRollingDailyCompatibilityContext(seriesId, observations)
+  const currentFingerprintRecords = maintenanceState?.latestSourceHistoryFingerprint
+    ? records.filter((record) => {
+        if (record.sourceHistoryFingerprint === maintenanceState.latestSourceHistoryFingerprint) {
+          return true
+        }
+
+        const metadata = record.metadataJson as Record<string, unknown> | null
+        if (
+          metadata?.verificationIdentityVersion !== ROLLING_DAILY_VERIFICATION_IDENTITY_VERSION
+          || typeof metadata.trainingHistoryFingerprint !== 'string'
+        ) {
+          return false
+        }
+
+        const trainingEndDate = record.trainingHistoryEndAt.toISOString().slice(0, 10)
+        if (compatibility.trainingFingerprints.get(trainingEndDate) !== metadata.trainingHistoryFingerprint) {
+          return false
+        }
+
+        if (record.maturityStatus !== 'MATURED') {
+          return true
+        }
+
+        if (!record.verificationObservedAt || record.actualValue === null) {
+          return false
+        }
+
+        const actualDate = record.verificationObservedAt.toISOString().slice(0, 10)
+        return compatibility.actualValues.get(actualDate) === Number(record.actualValue)
+      })
+    : []
+  const latestRecord = [...currentFingerprintRecords]
+    .sort((left, right) => right.forecastOriginAt.getTime() - left.forecastOriginAt.getTime())[0]
   const maintenanceComplete = Boolean(
     maintenanceState
     && (maintenanceState.lastMaintenanceStatus === 'SUCCEEDED' || maintenanceState.lastMaintenanceStatus === 'NO_OP')
@@ -851,8 +930,9 @@ async function getPersistedRollingDailyForecastVerification(
         maseScale: record.maseScale,
       }))
 
-      const expectedOrigins = horizonRecords.length
+      const expectedOrigins = maturedRecords.length
       const successfulOrigins = persistedRecords.length
+      const pendingOrigins = horizonRecords.length - maturedRecords.length
 
       return [
         horizonLabel,
@@ -863,6 +943,7 @@ async function getPersistedRollingDailyForecastVerification(
           expectedOrigins,
           successfulOrigins,
           failedOrigins: 0,
+          pendingOrigins,
           coverage: expectedOrigins > 0 ? successfulOrigins / expectedOrigins : 0,
           records: persistedRecords,
         },

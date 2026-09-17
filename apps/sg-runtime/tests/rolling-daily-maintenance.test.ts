@@ -6,15 +6,18 @@ import '../scripts/load-env'
 import { ROLLING_DAILY_TARGET_BASIS } from '../lib/forecast/rolling-daily-policy'
 import {
   buildRollingDailyHistoryFingerprint,
+  buildRollingDailyTrainingHistoryFingerprints,
   createRollingDailyMaintenanceService,
   DEFAULT_ROLLING_DAILY_HISTORICAL_ORIGIN_START_DATE,
   isRollingDailyHistoricalPreparationComplete,
+  isRollingDailyVerificationRecordCompatibleWithHistory,
   normalizePersistedRollingDailyArtifacts,
   type RollingDailyMaintenanceBridgeRequest,
   ROLLING_DAILY_REBUILD_REQUIRED_REASON,
   ROLLING_DAILY_INPUT_SOURCE,
   ROLLING_DAILY_METHOD_ID,
   ROLLING_DAILY_METHOD_VERSION,
+  ROLLING_DAILY_VERIFICATION_IDENTITY_VERSION,
   type RollingDailyCalibrationGroupArtifact,
   type RollingDailyMaintenanceRepository,
   type RollingDailyMaintenanceRunner,
@@ -90,6 +93,31 @@ function createVerificationRecord(overrides: Partial<RollingDailyVerificationRec
     ...overrides,
   }
 }
+
+test('rolling daily verification v2 reuses an append-only origin but rejects a revised training prefix', () => {
+  const originalHistory = createHistory()
+  const trainingFingerprint = buildRollingDailyTrainingHistoryFingerprints(originalHistory).get('2024-01-05')
+  assert.ok(trainingFingerprint)
+
+  const record = createVerificationRecord({
+    sourceHistoryFingerprint: buildRollingDailyHistoryFingerprint(originalHistory),
+    metadata: {
+      verificationIdentityVersion: ROLLING_DAILY_VERIFICATION_IDENTITY_VERSION,
+      trainingHistoryFingerprint: trainingFingerprint,
+    },
+  })
+  const appendedHistory = {
+    ...originalHistory,
+    points: [...originalHistory.points, { date: '2024-01-08', value: 105 }],
+  }
+  const revisedHistory = {
+    ...appendedHistory,
+    points: appendedHistory.points.map((point) => point.date === '2024-01-03' ? { ...point, value: 999 } : point),
+  }
+
+  assert.equal(isRollingDailyVerificationRecordCompatibleWithHistory(record, appendedHistory), true)
+  assert.equal(isRollingDailyVerificationRecordCompatibleWithHistory(record, revisedHistory), false)
+})
 
 function createCalibrationGroup(overrides: Partial<RollingDailyCalibrationGroupArtifact> = {}): RollingDailyCalibrationGroupArtifact {
   return {

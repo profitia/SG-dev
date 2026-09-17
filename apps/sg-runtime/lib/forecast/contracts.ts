@@ -124,6 +124,7 @@ export interface ForecastVerificationHorizon {
   expectedOrigins: number
   successfulOrigins: number
   failedOrigins: number
+  pendingOrigins?: number
   coverage: number
   metrics: ForecastVerificationMetrics | null
   records: ForecastVerificationRecord[]
@@ -142,16 +143,19 @@ export interface HistoricalVerificationHorizonSummary {
   originCount: number
   expectedOriginCount: number
   failedOriginCount: number
+  pendingOriginCount: number
+  minimumOriginCount: number
   coverage: number
   warningCode: 'SMALL_SAMPLE' | 'NO_LAWFUL_OUT_OF_SAMPLE_ORIGIN' | 'ALL_ORIGINS_FAILED' | null
 }
 
 export interface HistoricalVerificationSummary {
-  contractVersion: 'HISTORICAL_VERIFICATION_V1'
+  contractVersion: 'HISTORICAL_VERIFICATION_V2'
   status: HistoricalVerificationStatus
   originCount: number
   expectedOriginCount: number
   failedOriginCount: number
+  pendingOriginCount: number
   coverage: number
   horizons: Record<string, HistoricalVerificationHorizonSummary>
 }

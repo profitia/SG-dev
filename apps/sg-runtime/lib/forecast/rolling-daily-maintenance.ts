@@ -58,6 +58,7 @@ export {
 } from '@/lib/forecast/rolling-daily-policy'
 
 export const ROLLING_DAILY_INPUT_SOURCE = 'DYNAMIC_MARKET_DATA_STORE'
+export const ROLLING_DAILY_VERIFICATION_IDENTITY_VERSION = 'ROLLING_DAILY_VERIFICATION_IDENTITY_V2'
 export const DEFAULT_ROLLING_DAILY_MINIMUM_TRAINING_OBSERVATIONS = ROLLING_DAILY_TECHNICAL_MINIMUM_TRAINING_OBSERVATIONS
 export const DEFAULT_ROLLING_DAILY_MINIMUM_CALIBRATION_SAMPLES = ROLLING_DAILY_CONFIGURED_CALIBRATION_MINIMUM_SAMPLES
 export const DEFAULT_ROLLING_DAILY_HISTORICAL_ORIGIN_START_DATE = '2024-01-01'
@@ -669,6 +670,86 @@ export function buildRollingDailyHistoryFingerprint(history: RollingDailyHistory
   }
 
   return hash.digest('hex')
+}
+
+export function buildRollingDailyTrainingHistoryFingerprints(history: RollingDailyHistoryPayload) {
+  const hash = createHash('sha256')
+  const normalizedPoints = buildCanonicalLawfulHistoryPoints(history)
+  const fingerprints = new Map<string, string>()
+
+  hash.update(history.seriesId)
+  hash.update('\n')
+  hash.update(normalizeHistoryFrequency(history.frequency))
+
+  for (const point of normalizedPoints) {
+    hash.update('\n')
+    hash.update(point.date)
+    hash.update('=')
+    hash.update(serializeFingerprintValue(point.value))
+    fingerprints.set(point.date, hash.copy().digest('hex'))
+  }
+
+  return fingerprints
+}
+
+export type RollingDailyVerificationCompatibilityRecord = {
+  sourceHistoryFingerprint: string
+  metadata?: Record<string, unknown> | null
+  metadataJson?: unknown
+  trainingHistoryEndAt: string | Date
+  maturityStatus: string
+  verificationObservedAt: string | Date | null
+  actualValue: number | { toString(): string } | null
+}
+
+export function isRollingDailyVerificationRecordCompatibleWithHistory(
+  record: RollingDailyVerificationCompatibilityRecord,
+  history: RollingDailyHistoryPayload,
+  currentSourceHistoryFingerprint = buildRollingDailyHistoryFingerprint(history),
+) {
+  return filterRollingDailyVerificationRecordsCompatibleWithHistory(
+    [record],
+    history,
+    currentSourceHistoryFingerprint,
+  ).length === 1
+}
+
+export function filterRollingDailyVerificationRecordsCompatibleWithHistory<T extends RollingDailyVerificationCompatibilityRecord>(
+  records: T[],
+  history: RollingDailyHistoryPayload,
+  currentSourceHistoryFingerprint = buildRollingDailyHistoryFingerprint(history),
+) {
+  const trainingFingerprints = buildRollingDailyTrainingHistoryFingerprints(history)
+  const actualValues = new Map(buildCanonicalLawfulHistoryPoints(history).map((point) => [point.date, point.value]))
+
+  return records.filter((record) => {
+    if (record.sourceHistoryFingerprint === currentSourceHistoryFingerprint) {
+      return true
+    }
+
+    const metadata = (record.metadata ?? record.metadataJson) as Record<string, unknown> | null | undefined
+    if (
+      metadata?.verificationIdentityVersion !== ROLLING_DAILY_VERIFICATION_IDENTITY_VERSION
+      || typeof metadata.trainingHistoryFingerprint !== 'string'
+    ) {
+      return false
+    }
+
+    const trainingEndDate = normalizeDailyObservationDay(record.trainingHistoryEndAt)
+    if (trainingFingerprints.get(trainingEndDate) !== metadata.trainingHistoryFingerprint) {
+      return false
+    }
+
+    if (record.maturityStatus !== 'MATURED') {
+      return true
+    }
+
+    if (!record.verificationObservedAt || record.actualValue === null) {
+      return false
+    }
+
+    return actualValues.get(normalizeDailyObservationDay(record.verificationObservedAt)) === Number(record.actualValue)
+  })
 }
 
 function buildHistoryPrefix(history: RollingDailyHistoryPayload, throughDate: string): RollingDailyHistoryPayload {

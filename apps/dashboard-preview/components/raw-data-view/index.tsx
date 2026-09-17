@@ -885,12 +885,16 @@ export function resolveForecastVerificationBannerState(options: {
 
 export function resolveHistoricalVerificationNotice(
   result: BenchmarkForecastVerificationResult | null,
+  selectedHorizon?: string,
 ) {
   if (!result?.historicalVerification) {
     return null
   }
 
-  const summary = result.historicalVerification
+  const aggregate = result.historicalVerification
+  const summary = selectedHorizon
+    ? aggregate.horizons[selectedHorizon] ?? aggregate
+    : aggregate
   if (summary.status === 'AVAILABLE') {
     return null
   }
@@ -900,6 +904,8 @@ export function resolveHistoricalVerificationNotice(
     originCount: summary.originCount,
     expectedOriginCount: summary.expectedOriginCount,
     failedOriginCount: summary.failedOriginCount,
+    pendingOriginCount: summary.pendingOriginCount,
+    minimumOriginCount: 'minimumOriginCount' in summary ? summary.minimumOriginCount : 0,
   }
 }
 
@@ -2777,7 +2783,10 @@ export function RawDataView({
         identity: selectedForecastIdentity,
       })
     : null
-  const historicalVerificationNotice = resolveHistoricalVerificationNotice(forecastVerificationResult)
+  const historicalVerificationNotice = resolveHistoricalVerificationNotice(
+    forecastVerificationResult,
+    `${forecastAccuracyHorizon}M`,
+  )
   const forecastUnsupportedReason = selectedProgressiveVariant?.currentReason
     ?? (forecastCurrentResult && !isAvailableCurrentResult(forecastCurrentResult) ? forecastCurrentResult.reason : null)
   const pointInTimeRequiresDailyHistory = selectedForecastTargetBasis === 'POINT_IN_TIME'
@@ -4433,7 +4442,7 @@ export function RawDataView({
             <p>{historicalVerificationNotice.status === 'LIMITED_SAMPLE'
               ? t('verificationLimitedSampleHint', {
                   originCount: historicalVerificationNotice.originCount,
-                  expectedOriginCount: historicalVerificationNotice.expectedOriginCount,
+                  minimumOriginCount: historicalVerificationNotice.minimumOriginCount,
                 })
               : historicalVerificationNotice.status === 'INSUFFICIENT_HISTORY'
                 ? t('verificationInsufficientHistoryHint')

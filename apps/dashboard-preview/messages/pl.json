@@ -78,7 +78,7 @@
     "verificationNotPrepared": "Historyczna sprawdzalność nie została jeszcze przygotowana",
     "verificationNotPreparedHint": "Bieżąca prognoza pozostaje dostępna. Historyczna sprawdzalność wymaga wcześniejszego przygotowania i nie uruchomi się dopiero po kliknięciu klienta.",
     "verificationLimitedSample": "Historyczna sprawdzalność — ograniczona próbka",
-    "verificationLimitedSampleHint": "Sprawdzalność opiera się obecnie na {originCount} z wymaganych {expectedOriginCount} porównań. Wynik ma charakter informacyjny i będzie uzupełniany wraz z napływem danych.",
+    "verificationLimitedSampleHint": "Dla wybranego horyzontu dostępnych jest obecnie {originCount} porównań. Do prezentacji pełnej próby potrzeba co najmniej {minimumOriginCount}. Wynik ma charakter informacyjny.",
     "verificationInsufficientHistory": "Historyczna sprawdzalność jeszcze niedostępna",
     "verificationInsufficientHistoryHint": "Historia jest zbyt krótka, aby utworzyć choć jedno dojrzałe porównanie prognozy z rzeczywistym odczytem. Bieżąca prognoza pozostaje dostępna.",
     "verificationFailed": "Nie udało się przygotować Historycznej Sprawdzalności",

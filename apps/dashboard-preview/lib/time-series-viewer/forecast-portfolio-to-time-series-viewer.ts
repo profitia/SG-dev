@@ -634,6 +634,7 @@ function filterVerificationRecordsToTrailingWindow(
   }
 
   const windowStart = subtractUtcMonths(windowEnd, Number(horizonMatch[1]))
+  windowStart.setUTCHours(0, 0, 0, 0)
 
   return records.filter((record) => {
     const timestamp = new Date(record.displayDate).getTime()
@@ -714,103 +715,16 @@ function buildPointInTimeVerificationSeries(
   }
 }
 
-function selectLatestPointInTimeVerificationRecord(
-  basePayload: TimeSeriesViewerPayload,
-  verificationHorizon: string,
-  records: VerificationDisplayRecord[],
-) {
-  const historicalSeries = findHistoricalSeries(basePayload)
-  const horizonMatch = /^(\d+)M$/.exec(verificationHorizon)
-  if (!historicalSeries || !horizonMatch) {
-    return null
-  }
-
-  const latestHistoricalTimestamp = historicalSeries.points.reduce<number | null>((latest, point) => {
-    const timestamp = new Date(point.date).getTime()
-    return Number.isFinite(timestamp) && (latest === null || timestamp > latest) ? timestamp : latest
-  }, null)
-  if (latestHistoricalTimestamp === null) {
-    return null
-  }
-
-  const windowEnd = new Date(latestHistoricalTimestamp)
-  windowEnd.setUTCHours(23, 59, 59, 999)
-  const windowStart = subtractUtcMonths(windowEnd, Number(horizonMatch[1]))
-  const toleranceMs = 7 * 24 * 60 * 60 * 1000
-
-  const latestRecord = records.reduce<VerificationDisplayRecord | null>((latest, record) => {
-    if (!latest) {
-      return record
-    }
-
-    const recordObservedAt = new Date(record.actualObservedAt ?? record.forecastDate).getTime()
-    const latestObservedAt = new Date(latest.actualObservedAt ?? latest.forecastDate).getTime()
-
-    if (recordObservedAt !== latestObservedAt) {
-      return recordObservedAt > latestObservedAt ? record : latest
-    }
-
-    return new Date(record.forecastOrigin).getTime() > new Date(latest.forecastOrigin).getTime()
-      ? record
-      : latest
-  }, null)
-
-  if (!latestRecord) {
-    return null
-  }
-
-  const originDistance = Math.abs(new Date(latestRecord.forecastOrigin).getTime() - windowStart.getTime())
-  const observedDistance = Math.abs(new Date(latestRecord.actualObservedAt ?? latestRecord.forecastDate).getTime() - windowEnd.getTime())
-
-  return originDistance <= toleranceMs && observedDistance <= toleranceMs ? latestRecord : null
-}
-
-function buildPointInTimeRecentDeltaOverlays(
-  basePayload: TimeSeriesViewerPayload,
-  record: VerificationDisplayRecord,
-) {
-  const { points: historicalDailyPoints } = buildHistoricalActualPointLookup(basePayload)
-  const originDate = normalizePointInTimeDisplayDate(record.forecastOrigin)
-  const targetDate = record.displayDate
-  const originMs = new Date(originDate).getTime()
-  const targetMs = new Date(targetDate).getTime()
-
-  if (!Number.isFinite(originMs) || !Number.isFinite(targetMs) || originMs >= targetMs) {
+function buildPointInTimeHistoricalDeltaOverlays(records: VerificationDisplayRecord[]) {
+  if (records.length < 2) {
     return [] as TimeSeriesViewerDeltaOverlay[]
   }
 
-  const samples: DailyRibbonEndpoint[] = [{
-    date: originDate,
-    actualValue: record.originValue,
-    forecastValue: record.originValue,
-  }]
-
-  for (const point of historicalDailyPoints) {
-    const pointMs = new Date(point.date).getTime()
-    if (pointMs <= originMs || pointMs >= targetMs) {
-      continue
-    }
-
-    samples.push({
-      date: point.date,
-      actualValue: point.value,
-      forecastValue: interpolateValueByDate(
-        originDate,
-        targetDate,
-        record.originValue,
-        record.forecastValue,
-        point.date,
-      ),
-    })
-  }
-
-  samples.push({
-    date: targetDate,
+  return buildLocalDeltaOverlaysFromSamples(records.map((record) => ({
+    date: record.displayDate,
     actualValue: record.actualValue,
     forecastValue: record.forecastValue,
-  })
-
-  return buildLocalDeltaOverlaysFromSamples(samples)
+  })))
 }
 
 function findHistoricalSeries(basePayload: TimeSeriesViewerPayload) {
@@ -1450,12 +1364,7 @@ export function buildForecastPortfolioPayload({
       const trailingVerificationRecords = collectedVerificationRecords === null
         ? null
         : filterVerificationRecordsToTrailingWindow(basePayload, verificationResult.targetBasis, verificationHorizon, collectedVerificationRecords)
-      const latestPointInTimeRecord = trailingVerificationRecords && verificationResult.targetBasis === 'POINT_IN_TIME'
-        ? selectLatestPointInTimeVerificationRecord(basePayload, verificationHorizon, trailingVerificationRecords)
-        : null
-      const verificationRecords = latestPointInTimeRecord
-        ? [latestPointInTimeRecord]
-        : trailingVerificationRecords
+      const verificationRecords = trailingVerificationRecords
 
       if (verificationRecords !== null) {
         const monthlyActualSeries = verificationResult.targetBasis === 'POINT_IN_TIME'
@@ -1473,8 +1382,8 @@ export function buildForecastPortfolioPayload({
 
         if (verificationSeries) {
           series.push(verificationSeries)
-          deltaOverlays = verificationResult.targetBasis === 'POINT_IN_TIME' && latestPointInTimeRecord
-            ? buildPointInTimeRecentDeltaOverlays(basePayload, latestPointInTimeRecord)
+          deltaOverlays = verificationResult.targetBasis === 'POINT_IN_TIME'
+            ? buildPointInTimeHistoricalDeltaOverlays(verificationRecords)
             : verificationResult.targetBasis === 'END_OF_PERIOD'
               ? buildEndOfPeriodDeltaOverlays(basePayload, verificationRecords)
             : buildDeltaOverlays(verificationRecords)

@@ -5,7 +5,7 @@ import type {
   HistoricalVerificationSummary,
 } from '@/lib/forecast/contracts'
 
-export const HISTORICAL_VERIFICATION_CONTRACT_VERSION = 'HISTORICAL_VERIFICATION_V1' as const
+export const HISTORICAL_VERIFICATION_CONTRACT_VERSION = 'HISTORICAL_VERIFICATION_V2' as const
 export const MIN_HISTORICAL_VERIFICATION_ORIGINS = 24
 
 export function createUnavailableHistoricalVerificationSummary(
@@ -17,6 +17,7 @@ export function createUnavailableHistoricalVerificationSummary(
     originCount: 0,
     expectedOriginCount: 0,
     failedOriginCount: 0,
+    pendingOriginCount: 0,
     coverage: 0,
     horizons: {},
   }
@@ -45,6 +46,8 @@ export function resolveHistoricalVerificationHorizon(
       originCount: 0,
       expectedOriginCount: 0,
       failedOriginCount: 0,
+      pendingOriginCount: horizon.pendingOrigins ?? 0,
+      minimumOriginCount: MIN_HISTORICAL_VERIFICATION_ORIGINS,
       coverage: 0,
       warningCode: 'NO_LAWFUL_OUT_OF_SAMPLE_ORIGIN',
     }
@@ -56,6 +59,8 @@ export function resolveHistoricalVerificationHorizon(
       originCount: 0,
       expectedOriginCount: horizon.expectedOrigins,
       failedOriginCount: horizon.failedOrigins,
+      pendingOriginCount: horizon.pendingOrigins ?? 0,
+      minimumOriginCount: MIN_HISTORICAL_VERIFICATION_ORIGINS,
       coverage: horizon.coverage,
       warningCode: 'ALL_ORIGINS_FAILED',
     }
@@ -67,6 +72,8 @@ export function resolveHistoricalVerificationHorizon(
       originCount: horizon.successfulOrigins,
       expectedOriginCount: horizon.expectedOrigins,
       failedOriginCount: horizon.failedOrigins,
+      pendingOriginCount: horizon.pendingOrigins ?? 0,
+      minimumOriginCount: MIN_HISTORICAL_VERIFICATION_ORIGINS,
       coverage: horizon.coverage,
       warningCode: 'SMALL_SAMPLE',
     }
@@ -77,6 +84,8 @@ export function resolveHistoricalVerificationHorizon(
     originCount: horizon.successfulOrigins,
     expectedOriginCount: horizon.expectedOrigins,
     failedOriginCount: horizon.failedOrigins,
+    pendingOriginCount: horizon.pendingOrigins ?? 0,
+    minimumOriginCount: MIN_HISTORICAL_VERIFICATION_ORIGINS,
     coverage: horizon.coverage,
     warningCode: null,
   }
@@ -99,6 +108,7 @@ export function resolveHistoricalVerificationSummary(
       originCount: 0,
       expectedOriginCount: 0,
       failedOriginCount: 0,
+      pendingOriginCount: 0,
       coverage: 0,
       horizons,
     }
@@ -107,6 +117,7 @@ export function resolveHistoricalVerificationSummary(
   const originCount = values.reduce((sum, horizon) => sum + horizon.originCount, 0)
   const expectedOriginCount = values.reduce((sum, horizon) => sum + horizon.expectedOriginCount, 0)
   const failedOriginCount = values.reduce((sum, horizon) => sum + horizon.failedOriginCount, 0)
+  const pendingOriginCount = values.reduce((sum, horizon) => sum + horizon.pendingOriginCount, 0)
   const status = values.every((horizon) => horizon.status === 'AVAILABLE')
     ? 'AVAILABLE'
     : values.every((horizon) => horizon.status === 'INSUFFICIENT_HISTORY')
@@ -121,6 +132,7 @@ export function resolveHistoricalVerificationSummary(
     originCount,
     expectedOriginCount,
     failedOriginCount,
+    pendingOriginCount,
     coverage: expectedOriginCount === 0 ? 0 : originCount / expectedOriginCount,
     horizons,
   }

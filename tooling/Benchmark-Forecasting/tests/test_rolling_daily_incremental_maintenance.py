@@ -349,6 +349,11 @@ class RollingDailyIncrementalMaintenanceTests(unittest.TestCase):
         self.assertGreaterEqual(first_record["forecastOriginAt"], "2024-01-01")
         self.assertLess(first_record["trainingHistoryStartAt"], "2024-01-01")
         self.assertEqual(first_record["trainingHistoryEndAt"], first_record["forecastOriginAt"])
+        self.assertEqual(
+            first_record["metadata"]["verificationIdentityVersion"],
+            "ROLLING_DAILY_VERIFICATION_IDENTITY_V2",
+        )
+        self.assertEqual(len(first_record["metadata"]["trainingHistoryFingerprint"]), 64)
 
     def test_arima_uses_one_fit_per_origin_and_lawful_daily_origins_only(self) -> None:
         original_fit_path_model = incremental_script.fit_path_model

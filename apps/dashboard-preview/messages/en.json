@@ -78,7 +78,7 @@
     "verificationNotPrepared": "Historical Verification has not been prepared yet",
     "verificationNotPreparedHint": "Current Forecast remains available. Historical Verification requires advance preparation and will not be started by the client's first click.",
     "verificationLimitedSample": "Historical Verification — limited sample",
-    "verificationLimitedSampleHint": "Verification currently uses {originCount} of the required {expectedOriginCount} comparisons. The result is indicative and will be extended as new data arrives.",
+    "verificationLimitedSampleHint": "The selected horizon currently has {originCount} comparisons. At least {minimumOriginCount} are needed for a full-sample presentation. The result is indicative.",
     "verificationInsufficientHistory": "Historical Verification is not available yet",
     "verificationInsufficientHistoryHint": "The history is too short to create a matured forecast-versus-actual comparison. Current Forecast remains available.",
     "verificationFailed": "Historical Verification could not be prepared",

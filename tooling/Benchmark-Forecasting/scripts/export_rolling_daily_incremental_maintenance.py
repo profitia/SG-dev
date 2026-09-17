@@ -33,6 +33,7 @@ from forecasting.runtime_catalog import build_model
 TRACE_PREFIX = "[ROLLING_DAILY_HISTORICAL_TRACE]"
 DEFAULT_TRACE_SLOW_FIT_THRESHOLD_MS = 15000
 DEFAULT_TRACE_PROGRESS_EVERY_ORIGINS = 25
+ROLLING_DAILY_VERIFICATION_IDENTITY_VERSION = "ROLLING_DAILY_VERIFICATION_IDENTITY_V2"
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Export incremental rolling-daily maintenance delta.")
@@ -126,6 +127,21 @@ def build_history_fingerprint(series_id: str, frequency: str, observations: list
     return digest.hexdigest()
 
 
+def build_training_history_fingerprints(series: TimeSeries) -> dict[date, str]:
+    digest = sha256()
+    digest.update(series.series_id.encode("utf-8"))
+    digest.update(b"\n")
+    digest.update(series.frequency.value.encode("utf-8"))
+    fingerprints: dict[date, str] = {}
+    for observation in series.observations:
+        digest.update(b"\n")
+        digest.update(observation.date.isoformat().encode("utf-8"))
+        digest.update(b"=")
+        digest.update(str(observation.value).encode("utf-8"))
+        fingerprints[observation.date] = digest.copy().hexdigest()
+    return fingerprints
+
+
 def build_time_series(history_payload: dict[str, Any]) -> tuple[TimeSeries, dict[str, int]]:
     points_payload = history_payload.get("points")
     if not isinstance(points_payload, list) or not points_payload:
@@ -180,7 +196,11 @@ def serialize_record(
     training_history_start_at: date,
     training_history_end_at: date,
     training_observation_count: int,
+    training_history_fingerprint: str,
 ) -> dict[str, Any]:
+    metadata = serialize_metadata(record.metadata)
+    metadata["verificationIdentityVersion"] = ROLLING_DAILY_VERIFICATION_IDENTITY_VERSION
+    metadata["trainingHistoryFingerprint"] = training_history_fingerprint
     return {
         "seriesId": record.benchmark_id,
         "inputSource": input_source,
@@ -209,7 +229,7 @@ def serialize_record(
         "trainingHistoryEndAt": training_history_end_at.isoformat(),
         "trainingObservationCount": training_observation_count,
         "sourceHistoryFingerprint": history_fingerprint,
-        "metadata": serialize_metadata(record.metadata),
+        "metadata": metadata,
         "selectedVariant": record.metadata.selected_variant,
         "selectionMetric": record.metadata.selection_metric,
         "selectionScore": record.metadata.selection_score,
@@ -230,6 +250,7 @@ def compute_origin_records(
     tracer: HistoricalTraceEmitter,
 ) -> list[dict[str, Any]]:
     observations = series.observations
+    training_history_fingerprints = build_training_history_fingerprints(series)
     if not origin_indexes:
         return []
 
@@ -358,6 +379,7 @@ def compute_origin_records(
                     training_history_start_at=history[0].date,
                     training_history_end_at=history[-1].date,
                     training_observation_count=len(history),
+                    training_history_fingerprint=training_history_fingerprints[history[-1].date],
                 )
             )
 

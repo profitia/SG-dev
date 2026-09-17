@@ -535,7 +535,7 @@ test('point-in-time current forecast preserves full path and lawful upper/lower 
   assert.equal(lowerSeries?.points.filter((point) => point.value !== null).length, availableBandCount)
 })
 
-test('point-in-time recent verification anchors the latest exact target to its lawful forecast origin and enables daily overlay geometry', () => {
+test('point-in-time historical verification keeps every exact target comparison and builds multi-point overlay geometry', () => {
   const firstRecord = createRecord({
     forecastOrigin: '2026-01-15T00:00:00.000Z',
     forecastDate: '2026-04-15T00:00:00.000Z',
@@ -580,9 +580,10 @@ test('point-in-time recent verification anchors the latest exact target to its l
   assert.ok(verificationSeries)
   assert.equal(monthlyActualSeries, undefined)
   assert.deepEqual(verificationSeries?.points.map((point) => point.date), [
-    '2026-01-16T00:00:00.000Z',
+    '2026-04-15T00:00:00.000Z',
     '2026-04-16T00:00:00.000Z',
   ])
+  assert.ok((payload?.deltaOverlays.length ?? 0) > 0)
 })
 
 function interpolateByDate(
@@ -1042,7 +1043,7 @@ test('historical verification uses a real trailing window ending at the latest h
   )
 })
 
-test('point-in-time recent verification renders the latest matured horizon from its real origin through the latest observation', () => {
+test('point-in-time historical verification renders the matured target trajectory through the latest observation', () => {
   const verificationResult = createVerificationResultForTargetBasis('POINT_IN_TIME', [
     createRecord({
       forecastOrigin: '2026-03-15T00:00:00.000Z',

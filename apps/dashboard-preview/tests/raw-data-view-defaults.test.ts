@@ -272,11 +272,12 @@ test('historical verification notice exposes a limited sample without hiding ava
     forecastOrigin: '2026-09-01',
     verification: {},
     historicalVerification: {
-      contractVersion: 'HISTORICAL_VERIFICATION_V1',
+      contractVersion: 'HISTORICAL_VERIFICATION_V2',
       status: 'LIMITED_SAMPLE',
       originCount: 8,
       expectedOriginCount: 8,
       failedOriginCount: 0,
+      pendingOriginCount: 0,
       coverage: 1,
       horizons: {},
     },
@@ -285,6 +286,8 @@ test('historical verification notice exposes a limited sample without hiding ava
     originCount: 8,
     expectedOriginCount: 8,
     failedOriginCount: 0,
+    pendingOriginCount: 0,
+    minimumOriginCount: 0,
   })
 })
 
@@ -298,11 +301,12 @@ test('historical verification notice also exposes not-prepared state from an una
     methodId: 'END_OF_PERIOD',
     reason: 'PREPARATION_REQUIRED',
     historicalVerification: {
-      contractVersion: 'HISTORICAL_VERIFICATION_V1',
+      contractVersion: 'HISTORICAL_VERIFICATION_V2',
       status: 'NOT_PREPARED',
       originCount: 0,
       expectedOriginCount: 0,
       failedOriginCount: 0,
+      pendingOriginCount: 0,
       coverage: 0,
       horizons: {},
     },
@@ -311,7 +315,55 @@ test('historical verification notice also exposes not-prepared state from an una
     originCount: 0,
     expectedOriginCount: 0,
     failedOriginCount: 0,
+    pendingOriginCount: 0,
+    minimumOriginCount: 0,
   })
+})
+
+test('historical verification notice follows the selected horizon instead of the aggregate summary', () => {
+  assert.equal(resolveHistoricalVerificationNotice({
+    status: 'AVAILABLE',
+    seriesId: 'cl_c1_cl',
+    modelId: 'naive',
+    targetBasis: 'POINT_IN_TIME',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+    displayName: 'Light Sweet (WTI) Physical',
+    description: null,
+    methodVersion: 'rolling-daily-point-in-time-v1',
+    lineage: {
+      inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+      inputRunId: null,
+      sourceSeriesId: 'cl_c1_cl',
+      sourceFrequency: 'DAILY',
+      historyFingerprint: 'history-fingerprint',
+      preparation: null,
+    },
+    history: { frequency: 'DAILY', start: '1983-03-30', end: '2026-09-15', observations: 10917 },
+    forecastOrigin: '2026-09-15',
+    verification: {},
+    historicalVerification: {
+      contractVersion: 'HISTORICAL_VERIFICATION_V2',
+      status: 'LIMITED_SAMPLE',
+      originCount: 29,
+      expectedOriginCount: 29,
+      failedOriginCount: 0,
+      pendingOriginCount: 24,
+      coverage: 1,
+      horizons: {
+        '1M': {
+          status: 'AVAILABLE',
+          originCount: 30,
+          expectedOriginCount: 30,
+          failedOriginCount: 0,
+          pendingOriginCount: 6,
+          minimumOriginCount: 24,
+          coverage: 1,
+          warningCode: null,
+        },
+      },
+    },
+  }, '1M'), null)
 })
 
 test('displayed current forecast stays on the chart until the requested identity becomes renderable', () => {
@@ -854,11 +906,12 @@ test('verification unavailable state uses the explicit not-prepared historical s
     methodId: 'MONTHLY_AVERAGE',
     reason: 'PREPARATION_REQUIRED',
     historicalVerification: {
-      contractVersion: 'HISTORICAL_VERIFICATION_V1',
+      contractVersion: 'HISTORICAL_VERIFICATION_V2',
       status: 'NOT_PREPARED',
       originCount: 0,
       expectedOriginCount: 0,
       failedOriginCount: 0,
+      pendingOriginCount: 0,
       coverage: 0,
       horizons: {},
     },
