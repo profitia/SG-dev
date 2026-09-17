@@ -177,6 +177,7 @@ type VerificationDisplayRecord = {
   forecastDate: string
   forecastOrigin: string
   actualObservedAt: string | null
+  originValue: number
   actualValue: number
   forecastValue: number
   delta: number | null
@@ -538,6 +539,7 @@ function collectVerificationDisplayRecordsForTargetBasis(
         forecastDate: record.forecastDate,
         forecastOrigin: record.forecastOrigin,
         actualObservedAt: record.actualObservedAt,
+        originValue: record.originValue,
         actualValue: record.actualValue,
         forecastValue: record.forecastValue,
         delta: record.delta,
@@ -566,6 +568,7 @@ function collectVerificationDisplayRecordsForTargetBasis(
       forecastDate: record.forecastDate,
       forecastOrigin: record.forecastOrigin,
       actualObservedAt: record.actualObservedAt,
+      originValue: record.originValue,
       actualValue: record.actualValue,
       forecastValue: record.forecastValue,
       delta: record.delta,
@@ -647,7 +650,7 @@ function buildPointInTimeVerificationSeries(
   records: VerificationDisplayRecord[],
 ): TimeSeriesViewerSeries | null {
   const label = locale === 'pl' ? 'Historyczna prognoza' : 'Historical forecast'
-  const points = records.map((record): TimeSeriesViewerPoint => ({
+  const targetPoints = records.map((record): TimeSeriesViewerPoint => ({
     key: `historical-forecast-${model}-${record.horizon}-${record.forecastDate}`,
     date: record.displayDate,
     value: record.forecastValue,
@@ -671,6 +674,32 @@ function buildPointInTimeVerificationSeries(
     }),
   }))
 
+  const points = records.length === 1 && records[0]
+    ? [
+        {
+          key: `historical-forecast-${model}-${records[0].horizon}-origin-${records[0].forecastOrigin}`,
+          date: normalizePointInTimeDisplayDate(records[0].forecastOrigin),
+          value: records[0].originValue,
+          diff: 0,
+          recordId: `historical-forecast-${model}-${records[0].horizon}-origin-${records[0].forecastOrigin}`,
+          anchor: true,
+          tooltipModel: toTooltipModel({
+            locale,
+            componentName: basePayload.title,
+            date: records[0].forecastOrigin,
+            primarySeriesLabel: label,
+            primaryValue: records[0].originValue,
+            datePrecision: 'day',
+            rows: buildVerificationTooltipRows(locale, model, 'POINT_IN_TIME', records[0]),
+          }),
+          detailModel: toDetailModel(basePayload, records[0].forecastOrigin, records[0].originValue, 'historical-forecast', {
+            temporalResolution: 'day',
+          }),
+        } satisfies TimeSeriesViewerPoint,
+        ...targetPoints,
+      ]
+    : targetPoints
+
   if (points.length === 0) {
     return null
   }
@@ -683,6 +712,105 @@ function buildPointInTimeVerificationSeries(
     points,
     segments: points.length >= 2 ? [points] : undefined,
   }
+}
+
+function selectLatestPointInTimeVerificationRecord(
+  basePayload: TimeSeriesViewerPayload,
+  verificationHorizon: string,
+  records: VerificationDisplayRecord[],
+) {
+  const historicalSeries = findHistoricalSeries(basePayload)
+  const horizonMatch = /^(\d+)M$/.exec(verificationHorizon)
+  if (!historicalSeries || !horizonMatch) {
+    return null
+  }
+
+  const latestHistoricalTimestamp = historicalSeries.points.reduce<number | null>((latest, point) => {
+    const timestamp = new Date(point.date).getTime()
+    return Number.isFinite(timestamp) && (latest === null || timestamp > latest) ? timestamp : latest
+  }, null)
+  if (latestHistoricalTimestamp === null) {
+    return null
+  }
+
+  const windowEnd = new Date(latestHistoricalTimestamp)
+  windowEnd.setUTCHours(23, 59, 59, 999)
+  const windowStart = subtractUtcMonths(windowEnd, Number(horizonMatch[1]))
+  const toleranceMs = 7 * 24 * 60 * 60 * 1000
+
+  const latestRecord = records.reduce<VerificationDisplayRecord | null>((latest, record) => {
+    if (!latest) {
+      return record
+    }
+
+    const recordObservedAt = new Date(record.actualObservedAt ?? record.forecastDate).getTime()
+    const latestObservedAt = new Date(latest.actualObservedAt ?? latest.forecastDate).getTime()
+
+    if (recordObservedAt !== latestObservedAt) {
+      return recordObservedAt > latestObservedAt ? record : latest
+    }
+
+    return new Date(record.forecastOrigin).getTime() > new Date(latest.forecastOrigin).getTime()
+      ? record
+      : latest
+  }, null)
+
+  if (!latestRecord) {
+    return null
+  }
+
+  const originDistance = Math.abs(new Date(latestRecord.forecastOrigin).getTime() - windowStart.getTime())
+  const observedDistance = Math.abs(new Date(latestRecord.actualObservedAt ?? latestRecord.forecastDate).getTime() - windowEnd.getTime())
+
+  return originDistance <= toleranceMs && observedDistance <= toleranceMs ? latestRecord : null
+}
+
+function buildPointInTimeRecentDeltaOverlays(
+  basePayload: TimeSeriesViewerPayload,
+  record: VerificationDisplayRecord,
+) {
+  const { points: historicalDailyPoints } = buildHistoricalActualPointLookup(basePayload)
+  const originDate = normalizePointInTimeDisplayDate(record.forecastOrigin)
+  const targetDate = record.displayDate
+  const originMs = new Date(originDate).getTime()
+  const targetMs = new Date(targetDate).getTime()
+
+  if (!Number.isFinite(originMs) || !Number.isFinite(targetMs) || originMs >= targetMs) {
+    return [] as TimeSeriesViewerDeltaOverlay[]
+  }
+
+  const samples: DailyRibbonEndpoint[] = [{
+    date: originDate,
+    actualValue: record.originValue,
+    forecastValue: record.originValue,
+  }]
+
+  for (const point of historicalDailyPoints) {
+    const pointMs = new Date(point.date).getTime()
+    if (pointMs <= originMs || pointMs >= targetMs) {
+      continue
+    }
+
+    samples.push({
+      date: point.date,
+      actualValue: point.value,
+      forecastValue: interpolateValueByDate(
+        originDate,
+        targetDate,
+        record.originValue,
+        record.forecastValue,
+        point.date,
+      ),
+    })
+  }
+
+  samples.push({
+    date: targetDate,
+    actualValue: record.actualValue,
+    forecastValue: record.forecastValue,
+  })
+
+  return buildLocalDeltaOverlaysFromSamples(samples)
 }
 
 function findHistoricalSeries(basePayload: TimeSeriesViewerPayload) {
@@ -1077,6 +1205,69 @@ function appendRibbonSample(samples: DailyRibbonEndpoint[], sample: DailyRibbonE
   samples.push(sample)
 }
 
+function buildLocalDeltaOverlaysFromSamples(samples: DailyRibbonEndpoint[]) {
+  const overlays: TimeSeriesViewerDeltaOverlay[] = []
+
+  for (let sampleIndex = 1; sampleIndex < samples.length; sampleIndex += 1) {
+    const start = samples[sampleIndex - 1]
+    const end = samples[sampleIndex]
+
+    if (!start || !end) {
+      continue
+    }
+
+    const startDelta = start.forecastValue - start.actualValue
+    const endDelta = end.forecastValue - end.actualValue
+
+    if (startDelta === 0 && endDelta === 0) {
+      continue
+    }
+
+    if (startDelta === 0 || endDelta === 0) {
+      const nonZeroDelta = startDelta === 0 ? endDelta : startDelta
+      overlays.push(createLocalDeltaOverlay(nonZeroDelta > 0 ? 'above' : 'below', start, end))
+      continue
+    }
+
+    const startSign = startDelta > 0 ? 'above' : 'below'
+    const endSign = endDelta > 0 ? 'above' : 'below'
+
+    if (startSign === endSign) {
+      overlays.push(createLocalDeltaOverlay(startSign, start, end))
+      continue
+    }
+
+    const ratio = startDelta / (startDelta - endDelta)
+    const startMs = new Date(start.date).getTime()
+    const endMs = new Date(end.date).getTime()
+    const crossingDate = new Date(startMs + ((endMs - startMs) * ratio)).toISOString()
+    const crossingActualValue = interpolateValueByDate(
+      start.date,
+      end.date,
+      start.actualValue,
+      end.actualValue,
+      crossingDate,
+    )
+    const crossingForecastValue = interpolateValueByDate(
+      start.date,
+      end.date,
+      start.forecastValue,
+      end.forecastValue,
+      crossingDate,
+    )
+    const crossing: DailyRibbonEndpoint = {
+      date: crossingDate,
+      actualValue: crossingActualValue,
+      forecastValue: crossingForecastValue,
+    }
+
+    overlays.push(createLocalDeltaOverlay(startSign, start, crossing))
+    overlays.push(createLocalDeltaOverlay(endSign, crossing, end))
+  }
+
+  return overlays
+}
+
 function buildEndOfPeriodDeltaOverlays(
   basePayload: TimeSeriesViewerPayload,
   records: VerificationDisplayRecord[],
@@ -1256,9 +1447,15 @@ export function buildForecastPortfolioPayload({
     if (selectedVerification) {
       verificationTargetBasis = verificationResult.targetBasis
       const collectedVerificationRecords = collectVerificationDisplayRecordsForTargetBasis(verificationResult.targetBasis, selectedVerification.records)
-      const verificationRecords = collectedVerificationRecords === null
+      const trailingVerificationRecords = collectedVerificationRecords === null
         ? null
         : filterVerificationRecordsToTrailingWindow(basePayload, verificationResult.targetBasis, verificationHorizon, collectedVerificationRecords)
+      const latestPointInTimeRecord = trailingVerificationRecords && verificationResult.targetBasis === 'POINT_IN_TIME'
+        ? selectLatestPointInTimeVerificationRecord(basePayload, verificationHorizon, trailingVerificationRecords)
+        : null
+      const verificationRecords = latestPointInTimeRecord
+        ? [latestPointInTimeRecord]
+        : trailingVerificationRecords
 
       if (verificationRecords !== null) {
         const monthlyActualSeries = verificationResult.targetBasis === 'POINT_IN_TIME'
@@ -1276,8 +1473,10 @@ export function buildForecastPortfolioPayload({
 
         if (verificationSeries) {
           series.push(verificationSeries)
-          deltaOverlays = verificationResult.targetBasis === 'END_OF_PERIOD' || verificationResult.targetBasis === 'POINT_IN_TIME'
-            ? buildEndOfPeriodDeltaOverlays(basePayload, verificationRecords)
+          deltaOverlays = verificationResult.targetBasis === 'POINT_IN_TIME' && latestPointInTimeRecord
+            ? buildPointInTimeRecentDeltaOverlays(basePayload, latestPointInTimeRecord)
+            : verificationResult.targetBasis === 'END_OF_PERIOD'
+              ? buildEndOfPeriodDeltaOverlays(basePayload, verificationRecords)
             : buildDeltaOverlays(verificationRecords)
         }
       }

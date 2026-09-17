@@ -535,7 +535,7 @@ test('point-in-time current forecast preserves full path and lawful upper/lower 
   assert.equal(lowerSeries?.points.filter((point) => point.value !== null).length, availableBandCount)
 })
 
-test('point-in-time verification stays on exact target dates and enables daily overlay geometry', () => {
+test('point-in-time recent verification anchors the latest exact target to its lawful forecast origin and enables daily overlay geometry', () => {
   const firstRecord = createRecord({
     forecastOrigin: '2026-01-15T00:00:00.000Z',
     forecastDate: '2026-04-15T00:00:00.000Z',
@@ -580,7 +580,7 @@ test('point-in-time verification stays on exact target dates and enables daily o
   assert.ok(verificationSeries)
   assert.equal(monthlyActualSeries, undefined)
   assert.deepEqual(verificationSeries?.points.map((point) => point.date), [
-    '2026-04-15T00:00:00.000Z',
+    '2026-01-16T00:00:00.000Z',
     '2026-04-16T00:00:00.000Z',
   ])
 })
@@ -1040,6 +1040,50 @@ test('historical verification uses a real trailing window ending at the latest h
     verificationSeries?.points.map((point) => point.date),
     ['2026-07-15T00:00:00.000Z', '2026-09-14T00:00:00.000Z'],
   )
+})
+
+test('point-in-time recent verification renders the latest matured horizon from its real origin through the latest observation', () => {
+  const verificationResult = createVerificationResultForTargetBasis('POINT_IN_TIME', [
+    createRecord({
+      forecastOrigin: '2026-03-15T00:00:00.000Z',
+      forecastDate: '2026-06-15T00:00:00.000Z',
+      actualObservedAt: '2026-06-15T00:00:00.000Z',
+      originValue: 90,
+      forecastValue: 96,
+      actualValue: 94,
+    }),
+    createRecord({
+      forecastOrigin: '2026-06-15T00:00:00.000Z',
+      forecastDate: '2026-09-15T00:00:00.000Z',
+      actualObservedAt: '2026-09-15T00:00:00.000Z',
+      originValue: 94,
+      forecastValue: 108,
+      actualValue: 105,
+    }),
+  ])
+
+  const payload = buildForecastPortfolioPayload({
+    basePayload: createBasePayloadWithHistorical([
+      { date: '2026-06-15T00:00:00.000Z', value: 94 },
+      { date: '2026-07-15T00:00:00.000Z', value: 99 },
+      { date: '2026-08-15T00:00:00.000Z', value: 101 },
+      { date: '2026-09-15T00:00:00.000Z', value: 105 },
+    ]),
+    locale: 'pl',
+    model: 'damped_holt',
+    currentResult: null,
+    verificationResult,
+    verificationHorizon: '3M',
+  })
+
+  const verificationSeries = payload?.series.find((entry) => entry.kind === 'historical-forecast')
+
+  assert.deepEqual(
+    verificationSeries?.points.map((point) => point.date),
+    ['2026-06-15T00:00:00.000Z', '2026-09-15T00:00:00.000Z'],
+  )
+  assert.equal(verificationSeries?.segments?.length, 1)
+  assert.ok((payload?.deltaOverlays.length ?? 0) > 0)
 })
 
 test('historical verification does not move stale prepared records into the current chart window', () => {
