@@ -34,6 +34,8 @@ function readBenchmarkFinderMessages(dictionary: Record<string, unknown>) {
 
 test('benchmark finder starts from Search while preserving the outer PORR frame', () => {
   assert.match(benchmarkFinderClientSource, /<h1 className="text-base font-semibold text-slate-950">\{t\('mode\.search'\)\}<\/h1>/)
+  assert.match(benchmarkFinderClientSource, /disabled\s+aria-disabled="true"\s+data-testid="benchmark-mode-ai"/)
+  assert.match(benchmarkFinderClientSource, /t\('mode\.comingSoon'\)/)
   assert.match(shellSource, /rounded-\[32px\] border border-slate-200 bg-white\/90/)
   assert.doesNotMatch(shellSource, /<header className=/)
   assert.doesNotMatch(shellSource, /getTranslations|openFinder|Overview|Przegląd/)

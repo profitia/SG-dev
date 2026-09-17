@@ -241,7 +241,8 @@
     },
     "mode": {
       "search": "Search",
-      "ai": "Ask SpendGuru"
+      "ai": "Ask SpendGuru",
+      "comingSoon": "Coming soon"
     },
     "search": {
       "simpleTab": "Simple",
