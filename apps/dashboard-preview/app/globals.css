@@ -608,8 +608,11 @@ input:focus-visible {
   background: color-mix(in srgb, var(--panel) 78%, var(--surface-alt) 22%);
   color: var(--muted);
   font-size: 0.68rem;
-  font-weight: 500;
-  line-height: 1.1;
+  font-weight: 400;
+  line-height: 1;
+  opacity: 0.78;
+  transform: scale(0.84);
+  transform-origin: left top;
 }
 
 .forecast-control-button-status.is-ready {
@@ -1235,10 +1238,11 @@ html.preview-embedded .forecast-verification-group .chart-range-button.is-active
 body.preview-embedded .forecast-verification-group .chart-range-button.is-active,
 html:has(.app-shell.is-embedded) .forecast-verification-group .chart-range-button.is-active,
 body:has(.app-shell.is-embedded) .forecast-verification-group .chart-range-button.is-active {
-  border-color: color-mix(in srgb, var(--sg-color-action-secondary) 54%, var(--border));
-  background: color-mix(in srgb, var(--sg-color-info) 14%, var(--panel) 86%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sg-color-action-secondary) 18%, transparent);
-  color: color-mix(in srgb, var(--sg-color-action-primary) 82%, var(--text));
+  border-color: transparent;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: inset 0 -3px 0 var(--sg-color-success);
+  color: var(--text);
 }
 
 .forecast-portfolio-controls .forecast-control-button.is-active .forecast-control-button-label,
