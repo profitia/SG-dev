@@ -1454,9 +1454,9 @@ body:has(.app-shell.is-embedded) .forecast-verification-group .chart-range-butto
 
 .chart-line.historical-forecast {
   stroke: #6b7280;
-  stroke-width: 1.8;
+  stroke-width: 1.4;
   stroke-dasharray: 6 6;
-  opacity: 0.68;
+  opacity: 0.5;
 }
 
 .chart-delta-area {
@@ -1480,11 +1480,11 @@ body:has(.app-shell.is-embedded) .forecast-verification-group .chart-range-butto
 }
 
 .chart-delta-area.historical-forecast {
-  fill: rgba(15, 118, 110, 0.12);
+  fill: rgba(15, 118, 110, 0.26);
 }
 
 .chart-delta-area.historical-forecast.is-above {
-  fill: rgba(180, 120, 36, 0.18);
+  fill: rgba(180, 120, 36, 0.32);
 }
 
 .chart-delta-boundary.historical-forecast.is-above {
@@ -1492,7 +1492,7 @@ body:has(.app-shell.is-embedded) .forecast-verification-group .chart-range-butto
 }
 
 .chart-delta-area.historical-forecast.is-below {
-  fill: rgba(47, 125, 115, 0.18);
+  fill: rgba(47, 125, 115, 0.34);
 }
 
 .chart-delta-boundary.historical-forecast.is-below {
