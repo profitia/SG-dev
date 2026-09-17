@@ -4166,7 +4166,7 @@ export function RawDataView({
                         <button
                           key={model}
                           type="button"
-                          className={`chart-range-button forecast-control-button${forecastModel === model ? ' is-active' : ''}`}
+                          className={`chart-range-button forecast-control-button${forecastModel === model ? ' is-active' : ''}${buttonMeta.state === 'PREPARING' ? ' is-preparing' : ''}`}
                           aria-pressed={forecastModel === model}
                           disabled={disabled}
                           tabIndex={disabled ? -1 : 0}
@@ -4221,7 +4221,7 @@ export function RawDataView({
                         <button
                           key={targetBasis}
                           type="button"
-                          className={`chart-range-button forecast-control-button${selectedForecastTargetBasis === targetBasis ? ' is-active' : ''}`}
+                          className={`chart-range-button forecast-control-button${selectedForecastTargetBasis === targetBasis ? ' is-active' : ''}${buttonMeta.state === 'PREPARING' ? ' is-preparing' : ''}`}
                           aria-pressed={selectedForecastTargetBasis === targetBasis}
                           disabled={disabled}
                           tabIndex={disabled ? -1 : 0}
@@ -4296,6 +4296,44 @@ export function RawDataView({
                     </div>
                   </div>
                 </div>
+
+                <details className="forecast-explanations">
+                  <summary>
+                    <span className="forecast-explanations-summary-copy">
+                      <strong className="forecast-explanations-show-label">{t('forecastExplanationsShow')}</strong>
+                      <strong className="forecast-explanations-hide-label">{t('forecastExplanationsHide')}</strong>
+                      <small>{t('forecastExplanationsHint')}</small>
+                    </span>
+                    <span className="forecast-explanations-chevron" aria-hidden="true">⌄</span>
+                  </summary>
+                  <div className="forecast-explanations-table-wrap">
+                    <table className="forecast-explanations-table">
+                      <thead>
+                        <tr>
+                          <th scope="col">{t('forecastExplanationsModel')}</th>
+                          <th scope="col">{t('forecastExplanationsHow')}</th>
+                          <th scope="col">{t('forecastExplanationsCalculates')}</th>
+                          <th scope="col">{t('forecastExplanationsInterpret')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {([
+                          ['Naive', 'forecastExplanationNaiveHow', 'forecastExplanationNaiveCalculates', 'forecastExplanationNaiveInterpret'],
+                          ['ETS', 'forecastExplanationEtsHow', 'forecastExplanationEtsCalculates', 'forecastExplanationEtsInterpret'],
+                          ['Damped Holt', 'forecastExplanationDampedHoltHow', 'forecastExplanationDampedHoltCalculates', 'forecastExplanationDampedHoltInterpret'],
+                          ['ARIMA', 'forecastExplanationArimaHow', 'forecastExplanationArimaCalculates', 'forecastExplanationArimaInterpret'],
+                        ] as const).map(([model, howKey, calculatesKey, interpretKey]) => (
+                          <tr key={model}>
+                            <th scope="row">{model}</th>
+                            <td>{t(howKey)}</td>
+                            <td>{t(calculatesKey)}</td>
+                            <td>{t(interpretKey)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
               </div>
             </>
           ) : !isBenchmarkMode ? (

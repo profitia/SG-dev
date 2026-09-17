@@ -834,6 +834,30 @@ test('forecast portfolio controls keep two ordered rows with explicit group labe
   assert.match(source, /forecast-portfolio-toggle-copy/)
 })
 
+test('preparing model and target-basis controls expose the animated preparation state', () => {
+  const source = fs.readFileSync(new URL('../components/raw-data-view/index.tsx', import.meta.url), 'utf8')
+  const styles = fs.readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
+
+  assert.equal((source.match(/buttonMeta\.state === 'PREPARING' \? ' is-preparing' : ''/g) ?? []).length, 2)
+  assert.match(styles, /\.forecast-control-button\.is-preparing::after/)
+  assert.match(styles, /@keyframes forecastPreparationSweep/)
+  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/)
+})
+
+test('forecast explanations are collapsed by default and localized in Polish and English', () => {
+  const source = fs.readFileSync(new URL('../components/raw-data-view/index.tsx', import.meta.url), 'utf8')
+  const polishMessages = JSON.parse(fs.readFileSync(new URL('../messages/pl.json', import.meta.url), 'utf8'))
+  const englishMessages = JSON.parse(fs.readFileSync(new URL('../messages/en.json', import.meta.url), 'utf8'))
+
+  assert.match(source, /<details className="forecast-explanations">/)
+  assert.doesNotMatch(source, /<details className="forecast-explanations" open>/)
+  assert.match(source, /forecastExplanationsHow/)
+  assert.match(source, /forecastExplanationsCalculates/)
+  assert.match(source, /forecastExplanationsInterpret/)
+  assert.equal(polishMessages.RawDataView.forecastExplanationsShow, 'Pokaż wyjaśnienia dotyczące prognoz')
+  assert.equal(englishMessages.RawDataView.forecastExplanationsShow, 'Show forecast explanations')
+})
+
 test('forecast portfolio does not show an uncertainty disclaimer when bands are rendered', () => {
   const source = fs.readFileSync(new URL('../components/raw-data-view/index.tsx', import.meta.url), 'utf8')
 
