@@ -92,6 +92,8 @@
     "forecastTargetBasisInfoLine2": "The choice applies to both the current forecast and its Historical Verification.",
     "forecastPortfolioTitle": "Forecast portfolio review",
     "forecastPortfolioSubtitle": "Benchmark view with history, current forecast, upper and lower bounds, and Historical Verification.",
+    "forecastReadinessLoading": "Checking prepared forecasts. Controls will become available after readiness is confirmed.",
+    "forecastReadinessUnavailable": "Prepared forecast readiness could not be confirmed. Refresh the view or select the benchmark again.",
     "forecastOrigin": "Forecast starts",
     "targetPeriod": "Target period",
     "actual": "Actual",

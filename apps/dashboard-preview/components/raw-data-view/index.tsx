@@ -2664,6 +2664,7 @@ export function RawDataView({
   const [displayedForecastCurrentResult, setDisplayedForecastCurrentResult] = useState<BenchmarkForecastCurrentResult | null>(null)
   const [progressivePreparationSnapshot, setProgressivePreparationSnapshot] = useState<ProgressiveForecastPreparationSnapshot | null>(null)
   const [forecastCapabilitySnapshot, setForecastCapabilitySnapshot] = useState<InteractiveForecastCapabilitySeriesSnapshot | null>(null)
+  const [forecastCapabilityState, setForecastCapabilityState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
   const [forecastCurrentReloadNonce, setForecastCurrentReloadNonce] = useState(0)
   const [forecastVerificationReloadNonce, setForecastVerificationReloadNonce] = useState(0)
   const [forecastVerificationState, setForecastVerificationState] = useState<LoadState>(initialForecastVerificationVisibility ? 'loading' : 'idle')
@@ -2770,16 +2771,20 @@ export function RawDataView({
   useEffect(() => {
     if (!preparedReadsOnly || !isForecastPortfolioVariant || !benchmarkSeriesId) {
       setForecastCapabilitySnapshot(null)
+      setForecastCapabilityState('idle')
       return
     }
 
     const controller = new AbortController()
     let cancelled = false
+    setForecastCapabilitySnapshot(null)
+    setForecastCapabilityState('loading')
 
     readCurrentForecastCapabilitiesThroughDashboard(fetch, benchmarkSeriesId, controller.signal)
       .then((snapshot) => {
         if (cancelled) return
         setForecastCapabilitySnapshot(snapshot)
+        setForecastCapabilityState('ready')
 
         const selected = resolveCapabilityVariant(snapshot, forecastModel, selectedForecastTargetBasis)
         if (selected?.currentReadiness === 'READY') return
@@ -2795,7 +2800,10 @@ export function RawDataView({
         )
       })
       .catch(() => {
-        if (!cancelled) setForecastCapabilitySnapshot(null)
+        if (!cancelled) {
+          setForecastCapabilitySnapshot(null)
+          setForecastCapabilityState('error')
+        }
       })
 
     return () => {
@@ -4022,7 +4030,13 @@ export function RawDataView({
                     <input type="checkbox" checked={showForecast} onChange={(event) => setShowForecast(event.target.checked)} />
                     <span className="forecast-portfolio-toggle-copy">
                       <strong>{t('showForecast')}</strong>
-                      <small>{t('showForecastHint')}</small>
+                      <small>
+                        {preparedReadsOnly && forecastCapabilityState === 'loading'
+                          ? t('forecastReadinessLoading')
+                          : preparedReadsOnly && forecastCapabilityState === 'error'
+                            ? t('forecastReadinessUnavailable')
+                            : t('showForecastHint')}
+                      </small>
                     </span>
                   </label>
 
@@ -4054,7 +4068,9 @@ export function RawDataView({
                           aria-pressed={forecastModel === model}
                           disabled={disabled}
                           tabIndex={disabled ? -1 : 0}
-                          title={disabled && preparedReadsOnly ? forecastCapabilityReason(capability) : undefined}
+                          title={disabled && preparedReadsOnly
+                            ? (forecastCapabilityState === 'loading' ? t('forecastReadinessLoading') : forecastCapabilityReason(capability))
+                            : undefined}
                           onClick={() => {
                             forecastSelectionTouchedRef.current = true
                             setForecastModel(model)
@@ -4107,7 +4123,9 @@ export function RawDataView({
                           aria-pressed={selectedForecastTargetBasis === targetBasis}
                           disabled={disabled}
                           tabIndex={disabled ? -1 : 0}
-                          title={disabled && preparedReadsOnly ? forecastCapabilityReason(capability) : undefined}
+                          title={disabled && preparedReadsOnly
+                            ? (forecastCapabilityState === 'loading' ? t('forecastReadinessLoading') : forecastCapabilityReason(capability))
+                            : undefined}
                           onClick={() => {
                             forecastSelectionTouchedRef.current = true
                             setSelectedForecastTargetBasis(targetBasis)

@@ -92,6 +92,8 @@
     "forecastTargetBasisInfoLine2": "Wybór obowiązuje zarówno dla bieżącej prognozy, jak i dla jej Historycznej Sprawdzalności.",
     "forecastPortfolioTitle": "Przegląd portfela prognoz",
     "forecastPortfolioSubtitle": "Widok benchmarku z historią, bieżącą prognozą, górnym i dolnym ograniczeniem oraz Historyczną Sprawdzalnością.",
+    "forecastReadinessLoading": "Sprawdzamy przygotowane prognozy. Kontrolki uaktywnią się po potwierdzeniu gotowości.",
+    "forecastReadinessUnavailable": "Nie udało się potwierdzić gotowości przygotowanych prognoz. Odśwież widok lub wybierz benchmark ponownie.",
     "forecastOrigin": "Początek prognozy",
     "targetPeriod": "Okres docelowy",
     "actual": "Actual",
