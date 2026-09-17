@@ -24,13 +24,36 @@ test('analytics URL keeps warm-up off for the PORR demo profile', async () => {
   mutableEnv.NODE_ENV = 'production'
   const { buildDashboardPreviewAnalyticsUrl, resolveBenchmarkAnalyticsEligibility } = await import('@/lib/benchmark/analytics')
   const url = new URL(buildDashboardPreviewAnalyticsUrl('pl', 'wocaes0074', 'Brent'))
-  const eligibility = await resolveBenchmarkAnalyticsEligibility('pl', 'wocaes0074', 'Brent')
+  const eligibility = await resolveBenchmarkAnalyticsEligibility('pl', 'wocaes0074', 'Brent', { porrDemoProfile: true })
   const eligibilityUrl = new URL(eligibility.analyticsUrl ?? '')
 
   assert.equal(url.searchParams.get('showForecast'), 'false')
   assert.equal(url.searchParams.has('warmCurrentForecast'), false)
   assert.equal(eligibilityUrl.searchParams.get('showForecast'), 'false')
   assert.equal(eligibilityUrl.searchParams.has('warmCurrentForecast'), false)
+  assert.equal(eligibilityUrl.searchParams.get('preparedReadsOnly'), '1')
+  assert.equal(eligibility.forecastPortfolioEnabled, true)
+})
+
+test('PORR demo limits forecast controls to the configured eleven while preserving historical analytics', async () => {
+  const { resolveBenchmarkAnalyticsEligibility } = await import('@/lib/benchmark/analytics')
+  const { PORR_DEMO_FORECAST_BENCHMARKS } = await import('@/lib/benchmark/porr-demo-forecast-portfolio')
+
+  assert.equal(PORR_DEMO_FORECAST_BENCHMARKS.length, 11)
+  assert.equal(new Set(PORR_DEMO_FORECAST_BENCHMARKS.map((item) => item.seriesId)).size, 11)
+
+  const portfolio = await resolveBenchmarkAnalyticsEligibility('en', 'lmeofcucashask', 'LME Copper', { porrDemoProfile: true })
+  const historyOnly = await resolveBenchmarkAnalyticsEligibility('en', 'lmeofalcashask', 'LME Aluminium', { porrDemoProfile: true })
+
+  assert.equal(portfolio.eligible, true)
+  assert.equal(portfolio.forecastPortfolioEnabled, true)
+  assert.equal(new URL(portfolio.analyticsUrl ?? '').searchParams.get('variantId'), 'forecast-portfolio-v3')
+  assert.equal(new URL(portfolio.analyticsUrl ?? '').searchParams.get('preparedReadsOnly'), '1')
+
+  assert.equal(historyOnly.eligible, true)
+  assert.equal(historyOnly.forecastPortfolioEnabled, false)
+  assert.equal(new URL(historyOnly.analyticsUrl ?? '').searchParams.get('variantId'), 'finder-embedded-v2')
+  assert.equal(new URL(historyOnly.analyticsUrl ?? '').searchParams.has('preparedReadsOnly'), false)
 })
 
 test('analytics URL propagates the warm-up flag for explicit experiment requests without duplication', async () => {

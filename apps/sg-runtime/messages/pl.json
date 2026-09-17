@@ -279,6 +279,17 @@
         "eurUsd": { "label": "EUR/USD", "hint": "Benchmark walutowy dla importu i ekspozycji walutowej." }
       }
     },
+    "portfolio": {
+      "title": "Benchmarki z prognozami",
+      "subtitle": "Dla poniższych benchmarków dostępne są przygotowane prognozy, górne i dolne ograniczenia oraz Historyczna Sprawdzalność. Pozostałe benchmarki można analizować na wykresach historycznych.",
+      "openBenchmark": "Otwórz benchmark: {benchmark}",
+      "historyOnlyMessage": "Dla tego benchmarku dostępna jest analiza danych historycznych. Prognozy są obecnie przygotowane dla benchmarków wskazanych w sekcji „Benchmarki z prognozami”.",
+      "families": {
+        "oil": "Ropa naftowa",
+        "copper": "Miedź",
+        "steel": "Stal"
+      }
+    },
     "results": {
       "title": "Wyniki wyszukiwania",
       "subtitle": "Wyniki od razu pokazują benchmark i bieżący ruch.",

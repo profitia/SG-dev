@@ -19,6 +19,7 @@ import {
   resolveForecastVerificationUnavailableState,
   shouldApplyCurrentResultForActiveRequest,
   shouldHideEmbeddedBenchmarkShell,
+  isPreparedReadsOnlyForecastSession,
   shouldRunProgressiveForecastPreparation,
 } from '@/components/raw-data-view/index'
 import type { BenchmarkForecastCurrentAvailableResult } from '@/lib/benchmark-forecast/forecast-contract'
@@ -51,6 +52,12 @@ test('client-facing forecast reads do not invoke progressive preparation unless 
   assert.equal(shouldRunProgressiveForecastPreparation(enabled, { embedded: false, variant: 'forecast-portfolio-v3' }), false)
   assert.equal(shouldRunProgressiveForecastPreparation(disabled, { embedded: true, variant: 'forecast-portfolio-v3' }), false)
   assert.equal(shouldRunProgressiveForecastPreparation(enabled, { embedded: true, variant: 'forecast-portfolio-v3' }), true)
+})
+
+test('prepared-read-only demo mode is explicit and fail-closed', () => {
+  assert.equal(isPreparedReadsOnlyForecastSession({ get: (key) => key === 'preparedReadsOnly' ? '1' : null }), true)
+  assert.equal(isPreparedReadsOnlyForecastSession({ get: () => null }), false)
+  assert.equal(isPreparedReadsOnlyForecastSession({ get: () => 'true' }), false)
 })
 
 test('showing Historical Verification preserves the chart range selected by the user', () => {
@@ -694,12 +701,13 @@ test('forecast controls preserve the requested labels and presets', () => {
   assert.deepEqual(RANGE_PRESETS, ['3M', '6M', '1Y', '3Y', '5Y', 'ALL'])
 })
 
-test('forecast portfolio controls stay in the two-row structure without a standalone forecast model label', () => {
+test('forecast portfolio controls keep two ordered rows with explicit group labels', () => {
   const source = fs.readFileSync(new URL('../components/raw-data-view/index.tsx', import.meta.url), 'utf8')
 
   assert.match(source, /forecast-portfolio-row forecast-current-row/)
   assert.match(source, /forecast-portfolio-row forecast-verification-row/)
-  assert.doesNotMatch(source, /control-group-label">\{t\('forecastModel'\)\}<\/span>/)
+  assert.match(source, /control-group-label">\{t\('forecastModel'\)\}<\/span>/)
+  assert.match(source, /forecast-portfolio-toggle-copy/)
 })
 
 test('forecast-portfolio-v3 keeps explicit Brent authoritative when Brent is selected', () => {

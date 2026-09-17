@@ -16,6 +16,7 @@ import {
   isAvailableCurrentResult,
   isRenderableCurrentResult,
   isAvailableVerificationResult,
+  resolveForecastTargetSemantics,
   type BenchmarkForecastCurrentResult,
   type ForecastCurrentUiState,
   type BenchmarkForecastVerificationResult,
@@ -23,12 +24,15 @@ import {
   type ForecastPortfolioModelId,
   type ProgressiveForecastPreparationSnapshot,
   type ProgressiveForecastPreparationState,
+  type InteractiveForecastCapabilitySeriesSnapshot,
+  type InteractiveForecastCapabilityResult,
 } from '@/lib/benchmark-forecast/forecast-contract'
 import {
   explicitlyPrepareForecastCurrent,
   readProgressiveForecastPreparationThroughDashboard,
   resolveForecastCurrentObservedProgressState,
   readPreparedCurrentForecastThroughDashboard,
+  readCurrentForecastCapabilitiesThroughDashboard,
   requestExplicitCurrentForecastPreparationThroughDashboard,
   resolveForecastCurrentDisplayState,
   resolveForecastCurrentUiState,
@@ -564,6 +568,30 @@ export function shouldRunProgressiveForecastPreparation(
   return options.embedded
     && options.variant === 'forecast-portfolio-v3'
     && searchParams.get('progressivePreparation')?.trim() === '1'
+}
+
+export function isPreparedReadsOnlyForecastSession(searchParams: SearchParamsReader) {
+  return searchParams.get('preparedReadsOnly')?.trim() === '1'
+}
+
+function resolveCapabilityVariant(
+  snapshot: InteractiveForecastCapabilitySeriesSnapshot | null,
+  modelId: ForecastPortfolioModelId,
+  targetBasis: ForecastTargetBasis,
+) {
+  const targetSemantics = resolveForecastTargetSemantics(targetBasis)
+  return snapshot?.variants.find((variant) => (
+    variant.modelId === modelId && variant.targetSemantics === targetSemantics
+  )) ?? null
+}
+
+function capabilityCurrentControlState(
+  capability: InteractiveForecastCapabilityResult | null,
+): ProgressiveForecastPreparationState | null {
+  if (!capability) return null
+  if (capability.currentReadiness === 'READY') return 'READY'
+  if (capability.status === 'FAILED') return 'FAILED'
+  return 'UNSUPPORTED'
 }
 
 export function resolveRangeForForecastVerification(
@@ -2608,6 +2636,7 @@ export function RawDataView({
   const initialRange = readInitialRange(searchParams)
   const backgroundCurrentForecastWarmupEnabled = shouldWarmCurrentForecastInBackground(searchParams, { embedded, variant })
   const progressiveForecastPreparationEnabled = shouldRunProgressiveForecastPreparation(searchParams, { embedded, variant })
+  const preparedReadsOnly = isPreparedReadsOnlyForecastSession(searchParams)
   const defaultForecastTargetBasis = resolveDefaultForecastTargetBasis(variant)
   const initialForecastVisibility = resolveInitialForecastVisibility(variant, embedded)
   const initialForecastVerificationVisibility = resolveInitialForecastVerificationVisibility(variant, embedded)
@@ -2634,6 +2663,7 @@ export function RawDataView({
   const [forecastCurrentResult, setForecastCurrentResult] = useState<BenchmarkForecastCurrentResult | null>(null)
   const [displayedForecastCurrentResult, setDisplayedForecastCurrentResult] = useState<BenchmarkForecastCurrentResult | null>(null)
   const [progressivePreparationSnapshot, setProgressivePreparationSnapshot] = useState<ProgressiveForecastPreparationSnapshot | null>(null)
+  const [forecastCapabilitySnapshot, setForecastCapabilitySnapshot] = useState<InteractiveForecastCapabilitySeriesSnapshot | null>(null)
   const [forecastCurrentReloadNonce, setForecastCurrentReloadNonce] = useState(0)
   const [forecastVerificationReloadNonce, setForecastVerificationReloadNonce] = useState(0)
   const [forecastVerificationState, setForecastVerificationState] = useState<LoadState>(initialForecastVerificationVisibility ? 'loading' : 'idle')
@@ -2682,6 +2712,15 @@ export function RawDataView({
     modelId: forecastModel,
     targetBasis: selectedForecastTargetBasis,
   })
+  const selectedCapabilityVariant = resolveCapabilityVariant(
+    forecastCapabilitySnapshot,
+    forecastModel,
+    selectedForecastTargetBasis,
+  )
+  const selectedCurrentPrepared = !preparedReadsOnly || selectedCapabilityVariant?.currentReadiness === 'READY'
+  const selectedVerificationPrepared = !preparedReadsOnly
+    || selectedCapabilityVariant?.recentVerificationReadiness === 'READY'
+    || selectedCapabilityVariant?.verificationReadiness === 'READY'
   const forecastCurrentDisplayState = resolveForecastCurrentDisplayState(forecastCurrentState, selectedProgressiveVariant)
   const forecastCurrentObservedProgressState = resolveForecastCurrentObservedProgressState(
     forecastCurrentState,
@@ -2727,6 +2766,43 @@ export function RawDataView({
       setForecastVerificationErrorState(null)
     }
   }, [showForecast])
+
+  useEffect(() => {
+    if (!preparedReadsOnly || !isForecastPortfolioVariant || !benchmarkSeriesId) {
+      setForecastCapabilitySnapshot(null)
+      return
+    }
+
+    const controller = new AbortController()
+    let cancelled = false
+
+    readCurrentForecastCapabilitiesThroughDashboard(fetch, benchmarkSeriesId, controller.signal)
+      .then((snapshot) => {
+        if (cancelled) return
+        setForecastCapabilitySnapshot(snapshot)
+
+        const selected = resolveCapabilityVariant(snapshot, forecastModel, selectedForecastTargetBasis)
+        if (selected?.currentReadiness === 'READY') return
+
+        const firstReady = snapshot.variants.find((variant) => variant.currentReadiness === 'READY')
+        if (!firstReady) return
+
+        setForecastModel(firstReady.modelId)
+        setSelectedForecastTargetBasis(
+          firstReady.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+            ? 'POINT_IN_TIME'
+            : firstReady.targetSemantics,
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setForecastCapabilitySnapshot(null)
+      })
+
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [benchmarkSeriesId, isForecastPortfolioVariant, preparedReadsOnly])
 
   useEffect(() => {
     const html = document.documentElement
@@ -3632,7 +3708,7 @@ export function RawDataView({
 
     const activeSeriesId = benchmarkSeriesId
 
-    if (!showForecast || !showForecastVerification) {
+    if (!showForecast || !showForecastVerification || (preparedReadsOnly && !selectedVerificationPrepared)) {
       forecastVerificationAbortRef.current?.abort()
       setForecastVerificationState('idle')
       setForecastVerificationResult(null)
@@ -3753,7 +3829,7 @@ export function RawDataView({
       cancelled = true
       controller.abort()
     }
-  }, [benchmarkSeriesId, forecastModel, forecastVerificationReloadNonce, forecastVerificationResult, isForecastPortfolioVariant, locale, selectedForecastTargetBasis, selectedProgressiveVariant?.verificationState, showForecast, showForecastVerification, t])
+  }, [benchmarkSeriesId, forecastModel, forecastVerificationReloadNonce, forecastVerificationResult, isForecastPortfolioVariant, locale, preparedReadsOnly, selectedForecastTargetBasis, selectedProgressiveVariant?.verificationState, selectedVerificationPrepared, showForecast, showForecastVerification, t])
 
   useEffect(() => {
     if (isBenchmarkMode) {
@@ -3852,6 +3928,15 @@ export function RawDataView({
   const activePayload = isForecastPortfolioVariant
     ? forecastPortfolioPayload
     : mergeAccuracyIntoViewerPayload(viewerPayload, forecastAccuracyPayload, showForecastAccuracy)
+  const currentUsesModelNativeBands = isRenderableCurrentResult(displayedForecastCurrentResult) && (
+    Object.values(displayedForecastCurrentResult.currentForecast).some((point) => (
+      point.metadata?.uncertaintyBand?.source === 'MODEL_NATIVE_SHORT_HISTORY'
+    ))
+    || (displayedForecastCurrentResult.rollingDailySnapshot?.anchors ?? []).some((anchor) => (
+      anchor.band.source === 'MODEL_NATIVE_SHORT_HISTORY'
+      || anchor.band.rollingDailySource === 'MODEL_NATIVE_SHORT_HISTORY'
+    ))
+  )
   const isChartLoading = componentsState === 'loading'
     || seriesState === 'loading'
     || (!isForecastPortfolioVariant && forecastAccuracyState === 'loading' && !activePayload)
@@ -3865,6 +3950,27 @@ export function RawDataView({
     : selectedComponent?.availableBenchmarks.find((benchmark) => benchmark.componentCode === effectiveComponentCode)?.sourceLabel
       ?? selectedComponent?.availableBenchmarks[0]?.sourceLabel
       ?? t('singleBenchmark')
+
+  function forecastCapabilityReason(capability: InteractiveForecastCapabilityResult | null) {
+    if (!capability) return t('exactVariantUnavailableHint')
+
+    const reason = `${capability.status} ${capability.reason ?? ''}`.toUpperCase()
+    if (reason.includes('UNSUPPORTED_FREQUENCY') || reason.includes('NOT_LAWFUL')) {
+      return t('pointInTimeRequiresDailyHistoryHint')
+    }
+    if (reason.includes('PROVENANCE')) {
+      return t('providerMethodologyIncomplete')
+    }
+    if (reason.includes('INSUFFICIENT_HISTORY')) {
+      return t('insufficientForecastHistory')
+    }
+    if (capability.currentReadiness === 'STALE') {
+      return t('sourceUpdatedRecalculationRequired')
+    }
+
+    return t('exactVariantUnavailableHint')
+  }
+
   return (
     <div className={`shell-grid${hideEmbeddedBenchmarkShell ? ' is-embedded' : ''}`}>
       {hideEmbeddedBenchmarkShell ? null : <section className="panel filter-panel" style={{ gridColumn: 'span 12' }}>
@@ -3914,12 +4020,19 @@ export function RawDataView({
                 <div className="forecast-portfolio-row forecast-current-row">
                   <label className="control-check control-check-inline forecast-portfolio-toggle">
                     <input type="checkbox" checked={showForecast} onChange={(event) => setShowForecast(event.target.checked)} />
-                    <span>{t('showForecast')}</span>
+                    <span className="forecast-portfolio-toggle-copy">
+                      <strong>{t('showForecast')}</strong>
+                      <small>{t('showForecastHint')}</small>
+                    </span>
                   </label>
 
                   <div className={`control-block control-mode-group forecast-portfolio-group forecast-model-group${showForecast ? '' : ' is-hidden'}`} aria-hidden={!showForecast}>
+                    <span className="control-group-label">{t('forecastModel')}</span>
                     <div className="chart-range-buttons control-mode-buttons" role="group" aria-label={t('forecastModel')}>
                     {FORECAST_PORTFOLIO_MODELS.map((model) => {
+                      const capability = preparedReadsOnly
+                        ? resolveCapabilityVariant(forecastCapabilitySnapshot, model, selectedForecastTargetBasis)
+                        : null
                       const buttonMeta = buildForecastControlButtonMeta(
                         forecastModelLabel(locale, model),
                         locale,
@@ -3929,8 +4042,9 @@ export function RawDataView({
                             modelId: model,
                             targetBasis: selectedForecastTargetBasis,
                           })?.currentState ?? 'UNSUPPORTED'
-                          : null,
+                          : capabilityCurrentControlState(capability),
                       )
+                      const disabled = !showForecast || (preparedReadsOnly && capability?.currentReadiness !== 'READY')
 
                       return (
                         <button
@@ -3938,8 +4052,9 @@ export function RawDataView({
                           type="button"
                           className={`chart-range-button forecast-control-button${forecastModel === model ? ' is-active' : ''}`}
                           aria-pressed={forecastModel === model}
-                          disabled={!showForecast}
-                          tabIndex={showForecast ? 0 : -1}
+                          disabled={disabled}
+                          tabIndex={disabled ? -1 : 0}
+                          title={disabled && preparedReadsOnly ? forecastCapabilityReason(capability) : undefined}
                           onClick={() => {
                             forecastSelectionTouchedRef.current = true
                             setForecastModel(model)
@@ -3968,6 +4083,9 @@ export function RawDataView({
                     </div>
                     <div className="chart-range-buttons control-mode-buttons" role="group" aria-label={t('forecastTargetBasis')}>
                     {FORECAST_TARGET_BASES.map((targetBasis) => {
+                      const capability = preparedReadsOnly
+                        ? resolveCapabilityVariant(forecastCapabilitySnapshot, forecastModel, targetBasis)
+                        : null
                       const buttonMeta = buildForecastControlButtonMeta(
                         forecastTargetBasisLabel(locale, targetBasis),
                         locale,
@@ -3977,8 +4095,9 @@ export function RawDataView({
                             modelId: forecastModel,
                             targetBasis,
                           })?.currentState ?? 'UNSUPPORTED'
-                          : null,
+                          : capabilityCurrentControlState(capability),
                       )
+                      const disabled = !showForecast || (preparedReadsOnly && capability?.currentReadiness !== 'READY')
 
                       return (
                         <button
@@ -3986,8 +4105,9 @@ export function RawDataView({
                           type="button"
                           className={`chart-range-button forecast-control-button${selectedForecastTargetBasis === targetBasis ? ' is-active' : ''}`}
                           aria-pressed={selectedForecastTargetBasis === targetBasis}
-                          disabled={!showForecast}
-                          tabIndex={showForecast ? 0 : -1}
+                          disabled={disabled}
+                          tabIndex={disabled ? -1 : 0}
+                          title={disabled && preparedReadsOnly ? forecastCapabilityReason(capability) : undefined}
                           onClick={() => {
                             forecastSelectionTouchedRef.current = true
                             setSelectedForecastTargetBasis(targetBasis)
@@ -4011,7 +4131,7 @@ export function RawDataView({
                     <input
                       type="checkbox"
                       checked={showForecast && showForecastVerification}
-                      disabled={!showForecast}
+                      disabled={!showForecast || !selectedCurrentPrepared || !selectedVerificationPrepared}
                       onChange={(event) => {
                         const verificationEnabled = event.target.checked
                         setShowForecastVerification(verificationEnabled)
@@ -4021,7 +4141,10 @@ export function RawDataView({
                         ))
                       }}
                     />
-                    <span>{t('showForecastVerification')}</span>
+                    <span className="forecast-portfolio-toggle-copy">
+                      <strong>{t('showForecastVerification')}</strong>
+                      <small>{selectedVerificationPrepared ? t('showForecastVerificationHint') : t('verificationUnavailableForSelection')}</small>
+                    </span>
                   </label>
 
                   <div
@@ -4136,7 +4259,13 @@ export function RawDataView({
             </div>
           </div>
         ) : null}
-        {isForecastPortfolioVariant && forecastCurrentDisplayState === 'NOT_PREPARED' && !forecastCurrentObservedProgressState ? (
+        {isForecastPortfolioVariant && preparedReadsOnly && forecastCurrentDisplayState === 'NOT_PREPARED' && !forecastCurrentObservedProgressState ? (
+          <div className="callout" role="status" aria-live="polite">
+            <strong>{t('exactVariantUnavailable')}</strong>
+            <p>{t('exactVariantUnavailableHint')}</p>
+          </div>
+        ) : null}
+        {isForecastPortfolioVariant && !preparedReadsOnly && forecastCurrentDisplayState === 'NOT_PREPARED' && !forecastCurrentObservedProgressState ? (
           <div className="callout" role="status" aria-live="polite">
             <strong>{t('forecastPreparationRequired')}</strong>
             <p>{t('forecastPreparationRequiredHint')}</p>
@@ -4169,6 +4298,11 @@ export function RawDataView({
           <div className="callout callout-error" role="status" aria-live="polite">
             <strong>{forecastErrorState.title}</strong>
             <p>{forecastErrorState.message}</p>
+          </div>
+        ) : null}
+        {isForecastPortfolioVariant && showForecast && currentUsesModelNativeBands ? (
+          <div className="callout" role="status">
+            <p>{t('modelNativeBands')}</p>
           </div>
         ) : null}
         {isForecastPortfolioVariant && showForecast && showForecastVerification && forecastVerificationBannerState ? (

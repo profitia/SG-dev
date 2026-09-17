@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 
+import { PORR_DEMO_FORECAST_BENCHMARKS } from '@/lib/benchmark/porr-demo-forecast-portfolio'
+
 const benchmarkFinderClientSource = fs.readFileSync(new URL('../components/benchmark-finder/benchmark-finder-client.tsx', import.meta.url), 'utf8')
 const shellSource = fs.readFileSync(new URL('../components/porr-demo/porr-demo-shell.tsx', import.meta.url), 'utf8')
 const homePageSource = fs.readFileSync(new URL('../app/[locale]/page.tsx', import.meta.url), 'utf8')
@@ -20,6 +22,14 @@ function readPorrDemoMessages(dictionary: Record<string, unknown>) {
   }
 
   return porrDemo as Record<string, unknown>
+}
+
+function readBenchmarkFinderMessages(dictionary: Record<string, unknown>) {
+  const messages = dictionary.BenchmarkFinder
+  if (!messages || typeof messages !== 'object') {
+    throw new Error('BenchmarkFinder messages missing')
+  }
+  return messages as Record<string, unknown>
 }
 
 test('benchmark finder starts from Search while preserving the outer PORR frame', () => {
@@ -46,4 +56,16 @@ test('login messages keep only the requested next-version copy', () => {
   assert.equal('plannedTopicsItemThree' in porrDemoPl, false)
   assert.equal('plannedTopicsItemTwo' in porrDemoEn, false)
   assert.equal('plannedTopicsItemThree' in porrDemoEn, false)
+})
+
+test('PORR demo exposes one bilingual, operator-approved eleven-benchmark portfolio', () => {
+  const polish = readBenchmarkFinderMessages(polishMessages)
+  const english = readBenchmarkFinderMessages(englishMessages)
+
+  assert.equal(PORR_DEMO_FORECAST_BENCHMARKS.length, 11)
+  assert.equal(new Set(PORR_DEMO_FORECAST_BENCHMARKS.map((item) => item.seriesId)).size, 11)
+  assert.match(benchmarkFinderClientSource, /data-testid="porr-demo-forecast-portfolio"/)
+  assert.match(benchmarkFinderClientSource, /openPorrDemoPortfolioBenchmark/)
+  assert.ok(polish.portfolio)
+  assert.ok(english.portfolio)
 })

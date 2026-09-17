@@ -279,6 +279,17 @@
         "eurUsd": { "label": "EUR/USD", "hint": "FX benchmark for imported goods and currency exposure." }
       }
     },
+    "portfolio": {
+      "title": "Benchmarks with forecasts",
+      "subtitle": "Prepared forecasts, upper and lower bounds, and Historical Verification are available for the benchmarks below. All other benchmarks can be analysed using their historical charts.",
+      "openBenchmark": "Open benchmark: {benchmark}",
+      "historyOnlyMessage": "Historical data analysis is available for this benchmark. Forecasts are currently prepared for the benchmarks listed in the “Benchmarks with forecasts” section.",
+      "families": {
+        "oil": "Oil",
+        "copper": "Copper",
+        "steel": "Steel"
+      }
+    },
     "results": {
       "title": "Search Results",
       "subtitle": "Results surface benchmark identity and current movement immediately.",

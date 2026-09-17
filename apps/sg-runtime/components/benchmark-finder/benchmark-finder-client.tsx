@@ -22,6 +22,10 @@ import {
   sanitizeUserFacingPublisher,
   sanitizeUserFacingResolvedLabel,
 } from '@/lib/benchmark/presentation'
+import {
+  PORR_DEMO_FORECAST_BENCHMARKS,
+  type PorrDemoForecastBenchmarkFamily,
+} from '@/lib/benchmark/porr-demo-forecast-portfolio'
 import type {
   BenchmarkAiSearchResult,
   BenchmarkCandidate,
@@ -43,6 +47,7 @@ type BenchmarkFinderClientProps = {
   initialMode?: DiscoveryMode
   initialSearchQuery?: string
   initialAiPrompt?: string
+  showPorrDemoPortfolio?: boolean
 }
 
 type BenchmarkUiAction = 'search' | 'ai' | 'preview' | 'selection' | 'saved' | 'metadata'
@@ -76,6 +81,7 @@ type AnalyticsEligibilityResponse = {
   eligible: boolean
   componentCode: string | null
   analyticsUrl: string | null
+  forecastPortfolioEnabled: boolean
 }
 
 type AnalyticsEligibilityState = AnalyticsEligibilityResponse & {
@@ -187,7 +193,10 @@ const DEFAULT_ANALYTICS_ELIGIBILITY_STATE: AnalyticsEligibilityState = {
   eligible: false,
   componentCode: null,
   analyticsUrl: null,
+  forecastPortfolioEnabled: false,
 }
+
+const PORR_DEMO_FORECAST_FAMILIES: readonly PorrDemoForecastBenchmarkFamily[] = ['oil', 'copper', 'steel']
 
 function createDefaultCandidatePreviewState(): CandidatePreviewState {
   return {
@@ -883,6 +892,7 @@ export function BenchmarkFinderClient({
   initialMode,
   initialSearchQuery = '',
   initialAiPrompt = '',
+  showPorrDemoPortfolio = false,
 }: BenchmarkFinderClientProps) {
   const t = useTranslations('BenchmarkFinder')
   const router = useRouter()
@@ -920,6 +930,7 @@ export function BenchmarkFinderClient({
   const [openMetadataKey, setOpenMetadataKey] = useState<string | null>(null)
   const [enrichedCandidates, setEnrichedCandidates] = useState<Record<string, BenchmarkCandidate>>(initialLocaleSwitchSnapshot?.enrichedCandidates ?? {})
   const [recentSearches, setRecentSearches] = useState<RecentSearchEntry[]>([])
+  const [pendingPortfolioSeriesId, setPendingPortfolioSeriesId] = useState<string | null>(null)
   const [isSearching, startSearchTransition] = useTransition()
   const [isSaving, startSaveTransition] = useTransition()
   const [isLoadingSaved, startSavedTransition] = useTransition()
@@ -1456,7 +1467,7 @@ export function BenchmarkFinderClient({
 
     if (!normalizedQuery && !normalizedExactSeriesId) {
       setSearchError(t('errors.advancedInputRequired'))
-      return
+      return []
     }
 
     const { requestId, controller } = beginSearchRequest()
@@ -1502,9 +1513,11 @@ export function BenchmarkFinderClient({
       if (normalizedExactSeriesId && payload.items.length === 0) {
         setSearchError(t('errors.exactNotFound'))
       }
+
+      return payload.items
     } catch (error) {
       if (controller.signal.aborted || isAbortError(error)) {
-        return
+        return []
       }
 
       throw error
@@ -1512,6 +1525,14 @@ export function BenchmarkFinderClient({
       if (searchAbortControllerRef.current === controller) {
         searchAbortControllerRef.current = null
       }
+    }
+  }
+
+  async function openPorrDemoPortfolioBenchmark(seriesId: string) {
+    setPendingPortfolioSeriesId(seriesId)
+    const items = await runAdvancedSearch({ query: '', exactSeriesId: seriesId, filters: {} })
+    if (!(items ?? []).some((item) => item.providerSeries.providerSeriesId === seriesId)) {
+      setPendingPortfolioSeriesId(null)
     }
   }
 
@@ -1604,6 +1625,7 @@ export function BenchmarkFinderClient({
         eligible: false,
         componentCode: null,
         analyticsUrl: null,
+        forecastPortfolioEnabled: false,
       },
     }))
 
@@ -1647,6 +1669,7 @@ export function BenchmarkFinderClient({
         eligible: false,
         componentCode: null,
         analyticsUrl: null,
+        forecastPortfolioEnabled: false,
       }
       analyticsEligibilityCacheRef.current[cacheKey] = payload
       setCandidatePreviewState(seriesId, (state) => ({
@@ -1959,6 +1982,36 @@ export function BenchmarkFinderClient({
     : []
 
   useEffect(() => {
+    if (!pendingPortfolioSeriesId) {
+      return
+    }
+
+    const candidate = results.find((item) => item.providerSeries.providerSeriesId === pendingPortfolioSeriesId)
+    if (!candidate) {
+      return
+    }
+
+    const seriesId = pendingPortfolioSeriesId
+    setCandidatePreviewState(seriesId, (state) => ({
+      ...state,
+      expanded: true,
+      analyticsVisible: true,
+      previewError: null,
+    }))
+    startSearchTransition(() => {
+      ensureAnalyticsEligibility(candidate).catch(() => undefined)
+      loadPreview(candidate, DEFAULT_PREVIEW_RANGE).catch(() => undefined)
+    })
+    setPendingPortfolioSeriesId(null)
+
+    window.requestAnimationFrame(() => {
+      const card = Array.from(resultsRef.current?.querySelectorAll<HTMLElement>('[data-series-id]') ?? [])
+        .find((item) => item.dataset.seriesId === seriesId)
+      card?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }, [pendingPortfolioSeriesId, results])
+
+  useEffect(() => {
     if (!missingVisibleSemanticKey) {
       return
     }
@@ -2254,6 +2307,59 @@ export function BenchmarkFinderClient({
           ) : null}
         </section>
 
+        {showPorrDemoPortfolio ? (
+          <section
+            className="rounded-3xl border border-sky-200 bg-[linear-gradient(135deg,#f0f9ff_0%,#ffffff_62%)] p-6 shadow-sm sm:p-8"
+            aria-labelledby="porr-demo-forecast-portfolio-title"
+            data-testid="porr-demo-forecast-portfolio"
+          >
+            <div className="max-w-4xl">
+              <h2 id="porr-demo-forecast-portfolio-title" className="text-lg font-semibold text-slate-950">
+                {t('portfolio.title')}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{t('portfolio.subtitle')}</p>
+            </div>
+
+            <div className="mt-6 grid gap-5 xl:grid-cols-3">
+              {PORR_DEMO_FORECAST_FAMILIES.map((family) => (
+                <div key={family} className="min-w-0 rounded-2xl border border-slate-200/80 bg-white/80 p-4">
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    {t(`portfolio.families.${family}`)}
+                  </h3>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {PORR_DEMO_FORECAST_BENCHMARKS
+                      .filter((benchmark) => benchmark.family === family)
+                      .map((benchmark) => {
+                        const isPending = pendingPortfolioSeriesId === benchmark.seriesId && isSearching
+
+                        return (
+                          <button
+                            key={benchmark.seriesId}
+                            type="button"
+                            className="min-h-11 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-left text-sm font-medium leading-5 text-slate-700 shadow-sm transition hover:border-sky-300 hover:bg-sky-50 hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-sky-200 disabled:cursor-wait disabled:opacity-60"
+                            disabled={isSearching}
+                            aria-label={t('portfolio.openBenchmark', { benchmark: benchmark.label[locale] })}
+                            onClick={() => {
+                              startSearchTransition(() => {
+                                openPorrDemoPortfolioBenchmark(benchmark.seriesId)
+                                  .catch((searchFailure: unknown) => {
+                                    setPendingPortfolioSeriesId(null)
+                                    setSearchError(resolveErrorMessage('search', locale, searchFailure, t))
+                                  })
+                              })
+                            }}
+                          >
+                            {isPending ? t('common.loading') : benchmark.label[locale]}
+                          </button>
+                        )
+                      })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         <section className="rounded-3xl bg-slate-50 p-6 shadow-sm ring-1 ring-slate-200">
           <div className="mb-4 flex items-center justify-between">
             <div>
@@ -2290,6 +2396,7 @@ export function BenchmarkFinderClient({
                 <article
                   key={candidate.candidateId}
                   data-testid="benchmark-result-card"
+                  data-series-id={seriesId}
                   className={`rounded-2xl border p-5 transition ${isActive ? 'border-slate-300 bg-slate-50' : 'border-slate-200 bg-white'}`}
                   style={isActive ? { backgroundColor: 'rgb(248, 250, 252)' } : undefined}
                 >
@@ -2352,15 +2459,22 @@ export function BenchmarkFinderClient({
                   {isActive ? (
                     <div className="mt-4 space-y-4 border-t border-slate-200 pt-4">
                       {previewState.analyticsEligibility.status === 'ready' && previewState.analyticsEligibility.eligible && previewState.analyticsEligibility.analyticsUrl ? (
-                        <iframe
-                          key={previewState.analyticsEligibility.analyticsUrl}
-                          title={`${previewState.preview?.displayName ?? candidate.displayName} analytics`}
-                          src={previewState.analyticsEligibility.analyticsUrl}
-                          className="w-full border-0 bg-transparent"
-                          style={{ height: analyticsFrameHeight ? `${analyticsFrameHeight}px` : DEFAULT_ANALYTICS_IFRAME_HEIGHT_STYLE }}
-                          loading="lazy"
-                          data-testid="benchmark-analytics-embed"
-                        />
+                        <>
+                          {showPorrDemoPortfolio && !previewState.analyticsEligibility.forecastPortfolioEnabled ? (
+                            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-600" role="status">
+                              {t('portfolio.historyOnlyMessage')}
+                            </div>
+                          ) : null}
+                          <iframe
+                            key={previewState.analyticsEligibility.analyticsUrl}
+                            title={`${previewState.preview?.displayName ?? candidate.displayName} analytics`}
+                            src={previewState.analyticsEligibility.analyticsUrl}
+                            className="w-full border-0 bg-transparent"
+                            style={{ height: analyticsFrameHeight ? `${analyticsFrameHeight}px` : DEFAULT_ANALYTICS_IFRAME_HEIGHT_STYLE }}
+                            loading="lazy"
+                            data-testid="benchmark-analytics-embed"
+                          />
+                        </>
                       ) : previewState.analyticsEligibility.status === 'loading' ? (
                         <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-sm text-slate-500">{t('common.loading')}</div>
                       ) : (

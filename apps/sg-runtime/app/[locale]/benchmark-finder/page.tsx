@@ -36,7 +36,7 @@ export default async function BenchmarkFinderPage({ params }: BenchmarkFinderPag
 
   return (
     <PorrDemoShell locale={locale} activeRoute="benchmark-finder">
-      <BenchmarkFinderClient locale={locale} />
+      <BenchmarkFinderClient locale={locale} showPorrDemoPortfolio />
     </PorrDemoShell>
   )
 }

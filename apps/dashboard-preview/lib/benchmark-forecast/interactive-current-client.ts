@@ -4,6 +4,7 @@ import type {
   BenchmarkForecastCurrentResult,
   ForecastCurrentUiState,
   InteractiveForecastCapabilityResult,
+  InteractiveForecastCapabilitySeriesSnapshot,
   ProgressiveForecastPreparationSnapshot,
   ProgressiveForecastVariantSnapshot,
 } from './forecast-contract'
@@ -115,6 +116,25 @@ export async function readCurrentForecastCapabilityThroughDashboard(
   }
 
   return payload as InteractiveForecastCapabilityResult
+}
+
+export async function readCurrentForecastCapabilitiesThroughDashboard(
+  fetchLike: FetchLike,
+  seriesId: string,
+  signal?: AbortSignal,
+) {
+  const params = new URLSearchParams({ seriesId })
+  const response = await fetchLike(`/api/benchmark-forecast/current/capabilities?${params.toString()}`, {
+    cache: 'no-store',
+    signal,
+  })
+  const payload = await response.json() as InteractiveForecastCapabilitySeriesSnapshot | { error?: string }
+
+  if (!response.ok) {
+    throw new Error('error' in payload ? payload.error ?? 'Forecast capabilities unavailable' : 'Forecast capabilities unavailable')
+  }
+
+  return payload as InteractiveForecastCapabilitySeriesSnapshot
 }
 
 export async function readPreparedCurrentForecastThroughDashboard(
