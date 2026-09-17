@@ -1,9 +1,9 @@
 {
-  "evidenceVersion": "PPF1_DEMO_TASK4_ELEVEN_BENCHMARK_PRODUCTION_READINESS_V1",
-  "generatedAt": "2026-09-16T21:20:00+02:00",
+  "evidenceVersion": "PPF1_DEMO_TASK4_ELEVEN_BENCHMARK_PRODUCTION_READINESS_V2",
+  "generatedAt": "2026-09-17T02:43:08+02:00",
   "repository": "https://github.com/profitia/SG-dev.git",
   "branch": "demo/porr-11-benchmark-readiness-20260916",
-  "sourceSha": "9a0ce6bce2c12fd87dd95e9b1204577a40ad8aa4",
+  "sourceSha": "4fd33ec401379e3587d5801b005772e89f6738a6",
   "frozenStage12Sha": "2f0e93c828fef22241affd4b703fc139b1759ca8",
   "taskIdentity": {
     "taskId": "ppf-1-demo-readiness-task-4-production-readiness-20260916",
@@ -14,14 +14,14 @@
     "demoElevenBenchmarksReady": false,
     "preparedSupportedDemoPathsReady": true,
     "strictAllModelsAllMethodologiesContractMet": false,
-    "reason": "Four scope gaps remain: Brent continuation period preparation fails with DATA_NOT_AVAILABLE; HWWI Monthly Average requires provenance and Point in Time is unsupported; HRC period Recent Verification is available only for Naive because six closed monthly observations cannot produce a matured origin for the other models; the current WTI continuation candidate requires owner approval because the exact financial continuation is stale."
+    "reason": "Prepared client reads are live, but the strict acceptance contract is not met. Production persistence lacks the versioned training-policy identity columns, so all twelve formal Recent Verification capability cells remain STALE even when persisted prepared artifacts are present. HWWI provider metadata says DataType=average while the current provenance resolver exposes End of Period; HRC period Recent Verification is available only for Naive; and the current WTI continuation candidate still requires owner approval because the exact financial continuation is stale."
   },
   "deployments": {
     "sgRuntime": {
       "serviceName": "spendguru-stage",
       "serviceId": "srv-d98a73btqb8s73fabp90",
-      "deployId": "dep-dale0iu1egvs73e93mv0",
-      "deployedSha": "9a0ce6bce2c12fd87dd95e9b1204577a40ad8aa4",
+      "deployId": "dep-dalfs8id0e5s73f8r0sg",
+      "deployedSha": "4fd33ec401379e3587d5801b005772e89f6738a6",
       "status": "live",
       "autoDeploy": false
     },
@@ -40,8 +40,12 @@
     "projectId": "autumn-waterfall-65938876",
     "branchId": "br-purple-shape-b2az1npx",
     "database": "neondb",
-    "accessMode": "SELECT_ONLY",
-    "writes": false
+    "verificationAccessMode": "SELECT_ONLY",
+    "directSqlWrites": false,
+    "canonicalHydrationWrites": true,
+    "trainingPolicyIdentityColumnsPresent": false,
+    "latestAppliedMigration": "20260822190000_generic_forecast_method_identity",
+    "schemaMutationAuthorized": false
   },
   "candidateBenchmarks": [
     {
@@ -50,9 +54,16 @@
       "lawfulObservationCount": 9777,
       "totalObservationCount": 9958,
       "latestObservation": "2026-09-15",
+      "frequency": "Daily",
+      "currency": "USD",
+      "unit": "USD/Barrel",
+      "sourceLabel": "Intercontinental Exchange (ICE)",
+      "duplicateTimestampCount": 0,
       "preparedPeriodCurrentVariants": 8,
       "preparedPeriodVerificationVariants": 8,
       "rollingDailyCurrentModels": 4,
+      "rollingDailyCalibratedVariants": 16,
+      "rollingDailyCalibrationMinimumSampleCount": 30,
       "supportedDemoPathSmoke": "PASS"
     },
     {
@@ -61,9 +72,16 @@
       "lawfulObservationCount": 10917,
       "totalObservationCount": 11215,
       "latestObservation": "2026-09-15",
+      "frequency": "Daily",
+      "currency": "USD",
+      "unit": "USD/Barrel",
+      "sourceLabel": "CME Group",
+      "duplicateTimestampCount": 0,
       "preparedPeriodCurrentVariants": 8,
       "preparedPeriodVerificationVariants": 8,
       "rollingDailyCurrentModels": 4,
+      "rollingDailyCalibratedVariants": 16,
+      "rollingDailyCalibrationMinimumSampleCount": 31,
       "supportedDemoPathSmoke": "PASS"
     },
     {
@@ -72,9 +90,16 @@
       "lawfulObservationCount": 10480,
       "totalObservationCount": 10677,
       "latestObservation": "2026-09-15",
+      "frequency": "Daily",
+      "currency": "USD",
+      "unit": "USD/Barrel",
+      "sourceLabel": "Macrobond Financial AB",
+      "duplicateTimestampCount": 0,
       "preparedPeriodCurrentVariants": 8,
       "preparedPeriodVerificationVariants": 8,
       "rollingDailyCurrentModels": 4,
+      "rollingDailyCalibratedVariants": 16,
+      "rollingDailyCalibrationMinimumSampleCount": 443,
       "supportedDemoPathSmoke": "PASS"
     },
     {
@@ -83,9 +108,16 @@
       "lawfulObservationCount": 390,
       "totalObservationCount": 390,
       "latestObservation": "2026-09-15",
+      "frequency": "Daily",
+      "currency": "USD",
+      "unit": "USD/lb",
+      "sourceLabel": "CME Group",
+      "duplicateTimestampCount": 0,
       "preparedPeriodCurrentVariants": 8,
       "preparedPeriodVerificationVariants": 8,
       "rollingDailyCurrentModels": 4,
+      "rollingDailyCalibratedVariants": 16,
+      "rollingDailyCalibrationMinimumSampleCount": 30,
       "supportedDemoPathSmoke": "PASS"
     },
     {
@@ -94,9 +126,16 @@
       "lawfulObservationCount": 9796,
       "totalObservationCount": 10128,
       "latestObservation": "2026-09-15",
+      "frequency": "Daily",
+      "currency": "USD",
+      "unit": "USD/Metric Ton",
+      "sourceLabel": "London Metal Exchange (LME)",
+      "duplicateTimestampCount": 0,
       "preparedPeriodCurrentVariants": 8,
       "preparedPeriodVerificationVariants": 8,
       "rollingDailyCurrentModels": 4,
+      "rollingDailyCalibratedVariants": 16,
+      "rollingDailyCalibrationMinimumSampleCount": 432,
       "supportedDemoPathSmoke": "PASS"
     },
     {
@@ -105,10 +144,18 @@
       "lawfulObservationCount": 119,
       "totalObservationCount": 119,
       "latestObservation": "2026-09-15",
+      "frequency": "Daily",
+      "currency": "EUR",
+      "unit": "EUR/Metric Ton",
+      "sourceLabel": "CME Group",
+      "duplicateTimestampCount": 0,
       "preparedPeriodCurrentVariants": 8,
       "preparedPeriodVerificationVariants": 2,
       "periodVerificationGap": "Only Naive has a matured origin for Monthly Average and End of Period; the other models require one more closed month under the accepted minimum-six policy.",
       "rollingDailyCurrentModels": 4,
+      "rollingDailyCalibratedVariants": 4,
+      "rollingDailyCalibrationScope": "1M for all four models",
+      "rollingDailyStructuralGaps": "3M, 6M and 12M have zero lawful comparable residuals for every model.",
       "supportedDemoPathSmoke": "PASS"
     },
     {
@@ -117,11 +164,17 @@
       "lawfulObservationCount": 144,
       "totalObservationCount": 144,
       "latestObservation": "2026-08-31",
+      "frequency": "Monthly",
+      "currency": "EUR",
+      "unit": "Index",
+      "sourceLabel": "Hamburg Institute of International Economics (HWWI)",
+      "duplicateTimestampCount": 0,
       "preparedPeriodCurrentVariants": 4,
       "preparedPeriodVerificationVariants": 4,
       "supportedMethodology": "END_OF_PERIOD",
       "monthlyAverageStatus": "PROVENANCE_REQUIRED",
       "pointInTimeStatus": "UNSUPPORTED_FOR_NON_DAILY_SERIES",
+      "rollingDailyCalibration": "NOT_APPLICABLE_FOR_NON_DAILY_SERIES",
       "supportedDemoPathSmoke": "PASS"
     },
     {
@@ -130,9 +183,17 @@
       "lawfulObservationCount": 199,
       "totalObservationCount": 207,
       "latestObservation": "2026-09-15",
+      "frequency": "Daily",
+      "currency": "USD",
+      "unit": "USD/Metric Ton",
+      "sourceLabel": "London Metal Exchange (LME)",
+      "duplicateTimestampCount": 0,
       "preparedPeriodCurrentVariants": 8,
       "preparedPeriodVerificationVariants": 8,
       "rollingDailyCurrentModels": 4,
+      "rollingDailyCalibratedVariants": 8,
+      "rollingDailyCalibrationScope": "1M and 3M for all four models",
+      "rollingDailyStructuralGaps": "6M has 13 lawful comparable residuals and 12M has zero for every model.",
       "supportedDemoPathSmoke": "PASS"
     },
     {
@@ -141,11 +202,18 @@
       "lawfulObservationCount": 6117,
       "totalObservationCount": 6405,
       "latestObservation": "2026-09-15",
-      "preparedPeriodCurrentVariants": 0,
-      "preparedPeriodVerificationVariants": 0,
-      "periodPreparationStatus": "DATA_NOT_AVAILABLE",
+      "frequency": "Daily",
+      "currency": "USD",
+      "unit": "USD/Barrel",
+      "sourceLabel": "CME Group",
+      "duplicateTimestampCount": 0,
+      "preparedPeriodCurrentVariants": 8,
+      "preparedPeriodVerificationVariants": 8,
+      "periodPreparationStatus": "READY_AFTER_CONTIGUOUS_HISTORY_FIX",
       "rollingDailyCurrentModels": 4,
       "rollingDailyCalibration": "CALIBRATED_READY",
+      "rollingDailyCalibratedVariants": 16,
+      "rollingDailyCalibrationMinimumSampleCount": 428,
       "supportedDemoPathSmoke": "PASS"
     },
     {
@@ -154,9 +222,16 @@
       "lawfulObservationCount": 16851,
       "totalObservationCount": 17273,
       "latestObservation": "2026-09-15",
+      "frequency": "Daily",
+      "currency": "USD",
+      "unit": "USD/lb",
+      "sourceLabel": "CME Group",
+      "duplicateTimestampCount": 0,
       "preparedPeriodCurrentVariants": 8,
       "preparedPeriodVerificationVariants": 8,
       "rollingDailyCurrentModels": 4,
+      "rollingDailyCalibratedVariants": 16,
+      "rollingDailyCalibrationMinimumSampleCount": 30,
       "supportedDemoPathSmoke": "PASS"
     },
     {
@@ -165,10 +240,17 @@
       "lawfulObservationCount": 6099,
       "totalObservationCount": 6202,
       "latestObservation": "2026-09-15",
+      "frequency": "Daily",
+      "currency": "USD",
+      "unit": "USD/Barrel",
+      "sourceLabel": "CME Group",
+      "duplicateTimestampCount": 0,
       "preparedPeriodCurrentVariants": 8,
       "preparedPeriodVerificationVariants": 8,
       "rollingDailyCurrentModels": 4,
       "rollingDailyMaturedRecordsPerHorizon": 1,
+      "rollingDailyCalibratedVariants": 16,
+      "rollingDailyCalibrationMinimumSampleCount": 31,
       "ownerApprovalRequiredAsWtiContinuationSubstitute": true,
       "supportedDemoPathSmoke": "PASS"
     }
@@ -190,10 +272,195 @@
     "duplicateComputeObserved": false,
     "clientWasBootstrapTrigger": false
   },
+  "canonicalHydration": {
+    "operation": "CANONICAL_MARKET_DATA_HYDRATION_V1",
+    "startedAt": "2026-09-16T20:40:50.406Z",
+    "completedAt": "2026-09-16T20:40:56.248Z",
+    "seriesRequested": 11,
+    "seriesSucceeded": 11,
+    "seriesFailed": 0,
+    "concurrency": 2,
+    "provider": "Macrobond",
+    "canonicalRepositoryUpsertUsed": true,
+    "manualSqlUsed": false,
+    "duplicateTimestampsAfterHydration": 0,
+    "metadataVerifiedByNeonSelect": true,
+    "businessDisplayNamesVerifiedByNeonSelect": true,
+    "latestObservationVerifiedByNeonSelect": true
+  },
+  "rollingDailyCalibrationBootstrap": {
+    "minimumComparableResiduals": 30,
+    "dailySeriesCount": 10,
+    "exactIdentityCount": 160,
+    "readyBeforeControlledRecovery": 112,
+    "readyAfterControlledRecovery": 140,
+    "recoveredExactIdentities": 28,
+    "structurallyUncalibratableExactIdentities": 20,
+    "allRecoverableExactIdentitiesReady": true,
+    "operatorExecutionCount": 7,
+    "failedExecutionCount": 0,
+    "newOriginsPersisted": 210,
+    "calibrationGroupsRefreshed": 28,
+    "canonicalOperationUsed": true,
+    "manualForecastArtifactSqlUsed": false,
+    "duplicateComputeObserved": false,
+    "durableExecutionLedgerTablePresent": false,
+    "durableExecutionLedgerFinding": "Production query failed with PostgreSQL/Prisma P2021 because forecast_preparation_execution_ledger is absent; no migration was authorized or attempted.",
+    "postRunRenderHealth": {
+      "instanceCount": 1,
+      "computeProcessRemaining": false,
+      "cpuAtIdleAfterCompletion": true,
+      "memoryBytesApprox": 164000000,
+      "restartObserved": false
+    },
+    "executions": [
+      {
+        "seriesId": "b_c1_cl",
+        "modelId": "arima",
+        "status": "SUCCEEDED",
+        "runtimeMs": 1113679,
+        "newOriginCount": 30,
+        "calibrationRefreshCount": 4
+      },
+      {
+        "seriesId": "qm_c1_cl",
+        "modelId": "naive",
+        "status": "SUCCEEDED",
+        "runtimeMs": 3221,
+        "newOriginCount": 30,
+        "calibrationRefreshCount": 4
+      },
+      {
+        "seriesId": "qm_c1_cl",
+        "modelId": "damped_holt",
+        "status": "SUCCEEDED",
+        "runtimeMs": 13332,
+        "newOriginCount": 30,
+        "calibrationRefreshCount": 4
+      },
+      {
+        "seriesId": "qm_c1_cl",
+        "modelId": "ets",
+        "status": "SUCCEEDED",
+        "runtimeMs": 29589,
+        "newOriginCount": 30,
+        "calibrationRefreshCount": 4
+      },
+      {
+        "seriesId": "qm_c1_cl",
+        "modelId": "arima",
+        "status": "SUCCEEDED",
+        "runtimeMs": 679501,
+        "newOriginCount": 30,
+        "calibrationRefreshCount": 4
+      },
+      {
+        "seriesId": "cl_c1_cl",
+        "modelId": "arima",
+        "status": "SUCCEEDED",
+        "runtimeMs": 3793075,
+        "newOriginCount": 30,
+        "calibrationRefreshCount": 4
+      },
+      {
+        "seriesId": "hg_c1_cl",
+        "modelId": "arima",
+        "status": "SUCCEEDED",
+        "runtimeMs": 5006624,
+        "newOriginCount": 30,
+        "calibrationRefreshCount": 4,
+        "snapshotStatus": "REFRESHED_AFTER_MAINTENANCE",
+        "snapshotParityStatus": "MATCHED"
+      }
+    ],
+    "structuralHistoryGaps": [
+      {
+        "seriesId": "ehr2027g_cl",
+        "readyExactIdentities": 4,
+        "totalExactIdentities": 16,
+        "gap": "3M, 6M and 12M have zero lawful comparable residuals for every model."
+      },
+      {
+        "seriesId": "lmescusd20270226",
+        "readyExactIdentities": 8,
+        "totalExactIdentities": 16,
+        "gap": "6M has 13 lawful comparable residuals and 12M has zero for every model."
+      }
+    ]
+  },
+  "formalCapabilityMatrix": {
+    "capturedFromDeployedSgRuntimeSha": "03f2ff3535886f7579ef200a1cede9fb2d50d766",
+    "unchangedByLaterMetadataHydrationSha": "4fd33ec401379e3587d5801b005772e89f6738a6",
+    "variantCountPerDailySeries": 12,
+    "variantCountForMonthlyHwwi": 12,
+    "fastReadyBySeries": {
+      "b_c1_cl": 0,
+      "bz_c1_cl": 0,
+      "cl_c1_cl": 0,
+      "ehr2027g_cl": 0,
+      "hg2027g_cl": 0,
+      "hg_c1_cl": 0,
+      "hwwi_gb_ironsteel_2021_eur": 0,
+      "lmeofcucashask": 0,
+      "lmescusd20270226": 0,
+      "qm_c1_cl": 0,
+      "wocaes0074": 0
+    },
+    "recentVerificationStaleBySeries": {
+      "b_c1_cl": 12,
+      "bz_c1_cl": 12,
+      "cl_c1_cl": 12,
+      "ehr2027g_cl": 6,
+      "hg2027g_cl": 12,
+      "hg_c1_cl": 12,
+      "hwwi_gb_ironsteel_2021_eur": 4,
+      "lmeofcucashask": 12,
+      "lmescusd20270226": 12,
+      "qm_c1_cl": 12,
+      "wocaes0074": 12
+    },
+    "periodBandsReadyBySeries": {
+      "b_c1_cl": 8,
+      "bz_c1_cl": 8,
+      "cl_c1_cl": 8,
+      "ehr2027g_cl": 8,
+      "hg2027g_cl": 8,
+      "hg_c1_cl": 8,
+      "hwwi_gb_ironsteel_2021_eur": 4,
+      "lmeofcucashask": 8,
+      "lmescusd20270226": 8,
+      "qm_c1_cl": 8,
+      "wocaes0074": 8
+    },
+    "rootCause": "The deployed schema cannot persist trainingWindowPolicyId and effectiveTrainingPolicyId. Rows are reconstructed as LEGACY_UNRESOLVED and strict prepared-read capability checks reject them as statistical-policy incompatible.",
+    "notADataFingerprintFailure": true,
+    "notAColdComputeFailure": true
+  },
   "clientUiSmoke": {
     "actualProductionDashboardUsed": true,
-    "supportedPathsTested": 11,
-    "supportedPathsPassed": 11,
+    "supportedPathsTestedBeforeLatestSgRuntimeDeploy": 11,
+    "supportedPathsPassedBeforeLatestSgRuntimeDeploy": 11,
+    "representativePathsTestedAfterLatestSgRuntimeDeploy": 2,
+    "representativePathsPassedAfterLatestSgRuntimeDeploy": 2,
+    "finalRollingDailyCalibrationSmoke": {
+      "seriesId": "hg_c1_cl",
+      "modelCoverage": "4_OF_4_AT_ROLLING_DAILY_PASS",
+      "methodologyCoverage": "3_OF_3_AT_ARIMA_PASS",
+      "selectedFinalIdentity": "ARIMA|ROLLING_DAILY_POINT_IN_TIME|12M",
+      "forecastVisible": true,
+      "upperBandVisible": true,
+      "lowerBandVisible": true,
+      "historicalVerificationVisible": true,
+      "technicalErrorsVisible": false,
+      "sgRuntimeRequests": "GET_ONLY_HTTP_200",
+      "sgRuntimeCapabilityRequestCount": 4,
+      "sgRuntimeCapabilityResponseTimeRangeMs": "1839-2282",
+      "smokeWindowUtc": "2026-09-17T00:41:34Z/2026-09-17T00:42:16Z",
+      "noPostOrComputeAuditWindowUtc": "2026-09-17T00:41:00Z/2026-09-17T00:46:40Z",
+      "productionComputeStarted": false,
+      "prepareRouteInvoked": false
+    },
+    "finalVisualSmokeAtUtc": "2026-09-17T00:44:08Z",
     "allFourModelsExplicitlyCheckedOnRepresentativePreparedSeries": true,
     "forecastVisible": true,
     "upperBandVisible": true,
@@ -202,14 +469,20 @@
     "technicalErrorsVisible": false,
     "browserConsoleErrors": 0,
     "dashboardHttpStatus": 200,
-    "dashboardObservedResponseTimeRangeMs": "10-1980",
+    "dashboardObservedResponseTimeRangeMsBeforeLatestSgRuntimeDeploy": "10-1980",
+    "postDeploySmokeWindowUtc": "2026-09-16T20:25:29Z/2026-09-16T20:25:45Z",
+    "postDeploySgRuntimeCapabilityRequests": 1,
+    "postDeploySgRuntimeCapabilityResponseStatuses": [200],
+    "postDeploySgRuntimeCapabilityResponseTimesMs": [137],
+    "errorsObservedDuringPostDeploySmoke": 0,
     "postRequestsObservedDuringFinalSmoke": 0,
     "productionComputeStartedByFinalUiReads": false,
     "prepareRouteInvokedByFinalUiReads": false
   },
   "remainingDecisions": [
     "Approve or reject qm_c1_cl as the current WTI continuation substitute for stale ws_c1_cl.",
-    "Approve a capability-constrained demo in which unsupported or unprepared methodologies are not exposed, or authorize additional high-risk methodology/data work.",
+    "Decide whether to authorize the already-versioned forecast training-policy identity migration after a separate migration-risk review; without it the formal FAST_READY contract remains false even though prepared UI reads work.",
+    "Decide whether HWWI DataType=average is sufficient governed provenance for Monthly Average or whether the demo must stay capability-constrained; Point in Time remains structurally unsupported for a monthly source.",
     "Decide whether the HRC period Recent Verification gap may be presented as limited history or must be closed by changing the accepted training policy."
   ],
   "safety": {

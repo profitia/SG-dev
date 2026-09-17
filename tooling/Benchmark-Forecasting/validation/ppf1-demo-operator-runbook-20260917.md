@@ -2,9 +2,10 @@
 
 ## Frozen production authority
 
-- Dashboard and SG Runtime source SHA: `9a0ce6bce2c12fd87dd95e9b1204577a40ad8aa4`.
+- Dashboard source SHA: `9a0ce6bce2c12fd87dd95e9b1204577a40ad8aa4`.
+- SG Runtime source SHA: `4fd33ec401379e3587d5801b005772e89f6738a6`.
 - Dashboard deploy: `dep-dale0vm5vjqs73f2e22g`, status `live`.
-- SG Runtime deploy: `dep-dale0iu1egvs73e93mv0`, status `live`.
+- SG Runtime deploy: `dep-dalfs8id0e5s73f8r0sg`, status `live`.
 - Auto-deploy is disabled for both services.
 - Do not deploy, reconfigure, hydrate, prewarm, or run preparation during the client session.
 - Do not add `progressivePreparation=1` or any other preparation flag to a demo URL.
@@ -14,9 +15,10 @@
 1. Open the production Dashboard in a clean browser tab.
 2. Open `wocaes0074` and confirm that Rolling Daily / ARIMA displays Forecast, Upper, Lower, and Historical Verification.
 3. Switch to Naive, Damped Holt, ETS, and back to ARIMA. Each switch must remain a prepared read and must not show a technical error.
-4. Open `hwwi_gb_ironsteel_2021_eur`, select End of Period, and confirm the same four model choices.
-5. Open `bz_c1_cl`, keep Rolling Daily selected, and confirm all four models.
-6. If any prepared path is unavailable, do not press a preparation action during the meeting. Move to the fallback benchmark and record the exact series, model, and methodology after the meeting.
+4. Open `hg_c1_cl`, select Rolling Daily / ARIMA / 12M, and confirm Forecast, Upper, Lower, and Historical Verification. This exact path passed the final post-bootstrap smoke.
+5. Open `hwwi_gb_ironsteel_2021_eur`, select End of Period, and confirm the same four model choices.
+6. Open `bz_c1_cl`; confirm Rolling Daily, Monthly Average, and End of Period across all four models.
+7. If any prepared path is unavailable, do not press a preparation action during the meeting. Move to the fallback benchmark and record the exact series, model, and methodology after the meeting.
 
 ## Safe presentation path
 
@@ -27,10 +29,10 @@
 | 3 | `wocaes0074` | Brent Spot FOB North Sea | Rolling Daily; Monthly Average; End of Period | all four |
 | 4 | `hg2027g_cl` | CME Copper February 2027 | Rolling Daily; Monthly Average; End of Period | all four |
 | 5 | `lmeofcucashask` | LME Copper Cash | Rolling Daily; Monthly Average; End of Period | all four |
-| 6 | `ehr2027g_cl` | North European HRC February 2027 | Rolling Daily for all four; period Current for all four; period Verification only for Naive | as stated |
+| 6 | `ehr2027g_cl` | North European HRC February 2027 | Rolling Daily for all four (calibrated bands at 1M only); period Current for all four; period Verification only for Naive | as stated |
 | 7 | `hwwi_gb_ironsteel_2021_eur` | HWWI Iron and Steel Index | End of Period only | all four |
-| 8 | `lmescusd20270226` | LME Steel Scrap February 2027 | Rolling Daily; Monthly Average; End of Period | all four |
-| 9 | `bz_c1_cl` | ICE Brent continuation | Rolling Daily only | all four |
+| 8 | `lmescusd20270226` | LME Steel Scrap February 2027 | Rolling Daily (calibrated bands at 1M and 3M); Monthly Average; End of Period | all four |
+| 9 | `bz_c1_cl` | ICE Brent continuation | Rolling Daily; Monthly Average; End of Period | all four |
 | 10 | `hg_c1_cl` | Copper continuation | Rolling Daily; Monthly Average; End of Period | all four |
 | 11 | `qm_c1_cl` | current crude-oil continuation fallback candidate | Rolling Daily; Monthly Average; End of Period | all four |
 
@@ -48,8 +50,9 @@ The eleventh row must not be described as the exact WTI financial continuation u
 
 - Do not claim that a model is the champion, preferred model, automatic winner, or recommendation.
 - Do not claim calibrated uncertainty merely because Lower and Upper are visible.
-- Do not claim all three methodologies for HWWI or Brent continuation.
+- Do not claim all three methodologies for HWWI.
 - Do not claim complete period Recent Verification for HRC beyond Naive.
+- Do not describe Rolling Daily bands beyond 1M for HRC or beyond 3M for LME Steel Scrap as calibrated; their lawful history does not yet provide 30 comparable residuals at longer horizons.
 - Do not claim PPF-1 Stage 12 or full PPF-1 production completion.
 
 ## Fallback order

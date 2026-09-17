@@ -1,18 +1,20 @@
 {
-  "manifestVersion": "PPF1_DEMO_FREEZE_MANIFEST_V1",
-  "frozenAt": "2026-09-16T21:30:00+02:00",
+  "manifestVersion": "PPF1_DEMO_FREEZE_MANIFEST_V2",
+  "frozenAt": "2026-09-17T02:43:08+02:00",
   "demoDate": "2026-09-17",
   "repository": "https://github.com/profitia/SG-dev.git",
   "branch": "demo/porr-11-benchmark-readiness-20260916",
-  "deployedSourceSha": "9a0ce6bce2c12fd87dd95e9b1204577a40ad8aa4",
-  "documentationEvidenceSha": "8e4cb2e9bb444413c8f4816483ae6b1f6d5631af",
+  "dashboardSourceSha": "9a0ce6bce2c12fd87dd95e9b1204577a40ad8aa4",
+  "sgRuntimeSourceSha": "4fd33ec401379e3587d5801b005772e89f6738a6",
+  "priorDocumentationEvidenceSha": "8e4cb2e9bb444413c8f4816483ae6b1f6d5631af",
+  "finalPublicationShaRecordedInExternalHandoff": true,
   "frozenStage12Sha": "2f0e93c828fef22241affd4b703fc139b1759ca8",
   "services": [
     {
       "name": "spendguru-stage",
       "serviceId": "srv-d98a73btqb8s73fabp90",
-      "deployId": "dep-dale0iu1egvs73e93mv0",
-      "deployedSha": "9a0ce6bce2c12fd87dd95e9b1204577a40ad8aa4",
+      "deployId": "dep-dalfs8id0e5s73f8r0sg",
+      "deployedSha": "4fd33ec401379e3587d5801b005772e89f6738a6",
       "status": "live",
       "autoDeploy": false
     },
@@ -30,15 +32,23 @@
     "branchId": "br-purple-shape-b2az1npx",
     "database": "neondb"
   },
-  "productionChangeFreeze": true,
+  "backendProductionChangeFreeze": true,
+  "uiUxFollowUpChangesRemainAllowedAfterReview": true,
   "preparationDuringClientSessionAllowed": false,
   "progressivePreparationQueryFlagAllowed": false,
   "finalReadinessClaim": "PARTIAL_AWAITING_OWNER_DECISION",
   "strictElevenBenchmarkContractMet": false,
-  "supportedPreparedUiPathsSmoke": "11_OF_11_PASS",
+  "rollingDailyCalibrationReadyExactIdentities": 140,
+  "rollingDailyCalibrationExactIdentities": 160,
+  "allRecoverableCalibrationIdentitiesReady": true,
+  "structuralShortHistoryCalibrationGaps": 20,
+  "finalRollingDailyPreparedReadSmoke": "PASS",
+  "supportedPreparedUiPathsSmokeBeforeFinalMetadataDeploy": "11_OF_11_PASS",
+  "representativePreparedUiPathsSmokeAfterFinalMetadataDeploy": "2_OF_2_PASS",
   "openOwnerDecisions": [
     "WTI_CONTINUATION_SUBSTITUTE",
-    "CAPABILITY_CONSTRAINED_DEMO_SCOPE",
+    "TRAINING_POLICY_IDENTITY_MIGRATION",
+    "HWWI_MONTHLY_AVERAGE_PROVENANCE",
     "HRC_PERIOD_VERIFICATION_SCOPE"
   ],
   "governance": {
