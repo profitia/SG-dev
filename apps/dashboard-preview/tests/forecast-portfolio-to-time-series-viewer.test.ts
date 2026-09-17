@@ -992,7 +992,7 @@ test('period current forecast renders truthful upper and lower band series from 
   assert.equal(central?.points[0]?.detailModel.forecastUpper, 117)
 })
 
-test('forecast origin marker label stays locale-aware', () => {
+test('forecast preparation date stays locale-aware', () => {
   const englishPayload = buildForecastPortfolioPayload({
     basePayload: createBasePayload(),
     locale: 'en',
@@ -1011,8 +1011,8 @@ test('forecast origin marker label stays locale-aware', () => {
     verificationHorizon: '3M',
   })
 
-  assert.equal(englishPayload?.forecastOrigin?.label, 'Forecast origin · Jul 2026')
-  assert.equal(polishPayload?.forecastOrigin?.label, 'Forecast Origin · lip 2026')
+  assert.equal(englishPayload?.forecastOrigin?.label, 'Forecast preparation date: Jul 2026')
+  assert.equal(polishPayload?.forecastOrigin?.label, 'Data przygotowania prognozy: lip 2026')
 })
 
 test('historical verification uses a real trailing window ending at the latest historical observation', () => {

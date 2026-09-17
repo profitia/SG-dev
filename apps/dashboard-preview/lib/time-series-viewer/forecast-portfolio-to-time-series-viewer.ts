@@ -1495,7 +1495,7 @@ export function buildForecastPortfolioPayload({
         date: currentResult.targetBasis === 'POINT_IN_TIME'
           ? normalizePointInTimeDisplayDate(currentResult.forecastOrigin)
           : toMonthEndDisplayDate(currentResult.forecastOrigin),
-        label: `${locale === 'pl' ? 'Forecast Origin' : 'Forecast origin'} · ${currentResult.targetBasis === 'POINT_IN_TIME' ? formatDayLabel(locale, currentResult.forecastOrigin) : formatMonthLabel(locale, currentResult.forecastOrigin)}`,
+        label: `${locale === 'pl' ? 'Data przygotowania prognozy' : 'Forecast preparation date'}: ${currentResult.targetBasis === 'POINT_IN_TIME' ? formatDayLabel(locale, currentResult.forecastOrigin) : formatMonthLabel(locale, currentResult.forecastOrigin)}`,
       }
     }
   }

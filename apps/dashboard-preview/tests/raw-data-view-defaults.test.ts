@@ -788,6 +788,13 @@ test('forecast portfolio does not show an uncertainty disclaimer when bands are 
   assert.doesNotMatch(source, /t\('modelNativeBands'\)/)
 })
 
+test('forecast preparation date is outside the chart drawing area', () => {
+  const source = fs.readFileSync(new URL('../components/raw-data-view/index.tsx', import.meta.url), 'utf8')
+
+  assert.doesNotMatch(source, /chart-origin-label/)
+  assert.match(source, /chart-forecast-preparation-date/)
+})
+
 test('forecast-portfolio-v3 keeps explicit Brent authoritative when Brent is selected', () => {
   assert.deepEqual(
     resolveForecastPortfolioBenchmarkSubject({

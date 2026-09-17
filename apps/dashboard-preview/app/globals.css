@@ -1428,12 +1428,6 @@ body:has(.app-shell.is-embedded) .forecast-verification-group .chart-range-butto
   opacity: 0.7;
 }
 
-.chart-origin-label {
-  fill: color-mix(in srgb, var(--sg-color-action-primary) 82%, var(--text));
-  font-size: 11px;
-  font-weight: 600;
-}
-
 .chart-tick-label {
   fill: var(--muted);
   font-size: 12px;
@@ -2016,6 +2010,14 @@ body:has(.app-shell.is-embedded) .forecast-verification-group .chart-range-butto
   margin-top: 1.15rem;
   display: grid;
   gap: 0.95rem;
+}
+
+.chart-forecast-preparation-date {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.35;
+  text-align: right;
 }
 
 .chart-legend-footer {

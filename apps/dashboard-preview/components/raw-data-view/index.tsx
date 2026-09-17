@@ -2299,7 +2299,6 @@ function ChartPanel({
                 y2={chartLayout.height - chartLayout.paddingBottom}
                 className="chart-crosshair-line is-vertical is-origin"
               />
-              <text x={originX + 10} y={chartLayout.paddingTop + 12} className="chart-origin-label">{payload.forecastOrigin.label}</text>
             </g>
           )
         })() : null}
@@ -2505,6 +2504,10 @@ function ChartPanel({
           </div>
         ) : null}
       </div>
+
+      {payload.forecastOrigin ? (
+        <p className="chart-forecast-preparation-date">{payload.forecastOrigin.label}</p>
+      ) : null}
 
       {(!embedded && (chartLayout.isTouch || useCompactTooltipRail)) ? (
         <div className={`chart-tooltip-mobile-wrap${(displaySurfaceTooltip && tooltipCard) || hasSharedTooltipRows(sharedTooltipCard) ? ' is-active' : ' is-reserved'}`}>
