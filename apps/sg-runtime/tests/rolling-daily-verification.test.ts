@@ -59,6 +59,18 @@ function createPersistedRecord() {
   }
 }
 
+function createRecentPersistedRecords() {
+  return [1, 3, 6, 12].map((horizonMonths) => ({
+    ...createPersistedRecord(),
+    forecastOriginAt: new Date(`2023-${String(13 - horizonMonths).padStart(2, '0')}-05T00:00:00.000Z`),
+    horizonLabel: `${horizonMonths}M`,
+    horizonMonths,
+    horizonSteps: horizonMonths * 21,
+    targetCalendarDate: new Date('2024-01-05T00:00:00.000Z'),
+    verificationObservedAt: new Date('2024-01-05T00:00:00.000Z'),
+  }))
+}
+
 test('prepared rolling daily verification stays NOT_AVAILABLE while the checkpoint is partial', async () => {
   const events: Array<{ event: string, metrics: Record<string, unknown> }> = []
   const exactFingerprint = buildRollingDailyHistoryFingerprint({
@@ -144,4 +156,53 @@ test('prepared rolling daily verification becomes AVAILABLE only after the check
   assert.equal(result.historyFingerprint.length > 0, true)
   assert.equal(result.verification['1M']?.successfulOrigins, 1)
   assert.equal(result.forecastOrigin, '2024-01-04T00:00:00.000Z')
+})
+
+test('prepared rolling daily verification serves an exact recent four-horizon artifact before full enrichment completes', async () => {
+  const history = createHistory()
+  history.historical = Array.from({ length: 370 }, (_, index) => {
+    const date = new Date(Date.UTC(2023, 0, 1 + index))
+    return { date: date.toISOString(), value: 100 + index }
+  })
+  const exactFingerprint = buildRollingDailyHistoryFingerprint({
+    seriesId: 'wocaes0074',
+    displayName: 'Brent, Spot, FOB North Sea',
+    description: 'Brent, Spot, FOB North Sea',
+    frequency: 'DAILY',
+    source: 'controlled-source',
+    points: history.historical,
+  })
+  const recentRecords = createRecentPersistedRecords().map((record) => ({
+    ...record,
+    sourceHistoryFingerprint: exactFingerprint,
+    targetCalendarDate: new Date('2024-01-05T00:00:00.000Z'),
+    verificationObservedAt: new Date('2024-01-05T00:00:00.000Z'),
+  }))
+  const reader = createPreparedRollingDailyForecastVerificationReader({
+    prisma: {
+      rollingDailyVerificationRecord: {
+        async findMany() {
+          return recentRecords
+        },
+      },
+      rollingDailyMaintenanceState: {
+        async findUnique() {
+          return {
+            latestSourceHistoryFingerprint: exactFingerprint,
+            latestSourceObservationAt: '2024-01-05T00:00:00.000Z',
+            lastProcessedOriginAt: null,
+            lastMaintenanceStatus: 'SUCCEEDED',
+          }
+        },
+      },
+    } as never,
+    resolveHistory: async () => ({ history }) as never,
+  })
+
+  const result = await reader({ seriesId: 'wocaes0074', modelId: 'naive', targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME' } as never)
+
+  assert.equal(result.status, 'AVAILABLE')
+  assert.deepEqual(Object.keys(result.verification).sort(), ['12M', '1M', '3M', '6M'])
+  assert.equal(result.lineage.statisticalCompatibility.artifactScope, 'RECENT_VERIFICATION')
+  assert.equal(result.historicalVerification?.status, 'LIMITED_SAMPLE')
 })

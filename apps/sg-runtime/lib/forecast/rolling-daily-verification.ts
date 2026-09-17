@@ -4,7 +4,10 @@ import type {
   ForecastVerificationHorizon,
   ForecastVerificationRecord,
 } from '@/lib/forecast/contracts'
-import { createFullVerificationStatisticalCompatibility } from '@/lib/forecast/identity'
+import {
+  createFullVerificationStatisticalCompatibility,
+  createRecentVerificationStatisticalCompatibility,
+} from '@/lib/forecast/identity'
 import type { ForecastRequestInput } from '@/lib/forecast/request-contract'
 import {
   buildRollingDailyHistoryFingerprint,
@@ -40,6 +43,20 @@ function asIsoString(value: Date | string | null) {
   }
 
   return value instanceof Date ? value.toISOString() : value
+}
+
+function normalizeDailyObservationDay(value: Date | string) {
+  return asIsoString(value)?.slice(0, 10) ?? ''
+}
+
+function subtractCalendarMonthsClamped(value: string, months: number) {
+  const date = new Date(`${normalizeDailyObservationDay(value)}T00:00:00.000Z`)
+  const originalDay = date.getUTCDate()
+  date.setUTCDate(1)
+  date.setUTCMonth(date.getUTCMonth() - months)
+  const lastDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate()
+  date.setUTCDate(Math.min(originalDay, lastDay))
+  return date.toISOString().slice(0, 10)
 }
 
 export function createPreparedRollingDailyForecastVerificationReader(
@@ -94,7 +111,7 @@ export function createPreparedRollingDailyForecastVerificationReader(
       },
     })
 
-    const prepared = isRollingDailyHistoricalPreparationComplete({
+    const fullPrepared = isRollingDailyHistoricalPreparationComplete({
       state: maintenanceState
         ? {
             latestSourceHistoryFingerprint: maintenanceState.latestSourceHistoryFingerprint,
@@ -107,6 +124,40 @@ export function createPreparedRollingDailyForecastVerificationReader(
       latestSourceObservationDate: history.historical[history.historical.length - 1]?.date ?? null,
       verificationRecordCount: records.length,
     })
+    const latestSourceObservationDate = history.historical[history.historical.length - 1]?.date ?? null
+    const earliestSourceObservationDate = history.historical[0]?.date ?? null
+    const recentPrepared = Boolean(
+      records.length > 0
+      && maintenanceState
+      && (maintenanceState.lastMaintenanceStatus === 'SUCCEEDED' || maintenanceState.lastMaintenanceStatus === 'NO_OP')
+      && maintenanceState.latestSourceHistoryFingerprint === sourceHistoryFingerprint
+      && latestSourceObservationDate
+      && maintenanceState.latestSourceObservationAt
+      && normalizeDailyObservationDay(maintenanceState.latestSourceObservationAt) === normalizeDailyObservationDay(latestSourceObservationDate)
+      && earliestSourceObservationDate
+      && history.historical.length >= 36
+      && [1, 3, 6, 12]
+        .filter((horizonMonths) => (
+          normalizeDailyObservationDay(earliestSourceObservationDate)
+          <= subtractCalendarMonthsClamped(latestSourceObservationDate, horizonMonths)
+        ))
+        .every((horizonMonths) => records.some((record) => {
+          if (
+            record.horizonMonths !== horizonMonths
+            || record.maturityStatus !== 'MATURED'
+            || record.actualValue === null
+            || !record.verificationObservedAt
+          ) {
+            return false
+          }
+          const lagDays = (
+            new Date(`${normalizeDailyObservationDay(latestSourceObservationDate)}T00:00:00.000Z`).getTime()
+            - new Date(`${normalizeDailyObservationDay(record.verificationObservedAt)}T00:00:00.000Z`).getTime()
+          ) / (24 * 60 * 60 * 1000)
+          return lagDays >= 0 && lagDays <= 7
+        })),
+    )
+    const prepared = fullPrepared || recentPrepared
 
     emitPreparedRead('prepared_read', {
       kind: 'verification',
@@ -178,7 +229,9 @@ export function createPreparedRollingDailyForecastVerificationReader(
       if (!record.trainingHistoryStartAt) return earliest
       return !earliest || record.trainingHistoryStartAt < earliest ? record.trainingHistoryStartAt : earliest
     }, null)
-    const statisticalCompatibility = createFullVerificationStatisticalCompatibility({
+    const statisticalCompatibility = (fullPrepared
+      ? createFullVerificationStatisticalCompatibility
+      : createRecentVerificationStatisticalCompatibility)({
       sourceFrequency: 'DAILY',
       targetCadence: 'DAILY',
       targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
