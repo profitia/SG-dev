@@ -712,7 +712,7 @@ test('prepared verification routes point-in-time and period requests to their la
     targetCadence: 'MONTHLY',
   }, dependencies)
 
-  assert.deepEqual(owners, ['ROLLING_DAILY', 'RECENT', 'GENERIC_PERIOD'])
+  assert.deepEqual(owners, ['RECENT', 'ROLLING_DAILY', 'RECENT', 'GENERIC_PERIOD'])
 })
 
 test('internal production forecast route denies requests when service token is not configured', async () => {

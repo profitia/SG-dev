@@ -2,7 +2,10 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import { buildRollingDailyHistoryFingerprint } from '../lib/forecast/rolling-daily-maintenance'
-import { createPreparedRollingDailyForecastVerificationReader } from '../lib/forecast/rolling-daily-verification'
+import {
+  createPreparedRollingDailyForecastVerificationReader,
+  createPreparedRollingDailyRecentForecastVerificationReader,
+} from '../lib/forecast/rolling-daily-verification'
 
 function createHistory() {
   return {
@@ -158,7 +161,7 @@ test('prepared rolling daily verification becomes AVAILABLE only after the check
   assert.equal(result.forecastOrigin, '2024-01-04T00:00:00.000Z')
 })
 
-test('prepared rolling daily verification serves an exact recent four-horizon artifact before full enrichment completes', async () => {
+test('prepared rolling daily recent verification serves an exact four-horizon artifact before full enrichment completes', async () => {
   const history = createHistory()
   history.historical = Array.from({ length: 370 }, (_, index) => {
     const date = new Date(Date.UTC(2023, 0, 1 + index))
@@ -178,7 +181,7 @@ test('prepared rolling daily verification serves an exact recent four-horizon ar
     targetCalendarDate: new Date('2024-01-05T00:00:00.000Z'),
     verificationObservedAt: new Date('2024-01-05T00:00:00.000Z'),
   }))
-  const reader = createPreparedRollingDailyForecastVerificationReader({
+  const reader = createPreparedRollingDailyRecentForecastVerificationReader({
     prisma: {
       rollingDailyVerificationRecord: {
         async findMany() {
@@ -205,4 +208,48 @@ test('prepared rolling daily verification serves an exact recent four-horizon ar
   assert.deepEqual(Object.keys(result.verification).sort(), ['12M', '1M', '3M', '6M'])
   assert.equal(result.lineage.statisticalCompatibility.artifactScope, 'RECENT_VERIFICATION')
   assert.equal(result.historicalVerification?.status, 'LIMITED_SAMPLE')
+})
+
+test('full rolling daily verification remains fail-closed when only the recent artifact is ready', async () => {
+  const history = createHistory()
+  history.historical = Array.from({ length: 370 }, (_, index) => {
+    const date = new Date(Date.UTC(2023, 0, 1 + index))
+    return { date: date.toISOString(), value: 100 + index }
+  })
+  const exactFingerprint = buildRollingDailyHistoryFingerprint({
+    seriesId: 'wocaes0074',
+    displayName: 'Brent, Spot, FOB North Sea',
+    description: 'Brent, Spot, FOB North Sea',
+    frequency: 'DAILY',
+    source: 'controlled-source',
+    points: history.historical,
+  })
+  const reader = createPreparedRollingDailyForecastVerificationReader({
+    prisma: {
+      rollingDailyVerificationRecord: {
+        async findMany() {
+          return createRecentPersistedRecords().map((record) => ({
+            ...record,
+            sourceHistoryFingerprint: exactFingerprint,
+          }))
+        },
+      },
+      rollingDailyMaintenanceState: {
+        async findUnique() {
+          return {
+            latestSourceHistoryFingerprint: exactFingerprint,
+            latestSourceObservationAt: '2024-01-05T00:00:00.000Z',
+            lastProcessedOriginAt: null,
+            lastMaintenanceStatus: 'SUCCEEDED',
+          }
+        },
+      },
+    } as never,
+    resolveHistory: async () => ({ history }) as never,
+  })
+
+  const result = await reader({ seriesId: 'wocaes0074', modelId: 'naive', targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME' } as never)
+
+  assert.equal(result.status, 'NOT_AVAILABLE')
+  assert.match(result.reason ?? '', /Historical Verification is incomplete/)
 })

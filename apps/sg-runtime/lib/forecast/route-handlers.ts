@@ -12,7 +12,10 @@ import { resolveProductionForecast, type ProductionForecastResult } from '@/lib/
 import { createRollingDailyProductionOperationsService } from '@/lib/forecast/rolling-daily-production-operations'
 import { readRollingDailyCurrentForecastSnapshot } from '@/lib/forecast/rolling-daily-current-forecast-snapshot'
 import { buildRollingDailyHistoryFingerprint } from '@/lib/forecast/rolling-daily-maintenance'
-import { readPreparedRollingDailyForecastVerification } from '@/lib/forecast/rolling-daily-verification'
+import {
+  readPreparedRollingDailyForecastVerification,
+  readPreparedRollingDailyRecentForecastVerification,
+} from '@/lib/forecast/rolling-daily-verification'
 import {
   ForecastRouteQuerySchema,
   ProductionForecastRouteQuerySchema,
@@ -116,7 +119,9 @@ function readPreparedReadAuthorityFromHeaders(
 }
 
 const preparedVerificationDependencies: PreparedVerificationDependencies = {
-  readRecentVerification: readPreparedBenchmarkRecentForecastVerification,
+  readRecentVerification: (input) => input.targetBasis === 'POINT_IN_TIME'
+    ? readPreparedRollingDailyRecentForecastVerification(input)
+    : readPreparedBenchmarkRecentForecastVerification(input),
   readRollingDailyVerification: readPreparedRollingDailyForecastVerification,
   readGenericPeriodVerification: readPreparedBenchmarkForecastVerification,
 }
@@ -170,11 +175,9 @@ export async function resolvePreparedForecastVerification(
   input: ForecastRequestInput,
   dependencies: PreparedVerificationDependencies = preparedVerificationDependencies,
 ) {
-  if (input.targetBasis !== 'POINT_IN_TIME') {
-    const recent = await dependencies.readRecentVerification(input)
-    if (recent.status === 'AVAILABLE') {
-      return ensureHistoricalVerificationContract(recent)
-    }
+  const recent = await dependencies.readRecentVerification(input)
+  if (recent.status === 'AVAILABLE') {
+    return ensureHistoricalVerificationContract(recent)
   }
 
   const full = await (input.targetBasis === 'POINT_IN_TIME'

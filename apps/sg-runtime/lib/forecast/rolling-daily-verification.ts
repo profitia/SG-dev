@@ -59,7 +59,8 @@ function subtractCalendarMonthsClamped(value: string, months: number) {
   return date.toISOString().slice(0, 10)
 }
 
-export function createPreparedRollingDailyForecastVerificationReader(
+function createPreparedRollingDailyForecastVerificationReaderForScope(
+  scope: 'FULL' | 'RECENT',
   dependencies: PreparedRollingDailyForecastVerificationDependencies = {},
 ) {
   return async function readPreparedRollingDailyForecastVerification(
@@ -157,7 +158,7 @@ export function createPreparedRollingDailyForecastVerificationReader(
           return lagDays >= 0 && lagDays <= 7
         })),
     )
-    const prepared = fullPrepared || recentPrepared
+    const prepared = scope === 'FULL' ? fullPrepared : recentPrepared
 
     emitPreparedRead('prepared_read', {
       kind: 'verification',
@@ -175,8 +176,8 @@ export function createPreparedRollingDailyForecastVerificationReader(
         targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
         methodId: ROLLING_DAILY_METHOD_ID,
         reason: records.length === 0
-          ? 'PREPARATION_REQUIRED: No exact-identity prepared Rolling Daily Historical Verification is available.'
-          : 'PREPARATION_REQUIRED: Prepared Rolling Daily Historical Verification is incomplete for the latest lawful source observation.',
+          ? `PREPARATION_REQUIRED: No exact-identity prepared Rolling Daily ${scope === 'FULL' ? 'Historical' : 'Recent'} Verification is available.`
+          : `PREPARATION_REQUIRED: Prepared Rolling Daily ${scope === 'FULL' ? 'Historical Verification is incomplete' : 'Recent Verification is not ready'} for the latest lawful source observation.`,
         historicalVerification: createUnavailableHistoricalVerificationSummary('NOT_PREPARED'),
       }
     }
@@ -229,7 +230,7 @@ export function createPreparedRollingDailyForecastVerificationReader(
       if (!record.trainingHistoryStartAt) return earliest
       return !earliest || record.trainingHistoryStartAt < earliest ? record.trainingHistoryStartAt : earliest
     }, null)
-    const statisticalCompatibility = (fullPrepared
+    const statisticalCompatibility = (scope === 'FULL'
       ? createFullVerificationStatisticalCompatibility
       : createRecentVerificationStatisticalCompatibility)({
       sourceFrequency: 'DAILY',
@@ -274,10 +275,29 @@ export function createPreparedRollingDailyForecastVerificationReader(
   }
 }
 
+export function createPreparedRollingDailyForecastVerificationReader(
+  dependencies: PreparedRollingDailyForecastVerificationDependencies = {},
+) {
+  return createPreparedRollingDailyForecastVerificationReaderForScope('FULL', dependencies)
+}
+
+export function createPreparedRollingDailyRecentForecastVerificationReader(
+  dependencies: PreparedRollingDailyForecastVerificationDependencies = {},
+) {
+  return createPreparedRollingDailyForecastVerificationReaderForScope('RECENT', dependencies)
+}
+
 const defaultPreparedRollingDailyForecastVerificationReader = createPreparedRollingDailyForecastVerificationReader()
+const defaultPreparedRollingDailyRecentForecastVerificationReader = createPreparedRollingDailyRecentForecastVerificationReader()
 
 export async function readPreparedRollingDailyForecastVerification(
   input: ForecastRequestInput,
 ): Promise<BenchmarkForecastVerificationResult> {
   return defaultPreparedRollingDailyForecastVerificationReader(input)
+}
+
+export async function readPreparedRollingDailyRecentForecastVerification(
+  input: ForecastRequestInput,
+): Promise<BenchmarkForecastVerificationResult> {
+  return defaultPreparedRollingDailyRecentForecastVerificationReader(input)
 }
