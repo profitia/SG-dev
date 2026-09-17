@@ -39,23 +39,27 @@ test('benchmark finder starts from Search while preserving the outer PORR frame'
   assert.doesNotMatch(shellSource, /getTranslations|openFinder|Overview|Przegląd/)
 })
 
-test('login planned topics render exactly one bullet', () => {
-  const plannedTopicOccurrences = [...homePageSource.matchAll(/plannedTopicsItem[A-Z][A-Za-z]+/g)].length
-
-  assert.equal(plannedTopicOccurrences, 1)
-  assert.match(homePageSource, /<li>\{t\('porrDemo\.plannedTopicsItemOne'\)\}<\/li>/)
-})
-
-test('login messages keep only the requested next-version copy', () => {
+test('login messages publish version 1.2 with three next-version topics', () => {
   const porrDemoPl = readPorrDemoMessages(polishMessages)
   const porrDemoEn = readPorrDemoMessages(englishMessages)
 
-  assert.equal(porrDemoPl.plannedTopicsItemOne, 'Optymalizacja procesu tworzenia prognozy.')
-  assert.equal(porrDemoEn.plannedTopicsItemOne, 'Forecast generation process optimization.')
-  assert.equal('plannedTopicsItemTwo' in porrDemoPl, false)
-  assert.equal('plannedTopicsItemThree' in porrDemoPl, false)
-  assert.equal('plannedTopicsItemTwo' in porrDemoEn, false)
-  assert.equal('plannedTopicsItemThree' in porrDemoEn, false)
+  assert.equal(porrDemoPl.versionLabel, 'Wersja: 1.2')
+  assert.equal(porrDemoEn.versionLabel, 'Version: 1.2')
+  assert.equal(porrDemoPl.publicationDateLabel, 'Data publikacji: 2026-09-17')
+  assert.equal(porrDemoEn.publicationDateLabel, 'Publication date: 2026-09-17')
+  assert.ok(porrDemoPl.plannedTopicsItemOne)
+  assert.ok(porrDemoPl.plannedTopicsItemTwo)
+  assert.ok(porrDemoPl.plannedTopicsItemThree)
+  assert.ok(porrDemoEn.plannedTopicsItemOne)
+  assert.ok(porrDemoEn.plannedTopicsItemTwo)
+  assert.ok(porrDemoEn.plannedTopicsItemThree)
+})
+
+test('login reuses the canonical eleven-benchmark portfolio and exposes version history', () => {
+  assert.match(homePageSource, /PORR_DEMO_FORECAST_BENCHMARKS\.filter/)
+  assert.match(homePageSource, /<details className=/)
+  assert.match(homePageSource, /versionHistoryChangelogLabel/)
+  assert.equal(PORR_DEMO_FORECAST_BENCHMARKS.length, 11)
 })
 
 test('PORR demo exposes one bilingual, operator-approved eleven-benchmark portfolio', () => {

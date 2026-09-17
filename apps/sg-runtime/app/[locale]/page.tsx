@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 
+import { PORR_DEMO_FORECAST_BENCHMARKS } from '@/lib/benchmark/porr-demo-forecast-portfolio'
 import { isPorrDemoProfile } from '@/lib/env'
 import {
   PORR_DEMO_SESSION_COOKIE_NAME,
@@ -91,6 +92,26 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
       redirect(`/${locale}/benchmark-finder`)
   }
 
+  const benchmarkFamilies = [
+    { family: 'oil' as const, label: t('porrDemo.benchmarkFamilyOil') },
+    { family: 'copper' as const, label: t('porrDemo.benchmarkFamilyCopper') },
+    { family: 'steel' as const, label: t('porrDemo.benchmarkFamilySteel') },
+  ]
+  const changelogItems = [
+    'changelogItemOne',
+    'changelogItemTwo',
+    'changelogItemThree',
+    'changelogItemFour',
+    'changelogItemFive',
+    'changelogItemSix',
+    'changelogItemSeven',
+  ] as const
+  const plannedTopicItems = [
+    'plannedTopicsItemOne',
+    'plannedTopicsItemTwo',
+    'plannedTopicsItemThree',
+  ] as const
+
   return (
     <main className="bg-white text-slate-950">
       <div className="mx-auto w-full max-w-[1440px] px-[clamp(24px,4vw,56px)] py-8 sm:py-10 xl:flex xl:min-h-screen xl:items-center">
@@ -172,8 +193,8 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
 
             <div className="hidden bg-[#0E4F8A] xl:block" aria-hidden="true" />
 
-            <section className="flex min-h-full flex-col xl:pl-[clamp(36px,4vw,56px)]">
-              <div className="flex min-h-full flex-col gap-9 text-sm leading-6 text-slate-950">
+            <section className="flex min-h-full min-w-0 flex-col xl:pl-[clamp(36px,4vw,56px)]">
+              <div className="flex min-h-0 flex-col gap-6 text-sm leading-6 text-slate-950 xl:max-h-[calc(100vh-5rem)] xl:overflow-y-auto xl:pr-3">
               <div className="space-y-1">
                 <p>{t('porrDemo.versionLabel')}</p>
                 <p>{t('porrDemo.publicationDateLabel')}</p>
@@ -182,7 +203,21 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
               <div>
                 <h2 className="text-base font-semibold text-slate-950">{t('porrDemo.currentScopeTitle')}</h2>
                 <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-slate-950 marker:text-slate-950">
-                  <li>{t('porrDemo.currentScopeItemOne')}</li>
+                  <li>
+                    {t('porrDemo.currentScopeItemOne')}
+                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                      {benchmarkFamilies.map(({ family, label }) => (
+                        <div key={family} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+                          <p className="font-semibold text-slate-950">{label}</p>
+                          <ul className="mt-1.5 space-y-1 text-xs leading-5 text-slate-700">
+                            {PORR_DEMO_FORECAST_BENCHMARKS.filter((benchmark) => benchmark.family === family).map((benchmark) => (
+                              <li key={benchmark.seriesId}>{benchmark.label[locale]}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </li>
                   <li>{t('porrDemo.currentScopeItemTwo')}</li>
                   <li>{t('porrDemo.currentScopeItemThree')}</li>
                 </ul>
@@ -191,18 +226,57 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
               <div>
                 <h2 className="text-base font-semibold text-slate-950">{t('porrDemo.changelogTitle')}</h2>
                 <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-slate-950 marker:text-slate-950">
-                  <li>{t('porrDemo.changelogItemOne')}</li>
+                  {changelogItems.map((item) => <li key={item}>{t(`porrDemo.${item}`)}</li>)}
                 </ul>
               </div>
 
               <div>
                 <h2 className="text-base font-semibold text-slate-950">{t('porrDemo.plannedTopicsTitle')}</h2>
                 <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-slate-950 marker:text-slate-950">
-                  <li>{t('porrDemo.plannedTopicsItemOne')}</li>
+                  {plannedTopicItems.map((item) => <li key={item}>{t(`porrDemo.${item}`)}</li>)}
                 </ul>
               </div>
 
-                <div className="mt-auto pt-8 text-sm text-slate-950">
+              <details className="group rounded-xl border border-slate-200 bg-slate-50">
+                <summary className="cursor-pointer list-none px-4 py-3 font-semibold text-slate-950 marker:hidden">
+                  <span className="flex items-center justify-between gap-4">
+                    {t('porrDemo.versionHistoryTitle')}
+                    <span aria-hidden="true" className="text-lg font-normal text-slate-500 transition group-open:rotate-45">+</span>
+                  </span>
+                </summary>
+                <div className="border-t border-slate-200 px-4 py-4">
+                  <dl className="grid gap-3 text-sm">
+                    <div>
+                      <dt className="font-semibold text-slate-950">{t('porrDemo.versionHistoryVersionLabel')}</dt>
+                      <dd className="text-slate-700">1.1</dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold text-slate-950">{t('porrDemo.versionHistoryDateLabel')}</dt>
+                      <dd className="text-slate-700">2026-09-04</dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold text-slate-950">{t('porrDemo.versionHistoryScopeLabel')}</dt>
+                      <dd>
+                        <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-700">
+                          <li>{t('porrDemo.versionHistoryScopeItemOne')}</li>
+                          <li>{t('porrDemo.versionHistoryScopeItemTwo')}</li>
+                          <li>{t('porrDemo.versionHistoryScopeItemThree')}</li>
+                        </ul>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold text-slate-950">{t('porrDemo.versionHistoryChangelogLabel')}</dt>
+                      <dd className="text-slate-700">{t('porrDemo.versionHistoryChangelogItemOne')}</dd>
+                    </div>
+                    <div>
+                      <dt className="font-semibold text-slate-950">{t('porrDemo.versionHistoryPendingLabel')}</dt>
+                      <dd className="text-slate-700">{t('porrDemo.versionHistoryPendingItemOne')}</dd>
+                    </div>
+                  </dl>
+                </div>
+              </details>
+
+                <div className="mt-auto pt-3 text-sm text-slate-950">
                 <p>{t('porrDemo.contactTitle')}</p>
                 <p>{t('porrDemo.contactEmail')}</p>
                 </div>
