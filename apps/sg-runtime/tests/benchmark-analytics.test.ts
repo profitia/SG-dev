@@ -19,7 +19,7 @@ test('analytics URL keeps warm-up off by default for Finder embeds', async () =>
   assert.equal(url.searchParams.get('displayName'), 'Brent')
 })
 
-test('analytics URL auto-enables warm-up for the PORR demo profile', async () => {
+test('analytics URL keeps warm-up off for the PORR demo profile', async () => {
   process.env.SG_RUNTIME_PORR_DEMO = 'true'
   mutableEnv.NODE_ENV = 'production'
   const { buildDashboardPreviewAnalyticsUrl, resolveBenchmarkAnalyticsEligibility } = await import('@/lib/benchmark/analytics')
@@ -28,9 +28,9 @@ test('analytics URL auto-enables warm-up for the PORR demo profile', async () =>
   const eligibilityUrl = new URL(eligibility.analyticsUrl ?? '')
 
   assert.equal(url.searchParams.get('showForecast'), 'false')
-  assert.equal(url.searchParams.get('warmCurrentForecast'), '1')
+  assert.equal(url.searchParams.has('warmCurrentForecast'), false)
   assert.equal(eligibilityUrl.searchParams.get('showForecast'), 'false')
-  assert.equal(eligibilityUrl.searchParams.get('warmCurrentForecast'), '1')
+  assert.equal(eligibilityUrl.searchParams.has('warmCurrentForecast'), false)
 })
 
 test('analytics URL propagates the warm-up flag for explicit experiment requests without duplication', async () => {
