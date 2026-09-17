@@ -566,6 +566,19 @@ export function shouldRunProgressiveForecastPreparation(
     && searchParams.get('progressivePreparation')?.trim() === '1'
 }
 
+export function resolveRangeForForecastVerification(
+  currentRange: RangePreset,
+  verificationEnabled: boolean,
+): RangePreset {
+  if (!verificationEnabled) {
+    return currentRange
+  }
+
+  return currentRange === '3M' || currentRange === '6M' || currentRange === '1Y'
+    ? '3Y'
+    : currentRange
+}
+
 function getRawDataViewProfiler() {
   if (typeof window === 'undefined') {
     return null
@@ -4005,7 +4018,14 @@ export function RawDataView({
                       type="checkbox"
                       checked={showForecast && showForecastVerification}
                       disabled={!showForecast}
-                      onChange={(event) => setShowForecastVerification(event.target.checked)}
+                      onChange={(event) => {
+                        const verificationEnabled = event.target.checked
+                        setShowForecastVerification(verificationEnabled)
+                        setBenchmarkRange((currentRange) => resolveRangeForForecastVerification(
+                          currentRange,
+                          verificationEnabled,
+                        ))
+                      }}
                     />
                     <span>{t('showForecastVerification')}</span>
                   </label>

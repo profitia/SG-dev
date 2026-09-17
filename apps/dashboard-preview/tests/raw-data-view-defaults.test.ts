@@ -15,6 +15,7 @@ import {
   resolveHistoricalVerificationNotice,
   resolveInitialForecastVerificationVisibility,
   resolveInitialForecastVisibility,
+  resolveRangeForForecastVerification,
   resolveForecastVerificationUnavailableState,
   shouldApplyCurrentResultForActiveRequest,
   shouldHideEmbeddedBenchmarkShell,
@@ -50,6 +51,16 @@ test('client-facing forecast reads do not invoke progressive preparation unless 
   assert.equal(shouldRunProgressiveForecastPreparation(enabled, { embedded: false, variant: 'forecast-portfolio-v3' }), false)
   assert.equal(shouldRunProgressiveForecastPreparation(disabled, { embedded: true, variant: 'forecast-portfolio-v3' }), false)
   assert.equal(shouldRunProgressiveForecastPreparation(enabled, { embedded: true, variant: 'forecast-portfolio-v3' }), true)
+})
+
+test('showing Historical Verification expands short chart ranges far enough to reveal prepared comparison points', () => {
+  assert.equal(resolveRangeForForecastVerification('3M', true), '3Y')
+  assert.equal(resolveRangeForForecastVerification('6M', true), '3Y')
+  assert.equal(resolveRangeForForecastVerification('1Y', true), '3Y')
+  assert.equal(resolveRangeForForecastVerification('3Y', true), '3Y')
+  assert.equal(resolveRangeForForecastVerification('5Y', true), '5Y')
+  assert.equal(resolveRangeForForecastVerification('ALL', true), 'ALL')
+  assert.equal(resolveRangeForForecastVerification('1Y', false), '1Y')
 })
 
 test('embedded forecast-portfolio-v3 keeps the benchmark shell visible for controls', () => {
