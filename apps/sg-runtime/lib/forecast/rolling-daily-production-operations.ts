@@ -36,6 +36,7 @@ export type RollingDailyProductionOperationsRequest = {
   modelIds?: readonly RollingDailyProductionOperationsModelId[]
   preparedHistory?: RollingDailyHistoryPayload
   prepareHistorical?: boolean
+  verificationScope?: 'RECENT' | 'FULL'
   maxOriginsPerRun?: number
   trace?: RollingDailyHistoricalTraceInput | RollingDailyHistoricalTraceConfig
   resolvePersistenceOwnership?: () => Promise<ForecastPersistenceOwnership>
@@ -95,6 +96,7 @@ export type RollingDailyProductionOperationsResult = {
 
 type RollingDailyProductionOperationsDependencies = {
   runMaintenance?: (request: RollingDailyMaintenanceRequest) => Promise<RollingDailyMaintenanceResult>
+  runRecentMaintenance?: (request: RollingDailyMaintenanceRequest) => Promise<RollingDailyMaintenanceResult>
   resolveCurrentForecast?: (request: RollingDailyCurrentForecastSnapshotRequest) => Promise<RollingDailyProductionForecastResult>
   persistSnapshot?: (
     request: RollingDailyCurrentForecastSnapshotRequest,
@@ -225,6 +227,8 @@ export function createRollingDailyProductionOperationsService(
   const productionForecastService = createRollingDailyProductionForecastService()
   const runMaintenance = dependencies.runMaintenance
     ?? ((request: RollingDailyMaintenanceRequest) => maintenanceService.runIncrementalMaintenance(request))
+  const runRecentMaintenance = dependencies.runRecentMaintenance
+    ?? ((request: RollingDailyMaintenanceRequest) => maintenanceService.runRecentVerification(request))
   const resolveCurrentForecast = dependencies.resolveCurrentForecast
     ?? ((request: RollingDailyCurrentForecastSnapshotRequest) => productionForecastService.getRollingDailyProductionForecast(request))
   const persistSnapshot = dependencies.persistSnapshot
@@ -263,7 +267,8 @@ export function createRollingDailyProductionOperationsService(
 
       for (const modelId of modelIds) {
         try {
-          const maintenance = await runMaintenance({
+          const recentVerificationRequested = request.prepareHistorical && request.verificationScope === 'RECENT'
+          const maintenance = await (recentVerificationRequested ? runRecentMaintenance : runMaintenance)({
             seriesId: request.seriesId,
             modelId,
             preparedHistory: request.preparedHistory,
@@ -288,6 +293,28 @@ export function createRollingDailyProductionOperationsService(
           }
 
           if (maintenance.status === 'SUCCEEDED') {
+            if (recentVerificationRequested) {
+              const snapshotState = await readSnapshot({
+                seriesId: request.seriesId,
+                modelId,
+                sourceHistoryFingerprint: maintenance.sourceHistoryFingerprint,
+              })
+              if (snapshotState.status === 'HIT') {
+                results.push({
+                  status: 'SUCCEEDED',
+                  modelId,
+                  maintenance,
+                  snapshot: {
+                    status: 'SKIPPED_ALREADY_FRESH',
+                    reason: null,
+                    parityStatus: null,
+                  },
+                  error: null,
+                })
+                continue
+              }
+            }
+
             const snapshot = await refreshSnapshot(
               resolveCurrentForecast,
               persistSnapshot,

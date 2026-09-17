@@ -740,7 +740,9 @@ async function getPersistedRollingDailyForecastVerification(
       },
       select: {
         latestSourceObservationAt: true,
+        latestSourceHistoryStartAt: true,
         latestSourceHistoryFingerprint: true,
+        latestSourceObservationCount: true,
         lastProcessedOriginAt: true,
         lastMaintenanceStatus: true,
       },
@@ -762,7 +764,11 @@ async function getPersistedRollingDailyForecastVerification(
 
   const latestRecord = [...records].sort((left, right) => right.forecastOriginAt.getTime() - left.forecastOriginAt.getTime())[0]
   const latestSourceDate = maintenanceState?.latestSourceObservationAt?.toISOString().slice(0, 10) ?? null
+  const earliestSourceDate = maintenanceState?.latestSourceHistoryStartAt?.toISOString().slice(0, 10) ?? null
   const lastProcessedDate = maintenanceState?.lastProcessedOriginAt?.toISOString().slice(0, 10) ?? null
+  const currentFingerprintRecords = maintenanceState?.latestSourceHistoryFingerprint
+    ? records.filter((record) => record.sourceHistoryFingerprint === maintenanceState.latestSourceHistoryFingerprint)
+    : []
   const maintenanceComplete = Boolean(
     maintenanceState
     && (maintenanceState.lastMaintenanceStatus === 'SUCCEEDED' || maintenanceState.lastMaintenanceStatus === 'NO_OP')
@@ -771,8 +777,42 @@ async function getPersistedRollingDailyForecastVerification(
     && maintenanceState.latestSourceHistoryFingerprint
     && latestRecord?.sourceHistoryFingerprint === maintenanceState.latestSourceHistoryFingerprint,
   )
+  const recentVerificationComplete = Boolean(
+    maintenanceState
+    && latestSourceDate
+    && earliestSourceDate
+    && maintenanceState.latestSourceHistoryFingerprint
+    && (maintenanceState.latestSourceObservationCount ?? 0) >= 36
+    && [1, 3, 6, 12]
+      .filter((horizonMonths) => {
+        const cutoff = new Date(`${latestSourceDate}T00:00:00.000Z`)
+        const originalDay = cutoff.getUTCDate()
+        cutoff.setUTCDate(1)
+        cutoff.setUTCMonth(cutoff.getUTCMonth() - horizonMonths)
+        cutoff.setUTCDate(Math.min(
+          originalDay,
+          new Date(Date.UTC(cutoff.getUTCFullYear(), cutoff.getUTCMonth() + 1, 0)).getUTCDate(),
+        ))
+        return earliestSourceDate <= cutoff.toISOString().slice(0, 10)
+      })
+      .every((horizonMonths) => currentFingerprintRecords.some((record) => {
+        if (
+          record.horizonMonths !== horizonMonths
+          || record.maturityStatus !== 'MATURED'
+          || record.actualValue === null
+          || !record.verificationObservedAt
+        ) {
+          return false
+        }
+        const lagDays = (
+          new Date(`${latestSourceDate}T00:00:00.000Z`).getTime()
+          - record.verificationObservedAt.getTime()
+        ) / (24 * 60 * 60 * 1000)
+        return lagDays >= 0 && lagDays <= 7
+      })),
+  )
 
-  if (!maintenanceComplete) {
+  if (!maintenanceComplete && !recentVerificationComplete) {
     const identity = resolveForecastMethodIdentity('POINT_IN_TIME')
     return {
       status: 'NOT_AVAILABLE',
@@ -786,7 +826,7 @@ async function getPersistedRollingDailyForecastVerification(
   }
 
   const verification = Object.fromEntries(
-    [...records.reduce((map, record) => {
+    [...currentFingerprintRecords.reduce((map, record) => {
       const group = map.get(record.horizonLabel) ?? []
       group.push(record)
       map.set(record.horizonLabel, group)
@@ -1286,11 +1326,7 @@ export async function getBenchmarkForecastVerification(
   _capability?: InteractiveForecastCapabilityResult | null,
   requestOptions?: RuntimeQueryRequestOptions,
 ) {
-  if (targetBasis !== 'POINT_IN_TIME' && getMarketDataPrismaClient()) {
-    return getPersistedForecastVerification(seriesId, model, targetBasis)
-  }
-
-  if (targetBasis !== 'POINT_IN_TIME' && readSgRuntimeInternalForecastServiceToken()) {
+  if (readSgRuntimeInternalForecastServiceToken()) {
     const params: Record<string, string> = {
       seriesId,
       model,
@@ -1309,8 +1345,12 @@ export async function getBenchmarkForecastVerification(
     )
   }
 
-  if (targetBasis !== 'POINT_IN_TIME' && isDeployedDashboardEnvironment()) {
-    throw new Error('SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN is required in deployed dashboard-preview environments for non-POINT_IN_TIME prepared reads.')
+  if (targetBasis !== 'POINT_IN_TIME' && getMarketDataPrismaClient()) {
+    return getPersistedForecastVerification(seriesId, model, targetBasis)
+  }
+
+  if (isDeployedDashboardEnvironment()) {
+    throw new Error('SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN is required in deployed dashboard-preview environments for prepared verification reads.')
   }
 
   if (targetBasis === 'POINT_IN_TIME') {

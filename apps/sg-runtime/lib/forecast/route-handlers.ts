@@ -25,6 +25,7 @@ import {
   readPreparedBenchmarkCurrentForecast,
   resolveBenchmarkForecastVerification,
   readPreparedBenchmarkForecastVerification,
+  readPreparedBenchmarkRecentForecastVerification,
 } from '@/lib/forecast/service'
 import {
   forecastStressContextFromHeaders,
@@ -49,6 +50,7 @@ type ForecastVerificationResolver = (input: ForecastRequestInput) => Promise<Ben
 type ProductionForecastResolver = (input: ProductionForecastRequestInput) => Promise<ProductionForecastResult>
 
 type PreparedVerificationDependencies = {
+  readRecentVerification: ForecastVerificationResolver
   readRollingDailyVerification: ForecastVerificationResolver
   readGenericPeriodVerification: ForecastVerificationResolver
 }
@@ -114,6 +116,7 @@ function readPreparedReadAuthorityFromHeaders(
 }
 
 const preparedVerificationDependencies: PreparedVerificationDependencies = {
+  readRecentVerification: readPreparedBenchmarkRecentForecastVerification,
   readRollingDailyVerification: readPreparedRollingDailyForecastVerification,
   readGenericPeriodVerification: readPreparedBenchmarkForecastVerification,
 }
@@ -167,10 +170,17 @@ export async function resolvePreparedForecastVerification(
   input: ForecastRequestInput,
   dependencies: PreparedVerificationDependencies = preparedVerificationDependencies,
 ) {
-  const result = await (input.targetBasis === 'POINT_IN_TIME'
+  if (input.targetBasis !== 'POINT_IN_TIME') {
+    const recent = await dependencies.readRecentVerification(input)
+    if (recent.status === 'AVAILABLE') {
+      return ensureHistoricalVerificationContract(recent)
+    }
+  }
+
+  const full = await (input.targetBasis === 'POINT_IN_TIME'
     ? dependencies.readRollingDailyVerification(input)
     : dependencies.readGenericPeriodVerification(input))
-  return ensureHistoricalVerificationContract(result)
+  return ensureHistoricalVerificationContract(full)
 }
 
 export function createInternalForecastVerificationResolver(

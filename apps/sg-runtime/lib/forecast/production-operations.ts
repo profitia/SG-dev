@@ -203,6 +203,7 @@ export function createForecastProductionOperationsService(
           seriesId: request.seriesId,
           modelIds: requestedModels,
           prepareHistorical,
+          verificationScope,
           maxOriginsPerRun: request.maxOriginsPerRun,
         })
         for (const modelId of requestedModels) {

@@ -692,6 +692,7 @@ test('prepared verification routes point-in-time and period requests to their la
     }
   }
   const dependencies = {
+    readRecentVerification: resolveOwner('RECENT'),
     readRollingDailyVerification: resolveOwner('ROLLING_DAILY'),
     readGenericPeriodVerification: resolveOwner('GENERIC_PERIOD'),
   }
@@ -711,7 +712,7 @@ test('prepared verification routes point-in-time and period requests to their la
     targetCadence: 'MONTHLY',
   }, dependencies)
 
-  assert.deepEqual(owners, ['ROLLING_DAILY', 'GENERIC_PERIOD'])
+  assert.deepEqual(owners, ['ROLLING_DAILY', 'RECENT', 'GENERIC_PERIOD'])
 })
 
 test('internal production forecast route denies requests when service token is not configured', async () => {

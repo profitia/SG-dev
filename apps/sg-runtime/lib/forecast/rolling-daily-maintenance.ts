@@ -1203,6 +1203,30 @@ function summarizeHistoryState(history: RollingDailyHistoryPayload) {
   }
 }
 
+function subtractCalendarMonthsClamped(value: string, months: number) {
+  const date = new Date(`${normalizeDailyObservationDay(value)}T00:00:00.000Z`)
+  const originalDay = date.getUTCDate()
+  date.setUTCDate(1)
+  date.setUTCMonth(date.getUTCMonth() - months)
+  const lastDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate()
+  date.setUTCDate(Math.min(originalDay, lastDay))
+  return date.toISOString().slice(0, 10)
+}
+
+function mergeRollingDailyRecords(
+  existing: RollingDailyVerificationRecordArtifact[],
+  incoming: RollingDailyVerificationRecordArtifact[],
+) {
+  const records = new Map(existing.map((record) => [
+    `${record.forecastOriginAt}|${record.horizonLabel}`,
+    record,
+  ]))
+  for (const record of incoming) {
+    records.set(`${record.forecastOriginAt}|${record.horizonLabel}`, record)
+  }
+  return [...records.values()]
+}
+
 export function createRollingDailyMaintenanceRunner(): RollingDailyMaintenanceRunner {
   return createDefaultRunner()
 }
@@ -1229,6 +1253,148 @@ export function createRollingDailyMaintenanceService(
   }
 
   return {
+    async runRecentVerification(input: RollingDailyMaintenanceRequest): Promise<RollingDailyMaintenanceResult> {
+      const startedAt = performance.now()
+      const targetBasis = input.targetBasis ?? ROLLING_DAILY_TARGET_BASIS
+      const identity: RollingDailyMaintenanceIdentity = {
+        seriesId: input.seriesId,
+        inputSource: ROLLING_DAILY_INPUT_SOURCE,
+        targetBasis,
+        methodId: ROLLING_DAILY_METHOD_ID,
+        methodVersion: ROLLING_DAILY_METHOD_VERSION,
+        modelId: input.modelId,
+      }
+      const [history, state, existingRecords] = await Promise.all([
+        input.preparedHistory ?? resolvedDependencies.loadHistory(input.seriesId),
+        resolvedDependencies.repository.readState(identity),
+        resolvedDependencies.repository.listVerificationRecords(identity),
+      ])
+      const lawfulPoints = buildCanonicalLawfulHistoryPoints(history)
+      const historyState = summarizeHistoryState(history)
+      const latestSourceObservationAt = historyState.latestSourceObservationAt
+      const sourceHistoryFingerprint = buildRollingDailyHistoryFingerprint(history)
+      const minimumTrainingObservations = input.minimumTrainingObservations
+        ?? state?.minimumTrainingObservations
+        ?? DEFAULT_ROLLING_DAILY_MINIMUM_TRAINING_OBSERVATIONS
+      const minimumCalibrationSamples = input.minimumCalibrationSamples
+        ?? state?.minimumCalibrationSamples
+        ?? DEFAULT_ROLLING_DAILY_MINIMUM_CALIBRATION_SAMPLES
+      const historicalOriginStartAt = state?.historicalOriginStartAt
+        ?? `${DEFAULT_ROLLING_DAILY_HISTORICAL_ORIGIN_START_DATE}T00:00:00.000Z`
+
+      if (!latestSourceObservationAt || lawfulPoints.length < minimumTrainingObservations) {
+        throw new Error('PREPARATION_REQUIRED: Rolling Daily Recent Verification has insufficient lawful history.')
+      }
+
+      const selectedOriginDates = [...new Set([1, 3, 6, 12].flatMap((horizonMonths) => {
+        const cutoff = subtractCalendarMonthsClamped(latestSourceObservationAt, horizonMonths)
+        const origin = lawfulPoints
+          .filter((point, index) => index + 1 >= minimumTrainingObservations && point.date <= cutoff)
+          .at(-1)
+        return origin ? [origin.date] : []
+      }))].sort()
+
+      if (selectedOriginDates.length === 0) {
+        throw new Error('PREPARATION_REQUIRED: Rolling Daily Recent Verification has no lawful matured origin.')
+      }
+
+      let workingRecords = existingRecords
+      let newRecords: RollingDailyVerificationRecordArtifact[] = []
+      let maturedRecords: RollingDailyVerificationRecordArtifact[] = []
+      const calibrationGroups = new Map<string, RollingDailyCalibrationGroupArtifact>()
+      let lastMaturedObservedAt = state?.lastMaturedObservedAt ?? null
+
+      for (const originDate of selectedOriginDates) {
+        const response = await resolvedDependencies.runner.run({
+          seriesId: input.seriesId,
+          modelId: input.modelId,
+          inputSource: identity.inputSource,
+          targetBasis,
+          methodId: identity.methodId,
+          methodVersion: identity.methodVersion,
+          historicalOriginStartDate: originDate,
+          minimumTrainingObservations,
+          minimumCalibrationSamples,
+          history,
+          existingRecords: workingRecords,
+          lastProcessedOriginDate: null,
+          maxOriginsPerRun: 1,
+          sourceHistoryFingerprint,
+          forceCalibrationRefresh: false,
+        })
+
+        if (response.status === 'FAILED') {
+          throw new Error(response.reason ?? `Rolling Daily Recent Verification failed for ${originDate}.`)
+        }
+
+        newRecords = mergeRollingDailyRecords(newRecords, response.newRecords)
+        maturedRecords = mergeRollingDailyRecords(maturedRecords, response.maturedRecords)
+        workingRecords = mergeRollingDailyRecords(
+          workingRecords,
+          [...response.newRecords, ...response.maturedRecords],
+        )
+        for (const group of response.calibrationGroups) {
+          calibrationGroups.set(group.horizonLabel, group)
+        }
+        if (
+          response.maintenance.lastMaturedObservedAt
+          && (!lastMaturedObservedAt || response.maintenance.lastMaturedObservedAt > lastMaturedObservedAt)
+        ) {
+          lastMaturedObservedAt = response.maintenance.lastMaturedObservedAt
+        }
+      }
+
+      await resolvedDependencies.repository.applyMaintenanceUpdate({
+        identity,
+        inputRunId: null,
+        historicalOriginStartAt,
+        minimumTrainingObservations,
+        minimumCalibrationSamples,
+        latestSourceObservationAt,
+        latestSourceHistoryStartAt: historyState.latestSourceHistoryStartAt,
+        latestSourceObservationCount: historyState.latestSourceObservationCount,
+        latestSourceHistoryFingerprint: sourceHistoryFingerprint,
+        lastProcessedOriginAt: state?.lastProcessedOriginAt ?? null,
+        lastMaturedObservedAt,
+        newRecords,
+        maturedRecords,
+        calibrationGroups: [...calibrationGroups.values()],
+      })
+
+      const runtimeMs = Math.round(performance.now() - startedAt)
+      resolvedDependencies.logEvent('ROLLING_DAILY_RECENT_VERIFICATION', {
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        status: 'SUCCEEDED',
+        runtimeMs,
+        selectedOriginCount: selectedOriginDates.length,
+        persistedRecordCount: newRecords.length + maturedRecords.length,
+      })
+
+      return {
+        status: 'SUCCEEDED',
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis,
+        inputSource: identity.inputSource,
+        methodId: identity.methodId,
+        methodVersion: identity.methodVersion,
+        reasonCode: null,
+        sourceHistoryFingerprint,
+        latestSourceObservationAt,
+        sourceObservationCount: historyState.latestSourceObservationCount,
+        filteredNullCount: history.points.length - lawfulPoints.length,
+        filteredDuplicateCount: 0,
+        newOriginCount: selectedOriginDates.length,
+        maturedRecordCount: maturedRecords.length,
+        calibrationRefreshCount: calibrationGroups.size,
+        affectedCalibrationGroupCount: calibrationGroups.size,
+        lastProcessedOriginAt: state?.lastProcessedOriginAt ?? null,
+        lastMaturedObservedAt,
+        runtimeMs,
+      }
+    },
+
     async runIncrementalMaintenance(input: RollingDailyMaintenanceRequest): Promise<RollingDailyMaintenanceResult> {
       const startedAt = performance.now()
       const trace = resolveRollingDailyHistoricalTraceConfig(input.trace)

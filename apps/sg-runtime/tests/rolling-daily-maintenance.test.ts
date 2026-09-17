@@ -1042,6 +1042,79 @@ test('rolling daily historical preparation completeness requires the checkpoint 
   }), true)
 })
 
+test('rolling daily recent verification prepares one bounded origin per lawful horizon without advancing the full-history cursor', async () => {
+  const points = Array.from({ length: 500 }, (_, index) => ({
+    date: new Date(Date.UTC(2025, 0, 1 + index)).toISOString().slice(0, 10),
+    value: 100 + index,
+  }))
+  const requestedOrigins: string[] = []
+  let persistedUpdate: Parameters<RollingDailyMaintenanceRepository['applyMaintenanceUpdate']>[0] | null = null
+  const repository: RollingDailyMaintenanceRepository = {
+    async readState() { return null },
+    async listVerificationRecords() { return [] },
+    async applyMaintenanceUpdate(input) { persistedUpdate = input },
+    async recordMaintenanceFailure() {},
+  }
+  const runner: RollingDailyMaintenanceRunner = {
+    async run(request) {
+      requestedOrigins.push(request.historicalOriginStartDate)
+      const record = createVerificationRecord({
+        forecastOriginAt: request.historicalOriginStartDate,
+        trainingHistoryEndAt: request.historicalOriginStartDate,
+        sourceHistoryFingerprint: request.sourceHistoryFingerprint,
+      })
+      return {
+        status: 'AVAILABLE',
+        methodId: ROLLING_DAILY_METHOD_ID,
+        methodVersion: ROLLING_DAILY_METHOD_VERSION,
+        sourceHistory: {
+          startDate: points[0]!.date,
+          endDate: points.at(-1)!.date,
+          latestObservationDate: points.at(-1)!.date,
+          observationCount: points.length,
+          filteredNullCount: 0,
+          filteredDuplicateCount: 0,
+          historyFingerprint: request.sourceHistoryFingerprint,
+        },
+        maintenance: {
+          newOriginCount: 1,
+          maturedRecordCount: 0,
+          affectedCalibrationGroupCount: 0,
+          calibrationRefreshCount: 0,
+          lastProcessedOriginDate: request.historicalOriginStartDate,
+          lastMaturedObservedAt: points.at(-1)!.date,
+          newOriginDates: [request.historicalOriginStartDate],
+        },
+        newRecords: [record],
+        maturedRecords: [],
+        calibrationGroups: [],
+      }
+    },
+  }
+  const service = createRollingDailyMaintenanceService({
+    repository,
+    runner,
+    async loadHistory() {
+      return {
+        ...createHistory(),
+        points,
+      }
+    },
+  })
+
+  const result = await service.runRecentVerification({
+    seriesId: 'wocaes0074',
+    modelId: 'naive',
+    minimumTrainingObservations: 2,
+  })
+
+  assert.equal(result.status, 'SUCCEEDED')
+  assert.equal(requestedOrigins.length, 4)
+  assert.equal(new Set(requestedOrigins).size, 4)
+  assert.equal(persistedUpdate?.lastProcessedOriginAt, null)
+  assert.equal(persistedUpdate?.newRecords.length, 4)
+})
+
 test('rolling daily maintenance forwards opt-in trace config and preserves persistence flow', async () => {
   const traceRequests: RollingDailyMaintenanceBridgeRequest[] = []
 
