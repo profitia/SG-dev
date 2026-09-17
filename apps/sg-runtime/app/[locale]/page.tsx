@@ -205,18 +205,18 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
                 <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-slate-950 marker:text-slate-950">
                   <li>
                     {t('porrDemo.currentScopeItemOne')}
-                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                    <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-slate-950 marker:text-slate-950">
                       {benchmarkFamilies.map(({ family, label }) => (
-                        <div key={family} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
-                          <p className="font-semibold text-slate-950">{label}</p>
-                          <ul className="mt-1.5 space-y-1 text-xs leading-5 text-slate-700">
+                        <li key={family}>
+                          <span className="font-semibold text-slate-950">{label}</span>
+                          <ul className="mt-1 list-[circle] space-y-0.5 pl-5 text-sm leading-5 text-slate-700 marker:text-slate-500">
                             {PORR_DEMO_FORECAST_BENCHMARKS.filter((benchmark) => benchmark.family === family).map((benchmark) => (
                               <li key={benchmark.seriesId}>{benchmark.label[locale]}</li>
                             ))}
                           </ul>
-                        </div>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   </li>
                   <li>{t('porrDemo.currentScopeItemTwo')}</li>
                   <li>{t('porrDemo.currentScopeItemThree')}</li>
