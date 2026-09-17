@@ -8,7 +8,7 @@ import type { DashboardVariantId } from '@/lib/dashboard-variants/registry'
 import { filterSeriesToVisibleRange, resolveNiceScaleDomain, type VisibleRange } from '@/lib/chart/chart-panel-helpers'
 import { clipDeltaOverlaysToRange } from '@/lib/chart/delta-overlay-clipping'
 import { resolveDateTimePlotRatio } from '@/lib/chart/date-plot-offset'
-import { buildEndOfPeriodDeltaSurfaces, prepareVisibleSeriesGeometry } from '@/lib/chart/end-of-period-delta-geometry'
+import { buildEndOfPeriodDeltaSurfaces, prepareVisibleSeriesGeometry, usesEndOfPeriodDeltaSurface } from '@/lib/chart/end-of-period-delta-geometry'
 import {
   DEFAULT_FORECAST_TARGET_BASIS,
   FORECAST_PORTFOLIO_MODELS,
@@ -590,6 +590,12 @@ export function isRecentVerificationPrepared(
   capability: InteractiveForecastCapabilityResult | null,
 ) {
   return capability?.recentVerificationReadiness === 'READY'
+}
+
+export function isFullVerificationPrepared(
+  capability: InteractiveForecastCapabilityResult | null,
+) {
+  return capability?.fullVerificationReadiness === 'READY'
 }
 
 export function mergeExactCapabilitySnapshot(
@@ -1659,7 +1665,7 @@ function ChartPanel({
     const yTicks = buildValueTicks(locale, visibleValues, chartLayout.valueTickCount)
     const historicalVisibleSeries = visibleSeries.find((entry) => entry.kind === 'historical') ?? null
     const historicalForecastVisibleSeries = visibleSeries.find((entry) => entry.kind === 'historical-forecast') ?? null
-    const usesEndOfPeriodOverlayGeometry = payload.verificationTargetBasis === 'END_OF_PERIOD' || payload.verificationTargetBasis === 'POINT_IN_TIME'
+    const usesEndOfPeriodOverlayGeometry = usesEndOfPeriodDeltaSurface(payload.verificationTargetBasis)
     const historicalVisualGeometry = prepareVisibleSeriesGeometry(historicalVisibleSeries, geometry.pointX, geometry.pointY)
     const historicalForecastVisualGeometry = prepareVisibleSeriesGeometry(historicalForecastVisibleSeries, geometry.pointX, geometry.pointY)
     const historicalForecastDeltaPath = showForecastAccuracy
@@ -2761,7 +2767,7 @@ export function RawDataView({
   )
   const selectedCurrentPrepared = !preparedReadsOnly || selectedCapabilityVariant?.currentReadiness === 'READY'
   const selectedVerificationPrepared = !preparedReadsOnly
-    || isRecentVerificationPrepared(selectedCapabilityVariant)
+    || isFullVerificationPrepared(selectedCapabilityVariant)
   const forecastCurrentDisplayState = resolveForecastCurrentDisplayState(forecastCurrentState, selectedProgressiveVariant)
   const forecastCurrentObservedProgressState = resolveForecastCurrentObservedProgressState(
     forecastCurrentState,
@@ -2883,7 +2889,7 @@ export function RawDataView({
         setForecastCapabilitySnapshot((snapshot) => mergeExactCapabilitySnapshot(snapshot, capability))
         setForecastCapabilityState('ready')
 
-        if (capability.currentReadiness === 'READY' && isRecentVerificationPrepared(capability)) {
+        if (capability.currentReadiness === 'READY' && isFullVerificationPrepared(capability)) {
           return
         }
       } catch (error) {
@@ -3841,6 +3847,7 @@ export function RawDataView({
     }
 
     let cancelled = false
+    let preparedRereadTimeout: number | null = null
     forecastVerificationAbortRef.current?.abort()
     const controller = new AbortController()
     forecastVerificationAbortRef.current = controller
@@ -3849,11 +3856,26 @@ export function RawDataView({
       const cacheKey = buildForecastLayerCacheKey(locale, activeSeriesId, forecastModel, selectedForecastTargetBasis, 'verification')
       const cached = forecastLayerCacheRef.current.get(cacheKey)
 
-      if (cached) {
+      const schedulePreparedReread = (cachedAt: number) => {
+        const remainingTtlMs = Math.max(1_000, CLIENT_SERIES_CACHE_TTL_MS - (Date.now() - cachedAt))
+        preparedRereadTimeout = window.setTimeout(() => {
+          forecastLayerCacheRef.current.delete(cacheKey)
+          if (!cancelled) {
+            setForecastVerificationReloadNonce((value) => value + 1)
+          }
+        }, remainingTtlMs)
+      }
+
+      if (cached && Date.now() - cached.cachedAt <= CLIENT_SERIES_CACHE_TTL_MS) {
         setForecastVerificationResult(cached.payload as BenchmarkForecastVerificationResult)
         setForecastVerificationState('ready')
         setForecastVerificationErrorState(null)
+        schedulePreparedReread(cached.cachedAt)
         return
+      }
+
+      if (cached) {
+        forecastLayerCacheRef.current.delete(cacheKey)
       }
 
       setForecastVerificationState('loading')
@@ -3916,14 +3938,16 @@ export function RawDataView({
           return
         }
 
+        const cachedAt = Date.now()
         forecastLayerCacheRef.current.set(cacheKey, {
           payload: normalizedPayload,
-          cachedAt: Date.now(),
+          cachedAt,
         })
         forecastVerificationReadRetryRef.current.delete(cacheKey)
         setForecastVerificationResult(normalizedPayload)
         setForecastVerificationState('ready')
         setForecastVerificationErrorState(null)
+        schedulePreparedReread(cachedAt)
       } catch (error) {
         if (cancelled || (error as Error).name === 'AbortError') {
           return
@@ -3946,6 +3970,9 @@ export function RawDataView({
 
     return () => {
       cancelled = true
+      if (preparedRereadTimeout !== null) {
+        window.clearTimeout(preparedRereadTimeout)
+      }
       controller.abort()
     }
   }, [benchmarkSeriesId, forecastModel, forecastVerificationReloadNonce, forecastVerificationResult, isForecastPortfolioVariant, locale, preparedReadsOnly, selectedForecastTargetBasis, selectedProgressiveVariant?.verificationState, selectedVerificationPrepared, showForecast, showForecastVerification, t])

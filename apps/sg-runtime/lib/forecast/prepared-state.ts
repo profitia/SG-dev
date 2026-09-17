@@ -96,25 +96,13 @@ async function findPreparedHistoricalVerificationRun(
       },
       select,
       orderBy,
-    }) ?? await prisma.forecastVerificationRun.findFirst({
-      where: {
-        ...where,
-        trainingWindowPolicyId: null,
-        effectiveTrainingPolicyId: null,
-      },
-      select,
-      orderBy,
     })
   } catch (error) {
     if (!isMissingVerificationTrainingPolicyColumnError(error)) {
       throw error
     }
 
-    return prisma.forecastVerificationRun.findFirst({
-      where,
-      select,
-      orderBy,
-    })
+    return null
   }
 }
 

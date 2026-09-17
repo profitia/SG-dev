@@ -21,6 +21,7 @@ import {
   shouldHideEmbeddedBenchmarkShell,
   isPreparedReadsOnlyForecastSession,
   isRecentVerificationPrepared,
+  isFullVerificationPrepared,
   mergeExactCapabilitySnapshot,
   shouldRunProgressiveForecastPreparation,
 } from '@/components/raw-data-view/index'
@@ -62,7 +63,7 @@ test('prepared-read-only demo mode is explicit and fail-closed', () => {
   assert.equal(isPreparedReadsOnlyForecastSession({ get: () => 'true' }), false)
 })
 
-test('prepared verification requires the exact Recent Verification artifact', () => {
+test('prepared historical verification requires the exact Full Verification artifact', () => {
   const capability = {
     seriesId: 'b_c1_cl',
     targetSemantics: 'MONTHLY_AVERAGE',
@@ -81,9 +82,14 @@ test('prepared verification requires the exact Recent Verification artifact', ()
   } as const
 
   assert.equal(isRecentVerificationPrepared(capability), false)
+  assert.equal(isFullVerificationPrepared(capability), false)
   assert.equal(isRecentVerificationPrepared({
     ...capability,
     recentVerificationReadiness: 'READY',
+  }), true)
+  assert.equal(isFullVerificationPrepared({
+    ...capability,
+    fullVerificationReadiness: 'READY',
   }), true)
 })
 

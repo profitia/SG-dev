@@ -1412,6 +1412,7 @@ export async function getBenchmarkForecastVerification(
       seriesId,
       model,
       targetBasis,
+      verificationScope: 'FULL',
     }
     if (cadence) {
       params.sourceFrequency = cadence.sourceFrequency

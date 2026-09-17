@@ -31,7 +31,10 @@ import type {
   BenchmarkForecastCurrentResult,
   BenchmarkForecastVerificationResult,
 } from '../lib/forecast/contracts'
-import { createCurrentForecastStatisticalCompatibility } from '../lib/forecast/identity'
+import {
+  createCurrentForecastStatisticalCompatibility,
+  createLegacyVerificationStatisticalCompatibility,
+} from '../lib/forecast/identity'
 import type { ProductionForecastResult } from '../lib/forecast/production-routing'
 import type { ForecastRequestInput } from '../lib/forecast/request-contract'
 import { createForecastStressTelemetry, type ForecastStressEvent } from '../lib/forecast/stress-telemetry'
@@ -641,7 +644,7 @@ test('current forecast route preserves explicit END_OF_PERIOD to the service bou
   assert.equal(payload.status, 'UNSUPPORTED')
 })
 
-test('verification route passes explicit MONTHLY_AVERAGE and serializes targetBasis', async () => {
+test('verification route passes explicit MONTHLY_AVERAGE, Full scope, and serializes targetBasis', async () => {
   let receivedInput: ForecastRequestInput | null = null
 
   const handler = createForecastVerificationRouteHandler(async (input) => {
@@ -666,7 +669,7 @@ test('verification route passes explicit MONTHLY_AVERAGE and serializes targetBa
     } satisfies BenchmarkForecastVerificationResult
   })
 
-  const response = await handler(buildUserRequest('http://localhost/api/benchmark/forecast/verification?seriesId=wocaes0074&model=ets&targetBasis=MONTHLY_AVERAGE'))
+  const response = await handler(buildUserRequest('http://localhost/api/benchmark/forecast/verification?seriesId=wocaes0074&model=ets&targetBasis=MONTHLY_AVERAGE&verificationScope=FULL'))
   const payload = await response.json()
 
   assert.equal(response.status, 200)
@@ -675,6 +678,7 @@ test('verification route passes explicit MONTHLY_AVERAGE and serializes targetBa
   }
   const verificationInput = receivedInput as ForecastRequestInput
   assert.equal(verificationInput.targetBasis, 'MONTHLY_AVERAGE')
+  assert.equal(verificationInput.verificationScope, 'FULL')
   assert.equal(payload.targetBasis, 'MONTHLY_AVERAGE')
 })
 
@@ -711,8 +715,102 @@ test('prepared verification routes point-in-time and period requests to their la
     sourceFrequency: 'MONTHLY',
     targetCadence: 'MONTHLY',
   }, dependencies)
+  await resolvePreparedForecastVerification({
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    targetBasis: 'POINT_IN_TIME',
+    verificationScope: 'FULL',
+    sourceFrequency: 'DAILY',
+    targetCadence: 'DAILY',
+  }, dependencies)
+  await resolvePreparedForecastVerification({
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    verificationScope: 'FULL',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  }, dependencies)
+  await resolvePreparedForecastVerification({
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    verificationScope: 'RECENT',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  }, dependencies)
 
-  assert.deepEqual(owners, ['RECENT', 'ROLLING_DAILY', 'RECENT', 'GENERIC_PERIOD'])
+  assert.deepEqual(owners, [
+    'RECENT', 'ROLLING_DAILY',
+    'RECENT', 'GENERIC_PERIOD',
+    'ROLLING_DAILY',
+    'GENERIC_PERIOD',
+    'RECENT',
+  ])
+})
+
+test('explicit full period verification fails closed for an unresolved legacy policy identity', async () => {
+  const input: ForecastRequestInput = {
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    verificationScope: 'FULL',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  }
+  const legacyResult: BenchmarkForecastVerificationResult = {
+    status: 'AVAILABLE',
+    seriesId: input.seriesId,
+    modelId: input.modelId,
+    targetBasis: input.targetBasis,
+    targetSemantics: 'MONTHLY_AVERAGE',
+    methodId: 'MONTHLY_AVERAGE',
+    displayName: 'Brent',
+    description: null,
+    userFacingModel: true,
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: null },
+    lineage: {
+      inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+      inputRunId: null,
+      sourceSeriesId: input.seriesId,
+      sourceFrequency: 'MONTHLY',
+      historyFingerprint: 'abc',
+      preparation: null,
+      statisticalCompatibility: createLegacyVerificationStatisticalCompatibility({
+        sourceFrequency: 'MONTHLY',
+        targetCadence: 'MONTHLY',
+        targetSemantics: 'MONTHLY_AVERAGE',
+      }),
+    },
+    historyFingerprint: 'abc',
+    history: { frequency: 'MONTHLY', start: null, end: null, observations: 120 },
+    forecastOrigin: null,
+    runtimeSeconds: null,
+    cacheStatus: 'hit',
+    verification: {},
+    historicalVerification: {
+      contractVersion: 'HISTORICAL_VERIFICATION_V2',
+      status: 'AVAILABLE',
+      originCount: 100,
+      expectedOriginCount: 100,
+      failedOriginCount: 0,
+      pendingOriginCount: 0,
+      coverage: 1,
+      horizons: {},
+    },
+  }
+
+  const result = await resolvePreparedForecastVerification(input, {
+    readRecentVerification: async () => legacyResult,
+    readRollingDailyVerification: async () => legacyResult,
+    readGenericPeriodVerification: async () => legacyResult,
+  })
+
+  assert.equal(result.status, 'NOT_AVAILABLE')
+  if (result.status === 'NOT_AVAILABLE') {
+    assert.match(result.reason, /Exact-policy Full Historical Verification/)
+  }
 })
 
 test('internal production forecast route denies requests when service token is not configured', async () => {

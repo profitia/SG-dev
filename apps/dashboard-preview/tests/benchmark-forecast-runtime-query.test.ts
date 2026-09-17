@@ -337,6 +337,7 @@ test('deployed non-point-in-time verification reads do not forward prepared-read
   assert.equal(requestUrl.searchParams.get('seriesId'), 'wocaes0074')
   assert.equal(requestUrl.searchParams.get('model'), 'ets')
   assert.equal(requestUrl.searchParams.get('targetBasis'), 'END_OF_PERIOD')
+  assert.equal(requestUrl.searchParams.get('verificationScope'), 'FULL')
   assert.equal(requestUrl.searchParams.get('sourceFrequency'), 'DAILY')
   assert.equal(requestUrl.searchParams.get('targetCadence'), 'MONTHLY')
   assert.equal(headers.Authorization, 'Bearer dashboard-preview-token')

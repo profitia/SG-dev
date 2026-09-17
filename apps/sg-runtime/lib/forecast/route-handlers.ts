@@ -46,6 +46,7 @@ import {
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 import { ensureHistoricalVerificationContract } from '@/lib/forecast/historical-verification-policy'
+import { FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID } from '@/lib/forecast/identity'
 
 type PreparedCurrentResult = BenchmarkForecastCurrentResult | Awaited<ReturnType<typeof readPreparedRollingDailyCurrentForecast>>
 type CurrentForecastResolver = (input: ForecastRequestInput) => Promise<PreparedCurrentResult>
@@ -62,6 +63,27 @@ type PointInTimeVerificationPreparer = (input: {
   seriesId: string
   modelId: ForecastRequestInput['modelId']
 }) => Promise<void>
+
+function requireExactFullVerification(
+  result: BenchmarkForecastVerificationResult,
+  input: ForecastRequestInput,
+): BenchmarkForecastVerificationResult {
+  if (result.status !== 'AVAILABLE'
+    || input.targetBasis === 'POINT_IN_TIME'
+    || result.lineage.statisticalCompatibility.trainingWindowPolicyId === FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID) {
+    return result
+  }
+
+  return {
+    status: 'NOT_AVAILABLE',
+    seriesId: input.seriesId,
+    modelId: input.modelId,
+    targetBasis: input.targetBasis,
+    targetSemantics: result.targetSemantics,
+    methodId: result.methodId,
+    reason: 'PREPARATION_REQUIRED: Exact-policy Full Historical Verification has not been prepared.',
+  }
+}
 
 type ExecutionLedgerRow = {
   executionId: string
@@ -175,8 +197,15 @@ export async function resolvePreparedForecastVerification(
   input: ForecastRequestInput,
   dependencies: PreparedVerificationDependencies = preparedVerificationDependencies,
 ) {
+  if (input.verificationScope === 'FULL') {
+    const full = await (input.targetBasis === 'POINT_IN_TIME'
+      ? dependencies.readRollingDailyVerification(input)
+      : dependencies.readGenericPeriodVerification(input))
+    return ensureHistoricalVerificationContract(requireExactFullVerification(full, input))
+  }
+
   const recent = await dependencies.readRecentVerification(input)
-  if (recent.status === 'AVAILABLE') {
+  if (recent.status === 'AVAILABLE' || input.verificationScope === 'RECENT') {
     return ensureHistoricalVerificationContract(recent)
   }
 
