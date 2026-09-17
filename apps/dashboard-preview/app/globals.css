@@ -553,6 +553,14 @@ input:focus-visible {
   min-width: 0;
 }
 
+.forecast-verification-row {
+  grid-template-columns: minmax(17rem, 19rem) minmax(0, 1fr);
+}
+
+.forecast-verification-row .forecast-portfolio-toggle-copy strong {
+  white-space: nowrap;
+}
+
 .forecast-portfolio-controls .control-group-label,
 .forecast-portfolio-controls .control-check span,
 .forecast-portfolio-controls .chart-range-button {
@@ -2237,6 +2245,10 @@ body:has(.app-shell.is-embedded) .forecast-verification-group .chart-range-butto
   .forecast-portfolio-row,
   .forecast-current-row {
     grid-template-columns: 1fr;
+  }
+
+  .forecast-verification-row .forecast-portfolio-toggle-copy strong {
+    white-space: normal;
   }
 
   .forecast-portfolio-controls .forecast-portfolio-toggle {

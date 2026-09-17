@@ -782,6 +782,12 @@ test('forecast portfolio controls keep two ordered rows with explicit group labe
   assert.match(source, /forecast-portfolio-toggle-copy/)
 })
 
+test('forecast portfolio does not show an uncertainty disclaimer when bands are rendered', () => {
+  const source = fs.readFileSync(new URL('../components/raw-data-view/index.tsx', import.meta.url), 'utf8')
+
+  assert.doesNotMatch(source, /t\('modelNativeBands'\)/)
+})
+
 test('forecast-portfolio-v3 keeps explicit Brent authoritative when Brent is selected', () => {
   assert.deepEqual(
     resolveForecastPortfolioBenchmarkSubject({

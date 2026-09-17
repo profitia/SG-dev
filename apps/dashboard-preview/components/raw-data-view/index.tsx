@@ -4036,15 +4036,6 @@ export function RawDataView({
   const activePayload = isForecastPortfolioVariant
     ? forecastPortfolioPayload
     : mergeAccuracyIntoViewerPayload(viewerPayload, forecastAccuracyPayload, showForecastAccuracy)
-  const currentUsesModelNativeBands = isRenderableCurrentResult(displayedForecastCurrentResult) && (
-    Object.values(displayedForecastCurrentResult.currentForecast).some((point) => (
-      point.metadata?.uncertaintyBand?.source === 'MODEL_NATIVE_SHORT_HISTORY'
-    ))
-    || (displayedForecastCurrentResult.rollingDailySnapshot?.anchors ?? []).some((anchor) => (
-      anchor.band.source === 'MODEL_NATIVE_SHORT_HISTORY'
-      || anchor.band.rollingDailySource === 'MODEL_NATIVE_SHORT_HISTORY'
-    ))
-  )
   const isChartLoading = componentsState === 'loading'
     || seriesState === 'loading'
     || (!isForecastPortfolioVariant && forecastAccuracyState === 'loading' && !activePayload)
@@ -4416,11 +4407,6 @@ export function RawDataView({
           <div className="callout callout-error" role="status" aria-live="polite">
             <strong>{forecastErrorState.title}</strong>
             <p>{forecastErrorState.message}</p>
-          </div>
-        ) : null}
-        {isForecastPortfolioVariant && showForecast && currentUsesModelNativeBands ? (
-          <div className="callout" role="status">
-            <p>{t('modelNativeBands')}</p>
           </div>
         ) : null}
         {isForecastPortfolioVariant && showForecast && showForecastVerification && forecastVerificationBannerState ? (
