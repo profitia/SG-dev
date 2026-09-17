@@ -577,6 +577,69 @@ function collectVerificationDisplayRecordsForTargetBasis(
   return displayRecords
 }
 
+function subtractUtcMonths(value: Date, months: number) {
+  const result = new Date(value.getTime())
+  const originalDay = result.getUTCDate()
+
+  result.setUTCDate(1)
+  result.setUTCMonth(result.getUTCMonth() - months)
+
+  const lastDayOfTargetMonth = new Date(Date.UTC(
+    result.getUTCFullYear(),
+    result.getUTCMonth() + 1,
+    0,
+  )).getUTCDate()
+
+  result.setUTCDate(Math.min(originalDay, lastDayOfTargetMonth))
+  return result
+}
+
+function filterVerificationRecordsToTrailingWindow(
+  basePayload: TimeSeriesViewerPayload,
+  targetBasis: ForecastTargetBasis,
+  verificationHorizon: string,
+  records: VerificationDisplayRecord[],
+) {
+  const horizonMatch = /^(\d+)M$/.exec(verificationHorizon)
+  const historicalSeries = findHistoricalSeries(basePayload)
+
+  if (!horizonMatch || !historicalSeries) {
+    return records
+  }
+
+  const latestHistoricalTimestamp = historicalSeries.points.reduce<number | null>((latest, point) => {
+    const timestamp = new Date(point.date).getTime()
+
+    if (!Number.isFinite(timestamp)) {
+      return latest
+    }
+
+    return latest === null || timestamp > latest ? timestamp : latest
+  }, null)
+
+  if (latestHistoricalTimestamp === null) {
+    return records
+  }
+
+  const windowEnd = new Date(latestHistoricalTimestamp)
+
+  if (targetBasis === 'POINT_IN_TIME') {
+    windowEnd.setUTCHours(23, 59, 59, 999)
+  } else {
+    windowEnd.setUTCMonth(windowEnd.getUTCMonth() + 1, 0)
+    windowEnd.setUTCHours(23, 59, 59, 999)
+  }
+
+  const windowStart = subtractUtcMonths(windowEnd, Number(horizonMatch[1]))
+
+  return records.filter((record) => {
+    const timestamp = new Date(record.displayDate).getTime()
+    return Number.isFinite(timestamp)
+      && timestamp >= windowStart.getTime()
+      && timestamp <= windowEnd.getTime()
+  })
+}
+
 function buildPointInTimeVerificationSeries(
   basePayload: TimeSeriesViewerPayload,
   locale: TimeSeriesViewerLocale,
@@ -1192,7 +1255,10 @@ export function buildForecastPortfolioPayload({
 
     if (selectedVerification) {
       verificationTargetBasis = verificationResult.targetBasis
-      const verificationRecords = collectVerificationDisplayRecordsForTargetBasis(verificationResult.targetBasis, selectedVerification.records)
+      const collectedVerificationRecords = collectVerificationDisplayRecordsForTargetBasis(verificationResult.targetBasis, selectedVerification.records)
+      const verificationRecords = collectedVerificationRecords === null
+        ? null
+        : filterVerificationRecordsToTrailingWindow(basePayload, verificationResult.targetBasis, verificationHorizon, collectedVerificationRecords)
 
       if (verificationRecords !== null) {
         const monthlyActualSeries = verificationResult.targetBasis === 'POINT_IN_TIME'

@@ -1015,6 +1015,55 @@ test('forecast origin marker label stays locale-aware', () => {
   assert.equal(polishPayload?.forecastOrigin?.label, 'Forecast Origin · lip 2026')
 })
 
+test('historical verification uses a real trailing window ending at the latest historical observation', () => {
+  const verificationResult = createVerificationResultForTargetBasis('POINT_IN_TIME', [
+    createRecord({ forecastDate: '2026-05-15T00:00:00.000Z', actualObservedAt: '2026-05-15T00:00:00.000Z' }),
+    createRecord({ forecastDate: '2026-07-15T00:00:00.000Z', actualObservedAt: '2026-07-15T00:00:00.000Z' }),
+    createRecord({ forecastDate: '2026-09-14T00:00:00.000Z', actualObservedAt: '2026-09-14T00:00:00.000Z' }),
+  ])
+
+  const payload = buildForecastPortfolioPayload({
+    basePayload: createBasePayloadWithHistorical([
+      { date: '2026-05-01T00:00:00.000Z', value: 95 },
+      { date: '2026-09-15T00:00:00.000Z', value: 105 },
+    ]),
+    locale: 'pl',
+    model: 'damped_holt',
+    currentResult: null,
+    verificationResult,
+    verificationHorizon: '3M',
+  })
+
+  const verificationSeries = payload?.series.find((entry) => entry.kind === 'historical-forecast')
+
+  assert.deepEqual(
+    verificationSeries?.points.map((point) => point.date),
+    ['2026-07-15T00:00:00.000Z', '2026-09-14T00:00:00.000Z'],
+  )
+})
+
+test('historical verification does not move stale prepared records into the current chart window', () => {
+  const verificationResult = createVerificationResultForTargetBasis('POINT_IN_TIME', [
+    createRecord({ forecastDate: '2024-03-14T00:00:00.000Z', actualObservedAt: '2024-03-14T00:00:00.000Z' }),
+    createRecord({ forecastDate: '2024-05-14T00:00:00.000Z', actualObservedAt: '2024-05-14T00:00:00.000Z' }),
+  ])
+
+  const payload = buildForecastPortfolioPayload({
+    basePayload: createBasePayloadWithHistorical([
+      { date: '2026-06-15T00:00:00.000Z', value: 95 },
+      { date: '2026-09-15T00:00:00.000Z', value: 105 },
+    ]),
+    locale: 'pl',
+    model: 'damped_holt',
+    currentResult: null,
+    verificationResult,
+    verificationHorizon: '3M',
+  })
+
+  assert.equal(payload?.series.some((entry) => entry.kind === 'historical-forecast'), false)
+  assert.deepEqual(payload?.deltaOverlays, [])
+})
+
 test('point-in-time current path remains unchanged across verification horizon switches', () => {
   const currentResult = createExtendedPointInTimeCurrentResult()
   const verificationResult: BenchmarkForecastVerificationAvailableResult = {

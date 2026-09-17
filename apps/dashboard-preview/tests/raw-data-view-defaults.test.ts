@@ -53,10 +53,10 @@ test('client-facing forecast reads do not invoke progressive preparation unless 
   assert.equal(shouldRunProgressiveForecastPreparation(enabled, { embedded: true, variant: 'forecast-portfolio-v3' }), true)
 })
 
-test('showing Historical Verification expands short chart ranges far enough to reveal prepared comparison points', () => {
-  assert.equal(resolveRangeForForecastVerification('3M', true), '3Y')
-  assert.equal(resolveRangeForForecastVerification('6M', true), '3Y')
-  assert.equal(resolveRangeForForecastVerification('1Y', true), '3Y')
+test('showing Historical Verification preserves the chart range selected by the user', () => {
+  assert.equal(resolveRangeForForecastVerification('3M', true), '3M')
+  assert.equal(resolveRangeForForecastVerification('6M', true), '6M')
+  assert.equal(resolveRangeForForecastVerification('1Y', true), '1Y')
   assert.equal(resolveRangeForForecastVerification('3Y', true), '3Y')
   assert.equal(resolveRangeForForecastVerification('5Y', true), '5Y')
   assert.equal(resolveRangeForForecastVerification('ALL', true), 'ALL')

@@ -568,15 +568,9 @@ export function shouldRunProgressiveForecastPreparation(
 
 export function resolveRangeForForecastVerification(
   currentRange: RangePreset,
-  verificationEnabled: boolean,
+  _verificationEnabled: boolean,
 ): RangePreset {
-  if (!verificationEnabled) {
-    return currentRange
-  }
-
-  return currentRange === '3M' || currentRange === '6M' || currentRange === '1Y'
-    ? '3Y'
-    : currentRange
+  return currentRange
 }
 
 function getRawDataViewProfiler() {
