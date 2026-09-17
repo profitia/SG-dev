@@ -1574,6 +1574,70 @@ test('point-in-time current forecast preserves miss semantics and does not class
   }
 })
 
+test('point-in-time verification fails closed when maintenance has not reached the latest source observation', async () => {
+  const previousMarketDataUrl = process.env.MARKET_DATA_DATABASE_URL
+  const previousDatabaseUrl = process.env.DATABASE_URL
+  const marketDataGlobal = globalThis as typeof globalThis & {
+    dashboardPreviewMarketDataPrisma?: {
+      rollingDailyVerificationRecord: {
+        findMany: () => Promise<Array<Record<string, unknown>>>
+      }
+      rollingDailyMaintenanceState: {
+        findUnique: () => Promise<Record<string, unknown> | null>
+      }
+    }
+    dashboardPreviewMarketDataPrismaConnectionString?: string
+  }
+  const previousPrisma = marketDataGlobal.dashboardPreviewMarketDataPrisma
+  const previousPrismaConnectionString = marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString
+
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://verification-maintenance-incomplete'
+  delete process.env.DATABASE_URL
+
+  marketDataGlobal.dashboardPreviewMarketDataPrisma = {
+    rollingDailyVerificationRecord: {
+      async findMany() {
+        return [{
+          forecastOriginAt: new Date('2024-02-14T00:00:00.000Z'),
+          sourceHistoryFingerprint: 'history-fingerprint-current',
+        }]
+      },
+    },
+    rollingDailyMaintenanceState: {
+      async findUnique() {
+        return {
+          latestSourceObservationAt: new Date('2026-09-15T00:00:00.000Z'),
+          latestSourceHistoryFingerprint: 'history-fingerprint-current',
+          lastProcessedOriginAt: new Date('2024-02-14T00:00:00.000Z'),
+          lastMaintenanceStatus: 'SUCCEEDED',
+        }
+      },
+    },
+  }
+  marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = process.env.MARKET_DATA_DATABASE_URL
+
+  try {
+    const result = await getBenchmarkForecastVerification('cl_c1_cl', 'arima', 'POINT_IN_TIME')
+    assert.equal(result.status, 'NOT_AVAILABLE')
+    if (result.status === 'NOT_AVAILABLE') {
+      assert.match(result.reason, /^PREPARATION_REQUIRED:/)
+    }
+  } finally {
+    if (previousMarketDataUrl === undefined) {
+      delete process.env.MARKET_DATA_DATABASE_URL
+    } else {
+      process.env.MARKET_DATA_DATABASE_URL = previousMarketDataUrl
+    }
+    if (previousDatabaseUrl === undefined) {
+      delete process.env.DATABASE_URL
+    } else {
+      process.env.DATABASE_URL = previousDatabaseUrl
+    }
+    marketDataGlobal.dashboardPreviewMarketDataPrisma = previousPrisma
+    marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = previousPrismaConnectionString
+  }
+})
+
 test('point-in-time current forecast freshness contract is generic across all four accepted models with no cross-model fallback', async () => {
   const previousMarketDataUrl = process.env.MARKET_DATA_DATABASE_URL
   const previousDatabaseUrl = process.env.DATABASE_URL

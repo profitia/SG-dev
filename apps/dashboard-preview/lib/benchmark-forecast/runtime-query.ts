@@ -721,17 +721,31 @@ async function getPersistedRollingDailyForecastVerification(
     throw new Error('MARKET_DATA_DATABASE_URL is not configured.')
   }
 
-  const records = await prisma.rollingDailyVerificationRecord.findMany({
-    where: {
-      seriesId,
-      inputSource: ROLLING_DAILY_INPUT_SOURCE,
-      targetBasis: 'POINT_IN_TIME',
-      methodId: ROLLING_DAILY_METHOD_ID,
-      methodVersion: ROLLING_DAILY_METHOD_VERSION,
-      modelId: model,
-    },
-    orderBy: [{ horizonMonths: 'asc' }, { targetCalendarDate: 'asc' }, { forecastOriginAt: 'asc' }],
-  })
+  const identityWhere = {
+    seriesId,
+    inputSource: ROLLING_DAILY_INPUT_SOURCE,
+    targetBasis: 'POINT_IN_TIME' as const,
+    methodId: ROLLING_DAILY_METHOD_ID,
+    methodVersion: ROLLING_DAILY_METHOD_VERSION,
+    modelId: model,
+  }
+  const [records, maintenanceState] = await Promise.all([
+    prisma.rollingDailyVerificationRecord.findMany({
+      where: identityWhere,
+      orderBy: [{ horizonMonths: 'asc' }, { targetCalendarDate: 'asc' }, { forecastOriginAt: 'asc' }],
+    }),
+    prisma.rollingDailyMaintenanceState.findUnique({
+      where: {
+        seriesId_inputSource_targetBasis_methodId_methodVersion_modelId: identityWhere,
+      },
+      select: {
+        latestSourceObservationAt: true,
+        latestSourceHistoryFingerprint: true,
+        lastProcessedOriginAt: true,
+        lastMaintenanceStatus: true,
+      },
+    }),
+  ])
 
   if (records.length === 0) {
     const identity = resolveForecastMethodIdentity('POINT_IN_TIME')
@@ -743,6 +757,31 @@ async function getPersistedRollingDailyForecastVerification(
       targetSemantics: identity.targetSemantics,
       methodId: identity.methodId,
       reason: 'No persisted point-in-time forecast verification is available for the selected series and model.',
+    }
+  }
+
+  const latestRecord = [...records].sort((left, right) => right.forecastOriginAt.getTime() - left.forecastOriginAt.getTime())[0]
+  const latestSourceDate = maintenanceState?.latestSourceObservationAt?.toISOString().slice(0, 10) ?? null
+  const lastProcessedDate = maintenanceState?.lastProcessedOriginAt?.toISOString().slice(0, 10) ?? null
+  const maintenanceComplete = Boolean(
+    maintenanceState
+    && (maintenanceState.lastMaintenanceStatus === 'SUCCEEDED' || maintenanceState.lastMaintenanceStatus === 'NO_OP')
+    && latestSourceDate
+    && lastProcessedDate === latestSourceDate
+    && maintenanceState.latestSourceHistoryFingerprint
+    && latestRecord?.sourceHistoryFingerprint === maintenanceState.latestSourceHistoryFingerprint,
+  )
+
+  if (!maintenanceComplete) {
+    const identity = resolveForecastMethodIdentity('POINT_IN_TIME')
+    return {
+      status: 'NOT_AVAILABLE',
+      seriesId,
+      modelId: model,
+      targetBasis: 'POINT_IN_TIME',
+      targetSemantics: identity.targetSemantics,
+      methodId: identity.methodId,
+      reason: 'PREPARATION_REQUIRED: Point-in-time Historical Verification has not been prepared through the latest source observation.',
     }
   }
 
@@ -791,7 +830,6 @@ async function getPersistedRollingDailyForecastVerification(
     }),
   )
 
-  const latestRecord = [...records].sort((left, right) => right.forecastOriginAt.getTime() - left.forecastOriginAt.getTime())[0]
   const identity = resolveForecastMethodIdentity('POINT_IN_TIME')
 
   return {
