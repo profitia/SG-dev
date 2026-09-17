@@ -45,7 +45,7 @@ test('login messages publish version 1.2 with three next-version topics', () => 
 
   assert.equal(porrDemoPl.versionLabel, 'Wersja: 1.2')
   assert.equal(porrDemoEn.versionLabel, 'Version: 1.2')
-  assert.equal(porrDemoPl.publicationDateLabel, 'Data publikacji: 2026-09-17')
+  assert.equal(porrDemoPl.publicationDateLabel, 'Data publikacji: 2026.09.17')
   assert.equal(porrDemoEn.publicationDateLabel, 'Publication date: 2026-09-17')
   assert.ok(porrDemoPl.plannedTopicsItemOne)
   assert.ok(porrDemoPl.plannedTopicsItemTwo)
