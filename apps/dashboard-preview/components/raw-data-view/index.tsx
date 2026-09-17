@@ -7,7 +7,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import type { DashboardVariantId } from '@/lib/dashboard-variants/registry'
 import { filterSeriesToVisibleRange, resolveNiceScaleDomain, type VisibleRange } from '@/lib/chart/chart-panel-helpers'
 import { clipDeltaOverlaysToRange } from '@/lib/chart/delta-overlay-clipping'
-import { resolveDatePlotOffset } from '@/lib/chart/date-plot-offset'
+import { resolveDateTimePlotRatio } from '@/lib/chart/date-plot-offset'
 import { buildEndOfPeriodDeltaSurfaces, prepareVisibleSeriesGeometry } from '@/lib/chart/end-of-period-delta-geometry'
 import {
   DEFAULT_FORECAST_TARGET_BASIS,
@@ -1456,11 +1456,10 @@ function buildPlotGeometry(series: TimeSeriesViewerSeries[], layout: ChartLayout
   const yDomain = resolveNiceScaleDomain(allValues)
   const minimum = yDomain.minimum
   const maximum = yDomain.maximum
-  const dateDenominator = Math.max(allDates.length - 1, 1)
   const valueRange = maximum - minimum || 1
 
   function pointX(date: string) {
-    return layout.paddingLeft + (resolveDatePlotOffset(allDates, date) / dateDenominator) * (layout.width - layout.paddingLeft - layout.paddingRight)
+    return layout.paddingLeft + resolveDateTimePlotRatio(allDates, date) * (layout.width - layout.paddingLeft - layout.paddingRight)
   }
 
   function pointY(value: number | null) {
