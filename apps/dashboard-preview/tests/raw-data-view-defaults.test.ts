@@ -20,6 +20,8 @@ import {
   shouldApplyCurrentResultForActiveRequest,
   shouldHideEmbeddedBenchmarkShell,
   isPreparedReadsOnlyForecastSession,
+  isRecentVerificationPrepared,
+  mergeExactCapabilitySnapshot,
   shouldRunProgressiveForecastPreparation,
 } from '@/components/raw-data-view/index'
 import type { BenchmarkForecastCurrentAvailableResult } from '@/lib/benchmark-forecast/forecast-contract'
@@ -58,6 +60,76 @@ test('prepared-read-only demo mode is explicit and fail-closed', () => {
   assert.equal(isPreparedReadsOnlyForecastSession({ get: (key) => key === 'preparedReadsOnly' ? '1' : null }), true)
   assert.equal(isPreparedReadsOnlyForecastSession({ get: () => null }), false)
   assert.equal(isPreparedReadsOnlyForecastSession({ get: () => 'true' }), false)
+})
+
+test('prepared verification requires the exact Recent Verification artifact', () => {
+  const capability = {
+    seriesId: 'b_c1_cl',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'naive',
+    sourceFrequency: 'DAILY',
+    targetCadence: 'MONTHLY',
+    sourceAvailability: 'AVAILABLE',
+    lawfulTargetSemantics: 'LAWFUL',
+    status: 'STALE',
+    currentReadiness: 'READY',
+    verificationReadiness: 'READY',
+    recentVerificationReadiness: 'STALE',
+    targetedDataScope: 'SINGLE_SERIES',
+    timingMs: 4,
+    reason: 'Recent Verification is stale.',
+  } as const
+
+  assert.equal(isRecentVerificationPrepared(capability), false)
+  assert.equal(isRecentVerificationPrepared({
+    ...capability,
+    recentVerificationReadiness: 'READY',
+  }), true)
+})
+
+test('an exact capability refresh replaces only the matching model and methodology', () => {
+  const baseVariant = {
+    seriesId: 'b_c1_cl',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'naive',
+    sourceFrequency: 'DAILY',
+    targetCadence: 'MONTHLY',
+    sourceAvailability: 'AVAILABLE',
+    lawfulTargetSemantics: 'LAWFUL',
+    status: 'STALE',
+    currentReadiness: 'READY',
+    verificationReadiness: 'READY',
+    recentVerificationReadiness: 'STALE',
+    targetedDataScope: 'SINGLE_SERIES',
+    timingMs: 4,
+    reason: 'Recent Verification is stale.',
+  } as const
+  const otherVariant = {
+    ...baseVariant,
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    recentVerificationReadiness: 'READY',
+  } as const
+  const refreshed = {
+    ...baseVariant,
+    status: 'READY',
+    recentVerificationReadiness: 'READY',
+    reason: null,
+  } as const
+
+  const merged = mergeExactCapabilitySnapshot({
+    seriesId: 'b_c1_cl',
+    sourceFrequency: 'DAILY',
+    sourceAvailability: 'AVAILABLE',
+    status: 'AVAILABLE',
+    reason: null,
+    targetedDataScope: 'SINGLE_SERIES',
+    timingMs: 10,
+    variants: [baseVariant, otherVariant],
+  }, refreshed)
+
+  assert.equal(merged.variants.length, 2)
+  assert.equal(merged.variants.find((variant) => variant.targetSemantics === 'MONTHLY_AVERAGE')?.recentVerificationReadiness, 'READY')
+  assert.equal(merged.variants.find((variant) => variant.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME')?.recentVerificationReadiness, 'READY')
 })
 
 test('showing Historical Verification preserves the chart range selected by the user', () => {

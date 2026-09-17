@@ -40,7 +40,7 @@
     "showForecastAccuracy": "Show forecast accuracy",
     "showForecastVerification": "Show forecast verification",
     "showForecastVerificationHint": "Compare earlier forecasts with actual values.",
-    "verificationUnavailableForSelection": "Verification is unavailable for the selected variant.",
+    "verificationUnavailableForSelection": "Verification is not prepared for the selected variant yet. It will appear automatically once readiness is confirmed.",
     "prepareForecast": "Prepare forecast",
     "forecastPreparationRequired": "Forecast preparation required",
     "forecastPreparationRequiredHint": "Historical data stays available. Prepare the exact Current Forecast for the selected model and target basis when you want to view it.",

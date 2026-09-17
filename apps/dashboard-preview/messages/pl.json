@@ -40,7 +40,7 @@
     "showForecastAccuracy": "Pokaż trafność prognoz",
     "showForecastVerification": "Pokaż sprawdzalność prognozy",
     "showForecastVerificationHint": "Porównaj wcześniejsze prognozy z rzeczywistymi wartościami.",
-    "verificationUnavailableForSelection": "Sprawdzalność nie jest dostępna dla wybranego wariantu.",
+    "verificationUnavailableForSelection": "Sprawdzalność nie jest jeszcze przygotowana dla wybranego wariantu. Pojawi się automatycznie po potwierdzeniu gotowości.",
     "prepareForecast": "Przygotuj prognozę",
     "forecastPreparationRequired": "Wymagane przygotowanie prognozy",
     "forecastPreparationRequiredHint": "Dane historyczne pozostają dostępne. Przygotuj ten wariant bieżącej prognozy dla wybranego modelu i sposobu wyznaczenia wartości.",

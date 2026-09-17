@@ -32,6 +32,7 @@ import {
   readProgressiveForecastPreparationThroughDashboard,
   resolveForecastCurrentObservedProgressState,
   readPreparedCurrentForecastThroughDashboard,
+  readCurrentForecastCapabilityThroughDashboard,
   readCurrentForecastCapabilitiesThroughDashboard,
   requestExplicitCurrentForecastPreparationThroughDashboard,
   resolveForecastCurrentDisplayState,
@@ -583,6 +584,37 @@ function resolveCapabilityVariant(
   return snapshot?.variants.find((variant) => (
     variant.modelId === modelId && variant.targetSemantics === targetSemantics
   )) ?? null
+}
+
+export function isRecentVerificationPrepared(
+  capability: InteractiveForecastCapabilityResult | null,
+) {
+  return capability?.recentVerificationReadiness === 'READY'
+}
+
+export function mergeExactCapabilitySnapshot(
+  snapshot: InteractiveForecastCapabilitySeriesSnapshot | null,
+  capability: InteractiveForecastCapabilityResult,
+): InteractiveForecastCapabilitySeriesSnapshot {
+  const variants = snapshot?.seriesId === capability.seriesId
+    ? snapshot.variants.filter((variant) => !(
+        variant.modelId === capability.modelId
+        && variant.targetSemantics === capability.targetSemantics
+      ))
+    : []
+
+  return {
+    seriesId: capability.seriesId,
+    sourceFrequency: snapshot?.seriesId === capability.seriesId
+      ? snapshot.sourceFrequency
+      : capability.sourceFrequency,
+    sourceAvailability: capability.sourceAvailability,
+    status: capability.sourceAvailability === 'FAILED' ? 'FAILED' : 'AVAILABLE',
+    reason: capability.reason,
+    targetedDataScope: 'SINGLE_SERIES',
+    timingMs: capability.timingMs,
+    variants: [...variants, capability],
+  }
 }
 
 function capabilityCurrentControlState(
@@ -2678,6 +2710,7 @@ export function RawDataView({
   const forecastAccuracyAbortRef = useRef<AbortController | null>(null)
   const forecastCurrentAbortRef = useRef<AbortController | null>(null)
   const forecastVerificationAbortRef = useRef<AbortController | null>(null)
+  const forecastVerificationReadRetryRef = useRef<Map<string, number>>(new Map())
   const forecastPreparationRequestRef = useRef(0)
   const seriesCacheRef = useRef<Map<string, CachedSeriesEntry>>(new Map())
   const forecastLayerCacheRef = useRef<Map<string, ForecastLayerCacheEntry<BenchmarkForecastCurrentResult | BenchmarkForecastVerificationResult>>>(new Map())
@@ -2720,8 +2753,7 @@ export function RawDataView({
   )
   const selectedCurrentPrepared = !preparedReadsOnly || selectedCapabilityVariant?.currentReadiness === 'READY'
   const selectedVerificationPrepared = !preparedReadsOnly
-    || selectedCapabilityVariant?.recentVerificationReadiness === 'READY'
-    || selectedCapabilityVariant?.verificationReadiness === 'READY'
+    || isRecentVerificationPrepared(selectedCapabilityVariant)
   const forecastCurrentDisplayState = resolveForecastCurrentDisplayState(forecastCurrentState, selectedProgressiveVariant)
   const forecastCurrentObservedProgressState = resolveForecastCurrentObservedProgressState(
     forecastCurrentState,
@@ -2811,6 +2843,59 @@ export function RawDataView({
       controller.abort()
     }
   }, [benchmarkSeriesId, isForecastPortfolioVariant, preparedReadsOnly])
+
+  useEffect(() => {
+    if (!preparedReadsOnly || !isForecastPortfolioVariant || !benchmarkSeriesId || !showForecast) {
+      return
+    }
+
+    const activeSeriesId = benchmarkSeriesId
+    const controller = new AbortController()
+    let cancelled = false
+    let timeoutHandle: number | null = null
+    let attempt = 0
+    const maxAttempts = 38
+    const pollIntervalMs = 8_000
+
+    async function refreshExactCapability() {
+      attempt += 1
+
+      try {
+        const capability = await readCurrentForecastCapabilityThroughDashboard(fetch, {
+          seriesId: activeSeriesId,
+          modelId: forecastModel,
+          targetBasis: selectedForecastTargetBasis,
+        }, controller.signal)
+
+        if (cancelled) return
+
+        setForecastCapabilitySnapshot((snapshot) => mergeExactCapabilitySnapshot(snapshot, capability))
+        setForecastCapabilityState('ready')
+
+        if (capability.currentReadiness === 'READY' && isRecentVerificationPrepared(capability)) {
+          return
+        }
+      } catch (error) {
+        if (cancelled || (error as Error).name === 'AbortError') return
+      }
+
+      if (!cancelled && attempt < maxAttempts) {
+        timeoutHandle = window.setTimeout(() => {
+          void refreshExactCapability()
+        }, pollIntervalMs)
+      }
+    }
+
+    void refreshExactCapability()
+
+    return () => {
+      cancelled = true
+      controller.abort()
+      if (timeoutHandle !== null) {
+        window.clearTimeout(timeoutHandle)
+      }
+    }
+  }, [benchmarkSeriesId, forecastModel, isForecastPortfolioVariant, preparedReadsOnly, selectedForecastTargetBasis, showForecast])
 
   useEffect(() => {
     const html = document.documentElement
@@ -3789,6 +3874,20 @@ export function RawDataView({
         const normalizedPayload = payload as BenchmarkForecastVerificationResult
 
         if (!isAvailableVerificationResult(normalizedPayload)) {
+          const readRetryCount = forecastVerificationReadRetryRef.current.get(cacheKey) ?? 0
+          if (preparedReadsOnly && selectedVerificationPrepared && readRetryCount < 5) {
+            forecastVerificationReadRetryRef.current.set(cacheKey, readRetryCount + 1)
+            setForecastVerificationResult(null)
+            setForecastVerificationState('loading')
+            setForecastVerificationErrorState(null)
+            window.setTimeout(() => {
+              if (!cancelled) {
+                setForecastVerificationReloadNonce((value) => value + 1)
+              }
+            }, 8_000)
+            return
+          }
+
           setForecastVerificationResult(null)
           setForecastVerificationState('error')
           setForecastVerificationErrorState(resolveForecastVerificationUnavailableState(normalizedPayload, {
@@ -3810,6 +3909,7 @@ export function RawDataView({
           payload: normalizedPayload,
           cachedAt: Date.now(),
         })
+        forecastVerificationReadRetryRef.current.delete(cacheKey)
         setForecastVerificationResult(normalizedPayload)
         setForecastVerificationState('ready')
         setForecastVerificationErrorState(null)
