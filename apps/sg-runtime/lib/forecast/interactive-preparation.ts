@@ -22,7 +22,10 @@ import {
   type ForecastPreparationExecutionAdmission,
   type ForecastPreparationOwnedExecutionContext,
 } from '@/lib/forecast/execution-ledger'
-import { readPreparedRollingDailyForecastVerification } from '@/lib/forecast/rolling-daily-verification'
+import {
+  readPreparedRollingDailyForecastVerification,
+  readPreparedRollingDailyRecentForecastVerification,
+} from '@/lib/forecast/rolling-daily-verification'
 import {
   type ForecastPersistenceOwnership,
   readPreparedBenchmarkForecastVerification,
@@ -149,7 +152,7 @@ type InteractiveForecastPreparationDependencies = {
   readPreparedFullVerification: typeof readPreparedBenchmarkForecastVerification
   readPreparedCurrent: typeof readPreparedBenchmarkCurrentForecast
   readPreparedRollingDailyFullVerification: typeof readPreparedRollingDailyForecastVerification
-  readPreparedRecentVerification: typeof readPreparedBenchmarkRecentForecastVerification
+  readPreparedRecentVerification: (input: ForecastServiceRequest) => Promise<BenchmarkForecastVerificationResult>
   executionAdmission: ForecastPreparationExecutionAdmission
   now: () => number
 }
@@ -530,7 +533,18 @@ export function createInteractiveForecastPreparationService(
     readPreparedCurrent: dependencies.readPreparedCurrent ?? readPreparedBenchmarkCurrentForecast,
     readPreparedFullVerification: dependencies.readPreparedFullVerification ?? readPreparedBenchmarkForecastVerification,
     readPreparedRollingDailyFullVerification: dependencies.readPreparedRollingDailyFullVerification ?? readPreparedRollingDailyForecastVerification,
-    readPreparedRecentVerification: dependencies.readPreparedRecentVerification ?? readPreparedBenchmarkRecentForecastVerification,
+    readPreparedRecentVerification: dependencies.readPreparedRecentVerification ?? ((request) => {
+      if (request.targetBasis !== 'POINT_IN_TIME') {
+        return readPreparedBenchmarkRecentForecastVerification(request)
+      }
+      return readPreparedRollingDailyRecentForecastVerification({
+        seriesId: request.seriesId,
+        modelId: request.modelId as ForecastRequestInput['modelId'],
+        targetBasis: request.targetBasis,
+        ...(request.sourceFrequency ? { sourceFrequency: request.sourceFrequency } : {}),
+        ...(request.targetCadence ? { targetCadence: request.targetCadence } : {}),
+      })
+    }),
     executionAdmission: dependencies.executionAdmission ?? createDefaultForecastPreparationExecutionAdmission(),
     now: dependencies.now ?? (() => performance.now()),
   }
