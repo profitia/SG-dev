@@ -838,7 +838,7 @@ test('preparing model and target-basis controls expose the animated preparation 
   const source = fs.readFileSync(new URL('../components/raw-data-view/index.tsx', import.meta.url), 'utf8')
   const styles = fs.readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
 
-  assert.equal((source.match(/buttonMeta\.state === 'PREPARING' \? ' is-preparing' : ''/g) ?? []).length, 2)
+  assert.equal((source.match(/buttonMeta\.state === 'PREPARING' \|\| \(preparedReadsOnly && forecastCapabilityState === 'loading'\) \? ' is-preparing' : ''/g) ?? []).length, 2)
   assert.match(styles, /\.forecast-control-button\.is-preparing::after/)
   assert.match(styles, /@keyframes forecastPreparationSweep/)
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/)

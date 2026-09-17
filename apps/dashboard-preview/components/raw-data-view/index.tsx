@@ -4166,7 +4166,7 @@ export function RawDataView({
                         <button
                           key={model}
                           type="button"
-                          className={`chart-range-button forecast-control-button${forecastModel === model ? ' is-active' : ''}${buttonMeta.state === 'PREPARING' ? ' is-preparing' : ''}`}
+                          className={`chart-range-button forecast-control-button${forecastModel === model ? ' is-active' : ''}${buttonMeta.state === 'PREPARING' || (preparedReadsOnly && forecastCapabilityState === 'loading') ? ' is-preparing' : ''}`}
                           aria-pressed={forecastModel === model}
                           disabled={disabled}
                           tabIndex={disabled ? -1 : 0}
@@ -4221,7 +4221,7 @@ export function RawDataView({
                         <button
                           key={targetBasis}
                           type="button"
-                          className={`chart-range-button forecast-control-button${selectedForecastTargetBasis === targetBasis ? ' is-active' : ''}${buttonMeta.state === 'PREPARING' ? ' is-preparing' : ''}`}
+                          className={`chart-range-button forecast-control-button${selectedForecastTargetBasis === targetBasis ? ' is-active' : ''}${buttonMeta.state === 'PREPARING' || (preparedReadsOnly && forecastCapabilityState === 'loading') ? ' is-preparing' : ''}`}
                           aria-pressed={selectedForecastTargetBasis === targetBasis}
                           disabled={disabled}
                           tabIndex={disabled ? -1 : 0}
