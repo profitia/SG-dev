@@ -48,7 +48,11 @@ async function main() {
   const modelIds = readModelArgs()
   const prepareHistorical = readArg('historical') === 'true'
   const maxOriginsPerRun = readOptionalPositiveIntegerArg('maxOriginsPerRun')
-  const result = await service.run({ seriesId, modelIds, prepareHistorical, maxOriginsPerRun })
+  const fullRebuild = readArg('fullRebuild') === 'true'
+  const request = { seriesId, modelIds, prepareHistorical, maxOriginsPerRun, fullRebuild }
+  const result = prepareHistorical
+    ? await service.run(request)
+    : await service.runCurrentOnly(request)
   console.log(JSON.stringify(result, null, 2))
 
   if (result.status === 'FAILED') {

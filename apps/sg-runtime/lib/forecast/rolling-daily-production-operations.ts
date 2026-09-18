@@ -38,6 +38,7 @@ export type RollingDailyProductionOperationsRequest = {
   prepareHistorical?: boolean
   verificationScope?: 'RECENT' | 'FULL'
   maxOriginsPerRun?: number
+  fullRebuild?: boolean
   trace?: RollingDailyHistoricalTraceInput | RollingDailyHistoricalTraceConfig
   resolvePersistenceOwnership?: () => Promise<ForecastPersistenceOwnership>
 }
@@ -274,6 +275,7 @@ export function createRollingDailyProductionOperationsService(
             preparedHistory: request.preparedHistory,
             maxOriginsPerRun: request.maxOriginsPerRun,
             bootstrapHistoricalIfMissing: request.prepareHistorical,
+            fullRebuild: request.fullRebuild,
             trace: trace ?? undefined,
           })
 
