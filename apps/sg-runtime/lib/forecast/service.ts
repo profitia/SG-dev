@@ -2975,7 +2975,7 @@ export async function writeCurrentRunWithPrisma(
     } else {
       run = await tx.forecastCurrentRun.upsert({
         where: {
-          seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId: {
+          seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_frequency_trainingWindowPolicyId_effectiveTrainingPolicyId: {
             ...currentRunIdentityWhere,
             trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
             effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
@@ -3368,7 +3368,7 @@ export async function writeVerificationRunWithPrisma(
     } else {
       run = await tx.forecastVerificationRun.upsert({
         where: {
-          seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId: {
+          seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_frequency_trainingWindowPolicyId_effectiveTrainingPolicyId: {
             ...verificationRunIdentityWhere,
             trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
             effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,

@@ -104,7 +104,7 @@ model ForecastCurrentRun {
   updatedAt          DateTime               @updatedAt
   points             ForecastCurrentPoint[]
 
-  @@unique([seriesId, inputSource, historyFingerprint, targetBasis, methodId, modelId, methodVersion, trainingWindowPolicyId, effectiveTrainingPolicyId], map: "forecast_current_runs_identity_key")
+  @@unique([seriesId, inputSource, historyFingerprint, targetBasis, methodId, modelId, methodVersion, frequency, trainingWindowPolicyId, effectiveTrainingPolicyId], map: "forecast_current_runs_identity_key")
   @@index([seriesId, targetBasis, methodId, modelId, trainingWindowPolicyId, effectiveTrainingPolicyId, updatedAt], map: "forecast_current_runs_lookup_idx")
   @@map("forecast_current_runs")
 }
@@ -161,7 +161,7 @@ model ForecastVerificationRun {
   metrics            ForecastVerificationMetric[]
   points             ForecastVerificationPoint[]
 
-  @@unique([seriesId, inputSource, historyFingerprint, targetBasis, methodId, modelId, methodVersion, trainingWindowPolicyId, effectiveTrainingPolicyId], map: "forecast_verification_runs_identity_key")
+  @@unique([seriesId, inputSource, historyFingerprint, targetBasis, methodId, modelId, methodVersion, frequency, trainingWindowPolicyId, effectiveTrainingPolicyId], map: "forecast_verification_runs_identity_key")
   @@index([seriesId, targetBasis, methodId, modelId, trainingWindowPolicyId, effectiveTrainingPolicyId, updatedAt], map: "forecast_verification_runs_lookup_idx")
   @@map("forecast_verification_runs")
 }

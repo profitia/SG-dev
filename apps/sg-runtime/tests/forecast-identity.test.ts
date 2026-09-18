@@ -159,6 +159,23 @@ test('migration keeps pre-canonical monthly rows explicitly unresolved instead o
     assert.equal(migration.includes('UPDATE'), false)
 })
 
+test('persisted forecast run identity includes cadence frequency in schema and migration', () => {
+  const schema = readFileSync(
+    new URL('../prisma-market-data/schema.prisma', import.meta.url),
+    'utf8',
+  )
+  const migration = readFileSync(
+    new URL('../prisma-market-data/migrations/20260918203500_forecast_artifact_frequency_identity/migration.sql', import.meta.url),
+    'utf8',
+  )
+  const exactIdentity = /methodVersion, frequency, trainingWindowPolicyId, effectiveTrainingPolicyId/
+
+  assert.equal(schema.match(exactIdentity)?.length, 1)
+  assert.equal((schema.match(new RegExp(exactIdentity.source, 'g')) ?? []).length, 2)
+  assert.match(migration, /CREATE UNIQUE INDEX "forecast_current_runs_identity_key"[\s\S]*"methodVersion",\s*"frequency",\s*"trainingWindowPolicyId"/)
+  assert.match(migration, /CREATE UNIQUE INDEX "forecast_verification_runs_identity_key"[\s\S]*"methodVersion",\s*"frequency",\s*"trainingWindowPolicyId"/)
+})
+
 test('statistical compatibility keeps Current, Recent Verification, and Full Verification distinct', () => {
   const current = createCurrentForecastStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
   const recent = createRecentVerificationStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)

@@ -12800,6 +12800,9 @@ export namespace Prisma {
       methodId: string
       methodVersion: string
       modelId: string
+      /**
+       * Database migration additionally enforces this triplet as all-null legacy identity or all-non-null exact identity.
+       */
       trainingWindowPolicyId: string | null
       effectiveTrainingPolicyId: string | null
       sourceHistoryFingerprint: string | null
@@ -20072,7 +20075,7 @@ export namespace Prisma {
 
   export type ForecastCurrentRunWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId?: ForecastCurrentRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionTrainingWindowPolicyIdEffectiveTrainingPolicyIdCompoundUniqueInput
+    seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_frequency_trainingWindowPolicyId_effectiveTrainingPolicyId?: ForecastCurrentRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionFrequencyTrainingWindowPolicyIdEffectiveTrainingPolicyIdCompoundUniqueInput
     AND?: ForecastCurrentRunWhereInput | ForecastCurrentRunWhereInput[]
     OR?: ForecastCurrentRunWhereInput[]
     NOT?: ForecastCurrentRunWhereInput | ForecastCurrentRunWhereInput[]
@@ -20102,7 +20105,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"ForecastCurrentRun"> | Date | string
     updatedAt?: DateTimeFilter<"ForecastCurrentRun"> | Date | string
     points?: ForecastCurrentPointListRelationFilter
-  }, "id" | "seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId">
+  }, "id" | "seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_frequency_trainingWindowPolicyId_effectiveTrainingPolicyId">
 
   export type ForecastCurrentRunOrderByWithAggregationInput = {
     id?: SortOrder
@@ -20340,7 +20343,7 @@ export namespace Prisma {
 
   export type ForecastVerificationRunWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId?: ForecastVerificationRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionTrainingWindowPolicyIdEffectiveTrainingPolicyIdCompoundUniqueInput
+    seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_frequency_trainingWindowPolicyId_effectiveTrainingPolicyId?: ForecastVerificationRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionFrequencyTrainingWindowPolicyIdEffectiveTrainingPolicyIdCompoundUniqueInput
     AND?: ForecastVerificationRunWhereInput | ForecastVerificationRunWhereInput[]
     OR?: ForecastVerificationRunWhereInput[]
     NOT?: ForecastVerificationRunWhereInput | ForecastVerificationRunWhereInput[]
@@ -20371,7 +20374,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"ForecastVerificationRun"> | Date | string
     metrics?: ForecastVerificationMetricListRelationFilter
     points?: ForecastVerificationPointListRelationFilter
-  }, "id" | "seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_trainingWindowPolicyId_effectiveTrainingPolicyId">
+  }, "id" | "seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_frequency_trainingWindowPolicyId_effectiveTrainingPolicyId">
 
   export type ForecastVerificationRunOrderByWithAggregationInput = {
     id?: SortOrder
@@ -24579,7 +24582,7 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
-  export type ForecastCurrentRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionTrainingWindowPolicyIdEffectiveTrainingPolicyIdCompoundUniqueInput = {
+  export type ForecastCurrentRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionFrequencyTrainingWindowPolicyIdEffectiveTrainingPolicyIdCompoundUniqueInput = {
     seriesId: string
     inputSource: string
     historyFingerprint: string
@@ -24587,6 +24590,7 @@ export namespace Prisma {
     methodId: string
     modelId: string
     methodVersion: string
+    frequency: string
     trainingWindowPolicyId: string
     effectiveTrainingPolicyId: string
   }
@@ -24868,7 +24872,7 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
-  export type ForecastVerificationRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionTrainingWindowPolicyIdEffectiveTrainingPolicyIdCompoundUniqueInput = {
+  export type ForecastVerificationRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionFrequencyTrainingWindowPolicyIdEffectiveTrainingPolicyIdCompoundUniqueInput = {
     seriesId: string
     inputSource: string
     historyFingerprint: string
@@ -24876,6 +24880,7 @@ export namespace Prisma {
     methodId: string
     modelId: string
     methodVersion: string
+    frequency: string
     trainingWindowPolicyId: string
     effectiveTrainingPolicyId: string
   }
