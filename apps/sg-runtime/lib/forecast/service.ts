@@ -2756,13 +2756,6 @@ export async function readCurrentRunFromPrisma(key: ForecastCacheLookupKey): Pro
         effectiveTrainingPolicyId: key.effectiveTrainingPolicyId,
       },
       select,
-    }) as PersistedCurrentRunRecord | null ?? await prisma.forecastCurrentRun.findFirst({
-      where: {
-        ...where,
-        trainingWindowPolicyId: null,
-        effectiveTrainingPolicyId: null,
-      },
-      select,
     }) as PersistedCurrentRunRecord | null
   } catch (error) {
     if (!isMissingCurrentTrainingPolicyColumnError(error)) {
@@ -3105,13 +3098,6 @@ export async function readVerificationRunFromPrisma(key: ForecastCacheLookupKey)
         ...where,
         trainingWindowPolicyId: key.trainingWindowPolicyId,
         effectiveTrainingPolicyId: key.effectiveTrainingPolicyId,
-      },
-      select,
-    }) as PersistedVerificationRunRecord | null ?? await prisma.forecastVerificationRun.findFirst({
-      where: {
-        ...where,
-        trainingWindowPolicyId: null,
-        effectiveTrainingPolicyId: null,
       },
       select,
     }) as PersistedVerificationRunRecord | null
@@ -3476,20 +3462,6 @@ async function readLatestCurrentRunFromPrisma(key: ForecastPreparedLookupKey) {
       },
       select,
       orderBy: { updatedAt: 'desc' },
-    }) ?? await prisma.forecastCurrentRun.findFirst({
-      where: {
-        seriesId: key.seriesId,
-        targetBasis: key.targetBasis,
-        methodId: key.methodId,
-        modelId: key.modelId,
-        methodVersion: key.methodVersion,
-        frequency: key.frequencyIdentity,
-        trainingWindowPolicyId: null,
-        effectiveTrainingPolicyId: null,
-        status: 'AVAILABLE',
-      },
-      select,
-      orderBy: { updatedAt: 'desc' },
     })
   } catch (error) {
     if (!isMissingCurrentTrainingPolicyColumnError(error)) {
@@ -3540,20 +3512,6 @@ async function readLatestVerificationRunFromPrisma(key: ForecastPreparedLookupKe
         frequency: key.frequencyIdentity,
         trainingWindowPolicyId: key.trainingWindowPolicyId,
         effectiveTrainingPolicyId: key.effectiveTrainingPolicyId,
-        status: 'AVAILABLE',
-      },
-      select,
-      orderBy: { updatedAt: 'desc' },
-    }) ?? await prisma.forecastVerificationRun.findFirst({
-      where: {
-        seriesId: key.seriesId,
-        targetBasis: key.targetBasis,
-        methodId: key.methodId,
-        modelId: key.modelId,
-        methodVersion: key.methodVersion,
-        frequency: key.frequencyIdentity,
-        trainingWindowPolicyId: null,
-        effectiveTrainingPolicyId: null,
         status: 'AVAILABLE',
       },
       select,

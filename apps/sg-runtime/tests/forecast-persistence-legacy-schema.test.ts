@@ -483,3 +483,107 @@ test('readPreparedBenchmarkForecastVerification falls back to legacy latest look
     globalThis.__sgRuntimeMarketDataPrisma__ = previousPrisma
   }
 })
+
+test('prepared current read does not substitute a null-policy row when exact identity columns exist', async () => {
+  const previousUrl = process.env.MARKET_DATA_DATABASE_URL
+  const previousPrisma = globalThis.__sgRuntimeMarketDataPrisma__
+  const artifact = {
+    ...createCurrentArtifact(),
+    cadence: { sourceFrequency: 'MONTHLY' as const, targetCadence: 'MONTHLY' as const },
+    frequencyIdentity: buildForecastArtifactCadenceIdentity({ sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' }),
+  }
+  const findFirstCalls: Array<Record<string, unknown>> = []
+
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://exact-current-read.invalid/market-data'
+  globalThis.__sgRuntimeMarketDataPrisma__ = {
+    $on() {},
+    forecastCurrentRun: {
+      async findFirst(input: { where: Record<string, unknown> }) {
+        findFirstCalls.push(input)
+        assert.equal(typeof input.where.trainingWindowPolicyId, 'string')
+        assert.equal(typeof input.where.effectiveTrainingPolicyId, 'string')
+        return null
+      },
+    },
+  } as never
+
+  try {
+    const result = await readPreparedBenchmarkCurrentForecast({
+      seriesId: artifact.seriesId,
+      modelId: artifact.modelId,
+      targetBasis: artifact.targetBasis,
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      preparedReadAuthority: {
+        seriesId: artifact.seriesId,
+        modelId: artifact.modelId,
+        targetBasis: artifact.targetBasis,
+        sourceFrequency: 'MONTHLY',
+        targetCadence: 'MONTHLY',
+        expectedHistoryFingerprint: artifact.historyFingerprint,
+      },
+    })
+
+    assert.equal(result.status, 'NOT_AVAILABLE')
+    assert.equal(findFirstCalls.length, 1)
+  } finally {
+    if (previousUrl === undefined) {
+      delete process.env.MARKET_DATA_DATABASE_URL
+    } else {
+      process.env.MARKET_DATA_DATABASE_URL = previousUrl
+    }
+    globalThis.__sgRuntimeMarketDataPrisma__ = previousPrisma
+  }
+})
+
+test('prepared verification read does not substitute a null-policy row when exact identity columns exist', async () => {
+  const previousUrl = process.env.MARKET_DATA_DATABASE_URL
+  const previousPrisma = globalThis.__sgRuntimeMarketDataPrisma__
+  const artifact = {
+    ...createVerificationArtifact(),
+    cadence: { sourceFrequency: 'MONTHLY' as const, targetCadence: 'MONTHLY' as const },
+    frequencyIdentity: buildForecastArtifactCadenceIdentity({ sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' }),
+  }
+  const findFirstCalls: Array<Record<string, unknown>> = []
+
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://exact-verification-read.invalid/market-data'
+  globalThis.__sgRuntimeMarketDataPrisma__ = {
+    $on() {},
+    forecastVerificationRun: {
+      async findFirst(input: { where: Record<string, unknown> }) {
+        findFirstCalls.push(input)
+        assert.equal(typeof input.where.trainingWindowPolicyId, 'string')
+        assert.equal(typeof input.where.effectiveTrainingPolicyId, 'string')
+        return null
+      },
+    },
+  } as never
+
+  try {
+    const result = await readPreparedBenchmarkForecastVerification({
+      seriesId: artifact.seriesId,
+      modelId: artifact.modelId,
+      targetBasis: artifact.targetBasis,
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      preparedReadAuthority: {
+        seriesId: artifact.seriesId,
+        modelId: artifact.modelId,
+        targetBasis: artifact.targetBasis,
+        sourceFrequency: 'MONTHLY',
+        targetCadence: 'MONTHLY',
+        expectedHistoryFingerprint: artifact.historyFingerprint,
+      },
+    })
+
+    assert.equal(result.status, 'NOT_AVAILABLE')
+    assert.equal(findFirstCalls.length, 1)
+  } finally {
+    if (previousUrl === undefined) {
+      delete process.env.MARKET_DATA_DATABASE_URL
+    } else {
+      process.env.MARKET_DATA_DATABASE_URL = previousUrl
+    }
+    globalThis.__sgRuntimeMarketDataPrisma__ = previousPrisma
+  }
+})
