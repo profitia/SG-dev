@@ -334,6 +334,70 @@ function normalizeVerificationReadiness(input: {
   return { readiness: 'NOT_PREPARED', blockers: [input.missing] }
 }
 
+function resolvePreparedStateOnlyReadiness(
+  capability: ForecastVariantCapability | null,
+): Pick<InteractiveForecastCapabilityResult, 'recentVerificationReadiness' | 'fullVerificationReadiness' | 'predictionBandResidualCount' | 'predictionBandState' | 'readiness'> {
+  const blockers = new Set<InteractiveForecastReadinessBlocker>()
+  const add = (...next: InteractiveForecastReadinessBlocker[]) => {
+    for (const blocker of next) blockers.add(blocker)
+  }
+
+  if (!capability) {
+    add('CURRENT_MISSING', 'RECENT_MISSING', 'FULL_HISTORICAL_MISSING')
+    return {
+      recentVerificationReadiness: 'NOT_PREPARED',
+      fullVerificationReadiness: 'NOT_PREPARED',
+      predictionBandResidualCount: 0,
+      predictionBandState: 'NOT_AVAILABLE',
+      readiness: {
+        fastReady: false,
+        bandsReady: false,
+        calibratedReady: false,
+        fullReady: false,
+        blockers: [...blockers],
+      },
+    }
+  }
+
+  if (capability.capabilityState === 'NOT_LAWFUL') add('NOT_LAWFUL')
+  if (capability.capabilityState === 'PROVENANCE_REQUIRED') add('PROVENANCE_REQUIRED')
+  if (capability.capabilityState === 'NOT_IMPLEMENTED') add('NOT_IMPLEMENTED')
+  if (capability.capabilityState === 'DATA_NOT_AVAILABLE') add('DATA_NOT_AVAILABLE')
+  if (capability.capabilityState === 'INSUFFICIENT_HISTORY') add('INSUFFICIENT_HISTORY')
+
+  if (capability.currentPreparedState === 'STALE') {
+    add('CURRENT_STALE', 'SOURCE_REVISION_REBUILD_REQUIRED')
+  } else if (capability.currentPreparedState !== 'READY') {
+    add('CURRENT_MISSING')
+  }
+
+  if (capability.historicalPreparedState === 'STALE') {
+    add('RECENT_STALE', 'FULL_HISTORICAL_STALE', 'SOURCE_REVISION_REBUILD_REQUIRED')
+  } else if (capability.historicalPreparedState !== 'READY') {
+    add('RECENT_MISSING', 'FULL_HISTORICAL_MISSING')
+  }
+
+  add('BANDS_NOT_AVAILABLE')
+  if (capability.predictionBandState !== 'AVAILABLE') add('CALIBRATION_INSUFFICIENT_SAMPLES')
+
+  const currentReady = capability.currentPreparedState === 'READY'
+  const verificationReady = capability.historicalPreparedState === 'READY'
+
+  return {
+    recentVerificationReadiness: capability.historicalPreparedState,
+    fullVerificationReadiness: capability.historicalPreparedState,
+    predictionBandResidualCount: capability.predictionBandResidualCount,
+    predictionBandState: capability.predictionBandState,
+    readiness: {
+      fastReady: currentReady && verificationReady,
+      bandsReady: false,
+      calibratedReady: false,
+      fullReady: currentReady && verificationReady,
+      blockers: [...blockers],
+    },
+  }
+}
+
 async function resolveInteractiveForecastReadiness(
   dependencies: Pick<InteractiveForecastPreparationDependencies, 'readPreparedCurrent' | 'readRollingCurrentSnapshot' | 'readPreparedFullVerification' | 'readPreparedRollingDailyFullVerification' | 'readPreparedRecentVerification'>,
   input: InteractiveForecastIdentity,
@@ -483,19 +547,22 @@ async function projectInteractiveForecastCapability(
   input: InteractiveForecastIdentity,
   resolution: ForecastCapabilityResolution,
   capability: ForecastVariantCapability | null,
+  options: { inspectPreparedArtifacts?: boolean } = {},
 ): Promise<Omit<InteractiveForecastCapabilityResult, 'timingMs' | 'trace'>> {
-  const readiness = await resolveInteractiveForecastReadiness(
-    {
-      readPreparedCurrent: dependencies.readPreparedCurrent,
-      readRollingCurrentSnapshot: dependencies.readRollingCurrentSnapshot,
-      readPreparedFullVerification: dependencies.readPreparedFullVerification,
-      readPreparedRollingDailyFullVerification: dependencies.readPreparedRollingDailyFullVerification,
-      readPreparedRecentVerification: dependencies.readPreparedRecentVerification,
-    },
-    input,
-    capability,
-    resolution.sourceMetadata.sourceFrequency,
-  )
+  const readiness = options.inspectPreparedArtifacts === false
+    ? resolvePreparedStateOnlyReadiness(capability)
+    : await resolveInteractiveForecastReadiness(
+        {
+          readPreparedCurrent: dependencies.readPreparedCurrent,
+          readRollingCurrentSnapshot: dependencies.readRollingCurrentSnapshot,
+          readPreparedFullVerification: dependencies.readPreparedFullVerification,
+          readPreparedRollingDailyFullVerification: dependencies.readPreparedRollingDailyFullVerification,
+          readPreparedRecentVerification: dependencies.readPreparedRecentVerification,
+        },
+        input,
+        capability,
+        resolution.sourceMetadata.sourceFrequency,
+      )
 
   return {
     seriesId: input.seriesId,
@@ -598,6 +665,37 @@ export function createInteractiveForecastPreparationService(
       const projectedVariants = await Promise.all(identities.map(async (identity) => {
         const capability = findExactCapability(resolution, identity)
         return projectInteractiveForecastCapability(resolvedDependencies, identity, resolution, capability)
+      }))
+      const timingMs = Math.max(0, Math.round(resolvedDependencies.now() - startedAt))
+
+      return {
+        seriesId,
+        sourceFrequency: resolution.sourceMetadata.sourceFrequency,
+        sourceAvailability: resolveInteractiveSourceAvailability(resolution),
+        status: resolution.status,
+        reason: resolution.reason,
+        targetedDataScope: 'SINGLE_SERIES',
+        timingMs,
+        variants: projectedVariants.map((variant) => ({
+          ...variant,
+          timingMs,
+        })),
+      }
+    },
+
+    async readinessSnapshotBySeriesId(seriesId: string): Promise<InteractiveForecastCapabilitySeriesSnapshot> {
+      const startedAt = resolvedDependencies.now()
+      const resolution = await resolvedDependencies.resolveCapabilitiesBySeriesId(seriesId)
+      const identities = buildAllInteractiveForecastIdentities(seriesId)
+      const projectedVariants = await Promise.all(identities.map(async (identity) => {
+        const capability = findExactCapability(resolution, identity)
+        return projectInteractiveForecastCapability(
+          resolvedDependencies,
+          identity,
+          resolution,
+          capability,
+          { inspectPreparedArtifacts: false },
+        )
       }))
       const timingMs = Math.max(0, Math.round(resolvedDependencies.now() - startedAt))
 
@@ -909,4 +1007,5 @@ const interactiveForecastPreparationService = createInteractiveForecastPreparati
 
 export const resolveInteractiveForecastCapability = interactiveForecastPreparationService.capability
 export const resolveInteractiveForecastCapabilitySnapshotBySeriesId = interactiveForecastPreparationService.capabilitySnapshotBySeriesId
+export const resolveInteractiveForecastReadinessSnapshotBySeriesId = interactiveForecastPreparationService.readinessSnapshotBySeriesId
 export const prepareInteractiveCurrentForecast = interactiveForecastPreparationService.prepareCurrent

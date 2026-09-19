@@ -2767,7 +2767,7 @@ export function RawDataView({
   )
   const selectedCurrentPrepared = !preparedReadsOnly || selectedCapabilityVariant?.currentReadiness === 'READY'
   const selectedVerificationPrepared = !preparedReadsOnly
-    || isFullVerificationPrepared(selectedCapabilityVariant)
+    || isRecentVerificationPrepared(selectedCapabilityVariant)
   const forecastCurrentDisplayState = resolveForecastCurrentDisplayState(forecastCurrentState, selectedProgressiveVariant)
   const forecastCurrentObservedProgressState = resolveForecastCurrentObservedProgressState(
     forecastCurrentState,
@@ -2862,7 +2862,20 @@ export function RawDataView({
   }, [benchmarkSeriesId, isForecastPortfolioVariant, preparedReadsOnly])
 
   useEffect(() => {
-    if (!preparedReadsOnly || !isForecastPortfolioVariant || !benchmarkSeriesId || !showForecast) {
+    if (
+      !preparedReadsOnly
+      || !isForecastPortfolioVariant
+      || !benchmarkSeriesId
+      || !showForecast
+      || forecastCapabilityState !== 'ready'
+    ) {
+      return
+    }
+
+    if (
+      selectedCapabilityVariant?.currentReadiness === 'READY'
+      && isRecentVerificationPrepared(selectedCapabilityVariant)
+    ) {
       return
     }
 
@@ -2889,7 +2902,7 @@ export function RawDataView({
         setForecastCapabilitySnapshot((snapshot) => mergeExactCapabilitySnapshot(snapshot, capability))
         setForecastCapabilityState('ready')
 
-        if (capability.currentReadiness === 'READY' && isFullVerificationPrepared(capability)) {
+        if (capability.currentReadiness === 'READY' && isRecentVerificationPrepared(capability)) {
           return
         }
       } catch (error) {
@@ -2912,7 +2925,16 @@ export function RawDataView({
         window.clearTimeout(timeoutHandle)
       }
     }
-  }, [benchmarkSeriesId, forecastModel, isForecastPortfolioVariant, preparedReadsOnly, selectedForecastTargetBasis, showForecast])
+  }, [
+    benchmarkSeriesId,
+    forecastCapabilityState,
+    forecastModel,
+    isForecastPortfolioVariant,
+    preparedReadsOnly,
+    selectedCapabilityVariant,
+    selectedForecastTargetBasis,
+    showForecast,
+  ])
 
   useEffect(() => {
     const html = document.documentElement

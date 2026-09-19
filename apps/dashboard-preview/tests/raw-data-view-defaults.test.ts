@@ -63,7 +63,7 @@ test('prepared-read-only demo mode is explicit and fail-closed', () => {
   assert.equal(isPreparedReadsOnlyForecastSession({ get: () => 'true' }), false)
 })
 
-test('prepared historical verification requires the exact Full Verification artifact', () => {
+test('prepared verification readiness distinguishes Recent from Full artifacts', () => {
   const capability = {
     seriesId: 'b_c1_cl',
     targetSemantics: 'MONTHLY_AVERAGE',
@@ -91,6 +91,15 @@ test('prepared historical verification requires the exact Full Verification arti
     ...capability,
     fullVerificationReadiness: 'READY',
   }), true)
+})
+
+test('client-facing verification readiness uses the prepared Recent Verification contract', () => {
+  const source = fs.readFileSync(new URL('../components/raw-data-view/index.tsx', import.meta.url), 'utf8')
+
+  assert.match(source, /selectedVerificationPrepared = !preparedReadsOnly\s*\|\| isRecentVerificationPrepared\(selectedCapabilityVariant\)/)
+  assert.match(source, /capability\.currentReadiness === 'READY' && isRecentVerificationPrepared\(capability\)/)
+  assert.match(source, /forecastCapabilityState !== 'ready'/)
+  assert.match(source, /selectedCapabilityVariant\?\.currentReadiness === 'READY'\s*&& isRecentVerificationPrepared\(selectedCapabilityVariant\)/)
 })
 
 test('an exact capability refresh replaces only the matching model and methodology', () => {

@@ -54,6 +54,8 @@ function createNativeSparseHistory(
 test('prepared-state binding is exact across semantics, models, versions, and current/historical truth', async () => {
   const history = createHistory()
   const now = new Date('2025-01-15T00:00:00.000Z')
+  let currentRunReadsInFlight = 0
+  let maximumCurrentRunReadsInFlight = 0
   const selectedEopPayload = selectMinimalLawfulCurrentTrainingPayload(
     buildLiveForecastBridgePayloadFromHistory(history.providerSeries.providerSeriesId, history, {
       targetBasis: 'END_OF_PERIOD',
@@ -127,6 +129,10 @@ test('prepared-state binding is exact across semantics, models, versions, and cu
     prisma: {
       forecastCurrentRun: {
         async findFirst({ where }: { where: Record<string, string> }) {
+          currentRunReadsInFlight += 1
+          maximumCurrentRunReadsInFlight = Math.max(maximumCurrentRunReadsInFlight, currentRunReadsInFlight)
+          await new Promise<void>((resolve) => setImmediate(resolve))
+          currentRunReadsInFlight -= 1
           if (where.targetBasis === 'END_OF_PERIOD' && where.modelId === 'arima') {
             return {
               status: 'AVAILABLE',
@@ -252,6 +258,7 @@ test('prepared-state binding is exact across semantics, models, versions, and cu
   assert.equal(find('ROLLING_DAILY_POINT_IN_TIME', 'naive')?.current, 'READY')
   assert.equal(find('ROLLING_DAILY_POINT_IN_TIME', 'naive')?.historical, 'READY')
   assert.equal(find('ROLLING_DAILY_POINT_IN_TIME', 'arima')?.current, 'NOT_PREPARED')
+  assert.ok(maximumCurrentRunReadsInFlight > 1)
   assert.notEqual(fullEopHistoricalFingerprint, eopFingerprint)
   assert.notEqual(monthlyAverageFingerprint, selectedMonthlyAverageFingerprint)
 })

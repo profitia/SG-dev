@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import {
-  readInteractiveForecastCapabilitySnapshotBySeriesId,
+  readInteractiveForecastReadinessSnapshotBySeriesId,
   SgRuntimeForecastPreparationAuthError,
 } from '@/lib/benchmark-forecast/interactive-current-preparation'
 
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    return NextResponse.json(await readInteractiveForecastCapabilitySnapshotBySeriesId(
+    return NextResponse.json(await readInteractiveForecastReadinessSnapshotBySeriesId(
       seriesId,
       undefined,
       { signal: request.signal },

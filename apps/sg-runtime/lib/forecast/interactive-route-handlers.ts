@@ -9,6 +9,7 @@ import {
   prepareInteractiveCurrentForecast,
   resolveInteractiveForecastCapability,
   resolveInteractiveForecastCapabilitySnapshotBySeriesId,
+  resolveInteractiveForecastReadinessSnapshotBySeriesId,
   type InteractiveForecastCapabilityResult,
   type InteractiveForecastCapabilitySeriesSnapshot,
   type InteractiveForecastPreparationResult,
@@ -116,6 +117,45 @@ export function createInternalForecastCapabilitiesRouteHandler(
           {
             seriesId: parsed.data.seriesId,
           },
+        )
+        const response = cognitionOk(result)
+        if (request.headers.get(FORECAST_TRACE_HEADER) === '1') {
+          response.headers.set(SG_RUNTIME_CAPABILITY_TOTAL_MS_HEADER, String(result.timingMs))
+        }
+        return appendForecastRequestDiagnosticsHeader(response)
+      } catch (error) {
+        return appendForecastRequestDiagnosticsHeader(internalRouteError(error, principal.requestId))
+      }
+    })
+  })
+}
+
+export function createInternalForecastReadinessSnapshotRouteHandler(
+  resolveReadiness: CapabilitySnapshotResolver = resolveInteractiveForecastReadinessSnapshotBySeriesId,
+) {
+  return withInternalForecastServiceAuth(async (principal, request: NextRequest) => {
+    return runWithForecastRequestDiagnostics({
+      enabled: isForecastRequestDiagnosticsEnabled(request.headers),
+      requestId: principal.requestId,
+      route: request.nextUrl.pathname,
+      method: request.method,
+      operationType: 'CAPABILITY',
+    }, async () => {
+      noteForecastRequestDiagnosticsEvent('handler_entered', 'HTTP', { requestId: principal.requestId })
+      const parsed = parseSearchParams(request, InteractiveForecastSeriesRequestSchema)
+      if (!parsed.ok) return appendForecastRequestDiagnosticsHeader(cognitionError('VALIDATION_ERROR', parsed.message, 400, principal.requestId))
+
+      updateForecastRequestDiagnosticsIdentity({
+        operationType: 'CAPABILITY',
+        seriesId: parsed.data.seriesId,
+      })
+
+      try {
+        const result = await traceForecastRequestDiagnosticsSpan(
+          'prepared_readiness_resolution_series_snapshot',
+          'APPLICATION',
+          () => resolveReadiness(parsed.data.seriesId),
+          { seriesId: parsed.data.seriesId },
         )
         const response = cognitionOk(result)
         if (request.headers.get(FORECAST_TRACE_HEADER) === '1') {

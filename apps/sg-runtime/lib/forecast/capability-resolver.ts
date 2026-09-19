@@ -29,6 +29,7 @@ import { resolveForecastTechnicalMinimumObservations } from '@/lib/forecast/curr
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 import { readForecastPreparedVariants } from '@/lib/forecast/prepared-state'
 import { resolveMacrobondForecastProvenance } from '@/lib/forecast/provider-provenance'
+import { buildRollingDailyHistoryFingerprint } from '@/lib/forecast/rolling-daily-maintenance'
 
 export const FORECAST_SOURCE_FREQUENCIES = FORECAST_NATIVE_FREQUENCIES
 export { normalizeForecastSourceFrequency }
@@ -205,6 +206,33 @@ const TARGET_BASIS_BY_SEMANTICS = {
   MONTHLY_AVERAGE: 'MONTHLY_AVERAGE',
   ROLLING_DAILY_POINT_IN_TIME: 'POINT_IN_TIME',
 } as const
+
+const preparedVariantReadsInFlight = new Map<string, Promise<readonly ForecastPreparedVariant[]>>()
+
+function buildPreparedVariantReadKey(seriesId: string, history: BenchmarkHistoricalSeriesResult) {
+  return buildRollingDailyHistoryFingerprint({
+    seriesId,
+    displayName: history.displayName,
+    description: history.displayName,
+    frequency: history.frequency ?? '',
+    source: history.source ?? '',
+    points: history.historical,
+  })
+}
+
+function readForecastPreparedVariantsSingleFlight(
+  seriesId: string,
+  history: BenchmarkHistoricalSeriesResult,
+) {
+  const key = buildPreparedVariantReadKey(seriesId, history)
+  const existing = preparedVariantReadsInFlight.get(key)
+  if (existing) return existing
+
+  const pending = readForecastPreparedVariants(seriesId, history)
+    .finally(() => preparedVariantReadsInFlight.delete(key))
+  preparedVariantReadsInFlight.set(key, pending)
+  return pending
+}
 
 function resolveSemanticLawfulness(
   sourceFrequency: ForecastSourceFrequency | null,
@@ -600,9 +628,7 @@ export function createForecastCapabilityService(
   const resolvedDependencies: ForecastCapabilityServiceDependencies = {
     resolveHistoricalSeries: dependencies.resolveHistoricalSeries ?? resolveBenchmarkHistoricalSeries,
     resolveProvenance: dependencies.resolveProvenance ?? resolveMacrobondForecastProvenance,
-    readPreparedVariants: dependencies.readPreparedVariants ?? ((seriesId, history) => (
-      readForecastPreparedVariants(seriesId, history)
-    )),
+    readPreparedVariants: dependencies.readPreparedVariants ?? readForecastPreparedVariantsSingleFlight,
     now: dependencies.now ?? (() => new Date()),
   }
 

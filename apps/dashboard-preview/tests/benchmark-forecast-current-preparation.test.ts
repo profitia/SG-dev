@@ -8,6 +8,7 @@ import {
   createInteractiveCurrentPreparationGateway,
   readInteractiveForecastCapability,
   readInteractiveForecastCapabilitySnapshotBySeriesId,
+  readInteractiveForecastReadinessSnapshotBySeriesId,
   requestInteractiveForecastCurrentPreparation,
   requestInteractiveForecastVerificationPreparation,
 } from '@/lib/benchmark-forecast/interactive-current-preparation'
@@ -705,6 +706,49 @@ test('interactive capability snapshot bridge keeps private auth server-side and 
   assert.equal(resolvedCapabilityUrl.searchParams.get('seriesId'), 'wocaes0074')
   assert.equal(resolvedCapabilityUrl.searchParams.get('token'), null)
   assert.equal((resolvedCapabilityInit.headers as Record<string, string>).Authorization, 'Bearer dashboard-preview-token')
+})
+
+test('interactive readiness snapshot bridge keeps private auth server-side', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const originalFetch = global.fetch
+  let capturedUrl: URL | null = null
+  let capturedInit: RequestInit | null = null
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime.example.invalid'
+  global.fetch = (async (input: URL | RequestInfo | string, init?: RequestInit) => {
+    capturedUrl = new URL(String(input))
+    capturedInit = init ?? null
+    return new Response(JSON.stringify({
+      seriesId: 'wocaes0074',
+      sourceFrequency: 'DAILY',
+      sourceAvailability: 'AVAILABLE',
+      status: 'AVAILABLE',
+      reason: null,
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 3,
+      variants: [],
+    }), { status: 200, headers: { 'content-type': 'application/json' } })
+  }) as typeof fetch
+
+  try {
+    const result = await readInteractiveForecastReadinessSnapshotBySeriesId('wocaes0074')
+    assert.equal(result.status, 'AVAILABLE')
+  } finally {
+    global.fetch = originalFetch
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+  }
+
+  if (!capturedUrl || !capturedInit) {
+    throw new Error('Expected readiness snapshot bridge to issue a server-side SG Runtime request.')
+  }
+
+  assert.equal((capturedUrl as URL).pathname, '/api/internal/forecast/readiness')
+  assert.equal((capturedInit as RequestInit).headers && ((capturedInit as RequestInit).headers as Record<string, string>).Authorization, 'Bearer dashboard-preview-token')
 })
 
 test('interactive current prepare bridge keeps private auth server-side and forwards exact identity', async () => {

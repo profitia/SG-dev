@@ -16,6 +16,7 @@ import {
   createInternalCurrentForecastPreparationRouteHandler,
   createInternalForecastCapabilityRouteHandler,
   createInternalForecastCapabilitiesRouteHandler,
+  createInternalForecastReadinessSnapshotRouteHandler,
   createInternalProgressiveForecastPreparationRouteHandler,
 } from '../lib/forecast/interactive-route-handlers'
 import type { InteractiveForecastCapabilitySeriesSnapshot } from '../lib/forecast/interactive-preparation'
@@ -458,6 +459,35 @@ test('interactive capability snapshot service resolves a full series through one
   assert.ok(snapshot.variants.every((variant) => variant.status === 'READY'))
 })
 
+test('interactive readiness snapshot reuses prepared-state metadata without rereading artifact payloads', async () => {
+  let resolveCapabilitiesBySeriesIdCalls = 0
+  let preparedArtifactReads = 0
+  const rejectPreparedArtifactRead = async () => {
+    preparedArtifactReads += 1
+    throw new Error('Series readiness snapshot must not reread prepared artifact payloads.')
+  }
+  const service = createInteractiveForecastPreparationService({
+    resolveCapabilitiesBySeriesId: async () => {
+      resolveCapabilitiesBySeriesIdCalls += 1
+      return buildCapabilityResolution({ capabilities: buildSeriesCapabilityCandidates() })
+    },
+    readPreparedCurrent: rejectPreparedArtifactRead,
+    readRollingCurrentSnapshot: rejectPreparedArtifactRead,
+    readPreparedRecentVerification: rejectPreparedArtifactRead,
+    readPreparedFullVerification: rejectPreparedArtifactRead,
+    readPreparedRollingDailyFullVerification: rejectPreparedArtifactRead,
+  })
+
+  const snapshot = await service.readinessSnapshotBySeriesId('wocaes0074')
+
+  assert.equal(resolveCapabilitiesBySeriesIdCalls, 1)
+  assert.equal(preparedArtifactReads, 0)
+  assert.equal(snapshot.status, 'AVAILABLE')
+  assert.equal(snapshot.variants.length, 12)
+  assert.ok(snapshot.variants.every((variant) => variant.currentReadiness === 'READY'))
+  assert.ok(snapshot.variants.every((variant) => variant.recentVerificationReadiness === 'READY'))
+})
+
 test('interactive capability snapshot preserves exact interactive semantics for the same variant', async () => {
   const capabilityResolution = buildCapabilityResolution({
     sourceMetadata: {
@@ -550,6 +580,36 @@ test('internal forecast capabilities route accepts valid dashboard-preview servi
 
     const response = await handler(buildRequest(
       'http://localhost/api/internal/forecast/capabilities?seriesId=wocaes0074',
+      { Authorization: 'Bearer test-internal-token' },
+    ))
+    const payload = await response.json()
+
+    assert.equal(response.status, 200)
+    assert.equal(receivedSeriesId, 'wocaes0074')
+    assert.equal(payload.seriesId, 'wocaes0074')
+    assert.equal(payload.variants.length, 12)
+  } finally {
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
+})
+
+test('internal forecast readiness route accepts valid dashboard-preview service credential', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+  let receivedSeriesId: string | null = null
+
+  try {
+    const handler = createInternalForecastReadinessSnapshotRouteHandler(async (seriesId) => {
+      receivedSeriesId = seriesId
+      return buildInteractiveCapabilitySeriesSnapshot()
+    })
+
+    const response = await handler(buildRequest(
+      'http://localhost/api/internal/forecast/readiness?seriesId=wocaes0074',
       { Authorization: 'Bearer test-internal-token' },
     ))
     const payload = await response.json()

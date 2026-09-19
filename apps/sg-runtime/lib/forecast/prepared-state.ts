@@ -32,6 +32,7 @@ import { getMarketDataPrisma } from '@/lib/market-data/client'
 import { selectMinimalLawfulCurrentTrainingPayload } from '@/lib/forecast/live-market-input'
 
 const MONTHLY_TARGETS = ['END_OF_PERIOD', 'MONTHLY_AVERAGE'] as const
+const PREPARED_STATE_READ_CONCURRENCY = 4
 
 type MarketDataPrismaClient = NonNullable<ReturnType<typeof getMarketDataPrisma>>
 
@@ -45,6 +46,25 @@ type PreparedHistoricalRun = {
 type PreparedRollingDailySnapshot = {
   status: string
   payloadJson: unknown
+}
+
+async function mapWithConcurrency<T, R>(
+  values: readonly T[],
+  concurrency: number,
+  worker: (value: T) => Promise<R>,
+) {
+  const results = new Array<R>(values.length)
+  let nextIndex = 0
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, values.length) }, async () => {
+    while (nextIndex < values.length) {
+      const currentIndex = nextIndex
+      nextIndex += 1
+      results[currentIndex] = await worker(values[currentIndex]!)
+    }
+  }))
+
+  return results
 }
 
 function hasRenderableCurrentPoints(points: Array<{ forecastValue: unknown }> | undefined) {
@@ -315,8 +335,13 @@ export async function readForecastPreparedVariants(
   const rollingHistoricalFingerprint = buildRollingDailyHistoryFingerprint(rollingHistory)
   const variants: ForecastPreparedVariant[] = []
 
-  for (const candidate of monthlyCandidates) {
-    for (const modelId of USER_FACING_FORECAST_MODELS) {
+  const monthlyVariantInputs = monthlyCandidates.flatMap((candidate) => (
+    USER_FACING_FORECAST_MODELS.map((modelId) => ({ candidate, modelId }))
+  ))
+  const monthlyVariants = await mapWithConcurrency(
+    monthlyVariantInputs,
+    PREPARED_STATE_READ_CONCURRENCY,
+    async ({ candidate, modelId }) => {
       const targetCadence = resolvePreparedTargetCadence(resolvedSourceFrequency, candidate.targetBasis)
       const artifactFrequency = buildForecastArtifactCadenceIdentity({ sourceFrequency: resolvedSourceFrequency, targetCadence })
       const acceptedArtifactFrequencies = targetCadence === 'MONTHLY'
@@ -387,7 +412,7 @@ export async function readForecastPreparedVariants(
         ),
       ])
 
-      variants.push({
+      return {
         identity,
         current: stateForCurrentRun(current, currentHistoryFingerprints),
         historical: stateForHistoricalRun(historical, fullVerificationHistoryFingerprints),
@@ -396,40 +421,61 @@ export async function readForecastPreparedVariants(
           targetCadence,
           expectedHistoryFingerprint: currentHistoryFingerprints.cadence,
         }),
-      })
-    }
-  }
+      }
+    },
+  )
+  variants.push(...monthlyVariants)
 
   if (sourceFrequency !== 'DAILY') return variants
 
-  for (const modelId of USER_FACING_FORECAST_MODELS) {
-    const identity = createForecastIdentity({ seriesId, targetBasis: 'POINT_IN_TIME', modelId })
-    const rollingDailyCompatibility = createCurrentForecastStatisticalCompatibility({
-      sourceFrequency: 'DAILY',
-      targetCadence: 'DAILY',
-      targetSemantics: identity.targetSemantics,
-    })
-    const rollingSnapshotWhere = {
-      seriesId,
-      inputSource: ROLLING_DAILY_INPUT_SOURCE,
-      targetBasis: 'POINT_IN_TIME',
-      methodId: identity.methodId,
-      methodVersion: identity.methodVersion,
-      modelId,
-      sourceHistoryFingerprint: rollingCurrentFingerprint,
-    } satisfies Prisma.RollingDailyCurrentForecastSnapshotWhereInput
-    const rollingSnapshotUniqueWhere = {
-      seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint: {
-        ...rollingSnapshotWhere,
-        trainingWindowPolicyId: rollingDailyCompatibility.trainingWindowPolicyId,
-        effectiveTrainingPolicyId: rollingDailyCompatibility.effectiveTrainingPolicyId,
-      },
-    } satisfies Prisma.RollingDailyCurrentForecastSnapshotWhereUniqueInput
-    const [snapshot, maintenance, verificationCount] = await Promise.all([
-      findPreparedRollingDailySnapshot(prisma, rollingSnapshotWhere, rollingSnapshotUniqueWhere),
-      prisma.rollingDailyMaintenanceState.findUnique({
-        where: {
-          seriesId_inputSource_targetBasis_methodId_methodVersion_modelId: {
+  const rollingVariants = await mapWithConcurrency(
+    USER_FACING_FORECAST_MODELS,
+    PREPARED_STATE_READ_CONCURRENCY,
+    async (modelId) => {
+      const identity = createForecastIdentity({ seriesId, targetBasis: 'POINT_IN_TIME', modelId })
+      const rollingDailyCompatibility = createCurrentForecastStatisticalCompatibility({
+        sourceFrequency: 'DAILY',
+        targetCadence: 'DAILY',
+        targetSemantics: identity.targetSemantics,
+      })
+      const rollingSnapshotWhere = {
+        seriesId,
+        inputSource: ROLLING_DAILY_INPUT_SOURCE,
+        targetBasis: 'POINT_IN_TIME',
+        methodId: identity.methodId,
+        methodVersion: identity.methodVersion,
+        modelId,
+        sourceHistoryFingerprint: rollingCurrentFingerprint,
+      } satisfies Prisma.RollingDailyCurrentForecastSnapshotWhereInput
+      const rollingSnapshotUniqueWhere = {
+        seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint: {
+          ...rollingSnapshotWhere,
+          trainingWindowPolicyId: rollingDailyCompatibility.trainingWindowPolicyId,
+          effectiveTrainingPolicyId: rollingDailyCompatibility.effectiveTrainingPolicyId,
+        },
+      } satisfies Prisma.RollingDailyCurrentForecastSnapshotWhereUniqueInput
+      const [snapshot, maintenance, verificationCount] = await Promise.all([
+        findPreparedRollingDailySnapshot(prisma, rollingSnapshotWhere, rollingSnapshotUniqueWhere),
+        prisma.rollingDailyMaintenanceState.findUnique({
+          where: {
+            seriesId_inputSource_targetBasis_methodId_methodVersion_modelId: {
+              seriesId,
+              inputSource: ROLLING_DAILY_INPUT_SOURCE,
+              targetBasis: 'POINT_IN_TIME',
+              methodId: identity.methodId,
+              methodVersion: identity.methodVersion,
+              modelId,
+            },
+          },
+          select: {
+            latestSourceHistoryFingerprint: true,
+            latestSourceObservationAt: true,
+            lastProcessedOriginAt: true,
+            lastMaintenanceStatus: true,
+          },
+        }),
+        prisma.rollingDailyVerificationRecord.count({
+          where: {
             seriesId,
             inputSource: ROLLING_DAILY_INPUT_SOURCE,
             targetBasis: 'POINT_IN_TIME',
@@ -437,53 +483,38 @@ export async function readForecastPreparedVariants(
             methodVersion: identity.methodVersion,
             modelId,
           },
-        },
-        select: {
-          latestSourceHistoryFingerprint: true,
-          latestSourceObservationAt: true,
-          lastProcessedOriginAt: true,
-          lastMaintenanceStatus: true,
-        },
-      }),
-      prisma.rollingDailyVerificationRecord.count({
-        where: {
-          seriesId,
-          inputSource: ROLLING_DAILY_INPUT_SOURCE,
-          targetBasis: 'POINT_IN_TIME',
-          methodId: identity.methodId,
-          methodVersion: identity.methodVersion,
-          modelId,
-        },
-      }),
-    ])
-    const snapshotFingerprint = (
-      snapshot?.payloadJson as { audit?: { sourceHistoryFingerprint?: string | null } } | null
-    )?.audit?.sourceHistoryFingerprint
-    const normalizedMaintenance = maintenance ? {
-      latestSourceHistoryFingerprint: maintenance.latestSourceHistoryFingerprint,
-      latestSourceObservationAt: normalizeOptionalDateTime(maintenance.latestSourceObservationAt),
-      lastProcessedOriginAt: normalizeOptionalDateTime(maintenance.lastProcessedOriginAt),
-      lastMaintenanceStatus: maintenance.lastMaintenanceStatus,
-    } : null
+        }),
+      ])
+      const snapshotFingerprint = (
+        snapshot?.payloadJson as { audit?: { sourceHistoryFingerprint?: string | null } } | null
+      )?.audit?.sourceHistoryFingerprint
+      const normalizedMaintenance = maintenance ? {
+        latestSourceHistoryFingerprint: maintenance.latestSourceHistoryFingerprint,
+        latestSourceObservationAt: normalizeOptionalDateTime(maintenance.latestSourceObservationAt),
+        lastProcessedOriginAt: normalizeOptionalDateTime(maintenance.lastProcessedOriginAt),
+        lastMaintenanceStatus: maintenance.lastMaintenanceStatus,
+      } : null
 
-    variants.push({
-      identity,
-      current: stateForFingerprint(
-        snapshot?.status === 'AVAILABLE' && hasRenderableRollingDailyPath(snapshot.payloadJson)
-          ? snapshotFingerprint
-          : null,
-        rollingCurrentFingerprint,
-        snapshot?.status === 'AVAILABLE',
-      ),
-      historical: stateForRollingDailyHistoricalRun({
-        maintenance: normalizedMaintenance,
-        expectedFingerprint: rollingHistoricalFingerprint,
-        latestSourceObservationDate: rollingHistory.points[rollingHistory.points.length - 1]?.date ?? null,
-        verificationCount,
-      }),
-      preparedReadAuthority: null,
-    })
-  }
+      return {
+        identity,
+        current: stateForFingerprint(
+          snapshot?.status === 'AVAILABLE' && hasRenderableRollingDailyPath(snapshot.payloadJson)
+            ? snapshotFingerprint
+            : null,
+          rollingCurrentFingerprint,
+          snapshot?.status === 'AVAILABLE',
+        ),
+        historical: stateForRollingDailyHistoricalRun({
+          maintenance: normalizedMaintenance,
+          expectedFingerprint: rollingHistoricalFingerprint,
+          latestSourceObservationDate: rollingHistory.points[rollingHistory.points.length - 1]?.date ?? null,
+          verificationCount,
+        }),
+        preparedReadAuthority: null,
+      }
+    },
+  )
+  variants.push(...rollingVariants)
 
   return variants
 }
