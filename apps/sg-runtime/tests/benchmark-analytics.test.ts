@@ -77,3 +77,14 @@ test('forecast warm-up experiment parsing stays explicit and fail-closed', async
   assert.equal(normalizeForecastWarmupExperiment('single'), 'single')
   assert.equal(normalizeForecastWarmupExperiment('all'), null)
 })
+
+test('analytics embed follows the active Finder locale without losing prepared-read identity', async () => {
+  const { localizeDashboardPreviewAnalyticsUrl } = await import('@/lib/benchmark/analytics')
+  const source = 'https://analytics-demo-sg-porr.spendguru.app/pl?embed=1&preparedReadsOnly=1&seriesId=b_c1_cl'
+  const localized = new URL(localizeDashboardPreviewAnalyticsUrl(source, 'en'))
+
+  assert.equal(localized.pathname, '/en')
+  assert.equal(localized.searchParams.get('embed'), '1')
+  assert.equal(localized.searchParams.get('preparedReadsOnly'), '1')
+  assert.equal(localized.searchParams.get('seriesId'), 'b_c1_cl')
+})

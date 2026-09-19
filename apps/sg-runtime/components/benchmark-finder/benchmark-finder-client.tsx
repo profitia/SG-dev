@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 
 import {
   FORECAST_WARMUP_EXPERIMENT_SEARCH_PARAM,
+  localizeDashboardPreviewAnalyticsUrl,
   normalizeForecastWarmupExperiment,
 } from '@/lib/benchmark/analytics'
 import {
@@ -2468,9 +2469,9 @@ export function BenchmarkFinderClient({
                             </div>
                           ) : null}
                           <iframe
-                            key={previewState.analyticsEligibility.analyticsUrl}
+                            key={localizeDashboardPreviewAnalyticsUrl(previewState.analyticsEligibility.analyticsUrl, locale)}
                             title={`${previewState.preview?.displayName ?? candidate.displayName} analytics`}
-                            src={previewState.analyticsEligibility.analyticsUrl}
+                            src={localizeDashboardPreviewAnalyticsUrl(previewState.analyticsEligibility.analyticsUrl, locale)}
                             className="w-full border-0 bg-transparent"
                             style={{ height: analyticsFrameHeight ? `${analyticsFrameHeight}px` : DEFAULT_ANALYTICS_IFRAME_HEIGHT_STYLE }}
                             loading="lazy"

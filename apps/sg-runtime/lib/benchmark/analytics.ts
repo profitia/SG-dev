@@ -14,6 +14,19 @@ export function normalizeForecastWarmupExperiment(
   return value === 'single' ? 'single' : null
 }
 
+export function localizeDashboardPreviewAnalyticsUrl(
+  analyticsUrl: string,
+  locale: 'pl' | 'en',
+) {
+  try {
+    const url = new URL(analyticsUrl)
+    url.pathname = `/${locale}`
+    return url.toString()
+  } catch {
+    return analyticsUrl
+  }
+}
+
 export type BenchmarkAnalyticsEligibility = {
   eligible: boolean
   componentCode: string | null
