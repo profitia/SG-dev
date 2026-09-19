@@ -52,7 +52,7 @@ export type PhrPublicationAttemptRecord = PhrPublicationResult & {
 export type PhrPublicationSidecar = PhrPublicationResult & {
   attemptedAt: string
   closeoutRef: string
-  handoffArtifactId: string
+  handoffArtifactId: string | null
   conversationArtifactPath: string
   currentStatus: PhrPublicationResult['status']
   attemptHistory: PhrPublicationAttemptRecord[]
@@ -90,7 +90,14 @@ function classifyPublicationFailure(message: string): Pick<PhrPublicationResult,
     return { status: 'FAILED_RETRYABLE', retryable: true }
   }
 
-  if (message.includes('does not match') || message.includes('not a Git worktree') || message.includes('missing canonical files')) {
+  if (
+    message.includes('does not match') ||
+    message.includes('not a Git worktree') ||
+    message.includes('missing canonical files') ||
+    message.includes('Bundle conflict detected') ||
+    message.includes('immutable bundle') ||
+    message.includes('conflict')
+  ) {
     return { status: 'CONFLICT', retryable: false }
   }
 
@@ -218,6 +225,108 @@ function loadExistingPublicationAttempts(sidecarPath: string): PhrPublicationAtt
   }
 
   return []
+}
+
+function validatePhrPublicationCandidate(params: {
+  artifact: FlightRecordV1
+  handoff: GptHandoffArtifactV1 | null
+  closeout: CloseoutEvidence
+}): string | null {
+  if (params.closeout.closeoutState !== 'CLOSEOUT_COMPLETE') {
+    return 'PHR publication requires closeoutState=CLOSEOUT_COMPLETE.'
+  }
+
+  if (!params.handoff) {
+    return 'PHR publication requires a finalized HANDOFF artifact.'
+  }
+
+  if (
+    params.handoff.taskId !== params.artifact.metadata.taskId
+    || params.handoff.conversationId !== params.artifact.metadata.conversationId
+  ) {
+    return 'PHR publication requires a HANDOFF artifact that matches the completed closeout conversation.'
+  }
+
+  const currentState = Array.isArray(params.handoff.payload.currentState)
+    ? params.handoff.payload.currentState
+    : []
+  const completedWork = Array.isArray(params.handoff.payload.completedWork)
+    ? params.handoff.payload.completedWork
+    : []
+
+  if (!currentState.includes('closeoutState = CLOSEOUT_COMPLETE')) {
+    return 'PHR publication requires a HANDOFF built from CLOSEOUT_COMPLETE closeout evidence.'
+  }
+
+  if (!currentState.some((entry) => entry.startsWith('FINAL_VERDICT = '))) {
+    return 'PHR publication requires a HANDOFF with a final verdict.'
+  }
+
+  if (!completedWork.includes('Finalized: closeoutState=CLOSEOUT_COMPLETE')) {
+    return 'PHR publication requires completed HANDOFF work for CLOSEOUT_COMPLETE.'
+  }
+
+  return null
+}
+
+function buildRejectedPhrPublicationResult(params: {
+  artifact: FlightRecordV1
+  handoff: GptHandoffArtifactV1 | null
+  repositoryPath: string
+  error: string
+}): PhrPublicationResult {
+  return {
+    status: 'FAILED',
+    retryable: false,
+    bundlePath: null,
+    manifestPath: null,
+    commitSha: null,
+    publicationId: params.artifact.metadata.taskId,
+    taskId: params.artifact.metadata.taskId,
+    artifactCount: params.handoff ? 5 : 0,
+    repositoryPath: params.repositoryPath || null,
+    error: params.error,
+  }
+}
+
+function parsePhrPublicationStatus(value: unknown): PhrPublicationResult['status'] | null {
+  return value === 'PUBLISHED'
+    || value === 'IDEMPOTENT'
+    || value === 'FAILED'
+    || value === 'FAILED_RETRYABLE'
+    || value === 'CONFLICT'
+    ? value
+    : null
+}
+
+export function readLatestPhrPublicationStatusFromSidecar(sidecarPath: string): PhrPublicationResult['status'] | null {
+  if (!fs.existsSync(sidecarPath)) {
+    return null
+  }
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(sidecarPath, 'utf8')) as Record<string, unknown>
+    if (Array.isArray(parsed.attemptHistory) && parsed.attemptHistory.length > 0) {
+      const latestAttempt = parsed.attemptHistory[parsed.attemptHistory.length - 1] as Record<string, unknown>
+      const latestStatus = parsePhrPublicationStatus(latestAttempt?.status)
+      if (latestStatus) {
+        return latestStatus
+      }
+    }
+
+    return parsePhrPublicationStatus(parsed.currentStatus) ?? parsePhrPublicationStatus(parsed.status)
+  } catch {
+    return null
+  }
+}
+
+export function readSuccessfulPhrPublicationStatusFromSidecar(sidecarPath: string): 'PUBLISHED' | 'IDEMPOTENT' | null {
+  const status = readLatestPhrPublicationStatusFromSidecar(sidecarPath)
+  if (status === 'PUBLISHED' || status === 'IDEMPOTENT') {
+    return status
+  }
+
+  return null
 }
 
 export function buildPhrPublicationInput(params: {
@@ -412,7 +521,7 @@ export function writePhrPublicationSidecar(params: {
   result: PhrPublicationResult
   attemptedAt: string
   closeoutRef: string
-  handoffArtifactId: string
+  handoffArtifactId: string | null
   conversationArtifactPath: string
 }): void {
   const attemptHistory = [...loadExistingPublicationAttempts(params.sidecarPath), {
@@ -433,6 +542,59 @@ export function writePhrPublicationSidecar(params: {
   })
 }
 
+export function attemptPhrPublication(params: {
+  artifact: FlightRecordV1
+  handoff: GptHandoffArtifactV1 | null
+  closeout: CloseoutEvidence
+  closeoutRef: string
+  conversationArtifactPath: string
+  sidecarPath: string
+  repositoryPath: string
+  attemptedAt?: string
+  writeAttempt?: typeof writePhrPublicationAttempt
+  writeSidecar?: typeof writePhrPublicationSidecar
+}): { attempted: boolean; attemptedAt: string; result: PhrPublicationResult } {
+  const attemptedAt = params.attemptedAt ?? new Date().toISOString()
+  const writeAttempt = params.writeAttempt ?? writePhrPublicationAttempt
+  const writeSidecar = params.writeSidecar ?? writePhrPublicationSidecar
+  const candidateError = validatePhrPublicationCandidate({
+    artifact: params.artifact,
+    handoff: params.handoff,
+    closeout: params.closeout,
+  })
+  let result: PhrPublicationResult
+  if (candidateError || !params.handoff) {
+    result = buildRejectedPhrPublicationResult({
+      artifact: params.artifact,
+      handoff: params.handoff,
+      repositoryPath: params.repositoryPath,
+      error: candidateError ?? 'PHR publication requires a finalized HANDOFF artifact.',
+    })
+  } else {
+    result = writeAttempt({
+      publication: buildPhrPublicationInput({
+        artifact: params.artifact,
+        handoff: params.handoff,
+        closeout: params.closeout,
+        closeoutRef: params.closeoutRef,
+        conversationArtifactPath: params.conversationArtifactPath,
+      }),
+      repositoryPath: params.repositoryPath,
+    })
+  }
+
+  writeSidecar({
+    sidecarPath: params.sidecarPath,
+    result,
+    attemptedAt,
+    closeoutRef: params.closeoutRef,
+    handoffArtifactId: params.handoff?.id ?? null,
+    conversationArtifactPath: params.conversationArtifactPath,
+  })
+
+  return { attempted: true, attemptedAt, result }
+}
+
 export function publishPhrPublicationOnCompletedCloseout(params: {
   artifact: FlightRecordV1
   handoff: GptHandoffArtifactV1 | null
@@ -449,28 +611,16 @@ export function publishPhrPublicationOnCompletedCloseout(params: {
     return { attempted: false, attemptedAt: null, result: null }
   }
 
-  const attemptedAt = params.attemptedAt ?? new Date().toISOString()
-  const writeAttempt = params.writeAttempt ?? writePhrPublicationAttempt
-  const writeSidecar = params.writeSidecar ?? writePhrPublicationSidecar
-  const result = writeAttempt({
-    publication: buildPhrPublicationInput({
-      artifact: params.artifact,
-      handoff: params.handoff,
-      closeout: params.closeout,
-      closeoutRef: params.closeoutRef,
-      conversationArtifactPath: params.conversationArtifactPath,
-    }),
-    repositoryPath: params.repositoryPath,
-  })
-
-  writeSidecar({
-    sidecarPath: params.sidecarPath,
-    result,
-    attemptedAt,
+  return attemptPhrPublication({
+    artifact: params.artifact,
+    handoff: params.handoff,
+    closeout: params.closeout,
     closeoutRef: params.closeoutRef,
-    handoffArtifactId: params.handoff.id,
     conversationArtifactPath: params.conversationArtifactPath,
+    sidecarPath: params.sidecarPath,
+    repositoryPath: params.repositoryPath,
+    attemptedAt: params.attemptedAt,
+    writeAttempt: params.writeAttempt,
+    writeSidecar: params.writeSidecar,
   })
-
-  return { attempted: true, attemptedAt, result }
 }

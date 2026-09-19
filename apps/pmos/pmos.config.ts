@@ -6,12 +6,16 @@
  * to generate project-specific roadmap, principles, and context.
  */
 
+import { getConfiguredPmosProjectName } from './src/lib/pmos/project-profile'
+
+const configuredProjectName = getConfiguredPmosProjectName()
+
 export const pmosConfig = {
   /**
    * Display name of the project.
    * Used in context file headers and PMOS dashboard.
    */
-  projectName: 'SpendGuru 2.0',
+  projectName: configuredProjectName,
 
   /**
    * Project type. Drives roadmap structure suggestions.
