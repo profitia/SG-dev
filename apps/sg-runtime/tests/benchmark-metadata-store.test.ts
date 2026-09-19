@@ -185,6 +185,9 @@ function matchesMetadataValueWhere(row: ValueRow, where: MetadataValueWhere) {
 
 function installMarketDataPrisma() {
   const prisma = {
+    $on() {
+      return undefined
+    },
     benchmarkMetadataFacetRecord: {
       async findMany({ where }: { where: { providerCode: string; active: boolean; key: { in: string[] } } }) {
         return facetRows.filter((row) => (

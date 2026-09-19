@@ -19,7 +19,6 @@ import {
   buildForecastArtifactCadenceIdentity,
   createCurrentForecastStatisticalCompatibility,
   createFullVerificationStatisticalCompatibility,
-  createLegacyUnresolvedForecastStatisticalCompatibility,
   createRecentVerificationStatisticalCompatibility,
   LEGACY_MONTHLY_ARTIFACT_FREQUENCY,
 } from '../lib/forecast/identity'
@@ -1737,19 +1736,14 @@ serialTest('db-backed prepared current reads fail closed for persisted training 
   assert.equal(executionCount, 0)
 })
 
-serialTest('db-backed legacy current rows remain unresolved while reusing prepared reads until refresh', async () => {
+serialTest('db-backed legacy current rows cannot substitute for exact prepared-read policy identity', async () => {
   const history = createPeriodicHistoryResponse('stage4-legacy-current-series', 'MONTHLY', 'MONTHLY', 'MONTHLY_AVERAGE', 48)
   const artifact = createPreparedCurrentArtifact(history, 'ets', 'MONTHLY_AVERAGE')
   await writeCurrentRunWithPrisma(artifact)
   await nullCurrentRunPolicyIdentity(history.history.seriesId)
 
   const direct = await readCurrentRunFromPrisma(buildCurrentCacheLookupKey(artifact))
-  assert.ok(direct)
-  assert.equal(direct?.statisticalCompatibility.trainingWindowPolicyId, createLegacyUnresolvedForecastStatisticalCompatibility('CURRENT', {
-    sourceFrequency: 'MONTHLY',
-    targetCadence: 'MONTHLY',
-    targetSemantics: 'MONTHLY_AVERAGE',
-  }).trainingWindowPolicyId)
+  assert.equal(direct, null)
 
   const service = createDbBackedService({
     async exportHistory(input) {
@@ -1772,10 +1766,7 @@ serialTest('db-backed legacy current rows remain unresolved while reusing prepar
     targetCadence: 'MONTHLY',
   })
 
-  assert.equal(result.status, 'AVAILABLE')
-  if (result.status !== 'AVAILABLE') return
-  assert.equal(result.lineage.statisticalCompatibility.trainingWindowPolicyId, 'LEGACY_UNRESOLVED')
-  assert.equal(result.lineage.statisticalCompatibility.calibrationPolicy, 'CONDITIONAL_POLICY_MATCH_ONLY')
+  assert.equal(result.status, 'NOT_AVAILABLE')
 
   const executionCount = await requirePrisma().forecastPreparationExecutionLedger.count({
     where: { seriesId: history.history.seriesId },
@@ -2116,23 +2107,14 @@ serialTest('db-backed prepared verification reads fail closed for empty payloads
   assert.equal(executionCount, 0)
 })
 
-serialTest('db-backed legacy full verification reuse remains unresolved and never becomes recent-comparable identity', async () => {
+serialTest('db-backed legacy full verification rows cannot substitute for exact prepared-read policy identity', async () => {
   const history = createPeriodicHistoryResponse('stage4-legacy-verification-series', 'QUARTERLY', 'QUARTERLY', 'MONTHLY_AVERAGE', 48)
   const artifact = createPreparedVerificationArtifact(history, 'arima', 'MONTHLY_AVERAGE')
   await writeVerificationRunWithPrisma(artifact)
   await nullVerificationRunPolicyIdentity(history.history.seriesId)
 
   const direct = await readVerificationRunFromPrisma(buildVerificationCacheLookupKey(artifact))
-  assert.ok(direct)
-  assert.equal(direct?.statisticalCompatibility.trainingWindowPolicyId, 'LEGACY_UNRESOLVED')
-  assert.notEqual(
-    direct?.statisticalCompatibility.trainingWindowPolicyId,
-    createRecentVerificationStatisticalCompatibility({
-      sourceFrequency: 'QUARTERLY',
-      targetCadence: 'QUARTERLY',
-      targetSemantics: 'MONTHLY_AVERAGE',
-    }).trainingWindowPolicyId,
-  )
+  assert.equal(direct, null)
 
   const service = createDbBackedService({
     async exportHistory(input) {
@@ -2155,10 +2137,7 @@ serialTest('db-backed legacy full verification reuse remains unresolved and neve
     targetCadence: 'QUARTERLY',
   })
 
-  assert.equal(result.status, 'AVAILABLE')
-  if (result.status !== 'AVAILABLE') return
-  assert.equal(result.lineage.statisticalCompatibility.trainingWindowPolicyId, 'LEGACY_UNRESOLVED')
-  assert.equal(result.lineage.statisticalCompatibility.calibrationPolicy, 'CONDITIONAL_POLICY_MATCH_ONLY')
+  assert.equal(result.status, 'NOT_AVAILABLE')
 
   const executionCount = await requirePrisma().forecastPreparationExecutionLedger.count({
     where: { seriesId: history.history.seriesId },
