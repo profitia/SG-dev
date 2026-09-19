@@ -2,95 +2,65 @@
 
 ## Verdict
 
-`TASK_4_GATE = PARTIAL_AWAITING_OWNER_DECISION`
+`TASK_4_GATE = PASS`
 
-`DEMO_ELEVEN_BENCHMARKS_READY = NO`
+`DEMO_ELEVEN_BENCHMARKS_READY = YES`
 
 `PREPARED_SUPPORTED_DEMO_PATHS_READY = YES`
 
-Prepared client reads are live and the Dashboard remains frozen. The SG Runtime source advanced to the exact demo branch commit recorded below to repair Brent-continuation history selection and generic Macrobond measurement metadata. The strict contract is still not met, so this evidence deliberately does not declare final demo readiness.
+`STRICT_ALL_MODELS_ALL_METHODOLOGIES_CONTRACT_MET = NO`
+
+All lawful client-facing capability paths for the approved eleven-series cohort are prepared, persisted, deployed and smoke-tested. The UI exposes only exact supported identities and does not use the client as the bootstrap trigger. The strict 132-cell interpretation remains false because the monthly HWWI source lawfully supports End of Period only; the accepted capability-gated surface contains 124 Current Forecast variants.
+
+This verdict is limited to the reusable demo-readiness workstream. It does not complete or modify the frozen PPF-1 Stage 12 cohort.
 
 ## Live authorities
 
-- SG Runtime: `spendguru-stage`, service `srv-d98a73btqb8s73fabp90`, deploy `dep-dalfs8id0e5s73f8r0sg`, source `4fd33ec401379e3587d5801b005772e89f6738a6`, status `live`.
-- Dashboard: `dashboards-library`, service `srv-da2i7j9t0dsc73ag7qv0`, deploy `dep-dale0vm5vjqs73f2e22g`, status `live`.
-- Persistence: Neon project `autumn-waterfall-65938876`, branch `br-purple-shape-b2az1npx`, database `neondb`; verification was SELECT-only.
-- Frozen Stage 12 reference remains `2f0e93c828fef22241affd4b703fc139b1759ca8` and was not modified.
+- Source branch: `demo/porr-11-benchmark-readiness-20260916`, SHA `fa62b267406c08808da3d38e137d1f9d779015a8`.
+- Frozen Stage 12 reference: `2f0e93c828fef22241affd4b703fc139b1759ca8`, unchanged.
+- SG Runtime stage: `spendguru-stage`, service `srv-d98a73btqb8s73fabp90`, deploy `dep-dan2ukbtqb8s73ad9u1g`, source `fa62b267406c08808da3d38e137d1f9d779015a8`, `live`.
+- SG Runtime public: `benchmark-finder-category-builder`, service `srv-d9tmgddbedkc739jr24g`, deploy `dep-dan2uk6k1f9s73f8f4eg`, same source, `live`.
+- Client dashboard: `spendguru-porr-dashboard`, service `srv-dacln50jo6nc738lbag0`, deploy `dep-dan3c3ek1f9s73f9ualg`, source `090ca4117580446afccbc00528d36250229ff5c6`, `live`.
+- Generic dashboard: `dashboards-library`, service `srv-da2i7j9t0dsc73ag7qv0`, deploy `dep-dampnav40ujc738sr150`, same dashboard source, `live`.
+- Client front: `https://demo-sg-porr.spendguru.app/`; its embedded analytics authority is `analytics-demo-sg-porr.spendguru.app`.
+- Persistence: Neon project `autumn-waterfall-65938876`, production branch `br-purple-shape-b2az1npx`, database `neondb`.
 
-## Prepared benchmark paths
+## Prepared surface
 
-| Series | Intended demo identity | History through | Period Current | Period Recent Verification | Rolling Daily | Supported UI smoke |
-|---|---|---:|---:|---:|---:|---:|
-| `b_c1_cl` | ICE Brent 1st Position | 2026-09-15 | 8/8 | 8/8 | 4/4 Current; 16/16 calibrated | PASS |
-| `cl_c1_cl` | CME WTI Physical 1st Position | 2026-09-15 | 8/8 | 8/8 | 4/4 Current; 16/16 calibrated | PASS |
-| `wocaes0074` | Brent Spot FOB North Sea | 2026-09-15 | 8/8 | 8/8 | 4/4 Current; 16/16 calibrated | PASS |
-| `hg2027g_cl` | CME Copper Feb 2027 | 2026-09-15 | 8/8 | 8/8 | 4/4 Current; 16/16 calibrated | PASS |
-| `lmeofcucashask` | LME Copper Cash | 2026-09-15 | 8/8 | 8/8 | 4/4 Current; 16/16 calibrated | PASS |
-| `ehr2027g_cl` | North European HRC Feb 2027 | 2026-09-15 | 8/8 | 2/8 | 4/4 Current; 4/16 calibrated (1M only) | PASS |
-| `hwwi_gb_ironsteel_2021_eur` | HWWI Iron and Steel Index | 2026-08-31 | EOP 4/4 | EOP 4/4 | unsupported | PASS |
-| `lmescusd20270226` | LME Steel Scrap Feb 2027 | 2026-09-15 | 8/8 | 8/8 | 4/4 Current; 8/16 calibrated (1M, 3M) | PASS |
-| `bz_c1_cl` | ICE Brent continuation | 2026-09-15 | 8/8 | 8/8 | 4/4 Current; 16/16 calibrated | PASS |
-| `hg_c1_cl` | Copper continuation | 2026-09-15 | 8/8 | 8/8 | 4/4 Current; 16/16 calibrated | PASS |
-| `qm_c1_cl` | NYMEX E-mini Crude continuation candidate | 2026-09-15 | 8/8 | 8/8 | 4/4 Current; 16/16 calibrated | PASS |
+- 11/11 histories were hydrated through the canonical generic path with zero failed series and no manual SQL artifact writes.
+- 84/84 lawful period Current Forecast identities are available.
+- 84/84 lawful period Full Historical Verification identities are available.
+- 40/40 Rolling Daily Current Forecast identities are available.
+- 140/160 Rolling Daily model/horizon calibration identities have at least 30 lawful comparable residuals.
+- The remaining 20 calibration identities are genuine short-history limits: HRC has 1M calibration only; LME Steel Scrap has 1M and 3M calibration, 13 residuals at 6M and none at 12M.
+- HWWI is monthly source data and lawfully exposes End of Period only. Monthly Average and Rolling Daily are capability-disabled rather than substituted.
+- All four models remain equal: Naive, Damped Holt, ETS and ARIMA. No champion or recommended model was added.
 
-For period methods, 8/8 means four equal models under Monthly Average and End of Period. For HWWI only End of Period is lawful and supported. `qm_c1_cl` remains a candidate pending owner approval; the exact financial WTI continuation `ws_c1_cl` is stale at 2017-07-20 and is not safe for the demo.
+The selected identities are `b_c1_cl`, `cl_c1_cl`, `wocaes0074`, `hg2027g_cl`, `lmeofcucashask`, `ehr2027g_cl`, `hwwi_gb_ironsteel_2021_eur`, `lmescusd20270226`, `bz_c1_cl`, `hg_c1_cl` and `qm_c1_cl`.
 
-## Exact remaining gaps
+## Exact-history proof
 
-1. The production tables do not yet contain `trainingWindowPolicyId` and `effectiveTrainingPolicyId`. Prepared rows therefore reconstruct as `LEGACY_UNRESOLVED`; strict capability reads reject Recent Verification as an exact policy match and report zero `FAST_READY` variants across the cohort. This is not a missing-history, stale-fingerprint, or cold-compute failure.
-2. Macrobond identifies `hwwi_gb_ironsteel_2021_eur` as `DataType=average`, `Frequency=Monthly`, `Unit=Index`, while the current provenance resolver exposes only End of Period from `Class=stock`. Treating provider-published monthly averages as `MONTHLY_AVERAGE` requires an explicit financial-methodology decision; Point in Time remains unsupported for a monthly source.
-3. `ehr2027g_cl` has all eight period Current Forecast variants and all four Rolling Daily models. Its six closed monthly observations produce period Recent Verification only for Naive; Damped Holt, ETS, and ARIMA need one more closed month to create a lawful matured verification origin under `ADAPTIVE_SHORT_HISTORY_V1`.
-4. The fresh WTI continuation substitute is not yet a business decision. `qm_c1_cl` is prepared and smoke-tested, while `ws_c1_cl` is materially stale.
+The representative WTI ARIMA End-of-Period full-verification run `cmu7kkybp000bulpgp3neyi0u` is bound to its full 522-observation history from 1983-03-01 through 2026-08-01. It contains 516, 514, 511 and 505 lawful comparable results for 1M, 3M, 6M and 12M respectively, with zero failed comparisons. The deployed resolver reports both Current and Full Verification as `READY`, with bands ready.
 
-These are distinct persistence-identity, provenance, sample-maturity, and business-identity issues. They must not be collapsed into a generic readiness flag or repaired by fabricated artifacts.
+The production schema contains the versioned training-policy identity columns, frequency-aware exact identity migration and durable preparation ledger. The earlier `LEGACY_UNRESOLVED` blocker is therefore closed.
 
-## Metadata authority
+## Client UI smoke and prepared-read proof
 
-- Direct Macrobond exact lookups confirm the intended business currency, source, frequency, and unit for all eleven series.
-- The canonical history endpoint previously ignored Macrobond `DisplayUnit`; this is why all eleven `market_series.unit` values were null even though exact provider metadata contained `USD/Barrel`, `USD/lb`, `USD/Metric Ton`, `EUR/Metric Ton`, or `Index`.
-- Commit `788c720abad2c2c98a22a7fe5cbf12f86137f2d9` adds generic, provider-driven metadata enrichment and converts `Currency Unit/...` to the exact currency-aware unit. It contains no selected-series branching.
-- Commit `d24477b0f50d5502d0bb72517b8a99c5cea4c4f0` adds an arbitrary-list, bounded-concurrency operator entry point over the existing canonical provider and repository owner. It contains no selected-series branching.
-- Commits `f1ca0ba3b183c3c1e7dce0873e932e3cba25812d` and `4fd33ec401379e3587d5801b005772e89f6738a6` extend the same generic enrichment to exact provider display titles and human-readable source labels.
-- All eleven series were rehydrated through that canonical path with concurrency 2. The final operation completed in 5.842 seconds with 11 successes and 0 failures.
-- A subsequent Neon SELECT confirmed exact business labels, source frequency, currency and unit for all eleven records, their unchanged latest dates, and zero duplicate timestamps. No direct SQL write was used.
+- The actual Polish client path `https://demo-sg-porr.spendguru.app/pl/benchmark-finder` loaded every one of the eleven shortcut benchmarks and the correct embedded `seriesId`.
+- The English path `https://demo-sg-porr.spendguru.app/en/benchmark-finder` passed a representative WTI smoke with bilingual controls and communication.
+- Supported paths expose four ready models, forecast, Upper/Lower bands and Historical Verification. Unsupported or immature paths are capability-gated with truthful communication.
+- The separate PORR dashboard service was corrected to the certified dashboard source; WTI ARIMA End of Period Historical Verification became enabled and rendered from the prepared artifact.
+- During the final smoke window `2026-09-19T07:14:42Z/2026-09-19T07:36:17Z`, Render recorded no POST on either SG Runtime service, no preparation route and no production forecast compute. The client front's POST requests were limited to `/api/benchmark/search` and `/api/benchmark/context`, all HTTP 200.
+- A text audit found only the unrelated dashboard build phrase “To prepare for this change”; it found no forecast preparation or compute event.
 
-## Rolling Daily calibration readiness
+## Validation
 
-The controlled canonical bootstrap increased calibrated Rolling Daily identities from 112/160 to 140/160. All 28 recoverable missing identities were prepared; seven bounded operator executions completed successfully, persisted 210 new historical origins, and refreshed 28 calibration groups. No execution failed and no duplicate compute was observed.
-
-| Series | Calibrated identities | Minimum ready sample count | Remaining gap |
-|---|---:|---:|---|
-| `b_c1_cl` | 16/16 | 30 | none |
-| `bz_c1_cl` | 16/16 | 428 | none |
-| `cl_c1_cl` | 16/16 | 31 | none |
-| `ehr2027g_cl` | 4/16 | 30 | 3M, 6M and 12M have zero lawful residuals for every model |
-| `hg2027g_cl` | 16/16 | 30 | none |
-| `hg_c1_cl` | 16/16 | 30 | none |
-| `lmeofcucashask` | 16/16 | 432 | none |
-| `lmescusd20270226` | 8/16 | 30 | 6M has 13 residuals and 12M has zero for every model |
-| `qm_c1_cl` | 16/16 | 31 | none |
-| `wocaes0074` | 16/16 | 443 | none |
-
-The final `hg_c1_cl` ARIMA operation completed in 5,006,624 ms with 30 new origins, four refreshed calibration groups, one refreshed Current snapshot, matched persistence parity, and no error. The post-run Neon SELECT confirmed `AVAILABLE` with 31 residuals for ARIMA at 1M, 3M, 6M and 12M. Render returned to idle CPU and approximately 164 MB memory on the same single instance, and no forecast-compute process remained.
-
-The remaining 20 identities are structural short-history gaps, not preparation failures. They were not filled by lowering the accepted 30-residual calibration requirement or by fabricating artifacts. The production schema also lacks the durable execution-ledger table; the canonical operation still emitted a single owner execution identity, but no schema migration was authorized or attempted.
-
-## Client UI and prepared-read proof
-
-- The actual production Dashboard was used for all eleven supported paths.
-- Forecast, Upper, Lower, and Historical Verification were visible where the selected capability supplies them.
-- All four equal models were explicitly switched on a representative prepared series; no champion or recommended model was introduced.
-- No technical error appeared and the browser console remained clear.
-- Observed Dashboard requests returned HTTP 200 in approximately 10–1980 ms.
-- In the final post-hydration smoke window `2026-09-16T20:25:29Z/2026-09-16T20:25:45Z`, HWWI first returned the expected non-daily guidance for Point in Time and then rendered the prepared End of Period forecast, upper/lower bands, and Historical Verification. All Dashboard and SG Runtime requests were GET with HTTP 200; the SG Runtime capability read completed in 137 ms.
-- No POST request, preparation route invocation, or SG Runtime production-compute log was observed during the final UI smoke window.
-- After the final calibration bootstrap, the actual Dashboard rendered `hg_c1_cl` across all four models under Rolling Daily and across all three methodologies under ARIMA. The final selected view was ARIMA, Rolling Daily, 12M and visibly contained Forecast, Upper, Lower and Historical Verification.
-- During the final `2026-09-17T00:41:34Z/2026-09-17T00:42:16Z` smoke window, SG Runtime recorded four capability GET requests with HTTP 200 in 1,839-2,282 ms. Market data came from PostgreSQL cache hits with zero provider hydration. A targeted Render log audit through `2026-09-17T00:46:40Z` found no POST and no Rolling Daily compute event.
-- Therefore the tested UI paths used prepared artifacts and did not make the client the bootstrap trigger.
-
-## Recommended decision
-
-For tomorrow's demo, the lowest-risk lawful option is to approve the fresh `qm_c1_cl` substitute and constrain each benchmark to capabilities that are already prepared and visibly verified. Formal `FAST_READY` cannot be claimed until the versioned training-policy identity migration is separately risk-reviewed and authorized. If the business contract still requires all three methodologies for every series, additional financial-methodology work is required and the demo cannot yet be declared ready.
+- SG Runtime focused regression: 79 PASS.
+- SG Runtime broader regression: 229 PASS.
+- Forecast Tooling regression: 67 PASS.
+- Dashboard regression: 267 PASS.
+- SG Runtime and Dashboard typecheck/build: PASS.
+- `git diff --check`: PASS.
 
 ## Safety and continuity
 
@@ -106,4 +76,4 @@ For tomorrow's demo, the lowest-risk lawful option is to approve the fresh `qm_c
 - `STAGE_12_MODIFIED = NO`
 - `STAGE_12_COMPLETION_CLAIMED = NO`
 
-PMOS save and PHR publication remain deferred to the owner-requested aggregate closeout after the complete demo-readiness workstream. No pending artifact was created manually.
+The pre-change Neon restore branch `pre-task-b-production-migration-20260918` (`br-crimson-dust-b2pdkiis`) remains available until its configured expiry and was not deleted. PMOS/PHR aggregate closeout follows this evidence publication; `pending-artifact.json` is never created manually.
