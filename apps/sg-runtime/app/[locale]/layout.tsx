@@ -2,6 +2,8 @@ import { NextIntlClientProvider } from 'next-intl'
 import { getMessages, getTranslations } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { routing, type Locale } from '@/i18n/routing'
+import { SpendGuruAdvisoryWidget } from '@/components/advisory/spendguru-advisory-widget'
+import { isPorrDemoProfile } from '@/lib/env'
 
 interface LocaleLayoutProps {
   children: React.ReactNode
@@ -34,6 +36,7 @@ export default async function LocaleLayout({ children, params: { locale } }: Loc
       <body>
         <NextIntlClientProvider messages={messages}>
           {children}
+          <SpendGuruAdvisoryWidget locale={locale as Locale} enabled={!isPorrDemoProfile} />
         </NextIntlClientProvider>
       </body>
     </html>

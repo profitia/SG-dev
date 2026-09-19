@@ -1,4 +1,5 @@
 import './globals.css'
+import '@profitia/advisory-widget/styles.css'
 
 // Root layout — minimal shell required by Next.js App Router.
 // The locale-specific <html> and <body> are provided by app/[locale]/layout.tsx.
