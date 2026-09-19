@@ -404,6 +404,32 @@ export interface ForecastVerificationRecord {
   maseScale: number
 }
 
+export interface ForecastVerificationMetrics {
+  mae: number | null
+  rmse: number | null
+  mase: number | null
+  smape: number | null
+  directionalAccuracy: number | null
+  bias: number | null
+}
+
+export type ForecastVerificationConfidenceCode =
+  | 'LIMITED'
+  | 'MODERATE'
+  | 'SUFFICIENT'
+  | 'UNAVAILABLE'
+
+export interface ForecastVerificationQualitySummary {
+  policyVersion: 'FORECAST_VERIFICATION_QUALITY_V1'
+  averageVerificationPercent: number | null
+  directionalAccuracyPercent: number | null
+  confidenceCode: ForecastVerificationConfidenceCode
+  confidenceLevel: 1 | 2 | 3 | null
+  comparableOriginCount: number
+  requiredOriginCount: number
+  sampleCompletenessPercent: number
+}
+
 export interface ForecastVerificationHorizon {
   horizon: string
   horizonSteps: number
@@ -413,6 +439,8 @@ export interface ForecastVerificationHorizon {
   failedOrigins: number
   pendingOrigins?: number
   coverage: number
+  metrics?: ForecastVerificationMetrics | null
+  quality?: ForecastVerificationQualitySummary
   records: ForecastVerificationRecord[]
 }
 

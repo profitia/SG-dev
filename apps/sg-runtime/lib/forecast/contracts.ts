@@ -88,6 +88,23 @@ export interface ForecastVerificationMetrics {
   bias: number | null
 }
 
+export type ForecastVerificationConfidenceCode =
+  | 'LIMITED'
+  | 'MODERATE'
+  | 'SUFFICIENT'
+  | 'UNAVAILABLE'
+
+export interface ForecastVerificationQualitySummary {
+  policyVersion: 'FORECAST_VERIFICATION_QUALITY_V1'
+  averageVerificationPercent: number | null
+  directionalAccuracyPercent: number | null
+  confidenceCode: ForecastVerificationConfidenceCode
+  confidenceLevel: 1 | 2 | 3 | null
+  comparableOriginCount: number
+  requiredOriginCount: number
+  sampleCompletenessPercent: number
+}
+
 export interface ForecastVerificationFailure {
   benchmarkId: string
   modelId: string
@@ -127,6 +144,7 @@ export interface ForecastVerificationHorizon {
   pendingOrigins?: number
   coverage: number
   metrics: ForecastVerificationMetrics | null
+  quality?: ForecastVerificationQualitySummary
   records: ForecastVerificationRecord[]
   failures: ForecastVerificationFailure[]
 }

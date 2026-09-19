@@ -1,12 +1,89 @@
 import type {
   BenchmarkForecastVerificationResult,
   ForecastVerificationHorizon,
+  ForecastVerificationQualitySummary,
   HistoricalVerificationHorizonSummary,
   HistoricalVerificationSummary,
 } from '@/lib/forecast/contracts'
 
 export const HISTORICAL_VERIFICATION_CONTRACT_VERSION = 'HISTORICAL_VERIFICATION_V2' as const
 export const MIN_HISTORICAL_VERIFICATION_ORIGINS = 24
+export const FORECAST_VERIFICATION_QUALITY_POLICY_VERSION = 'FORECAST_VERIFICATION_QUALITY_V1' as const
+
+function clamp(value: number, minimum: number, maximum: number) {
+  return Math.min(maximum, Math.max(minimum, value))
+}
+
+export function resolveForecastVerificationQuality(
+  horizon: ForecastVerificationHorizon,
+): ForecastVerificationQualitySummary {
+  const comparableOriginCount = Math.max(0, horizon.successfulOrigins)
+  const sampleCompletenessPercent = clamp(
+    (comparableOriginCount / MIN_HISTORICAL_VERIFICATION_ORIGINS) * 100,
+    0,
+    100,
+  )
+  const smape = horizon.metrics?.smape
+  const directionalAccuracy = horizon.metrics?.directionalAccuracy
+  const hasLawfulMetrics = comparableOriginCount > 0
+    && smape !== null
+    && smape !== undefined
+    && Number.isFinite(smape)
+
+  if (!hasLawfulMetrics) {
+    return {
+      policyVersion: FORECAST_VERIFICATION_QUALITY_POLICY_VERSION,
+      averageVerificationPercent: null,
+      directionalAccuracyPercent: null,
+      confidenceCode: 'UNAVAILABLE',
+      confidenceLevel: null,
+      comparableOriginCount,
+      requiredOriginCount: MIN_HISTORICAL_VERIFICATION_ORIGINS,
+      sampleCompletenessPercent,
+    }
+  }
+
+  const confidence = sampleCompletenessPercent < 30
+    ? { confidenceCode: 'LIMITED' as const, confidenceLevel: 1 as const }
+    : sampleCompletenessPercent < 70
+      ? { confidenceCode: 'MODERATE' as const, confidenceLevel: 2 as const }
+      : { confidenceCode: 'SUFFICIENT' as const, confidenceLevel: 3 as const }
+
+  return {
+    policyVersion: FORECAST_VERIFICATION_QUALITY_POLICY_VERSION,
+    averageVerificationPercent: clamp(100 - smape, 0, 100),
+    directionalAccuracyPercent: directionalAccuracy !== null
+      && directionalAccuracy !== undefined
+      && Number.isFinite(directionalAccuracy)
+      ? clamp(directionalAccuracy * 100, 0, 100)
+      : null,
+    ...confidence,
+    comparableOriginCount,
+    requiredOriginCount: MIN_HISTORICAL_VERIFICATION_ORIGINS,
+    sampleCompletenessPercent,
+  }
+}
+
+function attachForecastVerificationQuality(
+  result: BenchmarkForecastVerificationResult,
+): BenchmarkForecastVerificationResult {
+  if (result.status !== 'AVAILABLE') {
+    return result
+  }
+
+  return {
+    ...result,
+    verification: Object.fromEntries(
+      Object.entries(result.verification).map(([horizonLabel, horizon]) => [
+        horizonLabel,
+        {
+          ...horizon,
+          quality: resolveForecastVerificationQuality(horizon),
+        },
+      ]),
+    ),
+  }
+}
 
 export function createUnavailableHistoricalVerificationSummary(
   status: Extract<HistoricalVerificationSummary['status'], 'NOT_PREPARED' | 'FAILED'>,
@@ -26,13 +103,14 @@ export function createUnavailableHistoricalVerificationSummary(
 export function ensureHistoricalVerificationContract(
   result: BenchmarkForecastVerificationResult,
 ): BenchmarkForecastVerificationResult & { historicalVerification: HistoricalVerificationSummary } {
-  if (result.historicalVerification) {
-    return result as BenchmarkForecastVerificationResult & { historicalVerification: HistoricalVerificationSummary }
+  const resultWithQuality = attachForecastVerificationQuality(result)
+  if (resultWithQuality.historicalVerification) {
+    return resultWithQuality as BenchmarkForecastVerificationResult & { historicalVerification: HistoricalVerificationSummary }
   }
   return {
-    ...result,
+    ...resultWithQuality,
     historicalVerification: createUnavailableHistoricalVerificationSummary(
-      result.status === 'FAILED' ? 'FAILED' : 'NOT_PREPARED',
+      resultWithQuality.status === 'FAILED' ? 'FAILED' : 'NOT_PREPARED',
     ),
   }
 }

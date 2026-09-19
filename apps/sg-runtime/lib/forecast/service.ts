@@ -125,6 +125,7 @@ import {
   resolveHistoricalVerificationHorizon,
   resolveHistoricalVerificationSummary,
 } from '@/lib/forecast/historical-verification-policy'
+import { calculateForecastVerificationMetrics } from '@/lib/forecast/verification-metrics'
 
 const execFileAsync = promisify(execFile)
 const DEFAULT_FORECASTING_LAB_ROOT = path.resolve(process.cwd(), '..', '..', 'tooling', 'Benchmark-Forecasting')
@@ -1213,42 +1214,6 @@ function normalizeVerificationMetrics(
   }
 }
 
-function average(values: number[]) {
-  return values.length === 0
-    ? null
-    : values.reduce((sum, value) => sum + value, 0) / values.length
-}
-
-function calculateRecentVerificationMetrics(records: ForecastVerificationRecord[]): ForecastVerificationMetrics | null {
-  if (records.length === 0) {
-    return null
-  }
-
-  const rmseBase = average(records.map((record) => record.error ** 2))
-  const maseValues = records
-    .filter((record) => record.maseScale > 0)
-    .map((record) => record.absoluteError / record.maseScale)
-  const smapeValues = records
-    .map((record) => {
-      const denominator = Math.abs(record.forecastValue) + Math.abs(record.actualValue)
-      return denominator === 0 ? null : (2 * record.absoluteError) / denominator
-    })
-    .filter((value): value is number => value !== null && Number.isFinite(value))
-
-  return {
-    mae: average(records.map((record) => record.absoluteError)),
-    rmse: rmseBase === null ? null : Math.sqrt(rmseBase),
-    mase: average(maseValues),
-    smape: average(smapeValues),
-    directionalAccuracy: average(records.map((record) => {
-      const forecastDirection = Math.sign(record.delta)
-      const actualDirection = Math.sign(record.actualValue - record.originValue)
-      return forecastDirection === actualDirection ? 1 : 0
-    })),
-    bias: average(records.map((record) => record.error)),
-  }
-}
-
 function sortVerificationRecords(records: ForecastVerificationRecord[]) {
   return [...records].sort((left, right) => {
     const byOrigin = left.forecastOrigin.localeCompare(right.forecastOrigin)
@@ -1448,7 +1413,7 @@ function mergeVerificationArtifacts(
           successfulOrigins,
           failedOrigins,
           coverage: expectedOrigins === 0 ? 0 : successfulOrigins / expectedOrigins,
-          metrics: calculateRecentVerificationMetrics(records),
+          metrics: calculateForecastVerificationMetrics(records),
           records,
           failures,
         } satisfies ForecastVerificationHorizon,
@@ -1712,7 +1677,7 @@ export async function buildRecentVerificationArtifact(input: {
           successfulOrigins: records.length,
           failedOrigins: 0,
           coverage: selectedOrigins.length === 0 ? 0 : records.length / selectedOrigins.length,
-          metrics: calculateRecentVerificationMetrics(records),
+          metrics: calculateForecastVerificationMetrics(records),
           records: [...records].sort((left, right) => left.forecastOrigin.localeCompare(right.forecastOrigin)),
           failures: [],
         } satisfies ForecastVerificationHorizon,

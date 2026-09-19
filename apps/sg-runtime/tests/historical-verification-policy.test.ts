@@ -4,7 +4,9 @@ import test from 'node:test'
 import type { ForecastVerificationHorizon } from '../lib/forecast/contracts'
 import {
   ensureHistoricalVerificationContract,
+  FORECAST_VERIFICATION_QUALITY_POLICY_VERSION,
   HISTORICAL_VERIFICATION_CONTRACT_VERSION,
+  resolveForecastVerificationQuality,
   resolveHistoricalVerificationHorizon,
   resolveHistoricalVerificationSummary,
 } from '../lib/forecast/historical-verification-policy'
@@ -64,6 +66,77 @@ test('24 lawful origins report AVAILABLE without changing metric definitions', (
   assert.equal(resolved.status, 'AVAILABLE')
   assert.equal(resolved.originCount, 24)
   assert.deepEqual(input.metrics, metrics)
+})
+
+test('verification quality uses 24 lawful comparisons as the versioned common denominator', () => {
+  const quality = resolveForecastVerificationQuality(horizon({
+    origins: 17,
+    expectedOrigins: 53,
+    successfulOrigins: 17,
+    coverage: 17 / 53,
+    metrics: {
+      mae: 1,
+      rmse: 2,
+      mase: 0.7,
+      smape: 4.3,
+      directionalAccuracy: 0.71,
+      bias: -0.2,
+    },
+  }))
+
+  assert.equal(quality.policyVersion, FORECAST_VERIFICATION_QUALITY_POLICY_VERSION)
+  assert.equal(quality.averageVerificationPercent, 95.7)
+  assert.equal(quality.directionalAccuracyPercent, 71)
+  assert.equal(quality.requiredOriginCount, 24)
+  assert.equal(quality.comparableOriginCount, 17)
+  assert.equal(quality.sampleCompletenessPercent, 17 / 24 * 100)
+  assert.equal(quality.confidenceCode, 'SUFFICIENT')
+  assert.equal(quality.confidenceLevel, 3)
+})
+
+test('verification quality applies the agreed integer boundaries without using expectedOrigins', () => {
+  const metrics = { mae: 1, rmse: 1, mase: 1, smape: 10, directionalAccuracy: 0.5, bias: 0 }
+
+  assert.equal(resolveForecastVerificationQuality(horizon({
+    expectedOrigins: 100,
+    successfulOrigins: 7,
+    metrics,
+  })).confidenceLevel, 1)
+  assert.equal(resolveForecastVerificationQuality(horizon({
+    expectedOrigins: 8,
+    successfulOrigins: 8,
+    metrics,
+  })).confidenceLevel, 2)
+  assert.equal(resolveForecastVerificationQuality(horizon({
+    expectedOrigins: 17,
+    successfulOrigins: 17,
+    metrics,
+  })).confidenceLevel, 3)
+})
+
+test('verification quality is unavailable when no lawful metric sample exists', () => {
+  const quality = resolveForecastVerificationQuality(horizon({
+    expectedOrigins: 24,
+    successfulOrigins: 0,
+    metrics: null,
+  }))
+
+  assert.equal(quality.averageVerificationPercent, null)
+  assert.equal(quality.directionalAccuracyPercent, null)
+  assert.equal(quality.confidenceCode, 'UNAVAILABLE')
+  assert.equal(quality.confidenceLevel, null)
+})
+
+test('verification quality clamps business-facing percentages to their lawful range', () => {
+  const quality = resolveForecastVerificationQuality(horizon({
+    expectedOrigins: 30,
+    successfulOrigins: 30,
+    metrics: { mae: 1, rmse: 1, mase: 1, smape: 180, directionalAccuracy: 1.2, bias: 0 },
+  }))
+
+  assert.equal(quality.averageVerificationPercent, 0)
+  assert.equal(quality.directionalAccuracyPercent, 100)
+  assert.equal(quality.sampleCompletenessPercent, 100)
 })
 
 test('all failed lawful origins report FAILED instead of successful verification', () => {

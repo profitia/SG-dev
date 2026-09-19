@@ -327,6 +327,21 @@ function formatNumber(locale: Locale, value: number | null) {
   }).format(value)
 }
 
+function formatPercent(locale: Locale, value: number | null) {
+  if (value === null) {
+    return '—'
+  }
+
+  return `${new Intl.NumberFormat(locale === 'pl' ? 'pl-PL' : 'en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+  }).format(value)}%`
+}
+
+function verificationConfidenceDots(level: 1 | 2 | 3 | null) {
+  return [1, 2, 3].map((dot) => dot <= (level ?? 0))
+}
+
 function formatPrimaryValue(locale: Locale, value: number | null, unit: string | null, currency: string | null) {
   const numberValue = formatNumber(locale, value)
   const suffix = [currency, unit].filter((item) => item && item.trim().length > 0).join(' ')
@@ -2793,6 +2808,20 @@ export function RawDataView({
     forecastVerificationResult,
     `${forecastAccuracyHorizon}M`,
   )
+  const selectedVerificationQuality = isAvailableVerificationResult(forecastVerificationResult)
+    ? forecastVerificationResult.verification[`${forecastAccuracyHorizon}M`]?.quality ?? null
+    : null
+  const selectedVerificationConfidenceLabel = selectedVerificationQuality?.confidenceCode === 'LIMITED'
+    ? t('verificationConfidenceLimited')
+    : selectedVerificationQuality?.confidenceCode === 'MODERATE'
+      ? t('verificationConfidenceModerate')
+      : selectedVerificationQuality?.confidenceCode === 'SUFFICIENT'
+        ? t('verificationConfidenceSufficient')
+        : t('verificationQualityUnavailable')
+  const showHistoricalVerificationNotice = historicalVerificationNotice?.status === 'LIMITED_SAMPLE'
+    && selectedVerificationQuality?.confidenceCode !== 'UNAVAILABLE'
+    ? null
+    : historicalVerificationNotice
   const forecastUnsupportedReason = selectedProgressiveVariant?.currentReason
     ?? (forecastCurrentResult && !isAvailableCurrentResult(forecastCurrentResult) ? forecastCurrentResult.reason : null)
   const pointInTimeRequiresDailyHistory = selectedForecastTargetBasis === 'POINT_IN_TIME'
@@ -4343,6 +4372,53 @@ export function RawDataView({
                         </button>
                       ))}
                     </div>
+                    {selectedVerificationQuality ? (
+                      <section
+                        className="verification-quality-panel"
+                        aria-label={t('verificationQualityForHorizon', { horizon: `${forecastAccuracyHorizon}M` })}
+                      >
+                        <div className="verification-quality-heading">
+                          <strong>{t('verificationQualityForHorizon', { horizon: `${forecastAccuracyHorizon}M` })}</strong>
+                          <InfoButton
+                            label={t('verificationQualityInfoLabel')}
+                            lines={[
+                              t('verificationQualityInfoLine1'),
+                              t('verificationQualityInfoLine2'),
+                              t('verificationQualityInfoLine3'),
+                              t('verificationQualityInfoLine4'),
+                            ]}
+                          />
+                        </div>
+                        <div className="verification-quality-metrics">
+                          <div className="verification-quality-metric">
+                            <span>{t('averageVerificationLevel')}</span>
+                            <strong>{formatPercent(locale, selectedVerificationQuality.averageVerificationPercent)}</strong>
+                          </div>
+                          <div className="verification-quality-metric">
+                            <span>{t('directionalAccuracy')}</span>
+                            <strong>{formatPercent(locale, selectedVerificationQuality.directionalAccuracyPercent)}</strong>
+                          </div>
+                          <div className="verification-quality-metric verification-confidence-metric">
+                            <span>{t('verificationConfidence')}</span>
+                            <strong>
+                              <span
+                                className={`verification-confidence-dots is-${selectedVerificationQuality.confidenceCode.toLowerCase()}`}
+                                aria-label={selectedVerificationConfidenceLabel}
+                              >
+                                {verificationConfidenceDots(selectedVerificationQuality.confidenceLevel).map((filled, index) => (
+                                  <span
+                                    key={`verification-confidence-${index}`}
+                                    className={filled ? 'is-filled' : ''}
+                                    aria-hidden="true"
+                                  >●</span>
+                                ))}
+                              </span>
+                              <span>{selectedVerificationConfidenceLabel}</span>
+                            </strong>
+                          </div>
+                        </div>
+                      </section>
+                    ) : null}
                   </div>
                 </div>
 
@@ -4513,28 +4589,28 @@ export function RawDataView({
             <p>{forecastVerificationBannerState === 'PREPARING' ? t('verificationPreparingHint') : t('verificationQueuedHint')}</p>
           </div>
         ) : null}
-        {isForecastPortfolioVariant && showForecast && showForecastVerification && historicalVerificationNotice ? (
+        {isForecastPortfolioVariant && showForecast && showForecastVerification && showHistoricalVerificationNotice ? (
           <div
-            className={`callout${historicalVerificationNotice.status === 'FAILED' || historicalVerificationNotice.status === 'NOT_PREPARED' ? ' callout-error' : ''}`}
+            className={`callout${showHistoricalVerificationNotice.status === 'FAILED' || showHistoricalVerificationNotice.status === 'NOT_PREPARED' ? ' callout-error' : ''}`}
             role="status"
             aria-live="polite"
           >
-            <strong>{historicalVerificationNotice.status === 'LIMITED_SAMPLE'
+            <strong>{showHistoricalVerificationNotice.status === 'LIMITED_SAMPLE'
               ? t('verificationLimitedSample')
-              : historicalVerificationNotice.status === 'INSUFFICIENT_HISTORY'
+              : showHistoricalVerificationNotice.status === 'INSUFFICIENT_HISTORY'
                 ? t('verificationInsufficientHistory')
-                : historicalVerificationNotice.status === 'FAILED'
+                : showHistoricalVerificationNotice.status === 'FAILED'
                   ? t('verificationFailed')
                   : t('verificationUnavailable')}</strong>
-            <p>{historicalVerificationNotice.status === 'LIMITED_SAMPLE'
+            <p>{showHistoricalVerificationNotice.status === 'LIMITED_SAMPLE'
               ? t('verificationLimitedSampleHint', {
-                  originCount: historicalVerificationNotice.originCount,
-                  minimumOriginCount: historicalVerificationNotice.minimumOriginCount,
+                  originCount: showHistoricalVerificationNotice.originCount,
+                  minimumOriginCount: showHistoricalVerificationNotice.minimumOriginCount,
                 })
-              : historicalVerificationNotice.status === 'INSUFFICIENT_HISTORY'
+              : showHistoricalVerificationNotice.status === 'INSUFFICIENT_HISTORY'
                 ? t('verificationInsufficientHistoryHint')
-                : historicalVerificationNotice.status === 'FAILED'
-                  ? t('verificationFailedHint', { failedOriginCount: historicalVerificationNotice.failedOriginCount })
+                : showHistoricalVerificationNotice.status === 'FAILED'
+                  ? t('verificationFailedHint', { failedOriginCount: showHistoricalVerificationNotice.failedOriginCount })
                   : t('verificationUnavailableHint')}</p>
           </div>
         ) : null}

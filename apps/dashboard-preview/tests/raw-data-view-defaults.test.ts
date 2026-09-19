@@ -873,6 +873,22 @@ test('forecast explanations are collapsed by default and localized in Polish and
   assert.equal(englishMessages.RawDataView.forecastExplanationsShow, 'Show forecast explanations')
 })
 
+test('verification quality presents prepared accuracy, direction, and confidence in both languages', () => {
+  const source = fs.readFileSync(new URL('../components/raw-data-view/index.tsx', import.meta.url), 'utf8')
+  const styles = fs.readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
+  const polishMessages = JSON.parse(fs.readFileSync(new URL('../messages/pl.json', import.meta.url), 'utf8'))
+  const englishMessages = JSON.parse(fs.readFileSync(new URL('../messages/en.json', import.meta.url), 'utf8'))
+
+  assert.match(source, /selectedVerificationQuality\.averageVerificationPercent/)
+  assert.match(source, /selectedVerificationQuality\.directionalAccuracyPercent/)
+  assert.match(source, /verificationConfidenceDots\(selectedVerificationQuality\.confidenceLevel\)/)
+  assert.match(styles, /\.verification-quality-metrics/)
+  assert.equal(polishMessages.RawDataView.averageVerificationLevel, 'Średni poziom sprawdzalności')
+  assert.equal(polishMessages.RawDataView.verificationConfidenceSufficient, 'Wystarczająca')
+  assert.equal(englishMessages.RawDataView.averageVerificationLevel, 'Average verification level')
+  assert.equal(englishMessages.RawDataView.verificationConfidenceSufficient, 'Sufficient')
+})
+
 test('forecast portfolio does not show an uncertainty disclaimer when bands are rendered', () => {
   const source = fs.readFileSync(new URL('../components/raw-data-view/index.tsx', import.meta.url), 'utf8')
 

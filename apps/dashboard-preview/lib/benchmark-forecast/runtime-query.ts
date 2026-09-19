@@ -696,6 +696,14 @@ async function getPersistedForecastVerification(
           successfulOrigins: metric.origins - metric.failedOrigins,
           failedOrigins: metric.failedOrigins,
           coverage: metric.coverage,
+          metrics: {
+            mae: metric.mae,
+            rmse: metric.rmse,
+            mase: metric.mase,
+            smape: metric.smape,
+            directionalAccuracy: metric.directionalAccuracy,
+            bias: metric.bias,
+          },
           records,
         },
       ]
@@ -945,6 +953,7 @@ async function getPersistedRollingDailyForecastVerification(
           failedOrigins: 0,
           pendingOrigins,
           coverage: expectedOrigins > 0 ? successfulOrigins / expectedOrigins : 0,
+          metrics: null,
           records: persistedRecords,
         },
       ]

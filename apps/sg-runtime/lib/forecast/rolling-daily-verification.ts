@@ -22,6 +22,7 @@ import {
   createUnavailableHistoricalVerificationSummary,
   resolveHistoricalVerificationSummary,
 } from '@/lib/forecast/historical-verification-policy'
+import { calculateForecastVerificationMetrics } from '@/lib/forecast/verification-metrics'
 
 const ROLLING_DAILY_METHOD_ID = 'ROLLING_DAILY_POINT_IN_TIME'
 const ROLLING_DAILY_METHOD_VERSION = 'rolling-daily-point-in-time-v1'
@@ -226,7 +227,7 @@ function createPreparedRollingDailyForecastVerificationReaderForScope(
         failedOrigins: 0,
         pendingOrigins,
         coverage: expectedOrigins > 0 ? successfulOrigins / expectedOrigins : 0,
-        metrics: null,
+        metrics: calculateForecastVerificationMetrics(persistedRecords),
         records: persistedRecords,
         failures: [],
       }]
