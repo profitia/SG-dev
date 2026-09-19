@@ -337,6 +337,14 @@ export async function readForecastPreparedVariants(
           cadence: { sourceFrequency: resolvedSourceFrequency, targetCadence },
         }),
       }
+      const fullVerificationHistory = currentBasePayloadByTarget.get(candidate.targetBasis)!.history
+      const fullVerificationHistoryFingerprints = {
+        legacy: buildForecastHistoryFingerprint(fullVerificationHistory),
+        cadence: buildForecastHistoryFingerprint({
+          ...fullVerificationHistory,
+          cadence: { sourceFrequency: resolvedSourceFrequency, targetCadence },
+        }),
+      }
       const fullVerificationCompatibility = createFullVerificationStatisticalCompatibility({
         sourceFrequency: resolvedSourceFrequency,
         targetCadence,
@@ -382,7 +390,7 @@ export async function readForecastPreparedVariants(
       variants.push({
         identity,
         current: stateForCurrentRun(current, currentHistoryFingerprints),
-        historical: stateForHistoricalRun(historical, currentHistoryFingerprints),
+        historical: stateForHistoricalRun(historical, fullVerificationHistoryFingerprints),
         preparedReadAuthority: createPreparedReadAuthority({
           sourceFrequency: resolvedSourceFrequency,
           targetCadence,

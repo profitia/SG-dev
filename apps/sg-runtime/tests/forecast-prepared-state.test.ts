@@ -77,6 +77,16 @@ test('prepared-state binding is exact across semantics, models, versions, and cu
       now,
     }).history,
   )
+  const fullEopHistoricalCadenceFingerprint = buildForecastHistoryFingerprint({
+    ...buildLiveForecastBridgePayloadFromHistory(history.providerSeries.providerSeriesId, history, {
+      targetBasis: 'END_OF_PERIOD',
+      now,
+    }).history,
+    cadence: {
+      sourceFrequency: 'DAILY',
+      targetCadence: 'MONTHLY',
+    },
+  })
   const selectedMonthlyAveragePayload = selectMinimalLawfulCurrentTrainingPayload(
     buildLiveForecastBridgePayloadFromHistory(history.providerSeries.providerSeriesId, history, {
       targetBasis: 'MONTHLY_AVERAGE',
@@ -144,7 +154,11 @@ test('prepared-state binding is exact across semantics, models, versions, and cu
             && where.trainingWindowPolicyId === fullEopCompatibility.trainingWindowPolicyId
             && where.effectiveTrainingPolicyId === fullEopCompatibility.effectiveTrainingPolicyId
           ) {
-            return { status: 'AVAILABLE', historyFingerprint: eopFingerprint, frequency: 'MONTHLY' }
+            return {
+              status: 'AVAILABLE',
+              historyFingerprint: fullEopHistoricalCadenceFingerprint,
+              frequency: 'FORECAST_CADENCE_V1|source=DAILY|target=MONTHLY',
+            }
           }
           if (
             where.targetBasis === 'MONTHLY_AVERAGE'
@@ -152,7 +166,7 @@ test('prepared-state binding is exact across semantics, models, versions, and cu
             && where.trainingWindowPolicyId === fullMonthlyAverageCompatibility.trainingWindowPolicyId
             && where.effectiveTrainingPolicyId === fullMonthlyAverageCompatibility.effectiveTrainingPolicyId
           ) {
-            return { status: 'AVAILABLE', historyFingerprint: selectedMonthlyAverageFingerprint, frequency: 'MONTHLY' }
+            return { status: 'AVAILABLE', historyFingerprint: monthlyAverageFingerprint, frequency: 'MONTHLY' }
           }
           return null
         },
