@@ -52,6 +52,20 @@ test('canonical verification metrics preserve perfect zero-valued comparisons', 
   assert.equal(metrics.directionalAccuracy, 1)
 })
 
+test('directional accuracy compares forecast and actual movement from the origin, not forecast error', () => {
+  const metrics = calculateForecastVerificationMetrics([record({
+    originValue: 100,
+    forecastValue: 110,
+    actualValue: 120,
+    error: -10,
+    absoluteError: 10,
+    delta: -10,
+  })])
+
+  assert.ok(metrics)
+  assert.equal(metrics.directionalAccuracy, 1)
+})
+
 test('canonical verification metrics fail closed for an empty record set', () => {
   assert.equal(calculateForecastVerificationMetrics([]), null)
 })

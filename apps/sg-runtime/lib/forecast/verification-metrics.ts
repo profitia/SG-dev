@@ -38,7 +38,7 @@ export function calculateForecastVerificationMetrics(
     mase: average(maseValues),
     smape: average(smapeValues),
     directionalAccuracy: average(records.map((record) => {
-      const forecastDirection = Math.sign(record.delta)
+      const forecastDirection = Math.sign(record.forecastValue - record.originValue)
       const actualDirection = Math.sign(record.actualValue - record.originValue)
       return forecastDirection === actualDirection ? 1 : 0
     })),
