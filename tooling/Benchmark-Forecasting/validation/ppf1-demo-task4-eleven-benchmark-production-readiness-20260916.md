@@ -76,4 +76,4 @@ The production schema contains the versioned training-policy identity columns, f
 - `STAGE_12_MODIFIED = NO`
 - `STAGE_12_COMPLETION_CLAIMED = NO`
 
-The pre-change Neon restore branch `pre-task-b-production-migration-20260918` (`br-crimson-dust-b2pdkiis`) remains available until its configured expiry and was not deleted. PMOS/PHR aggregate closeout follows this evidence publication; `pending-artifact.json` is never created manually.
+The pre-change Neon restore branch `pre-task-b-production-migration-20260918` (`br-crimson-dust-b2pdkiis`) remains available until its configured expiry and was not deleted. Aggregate PMOS closeout is `CLOSEOUT_COMPLETE`, runtime verification is `PASS`, the pending-artifact slot is clear, and the final PHR bundle is published at commit `586cc9917c8dac964fc7408c31787f2a398bf993`. `pending-artifact.json` was not created manually.

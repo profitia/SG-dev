@@ -174,8 +174,13 @@
     "stage12CompletionClaimed": false
   },
   "governance": {
-    "pmosSave": "PENDING_AGGREGATE_CLOSEOUT",
-    "phrPublication": "PENDING_AGGREGATE_CLOSEOUT",
+    "pmosSave": "SUCCEEDED",
+    "pmosCloseout": "CLOSEOUT_COMPLETE",
+    "pmosRuntimeVerification": "PASS",
+    "phrPublication": "PUBLISHED",
+    "phrPublicationCommit": "586cc9917c8dac964fc7408c31787f2a398bf993",
+    "memorOSPublication": "SUCCEEDED_WITH_DOWNSTREAM_PROCESSING_PENDING",
+    "pendingArtifactSlotFinal": "CLEAR",
     "pendingArtifactCreatedManually": false
   }
 }
