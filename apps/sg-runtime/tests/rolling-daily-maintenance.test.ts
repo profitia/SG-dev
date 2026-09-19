@@ -5,6 +5,10 @@ import '../scripts/load-env'
 
 import { ROLLING_DAILY_TARGET_BASIS } from '../lib/forecast/rolling-daily-policy'
 import {
+  createInMemoryForecastPreparationExecutionAdmission,
+  createNoopForecastPreparationExecutionLedger,
+} from '../lib/forecast/execution-ledger'
+import {
   buildRollingDailyHistoryFingerprint,
   buildRollingDailyTrainingHistoryFingerprints,
   createRollingDailyMaintenanceService,
@@ -27,6 +31,16 @@ import {
 
 process.env.MARKET_DATA_DATABASE_URL = process.env.MARKET_DATA_DATABASE_URL
   ?? 'postgresql://phase21@127.0.0.1:55421/sg_phase_2_1_market_data'
+
+function createTestRollingDailyMaintenanceService(
+  dependencies: Parameters<typeof createRollingDailyMaintenanceService>[0] = {},
+) {
+  return createRollingDailyMaintenanceService({
+    executionAdmission: createInMemoryForecastPreparationExecutionAdmission(),
+    executionLedger: createNoopForecastPreparationExecutionLedger(),
+    ...dependencies,
+  })
+}
 
 function createHistory() {
   return {
@@ -227,7 +241,7 @@ test('rolling daily maintenance persists incremental updates and forwards the la
     },
   }
 
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     loadHistory: async () => createHistory(),
@@ -307,7 +321,7 @@ test('rolling daily maintenance returns NO_OP when the runner reports no delta',
     },
   }
 
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     loadHistory: async () => createHistory(),
@@ -376,7 +390,7 @@ test('rolling daily maintenance bootstraps missing historical artifacts when exp
     },
   }
 
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     loadHistory: async () => createHistory(),
@@ -465,7 +479,7 @@ test('rolling daily incremental maintenance resumes prior bootstrap progress whe
     },
   }
 
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     loadHistory: async () => createHistory(),
@@ -512,7 +526,7 @@ test('rolling daily incremental maintenance does not bootstrap full replay for a
     },
   }
 
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     loadHistory: async () => createHistory(),
@@ -616,7 +630,7 @@ test('rolling daily maintenance requests a calibration-only refresh when mature 
     },
   }
 
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     loadHistory: async () => createHistory(),
@@ -714,7 +728,7 @@ test('rolling daily maintenance records FAILED state when the bridge fails', asy
     },
   }
 
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     loadHistory: async () => createHistory(),
@@ -814,7 +828,7 @@ test('rolling daily maintenance records FAILED state when persistence fails afte
     },
   }
 
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     loadHistory: async () => createHistory(),
@@ -898,7 +912,7 @@ test('rolling daily maintenance marks REBUILD_REQUIRED when a processed historic
     },
   }
 
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     loadHistory: async () => revisedHistory,
@@ -993,7 +1007,7 @@ test('rolling daily maintenance does not false-positive REBUILD_REQUIRED on norm
     },
   }
 
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     loadHistory: async () => createHistory(),
@@ -1119,7 +1133,7 @@ test('rolling daily recent verification prepares one bounded origin per lawful h
       }
     },
   }
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     async loadHistory() {
@@ -1200,7 +1214,7 @@ test('rolling daily maintenance forwards opt-in trace config and preserves persi
   }
 
   try {
-    const service = createRollingDailyMaintenanceService({
+    const service = createTestRollingDailyMaintenanceService({
       repository,
       runner,
       loadHistory: async () => createHistory(),
