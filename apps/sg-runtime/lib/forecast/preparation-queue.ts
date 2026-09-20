@@ -16,7 +16,10 @@ import {
 } from '@/lib/forecast/interactive-preparation'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 import { buildLiveForecastBridgePayloadFromHistory } from '@/lib/forecast/live-market-input'
-import { createForecastProductionOperationsService } from '@/lib/forecast/production-operations'
+import {
+  createForecastProductionOperationsService,
+  type ForecastProductionOperationsResult,
+} from '@/lib/forecast/production-operations'
 import {
   buildRollingDailyHistoryFingerprint,
   loadRollingDailyHistory,
@@ -76,6 +79,29 @@ export type ForecastPreparationIdentitySnapshot = {
   targetBasis: ForecastPreparationJobView['targetBasis']
   current: ForecastPreparationCommandResult
   verification: ForecastPreparationCommandResult
+}
+
+export function resolveTerminalVerificationUnavailability(
+  result: ForecastProductionOperationsResult | void,
+  input: InteractiveForecastIdentity,
+) {
+  if (!result) return null
+  const item = result.results.find((candidate) => (
+    candidate.targetSemantics === input.targetSemantics
+    && candidate.modelId === input.modelId
+  ))
+  const capability = result.after.capabilities.find((candidate) => (
+    candidate.identity.targetSemantics === input.targetSemantics
+    && candidate.identity.modelId === input.modelId
+  ))
+  if (
+    item
+    && ['READY', 'REUSED'].includes(item.historical)
+    && capability?.verificationOriginCount === 0
+  ) {
+    return 'Historical Verification completed with zero lawful comparisons for the requested horizons because the available history is insufficient.'
+  }
+  return null
 }
 
 export type ClaimedForecastPreparationJob = ForecastPreparationJob & {
@@ -560,7 +586,24 @@ export function createForecastPreparationQueueService(options: {
     if (updated.count !== 1) throw new Error(`Forecast preparation failure handling lost its lease for ${job.jobKey}.`)
   }
 
-  return { enqueue, snapshot, claimNext, heartbeat, complete, continueAfterSlice, failOrRetry }
+  async function completeUnavailable(job: ClaimedForecastPreparationJob, reason: string) {
+    const updated = await prisma.forecastPreparationJob.updateMany({
+      where: { id: job.id, status: 'RUNNING', leaseOwnerToken: job.leaseOwnerToken, leaseVersion: job.leaseVersion },
+      data: {
+        status: 'FAILED',
+        sliceCount: { increment: 1 },
+        completedAt: new Date(),
+        leaseOwnerToken: null,
+        leaseExpiresAt: null,
+        lastHeartbeatAt: null,
+        failureCode: 'INSUFFICIENT_VERIFICATION_HISTORY',
+        failureReason: reason,
+      },
+    })
+    if (updated.count !== 1) throw new Error(`Forecast preparation terminal-unavailable handling lost its lease for ${job.jobKey}.`)
+  }
+
+  return { enqueue, snapshot, claimNext, heartbeat, complete, completeUnavailable, continueAfterSlice, failOrRetry }
 }
 
 export type ForecastPreparationQueueService = ReturnType<typeof createForecastPreparationQueueService>
@@ -570,7 +613,7 @@ export function createForecastPreparationWorker(options: {
   workerId?: string
   heartbeatMs?: number
   prepareCurrent?: typeof prepareInteractiveCurrentForecast
-  prepareVerificationSlice?: (job: ClaimedForecastPreparationJob) => Promise<void>
+  prepareVerificationSlice?: (job: ClaimedForecastPreparationJob) => Promise<ForecastProductionOperationsResult | void>
   resolveReadiness?: typeof resolveInteractiveForecastCapability
 } = {}) {
   const queue = options.queue ?? createForecastPreparationQueueService()
@@ -590,6 +633,7 @@ export function createForecastPreparationWorker(options: {
     if (result.status === 'FAILED') {
       throw new Error(result.results[0]?.error ?? 'Historical Verification preparation failed.')
     }
+    return result
   })
   const resolveReadiness = options.resolveReadiness ?? resolveInteractiveForecastCapability
 
@@ -613,11 +657,16 @@ export function createForecastPreparationWorker(options: {
         return
       }
 
-      await prepareVerificationSlice(job)
+      const sliceResult = await prepareVerificationSlice(job)
       const readiness = await resolveReadiness(input)
       if (readiness.fullVerificationReadiness === 'READY') {
         await queue.complete(job)
       } else {
+        const terminalReason = resolveTerminalVerificationUnavailability(sliceResult, input)
+        if (terminalReason) {
+          await queue.completeUnavailable(job, terminalReason)
+          return
+        }
         await queue.continueAfterSlice(job, {
           fullVerificationReadiness: readiness.fullVerificationReadiness,
           blockers: readiness.readiness.blockers,
