@@ -14,7 +14,10 @@ import {
   type ClaimedForecastPreparationJob,
   type ForecastPreparationQueueService,
 } from '@/lib/forecast/preparation-queue'
-import { currentForecastRequestDiagnostics } from '@/lib/forecast/request-diagnostics'
+import {
+  currentForecastRequestDiagnostics,
+  resolveForecastOperationRequestId,
+} from '@/lib/forecast/request-diagnostics'
 
 test('a succeeded queue record is reopened only when its exact artifact remains missing', () => {
   assert.equal(shouldRequeueSucceededPreparationJob({
@@ -230,6 +233,7 @@ test('worker preserves the durable user correlation in compute diagnostics', asy
     workerId: 'worker-correlation-test',
     prepareCurrent: async (input) => {
       observedRequestId = currentForecastRequestDiagnostics()?.requestId ?? null
+      assert.equal(resolveForecastOperationRequestId(() => 'unexpected-fallback'), 'ppf1-e2e-latest')
       return {
         ...input,
         operation: 'CURRENT_FORECAST',
