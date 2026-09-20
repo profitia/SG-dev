@@ -8,6 +8,7 @@ import {
   readPreparedCurrentForecastThroughDashboard,
   requestExplicitCurrentForecastPreparationThroughDashboard,
   resolveForecastCurrentDisplayState,
+  resolveForecastCurrentObservedProgressState,
   resolveForecastCurrentUiState,
   resolveSelectedProgressiveVariant,
   shouldReadCurrentForecast,
@@ -466,7 +467,7 @@ test('stale point-in-time current result falls back to not-prepared UI state', (
   assert.equal(state, 'NOT_PREPARED')
 })
 
-test('progressive snapshot keeps lawful cold misses out of unsupported state', () => {
+test('progressive snapshot is observational and does not override owner-derived readiness state', () => {
   const variant = resolveSelectedProgressiveVariant({
     seriesId: 'wocaes0280',
     variants: [{
@@ -490,8 +491,10 @@ test('progressive snapshot keeps lawful cold misses out of unsupported state', (
     targetBasis: 'END_OF_PERIOD',
   })
 
-  assert.equal(resolveForecastCurrentDisplayState('NOT_PREPARED', variant), 'QUEUED')
-  assert.equal(resolveForecastCurrentDisplayState('UNSUPPORTED', variant), 'QUEUED')
+  assert.equal(resolveForecastCurrentDisplayState('NOT_PREPARED', variant), 'NOT_PREPARED')
+  assert.equal(resolveForecastCurrentDisplayState('UNSUPPORTED', variant), 'UNSUPPORTED')
+  assert.equal(resolveForecastCurrentObservedProgressState('NOT_PREPARED', variant), 'QUEUED')
+  assert.equal(resolveForecastCurrentObservedProgressState('UNSUPPORTED', variant), null)
 })
 
 test('dashboard progressive preparation route forwards exact model and target identity', async () => {
@@ -554,11 +557,17 @@ test('dashboard current read forwards exact model and target identity', async ()
     targetBasis: 'END_OF_PERIOD',
   })
 
+  if (!capturedUrl) {
+    throw new Error('Expected prepared current request URL.')
+  }
+
+  const resolvedPreparedUrl = new URL(String(capturedUrl))
+
   assert.equal(payload.modelId, 'ets')
   assert.equal(payload.targetBasis, 'END_OF_PERIOD')
-  assert.equal(capturedUrl?.searchParams.get('seriesId'), 'wocaes0280')
-  assert.equal(capturedUrl?.searchParams.get('model'), 'ets')
-  assert.equal(capturedUrl?.searchParams.get('targetBasis'), 'END_OF_PERIOD')
+  assert.equal(resolvedPreparedUrl.searchParams.get('seriesId'), 'wocaes0280')
+  assert.equal(resolvedPreparedUrl.searchParams.get('model'), 'ets')
+  assert.equal(resolvedPreparedUrl.searchParams.get('targetBasis'), 'END_OF_PERIOD')
 })
 
 test('dashboard current capability read forwards exact model and target identity', async () => {
@@ -588,11 +597,17 @@ test('dashboard current capability read forwards exact model and target identity
     targetBasis: 'END_OF_PERIOD',
   })
 
+  if (!capturedUrl) {
+    throw new Error('Expected capability request URL.')
+  }
+
+  const resolvedCapabilityUrl = new URL(String(capturedUrl))
+
   assert.equal(payload.modelId, 'ets')
   assert.equal(payload.status, 'PREPARATION_REQUIRED')
-  assert.equal(capturedUrl?.searchParams.get('seriesId'), 'wocaes0280')
-  assert.equal(capturedUrl?.searchParams.get('modelId'), 'ets')
-  assert.equal(capturedUrl?.searchParams.get('targetBasis'), 'END_OF_PERIOD')
+  assert.equal(resolvedCapabilityUrl.searchParams.get('seriesId'), 'wocaes0280')
+  assert.equal(resolvedCapabilityUrl.searchParams.get('modelId'), 'ets')
+  assert.equal(resolvedCapabilityUrl.searchParams.get('targetBasis'), 'END_OF_PERIOD')
 })
 
 test('explicit current preparation performs exactly one prepare action and one prepared reread for a lawful miss', async () => {

@@ -1,0 +1,126 @@
+{
+  "generatedAt": "2026-09-11T05:05:27.000Z",
+  "taskId": "ppf-1-stage-10-calibration-band-eligibility-completion-20260911",
+  "status": "PASS",
+  "publication": {
+    "sourceBranch": "ppf1/stage10-calibration-band-eligibility-20260911",
+    "sourceSha": "043505e0bdfa548cfaff64746750091c099c65ba",
+    "sourceRemote": "origin/ppf1/stage10-calibration-band-eligibility-20260911",
+    "evidenceWorktreeDetachedFrom": "043505e0bdfa548cfaff64746750091c099c65ba",
+    "cleanWorktreeRequired": true
+  },
+  "scope": {
+    "owner": "apps/sg-runtime",
+    "surface": "rolling-daily current calibration band eligibility",
+    "methodologyChanged": false,
+    "stage11Touched": false,
+    "changedFiles": [
+      "apps/sg-runtime/lib/forecast/rolling-daily-production-forecast.ts",
+      "apps/sg-runtime/tests/forecast-capability-resolver.test.ts",
+      "apps/sg-runtime/tests/forecast-identity.test.ts",
+      "apps/sg-runtime/tests/rolling-daily-production-forecast.test.ts"
+    ]
+  },
+  "implementation": {
+    "summary": "Current rolling-daily production serving now fail-closes coarse persisted calibration groups that cannot prove exact compatibility for Current Forecast bands. Stage 10 acceptance proof was completed with explicit coverage for methodId isolation, 29/30/31 sample boundaries, compatible-only residual counting, and large incompatible calibration inventories.",
+    "currentBandServingOwner": "apps/sg-runtime/lib/forecast/rolling-daily-production-forecast.ts",
+    "exactCompatibilityPredicate": "apps/sg-runtime/lib/forecast/identity.ts#canResidualCalibrateCurrent",
+    "productionDecision": "EXACT_CURRENT_POLICY_WITHOUT_PROVEN_COMPATIBILITY_RETURNS_NO_ELIGIBLE_CALIBRATION_GROUPS",
+    "mathematicsChanged": false,
+    "minimumCalibrationSamples": 30
+  },
+  "validationBasis": {
+    "focusedStage10ProofSuites": {
+      "command": "cd '/private/tmp/.tmp-ppf1-stage10-calibration-band-eligibility-20260910/apps/sg-runtime' && NODE_PATH='/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev-main/.tmp-sg-runtime-point-in-time-stale-20260905/apps/sg-runtime/node_modules' '/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev-main/.tmp-sg-runtime-point-in-time-stale-20260905/apps/sg-runtime/node_modules/.bin/tsx' --test tests/forecast-identity.test.ts tests/forecast-capability-resolver.test.ts tests/rolling-daily-production-forecast.test.ts",
+      "tests": 42,
+      "pass": 42,
+      "fail": 0,
+      "result": "PASS"
+    },
+    "rollingDailySubstrateNonRegression": {
+      "command": "cd '/private/tmp/.tmp-ppf1-stage10-calibration-band-eligibility-20260910/apps/sg-runtime' && PRISMA_QUERY_ENGINE_LIBRARY='/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev-main/apps/sg-runtime/generated/market-data-client/libquery_engine-darwin-arm64.dylib.node' FORECASTING_PYTHON_BIN='/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev-main/.tmp-sg-runtime-point-in-time-stale-20260905/tooling/Benchmark-Forecasting/.venv/bin/python' NODE_PATH='/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev-main/.tmp-sg-runtime-point-in-time-stale-20260905/apps/sg-runtime/node_modules' '/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev-main/.tmp-sg-runtime-point-in-time-stale-20260905/apps/sg-runtime/node_modules/.bin/tsx' --test tests/forecast-calibration-lineage.test.ts tests/rolling-daily-maintenance.test.ts tests/rolling-daily-historical-admission.test.ts tests/rolling-daily-verification.test.ts tests/rolling-daily-production-operations.test.ts tests/rolling-daily-current-forecast-snapshot.test.ts tests/forecast-production-operations.test.ts",
+      "tests": 37,
+      "pass": 37,
+      "fail": 0,
+      "result": "PASS"
+    },
+    "crossInstanceCorrectiveRegression": {
+      "command": "cd '/private/tmp/.tmp-ppf1-stage10-calibration-band-eligibility-20260910/apps/sg-runtime' && PRISMA_QUERY_ENGINE_LIBRARY='/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev-main/apps/sg-runtime/generated/market-data-client/libquery_engine-darwin-arm64.dylib.node' FORECASTING_PYTHON_BIN='/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev-main/.tmp-sg-runtime-point-in-time-stale-20260905/tooling/Benchmark-Forecasting/.venv/bin/python' NODE_PATH='/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev-main/.tmp-sg-runtime-point-in-time-stale-20260905/apps/sg-runtime/node_modules' '/Users/tomaszuscinski/Documents/Visual Code Studio/SG-dev-main/.tmp-sg-runtime-point-in-time-stale-20260905/apps/sg-runtime/node_modules/.bin/tsx' --test tests/forecast-stage3-cross-instance.test.ts",
+      "tests": 36,
+      "pass": 36,
+      "fail": 0,
+      "result": "PASS",
+      "harnessNote": "Worker subprocesses required a local node_modules symlink in the isolated worktree so tsx could resolve from the worker cwd."
+    },
+    "typecheckClassification": {
+      "command": "cd '/private/tmp/.tmp-ppf1-stage10-calibration-band-eligibility-20260910/apps/sg-runtime' && npm run typecheck",
+      "result": "BASELINE_FAIL_UNRELATED",
+      "blocking": false,
+      "unrelatedErrors": [
+        "lib/forecast/prepared-state.ts null targetCadence typing",
+        "lib/forecast/rolling-daily-verification.ts maintenance state string/date typing",
+        "lib/forecast/service.ts live input and bridge typing",
+        "scripts/run-forecast-stage7-evidence.ts snapshot/type narrowing",
+        "scripts/run-forecast-stage8-bounded-historical.ts snapshot contract typing"
+      ]
+    }
+  },
+  "gates": {
+    "STAGE10_IMPLEMENTATION_DIRECTION": "PASS",
+    "STAGE10_ADDITIONAL_SOURCE_CHANGE_REQUIRED": "NO",
+    "UNPROVEN_OR_INCOMPATIBLE_CALIBRATION_NEVER_SERVES_BANDS": "PASS",
+    "EXACT_IDENTITY_GATE": "PASS",
+    "METHOD_ID_ISOLATION_GATE": "PASS",
+    "METHOD_VERSION_ISOLATION_GATE": "PASS",
+    "MODEL_ISOLATION_GATE": "PASS",
+    "TARGET_SEMANTICS_ISOLATION_GATE": "PASS",
+    "HORIZON_ISOLATION_GATE": "PASS",
+    "SOURCE_REVISION_FAIL_CLOSED_GATE": "PASS",
+    "MATURED_ONLY_RESIDUAL_GATE": "PASS",
+    "MIN_CALIBRATION_SAMPLES_30_GATE": "PASS",
+    "SAMPLE_BOUNDARY_29_30_31_GATE": "PASS",
+    "COMPATIBLE_ONLY_SAMPLE_COUNT_GATE": "PASS",
+    "CURRENT_WITHOUT_CALIBRATION_GATE": "PASS",
+    "INLINE_HISTORICAL_CALIBRATION_REBUILD_GATE": "PASS",
+    "INCREMENTAL_REUSE_GATE": "PASS",
+    "CROSS_INSTANCE_NON_DUPLICATION_GATE": "PASS",
+    "STAGE11_UNTOUCHED_GATE": "PASS",
+    "OVERALL_STAGE10_ACCEPTANCE": "PASS"
+  },
+  "proofPoints": {
+    "failClosedServing": {
+      "result": "PASS",
+      "evidence": "rolling daily production forecast maps current bridge output into the ETAP 10 contract"
+    },
+    "largeIncompatibleInventory": {
+      "result": "PASS",
+      "evidence": "rolling daily production forecast ignores large incompatible calibration inventories and still serves the base forecast without bands"
+    },
+    "exactCompatibilityPredicate": {
+      "result": "PASS",
+      "evidence": "calibration compatibility is exact-contract based rather than scope-based"
+    },
+    "sampleThresholds": {
+      "result": "PASS",
+      "evidence": [
+        "prediction band readiness depends on compatible residual count rather than total verification volume",
+        "keeps Current Forecast eligibility independent from verification and band sample thresholds"
+      ]
+    },
+    "crossInstancePreservation": {
+      "result": "PASS",
+      "evidence": "db-backed rolling daily current elects one authoritative owner across service instances and reuses the exact prepared snapshot"
+    }
+  },
+  "notes": {
+    "providerAssertionClassification": "The earlier ETAP 10 provider mismatch was confirmed as a stale test expectation issue, not a Stage 10 calibration-owner defect.",
+    "stage7PerformanceEvidenceRerun": "NOT_RUN",
+    "reason": "This completion task validated Stage 10 behavior and adjacent non-regression through executable suites, but did not rerun the standalone Stage 7 profiler evidence pipeline."
+  },
+  "finalDecision": {
+    "status": "PASS",
+    "summary": "The published Stage 10 source SHA closes the current-band eligibility gap by failing closed on unproven calibration authority, preserves exact compatibility guardrails and rolling-daily reuse semantics, leaves Stage 11 untouched, and passes the Stage 10 acceptance matrix with unrelated baseline typecheck failures classified separately.",
+    "remoteSourceBound": true,
+    "readyForPublication": true
+  }
+}

@@ -24,3 +24,6 @@ class ForecastModel(ABC):
     @abstractmethod
     def forecast_with_metadata(self, history: Sequence[Observation], horizon_steps: int) -> ModelForecast:
         raise NotImplementedError
+
+    def forecast_with_uncertainty(self, history: Sequence[Observation], horizon_steps: int) -> ModelForecast:
+        return self.forecast_with_metadata(history, horizon_steps)

@@ -11,7 +11,9 @@ import {
 import { createRollingDailyProductionOperationsService } from '@/lib/forecast/rolling-daily-production-operations'
 import {
   resolveBenchmarkCurrentForecast,
+  resolveBenchmarkRecentForecastVerification,
   resolveBenchmarkForecastVerification,
+  readPreparedBenchmarkRecentForecastVerification,
 } from '@/lib/forecast/service'
 
 export type ProgressiveForecastPreparationRequest = {
@@ -47,6 +49,8 @@ export type ProgressiveForecastPreparationSnapshot = {
   verificationReadyCount: number
 }
 
+const POINT_IN_TIME_VERIFICATION_MAX_ORIGINS_PER_RUN = 1
+
 type QueueItemKind = 'CURRENT' | 'VERIFICATION'
 
 type QueueItem = {
@@ -78,6 +82,7 @@ type ProgressiveForecastPreparationDependencies = {
   prepareMonthlyCurrent: typeof resolveBenchmarkCurrentForecast
   prepareMonthlyHistorical: typeof resolveBenchmarkForecastVerification
   runRollingDaily: ReturnType<typeof createRollingDailyProductionOperationsService>['run']
+  readPreparedRecentVerification: typeof readPreparedBenchmarkRecentForecastVerification
 }
 
 const TARGET_BASIS_BY_SEMANTICS = {
@@ -99,6 +104,7 @@ function isCurrentPreparationEligible(capability: ForecastVariantCapability) {
 
 function isVerificationPreparationEligible(capability: ForecastVariantCapability) {
   return isCurrentPreparationEligible(capability)
+    && capability.currentPreparedState === 'READY'
 }
 
 function buildTargetPriority(preferredTargetBasis: ForecastTargetBasis) {
@@ -123,13 +129,24 @@ function compareQueueItems(
   preferredModelId: UserFacingForecastModelId,
   preferredTargetBasis: ForecastTargetBasis,
 ) {
-  if (left.kind !== right.kind) {
-    return left.kind === 'CURRENT' ? -1 : 1
-  }
-
   const preferredTargetSemantics = preferredTargetBasis === 'POINT_IN_TIME'
     ? 'ROLLING_DAILY_POINT_IN_TIME'
     : preferredTargetBasis
+
+  const resolvePriorityBucket = (item: QueueItem) => {
+    const isExactPreferred = item.modelId === preferredModelId && item.targetSemantics === preferredTargetSemantics
+    if (isExactPreferred) {
+      return item.kind === 'CURRENT' ? 0 : 1
+    }
+    return item.kind === 'CURRENT' ? 2 : 3
+  }
+
+  const leftBucket = resolvePriorityBucket(left)
+  const rightBucket = resolvePriorityBucket(right)
+  if (leftBucket !== rightBucket) {
+    return leftBucket - rightBucket
+  }
+
   const leftIsExactPreferred = left.modelId === preferredModelId && left.targetSemantics === preferredTargetSemantics
   const rightIsExactPreferred = right.modelId === preferredModelId && right.targetSemantics === preferredTargetSemantics
   if (leftIsExactPreferred !== rightIsExactPreferred) {
@@ -149,10 +166,56 @@ function compareQueueItems(
   return leftModelIndex - rightModelIndex
 }
 
-function buildQueuedItems(
+async function readRecentVerificationPreparedState(
+  dependencies: ProgressiveForecastPreparationDependencies,
+  capability: ForecastVariantCapability,
+): Promise<ForecastVariantCapability['historicalPreparedState']> {
+  if (!isVerificationPreparationEligible(capability)) {
+    return capability.historicalPreparedState
+  }
+
+  const targetBasis = TARGET_BASIS_BY_SEMANTICS[capability.identity.targetSemantics]
+  const result = await dependencies.readPreparedRecentVerification({
+    seriesId: capability.identity.seriesId,
+    modelId: capability.identity.modelId,
+    targetBasis,
+    ...(capability.sourceFrequency ? { sourceFrequency: capability.sourceFrequency } : {}),
+    ...(capability.targetCadence ? { targetCadence: capability.targetCadence } : {}),
+    ...(capability.preparedReadAuthority ? {
+      preparedReadAuthority: {
+        seriesId: capability.identity.seriesId,
+        modelId: capability.identity.modelId,
+        targetBasis,
+        sourceFrequency: capability.preparedReadAuthority.sourceFrequency,
+        targetCadence: capability.preparedReadAuthority.targetCadence,
+        expectedHistoryFingerprint: capability.preparedReadAuthority.expectedHistoryFingerprint,
+      },
+    } : {}),
+  })
+
+  return result.status === 'AVAILABLE' ? 'READY' : capability.historicalPreparedState === 'STALE' ? 'STALE' : 'NOT_PREPARED'
+}
+
+async function resolveRecentVerificationPreparedStates(
+  dependencies: ProgressiveForecastPreparationDependencies,
+  resolution: ForecastCapabilityResolution,
+) {
+  const states = new Map<string, ForecastVariantCapability['historicalPreparedState']>()
+
+  await Promise.all(resolution.capabilities.map(async (capability) => {
+    const verificationKey = toVariantKey('VERIFICATION', capability.identity.targetSemantics, capability.identity.modelId)
+    states.set(verificationKey, await readRecentVerificationPreparedState(dependencies, capability))
+  }))
+
+  return states
+}
+
+async function buildQueuedItems(
+  dependencies: ProgressiveForecastPreparationDependencies,
   resolution: ForecastCapabilityResolution,
   state: SeriesState,
-): QueueItem[] {
+): Promise<QueueItem[]> {
+  const recentVerificationStates = await resolveRecentVerificationPreparedStates(dependencies, resolution)
   const items: QueueItem[] = []
 
   for (const capability of resolution.capabilities) {
@@ -176,7 +239,7 @@ function buildQueuedItems(
     }
 
     if (
-      capability.historicalPreparedState !== 'READY'
+      recentVerificationStates.get(verificationKey) !== 'READY'
       && isVerificationPreparationEligible(capability)
       && !state.failedReasons.has(verificationKey)
     ) {
@@ -201,6 +264,7 @@ function resolveUnsupportedReason(capability: ForecastVariantCapability) {
 function buildVariantSnapshot(
   capability: ForecastVariantCapability,
   state: SeriesState,
+  recentVerificationPreparedState: ForecastVariantCapability['historicalPreparedState'],
 ): ProgressiveForecastVariantSnapshot {
   const targetBasis = TARGET_BASIS_BY_SEMANTICS[capability.identity.targetSemantics]
   const currentKey = toVariantKey('CURRENT', capability.identity.targetSemantics, capability.identity.modelId)
@@ -219,7 +283,7 @@ function buildVariantSnapshot(
             ? 'QUEUED'
             : 'UNSUPPORTED'
 
-  const verificationState: ProgressiveForecastPreparationState = capability.historicalPreparedState === 'READY'
+  const verificationState: ProgressiveForecastPreparationState = recentVerificationPreparedState === 'READY'
     ? 'READY'
     : state.failedReasons.has(verificationKey)
       ? 'FAILED'
@@ -254,8 +318,13 @@ function buildVariantSnapshot(
 function buildSnapshot(
   resolution: ForecastCapabilityResolution,
   state: SeriesState,
+  recentVerificationStates: Map<string, ForecastVariantCapability['historicalPreparedState']>,
 ): ProgressiveForecastPreparationSnapshot {
-  const variants = resolution.capabilities.map((capability) => buildVariantSnapshot(capability, state))
+  const variants = resolution.capabilities.map((capability) => buildVariantSnapshot(
+    capability,
+    state,
+    recentVerificationStates.get(toVariantKey('VERIFICATION', capability.identity.targetSemantics, capability.identity.modelId)) ?? capability.historicalPreparedState,
+  ))
   const firstReadyCurrent = variants.find((variant) => variant.currentState === 'READY')
 
   return {
@@ -307,8 +376,9 @@ export function createProgressiveForecastPreparationService(
   const resolvedDependencies: ProgressiveForecastPreparationDependencies = {
     resolveCapabilities: dependencies.resolveCapabilities ?? resolveForecastCapabilitiesBySeriesId,
     prepareMonthlyCurrent: dependencies.prepareMonthlyCurrent ?? resolveBenchmarkCurrentForecast,
-    prepareMonthlyHistorical: dependencies.prepareMonthlyHistorical ?? resolveBenchmarkForecastVerification,
+    prepareMonthlyHistorical: dependencies.prepareMonthlyHistorical ?? resolveBenchmarkRecentForecastVerification,
     runRollingDaily: dependencies.runRollingDaily ?? ((request) => rollingDaily.run(request)),
+    readPreparedRecentVerification: dependencies.readPreparedRecentVerification ?? readPreparedBenchmarkRecentForecastVerification,
   }
 
   const seriesStates = new Map<string, SeriesState>()
@@ -331,9 +401,9 @@ export function createProgressiveForecastPreparationService(
     }
   }
 
-  function reconcileQueuedItems(state: SeriesState, resolution: ForecastCapabilityResolution) {
+  async function reconcileQueuedItems(state: SeriesState, resolution: ForecastCapabilityResolution) {
     const activeItemKey = state.activeItemKey
-    const rebuiltQueue = buildQueuedItems(resolution, state)
+    const rebuiltQueue = await buildQueuedItems(resolvedDependencies, resolution, state)
 
     state.queuedItems = activeItemKey
       ? [
@@ -398,7 +468,7 @@ export function createProgressiveForecastPreparationService(
     }
 
     const updatedResolution = await resolvedDependencies.resolveCapabilities(seriesId)
-    state.queuedItems = buildQueuedItems(updatedResolution, state).filter((queuedItem) => queuedItem.key !== item.key)
+    state.queuedItems = (await buildQueuedItems(resolvedDependencies, updatedResolution, state)).filter((queuedItem) => queuedItem.key !== item.key)
     state.activeItemKey = null
   }
 
@@ -468,6 +538,8 @@ export function createProgressiveForecastPreparationService(
       const result = await resolvedDependencies.runRollingDaily({
         seriesId: item.seriesId,
         modelIds: [item.modelId],
+        prepareHistorical: item.kind === 'VERIFICATION',
+        maxOriginsPerRun: item.kind === 'VERIFICATION' ? POINT_IN_TIME_VERIFICATION_MAX_ORIGINS_PER_RUN : undefined,
       })
       const modelResult = result.results.find((candidate) => candidate.modelId === item.modelId)
       const failed = result.status === 'FAILED'
@@ -509,21 +581,25 @@ export function createProgressiveForecastPreparationService(
       let resolution = await resolvedDependencies.resolveCapabilities(request.seriesId)
       const hadExistingState = seriesStates.has(request.seriesId)
       const state = getSeriesState(request.seriesId, request)
-      reconcileQueuedItems(state, resolution)
+      await reconcileQueuedItems(state, resolution)
 
       if (!drainPromise && hasQueuedWork()) {
         if (hadExistingState && !hasActiveItem()) {
           const progressedInline = await runNextCandidateInline()
           if (progressedInline) {
             resolution = await resolvedDependencies.resolveCapabilities(request.seriesId)
-            reconcileQueuedItems(state, resolution)
+            await reconcileQueuedItems(state, resolution)
           }
         } else {
           ensureDrainRunning()
         }
       }
 
-      return buildSnapshot(resolution, state)
+      return buildSnapshot(
+        resolution,
+        state,
+        await resolveRecentVerificationPreparedStates(resolvedDependencies, resolution),
+      )
     },
   }
 }

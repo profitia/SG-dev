@@ -23,6 +23,8 @@ export async function GET(request: NextRequest) {
   const seriesId = request.nextUrl.searchParams.get('seriesId')?.trim() ?? ''
   const model = request.nextUrl.searchParams.get('model')?.trim() ?? ''
   const targetBasis = request.nextUrl.searchParams.get('targetBasis')?.trim() ?? ''
+  const sourceFrequency = request.nextUrl.searchParams.get('sourceFrequency')?.trim() ?? ''
+  const targetCadence = request.nextUrl.searchParams.get('targetCadence')?.trim() ?? ''
 
   if (!seriesId) {
     return NextResponse.json({ error: 'seriesId is required.' }, { status: 400 })
@@ -36,6 +38,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: `targetBasis must be one of: ${FORECAST_TARGET_BASES.join(', ')}` }, { status: 400 })
   }
 
+  if (Boolean(sourceFrequency) !== Boolean(targetCadence)) {
+    return NextResponse.json({ error: 'sourceFrequency and targetCadence must be provided together.' }, { status: 400 })
+  }
+
   const normalizedTargetBasis = targetBasis && isForecastTargetBasis(targetBasis)
     ? targetBasis
     : DEFAULT_FORECAST_TARGET_BASIS
@@ -45,6 +51,7 @@ export async function GET(request: NextRequest) {
       seriesId,
       model,
       normalizedTargetBasis,
+      sourceFrequency && targetCadence ? { sourceFrequency, targetCadence } : undefined,
     )
     return NextResponse.json(payload)
   } catch (error) {

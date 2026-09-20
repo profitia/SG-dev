@@ -177,6 +177,7 @@ type VerificationDisplayRecord = {
   forecastDate: string
   forecastOrigin: string
   actualObservedAt: string | null
+  originValue: number
   actualValue: number
   forecastValue: number
   delta: number | null
@@ -288,15 +289,20 @@ function buildCurrentForecastSeries(
   locale: TimeSeriesViewerLocale,
   model: ForecastPortfolioModelId,
   result: BenchmarkForecastCurrentAvailableResult,
-): TimeSeriesViewerSeries {
-  const label = locale === 'pl' ? 'Prognoza' : 'Forecast'
+): TimeSeriesViewerSeries[] {
+  const centralLabel = locale === 'pl' ? 'Prognoza' : 'Forecast'
+  const upperLabel = locale === 'pl' ? 'Górna granica prognozy' : 'Forecast Upper Bound'
+  const lowerLabel = locale === 'pl' ? 'Dolna granica prognozy' : 'Forecast Lower Bound'
+  const preparedPoints = sortCurrentForecastPoints(result.currentForecast)
+  const centralPoints = preparedPoints.map((point, index): TimeSeriesViewerPoint => {
+    const band = point.metadata?.uncertaintyBand
+    const bandAvailable = band?.status === 'AVAILABLE'
+      && band.lower !== null
+      && band.upper !== null
+      && Number.isFinite(band.lower)
+      && Number.isFinite(band.upper)
 
-  return {
-    id: `forecast-central-${model}`,
-    kind: 'forecast-central',
-    label,
-    lineStyle: 'dashed',
-    points: sortCurrentForecastPoints(result.currentForecast).map((point, index): TimeSeriesViewerPoint => ({
+    return {
       key: `forecast-central-${model}-${point.horizon}`,
       date: toMonthEndDisplayDate(point.forecastDate),
       value: point.forecastValue,
@@ -307,7 +313,7 @@ function buildCurrentForecastSeries(
         locale,
         componentName: basePayload.title,
         date: point.forecastDate,
-        primarySeriesLabel: label,
+        primarySeriesLabel: centralLabel,
         primaryValue: point.forecastValue,
         rows: [
           { label: locale === 'pl' ? 'Model' : 'Model', value: modelLabel(locale, model) },
@@ -315,9 +321,77 @@ function buildCurrentForecastSeries(
           { label: locale === 'pl' ? 'Horyzont' : 'Horizon', value: point.horizon },
         ],
       }),
-      detailModel: toDetailModel(basePayload, point.forecastDate, point.forecastValue, 'forecast-central'),
-    })),
+      detailModel: toDetailModel(basePayload, point.forecastDate, point.forecastValue, 'forecast-central', {
+        forecastLower: bandAvailable ? band.lower : null,
+        forecastUpper: bandAvailable ? band.upper : null,
+      }),
+    }
+  })
+
+  const buildBandPoints = (
+    kind: 'forecast-upper' | 'forecast-lower',
+    label: string,
+    selectValue: (point: ForecastCurrentPoint) => number | null,
+  ) => preparedPoints.map((point): TimeSeriesViewerPoint => ({
+    key: `${kind}-${model}-${point.horizon}`,
+    date: toMonthEndDisplayDate(point.forecastDate),
+    value: selectValue(point),
+    diff: null,
+    recordId: `forecast-current-${model}-${point.horizon}`,
+    anchor: false,
+    tooltipModel: toTooltipModel({
+      locale,
+      componentName: basePayload.title,
+      date: point.forecastDate,
+      primarySeriesLabel: label,
+      primaryValue: selectValue(point),
+      rows: [
+        { label: locale === 'pl' ? 'Model' : 'Model', value: modelLabel(locale, model) },
+        { label: locale === 'pl' ? 'Baza celu' : 'Target basis', value: targetBasisLabel(locale, result.targetBasis) },
+        { label: locale === 'pl' ? 'Horyzont' : 'Horizon', value: point.horizon },
+      ],
+    }),
+    detailModel: toDetailModel(basePayload, point.forecastDate, selectValue(point), kind),
+  }))
+
+  const lawfulBandValue = (point: ForecastCurrentPoint, edge: 'lower' | 'upper') => {
+    const band = point.metadata?.uncertaintyBand
+    const value = band?.status === 'AVAILABLE' ? band[edge] : null
+    return value !== null && Number.isFinite(value) ? value : null
   }
+  const upperPoints = buildBandPoints('forecast-upper', upperLabel, (point) => lawfulBandValue(point, 'upper'))
+  const lowerPoints = buildBandPoints('forecast-lower', lowerLabel, (point) => lawfulBandValue(point, 'lower'))
+
+  const series: TimeSeriesViewerSeries[] = [{
+    id: `forecast-central-${model}`,
+    kind: 'forecast-central',
+    label: centralLabel,
+    lineStyle: 'dashed',
+    points: centralPoints,
+  }]
+
+  if (upperPoints.some((point) => point.value !== null) && lowerPoints.some((point) => point.value !== null)) {
+    series.push(
+      {
+        id: `forecast-upper-${model}`,
+        kind: 'forecast-upper',
+        label: upperLabel,
+        lineStyle: 'dashed',
+        points: upperPoints,
+        segments: buildNonNullSegments(upperPoints),
+      },
+      {
+        id: `forecast-lower-${model}`,
+        kind: 'forecast-lower',
+        label: lowerLabel,
+        lineStyle: 'dashed',
+        points: lowerPoints,
+        segments: buildNonNullSegments(lowerPoints),
+      },
+    )
+  }
+
+  return series
 }
 
 function buildPointInTimeCurrentForecastSeries(
@@ -465,6 +539,7 @@ function collectVerificationDisplayRecordsForTargetBasis(
         forecastDate: record.forecastDate,
         forecastOrigin: record.forecastOrigin,
         actualObservedAt: record.actualObservedAt,
+        originValue: record.originValue,
         actualValue: record.actualValue,
         forecastValue: record.forecastValue,
         delta: record.delta,
@@ -493,6 +568,7 @@ function collectVerificationDisplayRecordsForTargetBasis(
       forecastDate: record.forecastDate,
       forecastOrigin: record.forecastOrigin,
       actualObservedAt: record.actualObservedAt,
+      originValue: record.originValue,
       actualValue: record.actualValue,
       forecastValue: record.forecastValue,
       delta: record.delta,
@@ -504,6 +580,70 @@ function collectVerificationDisplayRecordsForTargetBasis(
   return displayRecords
 }
 
+function subtractUtcMonths(value: Date, months: number) {
+  const result = new Date(value.getTime())
+  const originalDay = result.getUTCDate()
+
+  result.setUTCDate(1)
+  result.setUTCMonth(result.getUTCMonth() - months)
+
+  const lastDayOfTargetMonth = new Date(Date.UTC(
+    result.getUTCFullYear(),
+    result.getUTCMonth() + 1,
+    0,
+  )).getUTCDate()
+
+  result.setUTCDate(Math.min(originalDay, lastDayOfTargetMonth))
+  return result
+}
+
+function filterVerificationRecordsToTrailingWindow(
+  basePayload: TimeSeriesViewerPayload,
+  targetBasis: ForecastTargetBasis,
+  verificationHorizon: string,
+  records: VerificationDisplayRecord[],
+) {
+  const horizonMatch = /^(\d+)M$/.exec(verificationHorizon)
+  const historicalSeries = findHistoricalSeries(basePayload)
+
+  if (!horizonMatch || !historicalSeries) {
+    return records
+  }
+
+  const latestHistoricalTimestamp = historicalSeries.points.reduce<number | null>((latest, point) => {
+    const timestamp = new Date(point.date).getTime()
+
+    if (!Number.isFinite(timestamp)) {
+      return latest
+    }
+
+    return latest === null || timestamp > latest ? timestamp : latest
+  }, null)
+
+  if (latestHistoricalTimestamp === null) {
+    return records
+  }
+
+  const windowEnd = new Date(latestHistoricalTimestamp)
+
+  if (targetBasis === 'POINT_IN_TIME') {
+    windowEnd.setUTCHours(23, 59, 59, 999)
+  } else {
+    windowEnd.setUTCMonth(windowEnd.getUTCMonth() + 1, 0)
+    windowEnd.setUTCHours(23, 59, 59, 999)
+  }
+
+  const windowStart = subtractUtcMonths(windowEnd, Number(horizonMatch[1]))
+  windowStart.setUTCHours(0, 0, 0, 0)
+
+  return records.filter((record) => {
+    const timestamp = new Date(record.displayDate).getTime()
+    return Number.isFinite(timestamp)
+      && timestamp >= windowStart.getTime()
+      && timestamp <= windowEnd.getTime()
+  })
+}
+
 function buildPointInTimeVerificationSeries(
   basePayload: TimeSeriesViewerPayload,
   locale: TimeSeriesViewerLocale,
@@ -511,7 +651,7 @@ function buildPointInTimeVerificationSeries(
   records: VerificationDisplayRecord[],
 ): TimeSeriesViewerSeries | null {
   const label = locale === 'pl' ? 'Historyczna prognoza' : 'Historical forecast'
-  const points = records.map((record): TimeSeriesViewerPoint => ({
+  const targetPoints = records.map((record): TimeSeriesViewerPoint => ({
     key: `historical-forecast-${model}-${record.horizon}-${record.forecastDate}`,
     date: record.displayDate,
     value: record.forecastValue,
@@ -535,6 +675,32 @@ function buildPointInTimeVerificationSeries(
     }),
   }))
 
+  const points = records.length === 1 && records[0]
+    ? [
+        {
+          key: `historical-forecast-${model}-${records[0].horizon}-origin-${records[0].forecastOrigin}`,
+          date: normalizePointInTimeDisplayDate(records[0].forecastOrigin),
+          value: records[0].originValue,
+          diff: 0,
+          recordId: `historical-forecast-${model}-${records[0].horizon}-origin-${records[0].forecastOrigin}`,
+          anchor: true,
+          tooltipModel: toTooltipModel({
+            locale,
+            componentName: basePayload.title,
+            date: records[0].forecastOrigin,
+            primarySeriesLabel: label,
+            primaryValue: records[0].originValue,
+            datePrecision: 'day',
+            rows: buildVerificationTooltipRows(locale, model, 'POINT_IN_TIME', records[0]),
+          }),
+          detailModel: toDetailModel(basePayload, records[0].forecastOrigin, records[0].originValue, 'historical-forecast', {
+            temporalResolution: 'day',
+          }),
+        } satisfies TimeSeriesViewerPoint,
+        ...targetPoints,
+      ]
+    : targetPoints
+
   if (points.length === 0) {
     return null
   }
@@ -547,6 +713,18 @@ function buildPointInTimeVerificationSeries(
     points,
     segments: points.length >= 2 ? [points] : undefined,
   }
+}
+
+function buildPointInTimeHistoricalDeltaOverlays(records: VerificationDisplayRecord[]) {
+  if (records.length < 2) {
+    return [] as TimeSeriesViewerDeltaOverlay[]
+  }
+
+  return buildLocalDeltaOverlaysFromSamples(records.map((record) => ({
+    date: record.displayDate,
+    actualValue: record.actualValue,
+    forecastValue: record.forecastValue,
+  })))
 }
 
 function findHistoricalSeries(basePayload: TimeSeriesViewerPayload) {
@@ -941,6 +1119,69 @@ function appendRibbonSample(samples: DailyRibbonEndpoint[], sample: DailyRibbonE
   samples.push(sample)
 }
 
+function buildLocalDeltaOverlaysFromSamples(samples: DailyRibbonEndpoint[]) {
+  const overlays: TimeSeriesViewerDeltaOverlay[] = []
+
+  for (let sampleIndex = 1; sampleIndex < samples.length; sampleIndex += 1) {
+    const start = samples[sampleIndex - 1]
+    const end = samples[sampleIndex]
+
+    if (!start || !end) {
+      continue
+    }
+
+    const startDelta = start.forecastValue - start.actualValue
+    const endDelta = end.forecastValue - end.actualValue
+
+    if (startDelta === 0 && endDelta === 0) {
+      continue
+    }
+
+    if (startDelta === 0 || endDelta === 0) {
+      const nonZeroDelta = startDelta === 0 ? endDelta : startDelta
+      overlays.push(createLocalDeltaOverlay(nonZeroDelta > 0 ? 'above' : 'below', start, end))
+      continue
+    }
+
+    const startSign = startDelta > 0 ? 'above' : 'below'
+    const endSign = endDelta > 0 ? 'above' : 'below'
+
+    if (startSign === endSign) {
+      overlays.push(createLocalDeltaOverlay(startSign, start, end))
+      continue
+    }
+
+    const ratio = startDelta / (startDelta - endDelta)
+    const startMs = new Date(start.date).getTime()
+    const endMs = new Date(end.date).getTime()
+    const crossingDate = new Date(startMs + ((endMs - startMs) * ratio)).toISOString()
+    const crossingActualValue = interpolateValueByDate(
+      start.date,
+      end.date,
+      start.actualValue,
+      end.actualValue,
+      crossingDate,
+    )
+    const crossingForecastValue = interpolateValueByDate(
+      start.date,
+      end.date,
+      start.forecastValue,
+      end.forecastValue,
+      crossingDate,
+    )
+    const crossing: DailyRibbonEndpoint = {
+      date: crossingDate,
+      actualValue: crossingActualValue,
+      forecastValue: crossingForecastValue,
+    }
+
+    overlays.push(createLocalDeltaOverlay(startSign, start, crossing))
+    overlays.push(createLocalDeltaOverlay(endSign, crossing, end))
+  }
+
+  return overlays
+}
+
 function buildEndOfPeriodDeltaOverlays(
   basePayload: TimeSeriesViewerPayload,
   records: VerificationDisplayRecord[],
@@ -1119,7 +1360,11 @@ export function buildForecastPortfolioPayload({
 
     if (selectedVerification) {
       verificationTargetBasis = verificationResult.targetBasis
-      const verificationRecords = collectVerificationDisplayRecordsForTargetBasis(verificationResult.targetBasis, selectedVerification.records)
+      const collectedVerificationRecords = collectVerificationDisplayRecordsForTargetBasis(verificationResult.targetBasis, selectedVerification.records)
+      const trailingVerificationRecords = collectedVerificationRecords === null
+        ? null
+        : filterVerificationRecordsToTrailingWindow(basePayload, verificationResult.targetBasis, verificationHorizon, collectedVerificationRecords)
+      const verificationRecords = trailingVerificationRecords
 
       if (verificationRecords !== null) {
         const monthlyActualSeries = verificationResult.targetBasis === 'POINT_IN_TIME'
@@ -1137,8 +1382,10 @@ export function buildForecastPortfolioPayload({
 
         if (verificationSeries) {
           series.push(verificationSeries)
-          deltaOverlays = verificationResult.targetBasis === 'END_OF_PERIOD' || verificationResult.targetBasis === 'POINT_IN_TIME'
-            ? buildEndOfPeriodDeltaOverlays(basePayload, verificationRecords)
+          deltaOverlays = verificationResult.targetBasis === 'POINT_IN_TIME'
+            ? buildPointInTimeHistoricalDeltaOverlays(verificationRecords)
+            : verificationResult.targetBasis === 'END_OF_PERIOD'
+              ? buildEndOfPeriodDeltaOverlays(basePayload, verificationRecords)
             : buildDeltaOverlays(verificationRecords)
         }
       }
@@ -1149,7 +1396,7 @@ export function buildForecastPortfolioPayload({
     if (currentResult.targetBasis === 'POINT_IN_TIME' && currentResult.rollingDailySnapshot) {
       series.push(...buildPointInTimeCurrentForecastSeries(basePayload, locale, model, currentResult))
     } else {
-      series.push(buildCurrentForecastSeries(basePayload, locale, model, currentResult))
+      series.push(...buildCurrentForecastSeries(basePayload, locale, model, currentResult))
     }
 
     if (currentResult.forecastOrigin) {
@@ -1157,7 +1404,7 @@ export function buildForecastPortfolioPayload({
         date: currentResult.targetBasis === 'POINT_IN_TIME'
           ? normalizePointInTimeDisplayDate(currentResult.forecastOrigin)
           : toMonthEndDisplayDate(currentResult.forecastOrigin),
-        label: `${locale === 'pl' ? 'Forecast Origin' : 'Forecast origin'} · ${currentResult.targetBasis === 'POINT_IN_TIME' ? formatDayLabel(locale, currentResult.forecastOrigin) : formatMonthLabel(locale, currentResult.forecastOrigin)}`,
+        label: `${locale === 'pl' ? 'Data przygotowania prognozy' : 'Forecast preparation date'}: ${currentResult.targetBasis === 'POINT_IN_TIME' ? formatDayLabel(locale, currentResult.forecastOrigin) : formatMonthLabel(locale, currentResult.forecastOrigin)}`,
       }
     }
   }

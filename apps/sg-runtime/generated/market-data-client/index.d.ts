@@ -74,6 +74,11 @@ export type RollingDailyCalibrationGroup = $Result.DefaultSelection<Prisma.$Roll
  */
 export type RollingDailyMaintenanceState = $Result.DefaultSelection<Prisma.$RollingDailyMaintenanceStatePayload>
 /**
+ * Model ForecastPreparationExecutionLedger
+ * 
+ */
+export type ForecastPreparationExecutionLedger = $Result.DefaultSelection<Prisma.$ForecastPreparationExecutionLedgerPayload>
+/**
  * Model BenchmarkMetadataFacetRecord
  * 
  */
@@ -368,6 +373,16 @@ export class PrismaClient<
     * ```
     */
   get rollingDailyMaintenanceState(): Prisma.RollingDailyMaintenanceStateDelegate<ExtArgs>;
+
+  /**
+   * `prisma.forecastPreparationExecutionLedger`: Exposes CRUD operations for the **ForecastPreparationExecutionLedger** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ForecastPreparationExecutionLedgers
+    * const forecastPreparationExecutionLedgers = await prisma.forecastPreparationExecutionLedger.findMany()
+    * ```
+    */
+  get forecastPreparationExecutionLedger(): Prisma.ForecastPreparationExecutionLedgerDelegate<ExtArgs>;
 
   /**
    * `prisma.benchmarkMetadataFacetRecord`: Exposes CRUD operations for the **BenchmarkMetadataFacetRecord** model.
@@ -841,6 +856,7 @@ export namespace Prisma {
     RollingDailyCurrentForecastSnapshot: 'RollingDailyCurrentForecastSnapshot',
     RollingDailyCalibrationGroup: 'RollingDailyCalibrationGroup',
     RollingDailyMaintenanceState: 'RollingDailyMaintenanceState',
+    ForecastPreparationExecutionLedger: 'ForecastPreparationExecutionLedger',
     BenchmarkMetadataFacetRecord: 'BenchmarkMetadataFacetRecord',
     BenchmarkMetadataValueRecord: 'BenchmarkMetadataValueRecord'
   };
@@ -858,7 +874,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "marketSeries" | "marketObservation" | "marketHydrationState" | "forecastCurrentRun" | "forecastCurrentPoint" | "forecastVerificationRun" | "forecastVerificationMetric" | "forecastVerificationPoint" | "rollingDailyVerificationRecord" | "rollingDailyCurrentForecastSnapshot" | "rollingDailyCalibrationGroup" | "rollingDailyMaintenanceState" | "benchmarkMetadataFacetRecord" | "benchmarkMetadataValueRecord"
+      modelProps: "marketSeries" | "marketObservation" | "marketHydrationState" | "forecastCurrentRun" | "forecastCurrentPoint" | "forecastVerificationRun" | "forecastVerificationMetric" | "forecastVerificationPoint" | "rollingDailyVerificationRecord" | "rollingDailyCurrentForecastSnapshot" | "rollingDailyCalibrationGroup" | "rollingDailyMaintenanceState" | "forecastPreparationExecutionLedger" | "benchmarkMetadataFacetRecord" | "benchmarkMetadataValueRecord"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1699,6 +1715,76 @@ export namespace Prisma {
           count: {
             args: Prisma.RollingDailyMaintenanceStateCountArgs<ExtArgs>
             result: $Utils.Optional<RollingDailyMaintenanceStateCountAggregateOutputType> | number
+          }
+        }
+      }
+      ForecastPreparationExecutionLedger: {
+        payload: Prisma.$ForecastPreparationExecutionLedgerPayload<ExtArgs>
+        fields: Prisma.ForecastPreparationExecutionLedgerFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ForecastPreparationExecutionLedgerFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationExecutionLedgerPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ForecastPreparationExecutionLedgerFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationExecutionLedgerPayload>
+          }
+          findFirst: {
+            args: Prisma.ForecastPreparationExecutionLedgerFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationExecutionLedgerPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ForecastPreparationExecutionLedgerFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationExecutionLedgerPayload>
+          }
+          findMany: {
+            args: Prisma.ForecastPreparationExecutionLedgerFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationExecutionLedgerPayload>[]
+          }
+          create: {
+            args: Prisma.ForecastPreparationExecutionLedgerCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationExecutionLedgerPayload>
+          }
+          createMany: {
+            args: Prisma.ForecastPreparationExecutionLedgerCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ForecastPreparationExecutionLedgerCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationExecutionLedgerPayload>[]
+          }
+          delete: {
+            args: Prisma.ForecastPreparationExecutionLedgerDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationExecutionLedgerPayload>
+          }
+          update: {
+            args: Prisma.ForecastPreparationExecutionLedgerUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationExecutionLedgerPayload>
+          }
+          deleteMany: {
+            args: Prisma.ForecastPreparationExecutionLedgerDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ForecastPreparationExecutionLedgerUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ForecastPreparationExecutionLedgerUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationExecutionLedgerPayload>
+          }
+          aggregate: {
+            args: Prisma.ForecastPreparationExecutionLedgerAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateForecastPreparationExecutionLedger>
+          }
+          groupBy: {
+            args: Prisma.ForecastPreparationExecutionLedgerGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ForecastPreparationExecutionLedgerGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ForecastPreparationExecutionLedgerCountArgs<ExtArgs>
+            result: $Utils.Optional<ForecastPreparationExecutionLedgerCountAggregateOutputType> | number
           }
         }
       }
@@ -5191,6 +5277,8 @@ export namespace Prisma {
     forecastOriginAt: Date | null
     modelId: string | null
     methodVersion: string | null
+    trainingWindowPolicyId: string | null
+    effectiveTrainingPolicyId: string | null
     status: string | null
     failureReason: string | null
     runtimeSeconds: number | null
@@ -5218,6 +5306,8 @@ export namespace Prisma {
     forecastOriginAt: Date | null
     modelId: string | null
     methodVersion: string | null
+    trainingWindowPolicyId: string | null
+    effectiveTrainingPolicyId: string | null
     status: string | null
     failureReason: string | null
     runtimeSeconds: number | null
@@ -5245,6 +5335,8 @@ export namespace Prisma {
     forecastOriginAt: number
     modelId: number
     methodVersion: number
+    trainingWindowPolicyId: number
+    effectiveTrainingPolicyId: number
     status: number
     failureReason: number
     runtimeSeconds: number
@@ -5284,6 +5376,8 @@ export namespace Prisma {
     forecastOriginAt?: true
     modelId?: true
     methodVersion?: true
+    trainingWindowPolicyId?: true
+    effectiveTrainingPolicyId?: true
     status?: true
     failureReason?: true
     runtimeSeconds?: true
@@ -5311,6 +5405,8 @@ export namespace Prisma {
     forecastOriginAt?: true
     modelId?: true
     methodVersion?: true
+    trainingWindowPolicyId?: true
+    effectiveTrainingPolicyId?: true
     status?: true
     failureReason?: true
     runtimeSeconds?: true
@@ -5338,6 +5434,8 @@ export namespace Prisma {
     forecastOriginAt?: true
     modelId?: true
     methodVersion?: true
+    trainingWindowPolicyId?: true
+    effectiveTrainingPolicyId?: true
     status?: true
     failureReason?: true
     runtimeSeconds?: true
@@ -5452,6 +5550,8 @@ export namespace Prisma {
     forecastOriginAt: Date | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId: string | null
+    effectiveTrainingPolicyId: string | null
     status: string
     failureReason: string | null
     runtimeSeconds: number | null
@@ -5498,6 +5598,8 @@ export namespace Prisma {
     forecastOriginAt?: boolean
     modelId?: boolean
     methodVersion?: boolean
+    trainingWindowPolicyId?: boolean
+    effectiveTrainingPolicyId?: boolean
     status?: boolean
     failureReason?: boolean
     runtimeSeconds?: boolean
@@ -5527,6 +5629,8 @@ export namespace Prisma {
     forecastOriginAt?: boolean
     modelId?: boolean
     methodVersion?: boolean
+    trainingWindowPolicyId?: boolean
+    effectiveTrainingPolicyId?: boolean
     status?: boolean
     failureReason?: boolean
     runtimeSeconds?: boolean
@@ -5554,6 +5658,8 @@ export namespace Prisma {
     forecastOriginAt?: boolean
     modelId?: boolean
     methodVersion?: boolean
+    trainingWindowPolicyId?: boolean
+    effectiveTrainingPolicyId?: boolean
     status?: boolean
     failureReason?: boolean
     runtimeSeconds?: boolean
@@ -5592,6 +5698,8 @@ export namespace Prisma {
       forecastOriginAt: Date | null
       modelId: string
       methodVersion: string
+      trainingWindowPolicyId: string | null
+      effectiveTrainingPolicyId: string | null
       status: string
       failureReason: string | null
       runtimeSeconds: number | null
@@ -6010,6 +6118,8 @@ export namespace Prisma {
     readonly forecastOriginAt: FieldRef<"ForecastCurrentRun", 'DateTime'>
     readonly modelId: FieldRef<"ForecastCurrentRun", 'String'>
     readonly methodVersion: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly trainingWindowPolicyId: FieldRef<"ForecastCurrentRun", 'String'>
+    readonly effectiveTrainingPolicyId: FieldRef<"ForecastCurrentRun", 'String'>
     readonly status: FieldRef<"ForecastCurrentRun", 'String'>
     readonly failureReason: FieldRef<"ForecastCurrentRun", 'String'>
     readonly runtimeSeconds: FieldRef<"ForecastCurrentRun", 'Float'>
@@ -7484,6 +7594,8 @@ export namespace Prisma {
     forecastOriginAt: Date | null
     modelId: string | null
     methodVersion: string | null
+    trainingWindowPolicyId: string | null
+    effectiveTrainingPolicyId: string | null
     status: string | null
     failureReason: string | null
     runtimeSeconds: number | null
@@ -7511,6 +7623,8 @@ export namespace Prisma {
     forecastOriginAt: Date | null
     modelId: string | null
     methodVersion: string | null
+    trainingWindowPolicyId: string | null
+    effectiveTrainingPolicyId: string | null
     status: string | null
     failureReason: string | null
     runtimeSeconds: number | null
@@ -7538,6 +7652,8 @@ export namespace Prisma {
     forecastOriginAt: number
     modelId: number
     methodVersion: number
+    trainingWindowPolicyId: number
+    effectiveTrainingPolicyId: number
     status: number
     failureReason: number
     runtimeSeconds: number
@@ -7577,6 +7693,8 @@ export namespace Prisma {
     forecastOriginAt?: true
     modelId?: true
     methodVersion?: true
+    trainingWindowPolicyId?: true
+    effectiveTrainingPolicyId?: true
     status?: true
     failureReason?: true
     runtimeSeconds?: true
@@ -7604,6 +7722,8 @@ export namespace Prisma {
     forecastOriginAt?: true
     modelId?: true
     methodVersion?: true
+    trainingWindowPolicyId?: true
+    effectiveTrainingPolicyId?: true
     status?: true
     failureReason?: true
     runtimeSeconds?: true
@@ -7631,6 +7751,8 @@ export namespace Prisma {
     forecastOriginAt?: true
     modelId?: true
     methodVersion?: true
+    trainingWindowPolicyId?: true
+    effectiveTrainingPolicyId?: true
     status?: true
     failureReason?: true
     runtimeSeconds?: true
@@ -7745,6 +7867,8 @@ export namespace Prisma {
     forecastOriginAt: Date | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId: string | null
+    effectiveTrainingPolicyId: string | null
     status: string
     failureReason: string | null
     runtimeSeconds: number | null
@@ -7791,6 +7915,8 @@ export namespace Prisma {
     forecastOriginAt?: boolean
     modelId?: boolean
     methodVersion?: boolean
+    trainingWindowPolicyId?: boolean
+    effectiveTrainingPolicyId?: boolean
     status?: boolean
     failureReason?: boolean
     runtimeSeconds?: boolean
@@ -7821,6 +7947,8 @@ export namespace Prisma {
     forecastOriginAt?: boolean
     modelId?: boolean
     methodVersion?: boolean
+    trainingWindowPolicyId?: boolean
+    effectiveTrainingPolicyId?: boolean
     status?: boolean
     failureReason?: boolean
     runtimeSeconds?: boolean
@@ -7848,6 +7976,8 @@ export namespace Prisma {
     forecastOriginAt?: boolean
     modelId?: boolean
     methodVersion?: boolean
+    trainingWindowPolicyId?: boolean
+    effectiveTrainingPolicyId?: boolean
     status?: boolean
     failureReason?: boolean
     runtimeSeconds?: boolean
@@ -7888,6 +8018,8 @@ export namespace Prisma {
       forecastOriginAt: Date | null
       modelId: string
       methodVersion: string
+      trainingWindowPolicyId: string | null
+      effectiveTrainingPolicyId: string | null
       status: string
       failureReason: string | null
       runtimeSeconds: number | null
@@ -8307,6 +8439,8 @@ export namespace Prisma {
     readonly forecastOriginAt: FieldRef<"ForecastVerificationRun", 'DateTime'>
     readonly modelId: FieldRef<"ForecastVerificationRun", 'String'>
     readonly methodVersion: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly trainingWindowPolicyId: FieldRef<"ForecastVerificationRun", 'String'>
+    readonly effectiveTrainingPolicyId: FieldRef<"ForecastVerificationRun", 'String'>
     readonly status: FieldRef<"ForecastVerificationRun", 'String'>
     readonly failureReason: FieldRef<"ForecastVerificationRun", 'String'>
     readonly runtimeSeconds: FieldRef<"ForecastVerificationRun", 'Float'>
@@ -12344,6 +12478,9 @@ export namespace Prisma {
     methodId: string | null
     methodVersion: string | null
     modelId: string | null
+    trainingWindowPolicyId: string | null
+    effectiveTrainingPolicyId: string | null
+    sourceHistoryFingerprint: string | null
     contractVersion: string | null
     status: string | null
     reasonCode: string | null
@@ -12363,6 +12500,9 @@ export namespace Prisma {
     methodId: string | null
     methodVersion: string | null
     modelId: string | null
+    trainingWindowPolicyId: string | null
+    effectiveTrainingPolicyId: string | null
+    sourceHistoryFingerprint: string | null
     contractVersion: string | null
     status: string | null
     reasonCode: string | null
@@ -12382,6 +12522,9 @@ export namespace Prisma {
     methodId: number
     methodVersion: number
     modelId: number
+    trainingWindowPolicyId: number
+    effectiveTrainingPolicyId: number
+    sourceHistoryFingerprint: number
     contractVersion: number
     status: number
     reasonCode: number
@@ -12404,6 +12547,9 @@ export namespace Prisma {
     methodId?: true
     methodVersion?: true
     modelId?: true
+    trainingWindowPolicyId?: true
+    effectiveTrainingPolicyId?: true
+    sourceHistoryFingerprint?: true
     contractVersion?: true
     status?: true
     reasonCode?: true
@@ -12423,6 +12569,9 @@ export namespace Prisma {
     methodId?: true
     methodVersion?: true
     modelId?: true
+    trainingWindowPolicyId?: true
+    effectiveTrainingPolicyId?: true
+    sourceHistoryFingerprint?: true
     contractVersion?: true
     status?: true
     reasonCode?: true
@@ -12442,6 +12591,9 @@ export namespace Prisma {
     methodId?: true
     methodVersion?: true
     modelId?: true
+    trainingWindowPolicyId?: true
+    effectiveTrainingPolicyId?: true
+    sourceHistoryFingerprint?: true
     contractVersion?: true
     status?: true
     reasonCode?: true
@@ -12535,6 +12687,9 @@ export namespace Prisma {
     methodId: string
     methodVersion: string
     modelId: string
+    trainingWindowPolicyId: string | null
+    effectiveTrainingPolicyId: string | null
+    sourceHistoryFingerprint: string | null
     contractVersion: string
     status: string
     reasonCode: string | null
@@ -12572,6 +12727,9 @@ export namespace Prisma {
     methodId?: boolean
     methodVersion?: boolean
     modelId?: boolean
+    trainingWindowPolicyId?: boolean
+    effectiveTrainingPolicyId?: boolean
+    sourceHistoryFingerprint?: boolean
     contractVersion?: boolean
     status?: boolean
     reasonCode?: boolean
@@ -12592,6 +12750,9 @@ export namespace Prisma {
     methodId?: boolean
     methodVersion?: boolean
     modelId?: boolean
+    trainingWindowPolicyId?: boolean
+    effectiveTrainingPolicyId?: boolean
+    sourceHistoryFingerprint?: boolean
     contractVersion?: boolean
     status?: boolean
     reasonCode?: boolean
@@ -12612,6 +12773,9 @@ export namespace Prisma {
     methodId?: boolean
     methodVersion?: boolean
     modelId?: boolean
+    trainingWindowPolicyId?: boolean
+    effectiveTrainingPolicyId?: boolean
+    sourceHistoryFingerprint?: boolean
     contractVersion?: boolean
     status?: boolean
     reasonCode?: boolean
@@ -12636,6 +12800,12 @@ export namespace Prisma {
       methodId: string
       methodVersion: string
       modelId: string
+      /**
+       * Database migration additionally enforces this triplet as all-null legacy identity or all-non-null exact identity.
+       */
+      trainingWindowPolicyId: string | null
+      effectiveTrainingPolicyId: string | null
+      sourceHistoryFingerprint: string | null
       contractVersion: string
       status: string
       reasonCode: string | null
@@ -13046,6 +13216,9 @@ export namespace Prisma {
     readonly methodId: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
     readonly methodVersion: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
     readonly modelId: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
+    readonly trainingWindowPolicyId: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
+    readonly effectiveTrainingPolicyId: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
+    readonly sourceHistoryFingerprint: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
     readonly contractVersion: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
     readonly status: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
     readonly reasonCode: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
@@ -15578,6 +15751,1413 @@ export namespace Prisma {
 
 
   /**
+   * Model ForecastPreparationExecutionLedger
+   */
+
+  export type AggregateForecastPreparationExecutionLedger = {
+    _count: ForecastPreparationExecutionLedgerCountAggregateOutputType | null
+    _avg: ForecastPreparationExecutionLedgerAvgAggregateOutputType | null
+    _sum: ForecastPreparationExecutionLedgerSumAggregateOutputType | null
+    _min: ForecastPreparationExecutionLedgerMinAggregateOutputType | null
+    _max: ForecastPreparationExecutionLedgerMaxAggregateOutputType | null
+  }
+
+  export type ForecastPreparationExecutionLedgerAvgAggregateOutputType = {
+    leaseVersion: number | null
+    waiterCount: number | null
+    eventCount: number | null
+  }
+
+  export type ForecastPreparationExecutionLedgerSumAggregateOutputType = {
+    leaseVersion: number | null
+    waiterCount: number | null
+    eventCount: number | null
+  }
+
+  export type ForecastPreparationExecutionLedgerMinAggregateOutputType = {
+    id: string | null
+    executionId: string | null
+    logicalArtifactKey: string | null
+    operationFamily: string | null
+    executionStatus: string | null
+    resultStatus: string | null
+    cacheStatus: string | null
+    artifactScope: string | null
+    trainingWindowPolicyId: string | null
+    seriesId: string | null
+    targetBasis: $Enums.ForecastTargetBasis | null
+    targetSemantics: string | null
+    methodId: string | null
+    methodVersion: string | null
+    modelId: string | null
+    inputSource: string | null
+    historyFingerprint: string | null
+    sourceFrequency: string | null
+    targetCadence: string | null
+    frequencyIdentity: string | null
+    attemptKind: string | null
+    executionMode: string | null
+    ownerToken: string | null
+    leaseVersion: number | null
+    leaseAcquiredAt: Date | null
+    leaseExpiresAt: Date | null
+    recoveredFromExecutionId: string | null
+    ownerRequestId: string | null
+    latestRequestId: string | null
+    latestRole: string | null
+    waiterCount: number | null
+    eventCount: number | null
+    startedAt: Date | null
+    lastEventAt: Date | null
+    lastProgressAt: Date | null
+    completedAt: Date | null
+    computeStartedAt: Date | null
+    computeCompletedAt: Date | null
+    persistenceStartedAt: Date | null
+    persistenceCompletedAt: Date | null
+    failurePhase: string | null
+    failureReason: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ForecastPreparationExecutionLedgerMaxAggregateOutputType = {
+    id: string | null
+    executionId: string | null
+    logicalArtifactKey: string | null
+    operationFamily: string | null
+    executionStatus: string | null
+    resultStatus: string | null
+    cacheStatus: string | null
+    artifactScope: string | null
+    trainingWindowPolicyId: string | null
+    seriesId: string | null
+    targetBasis: $Enums.ForecastTargetBasis | null
+    targetSemantics: string | null
+    methodId: string | null
+    methodVersion: string | null
+    modelId: string | null
+    inputSource: string | null
+    historyFingerprint: string | null
+    sourceFrequency: string | null
+    targetCadence: string | null
+    frequencyIdentity: string | null
+    attemptKind: string | null
+    executionMode: string | null
+    ownerToken: string | null
+    leaseVersion: number | null
+    leaseAcquiredAt: Date | null
+    leaseExpiresAt: Date | null
+    recoveredFromExecutionId: string | null
+    ownerRequestId: string | null
+    latestRequestId: string | null
+    latestRole: string | null
+    waiterCount: number | null
+    eventCount: number | null
+    startedAt: Date | null
+    lastEventAt: Date | null
+    lastProgressAt: Date | null
+    completedAt: Date | null
+    computeStartedAt: Date | null
+    computeCompletedAt: Date | null
+    persistenceStartedAt: Date | null
+    persistenceCompletedAt: Date | null
+    failurePhase: string | null
+    failureReason: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ForecastPreparationExecutionLedgerCountAggregateOutputType = {
+    id: number
+    executionId: number
+    logicalArtifactKey: number
+    operationFamily: number
+    executionStatus: number
+    resultStatus: number
+    cacheStatus: number
+    artifactScope: number
+    trainingWindowPolicyId: number
+    seriesId: number
+    targetBasis: number
+    targetSemantics: number
+    methodId: number
+    methodVersion: number
+    modelId: number
+    inputSource: number
+    historyFingerprint: number
+    sourceFrequency: number
+    targetCadence: number
+    frequencyIdentity: number
+    attemptKind: number
+    executionMode: number
+    ownerToken: number
+    leaseVersion: number
+    leaseAcquiredAt: number
+    leaseExpiresAt: number
+    recoveredFromExecutionId: number
+    ownerRequestId: number
+    latestRequestId: number
+    latestRole: number
+    waiterCount: number
+    eventCount: number
+    startedAt: number
+    lastEventAt: number
+    lastProgressAt: number
+    completedAt: number
+    computeStartedAt: number
+    computeCompletedAt: number
+    persistenceStartedAt: number
+    persistenceCompletedAt: number
+    failurePhase: number
+    failureReason: number
+    logicalArtifactIdentityJson: number
+    eventsJson: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type ForecastPreparationExecutionLedgerAvgAggregateInputType = {
+    leaseVersion?: true
+    waiterCount?: true
+    eventCount?: true
+  }
+
+  export type ForecastPreparationExecutionLedgerSumAggregateInputType = {
+    leaseVersion?: true
+    waiterCount?: true
+    eventCount?: true
+  }
+
+  export type ForecastPreparationExecutionLedgerMinAggregateInputType = {
+    id?: true
+    executionId?: true
+    logicalArtifactKey?: true
+    operationFamily?: true
+    executionStatus?: true
+    resultStatus?: true
+    cacheStatus?: true
+    artifactScope?: true
+    trainingWindowPolicyId?: true
+    seriesId?: true
+    targetBasis?: true
+    targetSemantics?: true
+    methodId?: true
+    methodVersion?: true
+    modelId?: true
+    inputSource?: true
+    historyFingerprint?: true
+    sourceFrequency?: true
+    targetCadence?: true
+    frequencyIdentity?: true
+    attemptKind?: true
+    executionMode?: true
+    ownerToken?: true
+    leaseVersion?: true
+    leaseAcquiredAt?: true
+    leaseExpiresAt?: true
+    recoveredFromExecutionId?: true
+    ownerRequestId?: true
+    latestRequestId?: true
+    latestRole?: true
+    waiterCount?: true
+    eventCount?: true
+    startedAt?: true
+    lastEventAt?: true
+    lastProgressAt?: true
+    completedAt?: true
+    computeStartedAt?: true
+    computeCompletedAt?: true
+    persistenceStartedAt?: true
+    persistenceCompletedAt?: true
+    failurePhase?: true
+    failureReason?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ForecastPreparationExecutionLedgerMaxAggregateInputType = {
+    id?: true
+    executionId?: true
+    logicalArtifactKey?: true
+    operationFamily?: true
+    executionStatus?: true
+    resultStatus?: true
+    cacheStatus?: true
+    artifactScope?: true
+    trainingWindowPolicyId?: true
+    seriesId?: true
+    targetBasis?: true
+    targetSemantics?: true
+    methodId?: true
+    methodVersion?: true
+    modelId?: true
+    inputSource?: true
+    historyFingerprint?: true
+    sourceFrequency?: true
+    targetCadence?: true
+    frequencyIdentity?: true
+    attemptKind?: true
+    executionMode?: true
+    ownerToken?: true
+    leaseVersion?: true
+    leaseAcquiredAt?: true
+    leaseExpiresAt?: true
+    recoveredFromExecutionId?: true
+    ownerRequestId?: true
+    latestRequestId?: true
+    latestRole?: true
+    waiterCount?: true
+    eventCount?: true
+    startedAt?: true
+    lastEventAt?: true
+    lastProgressAt?: true
+    completedAt?: true
+    computeStartedAt?: true
+    computeCompletedAt?: true
+    persistenceStartedAt?: true
+    persistenceCompletedAt?: true
+    failurePhase?: true
+    failureReason?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ForecastPreparationExecutionLedgerCountAggregateInputType = {
+    id?: true
+    executionId?: true
+    logicalArtifactKey?: true
+    operationFamily?: true
+    executionStatus?: true
+    resultStatus?: true
+    cacheStatus?: true
+    artifactScope?: true
+    trainingWindowPolicyId?: true
+    seriesId?: true
+    targetBasis?: true
+    targetSemantics?: true
+    methodId?: true
+    methodVersion?: true
+    modelId?: true
+    inputSource?: true
+    historyFingerprint?: true
+    sourceFrequency?: true
+    targetCadence?: true
+    frequencyIdentity?: true
+    attemptKind?: true
+    executionMode?: true
+    ownerToken?: true
+    leaseVersion?: true
+    leaseAcquiredAt?: true
+    leaseExpiresAt?: true
+    recoveredFromExecutionId?: true
+    ownerRequestId?: true
+    latestRequestId?: true
+    latestRole?: true
+    waiterCount?: true
+    eventCount?: true
+    startedAt?: true
+    lastEventAt?: true
+    lastProgressAt?: true
+    completedAt?: true
+    computeStartedAt?: true
+    computeCompletedAt?: true
+    persistenceStartedAt?: true
+    persistenceCompletedAt?: true
+    failurePhase?: true
+    failureReason?: true
+    logicalArtifactIdentityJson?: true
+    eventsJson?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type ForecastPreparationExecutionLedgerAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ForecastPreparationExecutionLedger to aggregate.
+     */
+    where?: ForecastPreparationExecutionLedgerWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastPreparationExecutionLedgers to fetch.
+     */
+    orderBy?: ForecastPreparationExecutionLedgerOrderByWithRelationInput | ForecastPreparationExecutionLedgerOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ForecastPreparationExecutionLedgerWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastPreparationExecutionLedgers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastPreparationExecutionLedgers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ForecastPreparationExecutionLedgers
+    **/
+    _count?: true | ForecastPreparationExecutionLedgerCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ForecastPreparationExecutionLedgerAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ForecastPreparationExecutionLedgerSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ForecastPreparationExecutionLedgerMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ForecastPreparationExecutionLedgerMaxAggregateInputType
+  }
+
+  export type GetForecastPreparationExecutionLedgerAggregateType<T extends ForecastPreparationExecutionLedgerAggregateArgs> = {
+        [P in keyof T & keyof AggregateForecastPreparationExecutionLedger]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateForecastPreparationExecutionLedger[P]>
+      : GetScalarType<T[P], AggregateForecastPreparationExecutionLedger[P]>
+  }
+
+
+
+
+  export type ForecastPreparationExecutionLedgerGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ForecastPreparationExecutionLedgerWhereInput
+    orderBy?: ForecastPreparationExecutionLedgerOrderByWithAggregationInput | ForecastPreparationExecutionLedgerOrderByWithAggregationInput[]
+    by: ForecastPreparationExecutionLedgerScalarFieldEnum[] | ForecastPreparationExecutionLedgerScalarFieldEnum
+    having?: ForecastPreparationExecutionLedgerScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ForecastPreparationExecutionLedgerCountAggregateInputType | true
+    _avg?: ForecastPreparationExecutionLedgerAvgAggregateInputType
+    _sum?: ForecastPreparationExecutionLedgerSumAggregateInputType
+    _min?: ForecastPreparationExecutionLedgerMinAggregateInputType
+    _max?: ForecastPreparationExecutionLedgerMaxAggregateInputType
+  }
+
+  export type ForecastPreparationExecutionLedgerGroupByOutputType = {
+    id: string
+    executionId: string
+    logicalArtifactKey: string
+    operationFamily: string
+    executionStatus: string
+    resultStatus: string | null
+    cacheStatus: string | null
+    artifactScope: string
+    trainingWindowPolicyId: string
+    seriesId: string
+    targetBasis: $Enums.ForecastTargetBasis
+    targetSemantics: string
+    methodId: string
+    methodVersion: string
+    modelId: string
+    inputSource: string
+    historyFingerprint: string
+    sourceFrequency: string
+    targetCadence: string
+    frequencyIdentity: string
+    attemptKind: string
+    executionMode: string
+    ownerToken: string
+    leaseVersion: number
+    leaseAcquiredAt: Date
+    leaseExpiresAt: Date
+    recoveredFromExecutionId: string | null
+    ownerRequestId: string
+    latestRequestId: string
+    latestRole: string
+    waiterCount: number
+    eventCount: number
+    startedAt: Date
+    lastEventAt: Date
+    lastProgressAt: Date
+    completedAt: Date | null
+    computeStartedAt: Date | null
+    computeCompletedAt: Date | null
+    persistenceStartedAt: Date | null
+    persistenceCompletedAt: Date | null
+    failurePhase: string | null
+    failureReason: string | null
+    logicalArtifactIdentityJson: JsonValue
+    eventsJson: JsonValue
+    createdAt: Date
+    updatedAt: Date
+    _count: ForecastPreparationExecutionLedgerCountAggregateOutputType | null
+    _avg: ForecastPreparationExecutionLedgerAvgAggregateOutputType | null
+    _sum: ForecastPreparationExecutionLedgerSumAggregateOutputType | null
+    _min: ForecastPreparationExecutionLedgerMinAggregateOutputType | null
+    _max: ForecastPreparationExecutionLedgerMaxAggregateOutputType | null
+  }
+
+  type GetForecastPreparationExecutionLedgerGroupByPayload<T extends ForecastPreparationExecutionLedgerGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ForecastPreparationExecutionLedgerGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ForecastPreparationExecutionLedgerGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ForecastPreparationExecutionLedgerGroupByOutputType[P]>
+            : GetScalarType<T[P], ForecastPreparationExecutionLedgerGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ForecastPreparationExecutionLedgerSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    executionId?: boolean
+    logicalArtifactKey?: boolean
+    operationFamily?: boolean
+    executionStatus?: boolean
+    resultStatus?: boolean
+    cacheStatus?: boolean
+    artifactScope?: boolean
+    trainingWindowPolicyId?: boolean
+    seriesId?: boolean
+    targetBasis?: boolean
+    targetSemantics?: boolean
+    methodId?: boolean
+    methodVersion?: boolean
+    modelId?: boolean
+    inputSource?: boolean
+    historyFingerprint?: boolean
+    sourceFrequency?: boolean
+    targetCadence?: boolean
+    frequencyIdentity?: boolean
+    attemptKind?: boolean
+    executionMode?: boolean
+    ownerToken?: boolean
+    leaseVersion?: boolean
+    leaseAcquiredAt?: boolean
+    leaseExpiresAt?: boolean
+    recoveredFromExecutionId?: boolean
+    ownerRequestId?: boolean
+    latestRequestId?: boolean
+    latestRole?: boolean
+    waiterCount?: boolean
+    eventCount?: boolean
+    startedAt?: boolean
+    lastEventAt?: boolean
+    lastProgressAt?: boolean
+    completedAt?: boolean
+    computeStartedAt?: boolean
+    computeCompletedAt?: boolean
+    persistenceStartedAt?: boolean
+    persistenceCompletedAt?: boolean
+    failurePhase?: boolean
+    failureReason?: boolean
+    logicalArtifactIdentityJson?: boolean
+    eventsJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["forecastPreparationExecutionLedger"]>
+
+  export type ForecastPreparationExecutionLedgerSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    executionId?: boolean
+    logicalArtifactKey?: boolean
+    operationFamily?: boolean
+    executionStatus?: boolean
+    resultStatus?: boolean
+    cacheStatus?: boolean
+    artifactScope?: boolean
+    trainingWindowPolicyId?: boolean
+    seriesId?: boolean
+    targetBasis?: boolean
+    targetSemantics?: boolean
+    methodId?: boolean
+    methodVersion?: boolean
+    modelId?: boolean
+    inputSource?: boolean
+    historyFingerprint?: boolean
+    sourceFrequency?: boolean
+    targetCadence?: boolean
+    frequencyIdentity?: boolean
+    attemptKind?: boolean
+    executionMode?: boolean
+    ownerToken?: boolean
+    leaseVersion?: boolean
+    leaseAcquiredAt?: boolean
+    leaseExpiresAt?: boolean
+    recoveredFromExecutionId?: boolean
+    ownerRequestId?: boolean
+    latestRequestId?: boolean
+    latestRole?: boolean
+    waiterCount?: boolean
+    eventCount?: boolean
+    startedAt?: boolean
+    lastEventAt?: boolean
+    lastProgressAt?: boolean
+    completedAt?: boolean
+    computeStartedAt?: boolean
+    computeCompletedAt?: boolean
+    persistenceStartedAt?: boolean
+    persistenceCompletedAt?: boolean
+    failurePhase?: boolean
+    failureReason?: boolean
+    logicalArtifactIdentityJson?: boolean
+    eventsJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["forecastPreparationExecutionLedger"]>
+
+  export type ForecastPreparationExecutionLedgerSelectScalar = {
+    id?: boolean
+    executionId?: boolean
+    logicalArtifactKey?: boolean
+    operationFamily?: boolean
+    executionStatus?: boolean
+    resultStatus?: boolean
+    cacheStatus?: boolean
+    artifactScope?: boolean
+    trainingWindowPolicyId?: boolean
+    seriesId?: boolean
+    targetBasis?: boolean
+    targetSemantics?: boolean
+    methodId?: boolean
+    methodVersion?: boolean
+    modelId?: boolean
+    inputSource?: boolean
+    historyFingerprint?: boolean
+    sourceFrequency?: boolean
+    targetCadence?: boolean
+    frequencyIdentity?: boolean
+    attemptKind?: boolean
+    executionMode?: boolean
+    ownerToken?: boolean
+    leaseVersion?: boolean
+    leaseAcquiredAt?: boolean
+    leaseExpiresAt?: boolean
+    recoveredFromExecutionId?: boolean
+    ownerRequestId?: boolean
+    latestRequestId?: boolean
+    latestRole?: boolean
+    waiterCount?: boolean
+    eventCount?: boolean
+    startedAt?: boolean
+    lastEventAt?: boolean
+    lastProgressAt?: boolean
+    completedAt?: boolean
+    computeStartedAt?: boolean
+    computeCompletedAt?: boolean
+    persistenceStartedAt?: boolean
+    persistenceCompletedAt?: boolean
+    failurePhase?: boolean
+    failureReason?: boolean
+    logicalArtifactIdentityJson?: boolean
+    eventsJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+
+  export type $ForecastPreparationExecutionLedgerPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ForecastPreparationExecutionLedger"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      /**
+       * Stage 3 durable execution ledger and admission authority for Forecast preparation lifecycles.
+       */
+      id: string
+      executionId: string
+      logicalArtifactKey: string
+      operationFamily: string
+      executionStatus: string
+      resultStatus: string | null
+      cacheStatus: string | null
+      artifactScope: string
+      trainingWindowPolicyId: string
+      seriesId: string
+      targetBasis: $Enums.ForecastTargetBasis
+      targetSemantics: string
+      methodId: string
+      methodVersion: string
+      modelId: string
+      inputSource: string
+      historyFingerprint: string
+      sourceFrequency: string
+      targetCadence: string
+      frequencyIdentity: string
+      attemptKind: string
+      executionMode: string
+      ownerToken: string
+      leaseVersion: number
+      leaseAcquiredAt: Date
+      leaseExpiresAt: Date
+      recoveredFromExecutionId: string | null
+      ownerRequestId: string
+      latestRequestId: string
+      latestRole: string
+      waiterCount: number
+      eventCount: number
+      startedAt: Date
+      lastEventAt: Date
+      lastProgressAt: Date
+      completedAt: Date | null
+      computeStartedAt: Date | null
+      computeCompletedAt: Date | null
+      persistenceStartedAt: Date | null
+      persistenceCompletedAt: Date | null
+      failurePhase: string | null
+      failureReason: string | null
+      logicalArtifactIdentityJson: Prisma.JsonValue
+      eventsJson: Prisma.JsonValue
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["forecastPreparationExecutionLedger"]>
+    composites: {}
+  }
+
+  type ForecastPreparationExecutionLedgerGetPayload<S extends boolean | null | undefined | ForecastPreparationExecutionLedgerDefaultArgs> = $Result.GetResult<Prisma.$ForecastPreparationExecutionLedgerPayload, S>
+
+  type ForecastPreparationExecutionLedgerCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ForecastPreparationExecutionLedgerFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: ForecastPreparationExecutionLedgerCountAggregateInputType | true
+    }
+
+  export interface ForecastPreparationExecutionLedgerDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ForecastPreparationExecutionLedger'], meta: { name: 'ForecastPreparationExecutionLedger' } }
+    /**
+     * Find zero or one ForecastPreparationExecutionLedger that matches the filter.
+     * @param {ForecastPreparationExecutionLedgerFindUniqueArgs} args - Arguments to find a ForecastPreparationExecutionLedger
+     * @example
+     * // Get one ForecastPreparationExecutionLedger
+     * const forecastPreparationExecutionLedger = await prisma.forecastPreparationExecutionLedger.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ForecastPreparationExecutionLedgerFindUniqueArgs>(args: SelectSubset<T, ForecastPreparationExecutionLedgerFindUniqueArgs<ExtArgs>>): Prisma__ForecastPreparationExecutionLedgerClient<$Result.GetResult<Prisma.$ForecastPreparationExecutionLedgerPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ForecastPreparationExecutionLedger that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ForecastPreparationExecutionLedgerFindUniqueOrThrowArgs} args - Arguments to find a ForecastPreparationExecutionLedger
+     * @example
+     * // Get one ForecastPreparationExecutionLedger
+     * const forecastPreparationExecutionLedger = await prisma.forecastPreparationExecutionLedger.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ForecastPreparationExecutionLedgerFindUniqueOrThrowArgs>(args: SelectSubset<T, ForecastPreparationExecutionLedgerFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ForecastPreparationExecutionLedgerClient<$Result.GetResult<Prisma.$ForecastPreparationExecutionLedgerPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ForecastPreparationExecutionLedger that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastPreparationExecutionLedgerFindFirstArgs} args - Arguments to find a ForecastPreparationExecutionLedger
+     * @example
+     * // Get one ForecastPreparationExecutionLedger
+     * const forecastPreparationExecutionLedger = await prisma.forecastPreparationExecutionLedger.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ForecastPreparationExecutionLedgerFindFirstArgs>(args?: SelectSubset<T, ForecastPreparationExecutionLedgerFindFirstArgs<ExtArgs>>): Prisma__ForecastPreparationExecutionLedgerClient<$Result.GetResult<Prisma.$ForecastPreparationExecutionLedgerPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ForecastPreparationExecutionLedger that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastPreparationExecutionLedgerFindFirstOrThrowArgs} args - Arguments to find a ForecastPreparationExecutionLedger
+     * @example
+     * // Get one ForecastPreparationExecutionLedger
+     * const forecastPreparationExecutionLedger = await prisma.forecastPreparationExecutionLedger.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ForecastPreparationExecutionLedgerFindFirstOrThrowArgs>(args?: SelectSubset<T, ForecastPreparationExecutionLedgerFindFirstOrThrowArgs<ExtArgs>>): Prisma__ForecastPreparationExecutionLedgerClient<$Result.GetResult<Prisma.$ForecastPreparationExecutionLedgerPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ForecastPreparationExecutionLedgers that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastPreparationExecutionLedgerFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ForecastPreparationExecutionLedgers
+     * const forecastPreparationExecutionLedgers = await prisma.forecastPreparationExecutionLedger.findMany()
+     * 
+     * // Get first 10 ForecastPreparationExecutionLedgers
+     * const forecastPreparationExecutionLedgers = await prisma.forecastPreparationExecutionLedger.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const forecastPreparationExecutionLedgerWithIdOnly = await prisma.forecastPreparationExecutionLedger.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ForecastPreparationExecutionLedgerFindManyArgs>(args?: SelectSubset<T, ForecastPreparationExecutionLedgerFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastPreparationExecutionLedgerPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ForecastPreparationExecutionLedger.
+     * @param {ForecastPreparationExecutionLedgerCreateArgs} args - Arguments to create a ForecastPreparationExecutionLedger.
+     * @example
+     * // Create one ForecastPreparationExecutionLedger
+     * const ForecastPreparationExecutionLedger = await prisma.forecastPreparationExecutionLedger.create({
+     *   data: {
+     *     // ... data to create a ForecastPreparationExecutionLedger
+     *   }
+     * })
+     * 
+     */
+    create<T extends ForecastPreparationExecutionLedgerCreateArgs>(args: SelectSubset<T, ForecastPreparationExecutionLedgerCreateArgs<ExtArgs>>): Prisma__ForecastPreparationExecutionLedgerClient<$Result.GetResult<Prisma.$ForecastPreparationExecutionLedgerPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ForecastPreparationExecutionLedgers.
+     * @param {ForecastPreparationExecutionLedgerCreateManyArgs} args - Arguments to create many ForecastPreparationExecutionLedgers.
+     * @example
+     * // Create many ForecastPreparationExecutionLedgers
+     * const forecastPreparationExecutionLedger = await prisma.forecastPreparationExecutionLedger.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ForecastPreparationExecutionLedgerCreateManyArgs>(args?: SelectSubset<T, ForecastPreparationExecutionLedgerCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ForecastPreparationExecutionLedgers and returns the data saved in the database.
+     * @param {ForecastPreparationExecutionLedgerCreateManyAndReturnArgs} args - Arguments to create many ForecastPreparationExecutionLedgers.
+     * @example
+     * // Create many ForecastPreparationExecutionLedgers
+     * const forecastPreparationExecutionLedger = await prisma.forecastPreparationExecutionLedger.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ForecastPreparationExecutionLedgers and only return the `id`
+     * const forecastPreparationExecutionLedgerWithIdOnly = await prisma.forecastPreparationExecutionLedger.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ForecastPreparationExecutionLedgerCreateManyAndReturnArgs>(args?: SelectSubset<T, ForecastPreparationExecutionLedgerCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastPreparationExecutionLedgerPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a ForecastPreparationExecutionLedger.
+     * @param {ForecastPreparationExecutionLedgerDeleteArgs} args - Arguments to delete one ForecastPreparationExecutionLedger.
+     * @example
+     * // Delete one ForecastPreparationExecutionLedger
+     * const ForecastPreparationExecutionLedger = await prisma.forecastPreparationExecutionLedger.delete({
+     *   where: {
+     *     // ... filter to delete one ForecastPreparationExecutionLedger
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ForecastPreparationExecutionLedgerDeleteArgs>(args: SelectSubset<T, ForecastPreparationExecutionLedgerDeleteArgs<ExtArgs>>): Prisma__ForecastPreparationExecutionLedgerClient<$Result.GetResult<Prisma.$ForecastPreparationExecutionLedgerPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ForecastPreparationExecutionLedger.
+     * @param {ForecastPreparationExecutionLedgerUpdateArgs} args - Arguments to update one ForecastPreparationExecutionLedger.
+     * @example
+     * // Update one ForecastPreparationExecutionLedger
+     * const forecastPreparationExecutionLedger = await prisma.forecastPreparationExecutionLedger.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ForecastPreparationExecutionLedgerUpdateArgs>(args: SelectSubset<T, ForecastPreparationExecutionLedgerUpdateArgs<ExtArgs>>): Prisma__ForecastPreparationExecutionLedgerClient<$Result.GetResult<Prisma.$ForecastPreparationExecutionLedgerPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ForecastPreparationExecutionLedgers.
+     * @param {ForecastPreparationExecutionLedgerDeleteManyArgs} args - Arguments to filter ForecastPreparationExecutionLedgers to delete.
+     * @example
+     * // Delete a few ForecastPreparationExecutionLedgers
+     * const { count } = await prisma.forecastPreparationExecutionLedger.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ForecastPreparationExecutionLedgerDeleteManyArgs>(args?: SelectSubset<T, ForecastPreparationExecutionLedgerDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ForecastPreparationExecutionLedgers.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastPreparationExecutionLedgerUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ForecastPreparationExecutionLedgers
+     * const forecastPreparationExecutionLedger = await prisma.forecastPreparationExecutionLedger.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ForecastPreparationExecutionLedgerUpdateManyArgs>(args: SelectSubset<T, ForecastPreparationExecutionLedgerUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ForecastPreparationExecutionLedger.
+     * @param {ForecastPreparationExecutionLedgerUpsertArgs} args - Arguments to update or create a ForecastPreparationExecutionLedger.
+     * @example
+     * // Update or create a ForecastPreparationExecutionLedger
+     * const forecastPreparationExecutionLedger = await prisma.forecastPreparationExecutionLedger.upsert({
+     *   create: {
+     *     // ... data to create a ForecastPreparationExecutionLedger
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ForecastPreparationExecutionLedger we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ForecastPreparationExecutionLedgerUpsertArgs>(args: SelectSubset<T, ForecastPreparationExecutionLedgerUpsertArgs<ExtArgs>>): Prisma__ForecastPreparationExecutionLedgerClient<$Result.GetResult<Prisma.$ForecastPreparationExecutionLedgerPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ForecastPreparationExecutionLedgers.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastPreparationExecutionLedgerCountArgs} args - Arguments to filter ForecastPreparationExecutionLedgers to count.
+     * @example
+     * // Count the number of ForecastPreparationExecutionLedgers
+     * const count = await prisma.forecastPreparationExecutionLedger.count({
+     *   where: {
+     *     // ... the filter for the ForecastPreparationExecutionLedgers we want to count
+     *   }
+     * })
+    **/
+    count<T extends ForecastPreparationExecutionLedgerCountArgs>(
+      args?: Subset<T, ForecastPreparationExecutionLedgerCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ForecastPreparationExecutionLedgerCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ForecastPreparationExecutionLedger.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastPreparationExecutionLedgerAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ForecastPreparationExecutionLedgerAggregateArgs>(args: Subset<T, ForecastPreparationExecutionLedgerAggregateArgs>): Prisma.PrismaPromise<GetForecastPreparationExecutionLedgerAggregateType<T>>
+
+    /**
+     * Group by ForecastPreparationExecutionLedger.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastPreparationExecutionLedgerGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ForecastPreparationExecutionLedgerGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ForecastPreparationExecutionLedgerGroupByArgs['orderBy'] }
+        : { orderBy?: ForecastPreparationExecutionLedgerGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ForecastPreparationExecutionLedgerGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetForecastPreparationExecutionLedgerGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ForecastPreparationExecutionLedger model
+   */
+  readonly fields: ForecastPreparationExecutionLedgerFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ForecastPreparationExecutionLedger.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ForecastPreparationExecutionLedgerClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ForecastPreparationExecutionLedger model
+   */ 
+  interface ForecastPreparationExecutionLedgerFieldRefs {
+    readonly id: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly executionId: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly logicalArtifactKey: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly operationFamily: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly executionStatus: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly resultStatus: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly cacheStatus: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly artifactScope: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly trainingWindowPolicyId: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly seriesId: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly targetBasis: FieldRef<"ForecastPreparationExecutionLedger", 'ForecastTargetBasis'>
+    readonly targetSemantics: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly methodId: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly methodVersion: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly modelId: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly inputSource: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly historyFingerprint: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly sourceFrequency: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly targetCadence: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly frequencyIdentity: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly attemptKind: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly executionMode: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly ownerToken: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly leaseVersion: FieldRef<"ForecastPreparationExecutionLedger", 'Int'>
+    readonly leaseAcquiredAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
+    readonly leaseExpiresAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
+    readonly recoveredFromExecutionId: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly ownerRequestId: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly latestRequestId: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly latestRole: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly waiterCount: FieldRef<"ForecastPreparationExecutionLedger", 'Int'>
+    readonly eventCount: FieldRef<"ForecastPreparationExecutionLedger", 'Int'>
+    readonly startedAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
+    readonly lastEventAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
+    readonly lastProgressAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
+    readonly completedAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
+    readonly computeStartedAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
+    readonly computeCompletedAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
+    readonly persistenceStartedAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
+    readonly persistenceCompletedAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
+    readonly failurePhase: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly failureReason: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly logicalArtifactIdentityJson: FieldRef<"ForecastPreparationExecutionLedger", 'Json'>
+    readonly eventsJson: FieldRef<"ForecastPreparationExecutionLedger", 'Json'>
+    readonly createdAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
+    readonly updatedAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ForecastPreparationExecutionLedger findUnique
+   */
+  export type ForecastPreparationExecutionLedgerFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationExecutionLedger
+     */
+    select?: ForecastPreparationExecutionLedgerSelect<ExtArgs> | null
+    /**
+     * Filter, which ForecastPreparationExecutionLedger to fetch.
+     */
+    where: ForecastPreparationExecutionLedgerWhereUniqueInput
+  }
+
+  /**
+   * ForecastPreparationExecutionLedger findUniqueOrThrow
+   */
+  export type ForecastPreparationExecutionLedgerFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationExecutionLedger
+     */
+    select?: ForecastPreparationExecutionLedgerSelect<ExtArgs> | null
+    /**
+     * Filter, which ForecastPreparationExecutionLedger to fetch.
+     */
+    where: ForecastPreparationExecutionLedgerWhereUniqueInput
+  }
+
+  /**
+   * ForecastPreparationExecutionLedger findFirst
+   */
+  export type ForecastPreparationExecutionLedgerFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationExecutionLedger
+     */
+    select?: ForecastPreparationExecutionLedgerSelect<ExtArgs> | null
+    /**
+     * Filter, which ForecastPreparationExecutionLedger to fetch.
+     */
+    where?: ForecastPreparationExecutionLedgerWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastPreparationExecutionLedgers to fetch.
+     */
+    orderBy?: ForecastPreparationExecutionLedgerOrderByWithRelationInput | ForecastPreparationExecutionLedgerOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ForecastPreparationExecutionLedgers.
+     */
+    cursor?: ForecastPreparationExecutionLedgerWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastPreparationExecutionLedgers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastPreparationExecutionLedgers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ForecastPreparationExecutionLedgers.
+     */
+    distinct?: ForecastPreparationExecutionLedgerScalarFieldEnum | ForecastPreparationExecutionLedgerScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastPreparationExecutionLedger findFirstOrThrow
+   */
+  export type ForecastPreparationExecutionLedgerFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationExecutionLedger
+     */
+    select?: ForecastPreparationExecutionLedgerSelect<ExtArgs> | null
+    /**
+     * Filter, which ForecastPreparationExecutionLedger to fetch.
+     */
+    where?: ForecastPreparationExecutionLedgerWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastPreparationExecutionLedgers to fetch.
+     */
+    orderBy?: ForecastPreparationExecutionLedgerOrderByWithRelationInput | ForecastPreparationExecutionLedgerOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ForecastPreparationExecutionLedgers.
+     */
+    cursor?: ForecastPreparationExecutionLedgerWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastPreparationExecutionLedgers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastPreparationExecutionLedgers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ForecastPreparationExecutionLedgers.
+     */
+    distinct?: ForecastPreparationExecutionLedgerScalarFieldEnum | ForecastPreparationExecutionLedgerScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastPreparationExecutionLedger findMany
+   */
+  export type ForecastPreparationExecutionLedgerFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationExecutionLedger
+     */
+    select?: ForecastPreparationExecutionLedgerSelect<ExtArgs> | null
+    /**
+     * Filter, which ForecastPreparationExecutionLedgers to fetch.
+     */
+    where?: ForecastPreparationExecutionLedgerWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ForecastPreparationExecutionLedgers to fetch.
+     */
+    orderBy?: ForecastPreparationExecutionLedgerOrderByWithRelationInput | ForecastPreparationExecutionLedgerOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ForecastPreparationExecutionLedgers.
+     */
+    cursor?: ForecastPreparationExecutionLedgerWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ForecastPreparationExecutionLedgers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ForecastPreparationExecutionLedgers.
+     */
+    skip?: number
+    distinct?: ForecastPreparationExecutionLedgerScalarFieldEnum | ForecastPreparationExecutionLedgerScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastPreparationExecutionLedger create
+   */
+  export type ForecastPreparationExecutionLedgerCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationExecutionLedger
+     */
+    select?: ForecastPreparationExecutionLedgerSelect<ExtArgs> | null
+    /**
+     * The data needed to create a ForecastPreparationExecutionLedger.
+     */
+    data: XOR<ForecastPreparationExecutionLedgerCreateInput, ForecastPreparationExecutionLedgerUncheckedCreateInput>
+  }
+
+  /**
+   * ForecastPreparationExecutionLedger createMany
+   */
+  export type ForecastPreparationExecutionLedgerCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ForecastPreparationExecutionLedgers.
+     */
+    data: ForecastPreparationExecutionLedgerCreateManyInput | ForecastPreparationExecutionLedgerCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ForecastPreparationExecutionLedger createManyAndReturn
+   */
+  export type ForecastPreparationExecutionLedgerCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationExecutionLedger
+     */
+    select?: ForecastPreparationExecutionLedgerSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many ForecastPreparationExecutionLedgers.
+     */
+    data: ForecastPreparationExecutionLedgerCreateManyInput | ForecastPreparationExecutionLedgerCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ForecastPreparationExecutionLedger update
+   */
+  export type ForecastPreparationExecutionLedgerUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationExecutionLedger
+     */
+    select?: ForecastPreparationExecutionLedgerSelect<ExtArgs> | null
+    /**
+     * The data needed to update a ForecastPreparationExecutionLedger.
+     */
+    data: XOR<ForecastPreparationExecutionLedgerUpdateInput, ForecastPreparationExecutionLedgerUncheckedUpdateInput>
+    /**
+     * Choose, which ForecastPreparationExecutionLedger to update.
+     */
+    where: ForecastPreparationExecutionLedgerWhereUniqueInput
+  }
+
+  /**
+   * ForecastPreparationExecutionLedger updateMany
+   */
+  export type ForecastPreparationExecutionLedgerUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ForecastPreparationExecutionLedgers.
+     */
+    data: XOR<ForecastPreparationExecutionLedgerUpdateManyMutationInput, ForecastPreparationExecutionLedgerUncheckedUpdateManyInput>
+    /**
+     * Filter which ForecastPreparationExecutionLedgers to update
+     */
+    where?: ForecastPreparationExecutionLedgerWhereInput
+  }
+
+  /**
+   * ForecastPreparationExecutionLedger upsert
+   */
+  export type ForecastPreparationExecutionLedgerUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationExecutionLedger
+     */
+    select?: ForecastPreparationExecutionLedgerSelect<ExtArgs> | null
+    /**
+     * The filter to search for the ForecastPreparationExecutionLedger to update in case it exists.
+     */
+    where: ForecastPreparationExecutionLedgerWhereUniqueInput
+    /**
+     * In case the ForecastPreparationExecutionLedger found by the `where` argument doesn't exist, create a new ForecastPreparationExecutionLedger with this data.
+     */
+    create: XOR<ForecastPreparationExecutionLedgerCreateInput, ForecastPreparationExecutionLedgerUncheckedCreateInput>
+    /**
+     * In case the ForecastPreparationExecutionLedger was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ForecastPreparationExecutionLedgerUpdateInput, ForecastPreparationExecutionLedgerUncheckedUpdateInput>
+  }
+
+  /**
+   * ForecastPreparationExecutionLedger delete
+   */
+  export type ForecastPreparationExecutionLedgerDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationExecutionLedger
+     */
+    select?: ForecastPreparationExecutionLedgerSelect<ExtArgs> | null
+    /**
+     * Filter which ForecastPreparationExecutionLedger to delete.
+     */
+    where: ForecastPreparationExecutionLedgerWhereUniqueInput
+  }
+
+  /**
+   * ForecastPreparationExecutionLedger deleteMany
+   */
+  export type ForecastPreparationExecutionLedgerDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ForecastPreparationExecutionLedgers to delete
+     */
+    where?: ForecastPreparationExecutionLedgerWhereInput
+  }
+
+  /**
+   * ForecastPreparationExecutionLedger without action
+   */
+  export type ForecastPreparationExecutionLedgerDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationExecutionLedger
+     */
+    select?: ForecastPreparationExecutionLedgerSelect<ExtArgs> | null
+  }
+
+
+  /**
    * Model BenchmarkMetadataFacetRecord
    */
 
@@ -17686,6 +19266,8 @@ export namespace Prisma {
     forecastOriginAt: 'forecastOriginAt',
     modelId: 'modelId',
     methodVersion: 'methodVersion',
+    trainingWindowPolicyId: 'trainingWindowPolicyId',
+    effectiveTrainingPolicyId: 'effectiveTrainingPolicyId',
     status: 'status',
     failureReason: 'failureReason',
     runtimeSeconds: 'runtimeSeconds',
@@ -17736,6 +19318,8 @@ export namespace Prisma {
     forecastOriginAt: 'forecastOriginAt',
     modelId: 'modelId',
     methodVersion: 'methodVersion',
+    trainingWindowPolicyId: 'trainingWindowPolicyId',
+    effectiveTrainingPolicyId: 'effectiveTrainingPolicyId',
     status: 'status',
     failureReason: 'failureReason',
     runtimeSeconds: 'runtimeSeconds',
@@ -17845,6 +19429,9 @@ export namespace Prisma {
     methodId: 'methodId',
     methodVersion: 'methodVersion',
     modelId: 'modelId',
+    trainingWindowPolicyId: 'trainingWindowPolicyId',
+    effectiveTrainingPolicyId: 'effectiveTrainingPolicyId',
+    sourceHistoryFingerprint: 'sourceHistoryFingerprint',
     contractVersion: 'contractVersion',
     status: 'status',
     reasonCode: 'reasonCode',
@@ -17911,6 +19498,58 @@ export namespace Prisma {
   };
 
   export type RollingDailyMaintenanceStateScalarFieldEnum = (typeof RollingDailyMaintenanceStateScalarFieldEnum)[keyof typeof RollingDailyMaintenanceStateScalarFieldEnum]
+
+
+  export const ForecastPreparationExecutionLedgerScalarFieldEnum: {
+    id: 'id',
+    executionId: 'executionId',
+    logicalArtifactKey: 'logicalArtifactKey',
+    operationFamily: 'operationFamily',
+    executionStatus: 'executionStatus',
+    resultStatus: 'resultStatus',
+    cacheStatus: 'cacheStatus',
+    artifactScope: 'artifactScope',
+    trainingWindowPolicyId: 'trainingWindowPolicyId',
+    seriesId: 'seriesId',
+    targetBasis: 'targetBasis',
+    targetSemantics: 'targetSemantics',
+    methodId: 'methodId',
+    methodVersion: 'methodVersion',
+    modelId: 'modelId',
+    inputSource: 'inputSource',
+    historyFingerprint: 'historyFingerprint',
+    sourceFrequency: 'sourceFrequency',
+    targetCadence: 'targetCadence',
+    frequencyIdentity: 'frequencyIdentity',
+    attemptKind: 'attemptKind',
+    executionMode: 'executionMode',
+    ownerToken: 'ownerToken',
+    leaseVersion: 'leaseVersion',
+    leaseAcquiredAt: 'leaseAcquiredAt',
+    leaseExpiresAt: 'leaseExpiresAt',
+    recoveredFromExecutionId: 'recoveredFromExecutionId',
+    ownerRequestId: 'ownerRequestId',
+    latestRequestId: 'latestRequestId',
+    latestRole: 'latestRole',
+    waiterCount: 'waiterCount',
+    eventCount: 'eventCount',
+    startedAt: 'startedAt',
+    lastEventAt: 'lastEventAt',
+    lastProgressAt: 'lastProgressAt',
+    completedAt: 'completedAt',
+    computeStartedAt: 'computeStartedAt',
+    computeCompletedAt: 'computeCompletedAt',
+    persistenceStartedAt: 'persistenceStartedAt',
+    persistenceCompletedAt: 'persistenceCompletedAt',
+    failurePhase: 'failurePhase',
+    failureReason: 'failureReason',
+    logicalArtifactIdentityJson: 'logicalArtifactIdentityJson',
+    eventsJson: 'eventsJson',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type ForecastPreparationExecutionLedgerScalarFieldEnum = (typeof ForecastPreparationExecutionLedgerScalarFieldEnum)[keyof typeof ForecastPreparationExecutionLedgerScalarFieldEnum]
 
 
   export const BenchmarkMetadataFacetRecordScalarFieldEnum: {
@@ -18394,6 +20033,8 @@ export namespace Prisma {
     forecastOriginAt?: DateTimeNullableFilter<"ForecastCurrentRun"> | Date | string | null
     modelId?: StringFilter<"ForecastCurrentRun"> | string
     methodVersion?: StringFilter<"ForecastCurrentRun"> | string
+    trainingWindowPolicyId?: StringNullableFilter<"ForecastCurrentRun"> | string | null
+    effectiveTrainingPolicyId?: StringNullableFilter<"ForecastCurrentRun"> | string | null
     status?: StringFilter<"ForecastCurrentRun"> | string
     failureReason?: StringNullableFilter<"ForecastCurrentRun"> | string | null
     runtimeSeconds?: FloatNullableFilter<"ForecastCurrentRun"> | number | null
@@ -18422,6 +20063,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrderInput | SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrderInput | SortOrder
+    effectiveTrainingPolicyId?: SortOrderInput | SortOrder
     status?: SortOrder
     failureReason?: SortOrderInput | SortOrder
     runtimeSeconds?: SortOrderInput | SortOrder
@@ -18432,7 +20075,7 @@ export namespace Prisma {
 
   export type ForecastCurrentRunWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion?: ForecastCurrentRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionCompoundUniqueInput
+    seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_frequency_trainingWindowPolicyId_effectiveTrainingPolicyId?: ForecastCurrentRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionFrequencyTrainingWindowPolicyIdEffectiveTrainingPolicyIdCompoundUniqueInput
     AND?: ForecastCurrentRunWhereInput | ForecastCurrentRunWhereInput[]
     OR?: ForecastCurrentRunWhereInput[]
     NOT?: ForecastCurrentRunWhereInput | ForecastCurrentRunWhereInput[]
@@ -18454,13 +20097,15 @@ export namespace Prisma {
     forecastOriginAt?: DateTimeNullableFilter<"ForecastCurrentRun"> | Date | string | null
     modelId?: StringFilter<"ForecastCurrentRun"> | string
     methodVersion?: StringFilter<"ForecastCurrentRun"> | string
+    trainingWindowPolicyId?: StringNullableFilter<"ForecastCurrentRun"> | string | null
+    effectiveTrainingPolicyId?: StringNullableFilter<"ForecastCurrentRun"> | string | null
     status?: StringFilter<"ForecastCurrentRun"> | string
     failureReason?: StringNullableFilter<"ForecastCurrentRun"> | string | null
     runtimeSeconds?: FloatNullableFilter<"ForecastCurrentRun"> | number | null
     createdAt?: DateTimeFilter<"ForecastCurrentRun"> | Date | string
     updatedAt?: DateTimeFilter<"ForecastCurrentRun"> | Date | string
     points?: ForecastCurrentPointListRelationFilter
-  }, "id" | "seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion">
+  }, "id" | "seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_frequency_trainingWindowPolicyId_effectiveTrainingPolicyId">
 
   export type ForecastCurrentRunOrderByWithAggregationInput = {
     id?: SortOrder
@@ -18482,6 +20127,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrderInput | SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrderInput | SortOrder
+    effectiveTrainingPolicyId?: SortOrderInput | SortOrder
     status?: SortOrder
     failureReason?: SortOrderInput | SortOrder
     runtimeSeconds?: SortOrderInput | SortOrder
@@ -18517,6 +20164,8 @@ export namespace Prisma {
     forecastOriginAt?: DateTimeNullableWithAggregatesFilter<"ForecastCurrentRun"> | Date | string | null
     modelId?: StringWithAggregatesFilter<"ForecastCurrentRun"> | string
     methodVersion?: StringWithAggregatesFilter<"ForecastCurrentRun"> | string
+    trainingWindowPolicyId?: StringNullableWithAggregatesFilter<"ForecastCurrentRun"> | string | null
+    effectiveTrainingPolicyId?: StringNullableWithAggregatesFilter<"ForecastCurrentRun"> | string | null
     status?: StringWithAggregatesFilter<"ForecastCurrentRun"> | string
     failureReason?: StringNullableWithAggregatesFilter<"ForecastCurrentRun"> | string | null
     runtimeSeconds?: FloatNullableWithAggregatesFilter<"ForecastCurrentRun"> | number | null
@@ -18650,6 +20299,8 @@ export namespace Prisma {
     forecastOriginAt?: DateTimeNullableFilter<"ForecastVerificationRun"> | Date | string | null
     modelId?: StringFilter<"ForecastVerificationRun"> | string
     methodVersion?: StringFilter<"ForecastVerificationRun"> | string
+    trainingWindowPolicyId?: StringNullableFilter<"ForecastVerificationRun"> | string | null
+    effectiveTrainingPolicyId?: StringNullableFilter<"ForecastVerificationRun"> | string | null
     status?: StringFilter<"ForecastVerificationRun"> | string
     failureReason?: StringNullableFilter<"ForecastVerificationRun"> | string | null
     runtimeSeconds?: FloatNullableFilter<"ForecastVerificationRun"> | number | null
@@ -18679,6 +20330,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrderInput | SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrderInput | SortOrder
+    effectiveTrainingPolicyId?: SortOrderInput | SortOrder
     status?: SortOrder
     failureReason?: SortOrderInput | SortOrder
     runtimeSeconds?: SortOrderInput | SortOrder
@@ -18690,7 +20343,7 @@ export namespace Prisma {
 
   export type ForecastVerificationRunWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion?: ForecastVerificationRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionCompoundUniqueInput
+    seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_frequency_trainingWindowPolicyId_effectiveTrainingPolicyId?: ForecastVerificationRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionFrequencyTrainingWindowPolicyIdEffectiveTrainingPolicyIdCompoundUniqueInput
     AND?: ForecastVerificationRunWhereInput | ForecastVerificationRunWhereInput[]
     OR?: ForecastVerificationRunWhereInput[]
     NOT?: ForecastVerificationRunWhereInput | ForecastVerificationRunWhereInput[]
@@ -18712,6 +20365,8 @@ export namespace Prisma {
     forecastOriginAt?: DateTimeNullableFilter<"ForecastVerificationRun"> | Date | string | null
     modelId?: StringFilter<"ForecastVerificationRun"> | string
     methodVersion?: StringFilter<"ForecastVerificationRun"> | string
+    trainingWindowPolicyId?: StringNullableFilter<"ForecastVerificationRun"> | string | null
+    effectiveTrainingPolicyId?: StringNullableFilter<"ForecastVerificationRun"> | string | null
     status?: StringFilter<"ForecastVerificationRun"> | string
     failureReason?: StringNullableFilter<"ForecastVerificationRun"> | string | null
     runtimeSeconds?: FloatNullableFilter<"ForecastVerificationRun"> | number | null
@@ -18719,7 +20374,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"ForecastVerificationRun"> | Date | string
     metrics?: ForecastVerificationMetricListRelationFilter
     points?: ForecastVerificationPointListRelationFilter
-  }, "id" | "seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion">
+  }, "id" | "seriesId_inputSource_historyFingerprint_targetBasis_methodId_modelId_methodVersion_frequency_trainingWindowPolicyId_effectiveTrainingPolicyId">
 
   export type ForecastVerificationRunOrderByWithAggregationInput = {
     id?: SortOrder
@@ -18741,6 +20396,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrderInput | SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrderInput | SortOrder
+    effectiveTrainingPolicyId?: SortOrderInput | SortOrder
     status?: SortOrder
     failureReason?: SortOrderInput | SortOrder
     runtimeSeconds?: SortOrderInput | SortOrder
@@ -18776,6 +20433,8 @@ export namespace Prisma {
     forecastOriginAt?: DateTimeNullableWithAggregatesFilter<"ForecastVerificationRun"> | Date | string | null
     modelId?: StringWithAggregatesFilter<"ForecastVerificationRun"> | string
     methodVersion?: StringWithAggregatesFilter<"ForecastVerificationRun"> | string
+    trainingWindowPolicyId?: StringNullableWithAggregatesFilter<"ForecastVerificationRun"> | string | null
+    effectiveTrainingPolicyId?: StringNullableWithAggregatesFilter<"ForecastVerificationRun"> | string | null
     status?: StringWithAggregatesFilter<"ForecastVerificationRun"> | string
     failureReason?: StringNullableWithAggregatesFilter<"ForecastVerificationRun"> | string | null
     runtimeSeconds?: FloatNullableWithAggregatesFilter<"ForecastVerificationRun"> | number | null
@@ -19251,6 +20910,9 @@ export namespace Prisma {
     methodId?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
     methodVersion?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
     modelId?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    trainingWindowPolicyId?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    effectiveTrainingPolicyId?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    sourceHistoryFingerprint?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
     contractVersion?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
     status?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
     reasonCode?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
@@ -19271,6 +20933,9 @@ export namespace Prisma {
     methodId?: SortOrder
     methodVersion?: SortOrder
     modelId?: SortOrder
+    trainingWindowPolicyId?: SortOrderInput | SortOrder
+    effectiveTrainingPolicyId?: SortOrderInput | SortOrder
+    sourceHistoryFingerprint?: SortOrderInput | SortOrder
     contractVersion?: SortOrder
     status?: SortOrder
     reasonCode?: SortOrderInput | SortOrder
@@ -19284,7 +20949,7 @@ export namespace Prisma {
 
   export type RollingDailyCurrentForecastSnapshotWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    seriesId_inputSource_targetBasis_methodId_methodVersion_modelId?: RollingDailyCurrentForecastSnapshotSeriesIdInputSourceTargetBasisMethodIdMethodVersionModelIdCompoundUniqueInput
+    seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint?: RollingDailyCurrentForecastSnapshotSeriesIdInputSourceTargetBasisMethodIdMethodVersionModelIdTrainingWindowPolicyIdEffectiveTrainingPolicyIdSourceHistoryFingerprintCompoundUniqueInput
     AND?: RollingDailyCurrentForecastSnapshotWhereInput | RollingDailyCurrentForecastSnapshotWhereInput[]
     OR?: RollingDailyCurrentForecastSnapshotWhereInput[]
     NOT?: RollingDailyCurrentForecastSnapshotWhereInput | RollingDailyCurrentForecastSnapshotWhereInput[]
@@ -19295,6 +20960,9 @@ export namespace Prisma {
     methodId?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
     methodVersion?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
     modelId?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    trainingWindowPolicyId?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    effectiveTrainingPolicyId?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    sourceHistoryFingerprint?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
     contractVersion?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
     status?: StringFilter<"RollingDailyCurrentForecastSnapshot"> | string
     reasonCode?: StringNullableFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
@@ -19304,7 +20972,7 @@ export namespace Prisma {
     payloadJson?: JsonFilter<"RollingDailyCurrentForecastSnapshot">
     createdAt?: DateTimeFilter<"RollingDailyCurrentForecastSnapshot"> | Date | string
     updatedAt?: DateTimeFilter<"RollingDailyCurrentForecastSnapshot"> | Date | string
-  }, "id" | "seriesId_inputSource_targetBasis_methodId_methodVersion_modelId">
+  }, "id" | "seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint">
 
   export type RollingDailyCurrentForecastSnapshotOrderByWithAggregationInput = {
     id?: SortOrder
@@ -19315,6 +20983,9 @@ export namespace Prisma {
     methodId?: SortOrder
     methodVersion?: SortOrder
     modelId?: SortOrder
+    trainingWindowPolicyId?: SortOrderInput | SortOrder
+    effectiveTrainingPolicyId?: SortOrderInput | SortOrder
+    sourceHistoryFingerprint?: SortOrderInput | SortOrder
     contractVersion?: SortOrder
     status?: SortOrder
     reasonCode?: SortOrderInput | SortOrder
@@ -19341,6 +21012,9 @@ export namespace Prisma {
     methodId?: StringWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string
     methodVersion?: StringWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string
     modelId?: StringWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string
+    trainingWindowPolicyId?: StringNullableWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    effectiveTrainingPolicyId?: StringNullableWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
+    sourceHistoryFingerprint?: StringNullableWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
     contractVersion?: StringWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string
     status?: StringWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string
     reasonCode?: StringNullableWithAggregatesFilter<"RollingDailyCurrentForecastSnapshot"> | string | null
@@ -19620,6 +21294,265 @@ export namespace Prisma {
     lastFailureReason?: StringNullableWithAggregatesFilter<"RollingDailyMaintenanceState"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"RollingDailyMaintenanceState"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"RollingDailyMaintenanceState"> | Date | string
+  }
+
+  export type ForecastPreparationExecutionLedgerWhereInput = {
+    AND?: ForecastPreparationExecutionLedgerWhereInput | ForecastPreparationExecutionLedgerWhereInput[]
+    OR?: ForecastPreparationExecutionLedgerWhereInput[]
+    NOT?: ForecastPreparationExecutionLedgerWhereInput | ForecastPreparationExecutionLedgerWhereInput[]
+    id?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    executionId?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    logicalArtifactKey?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    operationFamily?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    executionStatus?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    resultStatus?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
+    cacheStatus?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
+    artifactScope?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    trainingWindowPolicyId?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    seriesId?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    targetBasis?: EnumForecastTargetBasisFilter<"ForecastPreparationExecutionLedger"> | $Enums.ForecastTargetBasis
+    targetSemantics?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    methodId?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    methodVersion?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    modelId?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    inputSource?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    historyFingerprint?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    sourceFrequency?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    targetCadence?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    frequencyIdentity?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    attemptKind?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    executionMode?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    ownerToken?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    leaseVersion?: IntFilter<"ForecastPreparationExecutionLedger"> | number
+    leaseAcquiredAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    leaseExpiresAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    recoveredFromExecutionId?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
+    ownerRequestId?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    latestRequestId?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    latestRole?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    waiterCount?: IntFilter<"ForecastPreparationExecutionLedger"> | number
+    eventCount?: IntFilter<"ForecastPreparationExecutionLedger"> | number
+    startedAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    lastEventAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    lastProgressAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    completedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    computeStartedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    computeCompletedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    persistenceStartedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    persistenceCompletedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    failurePhase?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
+    failureReason?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
+    logicalArtifactIdentityJson?: JsonFilter<"ForecastPreparationExecutionLedger">
+    eventsJson?: JsonFilter<"ForecastPreparationExecutionLedger">
+    createdAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    updatedAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+  }
+
+  export type ForecastPreparationExecutionLedgerOrderByWithRelationInput = {
+    id?: SortOrder
+    executionId?: SortOrder
+    logicalArtifactKey?: SortOrder
+    operationFamily?: SortOrder
+    executionStatus?: SortOrder
+    resultStatus?: SortOrderInput | SortOrder
+    cacheStatus?: SortOrderInput | SortOrder
+    artifactScope?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    seriesId?: SortOrder
+    targetBasis?: SortOrder
+    targetSemantics?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    inputSource?: SortOrder
+    historyFingerprint?: SortOrder
+    sourceFrequency?: SortOrder
+    targetCadence?: SortOrder
+    frequencyIdentity?: SortOrder
+    attemptKind?: SortOrder
+    executionMode?: SortOrder
+    ownerToken?: SortOrder
+    leaseVersion?: SortOrder
+    leaseAcquiredAt?: SortOrder
+    leaseExpiresAt?: SortOrder
+    recoveredFromExecutionId?: SortOrderInput | SortOrder
+    ownerRequestId?: SortOrder
+    latestRequestId?: SortOrder
+    latestRole?: SortOrder
+    waiterCount?: SortOrder
+    eventCount?: SortOrder
+    startedAt?: SortOrder
+    lastEventAt?: SortOrder
+    lastProgressAt?: SortOrder
+    completedAt?: SortOrderInput | SortOrder
+    computeStartedAt?: SortOrderInput | SortOrder
+    computeCompletedAt?: SortOrderInput | SortOrder
+    persistenceStartedAt?: SortOrderInput | SortOrder
+    persistenceCompletedAt?: SortOrderInput | SortOrder
+    failurePhase?: SortOrderInput | SortOrder
+    failureReason?: SortOrderInput | SortOrder
+    logicalArtifactIdentityJson?: SortOrder
+    eventsJson?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastPreparationExecutionLedgerWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    executionId?: string
+    AND?: ForecastPreparationExecutionLedgerWhereInput | ForecastPreparationExecutionLedgerWhereInput[]
+    OR?: ForecastPreparationExecutionLedgerWhereInput[]
+    NOT?: ForecastPreparationExecutionLedgerWhereInput | ForecastPreparationExecutionLedgerWhereInput[]
+    logicalArtifactKey?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    operationFamily?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    executionStatus?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    resultStatus?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
+    cacheStatus?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
+    artifactScope?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    trainingWindowPolicyId?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    seriesId?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    targetBasis?: EnumForecastTargetBasisFilter<"ForecastPreparationExecutionLedger"> | $Enums.ForecastTargetBasis
+    targetSemantics?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    methodId?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    methodVersion?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    modelId?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    inputSource?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    historyFingerprint?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    sourceFrequency?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    targetCadence?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    frequencyIdentity?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    attemptKind?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    executionMode?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    ownerToken?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    leaseVersion?: IntFilter<"ForecastPreparationExecutionLedger"> | number
+    leaseAcquiredAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    leaseExpiresAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    recoveredFromExecutionId?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
+    ownerRequestId?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    latestRequestId?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    latestRole?: StringFilter<"ForecastPreparationExecutionLedger"> | string
+    waiterCount?: IntFilter<"ForecastPreparationExecutionLedger"> | number
+    eventCount?: IntFilter<"ForecastPreparationExecutionLedger"> | number
+    startedAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    lastEventAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    lastProgressAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    completedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    computeStartedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    computeCompletedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    persistenceStartedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    persistenceCompletedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    failurePhase?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
+    failureReason?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
+    logicalArtifactIdentityJson?: JsonFilter<"ForecastPreparationExecutionLedger">
+    eventsJson?: JsonFilter<"ForecastPreparationExecutionLedger">
+    createdAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    updatedAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
+  }, "id" | "executionId">
+
+  export type ForecastPreparationExecutionLedgerOrderByWithAggregationInput = {
+    id?: SortOrder
+    executionId?: SortOrder
+    logicalArtifactKey?: SortOrder
+    operationFamily?: SortOrder
+    executionStatus?: SortOrder
+    resultStatus?: SortOrderInput | SortOrder
+    cacheStatus?: SortOrderInput | SortOrder
+    artifactScope?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    seriesId?: SortOrder
+    targetBasis?: SortOrder
+    targetSemantics?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    inputSource?: SortOrder
+    historyFingerprint?: SortOrder
+    sourceFrequency?: SortOrder
+    targetCadence?: SortOrder
+    frequencyIdentity?: SortOrder
+    attemptKind?: SortOrder
+    executionMode?: SortOrder
+    ownerToken?: SortOrder
+    leaseVersion?: SortOrder
+    leaseAcquiredAt?: SortOrder
+    leaseExpiresAt?: SortOrder
+    recoveredFromExecutionId?: SortOrderInput | SortOrder
+    ownerRequestId?: SortOrder
+    latestRequestId?: SortOrder
+    latestRole?: SortOrder
+    waiterCount?: SortOrder
+    eventCount?: SortOrder
+    startedAt?: SortOrder
+    lastEventAt?: SortOrder
+    lastProgressAt?: SortOrder
+    completedAt?: SortOrderInput | SortOrder
+    computeStartedAt?: SortOrderInput | SortOrder
+    computeCompletedAt?: SortOrderInput | SortOrder
+    persistenceStartedAt?: SortOrderInput | SortOrder
+    persistenceCompletedAt?: SortOrderInput | SortOrder
+    failurePhase?: SortOrderInput | SortOrder
+    failureReason?: SortOrderInput | SortOrder
+    logicalArtifactIdentityJson?: SortOrder
+    eventsJson?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: ForecastPreparationExecutionLedgerCountOrderByAggregateInput
+    _avg?: ForecastPreparationExecutionLedgerAvgOrderByAggregateInput
+    _max?: ForecastPreparationExecutionLedgerMaxOrderByAggregateInput
+    _min?: ForecastPreparationExecutionLedgerMinOrderByAggregateInput
+    _sum?: ForecastPreparationExecutionLedgerSumOrderByAggregateInput
+  }
+
+  export type ForecastPreparationExecutionLedgerScalarWhereWithAggregatesInput = {
+    AND?: ForecastPreparationExecutionLedgerScalarWhereWithAggregatesInput | ForecastPreparationExecutionLedgerScalarWhereWithAggregatesInput[]
+    OR?: ForecastPreparationExecutionLedgerScalarWhereWithAggregatesInput[]
+    NOT?: ForecastPreparationExecutionLedgerScalarWhereWithAggregatesInput | ForecastPreparationExecutionLedgerScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    executionId?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    logicalArtifactKey?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    operationFamily?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    executionStatus?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    resultStatus?: StringNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string | null
+    cacheStatus?: StringNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string | null
+    artifactScope?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    trainingWindowPolicyId?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    seriesId?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    targetBasis?: EnumForecastTargetBasisWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | $Enums.ForecastTargetBasis
+    targetSemantics?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    methodId?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    methodVersion?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    modelId?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    inputSource?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    historyFingerprint?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    sourceFrequency?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    targetCadence?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    frequencyIdentity?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    attemptKind?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    executionMode?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    ownerToken?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    leaseVersion?: IntWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | number
+    leaseAcquiredAt?: DateTimeWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    leaseExpiresAt?: DateTimeWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    recoveredFromExecutionId?: StringNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string | null
+    ownerRequestId?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    latestRequestId?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    latestRole?: StringWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string
+    waiterCount?: IntWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | number
+    eventCount?: IntWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | number
+    startedAt?: DateTimeWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    lastEventAt?: DateTimeWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    lastProgressAt?: DateTimeWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    completedAt?: DateTimeNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    computeStartedAt?: DateTimeNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    computeCompletedAt?: DateTimeNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    persistenceStartedAt?: DateTimeNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    persistenceCompletedAt?: DateTimeNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    failurePhase?: StringNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string | null
+    failureReason?: StringNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string | null
+    logicalArtifactIdentityJson?: JsonWithAggregatesFilter<"ForecastPreparationExecutionLedger">
+    eventsJson?: JsonWithAggregatesFilter<"ForecastPreparationExecutionLedger">
+    createdAt?: DateTimeWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string
   }
 
   export type BenchmarkMetadataFacetRecordWhereInput = {
@@ -20108,6 +22041,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -20136,6 +22071,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -20164,6 +22101,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -20192,6 +22131,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -20220,6 +22161,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -20247,6 +22190,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -20274,6 +22219,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -20419,6 +22366,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -20448,6 +22397,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -20477,6 +22428,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -20506,6 +22459,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -20535,6 +22490,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -20562,6 +22519,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -20589,6 +22548,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -21170,6 +23131,9 @@ export namespace Prisma {
     methodId: string
     methodVersion: string
     modelId: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
+    sourceHistoryFingerprint?: string | null
     contractVersion: string
     status: string
     reasonCode?: string | null
@@ -21190,6 +23154,9 @@ export namespace Prisma {
     methodId: string
     methodVersion: string
     modelId: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
+    sourceHistoryFingerprint?: string | null
     contractVersion: string
     status: string
     reasonCode?: string | null
@@ -21210,6 +23177,9 @@ export namespace Prisma {
     methodId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
     modelId?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceHistoryFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
     contractVersion?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
     reasonCode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -21230,6 +23200,9 @@ export namespace Prisma {
     methodId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
     modelId?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceHistoryFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
     contractVersion?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
     reasonCode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -21250,6 +23223,9 @@ export namespace Prisma {
     methodId: string
     methodVersion: string
     modelId: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
+    sourceHistoryFingerprint?: string | null
     contractVersion: string
     status: string
     reasonCode?: string | null
@@ -21270,6 +23246,9 @@ export namespace Prisma {
     methodId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
     modelId?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceHistoryFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
     contractVersion?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
     reasonCode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -21290,6 +23269,9 @@ export namespace Prisma {
     methodId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
     modelId?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    sourceHistoryFingerprint?: NullableStringFieldUpdateOperationsInput | string | null
     contractVersion?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
     reasonCode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -21633,6 +23615,349 @@ export namespace Prisma {
     lastMaintenanceAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     lastMaintenanceStatus?: NullableStringFieldUpdateOperationsInput | string | null
     lastFailureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastPreparationExecutionLedgerCreateInput = {
+    id?: string
+    executionId: string
+    logicalArtifactKey: string
+    operationFamily: string
+    executionStatus: string
+    resultStatus?: string | null
+    cacheStatus?: string | null
+    artifactScope: string
+    trainingWindowPolicyId: string
+    seriesId: string
+    targetBasis?: $Enums.ForecastTargetBasis
+    targetSemantics: string
+    methodId: string
+    methodVersion: string
+    modelId: string
+    inputSource: string
+    historyFingerprint: string
+    sourceFrequency: string
+    targetCadence: string
+    frequencyIdentity: string
+    attemptKind: string
+    executionMode: string
+    ownerToken: string
+    leaseVersion?: number
+    leaseAcquiredAt: Date | string
+    leaseExpiresAt: Date | string
+    recoveredFromExecutionId?: string | null
+    ownerRequestId: string
+    latestRequestId: string
+    latestRole: string
+    waiterCount?: number
+    eventCount?: number
+    startedAt: Date | string
+    lastEventAt: Date | string
+    lastProgressAt: Date | string
+    completedAt?: Date | string | null
+    computeStartedAt?: Date | string | null
+    computeCompletedAt?: Date | string | null
+    persistenceStartedAt?: Date | string | null
+    persistenceCompletedAt?: Date | string | null
+    failurePhase?: string | null
+    failureReason?: string | null
+    logicalArtifactIdentityJson: JsonNullValueInput | InputJsonValue
+    eventsJson: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastPreparationExecutionLedgerUncheckedCreateInput = {
+    id?: string
+    executionId: string
+    logicalArtifactKey: string
+    operationFamily: string
+    executionStatus: string
+    resultStatus?: string | null
+    cacheStatus?: string | null
+    artifactScope: string
+    trainingWindowPolicyId: string
+    seriesId: string
+    targetBasis?: $Enums.ForecastTargetBasis
+    targetSemantics: string
+    methodId: string
+    methodVersion: string
+    modelId: string
+    inputSource: string
+    historyFingerprint: string
+    sourceFrequency: string
+    targetCadence: string
+    frequencyIdentity: string
+    attemptKind: string
+    executionMode: string
+    ownerToken: string
+    leaseVersion?: number
+    leaseAcquiredAt: Date | string
+    leaseExpiresAt: Date | string
+    recoveredFromExecutionId?: string | null
+    ownerRequestId: string
+    latestRequestId: string
+    latestRole: string
+    waiterCount?: number
+    eventCount?: number
+    startedAt: Date | string
+    lastEventAt: Date | string
+    lastProgressAt: Date | string
+    completedAt?: Date | string | null
+    computeStartedAt?: Date | string | null
+    computeCompletedAt?: Date | string | null
+    persistenceStartedAt?: Date | string | null
+    persistenceCompletedAt?: Date | string | null
+    failurePhase?: string | null
+    failureReason?: string | null
+    logicalArtifactIdentityJson: JsonNullValueInput | InputJsonValue
+    eventsJson: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastPreparationExecutionLedgerUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    executionId?: StringFieldUpdateOperationsInput | string
+    logicalArtifactKey?: StringFieldUpdateOperationsInput | string
+    operationFamily?: StringFieldUpdateOperationsInput | string
+    executionStatus?: StringFieldUpdateOperationsInput | string
+    resultStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    cacheStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    artifactScope?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    targetSemantics?: StringFieldUpdateOperationsInput | string
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    sourceFrequency?: StringFieldUpdateOperationsInput | string
+    targetCadence?: StringFieldUpdateOperationsInput | string
+    frequencyIdentity?: StringFieldUpdateOperationsInput | string
+    attemptKind?: StringFieldUpdateOperationsInput | string
+    executionMode?: StringFieldUpdateOperationsInput | string
+    ownerToken?: StringFieldUpdateOperationsInput | string
+    leaseVersion?: IntFieldUpdateOperationsInput | number
+    leaseAcquiredAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    leaseExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    recoveredFromExecutionId?: NullableStringFieldUpdateOperationsInput | string | null
+    ownerRequestId?: StringFieldUpdateOperationsInput | string
+    latestRequestId?: StringFieldUpdateOperationsInput | string
+    latestRole?: StringFieldUpdateOperationsInput | string
+    waiterCount?: IntFieldUpdateOperationsInput | number
+    eventCount?: IntFieldUpdateOperationsInput | number
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastEventAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastProgressAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    computeStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    computeCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    persistenceStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    persistenceCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    failurePhase?: NullableStringFieldUpdateOperationsInput | string | null
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    logicalArtifactIdentityJson?: JsonNullValueInput | InputJsonValue
+    eventsJson?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastPreparationExecutionLedgerUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    executionId?: StringFieldUpdateOperationsInput | string
+    logicalArtifactKey?: StringFieldUpdateOperationsInput | string
+    operationFamily?: StringFieldUpdateOperationsInput | string
+    executionStatus?: StringFieldUpdateOperationsInput | string
+    resultStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    cacheStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    artifactScope?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    targetSemantics?: StringFieldUpdateOperationsInput | string
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    sourceFrequency?: StringFieldUpdateOperationsInput | string
+    targetCadence?: StringFieldUpdateOperationsInput | string
+    frequencyIdentity?: StringFieldUpdateOperationsInput | string
+    attemptKind?: StringFieldUpdateOperationsInput | string
+    executionMode?: StringFieldUpdateOperationsInput | string
+    ownerToken?: StringFieldUpdateOperationsInput | string
+    leaseVersion?: IntFieldUpdateOperationsInput | number
+    leaseAcquiredAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    leaseExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    recoveredFromExecutionId?: NullableStringFieldUpdateOperationsInput | string | null
+    ownerRequestId?: StringFieldUpdateOperationsInput | string
+    latestRequestId?: StringFieldUpdateOperationsInput | string
+    latestRole?: StringFieldUpdateOperationsInput | string
+    waiterCount?: IntFieldUpdateOperationsInput | number
+    eventCount?: IntFieldUpdateOperationsInput | number
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastEventAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastProgressAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    computeStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    computeCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    persistenceStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    persistenceCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    failurePhase?: NullableStringFieldUpdateOperationsInput | string | null
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    logicalArtifactIdentityJson?: JsonNullValueInput | InputJsonValue
+    eventsJson?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastPreparationExecutionLedgerCreateManyInput = {
+    id?: string
+    executionId: string
+    logicalArtifactKey: string
+    operationFamily: string
+    executionStatus: string
+    resultStatus?: string | null
+    cacheStatus?: string | null
+    artifactScope: string
+    trainingWindowPolicyId: string
+    seriesId: string
+    targetBasis?: $Enums.ForecastTargetBasis
+    targetSemantics: string
+    methodId: string
+    methodVersion: string
+    modelId: string
+    inputSource: string
+    historyFingerprint: string
+    sourceFrequency: string
+    targetCadence: string
+    frequencyIdentity: string
+    attemptKind: string
+    executionMode: string
+    ownerToken: string
+    leaseVersion?: number
+    leaseAcquiredAt: Date | string
+    leaseExpiresAt: Date | string
+    recoveredFromExecutionId?: string | null
+    ownerRequestId: string
+    latestRequestId: string
+    latestRole: string
+    waiterCount?: number
+    eventCount?: number
+    startedAt: Date | string
+    lastEventAt: Date | string
+    lastProgressAt: Date | string
+    completedAt?: Date | string | null
+    computeStartedAt?: Date | string | null
+    computeCompletedAt?: Date | string | null
+    persistenceStartedAt?: Date | string | null
+    persistenceCompletedAt?: Date | string | null
+    failurePhase?: string | null
+    failureReason?: string | null
+    logicalArtifactIdentityJson: JsonNullValueInput | InputJsonValue
+    eventsJson: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastPreparationExecutionLedgerUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    executionId?: StringFieldUpdateOperationsInput | string
+    logicalArtifactKey?: StringFieldUpdateOperationsInput | string
+    operationFamily?: StringFieldUpdateOperationsInput | string
+    executionStatus?: StringFieldUpdateOperationsInput | string
+    resultStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    cacheStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    artifactScope?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    targetSemantics?: StringFieldUpdateOperationsInput | string
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    sourceFrequency?: StringFieldUpdateOperationsInput | string
+    targetCadence?: StringFieldUpdateOperationsInput | string
+    frequencyIdentity?: StringFieldUpdateOperationsInput | string
+    attemptKind?: StringFieldUpdateOperationsInput | string
+    executionMode?: StringFieldUpdateOperationsInput | string
+    ownerToken?: StringFieldUpdateOperationsInput | string
+    leaseVersion?: IntFieldUpdateOperationsInput | number
+    leaseAcquiredAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    leaseExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    recoveredFromExecutionId?: NullableStringFieldUpdateOperationsInput | string | null
+    ownerRequestId?: StringFieldUpdateOperationsInput | string
+    latestRequestId?: StringFieldUpdateOperationsInput | string
+    latestRole?: StringFieldUpdateOperationsInput | string
+    waiterCount?: IntFieldUpdateOperationsInput | number
+    eventCount?: IntFieldUpdateOperationsInput | number
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastEventAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastProgressAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    computeStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    computeCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    persistenceStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    persistenceCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    failurePhase?: NullableStringFieldUpdateOperationsInput | string | null
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    logicalArtifactIdentityJson?: JsonNullValueInput | InputJsonValue
+    eventsJson?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastPreparationExecutionLedgerUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    executionId?: StringFieldUpdateOperationsInput | string
+    logicalArtifactKey?: StringFieldUpdateOperationsInput | string
+    operationFamily?: StringFieldUpdateOperationsInput | string
+    executionStatus?: StringFieldUpdateOperationsInput | string
+    resultStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    cacheStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    artifactScope?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    targetSemantics?: StringFieldUpdateOperationsInput | string
+    methodId?: StringFieldUpdateOperationsInput | string
+    methodVersion?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    inputSource?: StringFieldUpdateOperationsInput | string
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    sourceFrequency?: StringFieldUpdateOperationsInput | string
+    targetCadence?: StringFieldUpdateOperationsInput | string
+    frequencyIdentity?: StringFieldUpdateOperationsInput | string
+    attemptKind?: StringFieldUpdateOperationsInput | string
+    executionMode?: StringFieldUpdateOperationsInput | string
+    ownerToken?: StringFieldUpdateOperationsInput | string
+    leaseVersion?: IntFieldUpdateOperationsInput | number
+    leaseAcquiredAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    leaseExpiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    recoveredFromExecutionId?: NullableStringFieldUpdateOperationsInput | string | null
+    ownerRequestId?: StringFieldUpdateOperationsInput | string
+    latestRequestId?: StringFieldUpdateOperationsInput | string
+    latestRole?: StringFieldUpdateOperationsInput | string
+    waiterCount?: IntFieldUpdateOperationsInput | number
+    eventCount?: IntFieldUpdateOperationsInput | number
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastEventAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastProgressAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    computeStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    computeCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    persistenceStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    persistenceCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    failurePhase?: NullableStringFieldUpdateOperationsInput | string | null
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    logicalArtifactIdentityJson?: JsonNullValueInput | InputJsonValue
+    eventsJson?: JsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -22257,7 +24582,7 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
-  export type ForecastCurrentRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionCompoundUniqueInput = {
+  export type ForecastCurrentRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionFrequencyTrainingWindowPolicyIdEffectiveTrainingPolicyIdCompoundUniqueInput = {
     seriesId: string
     inputSource: string
     historyFingerprint: string
@@ -22265,6 +24590,9 @@ export namespace Prisma {
     methodId: string
     modelId: string
     methodVersion: string
+    frequency: string
+    trainingWindowPolicyId: string
+    effectiveTrainingPolicyId: string
   }
 
   export type ForecastCurrentRunCountOrderByAggregateInput = {
@@ -22287,6 +24615,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    effectiveTrainingPolicyId?: SortOrder
     status?: SortOrder
     failureReason?: SortOrder
     runtimeSeconds?: SortOrder
@@ -22319,6 +24649,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    effectiveTrainingPolicyId?: SortOrder
     status?: SortOrder
     failureReason?: SortOrder
     runtimeSeconds?: SortOrder
@@ -22346,6 +24678,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    effectiveTrainingPolicyId?: SortOrder
     status?: SortOrder
     failureReason?: SortOrder
     runtimeSeconds?: SortOrder
@@ -22538,7 +24872,7 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
-  export type ForecastVerificationRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionCompoundUniqueInput = {
+  export type ForecastVerificationRunSeriesIdInputSourceHistoryFingerprintTargetBasisMethodIdModelIdMethodVersionFrequencyTrainingWindowPolicyIdEffectiveTrainingPolicyIdCompoundUniqueInput = {
     seriesId: string
     inputSource: string
     historyFingerprint: string
@@ -22546,6 +24880,9 @@ export namespace Prisma {
     methodId: string
     modelId: string
     methodVersion: string
+    frequency: string
+    trainingWindowPolicyId: string
+    effectiveTrainingPolicyId: string
   }
 
   export type ForecastVerificationRunCountOrderByAggregateInput = {
@@ -22568,6 +24905,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    effectiveTrainingPolicyId?: SortOrder
     status?: SortOrder
     failureReason?: SortOrder
     runtimeSeconds?: SortOrder
@@ -22600,6 +24939,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    effectiveTrainingPolicyId?: SortOrder
     status?: SortOrder
     failureReason?: SortOrder
     runtimeSeconds?: SortOrder
@@ -22627,6 +24968,8 @@ export namespace Prisma {
     forecastOriginAt?: SortOrder
     modelId?: SortOrder
     methodVersion?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    effectiveTrainingPolicyId?: SortOrder
     status?: SortOrder
     failureReason?: SortOrder
     runtimeSeconds?: SortOrder
@@ -23083,13 +25426,16 @@ export namespace Prisma {
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
   }
 
-  export type RollingDailyCurrentForecastSnapshotSeriesIdInputSourceTargetBasisMethodIdMethodVersionModelIdCompoundUniqueInput = {
+  export type RollingDailyCurrentForecastSnapshotSeriesIdInputSourceTargetBasisMethodIdMethodVersionModelIdTrainingWindowPolicyIdEffectiveTrainingPolicyIdSourceHistoryFingerprintCompoundUniqueInput = {
     seriesId: string
     inputSource: string
     targetBasis: $Enums.ForecastTargetBasis
     methodId: string
     methodVersion: string
     modelId: string
+    trainingWindowPolicyId: string
+    effectiveTrainingPolicyId: string
+    sourceHistoryFingerprint: string
   }
 
   export type RollingDailyCurrentForecastSnapshotCountOrderByAggregateInput = {
@@ -23101,6 +25447,9 @@ export namespace Prisma {
     methodId?: SortOrder
     methodVersion?: SortOrder
     modelId?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    effectiveTrainingPolicyId?: SortOrder
+    sourceHistoryFingerprint?: SortOrder
     contractVersion?: SortOrder
     status?: SortOrder
     reasonCode?: SortOrder
@@ -23121,6 +25470,9 @@ export namespace Prisma {
     methodId?: SortOrder
     methodVersion?: SortOrder
     modelId?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    effectiveTrainingPolicyId?: SortOrder
+    sourceHistoryFingerprint?: SortOrder
     contractVersion?: SortOrder
     status?: SortOrder
     reasonCode?: SortOrder
@@ -23140,6 +25492,9 @@ export namespace Prisma {
     methodId?: SortOrder
     methodVersion?: SortOrder
     modelId?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    effectiveTrainingPolicyId?: SortOrder
+    sourceHistoryFingerprint?: SortOrder
     contractVersion?: SortOrder
     status?: SortOrder
     reasonCode?: SortOrder
@@ -23379,6 +25734,161 @@ export namespace Prisma {
     minimumTrainingObservations?: SortOrder
     minimumCalibrationSamples?: SortOrder
     latestSourceObservationCount?: SortOrder
+  }
+
+  export type ForecastPreparationExecutionLedgerCountOrderByAggregateInput = {
+    id?: SortOrder
+    executionId?: SortOrder
+    logicalArtifactKey?: SortOrder
+    operationFamily?: SortOrder
+    executionStatus?: SortOrder
+    resultStatus?: SortOrder
+    cacheStatus?: SortOrder
+    artifactScope?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    seriesId?: SortOrder
+    targetBasis?: SortOrder
+    targetSemantics?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    inputSource?: SortOrder
+    historyFingerprint?: SortOrder
+    sourceFrequency?: SortOrder
+    targetCadence?: SortOrder
+    frequencyIdentity?: SortOrder
+    attemptKind?: SortOrder
+    executionMode?: SortOrder
+    ownerToken?: SortOrder
+    leaseVersion?: SortOrder
+    leaseAcquiredAt?: SortOrder
+    leaseExpiresAt?: SortOrder
+    recoveredFromExecutionId?: SortOrder
+    ownerRequestId?: SortOrder
+    latestRequestId?: SortOrder
+    latestRole?: SortOrder
+    waiterCount?: SortOrder
+    eventCount?: SortOrder
+    startedAt?: SortOrder
+    lastEventAt?: SortOrder
+    lastProgressAt?: SortOrder
+    completedAt?: SortOrder
+    computeStartedAt?: SortOrder
+    computeCompletedAt?: SortOrder
+    persistenceStartedAt?: SortOrder
+    persistenceCompletedAt?: SortOrder
+    failurePhase?: SortOrder
+    failureReason?: SortOrder
+    logicalArtifactIdentityJson?: SortOrder
+    eventsJson?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastPreparationExecutionLedgerAvgOrderByAggregateInput = {
+    leaseVersion?: SortOrder
+    waiterCount?: SortOrder
+    eventCount?: SortOrder
+  }
+
+  export type ForecastPreparationExecutionLedgerMaxOrderByAggregateInput = {
+    id?: SortOrder
+    executionId?: SortOrder
+    logicalArtifactKey?: SortOrder
+    operationFamily?: SortOrder
+    executionStatus?: SortOrder
+    resultStatus?: SortOrder
+    cacheStatus?: SortOrder
+    artifactScope?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    seriesId?: SortOrder
+    targetBasis?: SortOrder
+    targetSemantics?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    inputSource?: SortOrder
+    historyFingerprint?: SortOrder
+    sourceFrequency?: SortOrder
+    targetCadence?: SortOrder
+    frequencyIdentity?: SortOrder
+    attemptKind?: SortOrder
+    executionMode?: SortOrder
+    ownerToken?: SortOrder
+    leaseVersion?: SortOrder
+    leaseAcquiredAt?: SortOrder
+    leaseExpiresAt?: SortOrder
+    recoveredFromExecutionId?: SortOrder
+    ownerRequestId?: SortOrder
+    latestRequestId?: SortOrder
+    latestRole?: SortOrder
+    waiterCount?: SortOrder
+    eventCount?: SortOrder
+    startedAt?: SortOrder
+    lastEventAt?: SortOrder
+    lastProgressAt?: SortOrder
+    completedAt?: SortOrder
+    computeStartedAt?: SortOrder
+    computeCompletedAt?: SortOrder
+    persistenceStartedAt?: SortOrder
+    persistenceCompletedAt?: SortOrder
+    failurePhase?: SortOrder
+    failureReason?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastPreparationExecutionLedgerMinOrderByAggregateInput = {
+    id?: SortOrder
+    executionId?: SortOrder
+    logicalArtifactKey?: SortOrder
+    operationFamily?: SortOrder
+    executionStatus?: SortOrder
+    resultStatus?: SortOrder
+    cacheStatus?: SortOrder
+    artifactScope?: SortOrder
+    trainingWindowPolicyId?: SortOrder
+    seriesId?: SortOrder
+    targetBasis?: SortOrder
+    targetSemantics?: SortOrder
+    methodId?: SortOrder
+    methodVersion?: SortOrder
+    modelId?: SortOrder
+    inputSource?: SortOrder
+    historyFingerprint?: SortOrder
+    sourceFrequency?: SortOrder
+    targetCadence?: SortOrder
+    frequencyIdentity?: SortOrder
+    attemptKind?: SortOrder
+    executionMode?: SortOrder
+    ownerToken?: SortOrder
+    leaseVersion?: SortOrder
+    leaseAcquiredAt?: SortOrder
+    leaseExpiresAt?: SortOrder
+    recoveredFromExecutionId?: SortOrder
+    ownerRequestId?: SortOrder
+    latestRequestId?: SortOrder
+    latestRole?: SortOrder
+    waiterCount?: SortOrder
+    eventCount?: SortOrder
+    startedAt?: SortOrder
+    lastEventAt?: SortOrder
+    lastProgressAt?: SortOrder
+    completedAt?: SortOrder
+    computeStartedAt?: SortOrder
+    computeCompletedAt?: SortOrder
+    persistenceStartedAt?: SortOrder
+    persistenceCompletedAt?: SortOrder
+    failurePhase?: SortOrder
+    failureReason?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastPreparationExecutionLedgerSumOrderByAggregateInput = {
+    leaseVersion?: SortOrder
+    waiterCount?: SortOrder
+    eventCount?: SortOrder
   }
 
   export type BoolFilter<$PrismaModel = never> = {
@@ -24621,6 +27131,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -24648,6 +27160,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -24691,6 +27205,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -24718,6 +27234,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -24931,6 +27449,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -24959,6 +27479,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -25003,6 +27525,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -25031,6 +27555,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -25059,6 +27585,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -25087,6 +27615,8 @@ export namespace Prisma {
     forecastOriginAt?: Date | string | null
     modelId: string
     methodVersion: string
+    trainingWindowPolicyId?: string | null
+    effectiveTrainingPolicyId?: string | null
     status: string
     failureReason?: string | null
     runtimeSeconds?: number | null
@@ -25131,6 +27661,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -25159,6 +27691,8 @@ export namespace Prisma {
     forecastOriginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modelId?: StringFieldUpdateOperationsInput | string
     methodVersion?: StringFieldUpdateOperationsInput | string
+    trainingWindowPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveTrainingPolicyId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
     runtimeSeconds?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -25496,6 +28030,10 @@ export namespace Prisma {
      * @deprecated Use RollingDailyMaintenanceStateDefaultArgs instead
      */
     export type RollingDailyMaintenanceStateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RollingDailyMaintenanceStateDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ForecastPreparationExecutionLedgerDefaultArgs instead
+     */
+    export type ForecastPreparationExecutionLedgerArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ForecastPreparationExecutionLedgerDefaultArgs<ExtArgs>
     /**
      * @deprecated Use BenchmarkMetadataFacetRecordDefaultArgs instead
      */

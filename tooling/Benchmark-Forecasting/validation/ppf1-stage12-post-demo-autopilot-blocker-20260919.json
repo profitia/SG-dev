@@ -1,0 +1,81 @@
+{
+  "task": "PPF-1 Stage 12 post-demo full autopilot",
+  "observedAt": "2026-09-19",
+  "status": "BLOCKED",
+  "blocker": {
+    "code": "BENCHMARK_FINDER_PRIVATE_PACKAGE_AUTHORIZATION",
+    "service": "BENCHMARK-FINDER-CATEGORY-BUILDER",
+    "serviceId": "srv-d9tmgddbedkc739jr24g",
+    "attemptedCommit": "200375cee46e62eeacbcb47132d8a70e7ba4b726",
+    "deployId": "dep-danft9egekts738rjkkg",
+    "result": "BUILD_FAILED",
+    "failure": "npm E401 while downloading @profitia/cic-procurement from GitHub Packages",
+    "secretValuesCaptured": false,
+    "requiredDecision": "Provide a GitHub Packages token with read access to the required @profitia packages and update the Render NPM_TOKEN for the Finder service, or attach the Finder to the governed secret source used by the successfully building SG Runtime service."
+  },
+  "aluminiumReadiness": {
+    "seriesId": "lmeofalcashask",
+    "currentExact": {
+      "expected": 8,
+      "available": 8,
+      "trainingWindowPolicyId": "CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1",
+      "periodPolicy": "ADAPTIVE_SHORT_HISTORY_V1"
+    },
+    "fullVerificationExact": {
+      "expected": 8,
+      "available": 8,
+      "trainingWindowPolicyId": "FULL_EXPANDING_HISTORY_PER_ORIGIN@full-expanding-history-per-origin-v1",
+      "periodPolicy": "ADAPTIVE_SHORT_HISTORY_V1"
+    },
+    "pointInTimeCurrentModels": 4,
+    "pointInTimeHistoricalModels": 4,
+    "completedExecutions": [
+      "de208c21-f4b4-41e5-bc83-79113f842c04",
+      "57b9540b-28b4-420e-9e31-30bfd4175e01",
+      "4a4d4bab-e16a-4518-bc7f-17abe30d5315",
+      "b95a7a4e-95da-4432-be93-d4249b455f1c"
+    ]
+  },
+  "lastKnownGood": {
+    "commit": "c9c2dc4b38563b2da47edea357b1c7fe6a63e52c",
+    "services": [
+      {
+        "name": "spendguru-stage",
+        "deployId": "dep-danfv48ae00c73el7ngg",
+        "status": "LIVE",
+        "smokeHttp": 200
+      },
+      {
+        "name": "BENCHMARK-FINDER-CATEGORY-BUILDER",
+        "deployId": "dep-danb85uk1f9s7384s0sg",
+        "status": "LIVE",
+        "smokeHttp": 200
+      },
+      {
+        "name": "dashboards-library",
+        "deployId": "dep-danfv5142hec73ecd42g",
+        "status": "LIVE",
+        "smokeHttp": 200
+      }
+    ]
+  },
+  "releaseCandidate": {
+    "branch": "ppf1/stage12-post-demo-release-candidate-20260919",
+    "head": "200375cee46e62eeacbcb47132d8a70e7ba4b726",
+    "published": true,
+    "sgRuntimeTypecheck": "PASS",
+    "sgRuntimeBuild": "PASS",
+    "advisoryWidgetTests": "4/4 PASS",
+    "executionLedgerTests": "14/14 PASS"
+  },
+  "remainingStages": [
+    "Deploy one exact release-candidate SHA to all three official services",
+    "Run the targeted expired-owner recovery audit",
+    "Run the official Brent-Copper-Aluminium cohort",
+    "Remove the implicit in-memory production admission fallback",
+    "Redeploy and run the post-deprecation cohort",
+    "Create and merge the final PR",
+    "Complete PMOS/PHR closeout when the authoritative pending artifact exists"
+  ],
+  "pmosSave": "NOT_RUN_PENDING_ARTIFACT_ABSENT"
+}

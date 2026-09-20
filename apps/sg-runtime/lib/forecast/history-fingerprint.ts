@@ -14,17 +14,17 @@ type ForecastHistoryCanonicalization = {
 }
 
 type ForecastHistoryPoint = {
-  date: string
+  date: string | Date
   value: number | null
-  sourceObservedAt?: string | null
+  sourceObservedAt?: string | Date | null
 }
 
 export type ForecastHistoryFingerprintInput = {
   seriesId: string
   frequency: string
   cadence?: ForecastCadence
-  start: string
-  end: string
+  start: string | Date
+  end: string | Date
   observations: number
   canonicalization?: ForecastHistoryCanonicalization | null
   points: ForecastHistoryPoint[]
@@ -37,15 +37,50 @@ function padMilliseconds(value?: string) {
   return (value ?? '').padEnd(3, '0').slice(0, 3)
 }
 
-function parseIsoLikeInstant(value: string, label: string) {
-  const trimmed = value.trim()
+function resolveHistoryPeriodNormalizer(history: Pick<ForecastHistoryFingerprintInput, 'frequency' | 'cadence'>) {
+  const targetCadence = history.cadence?.targetCadence
+  if (
+    history.cadence
+    && normalizeForecastSourceFrequency(history.frequency) !== history.cadence.targetCadence
+  ) {
+    throw new Error(
+      `Forecast history frequency ${history.frequency} must match target cadence ${history.cadence.targetCadence}.`,
+    )
+  }
+
+  return {
+    targetCadence,
+    normalizePeriod: (value: string | Date, label: string) => targetCadence
+      ? normalizeForecastPeriodIdentity(value, targetCadence, label)
+      : normalizeMonthlyPeriodIdentity(value, label),
+  }
+}
+
+function normalizeHistoryPoints(
+  history: ForecastHistoryFingerprintInput,
+  normalizePeriod: (value: string | Date, label: string) => string,
+) {
+  return [...history.points]
+    .map((point) => ({
+      date: normalizePeriod(point.date, 'Forecast history point date'),
+      value: point.value,
+      sourceObservedAt: point.sourceObservedAt
+        ? normalizeSourceObservedAtIdentity(point.sourceObservedAt, 'Forecast history point sourceObservedAt')
+        : null,
+    }))
+    .sort((left, right) => left.date.localeCompare(right.date))
+}
+
+function parseIsoLikeInstant(value: string | Date, label: string) {
+  const raw = value instanceof Date ? value.toISOString() : String(value)
+  const trimmed = raw.trim()
 
   const dateOnlyMatch = DATE_ONLY_PATTERN.exec(trimmed)
   if (dateOnlyMatch) {
     const [, year, month, day] = dateOnlyMatch
     const parsed = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)))
     if (Number.isNaN(parsed.getTime())) {
-      throw new Error(`${label} must be a valid ISO date, received ${value}.`)
+      throw new Error(`${label} must be a valid ISO date, received ${raw}.`)
     }
     return parsed
   }
@@ -65,20 +100,20 @@ function parseIsoLikeInstant(value: string, label: string) {
       ),
     )
     if (Number.isNaN(parsed.getTime())) {
-      throw new Error(`${label} must be a valid ISO timestamp, received ${value}.`)
+      throw new Error(`${label} must be a valid ISO timestamp, received ${raw}.`)
     }
     return parsed
   }
 
   const parsed = new Date(trimmed)
   if (Number.isNaN(parsed.getTime())) {
-    throw new Error(`${label} must be a valid ISO date or timestamp, received ${value}.`)
+    throw new Error(`${label} must be a valid ISO date or timestamp, received ${raw}.`)
   }
 
   return parsed
 }
 
-export function normalizeMonthlyPeriodIdentity(value: string, label: string) {
+export function normalizeMonthlyPeriodIdentity(value: string | Date, label: string) {
   const parsed = parseIsoLikeInstant(value, label)
 
   if (
@@ -97,7 +132,7 @@ export function normalizeMonthlyPeriodIdentity(value: string, label: string) {
 }
 
 export function normalizeForecastPeriodIdentity(
-  value: string,
+  value: string | Date,
   cadence: ForecastTargetCadence,
   label: string,
 ) {
@@ -113,33 +148,14 @@ export function normalizeForecastPeriodIdentity(
   return parsed.toISOString()
 }
 
-export function normalizeSourceObservedAtIdentity(value: string, label: string) {
+export function normalizeSourceObservedAtIdentity(value: string | Date, label: string) {
   return parseIsoLikeInstant(value, label).toISOString()
 }
 
 export function buildForecastHistoryFingerprint(history: ForecastHistoryFingerprintInput) {
   const hash = createHash('sha256')
-  const targetCadence = history.cadence?.targetCadence
-  if (
-    history.cadence
-    && normalizeForecastSourceFrequency(history.frequency) !== history.cadence.targetCadence
-  ) {
-    throw new Error(
-      `Forecast history frequency ${history.frequency} must match target cadence ${history.cadence.targetCadence}.`,
-    )
-  }
-  const normalizePeriod = (value: string, label: string) => targetCadence
-    ? normalizeForecastPeriodIdentity(value, targetCadence, label)
-    : normalizeMonthlyPeriodIdentity(value, label)
-  const normalizedPoints = [...history.points]
-    .map((point) => ({
-      date: normalizePeriod(point.date, 'Forecast history point date'),
-      value: point.value,
-      sourceObservedAt: point.sourceObservedAt
-        ? normalizeSourceObservedAtIdentity(point.sourceObservedAt, 'Forecast history point sourceObservedAt')
-        : null,
-    }))
-    .sort((left, right) => left.date.localeCompare(right.date))
+  const { normalizePeriod } = resolveHistoryPeriodNormalizer(history)
+  const normalizedPoints = normalizeHistoryPoints(history, normalizePeriod)
 
   hash.update(history.seriesId)
   if (history.cadence) {
@@ -174,4 +190,28 @@ export function buildForecastHistoryFingerprint(history: ForecastHistoryFingerpr
   }
 
   return hash.digest('hex')
+}
+
+export function buildOriginBoundForecastHistoryFingerprint(
+  history: ForecastHistoryFingerprintInput,
+  forecastOrigin: string | Date,
+): string | null {
+  const { normalizePeriod } = resolveHistoryPeriodNormalizer(history)
+  const normalizedOrigin = normalizePeriod(forecastOrigin, 'Forecast calibration forecastOrigin')
+  const normalizedPoints = normalizeHistoryPoints(history, normalizePeriod)
+  const originBoundPoints = normalizedPoints.filter((point) => point.date <= normalizedOrigin)
+  const lastPoint = originBoundPoints.at(-1)
+  const firstPoint = originBoundPoints[0]
+
+  if (!firstPoint || !lastPoint || lastPoint.date !== normalizedOrigin) {
+    return null
+  }
+
+  return buildForecastHistoryFingerprint({
+    ...history,
+    start: firstPoint.date,
+    end: lastPoint.date,
+    observations: originBoundPoints.length,
+    points: originBoundPoints,
+  })
 }

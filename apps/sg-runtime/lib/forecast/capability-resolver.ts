@@ -25,9 +25,11 @@ import {
   type ForecastPreparationIdentity,
   type ForecastTargetSemantics,
 } from '@/lib/forecast/identity'
+import { resolveForecastTechnicalMinimumObservations } from '@/lib/forecast/current-fast-policy'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 import { readForecastPreparedVariants } from '@/lib/forecast/prepared-state'
 import { resolveMacrobondForecastProvenance } from '@/lib/forecast/provider-provenance'
+import { buildRollingDailyHistoryFingerprint } from '@/lib/forecast/rolling-daily-maintenance'
 
 export const FORECAST_SOURCE_FREQUENCIES = FORECAST_NATIVE_FREQUENCIES
 export { normalizeForecastSourceFrequency }
@@ -38,6 +40,11 @@ export type ForecastImplementationState = 'SUPPORTED' | 'NOT_IMPLEMENTED' | 'NOT
 export type ForecastHistoryEligibilityState = 'ELIGIBLE' | 'INSUFFICIENT_HISTORY' | 'DATA_NOT_AVAILABLE'
 export type ForecastTargetPreparationState = 'PREPARED' | 'PREPARATION_REQUIRED' | 'NOT_SUPPORTED'
 export type ForecastPreparedState = 'READY' | 'NOT_PREPARED' | 'STALE'
+export type ForecastPreparedReadAuthority = {
+  sourceFrequency: ForecastSourceFrequency
+  targetCadence: ForecastTargetCadence
+  expectedHistoryFingerprint: string
+}
 export type ForecastBusinessTarget = 'DAILY' | 'AVERAGE' | 'END_OF_PERIOD'
 export type ForecastHorizonSupportState = 'SUPPORTED' | 'UNSUPPORTED' | 'NOT_REQUESTED'
 export type ForecastVerificationEvidenceState = 'SUFFICIENT' | 'LIMITED_SAMPLE' | 'NOT_AVAILABLE'
@@ -71,6 +78,7 @@ export type ForecastPreparedVariant = {
   identity: ForecastIdentity
   current: ForecastPreparedState
   historical: ForecastPreparedState
+  preparedReadAuthority: ForecastPreparedReadAuthority | null
 }
 
 export type ForecastCapabilityResolverInput = {
@@ -88,6 +96,7 @@ export type ForecastCapabilityResolverInput = {
 
 export type ForecastVariantCapability = {
   identity: ForecastIdentity
+  preparedReadAuthority: ForecastPreparedReadAuthority | null
   sourceFrequency: ForecastSourceFrequency | null
   sourceFrequencyRecognized: boolean
   businessTarget: ForecastBusinessTarget
@@ -189,8 +198,6 @@ type TimedAsyncResult<T> = {
   durationMs: number
 }
 
-const MONTHLY_MINIMUM_OBSERVATIONS = 36
-const ROLLING_DAILY_MINIMUM_OBSERVATIONS = 60
 export const MIN_BACKTEST_ORIGINS_POINT_METRICS = 24
 export const MIN_EMPIRICAL_BAND_RESIDUALS = 30
 
@@ -199,6 +206,33 @@ const TARGET_BASIS_BY_SEMANTICS = {
   MONTHLY_AVERAGE: 'MONTHLY_AVERAGE',
   ROLLING_DAILY_POINT_IN_TIME: 'POINT_IN_TIME',
 } as const
+
+const preparedVariantReadsInFlight = new Map<string, Promise<readonly ForecastPreparedVariant[]>>()
+
+function buildPreparedVariantReadKey(seriesId: string, history: BenchmarkHistoricalSeriesResult) {
+  return buildRollingDailyHistoryFingerprint({
+    seriesId,
+    displayName: history.displayName,
+    description: history.displayName,
+    frequency: history.frequency ?? '',
+    source: history.source ?? '',
+    points: history.historical,
+  })
+}
+
+function readForecastPreparedVariantsSingleFlight(
+  seriesId: string,
+  history: BenchmarkHistoricalSeriesResult,
+) {
+  const key = buildPreparedVariantReadKey(seriesId, history)
+  const existing = preparedVariantReadsInFlight.get(key)
+  if (existing) return existing
+
+  const pending = readForecastPreparedVariants(seriesId, history)
+    .finally(() => preparedVariantReadsInFlight.delete(key))
+  preparedVariantReadsInFlight.set(key, pending)
+  return pending
+}
 
 function resolveSemanticLawfulness(
   sourceFrequency: ForecastSourceFrequency | null,
@@ -434,9 +468,10 @@ function resolveVariant(
     : 'NOT_REQUIRED'
   const implementationState = resolveImplementationState(input.sourceFrequency, targetSemantics, semanticLawfulness)
   const isRollingDaily = targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
-  const minimumRequiredObservations = isRollingDaily
-    ? ROLLING_DAILY_MINIMUM_OBSERVATIONS
-    : MONTHLY_MINIMUM_OBSERVATIONS
+  const minimumRequiredObservations = resolveForecastTechnicalMinimumObservations({
+    targetSemantics,
+    modelId,
+  })
   const availableObservations = isRollingDaily || targetCadence === input.sourceFrequency
     ? input.sourceObservationCount
     : input.preparedObservationCounts[targetSemantics] ?? 0
@@ -471,6 +506,7 @@ function resolveVariant(
 
   return {
     identity,
+    preparedReadAuthority: prepared?.preparedReadAuthority ?? null,
     sourceFrequency: input.sourceFrequency,
     sourceFrequencyRecognized: input.sourceFrequency !== null,
     businessTarget,
@@ -592,9 +628,7 @@ export function createForecastCapabilityService(
   const resolvedDependencies: ForecastCapabilityServiceDependencies = {
     resolveHistoricalSeries: dependencies.resolveHistoricalSeries ?? resolveBenchmarkHistoricalSeries,
     resolveProvenance: dependencies.resolveProvenance ?? resolveMacrobondForecastProvenance,
-    readPreparedVariants: dependencies.readPreparedVariants ?? ((seriesId, history) => (
-      readForecastPreparedVariants(seriesId, history)
-    )),
+    readPreparedVariants: dependencies.readPreparedVariants ?? readForecastPreparedVariantsSingleFlight,
     now: dependencies.now ?? (() => new Date()),
   }
 
@@ -652,17 +686,23 @@ export function createForecastCapabilityService(
 
       if (sourceFrequency === 'DAILY') {
         try {
-          preparedObservationCounts.END_OF_PERIOD = canonicalizeDailyMarketPriceToEndOfPeriod(history, {
-            now: resolvedDependencies.now(),
-          }).historical.length
+          preparedObservationCounts.END_OF_PERIOD = countLatestContiguousMonthlyObservations(
+            canonicalizeDailyMarketPriceToEndOfPeriod(history, {
+              now: resolvedDependencies.now(),
+              continuityPolicy: 'ALLOW_GAPS',
+            }).historical,
+          )
         } catch (error) {
           preparationFailures.END_OF_PERIOD = error instanceof Error ? error.message : String(error)
         }
 
         try {
-          preparedObservationCounts.MONTHLY_AVERAGE = canonicalizeDailyMarketPriceToMonthly(history, {
-            now: resolvedDependencies.now(),
-          }).historical.length
+          preparedObservationCounts.MONTHLY_AVERAGE = countLatestContiguousMonthlyObservations(
+            canonicalizeDailyMarketPriceToMonthly(history, {
+              now: resolvedDependencies.now(),
+              continuityPolicy: 'ALLOW_GAPS',
+            }).historical,
+          )
         } catch (error) {
           preparationFailures.MONTHLY_AVERAGE = error instanceof Error ? error.message : String(error)
         }

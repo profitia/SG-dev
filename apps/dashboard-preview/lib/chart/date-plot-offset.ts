@@ -37,3 +37,19 @@ export function resolveDatePlotOffset(allDates: string[], date: string) {
 
   return allDateTimes.length - 1
 }
+
+export function resolveDateTimePlotRatio(allDates: string[], date: string) {
+  if (allDates.length < 2) {
+    return 0
+  }
+
+  const firstTime = new Date(allDates[0]).getTime()
+  const lastTime = new Date(allDates[allDates.length - 1]).getTime()
+  const targetTime = new Date(date).getTime()
+
+  if (!Number.isFinite(firstTime) || !Number.isFinite(lastTime) || !Number.isFinite(targetTime) || lastTime <= firstTime) {
+    return 0
+  }
+
+  return Math.min(Math.max((targetTime - firstTime) / (lastTime - firstTime), 0), 1)
+}

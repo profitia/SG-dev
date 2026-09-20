@@ -17,6 +17,11 @@ from forecasting.models.statsmodels_utils import (
     has_convergence_warning,
     validate_regular_history,
 )
+from forecasting.training_policy import (
+    resolve_ets_seasonal_minimum_training_observations,
+    resolve_period_model_minimum_training_observations,
+)
+from forecasting.uncertainty_bands import build_simulated_model_native_band
 
 
 @dataclass(frozen=True)
@@ -67,7 +72,8 @@ ETS_CANDIDATE_CATALOG: tuple[ETSCandidate, ...] = (
 
 class ETSModelFamily(ForecastModel):
     model_id = "ets"
-    min_history = 36
+    min_history = resolve_period_model_minimum_training_observations(model_id)
+    seasonal_min_history = resolve_ets_seasonal_minimum_training_observations()
     seasonal_periods = 12
 
     def __init__(
@@ -117,8 +123,48 @@ class ETSModelFamily(ForecastModel):
             ),
         )
 
+    def forecast_with_uncertainty(self, history: Sequence[Observation], horizon_steps: int) -> ModelForecast:
+        endog = validate_regular_history(
+            history,
+            horizon_steps,
+            self.min_history,
+            "ETS",
+            self.frequency,
+            self.cadence_plan,
+        )
+        fit = fit_selected_ets_endog(
+            endog=endog,
+            candidates=self.eligible_candidates(history),
+            sample_size=len(history),
+            seasonal_periods=self.seasonal_periods,
+        )
+        # Preserve the established ETS Current point semantics. Task 2 adds an
+        # interval from the selected fitted state; it must not silently change
+        # the point forecast that the same canonical ETS selection exposed
+        # before uncertainty metadata was introduced.
+        forecast_value = fit.selected.forecast_value
+        return ModelForecast(
+            forecast_value=forecast_value,
+            metadata=ForecastMetadata(
+                model_family=fit.metadata.model_family,
+                selected_variant=fit.metadata.selected_variant,
+                selected_parameters=fit.metadata.selected_parameters,
+                selection_score=fit.metadata.selection_score,
+                selection_metric=fit.metadata.selection_metric,
+                fit_status=fit.metadata.fit_status,
+                failure_reason=fit.metadata.failure_reason,
+                uncertainty_band=build_simulated_model_native_band(
+                    fitted=fit.selected.fitted,
+                    horizon_steps=horizon_steps,
+                    sample_count=len(history),
+                    calibration_method="STATSMODELS_ETS_SIMULATION",
+                    calibration_version="statsmodels-ets-simulation-seed-1729-r1000-v1",
+                ),
+            ),
+        )
+
     def eligible_candidates(self, history: Sequence[Observation]) -> tuple[ETSCandidate, ...]:
-        seasonal_allowed = self.frequency is Frequency.MONTHLY and len(history) >= self.min_history
+        seasonal_allowed = self.frequency is Frequency.MONTHLY and len(history) >= self.seasonal_min_history
         return tuple(
             candidate
             for candidate in ETS_CANDIDATE_CATALOG

@@ -7,8 +7,12 @@ import {
   FORECAST_TRACE_HEADER,
   createInteractiveCurrentPreparationGateway,
   readInteractiveForecastCapability,
+  readInteractiveForecastCapabilitySnapshotBySeriesId,
+  readInteractiveForecastReadinessSnapshotBySeriesId,
   requestInteractiveForecastCurrentPreparation,
+  requestInteractiveForecastVerificationPreparation,
 } from '@/lib/benchmark-forecast/interactive-current-preparation'
+import type { BenchmarkForecastCurrentPreparationRequest } from '@/lib/benchmark-forecast/forecast-contract'
 import { createReadCurrentForecastCapabilityRouteHandler } from '@/app/api/benchmark-forecast/current/capability/route'
 import { createPrepareCurrentForecastRouteHandler } from '@/app/api/benchmark-forecast/current/prepare/route'
 import { createProgressiveForecastPreparationRouteHandler } from '@/app/api/benchmark-forecast/progressive/route'
@@ -25,6 +29,7 @@ test('interactive current preparation gateway reuses ready variants without prep
       targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
       modelId: 'arima',
       sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'LAWFUL',
       status: 'READY',
@@ -64,6 +69,7 @@ test('interactive current preparation gateway fails closed on unsupported capabi
       targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
       modelId: 'arima',
       sourceFrequency: 'QUARTERLY',
+      targetCadence: 'QUARTERLY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'NOT_LAWFUL',
       status: 'NOT_LAWFUL',
@@ -93,8 +99,8 @@ test('interactive current preparation gateway fails closed on unsupported capabi
 })
 
 test('interactive current preparation gateway prepares exactly the requested variant', async () => {
-  const capabilityInputs: Array<Record<string, string>> = []
-  const prepareInputs: Array<Record<string, string>> = []
+  const capabilityInputs: BenchmarkForecastCurrentPreparationRequest[] = []
+  const prepareInputs: BenchmarkForecastCurrentPreparationRequest[] = []
   const prepareCurrent = createInteractiveCurrentPreparationGateway({
     now: (() => {
       let tick = 30
@@ -107,6 +113,7 @@ test('interactive current preparation gateway prepares exactly the requested var
         targetSemantics: 'MONTHLY_AVERAGE',
         modelId: input.modelId,
         sourceFrequency: 'MONTHLY',
+        targetCadence: 'MONTHLY',
         sourceAvailability: 'AVAILABLE',
         lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
         status: 'NOT_PREPARED',
@@ -153,6 +160,55 @@ test('interactive current preparation gateway prepares exactly the requested var
   }])
 })
 
+test('interactive current preparation gateway warms stale variants through the prepare route', async () => {
+  let prepareCalls = 0
+  const prepareCurrent = createInteractiveCurrentPreparationGateway({
+    now: (() => {
+      let tick = 40
+      return () => tick += 5
+    })(),
+    resolveCapability: async (input) => ({
+      seriesId: input.seriesId,
+      targetSemantics: 'MONTHLY_AVERAGE',
+      modelId: input.modelId,
+      sourceFrequency: 'DAILY',
+      targetCadence: 'MONTHLY',
+      sourceAvailability: 'AVAILABLE',
+      lawfulTargetSemantics: 'LAWFUL',
+      status: 'STALE',
+      currentReadiness: 'STALE',
+      verificationReadiness: 'STALE',
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 4,
+      reason: 'STALE',
+    }),
+    prepareCurrent: async (input) => {
+      prepareCalls += 1
+      return {
+        seriesId: input.seriesId,
+        targetSemantics: 'MONTHLY_AVERAGE',
+        modelId: input.modelId,
+        operation: 'CURRENT_FORECAST',
+        status: 'READY',
+        targetedDataScope: 'SINGLE_SERIES',
+        timingMs: 12,
+        reason: null,
+      }
+    },
+  })
+
+  const result = await prepareCurrent({
+    seriesId: 'wocaes0074',
+    modelId: 'arima',
+    targetBasis: 'MONTHLY_AVERAGE',
+  })
+
+  assert.equal(result.state, 'READY')
+  assert.equal(result.prepareAttempted, true)
+  assert.equal(result.prepareStatus, 'READY')
+  assert.equal(prepareCalls, 1)
+})
+
 test('interactive current preparation gateway reports failed preparation truthfully', async () => {
   const prepareCurrent = createInteractiveCurrentPreparationGateway({
     now: (() => {
@@ -164,6 +220,7 @@ test('interactive current preparation gateway reports failed preparation truthfu
       targetSemantics: 'MONTHLY_AVERAGE',
       modelId: 'ets',
       sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
       status: 'PREPARATION_REQUIRED',
@@ -197,7 +254,7 @@ test('interactive current preparation gateway reports failed preparation truthfu
   assert.equal(result.reason, 'MODEL_FIT_FAILED')
 })
 
-test('interactive current preparation gateway falls back to progressive state after timeout', async () => {
+test('interactive current preparation gateway treats progressive timeout status as observational in-progress state', async () => {
   const prepareCurrent = createInteractiveCurrentPreparationGateway({
     now: (() => {
       let tick = 50
@@ -208,6 +265,7 @@ test('interactive current preparation gateway falls back to progressive state af
       targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
       modelId: 'arima',
       sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'LAWFUL',
       status: 'PREPARATION_REQUIRED',
@@ -250,10 +308,10 @@ test('interactive current preparation gateway falls back to progressive state af
     targetBasis: 'POINT_IN_TIME',
   })
 
-  assert.equal(result.state, 'PREPARING')
+  assert.equal(result.state, 'NOT_PREPARED')
   assert.equal(result.prepareAttempted, true)
   assert.equal(result.prepareStatus, null)
-  assert.equal(result.reason, null)
+  assert.equal(result.reason, 'PREPARATION_IN_PROGRESS')
 })
 
 test('interactive current preparation route rejects invalid input before gateway execution', async () => {
@@ -316,6 +374,73 @@ test('interactive current preparation route includes trace payload only when exp
   assert.equal(payload.trace.attempts[0].sgRuntimeCapabilityExecutionMs, 109)
 })
 
+test('interactive capability bridge preserves transport failure cause in trace attempts', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const originalFetch = global.fetch
+  const attempts: import('@/lib/benchmark-forecast/interactive-current-preparation').ForecastBridgeAttemptTrace[] = []
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime.example.invalid'
+  global.fetch = (async () => {
+    const transportError = new Error('fetch failed') as Error & { cause?: unknown; name: string }
+    transportError.name = 'TypeError'
+    transportError.cause = {
+      name: 'SocketError',
+      code: 'UND_ERR_SOCKET',
+      message: 'other side closed',
+    }
+    throw transportError
+  }) as typeof fetch
+
+  try {
+    await assert.rejects(
+      () => readInteractiveForecastCapability({
+        seriesId: 'lmeofcucashask',
+        modelId: 'naive',
+        targetBasis: 'POINT_IN_TIME',
+      }, { enabled: true, attempts }, {
+        headers: {
+          'x-request-id': 'req-bridge-trace',
+          'x-sg-certification-phase': 'PRECOMPUTE',
+          'x-sg-certification-operation': 'PREPARE_CURRENT',
+          'x-sg-certification-series-id': 'lmeofcucashask',
+          'x-sg-certification-model-id': 'naive',
+          'x-sg-certification-target-basis': 'POINT_IN_TIME',
+        },
+      }),
+      /fetch failed/,
+    )
+  } finally {
+    global.fetch = originalFetch
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+  }
+
+  assert.equal(attempts.length, 1)
+  assert.equal(attempts[0]?.targetRole, 'PRIMARY')
+  assert.equal(attempts[0]?.httpStatus, null)
+  assert.equal(attempts[0]?.responseReceived, false)
+  assert.equal(attempts[0]?.callerAborted, false)
+  assert.equal(attempts[0]?.internalTimedOut, false)
+  assert.equal(attempts[0]?.controllerAborted, false)
+  assert.equal(attempts[0]?.errorName, 'TypeError')
+  assert.equal(attempts[0]?.errorMessage, 'fetch failed')
+  assert.equal(attempts[0]?.errorCause?.name, 'SocketError')
+  assert.equal(attempts[0]?.errorCause?.code, 'UND_ERR_SOCKET')
+  assert.equal(attempts[0]?.errorCause?.message, 'other side closed')
+  assert.equal(attempts[0]?.diagnosticContext?.requestId, 'req-bridge-trace')
+  assert.equal(attempts[0]?.diagnosticContext?.phase, 'PRECOMPUTE')
+  assert.equal(attempts[0]?.diagnosticContext?.operation, 'PREPARE_CURRENT')
+  assert.equal(attempts[0]?.diagnosticContext?.seriesId, 'lmeofcucashask')
+  assert.equal(attempts[0]?.diagnosticContext?.modelId, 'naive')
+  assert.equal(attempts[0]?.diagnosticContext?.targetBasis, 'POINT_IN_TIME')
+  assert.equal(attempts[0]?.diagnosticContext?.pathname, '/api/internal/forecast/capability?seriesId=lmeofcucashask&modelId=naive&targetSemantics=ROLLING_DAILY_POINT_IN_TIME')
+  assert.equal(attempts[0]?.diagnosticContext?.baseUrl, 'https://sg-runtime.example.invalid')
+})
+
 test('interactive current capability route forwards request abort signal to the bridge', async () => {
   let capturedSignal: AbortSignal | undefined
   const handler = createReadCurrentForecastCapabilityRouteHandler(async (_input, _traceOptions, options) => {
@@ -326,6 +451,7 @@ test('interactive current capability route forwards request abort signal to the 
       targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
       modelId: 'arima',
       sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'LAWFUL',
       status: 'READY',
@@ -346,7 +472,7 @@ test('interactive current capability route forwards request abort signal to the 
 })
 
 test('interactive current preparation route forwards request abort signal to the gateway', async () => {
-  let capturedSignal: AbortSignal | undefined
+  let capturedSignal: unknown
   const handler = createPrepareCurrentForecastRouteHandler(async (_input, _traceEnabled, signal) => {
     capturedSignal = signal
 
@@ -483,6 +609,7 @@ test('interactive current capability bridge keeps private auth server-side and f
       targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
       modelId: 'arima',
       sourceFrequency: 'QUARTERLY',
+      targetCadence: 'QUARTERLY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'NOT_LAWFUL',
       status: 'NOT_LAWFUL',
@@ -517,13 +644,111 @@ test('interactive current capability bridge keeps private auth server-side and f
     throw new Error('Expected capability bridge to issue a server-side SG Runtime request.')
   }
 
-  assert.equal(capturedUrl.pathname, '/api/internal/forecast/capability')
-  assert.equal(capturedUrl.searchParams.get('seriesId'), 'usnaac0169')
-  assert.equal(capturedUrl.searchParams.get('modelId'), 'arima')
-  assert.equal(capturedUrl.searchParams.get('targetSemantics'), 'ROLLING_DAILY_POINT_IN_TIME')
-  assert.equal(capturedUrl.searchParams.get('token'), null)
-  assert.equal((capturedInit.headers as Record<string, string>).Authorization, 'Bearer dashboard-preview-token')
-  assert.equal((capturedInit.headers as Record<string, string>)[FORECAST_TRACE_HEADER], undefined)
+  const resolvedCapabilityUrl = capturedUrl as URL
+  const resolvedCapabilityInit = capturedInit as RequestInit
+
+  assert.equal(resolvedCapabilityUrl.pathname, '/api/internal/forecast/capability')
+  assert.equal(resolvedCapabilityUrl.searchParams.get('seriesId'), 'usnaac0169')
+  assert.equal(resolvedCapabilityUrl.searchParams.get('modelId'), 'arima')
+  assert.equal(resolvedCapabilityUrl.searchParams.get('targetSemantics'), 'ROLLING_DAILY_POINT_IN_TIME')
+  assert.equal(resolvedCapabilityUrl.searchParams.get('token'), null)
+  assert.equal((resolvedCapabilityInit.headers as Record<string, string>).Authorization, 'Bearer dashboard-preview-token')
+  assert.equal((resolvedCapabilityInit.headers as Record<string, string>)[FORECAST_TRACE_HEADER], undefined)
+})
+
+test('interactive capability snapshot bridge keeps private auth server-side and forwards series identity once', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const originalFetch = global.fetch
+  let capturedUrl: URL | null = null
+  let capturedInit: RequestInit | null = null
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime.example.invalid'
+  global.fetch = (async (input: URL | RequestInfo | string, init?: RequestInit) => {
+    capturedUrl = new URL(String(input))
+    capturedInit = init ?? null
+    return new Response(JSON.stringify({
+      seriesId: 'wocaes0074',
+      sourceFrequency: 'DAILY',
+      sourceAvailability: 'AVAILABLE',
+      status: 'AVAILABLE',
+      reason: null,
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 9,
+      variants: [],
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json', 'x-sg-runtime-capability-total-ms': '9' },
+    })
+  }) as typeof fetch
+
+  try {
+    const result = await readInteractiveForecastCapabilitySnapshotBySeriesId('wocaes0074')
+
+    assert.equal(result.status, 'AVAILABLE')
+  } finally {
+    global.fetch = originalFetch
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+  }
+
+  if (!capturedUrl || !capturedInit) {
+    throw new Error('Expected capability snapshot bridge to issue a server-side SG Runtime request.')
+  }
+
+  const resolvedCapabilityUrl = capturedUrl as URL
+  const resolvedCapabilityInit = capturedInit as RequestInit
+
+  assert.equal(resolvedCapabilityUrl.pathname, '/api/internal/forecast/capabilities')
+  assert.equal(resolvedCapabilityUrl.searchParams.get('seriesId'), 'wocaes0074')
+  assert.equal(resolvedCapabilityUrl.searchParams.get('token'), null)
+  assert.equal((resolvedCapabilityInit.headers as Record<string, string>).Authorization, 'Bearer dashboard-preview-token')
+})
+
+test('interactive readiness snapshot bridge keeps private auth server-side', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const originalFetch = global.fetch
+  let capturedUrl: URL | null = null
+  let capturedInit: RequestInit | null = null
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime.example.invalid'
+  global.fetch = (async (input: URL | RequestInfo | string, init?: RequestInit) => {
+    capturedUrl = new URL(String(input))
+    capturedInit = init ?? null
+    return new Response(JSON.stringify({
+      seriesId: 'wocaes0074',
+      sourceFrequency: 'DAILY',
+      sourceAvailability: 'AVAILABLE',
+      status: 'AVAILABLE',
+      reason: null,
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 3,
+      variants: [],
+    }), { status: 200, headers: { 'content-type': 'application/json' } })
+  }) as typeof fetch
+
+  try {
+    const result = await readInteractiveForecastReadinessSnapshotBySeriesId('wocaes0074')
+    assert.equal(result.status, 'AVAILABLE')
+  } finally {
+    global.fetch = originalFetch
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+  }
+
+  if (!capturedUrl || !capturedInit) {
+    throw new Error('Expected readiness snapshot bridge to issue a server-side SG Runtime request.')
+  }
+
+  assert.equal((capturedUrl as URL).pathname, '/api/internal/forecast/readiness')
+  assert.equal((capturedInit as RequestInit).headers && ((capturedInit as RequestInit).headers as Record<string, string>).Authorization, 'Bearer dashboard-preview-token')
 })
 
 test('interactive current prepare bridge keeps private auth server-side and forwards exact identity', async () => {
@@ -573,10 +798,13 @@ test('interactive current prepare bridge keeps private auth server-side and forw
     throw new Error('Expected prepare bridge to issue a server-side SG Runtime request.')
   }
 
-  assert.equal(capturedUrl.pathname, '/api/internal/forecast/prepare/current')
-  assert.equal(capturedUrl.searchParams.get('token'), null)
-  assert.equal((capturedInit.headers as Record<string, string>).Authorization, 'Bearer dashboard-preview-token')
-  const body = JSON.parse(String(capturedInit.body)) as Record<string, string>
+  const resolvedPrepareUrl = capturedUrl as URL
+  const resolvedPrepareInit = capturedInit as RequestInit
+
+  assert.equal(resolvedPrepareUrl.pathname, '/api/internal/forecast/prepare/current')
+  assert.equal(resolvedPrepareUrl.searchParams.get('token'), null)
+  assert.equal((resolvedPrepareInit.headers as Record<string, string>).Authorization, 'Bearer dashboard-preview-token')
+  const body = JSON.parse(String(resolvedPrepareInit.body)) as Record<string, string>
   assert.deepEqual(body, {
     seriesId: 'wocaes0280',
     modelId: 'ets',
@@ -584,12 +812,140 @@ test('interactive current prepare bridge keeps private auth server-side and forw
   })
 })
 
+test('interactive verification prepare bridge keeps private auth server-side for monthly exact verification materialization', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const originalFetch = global.fetch
+  let capturedUrl: URL | null = null
+  let capturedInit: RequestInit | null = null
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime.example.invalid'
+  global.fetch = (async (input: URL | RequestInfo | string, init?: RequestInit) => {
+    capturedUrl = new URL(String(input))
+    capturedInit = init ?? null
+    return new Response(JSON.stringify({
+      status: 'AVAILABLE',
+      seriesId: 'wocaes0280',
+      modelId: 'ets',
+      targetBasis: 'MONTHLY_AVERAGE',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      methodId: 'MONTHLY_AVERAGE',
+      methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+      historyFingerprint: 'fp',
+      history: { frequency: 'MONTHLY', start: '2025-01-01T00:00:00.000Z', end: '2026-01-01T00:00:00.000Z', observations: 12 },
+      forecastOrigin: '2026-01-01T00:00:00.000Z',
+      runtimeSeconds: 1,
+      cacheStatus: 'miss',
+      verification: {},
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }) as typeof fetch
+
+  try {
+    const result = await requestInteractiveForecastVerificationPreparation({
+      seriesId: 'wocaes0280',
+      modelId: 'ets',
+      targetBasis: 'MONTHLY_AVERAGE',
+    }, {
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+    })
+
+    assert.equal(result.status, 'AVAILABLE')
+  } finally {
+    global.fetch = originalFetch
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+  }
+
+  if (!capturedUrl || !capturedInit) {
+    throw new Error('Expected verification prepare bridge to issue a server-side SG Runtime request.')
+  }
+
+  const resolvedVerificationUrl = capturedUrl as URL
+  const resolvedVerificationInit = capturedInit as RequestInit
+
+  assert.equal(resolvedVerificationUrl.pathname, '/api/internal/forecast/verification')
+  assert.equal(resolvedVerificationUrl.searchParams.get('seriesId'), 'wocaes0280')
+  assert.equal(resolvedVerificationUrl.searchParams.get('model'), 'ets')
+  assert.equal(resolvedVerificationUrl.searchParams.get('targetBasis'), 'MONTHLY_AVERAGE')
+  assert.equal(resolvedVerificationUrl.searchParams.get('sourceFrequency'), 'MONTHLY')
+  assert.equal(resolvedVerificationUrl.searchParams.get('targetCadence'), 'MONTHLY')
+  assert.equal((resolvedVerificationInit.headers as Record<string, string>).Authorization, 'Bearer dashboard-preview-token')
+})
+
+test('interactive verification prepare bridge routes point-in-time warm-up through SG Runtime internal verification', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const originalFetch = global.fetch
+  let capturedUrl: URL | null = null
+  let capturedInit: RequestInit | null = null
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime.example.invalid'
+  global.fetch = (async (input: URL | RequestInfo | string, init?: RequestInit) => {
+    capturedUrl = new URL(String(input))
+    capturedInit = init ?? null
+    return new Response(JSON.stringify({
+      status: 'AVAILABLE',
+      seriesId: 'wocaes0074',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodVersion: 'rolling-daily-point-in-time-v1',
+      source: 'DYNAMIC_MARKET_DATA_STORE',
+      history: { frequency: 'DAILY', start: '2026-01-01T00:00:00.000Z', end: '2026-09-01T00:00:00.000Z', observations: 100 },
+      forecastOrigin: '2026-09-01T00:00:00.000Z',
+      freshness: { status: 'FRESH', reason: null },
+      current: [],
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }) as typeof fetch
+
+  try {
+    const result = await requestInteractiveForecastVerificationPreparation({
+      seriesId: 'wocaes0074',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+    })
+
+    assert.equal(result.status, 'AVAILABLE')
+  } finally {
+    global.fetch = originalFetch
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+  }
+
+  if (!capturedUrl || !capturedInit) {
+    throw new Error('Expected point-in-time verification bridge to issue a server-side SG Runtime request.')
+  }
+
+  const resolvedVerificationUrl = capturedUrl as URL
+  const resolvedVerificationInit = capturedInit as RequestInit
+
+  assert.equal(resolvedVerificationUrl.pathname, '/api/internal/forecast/verification')
+  assert.equal(resolvedVerificationUrl.searchParams.get('seriesId'), 'wocaes0074')
+  assert.equal(resolvedVerificationUrl.searchParams.get('model'), 'arima')
+  assert.equal(resolvedVerificationUrl.searchParams.get('targetBasis'), 'POINT_IN_TIME')
+  assert.equal((resolvedVerificationInit.headers as Record<string, string>).Authorization, 'Bearer dashboard-preview-token')
+})
+
 test('interactive capability bridge aborts downstream fetch when caller signal aborts', async () => {
   const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
   const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
   const originalFetch = global.fetch
   const callerController = new AbortController()
-  let capturedSignal: AbortSignal | undefined
+  let capturedSignal: AbortSignal | null | undefined
 
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
   process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime.example.invalid'
@@ -653,6 +1009,7 @@ test('interactive capability bridge falls back to the public SG Runtime deployme
       targetSemantics: 'MONTHLY_AVERAGE',
       modelId: 'arima',
       sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
       status: 'NOT_PREPARED',
@@ -736,5 +1093,141 @@ test('interactive capability bridge does not fall back away from an explicit dep
 
   assert.deepEqual(visited, [
     'https://sg-runtime-primary.example.invalid',
+  ])
+})
+
+test('interactive capability bridge does not fall back away from an explicit deployed SG Runtime base URL after a real timeout', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  const previousVercelUrl = process.env.VERCEL_URL
+  const originalFetch = global.fetch
+  const originalSetTimeout = global.setTimeout
+  const originalClearTimeout = global.clearTimeout
+  const visited: string[] = []
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime-primary.example.invalid'
+  process.env.RENDER_EXTERNAL_URL = 'https://analytics-demo-sg-porr.spendguru.app'
+  delete process.env.VERCEL_URL
+
+  global.setTimeout = (((callback: TimerHandler) => {
+    if (typeof callback === 'function') {
+      callback()
+    }
+    return 1 as unknown as ReturnType<typeof setTimeout>
+  }) as unknown as typeof setTimeout)
+  global.clearTimeout = ((() => undefined) as typeof clearTimeout)
+  global.fetch = (async (input: URL | RequestInfo | string, init?: RequestInit) => {
+    const url = new URL(String(input))
+    visited.push(url.origin)
+
+    return new Promise<Response>((_, reject) => {
+      const timeoutError = new Error('timed out') as Error & { name: string }
+      timeoutError.name = 'AbortError'
+
+      if (init?.signal?.aborted) {
+        reject(timeoutError)
+        return
+      }
+
+      init?.signal?.addEventListener('abort', () => reject(timeoutError), { once: true })
+    })
+  }) as typeof fetch
+
+  try {
+    await assert.rejects(
+      () => readInteractiveForecastCapability({
+        seriesId: 'wocaes0280',
+        modelId: 'arima',
+        targetBasis: 'MONTHLY_AVERAGE',
+      }),
+      /timed out/,
+    )
+  } finally {
+    global.fetch = originalFetch
+    global.setTimeout = originalSetTimeout
+    global.clearTimeout = originalClearTimeout
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+    if (previousRenderExternalUrl === undefined) delete process.env.RENDER_EXTERNAL_URL
+    else process.env.RENDER_EXTERNAL_URL = previousRenderExternalUrl
+    if (previousVercelUrl === undefined) delete process.env.VERCEL_URL
+    else process.env.VERCEL_URL = previousVercelUrl
+  }
+
+  assert.deepEqual(visited, [
+    'https://sg-runtime-primary.example.invalid',
+  ])
+})
+
+test('interactive capability bridge falls back after an empty JSON response from the explicit primary SG Runtime base URL', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  const previousVercelUrl = process.env.VERCEL_URL
+  const originalFetch = global.fetch
+  const visited: string[] = []
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime-primary.example.invalid'
+  process.env.RENDER_EXTERNAL_URL = 'https://analytics-demo-sg-porr.spendguru.app'
+  delete process.env.VERCEL_URL
+  global.fetch = (async (input: URL | RequestInfo | string) => {
+    const url = new URL(String(input))
+    visited.push(url.origin)
+
+    if (url.origin === 'https://sg-runtime-primary.example.invalid') {
+      return new Response('', {
+        status: 502,
+        headers: { 'content-type': 'application/json' },
+      })
+    }
+
+    return new Response(JSON.stringify({
+      seriesId: 'wocaes0280',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      modelId: 'arima',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      sourceAvailability: 'AVAILABLE',
+      lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
+      status: 'NOT_PREPARED',
+      currentReadiness: 'NOT_PREPARED',
+      verificationReadiness: 'NOT_PREPARED',
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 4,
+      reason: null,
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }) as typeof fetch
+
+  try {
+    const result = await readInteractiveForecastCapability({
+      seriesId: 'wocaes0280',
+      modelId: 'arima',
+      targetBasis: 'MONTHLY_AVERAGE',
+    })
+
+    assert.equal(result.status, 'NOT_PREPARED')
+  } finally {
+    global.fetch = originalFetch
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+    if (previousRenderExternalUrl === undefined) delete process.env.RENDER_EXTERNAL_URL
+    else process.env.RENDER_EXTERNAL_URL = previousRenderExternalUrl
+    if (previousVercelUrl === undefined) delete process.env.VERCEL_URL
+    else process.env.VERCEL_URL = previousVercelUrl
+  }
+
+  assert.deepEqual(visited, [
+    'https://sg-runtime-primary.example.invalid',
+    'https://benchmark-finder-category-builder.onrender.com',
   ])
 })

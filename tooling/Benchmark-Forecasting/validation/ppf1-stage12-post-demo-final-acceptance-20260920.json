@@ -1,0 +1,139 @@
+{
+  "task": "PPF-1 Stage 12 post-demo final acceptance",
+  "observedAt": "2026-09-20",
+  "status": "PASS_READY_FOR_PR_MERGE",
+  "branch": "ppf1/stage12-post-demo-release-candidate-20260919",
+  "preDeprecationRelease": {
+    "commit": "200375cee46e62eeacbcb47132d8a70e7ba4b726",
+    "deploys": {
+      "spendguru-stage": "dep-dann76jm8hqs73bsm8ig",
+      "BENCHMARK-FINDER-CATEGORY-BUILDER": "dep-dann69n40ujc73cgn3lg",
+      "dashboards-library": "dep-dann76h42hec73f29tmg"
+    },
+    "health": {
+      "spendguru-stage": 200,
+      "BENCHMARK-FINDER-CATEGORY-BUILDER": 200,
+      "dashboards-library": 200
+    }
+  },
+  "expiredOwnerRecovery": {
+    "seriesId": "hg2027g_cl",
+    "operationFamily": "HISTORICAL_MAINTENANCE",
+    "modelId": "ets",
+    "expiredExecutionId": "a95f6102-25a0-40aa-941a-e2c33615c8dd",
+    "expiredExecutionStatus": "FAILED",
+    "expiredFailurePhase": "FINALIZATION",
+    "recoveryExecutionId": "842a5a8e-a91e-4739-b396-c803deeb4769",
+    "recoveryAttemptKind": "RECOVERY",
+    "recoveryExecutionMode": "RECOVERY_RESUME",
+    "recoveryExecutionStatus": "COMPLETED",
+    "recoveryResultStatus": "NO_OP",
+    "recoveryCacheStatus": "hit",
+    "recoveredFromExecutionId": "a95f6102-25a0-40aa-941a-e2c33615c8dd",
+    "renderJob": "job-dannbl3m8hqs73bt50a0",
+    "verdict": "PASS"
+  },
+  "preDeprecationCohort": {
+    "Brent": {
+      "seriesId": "wocaes0074",
+      "executionId": "demo-certification-ad80a8bf-335f-45fc-a7ac-c5ab5f8d6fe8",
+      "demoSafe": "YES"
+    },
+    "Copper": {
+      "seriesId": "lmeofcucashask",
+      "executionId": "demo-certification-351e9aaf-7dfd-456f-9c53-0d4a27ea018e",
+      "demoSafe": "YES"
+    },
+    "Aluminium": {
+      "seriesId": "lmeofalcashask",
+      "initialExecutionId": "demo-certification-09a11de4-577f-4f1a-9633-593bd6f506bc",
+      "initialVerdict": "PRECOMPUTE_FAIL",
+      "rootCause": "Three newly available source observations required canonical incremental historical maintenance.",
+      "maintenanceJob": "job-danneoajnfac7397ghig",
+      "maintenanceStatus": "SUCCEEDED",
+      "modelsRefreshed": 4,
+      "newOriginsPerModel": 3,
+      "finalExecutionId": "demo-certification-3ef1be28-47d4-4943-a692-f5ea7fa03187",
+      "finalDemoSafe": "YES"
+    },
+    "verdict": "PASS"
+  },
+  "legacyAdmissionFallbackDeprecation": {
+    "commit": "7885466e64a1fed4971c1c3a5550c6646625312b",
+    "implicitProductionInMemoryFallbackRemoved": true,
+    "explicitInMemoryAdapterRetainedForTestsAndInjection": true,
+    "missingDurableRelationBehavior": "FAIL_CLOSED"
+  },
+  "validation": {
+    "executionLedgerTests": "14/14 PASS",
+    "sgRuntimeTypecheck": "PASS",
+    "sgRuntimeNonDbTestSuite": "PASS",
+    "sgRuntimeProductionBuild": "PASS",
+    "gitDiffCheck": "PASS",
+    "localCrossInstanceSuite": "NOT_RUN_LOCAL_POSTGRES_127.0.0.1_55421_ABSENT",
+    "liveCrossInstanceRecoveryProof": "PASS"
+  },
+  "postDeprecationRelease": {
+    "commit": "7885466e64a1fed4971c1c3a5550c6646625312b",
+    "deploys": {
+      "spendguru-stage": "dep-dannifuk1f9s739b1uj0",
+      "BENCHMARK-FINDER-CATEGORY-BUILDER": "dep-dannifp42hec73f3g52g",
+      "dashboards-library": "dep-dannifp42hec73f3g5dg"
+    },
+    "health": {
+      "spendguru-stage": 200,
+      "BENCHMARK-FINDER-CATEGORY-BUILDER": 200,
+      "dashboards-library": 200
+    }
+  },
+  "postDeprecationCohort": {
+    "Brent": {
+      "seriesId": "wocaes0074",
+      "executionId": "demo-certification-b76fc149-2b13-420f-85d1-88c4850523ee",
+      "demoSafe": "YES",
+      "precompute": "PASS",
+      "reread": "PASS",
+      "matrix": "PASS",
+      "freshness": "PASS",
+      "warmRehearsal": "PASS",
+      "timeoutSnapshot": null
+    },
+    "Copper": {
+      "seriesId": "lmeofcucashask",
+      "executionId": "demo-certification-331d16e7-9cc7-49b5-83b7-6db045937610",
+      "demoSafe": "YES",
+      "precompute": "PASS",
+      "reread": "PASS",
+      "matrix": "PASS",
+      "freshness": "PASS",
+      "warmRehearsal": "PASS",
+      "timeoutSnapshot": null
+    },
+    "Aluminium": {
+      "seriesId": "lmeofalcashask",
+      "executionId": "demo-certification-b50519df-9ba7-4a64-9d24-db1ff2c702bb",
+      "demoSafe": "YES",
+      "precompute": "PASS",
+      "reread": "PASS",
+      "matrix": "PASS",
+      "freshness": "PASS",
+      "warmRehearsal": "PASS",
+      "timeoutSnapshot": null
+    },
+    "verdict": "PASS"
+  },
+  "safety": {
+    "secondForecastEngineCreated": "NO",
+    "duplicateComputeRegression": "NO",
+    "canonicalSingleFlightPreserved": "YES",
+    "uncontrolledPrecomputeFanout": "NO",
+    "forecastMathChanged": "NO",
+    "methodVersionChanged": "NO",
+    "historyWindowChanged": "NO",
+    "verificationMethodologyChanged": "NO"
+  },
+  "pmos": {
+    "pendingArtifact": "ABSENT",
+    "save": "NOT_RUN_PENDING_ARTIFACT_ABSENT"
+  }
+}

@@ -8,7 +8,6 @@ import {
   canonicalizeDailyMarketPriceHistory,
   canonicalizeProvenanceQualifiedWeeklyEndOfPeriod,
   canonicalizeProvenanceQualifiedNativePeriod,
-  selectLatestContiguousMonthlySuffix,
 } from '@/lib/forecast/canonical-history'
 import { DEFAULT_FORECAST_TARGET_BASIS, type ForecastTargetBasis } from '@/lib/forecast/contracts'
 import {
@@ -17,6 +16,9 @@ import {
   normalizeForecastSourceFrequency,
   type ForecastTargetCadence,
 } from '@/lib/forecast/cadence'
+import {
+  selectMinimalLawfulCurrentTrainingSuffix,
+} from '@/lib/forecast/current-fast-policy'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 
 type LiveForecastBridgeHistory = {
@@ -69,17 +71,35 @@ export type LiveForecastBridgePayload = {
   history: LiveForecastBridgeHistory
 }
 
-export function selectLatestCurrentForecastMonthlyTrainingPayload(
-  payload: LiveForecastBridgePayload,
-): LiveForecastBridgePayload {
-  if (payload.history.frequency !== 'MONTHLY') {
-    return payload
+function selectLatestContiguousTargetCadenceSuffix<TPoint extends { date: string }>(
+  points: readonly TPoint[],
+  targetCadence: ForecastTargetCadence,
+) {
+  if (points.length < 2) {
+    return [...points]
   }
 
-  const points = selectLatestContiguousMonthlySuffix(payload.history.points.map((point) => ({
-    ...point,
-    sourceObservedAt: point.sourceObservedAt ?? null,
-  })))
+  let suffixStartIndex = points.length - 1
+
+  for (let index = points.length - 1; index > 0; index -= 1) {
+    const previous = points[index - 1]
+    const current = points[index]
+    const expectedCurrent = createFutureForecastTargetPeriods(previous.date, targetCadence, 1)[0]?.start
+
+    if (!expectedCurrent || current.date !== expectedCurrent.toISOString()) {
+      break
+    }
+
+    suffixStartIndex = index - 1
+  }
+
+  return points.slice(suffixStartIndex)
+}
+
+function selectForecastBridgePayloadPoints(
+  payload: LiveForecastBridgePayload,
+  points: LiveForecastBridgePayload['history']['points'],
+): LiveForecastBridgePayload {
   if (points.length === payload.history.points.length) {
     return payload
   }
@@ -112,6 +132,28 @@ export function selectLatestCurrentForecastMonthlyTrainingPayload(
       points,
     },
   }
+}
+
+export function selectLatestLawfulVerificationPayload(
+  payload: LiveForecastBridgePayload,
+): LiveForecastBridgePayload {
+  return selectForecastBridgePayloadPoints(
+    payload,
+    selectLatestContiguousTargetCadenceSuffix(payload.history.points, payload.execution.frequency),
+  )
+}
+
+export function selectMinimalLawfulCurrentTrainingPayload(
+  payload: LiveForecastBridgePayload,
+  minimumRequiredObservations: number,
+): LiveForecastBridgePayload {
+  const selection = selectMinimalLawfulCurrentTrainingSuffix({
+    points: payload.history.points,
+    forecastOrigin: payload.history.end,
+    minimumRequiredObservations,
+  })
+  const points = selection.points
+  return selectForecastBridgePayloadPoints(payload, points)
 }
 
 export function buildCurrentForecastExecutionPlan(

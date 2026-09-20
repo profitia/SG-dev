@@ -7,7 +7,12 @@ from forecasting.comparative_backtest import ComparableVerificationRecord, build
 from scripts.generate_stage5_four_model_comparative_backtest import (
     HORIZONS,
     MODELS,
+    build_generated_corpus_identity,
     build_identity_set_equality,
+    build_non_arima_corpus_identity,
+    build_stage4_corpus_identity,
+    build_stage5_corpus_identity_gate,
+    filter_model_payloads_through_origin,
     flatten_strict_common_metrics,
     metric_row,
     render_acceptance,
@@ -53,6 +58,70 @@ def record(
 
 
 class GenerateStage5ComparativeBacktestTests(unittest.TestCase):
+    def test_stage5_corpus_identity_gate_fails_closed_on_mismatch(self) -> None:
+        stage4_payload = {
+            "seriesId": "wocaes0074",
+            "lastHistoricalOrigin": "2026-08-18",
+            "lawfulHistoricalOrigins": 681,
+            "sourceHistory": {"endDate": "2026-08-18", "historyFingerprint": "abc"},
+            "sourceHistoryFingerprint": "abc",
+        }
+        non_arima_payload = {
+            "seriesId": "wocaes0074",
+            "sourcePerformance": {"seriesEnd": "2026-08-18"},
+        }
+        records = [record(model, origin_day=2) for model in MODELS]
+        records.extend(record(model, origin_day=3) for model in MODELS)
+
+        gate = build_stage5_corpus_identity_gate(
+            stage4_payload=stage4_payload,
+            non_arima_payload=non_arima_payload,
+            comparable_records=records,
+        )
+
+        self.assertEqual(gate["status"], "FAIL")
+        self.assertEqual(gate["comparisons"]["lastHistoricalOrigin"]["status"], "FAIL")
+
+    def test_stage5_corpus_identity_gate_passes_on_exact_match(self) -> None:
+        stage4_payload = {
+            "seriesId": "wocaes0074",
+            "lastHistoricalOrigin": "2024-01-02",
+            "lawfulHistoricalOrigins": 1,
+            "sourceHistory": {"endDate": "2024-01-02", "historyFingerprint": "abc"},
+            "sourceHistoryFingerprint": "abc",
+        }
+        non_arima_payload = {
+            "seriesId": "wocaes0074",
+            "sourcePerformance": {"seriesEnd": "2024-01-02"},
+        }
+        records = [record(model, origin_day=2) for model in MODELS]
+
+        gate = build_stage5_corpus_identity_gate(
+            stage4_payload=stage4_payload,
+            non_arima_payload=non_arima_payload,
+            comparable_records=records,
+        )
+
+        self.assertEqual(gate["status"], "PASS")
+        self.assertTrue(gate["limitations"])
+
+    def test_generated_payloads_can_be_frozen_to_stage4_last_origin(self) -> None:
+        payloads = {
+            "naive": {"records": [
+                {"forecastOriginAt": "2026-08-18T00:00:00.000Z", "maturityStatus": "MATURED", "verificationObservedAt": "2026-08-20T00:00:00.000Z", "actualValue": 2.0, "errorValue": 1.0, "absoluteErrorValue": 1.0},
+                {"forecastOriginAt": "2026-08-20T00:00:00.000Z"},
+            ]},
+            "damped_holt": {"records": [{"forecastOriginAt": "2026-08-18T00:00:00.000Z"}, {"forecastOriginAt": "2026-08-20T00:00:00.000Z"}]},
+        }
+
+        filtered = filter_model_payloads_through_origin(payloads, "2026-08-18")
+
+        self.assertEqual(len(filtered["naive"]["records"]), 1)
+        self.assertEqual(filtered["naive"]["records"][0]["forecastOriginAt"], "2026-08-18T00:00:00.000Z")
+        self.assertEqual(filtered["naive"]["records"][0]["maturityStatus"], "NOT_YET_MATURED")
+        self.assertIsNone(filtered["naive"]["records"][0]["verificationObservedAt"])
+        self.assertIsNone(filtered["naive"]["records"][0]["actualValue"])
+
     def test_valid_numeric_metric_values_survive_aggregation(self) -> None:
         records = [record(model, origin_day=2, actual_value=10.0, forecast_value=8.0) for model in MODELS]
         native = build_native_view(records, MODELS, ["1M"])

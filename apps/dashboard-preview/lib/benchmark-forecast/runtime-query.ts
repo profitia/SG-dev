@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+
 import type {
   BenchmarkForecastCurrentResult,
   BenchmarkForecastCurrentAvailableResult,
@@ -6,6 +8,7 @@ import type {
   ForecastCurrentFreshness,
   ForecastCapabilityStatus,
   ForecastCurrentPoint,
+  ForecastSelectionMetadata,
   ForecastIdentity,
   ForecastMethodId,
   InteractiveForecastCapabilityResult,
@@ -22,12 +25,22 @@ import { getMarketDataPrismaClient } from '@/lib/db/market-data-prisma'
 import { phase22cDiagnosticSpan } from '@/lib/phase-2-2c/diagnostics'
 
 const LOCAL_SG_RUNTIME_BASE_URL = 'http://localhost:3001'
+const DEPLOYED_SG_RUNTIME_FALLBACK_BASE_URLS = [
+  'https://benchmark-finder-category-builder.onrender.com',
+]
 const INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH = '/api/internal/forecast/capability'
 const INTERNAL_FORECAST_ROUTE_PATH = '/api/internal/forecast/production'
+const INTERNAL_PREPARED_CURRENT_ROUTE_PATH = '/api/internal/forecast/prepared/current'
+const INTERNAL_PREPARED_VERIFICATION_ROUTE_PATH = '/api/internal/forecast/prepared/verification'
+const PREPARED_READ_AUTHORITY_SOURCE_FREQUENCY_HEADER = 'x-sg-prepared-source-frequency'
+const PREPARED_READ_AUTHORITY_TARGET_CADENCE_HEADER = 'x-sg-prepared-target-cadence'
+const PREPARED_READ_AUTHORITY_HISTORY_FINGERPRINT_HEADER = 'x-sg-prepared-history-fingerprint'
 const INTERNAL_FORECAST_TIMEOUT_MS = 20_000
+const INTERNAL_FORECAST_TIMEOUT_ERROR = 'SG Runtime prepared forecast request timed out.'
 const ROLLING_DAILY_INPUT_SOURCE = 'DYNAMIC_MARKET_DATA_STORE'
 const ROLLING_DAILY_METHOD_ID = 'ROLLING_DAILY_POINT_IN_TIME'
 const ROLLING_DAILY_METHOD_VERSION = 'rolling-daily-point-in-time-v1'
+const ROLLING_DAILY_VERIFICATION_IDENTITY_VERSION = 'ROLLING_DAILY_VERIFICATION_IDENTITY_V2'
 const MONTHLY_METHOD_VERSION = 'benchmark-forecasting-mvp-phase2-v1'
 const FORECAST_ARTIFACT_CADENCE_IDENTITY_VERSION = 'FORECAST_CADENCE_V1'
 const FORECAST_CADENCES = [
@@ -48,6 +61,10 @@ const VALID_PREPARED_ARTIFACT_FREQUENCIES = [
     ))
   )),
 ]
+
+type RuntimeQueryRequestOptions = {
+  signal?: AbortSignal
+}
 
 function parsePreparedArtifactFrequency(value: string | null | undefined) {
   if (!value) {
@@ -73,6 +90,35 @@ function parsePreparedArtifactFrequency(value: string | null | undefined) {
   }
 
   return { sourceFrequency, targetCadence }
+}
+
+function serializeRollingDailyFingerprintValue(value: number) {
+  return Number.isInteger(value) ? value.toFixed(1) : String(value)
+}
+
+function buildRollingDailyCompatibilityContext(
+  seriesId: string,
+  observations: Array<{ observedAt: Date, value: { toString(): string } | number }>,
+) {
+  const hash = createHash('sha256')
+  const trainingFingerprints = new Map<string, string>()
+  const actualValues = new Map<string, number>()
+  hash.update(seriesId)
+  hash.update('\n')
+  hash.update('DAILY')
+
+  for (const observation of observations) {
+    const date = observation.observedAt.toISOString().slice(0, 10)
+    const value = Number(observation.value)
+    hash.update('\n')
+    hash.update(date)
+    hash.update('=')
+    hash.update(serializeRollingDailyFingerprintValue(value))
+    trainingFingerprints.set(date, hash.copy().digest('hex'))
+    actualValues.set(date, value)
+  }
+
+  return { trainingFingerprints, actualValues }
 }
 
 function resolveForecastMethodIdentity(targetBasis: ForecastTargetBasis): {
@@ -226,7 +272,13 @@ function evaluateRollingDailyCurrentForecastFreshness(
 async function getRollingDailyCurrentSourceHistoryFingerprint(
   seriesId: string,
   model: ForecastPortfolioModelId,
+  capability?: Pick<InteractiveForecastCapabilityResult, 'currentReadiness'> | null,
+  snapshotSourceHistoryFingerprint?: string | null,
 ): Promise<string | null> {
+  if (capability?.currentReadiness === 'READY') {
+    return snapshotSourceHistoryFingerprint ?? null
+  }
+
   const prisma = getMarketDataPrismaClient()
 
   if (!prisma) {
@@ -313,6 +365,7 @@ function toCurrentNotAvailableReason(
 async function getPersistedRollingDailyCurrentForecast(
   seriesId: string,
   model: ForecastPortfolioModelId,
+  capability?: Pick<InteractiveForecastCapabilityResult, 'currentReadiness'> | null,
 ): Promise<BenchmarkForecastCurrentResult> {
   const prisma = getMarketDataPrismaClient()
 
@@ -368,7 +421,12 @@ async function getPersistedRollingDailyCurrentForecast(
       seriesId,
       model,
       payload,
-      await getRollingDailyCurrentSourceHistoryFingerprint(seriesId, model),
+      await getRollingDailyCurrentSourceHistoryFingerprint(
+        seriesId,
+        model,
+        capability,
+        payload.audit.sourceHistoryFingerprint ?? null,
+      ),
     ),
   )
 
@@ -380,6 +438,14 @@ async function getPersistedRollingDailyCurrentForecast(
         'POINT_IN_TIME',
         'PREPARATION_REQUIRED: Exact prepared Current Forecast payload is missing a renderable point-in-time forecast path.',
       )
+}
+
+export async function readPointInTimeCurrentForecastSnapshot(
+  seriesId: string,
+  model: ForecastPortfolioModelId,
+  capability?: Pick<InteractiveForecastCapabilityResult, 'currentReadiness'> | null,
+) {
+  return getPersistedRollingDailyCurrentForecast(seriesId, model, capability)
 }
 
 async function getPersistedCurrentForecast(
@@ -457,6 +523,7 @@ async function getPersistedCurrentForecast(
         horizonSteps: point.horizonSteps,
         forecastDate: point.forecastDate.toISOString(),
         forecastValue: toNumber(point.forecastValue),
+        metadata: point.metadataJson as ForecastSelectionMetadata | null,
       },
     ]),
   )
@@ -534,7 +601,19 @@ async function getPersistedForecastVerification(
       methodVersion: identity.methodVersion,
       status: 'AVAILABLE',
     },
-    include: {
+    select: {
+      seriesId: true,
+      displayName: true,
+      description: true,
+      methodVersion: true,
+      inputSource: true,
+      inputRunId: true,
+      historyFingerprint: true,
+      historyStartAt: true,
+      historyEndAt: true,
+      observationCount: true,
+      forecastOriginAt: true,
+      frequency: true,
       metrics: {
         orderBy: [{ horizonSteps: 'asc' }],
       },
@@ -554,6 +633,10 @@ async function getPersistedForecastVerification(
         targetBasis,
         methodId: identity.methodId,
         methodVersion: identity.methodVersion,
+      },
+      select: {
+        status: true,
+        failureReason: true,
       },
       orderBy: [{ updatedAt: 'desc' }],
     })
@@ -613,6 +696,14 @@ async function getPersistedForecastVerification(
           successfulOrigins: metric.origins - metric.failedOrigins,
           failedOrigins: metric.failedOrigins,
           coverage: metric.coverage,
+          metrics: {
+            mae: metric.mae,
+            rmse: metric.rmse,
+            mase: metric.mase,
+            smape: metric.smape,
+            directionalAccuracy: metric.directionalAccuracy,
+            bias: metric.bias,
+          },
           records,
         },
       ]
@@ -670,17 +761,33 @@ async function getPersistedRollingDailyForecastVerification(
     throw new Error('MARKET_DATA_DATABASE_URL is not configured.')
   }
 
-  const records = await prisma.rollingDailyVerificationRecord.findMany({
-    where: {
-      seriesId,
-      inputSource: ROLLING_DAILY_INPUT_SOURCE,
-      targetBasis: 'POINT_IN_TIME',
-      methodId: ROLLING_DAILY_METHOD_ID,
-      methodVersion: ROLLING_DAILY_METHOD_VERSION,
-      modelId: model,
-    },
-    orderBy: [{ horizonMonths: 'asc' }, { targetCalendarDate: 'asc' }, { forecastOriginAt: 'asc' }],
-  })
+  const identityWhere = {
+    seriesId,
+    inputSource: ROLLING_DAILY_INPUT_SOURCE,
+    targetBasis: 'POINT_IN_TIME' as const,
+    methodId: ROLLING_DAILY_METHOD_ID,
+    methodVersion: ROLLING_DAILY_METHOD_VERSION,
+    modelId: model,
+  }
+  const [records, maintenanceState] = await Promise.all([
+    prisma.rollingDailyVerificationRecord.findMany({
+      where: identityWhere,
+      orderBy: [{ horizonMonths: 'asc' }, { targetCalendarDate: 'asc' }, { forecastOriginAt: 'asc' }],
+    }),
+    prisma.rollingDailyMaintenanceState.findUnique({
+      where: {
+        seriesId_inputSource_targetBasis_methodId_methodVersion_modelId: identityWhere,
+      },
+      select: {
+        latestSourceObservationAt: true,
+        latestSourceHistoryStartAt: true,
+        latestSourceHistoryFingerprint: true,
+        latestSourceObservationCount: true,
+        lastProcessedOriginAt: true,
+        lastMaintenanceStatus: true,
+      },
+    }),
+  ])
 
   if (records.length === 0) {
     const identity = resolveForecastMethodIdentity('POINT_IN_TIME')
@@ -695,8 +802,118 @@ async function getPersistedRollingDailyForecastVerification(
     }
   }
 
+  const latestSourceDate = maintenanceState?.latestSourceObservationAt?.toISOString().slice(0, 10) ?? null
+  const earliestSourceDate = maintenanceState?.latestSourceHistoryStartAt?.toISOString().slice(0, 10) ?? null
+  const lastProcessedDate = maintenanceState?.lastProcessedOriginAt?.toISOString().slice(0, 10) ?? null
+  const hasReusableV2Records = Boolean(maintenanceState?.latestSourceHistoryFingerprint) && records.some((record) => {
+    if (record.sourceHistoryFingerprint === maintenanceState?.latestSourceHistoryFingerprint) {
+      return false
+    }
+    const metadata = record.metadataJson as Record<string, unknown> | null
+    return metadata?.verificationIdentityVersion === ROLLING_DAILY_VERIFICATION_IDENTITY_VERSION
+      && typeof metadata.trainingHistoryFingerprint === 'string'
+  })
+  const observations = hasReusableV2Records
+    ? await prisma.$queryRaw<Array<{ observedAt: Date, value: { toString(): string } | number }>>`
+        SELECT "observedAt", "value"
+        FROM "market_observations"
+        WHERE "seriesId" = ${seriesId}
+          AND "value" IS NOT NULL
+        ORDER BY "observedAt" ASC
+      `
+    : []
+  const compatibility = buildRollingDailyCompatibilityContext(seriesId, observations)
+  const currentFingerprintRecords = maintenanceState?.latestSourceHistoryFingerprint
+    ? records.filter((record) => {
+        if (record.sourceHistoryFingerprint === maintenanceState.latestSourceHistoryFingerprint) {
+          return true
+        }
+
+        const metadata = record.metadataJson as Record<string, unknown> | null
+        if (
+          metadata?.verificationIdentityVersion !== ROLLING_DAILY_VERIFICATION_IDENTITY_VERSION
+          || typeof metadata.trainingHistoryFingerprint !== 'string'
+        ) {
+          return false
+        }
+
+        const trainingEndDate = record.trainingHistoryEndAt.toISOString().slice(0, 10)
+        if (compatibility.trainingFingerprints.get(trainingEndDate) !== metadata.trainingHistoryFingerprint) {
+          return false
+        }
+
+        if (record.maturityStatus !== 'MATURED') {
+          return true
+        }
+
+        if (!record.verificationObservedAt || record.actualValue === null) {
+          return false
+        }
+
+        const actualDate = record.verificationObservedAt.toISOString().slice(0, 10)
+        return compatibility.actualValues.get(actualDate) === Number(record.actualValue)
+      })
+    : []
+  const latestRecord = [...currentFingerprintRecords]
+    .sort((left, right) => right.forecastOriginAt.getTime() - left.forecastOriginAt.getTime())[0]
+  const maintenanceComplete = Boolean(
+    maintenanceState
+    && (maintenanceState.lastMaintenanceStatus === 'SUCCEEDED' || maintenanceState.lastMaintenanceStatus === 'NO_OP')
+    && latestSourceDate
+    && lastProcessedDate === latestSourceDate
+    && maintenanceState.latestSourceHistoryFingerprint
+    && latestRecord?.sourceHistoryFingerprint === maintenanceState.latestSourceHistoryFingerprint,
+  )
+  const recentVerificationComplete = Boolean(
+    maintenanceState
+    && latestSourceDate
+    && earliestSourceDate
+    && maintenanceState.latestSourceHistoryFingerprint
+    && (maintenanceState.latestSourceObservationCount ?? 0) >= 36
+    && [1, 3, 6, 12]
+      .filter((horizonMonths) => {
+        const cutoff = new Date(`${latestSourceDate}T00:00:00.000Z`)
+        const originalDay = cutoff.getUTCDate()
+        cutoff.setUTCDate(1)
+        cutoff.setUTCMonth(cutoff.getUTCMonth() - horizonMonths)
+        cutoff.setUTCDate(Math.min(
+          originalDay,
+          new Date(Date.UTC(cutoff.getUTCFullYear(), cutoff.getUTCMonth() + 1, 0)).getUTCDate(),
+        ))
+        return earliestSourceDate <= cutoff.toISOString().slice(0, 10)
+      })
+      .every((horizonMonths) => currentFingerprintRecords.some((record) => {
+        if (
+          record.horizonMonths !== horizonMonths
+          || record.maturityStatus !== 'MATURED'
+          || record.actualValue === null
+          || !record.verificationObservedAt
+        ) {
+          return false
+        }
+        const lagDays = (
+          new Date(`${latestSourceDate}T00:00:00.000Z`).getTime()
+          - record.verificationObservedAt.getTime()
+        ) / (24 * 60 * 60 * 1000)
+        return lagDays >= 0 && lagDays <= 7
+      })),
+  )
+
+  if (!maintenanceComplete && !recentVerificationComplete) {
+    const identity = resolveForecastMethodIdentity('POINT_IN_TIME')
+    return {
+      status: 'NOT_AVAILABLE',
+      seriesId,
+      modelId: model,
+      targetBasis: 'POINT_IN_TIME',
+      targetSemantics: identity.targetSemantics,
+      methodId: identity.methodId,
+      reason: 'PREPARATION_REQUIRED: Point-in-time Historical Verification has not been prepared through the latest source observation.',
+    }
+  }
+
   const verification = Object.fromEntries(
-    [...records.reduce((map, record) => {
+    [...currentFingerprintRecords.reduce((map, record) => {
       const group = map.get(record.horizonLabel) ?? []
       group.push(record)
       map.set(record.horizonLabel, group)
@@ -721,8 +938,9 @@ async function getPersistedRollingDailyForecastVerification(
         maseScale: record.maseScale,
       }))
 
-      const expectedOrigins = horizonRecords.length
+      const expectedOrigins = maturedRecords.length
       const successfulOrigins = persistedRecords.length
+      const pendingOrigins = horizonRecords.length - maturedRecords.length
 
       return [
         horizonLabel,
@@ -733,14 +951,15 @@ async function getPersistedRollingDailyForecastVerification(
           expectedOrigins,
           successfulOrigins,
           failedOrigins: 0,
+          pendingOrigins,
           coverage: expectedOrigins > 0 ? successfulOrigins / expectedOrigins : 0,
+          metrics: null,
           records: persistedRecords,
         },
       ]
     }),
   )
 
-  const latestRecord = [...records].sort((left, right) => right.forecastOriginAt.getTime() - left.forecastOriginAt.getTime())[0]
   const identity = resolveForecastMethodIdentity('POINT_IN_TIME')
 
   return {
@@ -784,8 +1003,34 @@ function resolveSgRuntimeBaseUrl() {
   return LOCAL_SG_RUNTIME_BASE_URL
 }
 
+function hasExplicitSgRuntimeBaseUrl() {
+  return Boolean(process.env.SG_RUNTIME_BASE_URL?.trim())
+}
+
+function resolveSgRuntimeBaseUrls() {
+  const primaryBaseUrl = resolveSgRuntimeBaseUrl()
+  const candidates = [primaryBaseUrl]
+
+  for (const fallbackBaseUrl of DEPLOYED_SG_RUNTIME_FALLBACK_BASE_URLS) {
+    if (!candidates.includes(fallbackBaseUrl)) {
+      candidates.push(fallbackBaseUrl)
+    }
+  }
+
+  return candidates
+}
+
 function readSgRuntimeInternalForecastServiceToken() {
   return process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN?.trim() ?? ''
+}
+
+function isDeployedDashboardEnvironment() {
+  return Boolean(process.env.RENDER_EXTERNAL_URL?.trim() || process.env.VERCEL_URL?.trim())
+}
+
+function isMalformedJsonResponseError(error: unknown) {
+  return error instanceof Error
+    && (error.message.includes('empty JSON response') || error.message.includes('invalid JSON response'))
 }
 
 async function fetchSgRuntimeJson<T extends object>(pathname: string, params: Record<string, string>) {
@@ -811,6 +1056,102 @@ async function fetchSgRuntimeJson<T extends object>(pathname: string, params: Re
   return payload as T
 }
 
+async function fetchInternalPreparedForecast<T extends object>(
+  pathname: string,
+  params: Record<string, string>,
+  correlationHeaders: Record<string, string> = {},
+  requestOptions?: RuntimeQueryRequestOptions,
+) {
+  const token = readSgRuntimeInternalForecastServiceToken()
+
+  if (!token) {
+    throw new Error('SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN is not configured.')
+  }
+
+  const baseUrls = resolveSgRuntimeBaseUrls()
+  let lastError: unknown = null
+
+  for (const [index, baseUrl] of baseUrls.entries()) {
+    const url = new URL(pathname, baseUrl)
+    for (const [key, value] of Object.entries(params)) {
+      url.searchParams.set(key, value)
+    }
+
+    const controller = new AbortController()
+    const abortFromCaller = () => controller.abort(requestOptions?.signal?.reason)
+    if (requestOptions?.signal?.aborted) {
+      abortFromCaller()
+    } else {
+      requestOptions?.signal?.addEventListener('abort', abortFromCaller, { once: true })
+    }
+    const timeoutId = setTimeout(() => controller.abort(), INTERNAL_FORECAST_TIMEOUT_MS)
+
+    try {
+      const response = await fetch(url, {
+        cache: 'no-store',
+        signal: controller.signal,
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+          ...correlationHeaders,
+        },
+      })
+
+      const body = await response.text()
+      if (!body.trim()) {
+        throw new Error(`SG Runtime prepared forecast request returned an empty JSON response from ${baseUrl} with status ${response.status}.`)
+      }
+
+      let payload: T | { error?: string }
+      try {
+        payload = JSON.parse(body) as T | { error?: string }
+      } catch {
+        throw new Error(`SG Runtime prepared forecast request returned an invalid JSON response from ${baseUrl} with status ${response.status}.`)
+      }
+
+      if (!response.ok) {
+        const message = 'error' in payload ? payload.error ?? 'SG Runtime prepared forecast request failed.' : 'SG Runtime prepared forecast request failed.'
+
+        if (response.status === 401 || response.status === 403) {
+          throw new SgRuntimeForecastAuthError(message, response.status)
+        }
+
+        throw new Error(message)
+      }
+
+      return payload as T
+    } catch (error) {
+      if ((error as Error).name === 'AbortError') {
+        clearTimeout(timeoutId)
+        if (hasExplicitSgRuntimeBaseUrl()) {
+          throw new Error(INTERNAL_FORECAST_TIMEOUT_ERROR)
+        }
+        lastError = new Error(INTERNAL_FORECAST_TIMEOUT_ERROR)
+        continue
+      }
+
+      if (error instanceof SgRuntimeForecastAuthError) {
+        clearTimeout(timeoutId)
+        throw error
+      }
+
+      lastError = error
+      if (isMalformedJsonResponseError(error) && index + 1 < baseUrls.length) {
+        clearTimeout(timeoutId)
+        continue
+      }
+
+      clearTimeout(timeoutId)
+      throw error
+    } finally {
+      clearTimeout(timeoutId)
+      requestOptions?.signal?.removeEventListener('abort', abortFromCaller)
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('SG Runtime prepared forecast request failed.')
+}
+
 export async function getRollingDailyPointInTimeProductionForecast(
   seriesId: string,
   model: ForecastPortfolioModelId,
@@ -824,6 +1165,7 @@ export async function getBenchmarkProductionForecast(
   targetBasis: ForecastTargetBasis,
   cadence?: { sourceFrequency: string, targetCadence: string },
   correlationHeaders: Record<string, string> = {},
+  requestOptions?: RuntimeQueryRequestOptions,
 ) {
   const token = readSgRuntimeInternalForecastServiceToken()
 
@@ -841,6 +1183,12 @@ export async function getBenchmarkProductionForecast(
   }
 
   const controller = new AbortController()
+  const abortFromCaller = () => controller.abort(requestOptions?.signal?.reason)
+  if (requestOptions?.signal?.aborted) {
+    abortFromCaller()
+  } else {
+    requestOptions?.signal?.addEventListener('abort', abortFromCaller, { once: true })
+  }
   const timeoutId = setTimeout(() => controller.abort(), INTERNAL_FORECAST_TIMEOUT_MS)
 
   try {
@@ -874,6 +1222,7 @@ export async function getBenchmarkProductionForecast(
     throw error
   } finally {
     clearTimeout(timeoutId)
+    requestOptions?.signal?.removeEventListener('abort', abortFromCaller)
   }
 }
 
@@ -881,6 +1230,8 @@ async function readInteractiveForecastCapability(
   seriesId: string,
   model: ForecastPortfolioModelId,
   targetBasis: ForecastTargetBasis,
+  correlationHeaders: Record<string, string> = {},
+  requestOptions?: RuntimeQueryRequestOptions,
 ): Promise<InteractiveForecastCapabilityResult> {
   const token = readSgRuntimeInternalForecastServiceToken()
 
@@ -894,6 +1245,12 @@ async function readInteractiveForecastCapability(
   url.searchParams.set('targetSemantics', resolveForecastMethodIdentity(targetBasis).targetSemantics)
 
   const controller = new AbortController()
+  const abortFromCaller = () => controller.abort(requestOptions?.signal?.reason)
+  if (requestOptions?.signal?.aborted) {
+    abortFromCaller()
+  } else {
+    requestOptions?.signal?.addEventListener('abort', abortFromCaller, { once: true })
+  }
   const timeoutId = setTimeout(() => controller.abort(), INTERNAL_FORECAST_TIMEOUT_MS)
 
   try {
@@ -903,6 +1260,7 @@ async function readInteractiveForecastCapability(
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,
+        ...correlationHeaders,
       },
     })
 
@@ -926,6 +1284,22 @@ async function readInteractiveForecastCapability(
     throw error
   } finally {
     clearTimeout(timeoutId)
+    requestOptions?.signal?.removeEventListener('abort', abortFromCaller)
+  }
+}
+
+function buildPreparedReadAuthorityHeaders(
+  capability: InteractiveForecastCapabilityResult | null | undefined,
+): Record<string, string> {
+  const authority = capability?.preparedReadAuthority
+  if (!authority) {
+    return {}
+  }
+
+  return {
+    [PREPARED_READ_AUTHORITY_SOURCE_FREQUENCY_HEADER]: authority.sourceFrequency,
+    [PREPARED_READ_AUTHORITY_TARGET_CADENCE_HEADER]: authority.targetCadence,
+    [PREPARED_READ_AUTHORITY_HISTORY_FINGERPRINT_HEADER]: authority.expectedHistoryFingerprint,
   }
 }
 
@@ -933,13 +1307,47 @@ export async function getBenchmarkForecastCurrent(
   seriesId: string,
   model: ForecastPortfolioModelId,
   targetBasis: ForecastTargetBasis = DEFAULT_FORECAST_TARGET_BASIS,
+  cadence?: { sourceFrequency: string, targetCadence: string },
+  correlationHeaders: Record<string, string> = {},
+  capability?: InteractiveForecastCapabilityResult | null,
+  requestOptions?: RuntimeQueryRequestOptions,
 ) {
+  if (targetBasis !== 'POINT_IN_TIME' && getMarketDataPrismaClient()) {
+    return getPersistedCurrentForecast(seriesId, model, targetBasis)
+  }
+
+  if (targetBasis !== 'POINT_IN_TIME' && readSgRuntimeInternalForecastServiceToken()) {
+    const params: Record<string, string> = {
+      seriesId,
+      model,
+      targetBasis,
+    }
+    if (cadence) {
+      params.sourceFrequency = cadence.sourceFrequency
+      params.targetCadence = cadence.targetCadence
+    }
+
+    return fetchInternalPreparedForecast<BenchmarkForecastCurrentResult>(
+      INTERNAL_PREPARED_CURRENT_ROUTE_PATH,
+      params,
+      {
+        ...correlationHeaders,
+        ...buildPreparedReadAuthorityHeaders(capability),
+      },
+      requestOptions,
+    )
+  }
+
+  if (targetBasis !== 'POINT_IN_TIME' && isDeployedDashboardEnvironment()) {
+    throw new Error('SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN is required in deployed dashboard-preview environments for non-POINT_IN_TIME prepared reads.')
+  }
+
   if (targetBasis === 'POINT_IN_TIME') {
     assertPointInTimeSnapshotDatastoreAvailable()
 
     let capability: InteractiveForecastCapabilityResult | null = null
     if (readSgRuntimeInternalForecastServiceToken()) {
-      capability = await readInteractiveForecastCapability(seriesId, model, targetBasis)
+      capability = await readInteractiveForecastCapability(seriesId, model, targetBasis, correlationHeaders, requestOptions)
     }
 
     if (capability && (capability.status === 'NOT_LAWFUL' || capability.reason === 'NOT_LAWFUL')) {
@@ -955,11 +1363,7 @@ export async function getBenchmarkForecastCurrent(
       } satisfies BenchmarkForecastCurrentResult
     }
 
-    return getPersistedRollingDailyCurrentForecast(seriesId, model)
-  }
-
-  if (getMarketDataPrismaClient()) {
-    return getPersistedCurrentForecast(seriesId, model, targetBasis)
+    return getPersistedRollingDailyCurrentForecast(seriesId, model, capability)
   }
 
   const identity = resolveForecastMethodIdentity(targetBasis)
@@ -979,6 +1383,10 @@ type ShowForecastDependencies = {
     seriesId: string,
     model: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
+    cadence?: { sourceFrequency: string, targetCadence: string },
+    correlationHeaders?: Record<string, string>,
+    capability?: InteractiveForecastCapabilityResult | null,
+    requestOptions?: RuntimeQueryRequestOptions,
   ) => Promise<{ status: string }>
 }
 
@@ -991,22 +1399,54 @@ export async function resolveShowForecastCurrent(
   model: ForecastPortfolioModelId,
   targetBasis: ForecastTargetBasis = DEFAULT_FORECAST_TARGET_BASIS,
   dependencies: ShowForecastDependencies = showForecastDependencies,
+  cadence?: { sourceFrequency: string, targetCadence: string },
+  correlationHeaders: Record<string, string> = {},
+  capability?: InteractiveForecastCapabilityResult | null,
+  requestOptions?: RuntimeQueryRequestOptions,
 ) {
-  return dependencies.readPrepared(seriesId, model, targetBasis)
+  return dependencies.readPrepared(seriesId, model, targetBasis, cadence, correlationHeaders, capability, requestOptions)
 }
 
 export async function getBenchmarkForecastVerification(
   seriesId: string,
   model: ForecastPortfolioModelId,
   targetBasis: ForecastTargetBasis = DEFAULT_FORECAST_TARGET_BASIS,
+  cadence?: { sourceFrequency: string, targetCadence: string },
+  correlationHeaders: Record<string, string> = {},
+  _capability?: InteractiveForecastCapabilityResult | null,
+  requestOptions?: RuntimeQueryRequestOptions,
 ) {
+  if (readSgRuntimeInternalForecastServiceToken()) {
+    const params: Record<string, string> = {
+      seriesId,
+      model,
+      targetBasis,
+      verificationScope: 'FULL',
+    }
+    if (cadence) {
+      params.sourceFrequency = cadence.sourceFrequency
+      params.targetCadence = cadence.targetCadence
+    }
+
+    return fetchInternalPreparedForecast<BenchmarkForecastVerificationResult>(
+      INTERNAL_PREPARED_VERIFICATION_ROUTE_PATH,
+      params,
+      correlationHeaders,
+      requestOptions,
+    )
+  }
+
+  if (targetBasis !== 'POINT_IN_TIME' && getMarketDataPrismaClient()) {
+    return getPersistedForecastVerification(seriesId, model, targetBasis)
+  }
+
+  if (isDeployedDashboardEnvironment()) {
+    throw new Error('SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN is required in deployed dashboard-preview environments for prepared verification reads.')
+  }
+
   if (targetBasis === 'POINT_IN_TIME') {
     assertPointInTimeSnapshotDatastoreAvailable()
     return getPersistedRollingDailyForecastVerification(seriesId, model)
-  }
-
-  if (getMarketDataPrismaClient()) {
-    return getPersistedForecastVerification(seriesId, model, targetBasis)
   }
 
   const identity = resolveForecastMethodIdentity(targetBasis)

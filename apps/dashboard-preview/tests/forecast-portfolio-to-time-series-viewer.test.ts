@@ -535,7 +535,7 @@ test('point-in-time current forecast preserves full path and lawful upper/lower 
   assert.equal(lowerSeries?.points.filter((point) => point.value !== null).length, availableBandCount)
 })
 
-test('point-in-time verification stays on exact target dates and enables daily overlay geometry', () => {
+test('point-in-time historical verification keeps every exact target comparison and builds multi-point overlay geometry', () => {
   const firstRecord = createRecord({
     forecastOrigin: '2026-01-15T00:00:00.000Z',
     forecastDate: '2026-04-15T00:00:00.000Z',
@@ -583,6 +583,7 @@ test('point-in-time verification stays on exact target dates and enables daily o
     '2026-04-15T00:00:00.000Z',
     '2026-04-16T00:00:00.000Z',
   ])
+  assert.ok((payload?.deltaOverlays.length ?? 0) > 0)
 })
 
 function interpolateByDate(
@@ -944,7 +945,55 @@ test('current forecast tooltip exposes selected target basis semantics', () => {
   assert.equal(currentSeries?.points[0]?.tooltipModel.rows.find((row) => row.label === 'Target basis')?.value, 'End of period')
 })
 
-test('forecast origin marker label stays locale-aware', () => {
+test('period current forecast renders truthful upper and lower band series from prepared metadata', () => {
+  const currentResult = createCurrentResult('MONTHLY_AVERAGE')
+  currentResult.currentForecast['1M'] = {
+    ...currentResult.currentForecast['1M'],
+    metadata: {
+      modelFamily: 'damped_holt',
+      selectedVariant: 'DAMPED_HOLT',
+      selectedParameters: {},
+      selectionScore: null,
+      selectionMetric: null,
+      fitStatus: 'SUCCEEDED',
+      failureReason: null,
+      uncertaintyBand: {
+        status: 'AVAILABLE',
+        source: 'MODEL_NATIVE_SHORT_HISTORY',
+        policyVersion: 'ADAPTIVE_UNCERTAINTY_BANDS_V1',
+        coverage: 0.8,
+        lower: 103,
+        upper: 117,
+        sampleCount: 9,
+        calibrationStatus: 'INSUFFICIENT_SAMPLE',
+        calibrationMethod: 'STATSMODELS_DAMPED_HOLT_SIMULATION',
+        calibrationVersion: 'statsmodels-damped-holt-simulation-seed-1729-r1000-v1',
+        reasonCode: null,
+      },
+    },
+  }
+
+  const payload = buildForecastPortfolioPayload({
+    basePayload: createBasePayload(),
+    locale: 'pl',
+    model: 'damped_holt',
+    currentResult,
+    verificationResult: null,
+    verificationHorizon: '1M',
+  })
+
+  const central = payload?.series.find((entry) => entry.kind === 'forecast-central')
+  const upper = payload?.series.find((entry) => entry.kind === 'forecast-upper')
+  const lower = payload?.series.find((entry) => entry.kind === 'forecast-lower')
+
+  assert.deepEqual(central?.points.map((point) => point.value), [110])
+  assert.deepEqual(upper?.points.map((point) => point.value), [117])
+  assert.deepEqual(lower?.points.map((point) => point.value), [103])
+  assert.equal(central?.points[0]?.detailModel.forecastLower, 103)
+  assert.equal(central?.points[0]?.detailModel.forecastUpper, 117)
+})
+
+test('forecast preparation date stays locale-aware', () => {
   const englishPayload = buildForecastPortfolioPayload({
     basePayload: createBasePayload(),
     locale: 'en',
@@ -963,8 +1012,101 @@ test('forecast origin marker label stays locale-aware', () => {
     verificationHorizon: '3M',
   })
 
-  assert.equal(englishPayload?.forecastOrigin?.label, 'Forecast origin · Jul 2026')
-  assert.equal(polishPayload?.forecastOrigin?.label, 'Forecast Origin · lip 2026')
+  assert.equal(englishPayload?.forecastOrigin?.label, 'Forecast preparation date: Jul 2026')
+  assert.equal(polishPayload?.forecastOrigin?.label, 'Data przygotowania prognozy: lip 2026')
+})
+
+test('historical verification uses a real trailing window ending at the latest historical observation', () => {
+  const verificationResult = createVerificationResultForTargetBasis('POINT_IN_TIME', [
+    createRecord({ forecastDate: '2026-05-15T00:00:00.000Z', actualObservedAt: '2026-05-15T00:00:00.000Z' }),
+    createRecord({ forecastDate: '2026-07-15T00:00:00.000Z', actualObservedAt: '2026-07-15T00:00:00.000Z' }),
+    createRecord({ forecastDate: '2026-09-14T00:00:00.000Z', actualObservedAt: '2026-09-14T00:00:00.000Z' }),
+  ])
+
+  const payload = buildForecastPortfolioPayload({
+    basePayload: createBasePayloadWithHistorical([
+      { date: '2026-05-01T00:00:00.000Z', value: 95 },
+      { date: '2026-09-15T00:00:00.000Z', value: 105 },
+    ]),
+    locale: 'pl',
+    model: 'damped_holt',
+    currentResult: null,
+    verificationResult,
+    verificationHorizon: '3M',
+  })
+
+  const verificationSeries = payload?.series.find((entry) => entry.kind === 'historical-forecast')
+
+  assert.deepEqual(
+    verificationSeries?.points.map((point) => point.date),
+    ['2026-07-15T00:00:00.000Z', '2026-09-14T00:00:00.000Z'],
+  )
+})
+
+test('point-in-time historical verification renders the matured target trajectory through the latest observation', () => {
+  const verificationResult = createVerificationResultForTargetBasis('POINT_IN_TIME', [
+    createRecord({
+      forecastOrigin: '2026-03-15T00:00:00.000Z',
+      forecastDate: '2026-06-15T00:00:00.000Z',
+      actualObservedAt: '2026-06-15T00:00:00.000Z',
+      originValue: 90,
+      forecastValue: 96,
+      actualValue: 94,
+    }),
+    createRecord({
+      forecastOrigin: '2026-06-15T00:00:00.000Z',
+      forecastDate: '2026-09-15T00:00:00.000Z',
+      actualObservedAt: '2026-09-15T00:00:00.000Z',
+      originValue: 94,
+      forecastValue: 108,
+      actualValue: 105,
+    }),
+  ])
+
+  const payload = buildForecastPortfolioPayload({
+    basePayload: createBasePayloadWithHistorical([
+      { date: '2026-06-15T00:00:00.000Z', value: 94 },
+      { date: '2026-07-15T00:00:00.000Z', value: 99 },
+      { date: '2026-08-15T00:00:00.000Z', value: 101 },
+      { date: '2026-09-15T00:00:00.000Z', value: 105 },
+    ]),
+    locale: 'pl',
+    model: 'damped_holt',
+    currentResult: null,
+    verificationResult,
+    verificationHorizon: '3M',
+  })
+
+  const verificationSeries = payload?.series.find((entry) => entry.kind === 'historical-forecast')
+
+  assert.deepEqual(
+    verificationSeries?.points.map((point) => point.date),
+    ['2026-06-15T00:00:00.000Z', '2026-09-15T00:00:00.000Z'],
+  )
+  assert.equal(verificationSeries?.segments?.length, 1)
+  assert.ok((payload?.deltaOverlays.length ?? 0) > 0)
+})
+
+test('historical verification does not move stale prepared records into the current chart window', () => {
+  const verificationResult = createVerificationResultForTargetBasis('POINT_IN_TIME', [
+    createRecord({ forecastDate: '2024-03-14T00:00:00.000Z', actualObservedAt: '2024-03-14T00:00:00.000Z' }),
+    createRecord({ forecastDate: '2024-05-14T00:00:00.000Z', actualObservedAt: '2024-05-14T00:00:00.000Z' }),
+  ])
+
+  const payload = buildForecastPortfolioPayload({
+    basePayload: createBasePayloadWithHistorical([
+      { date: '2026-06-15T00:00:00.000Z', value: 95 },
+      { date: '2026-09-15T00:00:00.000Z', value: 105 },
+    ]),
+    locale: 'pl',
+    model: 'damped_holt',
+    currentResult: null,
+    verificationResult,
+    verificationHorizon: '3M',
+  })
+
+  assert.equal(payload?.series.some((entry) => entry.kind === 'historical-forecast'), false)
+  assert.deepEqual(payload?.deltaOverlays, [])
 })
 
 test('point-in-time current path remains unchanged across verification horizon switches', () => {

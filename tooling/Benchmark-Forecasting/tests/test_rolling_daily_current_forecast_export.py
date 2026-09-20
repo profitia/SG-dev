@@ -40,7 +40,7 @@ def build_payload(
         "methodId": ROLLING_DAILY_POINT_IN_TIME_METHOD_ID,
         "methodVersion": ROLLING_DAILY_POINT_IN_TIME_METHOD_VERSION,
         "minimumTrainingObservations": minimum_training_observations,
-        "minimumCalibrationSamples": 20,
+        "minimumCalibrationSamples": 30,
         "history": {
             "seriesId": "wocaes0074",
             "displayName": "Brent, Spot, FOB North Sea",
@@ -55,7 +55,7 @@ def build_payload(
             {
                 "horizonLabel": "1M",
                 "horizonMonths": 1,
-                "sampleCount": 25,
+                "sampleCount": 30,
                 "residualP10": -2.0,
                 "residualP90": 3.0,
                 "status": "AVAILABLE",
@@ -63,7 +63,7 @@ def build_payload(
             {
                 "horizonLabel": "3M",
                 "horizonMonths": 3,
-                "sampleCount": 25,
+                "sampleCount": 30,
                 "residualP10": -4.0,
                 "residualP90": 5.0,
                 "status": "AVAILABLE",
@@ -71,7 +71,7 @@ def build_payload(
             {
                 "horizonLabel": "6M",
                 "horizonMonths": 6,
-                "sampleCount": 25,
+                "sampleCount": 30,
                 "residualP10": -6.0,
                 "residualP90": 7.0,
                 "status": "AVAILABLE",
@@ -79,7 +79,7 @@ def build_payload(
             {
                 "horizonLabel": "12M",
                 "horizonMonths": 12,
-                "sampleCount": 25,
+                "sampleCount": 30,
                 "residualP10": -8.0,
                 "residualP90": 9.0,
                 "status": "AVAILABLE",

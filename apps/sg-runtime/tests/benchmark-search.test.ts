@@ -87,6 +87,127 @@ test('advanced search returns filtered results even when metadata label enrichme
   }
 })
 
+test('history metadata enrichment resolves DisplayUnit and business description without changing observations', async () => {
+  const requests: string[] = []
+  const restoreFetch = installFetchMock(async (url) => {
+    requests.push(url)
+
+    if (url.includes('/mbauth/connect/token')) {
+      return jsonResponse({ access_token: 'token', expires_in: 3600 })
+    }
+
+    if (url.includes('/v1/series/fetchseries')) {
+      return jsonResponse([{
+        metadata: {
+          Frequency: 'daily',
+          Currency: 'usd',
+          Source: 'src_cme',
+        },
+        dates: ['2026-09-14T00:00:00.000Z', '2026-09-15T00:00:00.000Z'],
+        values: [63.25, 64.5],
+      }])
+    }
+
+    if (url.includes('/v1/series/fetchentities')) {
+      return jsonResponse([{
+        metadata: {
+          Description: 'Crude Oil, Future, Light Sweet (WTI) Physical, 1st Position, Close, USD',
+          DisplayUnit: 'Currency Unit/Barrel',
+          Frequency: 'daily',
+          Currency: 'usd',
+          Source: 'src_cme',
+        },
+      }])
+    }
+
+    throw new Error(`Unexpected fetch: ${url}`)
+  })
+
+  try {
+    const { fetchMacrobondSeriesHistory } = await import('../lib/benchmark/macrobond')
+    const history = await fetchMacrobondSeriesHistory('cl_c1_cl')
+
+    assert.equal(history.displayName, 'Crude Oil, Future, Light Sweet (WTI) Physical, 1st Position, Close, USD')
+    assert.equal(history.frequency, 'daily')
+    assert.equal(history.currency, 'usd')
+    assert.equal(history.unit, 'USD/Barrel')
+    assert.equal(history.source, 'src_cme')
+    assert.deepEqual(history.historical, [
+      { date: '2026-09-14T00:00:00.000Z', value: 63.25 },
+      { date: '2026-09-15T00:00:00.000Z', value: 64.5 },
+    ])
+    assert.equal(requests.filter((url) => url.includes('/v1/series/fetchentities')).length, 1)
+  } finally {
+    restoreFetch()
+  }
+})
+
+test('history metadata enrichment falls back to the exact display title when entity metadata has no business label', async () => {
+  const requests: string[] = []
+  const restoreFetch = installFetchMock(async (url) => {
+    requests.push(url)
+
+    if (url.includes('/mbauth/connect/token')) {
+      return jsonResponse({ access_token: 'token', expires_in: 3600 })
+    }
+
+    if (url.includes('/v1/series/fetchseries')) {
+      return jsonResponse([{
+        metadata: {
+          Name: 'b_c1_cl',
+          Frequency: 'daily',
+          Currency: 'usd',
+          Source: 'src_ice',
+        },
+        dates: ['2026-09-15T00:00:00.000Z'],
+        values: [68.42],
+      }])
+    }
+
+    if (url.includes('/v1/series/fetchentities')) {
+      return jsonResponse([{
+        metadata: {
+          Name: 'b_c1_cl',
+          DisplayUnit: 'Currency Unit/Barrel',
+          Frequency: 'daily',
+          Currency: 'usd',
+          Source: 'src_ice',
+        },
+      }])
+    }
+
+    if (url.includes('/v1/search/entities')) {
+      return jsonResponse({
+        results: [{
+          Name: 'b_c1_cl',
+          Title: 'ICE Brent Crude, 1st Position, Close',
+          Description: 'Crude oil future continuation',
+          Frequency: 'daily',
+          Currency: 'usd',
+          Unit: 'Currency Unit/Barrel',
+          Source: 'src_ice',
+        }],
+      })
+    }
+
+    throw new Error(`Unexpected fetch: ${url}`)
+  })
+
+  try {
+    const { fetchMacrobondSeriesHistory } = await import('../lib/benchmark/macrobond')
+    const history = await fetchMacrobondSeriesHistory('b_c1_cl')
+
+    assert.equal(history.displayName, 'ICE Brent Crude, 1st Position, Close')
+    assert.equal(history.unit, 'USD/Barrel')
+    assert.deepEqual(history.historical, [
+      { date: '2026-09-15T00:00:00.000Z', value: 68.42 },
+    ])
+    assert.equal(requests.filter((url) => url.includes('/v1/search/entities')).length, 1)
+  } finally {
+    restoreFetch()
+  }
+})
+
 test('advanced search skips full Region label hydration during enrichment', async () => {
   const requests: Array<{ url: string; body: string | null }> = []
   const restoreFetch = installFetchMock(async (url, init) => {

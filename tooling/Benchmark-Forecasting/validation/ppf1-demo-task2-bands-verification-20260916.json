@@ -1,0 +1,272 @@
+{
+  "evidenceVersion": "PPF1_DEMO_TASK2_BANDS_VERIFICATION_EVIDENCE_V1",
+  "generatedAt": "2026-09-16T16:51:26+02:00",
+  "repository": "https://github.com/profitia/SG-dev.git",
+  "branch": "demo/porr-11-benchmark-readiness-20260916",
+  "baseSha": "5da1394924b6681de79e6c0eeff4f9cc29de54b0",
+  "frozenStage12Sha": "2f0e93c828fef22241affd4b703fc139b1759ca8",
+  "taskIdentity": {
+    "taskId": "ppf-1-demo-readiness-task-2-bands-verification-20260916",
+    "etap": "MVP-11 — Stabilizacja / Deploy"
+  },
+  "gates": {
+    "routingGate": "PASS",
+    "codeStateGate": "PASS",
+    "taskInputGate": "PASS",
+    "pmosBootstrapGate": "PASS",
+    "pmosRuntimeGate": "PASS",
+    "implementationResult": "PASS",
+    "localTestResult": "PASS",
+    "typecheck": "PASS",
+    "task1Regression": "PASS",
+    "task2Gate": "PASS",
+    "proceedToTask3": true
+  },
+  "bandPolicy": {
+    "version": "ADAPTIVE_UNCERTAINTY_BANDS_V1",
+    "coverage": 0.8,
+    "empiricalResidualThreshold": 30,
+    "sources": [
+      "EMPIRICAL_EXACT_RESIDUALS",
+      "MODEL_NATIVE_SHORT_HISTORY"
+    ],
+    "modelNativeBandFabricated": false,
+    "maseScaleFabricated": false,
+    "modelMethods": {
+      "naive": {
+        "method": "NAIVE_RANDOM_WALK_INNOVATION_RMS_NORMAL",
+        "version": "naive-random-walk-innovation-rms-normal-v1",
+        "minimumBandObservations": 2
+      },
+      "damped_holt": {
+        "method": "STATSMODELS_DAMPED_HOLT_SIMULATION",
+        "version": "statsmodels-damped-holt-simulation-seed-1729-r1000-v1",
+        "seed": 1729,
+        "repetitions": 1000
+      },
+      "ets": {
+        "method": "STATSMODELS_ETS_SIMULATION",
+        "version": "statsmodels-ets-simulation-seed-1729-r1000-v1",
+        "seed": 1729,
+        "repetitions": 1000,
+        "pointSemanticsPreserved": true
+      },
+      "arima": {
+        "method": "STATSMODELS_ARIMA_FORECAST_DISTRIBUTION",
+        "version": "statsmodels-arima-conf-int-alpha-0.2-v1",
+        "alpha": 0.2
+      }
+    }
+  },
+  "bandIdentityFields": [
+    "forecastIdentity",
+    "inputSource",
+    "sourceFrequency",
+    "targetCadence",
+    "horizonLabel",
+    "horizonSteps",
+    "targetDate",
+    "sourceHistoryFingerprint",
+    "trainingWindowPolicyId",
+    "effectiveTrainingPolicyId",
+    "bandPolicyVersion",
+    "bandSource",
+    "calibrationMethod",
+    "calibrationVersion",
+    "calibrationCutoff"
+  ],
+  "historicalVerification": {
+    "contractVersion": "HISTORICAL_VERIFICATION_V1",
+    "statuses": [
+      "AVAILABLE",
+      "LIMITED_SAMPLE",
+      "INSUFFICIENT_HISTORY",
+      "NOT_PREPARED",
+      "FAILED"
+    ],
+    "availableMinimumOrigins": 24,
+    "zeroOriginState": "INSUFFICIENT_HISTORY",
+    "currentForecastBlockedByVerification": false,
+    "originCountsAreFactual": true,
+    "inSampleSubstitutionUsed": false
+  },
+  "readiness": {
+    "statesSeparated": [
+      "FAST_READY",
+      "BANDS_READY",
+      "CALIBRATED_READY",
+      "RECENT_VERIFICATION_READY",
+      "FULL_READY"
+    ],
+    "modelNativeImpliesBandsReady": true,
+    "modelNativeImpliesCalibratedReady": false,
+    "calibratedReadyRequiresPersistedEmpiricalBand": true
+  },
+  "persistence": {
+    "storage": "existing Current Forecast point metadata",
+    "schemaMigrationUsed": false,
+    "roundTripTest": "PASS",
+    "preparedReadStartsProductionCompute": false,
+    "preparedReadInvokesPrepareRoute": false
+  },
+  "rollingDaily": {
+    "pointForecastIdentityPreserved": true,
+    "calendarProjectionSemanticsPreserved": true,
+    "empiricalCalibrationPreferredAtOrAbove30": true,
+    "empiricalInterpolationPreserved": true,
+    "sub30EmpiricalInventoryUsesNativeFallback": true,
+    "periodResidualReuse": false
+  },
+  "boundaryTests": {
+    "empirical29": "NOT_AVAILABLE_INSUFFICIENT_SAMPLE",
+    "empirical30": "AVAILABLE_CALIBRATED",
+    "empirical31": "AVAILABLE_CALIBRATED",
+    "naive1": "POINT_AVAILABLE_BAND_NOT_AVAILABLE",
+    "naive2": "MODEL_NATIVE_BAND_AVAILABLE",
+    "shortHistoryObservationCounts": [6, 9, 19],
+    "fourModels": "PASS",
+    "threeMethodologies": "PASS"
+  },
+  "realSeriesValidation": {
+    "mode": "AUTHORIZED_NEON_READ_ONLY_TO_LOCAL_CANONICAL_COMPUTE",
+    "neonProjectId": "autumn-waterfall-65938876",
+    "neonBranchId": "br-purple-shape-b2az1npx",
+    "database": "neondb",
+    "selectOnly": true,
+    "writes": false,
+    "rawObservationsCommitted": false,
+    "matrix": {
+      "variantCount": 48,
+      "passCount": 48,
+      "failCount": 0,
+      "modelsPerSeries": 4,
+      "methodologiesPerSeries": 3,
+      "series": {
+        "ehr2027g_cl": {
+          "lawfulDailyObservations": 119,
+          "contiguousMonthlyObservations": 7,
+          "variants": 12,
+          "passed": 12
+        },
+        "lmescusd20270226": {
+          "lawfulDailyObservations": 199,
+          "nullSourceRowsExcluded": 8,
+          "contiguousMonthlyObservations": 10,
+          "variants": 12,
+          "passed": 12
+        },
+        "hg2027g_cl": {
+          "lawfulDailyObservations": 390,
+          "contiguousMonthlyObservations": 20,
+          "variants": 12,
+          "passed": 12
+        },
+        "lmeofcucashask": {
+          "lawfulDailyObservations": 9795,
+          "nullSourceRowsExcluded": 332,
+          "contiguousMonthlyObservations": 467,
+          "variants": 12,
+          "passed": 12
+        }
+      },
+      "periodHistoricalVerification": {
+        "execution": "sampled lawful 1M out-of-sample origins, maximum 24 per exact variant",
+        "shortHistoryState": "LIMITED_SAMPLE",
+        "longHistoryState": "AVAILABLE",
+        "failedOriginCount": 0
+      },
+      "rollingDailyHistoricalVerification": {
+        "execution": "lawful matured-origin capacity check during read-only audit",
+        "note": "No production verification artifact was created. Historical Verification execution and response-state semantics are covered by local canonical tests."
+      }
+    },
+    "pointForecastABRegression": {
+      "baselineSha": "5da1394924b6681de79e6c0eeff4f9cc29de54b0",
+      "comparedPoints": 192,
+      "passCount": 192,
+      "failCount": 0,
+      "maxAbsoluteDelta": 0
+    },
+    "supersededDiagnostic": {
+      "result": "46_PASS_2_FALSE_NEGATIVES",
+      "reason": "The diagnostic compared two independent ETS fits after simulation instead of comparing Task 1 baseline with Task 2 under controlled identical state.",
+      "disposition": "SUPERSEDED_BY_192_POINT_AB_REGRESSION_AND_FINAL_48_VARIANT_MATRIX"
+    },
+    "result": "PASS"
+  },
+  "localValidation": {
+    "sgRuntime": {
+      "command": "node --import tsx --test tests/forecast-identity.test.ts tests/forecast-capability-resolver.test.ts tests/verification-single-flight.test.ts tests/forecast-live-input.test.ts tests/forecast-library-service.test.ts tests/forecast-route-contract.test.ts tests/uncertainty-band-policy.test.ts tests/historical-verification-policy.test.ts tests/rolling-daily-production-forecast.test.ts tests/rolling-daily-snapshot-persistence.test.ts tests/forecast-persistence-legacy-schema.test.ts && npm run typecheck",
+      "passed": 175,
+      "failed": 0,
+      "skipped": 0,
+      "typecheck": "PASS",
+      "exitCode": 0
+    },
+    "forecastTooling": {
+      "command": "PYTHONPATH=. .venv/bin/python -m unittest tests.test_phase1 tests.test_phase2 tests.test_live_input tests.test_bounded_non_daily_verification tests.test_generic_cadence_orchestration tests.test_uncertainty_bands tests.test_rolling_daily_method tests.test_rolling_daily_current_forecast_export tests.test_rolling_daily_band_interpolation",
+      "passed": 109,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    "gitDiffCheck": "PASS",
+    "selectedSeriesSpecificProductionLogic": false
+  },
+  "changedFiles": [
+    "apps/sg-runtime/lib/forecast/contracts.ts",
+    "apps/sg-runtime/lib/forecast/historical-verification-policy.ts",
+    "apps/sg-runtime/lib/forecast/identity.ts",
+    "apps/sg-runtime/lib/forecast/interactive-preparation.ts",
+    "apps/sg-runtime/lib/forecast/rolling-daily-production-forecast.ts",
+    "apps/sg-runtime/lib/forecast/rolling-daily-verification.ts",
+    "apps/sg-runtime/lib/forecast/route-handlers.ts",
+    "apps/sg-runtime/lib/forecast/service.ts",
+    "apps/sg-runtime/lib/forecast/uncertainty-band-policy.ts",
+    "apps/sg-runtime/tests/forecast-persistence-legacy-schema.test.ts",
+    "apps/sg-runtime/tests/forecast-route-contract.test.ts",
+    "apps/sg-runtime/tests/historical-verification-policy.test.ts",
+    "apps/sg-runtime/tests/uncertainty-band-policy.test.ts",
+    "tooling/Benchmark-Forecasting/forecasting/backtest.py",
+    "tooling/Benchmark-Forecasting/forecasting/contracts.py",
+    "tooling/Benchmark-Forecasting/forecasting/models/arima.py",
+    "tooling/Benchmark-Forecasting/forecasting/models/base.py",
+    "tooling/Benchmark-Forecasting/forecasting/models/damped_holt.py",
+    "tooling/Benchmark-Forecasting/forecasting/models/ets.py",
+    "tooling/Benchmark-Forecasting/forecasting/models/naive.py",
+    "tooling/Benchmark-Forecasting/forecasting/rolling_daily_contracts.py",
+    "tooling/Benchmark-Forecasting/forecasting/rolling_daily_point_in_time.py",
+    "tooling/Benchmark-Forecasting/forecasting/uncertainty_bands.py",
+    "tooling/Benchmark-Forecasting/scripts/export_rolling_daily_current_forecast.py",
+    "tooling/Benchmark-Forecasting/tests/test_rolling_daily_band_interpolation.py",
+    "tooling/Benchmark-Forecasting/tests/test_rolling_daily_current_forecast_export.py",
+    "tooling/Benchmark-Forecasting/tests/test_uncertainty_bands.py",
+    "tooling/Benchmark-Forecasting/validation/ppf1-demo-task2-bands-verification-20260916.json",
+    "tooling/Benchmark-Forecasting/validation/ppf1-demo-task2-bands-verification-20260916.md"
+  ],
+  "prohibitedActions": {
+    "schemaMigrationUsed": false,
+    "neonWrites": false,
+    "manualForecastArtifactSqlUsed": false,
+    "rawMarketDataCommitted": false,
+    "deploymentPerformed": false,
+    "productionPrewarmPerformed": false,
+    "stage12Modified": false,
+    "stage12CompletionClaimed": false,
+    "demoOnlySourceCodeCreated": false,
+    "seriesSpecificForecastLogicCreated": false,
+    "secondForecastEngineCreated": false,
+    "fullPpf1ReusePreserved": true
+  },
+  "publication": {
+    "commitCreated": false,
+    "remoteBranch": "origin/demo/porr-11-benchmark-readiness-20260916",
+    "remoteBranchPublished": false,
+    "finalCommitShaLocation": "EXTERNAL_HANDOFF_AFTER_COMMIT_TO_AVOID_SELF_REFERENTIAL_EVIDENCE"
+  },
+  "pmos": {
+    "save": "DEFERRED_TO_AGGREGATE_DEMO_CLOSEOUT_BY_OWNER_DECISION",
+    "closeout": "DEFERRED_TO_AGGREGATE_DEMO_CLOSEOUT_BY_OWNER_DECISION",
+    "pendingArtifactManuallyCreated": false
+  }
+}

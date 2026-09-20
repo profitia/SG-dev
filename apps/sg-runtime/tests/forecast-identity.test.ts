@@ -3,15 +3,51 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 import {
+  areForecastStatisticalCompatibilitiesEqual,
   buildForecastArtifactCadenceIdentity,
   buildForecastArtifactIdentityKey,
   buildForecastIdentityKey,
+  canResidualCalibrateCurrent,
+  createCurrentForecastStatisticalCompatibility,
+  createFullVerificationStatisticalCompatibility,
+  createLegacyFrequencySpecificCurrentForecastStatisticalCompatibility,
+  createLegacyUnresolvedForecastStatisticalCompatibility,
+  createLegacyVerificationStatisticalCompatibility,
+  createRecentVerificationStatisticalCompatibility,
   createForecastIdentity,
+  doesForecastArtifactSatisfyRequest,
   FORECAST_ARTIFACT_CADENCE_IDENTITY_VERSION,
+  FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID,
+  isRecentVerificationReusableForFullVerification,
   LEGACY_UNRESOLVED_FORECAST_METHOD_ID,
   parseForecastArtifactCadenceIdentity,
   resolveForecastMethodContract,
+  resolveLegacyForecastStatisticalCompatibility,
+  type ForecastVerificationReuseIdentity,
 } from '../lib/forecast/identity'
+import {
+  PERIOD_VERIFICATION_CONFIGURATION_ID,
+  ROLLING_DAILY_VERIFICATION_CONFIGURATION_ID,
+  resolveVerificationConfigurationId,
+} from '../lib/forecast/verification-single-flight'
+
+const MONTHLY_AVERAGE_POLICY_CONTEXT = {
+  sourceFrequency: 'MONTHLY',
+  targetCadence: 'MONTHLY',
+  targetSemantics: 'MONTHLY_AVERAGE',
+} as const
+
+const DAILY_POINT_IN_TIME_POLICY_CONTEXT = {
+  sourceFrequency: 'DAILY',
+  targetCadence: 'DAILY',
+  targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+} as const
+
+const QUARTERLY_END_OF_PERIOD_POLICY_CONTEXT = {
+  sourceFrequency: 'QUARTERLY',
+  targetCadence: 'QUARTERLY',
+  targetSemantics: 'END_OF_PERIOD',
+} as const
 
 test('generic identity keeps target semantics separate for the same series and model', () => {
   const identities = [
@@ -121,4 +157,209 @@ test('migration keeps pre-canonical monthly rows explicitly unresolved instead o
   assert.match(migration, /ALTER COLUMN "methodId" DROP DEFAULT/)
   assert.match(migration, /"targetBasis", "methodId", "modelId", "methodVersion"/)
     assert.equal(migration.includes('UPDATE'), false)
+})
+
+test('persisted forecast run identity includes cadence frequency in schema and migration', () => {
+  const schema = readFileSync(
+    new URL('../prisma-market-data/schema.prisma', import.meta.url),
+    'utf8',
+  )
+  const migration = readFileSync(
+    new URL('../prisma-market-data/migrations/20260918203500_forecast_artifact_frequency_identity/migration.sql', import.meta.url),
+    'utf8',
+  )
+  const exactIdentity = /methodVersion, frequency, trainingWindowPolicyId, effectiveTrainingPolicyId/
+
+  assert.equal(schema.match(exactIdentity)?.length, 1)
+  assert.equal((schema.match(new RegExp(exactIdentity.source, 'g')) ?? []).length, 2)
+  assert.match(migration, /CREATE UNIQUE INDEX "forecast_current_runs_identity_key"[\s\S]*"methodVersion",\s*"frequency",\s*"trainingWindowPolicyId"/)
+  assert.match(migration, /CREATE UNIQUE INDEX "forecast_verification_runs_identity_key"[\s\S]*"methodVersion",\s*"frequency",\s*"trainingWindowPolicyId"/)
+})
+
+test('statistical compatibility keeps Current, Recent Verification, and Full Verification distinct', () => {
+  const current = createCurrentForecastStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
+  const recent = createRecentVerificationStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
+  const full = createFullVerificationStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
+
+  assert.equal(new Set([
+    `${current.artifactScope}|${current.trainingWindowPolicyId}|${current.calibrationPolicy}`,
+    `${recent.artifactScope}|${recent.trainingWindowPolicyId}|${recent.calibrationPolicy}`,
+    `${full.artifactScope}|${full.trainingWindowPolicyId}|${full.calibrationPolicy}`,
+  ]).size, 3)
+  assert.equal(current.effectiveTrainingPolicyId, recent.effectiveTrainingPolicyId)
+  assert.notEqual(current.effectiveTrainingPolicyId, full.effectiveTrainingPolicyId)
+  assert.equal(current.effectiveTrainingPolicyId.includes('periodPolicy=ADAPTIVE_SHORT_HISTORY_V1'), true)
+  assert.equal(full.effectiveTrainingPolicyId.includes('periodPolicy=ADAPTIVE_SHORT_HISTORY_V1'), true)
+  assert.equal(areForecastStatisticalCompatibilitiesEqual(current, current), true)
+  assert.equal(areForecastStatisticalCompatibilitiesEqual(current, full), false)
+  assert.equal(doesForecastArtifactSatisfyRequest(full, full), true)
+  assert.equal(doesForecastArtifactSatisfyRequest(full, recent), false)
+})
+
+test('adaptive short-history policy version separates legacy and current exact identities', () => {
+  const legacyCurrent = createLegacyFrequencySpecificCurrentForecastStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
+  const adaptiveCurrent = createCurrentForecastStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
+
+  assert.notEqual(legacyCurrent.effectiveTrainingPolicyId, adaptiveCurrent.effectiveTrainingPolicyId)
+  assert.equal(doesForecastArtifactSatisfyRequest(legacyCurrent, adaptiveCurrent), false)
+  assert.equal(doesForecastArtifactSatisfyRequest(adaptiveCurrent, legacyCurrent), false)
+})
+
+test('period verification configuration is versioned by adaptive short-history policy and metric minimum', () => {
+  assert.equal(
+    PERIOD_VERIFICATION_CONFIGURATION_ID,
+    JSON.stringify({ periodTrainingPolicyVersion: 'ADAPTIVE_SHORT_HISTORY_V1', maseScaleMinimumObservations: 2 }),
+  )
+  assert.equal(resolveVerificationConfigurationId('MONTHLY_AVERAGE'), PERIOD_VERIFICATION_CONFIGURATION_ID)
+  assert.equal(resolveVerificationConfigurationId('END_OF_PERIOD'), PERIOD_VERIFICATION_CONFIGURATION_ID)
+})
+
+test('rolling daily verification configuration preserves the legacy exact identity', () => {
+  assert.equal(ROLLING_DAILY_VERIFICATION_CONFIGURATION_ID, JSON.stringify({ minTrainingWindow: 36 }))
+  assert.equal(resolveVerificationConfigurationId('ROLLING_DAILY_POINT_IN_TIME'), ROLLING_DAILY_VERIFICATION_CONFIGURATION_ID)
+})
+
+test('period and rolling-daily verification configurations remain exact-match isolated', () => {
+  assert.notEqual(PERIOD_VERIFICATION_CONFIGURATION_ID, ROLLING_DAILY_VERIFICATION_CONFIGURATION_ID)
+})
+
+test('legacy verification mapping stays deterministic while calibration remains conditional', () => {
+  const legacyVerification = createLegacyVerificationStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
+
+  assert.equal(legacyVerification.artifactScope, 'FULL_VERIFICATION')
+  assert.equal(legacyVerification.trainingWindowPolicyId, 'LEGACY_UNRESOLVED')
+  assert.equal(legacyVerification.calibrationPolicy, 'CONDITIONAL_POLICY_MATCH_ONLY')
+  assert.equal(legacyVerification.effectiveTrainingPolicyId.includes('LEGACY_UNRESOLVED@'), true)
+})
+
+test('legacy current mapping stays explicit and unresolved instead of being reconstructed as exact current policy', () => {
+  const legacyCurrent = createLegacyUnresolvedForecastStatisticalCompatibility('CURRENT', MONTHLY_AVERAGE_POLICY_CONTEXT)
+  const exactCurrent = createCurrentForecastStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
+
+  assert.equal(legacyCurrent.artifactScope, 'CURRENT_FORECAST')
+  assert.equal(legacyCurrent.trainingWindowPolicyId, 'LEGACY_UNRESOLVED')
+  assert.equal(legacyCurrent.calibrationPolicy, 'CONDITIONAL_POLICY_MATCH_ONLY')
+  assert.equal(areForecastStatisticalCompatibilitiesEqual(legacyCurrent, exactCurrent), false)
+})
+
+test('legacy statistical compatibility mapping is deterministic by artifact family', () => {
+  assert.deepEqual(
+    resolveLegacyForecastStatisticalCompatibility('CURRENT', MONTHLY_AVERAGE_POLICY_CONTEXT),
+    createLegacyUnresolvedForecastStatisticalCompatibility('CURRENT', MONTHLY_AVERAGE_POLICY_CONTEXT),
+  )
+  assert.deepEqual(
+    resolveLegacyForecastStatisticalCompatibility('VERIFICATION', MONTHLY_AVERAGE_POLICY_CONTEXT),
+    createLegacyUnresolvedForecastStatisticalCompatibility('VERIFICATION', MONTHLY_AVERAGE_POLICY_CONTEXT),
+  )
+})
+
+test('calibration compatibility is exact-contract based rather than scope-based', () => {
+  const currentCompatibility = createCurrentForecastStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
+  const recentCompatibility = createRecentVerificationStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
+  const fullCompatibility = createFullVerificationStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
+
+  const currentTarget = {
+    artifactScope: currentCompatibility.artifactScope,
+    seriesId: 'wocaes0280',
+    sourceSeriesId: 'wocaes0280',
+    inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'ets',
+    methodId: 'MONTHLY_AVERAGE',
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    trainingWindowPolicyId: currentCompatibility.trainingWindowPolicyId,
+    effectiveTrainingPolicyId: currentCompatibility.effectiveTrainingPolicyId,
+    historyFingerprint: 'history-live',
+    horizonLabel: '1M',
+    forecastOrigin: '2026-04-01T00:00:00.000Z',
+    actualObservedAt: null,
+    calibrationPolicy: currentCompatibility.calibrationPolicy,
+  } as const
+
+  const exactRecentResidual = {
+    ...currentTarget,
+    artifactScope: recentCompatibility.artifactScope,
+    trainingWindowPolicyId: recentCompatibility.trainingWindowPolicyId,
+    effectiveTrainingPolicyId: recentCompatibility.effectiveTrainingPolicyId,
+    historyFingerprint: 'history-live',
+    forecastOrigin: '2026-04-01T00:00:00.000Z',
+    actualObservedAt: '2026-04-30T00:00:00.000Z',
+  } as const
+  const exactFullResidual = {
+    ...currentTarget,
+    artifactScope: fullCompatibility.artifactScope,
+    trainingWindowPolicyId: fullCompatibility.trainingWindowPolicyId,
+    effectiveTrainingPolicyId: fullCompatibility.effectiveTrainingPolicyId,
+    historyFingerprint: 'history-live',
+    forecastOrigin: '2026-04-01T00:00:00.000Z',
+    actualObservedAt: '2026-04-30T00:00:00.000Z',
+  } as const
+  const conditionalLegacyResidual = {
+    ...currentTarget,
+    artifactScope: 'FULL_VERIFICATION',
+    calibrationPolicy: 'CONDITIONAL_POLICY_MATCH_ONLY',
+    actualObservedAt: '2026-04-30T00:00:00.000Z',
+  } as const
+
+  assert.equal(canResidualCalibrateCurrent(exactRecentResidual, currentTarget), true)
+  assert.equal(canResidualCalibrateCurrent(exactFullResidual, currentTarget), false)
+  assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, targetSemantics: 'END_OF_PERIOD' }, currentTarget), false)
+  assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, modelId: 'arima' }, currentTarget), false)
+  assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, methodId: 'END_OF_PERIOD' }, currentTarget), false)
+  assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, methodVersion: 'benchmark-forecasting-mvp-phase2-v2' }, currentTarget), false)
+  assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, sourceFrequency: 'QUARTERLY' }, currentTarget), false)
+  assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, targetCadence: 'QUARTERLY' }, currentTarget), false)
+  assert.equal(canResidualCalibrateCurrent({ ...exactFullResidual, horizonLabel: '3M' }, currentTarget), false)
+  assert.equal(canResidualCalibrateCurrent({ ...exactRecentResidual, sourceSeriesId: 'other-series' }, currentTarget), false)
+  assert.equal(canResidualCalibrateCurrent({ ...exactRecentResidual, actualObservedAt: null }, currentTarget), false)
+  assert.equal(canResidualCalibrateCurrent(conditionalLegacyResidual, currentTarget), false)
+})
+
+test('Recent to Full reuse remains conditional by effective statistical identity', () => {
+  const recentCompatibility = createRecentVerificationStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
+  const fullCompatibility = createFullVerificationStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
+
+  const recent: ForecastVerificationReuseIdentity = {
+    artifactScope: 'RECENT_VERIFICATION',
+    seriesId: 'wocaes0280',
+    sourceSeriesId: 'wocaes0280',
+    inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'ets',
+    methodId: 'MONTHLY_AVERAGE',
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    trainingWindowPolicyId: recentCompatibility.trainingWindowPolicyId,
+    effectiveTrainingPolicyId: recentCompatibility.effectiveTrainingPolicyId,
+    historyFingerprint: 'history-a',
+    horizonLabel: '1M',
+    forecastOrigin: '2025-12-01T00:00:00.000Z',
+  }
+  const full: ForecastVerificationReuseIdentity = {
+    ...recent,
+    artifactScope: 'FULL_VERIFICATION',
+    trainingWindowPolicyId: fullCompatibility.trainingWindowPolicyId,
+    effectiveTrainingPolicyId: fullCompatibility.effectiveTrainingPolicyId,
+  }
+
+  assert.equal(isRecentVerificationReusableForFullVerification(recent, full), false)
+  assert.equal(isRecentVerificationReusableForFullVerification({ ...recent, modelId: 'arima' }, full), false)
+  assert.equal(isRecentVerificationReusableForFullVerification({ ...recent, horizonLabel: '3M' }, full), false)
+  assert.equal(isRecentVerificationReusableForFullVerification({ ...recent, historyFingerprint: 'history-b' }, full), false)
+})
+
+test('effective training policy identity stays frequency-specific across repository methodologies', () => {
+  const monthlyCurrent = createCurrentForecastStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
+  const monthlyRecent = createRecentVerificationStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
+  const monthlyFull = createFullVerificationStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
+  const dailyCurrent = createCurrentForecastStatisticalCompatibility(DAILY_POINT_IN_TIME_POLICY_CONTEXT)
+  const quarterlyCurrent = createCurrentForecastStatisticalCompatibility(QUARTERLY_END_OF_PERIOD_POLICY_CONTEXT)
+
+  assert.equal(monthlyCurrent.effectiveTrainingPolicyId, monthlyRecent.effectiveTrainingPolicyId)
+  assert.notEqual(monthlyCurrent.effectiveTrainingPolicyId, monthlyFull.effectiveTrainingPolicyId)
+  assert.notEqual(monthlyCurrent.effectiveTrainingPolicyId, dailyCurrent.effectiveTrainingPolicyId)
+  assert.notEqual(monthlyCurrent.effectiveTrainingPolicyId, quarterlyCurrent.effectiveTrainingPolicyId)
 })

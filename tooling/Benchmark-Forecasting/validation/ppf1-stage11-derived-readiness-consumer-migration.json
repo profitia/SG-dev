@@ -1,0 +1,131 @@
+{
+  "generatedAt": "2026-09-11T14:42:13.000Z",
+  "taskId": "ppf-1-stage-11-validation-harness-corrective-evidence-completion-20260911",
+  "status": "PASS",
+  "publication": {
+    "authoritativeStage11SourceBranch": "ppf1/stage11-derived-readiness-consumer-migration-20260911",
+    "authoritativeStage11SourceSha": "6d8270e93d00dbce9f64fae9bf0a8aacf80631ce",
+    "authoritativeStage11SourceRemote": "origin/ppf1/stage11-derived-readiness-consumer-migration-20260911",
+    "validationHarnessBranch": "ppf1/stage11-validation-harness-corrective-20260911",
+    "validationHarnessHead": "1dbdc982956fe56a2a8875660966a5d38e9497d5",
+    "stage8AuthoritativeHarnessSha": "769f12766c79cff2508e3cde8f2664a387b1d3fa",
+    "baseStage10EvidenceHead": "7b6b44a3b84f301db7aeff5f26a0d1330bc4e4e0",
+    "cleanWorktreeRequired": true,
+    "isolatedPostgresRequired": true
+  },
+  "classification": {
+    "changeType": "VALIDATION_TOOLING_CORRECTIVE",
+    "productSourceMutated": false,
+    "forecastMethodologyChanged": false,
+    "protectedSurfacesTouched": false,
+    "changedFiles": [
+      "apps/sg-runtime/scripts/run-forecast-stage8-final-evidence.ts",
+      "apps/sg-runtime/scripts/run-forecast-stage9-final-evidence.ts",
+      "tooling/Benchmark-Forecasting/validation/ppf1-stage11-derived-readiness-consumer-migration.json",
+      "tooling/Benchmark-Forecasting/validation/ppf1-stage11-derived-readiness-consumer-migration.md"
+    ]
+  },
+  "validationBasis": {
+    "stage8AuthoritativeRerun": {
+      "sourceCandidateSha": "6d8270e93d00dbce9f64fae9bf0a8aacf80631ce",
+      "evidenceWorktreeHead": "769f12766c79cff2508e3cde8f2664a387b1d3fa",
+      "resultJson": "/tmp/ppf1-stage11-stage8-clean.json",
+      "resultMd": "/tmp/ppf1-stage11-stage8-clean.md",
+      "summary": {
+        "STAGE8_COMPLETION": "PASS",
+        "READY_FOR_STAGE9": "YES",
+        "CONCURRENT_ONE_GLOBAL_COMPUTE_GATE": "PASS",
+        "STATISTICAL_PARITY_GATE": "PASS",
+        "FAST_READY_ISOLATION_GATE": "PASS",
+        "TYPECHECK_REGRESSION": "PASS"
+      }
+    },
+    "stage9AuthoritativeRerun": {
+      "sourceCandidateSha": "6d8270e93d00dbce9f64fae9bf0a8aacf80631ce",
+      "evidenceWorktreeHead": "1dbdc982956fe56a2a8875660966a5d38e9497d5",
+      "generatedAt": "2026-09-11T14:41:24.664Z",
+      "resultJson": "/tmp/ppf1-stage11-stage9-clean.json",
+      "resultMd": "/tmp/ppf1-stage11-stage9-clean.md",
+      "finalDecision": {
+        "STAGE9_SOURCE_CANDIDATE_SHA": "6d8270e93d00dbce9f64fae9bf0a8aacf80631ce",
+        "STAGE9_EVIDENCE_SOURCE_SHA": "1dbdc982956fe56a2a8875660966a5d38e9497d5",
+        "CLEAN_WORKTREE_REQUIRED": "PASS",
+        "ISOLATED_POSTGRES_REQUIRED": "PASS",
+        "CAPABILITY_MATRIX_GATE": "PASS",
+        "RUNTIME_MATRIX_GATE": "PASS",
+        "REPRESENTATIVE_RECOVERY_GATE": "PASS",
+        "RUNTIME_EVIDENCE_MODEL": "arima",
+        "STAGE7_NON_REGRESSION_GATE": "PASS",
+        "STAGE8_NON_REGRESSION_GATE": "PASS",
+        "FOCUSED_VALIDATION_GATE": "PASS",
+        "MAX_ORIGINS_PER_BATCH": 3,
+        "LAWFUL_NON_DAILY_PATH_COUNT": 13,
+        "OVERALL_STAGE9_FINAL_ACCEPTANCE": "PASS"
+      },
+      "representativeProofs": {
+        "failureRecovery": "PASS",
+        "concurrency": "PASS",
+        "identityIsolation": "PASS",
+        "sourceRevisionFailClosed": "PASS",
+        "fastReadyIsolation": "PASS"
+      },
+      "focusedValidations": {
+        "forecastLibrary": "PASS",
+        "productionOperations": "PASS",
+        "preparedState": "PASS",
+        "pythonBoundedVerification": "PASS"
+      }
+    },
+    "nonRegression": {
+      "stage7FromStage9Harness": {
+        "status": "PASS",
+        "fastReadyExactCurrentAndRequiredRecentRenderable": "YES",
+        "globalNFastEquals1": "YES",
+        "realProgressiveOrchestrationPathExercised": "YES",
+        "fullVerificationExcludedFromFastReady": "YES",
+        "warmReusePreserved": "YES",
+        "crossContextReusePreserved": "YES"
+      },
+      "stage8FromStage9Harness": {
+        "status": "PASS",
+        "STAGE8_SOURCE_CANDIDATE_SHA": "1dbdc982956fe56a2a8875660966a5d38e9497d5",
+        "STAGE8_EVIDENCE_SOURCE_SHA": "1dbdc982956fe56a2a8875660966a5d38e9497d5",
+        "STAGE8_COMPLETION": "PASS",
+        "READY_FOR_STAGE9": "YES",
+        "CONCURRENT_ONE_GLOBAL_COMPUTE_GATE": "PASS",
+        "STATISTICAL_PARITY_GATE": "PASS"
+      },
+      "stage10Baseline": {
+        "status": "PASS",
+        "basis": "Previously published Stage 10 evidence remains authoritative and untouched by this validation-tooling corrective.",
+        "baseStage10EvidenceHead": "7b6b44a3b84f301db7aeff5f26a0d1330bc4e4e0"
+      }
+    },
+    "readinessState": {
+      "FAST_READY": "PASS",
+      "CALIBRATED_READY": "PASS",
+      "FULL_READY": "PASS"
+    }
+  },
+  "gates": {
+    "AUTHORITATIVE_STAGE11_SOURCE_SHA_PRESERVED": "PASS",
+    "VALIDATION_TOOLING_CORRECTIVE_CLASSIFICATION": "PASS",
+    "CLEAN_EVIDENCE_WORKTREE_GATE": "PASS",
+    "ISOLATED_POSTGRES_GATE": "PASS",
+    "STAGE8_AUTHORITATIVE_RERUN_GATE": "PASS",
+    "STAGE9_AUTHORITATIVE_RERUN_GATE": "PASS",
+    "STAGE7_NON_REGRESSION_GATE": "PASS",
+    "STAGE8_NON_REGRESSION_GATE": "PASS",
+    "STAGE10_BASELINE_PRESERVED_GATE": "PASS",
+    "FAST_READY_ADDITIVE_GATE": "PASS",
+    "CALIBRATED_READY_ADDITIVE_GATE": "PASS",
+    "FULL_READY_ADDITIVE_GATE": "PASS",
+    "GOVERNED_STAGE11_EVIDENCE_READY": "PASS"
+  },
+  "finalDecision": {
+    "status": "PASS",
+    "summary": "Stage 11 product authority remains bound to source SHA 6d8270e93d00dbce9f64fae9bf0a8aacf80631ce, the validation harness corrective remains isolated to Stage 8 and Stage 9 evidence tooling, the clean authoritative Stage 8 and Stage 9 reruns passed against that preserved source candidate, and additive FAST_READY, CALIBRATED_READY, and FULL_READY evidence is now publishable with governed lineage.",
+    "readyForPublication": true,
+    "readyForPmosCloseout": true
+  }
+}

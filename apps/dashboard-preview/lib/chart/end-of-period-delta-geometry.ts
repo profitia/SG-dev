@@ -1,6 +1,11 @@
 import type { TimeSeriesViewerSeries } from '@/lib/time-series-viewer/time-series-viewer-contract'
+import type { ForecastTargetBasis } from '@/lib/benchmark-forecast/forecast-contract'
 
 const VISUAL_EPSILON = 1e-9
+
+export function usesEndOfPeriodDeltaSurface(targetBasis: ForecastTargetBasis | null | undefined) {
+  return targetBasis === 'END_OF_PERIOD'
+}
 
 export type PreparedVisualSeriesPoint = {
   key: string

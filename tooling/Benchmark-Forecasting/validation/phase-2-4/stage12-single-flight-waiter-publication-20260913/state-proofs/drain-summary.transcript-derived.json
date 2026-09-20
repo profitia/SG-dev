@@ -1,0 +1,44 @@
+{
+  "taskId": "ppf-1-stage-12-single-flight-waiter-publication-20260913",
+  "selectedMaxOriginsPerRun": 50,
+  "summary": [
+    {
+      "benchmark": "Copper",
+      "seriesId": "lmeofcucashask",
+      "modelId": "arima",
+      "startingCheckpoint": "2024-01-25",
+      "finalCheckpoint": "2026-09-11",
+      "runs": 14,
+      "totalOriginsAdvanced": 665,
+      "fullVerificationReadiness": "READY",
+      "fullReady": true,
+      "boundedNoOpConfirmed": true
+    },
+    {
+      "benchmark": "Aluminium",
+      "seriesId": "lmeofalcashask",
+      "modelId": "arima",
+      "startingCheckpoint": "2024-01-12",
+      "finalCheckpoint": "2026-09-11",
+      "runs": 14,
+      "totalOriginsAdvanced": 673,
+      "fullVerificationReadiness": "READY",
+      "fullReady": true,
+      "boundedNoOpConfirmed": true
+    },
+    {
+      "benchmark": "Brent",
+      "seriesId": "wocaes0074",
+      "modelId": "arima",
+      "fullVerificationReadiness": "READY",
+      "fullReady": true,
+      "boundedHistoricalCatchupRequired": false
+    }
+  ],
+  "provenance": {
+    "mode": "transcript-derived",
+    "rawArtifactsExpired": true,
+    "originalSummaryPath": "/tmp/stage12-bg-catchup/drain-summary.json",
+    "originalProgressPath": "/tmp/stage12-bg-catchup/drain-progress.jsonl"
+  }
+}

@@ -5,6 +5,7 @@ import { writeFile } from 'node:fs/promises'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 import type { ForecastTargetBasis } from '@/lib/forecast/contracts'
+import { createCurrentForecastStatisticalCompatibility } from '@/lib/forecast/identity'
 import {
   buildRollingDailyHistoryFingerprint,
   ROLLING_DAILY_INPUT_SOURCE,
@@ -105,6 +106,11 @@ async function main() {
       methodVersion: ROLLING_DAILY_METHOD_VERSION,
       modelId,
     }
+    const statisticalCompatibility = createCurrentForecastStatisticalCompatibility({
+      sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    })
 
     const [state, snapshot, verificationRecords, calibrationGroups] = await Promise.all([
       prisma.rollingDailyMaintenanceState.findUnique({
@@ -114,7 +120,12 @@ async function main() {
       }),
       prisma.rollingDailyCurrentForecastSnapshot.findUnique({
         where: {
-          seriesId_inputSource_targetBasis_methodId_methodVersion_modelId: identity,
+          seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint: {
+            ...identity,
+            trainingWindowPolicyId: statisticalCompatibility.trainingWindowPolicyId,
+            effectiveTrainingPolicyId: statisticalCompatibility.effectiveTrainingPolicyId,
+            sourceHistoryFingerprint,
+          },
         },
       }),
       prisma.rollingDailyVerificationRecord.findMany({

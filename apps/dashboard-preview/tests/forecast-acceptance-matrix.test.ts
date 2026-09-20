@@ -9,17 +9,42 @@ import type {
   InteractiveForecastCapabilityResult,
 } from '@/lib/benchmark-forecast/forecast-contract'
 
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void
+  let reject!: (reason?: unknown) => void
+
+  const promise = new Promise<T>((nextResolve, nextReject) => {
+    resolve = nextResolve
+    reject = nextReject
+  })
+
+  return { promise, resolve, reject }
+}
+
 function capability(overrides: Partial<InteractiveForecastCapabilityResult> = {}): InteractiveForecastCapabilityResult {
   return {
     seriesId: 'brent',
     targetSemantics: 'MONTHLY_AVERAGE',
     modelId: 'naive',
+    preparedReadAuthority: null,
     sourceFrequency: 'MONTHLY',
+    targetCadence: null,
     sourceAvailability: 'AVAILABLE',
     lawfulTargetSemantics: 'LAWFUL',
     status: 'READY',
     currentReadiness: 'READY',
     verificationReadiness: 'READY',
+    recentVerificationReadiness: 'READY',
+    fullVerificationReadiness: 'READY',
+    predictionBandResidualCount: 0,
+    predictionBandState: 'NOT_AVAILABLE',
+    readiness: {
+      fastReady: true,
+      bandsReady: false,
+      calibratedReady: false,
+      fullReady: true,
+      blockers: [],
+    },
     targetedDataScope: 'SINGLE_SERIES',
     timingMs: 5,
     reason: null,
@@ -246,9 +271,44 @@ test('matrix fails the current cell when readiness stays not prepared after capa
   assert.equal(currentCell?.reasonCode, 'PREPARED_STATE_NOT_READY')
 })
 
+test('matrix warms stale variants before failing the current cell', async () => {
+  let prepareCalls = 0
+  const service = createForecastAcceptanceMatrixService({
+    readCapability: async () => capability({ status: 'STALE', currentReadiness: 'STALE', verificationReadiness: 'STALE', reason: 'STALE' }),
+    prepareCurrent: async () => {
+      prepareCalls += 1
+      return preparationResult({
+        state: 'NOT_PREPARED',
+        capabilityStatus: 'STALE',
+        currentReadiness: 'STALE',
+        prepareAttempted: true,
+        prepareStatus: 'STALE',
+        reason: 'STALE',
+      })
+    },
+    readCurrent: async () => currentResult(),
+    readVerification: async () => verificationResult(),
+    getPrisma: () => null,
+  })
+
+  const report = await service.evaluateSeries('brent')
+  const currentCell = report.current.cells.find((cell) => cell.identity.modelId === 'naive' && cell.identity.targetBasis === 'MONTHLY_AVERAGE')
+
+  assert.equal(currentCell?.state, 'FAIL')
+  assert.equal(currentCell?.failingLayer, 'PREPARED_STATE')
+  assert.equal(currentCell?.reasonCode, 'PREPARED_STATE_NOT_READY')
+  assert.equal(currentCell?.preparation.attempted, true)
+  assert.equal(prepareCalls, 12)
+})
+
 test('matrix fails the verification cell when verification readiness stays not prepared', async () => {
   const service = createForecastAcceptanceMatrixService({
-    readCapability: async () => capability({ status: 'AVAILABLE' as never, currentReadiness: 'READY', verificationReadiness: 'NOT_PREPARED' }),
+    readCapability: async () => capability({
+      status: 'AVAILABLE' as never,
+      currentReadiness: 'READY',
+      verificationReadiness: 'NOT_PREPARED',
+      fullVerificationReadiness: 'NOT_PREPARED',
+    }),
     prepareCurrent: async () => preparationResult({ prepareAttempted: false, prepareStatus: null }),
     readCurrent: async () => currentResult(),
     readVerification: async () => verificationResult(),
@@ -286,6 +346,116 @@ test('matrix fails at persisted layer when prepared state is READY but exact art
   assert.equal(currentCell?.reasonCode, 'MISSING_ARTIFACT')
   assert.equal(verificationCell?.state, 'FAIL')
   assert.equal(verificationCell?.reasonCode, 'MISSING_ARTIFACT')
+})
+
+test('matrix accepts full verification when legacy verificationReadiness is stale but fullVerificationReadiness is ready', async () => {
+  const service = createForecastAcceptanceMatrixService({
+    readCapability: async () => capability({
+      status: 'STALE',
+      currentReadiness: 'READY',
+      verificationReadiness: 'STALE',
+      fullVerificationReadiness: 'READY',
+    }),
+    prepareCurrent: async () => preparationResult({ prepareAttempted: false, prepareStatus: null }),
+    readCurrent: async () => currentResult(),
+    readVerification: async () => verificationResult(),
+    getPrisma: () => ({
+      forecastCurrentRun: { findFirst: async () => ({ status: 'AVAILABLE', historyFingerprint: 'fp-current', points: [{ forecastValue: 101 }] }) },
+      rollingDailyCurrentForecastSnapshot: { findFirst: async () => null },
+      forecastVerificationRun: { findFirst: async () => ({ status: 'AVAILABLE', historyFingerprint: 'fp-verification', metrics: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }], points: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }] }) },
+      rollingDailyVerificationRecord: { findMany: async () => [] },
+    } as never),
+  })
+
+  const report = await service.evaluateSeries('brent')
+  const verificationCell = report.verification.cells.find((cell) => cell.identity.modelId === 'naive' && cell.identity.targetBasis === 'MONTHLY_AVERAGE' && cell.identity.verificationHorizon === '1M')
+
+  assert.equal(verificationCell?.state, 'PASS')
+})
+
+test('matrix accepts the exact persisted verification artifact selected by the canonical read even when a newer row exists', async () => {
+  const service = createForecastAcceptanceMatrixService({
+    readCapability: async () => capability(),
+    prepareCurrent: async () => preparationResult(),
+    readCurrent: async () => currentResult(),
+    readVerification: async () => verificationResult({
+      lineage: {
+        inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+        inputRunId: 'verification-exact',
+        sourceSeriesId: 'brent',
+        sourceFrequency: 'MONTHLY',
+        historyFingerprint: 'fp-exact',
+        preparation: null,
+      },
+    }),
+    getPrisma: () => ({
+      forecastCurrentRun: { findFirst: async () => ({ status: 'AVAILABLE', historyFingerprint: 'fp-current', points: [{ forecastValue: 101 }] }) },
+      rollingDailyCurrentForecastSnapshot: { findFirst: async () => null },
+      forecastVerificationRun: {
+        findFirst: async ({ where }: { where: { historyFingerprint?: string } }) => {
+          if (where.historyFingerprint === 'fp-exact') {
+            return {
+              status: 'AVAILABLE',
+              historyFingerprint: 'fp-exact',
+              metrics: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }],
+              points: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }],
+            }
+          }
+
+          return {
+            status: 'AVAILABLE',
+            historyFingerprint: 'fp-latest',
+            metrics: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }],
+            points: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }],
+          }
+        },
+      },
+      rollingDailyVerificationRecord: { findMany: async () => [] },
+    } as never),
+  })
+
+  const report = await service.evaluateSeries('brent')
+  const verificationCell = report.verification.cells.find((cell) => cell.identity.modelId === 'naive' && cell.identity.targetBasis === 'MONTHLY_AVERAGE' && cell.identity.verificationHorizon === '1M')
+
+  assert.equal(verificationCell?.state, 'PASS')
+})
+
+test('matrix still fails when exact persisted verification proof does not match the canonical read fingerprint', async () => {
+  const service = createForecastAcceptanceMatrixService({
+    readCapability: async () => capability(),
+    prepareCurrent: async () => preparationResult(),
+    readCurrent: async () => currentResult(),
+    readVerification: async () => verificationResult({
+      lineage: {
+        inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+        inputRunId: 'verification-exact',
+        sourceSeriesId: 'brent',
+        sourceFrequency: 'MONTHLY',
+        historyFingerprint: 'fp-exact',
+        preparation: null,
+      },
+    }),
+    getPrisma: () => ({
+      forecastCurrentRun: { findFirst: async () => ({ status: 'AVAILABLE', historyFingerprint: 'fp-current', points: [{ forecastValue: 101 }] }) },
+      rollingDailyCurrentForecastSnapshot: { findFirst: async () => null },
+      forecastVerificationRun: {
+        findFirst: async ({ where }: { where: { historyFingerprint?: string } }) => ({
+          status: 'AVAILABLE',
+          historyFingerprint: where.historyFingerprint === 'fp-exact' ? 'fp-wrong' : 'fp-latest',
+          metrics: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }],
+          points: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }],
+        }),
+      },
+      rollingDailyVerificationRecord: { findMany: async () => [] },
+    } as never),
+  })
+
+  const report = await service.evaluateSeries('brent')
+  const verificationCell = report.verification.cells.find((cell) => cell.identity.modelId === 'naive' && cell.identity.targetBasis === 'MONTHLY_AVERAGE' && cell.identity.verificationHorizon === '1M')
+
+  assert.equal(verificationCell?.state, 'FAIL')
+  assert.equal(verificationCell?.failingLayer, 'POSTGRES_ARTIFACT')
+  assert.equal(verificationCell?.reasonCode, 'STALE_FINGERPRINT')
 })
 
 test('matrix surfaces empty point-in-time snapshot paths as EMPTY_PATH without attempting a canonical read', async () => {
@@ -382,6 +552,39 @@ test('matrix rejects stale point-in-time current fingerprints deterministically'
           })
         : currentResult({ modelId, targetBasis, targetSemantics: targetBasis, methodId: targetBasis, lineage: { inputSource: 'DYNAMIC_MARKET_DATA_STORE', inputRunId: 'run-1', sourceSeriesId: 'brent', sourceFrequency: 'MONTHLY', historyFingerprint: `${modelId}-${targetBasis}`, preparation: null } })
     ),
+    readPointInTimeCurrent: async (_seriesId, modelId) => currentResult({
+      modelId,
+      targetBasis: 'POINT_IN_TIME',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodVersion: 'rolling-daily-point-in-time-v1',
+      lineage: {
+        inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+        inputRunId: 'run-1',
+        sourceSeriesId: 'brent',
+        sourceFrequency: 'DAILY',
+        historyFingerprint: 'snapshot-fingerprint',
+        preparation: null,
+      },
+      freshness: {
+        identity: {
+          forecastIdentity: {
+            seriesId: 'brent',
+            modelId,
+            targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+            methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+            methodVersion: 'rolling-daily-point-in-time-v1',
+          },
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          sourceHistoryFingerprint: 'snapshot-fingerprint',
+          forecastOrigin: '2025-01-01T00:00:00.000Z',
+        },
+        status: 'STALE',
+        reason: 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
+        snapshotSourceHistoryFingerprint: 'snapshot-fingerprint',
+        currentSourceHistoryFingerprint: 'current-fingerprint',
+      },
+    }),
     readVerification: async (_seriesId, modelId, targetBasis) => verificationResult({ modelId, targetBasis, targetSemantics: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis, methodId: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis, methodVersion: targetBasis === 'POINT_IN_TIME' ? 'rolling-daily-point-in-time-v1' : 'benchmark-forecasting-mvp-phase2-v1', lineage: { inputSource: 'DYNAMIC_MARKET_DATA_STORE', inputRunId: 'verification-1', sourceSeriesId: 'brent', sourceFrequency: targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY', historyFingerprint: `${modelId}-${targetBasis}-verification`, preparation: null } }),
     getPrisma: () => ({
       forecastCurrentRun: { findFirst: async ({ where }: { where: { modelId: string, targetBasis: string } }) => ({ status: 'AVAILABLE', historyFingerprint: `${where.modelId}-${where.targetBasis}`, points: [{ forecastValue: 1 }] }) },
@@ -397,6 +600,82 @@ test('matrix rejects stale point-in-time current fingerprints deterministically'
   assert.equal(pointInTimeCurrent?.state, 'FAIL')
   assert.equal(pointInTimeCurrent?.failingLayer, 'POSTGRES_ARTIFACT')
   assert.equal(pointInTimeCurrent?.reasonCode, 'STALE_FINGERPRINT')
+})
+
+test('matrix reads point-in-time current snapshots without routing back through the generic current reader', async () => {
+  let genericCurrentReads = 0
+  let pointInTimeCurrentReads = 0
+
+  const service = createForecastAcceptanceMatrixService({
+    readCapability: async (input) => capability({ modelId: input.modelId, targetSemantics: input.targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : input.targetBasis, sourceFrequency: input.targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY' }),
+    prepareCurrent: async () => preparationResult(),
+    readCurrent: async (_seriesId, modelId, targetBasis) => {
+      genericCurrentReads += 1
+      return currentResult({
+        modelId,
+        targetBasis,
+        targetSemantics: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis,
+        methodId: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis,
+        methodVersion: targetBasis === 'POINT_IN_TIME' ? 'rolling-daily-point-in-time-v1' : 'benchmark-forecasting-mvp-phase2-v1',
+        lineage: {
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          inputRunId: 'run-1',
+          sourceSeriesId: 'brent',
+          sourceFrequency: targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
+          historyFingerprint: `${modelId}-${targetBasis}`,
+          preparation: null,
+        },
+      })
+    },
+    readPointInTimeCurrent: async (_seriesId, modelId) => {
+      pointInTimeCurrentReads += 1
+      return currentResult({
+        modelId,
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodVersion: 'rolling-daily-point-in-time-v1',
+        lineage: {
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          inputRunId: 'run-1',
+          sourceSeriesId: 'brent',
+          sourceFrequency: 'DAILY',
+          historyFingerprint: `${modelId}-POINT_IN_TIME`,
+          preparation: null,
+        },
+        freshness: {
+          identity: {
+            forecastIdentity: {
+              seriesId: 'brent',
+              modelId,
+              targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+              methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+              methodVersion: 'rolling-daily-point-in-time-v1',
+            },
+            inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+            sourceHistoryFingerprint: `${modelId}-POINT_IN_TIME`,
+            forecastOrigin: '2025-01-01T00:00:00.000Z',
+          },
+          status: 'FRESH',
+          reason: null,
+          snapshotSourceHistoryFingerprint: `${modelId}-POINT_IN_TIME`,
+          currentSourceHistoryFingerprint: `${modelId}-POINT_IN_TIME`,
+        },
+      })
+    },
+    readVerification: async (_seriesId, modelId, targetBasis) => verificationResult({ modelId, targetBasis, targetSemantics: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis, methodId: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis, methodVersion: targetBasis === 'POINT_IN_TIME' ? 'rolling-daily-point-in-time-v1' : 'benchmark-forecasting-mvp-phase2-v1', lineage: { inputSource: 'DYNAMIC_MARKET_DATA_STORE', inputRunId: 'verification-1', sourceSeriesId: 'brent', sourceFrequency: targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY', historyFingerprint: `${modelId}-${targetBasis}-verification`, preparation: null } }),
+    getPrisma: () => ({
+      forecastCurrentRun: { findFirst: async ({ where }: { where: { modelId: string, targetBasis: string } }) => ({ status: 'AVAILABLE', historyFingerprint: `${where.modelId}-${where.targetBasis}`, points: [{ forecastValue: 1 }] }) },
+      rollingDailyCurrentForecastSnapshot: { findFirst: async ({ where }: { where: { modelId: string } }) => ({ status: 'AVAILABLE', payloadJson: { status: 'AVAILABLE', audit: { sourceHistoryFingerprint: `${where.modelId}-POINT_IN_TIME` }, path: [{ pointForecast: 1 }] } }) },
+      forecastVerificationRun: { findFirst: async ({ where }: { where: { modelId: string, targetBasis: string } }) => ({ status: 'AVAILABLE', historyFingerprint: `${where.modelId}-${where.targetBasis}-verification`, metrics: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }], points: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }] }) },
+      rollingDailyVerificationRecord: { findMany: async ({ where }: { where: { modelId: string } }) => [{ actualValue: 1, maturityStatus: 'MATURED', sourceHistoryFingerprint: `${where.modelId}-POINT_IN_TIME-verification` }] },
+    } as never),
+  })
+
+  await service.evaluateSeries('brent')
+
+  assert.equal(genericCurrentReads, 8)
+  assert.equal(pointInTimeCurrentReads, 4)
 })
 
 test('matrix rejects available reads that do not match the requested forecast identity', async () => {
@@ -630,4 +909,176 @@ test('matrix performs one cold prepare on first evaluation and zero prepares on 
   assert.equal(secondVerificationCell?.preparation.attempted, false)
   assert.equal(prepareCalls, 1)
   assert.equal(targetVariantCapabilityReads, 3)
+})
+
+test('matrix starts non-point-in-time work before the optional PIT hook resolves and waits before PIT evaluation', async () => {
+  const pointInTimeGate = createDeferred<void>()
+  const nonPointInTimeStarted = createDeferred<void>()
+  let pointInTimeCurrentStarted = false
+
+  const service = createForecastAcceptanceMatrixService({
+    readCapability: async (input) => capability({
+      modelId: input.modelId,
+      targetSemantics: input.targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : input.targetBasis,
+      sourceFrequency: input.targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
+    }),
+    prepareCurrent: async (input) => preparationResult({
+      modelId: input.modelId,
+      targetBasis: input.targetBasis,
+      targetSemantics: input.targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : input.targetBasis,
+    }),
+    readCurrent: async (_seriesId, modelId, targetBasis) => {
+      if (targetBasis === 'POINT_IN_TIME') {
+        pointInTimeCurrentStarted = true
+      } else {
+        nonPointInTimeStarted.resolve()
+      }
+
+      return currentResult({
+        modelId,
+        targetBasis,
+        targetSemantics: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis,
+        methodId: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis,
+        methodVersion: targetBasis === 'POINT_IN_TIME' ? 'rolling-daily-point-in-time-v1' : 'benchmark-forecasting-mvp-phase2-v1',
+        lineage: {
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          inputRunId: 'run-1',
+          sourceSeriesId: 'brent',
+          sourceFrequency: targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
+          historyFingerprint: `${modelId}-${targetBasis}`,
+          preparation: null,
+        },
+      })
+    },
+    readPointInTimeCurrent: async (_seriesId, modelId) => {
+      pointInTimeCurrentStarted = true
+      return currentResult({
+        modelId,
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodVersion: 'rolling-daily-point-in-time-v1',
+        lineage: {
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          inputRunId: 'run-1',
+          sourceSeriesId: 'brent',
+          sourceFrequency: 'DAILY',
+          historyFingerprint: `${modelId}-POINT_IN_TIME`,
+          preparation: null,
+        },
+        freshness: {
+          status: 'FRESH',
+          reason: null,
+          snapshotSourceHistoryFingerprint: `${modelId}-POINT_IN_TIME`,
+          currentSourceHistoryFingerprint: `${modelId}-POINT_IN_TIME`,
+        },
+      } as never)
+    },
+    readVerification: async (_seriesId, modelId, targetBasis) => verificationResult({
+      modelId,
+      targetBasis,
+      targetSemantics: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis,
+      methodId: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis,
+      methodVersion: targetBasis === 'POINT_IN_TIME' ? 'rolling-daily-point-in-time-v1' : 'benchmark-forecasting-mvp-phase2-v1',
+      lineage: {
+        inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+        inputRunId: 'verification-1',
+        sourceSeriesId: 'brent',
+        sourceFrequency: targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
+        historyFingerprint: `${modelId}-${targetBasis}-verification`,
+        preparation: null,
+      },
+    }),
+    getPrisma: () => ({
+      forecastCurrentRun: { findFirst: async ({ where }: { where: { modelId: string, targetBasis: string } }) => ({ status: 'AVAILABLE', historyFingerprint: `${where.modelId}-${where.targetBasis}`, points: [{ forecastValue: 101 }] }) },
+      rollingDailyCurrentForecastSnapshot: { findFirst: async ({ where }: { where: { modelId: string } }) => ({ status: 'AVAILABLE', payloadJson: { status: 'AVAILABLE', audit: { sourceHistoryFingerprint: `${where.modelId}-POINT_IN_TIME` }, path: [{ pointForecast: 1 }] } }) },
+      forecastVerificationRun: { findFirst: async ({ where }: { where: { modelId: string, targetBasis: string } }) => ({ status: 'AVAILABLE', historyFingerprint: `${where.modelId}-${where.targetBasis}-verification`, metrics: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }], points: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }] }) },
+      rollingDailyVerificationRecord: { findMany: async ({ where }: { where: { modelId: string } }) => [{ actualValue: 1, maturityStatus: 'MATURED', sourceHistoryFingerprint: `${where.modelId}-POINT_IN_TIME-verification` }] },
+    } as never),
+  })
+
+  const reportPromise = service.evaluateSeries('brent', {
+    beforePointInTimeEvaluation: async () => pointInTimeGate.promise,
+  })
+
+  await nonPointInTimeStarted.promise
+  assert.equal(pointInTimeCurrentStarted, false)
+
+  pointInTimeGate.resolve()
+
+  const report = await reportPromise
+  assert.ok(report.current.cells.length > 0)
+  assert.equal(pointInTimeCurrentStarted, true)
+})
+
+test('matrix preserves default behavior when the optional PIT hook is absent', async () => {
+  let pointInTimeCurrentStarted = false
+
+  const service = createForecastAcceptanceMatrixService({
+    readCapability: async (input) => capability({
+      modelId: input.modelId,
+      targetSemantics: input.targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : input.targetBasis,
+      sourceFrequency: input.targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
+    }),
+    prepareCurrent: async (input) => preparationResult({
+      modelId: input.modelId,
+      targetBasis: input.targetBasis,
+      targetSemantics: input.targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : input.targetBasis,
+    }),
+    readCurrent: async (_seriesId, modelId, targetBasis) => {
+      if (targetBasis === 'POINT_IN_TIME') {
+        pointInTimeCurrentStarted = true
+      }
+
+      return currentResult({
+        modelId,
+        targetBasis,
+        targetSemantics: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis,
+        methodId: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis,
+        methodVersion: targetBasis === 'POINT_IN_TIME' ? 'rolling-daily-point-in-time-v1' : 'benchmark-forecasting-mvp-phase2-v1',
+      })
+    },
+    readPointInTimeCurrent: async (_seriesId, modelId) => {
+      pointInTimeCurrentStarted = true
+      return currentResult({
+        modelId,
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodVersion: 'rolling-daily-point-in-time-v1',
+        lineage: {
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          inputRunId: 'run-1',
+          sourceSeriesId: 'brent',
+          sourceFrequency: 'DAILY',
+          historyFingerprint: `${modelId}-POINT_IN_TIME`,
+          preparation: null,
+        },
+        freshness: {
+          status: 'FRESH',
+          reason: null,
+          snapshotSourceHistoryFingerprint: `${modelId}-POINT_IN_TIME`,
+          currentSourceHistoryFingerprint: `${modelId}-POINT_IN_TIME`,
+        },
+      } as never)
+    },
+    readVerification: async (_seriesId, modelId, targetBasis) => verificationResult({
+      modelId,
+      targetBasis,
+      targetSemantics: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis,
+      methodId: targetBasis === 'POINT_IN_TIME' ? 'ROLLING_DAILY_POINT_IN_TIME' : targetBasis,
+      methodVersion: targetBasis === 'POINT_IN_TIME' ? 'rolling-daily-point-in-time-v1' : 'benchmark-forecasting-mvp-phase2-v1',
+    }),
+    getPrisma: () => ({
+      forecastCurrentRun: { findFirst: async ({ where }: { where: { modelId: string, targetBasis: string } }) => ({ status: 'AVAILABLE', historyFingerprint: `${where.modelId}-${where.targetBasis}`, points: [{ forecastValue: 101 }] }) },
+      rollingDailyCurrentForecastSnapshot: { findFirst: async ({ where }: { where: { modelId: string } }) => ({ status: 'AVAILABLE', payloadJson: { status: 'AVAILABLE', audit: { sourceHistoryFingerprint: `${where.modelId}-POINT_IN_TIME` }, path: [{ pointForecast: 1 }] } }) },
+      forecastVerificationRun: { findFirst: async ({ where }: { where: { modelId: string, targetBasis: string } }) => ({ status: 'AVAILABLE', historyFingerprint: `${where.modelId}-${where.targetBasis}-verification`, metrics: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }], points: [{ horizonLabel: '1M' }, { horizonLabel: '3M' }, { horizonLabel: '6M' }, { horizonLabel: '12M' }] }) },
+      rollingDailyVerificationRecord: { findMany: async ({ where }: { where: { modelId: string } }) => [{ actualValue: 1, maturityStatus: 'MATURED', sourceHistoryFingerprint: `${where.modelId}-POINT_IN_TIME-verification` }] },
+    } as never),
+  })
+
+  const report = await service.evaluateSeries('brent')
+
+  assert.ok(report.current.cells.length > 0)
+  assert.equal(pointInTimeCurrentStarted, true)
 })

@@ -2,7 +2,7 @@
 
 Status: STAGE 5 ACCEPTANCE
 Scope: `ROLLING_DAILY_POINT_IN_TIME` four-model comparative backtest for `naive`, `damped_holt`, `ets`, `arima`
-Date: 2026-08-21
+Date: 2026-09-08
 
 Historical context:
 

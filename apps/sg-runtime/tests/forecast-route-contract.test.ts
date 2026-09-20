@@ -6,6 +6,8 @@ import { NextRequest } from 'next/server'
 import {
   createCurrentForecastRouteHandler,
   createForecastVerificationRouteHandler,
+  createInternalForecastVerificationResolver,
+  createInternalForecastVerificationRouteHandler,
   createInternalProductionForecastRouteHandler,
   resolvePreparedForecastVerification,
 } from '../lib/forecast/route-handlers'
@@ -13,12 +15,27 @@ import { createInteractiveForecastPreparationService } from '../lib/forecast/int
 import {
   createInternalCurrentForecastPreparationRouteHandler,
   createInternalForecastCapabilityRouteHandler,
+  createInternalForecastCapabilitiesRouteHandler,
+  createInternalForecastReadinessSnapshotRouteHandler,
   createInternalProgressiveForecastPreparationRouteHandler,
 } from '../lib/forecast/interactive-route-handlers'
+import type { InteractiveForecastCapabilitySeriesSnapshot } from '../lib/forecast/interactive-preparation'
+import {
+  FORECAST_REQUEST_DIAGNOSTICS_HEADER,
+  FORECAST_REQUEST_DIAGNOSTICS_LOG_EVENT,
+  noteForecastRequestDiagnosticsEvent,
+  type ForecastRequestDiagnosticsHeaderSummary,
+  type ForecastRequestDiagnosticsSnapshot,
+} from '../lib/forecast/request-diagnostics'
+import type { ForecastPreparationExecutionAdmission } from '../lib/forecast/execution-ledger'
 import type {
   BenchmarkForecastCurrentResult,
   BenchmarkForecastVerificationResult,
 } from '../lib/forecast/contracts'
+import {
+  createCurrentForecastStatisticalCompatibility,
+  createLegacyVerificationStatisticalCompatibility,
+} from '../lib/forecast/identity'
 import type { ProductionForecastResult } from '../lib/forecast/production-routing'
 import type { ForecastRequestInput } from '../lib/forecast/request-contract'
 import { createForecastStressTelemetry, type ForecastStressEvent } from '../lib/forecast/stress-telemetry'
@@ -47,6 +64,154 @@ function buildJsonRequest(url: string, body: unknown, headers: Record<string, st
   })
 }
 
+function decodeDiagnosticsHeader(value: string | null) {
+  if (!value) {
+    return null
+  }
+
+  return JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as ForecastRequestDiagnosticsHeaderSummary
+}
+
+function createStubExecutionAdmission(): ForecastPreparationExecutionAdmission {
+  const executions = new Map<string, {
+    executionId: string
+    ownerToken: string
+    ownerRequestId: string
+    leaseVersion: number
+    leaseExpiresAt: string
+    executionStatus: 'STARTED' | 'COMPLETED' | 'FAILED'
+    failureReason: string | null
+  }>()
+
+  return {
+    leaseDurationMs: 2_000,
+    async acquireExecution(input) {
+      const existing = executions.get(input.logicalArtifactKey)
+      if (!existing || existing.executionStatus !== 'STARTED') {
+        const execution = {
+          executionId: `exec-${executions.size + 1}`,
+          ownerToken: `owner-${executions.size + 1}`,
+          ownerRequestId: input.ownerRequestId,
+          leaseVersion: 1,
+          leaseExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+          executionStatus: 'STARTED' as const,
+          failureReason: null,
+        }
+        executions.set(input.logicalArtifactKey, execution)
+        return {
+          role: 'OWNER' as const,
+          ownership: {
+            role: 'OWNER' as const,
+            requestId: input.requestId,
+            operationFamily: input.operationFamily,
+            logicalArtifactKey: input.logicalArtifactKey,
+            executionId: execution.executionId,
+            ownerToken: execution.ownerToken,
+            ownerRequestId: execution.ownerRequestId,
+            attemptKind: 'PRIMARY' as const,
+            executionMode: 'PRE_STAGE3_PREPARATION' as const,
+            leaseVersion: execution.leaseVersion,
+            leaseAcquiredAt: new Date().toISOString(),
+            leaseExpiresAt: execution.leaseExpiresAt,
+            recoveredFromExecutionId: null,
+          },
+        }
+      }
+
+      return {
+        role: 'WAITER' as const,
+        executionId: existing.executionId,
+        ownerRequestId: existing.ownerRequestId,
+        ownerToken: existing.ownerToken,
+        leaseVersion: existing.leaseVersion,
+        leaseExpiresAt: existing.leaseExpiresAt,
+        recoveredFromExecutionId: null,
+      }
+    },
+    async renewLease(input) {
+      const existing = executions.get(input.logicalArtifactKey)
+      if (!existing) throw new Error('missing execution')
+      existing.leaseVersion += 1
+      existing.leaseExpiresAt = new Date(Date.now() + 60_000).toISOString()
+      return {
+        role: 'OWNER' as const,
+        requestId: input.requestId,
+        operationFamily: 'CURRENT',
+        logicalArtifactKey: input.logicalArtifactKey,
+        executionId: existing.executionId,
+        ownerToken: existing.ownerToken,
+        ownerRequestId: existing.ownerRequestId,
+        attemptKind: 'PRIMARY' as const,
+        executionMode: 'PRE_STAGE3_PREPARATION' as const,
+        leaseVersion: existing.leaseVersion,
+        leaseAcquiredAt: new Date().toISOString(),
+        leaseExpiresAt: existing.leaseExpiresAt,
+        recoveredFromExecutionId: null,
+      }
+    },
+    async markExecutionCompleted(input) {
+      const existing = executions.get(input.logicalArtifactKey)
+      if (!existing) throw new Error('missing execution')
+      existing.executionStatus = 'COMPLETED'
+    },
+    async markExecutionFailed(input) {
+      const existing = executions.get(input.logicalArtifactKey)
+      if (!existing) throw new Error('missing execution')
+      existing.executionStatus = 'FAILED'
+      existing.failureReason = input.failureReason
+    },
+    async readLatestExecutionForLogicalArtifact(logicalArtifactKey) {
+      const existing = executions.get(logicalArtifactKey)
+      if (!existing) return null
+      return {
+        executionId: existing.executionId,
+        logicalArtifactKey,
+        operationFamily: 'CURRENT',
+        executionStatus: existing.executionStatus,
+        resultStatus: existing.executionStatus === 'COMPLETED' ? 'AVAILABLE' : existing.executionStatus === 'FAILED' ? 'FAILED' : null,
+        cacheStatus: null,
+        artifactScope: 'CURRENT_FORECAST',
+        trainingWindowPolicyId: 'CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1',
+        seriesId: 'stub-series',
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodVersion: 'rolling-daily-point-in-time-v1',
+        modelId: 'arima',
+        inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+        historyFingerprint: 'stub-history',
+        sourceFrequency: 'DAILY',
+        targetCadence: 'DAILY',
+        frequencyIdentity: 'FORECAST_CADENCE_V1|source=DAILY|target=DAILY',
+        attemptKind: 'PRIMARY',
+        executionMode: 'PRE_STAGE3_PREPARATION',
+        ownerToken: existing.ownerToken,
+        leaseVersion: existing.leaseVersion,
+        leaseAcquiredAt: new Date().toISOString(),
+        leaseExpiresAt: existing.leaseExpiresAt,
+        recoveredFromExecutionId: null,
+        ownerRequestId: existing.ownerRequestId,
+        latestRequestId: existing.ownerRequestId,
+        latestRole: 'OWNER',
+        waiterCount: 0,
+        eventCount: 0,
+        startedAt: new Date().toISOString(),
+        lastEventAt: new Date().toISOString(),
+        lastProgressAt: new Date().toISOString(),
+        completedAt: existing.executionStatus === 'COMPLETED' ? new Date().toISOString() : null,
+        computeStartedAt: null,
+        computeCompletedAt: null,
+        persistenceStartedAt: null,
+        persistenceCompletedAt: null,
+        failurePhase: existing.executionStatus === 'FAILED' ? 'COMPUTE' : null,
+        failureReason: existing.failureReason,
+        logicalArtifactIdentity: {} as never,
+        events: [],
+      }
+    },
+  }
+}
+
 function capabilityIdentity(targetBasis: ForecastRequestInput['targetBasis']) {
   if (targetBasis === 'END_OF_PERIOD') {
     return { targetSemantics: 'END_OF_PERIOD', methodId: 'END_OF_PERIOD' } as const
@@ -60,15 +225,26 @@ function capabilityIdentity(targetBasis: ForecastRequestInput['targetBasis']) {
 }
 
 function availableIdentity(targetBasis: ForecastRequestInput['targetBasis']) {
+  const sourceFrequency = targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY'
+  const targetCadence = targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY'
+  const targetSemantics = targetBasis === 'POINT_IN_TIME'
+    ? 'ROLLING_DAILY_POINT_IN_TIME'
+    : targetBasis
+
   return {
     ...capabilityIdentity(targetBasis),
     lineage: {
       inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
       inputRunId: null,
       sourceSeriesId: 'wocaes0074',
-      sourceFrequency: targetBasis === 'POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
+      sourceFrequency,
       historyFingerprint: 'abc',
       preparation: null,
+      statisticalCompatibility: createCurrentForecastStatisticalCompatibility({
+        sourceFrequency,
+        targetCadence,
+        targetSemantics,
+      }),
     },
   } as const
 }
@@ -152,6 +328,71 @@ function buildExactCapabilityTrace() {
   }
 }
 
+function buildSeriesCapabilityCandidates() {
+  return (['END_OF_PERIOD', 'MONTHLY_AVERAGE', 'ROLLING_DAILY_POINT_IN_TIME'] as const).flatMap((targetSemantics) => (
+    ['naive', 'damped_holt', 'ets', 'arima'].map((modelId) => buildCapabilityCandidate({
+      identity: {
+        seriesId: 'wocaes0074',
+        targetSemantics,
+        methodId: targetSemantics,
+        methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+        modelId,
+      },
+      sourceFrequency: targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
+      businessTarget: targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+        ? 'DAILY'
+        : targetSemantics === 'END_OF_PERIOD'
+          ? 'END_OF_PERIOD'
+          : 'AVERAGE',
+      targetCadence: targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME' ? 'DAILY' : 'MONTHLY',
+      semanticLawfulness: targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME' ? 'LAWFUL' : 'LAWFUL_WITH_PROVENANCE',
+      currentPreparedState: 'READY',
+      historicalPreparedState: 'READY',
+      capabilityState: 'READY',
+      predictionBandResidualCount: 40,
+      predictionBandState: 'AVAILABLE',
+    }))
+  ))
+}
+
+function buildInteractiveCapabilitySeriesSnapshot(): InteractiveForecastCapabilitySeriesSnapshot {
+  return {
+    seriesId: 'wocaes0074',
+    sourceFrequency: 'MONTHLY',
+    sourceAvailability: 'AVAILABLE',
+    status: 'AVAILABLE',
+    reason: null,
+    targetedDataScope: 'SINGLE_SERIES',
+    timingMs: 9,
+    variants: buildSeriesCapabilityCandidates().map((candidate) => ({
+      seriesId: candidate.identity.seriesId,
+      targetSemantics: candidate.identity.targetSemantics,
+      modelId: candidate.identity.modelId,
+      preparedReadAuthority: candidate.preparedReadAuthority,
+      sourceFrequency: candidate.sourceFrequency,
+      targetCadence: candidate.targetCadence,
+      sourceAvailability: 'AVAILABLE',
+      lawfulTargetSemantics: candidate.semanticLawfulness,
+      status: candidate.capabilityState,
+      currentReadiness: candidate.currentPreparedState,
+      verificationReadiness: candidate.historicalPreparedState,
+      recentVerificationReadiness: 'READY',
+      fullVerificationReadiness: 'READY',
+      predictionBandResidualCount: candidate.predictionBandResidualCount,
+      predictionBandState: candidate.predictionBandState,
+      readiness: {
+        fastReady: true,
+        calibratedReady: true,
+        fullReady: true,
+        blockers: [],
+      },
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 9,
+      reason: null,
+    })),
+  }
+}
+
 test('current forecast route defaults missing targetBasis to MONTHLY_AVERAGE', async () => {
   let receivedInput: ForecastRequestInput | null = null
 
@@ -194,6 +435,196 @@ test('current forecast route defaults missing targetBasis to MONTHLY_AVERAGE', a
   const currentInput = receivedInput as ForecastRequestInput
   assert.equal(currentInput.targetBasis, 'MONTHLY_AVERAGE')
   assert.equal(payload.targetBasis, 'MONTHLY_AVERAGE')
+})
+
+test('interactive capability snapshot service resolves a full series through one shared authority call', async () => {
+  let resolveCapabilitiesBySeriesIdCalls = 0
+  const service = createInteractiveForecastPreparationService({
+    resolveCapabilitiesBySeriesId: async () => {
+      resolveCapabilitiesBySeriesIdCalls += 1
+      return buildCapabilityResolution({
+        capabilities: buildSeriesCapabilityCandidates(),
+      })
+    },
+    readPreparedRecentVerification: async () => ({ status: 'AVAILABLE', verification: {} } as BenchmarkForecastVerificationResult),
+    readPreparedFullVerification: async () => ({ status: 'AVAILABLE', verification: {} } as BenchmarkForecastVerificationResult),
+    readPreparedRollingDailyFullVerification: async () => ({ status: 'AVAILABLE', verification: {} } as BenchmarkForecastVerificationResult),
+  })
+
+  const snapshot = await service.capabilitySnapshotBySeriesId('wocaes0074')
+
+  assert.equal(resolveCapabilitiesBySeriesIdCalls, 1)
+  assert.equal(snapshot.status, 'AVAILABLE')
+  assert.equal(snapshot.variants.length, 12)
+  assert.ok(snapshot.variants.every((variant) => variant.status === 'READY'))
+})
+
+test('interactive readiness snapshot reuses prepared-state metadata without rereading artifact payloads', async () => {
+  let resolveCapabilitiesBySeriesIdCalls = 0
+  let preparedArtifactReads = 0
+  const rejectPreparedArtifactRead = async () => {
+    preparedArtifactReads += 1
+    throw new Error('Series readiness snapshot must not reread prepared artifact payloads.')
+  }
+  const service = createInteractiveForecastPreparationService({
+    resolveCapabilitiesBySeriesId: async () => {
+      resolveCapabilitiesBySeriesIdCalls += 1
+      return buildCapabilityResolution({ capabilities: buildSeriesCapabilityCandidates() })
+    },
+    readPreparedCurrent: rejectPreparedArtifactRead,
+    readRollingCurrentSnapshot: rejectPreparedArtifactRead,
+    readPreparedRecentVerification: rejectPreparedArtifactRead,
+    readPreparedFullVerification: rejectPreparedArtifactRead,
+    readPreparedRollingDailyFullVerification: rejectPreparedArtifactRead,
+  })
+
+  const snapshot = await service.readinessSnapshotBySeriesId('wocaes0074')
+
+  assert.equal(resolveCapabilitiesBySeriesIdCalls, 1)
+  assert.equal(preparedArtifactReads, 0)
+  assert.equal(snapshot.status, 'AVAILABLE')
+  assert.equal(snapshot.variants.length, 12)
+  assert.ok(snapshot.variants.every((variant) => variant.currentReadiness === 'READY'))
+  assert.ok(snapshot.variants.every((variant) => variant.recentVerificationReadiness === 'READY'))
+})
+
+test('interactive capability snapshot preserves exact interactive semantics for the same variant', async () => {
+  const capabilityResolution = buildCapabilityResolution({
+    sourceMetadata: {
+      seriesId: 'wocaes0074',
+      providerCode: 'macrobond',
+      source: 'POSTGRES_RUNTIME_SNAPSHOT',
+      sourceFrequency: 'DAILY',
+      rawFrequency: 'DAILY',
+      sourceObservationCount: 96,
+      fullHistoryObservationCount: 96,
+    },
+    capabilities: buildSeriesCapabilityCandidates(),
+  })
+  const exactCapability = capabilityResolution.capabilities.find((candidate) => (
+    candidate.identity.modelId === 'arima' && candidate.identity.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+  ))
+  if (!exactCapability) {
+    throw new Error('Expected exact capability fixture for parity test.')
+  }
+
+  const service = createInteractiveForecastPreparationService({
+    resolveExactCapability: async () => ({
+      resolution: capabilityResolution,
+      capability: exactCapability,
+      trace: buildExactCapabilityTrace(),
+    }),
+    resolveCapabilitiesBySeriesId: async () => capabilityResolution,
+    readPreparedRecentVerification: async () => ({ status: 'AVAILABLE', verification: {} } as BenchmarkForecastVerificationResult),
+    readPreparedFullVerification: async () => ({ status: 'AVAILABLE', verification: {} } as BenchmarkForecastVerificationResult),
+    readPreparedRollingDailyFullVerification: async () => ({ status: 'AVAILABLE', verification: {} } as BenchmarkForecastVerificationResult),
+  })
+
+  const exact = await service.capability({
+    seriesId: 'wocaes0074',
+    modelId: 'arima',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+  })
+  const snapshot = await service.capabilitySnapshotBySeriesId('wocaes0074')
+  const variant = snapshot.variants.find((candidate) => (
+    candidate.modelId === 'arima' && candidate.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+  ))
+
+  assert.deepEqual(variant && {
+    seriesId: variant.seriesId,
+    modelId: variant.modelId,
+    targetSemantics: variant.targetSemantics,
+    sourceFrequency: variant.sourceFrequency,
+    targetCadence: variant.targetCadence,
+    sourceAvailability: variant.sourceAvailability,
+    lawfulTargetSemantics: variant.lawfulTargetSemantics,
+    status: variant.status,
+    currentReadiness: variant.currentReadiness,
+    verificationReadiness: variant.verificationReadiness,
+    recentVerificationReadiness: variant.recentVerificationReadiness,
+    fullVerificationReadiness: variant.fullVerificationReadiness,
+    predictionBandResidualCount: variant.predictionBandResidualCount,
+    predictionBandState: variant.predictionBandState,
+    readiness: variant.readiness,
+    reason: variant.reason,
+  }, {
+    seriesId: exact.seriesId,
+    modelId: exact.modelId,
+    targetSemantics: exact.targetSemantics,
+    sourceFrequency: exact.sourceFrequency,
+    targetCadence: exact.targetCadence,
+    sourceAvailability: exact.sourceAvailability,
+    lawfulTargetSemantics: exact.lawfulTargetSemantics,
+    status: exact.status,
+    currentReadiness: exact.currentReadiness,
+    verificationReadiness: exact.verificationReadiness,
+    recentVerificationReadiness: exact.recentVerificationReadiness,
+    fullVerificationReadiness: exact.fullVerificationReadiness,
+    predictionBandResidualCount: exact.predictionBandResidualCount,
+    predictionBandState: exact.predictionBandState,
+    readiness: exact.readiness,
+    reason: exact.reason,
+  })
+})
+
+test('internal forecast capabilities route accepts valid dashboard-preview service credential', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+  let receivedSeriesId: string | null = null
+
+  try {
+    const handler = createInternalForecastCapabilitiesRouteHandler(async (seriesId) => {
+      receivedSeriesId = seriesId
+      return buildInteractiveCapabilitySeriesSnapshot()
+    })
+
+    const response = await handler(buildRequest(
+      'http://localhost/api/internal/forecast/capabilities?seriesId=wocaes0074',
+      { Authorization: 'Bearer test-internal-token' },
+    ))
+    const payload = await response.json()
+
+    assert.equal(response.status, 200)
+    assert.equal(receivedSeriesId, 'wocaes0074')
+    assert.equal(payload.seriesId, 'wocaes0074')
+    assert.equal(payload.variants.length, 12)
+  } finally {
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
+})
+
+test('internal forecast readiness route accepts valid dashboard-preview service credential', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+  let receivedSeriesId: string | null = null
+
+  try {
+    const handler = createInternalForecastReadinessSnapshotRouteHandler(async (seriesId) => {
+      receivedSeriesId = seriesId
+      return buildInteractiveCapabilitySeriesSnapshot()
+    })
+
+    const response = await handler(buildRequest(
+      'http://localhost/api/internal/forecast/readiness?seriesId=wocaes0074',
+      { Authorization: 'Bearer test-internal-token' },
+    ))
+    const payload = await response.json()
+
+    assert.equal(response.status, 200)
+    assert.equal(receivedSeriesId, 'wocaes0074')
+    assert.equal(payload.seriesId, 'wocaes0074')
+    assert.equal(payload.variants.length, 12)
+  } finally {
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
 })
 
 test('current forecast route accepts arima model and forwards it to the service boundary', async () => {
@@ -273,7 +704,7 @@ test('current forecast route preserves explicit END_OF_PERIOD to the service bou
   assert.equal(payload.status, 'UNSUPPORTED')
 })
 
-test('verification route passes explicit MONTHLY_AVERAGE and serializes targetBasis', async () => {
+test('verification route passes explicit MONTHLY_AVERAGE, Full scope, and serializes targetBasis', async () => {
   let receivedInput: ForecastRequestInput | null = null
 
   const handler = createForecastVerificationRouteHandler(async (input) => {
@@ -298,7 +729,7 @@ test('verification route passes explicit MONTHLY_AVERAGE and serializes targetBa
     } satisfies BenchmarkForecastVerificationResult
   })
 
-  const response = await handler(buildUserRequest('http://localhost/api/benchmark/forecast/verification?seriesId=wocaes0074&model=ets&targetBasis=MONTHLY_AVERAGE'))
+  const response = await handler(buildUserRequest('http://localhost/api/benchmark/forecast/verification?seriesId=wocaes0074&model=ets&targetBasis=MONTHLY_AVERAGE&verificationScope=FULL'))
   const payload = await response.json()
 
   assert.equal(response.status, 200)
@@ -307,6 +738,7 @@ test('verification route passes explicit MONTHLY_AVERAGE and serializes targetBa
   }
   const verificationInput = receivedInput as ForecastRequestInput
   assert.equal(verificationInput.targetBasis, 'MONTHLY_AVERAGE')
+  assert.equal(verificationInput.verificationScope, 'FULL')
   assert.equal(payload.targetBasis, 'MONTHLY_AVERAGE')
 })
 
@@ -324,6 +756,7 @@ test('prepared verification routes point-in-time and period requests to their la
     }
   }
   const dependencies = {
+    readRecentVerification: resolveOwner('RECENT'),
     readRollingDailyVerification: resolveOwner('ROLLING_DAILY'),
     readGenericPeriodVerification: resolveOwner('GENERIC_PERIOD'),
   }
@@ -342,8 +775,102 @@ test('prepared verification routes point-in-time and period requests to their la
     sourceFrequency: 'MONTHLY',
     targetCadence: 'MONTHLY',
   }, dependencies)
+  await resolvePreparedForecastVerification({
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    targetBasis: 'POINT_IN_TIME',
+    verificationScope: 'FULL',
+    sourceFrequency: 'DAILY',
+    targetCadence: 'DAILY',
+  }, dependencies)
+  await resolvePreparedForecastVerification({
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    verificationScope: 'FULL',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  }, dependencies)
+  await resolvePreparedForecastVerification({
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    verificationScope: 'RECENT',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  }, dependencies)
 
-  assert.deepEqual(owners, ['ROLLING_DAILY', 'GENERIC_PERIOD'])
+  assert.deepEqual(owners, [
+    'RECENT', 'ROLLING_DAILY',
+    'RECENT', 'GENERIC_PERIOD',
+    'ROLLING_DAILY',
+    'GENERIC_PERIOD',
+    'RECENT',
+  ])
+})
+
+test('explicit full period verification fails closed for an unresolved legacy policy identity', async () => {
+  const input: ForecastRequestInput = {
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    verificationScope: 'FULL',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  }
+  const legacyResult: BenchmarkForecastVerificationResult = {
+    status: 'AVAILABLE',
+    seriesId: input.seriesId,
+    modelId: input.modelId,
+    targetBasis: input.targetBasis,
+    targetSemantics: 'MONTHLY_AVERAGE',
+    methodId: 'MONTHLY_AVERAGE',
+    displayName: 'Brent',
+    description: null,
+    userFacingModel: true,
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: null },
+    lineage: {
+      inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+      inputRunId: null,
+      sourceSeriesId: input.seriesId,
+      sourceFrequency: 'MONTHLY',
+      historyFingerprint: 'abc',
+      preparation: null,
+      statisticalCompatibility: createLegacyVerificationStatisticalCompatibility({
+        sourceFrequency: 'MONTHLY',
+        targetCadence: 'MONTHLY',
+        targetSemantics: 'MONTHLY_AVERAGE',
+      }),
+    },
+    historyFingerprint: 'abc',
+    history: { frequency: 'MONTHLY', start: null, end: null, observations: 120 },
+    forecastOrigin: null,
+    runtimeSeconds: null,
+    cacheStatus: 'hit',
+    verification: {},
+    historicalVerification: {
+      contractVersion: 'HISTORICAL_VERIFICATION_V2',
+      status: 'AVAILABLE',
+      originCount: 100,
+      expectedOriginCount: 100,
+      failedOriginCount: 0,
+      pendingOriginCount: 0,
+      coverage: 1,
+      horizons: {},
+    },
+  }
+
+  const result = await resolvePreparedForecastVerification(input, {
+    readRecentVerification: async () => legacyResult,
+    readRollingDailyVerification: async () => legacyResult,
+    readGenericPeriodVerification: async () => legacyResult,
+  })
+
+  assert.equal(result.status, 'NOT_AVAILABLE')
+  if (result.status === 'NOT_AVAILABLE') {
+    assert.match(result.reason, /Exact-policy Full Historical Verification/)
+  }
 })
 
 test('internal production forecast route denies requests when service token is not configured', async () => {
@@ -569,11 +1096,22 @@ test('internal capability route returns supported capability in legacy-compatibl
       targetSemantics: input.targetSemantics,
       modelId: input.modelId,
       sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
       status: 'AVAILABLE',
       currentReadiness: 'READY',
       verificationReadiness: 'READY',
+      recentVerificationReadiness: 'READY',
+      fullVerificationReadiness: 'READY',
+      predictionBandResidualCount: 30,
+      predictionBandState: 'AVAILABLE',
+      readiness: {
+        fastReady: true,
+        calibratedReady: true,
+        fullReady: true,
+        blockers: [],
+      },
       targetedDataScope: 'SINGLE_SERIES',
       timingMs: 7,
       reason: null,
@@ -586,16 +1124,28 @@ test('internal capability route returns supported capability in legacy-compatibl
     const payload = await response.json()
 
     assert.equal(response.status, 200)
+    assert.equal(response.headers.get(FORECAST_REQUEST_DIAGNOSTICS_HEADER), null)
     assert.deepEqual(payload, {
       seriesId: 'wocaes0074',
       targetSemantics: 'MONTHLY_AVERAGE',
       modelId: 'ets',
       sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
       status: 'AVAILABLE',
       currentReadiness: 'READY',
       verificationReadiness: 'READY',
+      recentVerificationReadiness: 'READY',
+      fullVerificationReadiness: 'READY',
+      predictionBandResidualCount: 30,
+      predictionBandState: 'AVAILABLE',
+      readiness: {
+        fastReady: true,
+        calibratedReady: true,
+        fullReady: true,
+        blockers: [],
+      },
       targetedDataScope: 'SINGLE_SERIES',
       timingMs: 7,
       reason: null,
@@ -619,11 +1169,22 @@ test('internal capability route returns unavailable capability without changing 
       targetSemantics: input.targetSemantics,
       modelId: input.modelId,
       sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'LAWFUL_WITH_PROVENANCE',
       status: 'PREPARATION_REQUIRED',
       currentReadiness: 'NOT_PREPARED',
       verificationReadiness: 'NOT_PREPARED',
+      recentVerificationReadiness: 'NOT_PREPARED',
+      fullVerificationReadiness: 'NOT_PREPARED',
+      predictionBandResidualCount: 0,
+      predictionBandState: 'NOT_AVAILABLE',
+      readiness: {
+        fastReady: false,
+        calibratedReady: false,
+        fullReady: false,
+        blockers: ['CURRENT_MISSING', 'RECENT_MISSING', 'FULL_HISTORICAL_MISSING', 'BANDS_NOT_AVAILABLE'],
+      },
       targetedDataScope: 'SINGLE_SERIES',
       timingMs: 5,
       reason: 'Prepared artifacts are missing.',
@@ -638,6 +1199,12 @@ test('internal capability route returns unavailable capability without changing 
     assert.equal(response.status, 200)
     assert.equal(payload.status, 'PREPARATION_REQUIRED')
     assert.equal(payload.currentReadiness, 'NOT_PREPARED')
+    assert.deepEqual(payload.readiness, {
+      fastReady: false,
+      calibratedReady: false,
+      fullReady: false,
+      blockers: ['CURRENT_MISSING', 'RECENT_MISSING', 'FULL_HISTORICAL_MISSING', 'BANDS_NOT_AVAILABLE'],
+    })
     assert.equal(payload.reason, 'Prepared artifacts are missing.')
   } finally {
     if (previousToken === undefined) {
@@ -653,16 +1220,181 @@ test('internal capability route emits timing header only when trace is requested
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
 
   try {
+
+test('internal capability route keeps traced diagnostics header bounded and logs the full snapshot', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const originalConsoleInfo = console.info
+  const loggedLines: string[] = []
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+  console.info = ((message?: unknown) => {
+    loggedLines.push(String(message ?? ''))
+  }) as unknown as typeof console.info
+
+  try {
+    const handler = createInternalForecastCapabilityRouteHandler(async (input) => {
+      for (let index = 0; index < 220; index += 1) {
+        noteForecastRequestDiagnosticsEvent('capability_path_detail', 'APPLICATION', {
+          index,
+          detail: 'stale-capability-trace-detail'.repeat(6),
+        })
+      }
+
+      return {
+        seriesId: input.seriesId,
+        targetSemantics: input.targetSemantics,
+        modelId: input.modelId,
+        sourceFrequency: 'DAILY',
+        targetCadence: 'DAILY',
+        sourceAvailability: 'AVAILABLE',
+        lawfulTargetSemantics: 'LAWFUL',
+        status: 'STALE',
+        currentReadiness: 'STALE',
+        verificationReadiness: 'NOT_PREPARED',
+        recentVerificationReadiness: 'NOT_PREPARED',
+        fullVerificationReadiness: 'NOT_PREPARED',
+        predictionBandResidualCount: 0,
+        predictionBandState: 'NOT_AVAILABLE',
+        readiness: {
+          fastReady: false,
+          calibratedReady: false,
+          fullReady: false,
+          blockers: ['SOURCE_REVISION_REBUILD_REQUIRED'],
+        },
+        targetedDataScope: 'SINGLE_SERIES',
+        timingMs: 37,
+        reason: null,
+      }
+    })
+
+    const response = await handler(buildRequest(
+      'http://localhost/api/internal/forecast/capability?seriesId=lmeofcucashask&targetSemantics=ROLLING_DAILY_POINT_IN_TIME&modelId=naive',
+      {
+        Authorization: 'Bearer test-internal-token',
+        'x-sg-forecast-trace': '1',
+        'x-request-id': 'req-header-overflow-proof',
+      },
+    ))
+    const payload = await response.json()
+    const diagnosticsHeader = decodeDiagnosticsHeader(response.headers.get(FORECAST_REQUEST_DIAGNOSTICS_HEADER))
+    const loggedSnapshot = JSON.parse(loggedLines.find((line) => line.includes(FORECAST_REQUEST_DIAGNOSTICS_LOG_EVENT)) ?? 'null') as ({ event: string, entryCount: number } & ForecastRequestDiagnosticsSnapshot)
+
+    assert.equal(response.status, 200)
+    assert.equal(response.headers.get('x-sg-runtime-capability-total-ms'), '37')
+    assert.equal(payload.status, 'STALE')
+    assert.ok(diagnosticsHeader)
+    assert.equal(diagnosticsHeader?.schemaVersion, 'bounded-summary-v1')
+    assert.equal(diagnosticsHeader?.requestId, 'req-header-overflow-proof')
+    assert.equal(diagnosticsHeader?.operationType, 'CAPABILITY')
+    assert.equal(diagnosticsHeader?.responseStatus, 200)
+    assert.equal(diagnosticsHeader?.seriesId, 'lmeofcucashask')
+    assert.equal(diagnosticsHeader?.modelId, 'naive')
+    assert.equal(diagnosticsHeader?.targetSemantics, 'ROLLING_DAILY_POINT_IN_TIME')
+    assert.equal(diagnosticsHeader?.fullSnapshotLogged, true)
+    assert.deepEqual(diagnosticsHeader?.entries, [])
+    assert.ok((response.headers.get(FORECAST_REQUEST_DIAGNOSTICS_HEADER) ?? '').length < 1024)
+    assert.equal(loggedSnapshot.event, FORECAST_REQUEST_DIAGNOSTICS_LOG_EVENT)
+    assert.equal(loggedSnapshot.requestId, 'req-header-overflow-proof')
+    assert.equal(loggedSnapshot.responseStatus, 200)
+    assert.ok(loggedSnapshot.entryCount > 220)
+    assert.equal(loggedSnapshot.entryCount, loggedSnapshot.entries.length)
+
+    const { event: _event, entryCount: _entryCount, ...fullSnapshot } = loggedSnapshot
+    const legacyHeaderLength = Buffer.from(JSON.stringify(fullSnapshot), 'utf8').toString('base64url').length
+    assert.ok(legacyHeaderLength > 8192)
+    assert.equal(diagnosticsHeader?.entryCount, loggedSnapshot.entries.length)
+  } finally {
+    console.info = originalConsoleInfo
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
+})
+
+test('internal capability route keeps traced diagnostics header bounded on error responses', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const originalConsoleInfo = console.info
+  const loggedLines: string[] = []
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+  console.info = ((message?: unknown) => {
+    loggedLines.push(String(message ?? ''))
+  }) as unknown as typeof console.info
+
+  try {
+    const handler = createInternalForecastCapabilityRouteHandler(async () => {
+      for (let index = 0; index < 220; index += 1) {
+        noteForecastRequestDiagnosticsEvent('capability_error_detail', 'APPLICATION', {
+          index,
+          detail: 'capability-error-trace-detail'.repeat(6),
+        })
+      }
+
+      throw new Error('synthetic capability failure')
+    })
+
+    const response = await handler(buildRequest(
+      'http://localhost/api/internal/forecast/capability?seriesId=lmeofalcashask&targetSemantics=ROLLING_DAILY_POINT_IN_TIME&modelId=naive',
+      {
+        Authorization: 'Bearer test-internal-token',
+        'x-sg-forecast-trace': '1',
+        'x-request-id': 'req-header-error-proof',
+      },
+    ))
+    const payload = await response.json()
+    const diagnosticsHeader = decodeDiagnosticsHeader(response.headers.get(FORECAST_REQUEST_DIAGNOSTICS_HEADER))
+    const loggedSnapshot = JSON.parse(loggedLines.find((line) => line.includes(FORECAST_REQUEST_DIAGNOSTICS_LOG_EVENT)) ?? 'null') as ({ event: string, entryCount: number } & ForecastRequestDiagnosticsSnapshot)
+
+    assert.equal(response.status, 500)
+    assert.equal(payload.code, 'INTERNAL_FORECAST_OPERATION_FAILED')
+    assert.equal(payload.error, 'synthetic capability failure')
+    assert.ok(diagnosticsHeader)
+    assert.equal(diagnosticsHeader?.schemaVersion, 'bounded-summary-v1')
+    assert.equal(diagnosticsHeader?.requestId, 'req-header-error-proof')
+    assert.equal(diagnosticsHeader?.responseStatus, 500)
+    assert.deepEqual(diagnosticsHeader?.entries, [])
+    assert.ok((response.headers.get(FORECAST_REQUEST_DIAGNOSTICS_HEADER) ?? '').length < 1024)
+    assert.equal(loggedSnapshot.event, FORECAST_REQUEST_DIAGNOSTICS_LOG_EVENT)
+    assert.equal(loggedSnapshot.requestId, 'req-header-error-proof')
+    assert.equal(loggedSnapshot.responseStatus, 500)
+    assert.ok(loggedSnapshot.entryCount > 220)
+
+    const { event: _event, entryCount: _entryCount, ...fullSnapshot } = loggedSnapshot
+    const legacyHeaderLength = Buffer.from(JSON.stringify(fullSnapshot), 'utf8').toString('base64url').length
+    assert.ok(legacyHeaderLength > 8192)
+    assert.equal(diagnosticsHeader?.entryCount, loggedSnapshot.entries.length)
+  } finally {
+    console.info = originalConsoleInfo
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
+})
     const handler = createInternalForecastCapabilityRouteHandler(async () => ({
       seriesId: 'usnaac0169',
       targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
       modelId: 'arima',
       sourceFrequency: 'QUARTERLY',
+      targetCadence: 'DAILY',
       sourceAvailability: 'AVAILABLE',
       lawfulTargetSemantics: 'NOT_LAWFUL',
       status: 'NOT_LAWFUL',
       currentReadiness: 'NOT_PREPARED',
       verificationReadiness: 'READY',
+      recentVerificationReadiness: 'READY',
+      fullVerificationReadiness: 'NOT_PREPARED',
+      predictionBandResidualCount: 0,
+      predictionBandState: 'NOT_AVAILABLE',
+      readiness: {
+        fastReady: false,
+        calibratedReady: false,
+        fullReady: false,
+        blockers: ['NOT_LAWFUL', 'CURRENT_MISSING', 'BANDS_NOT_AVAILABLE'],
+      },
       targetedDataScope: 'SINGLE_SERIES',
       timingMs: 37,
       reason: 'NOT_LAWFUL',
@@ -695,6 +1427,938 @@ test('internal capability route emits timing header only when trace is requested
       process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
     }
   }
+})
+
+test('interactive capability derives fast, calibrated, and full readiness independently from owner-side persisted truth', async () => {
+  const service = createInteractiveForecastPreparationService({
+    now: (() => {
+      let tick = 100
+      return () => ++tick
+    })(),
+    resolveExactCapability: async () => {
+      const capability: ForecastVariantCapability = {
+        identity: {
+          seriesId: 'wocaes0280',
+          targetSemantics: 'END_OF_PERIOD',
+          methodId: 'END_OF_PERIOD',
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+          modelId: 'ets',
+        },
+        sourceFrequency: 'MONTHLY',
+        sourceFrequencyRecognized: true,
+        businessTarget: 'END_OF_PERIOD',
+        targetCadence: 'MONTHLY',
+        targetSemanticsSupported: true,
+        horizonSupportState: 'NOT_REQUESTED',
+        horizonMonths: null,
+        horizonSteps: null,
+        semanticLawfulness: 'LAWFUL_WITH_PROVENANCE',
+        admissionState: 'ADMITTED',
+        provenanceStatus: 'PROVEN',
+        implementationState: 'SUPPORTED',
+        historyEligibility: 'ELIGIBLE',
+        minimumRequiredObservations: 36,
+        availableObservations: 64,
+        modelEligible: true,
+        currentForecastEligible: true,
+        verificationOriginCount: 28,
+        verificationEvidenceState: 'SUFFICIENT',
+        predictionBandResidualCount: 29,
+        predictionBandState: 'INSUFFICIENT_SAMPLE',
+        targetPreparationState: 'PREPARED',
+        currentPreparedState: 'READY',
+        historicalPreparedState: 'READY',
+        capabilityState: 'AVAILABLE',
+      }
+
+      const resolution: ForecastCapabilityResolution = {
+        status: 'AVAILABLE',
+        reason: null,
+        sourceMetadata: {
+          seriesId: 'wocaes0280',
+          providerCode: 'MACROBOND',
+          source: 'DYNAMIC_MARKET_DATA_STORE',
+          sourceFrequency: 'MONTHLY',
+          rawFrequency: 'MONTHLY',
+          sourceObservationCount: 64,
+          fullHistoryObservationCount: 64,
+        },
+        targetedHydration: {
+          scope: 'SINGLE_SERIES',
+          requestedSeriesId: 'wocaes0280',
+          source: 'postgres',
+          cacheStatus: 'hit',
+        },
+        preparationFailures: {},
+        capabilities: [capability],
+      }
+
+      return {
+        resolution,
+        capability,
+        trace: undefined,
+      }
+    },
+    readPreparedCurrent: async () => ({
+      status: 'AVAILABLE',
+      currentForecast: {
+        '1M': {
+          metadata: {
+            uncertaintyBand: {
+              status: 'AVAILABLE',
+              source: 'MODEL_NATIVE_SHORT_HISTORY',
+              calibrationStatus: 'INSUFFICIENT_SAMPLE',
+            },
+          },
+        },
+      },
+    } as never),
+    readPreparedRecentVerification: async () => ({
+      status: 'AVAILABLE',
+      seriesId: 'wocaes0280',
+      modelId: 'ets',
+      targetBasis: 'END_OF_PERIOD',
+      targetSemantics: 'END_OF_PERIOD',
+      methodId: 'END_OF_PERIOD',
+      displayName: 'Test',
+      description: null,
+      userFacingModel: true,
+      methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+      source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: 'run-1' },
+      lineage: {
+        inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+        inputRunId: 'run-1',
+        sourceSeriesId: 'wocaes0280',
+        sourceFrequency: 'MONTHLY',
+        historyFingerprint: 'hist-1',
+        preparation: { method: 'MONTHLY_END_OF_PERIOD', version: 'v1', provenanceStatus: 'PROVEN' },
+      },
+      historyFingerprint: 'hist-1',
+      history: { frequency: 'MONTHLY', start: '2020-01-01', end: '2025-04-01', observations: 64 },
+      forecastOrigin: '2025-03-01T00:00:00.000Z',
+      runtimeSeconds: 1,
+      cacheStatus: 'hit',
+      verification: {},
+    }),
+    readPreparedFullVerification: async () => ({
+      status: 'AVAILABLE',
+      seriesId: 'wocaes0280',
+      modelId: 'ets',
+      targetBasis: 'END_OF_PERIOD',
+      targetSemantics: 'END_OF_PERIOD',
+      methodId: 'END_OF_PERIOD',
+      displayName: 'Test',
+      description: null,
+      userFacingModel: true,
+      methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+      source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: 'run-2' },
+      lineage: {
+        inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+        inputRunId: 'run-2',
+        sourceSeriesId: 'wocaes0280',
+        sourceFrequency: 'MONTHLY',
+        historyFingerprint: 'hist-1',
+        preparation: { method: 'MONTHLY_END_OF_PERIOD', version: 'v1', provenanceStatus: 'PROVEN' },
+      },
+      historyFingerprint: 'hist-1',
+      history: { frequency: 'MONTHLY', start: '2020-01-01', end: '2025-04-01', observations: 64 },
+      forecastOrigin: '2025-03-01T00:00:00.000Z',
+      runtimeSeconds: 1,
+      cacheStatus: 'hit',
+      verification: {},
+    }),
+  })
+
+  const result = await service.capability({
+    seriesId: 'wocaes0280',
+    targetSemantics: 'END_OF_PERIOD',
+    modelId: 'ets',
+  })
+
+  assert.deepEqual(result.readiness, {
+    fastReady: true,
+    bandsReady: true,
+    calibratedReady: false,
+    fullReady: true,
+    blockers: ['CALIBRATION_INSUFFICIENT_SAMPLES'],
+  })
+  assert.equal(result.recentVerificationReadiness, 'READY')
+  assert.equal(result.fullVerificationReadiness, 'READY')
+  assert.equal(result.predictionBandResidualCount, 29)
+  assert.equal(result.predictionBandState, 'INSUFFICIENT_SAMPLE')
+})
+
+test('interactive capability readiness is restart-safe and does not start compute', async () => {
+  let monthlyCalls = 0
+  let rollingCalls = 0
+  let recentReads = 0
+  let fullReads = 0
+
+  const buildService = () => createInteractiveForecastPreparationService({
+    now: (() => {
+      let tick = 200
+      return () => ++tick
+    })(),
+    resolveExactCapability: async () => {
+      const capability: ForecastVariantCapability = {
+        identity: {
+          seriesId: 'restart-ready-series',
+          targetSemantics: 'MONTHLY_AVERAGE',
+          methodId: 'MONTHLY_AVERAGE',
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+          modelId: 'arima',
+        },
+        sourceFrequency: 'MONTHLY',
+        sourceFrequencyRecognized: true,
+        businessTarget: 'AVERAGE',
+        targetCadence: 'MONTHLY',
+        targetSemanticsSupported: true,
+        horizonSupportState: 'NOT_REQUESTED',
+        horizonMonths: null,
+        horizonSteps: null,
+        semanticLawfulness: 'LAWFUL_WITH_PROVENANCE',
+        admissionState: 'ADMITTED',
+        provenanceStatus: 'PROVEN',
+        implementationState: 'SUPPORTED',
+        historyEligibility: 'ELIGIBLE',
+        minimumRequiredObservations: 36,
+        availableObservations: 72,
+        modelEligible: true,
+        currentForecastEligible: true,
+        verificationOriginCount: 28,
+        verificationEvidenceState: 'SUFFICIENT',
+        predictionBandResidualCount: 31,
+        predictionBandState: 'AVAILABLE',
+        targetPreparationState: 'PREPARED',
+        currentPreparedState: 'READY',
+        historicalPreparedState: 'READY',
+        capabilityState: 'AVAILABLE',
+      }
+
+      return {
+        resolution: {
+          status: 'AVAILABLE',
+          reason: null,
+          sourceMetadata: {
+            seriesId: 'restart-ready-series',
+            providerCode: 'MACROBOND',
+            source: 'DYNAMIC_MARKET_DATA_STORE',
+            sourceFrequency: 'MONTHLY',
+            rawFrequency: 'MONTHLY',
+            sourceObservationCount: 72,
+            fullHistoryObservationCount: 72,
+          },
+          targetedHydration: {
+            scope: 'SINGLE_SERIES',
+            requestedSeriesId: 'restart-ready-series',
+            source: 'postgres',
+            cacheStatus: 'hit',
+          },
+          preparationFailures: {},
+          capabilities: [capability],
+        },
+        capability,
+        trace: undefined,
+      }
+    },
+    prepareMonthlyCurrent: async () => {
+      monthlyCalls += 1
+      throw new Error('readiness should not start monthly compute')
+    },
+    prepareRollingCurrent: async () => {
+      rollingCalls += 1
+      throw new Error('readiness should not start rolling compute')
+    },
+    readPreparedCurrent: async () => ({
+      status: 'AVAILABLE',
+      currentForecast: {
+        '1M': {
+          metadata: {
+            uncertaintyBand: {
+              status: 'AVAILABLE',
+              source: 'EMPIRICAL_EXACT_RESIDUALS',
+              calibrationStatus: 'CALIBRATED',
+            },
+          },
+        },
+      },
+    } as never),
+    readPreparedRecentVerification: async () => {
+      recentReads += 1
+      return {
+        status: 'AVAILABLE',
+        seriesId: 'restart-ready-series',
+        modelId: 'arima',
+        targetBasis: 'MONTHLY_AVERAGE',
+        targetSemantics: 'MONTHLY_AVERAGE',
+        methodId: 'MONTHLY_AVERAGE',
+        displayName: 'Restart Ready',
+        description: null,
+        userFacingModel: true,
+        methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+        source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: 'recent-ready-1' },
+        lineage: {
+          inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+          inputRunId: 'recent-ready-1',
+          sourceSeriesId: 'restart-ready-series',
+          sourceFrequency: 'MONTHLY',
+          historyFingerprint: 'hist-restart-1',
+          preparation: { method: 'MONTHLY_AVERAGE', version: 'v1', provenanceStatus: 'PROVEN' },
+        },
+        historyFingerprint: 'hist-restart-1',
+        history: { frequency: 'MONTHLY', start: '2019-01-01', end: '2025-12-01', observations: 72 },
+        forecastOrigin: '2025-11-01T00:00:00.000Z',
+        runtimeSeconds: 1,
+        cacheStatus: 'hit',
+        verification: {},
+      }
+    },
+    readPreparedFullVerification: async () => {
+      fullReads += 1
+      return {
+        status: 'AVAILABLE',
+        seriesId: 'restart-ready-series',
+        modelId: 'arima',
+        targetBasis: 'MONTHLY_AVERAGE',
+        targetSemantics: 'MONTHLY_AVERAGE',
+        methodId: 'MONTHLY_AVERAGE',
+        displayName: 'Restart Ready',
+        description: null,
+        userFacingModel: true,
+        methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+        source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: 'full-ready-1' },
+        lineage: {
+          inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+          inputRunId: 'full-ready-1',
+          sourceSeriesId: 'restart-ready-series',
+          sourceFrequency: 'MONTHLY',
+          historyFingerprint: 'hist-restart-1',
+          preparation: { method: 'MONTHLY_AVERAGE', version: 'v1', provenanceStatus: 'PROVEN' },
+        },
+        historyFingerprint: 'hist-restart-1',
+        history: { frequency: 'MONTHLY', start: '2019-01-01', end: '2025-12-01', observations: 72 },
+        forecastOrigin: '2025-11-01T00:00:00.000Z',
+        runtimeSeconds: 1,
+        cacheStatus: 'hit',
+        verification: {},
+      }
+    },
+  })
+
+  const first = await buildService().capability({
+    seriesId: 'restart-ready-series',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'arima',
+  })
+  const second = await buildService().capability({
+    seriesId: 'restart-ready-series',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'arima',
+  })
+
+  assert.deepEqual(first.readiness, second.readiness)
+  assert.deepEqual(first.readiness, {
+    fastReady: true,
+    bandsReady: true,
+    calibratedReady: true,
+    fullReady: true,
+    blockers: [],
+  })
+  assert.equal(monthlyCalls, 0)
+  assert.equal(rollingCalls, 0)
+  assert.equal(recentReads, 2)
+  assert.equal(fullReads, 2)
+})
+
+test('interactive capability does not mark active execution as ready without persisted current truth', async () => {
+  let recentReads = 0
+  let fullReads = 0
+  const service = createInteractiveForecastPreparationService({
+    now: (() => {
+      let tick = 300
+      return () => ++tick
+    })(),
+    resolveExactCapability: async () => {
+      const capability: ForecastVariantCapability = {
+        identity: {
+          seriesId: 'active-owner-series',
+          targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+          methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+          methodVersion: 'rolling-daily-point-in-time-v1',
+          modelId: 'ets',
+        },
+        sourceFrequency: 'DAILY',
+        sourceFrequencyRecognized: true,
+        businessTarget: 'DAILY',
+        targetCadence: 'DAILY',
+        targetSemanticsSupported: true,
+        horizonSupportState: 'NOT_REQUESTED',
+        horizonMonths: null,
+        horizonSteps: null,
+        semanticLawfulness: 'LAWFUL',
+        admissionState: 'ADMITTED',
+        provenanceStatus: 'NOT_REQUIRED',
+        implementationState: 'SUPPORTED',
+        historyEligibility: 'ELIGIBLE',
+        minimumRequiredObservations: 60,
+        availableObservations: 6108,
+        modelEligible: true,
+        currentForecastEligible: true,
+        verificationOriginCount: 48,
+        verificationEvidenceState: 'SUFFICIENT',
+        predictionBandResidualCount: 48,
+        predictionBandState: 'AVAILABLE',
+        targetPreparationState: 'PREPARED',
+        currentPreparedState: 'NOT_PREPARED',
+        historicalPreparedState: 'READY',
+        capabilityState: 'PREPARATION_REQUIRED',
+      }
+
+      return {
+        resolution: {
+          status: 'AVAILABLE',
+          reason: null,
+          sourceMetadata: {
+            seriesId: 'active-owner-series',
+            providerCode: 'MACROBOND',
+            source: 'DYNAMIC_MARKET_DATA_STORE',
+            sourceFrequency: 'DAILY',
+            rawFrequency: 'DAILY',
+            sourceObservationCount: 6108,
+            fullHistoryObservationCount: 6108,
+          },
+          targetedHydration: {
+            scope: 'SINGLE_SERIES',
+            requestedSeriesId: 'active-owner-series',
+            source: 'postgres',
+            cacheStatus: 'hit',
+          },
+          preparationFailures: {},
+          capabilities: [capability],
+        },
+        capability,
+        trace: undefined,
+      }
+    },
+    readPreparedRecentVerification: async () => {
+      recentReads += 1
+      throw new Error('should not read recent verification when current is not prepared')
+    },
+    readPreparedFullVerification: async () => {
+      fullReads += 1
+      throw new Error('should not read full verification when current is not prepared')
+    },
+  })
+
+  const result = await service.capability({
+    seriesId: 'active-owner-series',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'ets',
+  })
+
+  assert.deepEqual(result.readiness, {
+    fastReady: false,
+    bandsReady: false,
+    calibratedReady: false,
+    fullReady: false,
+    blockers: ['CURRENT_MISSING'],
+  })
+  assert.equal(recentReads, 0)
+  assert.equal(fullReads, 0)
+})
+
+test('interactive capability downgrades full readiness when exact historical identity is stale', async () => {
+  const service = createInteractiveForecastPreparationService({
+    now: (() => {
+      let tick = 400
+      return () => ++tick
+    })(),
+    resolveExactCapability: async () => {
+      const capability: ForecastVariantCapability = {
+        identity: {
+          seriesId: 'stale-historical-series',
+          targetSemantics: 'END_OF_PERIOD',
+          methodId: 'END_OF_PERIOD',
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+          modelId: 'naive',
+        },
+        sourceFrequency: 'MONTHLY',
+        sourceFrequencyRecognized: true,
+        businessTarget: 'END_OF_PERIOD',
+        targetCadence: 'MONTHLY',
+        targetSemanticsSupported: true,
+        horizonSupportState: 'NOT_REQUESTED',
+        horizonMonths: null,
+        horizonSteps: null,
+        semanticLawfulness: 'LAWFUL_WITH_PROVENANCE',
+        admissionState: 'ADMITTED',
+        provenanceStatus: 'PROVEN',
+        implementationState: 'SUPPORTED',
+        historyEligibility: 'ELIGIBLE',
+        minimumRequiredObservations: 36,
+        availableObservations: 80,
+        modelEligible: true,
+        currentForecastEligible: true,
+        verificationOriginCount: 80,
+        verificationEvidenceState: 'SUFFICIENT',
+        predictionBandResidualCount: 40,
+        predictionBandState: 'AVAILABLE',
+        targetPreparationState: 'PREPARED',
+        currentPreparedState: 'READY',
+        historicalPreparedState: 'READY',
+        capabilityState: 'AVAILABLE',
+      }
+
+      return {
+        resolution: {
+          status: 'AVAILABLE',
+          reason: null,
+          sourceMetadata: {
+            seriesId: 'stale-historical-series',
+            providerCode: 'MACROBOND',
+            source: 'DYNAMIC_MARKET_DATA_STORE',
+            sourceFrequency: 'MONTHLY',
+            rawFrequency: 'MONTHLY',
+            sourceObservationCount: 80,
+            fullHistoryObservationCount: 80,
+          },
+          targetedHydration: {
+            scope: 'SINGLE_SERIES',
+            requestedSeriesId: 'stale-historical-series',
+            source: 'postgres',
+            cacheStatus: 'hit',
+          },
+          preparationFailures: {},
+          capabilities: [capability],
+        },
+        capability,
+        trace: undefined,
+      }
+    },
+    readPreparedCurrent: async () => ({
+      status: 'AVAILABLE',
+      currentForecast: {
+        '1M': {
+          metadata: {
+            uncertaintyBand: {
+              status: 'AVAILABLE',
+              source: 'EMPIRICAL_EXACT_RESIDUALS',
+              calibrationStatus: 'CALIBRATED',
+            },
+          },
+        },
+      },
+    } as never),
+    readPreparedRecentVerification: async () => ({
+      status: 'AVAILABLE',
+      seriesId: 'stale-historical-series',
+      modelId: 'naive',
+      targetBasis: 'END_OF_PERIOD',
+      targetSemantics: 'END_OF_PERIOD',
+      methodId: 'END_OF_PERIOD',
+      displayName: 'Stale Historical',
+      description: null,
+      userFacingModel: true,
+      methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+      source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: 'recent-stale-ok' },
+      lineage: {
+        inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+        inputRunId: 'recent-stale-ok',
+        sourceSeriesId: 'stale-historical-series',
+        sourceFrequency: 'MONTHLY',
+        historyFingerprint: 'hist-stale-1',
+        preparation: { method: 'MONTHLY_END_OF_PERIOD', version: 'v1', provenanceStatus: 'PROVEN' },
+      },
+      historyFingerprint: 'hist-stale-1',
+      history: { frequency: 'MONTHLY', start: '2018-01-01', end: '2025-12-01', observations: 80 },
+      forecastOrigin: '2025-11-01T00:00:00.000Z',
+      runtimeSeconds: 1,
+      cacheStatus: 'hit',
+      verification: {},
+    }),
+    readPreparedFullVerification: async () => ({
+      status: 'NOT_AVAILABLE',
+      seriesId: 'stale-historical-series',
+      modelId: 'naive',
+      targetBasis: 'END_OF_PERIOD',
+      targetSemantics: 'END_OF_PERIOD',
+      methodId: 'END_OF_PERIOD',
+      reason: 'PREPARATION_REQUIRED: Prepared Historical Verification training-policy identity is not compatible.',
+    }),
+  })
+
+  const result = await service.capability({
+    seriesId: 'stale-historical-series',
+    targetSemantics: 'END_OF_PERIOD',
+    modelId: 'naive',
+  })
+
+  assert.deepEqual(result.readiness, {
+    fastReady: true,
+    bandsReady: true,
+    calibratedReady: true,
+    fullReady: false,
+    blockers: ['FULL_HISTORICAL_STALE', 'SOURCE_REVISION_REBUILD_REQUIRED'],
+  })
+  assert.equal(result.fullVerificationReadiness, 'STALE')
+})
+
+test('interactive capability uses rolling-daily authority for point-in-time full verification readiness', async () => {
+  let rollingReads = 0
+  let genericReads = 0
+
+  const capability = buildCapabilityCandidate({
+    identity: {
+      seriesId: 'wocaes0074',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodVersion: 'rolling-daily-point-in-time-v1',
+      modelId: 'arima',
+    },
+    sourceFrequency: 'DAILY',
+    businessTarget: 'DAILY',
+    targetCadence: 'DAILY',
+    semanticLawfulness: 'LAWFUL',
+    currentPreparedState: 'READY',
+    historicalPreparedState: 'READY',
+    preparedReadAuthority: {
+      sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
+      expectedHistoryFingerprint: 'rolling-history-1',
+    },
+    predictionBandResidualCount: 48,
+    predictionBandState: 'AVAILABLE',
+    capabilityState: 'AVAILABLE',
+  })
+
+  const service = createInteractiveForecastPreparationService({
+    now: () => 301,
+    resolveExactCapability: async () => ({
+      resolution: buildCapabilityResolution({ capabilities: [capability] }),
+      capability,
+      trace: buildExactCapabilityTrace(),
+    }),
+    readRollingCurrentSnapshot: async () => ({
+      status: 'HIT',
+      payload: {
+        status: 'AVAILABLE',
+        path: [{
+          band: {
+            status: 'AVAILABLE',
+            source: 'MODEL_NATIVE_SHORT_HISTORY',
+            calibrationStatus: 'INSUFFICIENT_SAMPLE',
+          },
+        }],
+      },
+    } as never),
+    readPreparedRecentVerification: async () => ({
+      status: 'AVAILABLE',
+      seriesId: 'wocaes0074',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      verification: {},
+    } as never),
+    readPreparedFullVerification: async () => {
+      genericReads += 1
+      return {
+        status: 'NOT_AVAILABLE',
+        seriesId: 'wocaes0074',
+        modelId: 'arima',
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        reason: 'PREPARATION_REQUIRED: Prepared Historical Verification training-policy identity is not compatible.',
+      }
+    },
+    readPreparedRollingDailyFullVerification: async () => {
+      rollingReads += 1
+      return {
+        status: 'AVAILABLE',
+        seriesId: 'wocaes0074',
+        modelId: 'arima',
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        verification: {},
+      } as never
+    },
+  })
+
+  const result = await service.capability({
+    seriesId: 'wocaes0074',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'arima',
+  })
+
+  assert.equal(rollingReads, 1)
+  assert.equal(genericReads, 0)
+  assert.equal(result.fullVerificationReadiness, 'READY')
+  assert.equal(result.readiness.fullReady, true)
+  assert.equal(result.readiness.bandsReady, true)
+  assert.equal(result.readiness.calibratedReady, false)
+})
+
+test('interactive capability keeps point-in-time full verification not prepared when rolling-daily authority is missing', async () => {
+  let rollingReads = 0
+  let genericReads = 0
+
+  const capability = buildCapabilityCandidate({
+    identity: {
+      seriesId: 'wocaes0074',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodVersion: 'rolling-daily-point-in-time-v1',
+      modelId: 'arima',
+    },
+    sourceFrequency: 'DAILY',
+    businessTarget: 'DAILY',
+    targetCadence: 'DAILY',
+    semanticLawfulness: 'LAWFUL',
+    currentPreparedState: 'READY',
+    historicalPreparedState: 'READY',
+    preparedReadAuthority: {
+      sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
+      expectedHistoryFingerprint: 'rolling-history-1',
+    },
+    predictionBandResidualCount: 48,
+    predictionBandState: 'AVAILABLE',
+    capabilityState: 'AVAILABLE',
+  })
+
+  const service = createInteractiveForecastPreparationService({
+    now: () => 302,
+    resolveExactCapability: async () => ({
+      resolution: buildCapabilityResolution({ capabilities: [capability] }),
+      capability,
+      trace: buildExactCapabilityTrace(),
+    }),
+    readRollingCurrentSnapshot: async () => ({
+      status: 'HIT',
+      payload: { status: 'AVAILABLE', path: [{ band: { status: 'AVAILABLE' } }] },
+    } as never),
+    readPreparedRecentVerification: async () => ({
+      status: 'AVAILABLE',
+      seriesId: 'wocaes0074',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      verification: {},
+    } as never),
+    readPreparedFullVerification: async () => {
+      genericReads += 1
+      return {
+        status: 'AVAILABLE',
+        seriesId: 'wocaes0074',
+        modelId: 'arima',
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        verification: {},
+      } as never
+    },
+    readPreparedRollingDailyFullVerification: async () => {
+      rollingReads += 1
+      return {
+        status: 'NOT_AVAILABLE',
+        seriesId: 'wocaes0074',
+        modelId: 'arima',
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        reason: 'PREPARATION_REQUIRED: No exact-identity prepared Rolling Daily Historical Verification is available.',
+      }
+    },
+  })
+
+  const result = await service.capability({
+    seriesId: 'wocaes0074',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'arima',
+  })
+
+  assert.equal(rollingReads, 1)
+  assert.equal(genericReads, 0)
+  assert.equal(result.fullVerificationReadiness, 'NOT_PREPARED')
+  assert.equal(result.readiness.fullReady, false)
+  assert.deepEqual(result.readiness.blockers, ['FULL_HISTORICAL_MISSING'])
+})
+
+test('interactive capability keeps point-in-time full verification stale when rolling-daily authority is incomplete', async () => {
+  let rollingReads = 0
+  let genericReads = 0
+
+  const capability = buildCapabilityCandidate({
+    identity: {
+      seriesId: 'wocaes0074',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodVersion: 'rolling-daily-point-in-time-v1',
+      modelId: 'arima',
+    },
+    sourceFrequency: 'DAILY',
+    businessTarget: 'DAILY',
+    targetCadence: 'DAILY',
+    semanticLawfulness: 'LAWFUL',
+    currentPreparedState: 'READY',
+    historicalPreparedState: 'READY',
+    preparedReadAuthority: {
+      sourceFrequency: 'DAILY',
+      targetCadence: 'DAILY',
+      expectedHistoryFingerprint: 'rolling-history-1',
+    },
+    predictionBandResidualCount: 48,
+    predictionBandState: 'AVAILABLE',
+    capabilityState: 'AVAILABLE',
+  })
+
+  const service = createInteractiveForecastPreparationService({
+    now: () => 303,
+    resolveExactCapability: async () => ({
+      resolution: buildCapabilityResolution({ capabilities: [capability] }),
+      capability,
+      trace: buildExactCapabilityTrace(),
+    }),
+    readRollingCurrentSnapshot: async () => ({
+      status: 'HIT',
+      payload: { status: 'AVAILABLE', path: [{ band: { status: 'AVAILABLE' } }] },
+    } as never),
+    readPreparedRecentVerification: async () => ({
+      status: 'AVAILABLE',
+      seriesId: 'wocaes0074',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+      verification: {},
+    } as never),
+    readPreparedFullVerification: async () => {
+      genericReads += 1
+      return {
+        status: 'AVAILABLE',
+        seriesId: 'wocaes0074',
+        modelId: 'arima',
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        verification: {},
+      } as never
+    },
+    readPreparedRollingDailyFullVerification: async () => {
+      rollingReads += 1
+      return {
+        status: 'NOT_AVAILABLE',
+        seriesId: 'wocaes0074',
+        modelId: 'arima',
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        reason: 'PREPARATION_REQUIRED: Prepared Rolling Daily Historical Verification is incomplete for the latest lawful source observation.',
+      }
+    },
+  })
+
+  const result = await service.capability({
+    seriesId: 'wocaes0074',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'arima',
+  })
+
+  assert.equal(rollingReads, 1)
+  assert.equal(genericReads, 0)
+  assert.equal(result.fullVerificationReadiness, 'STALE')
+  assert.equal(result.readiness.fullReady, false)
+  assert.deepEqual(result.readiness.blockers, ['FULL_HISTORICAL_STALE'])
+})
+
+test('interactive capability keeps non-point-in-time full verification authority on the generic prepared reader', async () => {
+  let rollingReads = 0
+  const genericReads: Array<{ targetBasis: string, preparedReadAuthority?: unknown }> = []
+
+  const service = createInteractiveForecastPreparationService({
+    now: (() => {
+      let tick = 400
+      return () => ++tick
+    })(),
+    resolveExactCapability: async (input) => {
+      const capability = buildCapabilityCandidate({
+        identity: {
+          seriesId: input.seriesId,
+          targetSemantics: input.targetSemantics,
+          methodId: input.targetSemantics,
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+          modelId: input.modelId,
+        },
+        sourceFrequency: 'MONTHLY',
+        businessTarget: input.targetSemantics === 'END_OF_PERIOD' ? 'END_OF_PERIOD' : 'AVERAGE',
+        targetCadence: 'MONTHLY',
+        semanticLawfulness: 'LAWFUL_WITH_PROVENANCE',
+        currentPreparedState: 'READY',
+        historicalPreparedState: 'READY',
+        predictionBandResidualCount: 48,
+        predictionBandState: 'AVAILABLE',
+        capabilityState: 'AVAILABLE',
+      })
+
+      return {
+        resolution: buildCapabilityResolution({ capabilities: [capability] }),
+        capability,
+        trace: buildExactCapabilityTrace(),
+      }
+    },
+    readPreparedRecentVerification: async (request) => ({
+      status: 'AVAILABLE',
+      seriesId: request.seriesId,
+      modelId: request.modelId,
+      targetBasis: request.targetBasis,
+      targetSemantics: request.targetBasis,
+      methodId: request.targetBasis,
+      verification: {},
+    } as never),
+    readPreparedFullVerification: async (request) => {
+      genericReads.push({
+        targetBasis: request.targetBasis,
+        preparedReadAuthority: 'preparedReadAuthority' in request ? request.preparedReadAuthority : undefined,
+      })
+      return {
+        status: 'AVAILABLE',
+        seriesId: request.seriesId,
+        modelId: request.modelId,
+        targetBasis: request.targetBasis,
+        targetSemantics: request.targetBasis,
+        methodId: request.targetBasis,
+        verification: {},
+      } as never
+    },
+    readPreparedRollingDailyFullVerification: async () => {
+      rollingReads += 1
+      throw new Error('should not be called for non-point-in-time readiness')
+    },
+  })
+
+  const monthly = await service.capability({
+    seriesId: 'wocaes0280',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'ets',
+  })
+  const endOfPeriod = await service.capability({
+    seriesId: 'wocaes0280',
+    targetSemantics: 'END_OF_PERIOD',
+    modelId: 'ets',
+  })
+
+  assert.deepEqual(genericReads, [
+    { targetBasis: 'MONTHLY_AVERAGE', preparedReadAuthority: undefined },
+    { targetBasis: 'END_OF_PERIOD', preparedReadAuthority: undefined },
+  ])
+  assert.equal(rollingReads, 0)
+  assert.equal(monthly.fullVerificationReadiness, 'READY')
+  assert.equal(monthly.readiness.fullReady, true)
+  assert.equal(endOfPeriod.fullVerificationReadiness, 'READY')
+  assert.equal(endOfPeriod.readiness.fullReady, true)
 })
 
 test('internal prepare-current route denies invalid bearer credential', async () => {
@@ -786,6 +2450,102 @@ test('internal prepare-current route returns reused success in legacy-compatible
       timingMs: 11,
       reason: null,
     })
+  } finally {
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
+})
+
+test('internal verification route runs bounded point-in-time historical preparation before the exact prepared read', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+  let preparedPointInTime: { seriesId: string, modelId: string } | null = null
+
+  try {
+    const resolver = createInternalForecastVerificationResolver(
+      async () => {
+        throw new Error('monthly verification resolver should not be called')
+      },
+      async ({ seriesId, modelId }) => {
+        preparedPointInTime = { seriesId, modelId }
+      },
+      async () => ({
+        status: 'NOT_AVAILABLE',
+        seriesId: 'wocaes0074',
+        modelId: 'arima',
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        reason: 'Prepared Rolling Daily Historical Verification is incomplete for the latest lawful source observation.',
+      }),
+    )
+    const handler = createInternalForecastVerificationRouteHandler(resolver)
+
+    const response = await handler(buildRequest(
+      'http://localhost/api/internal/forecast/verification?seriesId=wocaes0074&model=arima&targetBasis=POINT_IN_TIME',
+      { Authorization: 'Bearer test-internal-token' },
+    ))
+    const payload = await response.json()
+
+    assert.equal(response.status, 200)
+    assert.deepEqual(preparedPointInTime, { seriesId: 'wocaes0074', modelId: 'arima' })
+    assert.equal(payload.status, 'NOT_AVAILABLE')
+    assert.equal(payload.reason, 'Prepared Rolling Daily Historical Verification is incomplete for the latest lawful source observation.')
+  } finally {
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    }
+  }
+})
+
+test('internal verification route keeps monthly exact verification on the generic resolver path', async () => {
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+  let genericCalls = 0
+  let pointInTimeCalls = 0
+
+  try {
+    const resolver = createInternalForecastVerificationResolver(
+      async () => {
+        genericCalls += 1
+        return {
+          status: 'AVAILABLE',
+          seriesId: 'wocaes0074',
+          modelId: 'ets',
+          targetBasis: 'MONTHLY_AVERAGE',
+          targetSemantics: 'MONTHLY_AVERAGE',
+          methodId: 'MONTHLY_AVERAGE',
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+          inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+          historyFingerprint: 'fp',
+          history: { frequency: 'MONTHLY', start: '2025-01-01T00:00:00.000Z', end: '2026-01-01T00:00:00.000Z', observations: 12 },
+          forecastOrigin: '2026-01-01T00:00:00.000Z',
+          runtimeSeconds: 1,
+          cacheStatus: 'miss',
+          verification: {},
+        }
+      },
+      async () => {
+        pointInTimeCalls += 1
+      },
+    )
+    const handler = createInternalForecastVerificationRouteHandler(resolver)
+
+    const response = await handler(buildRequest(
+      'http://localhost/api/internal/forecast/verification?seriesId=wocaes0074&model=ets&targetBasis=MONTHLY_AVERAGE&sourceFrequency=MONTHLY&targetCadence=MONTHLY',
+      { Authorization: 'Bearer test-internal-token' },
+    ))
+    const payload = await response.json()
+
+    assert.equal(response.status, 200)
+    assert.equal(genericCalls, 1)
+    assert.equal(pointInTimeCalls, 0)
+    assert.equal(payload.status, 'AVAILABLE')
   } finally {
     if (previousToken === undefined) {
       delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
@@ -966,7 +2726,9 @@ test('interactive current preparation service reuses ready artifacts without dup
 test('interactive current preparation service delegates monthly and rolling preparation to canonical owners only', async () => {
   let monthlyCalls = 0
   let rollingCalls = 0
+  let snapshotReady = false
   const service = createInteractiveForecastPreparationService({
+    executionAdmission: createStubExecutionAdmission(),
     now: (() => {
       let tick = 0
       return () => ++tick
@@ -1022,6 +2784,7 @@ test('interactive current preparation service delegates monthly and rolling prep
     }),
     prepareRollingCurrent: async (request) => {
       rollingCalls += 1
+      snapshotReady = true
       assert.equal(request.seriesId, 'wocaes0074')
       assert.deepEqual(request.modelIds, ['ets'])
       assert.equal(request.preparedHistory?.seriesId, 'wocaes0074')
@@ -1066,6 +2829,9 @@ test('interactive current preparation service delegates monthly and rolling prep
         }],
       }
     },
+    readRollingCurrentSnapshot: async () => snapshotReady
+      ? { status: 'HIT', payload: {} as never }
+      : { status: 'MISS' },
   })
 
   const monthly = await service.prepareCurrent({
@@ -1087,7 +2853,9 @@ test('interactive current preparation service delegates monthly and rolling prep
 
 test('interactive current preparation service maps rolling daily NO_OP to REUSED and failures to FAILED', async () => {
   let rollingCalls = 0
+  let pendingHitOnce = false
   const service = createInteractiveForecastPreparationService({
+    executionAdmission: createStubExecutionAdmission(),
     now: (() => {
       let tick = 200
       return () => ++tick
@@ -1135,6 +2903,9 @@ test('interactive current preparation service maps rolling daily NO_OP to REUSED
     }),
     prepareRollingCurrent: async () => {
       rollingCalls += 1
+      if (rollingCalls === 1) {
+        pendingHitOnce = true
+      }
       return rollingCalls === 1
         ? {
             status: 'NO_OP',
@@ -1195,6 +2966,13 @@ test('interactive current preparation service maps rolling daily NO_OP to REUSED
               error: 'maintenance failed',
             }],
           }
+    },
+    readRollingCurrentSnapshot: async () => {
+      if (pendingHitOnce) {
+        pendingHitOnce = false
+        return { status: 'HIT', payload: {} as never }
+      }
+      return { status: 'MISS' }
     },
   })
 
@@ -1270,6 +3048,7 @@ test('interactive point-in-time current reuses ready artifacts without owner com
 test('interactive point-in-time current uses canonical single-flight for concurrent same-identity requests', async () => {
   let rollingCalls = 0
   let ownershipCalls = 0
+  let snapshotReady = false
   let releaseRolling: (() => void) | undefined
   const rollingGate = new Promise<void>((resolve) => {
     releaseRolling = resolve
@@ -1295,6 +3074,7 @@ test('interactive point-in-time current uses canonical single-flight for concurr
   })
 
   const service = createInteractiveForecastPreparationService({
+    executionAdmission: createStubExecutionAdmission(),
     now: (() => {
       let tick = 400
       return () => ++tick
@@ -1327,6 +3107,7 @@ test('interactive point-in-time current uses canonical single-flight for concurr
       assert.equal(request.seriesId, 'wocaes0074')
       assert.deepEqual(request.modelIds, ['arima'])
       await rollingGate
+      snapshotReady = true
       return {
         status: 'SUCCEEDED',
         seriesId: 'wocaes0074',
@@ -1368,6 +3149,9 @@ test('interactive point-in-time current uses canonical single-flight for concurr
         }],
       }
     },
+    readRollingCurrentSnapshot: async () => snapshotReady
+      ? { status: 'HIT', payload: {} as never }
+      : { status: 'MISS' },
   })
 
   const first = service.prepareCurrent({
@@ -1389,7 +3173,7 @@ test('interactive point-in-time current uses canonical single-flight for concurr
   const results = await Promise.all([first, second])
 
   assert.equal(rollingCalls, 1)
-  assert.deepEqual(results.map((result) => result.status), ['READY', 'READY'])
+  assert.deepEqual(results.map((result) => result.status), ['READY', 'REUSED'])
   assert.ok(results.every((result) => result.reason === null))
 })
 
@@ -1397,12 +3181,14 @@ test('interactive point-in-time current keeps different lawful identities indepe
   let rollingCalls = 0
   let activeRollingCalls = 0
   let maxActiveRollingCalls = 0
+  const readyByModelId = new Map<string, boolean>()
   let releaseRolling: (() => void) | undefined
   const rollingGate = new Promise<void>((resolve) => {
     releaseRolling = resolve
   })
 
   const service = createInteractiveForecastPreparationService({
+    executionAdmission: createStubExecutionAdmission(),
     now: (() => {
       let tick = 500
       return () => ++tick
@@ -1453,6 +3239,9 @@ test('interactive point-in-time current keeps different lawful identities indepe
       activeRollingCalls += 1
       maxActiveRollingCalls = Math.max(maxActiveRollingCalls, activeRollingCalls)
       await rollingGate
+      for (const modelId of request.modelIds ?? []) {
+        readyByModelId.set(modelId, true)
+      }
       activeRollingCalls -= 1
       return {
         status: 'SUCCEEDED',
@@ -1461,7 +3250,7 @@ test('interactive point-in-time current keeps different lawful identities indepe
         recoveredSnapshotCount: 0,
         noOpModelCount: 0,
         failedModelCount: 0,
-        results: request.modelIds.map((modelId) => ({
+        results: (request.modelIds ?? []).map((modelId) => ({
           status: 'SUCCEEDED' as const,
           modelId,
           maintenance: {
@@ -1495,6 +3284,9 @@ test('interactive point-in-time current keeps different lawful identities indepe
         })),
       }
     },
+    readRollingCurrentSnapshot: async ({ modelId }) => readyByModelId.get(modelId)
+      ? { status: 'HIT', payload: {} as never }
+      : { status: 'MISS' },
   })
 
   const first = service.prepareCurrent({

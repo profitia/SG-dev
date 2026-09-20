@@ -4,6 +4,7 @@ import test from 'node:test'
 import {
   buildRollingDailyCurrentHorizonConfigurationId,
   prepareRollingDailyCurrentOwnership,
+  selectTrailingRollingDailyCurrentHistory,
 } from '@/lib/forecast/rolling-daily-current-ownership'
 import {
   getActiveCurrentForecastSingleFlightEntryCount,
@@ -31,7 +32,7 @@ test('Daily Current ownership prepares the complete frozen identity before compu
   })
   const horizon = JSON.parse(prepared.identity.horizonConfigurationId)
 
-  assert.equal(prepared.history, history)
+  assert.deepEqual(prepared.history, selectTrailingRollingDailyCurrentHistory(history))
   assert.equal(prepared.identity.forecastOrigin, '2026-01-31')
   assert.equal(prepared.identity.historyFingerprint.length, 64)
   assert.equal(prepared.identity.frequencyIdentity, 'FORECAST_CADENCE_V1|source=DAILY|target=DAILY')
@@ -53,7 +54,9 @@ test('Daily callers share the accepted Current owner and release the entry after
   const callers = Array.from({ length: 4 }, (_, index) => runCurrentForecastSingleFlight({
     logicalArtifactKey,
     requestId: `daily-request-${index + 1}`,
-    emit: (event) => events.push(event),
+    emit: (event) => {
+      events.push(event)
+    },
     operation: async () => {
       computes += 1
       await ownerGate

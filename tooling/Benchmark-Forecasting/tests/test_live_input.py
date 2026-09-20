@@ -254,7 +254,7 @@ class LiveForecastInputTests(unittest.TestCase):
             model=build_model("naive"),
             run_id="test-live-input",
             horizons=HORIZONS,
-            min_training_window=36,
+            min_training_window=build_model("naive").min_history,
         )
 
         result = service.run_benchmark(context["benchmark"])
@@ -274,7 +274,7 @@ class LiveForecastInputTests(unittest.TestCase):
             model=build_model("naive"),
             run_id="test-live-input",
             horizons=HORIZONS,
-            min_training_window=36,
+            min_training_window=build_model("naive").min_history,
         )
 
         result = service.run_benchmark(context["benchmark"])

@@ -11,6 +11,7 @@ import { createRollingDailyProductionOperationsService } from '@/lib/forecast/ro
 import {
   resolveBenchmarkCurrentForecast,
   resolveBenchmarkForecastVerification,
+  resolveBenchmarkRecentForecastVerification,
 } from '@/lib/forecast/service'
 
 export const OPERATIONAL_FORECAST_TARGETS = [
@@ -25,18 +26,23 @@ export type ForecastProductionOperationsRequest = {
   seriesId: string
   targetSemantics?: readonly OperationalForecastTarget[]
   modelIds?: readonly UserFacingForecastModelId[]
+  forceCurrent?: boolean
   prepareHistorical?: boolean
+  verificationScope?: 'RECENT' | 'FULL'
+  maxOriginsPerRun?: number
 }
 
 export type ForecastProductionOperationItem = {
   targetSemantics: OperationalForecastTarget
   modelId: UserFacingForecastModelId
   current: 'READY' | 'REUSED' | 'FAILED'
-  historical: 'READY' | 'REUSED' | 'NOT_REQUESTED' | 'FAILED'
+  historical: 'READY' | 'REUSED' | 'IN_PROGRESS' | 'NOT_REQUESTED' | 'FAILED'
   currentCacheStatus: string | null
   historicalCacheStatus: string | null
   error: string | null
 }
+
+const HISTORICAL_PREPARATION_IN_PROGRESS_REASON = 'PREPARATION_REQUIRED: Exact-identity prepared Historical Verification is still being built in bounded batches.'
 
 export type ForecastProductionOperationsResult = {
   status: 'SUCCEEDED' | 'PARTIAL' | 'FAILED'
@@ -44,6 +50,7 @@ export type ForecastProductionOperationsResult = {
   requestedTargets: OperationalForecastTarget[]
   requestedModels: UserFacingForecastModelId[]
   prepareHistorical: boolean
+  verificationScope: 'RECENT' | 'FULL'
   before: ForecastCapabilityResolution
   after: ForecastCapabilityResolution
   results: ForecastProductionOperationItem[]
@@ -53,6 +60,7 @@ type ForecastProductionOperationsDependencies = {
   resolveCapabilities: typeof resolveForecastCapabilitiesBySeriesId
   prepareMonthlyCurrent: typeof resolveBenchmarkCurrentForecast
   prepareMonthlyHistorical: typeof resolveBenchmarkForecastVerification
+  prepareMonthlyRecentVerification: typeof resolveBenchmarkRecentForecastVerification
   runRollingDaily: ReturnType<typeof createRollingDailyProductionOperationsService>['run']
 }
 
@@ -73,6 +81,7 @@ export function createForecastProductionOperationsService(
     resolveCapabilities: dependencies.resolveCapabilities ?? resolveForecastCapabilitiesBySeriesId,
     prepareMonthlyCurrent: dependencies.prepareMonthlyCurrent ?? resolveBenchmarkCurrentForecast,
     prepareMonthlyHistorical: dependencies.prepareMonthlyHistorical ?? resolveBenchmarkForecastVerification,
+    prepareMonthlyRecentVerification: dependencies.prepareMonthlyRecentVerification ?? resolveBenchmarkRecentForecastVerification,
     runRollingDaily: dependencies.runRollingDaily ?? ((request) => rollingDaily.run(request)),
   }
 
@@ -85,6 +94,7 @@ export function createForecastProductionOperationsService(
         ? [...request.modelIds]
         : [...USER_FACING_FORECAST_MODELS]
       const prepareHistorical = request.prepareHistorical ?? false
+      const verificationScope = request.verificationScope ?? 'FULL'
       const before = await resolvedDependencies.resolveCapabilities(request.seriesId)
       const results: ForecastProductionOperationItem[] = []
 
@@ -95,6 +105,7 @@ export function createForecastProductionOperationsService(
           requestedTargets,
           requestedModels,
           prepareHistorical,
+          verificationScope,
           before,
           after: before,
           results,
@@ -131,6 +142,7 @@ export function createForecastProductionOperationsService(
             seriesId: request.seriesId,
             modelId,
             targetBasis,
+            forceRefresh: request.forceCurrent,
             sourceFrequency: capability.sourceFrequency ?? undefined,
             targetCadence: capability.targetCadence ?? undefined,
           })
@@ -161,18 +173,26 @@ export function createForecastProductionOperationsService(
             candidate.identity.targetSemantics === item.targetSemantics
             && candidate.identity.modelId === item.modelId
           ))
-          const historical = await resolvedDependencies.prepareMonthlyHistorical({
+          const prepareVerification = verificationScope === 'RECENT'
+            ? resolvedDependencies.prepareMonthlyRecentVerification
+            : resolvedDependencies.prepareMonthlyHistorical
+          const historical = await prepareVerification({
             seriesId: request.seriesId,
             modelId: item.modelId,
             targetBasis,
             sourceFrequency: capability?.sourceFrequency ?? undefined,
             targetCadence: capability?.targetCadence ?? undefined,
+            maxOriginsPerRun: request.maxOriginsPerRun,
           })
           const historicalPersisted = historical.status === 'AVAILABLE'
             && (historical.cacheStatus === 'hit' || historical.cacheStatus === 'miss')
+          const historicalPreparing = historical.status === 'NOT_AVAILABLE'
+            && historical.reason === HISTORICAL_PREPARATION_IN_PROGRESS_REASON
           item.historical = historicalPersisted && historical.status === 'AVAILABLE'
             ? readiness(historical.cacheStatus)
-            : 'FAILED'
+            : historicalPreparing
+              ? 'IN_PROGRESS'
+              : 'FAILED'
           item.historicalCacheStatus = historical.status === 'AVAILABLE' ? historical.cacheStatus : null
           if (historical.status !== 'AVAILABLE') item.error = historical.reason
         }
@@ -183,6 +203,8 @@ export function createForecastProductionOperationsService(
           seriesId: request.seriesId,
           modelIds: requestedModels,
           prepareHistorical,
+          verificationScope,
+          maxOriginsPerRun: request.maxOriginsPerRun,
         })
         for (const modelId of requestedModels) {
           const item = rolling.results.find((candidate) => candidate.modelId === modelId)
@@ -203,8 +225,11 @@ export function createForecastProductionOperationsService(
 
       const after = await resolvedDependencies.resolveCapabilities(request.seriesId)
       const failed = results.filter((item) => item.current === 'FAILED' || item.historical === 'FAILED').length
+      const inProgress = results.filter((item) => item.historical === 'IN_PROGRESS').length
       const status: ForecastProductionOperationsResult['status'] = failed === 0
-        ? 'SUCCEEDED'
+        ? inProgress === 0
+          ? 'SUCCEEDED'
+          : 'PARTIAL'
         : failed === results.length
           ? 'FAILED'
           : 'PARTIAL'
@@ -215,6 +240,7 @@ export function createForecastProductionOperationsService(
         requestedTargets,
         requestedModels,
         prepareHistorical,
+        verificationScope,
         before,
         after,
         results,

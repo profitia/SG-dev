@@ -1,0 +1,163 @@
+{
+  "generatedAt": "2026-09-14T07:02:44.045Z",
+  "taskId": "ppf-1-stage-12-warm-rehearsal-duplicate-read-cache-reuse-profiler-20260914",
+  "status": "PASS",
+  "classification": {
+    "changeType": "PROFILE_ONLY",
+    "productSourceMutated": false,
+    "validationBranch": "ppf1/stage12-live-acceptance-legacy-deprecation-20260911",
+    "dashboardDeployedSha": "7e87d2fad1c20c1e4ca20a742b2809e06b40ea86",
+    "sgRuntimeDeployedSha": "f7761cc3ee56dd474667b89132747910d67c2517",
+    "productionFixImplemented": false
+  },
+  "profileScope": {
+    "mode": "REVALIDATE",
+    "seriesId": "lmeofcucashask",
+    "benchmarkName": "Copper",
+    "timeoutMs": 75000,
+    "payloadPath": "/tmp/ppf1-stage12-warm-rehearsal-live-revalidate.json"
+  },
+  "liveEvidence": {
+    "phaseTimingsMs": {
+      "PRECOMPUTE": 20112,
+      "MATRIX": 40786,
+      "WARM_REHEARSAL_ELAPSED_BEFORE_TIMEOUT": 14112
+    },
+    "warmRemoteEvents": {
+      "total": 36,
+      "counts": {
+        "READ_CAPABILITY:hit": 12,
+        "READ_CURRENT:hit": 8,
+        "READ_CURRENT:miss": 4,
+        "READ_VERIFICATION:hit": 7,
+        "READ_VERIFICATION:miss": 5
+      }
+    },
+    "warmTimingDecompositionMs": {
+      "warmElapsedMs": 14112,
+      "batchSpanMs": 11164,
+      "remoteElapsedCompletedMs": 74214,
+      "queueWaitCompletedMs": 0,
+      "remoteElapsedActiveMs": 2949,
+      "localOverheadMs": 0
+    },
+    "timeoutSnapshot": {
+      "phase": "WARM_REHEARSAL",
+      "operation": "READ_CURRENT",
+      "key": "lmeofcucashask:naive:MONTHLY_AVERAGE:none:none",
+      "cacheStatus": "miss",
+      "elapsedMsAtTimeout": 2949
+    },
+    "overlap": {
+      "capabilityOverlap": "100_PERCENT",
+      "currentOverlapOfMatrixKeys": "100_PERCENT",
+      "verificationOverlapOfMatrixKeys": "100_PERCENT",
+      "warmOnlyCurrentKeys": [
+        "naive:POINT_IN_TIME",
+        "damped_holt:POINT_IN_TIME",
+        "ets:POINT_IN_TIME",
+        "arima:POINT_IN_TIME"
+      ],
+      "warmOnlyVerificationKeys": [
+        "naive:MONTHLY_AVERAGE",
+        "ets:MONTHLY_AVERAGE",
+        "ets:END_OF_PERIOD",
+        "arima:MONTHLY_AVERAGE",
+        "arima:END_OF_PERIOD"
+      ]
+    }
+  },
+  "sourceProof": {
+    "warmSequence": [
+      "build 12 required inputs",
+      "read capability for each input",
+      "read current and verification for each input",
+      "perform separate switchBack current reread for the first input without cadence",
+      "run a fresh warm matrix via evaluateMatrix(entry.seriesId, false, options)"
+    ],
+    "matrixFacts": {
+      "ownsInternalCaches": true,
+      "pointInTimeUsesDedicatedReadPath": true,
+      "matrixLocalCurrentReadCacheKey": "seriesId::modelId::targetBasis",
+      "dashboardSharedReadCacheKey": "seriesId::modelId::targetBasis::sourceFrequency::targetCadence",
+      "switchBackUsesCadenceLessCurrentRead": true
+    }
+  },
+  "controlExperiments": {
+    "observedWarmCurrentStructureMs": 14512,
+    "warmMinimalProofMs": 0,
+    "secondMatrixDefaultMs": 19554,
+    "secondMatrixWithSharedPitCacheMs": 1,
+    "warmWithSharedCacheMs": 0,
+    "notes": [
+      "The structure-level warm harness reproduces the live timeout slice closely enough to isolate the preread layer plus switchBack as the active cost center.",
+      "The corrected second-matrix harness requires mocked persisted-artifact proof to avoid local short-circuiting before the expensive PIT read path.",
+      "The second matrix becomes materially expensive only when it must perform the four PIT current reads itself."
+    ]
+  },
+  "liveCapabilityState": {
+    "allCurrentReady": true,
+    "fullVerificationReadyOnAllVariants": true,
+    "verificationStaleVariants": [
+      {
+        "modelId": "naive",
+        "targetBasis": "MONTHLY_AVERAGE",
+        "status": "STALE",
+        "verificationReadiness": "STALE",
+        "fullVerificationReadiness": "READY"
+      },
+      {
+        "modelId": "ets",
+        "targetBasis": "MONTHLY_AVERAGE",
+        "status": "STALE",
+        "verificationReadiness": "STALE",
+        "fullVerificationReadiness": "READY"
+      },
+      {
+        "modelId": "ets",
+        "targetBasis": "END_OF_PERIOD",
+        "status": "STALE",
+        "verificationReadiness": "STALE",
+        "fullVerificationReadiness": "READY"
+      },
+      {
+        "modelId": "arima",
+        "targetBasis": "MONTHLY_AVERAGE",
+        "status": "STALE",
+        "verificationReadiness": "STALE",
+        "fullVerificationReadiness": "READY"
+      },
+      {
+        "modelId": "arima",
+        "targetBasis": "END_OF_PERIOD",
+        "status": "STALE",
+        "verificationReadiness": "STALE",
+        "fullVerificationReadiness": "READY"
+      }
+    ]
+  },
+  "rootCauseClassification": {
+    "ROOT_CAUSE": "AVOIDABLE_WARM_REREADS",
+    "INTENT_IMPLEMENTATION_MISMATCH": "PROVEN",
+    "SECOND_MATRIX_DUPLICATION": "PROVEN",
+    "CACHE_SCOPE_BUG": "PROVEN",
+    "AVOIDABLE_REMOTE_REREADS": "PROVEN",
+    "explanation": "Warm partially reuses certification caches, but still falls through to four PIT current misses, five monthly verification misses, and a separate cadence-less switchBack current reread before source unconditionally invokes a second matrix pass."
+  },
+  "recommendedCorrectiveScope": {
+    "ownerSurface": "apps/dashboard-preview/lib/benchmark-forecast/demo-certification.ts",
+    "allowed": [
+      "remove or collapse unconditional warm prereads",
+      "reuse already-proven matrix evidence under shared cache identities",
+      "route switchBack through the same keyed current-read cache",
+      "keep any change confined to dashboard-preview and nearby acceptance-matrix seam"
+    ],
+    "forbidden": [
+      "timeout budget increase",
+      "sg-runtime changes",
+      "forecast math changes",
+      "queue architecture changes",
+      "legacy deprecation"
+    ]
+  }
+}

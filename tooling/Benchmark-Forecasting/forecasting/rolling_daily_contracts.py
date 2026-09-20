@@ -6,6 +6,7 @@ from enum import StrEnum
 from typing import Any
 
 from forecasting.contracts import ForecastMetadata, Frequency, MetricsSummary, TimeSeries
+from forecasting.uncertainty_bands import ForecastUncertaintyBand
 
 
 class ForecastAvailabilityStatus(StrEnum):
@@ -28,6 +29,7 @@ class BandStatus(StrEnum):
 class BandSource(StrEnum):
     EMPIRICAL_ANCHOR = "EMPIRICAL_ANCHOR"
     INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS = "INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS"
+    MODEL_NATIVE_SHORT_HISTORY = "MODEL_NATIVE_SHORT_HISTORY"
 
 
 class MaturityStatus(StrEnum):
@@ -38,6 +40,7 @@ class MaturityStatus(StrEnum):
 @dataclass(frozen=True)
 class ForecastPathPoint:
     date: date
+    projected_step_count: int
     point_forecast: float
     lower_p10: float | None
     upper_p90: float | None
@@ -49,6 +52,7 @@ class ForecastPathPoint:
     left_anchor_horizon: str | None = None
     right_anchor_horizon: str | None = None
     interpolation_fraction: float | None = None
+    uncertainty_band: ForecastUncertaintyBand | None = None
 
 
 @dataclass(frozen=True)
@@ -64,6 +68,7 @@ class ForecastAnchorPoint:
     p10_residual_offset: float | None = None
     p90_residual_offset: float | None = None
     band_source: BandSource | None = None
+    uncertainty_band: ForecastUncertaintyBand | None = None
 
 
 @dataclass(frozen=True)

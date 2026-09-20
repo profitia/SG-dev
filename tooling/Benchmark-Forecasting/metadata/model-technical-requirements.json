@@ -1,0 +1,16 @@
+{
+  "policyVersion": "ADAPTIVE_SHORT_HISTORY_V1",
+  "etsSeasonalMinimumObservations": 36,
+  "naive": {
+    "minimumTrainingObservations": 1
+  },
+  "damped_holt": {
+    "minimumTrainingObservations": 6
+  },
+  "ets": {
+    "minimumTrainingObservations": 6
+  },
+  "arima": {
+    "minimumTrainingObservations": 6
+  }
+}

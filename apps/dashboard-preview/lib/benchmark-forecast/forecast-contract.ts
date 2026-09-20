@@ -29,21 +29,51 @@ export interface BenchmarkForecastCurrentPreparationRequest {
   seriesId: string
   modelId: ForecastPortfolioModelId
   targetBasis: ForecastTargetBasis
+  sourceFrequency?: string
+  targetCadence?: string
 }
 
 export interface InteractiveForecastCapabilityResult {
   seriesId: string
   targetSemantics: ForecastTargetSemantics
   modelId: ForecastPortfolioModelId
+  preparedReadAuthority?: {
+    sourceFrequency: string
+    targetCadence: string
+    expectedHistoryFingerprint: string
+  } | null
   sourceFrequency: string | null
+  targetCadence: string | null
   sourceAvailability: 'AVAILABLE' | 'DATA_NOT_AVAILABLE' | 'FAILED'
   lawfulTargetSemantics: string | null
   status: InteractiveForecastCapabilityStatus
   currentReadiness: 'READY' | 'NOT_PREPARED' | 'STALE'
   verificationReadiness: 'READY' | 'NOT_PREPARED' | 'STALE'
+  recentVerificationReadiness?: 'READY' | 'NOT_PREPARED' | 'STALE'
+  fullVerificationReadiness?: 'READY' | 'NOT_PREPARED' | 'STALE'
+  predictionBandResidualCount?: number
+  predictionBandState?: 'AVAILABLE' | 'INSUFFICIENT_SAMPLE' | 'NOT_AVAILABLE'
+  readiness?: {
+    fastReady: boolean
+    bandsReady: boolean
+    calibratedReady: boolean
+    fullReady: boolean
+    blockers: string[]
+  }
   targetedDataScope: 'SINGLE_SERIES'
   timingMs: number
   reason: string | null
+}
+
+export interface InteractiveForecastCapabilitySeriesSnapshot {
+  seriesId: string
+  sourceFrequency: string | null
+  sourceAvailability: 'AVAILABLE' | 'DATA_NOT_AVAILABLE' | 'FAILED'
+  status: 'AVAILABLE' | 'FAILED'
+  reason: string | null
+  targetedDataScope: 'SINGLE_SERIES'
+  timingMs: number
+  variants: InteractiveForecastCapabilityResult[]
 }
 
 export interface InteractiveForecastPreparationResult {
@@ -64,7 +94,7 @@ export interface BenchmarkForecastCurrentPreparationResult {
   targetSemantics: ForecastTargetSemantics
   state: BenchmarkForecastPreparationState
   capabilityStatus: InteractiveForecastCapabilityStatus
-  currentReadiness: 'READY' | 'NOT_PREPARED'
+  currentReadiness: 'READY' | 'NOT_PREPARED' | 'STALE'
   prepareAttempted: boolean
   prepareStatus: InteractiveForecastPreparationStatus | null
   reason: string | null
@@ -142,10 +172,48 @@ export interface ForecastPreparedSnapshotIdentity {
 
 export interface ForecastPredictionBandIdentity {
   forecastIdentity: ForecastIdentity
-  horizon: string
+  inputSource: string
+  sourceFrequency: string
+  targetCadence: string
+  horizonLabel: string
+  horizonSteps: number
   targetDate: string | null
+  sourceHistoryFingerprint: string
+  trainingWindowPolicyId: string
+  effectiveTrainingPolicyId: string
+  bandPolicyVersion: string
+  bandSource: ForecastUncertaintyBandSource | null
   calibrationMethod: string
   calibrationVersion: string
+  calibrationCutoff: string | null
+}
+
+export type ForecastUncertaintyBandSource = 'EMPIRICAL_EXACT_RESIDUALS' | 'MODEL_NATIVE_SHORT_HISTORY'
+
+export interface ForecastUncertaintyBand {
+  status: 'AVAILABLE' | 'NOT_AVAILABLE'
+  source: ForecastUncertaintyBandSource | null
+  policyVersion: string
+  coverage: 0.8
+  lower: number | null
+  upper: number | null
+  sampleCount: number
+  calibrationStatus: 'CALIBRATED' | 'INSUFFICIENT_SAMPLE' | 'NOT_AVAILABLE'
+  calibrationMethod: string | null
+  calibrationVersion: string | null
+  reasonCode: string | null
+  identity?: ForecastPredictionBandIdentity
+}
+
+export interface ForecastSelectionMetadata {
+  modelFamily: string
+  selectedVariant: string
+  selectedParameters: Record<string, unknown>
+  selectionScore: number | null
+  selectionMetric: string | null
+  fitStatus: string
+  failureReason: string | null
+  uncertaintyBand?: ForecastUncertaintyBand | null
 }
 
 export type ForecastCapabilityStatus = 'AVAILABLE' | 'NOT_AVAILABLE' | 'UNSUPPORTED' | 'FAILED'
@@ -162,6 +230,7 @@ export interface ForecastCurrentPoint {
   horizonSteps: number
   forecastDate: string
   forecastValue: number | null
+  metadata?: ForecastSelectionMetadata | null
 }
 
 export type ForecastCurrentFreshnessStatus = 'FRESH' | 'STALE'
@@ -192,7 +261,10 @@ export type RollingDailyProductionForecastBandReasonCode =
   | 'SOURCE_DATA_UNAVAILABLE'
   | 'UNSUPPORTED_FREQUENCY'
 
-export type RollingDailyProductionForecastBandSource = 'EMPIRICAL_ANCHOR' | 'INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS'
+export type RollingDailyProductionForecastBandSource =
+  | 'EMPIRICAL_ANCHOR'
+  | 'INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS'
+  | ForecastUncertaintyBandSource
 
 export interface RollingDailyProductionForecastBand {
   status: 'AVAILABLE' | 'NOT_AVAILABLE'
@@ -200,6 +272,13 @@ export interface RollingDailyProductionForecastBand {
   source: RollingDailyProductionForecastBandSource | null
   lower: number | null
   upper: number | null
+  policyVersion?: string
+  coverage?: 0.8
+  sampleCount?: number | null
+  calibrationStatus?: 'CALIBRATED' | 'INSUFFICIENT_SAMPLE' | 'NOT_AVAILABLE'
+  calibrationMethod?: string | null
+  calibrationVersion?: string | null
+  rollingDailySource?: 'EMPIRICAL_ANCHOR' | 'INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS' | 'MODEL_NATIVE_SHORT_HISTORY' | null
 }
 
 export interface RollingDailyProductionForecastPathPoint {
@@ -325,6 +404,32 @@ export interface ForecastVerificationRecord {
   maseScale: number
 }
 
+export interface ForecastVerificationMetrics {
+  mae: number | null
+  rmse: number | null
+  mase: number | null
+  smape: number | null
+  directionalAccuracy: number | null
+  bias: number | null
+}
+
+export type ForecastVerificationConfidenceCode =
+  | 'LIMITED'
+  | 'MODERATE'
+  | 'SUFFICIENT'
+  | 'UNAVAILABLE'
+
+export interface ForecastVerificationQualitySummary {
+  policyVersion: 'FORECAST_VERIFICATION_QUALITY_V1'
+  averageVerificationPercent: number | null
+  directionalAccuracyPercent: number | null
+  confidenceCode: ForecastVerificationConfidenceCode
+  confidenceLevel: 1 | 2 | 3 | null
+  comparableOriginCount: number
+  requiredOriginCount: number
+  sampleCompletenessPercent: number
+}
+
 export interface ForecastVerificationHorizon {
   horizon: string
   horizonSteps: number
@@ -332,8 +437,40 @@ export interface ForecastVerificationHorizon {
   expectedOrigins: number
   successfulOrigins: number
   failedOrigins: number
+  pendingOrigins?: number
   coverage: number
+  metrics?: ForecastVerificationMetrics | null
+  quality?: ForecastVerificationQualitySummary
   records: ForecastVerificationRecord[]
+}
+
+export type HistoricalVerificationStatus =
+  | 'AVAILABLE'
+  | 'LIMITED_SAMPLE'
+  | 'INSUFFICIENT_HISTORY'
+  | 'NOT_PREPARED'
+  | 'FAILED'
+
+export interface HistoricalVerificationHorizonSummary {
+  status: Exclude<HistoricalVerificationStatus, 'NOT_PREPARED'>
+  originCount: number
+  expectedOriginCount: number
+  failedOriginCount: number
+  pendingOriginCount: number
+  minimumOriginCount: number
+  coverage: number
+  warningCode: 'SMALL_SAMPLE' | 'NO_LAWFUL_OUT_OF_SAMPLE_ORIGIN' | 'ALL_ORIGINS_FAILED' | null
+}
+
+export interface HistoricalVerificationSummary {
+  contractVersion: 'HISTORICAL_VERIFICATION_V2'
+  status: HistoricalVerificationStatus
+  originCount: number
+  expectedOriginCount: number
+  failedOriginCount: number
+  pendingOriginCount: number
+  coverage: number
+  horizons: Record<string, HistoricalVerificationHorizonSummary>
 }
 
 export interface ForecastAvailableBase {
@@ -359,6 +496,7 @@ export interface BenchmarkForecastCurrentAvailableResult extends ForecastAvailab
 
 export interface BenchmarkForecastVerificationAvailableResult extends ForecastAvailableBase {
   verification: Record<string, ForecastVerificationHorizon>
+  historicalVerification?: HistoricalVerificationSummary
 }
 
 export interface ForecastUnavailableResult {
@@ -369,6 +507,7 @@ export interface ForecastUnavailableResult {
   targetSemantics: ForecastTargetSemantics
   methodId: ForecastMethodId
   reason: string
+  historicalVerification?: HistoricalVerificationSummary
 }
 
 export type BenchmarkForecastCurrentResult = BenchmarkForecastCurrentAvailableResult | ForecastUnavailableResult

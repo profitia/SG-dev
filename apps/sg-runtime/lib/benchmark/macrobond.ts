@@ -1359,7 +1359,46 @@ export async function fetchMacrobondSeriesHistory(seriesName: string): Promise<B
     throw new BenchmarkAppError('PROVIDER_SERIES_NOT_FOUND', `Macrobond series ${seriesName} could not be loaded.`, 404)
   }
 
-  const metadata = item.metadata ?? {}
+  const seriesMetadata = item.metadata ?? {}
+  const seriesDisplayName = getMetadataString(seriesMetadata, ['Title', 'Description', 'PrimName', 'Name']) ?? seriesName
+  const seriesUnit = getMetadataString(seriesMetadata, ['Unit', 'DisplayUnit', 'TitleUnit'])
+  let metadata = seriesMetadata
+
+  if (seriesDisplayName === seriesName || !seriesUnit) {
+    try {
+      const entityMetadata = await fetchMacrobondEntityMetadata(seriesName)
+      metadata = {
+        ...entityMetadata,
+        ...seriesMetadata,
+      }
+    } catch {
+      // History remains lawful provider data even when optional descriptive metadata enrichment is unavailable.
+    }
+  }
+
+  const entityDisplayName = getMetadataString(metadata, ['Title', 'Description', 'PrimName', 'Name']) ?? seriesName
+  const entitySource = getMetadataString(metadata, ['Source'])
+  const needsDisplayMetadata = entityDisplayName === seriesName || /^src_/i.test(entitySource ?? '')
+  if (needsDisplayMetadata) {
+    try {
+      const displayPayload = await searchMacrobondDisplayEntities(seriesName)
+      const displayResult = (displayPayload.results ?? []).find((result) => getString(result, 'Name') === seriesName)
+
+      if (displayResult) {
+        metadata = {
+          ...metadata,
+          Title: getString(displayResult, 'Title') ?? getString(displayResult, 'Description') ?? entityDisplayName,
+          Description: getString(displayResult, 'Description') ?? getMetadataString(metadata, ['Description']),
+          DisplayUnit: getString(displayResult, 'Unit') ?? getMetadataString(metadata, ['DisplayUnit', 'TitleUnit']),
+          Frequency: getString(displayResult, 'Frequency') ?? getMetadataString(metadata, ['Frequency', 'SamplingPeriod']),
+          Currency: getString(displayResult, 'Currency') ?? getMetadataString(metadata, ['Currency']),
+          Source: getString(displayResult, 'Source') ?? getMetadataString(metadata, ['Source']),
+        }
+      }
+    } catch {
+      // A missing display-search label must not make otherwise lawful provider history unavailable.
+    }
+  }
   const rawDates = Array.isArray(item.dates) ? item.dates : []
   const rawValues = Array.isArray(item.values) ? item.values : []
   const historical = rawDates
@@ -1367,6 +1406,9 @@ export async function fetchMacrobondSeriesHistory(seriesName: string): Promise<B
     .filter((point): point is BenchmarkPreviewPoint => point !== null)
 
   const displayName = getMetadataString(metadata, ['Title', 'Description', 'PrimName', 'Name']) ?? seriesName
+  const currency = getMetadataString(metadata, ['Currency'])
+  const rawUnit = getMetadataString(metadata, ['Unit', 'DisplayUnit', 'TitleUnit'])
+  const unit = rawUnit?.replace(/^Currency Unit(?=\/|\s|$)/i, currency?.toUpperCase() ?? 'Currency Unit') ?? null
 
   return {
     providerSeries: {
@@ -1376,8 +1418,8 @@ export async function fetchMacrobondSeriesHistory(seriesName: string): Promise<B
     },
     displayName,
     frequency: getMetadataString(metadata, ['Frequency', 'SamplingPeriod']),
-    currency: getMetadataString(metadata, ['Currency']),
-    unit: getMetadataString(metadata, ['Unit']),
+    currency,
+    unit,
     source: getMetadataString(metadata, ['Source']),
     historical,
   }

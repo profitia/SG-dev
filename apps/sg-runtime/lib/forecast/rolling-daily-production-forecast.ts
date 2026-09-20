@@ -10,7 +10,9 @@ import { z } from 'zod'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 import { serverEnv } from '@/lib/env'
-import type { ForecastTargetBasis } from '@/lib/forecast/contracts'
+import type { ForecastTargetBasis, ForecastUncertaintyBand } from '@/lib/forecast/contracts'
+import { createCurrentForecastStatisticalCompatibility } from '@/lib/forecast/identity'
+import { selectTrailingRollingDailyCurrentHistory } from '@/lib/forecast/rolling-daily-current-ownership'
 import {
   ROLLING_DAILY_INSUFFICIENT_TECHNICAL_TRAINING_REASON,
   ROLLING_DAILY_METHODOLOGICAL_CALIBRATION_MINIMUM_STATUS,
@@ -62,6 +64,8 @@ export const RollingDailyProductionWarningCodeSchema = z.enum([
 const RollingDailyContractBandSourceSchema = z.enum([
   'EMPIRICAL_ANCHOR',
   'INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS',
+  'EMPIRICAL_EXACT_RESIDUALS',
+  'MODEL_NATIVE_SHORT_HISTORY',
 ])
 
 const RollingDailyContractBandBaseSchema = z.object({
@@ -70,6 +74,13 @@ const RollingDailyContractBandBaseSchema = z.object({
   source: RollingDailyContractBandSourceSchema.nullable(),
   lower: z.number().nullable(),
   upper: z.number().nullable(),
+  policyVersion: z.string().optional(),
+  coverage: z.literal(0.8).optional(),
+  sampleCount: z.number().int().nonnegative().nullable().optional(),
+  calibrationStatus: z.enum(['CALIBRATED', 'INSUFFICIENT_SAMPLE', 'NOT_AVAILABLE']).optional(),
+  calibrationMethod: z.string().nullable().optional(),
+  calibrationVersion: z.string().nullable().optional(),
+  rollingDailySource: z.enum(['EMPIRICAL_ANCHOR', 'INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS', 'MODEL_NATIVE_SHORT_HISTORY']).nullable().optional(),
 })
 
 const RollingDailyContractBandSchema = RollingDailyContractBandBaseSchema.superRefine((value, context) => {
@@ -315,7 +326,10 @@ type RollingDailyCurrentForecastBridgeRequest = {
   calibrationGroups: RollingDailyCurrentForecastBridgeCalibrationGroup[]
 }
 
-type RollingDailyCurrentForecastBridgeBandSource = 'EMPIRICAL_ANCHOR' | 'INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS'
+type RollingDailyCurrentForecastBridgeBandSource =
+  | 'EMPIRICAL_ANCHOR'
+  | 'INTERPOLATED_BETWEEN_EMPIRICAL_ANCHORS'
+  | 'MODEL_NATIVE_SHORT_HISTORY'
 type RollingDailyCurrentForecastBridgeBandStatus =
   | 'AVAILABLE'
   | 'INSUFFICIENT_CALIBRATION_HISTORY'
@@ -325,6 +339,7 @@ type RollingDailyCurrentForecastBridgeBandStatus =
 
 type RollingDailyCurrentForecastBridgePathPoint = {
   date: string
+  projectedStepCount?: number
   pointForecast: number
   lowerP10: number | null
   upperP90: number | null
@@ -332,6 +347,7 @@ type RollingDailyCurrentForecastBridgePathPoint = {
   bandSource: RollingDailyCurrentForecastBridgeBandSource | null
   p10ResidualOffset: number | null
   p90ResidualOffset: number | null
+  uncertaintyBand?: ForecastUncertaintyBand | null
 }
 
 type RollingDailyCurrentForecastBridgeAnchor = {
@@ -345,6 +361,8 @@ type RollingDailyCurrentForecastBridgeAnchor = {
   bandSource: RollingDailyCurrentForecastBridgeBandSource | null
   p10ResidualOffset: number | null
   p90ResidualOffset: number | null
+  projectedStepCount?: number
+  uncertaintyBand?: ForecastUncertaintyBand | null
 }
 
 type RollingDailyCurrentForecastBridgeResponse = {
@@ -426,6 +444,12 @@ type RollingDailyProductionForecastDependencies = {
   now: () => Date
 }
 
+const ROLLING_DAILY_CURRENT_CALIBRATION_CONTEXT = {
+  sourceFrequency: 'DAILY',
+  targetCadence: 'DAILY',
+  targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+} as const
+
 function normalizeOptionalString(value?: string | null) {
   const trimmed = value?.trim()
   return trimmed && trimmed.length > 0 ? trimmed : null
@@ -435,8 +459,9 @@ function toIsoDateOnly(value: string | null) {
   return value ? value.slice(0, 10) : null
 }
 
-function normalizeDailyObservationDay(value: string) {
-  return value.trim().slice(0, 10)
+function normalizeDailyObservationDay(value: string | Date) {
+  const raw = value instanceof Date ? value.toISOString() : String(value)
+  return raw.trim().slice(0, 10)
 }
 
 function addCalendarMonthsClamped(value: string, months: number) {
@@ -517,6 +542,19 @@ function buildBenchmarkContextFromPreparedHistory(history: RollingDailyHistoryPa
     sourceLatestObservationDate: latestLawfulPoint ? normalizeDailyObservationDay(latestLawfulPoint.date) : null,
     sourceLatestObservationValue: latestLawfulPoint?.value ?? null,
   }
+}
+
+function normalizeBenchmarkContextForCurrentForecast(
+  benchmarkContext: RollingDailyProductionBenchmarkContext,
+  targetBasis: ForecastTargetBasis,
+): RollingDailyProductionBenchmarkContext {
+  if (targetBasis !== 'POINT_IN_TIME') {
+    return benchmarkContext
+  }
+
+  return buildBenchmarkContextFromPreparedHistory(
+    selectTrailingRollingDailyCurrentHistory(benchmarkContext.history),
+  )
 }
 
 function normalizePreparedHistoryForNaiveCurrent(input: {
@@ -1083,14 +1121,27 @@ function mapBand(point: {
   upperP90: number | null
   bandStatus: RollingDailyCurrentForecastBridgeBandStatus
   bandSource: RollingDailyCurrentForecastBridgeBandSource | null
+  uncertaintyBand?: ForecastUncertaintyBand | null
 }) {
+  const uncertaintyBand = point.uncertaintyBand
   if (point.bandStatus === 'AVAILABLE') {
     return {
       status: 'AVAILABLE' as const,
       reasonCode: null,
-      source: point.bandSource,
+      source: uncertaintyBand?.source ?? point.bandSource,
+      rollingDailySource: point.bandSource,
       lower: point.lowerP10,
       upper: point.upperP90,
+      ...(uncertaintyBand
+        ? {
+            policyVersion: uncertaintyBand.policyVersion,
+            coverage: uncertaintyBand.coverage,
+            sampleCount: uncertaintyBand.sampleCount,
+            calibrationStatus: uncertaintyBand.calibrationStatus,
+            calibrationMethod: uncertaintyBand.calibrationMethod,
+            calibrationVersion: uncertaintyBand.calibrationVersion,
+          }
+        : {}),
     }
   }
 
@@ -1100,6 +1151,17 @@ function mapBand(point: {
     source: null,
     lower: null,
     upper: null,
+    ...(uncertaintyBand
+      ? {
+          policyVersion: uncertaintyBand.policyVersion,
+          coverage: uncertaintyBand.coverage,
+          sampleCount: uncertaintyBand.sampleCount,
+          calibrationStatus: uncertaintyBand.calibrationStatus,
+          calibrationMethod: uncertaintyBand.calibrationMethod,
+          calibrationVersion: uncertaintyBand.calibrationVersion,
+          rollingDailySource: point.bandSource,
+        }
+      : {}),
   }
 }
 
@@ -1117,6 +1179,23 @@ function deriveCalibrationAvailabilityStatus(groups: RollingDailyCalibrationGrou
   }
 
   return 'NOT_AVAILABLE' as const
+}
+
+function selectEligibleCalibrationGroupsForCurrent(
+  groups: RollingDailyCalibrationGroupArtifact[],
+): RollingDailyCalibrationGroupArtifact[] {
+  const currentCompatibility = createCurrentForecastStatisticalCompatibility(
+    ROLLING_DAILY_CURRENT_CALIBRATION_CONTEXT,
+  )
+
+  if (currentCompatibility.calibrationPolicy !== 'EXACT_STATISTICAL_MATCH_ONLY') {
+    return groups
+  }
+
+  // Persisted rolling-daily calibration groups are full-verification aggregates.
+  // They do not yet carry the exact statistical identity and lineage proof
+  // required to lawfully calibrate current forecasts under Stage 10 rules.
+  return []
 }
 
 function deriveCalibrationFreshnessStatus(
@@ -1215,7 +1294,7 @@ function mapAvailableResult(input: {
       pointForecast: anchor.pointForecast,
       band: {
         ...mapBand(anchor),
-        sampleCount: group?.sampleCount ?? null,
+        sampleCount: anchor.uncertaintyBand?.sampleCount ?? group?.sampleCount ?? null,
         p10ResidualOffset: anchor.p10ResidualOffset,
         p90ResidualOffset: anchor.p90ResidualOffset,
       },
@@ -1342,16 +1421,18 @@ export function createRollingDailyProductionForecastService(
           : resolvedDependencies.loadBenchmarkContext(input.seriesId),
         resolvedDependencies.repository.readCalibrationAuthority(identity),
       ])
+      const normalizedBenchmarkContext = normalizeBenchmarkContextForCurrentForecast(benchmarkContext, targetBasis)
+      const eligibleCalibrationGroups = selectEligibleCalibrationGroupsForCurrent(calibrationAuthority.groups)
 
-      const latestObservationDate = benchmarkContext.sourceLatestObservationDate
-      const latestObservationValue = benchmarkContext.sourceLatestObservationValue
+      const latestObservationDate = normalizedBenchmarkContext.sourceLatestObservationDate
+      const latestObservationValue = normalizedBenchmarkContext.sourceLatestObservationValue
       const generatedAt = resolvedDependencies.now().toISOString()
 
       if (!latestObservationDate || latestObservationValue === null) {
         return RollingDailyProductionForecastUnavailableSchema.parse({
           contractVersion: ROLLING_DAILY_PRODUCTION_CONTRACT_VERSION,
           status: 'FAILED',
-          benchmark: benchmarkContext.benchmark,
+          benchmark: normalizedBenchmarkContext.benchmark,
           forecastMethod: {
             id: ROLLING_DAILY_METHOD_ID,
             version: ROLLING_DAILY_METHOD_VERSION,
@@ -1375,7 +1456,7 @@ export function createRollingDailyProductionForecastService(
             calibrationUpdatedAt: null,
             calibrationLastResidualAvailabilityDate: null,
             inputSource: null,
-            sourceHistoryFingerprint: buildRollingDailyHistoryFingerprint(benchmarkContext.history),
+            sourceHistoryFingerprint: buildRollingDailyHistoryFingerprint(normalizedBenchmarkContext.history),
           },
           warnings: [],
         })
@@ -1388,8 +1469,8 @@ export function createRollingDailyProductionForecastService(
         methodVersion: ROLLING_DAILY_METHOD_VERSION,
         minimumTrainingObservations: input.minimumTrainingObservations ?? DEFAULT_ROLLING_DAILY_MINIMUM_TRAINING_OBSERVATIONS,
         minimumCalibrationSamples: input.minimumCalibrationSamples ?? DEFAULT_ROLLING_DAILY_MINIMUM_CALIBRATION_SAMPLES,
-        history: benchmarkContext.history,
-        calibrationGroups: calibrationAuthority.groups.map((group) => ({
+        history: normalizedBenchmarkContext.history,
+        calibrationGroups: eligibleCalibrationGroups.map((group) => ({
           horizonLabel: group.horizonLabel,
           horizonMonths: group.horizonMonths,
           sampleCount: group.sampleCount,
@@ -1405,8 +1486,8 @@ export function createRollingDailyProductionForecastService(
 
       if (bridgeResponse.status !== 'AVAILABLE') {
         return mapUnavailableResult({
-          benchmark: benchmarkContext.benchmark,
-          benchmarkContext,
+          benchmark: normalizedBenchmarkContext.benchmark,
+          benchmarkContext: normalizedBenchmarkContext,
           bridgeResponse,
           generatedAt,
           sourceLatestObservationDate: latestObservationDate,
@@ -1414,10 +1495,10 @@ export function createRollingDailyProductionForecastService(
       }
 
       return mapAvailableResult({
-        benchmark: benchmarkContext.benchmark,
-        benchmarkContext,
+        benchmark: normalizedBenchmarkContext.benchmark,
+        benchmarkContext: normalizedBenchmarkContext,
         bridgeResponse,
-        calibrationGroups: calibrationAuthority.groups,
+        calibrationGroups: eligibleCalibrationGroups,
         maintenanceState: calibrationAuthority.state,
         sourceLatestObservationDate: latestObservationDate,
         sourceLatestObservationValue: latestObservationValue,

@@ -37,6 +37,7 @@ def build_payload(
     method_version: str = ROLLING_DAILY_POINT_IN_TIME_METHOD_VERSION,
     input_source: str = "Macrobond",
     force_calibration_refresh: bool = False,
+    max_origins_per_run: int | None = None,
 ) -> dict[str, object]:
     return {
         "seriesId": "wocaes0074",
@@ -49,6 +50,7 @@ def build_payload(
         "minimumCalibrationSamples": 20,
         "lastProcessedOriginDate": last_processed_origin_date,
         "forceCalibrationRefresh": force_calibration_refresh,
+        "maxOriginsPerRun": max_origins_per_run,
         "sourceHistoryFingerprint": "ignored-by-script",
         "existingRecords": existing_records,
         "history": {
@@ -300,6 +302,23 @@ class RollingDailyIncrementalMaintenanceTests(unittest.TestCase):
                 self.assertEqual(output["maintenance"]["maturedRecordCount"], 0)
                 self.assertTrue(all(record["modelId"] == model_id for record in output["newRecords"]))
 
+    def test_bounded_origin_limit_advances_checkpoint_only_to_last_processed_origin(self) -> None:
+        output = run_script(
+            build_payload(
+                end=date(2024, 5, 31),
+                last_processed_origin_date="2024-03-29",
+                existing_records=[],
+                model_id="naive",
+                max_origins_per_run=2,
+            )
+        )
+
+        self.assertEqual(output["status"], "AVAILABLE")
+        self.assertEqual(output["maintenance"]["newOriginCount"], 2)
+        self.assertEqual(len(output["maintenance"]["newOriginDates"]), 2)
+        self.assertEqual(output["maintenance"]["lastProcessedOriginDate"], output["maintenance"]["newOriginDates"][-1])
+        self.assertLess(output["maintenance"]["lastProcessedOriginDate"], output["sourceHistory"]["latestObservationDate"])
+
     def test_arima_historical_origin_floor_keeps_pre_2024_training_history(self) -> None:
         payload = {
             "seriesId": "wocaes0074",
@@ -330,6 +349,11 @@ class RollingDailyIncrementalMaintenanceTests(unittest.TestCase):
         self.assertGreaterEqual(first_record["forecastOriginAt"], "2024-01-01")
         self.assertLess(first_record["trainingHistoryStartAt"], "2024-01-01")
         self.assertEqual(first_record["trainingHistoryEndAt"], first_record["forecastOriginAt"])
+        self.assertEqual(
+            first_record["metadata"]["verificationIdentityVersion"],
+            "ROLLING_DAILY_VERIFICATION_IDENTITY_V2",
+        )
+        self.assertEqual(len(first_record["metadata"]["trainingHistoryFingerprint"]), 64)
 
     def test_arima_uses_one_fit_per_origin_and_lawful_daily_origins_only(self) -> None:
         original_fit_path_model = incremental_script.fit_path_model

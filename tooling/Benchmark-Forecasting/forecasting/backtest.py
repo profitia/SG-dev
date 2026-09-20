@@ -15,6 +15,8 @@ from forecasting.contracts import (
 )
 from forecasting.models.base import ForecastModel, ModelForecastError
 
+DEFAULT_MASE_SCALE_MINIMUM_OBSERVATIONS = 2
+
 
 def add_months(base_date: date, months: int) -> date:
     zero_based_month = base_date.month - 1 + months
@@ -30,10 +32,26 @@ def compute_mase_scale(history: list[Observation]) -> float:
     return sum(diffs) / len(diffs)
 
 
-def expected_origin_count(total_observations: int, horizon_steps: int, min_training_window: int) -> int:
-    if total_observations < min_training_window + horizon_steps:
+def resolve_verification_origin_minimum_observations(
+    min_training_window: int,
+    mase_scale_minimum_observations: int = DEFAULT_MASE_SCALE_MINIMUM_OBSERVATIONS,
+) -> int:
+    return max(min_training_window, mase_scale_minimum_observations)
+
+
+def expected_origin_count(
+    total_observations: int,
+    horizon_steps: int,
+    min_training_window: int,
+    mase_scale_minimum_observations: int = DEFAULT_MASE_SCALE_MINIMUM_OBSERVATIONS,
+) -> int:
+    verification_origin_minimum = resolve_verification_origin_minimum_observations(
+        min_training_window,
+        mase_scale_minimum_observations,
+    )
+    if total_observations < verification_origin_minimum + horizon_steps:
         return 0
-    return total_observations - min_training_window - horizon_steps + 1
+    return total_observations - verification_origin_minimum - horizon_steps + 1
 
 
 def generate_backtest_records(
@@ -43,12 +61,17 @@ def generate_backtest_records(
     horizon_steps: int,
     min_training_window: int,
     validation_origin_dates: set[date] | None = None,
+    mase_scale_minimum_observations: int = DEFAULT_MASE_SCALE_MINIMUM_OBSERVATIONS,
 ) -> BacktestRun:
     observations = list(series.observations)
     last_origin_index = len(observations) - horizon_steps
+    verification_origin_minimum = resolve_verification_origin_minimum_observations(
+        min_training_window,
+        mase_scale_minimum_observations,
+    )
     origin_ends = [
         origin_end
-        for origin_end in range(min_training_window, last_origin_index + 1)
+        for origin_end in range(verification_origin_minimum, last_origin_index + 1)
         if validation_origin_dates is None or observations[origin_end - 1].date in validation_origin_dates
     ]
     expected_origins = len(origin_ends)
@@ -135,7 +158,7 @@ def generate_current_forecast(
             )
         forecast_date = add_months(history[-1].date, horizon_steps)
     try:
-        model_forecast = model.forecast_with_metadata(history, horizon_steps)
+        model_forecast = model.forecast_with_uncertainty(history, horizon_steps)
     except ModelForecastError as error:
         return CurrentForecast(
             horizon=horizon_label,

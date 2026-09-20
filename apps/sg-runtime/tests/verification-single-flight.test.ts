@@ -3,17 +3,21 @@ import test from 'node:test'
 
 import {
   buildVerificationLogicalArtifactKey,
+  PERIOD_VERIFICATION_CONFIGURATION_ID,
+  ROLLING_DAILY_VERIFICATION_CONFIGURATION_ID,
   VerificationForecastSingleFlight,
   type VerificationLogicalArtifactIdentity,
   type VerificationSingleFlightEvent,
 } from '../lib/forecast/verification-single-flight'
 
 const identity: VerificationLogicalArtifactIdentity = {
+  artifactScope: 'FULL_VERIFICATION',
   seriesId: 'wocaes0280',
   targetBasis: 'MONTHLY_AVERAGE',
   targetSemantics: 'MONTHLY_AVERAGE',
   methodId: 'MONTHLY_AVERAGE',
   methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+  trainingWindowPolicyId: 'FULL_EXPANDING_HISTORY_PER_ORIGIN@full-expanding-history-per-origin-v1',
   modelId: 'naive',
   inputSource: 'DYNAMIC_MARKET_DATA_STORE',
   historyFingerprint: 'history-a',
@@ -21,8 +25,25 @@ const identity: VerificationLogicalArtifactIdentity = {
   targetCadence: 'MONTHLY',
   frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
   verificationHorizonSetId: '{"1M":1,"3M":3,"6M":6,"12M":12}',
-  verificationConfigurationId: '{"minTrainingWindow":36}',
+  verificationConfigurationId: PERIOD_VERIFICATION_CONFIGURATION_ID,
   originPolicyId: 'EXPANDING_WINDOW_ROLLING_ORIGIN@expanding-window-rolling-origin-v1',
+}
+
+const rollingDailyIdentity: VerificationLogicalArtifactIdentity = {
+  ...identity,
+  artifactScope: 'RECENT_VERIFICATION',
+  seriesId: 'wocaes0074',
+  targetBasis: 'POINT_IN_TIME',
+  targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+  methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+  methodVersion: 'rolling-daily-point-in-time-v1',
+  trainingWindowPolicyId: 'RECENT_SAME_POLICY_AS_CURRENT@recent-any-matured-horizon-v2',
+  inputSource: 'ROLLING_DAILY_MARKET_DATA_STORE',
+  historyFingerprint: 'rolling-history-a',
+  sourceFrequency: 'DAILY',
+  targetCadence: 'DAILY',
+  frequencyIdentity: 'FORECAST_CADENCE_V1|source=DAILY|target=DAILY',
+  verificationConfigurationId: ROLLING_DAILY_VERIFICATION_CONFIGURATION_ID,
 }
 
 test('Verification logical key is deterministic, exact-field isolated, and fail-closed', () => {
@@ -36,6 +57,7 @@ test('Verification logical key is deterministic, exact-field isolated, and fail-
     'targetSemantics',
     'targetBasis',
     'methodVersion',
+    'trainingWindowPolicyId',
     'sourceFrequency',
     'targetCadence',
     'frequencyIdentity',
@@ -79,7 +101,9 @@ test('ten exact-key Verification callers share one owner and release the entry',
     logicalArtifactKey: key,
     requestId: `request-${index + 1}`,
     operation,
-    emit: (event) => events.push(event),
+    emit: (event) => {
+      events.push(event)
+    },
   }))
 
   await new Promise((resolve) => setImmediate(resolve))
@@ -126,6 +150,13 @@ test('different Verification keys run independently', async () => {
   releaseOperations?.()
   assert.deepEqual(await Promise.all([first, second]), ['first', 'second'])
   assert.equal(registry.activeEntryCount, 0)
+})
+
+test('rolling-daily and period verification identities stay exact-match isolated', () => {
+  assert.notEqual(
+    buildVerificationLogicalArtifactKey(identity),
+    buildVerificationLogicalArtifactKey(rollingDailyIdentity),
+  )
 })
 
 test('Verification owner failure is shared, cleaned up, and permits retry', async () => {
@@ -182,14 +213,18 @@ test('late arrivals join before settlement and become new owners after release',
     logicalArtifactKey: key,
     requestId: 'owner',
     operation,
-    emit: (event) => events.push(event),
+    emit: (event) => {
+      events.push(event)
+    },
   })
   await new Promise((resolve) => setImmediate(resolve))
   const lateWaiter = registry.run({
     logicalArtifactKey: key,
     requestId: 'late-waiter',
     operation,
-    emit: (event) => events.push(event),
+    emit: (event) => {
+      events.push(event)
+    },
   })
 
   assert.equal(events.filter((event) => event === 'single_flight_waiter_joined').length, 1)

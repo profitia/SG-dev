@@ -4,7 +4,7 @@ import unittest
 from datetime import date
 
 from data_sources.postgres import rows_to_time_series
-from forecasting.backtest import compute_mase_scale, generate_backtest_records
+from forecasting.backtest import compute_mase_scale, expected_origin_count, generate_backtest_records
 from forecasting.contracts import BenchmarkDefinition, Frequency, Observation, TimeSeries
 from forecasting.metrics import bias, directional_accuracy, mae, mase, rmse, smape
 from forecasting.models.naive import NaiveLastValueModel
@@ -92,6 +92,18 @@ class Phase1Tests(unittest.TestCase):
         records = generate_backtest_records(series, NaiveLastValueModel(), "1M", 1, 36)
         self.assertEqual(compute_mase_scale(list(series.observations[:36])), 1.0)
         self.assertEqual(mase(records), 1.0)
+
+    def test_mase_scale_fails_closed_for_single_observation(self) -> None:
+        with self.assertRaisesRegex(ValueError, "MASE requires at least two training observations"):
+            compute_mase_scale([Observation(date(2021, 1, 1), 10.0)])
+
+    def test_naive_verification_starts_after_metric_minimum_of_two_observations(self) -> None:
+        series = monthly_series(4)
+        records = generate_backtest_records(series, NaiveLastValueModel(), "1M", 1, 1)
+
+        self.assertEqual(expected_origin_count(series.observation_count, 1, 1), 2)
+        self.assertEqual(len(records), 2)
+        self.assertEqual(records[0].forecast_origin, date(2021, 2, 1))
 
     def test_duplicate_conflicting_observation_fails(self) -> None:
         benchmark = BenchmarkDefinition(

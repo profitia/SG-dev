@@ -6,10 +6,17 @@ import {
   auditEndOfPeriodDeltaSurfaces,
   buildEndOfPeriodDeltaSurfaces,
   prepareVisibleSeriesGeometry,
+  usesEndOfPeriodDeltaSurface,
 } from '@/lib/chart/end-of-period-delta-geometry'
 import type { TimeSeriesViewerPoint, TimeSeriesViewerSeries } from '@/lib/time-series-viewer/time-series-viewer-contract'
 
 const EPSILON = 1e-8
+
+test('only End of Period uses the specialized visual delta surface', () => {
+  assert.equal(usesEndOfPeriodDeltaSurface('END_OF_PERIOD'), true)
+  assert.equal(usesEndOfPeriodDeltaSurface('POINT_IN_TIME'), false)
+  assert.equal(usesEndOfPeriodDeltaSurface('MONTHLY_AVERAGE'), false)
+})
 
 function createPoint(date: string, value: number, scenarioType: string): TimeSeriesViewerPoint {
   return {

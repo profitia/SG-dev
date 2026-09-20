@@ -1,7 +1,63 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { createForecastLibraryService, type ForecastBridge, type ForecastLibraryRepository, buildForecastHistoryFingerprint } from '../lib/forecast/service'
+import {
+  createForecastPreparationExecutionContextRegistry,
+  createInMemoryForecastPreparationExecutionAdmission,
+  createNoopForecastPreparationExecutionLedger,
+} from '../lib/forecast/execution-ledger'
+import {
+  createCurrentForecastStatisticalCompatibility,
+  createFullVerificationStatisticalCompatibility,
+  createLegacyFrequencySpecificCurrentForecastStatisticalCompatibility,
+  createLegacyUnresolvedForecastStatisticalCompatibility,
+  createLegacyVerificationStatisticalCompatibility,
+  createRecentVerificationStatisticalCompatibility,
+  createStrictTrailing12MCurrentForecastStatisticalCompatibility,
+} from '../lib/forecast/identity'
+import type { UserFacingForecastModelId } from '../lib/forecast/contracts'
+import type { ExactForecastCapabilityResolution } from '../lib/forecast/capability-resolver'
+import {
+  buildForecastHistoryFingerprint,
+  buildRecentVerificationArtifact,
+  createForecastLibraryService,
+  type ForecastBridge,
+  type ForecastLibraryRepository,
+} from '../lib/forecast/service'
+
+function createTestForecastLibraryService(
+  dependencies: Parameters<typeof createForecastLibraryService>[0] = {},
+) {
+  return createForecastLibraryService({
+    ...dependencies,
+    executionAdmission: dependencies.executionAdmission ?? createInMemoryForecastPreparationExecutionAdmission(),
+  })
+}
+
+async function withEnv<T>(overrides: Record<string, string | undefined>, run: () => Promise<T>): Promise<T> {
+  const previousValues = new Map<string, string | undefined>()
+
+  for (const [key, value] of Object.entries(overrides)) {
+    previousValues.set(key, process.env[key])
+    if (value === undefined) {
+      delete process.env[key]
+      continue
+    }
+    process.env[key] = value
+  }
+
+  try {
+    return await run()
+  } finally {
+    for (const [key, value] of previousValues.entries()) {
+      if (value === undefined) {
+        delete process.env[key]
+        continue
+      }
+      process.env[key] = value
+    }
+  }
+}
 
 function createHistoryResponse() {
   return {
@@ -30,6 +86,49 @@ function createHistoryResponse() {
         { date: '2021-01-01T00:00:00', value: 1000 },
         { date: '2026-04-01T00:00:00', value: 1125 },
       ],
+    },
+  }
+}
+
+function createMonthlyHistoryResponse(length: number, startYear: number, startMonthIndex: number) {
+  const points = Array.from({ length }, (_, index) => {
+    const monthIndex = startMonthIndex + index
+    const year = startYear + Math.floor(monthIndex / 12)
+    const month = monthIndex % 12
+    return {
+      date: new Date(Date.UTC(year, month, 1)).toISOString(),
+      value: 100 + index,
+      sourceObservedAt: new Date(Date.UTC(year, month + 1, 0)).toISOString(),
+    }
+  })
+
+  return {
+    status: 'AVAILABLE' as const,
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: {
+      kind: 'POSTGRES_RUNTIME_SNAPSHOT' as const,
+      runId: 'cmrd3xvlu0000cedt8gczw378',
+    },
+    benchmark: {
+      seriesId: 'recent.series',
+      component: 'RECENT_SERIES',
+      description: 'Recent series',
+      frequency: 'MONTHLY',
+      expectedObservations: length,
+    },
+    history: {
+      seriesId: 'recent.series',
+      benchmarkName: 'Recent series',
+      description: 'Recent series',
+      frequency: 'MONTHLY',
+      start: points[0]!.date,
+      end: points.at(-1)!.date,
+      observations: length,
+      canonicalization: {
+        method: 'VALIDATE_NATIVE_MONTHLY_END_OF_PERIOD',
+        version: 'native-monthly-end-of-period-v1',
+      },
+      points,
     },
   }
 }
@@ -95,6 +194,126 @@ function createCurrentResponse(modelId = 'ets') {
         },
       },
       runtimeSeconds: 0.084,
+    },
+  }
+}
+
+function createPreparedReadBridge(historyResponse = createHistoryResponse()): ForecastBridge {
+  return {
+    async exportHistory() {
+      throw new Error('prepared reads should use the prepared execution context history export')
+    },
+    async exportCurrent() {
+      throw new Error('unused')
+    },
+    async exportVerification() {
+      throw new Error('unused')
+    },
+    async prepareExecutionContext() {
+      return {
+        async exportHistory() {
+          return historyResponse
+        },
+        async exportCurrent() {
+          throw new Error('unused')
+        },
+        async exportVerification() {
+          throw new Error('unused')
+        },
+      }
+    },
+  }
+}
+
+function createPreparedCapability(params: {
+  seriesId: string
+  modelId: UserFacingForecastModelId
+  targetSemantics: 'END_OF_PERIOD' | 'MONTHLY_AVERAGE'
+  sourceFrequency: 'MONTHLY' | 'WEEKLY' | 'QUARTERLY'
+  targetCadence: 'MONTHLY' | 'QUARTERLY'
+  availableObservations: number
+}): ExactForecastCapabilityResolution {
+  const businessTarget = params.targetSemantics === 'END_OF_PERIOD' ? 'END_OF_PERIOD' : 'AVERAGE'
+
+  return {
+    resolution: {} as never,
+    capability: {
+      identity: {
+        seriesId: params.seriesId,
+        modelId: params.modelId,
+        targetSemantics: params.targetSemantics,
+        methodId: params.targetSemantics,
+        methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+      },
+      sourceFrequency: params.sourceFrequency,
+      sourceFrequencyRecognized: true,
+      businessTarget,
+      targetCadence: params.targetCadence,
+      targetSemanticsSupported: true,
+      horizonSupportState: 'NOT_REQUESTED' as const,
+      horizonMonths: null,
+      horizonSteps: null,
+      semanticLawfulness: 'LAWFUL_WITH_PROVENANCE' as const,
+      admissionState: 'ADMITTED' as const,
+      provenanceStatus: 'PROVEN' as const,
+      implementationState: 'SUPPORTED' as const,
+      historyEligibility: 'ELIGIBLE' as const,
+      minimumRequiredObservations: 36,
+      availableObservations: params.availableObservations,
+      modelEligible: true,
+      currentForecastEligible: true,
+      verificationOriginCount: 24,
+      verificationEvidenceState: 'SUFFICIENT' as const,
+      predictionBandResidualCount: 30,
+      predictionBandState: 'AVAILABLE' as const,
+      targetPreparationState: 'PREPARED' as const,
+      currentPreparedState: 'READY' as const,
+      historicalPreparedState: 'READY' as const,
+      capabilityState: 'AVAILABLE' as const,
+    },
+    trace: {} as never,
+  }
+}
+
+function createPersistedVerificationPayload(modelId = 'ets') {
+  return {
+    '1M': {
+      horizon: '1M',
+      horizonSteps: 1,
+      origins: 28,
+      expectedOrigins: 28,
+      successfulOrigins: 28,
+      failedOrigins: 0,
+      coverage: 1,
+      metrics: {
+        mae: 10.5,
+        rmse: 12.4,
+        mase: 0.81,
+        smape: 0.073,
+        directionalAccuracy: 0.64,
+        bias: -1.2,
+      },
+      records: [
+        {
+          benchmarkId: 'wocaes0280',
+          modelId,
+          forecastOrigin: '2025-01-01T00:00:00',
+          horizon: '1M',
+          horizonSteps: 1,
+          forecastDate: '2025-02-01T00:00:00',
+          actualObservedAt: '2025-02-28T00:00:00',
+          originValue: 1000,
+          forecastValue: 1012,
+          actualValue: 1008,
+          error: 4,
+          absoluteError: 4,
+          delta: 12,
+          deltaPct: 0.012,
+          maseScale: 14.2,
+          metadata: null,
+        },
+      ],
+      failures: [],
     },
   }
 }
@@ -349,11 +568,33 @@ function createEndOfPeriodVerificationResponse(modelId = 'ets') {
   }
 }
 
-function persistedIdentity(targetBasis: 'MONTHLY_AVERAGE' | 'END_OF_PERIOD') {
+function persistedIdentity(
+  targetBasis: 'MONTHLY_AVERAGE' | 'END_OF_PERIOD',
+  artifactFamily: 'CURRENT' | 'VERIFICATION' | 'RECENT_VERIFICATION' = 'CURRENT',
+) {
+  const statisticalCompatibility = artifactFamily === 'CURRENT'
+    ? createCurrentForecastStatisticalCompatibility({
+        sourceFrequency: 'MONTHLY',
+        targetCadence: 'MONTHLY',
+        targetSemantics: targetBasis,
+      })
+    : artifactFamily === 'RECENT_VERIFICATION'
+      ? createRecentVerificationStatisticalCompatibility({
+          sourceFrequency: 'MONTHLY',
+          targetCadence: 'MONTHLY',
+          targetSemantics: targetBasis,
+        })
+    : createFullVerificationStatisticalCompatibility({
+        sourceFrequency: 'MONTHLY',
+        targetCadence: 'MONTHLY',
+        targetSemantics: targetBasis,
+      })
+
   return {
     targetSemantics: targetBasis,
     methodId: targetBasis,
     preparation: null,
+    statisticalCompatibility,
     cadence: null,
     frequencyIdentity: 'MONTHLY',
   } as const
@@ -421,7 +662,7 @@ test('forecast library current path returns cached artifact without invoking com
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveCurrentForecast('wocaes0280', 'ets')
 
   assert.equal(result.status, 'AVAILABLE')
@@ -432,6 +673,8 @@ test('forecast library current path returns cached artifact without invoking com
   assert.equal(result.methodId, 'MONTHLY_AVERAGE')
   assert.equal(result.targetSemantics, 'MONTHLY_AVERAGE')
   assert.equal(result.methodId, 'MONTHLY_AVERAGE')
+  assert.equal(result.lineage.statisticalCompatibility.artifactScope, 'CURRENT_FORECAST')
+  assert.equal(result.lineage.statisticalCompatibility.trainingWindowPolicyId, 'CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1')
   assert.equal(result.alignment.status, 'ALIGNED')
   assert.equal(result.alignment.lastHistoricalPeriod, '2026-04-01T00:00:00')
   assert.equal(result.alignment.forecastOrigin, '2026-04-01T00:00:00')
@@ -440,7 +683,75 @@ test('forecast library current path returns cached artifact without invoking com
   assert.equal(verificationCalls, 0)
 })
 
-test('prepared-only Forecast Library reads never invoke history, model, verification, or writes', async () => {
+test('forecast library force refresh recomputes through the canonical owner instead of reusing a current cache hit', async () => {
+  const history = createHistoryResponse()
+  let currentCalls = 0
+  let writeCalls = 0
+  const cachedArtifact = {
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    displayName: 'FRACHT_DRY',
+    description: 'Baltic Exchange, Dry Index (BDI), USD',
+    targetBasis: 'MONTHLY_AVERAGE' as const,
+    ...persistedIdentity('MONTHLY_AVERAGE'),
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT' as const, runId: 'cached-current-run' },
+    historyFingerprint: buildForecastHistoryFingerprint(history.history),
+    history: {
+      frequency: 'MONTHLY',
+      start: '2021-01-01T00:00:00',
+      end: '2026-04-01T00:00:00',
+      observations: 64,
+    },
+    forecastOrigin: '2026-04-01T00:00:00',
+    runtimeSeconds: 0.02,
+    currentForecast: createCurrentResponse().result.currentForecast,
+  }
+
+  const service = createTestForecastLibraryService({
+    bridge: {
+      async exportHistory() {
+        return history
+      },
+      async exportCurrent() {
+        currentCalls += 1
+        return createCurrentResponse()
+      },
+      async exportVerification() {
+        throw new Error('unused')
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        return cachedArtifact
+      },
+      async writeCurrentRun() {
+        writeCalls += 1
+      },
+      async readVerificationRun() {
+        return null
+      },
+      async writeVerificationRun() {
+        throw new Error('unused')
+      },
+    },
+    logEvent: () => {},
+  })
+
+  const result = await service.resolveCurrentForecastRequest({
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    forceRefresh: true,
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  assert.equal(result.cacheStatus, 'miss')
+  assert.equal(currentCalls, 1)
+  assert.equal(writeCalls, 1)
+})
+
+test('prepared-only Forecast Library reads exact persisted artifacts without compute or writes', async () => {
   let bridgeCalls = 0
   let writeCalls = 0
   const history = createHistoryResponse()
@@ -454,6 +765,14 @@ test('prepared-only Forecast Library reads never invoke history, model, verifica
     methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
     source: { kind: 'DYNAMIC_MARKET_DATA_STORE', runId: null },
     historyFingerprint: 'prepared-eop',
+    cadence: { sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' } as const,
+    frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+    statisticalCompatibility: createCurrentForecastStatisticalCompatibility({
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'END_OF_PERIOD',
+    }),
+    preparation: null,
     history: { frequency: 'MONTHLY', start: '2021-01-01', end: '2026-04-01', observations: 64 },
     forecastOrigin: '2026-04-01',
     runtimeSeconds: 1,
@@ -462,34 +781,59 @@ test('prepared-only Forecast Library reads never invoke history, model, verifica
   const verificationArtifact = {
     ...currentArtifact,
     currentForecast: undefined,
-    verification: {},
+    statisticalCompatibility: createFullVerificationStatisticalCompatibility({
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'END_OF_PERIOD',
+    }),
+    verification: createPersistedVerificationPayload('arima'),
   }
   delete (verificationArtifact as { currentForecast?: unknown }).currentForecast
 
-  const service = createForecastLibraryService({
-    bridge: {
-      async exportHistory() { bridgeCalls += 1; return history },
-      async exportCurrent() { bridgeCalls += 1; return createCurrentResponse('arima') },
-      async exportVerification() { bridgeCalls += 1; return createVerificationResponse('arima') },
-    },
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge(history),
     repository: {
-      async readCurrentRun() { throw new Error('exact-history lookup is not a prepared read') },
-      async readVerificationRun() { throw new Error('exact-history lookup is not a prepared read') },
-      async writeCurrentRun() { writeCalls += 1 },
-      async writeVerificationRun() { writeCalls += 1 },
-      async readLatestCurrentRun(key) {
+      async readCurrentRun(key) {
+        bridgeCalls += 1
         assert.equal(key.methodId, 'END_OF_PERIOD')
         assert.equal(key.modelId, 'arima')
-        assert.equal(key.frequencyIdentity, 'MONTHLY')
+        assert.equal(key.frequencyIdentity, 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY')
+        assert.equal(key.inputSource, 'POSTGRES_RUNTIME_SNAPSHOT')
+        assert.equal(key.trainingWindowPolicyId, currentArtifact.statisticalCompatibility.trainingWindowPolicyId)
+        assert.equal(key.effectiveTrainingPolicyId, currentArtifact.statisticalCompatibility.effectiveTrainingPolicyId)
+        assert.equal(key.historyFingerprint, buildForecastHistoryFingerprint(history.history, {
+          sourceFrequency: 'MONTHLY',
+          targetCadence: 'MONTHLY',
+        }))
         return currentArtifact
       },
-      async readLatestVerificationRun(key) {
+      async readVerificationRun(key) {
+        bridgeCalls += 1
         assert.equal(key.methodId, 'END_OF_PERIOD')
         assert.equal(key.modelId, 'arima')
-        assert.equal(key.frequencyIdentity, 'MONTHLY')
+        assert.equal(key.frequencyIdentity, 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY')
+        assert.equal(key.inputSource, 'POSTGRES_RUNTIME_SNAPSHOT')
+        assert.equal(key.trainingWindowPolicyId, verificationArtifact.statisticalCompatibility.trainingWindowPolicyId)
+        assert.equal(key.effectiveTrainingPolicyId, verificationArtifact.statisticalCompatibility.effectiveTrainingPolicyId)
+        assert.equal(key.historyFingerprint, buildForecastHistoryFingerprint(history.history, {
+          sourceFrequency: 'MONTHLY',
+          targetCadence: 'MONTHLY',
+        }))
         return verificationArtifact
       },
+      async writeCurrentRun() { writeCalls += 1 },
+      async writeVerificationRun() { writeCalls += 1 },
+      async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
+      async readLatestVerificationRun() { throw new Error('prepared reads must not use latest-only lookup') },
     },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'wocaes0280',
+      modelId: 'arima',
+      targetSemantics: 'END_OF_PERIOD',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 64,
+    }),
     logEvent: () => {},
   })
 
@@ -498,20 +842,638 @@ test('prepared-only Forecast Library reads never invoke history, model, verifica
 
   assert.equal(current.status, 'AVAILABLE')
   assert.equal(verification.status, 'AVAILABLE')
-  assert.equal(bridgeCalls, 0)
+  assert.equal(bridgeCalls, 2)
   assert.equal(writeCalls, 0)
 })
 
-test('prepared-only lookup selects the exact source-frequency and target-cadence cohort before latest', async () => {
+test('prepared recent verification lookup uses the recent policy identity and current-mode prepared history', async () => {
+  let historyMode: 'current' | 'verification' | null = null
+  let historyModelId: string | undefined
+
+  const verificationArtifact = {
+    seriesId: 'wocaes0280',
+    modelId: 'arima',
+    displayName: 'Baltic Exchange, Dry Index (BDI), USD',
+    description: 'Baltic Exchange, Dry Index (BDI), USD',
+    targetBasis: 'END_OF_PERIOD' as const,
+    ...persistedIdentity('END_OF_PERIOD', 'RECENT_VERIFICATION'),
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: {
+      kind: 'POSTGRES_RUNTIME_SNAPSHOT',
+      runId: 'cmrd3xvlu0000cedt8gczw378',
+    },
+    historyFingerprint: buildForecastHistoryFingerprint(createHistoryResponse().history, {
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+    }),
+    history: {
+      frequency: 'MONTHLY',
+      start: '2021-01-01T00:00:00',
+      end: '2026-04-01T00:00:00',
+      observations: 64,
+    },
+    forecastOrigin: '2025-04-01T00:00:00.000Z',
+    runtimeSeconds: null,
+    verification: createPersistedVerificationPayload('arima'),
+  }
+
+  const service = createTestForecastLibraryService({
+    bridge: {
+      async exportHistory() {
+        throw new Error('prepared recent verification should use the prepared execution context history export')
+      },
+      async exportCurrent() {
+        throw new Error('unused')
+      },
+      async exportVerification() {
+        throw new Error('unused')
+      },
+      async prepareExecutionContext() {
+        return {
+          async exportHistory(mode, modelId) {
+            historyMode = mode ?? null
+            historyModelId = modelId
+            return createHistoryResponse()
+          },
+          async exportCurrent() {
+            throw new Error('unused')
+          },
+          async exportVerification() {
+            throw new Error('unused')
+          },
+        }
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        return null
+      },
+      async writeCurrentRun() {
+        throw new Error('unused')
+      },
+      async readVerificationRun(key) {
+        assert.equal(key.trainingWindowPolicyId, verificationArtifact.statisticalCompatibility.trainingWindowPolicyId)
+        assert.equal(key.effectiveTrainingPolicyId, verificationArtifact.statisticalCompatibility.effectiveTrainingPolicyId)
+        return verificationArtifact
+      },
+      async writeVerificationRun() {
+        throw new Error('unused')
+      },
+    },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'wocaes0280',
+      modelId: 'arima',
+      targetSemantics: 'END_OF_PERIOD',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 64,
+    }),
+    logEvent: () => {},
+  })
+
+  const verification = await service.readPreparedRecentVerificationRequest({
+    seriesId: 'wocaes0280',
+    modelId: 'arima',
+    targetBasis: 'END_OF_PERIOD',
+  })
+
+  assert.equal(verification.status, 'AVAILABLE')
+  assert.equal(historyMode, 'current')
+  assert.equal(historyModelId, 'arima')
+})
+
+test('prepared recent verification lookup uses trusted prepared-read authority fast path', async () => {
+  let readLatestCalls = 0
+
+  const history = createHistoryResponse()
+  const historyFingerprint = buildForecastHistoryFingerprint(history.history, {
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  })
+  const verificationArtifact = {
+    seriesId: 'wocaes0280',
+    modelId: 'arima',
+    displayName: 'Baltic Exchange, Dry Index (BDI), USD',
+    description: 'Baltic Exchange, Dry Index (BDI), USD',
+    targetBasis: 'END_OF_PERIOD' as const,
+    ...persistedIdentity('END_OF_PERIOD', 'RECENT_VERIFICATION'),
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: {
+      kind: 'POSTGRES_RUNTIME_SNAPSHOT',
+      runId: 'cmrd3xvlu0000cedt8gczw378',
+    },
+    historyFingerprint,
+    cadence: {
+      sourceFrequency: 'MONTHLY' as const,
+      targetCadence: 'MONTHLY' as const,
+    },
+    frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+    statisticalCompatibility: createRecentVerificationStatisticalCompatibility({
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'END_OF_PERIOD',
+    }),
+    preparation: null,
+    history: {
+      frequency: 'MONTHLY',
+      start: '2021-01-01T00:00:00',
+      end: '2026-04-01T00:00:00',
+      observations: 64,
+    },
+    forecastOrigin: '2025-04-01T00:00:00.000Z',
+    runtimeSeconds: null,
+    verification: createPersistedVerificationPayload('arima'),
+  }
+
+  const service = createTestForecastLibraryService({
+    bridge: {
+      async exportHistory() {
+        throw new Error('trusted prepared-read authority should skip prepared recent history export')
+      },
+      async exportCurrent() {
+        throw new Error('unused')
+      },
+      async exportVerification() {
+        throw new Error('unused')
+      },
+      async prepareExecutionContext() {
+        throw new Error('trusted prepared-read authority should skip prepared execution context lookup')
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        throw new Error('unused')
+      },
+      async writeCurrentRun() {
+        throw new Error('unused')
+      },
+      async readVerificationRun() {
+        throw new Error('trusted prepared-read authority should use latest-only verification lookup')
+      },
+      async readLatestVerificationRun(key) {
+        readLatestCalls += 1
+        assert.equal(key.seriesId, 'wocaes0280')
+        assert.equal(key.modelId, 'arima')
+        assert.equal(key.targetBasis, 'END_OF_PERIOD')
+        assert.equal(key.frequencyIdentity, 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY')
+        assert.equal(key.trainingWindowPolicyId, verificationArtifact.statisticalCompatibility.trainingWindowPolicyId)
+        assert.equal(key.effectiveTrainingPolicyId, verificationArtifact.statisticalCompatibility.effectiveTrainingPolicyId)
+        return verificationArtifact
+      },
+      async writeVerificationRun() {
+        throw new Error('unused')
+      },
+    },
+    resolveExactPreparedCapability: async () => {
+      throw new Error('trusted prepared-read authority should skip exact capability resolution')
+    },
+    logEvent: () => {},
+  })
+
+  const verification = await service.readPreparedRecentVerificationRequest({
+    seriesId: 'wocaes0280',
+    modelId: 'arima',
+    targetBasis: 'END_OF_PERIOD',
+    preparedReadAuthority: {
+      seriesId: 'wocaes0280',
+      modelId: 'arima',
+      targetBasis: 'END_OF_PERIOD',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      expectedHistoryFingerprint: historyFingerprint,
+    },
+  })
+
+  assert.equal(verification.status, 'AVAILABLE')
+  assert.equal(readLatestCalls, 1)
+})
+
+test('prepared recent verification falls back to exact lookup when latest artifact mismatches trusted authority', async () => {
+  let readLatestCalls = 0
+  let readExactCalls = 0
+
+  const history = createHistoryResponse()
+  const historyFingerprint = buildForecastHistoryFingerprint(history.history, {
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  })
+  const exactArtifact = {
+    seriesId: 'wocaes0280',
+    modelId: 'arima',
+    displayName: 'Baltic Exchange, Dry Index (BDI), USD',
+    description: 'Baltic Exchange, Dry Index (BDI), USD',
+    targetBasis: 'END_OF_PERIOD' as const,
+    ...persistedIdentity('END_OF_PERIOD', 'RECENT_VERIFICATION'),
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: {
+      kind: 'POSTGRES_RUNTIME_SNAPSHOT',
+      runId: 'cmrd3xvlu0000cedt8gczw378',
+    },
+    historyFingerprint,
+    cadence: {
+      sourceFrequency: 'MONTHLY' as const,
+      targetCadence: 'MONTHLY' as const,
+    },
+    frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+    statisticalCompatibility: createRecentVerificationStatisticalCompatibility({
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'END_OF_PERIOD',
+    }),
+    preparation: null,
+    history: {
+      frequency: 'MONTHLY',
+      start: '2021-01-01T00:00:00',
+      end: '2026-04-01T00:00:00',
+      observations: 64,
+    },
+    forecastOrigin: '2025-04-01T00:00:00.000Z',
+    runtimeSeconds: null,
+    verification: createPersistedVerificationPayload('arima'),
+  }
+  const staleLatestArtifact = {
+    ...exactArtifact,
+    historyFingerprint: 'stale-history-fingerprint',
+  }
+
+  const service = createTestForecastLibraryService({
+    bridge: {
+      async exportHistory() {
+        throw new Error('trusted prepared-read authority should skip prepared recent history export')
+      },
+      async exportCurrent() {
+        throw new Error('unused')
+      },
+      async exportVerification() {
+        throw new Error('unused')
+      },
+      async prepareExecutionContext() {
+        throw new Error('trusted prepared-read authority should skip prepared execution context lookup')
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        throw new Error('unused')
+      },
+      async writeCurrentRun() {
+        throw new Error('unused')
+      },
+      async readVerificationRun(key) {
+        readExactCalls += 1
+        assert.equal(key.historyFingerprint, historyFingerprint)
+        return exactArtifact
+      },
+      async readLatestVerificationRun() {
+        readLatestCalls += 1
+        return staleLatestArtifact
+      },
+      async writeVerificationRun() {
+        throw new Error('unused')
+      },
+    },
+    resolveExactPreparedCapability: async () => {
+      throw new Error('trusted prepared-read authority should skip exact capability resolution')
+    },
+    logEvent: () => {},
+  })
+
+  const verification = await service.readPreparedRecentVerificationRequest({
+    seriesId: 'wocaes0280',
+    modelId: 'arima',
+    targetBasis: 'END_OF_PERIOD',
+    preparedReadAuthority: {
+      seriesId: 'wocaes0280',
+      modelId: 'arima',
+      targetBasis: 'END_OF_PERIOD',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      expectedHistoryFingerprint: historyFingerprint,
+    },
+  })
+
+  assert.equal(verification.status, 'AVAILABLE')
+  assert.equal(readLatestCalls, 1)
+  assert.equal(readExactCalls, 1)
+})
+
+test('recent verification compute uses verification-mode prepared history while lookup keeps current-mode identity', async () => {
+  const currentHistoryResponse = createMonthlyHistoryResponse(10, 2026, 0)
+  const verificationHistoryResponse = createMonthlyHistoryResponse(60, 2022, 0)
+  const historyModes: Array<'current' | 'verification'> = []
+  const executedOrigins: string[] = []
+  let persistedHistoryFingerprint: string | null = null
+  let persistedForecastOrigin: string | null = null
+
+  const service = createTestForecastLibraryService({
+    bridge: {
+      async exportHistory() {
+        throw new Error('prepared recent verification should use the prepared execution context history export')
+      },
+      async exportCurrent() {
+        throw new Error('unused')
+      },
+      async exportVerification() {
+        throw new Error('unused')
+      },
+      async prepareExecutionContext() {
+        return {
+          async exportHistory(mode = 'verification') {
+            historyModes.push(mode)
+            return mode === 'current' ? currentHistoryResponse : verificationHistoryResponse
+          },
+          async exportCurrent() {
+            throw new Error('unused')
+          },
+          async exportVerification() {
+            throw new Error('unused')
+          },
+        }
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        throw new Error('unused')
+      },
+      async writeCurrentRun() {
+        throw new Error('unused')
+      },
+      async readVerificationRun(key) {
+        assert.equal(
+          key.historyFingerprint,
+          buildForecastHistoryFingerprint(currentHistoryResponse.history, {
+            sourceFrequency: 'MONTHLY',
+            targetCadence: 'MONTHLY',
+          }),
+        )
+        return null
+      },
+      async writeVerificationRun(artifact) {
+        persistedHistoryFingerprint = artifact.historyFingerprint
+        persistedForecastOrigin = artifact.forecastOrigin
+      },
+    },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'recent.series',
+      modelId: 'arima',
+      targetSemantics: 'END_OF_PERIOD',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 60,
+    }),
+    executePreparedCurrent: async (payload) => {
+      executedOrigins.push(payload.history.end)
+      return {
+        status: 'AVAILABLE',
+        methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+        source: {
+          kind: 'POSTGRES_RUNTIME_SNAPSHOT',
+          runId: 'cmrd3xvlu0000cedt8gczw378',
+        },
+        benchmark: {
+          seriesId: 'recent.series',
+          component: 'RECENT_SERIES',
+          description: 'Recent series',
+          frequency: 'MONTHLY',
+          expectedObservations: payload.history.observations,
+        },
+        model: {
+          id: 'arima',
+          userFacing: true,
+        },
+        result: {
+          benchmarkId: 'recent.series',
+          component: 'RECENT_SERIES',
+          description: 'Recent series',
+          frequency: 'MONTHLY',
+          model: 'arima',
+          history: payload.history,
+          currentForecast: {
+            '1M': {
+              horizon: '1M',
+              horizonSteps: 1,
+              forecastDate: '2026-12-01T00:00:00.000Z',
+              forecastValue: 159,
+              metadata: null,
+              failureReason: null,
+            },
+          },
+          runtimeSeconds: 0.01,
+        },
+      }
+    },
+    logEvent: () => {},
+  })
+
+  const verification = await service.resolveRecentVerificationRequest({
+    seriesId: 'recent.series',
+    modelId: 'arima',
+    targetBasis: 'END_OF_PERIOD',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  })
+
+  assert.equal(verification.status, 'AVAILABLE')
+  assert.deepEqual(historyModes, ['current', 'verification'])
+  assert.deepEqual(executedOrigins, ['2026-11-01T00:00:00.000Z'])
+  assert.equal(
+    persistedHistoryFingerprint,
+    buildForecastHistoryFingerprint(currentHistoryResponse.history, {
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+    }),
+  )
+  assert.equal(persistedForecastOrigin, '2026-11-01T00:00:00.000Z')
+})
+
+test('recent verification artifact uses the latest lawful origin with any matured horizon, same effective policy, and N=1', async () => {
+  const authoritativeHistory = {
+    seriesId: 'recent.series',
+    benchmarkName: 'Recent series',
+    description: 'Recent series',
+    frequency: 'MONTHLY',
+    start: '2022-01-01T00:00:00.000Z',
+    end: '2026-12-01T00:00:00.000Z',
+    observations: 60,
+    canonicalization: {
+      method: 'VALIDATE_NATIVE_MONTHLY_END_OF_PERIOD',
+      version: 'native-monthly-end-of-period-v1',
+    },
+    points: Array.from({ length: 60 }, (_, index) => {
+      const date = new Date(Date.UTC(2022 + Math.floor(index / 12), index % 12, 1)).toISOString()
+      return {
+        date,
+        value: 100 + index,
+        sourceObservedAt: new Date(Date.UTC(2022 + Math.floor(index / 12), (index % 12) + 1, 0)).toISOString(),
+      }
+    }),
+  }
+  const executedOrigins: string[] = []
+
+  const artifact = await buildRecentVerificationArtifact({
+    request: {
+      seriesId: 'recent.series',
+      modelId: 'arima',
+      targetBasis: 'END_OF_PERIOD',
+    },
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    targetSemantics: 'END_OF_PERIOD',
+    benchmark: {
+      seriesId: 'recent.series',
+      component: 'RECENT_SERIES',
+      description: 'Recent series',
+      frequency: 'MONTHLY',
+      expectedObservations: 60,
+    },
+    source: {
+      kind: 'DYNAMIC_MARKET_DATA_STORE',
+      runId: null,
+    },
+    authoritativeHistory,
+    cadenceContext: {
+      cadence: {
+        sourceFrequency: 'MONTHLY',
+        targetCadence: 'MONTHLY',
+      },
+      frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+    },
+    async executePreparedCurrent(payload) {
+      executedOrigins.push(payload.history.end)
+      return {
+        status: 'AVAILABLE',
+        methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+        source: {
+          kind: 'DYNAMIC_MARKET_DATA_STORE',
+          runId: null,
+        },
+        benchmark: {
+          seriesId: 'recent.series',
+          component: 'RECENT_SERIES',
+          description: 'Recent series',
+          frequency: 'MONTHLY',
+          expectedObservations: payload.history.observations,
+        },
+        model: {
+          id: 'arima',
+          userFacing: true,
+        },
+        result: {
+          benchmarkId: 'recent.series',
+          component: 'RECENT_SERIES',
+          description: 'Recent series',
+          frequency: 'MONTHLY',
+          model: 'arima',
+          history: payload.history,
+          currentForecast: {
+            '1M': {
+              horizon: '1M',
+              horizonSteps: 1,
+              forecastDate: '2026-12-01T00:00:00.000Z',
+              forecastValue: 159,
+              metadata: null,
+              failureReason: null,
+            },
+            '12M': {
+              horizon: '12M',
+              horizonSteps: 12,
+              forecastDate: '2027-11-01T00:00:00.000Z',
+              forecastValue: 170,
+              metadata: null,
+              failureReason: null,
+            },
+          },
+          runtimeSeconds: 0.01,
+        },
+      }
+    },
+  })
+
+  const currentCompatibility = createCurrentForecastStatisticalCompatibility({
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: 'END_OF_PERIOD',
+  })
+
+  assert.deepEqual(executedOrigins, ['2026-11-01T00:00:00.000Z'])
+  assert.equal(artifact.forecastOrigin, '2026-11-01T00:00:00.000Z')
+  assert.equal(artifact.statisticalCompatibility.trainingWindowPolicyId, 'RECENT_SAME_POLICY_AS_CURRENT@recent-any-matured-horizon-v2')
+  assert.equal(artifact.statisticalCompatibility.effectiveTrainingPolicyId, currentCompatibility.effectiveTrainingPolicyId)
+  assert.equal(artifact.verification['1M']?.origins, 1)
+  assert.equal(artifact.verification['1M']?.records[0]?.forecastDate, '2026-12-01T00:00:00.000Z')
+  assert.equal(artifact.verification['12M'], undefined)
+})
+
+test('recent verification artifact fails closed when no lawful matured recent origin exists', async () => {
+  await assert.rejects(
+    buildRecentVerificationArtifact({
+      request: {
+        seriesId: 'recent.series',
+        modelId: 'arima',
+        targetBasis: 'END_OF_PERIOD',
+      },
+      methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+      targetSemantics: 'END_OF_PERIOD',
+      benchmark: {
+        seriesId: 'recent.series',
+        component: 'RECENT_SERIES',
+        description: 'Recent series',
+        frequency: 'MONTHLY',
+        expectedObservations: 6,
+      },
+      source: {
+        kind: 'DYNAMIC_MARKET_DATA_STORE',
+        runId: null,
+      },
+      authoritativeHistory: {
+        seriesId: 'recent.series',
+        benchmarkName: 'Recent series',
+        description: 'Recent series',
+        frequency: 'MONTHLY',
+        start: '2026-01-01T00:00:00.000Z',
+        end: '2026-06-01T00:00:00.000Z',
+        observations: 6,
+        canonicalization: {
+          method: 'VALIDATE_NATIVE_MONTHLY_END_OF_PERIOD',
+          version: 'native-monthly-end-of-period-v1',
+        },
+        points: Array.from({ length: 6 }, (_, index) => ({
+          date: new Date(Date.UTC(2026, index, 1)).toISOString(),
+          value: 100 + index,
+          sourceObservedAt: new Date(Date.UTC(2026, index + 1, 0)).toISOString(),
+        })),
+      },
+      cadenceContext: {
+        cadence: {
+          sourceFrequency: 'MONTHLY',
+          targetCadence: 'MONTHLY',
+        },
+        frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+      },
+      async executePreparedCurrent() {
+        throw new Error('should not execute current when no lawful matured origin exists')
+      },
+    }),
+    /PREPARATION_REQUIRED: No exact-identity prepared Recent Verification is available\./,
+  )
+})
+
+test('prepared-only lookup selects the exact source-frequency and target-cadence cohort before exact persisted read', async () => {
   let sideEffects = 0
   const expectedFrequencyIdentity = 'FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY'
   const requestedMethodVersion = 'benchmark-forecasting-mvp-phase2-v1'
-  const artifacts = [
-    { frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=QUARTERLY', methodVersion: requestedMethodVersion, updatedAt: 5, marker: 'A' },
-    { frequencyIdentity: expectedFrequencyIdentity, methodVersion: requestedMethodVersion, updatedAt: 1, marker: 'B-OLDER' },
-    { frequencyIdentity: expectedFrequencyIdentity, methodVersion: 'benchmark-forecasting-mvp-phase2-v2', updatedAt: 4, marker: 'C' },
-    { frequencyIdentity: expectedFrequencyIdentity, methodVersion: requestedMethodVersion, updatedAt: 2, marker: 'B-LATEST' },
-  ]
+  const history = {
+    ...createHistoryResponse(),
+    benchmark: {
+      ...createHistoryResponse().benchmark,
+      seriesId: 'generic.series',
+      frequency: 'QUARTERLY',
+    },
+    history: {
+      ...createHistoryResponse().history,
+      seriesId: 'generic.series',
+      frequency: 'QUARTERLY',
+      observations: 40,
+    },
+  }
   const exactArtifact = {
     seriesId: 'generic.series',
     modelId: 'ets',
@@ -524,36 +1486,53 @@ test('prepared-only lookup selects the exact source-frequency and target-cadence
     historyFingerprint: 'quarterly-history',
     cadence: { sourceFrequency: 'QUARTERLY', targetCadence: 'QUARTERLY' } as const,
     frequencyIdentity: expectedFrequencyIdentity,
+    statisticalCompatibility: createCurrentForecastStatisticalCompatibility({
+      sourceFrequency: 'QUARTERLY',
+      targetCadence: 'QUARTERLY',
+      targetSemantics: 'MONTHLY_AVERAGE',
+    }),
+    preparation: null,
     history: { frequency: 'QUARTERLY', start: '2025-01-01', end: '2025-10-01', observations: 4 },
     forecastOrigin: '2025-10-01',
     runtimeSeconds: 0.1,
-    currentForecast: {},
-  }
-
-  const service = createForecastLibraryService({
-    bridge: {
-      async exportHistory() { sideEffects += 1; return createHistoryResponse() },
-      async exportCurrent() { sideEffects += 1; return createCurrentResponse() },
-      async exportVerification() { sideEffects += 1; return createVerificationResponse() },
+    currentForecast: {
+      '1Q': {
+        horizon: '1Q',
+        horizonSteps: 1,
+        forecastDate: '2025-12-01T00:00:00.000Z',
+        forecastValue: 101,
+        metadata: null,
+        failureReason: null,
+      },
     },
+  }
+  const expectedHistoryFingerprint = buildForecastHistoryFingerprint(history.history, {
+    sourceFrequency: 'QUARTERLY',
+    targetCadence: 'QUARTERLY',
+  })
+
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge(history),
     repository: {
-      async readCurrentRun() { throw new Error('unused') },
+      async readCurrentRun(key) {
+        assert.equal(key.frequencyIdentity, expectedFrequencyIdentity)
+        assert.equal(key.historyFingerprint, expectedHistoryFingerprint)
+        return exactArtifact
+      },
       async readVerificationRun() { throw new Error('unused') },
       async writeCurrentRun() { sideEffects += 1 },
       async writeVerificationRun() { sideEffects += 1 },
-      async readLatestCurrentRun(key) {
-        const selected = artifacts
-          .filter((artifact) => (
-            artifact.frequencyIdentity === key.frequencyIdentity
-            && artifact.methodVersion === key.methodVersion
-          ))
-          .sort((left, right) => right.updatedAt - left.updatedAt)
-          .at(0)
-        assert.equal(selected?.marker, 'B-LATEST')
-        return exactArtifact
-      },
+      async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
       async readLatestVerificationRun() { return null },
     },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'generic.series',
+      modelId: 'ets',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      sourceFrequency: 'QUARTERLY',
+      targetCadence: 'QUARTERLY',
+      availableObservations: 40,
+    }),
     logEvent: () => {},
   })
 
@@ -572,14 +1551,197 @@ test('prepared-only lookup selects the exact source-frequency and target-cadence
   assert.equal(result.history.frequency, 'QUARTERLY')
 })
 
+test('prepared-only current lookup resolves the exact cadence cohort when callers omit cadence', async () => {
+  let sideEffects = 0
+  let exactLookup: { frequencyIdentity: string, historyFingerprint: string } | null = null
+  const expectedFrequencyIdentity = 'FORECAST_CADENCE_V1|source=WEEKLY|target=MONTHLY'
+  const history = {
+    ...createHistoryResponse(),
+    benchmark: {
+      ...createHistoryResponse().benchmark,
+      seriesId: 'weekly.series',
+      frequency: 'MONTHLY',
+    },
+    history: {
+      ...createHistoryResponse().history,
+      seriesId: 'weekly.series',
+      frequency: 'MONTHLY',
+      observations: 40,
+    },
+  }
+  const exactArtifact = {
+    seriesId: 'weekly.series',
+    modelId: 'ets',
+    displayName: 'Weekly lawful current',
+    description: null,
+    targetBasis: 'END_OF_PERIOD' as const,
+    ...persistedIdentity('END_OF_PERIOD'),
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: { kind: 'CONTROLLED_FIXTURE', runId: null },
+    historyFingerprint: 'weekly-history',
+    cadence: { sourceFrequency: 'WEEKLY', targetCadence: 'MONTHLY' } as const,
+    frequencyIdentity: expectedFrequencyIdentity,
+    statisticalCompatibility: createCurrentForecastStatisticalCompatibility({
+      sourceFrequency: 'WEEKLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'END_OF_PERIOD',
+    }),
+    preparation: null,
+    history: { frequency: 'MONTHLY', start: '2025-01-01', end: '2025-10-01', observations: 40 },
+    forecastOrigin: '2025-10-01',
+    runtimeSeconds: 0.1,
+    currentForecast: {
+      '1M': {
+        horizon: '1M',
+        horizonSteps: 1,
+        forecastDate: '2025-11-01T00:00:00.000Z',
+        forecastValue: 1001,
+        metadata: null,
+        failureReason: null,
+      },
+    },
+  }
+  const expectedHistoryFingerprint = buildForecastHistoryFingerprint(history.history, {
+    sourceFrequency: 'WEEKLY',
+    targetCadence: 'MONTHLY',
+  })
+
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge(history),
+    repository: {
+      async readCurrentRun(key) {
+        exactLookup = {
+          frequencyIdentity: key.frequencyIdentity,
+          historyFingerprint: key.historyFingerprint,
+        }
+        assert.equal(key.trainingWindowPolicyId, exactArtifact.statisticalCompatibility.trainingWindowPolicyId)
+        assert.equal(key.effectiveTrainingPolicyId, exactArtifact.statisticalCompatibility.effectiveTrainingPolicyId)
+        return exactArtifact
+      },
+      async readVerificationRun() { throw new Error('unused') },
+      async writeCurrentRun() { sideEffects += 1 },
+      async writeVerificationRun() { sideEffects += 1 },
+      async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
+      async readLatestVerificationRun() { return null },
+    },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'weekly.series',
+      modelId: 'ets',
+      targetSemantics: 'END_OF_PERIOD',
+      sourceFrequency: 'WEEKLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 40,
+    }),
+    logEvent: () => {},
+  })
+
+  const result = await service.readPreparedCurrentForecastRequest({
+    seriesId: 'weekly.series',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  assert.deepEqual(exactLookup, {
+    frequencyIdentity: expectedFrequencyIdentity,
+    historyFingerprint: expectedHistoryFingerprint,
+  })
+  assert.equal(sideEffects, 0)
+})
+
+test('prepared-only verification lookup resolves the exact cadence cohort when callers omit cadence', async () => {
+  let sideEffects = 0
+  let exactLookup: { frequencyIdentity: string, historyFingerprint: string } | null = null
+  const expectedFrequencyIdentity = 'FORECAST_CADENCE_V1|source=QUARTERLY|target=QUARTERLY'
+  const history = {
+    ...createHistoryResponse(),
+    benchmark: {
+      ...createHistoryResponse().benchmark,
+      seriesId: 'quarterly.series',
+      frequency: 'QUARTERLY',
+    },
+    history: {
+      ...createHistoryResponse().history,
+      seriesId: 'quarterly.series',
+      frequency: 'QUARTERLY',
+      observations: 48,
+    },
+  }
+  const exactArtifact = {
+    seriesId: 'quarterly.series',
+    modelId: 'arima',
+    displayName: 'Quarterly lawful verification',
+    description: null,
+    targetBasis: 'MONTHLY_AVERAGE' as const,
+    ...persistedIdentity('MONTHLY_AVERAGE'),
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: { kind: 'CONTROLLED_FIXTURE', runId: null },
+    historyFingerprint: 'quarterly-history',
+    cadence: { sourceFrequency: 'QUARTERLY', targetCadence: 'QUARTERLY' } as const,
+    frequencyIdentity: expectedFrequencyIdentity,
+    statisticalCompatibility: createFullVerificationStatisticalCompatibility({
+      sourceFrequency: 'QUARTERLY',
+      targetCadence: 'QUARTERLY',
+      targetSemantics: 'MONTHLY_AVERAGE',
+    }),
+    preparation: null,
+    history: { frequency: 'QUARTERLY', start: '2025-01-01', end: '2025-10-01', observations: 8 },
+    forecastOrigin: '2025-10-01',
+    runtimeSeconds: 0.1,
+    verification: createPersistedVerificationPayload('arima'),
+  }
+  const expectedHistoryFingerprint = buildForecastHistoryFingerprint(history.history, {
+    sourceFrequency: 'QUARTERLY',
+    targetCadence: 'QUARTERLY',
+  })
+
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge(history),
+    repository: {
+      async readCurrentRun() { throw new Error('unused') },
+      async readVerificationRun(key) {
+        exactLookup = {
+          frequencyIdentity: key.frequencyIdentity,
+          historyFingerprint: key.historyFingerprint,
+        }
+        assert.equal(key.trainingWindowPolicyId, exactArtifact.statisticalCompatibility.trainingWindowPolicyId)
+        assert.equal(key.effectiveTrainingPolicyId, exactArtifact.statisticalCompatibility.effectiveTrainingPolicyId)
+        return exactArtifact
+      },
+      async writeCurrentRun() { sideEffects += 1 },
+      async writeVerificationRun() { sideEffects += 1 },
+      async readLatestCurrentRun() { return null },
+      async readLatestVerificationRun() { throw new Error('prepared reads must not use latest-only lookup') },
+    },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'quarterly.series',
+      modelId: 'arima',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      sourceFrequency: 'QUARTERLY',
+      targetCadence: 'QUARTERLY',
+      availableObservations: 48,
+    }),
+    logEvent: () => {},
+  })
+
+  const result = await service.readPreparedVerificationRequest({
+    seriesId: 'quarterly.series',
+    modelId: 'arima',
+    targetBasis: 'MONTHLY_AVERAGE',
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  assert.deepEqual(exactLookup, {
+    frequencyIdentity: expectedFrequencyIdentity,
+    historyFingerprint: expectedHistoryFingerprint,
+  })
+  assert.equal(sideEffects, 0)
+})
+
 test('prepared-only lookup rejects partial cadence identity without compute or fallback', async () => {
   let sideEffects = 0
-  const service = createForecastLibraryService({
-    bridge: {
-      async exportHistory() { sideEffects += 1; return createHistoryResponse() },
-      async exportCurrent() { sideEffects += 1; return createCurrentResponse() },
-      async exportVerification() { sideEffects += 1; return createVerificationResponse() },
-    },
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge(),
     repository: {
       async readCurrentRun() { throw new Error('unused') },
       async readVerificationRun() { throw new Error('unused') },
@@ -605,19 +1767,15 @@ test('prepared-only lookup rejects partial cadence identity without compute or f
 
 test('prepared-only Forecast Library miss is explicit and performs no compute or write', async () => {
   let sideEffects = 0
-  const service = createForecastLibraryService({
-    bridge: {
-      async exportHistory() { sideEffects += 1; return createHistoryResponse() },
-      async exportCurrent() { sideEffects += 1; return createCurrentResponse() },
-      async exportVerification() { sideEffects += 1; return createVerificationResponse() },
-    },
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge(),
     repository: {
-      async readCurrentRun() { throw new Error('unused') },
-      async readVerificationRun() { throw new Error('unused') },
+      async readCurrentRun() { return null },
+      async readVerificationRun() { return null },
       async writeCurrentRun() { sideEffects += 1 },
       async writeVerificationRun() { sideEffects += 1 },
-      async readLatestCurrentRun() { return null },
-      async readLatestVerificationRun() { return null },
+      async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
+      async readLatestVerificationRun() { throw new Error('prepared reads must not use latest-only lookup') },
     },
     logEvent: () => {},
   })
@@ -629,6 +1787,384 @@ test('prepared-only Forecast Library miss is explicit and performs no compute or
   assert.equal(verification.status, 'NOT_AVAILABLE')
   assert.match(current.reason, /PREPARATION_REQUIRED/)
   assert.match(verification.reason, /PREPARATION_REQUIRED/)
+  assert.equal(sideEffects, 0)
+})
+
+test('prepared-only current read rejects explicit cadence that does not match the canonical capability without compute or writes', async () => {
+  let sideEffects = 0
+  let repositoryReads = 0
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge({
+      ...createHistoryResponse(),
+      benchmark: {
+        ...createHistoryResponse().benchmark,
+        seriesId: 'cadence-mismatch.series',
+        frequency: 'QUARTERLY',
+      },
+      history: {
+        ...createHistoryResponse().history,
+        seriesId: 'cadence-mismatch.series',
+        frequency: 'QUARTERLY',
+        observations: 48,
+      },
+    }),
+    repository: {
+      async readCurrentRun() { repositoryReads += 1; return null },
+      async readVerificationRun() { throw new Error('unused') },
+      async writeCurrentRun() { sideEffects += 1 },
+      async writeVerificationRun() { sideEffects += 1 },
+      async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
+      async readLatestVerificationRun() { throw new Error('unused') },
+    },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'cadence-mismatch.series',
+      modelId: 'ets',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 48,
+    }),
+    logEvent: () => {},
+  })
+
+  const result = await service.readPreparedCurrentForecastRequest({
+    seriesId: 'cadence-mismatch.series',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+    sourceFrequency: 'QUARTERLY',
+    targetCadence: 'QUARTERLY',
+  })
+
+  assert.equal(result.status, 'NOT_AVAILABLE')
+  if (result.status !== 'NOT_AVAILABLE') return
+  assert.match(result.reason, /Explicit cadence does not match the canonical prepared-read capability/)
+  assert.equal(repositoryReads, 0)
+  assert.equal(sideEffects, 0)
+})
+
+test('prepared-only current read rejects mismatched training-window policy identity without compute or writes', async () => {
+  let sideEffects = 0
+  const history = createHistoryResponse()
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge(history),
+    repository: {
+      async readCurrentRun() {
+        return {
+          seriesId: 'wocaes0280',
+          modelId: 'ets',
+          displayName: 'FRACHT_DRY',
+          description: null,
+          targetBasis: 'MONTHLY_AVERAGE' as const,
+          ...persistedIdentity('MONTHLY_AVERAGE'),
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+          source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: null },
+          historyFingerprint: buildForecastHistoryFingerprint(history.history, {
+            sourceFrequency: 'MONTHLY',
+            targetCadence: 'MONTHLY',
+          }),
+          cadence: { sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' } as const,
+          frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+          statisticalCompatibility: createFullVerificationStatisticalCompatibility({
+            sourceFrequency: 'MONTHLY',
+            targetCadence: 'MONTHLY',
+            targetSemantics: 'MONTHLY_AVERAGE',
+          }),
+          preparation: null,
+          history: { frequency: 'MONTHLY', start: '2021-01-01', end: '2026-04-01', observations: 64 },
+          forecastOrigin: '2026-04-01',
+          runtimeSeconds: 1,
+          currentForecast: createCurrentResponse('ets').result.currentForecast,
+        }
+      },
+      async readVerificationRun() { throw new Error('unused') },
+      async writeCurrentRun() { sideEffects += 1 },
+      async writeVerificationRun() { sideEffects += 1 },
+      async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
+      async readLatestVerificationRun() { throw new Error('unused') },
+    },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'wocaes0280',
+      modelId: 'ets',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 64,
+    }),
+    logEvent: () => {},
+  })
+
+  const result = await service.readPreparedCurrentForecastRequest({
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+  })
+
+  assert.equal(result.status, 'NOT_AVAILABLE')
+  if (result.status !== 'NOT_AVAILABLE') return
+  assert.match(result.reason, /training-policy identity is not compatible/)
+  assert.equal(sideEffects, 0)
+})
+
+test('prepared-only current read rejects legacy frequency-specific Current artifacts after the FAST policy split', async () => {
+  let sideEffects = 0
+  const history = createHistoryResponse()
+  const legacyCurrentCompatibility = createLegacyFrequencySpecificCurrentForecastStatisticalCompatibility({
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: 'MONTHLY_AVERAGE',
+  })
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge(history),
+    repository: {
+      async readCurrentRun() {
+        return {
+          seriesId: 'wocaes0280',
+          modelId: 'ets',
+          displayName: 'FRACHT_DRY',
+          description: null,
+          targetBasis: 'MONTHLY_AVERAGE' as const,
+          targetSemantics: 'MONTHLY_AVERAGE' as const,
+          methodId: 'MONTHLY_AVERAGE' as const,
+          preparation: null,
+          statisticalCompatibility: legacyCurrentCompatibility,
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+          source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: null },
+          historyFingerprint: buildForecastHistoryFingerprint(history.history, {
+            sourceFrequency: 'MONTHLY',
+            targetCadence: 'MONTHLY',
+          }),
+          cadence: { sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' } as const,
+          frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+          history: { frequency: 'MONTHLY', start: '2021-01-01', end: '2026-04-01', observations: 64 },
+          forecastOrigin: '2026-04-01',
+          runtimeSeconds: 1,
+          currentForecast: createCurrentResponse('ets').result.currentForecast,
+        }
+      },
+      async readVerificationRun() { throw new Error('unused') },
+      async writeCurrentRun() { sideEffects += 1 },
+      async writeVerificationRun() { sideEffects += 1 },
+      async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
+      async readLatestVerificationRun() { throw new Error('unused') },
+    },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'wocaes0280',
+      modelId: 'ets',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 64,
+    }),
+    logEvent: () => {},
+  })
+
+  const result = await service.readPreparedCurrentForecastRequest({
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+  })
+
+  assert.equal(result.status, 'NOT_AVAILABLE')
+  if (result.status !== 'NOT_AVAILABLE') return
+  assert.match(result.reason, /training-policy identity is not compatible/)
+  assert.equal(sideEffects, 0)
+})
+
+test('prepared-only current read rejects strict trailing-12M Current artifacts after minimal-lawful-suffix activation', async () => {
+  let sideEffects = 0
+  const history = createHistoryResponse()
+  const strictTrailingCompatibility = createStrictTrailing12MCurrentForecastStatisticalCompatibility({
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: 'MONTHLY_AVERAGE',
+  })
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge(history),
+    repository: {
+      async readCurrentRun() {
+        return {
+          seriesId: 'wocaes0280',
+          modelId: 'ets',
+          displayName: 'FRACHT_DRY',
+          description: null,
+          targetBasis: 'MONTHLY_AVERAGE' as const,
+          targetSemantics: 'MONTHLY_AVERAGE' as const,
+          methodId: 'MONTHLY_AVERAGE' as const,
+          preparation: null,
+          statisticalCompatibility: strictTrailingCompatibility,
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+          source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: null },
+          historyFingerprint: buildForecastHistoryFingerprint(history.history, {
+            sourceFrequency: 'MONTHLY',
+            targetCadence: 'MONTHLY',
+          }),
+          cadence: { sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' } as const,
+          frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+          history: { frequency: 'MONTHLY', start: '2021-01-01', end: '2026-04-01', observations: 64 },
+          forecastOrigin: '2026-04-01',
+          runtimeSeconds: 1,
+          currentForecast: createCurrentResponse('ets').result.currentForecast,
+        }
+      },
+      async readVerificationRun() { throw new Error('unused') },
+      async writeCurrentRun() { sideEffects += 1 },
+      async writeVerificationRun() { sideEffects += 1 },
+      async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
+      async readLatestVerificationRun() { throw new Error('unused') },
+    },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'wocaes0280',
+      modelId: 'ets',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 64,
+    }),
+    logEvent: () => {},
+  })
+
+  const result = await service.readPreparedCurrentForecastRequest({
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+  })
+
+  assert.equal(result.status, 'NOT_AVAILABLE')
+  if (result.status !== 'NOT_AVAILABLE') return
+  assert.match(result.reason, /training-policy identity is not compatible/)
+  assert.equal(sideEffects, 0)
+})
+
+test('prepared-only verification read preserves lawful legacy full-verification reuse for current Stage 4 scope', async () => {
+  let sideEffects = 0
+  const history = createHistoryResponse()
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge(history),
+    repository: {
+      async readCurrentRun() { throw new Error('unused') },
+      async readVerificationRun() {
+        return {
+          seriesId: 'wocaes0280',
+          modelId: 'ets',
+          displayName: 'FRACHT_DRY',
+          description: null,
+          targetBasis: 'MONTHLY_AVERAGE' as const,
+          ...persistedIdentity('MONTHLY_AVERAGE', 'VERIFICATION'),
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+          source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: null },
+          historyFingerprint: buildForecastHistoryFingerprint(history.history, {
+            sourceFrequency: 'MONTHLY',
+            targetCadence: 'MONTHLY',
+          }),
+          cadence: { sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' } as const,
+          frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+          statisticalCompatibility: createLegacyVerificationStatisticalCompatibility({
+            sourceFrequency: 'MONTHLY',
+            targetCadence: 'MONTHLY',
+            targetSemantics: 'MONTHLY_AVERAGE',
+          }),
+          preparation: null,
+          history: { frequency: 'MONTHLY', start: '2021-01-01', end: '2026-04-01', observations: 64 },
+          forecastOrigin: '2026-04-01',
+          runtimeSeconds: 1,
+          verification: createPersistedVerificationPayload('ets'),
+        }
+      },
+      async writeCurrentRun() { sideEffects += 1 },
+      async writeVerificationRun() { sideEffects += 1 },
+      async readLatestCurrentRun() { throw new Error('unused') },
+      async readLatestVerificationRun() { throw new Error('prepared reads must not use latest-only lookup') },
+    },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'wocaes0280',
+      modelId: 'ets',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 64,
+    }),
+    logEvent: () => {},
+  })
+
+  const result = await service.readPreparedVerificationRequest({
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  assert.equal(sideEffects, 0)
+})
+
+test('prepared-only current read preserves lawful legacy unresolved reuse until refresh without claiming exact policy provenance', async () => {
+  let sideEffects = 0
+  const history = createHistoryResponse()
+  const currentCompatibility = createCurrentForecastStatisticalCompatibility({
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: 'MONTHLY_AVERAGE',
+  })
+
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge(history),
+    repository: {
+      async readCurrentRun(key) {
+        assert.equal(key.trainingWindowPolicyId, currentCompatibility.trainingWindowPolicyId)
+        assert.equal(key.effectiveTrainingPolicyId, currentCompatibility.effectiveTrainingPolicyId)
+        return {
+          seriesId: 'wocaes0280',
+          modelId: 'ets',
+          displayName: 'FRACHT_DRY',
+          description: null,
+          targetBasis: 'MONTHLY_AVERAGE' as const,
+          ...persistedIdentity('MONTHLY_AVERAGE'),
+          methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+          source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT', runId: null },
+          historyFingerprint: buildForecastHistoryFingerprint(history.history, {
+            sourceFrequency: 'MONTHLY',
+            targetCadence: 'MONTHLY',
+          }),
+          cadence: { sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' } as const,
+          frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+          statisticalCompatibility: createLegacyUnresolvedForecastStatisticalCompatibility('CURRENT', {
+            sourceFrequency: 'MONTHLY',
+            targetCadence: 'MONTHLY',
+            targetSemantics: 'MONTHLY_AVERAGE',
+          }),
+          preparation: null,
+          history: { frequency: 'MONTHLY', start: '2021-01-01', end: '2026-04-01', observations: 64 },
+          forecastOrigin: '2026-04-01',
+          runtimeSeconds: 1,
+          currentForecast: createCurrentResponse('ets').result.currentForecast,
+        }
+      },
+      async readVerificationRun() { throw new Error('unused') },
+      async writeCurrentRun() { sideEffects += 1 },
+      async writeVerificationRun() { sideEffects += 1 },
+      async readLatestCurrentRun() { throw new Error('prepared reads must not use latest-only lookup') },
+      async readLatestVerificationRun() { throw new Error('unused') },
+    },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'wocaes0280',
+      modelId: 'ets',
+      targetSemantics: 'MONTHLY_AVERAGE',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 64,
+    }),
+    logEvent: () => {},
+  })
+
+  const result = await service.readPreparedCurrentForecastRequest({
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  if (result.status !== 'AVAILABLE') return
+  assert.equal(result.lineage.statisticalCompatibility.trainingWindowPolicyId, 'LEGACY_UNRESOLVED')
+  assert.equal(result.lineage.statisticalCompatibility.calibrationPolicy, 'CONDITIONAL_POLICY_MATCH_ONLY')
   assert.equal(sideEffects, 0)
 })
 
@@ -666,7 +2202,7 @@ test('forecast library current path computes and persists on cache miss', async 
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveCurrentForecast('wocaes0280', 'ets')
 
   assert.equal(result.status, 'AVAILABLE')
@@ -676,6 +2212,7 @@ test('forecast library current path computes and persists on cache miss', async 
   assert.equal(result.targetSemantics, 'MONTHLY_AVERAGE')
   assert.equal(result.methodId, 'MONTHLY_AVERAGE')
   assert.equal(result.lineage.preparation?.provenanceStatus, 'LEGACY_UNRESOLVED')
+  assert.equal(result.lineage.statisticalCompatibility.artifactScope, 'CURRENT_FORECAST')
   assert.equal(result.alignment.status, 'ALIGNED')
   assert.equal(result.alignment.lastHistoricalPeriod, '2026-04-01T00:00:00')
   assert.equal(result.alignment.forecastOrigin, '2026-04-01T00:00:00')
@@ -683,6 +2220,162 @@ test('forecast library current path computes and persists on cache miss', async 
   assert.equal(persistedFingerprint, result.historyFingerprint)
   assert.equal(persistedHorizons, 2)
   assert.equal(persistedTargetBasis, 'MONTHLY_AVERAGE')
+})
+
+test('forecast library current miss records a durable execution ledger without changing result semantics', async () => {
+  const history = createHistoryResponse()
+  const events: Array<{
+    eventType: string
+    executionId: string
+    ownerRequestId: string
+    attemptKind: string | undefined
+    executionMode: string | undefined
+    ownerToken: string | undefined
+    leaseVersion: number | undefined
+    leaseAcquiredAt: string | undefined
+    leaseExpiresAt: string | undefined
+    recoveredFromExecutionId: string | null | undefined
+  }> = []
+
+  const service = createTestForecastLibraryService({
+    bridge: {
+      async exportHistory() {
+        return history
+      },
+      async exportCurrent() {
+        return createCurrentResponse()
+      },
+      async exportVerification() {
+        throw new Error('unused')
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        return null
+      },
+      async writeCurrentRun() {},
+      async readVerificationRun() {
+        return null
+      },
+      async writeVerificationRun() {
+        throw new Error('unused')
+      },
+    },
+    logEvent: () => {},
+    telemetry: {
+      emit() {},
+      currentContext() {
+        return {
+          stressRunId: 'stress-run-current',
+          scenarioId: 'scenario-current',
+          virtualUserId: 'virtual-user-current',
+          requestId: 'req-stage2-current',
+          forecastIdentity: 'forecast-identity-current',
+          logicalArtifactKey: 'logical-artifact-current',
+        }
+      },
+    },
+    executionLedger: {
+      ...createNoopForecastPreparationExecutionLedger(),
+      async recordEvent(input) {
+        events.push({
+          eventType: input.eventType,
+          executionId: input.executionId,
+          ownerRequestId: input.ownerRequestId,
+          attemptKind: input.attemptKind,
+          executionMode: input.executionMode,
+          ownerToken: input.ownerToken,
+          leaseVersion: input.leaseVersion,
+          leaseAcquiredAt: input.leaseAcquiredAt,
+          leaseExpiresAt: input.leaseExpiresAt,
+          recoveredFromExecutionId: input.recoveredFromExecutionId,
+        })
+      },
+    },
+  })
+
+  const result = await service.resolveCurrentForecast('wocaes0280', 'ets')
+
+  assert.equal(result.status, 'AVAILABLE')
+  assert.equal(result.cacheStatus, 'miss')
+  assert.ok(events.some((event) => event.eventType === 'single_flight_owner_acquired'))
+  assert.ok(events.some((event) => event.eventType === 'compute_started'))
+  assert.ok(events.some((event) => event.eventType === 'compute_completed'))
+  assert.ok(events.some((event) => event.eventType === 'persistence_started'))
+  assert.ok(events.some((event) => event.eventType === 'persistence_completed'))
+  assert.ok(events.some((event) => event.eventType === 'execution_completed'))
+  assert.ok(events.every((event) => event.ownerRequestId === 'req-stage2-current'))
+  assert.ok(events.every((event) => event.executionId !== 'CURRENT:req-stage2-current'))
+  assert.equal(new Set(events.map((event) => event.executionId)).size, 1)
+  assert.ok(events.every((event) => event.attemptKind === 'PRIMARY'))
+  assert.ok(events.every((event) => event.executionMode === 'PRE_STAGE3_PREPARATION'))
+  assert.ok(events.every((event) => typeof event.ownerToken === 'string' && event.ownerToken.length > 0))
+  assert.ok(events.every((event) => event.leaseVersion === 1))
+  assert.ok(events.every((event) => event.leaseAcquiredAt === events[0]?.leaseAcquiredAt))
+  assert.ok(events.every((event) => typeof event.leaseExpiresAt === 'string' && event.leaseExpiresAt.length > 0))
+  assert.ok(events.every((event) => event.recoveredFromExecutionId === null))
+})
+
+test('forecast library current path does not await passive execution-ledger writes', async () => {
+  const history = createHistoryResponse()
+  let releaseLedger: (() => void) | undefined
+  const ledgerGate = new Promise<void>((resolve) => {
+    releaseLedger = resolve
+  })
+
+  const service = createTestForecastLibraryService({
+    bridge: {
+      async exportHistory() {
+        return history
+      },
+      async exportCurrent() {
+        return createCurrentResponse()
+      },
+      async exportVerification() {
+        throw new Error('unused')
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        return null
+      },
+      async writeCurrentRun() {},
+      async readVerificationRun() {
+        return null
+      },
+      async writeVerificationRun() {
+        throw new Error('unused')
+      },
+    },
+    logEvent: () => {},
+    telemetry: {
+      emit() {},
+      currentContext() {
+        return {
+          stressRunId: 'stress-run-nonblocking',
+          scenarioId: 'scenario-nonblocking',
+          virtualUserId: 'virtual-user-nonblocking',
+          requestId: 'req-stage2-nonblocking',
+          forecastIdentity: 'forecast-identity-nonblocking',
+          logicalArtifactKey: 'logical-artifact-nonblocking',
+        }
+      },
+    },
+    executionLedger: {
+      ...createNoopForecastPreparationExecutionLedger(),
+      async recordEvent() {
+        await ledgerGate
+      },
+    },
+  })
+
+  const outcome = await Promise.race([
+    service.resolveCurrentForecast('wocaes0280', 'ets').then((result) => result.status),
+    new Promise<'pending'>((resolve) => setTimeout(() => resolve('pending'), 20)),
+  ])
+
+  assert.equal(outcome, 'AVAILABLE')
+  releaseLedger?.()
 })
 
 test('forecast library Current exact-key misses use one owner, nine waiters, and one write', async () => {
@@ -693,7 +2386,7 @@ test('forecast library Current exact-key misses use one owner, nine waiters, and
   const computeGate = new Promise<void>((resolve) => {
     releaseCompute = resolve
   })
-  const service = createForecastLibraryService({
+  const service = createTestForecastLibraryService({
     bridge: {
       async exportHistory() { return createHistoryResponse() },
       async exportCurrent() {
@@ -741,7 +2434,7 @@ test('forecast library Current owner remains in flight through persistence settl
   const persistenceGate = new Promise<void>((resolve) => {
     releasePersistence = resolve
   })
-  const service = createForecastLibraryService({
+  const service = createTestForecastLibraryService({
     bridge: {
       async exportHistory() { return createHistoryResponse() },
       async exportCurrent() {
@@ -786,6 +2479,53 @@ test('forecast library Current owner remains in flight through persistence settl
   assert.equal(computes, 2)
   assert.equal(writes, 2)
   assert.equal(events.filter(({ event }) => event === 'single_flight_owner_acquired').length, 2)
+})
+
+test('forecast library Current owner and waiters share one context and release it after single-flight cleanup', async () => {
+  const registry = createForecastPreparationExecutionContextRegistry()
+  const observedExecutionIds = new Set<string>()
+  const observedOwnerTokens = new Set<string>()
+  let releaseCompute: (() => void) | undefined
+  const computeGate = new Promise<void>((resolve) => {
+    releaseCompute = resolve
+  })
+
+  const service = createTestForecastLibraryService({
+    bridge: {
+      async exportHistory() { return createHistoryResponse() },
+      async exportCurrent() {
+        await computeGate
+        return createCurrentResponse()
+      },
+      async exportVerification() { throw new Error('unused') },
+    },
+    repository: {
+      async readCurrentRun() { return null },
+      async writeCurrentRun() {},
+      async readVerificationRun() { return null },
+      async writeVerificationRun() { throw new Error('unused') },
+    },
+    logEvent: () => {},
+    executionContextRegistry: registry,
+    executionLedger: {
+      ...createNoopForecastPreparationExecutionLedger(),
+      async recordEvent(input) {
+        observedExecutionIds.add(input.executionId)
+        observedOwnerTokens.add(input.ownerToken ?? '')
+      },
+    },
+  })
+
+  const requests = Array.from({ length: 10 }, () => service.resolveCurrentForecast('wocaes0280', 'ets'))
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.equal(registry.getActiveContextCount(), 0)
+
+  releaseCompute?.()
+  await Promise.all(requests)
+
+  assert.equal(observedExecutionIds.size, 1)
+  assert.equal(observedOwnerTokens.size, 1)
+  assert.equal(registry.getActiveContextCount(), 0)
 })
 
 test('forecast library current path marks cached payload unaligned when forecast origin drifts from lawful history end', async () => {
@@ -840,7 +2580,7 @@ test('forecast library current path marks cached payload unaligned when forecast
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveCurrentForecast('wocaes0280', 'ets')
 
   assert.equal(result.status, 'AVAILABLE')
@@ -883,12 +2623,15 @@ test('forecast library verification path normalizes metrics and persists heavier
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveVerification('wocaes0280', 'ets')
 
   assert.equal(result.status, 'AVAILABLE')
   assert.equal(result.cacheStatus, 'miss')
   assert.equal(result.targetBasis, 'MONTHLY_AVERAGE')
+  assert.equal(result.lineage.statisticalCompatibility.artifactScope, 'FULL_VERIFICATION')
+  assert.equal(result.lineage.statisticalCompatibility.trainingWindowPolicyId, 'FULL_EXPANDING_HISTORY_PER_ORIGIN@full-expanding-history-per-origin-v1')
+  assert.equal(result.lineage.statisticalCompatibility.calibrationPolicy, 'EXACT_STATISTICAL_MATCH_ONLY')
   assert.equal(result.verification['1M']?.metrics?.directionalAccuracy, 0.64)
   assert.equal(result.verification['1M']?.records.length, 1)
   assert.equal(result.verification['1M']?.records[0]?.actualObservedAt, '2025-02-28T00:00:00')
@@ -904,7 +2647,7 @@ test('forecast library Verification exact-key misses use one owner, one waiter, 
   const computeGate = new Promise<void>((resolve) => {
     releaseCompute = resolve
   })
-  const service = createForecastLibraryService({
+  const service = createTestForecastLibraryService({
     bridge: {
       async exportHistory() { return createHistoryResponse() },
       async exportCurrent() { throw new Error('Current must remain outside Verification single-flight.') },
@@ -955,7 +2698,7 @@ test('forecast library Verification owner remains in flight through persistence 
   const persistenceGate = new Promise<void>((resolve) => {
     releasePersistence = resolve
   })
-  const service = createForecastLibraryService({
+  const service = createTestForecastLibraryService({
     bridge: {
       async exportHistory() { return createHistoryResponse() },
       async exportCurrent() { throw new Error('unused') },
@@ -1012,7 +2755,7 @@ test('forecast library Verification owner failure releases, writes nothing, and 
   const failureGate = new Promise<void>((resolve) => {
     releaseFailure = resolve
   })
-  const service = createForecastLibraryService({
+  const service = createTestForecastLibraryService({
     bridge: {
       async exportHistory() { return createHistoryResponse() },
       async exportCurrent() { throw new Error('unused') },
@@ -1088,7 +2831,7 @@ test('forecast library current path does not reuse cache across target bases', a
           displayName: 'FRACHT_DRY',
           description: 'Baltic Exchange, Dry Index (BDI), USD',
           targetBasis: 'END_OF_PERIOD',
-          ...persistedIdentity('END_OF_PERIOD'),
+          ...persistedIdentity('END_OF_PERIOD', 'VERIFICATION'),
           methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
           source: {
             kind: 'POSTGRES_RUNTIME_SNAPSHOT',
@@ -1119,7 +2862,7 @@ test('forecast library current path does not reuse cache across target bases', a
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveCurrentForecast('wocaes0280', 'ets')
 
   assert.equal(result.status, 'AVAILABLE')
@@ -1159,7 +2902,7 @@ test('forecast library verification path does not reuse cache across target base
           displayName: 'FRACHT_DRY',
           description: 'Baltic Exchange, Dry Index (BDI), USD',
           targetBasis: 'END_OF_PERIOD',
-          ...persistedIdentity('END_OF_PERIOD'),
+          ...persistedIdentity('END_OF_PERIOD', 'VERIFICATION'),
           methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
           source: {
             kind: 'POSTGRES_RUNTIME_SNAPSHOT',
@@ -1204,7 +2947,7 @@ test('forecast library verification path does not reuse cache across target base
     async writeVerificationRun() {},
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveVerification('wocaes0280', 'ets')
 
   assert.equal(result.status, 'AVAILABLE')
@@ -1213,7 +2956,7 @@ test('forecast library verification path does not reuse cache across target base
   assert.equal(verificationCalls, 1)
 })
 
-test('forecast library current path serves compute result when datastore is unavailable', async () => {
+test('forecast library current path fails closed when datastore is unavailable', async () => {
   let persisted = false
 
   const bridge: ForecastBridge = {
@@ -1243,11 +2986,14 @@ test('forecast library current path serves compute result when datastore is unav
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
-  const result = await service.resolveCurrentForecast('wocaes0280', 'ets')
-
-  assert.equal(result.status, 'AVAILABLE')
-  assert.equal(result.cacheStatus, 'db-unavailable')
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  await assert.rejects(
+    () => service.resolveCurrentForecast('wocaes0280', 'ets'),
+    (error: unknown) => error instanceof Error
+      && error.name === 'ForecastExecutionControlError'
+      && 'code' in error
+      && error.code === 'CONTROL_DB_UNAVAILABLE',
+  )
   assert.equal(persisted, false)
 })
 
@@ -1293,7 +3039,7 @@ test('forecast library short-circuits unsupported benchmarks before compute', as
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveCurrentForecast('unsupported-series', 'ets')
 
   assert.equal(result.status, 'UNSUPPORTED')
@@ -1338,7 +3084,7 @@ test('forecast library current path computes END_OF_PERIOD for live-input series
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveCurrentForecastRequest({
     seriesId: 'wocaes0074',
     modelId: 'ets',
@@ -1408,7 +3154,7 @@ test('forecast library current path reuses prepared selected live history and ex
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveCurrentForecastRequest({
     seriesId: 'wocaes0074',
     modelId: 'naive',
@@ -1424,6 +3170,47 @@ test('forecast library current path reuses prepared selected live history and ex
   assert.equal(historyMode, 'current')
   assert.equal(currentCalls, 1)
   assert.equal(verificationCalls, 0)
+})
+
+test('forecast library cold current miss succeeds without invoking verification inline', async () => {
+  let currentCalls = 0
+
+  const bridge: ForecastBridge = {
+    async exportHistory() {
+      return createHistoryResponse()
+    },
+    async exportCurrent() {
+      currentCalls += 1
+      return createCurrentResponse('ets')
+    },
+    async exportVerification() {
+      throw new Error('Current miss must not invoke verification inline.')
+    },
+  }
+
+  const repository: ForecastLibraryRepository = {
+    async readCurrentRun() {
+      return null
+    },
+    async writeCurrentRun() {},
+    async readVerificationRun() {
+      return null
+    },
+    async writeVerificationRun() {
+      throw new Error('unused')
+    },
+  }
+
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const result = await service.resolveCurrentForecastRequest({
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  assert.equal(result.cacheStatus, 'miss')
+  assert.equal(currentCalls, 1)
 })
 
 test('forecast library verification path reuses prepared selected live history and does not invoke unrelated current compute', async () => {
@@ -1480,7 +3267,7 @@ test('forecast library verification path reuses prepared selected live history a
     async writeVerificationRun() {},
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveVerificationRequest({
     seriesId: 'wocaes0074',
     modelId: 'damped_holt',
@@ -1531,7 +3318,7 @@ test('forecast library verification path backfills END_OF_PERIOD actualObservedA
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveVerificationRequest({
     seriesId: 'wocaes0074',
     modelId: 'ets',
@@ -1542,6 +3329,653 @@ test('forecast library verification path backfills END_OF_PERIOD actualObservedA
   assert.equal(result.targetBasis, 'END_OF_PERIOD')
   assert.equal(result.verification['1M']?.records[0]?.actualObservedAt, '2025-02-28T00:00:00.000Z')
   assert.equal(persistedActualObservedAt, '2025-02-28T00:00:00.000Z')
+})
+
+test('forecast library verification path forwards bounded execution options to the direct bridge', async () => {
+  let capturedHistoricalOriginStartDate: string | undefined
+  let capturedLastProcessedOriginDate: string | null | undefined
+  let capturedMaxOriginsPerRun: number | undefined
+
+  const bridge: ForecastBridge = {
+    async exportHistory(input) {
+      assert.equal(input.targetBasis, 'END_OF_PERIOD')
+      return createEndOfPeriodHistoryResponse()
+    },
+    async exportCurrent() {
+      throw new Error('unused')
+    },
+    async exportVerification(input) {
+      capturedHistoricalOriginStartDate = input.historicalOriginStartDate
+      capturedLastProcessedOriginDate = input.lastProcessedOriginDate
+      capturedMaxOriginsPerRun = input.maxOriginsPerRun
+      return createEndOfPeriodVerificationResponse()
+    },
+  }
+
+  const repository: ForecastLibraryRepository = {
+    async readCurrentRun() {
+      return null
+    },
+    async writeCurrentRun() {
+      throw new Error('unused')
+    },
+    async readVerificationRun() {
+      return null
+    },
+    async writeVerificationRun() {},
+  }
+
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const result = await service.resolveVerificationRequest({
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+    historicalOriginStartDate: '2021-01-01',
+    lastProcessedOriginDate: '2024-12-01',
+    maxOriginsPerRun: 5,
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  assert.equal(capturedHistoricalOriginStartDate, '2021-01-01')
+  assert.equal(capturedLastProcessedOriginDate, '2024-12-01')
+  assert.equal(capturedMaxOriginsPerRun, 5)
+})
+
+test('forecast library verification path forwards bounded execution options to the prepared execution context', async () => {
+  let verificationHistoricalOriginStartDate: string | undefined
+  let verificationLastProcessedOriginDate: string | null | undefined
+  let verificationMaxOriginsPerRun: number | undefined
+
+  const bridge: ForecastBridge = {
+    async prepareExecutionContext() {
+      return {
+        async exportHistory() {
+          return createEndOfPeriodHistoryResponse()
+        },
+        async exportCurrent() {
+          throw new Error('unused')
+        },
+        async exportVerification(_modelId, options) {
+          verificationHistoricalOriginStartDate = options?.historicalOriginStartDate
+          verificationLastProcessedOriginDate = options?.lastProcessedOriginDate
+          verificationMaxOriginsPerRun = options?.maxOriginsPerRun
+          return createEndOfPeriodVerificationResponse()
+        },
+      }
+    },
+    async exportHistory() {
+      throw new Error('should use prepared execution context history')
+    },
+    async exportCurrent() {
+      throw new Error('unused')
+    },
+    async exportVerification() {
+      throw new Error('should use prepared execution context verification')
+    },
+  }
+
+  const repository: ForecastLibraryRepository = {
+    async readCurrentRun() {
+      return null
+    },
+    async writeCurrentRun() {
+      throw new Error('unused')
+    },
+    async readVerificationRun() {
+      return null
+    },
+    async writeVerificationRun() {},
+  }
+
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const result = await service.resolveVerificationRequest({
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+    historicalOriginStartDate: '2021-01-01',
+    lastProcessedOriginDate: '2024-12-01',
+    maxOriginsPerRun: 3,
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  assert.equal(verificationHistoricalOriginStartDate, '2021-01-01')
+  assert.equal(verificationLastProcessedOriginDate, '2024-12-01')
+  assert.equal(verificationMaxOriginsPerRun, 3)
+})
+
+test('forecast library verification path persists bounded partial progress and resumes from the latest processed origin', async () => {
+  const firstResponse = createEndOfPeriodVerificationResponse('ets')
+  firstResponse.result.backtest['1M'] = {
+    ...firstResponse.result.backtest['1M'],
+    origins: 1,
+    expectedOrigins: 2,
+    successfulOrigins: 1,
+    coverage: 0.5,
+    records: [
+      {
+        ...firstResponse.result.backtest['1M'].records[0],
+        forecastOrigin: '2025-01-01T00:00:00.000Z',
+        forecastDate: '2025-02-01T00:00:00.000Z',
+      },
+    ],
+  }
+
+  const secondResponse = createEndOfPeriodVerificationResponse('ets')
+  secondResponse.result.backtest['1M'] = {
+    ...secondResponse.result.backtest['1M'],
+    origins: 1,
+    expectedOrigins: 2,
+    successfulOrigins: 1,
+    coverage: 0.5,
+    records: [
+      {
+        ...secondResponse.result.backtest['1M'].records[0],
+        forecastOrigin: '2025-02-01T00:00:00.000Z',
+        forecastDate: '2025-03-01T00:00:00.000Z',
+      },
+    ],
+  }
+
+  let persistedArtifact: Awaited<ReturnType<ForecastLibraryRepository['readVerificationRun']>> = null
+  const capturedLastProcessedOriginDates: Array<string | null | undefined> = []
+
+  const service = createTestForecastLibraryService({
+    bridge: {
+      async exportHistory() {
+        return createEndOfPeriodHistoryResponse()
+      },
+      async exportCurrent() {
+        throw new Error('unused')
+      },
+      async exportVerification(input) {
+        capturedLastProcessedOriginDates.push(input.lastProcessedOriginDate)
+        return capturedLastProcessedOriginDates.length === 1 ? firstResponse : secondResponse
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        throw new Error('unused')
+      },
+      async writeCurrentRun() {
+        throw new Error('unused')
+      },
+      async readVerificationRun() {
+        return persistedArtifact
+      },
+      async writeVerificationRun(artifact) {
+        persistedArtifact = artifact
+      },
+    },
+    logEvent: () => {},
+  })
+
+  const first = await service.resolveVerificationRequest({
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+    maxOriginsPerRun: 1,
+  })
+
+  assert.equal(first.status, 'NOT_AVAILABLE')
+  assert.equal(capturedLastProcessedOriginDates[0], null)
+  assert.equal(persistedArtifact?.verification['1M']?.records.length, 1)
+  assert.equal(persistedArtifact?.verification['1M']?.expectedOrigins, 2)
+
+  const second = await service.resolveVerificationRequest({
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+    maxOriginsPerRun: 1,
+  })
+
+  assert.equal(second.status, 'AVAILABLE')
+  assert.equal(capturedLastProcessedOriginDates[1], '2025-01-01T00:00:00.000Z')
+  assert.equal(second.cacheStatus, 'miss')
+  assert.equal(second.verification['1M']?.records.length, 2)
+  assert.equal(second.verification['1M']?.expectedOrigins, 2)
+})
+
+test('forecast library verification waiter stays fail-closed when a bounded partial artifact is visible before completion', async () => {
+  const historyResponse = createEndOfPeriodHistoryResponse()
+  const partialArtifact = {
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    displayName: 'Brent, Spot, FOB North Sea',
+    description: 'Brent, Spot, FOB North Sea',
+    targetBasis: 'END_OF_PERIOD' as const,
+    targetSemantics: 'END_OF_PERIOD' as const,
+    methodId: 'END_OF_PERIOD' as const,
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: { kind: 'DYNAMIC_MARKET_DATA_STORE' as const, runId: null },
+    historyFingerprint: buildForecastHistoryFingerprint(historyResponse.history, {
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+    }),
+    cadence: { sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' } as const,
+    frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+    statisticalCompatibility: createFullVerificationStatisticalCompatibility({
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'END_OF_PERIOD',
+    }),
+    preparation: null,
+    history: {
+      frequency: 'MONTHLY',
+      start: '2021-01-01',
+      end: '2026-04-01',
+      observations: 64,
+    },
+    forecastOrigin: '2026-04-01',
+    runtimeSeconds: 0.1,
+    verification: {
+      '1M': {
+        ...createPersistedVerificationPayload('ets')['1M'],
+        origins: 1,
+        expectedOrigins: 2,
+        successfulOrigins: 1,
+        coverage: 0.5,
+      },
+    },
+  }
+
+  const executionAdmission = createInMemoryForecastPreparationExecutionAdmission()
+  executionAdmission.acquireExecution = async () => ({
+    role: 'WAITER' as const,
+    executionId: 'verification-partial-waiter-execution',
+    ownerRequestId: 'verification-partial-waiter-owner',
+    ownerToken: 'verification-partial-waiter-token',
+    leaseVersion: 1,
+    leaseExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+    recoveredFromExecutionId: null,
+  })
+  executionAdmission.readLatestExecutionForLogicalArtifact = async () => ({
+    executionStatus: 'STARTED',
+    leaseExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+  } as never)
+
+  let readCount = 0
+  const service = createTestForecastLibraryService({
+    executionAdmission,
+    bridge: {
+      async exportHistory() {
+        return historyResponse
+      },
+      async exportCurrent() {
+        throw new Error('unused')
+      },
+      async exportVerification() {
+        throw new Error('Verification waiter must not start compute while an owner is active.')
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        throw new Error('unused')
+      },
+      async writeCurrentRun() {
+        throw new Error('unused')
+      },
+      async readVerificationRun() {
+        readCount += 1
+        return readCount === 1 ? null : partialArtifact
+      },
+      async writeVerificationRun() {
+        throw new Error('unused')
+      },
+    },
+    logEvent: () => {},
+  })
+
+  const result = await service.resolveVerificationRequest({
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+    maxOriginsPerRun: 1,
+  })
+
+  assert.equal(result.status, 'NOT_AVAILABLE')
+  if (result.status !== 'NOT_AVAILABLE') return
+  assert.match(result.reason, /PREPARATION_REQUIRED: Exact-identity prepared Historical Verification is still being built in bounded batches\./)
+  assert.equal(readCount >= 2, true)
+})
+
+test('forecast library verification path reuses the latest append-only artifact across a new history fingerprint', async () => {
+  const baseHistory = createEndOfPeriodHistoryResponse().history
+  const priorHistory = {
+    ...baseHistory,
+    start: baseHistory.points[0]!.date.slice(0, 10),
+    end: baseHistory.points.at(-1)!.date.slice(0, 10),
+    observations: baseHistory.points.length,
+    points: baseHistory.points.map((point) => ({
+      ...point,
+      date: point.date.slice(0, 10),
+    })),
+  }
+  const appendOnlyHistory = {
+    ...priorHistory,
+    end: '2026-05-01',
+    observations: priorHistory.observations + 1,
+    points: [
+      ...priorHistory.points,
+      {
+        date: '2026-05-01',
+        value: 1138,
+        sourceObservedAt: '2026-05-31T00:00:00.000Z',
+      },
+    ],
+  }
+  const priorHistoryFingerprint = buildForecastHistoryFingerprint(priorHistory, {
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  })
+  const exactHistoryFingerprint = buildForecastHistoryFingerprint(appendOnlyHistory, {
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  })
+  const latestArtifact: Awaited<ReturnType<ForecastLibraryRepository['readVerificationRun']>> = {
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    displayName: 'Brent, Spot, FOB North Sea',
+    description: 'Brent, Spot, FOB North Sea',
+    targetBasis: 'END_OF_PERIOD',
+    targetSemantics: 'END_OF_PERIOD',
+    methodId: 'END_OF_PERIOD',
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: { kind: 'DYNAMIC_MARKET_DATA_STORE', runId: null },
+    historyFingerprint: priorHistoryFingerprint,
+    cadence: { sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' },
+    frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+    statisticalCompatibility: createFullVerificationStatisticalCompatibility({
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'END_OF_PERIOD',
+    }),
+    preparation: null,
+    history: {
+      frequency: 'MONTHLY',
+      start: `${priorHistory.start}T00:00:00.000Z`,
+      end: `${priorHistory.end}T00:00:00.000Z`,
+      observations: priorHistory.observations,
+    },
+    forecastOrigin: '2025-02-01T00:00:00.000Z',
+    runtimeSeconds: 1.2,
+    verification: {
+      '1M': {
+        horizon: '1M',
+        horizonSteps: 1,
+        origins: 2,
+        expectedOrigins: 2,
+        successfulOrigins: 2,
+        failedOrigins: 0,
+        coverage: 1,
+        metrics: {
+          mae: 3.5,
+          rmse: 3.5,
+          mase: 0.4,
+          smape: 0.01,
+          directionalAccuracy: 1,
+          bias: 0.5,
+        },
+        records: [
+          {
+            ...createEndOfPeriodVerificationResponse('ets').result.backtest['1M'].records[0],
+            forecastOrigin: '2025-01-01T00:00:00.000Z',
+            forecastDate: '2025-02-01T00:00:00.000Z',
+            actualObservedAt: '2025-02-28T00:00:00.000Z',
+          },
+          {
+            ...createEndOfPeriodVerificationResponse('ets').result.backtest['1M'].records[0],
+            forecastOrigin: '2025-02-01T00:00:00.000Z',
+            forecastDate: '2025-03-01T00:00:00.000Z',
+            actualObservedAt: '2025-03-31T00:00:00.000Z',
+          },
+        ],
+        failures: [],
+      },
+    },
+  }
+
+  const appendOnlyResponse = createEndOfPeriodVerificationResponse('ets')
+  appendOnlyResponse.result.history = appendOnlyHistory
+  appendOnlyResponse.result.backtest['1M'] = {
+    ...appendOnlyResponse.result.backtest['1M'],
+    origins: 1,
+    expectedOrigins: 3,
+    successfulOrigins: 1,
+    failedOrigins: 0,
+    coverage: 1 / 3,
+    records: [
+      {
+        ...appendOnlyResponse.result.backtest['1M'].records[0],
+        forecastOrigin: '2025-03-01T00:00:00.000Z',
+        forecastDate: '2025-04-01T00:00:00.000Z',
+      },
+    ],
+    failures: [],
+  }
+
+  let readLatestCalls = 0
+  let persistedArtifact: Awaited<ReturnType<ForecastLibraryRepository['readVerificationRun']>> = null
+  const capturedLastProcessedOriginDates: Array<string | null | undefined> = []
+
+  const service = createTestForecastLibraryService({
+    bridge: {
+      async exportHistory() {
+        return {
+          ...createEndOfPeriodHistoryResponse(),
+          history: appendOnlyHistory,
+        }
+      },
+      async exportCurrent() {
+        throw new Error('unused')
+      },
+      async exportVerification(input) {
+        capturedLastProcessedOriginDates.push(input.lastProcessedOriginDate)
+        return appendOnlyResponse
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        throw new Error('unused')
+      },
+      async writeCurrentRun() {
+        throw new Error('unused')
+      },
+      async readVerificationRun(key) {
+        if (key.historyFingerprint === exactHistoryFingerprint) {
+          return persistedArtifact
+        }
+        return null
+      },
+      async readLatestVerificationRun() {
+        readLatestCalls += 1
+        return latestArtifact
+      },
+      async writeVerificationRun(artifact) {
+        persistedArtifact = artifact
+      },
+    },
+    logEvent: () => {},
+  })
+
+  const result = await service.resolveVerificationRequest({
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    maxOriginsPerRun: 1,
+  })
+
+  assert.equal(result.status, 'AVAILABLE')
+  assert.equal(readLatestCalls >= 1, true)
+  assert.equal(capturedLastProcessedOriginDates[0], '2025-02-01T00:00:00.000Z')
+  assert.equal(persistedArtifact?.historyFingerprint, exactHistoryFingerprint)
+  assert.equal(persistedArtifact?.verification['1M']?.expectedOrigins, 3)
+  assert.equal(persistedArtifact?.verification['1M']?.records.length, 3)
+})
+
+test('forecast library verification path preserves longer-horizon steps across bounded partial merges', async () => {
+  const priorHistory = createEndOfPeriodHistoryResponse().history
+  const priorHistoryFingerprint = buildForecastHistoryFingerprint(priorHistory, {
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+  })
+
+  const latestArtifact: Awaited<ReturnType<ForecastLibraryRepository['readVerificationRun']>> = {
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    displayName: 'Brent, Spot, FOB North Sea',
+    description: 'Brent, Spot, FOB North Sea',
+    targetBasis: 'END_OF_PERIOD',
+    targetSemantics: 'END_OF_PERIOD',
+    methodId: 'END_OF_PERIOD',
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: { kind: 'DYNAMIC_MARKET_DATA_STORE', runId: null },
+    historyFingerprint: priorHistoryFingerprint,
+    cadence: { sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' },
+    frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+    statisticalCompatibility: createFullVerificationStatisticalCompatibility({
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'END_OF_PERIOD',
+    }),
+    preparation: null,
+    history: {
+      frequency: 'MONTHLY',
+      start: priorHistory.start,
+      end: priorHistory.end,
+      observations: priorHistory.observations,
+    },
+    forecastOrigin: priorHistory.end,
+    runtimeSeconds: 1.2,
+    verification: {
+      '1M': {
+        ...createEndOfPeriodVerificationResponse('ets').result.backtest['1M'],
+        horizon: '1M',
+        horizonSteps: 1,
+        origins: 2,
+        expectedOrigins: 3,
+        successfulOrigins: 2,
+        failedOrigins: 0,
+        coverage: 2 / 3,
+        records: [
+          {
+            ...createEndOfPeriodVerificationResponse('ets').result.backtest['1M'].records[0],
+            actualObservedAt: '2025-02-28T00:00:00.000Z',
+          },
+          {
+            ...createEndOfPeriodVerificationResponse('ets').result.backtest['1M'].records[0],
+            forecastOrigin: '2025-02-01T00:00:00.000Z',
+            forecastDate: '2025-03-01T00:00:00.000Z',
+            actualObservedAt: '2025-03-31T00:00:00.000Z',
+          },
+        ],
+      },
+      '6M': {
+        horizon: '6M',
+        horizonSteps: 6,
+        origins: 2,
+        expectedOrigins: 3,
+        successfulOrigins: 2,
+        failedOrigins: 0,
+        coverage: 2 / 3,
+        metrics: {
+          mae: 7.5,
+          rmse: 8.2,
+          mase: 0.52,
+          smape: 0.031,
+          directionalAccuracy: 0.5,
+          bias: -0.7,
+        },
+        records: [
+          {
+            ...createEndOfPeriodVerificationResponse('ets').result.backtest['1M'].records[0],
+            horizon: '6M',
+            horizonSteps: 6,
+            forecastDate: '2025-07-01T00:00:00.000Z',
+            actualObservedAt: '2025-07-31T00:00:00.000Z',
+          },
+          {
+            ...createEndOfPeriodVerificationResponse('ets').result.backtest['1M'].records[0],
+            forecastOrigin: '2025-02-01T00:00:00.000Z',
+            horizon: '6M',
+            horizonSteps: 6,
+            forecastDate: '2025-08-01T00:00:00.000Z',
+            actualObservedAt: '2025-08-31T00:00:00.000Z',
+          },
+        ],
+        failures: [],
+      },
+    },
+  }
+
+  const partialResponse = createEndOfPeriodVerificationResponse('ets')
+  partialResponse.result.backtest['1M'] = {
+    ...partialResponse.result.backtest['1M'],
+    origins: 1,
+    expectedOrigins: 3,
+    successfulOrigins: 1,
+    failedOrigins: 0,
+    coverage: 1 / 3,
+    records: [partialResponse.result.backtest['1M'].records[0]],
+    failures: [],
+  }
+  partialResponse.result.backtest['6M'] = {
+    origins: 0,
+    expectedOrigins: 3,
+    successfulOrigins: 0,
+    failedOrigins: 0,
+    coverage: 0,
+    metrics: null,
+    records: [],
+    failures: [],
+  }
+
+  let persistedArtifact: Awaited<ReturnType<ForecastLibraryRepository['readVerificationRun']>> = null
+
+  const service = createTestForecastLibraryService({
+    bridge: {
+      async exportHistory() {
+        return createEndOfPeriodHistoryResponse()
+      },
+      async exportCurrent() {
+        throw new Error('unused')
+      },
+      async exportVerification() {
+        return partialResponse
+      },
+    },
+    repository: {
+      async readCurrentRun() {
+        throw new Error('unused')
+      },
+      async writeCurrentRun() {
+        throw new Error('unused')
+      },
+      async readVerificationRun() {
+        return latestArtifact
+      },
+      async readLatestVerificationRun() {
+        return latestArtifact
+      },
+      async writeVerificationRun(artifact) {
+        persistedArtifact = artifact
+      },
+    },
+    logEvent: () => {},
+  })
+
+  const result = await service.resolveVerificationRequest({
+    seriesId: 'wocaes0074',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    maxOriginsPerRun: 1,
+  })
+
+  assert.equal(result.status, 'NOT_AVAILABLE')
+  assert.equal(persistedArtifact?.verification['6M']?.horizonSteps, 6)
 })
 
 test('forecast library verification path backfills END_OF_PERIOD actualObservedAt for date-only target periods', async () => {
@@ -1595,7 +4029,7 @@ test('forecast library verification path backfills END_OF_PERIOD actualObservedA
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveVerificationRequest({
     seriesId: 'wocaes0074',
     modelId: 'ets',
@@ -1665,7 +4099,7 @@ test('forecast library verification path uses exportHistory provenance when veri
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveVerificationRequest({
     seriesId: 'wocaes0074',
     modelId: 'ets',
@@ -1711,7 +4145,7 @@ test('forecast library verification path rebuilds stale END_OF_PERIOD cache entr
         displayName: 'Brent, Spot, FOB North Sea',
         description: 'Brent, Spot, FOB North Sea',
         targetBasis: 'END_OF_PERIOD',
-        ...persistedIdentity('END_OF_PERIOD'),
+        ...persistedIdentity('END_OF_PERIOD', 'VERIFICATION'),
         methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
         source: {
           kind: 'DYNAMIC_MARKET_DATA_STORE',
@@ -1759,7 +4193,7 @@ test('forecast library verification path rebuilds stale END_OF_PERIOD cache entr
     },
   }
 
-  const service = createForecastLibraryService({ bridge, repository, logEvent: () => {} })
+  const service = createTestForecastLibraryService({ bridge, repository, logEvent: () => {} })
   const result = await service.resolveVerificationRequest({
     seriesId: 'wocaes0074',
     modelId: 'ets',
@@ -1775,7 +4209,7 @@ test('forecast library verification path rebuilds stale END_OF_PERIOD cache entr
 
 test('forecast library emits prepared, compute, model-fit, verification, and persistence counters', async () => {
   const events: Array<{ event: string; metrics: Record<string, string | number | boolean | null> }> = []
-  const service = createForecastLibraryService({
+  const service = createTestForecastLibraryService({
     bridge: {
       async exportHistory() { return createHistoryResponse() },
       async exportCurrent() { return createCurrentResponse() },
@@ -1809,7 +4243,7 @@ test('forecast library emits prepared, compute, model-fit, verification, and per
 
 test('stress telemetry leaves Forecast values and identity unchanged', async () => {
   function createService(emit: (event: string, metrics?: Record<string, string | number | boolean | null>) => void) {
-    return createForecastLibraryService({
+    return createTestForecastLibraryService({
       bridge: {
         async exportHistory() { return createHistoryResponse() },
         async exportCurrent() { return createCurrentResponse() },
@@ -1834,4 +4268,34 @@ test('stress telemetry leaves Forecast values and identity unchanged', async () 
   assert.ok(telemetryEvents.includes('current_compute_end'))
   assert.ok(telemetryEvents.includes('model_fit'))
   assert.ok(telemetryEvents.includes('persistence'))
+})
+
+test('forecast library rejects Stage 3 heartbeat intervals that are not strictly below the lease duration', async () => {
+  await withEnv(
+    {
+      FORECAST_STAGE3_LEASE_DURATION_MS: '3000',
+      FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS: '3000',
+    },
+    async () => {
+      await assert.rejects(
+        async () => createTestForecastLibraryService({ logEvent: () => {} }),
+        /FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS must be strictly less than FORECAST_STAGE3_LEASE_DURATION_MS/,
+      )
+    },
+  )
+})
+
+test('forecast library rejects lease durations that cannot support a safe Stage 3 heartbeat', async () => {
+  await withEnv(
+    {
+      FORECAST_STAGE3_LEASE_DURATION_MS: '1000',
+      FORECAST_STAGE3_HEARTBEAT_INTERVAL_MS: undefined,
+    },
+    async () => {
+      await assert.rejects(
+        async () => createTestForecastLibraryService({ logEvent: () => {} }),
+        /FORECAST_STAGE3_LEASE_DURATION_MS must be greater than 1000 milliseconds/,
+      )
+    },
+  )
 })

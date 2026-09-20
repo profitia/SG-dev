@@ -1,0 +1,258 @@
+{
+  "generatedAt": "2026-09-14T14:27:51.000Z",
+  "taskId": "ppf-1-stage-12-matrix-reread-fail-root-cause-audit-20260914",
+  "scope": "audit",
+  "upstreamIdentityAuthority": "EXTERNAL_CHATGPT_PROMPT_AUTHORING_LAYER",
+  "conversationId": "7f2e9d6a-1c84-4d79-93a6-2b7f0c4e8a51",
+  "validationBranch": "ppf1/stage12-live-acceptance-legacy-deprecation-20260911",
+  "remoteHead": "3c714e34946b89f086d822d32b5e197e36ad2e63",
+  "dashboardDeployedSha": "db177e4931b9ce7247393b40448c11811bdc51cc",
+  "sgRuntimeDeployedSha": "f7761cc3ee56dd474667b89132747910d67c2517",
+  "semantics": {
+    "rereadFailIsMatrixDerived": true,
+    "independentRereadOperationExists": false,
+    "rereadFailLabelSemanticallyPrecise": false,
+    "explanation": "The benchmark-level reread gate is derived directly from matrix.status and matrix.failingReasons. There is no separate primary reread phase. WARM_REHEARSAL is a later distinct stage."
+  },
+  "sourceTruth": {
+    "demoCertification": {
+      "getMatrixPrismaDefault": {
+        "line": 1611,
+        "value": "dependencies.getMatrixPrisma ?? (() => null)"
+      },
+      "rereadDefinitionLine": 2160,
+      "rereadFailReturnLine": 1460,
+      "matrixPrismaInjectionLine": 1142
+    },
+    "acceptanceMatrix": {
+      "persistedProofGuardLine": 363,
+      "currentPersistedCheckLine": 782,
+      "currentPersistedFailLine": 792,
+      "verificationPersistedCheckLine": 917,
+      "verificationPersistedFailLine": 927
+    },
+    "runtimeQuery": {
+      "pointInTimeCurrentRouteLine": 406,
+      "pointInTimeCurrentPersistedReturnLine": 411,
+      "pointInTimeCurrentBranchLine": 1141,
+      "pointInTimeCurrentBranchReturnLine": 1162,
+      "pointInTimeVerificationPersistedFunctionLine": 708,
+      "pointInTimeVerificationBranchLine": 1238,
+      "pointInTimeVerificationBranchReturnLine": 1240
+    }
+  },
+  "analysis": {
+    "executionSummary": "This audit confirmed from source that REREAD_FAIL is a derived certification label from MATRIX FAIL rather than a distinct measured reread phase. It then ran Brent and Aluminium REVALIDATE against the deployed dashboard revision db177e4931b9ce7247393b40448c11811bdc51cc, captured the live matrix summaries, and compared those failures with deployed public POINT_IN_TIME capability, current, and verification routes. The live benchmarks now pass PRECOMPUTE, reach point-in-time evaluation, and complete all 12 variants without timeout. Brent still reports 4 failing current cells and 16 failing verification cells, all as MISSING_ARTIFACT. However, deployed public PIT current and verification routes return AVAILABLE for all four models on both Brent and Aluminium, with populated verification horizons and stable fingerprints. A harness that reproduces deployed MATRIX semantics while injecting getPrisma() = null reproduces the exact 4 plus 16 PIT-only failures at POSTGRES_ARTIFACT / MISSING_ARTIFACT, which matches the live report. The primary root cause is therefore dashboard-owned matrix persisted-proof dependency wiring, not missing PIT data and not SG Runtime.",
+    "reasoningSummary": "The critical discriminating check was whether the deployed public PIT consumer routes would also fail if the artifacts were truly missing. They did not; they returned AVAILABLE with fingerprints and records. That falsified a data-absence hypothesis. The next discriminating check was whether the matrix persisted-proof gate could alone explain the exact live fail shape. It could: acceptance-matrix requires persisted proof for POINT_IN_TIME cells, createDemoCertificationService defaults getMatrixPrisma to null, and a deployed-semantics harness with public capability/current/verification reads plus null Prisma reproduced the exact 4 current and 16 verification failures with diagnostic Market-data Prisma client is unavailable."
+  },
+  "brent": {
+    "liveResult": {
+      "mode": "REVALIDATE",
+      "seriesId": "wocaes0074",
+      "demoSafe": "NO",
+      "reason": "REREAD_FAIL",
+      "precomputeStatus": "PASS",
+      "matrixStatus": "FAIL",
+      "warmStatus": "FAIL",
+      "rereadStatus": "FAIL",
+      "rereadReason": "MISSING_ARTIFACT"
+    },
+    "requiredCurrentCellCount": 12,
+    "requiredCurrentFailCount": 4,
+    "requiredVerificationCellCount": 48,
+    "requiredVerificationFailCount": 16,
+    "nonPitFailCount": 0,
+    "pitFailCount": 20,
+    "failureDomain": "BOTH",
+    "failureLayerCounts": {
+      "POSTGRES_ARTIFACT": 20
+    },
+    "reasonCodeCounts": {
+      "MISSING_ARTIFACT": 20
+    },
+    "failingCurrentCells": [
+      {
+        "seriesId": "wocaes0074",
+        "modelId": "naive",
+        "targetBasis": "POINT_IN_TIME",
+        "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+        "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+        "methodVersion": "rolling-daily-point-in-time-v1",
+        "sourceFrequency": "DAILY",
+        "targetCadence": "DAILY",
+        "historyFingerprint": null,
+        "state": "FAIL",
+        "failingLayer": "POSTGRES_ARTIFACT",
+        "reasonCode": "MISSING_ARTIFACT",
+        "diagnostic": "Market-data Prisma client is unavailable."
+      },
+      {
+        "seriesId": "wocaes0074",
+        "modelId": "damped_holt",
+        "targetBasis": "POINT_IN_TIME",
+        "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+        "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+        "methodVersion": "rolling-daily-point-in-time-v1",
+        "sourceFrequency": "DAILY",
+        "targetCadence": "DAILY",
+        "historyFingerprint": null,
+        "state": "FAIL",
+        "failingLayer": "POSTGRES_ARTIFACT",
+        "reasonCode": "MISSING_ARTIFACT",
+        "diagnostic": "Market-data Prisma client is unavailable."
+      },
+      {
+        "seriesId": "wocaes0074",
+        "modelId": "ets",
+        "targetBasis": "POINT_IN_TIME",
+        "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+        "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+        "methodVersion": "rolling-daily-point-in-time-v1",
+        "sourceFrequency": "DAILY",
+        "targetCadence": "DAILY",
+        "historyFingerprint": null,
+        "state": "FAIL",
+        "failingLayer": "POSTGRES_ARTIFACT",
+        "reasonCode": "MISSING_ARTIFACT",
+        "diagnostic": "Market-data Prisma client is unavailable."
+      },
+      {
+        "seriesId": "wocaes0074",
+        "modelId": "arima",
+        "targetBasis": "POINT_IN_TIME",
+        "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+        "methodId": "ROLLING_DAILY_POINT_IN_TIME",
+        "methodVersion": "rolling-daily-point-in-time-v1",
+        "sourceFrequency": "DAILY",
+        "targetCadence": "DAILY",
+        "historyFingerprint": null,
+        "state": "FAIL",
+        "failingLayer": "POSTGRES_ARTIFACT",
+        "reasonCode": "MISSING_ARTIFACT",
+        "diagnostic": "Market-data Prisma client is unavailable."
+      }
+    ],
+    "failingVerificationCells": [
+      { "seriesId": "wocaes0074", "modelId": "naive", "targetBasis": "POINT_IN_TIME", "verificationHorizon": "1M", "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME", "methodId": "ROLLING_DAILY_POINT_IN_TIME", "methodVersion": "rolling-daily-point-in-time-v1", "sourceFrequency": "DAILY", "targetCadence": "DAILY", "historyFingerprint": null, "state": "FAIL", "failingLayer": "POSTGRES_ARTIFACT", "reasonCode": "MISSING_ARTIFACT", "diagnostic": "Market-data Prisma client is unavailable." },
+      { "seriesId": "wocaes0074", "modelId": "naive", "targetBasis": "POINT_IN_TIME", "verificationHorizon": "3M", "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME", "methodId": "ROLLING_DAILY_POINT_IN_TIME", "methodVersion": "rolling-daily-point-in-time-v1", "sourceFrequency": "DAILY", "targetCadence": "DAILY", "historyFingerprint": null, "state": "FAIL", "failingLayer": "POSTGRES_ARTIFACT", "reasonCode": "MISSING_ARTIFACT", "diagnostic": "Market-data Prisma client is unavailable." },
+      { "seriesId": "wocaes0074", "modelId": "naive", "targetBasis": "POINT_IN_TIME", "verificationHorizon": "6M", "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME", "methodId": "ROLLING_DAILY_POINT_IN_TIME", "methodVersion": "rolling-daily-point-in-time-v1", "sourceFrequency": "DAILY", "targetCadence": "DAILY", "historyFingerprint": null, "state": "FAIL", "failingLayer": "POSTGRES_ARTIFACT", "reasonCode": "MISSING_ARTIFACT", "diagnostic": "Market-data Prisma client is unavailable." },
+      { "seriesId": "wocaes0074", "modelId": "naive", "targetBasis": "POINT_IN_TIME", "verificationHorizon": "12M", "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME", "methodId": "ROLLING_DAILY_POINT_IN_TIME", "methodVersion": "rolling-daily-point-in-time-v1", "sourceFrequency": "DAILY", "targetCadence": "DAILY", "historyFingerprint": null, "state": "FAIL", "failingLayer": "POSTGRES_ARTIFACT", "reasonCode": "MISSING_ARTIFACT", "diagnostic": "Market-data Prisma client is unavailable." },
+      { "seriesId": "wocaes0074", "modelId": "damped_holt", "targetBasis": "POINT_IN_TIME", "verificationHorizon": "1M", "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME", "methodId": "ROLLING_DAILY_POINT_IN_TIME", "methodVersion": "rolling-daily-point-in-time-v1", "sourceFrequency": "DAILY", "targetCadence": "DAILY", "historyFingerprint": null, "state": "FAIL", "failingLayer": "POSTGRES_ARTIFACT", "reasonCode": "MISSING_ARTIFACT", "diagnostic": "Market-data Prisma client is unavailable." },
+      { "seriesId": "wocaes0074", "modelId": "damped_holt", "targetBasis": "POINT_IN_TIME", "verificationHorizon": "3M", "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME", "methodId": "ROLLING_DAILY_POINT_IN_TIME", "methodVersion": "rolling-daily-point-in-time-v1", "sourceFrequency": "DAILY", "targetCadence": "DAILY", "historyFingerprint": null, "state": "FAIL", "failingLayer": "POSTGRES_ARTIFACT", "reasonCode": "MISSING_ARTIFACT", "diagnostic": "Market-data Prisma client is unavailable." },
+      { "seriesId": "wocaes0074", "modelId": "damped_holt", "targetBasis": "POINT_IN_TIME", "verificationHorizon": "6M", "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME", "methodId": "ROLLING_DAILY_POINT_IN_TIME", "methodVersion": "rolling-daily-point-in-time-v1", "sourceFrequency": "DAILY", "targetCadence": "DAILY", "historyFingerprint": null, "state": "FAIL", "failingLayer": "POSTGRES_ARTIFACT", "reasonCode": "MISSING_ARTIFACT", "diagnostic": "Market-data Prisma client is unavailable." },
+      { "seriesId": "wocaes0074", "modelId": "damped_holt", "targetBasis": "POINT_IN_TIME", "verificationHorizon": "12M", "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME", "methodId": "ROLLING_DAILY_POINT_IN_TIME", "methodVersion": "rolling-daily-point-in-time-v1", "sourceFrequency": "DAILY", "targetCadence": "DAILY", "historyFingerprint": null, "state": "FAIL", "failingLayer": "POSTGRES_ARTIFACT", "reasonCode": "MISSING_ARTIFACT", "diagnostic": "Market-data Prisma client is unavailable." },
+      { "seriesId": "wocaes0074", "modelId": "ets", "targetBasis": "POINT_IN_TIME", "verificationHorizon": "1M", "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME", "methodId": "ROLLING_DAILY_POINT_IN_TIME", "methodVersion": "rolling-daily-point-in-time-v1", "sourceFrequency": "DAILY", "targetCadence": "DAILY", "historyFingerprint": null, "state": "FAIL", "failingLayer": "POSTGRES_ARTIFACT", "reasonCode": "MISSING_ARTIFACT", "diagnostic": "Market-data Prisma client is unavailable." },
+      { "seriesId": "wocaes0074", "modelId": "ets", "targetBasis": "POINT_IN_TIME", "verificationHorizon": "3M", "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME", "methodId": "ROLLING_DAILY_POINT_IN_TIME", "methodVersion": "rolling-daily-point-in-time-v1", "sourceFrequency": "DAILY", "targetCadence": "DAILY", "historyFingerprint": null, "state": "FAIL", "failingLayer": "POSTGRES_ARTIFACT", "reasonCode": "MISSING_ARTIFACT", "diagnostic": "Market-data Prisma client is unavailable." },
+      { "seriesId": "wocaes0074", "modelId": "ets", "targetBasis": "POINT_IN_TIME", "verificationHorizon": "6M", "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME", "methodId": "ROLLING_DAILY_POINT_IN_TIME", "methodVersion": "rolling-daily-point-in-time-v1", "sourceFrequency": "DAILY", "targetCadence": "DAILY", "historyFingerprint": null, "state": "FAIL", "failingLayer": "POSTGRES_ARTIFACT", "reasonCode": "MISSING_ARTIFACT", "diagnostic": "Market-data Prisma client is unavailable." },
+      { "seriesId": "wocaes0074", "modelId": "ets", "targetBasis": "POINT_IN_TIME", "verificationHorizon": "12M", "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME", "methodId": "ROLLING_DAILY_POINT_IN_TIME", "methodVersion": "rolling-daily-point-in-time-v1", "sourceFrequency": "DAILY", "targetCadence": "DAILY", "historyFingerprint": null, "state": "FAIL", "failingLayer": "POSTGRES_ARTIFACT", "reasonCode": "MISSING_ARTIFACT", "diagnostic": "Market-data Prisma client is unavailable." },
+      { "seriesId": "wocaes0074", "modelId": "arima", "targetBasis": "POINT_IN_TIME", "verificationHorizon": "1M", "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME", "methodId": "ROLLING_DAILY_POINT_IN_TIME", "methodVersion": "rolling-daily-point-in-time-v1", "sourceFrequency": "DAILY", "targetCadence": "DAILY", "historyFingerprint": null, "state": "FAIL", "failingLayer": "POSTGRES_ARTIFACT", "reasonCode": "MISSING_ARTIFACT", "diagnostic": "Market-data Prisma client is unavailable." },
+      { "seriesId": "wocaes0074", "modelId": "arima", "targetBasis": "POINT_IN_TIME", "verificationHorizon": "3M", "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME", "methodId": "ROLLING_DAILY_POINT_IN_TIME", "methodVersion": "rolling-daily-point-in-time-v1", "sourceFrequency": "DAILY", "targetCadence": "DAILY", "historyFingerprint": null, "state": "FAIL", "failingLayer": "POSTGRES_ARTIFACT", "reasonCode": "MISSING_ARTIFACT", "diagnostic": "Market-data Prisma client is unavailable." },
+      { "seriesId": "wocaes0074", "modelId": "arima", "targetBasis": "POINT_IN_TIME", "verificationHorizon": "6M", "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME", "methodId": "ROLLING_DAILY_POINT_IN_TIME", "methodVersion": "rolling-daily-point-in-time-v1", "sourceFrequency": "DAILY", "targetCadence": "DAILY", "historyFingerprint": null, "state": "FAIL", "failingLayer": "POSTGRES_ARTIFACT", "reasonCode": "MISSING_ARTIFACT", "diagnostic": "Market-data Prisma client is unavailable." },
+      { "seriesId": "wocaes0074", "modelId": "arima", "targetBasis": "POINT_IN_TIME", "verificationHorizon": "12M", "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME", "methodId": "ROLLING_DAILY_POINT_IN_TIME", "methodVersion": "rolling-daily-point-in-time-v1", "sourceFrequency": "DAILY", "targetCadence": "DAILY", "historyFingerprint": null, "state": "FAIL", "failingLayer": "POSTGRES_ARTIFACT", "reasonCode": "MISSING_ARTIFACT", "diagnostic": "Market-data Prisma client is unavailable." }
+    ],
+    "readinessComparison": [
+      { "modelId": "naive", "targetBasis": "POINT_IN_TIME", "capabilityStatus": "AVAILABLE", "currentReadiness": "READY", "verificationReadiness": "READY", "fullVerificationReadiness": "READY", "matrixCellState": "FAIL", "consistentWithCapability": "NO" },
+      { "modelId": "damped_holt", "targetBasis": "POINT_IN_TIME", "capabilityStatus": "AVAILABLE", "currentReadiness": "READY", "verificationReadiness": "READY", "fullVerificationReadiness": "READY", "matrixCellState": "FAIL", "consistentWithCapability": "NO" },
+      { "modelId": "ets", "targetBasis": "POINT_IN_TIME", "capabilityStatus": "AVAILABLE", "currentReadiness": "READY", "verificationReadiness": "READY", "fullVerificationReadiness": "READY", "matrixCellState": "FAIL", "consistentWithCapability": "NO" },
+      { "modelId": "arima", "targetBasis": "POINT_IN_TIME", "capabilityStatus": "AVAILABLE", "currentReadiness": "READY", "verificationReadiness": "READY", "fullVerificationReadiness": "READY", "matrixCellState": "FAIL", "consistentWithCapability": "NO" }
+    ],
+    "pitCurrentArtifactState": {
+      "status": "AVAILABLE_ON_PUBLIC_ROUTE_BUT_INVISIBLE_TO_MATRIX_PERSISTED_PROOF",
+      "historyFingerprint": "f141dff21e828a2887b55946ab4e49d28dbbedbe698c1b08c9ffdf3af912ba54",
+      "models": ["naive", "damped_holt", "ets", "arima"]
+    },
+    "pitVerificationArtifactState": {
+      "status": "AVAILABLE_ON_PUBLIC_ROUTE_BUT_INVISIBLE_TO_MATRIX_PERSISTED_PROOF",
+      "historyFingerprint": "65cd369878e332ad93637bf46aa5530f0235e4bac4f47693916167ded900f5e3",
+      "horizons": ["1M", "3M", "6M", "12M"],
+      "recordCountsPerHorizon": { "1M": 675, "3M": 632, "6M": 567, "12M": 440 }
+    }
+  },
+  "aluminium": {
+    "rootCauseMatchesBrent": true,
+    "reasonCodeCounts": { "MISSING_ARTIFACT": 20 },
+    "failureLayerCounts": { "POSTGRES_ARTIFACT": 20 },
+    "pitCurrentArtifactState": {
+      "status": "AVAILABLE_ON_PUBLIC_ROUTE_BUT_INVISIBLE_TO_MATRIX_PERSISTED_PROOF",
+      "historyFingerprint": "c37c1f02210d41fbc92fa7f5ee1ce083a9e7244b47facd2e6bcb5ce08b882e8b",
+      "models": ["naive", "damped_holt", "ets", "arima"]
+    },
+    "pitVerificationArtifactState": {
+      "status": "AVAILABLE_ON_PUBLIC_ROUTE_BUT_INVISIBLE_TO_MATRIX_PERSISTED_PROOF",
+      "historyFingerprint": "66ab9637bc2685c14030dc5ae334c50556b3d71525a3dfaf41d4233d7a716c91",
+      "horizons": ["1M", "3M", "6M", "12M"],
+      "recordCountsPerHorizon": { "1M": 660, "3M": 617, "6M": 555, "12M": 429 }
+    },
+    "readinessComparison": [
+      { "modelId": "naive", "targetBasis": "POINT_IN_TIME", "capabilityStatus": "AVAILABLE", "currentReadiness": "READY", "verificationReadiness": "READY", "fullVerificationReadiness": "READY", "matrixCellState": "FAIL", "consistentWithCapability": "NO" },
+      { "modelId": "damped_holt", "targetBasis": "POINT_IN_TIME", "capabilityStatus": "AVAILABLE", "currentReadiness": "READY", "verificationReadiness": "READY", "fullVerificationReadiness": "READY", "matrixCellState": "FAIL", "consistentWithCapability": "NO" },
+      { "modelId": "ets", "targetBasis": "POINT_IN_TIME", "capabilityStatus": "AVAILABLE", "currentReadiness": "READY", "verificationReadiness": "READY", "fullVerificationReadiness": "READY", "matrixCellState": "FAIL", "consistentWithCapability": "NO" },
+      { "modelId": "arima", "targetBasis": "POINT_IN_TIME", "capabilityStatus": "AVAILABLE", "currentReadiness": "READY", "verificationReadiness": "READY", "fullVerificationReadiness": "READY", "matrixCellState": "FAIL", "consistentWithCapability": "NO" }
+    ]
+  },
+  "warm": {
+    "failureIsDownstreamOfMatrix": true,
+    "explanation": "runWarmRehearsal seeds verification failures directly from required primary matrix verification cells that are not PASS and records primary matrix current failures before issuing current reread checks."
+  },
+  "fingerprints": {
+    "mismatchCount": 0,
+    "explanation": "The failing matrix cells exit before canonical PIT reads are bound into matrix identities, so their matrix historyFingerprint remains null. No STALE_FINGERPRINT or IDENTITY_MISMATCH evidence was observed."
+  },
+  "computeSafety": {
+    "prepareCurrentCount": 0,
+    "prepareVerificationCount": 0,
+    "modelFitCount": 0,
+    "pitMaterializationCount": 0,
+    "historicalComputeCount": 0,
+    "duplicateForecastCompute": 0
+  },
+  "failureRevealedAfterTimeoutRemoval": true,
+  "rootCause": {
+    "classification": "OTHER",
+    "explanation": "Dashboard certification matrix PIT persisted-proof dependency unavailable because createDemoCertificationService defaults getMatrixPrisma to null while acceptance-matrix requires a live Prisma dependency for POINT_IN_TIME proof checks.",
+    "correctiveOwner": "DASHBOARD_PREVIEW",
+    "recommendedNextCorrective": "wire a live market-data Prisma dependency into the deployed certification matrix path for POINT_IN_TIME persisted-proof checks so MATRIX evaluates the same available PIT artifacts already served by the public dashboard current and verification routes",
+    "readyForCorrective": true
+  },
+  "actions": {
+    "validationsExecuted": [
+      "Read demo-certification.ts and acceptance-matrix.ts to confirm the benchmark-level reread gate is matrix-derived.",
+      "Captured a full deployed Brent REVALIDATE certification report from dashboards-library.",
+      "Queried deployed Brent and Aluminium POINT_IN_TIME capability routes across all four models.",
+      "Queried deployed Brent and Aluminium POINT_IN_TIME current routes across all four models.",
+      "Queried deployed Brent and Aluminium POINT_IN_TIME verification routes across all four models.",
+      "Reproduced the exact live matrix fail shape with a deployed-semantics harness that injected getPrisma() = null into createForecastAcceptanceMatrixService."
+    ],
+    "validationsNotExecuted": [
+      "No source corrective was implemented.",
+      "No SG Runtime mutation was performed.",
+      "No Copper repair was performed.",
+      "No timeout or MATRIX semantics change was performed."
+    ],
+    "artifactsCreated": [
+      "tooling/Benchmark-Forecasting/validation/ppf1-stage12-matrix-reread-fail-root-cause-audit.md",
+      "tooling/Benchmark-Forecasting/validation/ppf1-stage12-matrix-reread-fail-root-cause-audit.json",
+      "apps/pmos/.pmos/recovery/bootstrap-inputs/2026-09-14_ppf-1-stage-12-matrix-reread-fail-root-cause-audit-20260914.json"
+    ],
+    "artifactsModified": []
+  },
+  "result": {
+    "pmosSave": "SUCCEEDED",
+    "closeoutState": "CLOSEOUT_COMPLETE",
+    "pendingSlotFinal": "CLEAR",
+    "archiveCompletenessStatus": "PASS",
+    "executionTrailStatus": "PRESENT",
+    "handoffPublicationStatus": "SUCCEEDED",
+    "vectorRebuildStatus": "SUCCEEDED",
+    "runtimeContextIntegrityStatus": "PASS",
+    "runtimeVerification": "PASS",
+    "recoveryRequired": false,
+    "persistedConversationBaseName": "2026-09-14-16:29_ppf-1-stage-12-matrix-reread-fail-root-cause-audit-20260914",
+    "rereadFailAudit": "PASS",
+    "warmRehearsalCorrectiveFullLiveAcceptance": "NOT_PROVEN",
+    "readyForCopperFreshnessRepair": "NO",
+    "preDeprecationAcceptance": "BLOCKED",
+    "legacyDeprecationAllowed": "NO",
+    "finalStatus": "SUCCESS"
+  }
+}

@@ -1,23 +1,46 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+import '../scripts/load-env'
+
 import { ROLLING_DAILY_TARGET_BASIS } from '../lib/forecast/rolling-daily-policy'
 import {
+  createInMemoryForecastPreparationExecutionAdmission,
+  createNoopForecastPreparationExecutionLedger,
+} from '../lib/forecast/execution-ledger'
+import {
   buildRollingDailyHistoryFingerprint,
+  buildRollingDailyTrainingHistoryFingerprints,
   createRollingDailyMaintenanceService,
   DEFAULT_ROLLING_DAILY_HISTORICAL_ORIGIN_START_DATE,
+  isRollingDailyHistoricalPreparationComplete,
+  isRollingDailyVerificationRecordCompatibleWithHistory,
   normalizePersistedRollingDailyArtifacts,
   type RollingDailyMaintenanceBridgeRequest,
   ROLLING_DAILY_REBUILD_REQUIRED_REASON,
   ROLLING_DAILY_INPUT_SOURCE,
   ROLLING_DAILY_METHOD_ID,
   ROLLING_DAILY_METHOD_VERSION,
+  ROLLING_DAILY_VERIFICATION_IDENTITY_VERSION,
   type RollingDailyCalibrationGroupArtifact,
   type RollingDailyMaintenanceRepository,
   type RollingDailyMaintenanceRunner,
   type RollingDailyMaintenanceStateArtifact,
   type RollingDailyVerificationRecordArtifact,
 } from '../lib/forecast/rolling-daily-maintenance'
+
+process.env.MARKET_DATA_DATABASE_URL = process.env.MARKET_DATA_DATABASE_URL
+  ?? 'postgresql://phase21@127.0.0.1:55421/sg_phase_2_1_market_data'
+
+function createTestRollingDailyMaintenanceService(
+  dependencies: Parameters<typeof createRollingDailyMaintenanceService>[0] = {},
+) {
+  return createRollingDailyMaintenanceService({
+    executionAdmission: createInMemoryForecastPreparationExecutionAdmission(),
+    executionLedger: createNoopForecastPreparationExecutionLedger(),
+    ...dependencies,
+  })
+}
 
 function createHistory() {
   return {
@@ -84,6 +107,31 @@ function createVerificationRecord(overrides: Partial<RollingDailyVerificationRec
     ...overrides,
   }
 }
+
+test('rolling daily verification v2 reuses an append-only origin but rejects a revised training prefix', () => {
+  const originalHistory = createHistory()
+  const trainingFingerprint = buildRollingDailyTrainingHistoryFingerprints(originalHistory).get('2024-01-05')
+  assert.ok(trainingFingerprint)
+
+  const record = createVerificationRecord({
+    sourceHistoryFingerprint: buildRollingDailyHistoryFingerprint(originalHistory),
+    metadata: {
+      verificationIdentityVersion: ROLLING_DAILY_VERIFICATION_IDENTITY_VERSION,
+      trainingHistoryFingerprint: trainingFingerprint,
+    },
+  })
+  const appendedHistory = {
+    ...originalHistory,
+    points: [...originalHistory.points, { date: '2024-01-08', value: 105 }],
+  }
+  const revisedHistory = {
+    ...appendedHistory,
+    points: appendedHistory.points.map((point) => point.date === '2024-01-03' ? { ...point, value: 999 } : point),
+  }
+
+  assert.equal(isRollingDailyVerificationRecordCompatibleWithHistory(record, appendedHistory), true)
+  assert.equal(isRollingDailyVerificationRecordCompatibleWithHistory(record, revisedHistory), false)
+})
 
 function createCalibrationGroup(overrides: Partial<RollingDailyCalibrationGroupArtifact> = {}): RollingDailyCalibrationGroupArtifact {
   return {
@@ -159,9 +207,11 @@ test('rolling daily maintenance persists incremental updates and forwards the la
   }
 
   let runnerRequestLastProcessedOrigin: string | null = null
+  let runnerRequestMaxOriginsPerRun: number | undefined
   const runner: RollingDailyMaintenanceRunner = {
     async run(request) {
       runnerRequestLastProcessedOrigin = request.lastProcessedOriginDate
+      runnerRequestMaxOriginsPerRun = request.maxOriginsPerRun
       return {
         status: 'AVAILABLE',
         methodId: ROLLING_DAILY_METHOD_ID,
@@ -191,7 +241,7 @@ test('rolling daily maintenance persists incremental updates and forwards the la
     },
   }
 
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     loadHistory: async () => createHistory(),
@@ -202,9 +252,11 @@ test('rolling daily maintenance persists incremental updates and forwards the la
   const result = await service.runIncrementalMaintenance({
     seriesId: 'wocaes0074',
     modelId: 'naive',
+    maxOriginsPerRun: 7,
   })
 
   assert.equal(runnerRequestLastProcessedOrigin, '2024-01-04')
+  assert.equal(runnerRequestMaxOriginsPerRun, 7)
   assert.deepEqual(requestedTargetBases, [ROLLING_DAILY_TARGET_BASIS])
   assert.equal(result.status, 'SUCCEEDED')
   assert.equal(result.reasonCode, null)
@@ -269,7 +321,7 @@ test('rolling daily maintenance returns NO_OP when the runner reports no delta',
     },
   }
 
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     loadHistory: async () => createHistory(),
@@ -338,7 +390,7 @@ test('rolling daily maintenance bootstraps missing historical artifacts when exp
     },
   }
 
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     loadHistory: async () => createHistory(),
@@ -354,8 +406,98 @@ test('rolling daily maintenance bootstraps missing historical artifacts when exp
 
   assert.equal(result.status, 'SUCCEEDED')
   assert.ok(runnerRequest)
-  assert.equal(runnerRequest?.lastProcessedOriginDate, null)
-  assert.deepEqual(runnerRequest?.existingRecords, [])
+  const issuedRunnerRequest = runnerRequest as RollingDailyMaintenanceBridgeRequest
+  assert.equal(issuedRunnerRequest.lastProcessedOriginDate, null)
+  assert.deepEqual(issuedRunnerRequest.existingRecords, [])
+})
+
+test('rolling daily incremental maintenance resumes prior bootstrap progress when state exists without persisted records', async () => {
+  let runnerRequest: RollingDailyMaintenanceBridgeRequest | null = null
+
+  const repository: RollingDailyMaintenanceRepository = {
+    async readState() {
+      return {
+        seriesId: 'wocaes0074',
+        inputSource: ROLLING_DAILY_INPUT_SOURCE,
+        inputRunId: null,
+        targetBasis: ROLLING_DAILY_TARGET_BASIS,
+        methodId: ROLLING_DAILY_METHOD_ID,
+        methodVersion: ROLLING_DAILY_METHOD_VERSION,
+        modelId: 'naive',
+        historicalOriginStartAt: `${DEFAULT_ROLLING_DAILY_HISTORICAL_ORIGIN_START_DATE}T00:00:00.000Z`,
+        minimumTrainingObservations: 5,
+        minimumCalibrationSamples: 20,
+        latestSourceObservationAt: '2024-01-05T00:00:00.000Z',
+        latestSourceHistoryStartAt: '2024-01-01T00:00:00.000Z',
+        latestSourceObservationCount: 5,
+        latestSourceHistoryFingerprint: createHistoryFingerprint(),
+        lastProcessedOriginAt: '2024-01-04',
+        lastMaturedObservedAt: null,
+        lastMaintenanceAt: '2024-01-05T00:00:00.000Z',
+        lastMaintenanceStatus: 'SUCCEEDED',
+        lastFailureReason: null,
+      }
+    },
+    async listVerificationRecords() {
+      return []
+    },
+    async applyMaintenanceUpdate() {},
+    async recordMaintenanceFailure() {
+      throw new Error('recordMaintenanceFailure should not be called for resumable bootstrap progress')
+    },
+  }
+
+  const runner: RollingDailyMaintenanceRunner = {
+    async run(request) {
+      runnerRequest = request
+      return {
+        status: 'AVAILABLE',
+        methodId: ROLLING_DAILY_METHOD_ID,
+        methodVersion: ROLLING_DAILY_METHOD_VERSION,
+        sourceHistory: {
+          startDate: '2024-01-01',
+          endDate: '2024-01-05',
+          latestObservationDate: '2024-01-05',
+          observationCount: 5,
+          filteredNullCount: 0,
+          filteredDuplicateCount: 0,
+          historyFingerprint: 'hist-1',
+        },
+        maintenance: {
+          newOriginCount: 0,
+          maturedRecordCount: 0,
+          affectedCalibrationGroupCount: 0,
+          calibrationRefreshCount: 0,
+          lastProcessedOriginDate: '2024-01-05',
+          lastMaturedObservedAt: null,
+          newOriginDates: [],
+        },
+        newRecords: [],
+        maturedRecords: [],
+        calibrationGroups: [],
+      }
+    },
+  }
+
+  const service = createTestRollingDailyMaintenanceService({
+    repository,
+    runner,
+    loadHistory: async () => createHistory(),
+    logEvent: () => {},
+  })
+
+  const result = await service.runIncrementalMaintenance({
+    seriesId: 'wocaes0074',
+    modelId: 'naive',
+    minimumTrainingObservations: 5,
+    bootstrapHistoricalIfMissing: true,
+  })
+
+  assert.equal(result.status, 'NO_OP')
+  assert.ok(runnerRequest)
+  const issuedRunnerRequest = runnerRequest as RollingDailyMaintenanceBridgeRequest
+  assert.equal(issuedRunnerRequest.lastProcessedOriginDate, '2024-01-04')
+  assert.deepEqual(issuedRunnerRequest.existingRecords, [])
 })
 
 test('rolling daily incremental maintenance does not bootstrap full replay for an unseeded identity', async () => {
@@ -384,7 +526,7 @@ test('rolling daily incremental maintenance does not bootstrap full replay for a
     },
   }
 
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     loadHistory: async () => createHistory(),
@@ -488,7 +630,7 @@ test('rolling daily maintenance requests a calibration-only refresh when mature 
     },
   }
 
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     loadHistory: async () => createHistory(),
@@ -586,7 +728,7 @@ test('rolling daily maintenance records FAILED state when the bridge fails', asy
     },
   }
 
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     loadHistory: async () => createHistory(),
@@ -686,7 +828,7 @@ test('rolling daily maintenance records FAILED state when persistence fails afte
     },
   }
 
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     loadHistory: async () => createHistory(),
@@ -770,7 +912,7 @@ test('rolling daily maintenance marks REBUILD_REQUIRED when a processed historic
     },
   }
 
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     loadHistory: async () => revisedHistory,
@@ -865,7 +1007,7 @@ test('rolling daily maintenance does not false-positive REBUILD_REQUIRED on norm
     },
   }
 
-  const service = createRollingDailyMaintenanceService({
+  const service = createTestRollingDailyMaintenanceService({
     repository,
     runner,
     loadHistory: async () => createHistory(),
@@ -914,6 +1056,105 @@ test('rolling daily persistence artifacts are normalized to the canonical mainte
   assert.equal(normalized.maturedRecords[0]?.inputSource, ROLLING_DAILY_INPUT_SOURCE)
   assert.equal(normalized.calibrationGroups[0]?.inputSource, ROLLING_DAILY_INPUT_SOURCE)
   assert.equal(normalized.calibrationGroups[0]?.modelId, 'arima')
+})
+
+test('rolling daily historical preparation completeness requires the checkpoint to reach the latest source observation', () => {
+  assert.equal(isRollingDailyHistoricalPreparationComplete({
+    state: {
+      latestSourceHistoryFingerprint: 'hist-1',
+      latestSourceObservationAt: '2024-01-05T00:00:00.000Z',
+      lastProcessedOriginAt: '2024-01-04',
+      lastMaintenanceStatus: 'SUCCEEDED',
+    },
+    expectedSourceHistoryFingerprint: 'hist-1',
+    latestSourceObservationDate: '2024-01-05',
+    verificationRecordCount: 4,
+  }), false)
+
+  assert.equal(isRollingDailyHistoricalPreparationComplete({
+    state: {
+      latestSourceHistoryFingerprint: 'hist-1',
+      latestSourceObservationAt: '2024-01-05T00:00:00.000Z',
+      lastProcessedOriginAt: '2024-01-05',
+      lastMaintenanceStatus: 'NO_OP',
+    },
+    expectedSourceHistoryFingerprint: 'hist-1',
+    latestSourceObservationDate: '2024-01-05',
+    verificationRecordCount: 4,
+  }), true)
+})
+
+test('rolling daily recent verification prepares one bounded origin per lawful horizon without advancing the full-history cursor', async () => {
+  const points = Array.from({ length: 500 }, (_, index) => ({
+    date: new Date(Date.UTC(2025, 0, 1 + index)).toISOString().slice(0, 10),
+    value: 100 + index,
+  }))
+  const requestedOrigins: string[] = []
+  let persistedUpdate: Parameters<RollingDailyMaintenanceRepository['applyMaintenanceUpdate']>[0] | null = null
+  const repository: RollingDailyMaintenanceRepository = {
+    async readState() { return null },
+    async listVerificationRecords() { return [] },
+    async applyMaintenanceUpdate(input) { persistedUpdate = input },
+    async recordMaintenanceFailure() {},
+  }
+  const runner: RollingDailyMaintenanceRunner = {
+    async run(request) {
+      requestedOrigins.push(request.historicalOriginStartDate)
+      const record = createVerificationRecord({
+        forecastOriginAt: request.historicalOriginStartDate,
+        trainingHistoryEndAt: request.historicalOriginStartDate,
+        sourceHistoryFingerprint: request.sourceHistoryFingerprint,
+      })
+      return {
+        status: 'AVAILABLE',
+        methodId: ROLLING_DAILY_METHOD_ID,
+        methodVersion: ROLLING_DAILY_METHOD_VERSION,
+        sourceHistory: {
+          startDate: points[0]!.date,
+          endDate: points.at(-1)!.date,
+          latestObservationDate: points.at(-1)!.date,
+          observationCount: points.length,
+          filteredNullCount: 0,
+          filteredDuplicateCount: 0,
+          historyFingerprint: request.sourceHistoryFingerprint,
+        },
+        maintenance: {
+          newOriginCount: 1,
+          maturedRecordCount: 0,
+          affectedCalibrationGroupCount: 0,
+          calibrationRefreshCount: 0,
+          lastProcessedOriginDate: request.historicalOriginStartDate,
+          lastMaturedObservedAt: points.at(-1)!.date,
+          newOriginDates: [request.historicalOriginStartDate],
+        },
+        newRecords: [record],
+        maturedRecords: [],
+        calibrationGroups: [],
+      }
+    },
+  }
+  const service = createTestRollingDailyMaintenanceService({
+    repository,
+    runner,
+    async loadHistory() {
+      return {
+        ...createHistory(),
+        points,
+      }
+    },
+  })
+
+  const result = await service.runRecentVerification({
+    seriesId: 'wocaes0074',
+    modelId: 'naive',
+    minimumTrainingObservations: 2,
+  })
+
+  assert.equal(result.status, 'SUCCEEDED')
+  assert.equal(requestedOrigins.length, 4)
+  assert.equal(new Set(requestedOrigins).size, 4)
+  assert.equal(persistedUpdate?.lastProcessedOriginAt, null)
+  assert.equal(persistedUpdate?.newRecords.length, 4)
 })
 
 test('rolling daily maintenance forwards opt-in trace config and preserves persistence flow', async () => {
@@ -973,7 +1214,7 @@ test('rolling daily maintenance forwards opt-in trace config and preserves persi
   }
 
   try {
-    const service = createRollingDailyMaintenanceService({
+    const service = createTestRollingDailyMaintenanceService({
       repository,
       runner,
       loadHistory: async () => createHistory(),

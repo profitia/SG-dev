@@ -104,6 +104,42 @@ test('market data service returns a warm postgres hit when coverage is sufficien
   assert.equal(result.history.historical.length, 2)
 })
 
+test('explicit refresh reuses canonical provider persistence even when stored history is fresh', async () => {
+  const providerHistory = createHistory('uscaes0301', [
+    ['2026-09-14T00:00:00.000Z', 63.25],
+    ['2026-09-15T00:00:00.000Z', 64.5],
+  ])
+  let storedReadCount = 0
+  let providerReadCount = 0
+  const persisted: BenchmarkHistoricalSeriesResult[] = []
+  const service = createBenchmarkMarketDataService({
+    repository: {
+      async readStoredSeries() {
+        storedReadCount += 1
+        throw new Error('explicit refresh must not be downgraded to a cache read')
+      },
+      async upsertSeriesHistory(history) {
+        persisted.push(history)
+        return { hydratedObservationCount: history.historical.length }
+      },
+    },
+    async fetchProviderSeriesHistory() {
+      providerReadCount += 1
+      return providerHistory
+    },
+    now: () => new Date('2026-09-16T00:00:00.000Z'),
+    logEvent: () => {},
+  })
+
+  const result = await service.refreshHistoricalSeries('uscaes0301')
+
+  assert.equal(storedReadCount, 0)
+  assert.equal(providerReadCount, 1)
+  assert.equal(persisted.length, 1)
+  assert.equal(result.hydratedObservationCount, 2)
+  assert.equal(result.history.unit, 'USD/Barrel')
+})
+
 test('market data service shares only concurrent exact-series repository reads', async () => {
   const readCounts = new Map<string, number>()
   let releaseReads: (() => void) | undefined

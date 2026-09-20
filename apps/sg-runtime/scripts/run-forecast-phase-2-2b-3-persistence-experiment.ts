@@ -6,6 +6,10 @@ import { pathToFileURL } from 'node:url'
 
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 import {
+  createCurrentForecastStatisticalCompatibility,
+  createFullVerificationStatisticalCompatibility,
+} from '@/lib/forecast/identity'
+import {
   readCurrentRunFromPrisma,
   readVerificationRunFromPrisma,
   writeCurrentRunWithPrisma,
@@ -46,6 +50,11 @@ type ScenarioResult = {
 
 function currentArtifact(variant: 'A' | 'B' = 'A'): PersistedCurrentArtifact {
   const offset = variant === 'A' ? 0 : 100
+  const statisticalCompatibility = createCurrentForecastStatisticalCompatibility({
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: 'MONTHLY_AVERAGE',
+  })
   return {
     seriesId: CURRENT_SERIES_ID,
     modelId: 'naive',
@@ -60,6 +69,7 @@ function currentArtifact(variant: 'A' | 'B' = 'A'): PersistedCurrentArtifact {
     historyFingerprint: 'phase22b3-current-history',
     cadence: null,
     frequencyIdentity: FREQUENCY_IDENTITY,
+    statisticalCompatibility,
     history: {
       frequency: 'MONTHLY',
       start: '2023-01-01T00:00:00.000Z',
@@ -91,6 +101,11 @@ function currentArtifact(variant: 'A' | 'B' = 'A'): PersistedCurrentArtifact {
 
 function verificationArtifact(variant: 'A' | 'B' = 'A'): PersistedVerificationArtifact {
   const offset = variant === 'A' ? 0 : 100
+  const statisticalCompatibility = createFullVerificationStatisticalCompatibility({
+    sourceFrequency: 'MONTHLY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: 'MONTHLY_AVERAGE',
+  })
   const record = (horizon: string, horizonSteps: number, originMonth: string, targetMonth: string, base: number) => ({
     benchmarkId: VERIFICATION_SERIES_ID,
     modelId: 'naive',
@@ -124,6 +139,7 @@ function verificationArtifact(variant: 'A' | 'B' = 'A'): PersistedVerificationAr
     historyFingerprint: 'phase22b3-verification-history',
     cadence: null,
     frequencyIdentity: FREQUENCY_IDENTITY,
+    statisticalCompatibility,
     history: {
       frequency: 'MONTHLY',
       start: '2022-01-01T00:00:00.000Z',
@@ -175,6 +191,8 @@ function lookupKey(artifact: PersistedCurrentArtifact | PersistedVerificationArt
     historyFingerprint: artifact.historyFingerprint,
     targetBasis: artifact.targetBasis,
     frequencyIdentity: artifact.frequencyIdentity,
+    trainingWindowPolicyId: artifact.statisticalCompatibility.trainingWindowPolicyId,
+    effectiveTrainingPolicyId: artifact.statisticalCompatibility.effectiveTrainingPolicyId,
   }
 }
 

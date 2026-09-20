@@ -1,0 +1,75 @@
+{
+  "generatedAt": "2026-09-13T16:51:57.000Z",
+  "taskId": "ppf-1-stage-12-series-scoped-capability-batch-corrective-20260913",
+  "status": "PASS",
+  "publication": {
+    "implementationBranch": "ppf1/stage12-live-acceptance-legacy-deprecation-20260911",
+    "baseHeadBeforeCorrective": "462000e9f526e15286d56a0d448faa942821d844",
+    "liveDeployPerformed": false
+  },
+  "classification": {
+    "changeType": "PRODUCT_SOURCE_CORRECTIVE",
+    "productSourceMutated": true,
+    "forecastMethodologyChanged": false,
+    "readinessSemanticsChanged": false,
+    "exactEndpointChanged": false,
+    "newInternalBatchRoute": "/api/internal/forecast/capabilities",
+    "reusedCapabilityAuthority": "resolveForecastCapabilitiesBySeriesId(seriesId)",
+    "changedFiles": [
+      "apps/sg-runtime/lib/forecast/interactive-preparation.ts",
+      "apps/sg-runtime/lib/forecast/interactive-route-handlers.ts",
+      "apps/sg-runtime/app/api/internal/forecast/capabilities/route.ts",
+      "apps/sg-runtime/tests/forecast-route-contract.test.ts",
+      "apps/dashboard-preview/lib/benchmark-forecast/acceptance-matrix.ts",
+      "apps/dashboard-preview/lib/benchmark-forecast/demo-certification.ts",
+      "apps/dashboard-preview/lib/benchmark-forecast/forecast-contract.ts",
+      "apps/dashboard-preview/lib/benchmark-forecast/interactive-current-preparation.ts",
+      "apps/dashboard-preview/lib/benchmark-forecast/runtime-query.ts",
+      "apps/dashboard-preview/tests/benchmark-forecast-current-preparation.test.ts",
+      "apps/dashboard-preview/tests/benchmark-forecast-runtime-query.test.ts",
+      "apps/dashboard-preview/tests/demo-certification.test.ts",
+      "apps/dashboard-preview/tests/forecast-acceptance-matrix.test.ts",
+      "apps/dashboard-preview/tests/interactive-current-client.test.ts",
+      "tooling/Benchmark-Forecasting/validation/ppf1-stage12-series-scoped-capability-batch-corrective.json",
+      "tooling/Benchmark-Forecasting/validation/ppf1-stage12-series-scoped-capability-batch-corrective.md"
+    ]
+  },
+  "validation": {
+    "focusedTests": [
+      {
+        "command": "cd apps/sg-runtime && node --import tsx --test tests/forecast-route-contract.test.ts",
+        "status": "PASS",
+        "tests": 44
+      },
+      {
+        "command": "cd apps/dashboard-preview && node --import tsx --test tests/benchmark-forecast-current-preparation.test.ts tests/demo-certification.test.ts",
+        "status": "PASS",
+        "tests": 57
+      }
+    ],
+    "typechecks": [
+      {
+        "command": "cd apps/sg-runtime && npm run typecheck",
+        "status": "PASS"
+      },
+      {
+        "command": "cd apps/dashboard-preview && npm run typecheck",
+        "status": "PASS"
+      }
+    ]
+  },
+  "assertions": {
+    "capabilityAuthorityReuse": "PASS",
+    "exactEndpointPreserved": "PASS",
+    "precomputeUsesSeriesSnapshotPerBenchmark": "PASS",
+    "precomputeRefreshesSnapshotAfterLawfulPrepare": "PASS",
+    "interactiveParityAgainstExactVariant": "PASS",
+    "dashboardBridgeInternalAuthPreserved": "PASS"
+  },
+  "finalDecision": {
+    "status": "PASS",
+    "summary": "Stage 12 certification PRECOMPUTE now reuses one SG Runtime series-scoped capability snapshot per benchmark through the existing resolveForecastCapabilitiesBySeriesId authority, preserves exact interactive readiness semantics and the existing exact endpoint, passed focused SG Runtime and dashboard tests, passed both app typechecks, and was intentionally stopped before live deploy.",
+    "readyForDeploy": false,
+    "readyForSourcePublication": true
+  }
+}

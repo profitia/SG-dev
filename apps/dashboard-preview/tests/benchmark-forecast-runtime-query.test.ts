@@ -137,6 +137,413 @@ test('runtime query returns preparation-required without fetching when verificat
   assert.equal(fetchCalls, 0)
 })
 
+test('deployed non-point-in-time current reads use the prepared datastore when the SG Runtime internal token is missing', async () => {
+  const previousMarketDataUrl = process.env.MARKET_DATA_DATABASE_URL
+  const previousDatabaseUrl = process.env.DATABASE_URL
+  const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const originalFetch = global.fetch
+  const marketDataGlobal = globalThis as typeof globalThis & {
+    dashboardPreviewMarketDataPrisma?: {
+      forecastCurrentRun: { findFirst: () => Promise<Record<string, unknown> | null> }
+    }
+    dashboardPreviewMarketDataPrismaConnectionString?: string
+  }
+  const previousPrisma = marketDataGlobal.dashboardPreviewMarketDataPrisma
+  const previousConnectionString = marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString
+  let localReads = 0
+  let fetchCalls = 0
+
+  process.env.RENDER_EXTERNAL_URL = 'https://profitia-pl.onrender.com'
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://deployed-non-pit-current'
+  delete process.env.DATABASE_URL
+  delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+
+  marketDataGlobal.dashboardPreviewMarketDataPrisma = {
+    forecastCurrentRun: {
+      async findFirst() {
+        localReads += 1
+        return null
+      },
+    },
+  }
+  marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = process.env.MARKET_DATA_DATABASE_URL
+  global.fetch = (async () => {
+    fetchCalls += 1
+    throw new Error('deployed non-PIT current read must not hit internal fetch without a token')
+  }) as typeof fetch
+
+  try {
+    const result = await getBenchmarkForecastCurrent('wocaes0074', 'ets', 'END_OF_PERIOD')
+    assert.equal(result.status, 'NOT_AVAILABLE')
+    assert.match(result.reason, /No persisted current forecast/)
+    assert.ok(localReads >= 1)
+    assert.equal(fetchCalls, 0)
+  } finally {
+    global.fetch = originalFetch
+    if (previousMarketDataUrl === undefined) delete process.env.MARKET_DATA_DATABASE_URL
+    else process.env.MARKET_DATA_DATABASE_URL = previousMarketDataUrl
+    if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL
+    else process.env.DATABASE_URL = previousDatabaseUrl
+    if (previousRenderExternalUrl === undefined) delete process.env.RENDER_EXTERNAL_URL
+    else process.env.RENDER_EXTERNAL_URL = previousRenderExternalUrl
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    marketDataGlobal.dashboardPreviewMarketDataPrisma = previousPrisma
+    marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = previousConnectionString
+  }
+})
+
+test('deployed non-point-in-time verification reads use the prepared datastore when the SG Runtime internal token is missing', async () => {
+  const previousMarketDataUrl = process.env.MARKET_DATA_DATABASE_URL
+  const previousDatabaseUrl = process.env.DATABASE_URL
+  const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const originalFetch = global.fetch
+  const marketDataGlobal = globalThis as typeof globalThis & {
+    dashboardPreviewMarketDataPrisma?: {
+      forecastVerificationRun: { findFirst: () => Promise<Record<string, unknown> | null> }
+    }
+    dashboardPreviewMarketDataPrismaConnectionString?: string
+  }
+  const previousPrisma = marketDataGlobal.dashboardPreviewMarketDataPrisma
+  const previousConnectionString = marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString
+  let localReads = 0
+  let fetchCalls = 0
+
+  process.env.RENDER_EXTERNAL_URL = 'https://profitia-pl.onrender.com'
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://deployed-non-pit-verification'
+  delete process.env.DATABASE_URL
+  delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+
+  marketDataGlobal.dashboardPreviewMarketDataPrisma = {
+    forecastVerificationRun: {
+      async findFirst() {
+        localReads += 1
+        return null
+      },
+    },
+  }
+  marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = process.env.MARKET_DATA_DATABASE_URL
+  global.fetch = (async () => {
+    fetchCalls += 1
+    throw new Error('deployed non-PIT verification read must not hit internal fetch without a token')
+  }) as typeof fetch
+
+  try {
+    const result = await getBenchmarkForecastVerification('wocaes0074', 'ets', 'END_OF_PERIOD')
+    assert.equal(result.status, 'NOT_AVAILABLE')
+    assert.match(result.reason, /No persisted forecast verification/)
+    assert.ok(localReads >= 1)
+    assert.equal(fetchCalls, 0)
+  } finally {
+    global.fetch = originalFetch
+    if (previousMarketDataUrl === undefined) delete process.env.MARKET_DATA_DATABASE_URL
+    else process.env.MARKET_DATA_DATABASE_URL = previousMarketDataUrl
+    if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL
+    else process.env.DATABASE_URL = previousDatabaseUrl
+    if (previousRenderExternalUrl === undefined) delete process.env.RENDER_EXTERNAL_URL
+    else process.env.RENDER_EXTERNAL_URL = previousRenderExternalUrl
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    marketDataGlobal.dashboardPreviewMarketDataPrisma = previousPrisma
+    marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = previousConnectionString
+  }
+})
+
+test('deployed non-point-in-time verification reads do not forward prepared-read authority headers', async () => {
+  const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const originalFetch = global.fetch
+  let capturedUrl: URL | null = null
+  let capturedInit: RequestInit | undefined
+
+  process.env.RENDER_EXTERNAL_URL = 'https://profitia-pl.onrender.com'
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime-primary.example.invalid'
+
+  global.fetch = (async (input: URL | RequestInfo | string, init?: RequestInit) => {
+    capturedUrl = new URL(String(input))
+    capturedInit = init
+    return new Response(JSON.stringify({
+      status: 'NOT_AVAILABLE',
+      seriesId: 'wocaes0074',
+      modelId: 'ets',
+      targetBasis: 'END_OF_PERIOD',
+      targetSemantics: 'END_OF_PERIOD',
+      methodId: 'END_OF_PERIOD',
+      reason: 'PREPARATION_REQUIRED: No exact-identity prepared Historical Verification is available.',
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }) as typeof fetch
+
+  try {
+    await getBenchmarkForecastVerification(
+      'wocaes0074',
+      'ets',
+      'END_OF_PERIOD',
+      { sourceFrequency: 'DAILY', targetCadence: 'MONTHLY' },
+      { 'x-test-correlation': 'stage12' },
+      {
+        seriesId: 'wocaes0074',
+        modelId: 'ets',
+        targetSemantics: 'END_OF_PERIOD',
+        sourceFrequency: 'DAILY',
+        targetCadence: 'MONTHLY',
+        sourceAvailability: 'AVAILABLE',
+        lawfulTargetSemantics: 'LAWFUL',
+        status: 'AVAILABLE',
+        currentReadiness: 'READY',
+        verificationReadiness: 'READY',
+        recentVerificationReadiness: 'READY',
+        fullVerificationReadiness: 'READY',
+        readiness: {
+          fastReady: true,
+          bandsReady: true,
+          calibratedReady: true,
+          fullReady: true,
+          blockers: [],
+        },
+        targetedDataScope: 'SINGLE_SERIES',
+        timingMs: 1,
+        reason: null,
+        preparedReadAuthority: {
+          sourceFrequency: 'DAILY',
+          targetCadence: 'MONTHLY',
+          expectedHistoryFingerprint: 'fp-current',
+        },
+      },
+    )
+  } finally {
+    global.fetch = originalFetch
+    if (previousRenderExternalUrl === undefined) delete process.env.RENDER_EXTERNAL_URL
+    else process.env.RENDER_EXTERNAL_URL = previousRenderExternalUrl
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+  }
+
+  if (!capturedUrl || !capturedInit) {
+    throw new Error('Expected runtime query to issue an internal prepared verification request.')
+  }
+
+  const requestUrl = capturedUrl as URL
+  const headers = capturedInit.headers as Record<string, string>
+  assert.equal(requestUrl.pathname, '/api/internal/forecast/prepared/verification')
+  assert.equal(requestUrl.searchParams.get('seriesId'), 'wocaes0074')
+  assert.equal(requestUrl.searchParams.get('model'), 'ets')
+  assert.equal(requestUrl.searchParams.get('targetBasis'), 'END_OF_PERIOD')
+  assert.equal(requestUrl.searchParams.get('verificationScope'), 'FULL')
+  assert.equal(requestUrl.searchParams.get('sourceFrequency'), 'DAILY')
+  assert.equal(requestUrl.searchParams.get('targetCadence'), 'MONTHLY')
+  assert.equal(headers.Authorization, 'Bearer dashboard-preview-token')
+  assert.equal(headers['x-test-correlation'], 'stage12')
+  assert.equal(headers['x-sg-prepared-source-frequency'], undefined)
+  assert.equal(headers['x-sg-prepared-target-cadence'], undefined)
+  assert.equal(headers['x-sg-prepared-history-fingerprint'], undefined)
+})
+
+test('deployed non-point-in-time prepared current read falls back after an empty JSON response from the explicit primary SG Runtime base URL', async () => {
+  const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const originalFetch = global.fetch
+  const visited: string[] = []
+
+  process.env.RENDER_EXTERNAL_URL = 'https://profitia-pl.onrender.com'
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime-primary.example.invalid'
+
+  global.fetch = (async (input: URL | RequestInfo | string) => {
+    const url = new URL(String(input))
+    visited.push(url.origin)
+
+    if (url.origin === 'https://sg-runtime-primary.example.invalid') {
+      return new Response('', {
+        status: 502,
+        headers: { 'content-type': 'application/json' },
+      })
+    }
+
+    return new Response(JSON.stringify({
+      status: 'AVAILABLE',
+      seriesId: 'wocaes0074',
+      modelId: 'ets',
+      targetBasis: 'END_OF_PERIOD',
+      targetSemantics: 'END_OF_PERIOD',
+      methodId: 'END_OF_PERIOD',
+      displayName: 'Brent',
+      description: null,
+      methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+      lineage: {
+        inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+        inputRunId: null,
+        sourceSeriesId: 'wocaes0074',
+        sourceFrequency: 'MONTHLY',
+        historyFingerprint: 'fp-current',
+        preparation: null,
+      },
+      history: {
+        frequency: 'MONTHLY',
+        start: '2020-01-01T00:00:00.000Z',
+        end: '2024-12-01T00:00:00.000Z',
+        observations: 60,
+      },
+      forecastOrigin: '2025-01-01T00:00:00.000Z',
+      currentForecast: {
+        '1M': {
+          horizon: '1M',
+          horizonSteps: 1,
+          forecastDate: '2025-02-01T00:00:00.000Z',
+          forecastValue: 123,
+        },
+      },
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }) as typeof fetch
+
+  try {
+    const result = await getBenchmarkForecastCurrent('wocaes0074', 'ets', 'END_OF_PERIOD')
+    assert.equal(result.status, 'AVAILABLE')
+  } finally {
+    global.fetch = originalFetch
+    if (previousRenderExternalUrl === undefined) delete process.env.RENDER_EXTERNAL_URL
+    else process.env.RENDER_EXTERNAL_URL = previousRenderExternalUrl
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+  }
+
+  assert.deepEqual(visited, [
+    'https://sg-runtime-primary.example.invalid',
+    'https://benchmark-finder-category-builder.onrender.com',
+  ])
+})
+
+test('deployed non-point-in-time prepared current read does not fall back after a real timeout from the explicit primary SG Runtime base URL', async () => {
+  const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const originalFetch = global.fetch
+  const originalSetTimeout = global.setTimeout
+  const originalClearTimeout = global.clearTimeout
+  const visited: string[] = []
+
+  process.env.RENDER_EXTERNAL_URL = 'https://profitia-pl.onrender.com'
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime-primary.example.invalid'
+
+  global.setTimeout = (((callback: TimerHandler) => {
+    if (typeof callback === 'function') {
+      callback()
+    }
+    return 1 as unknown as ReturnType<typeof setTimeout>
+  }) as unknown as typeof setTimeout)
+  global.clearTimeout = ((() => undefined) as typeof clearTimeout)
+  global.fetch = (async (input: URL | RequestInfo | string, init?: RequestInit) => {
+    const url = new URL(String(input))
+    visited.push(url.origin)
+
+    return new Promise<Response>((_, reject) => {
+      const timeoutError = new Error('timed out') as Error & { name: string }
+      timeoutError.name = 'AbortError'
+
+      if (init?.signal?.aborted) {
+        reject(timeoutError)
+        return
+      }
+
+      init?.signal?.addEventListener('abort', () => reject(timeoutError), { once: true })
+    })
+  }) as typeof fetch
+
+  try {
+    await assert.rejects(
+      () => getBenchmarkForecastCurrent('wocaes0074', 'ets', 'END_OF_PERIOD'),
+      /SG Runtime prepared forecast request timed out\./,
+    )
+  } finally {
+    global.fetch = originalFetch
+    global.setTimeout = originalSetTimeout
+    global.clearTimeout = originalClearTimeout
+    if (previousRenderExternalUrl === undefined) delete process.env.RENDER_EXTERNAL_URL
+    else process.env.RENDER_EXTERNAL_URL = previousRenderExternalUrl
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+  }
+
+  assert.deepEqual(visited, [
+    'https://sg-runtime-primary.example.invalid',
+  ])
+})
+
+test('deployed non-point-in-time prepared current read honors a caller abort signal', async () => {
+  const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const originalFetch = global.fetch
+  const controller = new AbortController()
+  let sawAbort = false
+
+  process.env.RENDER_EXTERNAL_URL = 'https://profitia-pl.onrender.com'
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime-primary.example.invalid'
+
+  global.fetch = (async (_input: URL | RequestInfo | string, init?: RequestInit) => {
+    return new Promise<Response>((_resolve, reject) => {
+      const timeoutError = new Error('timed out') as Error & { name: string }
+      timeoutError.name = 'AbortError'
+
+      if (init?.signal?.aborted) {
+        sawAbort = true
+        reject(timeoutError)
+        return
+      }
+
+      init?.signal?.addEventListener('abort', () => {
+        sawAbort = true
+        reject(timeoutError)
+      }, { once: true })
+
+      controller.abort()
+    })
+  }) as typeof fetch
+
+  try {
+    await assert.rejects(
+      () => getBenchmarkForecastCurrent(
+        'wocaes0074',
+        'ets',
+        'END_OF_PERIOD',
+        undefined,
+        {},
+        null,
+        { signal: controller.signal },
+      ),
+      /SG Runtime prepared forecast request timed out\./,
+    )
+  } finally {
+    global.fetch = originalFetch
+    if (previousRenderExternalUrl === undefined) delete process.env.RENDER_EXTERNAL_URL
+    else process.env.RENDER_EXTERNAL_URL = previousRenderExternalUrl
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+  }
+
+  assert.equal(sawAbort, true)
+})
+
 test('point-in-time current forecast fails closed as unsupported for non-daily capability before snapshot lookup', async () => {
   const originalFetch = global.fetch
   const previousMarketDataUrl = process.env.MARKET_DATA_DATABASE_URL
@@ -229,6 +636,155 @@ test('point-in-time current forecast fails closed as unsupported for non-daily c
       delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_URL
     } else {
       process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_URL = previousBaseUrl
+    }
+    marketDataGlobal.dashboardPreviewMarketDataPrisma = previousPrisma
+    marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = previousPrismaConnectionString
+  }
+})
+
+test('point-in-time current freshness trusts READY capability for the current snapshot contract', async () => {
+  const originalFetch = global.fetch
+  const previousMarketDataUrl = process.env.MARKET_DATA_DATABASE_URL
+  const previousDatabaseUrl = process.env.DATABASE_URL
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const marketDataGlobal = globalThis as typeof globalThis & {
+    dashboardPreviewMarketDataPrisma?: {
+      rollingDailyCurrentForecastSnapshot: {
+        findFirst: () => Promise<Record<string, unknown> | null>
+      }
+      rollingDailyMaintenanceState: {
+        findUnique: () => Promise<Record<string, unknown> | null>
+      }
+    }
+    dashboardPreviewMarketDataPrismaConnectionString?: string
+  }
+  const previousPrisma = marketDataGlobal.dashboardPreviewMarketDataPrisma
+  const previousPrismaConnectionString = marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString
+  let maintenanceReads = 0
+
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://market-data-present'
+  delete process.env.DATABASE_URL
+
+  marketDataGlobal.dashboardPreviewMarketDataPrisma = {
+    rollingDailyCurrentForecastSnapshot: {
+      async findFirst() {
+        return {
+          payloadJson: {
+            status: 'AVAILABLE',
+            contractVersion: '1',
+            benchmark: {
+              benchmarkId: 'wocaes0074',
+              displayName: 'Brent',
+              frequency: 'DAILY',
+              unit: 'USD/bbl',
+              currency: 'USD',
+              provider: 'macrobond',
+              providerSeriesId: 'wocaes0074',
+            },
+            forecastMethod: {
+              id: 'ROLLING_DAILY_POINT_IN_TIME',
+              version: 'rolling-daily-point-in-time-v1',
+            },
+            model: {
+              id: 'naive',
+            },
+            origin: {
+              date: '2026-09-10',
+              value: 90.1,
+            },
+            anchors: [
+              {
+                horizon: '1M',
+                horizonMonths: 1,
+                targetCalendarDate: '2026-10-10',
+                pointForecast: 91.5,
+              },
+            ],
+            path: [
+              {
+                date: '2026-09-11',
+                pointForecast: 90.2,
+              },
+            ],
+            audit: {
+              inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+              sourceLatestObservationDate: '2026-09-10',
+              sourceHistoryFingerprint: 'current-contract-fingerprint',
+            },
+            warnings: [],
+          },
+          status: 'AVAILABLE',
+          message: null,
+          reasonCode: null,
+        }
+      },
+    },
+    rollingDailyMaintenanceState: {
+      async findUnique() {
+        maintenanceReads += 1
+        return {
+          latestSourceHistoryFingerprint: 'historical-maintenance-fingerprint',
+        }
+      },
+    },
+  }
+  marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = process.env.MARKET_DATA_DATABASE_URL
+
+  global.fetch = (async () => new Response(JSON.stringify({
+    seriesId: 'wocaes0074',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'naive',
+    sourceFrequency: 'DAILY',
+    targetCadence: 'DAILY',
+    sourceAvailability: 'AVAILABLE',
+    lawfulTargetSemantics: 'LAWFUL',
+    status: 'AVAILABLE',
+    currentReadiness: 'READY',
+    verificationReadiness: 'READY',
+    recentVerificationReadiness: 'READY',
+    fullVerificationReadiness: 'READY',
+    predictionBandResidualCount: 40,
+    predictionBandState: 'AVAILABLE',
+    readiness: {
+      fastReady: true,
+      bandsReady: true,
+      calibratedReady: true,
+      fullReady: true,
+      blockers: [],
+    },
+    targetedDataScope: 'SINGLE_SERIES',
+    timingMs: 12,
+    reason: null,
+  }), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  })) as typeof fetch
+
+  try {
+    const result = await getBenchmarkForecastCurrent('wocaes0074', 'naive', 'POINT_IN_TIME')
+    assert.equal(result.status, 'AVAILABLE')
+    if (result.status !== 'AVAILABLE') return
+    assert.equal(result.freshness?.status, 'FRESH')
+    assert.equal(result.freshness?.snapshotSourceHistoryFingerprint, 'current-contract-fingerprint')
+    assert.equal(result.freshness?.currentSourceHistoryFingerprint, 'current-contract-fingerprint')
+    assert.equal(maintenanceReads, 0)
+  } finally {
+    global.fetch = originalFetch
+    if (previousMarketDataUrl === undefined) {
+      delete process.env.MARKET_DATA_DATABASE_URL
+    } else {
+      process.env.MARKET_DATA_DATABASE_URL = previousMarketDataUrl
+    }
+    if (previousDatabaseUrl === undefined) {
+      delete process.env.DATABASE_URL
+    } else {
+      process.env.DATABASE_URL = previousDatabaseUrl
+    }
+    if (previousToken === undefined) {
+      delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    } else {
+      process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
     }
     marketDataGlobal.dashboardPreviewMarketDataPrisma = previousPrisma
     marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = previousPrismaConnectionString
@@ -1003,6 +1559,70 @@ test('point-in-time current forecast preserves miss semantics and does not class
       methodId: 'ROLLING_DAILY_POINT_IN_TIME',
       reason: 'No persisted point-in-time current forecast snapshot is available for the selected series and model.',
     })
+  } finally {
+    if (previousMarketDataUrl === undefined) {
+      delete process.env.MARKET_DATA_DATABASE_URL
+    } else {
+      process.env.MARKET_DATA_DATABASE_URL = previousMarketDataUrl
+    }
+    if (previousDatabaseUrl === undefined) {
+      delete process.env.DATABASE_URL
+    } else {
+      process.env.DATABASE_URL = previousDatabaseUrl
+    }
+    marketDataGlobal.dashboardPreviewMarketDataPrisma = previousPrisma
+    marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = previousPrismaConnectionString
+  }
+})
+
+test('point-in-time verification fails closed when maintenance has not reached the latest source observation', async () => {
+  const previousMarketDataUrl = process.env.MARKET_DATA_DATABASE_URL
+  const previousDatabaseUrl = process.env.DATABASE_URL
+  const marketDataGlobal = globalThis as typeof globalThis & {
+    dashboardPreviewMarketDataPrisma?: {
+      rollingDailyVerificationRecord: {
+        findMany: () => Promise<Array<Record<string, unknown>>>
+      }
+      rollingDailyMaintenanceState: {
+        findUnique: () => Promise<Record<string, unknown> | null>
+      }
+    }
+    dashboardPreviewMarketDataPrismaConnectionString?: string
+  }
+  const previousPrisma = marketDataGlobal.dashboardPreviewMarketDataPrisma
+  const previousPrismaConnectionString = marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString
+
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://verification-maintenance-incomplete'
+  delete process.env.DATABASE_URL
+
+  marketDataGlobal.dashboardPreviewMarketDataPrisma = {
+    rollingDailyVerificationRecord: {
+      async findMany() {
+        return [{
+          forecastOriginAt: new Date('2024-02-14T00:00:00.000Z'),
+          sourceHistoryFingerprint: 'history-fingerprint-current',
+        }]
+      },
+    },
+    rollingDailyMaintenanceState: {
+      async findUnique() {
+        return {
+          latestSourceObservationAt: new Date('2026-09-15T00:00:00.000Z'),
+          latestSourceHistoryFingerprint: 'history-fingerprint-current',
+          lastProcessedOriginAt: new Date('2024-02-14T00:00:00.000Z'),
+          lastMaintenanceStatus: 'SUCCEEDED',
+        }
+      },
+    },
+  }
+  marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString = process.env.MARKET_DATA_DATABASE_URL
+
+  try {
+    const result = await getBenchmarkForecastVerification('cl_c1_cl', 'arima', 'POINT_IN_TIME')
+    assert.equal(result.status, 'NOT_AVAILABLE')
+    if (result.status === 'NOT_AVAILABLE') {
+      assert.match(result.reason, /^PREPARATION_REQUIRED:/)
+    }
   } finally {
     if (previousMarketDataUrl === undefined) {
       delete process.env.MARKET_DATA_DATABASE_URL

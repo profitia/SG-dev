@@ -7,6 +7,7 @@ import {
 } from '../lib/forecast/current-single-flight'
 import {
   buildVerificationLogicalArtifactKey,
+  PERIOD_VERIFICATION_CONFIGURATION_ID,
   type VerificationLogicalArtifactIdentity,
 } from '../lib/forecast/verification-single-flight'
 
@@ -44,11 +45,13 @@ function buildPersistenceOwnershipKey(identity: PersistenceOwnershipIdentity) {
 }
 
 const currentIdentity: CurrentLogicalArtifactIdentity = {
+  artifactScope: 'CURRENT_FORECAST',
   seriesId: 'b3.current',
   targetBasis: 'MONTHLY_AVERAGE',
   targetSemantics: 'MONTHLY_AVERAGE',
   methodId: 'MONTHLY_AVERAGE',
   methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+  trainingWindowPolicyId: 'CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX@current-fast-minimal-lawful-suffix-v1',
   modelId: 'naive',
   inputSource: 'B3_CONTROLLED_FIXTURE',
   historyFingerprint: 'b3-current-history',
@@ -60,11 +63,13 @@ const currentIdentity: CurrentLogicalArtifactIdentity = {
 }
 
 const verificationIdentity: VerificationLogicalArtifactIdentity = {
+  artifactScope: 'FULL_VERIFICATION',
   seriesId: 'b3.verification',
   targetBasis: 'MONTHLY_AVERAGE',
   targetSemantics: 'MONTHLY_AVERAGE',
   methodId: 'MONTHLY_AVERAGE',
   methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+  trainingWindowPolicyId: 'FULL_EXPANDING_HISTORY_PER_ORIGIN@full-expanding-history-per-origin-v1',
   modelId: 'naive',
   inputSource: 'B3_CONTROLLED_FIXTURE',
   historyFingerprint: 'b3-verification-history',
@@ -72,7 +77,7 @@ const verificationIdentity: VerificationLogicalArtifactIdentity = {
   targetCadence: 'MONTHLY',
   frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
   verificationHorizonSetId: '{"1M":1,"3M":3}',
-  verificationConfigurationId: '{"minTrainingWindow":36}',
+  verificationConfigurationId: PERIOD_VERIFICATION_CONFIGURATION_ID,
   originPolicyId: 'EXPANDING_WINDOW_ROLLING_ORIGIN@expanding-window-rolling-origin-v1',
 }
 

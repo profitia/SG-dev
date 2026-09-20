@@ -201,9 +201,21 @@ test('reports target-specific insufficient history without lowering either minim
     },
   })
 
-  assert.ok(capabilities.every((item) => item.historyEligibility === 'INSUFFICIENT_HISTORY'))
-  assert.ok(capabilities.every((item) => item.capabilityState === 'INSUFFICIENT_HISTORY'))
-  assert.deepEqual(new Set(capabilities.map((item) => item.minimumRequiredObservations)), new Set([36, 60]))
+  const naivePeriodCapabilities = capabilities.filter((item) => (
+    item.identity.modelId === 'naive'
+    && item.identity.targetSemantics !== 'ROLLING_DAILY_POINT_IN_TIME'
+  ))
+  const nonNaiveOrRollingCapabilities = capabilities.filter((item) => !naivePeriodCapabilities.includes(item))
+  const nonNaivePeriodCapabilities = nonNaiveOrRollingCapabilities.filter((item) => item.identity.targetSemantics !== 'ROLLING_DAILY_POINT_IN_TIME')
+  const rollingDailyCapabilities = nonNaiveOrRollingCapabilities.filter((item) => item.identity.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME')
+
+  assert.ok(naivePeriodCapabilities.every((item) => item.historyEligibility === 'ELIGIBLE'))
+  assert.ok(naivePeriodCapabilities.every((item) => item.capabilityState === 'NOT_PREPARED'))
+  assert.ok(nonNaivePeriodCapabilities.every((item) => item.historyEligibility === 'ELIGIBLE'))
+  assert.ok(nonNaivePeriodCapabilities.every((item) => item.capabilityState === 'NOT_PREPARED'))
+  assert.ok(rollingDailyCapabilities.every((item) => item.historyEligibility === 'INSUFFICIENT_HISTORY'))
+  assert.ok(rollingDailyCapabilities.every((item) => item.capabilityState === 'INSUFFICIENT_HISTORY'))
+  assert.deepEqual(new Set(capabilities.map((item) => item.minimumRequiredObservations)), new Set([1, 6, 60]))
 })
 
 test('proves the frozen eight-frequency business target matrix and default target cadence', () => {
@@ -272,9 +284,11 @@ test('keeps sparse semantic support separate from model and real execution eligi
   }).filter((item) => item.businessTarget !== 'DAILY')
 
   assert.ok(annual35.every((item) => item.targetSemanticsSupported))
-  assert.ok(annual35.every((item) => !item.modelEligible))
+  assert.ok(annual35.filter((item) => item.identity.modelId === 'naive').every((item) => item.modelEligible))
+  assert.ok(annual35.filter((item) => item.identity.modelId !== 'naive').every((item) => item.modelEligible))
   assert.ok(annual35.every((item) => !item.currentForecastEligible))
-  assert.ok(annual35.every((item) => item.historyEligibility === 'INSUFFICIENT_HISTORY'))
+  assert.ok(annual35.filter((item) => item.identity.modelId === 'naive').every((item) => item.historyEligibility === 'ELIGIBLE'))
+  assert.ok(annual35.filter((item) => item.identity.modelId !== 'naive').every((item) => item.historyEligibility === 'ELIGIBLE'))
   assert.ok(annual36.every((item) => item.modelEligible))
   assert.ok(annual36.every((item) => !item.currentForecastEligible))
   assert.ok(annual36.every((item) => item.implementationState === 'SUPPORTED'))
@@ -329,6 +343,7 @@ test('rejects ambiguous or invalid horizon requests instead of rounding', () => 
 
 test('keeps Current Forecast eligibility independent from verification and band sample thresholds', () => {
   const cases = [
+    { origins: 24, residuals: 31, verification: 'SUFFICIENT', bands: 'AVAILABLE' },
     { origins: 24, residuals: 30, verification: 'SUFFICIENT', bands: 'AVAILABLE' },
     { origins: 23, residuals: 30, verification: 'LIMITED_SAMPLE', bands: 'AVAILABLE' },
     { origins: 24, residuals: 29, verification: 'SUFFICIENT', bands: 'INSUFFICIENT_SAMPLE' },
@@ -339,19 +354,36 @@ test('keeps Current Forecast eligibility independent from verification and band 
     const capability = resolve({
       verificationOriginCounts: { END_OF_PERIOD: sample.origins },
       predictionBandResidualCounts: { END_OF_PERIOD: sample.residuals },
-    }).find((item) => item.businessTarget === 'END_OF_PERIOD')
+    }).find((item) => item.businessTarget === 'END_OF_PERIOD' && item.identity.modelId === 'ets')
     assert.equal(capability?.currentForecastEligible, true)
     assert.equal(capability?.verificationEvidenceState, sample.verification)
     assert.equal(capability?.predictionBandState, sample.bands)
   }
 
   const ineligible = resolve({
-    preparedObservationCounts: { END_OF_PERIOD: 35 },
+    preparedObservationCounts: { END_OF_PERIOD: 5 },
     verificationOriginCounts: { END_OF_PERIOD: 24 },
     predictionBandResidualCounts: { END_OF_PERIOD: 30 },
-  }).find((item) => item.businessTarget === 'END_OF_PERIOD')
+  }).find((item) => item.businessTarget === 'END_OF_PERIOD' && item.identity.modelId === 'ets')
   assert.equal(ineligible?.currentForecastEligible, false)
   assert.equal(ineligible?.historyEligibility, 'INSUFFICIENT_HISTORY')
+})
+
+test('prediction band readiness depends on compatible residual count rather than total verification volume', () => {
+  const insufficientCompatible = resolve({
+    verificationOriginCounts: { END_OF_PERIOD: 100 },
+    predictionBandResidualCounts: { END_OF_PERIOD: 29 },
+  }).find((item) => item.businessTarget === 'END_OF_PERIOD' && item.identity.modelId === 'ets')
+
+  const sufficientCompatible = resolve({
+    verificationOriginCounts: { END_OF_PERIOD: 100 },
+    predictionBandResidualCounts: { END_OF_PERIOD: 30 },
+  }).find((item) => item.businessTarget === 'END_OF_PERIOD' && item.identity.modelId === 'ets')
+
+  assert.equal(insufficientCompatible?.verificationEvidenceState, 'SUFFICIENT')
+  assert.equal(insufficientCompatible?.predictionBandState, 'INSUFFICIENT_SAMPLE')
+  assert.equal(sufficientCompatible?.verificationEvidenceState, 'SUFFICIENT')
+  assert.equal(sufficientCompatible?.predictionBandState, 'AVAILABLE')
 })
 
 test('distinguishes no source data from insufficient prepared history', () => {
@@ -640,11 +672,38 @@ test('exact monthly-average capability uses the latest contiguous monthly suffix
   assert.equal(exact.resolution.preparationFailures.MONTHLY_AVERAGE, undefined)
 })
 
+test('series capability snapshot uses the same latest contiguous suffix policy for both daily-to-monthly targets', async () => {
+  const service = createForecastCapabilityService({
+    async resolveHistoricalSeries(seriesId) {
+      return {
+        history: createDailyHistoryWithMonthlyGap(seriesId, { prefixMonths: 2, gapMonths: 4, suffixMonths: 48 }),
+        marketDataSource: 'postgres',
+        cacheStatus: 'hit',
+      }
+    },
+    async readPreparedVariants() {
+      return []
+    },
+    now: () => new Date('2026-09-15T00:00:00.000Z'),
+  })
+
+  const resolution = await service.resolveBySeriesId('snapshot-suffix-positive')
+  const periodCapabilities = resolution.capabilities.filter((item) => (
+    item.identity.targetSemantics === 'MONTHLY_AVERAGE'
+    || item.identity.targetSemantics === 'END_OF_PERIOD'
+  ))
+
+  assert.deepEqual(resolution.preparationFailures, {})
+  assert.ok(periodCapabilities.every((item) => item.availableObservations === 48))
+  assert.ok(periodCapabilities.every((item) => item.historyEligibility === 'ELIGIBLE'))
+  assert.ok(periodCapabilities.every((item) => item.capabilityState === 'NOT_PREPARED'))
+})
+
 test('exact monthly-average capability reports insufficient history from the latest contiguous monthly suffix', async () => {
   const service = createForecastCapabilityService({
     async resolveHistoricalSeries(seriesId) {
       return {
-        history: createDailyHistoryWithMonthlyGap(seriesId, { prefixMonths: 24, gapMonths: 2, suffixMonths: 7 }),
+        history: createDailyHistoryWithMonthlyGap(seriesId, { prefixMonths: 24, gapMonths: 2, suffixMonths: 5 }),
         marketDataSource: 'macrobond',
         cacheStatus: 'miss',
       }
@@ -661,7 +720,7 @@ test('exact monthly-average capability reports insufficient history from the lat
     modelId: 'arima',
   })
 
-  assert.equal(exact.capability?.availableObservations, 7)
+  assert.equal(exact.capability?.availableObservations, 5)
   assert.equal(exact.capability?.historyEligibility, 'INSUFFICIENT_HISTORY')
   assert.equal(exact.capability?.capabilityState, 'INSUFFICIENT_HISTORY')
   assert.equal(exact.resolution.preparationFailures.MONTHLY_AVERAGE, undefined)

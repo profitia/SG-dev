@@ -8,6 +8,7 @@ import {
 } from '@/lib/forecast/rolling-daily-current-forecast-snapshot'
 import {
   createRollingDailyMaintenanceService,
+  buildRollingDailyHistoryFingerprint,
   type RollingDailyHistoryPayload,
   type RollingDailyHistoricalTraceConfig,
   type RollingDailyHistoricalTraceInput,
@@ -19,6 +20,11 @@ import {
   createRollingDailyProductionForecastService,
   type RollingDailyProductionForecastResult,
 } from '@/lib/forecast/rolling-daily-production-forecast'
+import type { ForecastPersistenceOwnership } from '@/lib/forecast/service'
+import {
+  traceForecastRequestDiagnosticsSpan,
+  updateForecastRequestDiagnosticsIdentity,
+} from '@/lib/forecast/request-diagnostics'
 
 export const DEFAULT_ROLLING_DAILY_PRODUCTION_OPERATIONS_SERIES_ID = 'wocaes0074'
 export const ROLLING_DAILY_PRODUCTION_OPERATIONS_MODELS = ['naive', 'damped_holt', 'ets', 'arima'] as const
@@ -30,7 +36,11 @@ export type RollingDailyProductionOperationsRequest = {
   modelIds?: readonly RollingDailyProductionOperationsModelId[]
   preparedHistory?: RollingDailyHistoryPayload
   prepareHistorical?: boolean
+  verificationScope?: 'RECENT' | 'FULL'
+  maxOriginsPerRun?: number
+  fullRebuild?: boolean
   trace?: RollingDailyHistoricalTraceInput | RollingDailyHistoricalTraceConfig
+  resolvePersistenceOwnership?: () => Promise<ForecastPersistenceOwnership>
 }
 
 const ROLLING_DAILY_HISTORICAL_TRACE_PREFIX = '[ROLLING_DAILY_HISTORICAL_TRACE]'
@@ -54,6 +64,11 @@ export type RollingDailyProductionOperationsSnapshotResult =
   | {
       status: 'SKIPPED_MAINTENANCE_FAILURE'
       reason: 'MAINTENANCE_FAILED'
+      parityStatus: null
+    }
+  | {
+      status: 'SKIPPED_CURRENT_FAILURE'
+      reason: 'CURRENT_FAILED'
       parityStatus: null
     }
   | {
@@ -82,10 +97,12 @@ export type RollingDailyProductionOperationsResult = {
 
 type RollingDailyProductionOperationsDependencies = {
   runMaintenance?: (request: RollingDailyMaintenanceRequest) => Promise<RollingDailyMaintenanceResult>
+  runRecentMaintenance?: (request: RollingDailyMaintenanceRequest) => Promise<RollingDailyMaintenanceResult>
   resolveCurrentForecast?: (request: RollingDailyCurrentForecastSnapshotRequest) => Promise<RollingDailyProductionForecastResult>
   persistSnapshot?: (
     request: RollingDailyCurrentForecastSnapshotRequest,
     result: RollingDailyProductionForecastResult & { productionMethod: 'ROLLING_DAILY_POINT_IN_TIME' },
+    options?: { ownership?: ForecastPersistenceOwnership },
   ) => Promise<RollingDailyCurrentForecastSnapshotPersistenceResult>
   readSnapshot?: (request: {
     seriesId: string
@@ -107,6 +124,7 @@ async function refreshSnapshot(
   resolveCurrentForecast: NonNullable<RollingDailyProductionOperationsDependencies['resolveCurrentForecast']>,
   persistSnapshot: NonNullable<RollingDailyProductionOperationsDependencies['persistSnapshot']>,
   request: RollingDailyCurrentForecastSnapshotRequest,
+  options: { resolvePersistenceOwnership?: () => Promise<ForecastPersistenceOwnership> },
   trace: RollingDailyHistoricalTraceConfig | null,
   status: 'REFRESHED_AFTER_MAINTENANCE',
   reason: 'MAINTENANCE_DELTA_APPLIED',
@@ -115,6 +133,7 @@ async function refreshSnapshot(
   resolveCurrentForecast: NonNullable<RollingDailyProductionOperationsDependencies['resolveCurrentForecast']>,
   persistSnapshot: NonNullable<RollingDailyProductionOperationsDependencies['persistSnapshot']>,
   request: RollingDailyCurrentForecastSnapshotRequest,
+  options: { resolvePersistenceOwnership?: () => Promise<ForecastPersistenceOwnership> },
   trace: RollingDailyHistoricalTraceConfig | null,
   status: 'REFRESHED_AFTER_RECOVERY',
   reason: 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
@@ -123,11 +142,20 @@ async function refreshSnapshot(
   resolveCurrentForecast: NonNullable<RollingDailyProductionOperationsDependencies['resolveCurrentForecast']>,
   persistSnapshot: NonNullable<RollingDailyProductionOperationsDependencies['persistSnapshot']>,
   request: RollingDailyCurrentForecastSnapshotRequest,
+  options: { resolvePersistenceOwnership?: () => Promise<ForecastPersistenceOwnership> },
   trace: RollingDailyHistoricalTraceConfig | null,
   status: 'REFRESHED_AFTER_MAINTENANCE' | 'REFRESHED_AFTER_RECOVERY',
   reason: 'MAINTENANCE_DELTA_APPLIED' | 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
 ): Promise<Extract<RollingDailyProductionOperationsSnapshotResult, { status: 'REFRESHED_AFTER_MAINTENANCE' | 'REFRESHED_AFTER_RECOVERY' }>> {
   const refreshStartedAt = performance.now()
+  updateForecastRequestDiagnosticsIdentity({
+    seriesId: request.seriesId,
+    modelId: request.modelId,
+    targetBasis: 'POINT_IN_TIME',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    sourceFrequency: 'DAILY',
+    targetCadence: 'DAILY',
+  })
   if (trace) {
     console.info(`${ROLLING_DAILY_HISTORICAL_TRACE_PREFIX} ${JSON.stringify({
       event: 'current_refresh_started',
@@ -137,11 +165,34 @@ async function refreshSnapshot(
       refreshStatus: status,
     })}`)
   }
-  const result = await resolveCurrentForecast(request)
-  const persisted = await persistSnapshot(request, {
-    ...result,
-    productionMethod: 'ROLLING_DAILY_POINT_IN_TIME',
-  })
+  const result = await traceForecastRequestDiagnosticsSpan(
+    'rolling_daily_snapshot_compute',
+    'COMPUTE',
+    () => resolveCurrentForecast(request),
+    {
+      seriesId: request.seriesId,
+      modelId: request.modelId,
+      reason,
+      refreshStatus: status,
+    },
+  )
+  const ownership = options.resolvePersistenceOwnership
+    ? await options.resolvePersistenceOwnership()
+    : undefined
+  const persisted = await traceForecastRequestDiagnosticsSpan(
+    'rolling_daily_snapshot_persist',
+    'PERSISTENCE',
+    () => persistSnapshot(request, {
+      ...result,
+      productionMethod: 'ROLLING_DAILY_POINT_IN_TIME',
+    }, ownership ? { ownership } : undefined),
+    {
+      seriesId: request.seriesId,
+      modelId: request.modelId,
+      reason,
+      refreshStatus: status,
+    },
+  )
 
   if (trace) {
     console.info(`${ROLLING_DAILY_HISTORICAL_TRACE_PREFIX} ${JSON.stringify({
@@ -177,12 +228,34 @@ export function createRollingDailyProductionOperationsService(
   const productionForecastService = createRollingDailyProductionForecastService()
   const runMaintenance = dependencies.runMaintenance
     ?? ((request: RollingDailyMaintenanceRequest) => maintenanceService.runIncrementalMaintenance(request))
+  const runRecentMaintenance = dependencies.runRecentMaintenance
+    ?? ((request: RollingDailyMaintenanceRequest) => maintenanceService.runRecentVerification(request))
   const resolveCurrentForecast = dependencies.resolveCurrentForecast
     ?? ((request: RollingDailyCurrentForecastSnapshotRequest) => productionForecastService.getRollingDailyProductionForecast(request))
   const persistSnapshot = dependencies.persistSnapshot
     ?? ((request, result) => persistResolvedRollingDailyCurrentForecastSnapshot(request, result))
   const readSnapshot = dependencies.readSnapshot ?? readRollingDailyCurrentForecastSnapshot
   const logEvent = dependencies.logEvent ?? logProductionOperationsEvent
+
+  function summarizeResultSet(results: RollingDailyProductionOperationsModelResult[]) {
+    const refreshedSnapshotCount = results.filter((result) => result.snapshot.status === 'REFRESHED_AFTER_MAINTENANCE').length
+    const recoveredSnapshotCount = results.filter((result) => result.snapshot.status === 'REFRESHED_AFTER_RECOVERY').length
+    const noOpModelCount = results.filter((result) => result.status === 'NO_OP').length
+    const failedModelCount = results.filter((result) => result.status === 'FAILED' || result.status === 'REBUILD_REQUIRED').length
+    const status: RollingDailyProductionOperationsResult['status'] = failedModelCount > 0
+      ? 'FAILED'
+      : results.every((result) => result.status === 'NO_OP')
+        ? 'NO_OP'
+        : 'SUCCEEDED'
+
+    return {
+      status,
+      refreshedSnapshotCount,
+      recoveredSnapshotCount,
+      noOpModelCount,
+      failedModelCount,
+    }
+  }
 
   return {
     async run(request: RollingDailyProductionOperationsRequest): Promise<RollingDailyProductionOperationsResult> {
@@ -195,11 +268,14 @@ export function createRollingDailyProductionOperationsService(
 
       for (const modelId of modelIds) {
         try {
-          const maintenance = await runMaintenance({
+          const recentVerificationRequested = request.prepareHistorical && request.verificationScope === 'RECENT'
+          const maintenance = await (recentVerificationRequested ? runRecentMaintenance : runMaintenance)({
             seriesId: request.seriesId,
             modelId,
             preparedHistory: request.preparedHistory,
+            maxOriginsPerRun: request.maxOriginsPerRun,
             bootstrapHistoricalIfMissing: request.prepareHistorical,
+            fullRebuild: request.fullRebuild,
             trace: trace ?? undefined,
           })
 
@@ -219,10 +295,33 @@ export function createRollingDailyProductionOperationsService(
           }
 
           if (maintenance.status === 'SUCCEEDED') {
+            if (recentVerificationRequested) {
+              const snapshotState = await readSnapshot({
+                seriesId: request.seriesId,
+                modelId,
+                sourceHistoryFingerprint: maintenance.sourceHistoryFingerprint,
+              })
+              if (snapshotState.status === 'HIT') {
+                results.push({
+                  status: 'SUCCEEDED',
+                  modelId,
+                  maintenance,
+                  snapshot: {
+                    status: 'SKIPPED_ALREADY_FRESH',
+                    reason: null,
+                    parityStatus: null,
+                  },
+                  error: null,
+                })
+                continue
+              }
+            }
+
             const snapshot = await refreshSnapshot(
               resolveCurrentForecast,
               persistSnapshot,
               { seriesId: request.seriesId, modelId, preparedHistory: request.preparedHistory },
+              { resolvePersistenceOwnership: request.resolvePersistenceOwnership },
               trace,
               'REFRESHED_AFTER_MAINTENANCE',
               'MAINTENANCE_DELTA_APPLIED',
@@ -263,6 +362,7 @@ export function createRollingDailyProductionOperationsService(
             resolveCurrentForecast,
             persistSnapshot,
             { seriesId: request.seriesId, modelId, preparedHistory: request.preparedHistory },
+            { resolvePersistenceOwnership: request.resolvePersistenceOwnership },
             trace,
             'REFRESHED_AFTER_RECOVERY',
             snapshotState.status === 'MISS' ? 'SNAPSHOT_MISS' : snapshotState.reason,
@@ -296,15 +396,13 @@ export function createRollingDailyProductionOperationsService(
         }
       }
 
-      const refreshedSnapshotCount = results.filter((result) => result.snapshot.status === 'REFRESHED_AFTER_MAINTENANCE').length
-      const recoveredSnapshotCount = results.filter((result) => result.snapshot.status === 'REFRESHED_AFTER_RECOVERY').length
-      const noOpModelCount = results.filter((result) => result.status === 'NO_OP').length
-      const failedModelCount = results.filter((result) => result.status === 'FAILED' || result.status === 'REBUILD_REQUIRED').length
-      const status: RollingDailyProductionOperationsResult['status'] = failedModelCount > 0
-        ? 'FAILED'
-        : results.every((result) => result.status === 'NO_OP')
-          ? 'NO_OP'
-          : 'SUCCEEDED'
+      const {
+        status,
+        refreshedSnapshotCount,
+        recoveredSnapshotCount,
+        noOpModelCount,
+        failedModelCount,
+      } = summarizeResultSet(results)
 
       logEvent('ROLLING_DAILY_PRODUCTION_OPERATIONS', {
         seriesId: request.seriesId,
@@ -313,6 +411,114 @@ export function createRollingDailyProductionOperationsService(
         recoveredSnapshotCount,
         noOpModelCount,
         failedModelCount,
+        historicalVerificationTriggeredInline: true,
+        calibrationTriggeredInline: true,
+      })
+
+      return {
+        status,
+        seriesId: request.seriesId,
+        results,
+        refreshedSnapshotCount,
+        recoveredSnapshotCount,
+        noOpModelCount,
+        failedModelCount,
+      }
+    },
+
+    async runCurrentOnly(request: RollingDailyProductionOperationsRequest): Promise<RollingDailyProductionOperationsResult> {
+      const trace = resolveRollingDailyHistoricalTraceConfig(request.trace)
+      const modelIds = request.modelIds?.length
+        ? [...request.modelIds]
+        : [...ROLLING_DAILY_PRODUCTION_OPERATIONS_MODELS]
+
+      const results: RollingDailyProductionOperationsModelResult[] = []
+      const sourceHistoryFingerprint = request.preparedHistory
+        ? buildRollingDailyHistoryFingerprint(request.preparedHistory)
+        : null
+
+      for (const modelId of modelIds) {
+        try {
+          const snapshotState = sourceHistoryFingerprint
+            ? await readSnapshot({
+                seriesId: request.seriesId,
+                modelId,
+                sourceHistoryFingerprint,
+              })
+            : { status: 'MISS' as const }
+
+          if (snapshotState.status === 'HIT') {
+            results.push({
+              status: 'NO_OP',
+              modelId,
+              maintenance: null,
+              snapshot: {
+                status: 'SKIPPED_ALREADY_FRESH',
+                reason: null,
+                parityStatus: null,
+              },
+              error: null,
+            })
+            continue
+          }
+
+          const snapshot = await refreshSnapshot(
+            resolveCurrentForecast,
+            persistSnapshot,
+            { seriesId: request.seriesId, modelId, preparedHistory: request.preparedHistory },
+            { resolvePersistenceOwnership: request.resolvePersistenceOwnership },
+            trace,
+            'REFRESHED_AFTER_RECOVERY',
+            snapshotState.status === 'MISS' ? 'SNAPSHOT_MISS' : snapshotState.reason,
+          )
+
+          results.push({
+            status: 'RECOVERED',
+            modelId,
+            maintenance: null,
+            snapshot,
+            error: null,
+          })
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          results.push({
+            status: 'FAILED',
+            modelId,
+            maintenance: null,
+            snapshot: {
+              status: 'SKIPPED_CURRENT_FAILURE',
+              reason: 'CURRENT_FAILED',
+              parityStatus: null,
+            },
+            error: message,
+          })
+          logEvent('ROLLING_DAILY_CURRENT_ONLY_FAILURE', {
+            seriesId: request.seriesId,
+            modelId,
+            error: message,
+            historicalVerificationTriggeredInline: false,
+            calibrationTriggeredInline: false,
+          })
+        }
+      }
+
+      const {
+        status,
+        refreshedSnapshotCount,
+        recoveredSnapshotCount,
+        noOpModelCount,
+        failedModelCount,
+      } = summarizeResultSet(results)
+
+      logEvent('ROLLING_DAILY_CURRENT_ONLY', {
+        seriesId: request.seriesId,
+        status,
+        refreshedSnapshotCount,
+        recoveredSnapshotCount,
+        noOpModelCount,
+        failedModelCount,
+        historicalVerificationTriggeredInline: false,
+        calibrationTriggeredInline: false,
       })
 
       return {

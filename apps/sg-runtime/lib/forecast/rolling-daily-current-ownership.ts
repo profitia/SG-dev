@@ -1,4 +1,12 @@
 import {
+  createCurrentForecastStatisticalCompatibility,
+} from '@/lib/forecast/identity'
+import {
+  addCalendarMonthsClamped,
+  resolveForecastTechnicalMinimumObservations,
+  selectMinimalLawfulCurrentTrainingSuffix,
+} from '@/lib/forecast/current-fast-policy'
+import {
   buildCurrentLogicalArtifactKey,
   type CurrentLogicalArtifactIdentity,
 } from '@/lib/forecast/current-single-flight'
@@ -22,19 +30,9 @@ const ROLLING_DAILY_ANCHOR_HORIZONS = {
   '12M': 12,
 } as const
 
-function normalizeDailyObservationDay(value: string) {
-  return value.trim().slice(0, 10)
-}
-
-function addCalendarMonthsClamped(value: string, months: number) {
-  const source = new Date(`${value}T00:00:00.000Z`)
-  const targetMonthIndex = source.getUTCMonth() + months
-  const targetYear = source.getUTCFullYear() + Math.floor(targetMonthIndex / 12)
-  const targetMonth = ((targetMonthIndex % 12) + 12) % 12
-  const lastTargetDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate()
-  return new Date(Date.UTC(targetYear, targetMonth, Math.min(source.getUTCDate(), lastTargetDay)))
-    .toISOString()
-    .slice(0, 10)
+function normalizeDailyObservationDay(value: string | Date) {
+  const raw = value instanceof Date ? value.toISOString() : String(value)
+  return raw.trim().slice(0, 10)
 }
 
 function nextCalendarDay(value: string) {
@@ -43,11 +41,28 @@ function nextCalendarDay(value: string) {
   return date.toISOString().slice(0, 10)
 }
 
+export function selectTrailingRollingDailyCurrentHistory(history: RollingDailyHistoryPayload): RollingDailyHistoryPayload {
+  const forecastOrigin = latestLawfulObservationDate(history)
+  const selection = selectMinimalLawfulCurrentTrainingSuffix({
+    points: history.points.map((point) => ({ ...point, date: normalizeDailyObservationDay(point.date) })),
+    forecastOrigin,
+    minimumRequiredObservations: resolveForecastTechnicalMinimumObservations({
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      modelId: 'naive',
+    }),
+  })
+
+  return {
+    ...history,
+    points: selection.points,
+  }
+}
+
 export function buildRollingDailyCurrentHorizonConfigurationId(forecastOrigin: string) {
   const anchorTargetDates = Object.fromEntries(
     Object.entries(ROLLING_DAILY_ANCHOR_HORIZONS).map(([label, months]) => [
       label,
-      addCalendarMonthsClamped(forecastOrigin, months),
+      addCalendarMonthsClamped(forecastOrigin, months).slice(0, 10),
     ]),
   )
 
@@ -86,17 +101,25 @@ export async function prepareRollingDailyCurrentOwnership(input: {
   modelId: string
   loadHistory?: (seriesId: string) => Promise<RollingDailyHistoryPayload>
 }) {
-  const history = await (input.loadHistory ?? loadRollingDailyHistory)(input.seriesId)
-  if (history.frequency.trim().toUpperCase() !== 'DAILY') {
+  const fullHistory = await (input.loadHistory ?? loadRollingDailyHistory)(input.seriesId)
+  if (fullHistory.frequency.trim().toUpperCase() !== 'DAILY') {
     throw new Error(`Rolling Daily Current ownership requires DAILY history for ${input.seriesId}.`)
   }
+  const history = selectTrailingRollingDailyCurrentHistory(fullHistory)
   const forecastOrigin = latestLawfulObservationDate(history)
+  const statisticalCompatibility = createCurrentForecastStatisticalCompatibility({
+    sourceFrequency: 'DAILY',
+    targetCadence: 'DAILY',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+  })
   const identity = {
+    artifactScope: statisticalCompatibility.artifactScope,
     seriesId: input.seriesId,
     targetBasis: ROLLING_DAILY_TARGET_BASIS,
     targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
     methodId: ROLLING_DAILY_METHOD_ID,
     methodVersion: ROLLING_DAILY_METHOD_VERSION,
+    trainingWindowPolicyId: statisticalCompatibility.trainingWindowPolicyId,
     modelId: input.modelId,
     inputSource: ROLLING_DAILY_INPUT_SOURCE,
     historyFingerprint: buildRollingDailyHistoryFingerprint(history),

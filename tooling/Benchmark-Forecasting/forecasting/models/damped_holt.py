@@ -12,6 +12,8 @@ from statsmodels.tsa.holtwinters import ExponentialSmoothing
 from forecasting.contracts import ForecastMetadata, Frequency, ModelForecast, NativeCadenceExecutionPlan, Observation
 from forecasting.models.base import ForecastModel, ModelForecastError
 from forecasting.models.statsmodels_utils import fit_converged, validate_regular_history
+from forecasting.training_policy import resolve_period_model_minimum_training_observations
+from forecasting.uncertainty_bands import build_simulated_model_native_band
 
 
 @dataclass(frozen=True)
@@ -75,7 +77,7 @@ def fit_damped_holt_endog(endog: np.ndarray) -> DampedHoltPathFit:
 
 class DampedHoltModel(ForecastModel):
     model_id = "damped_holt"
-    min_history = 36
+    min_history = resolve_period_model_minimum_training_observations(model_id)
 
     def __init__(
         self,
@@ -100,6 +102,37 @@ class DampedHoltModel(ForecastModel):
         return ModelForecast(
             forecast_value=forecast_value,
             metadata=fit.metadata,
+        )
+
+    def forecast_with_uncertainty(self, history: Sequence[Observation], horizon_steps: int) -> ModelForecast:
+        endog = validate_regular_history(
+            history,
+            horizon_steps,
+            self.min_history,
+            "Damped Holt",
+            self.frequency,
+            self.cadence_plan,
+        )
+        fit = fit_damped_holt_endog(endog)
+        forecast_value = fit.forecast_path(horizon_steps)[-1]
+        return ModelForecast(
+            forecast_value=forecast_value,
+            metadata=ForecastMetadata(
+                model_family=fit.metadata.model_family,
+                selected_variant=fit.metadata.selected_variant,
+                selected_parameters=fit.metadata.selected_parameters,
+                selection_score=fit.metadata.selection_score,
+                selection_metric=fit.metadata.selection_metric,
+                fit_status=fit.metadata.fit_status,
+                failure_reason=fit.metadata.failure_reason,
+                uncertainty_band=build_simulated_model_native_band(
+                    fitted=fit.fitted,
+                    horizon_steps=horizon_steps,
+                    sample_count=len(history),
+                    calibration_method="STATSMODELS_DAMPED_HOLT_SIMULATION",
+                    calibration_version="statsmodels-damped-holt-simulation-seed-1729-r1000-v1",
+                ),
+            ),
         )
 
     @staticmethod

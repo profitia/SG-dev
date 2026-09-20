@@ -12,11 +12,13 @@ import {
 } from '@/lib/forecast/contracts'
 
 export const ForecastTargetBasisSchema = z.enum(FORECAST_TARGET_BASES)
+export const ForecastVerificationScopeSchema = z.enum(['RECENT', 'FULL'])
 
 export const ForecastRouteQuerySchema = z.object({
   seriesId: z.string().trim().min(1),
   model: z.enum(USER_FACING_FORECAST_MODELS),
   targetBasis: ForecastTargetBasisSchema.optional(),
+  verificationScope: ForecastVerificationScopeSchema.optional(),
   sourceFrequency: z.enum(FORECAST_NATIVE_FREQUENCIES).optional(),
   targetCadence: z.enum(FORECAST_NATIVE_FREQUENCIES).optional(),
 }).refine((value) => (
@@ -33,6 +35,7 @@ export type ForecastRequestInput = {
   seriesId: string
   modelId: UserFacingForecastModelId
   targetBasis: ForecastTargetBasis
+  verificationScope?: z.infer<typeof ForecastVerificationScopeSchema>
   sourceFrequency?: (typeof FORECAST_NATIVE_FREQUENCIES)[number]
   targetCadence?: (typeof FORECAST_NATIVE_FREQUENCIES)[number]
 }
@@ -72,6 +75,7 @@ export function toForecastRequestInput(query: ForecastRouteQuery): ForecastReque
     seriesId: query.seriesId,
     modelId: query.model,
     targetBasis: normalizeForecastTargetBasis(query.targetBasis),
+    verificationScope: query.verificationScope,
     sourceFrequency: query.sourceFrequency,
     targetCadence: query.targetCadence,
   }

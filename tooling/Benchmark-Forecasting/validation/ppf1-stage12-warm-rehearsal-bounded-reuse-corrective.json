@@ -1,0 +1,293 @@
+{
+  "generatedAt": "2026-09-14T09:46:52.000Z",
+  "taskId": "ppf-1-stage-12-warm-rehearsal-bounded-reuse-corrective-20260914",
+  "scope": "implementation",
+  "status": "PARTIAL_SUCCESS",
+  "classification": {
+    "changeType": "DASHBOARD_OWNED_CORRECTIVE",
+    "productSourceMutated": true,
+    "ownerSurface": "apps/dashboard-preview",
+    "validationBranch": "ppf1/stage12-live-acceptance-legacy-deprecation-20260911",
+    "sourceSha": "b78ff87645c83f7c9eeebf7dbe21ed18eb94e2ee",
+    "dashboardDeployedSha": "b78ff87645c83f7c9eeebf7dbe21ed18eb94e2ee",
+    "sgRuntimeDeployedSha": "f7761cc3ee56dd474667b89132747910d67c2517",
+    "sgRuntimeMutated": false,
+    "deployId": "dep-dajrvfu7bikc73d9pc30"
+  },
+  "sourceDiff": {
+    "commit": "b78ff87645c83f7c9eeebf7dbe21ed18eb94e2ee",
+    "subject": "fix(stage12): bound warm rehearsal reuse",
+    "filesChanged": 2,
+    "insertions": 117,
+    "deletions": 57,
+    "touchedFiles": [
+      "apps/dashboard-preview/lib/benchmark-forecast/demo-certification.ts",
+      "apps/dashboard-preview/tests/demo-certification.test.ts"
+    ],
+    "behavioralChanges": [
+      "runWarmRehearsal reuses the primary matrixReport instead of dispatching a second unconditional matrix evaluation",
+      "WARM verification and verification-horizon gates reuse authoritative primary matrix evidence",
+      "WARM current rereads stay bounded to current renderability checks not already proven by the primary matrix",
+      "switchBack now uses the same cadence-aware current-read identity as the original current read"
+    ]
+  },
+  "localValidation": {
+    "focusedTests": {
+      "command": "node --import tsx --test tests/demo-certification.test.ts",
+      "result": "PASS",
+      "details": "35/35 PASS"
+    },
+    "typecheck": {
+      "command": "npm run typecheck",
+      "result": "PASS"
+    },
+    "publish": {
+      "commitCreated": true,
+      "commitPushed": true,
+      "dashboardDeployed": true,
+      "dashboardHost": "https://dashboards-library.onrender.com"
+    }
+  },
+  "warmStructureComparison": {
+    "baselineProfilerArtifact": "ppf1-stage12-warm-rehearsal-duplicate-read-cache-reuse-profiler",
+    "before": {
+      "dashboardDeployedSha": "7e87d2fad1c20c1e4ca20a742b2809e06b40ea86",
+      "mode": "REVALIDATE",
+      "seriesId": "lmeofcucashask",
+      "phaseTimingsMs": {
+        "PRECOMPUTE": 20112,
+        "MATRIX": 40786,
+        "WARM_REHEARSAL_ELAPSED_BEFORE_TIMEOUT": 14112
+      },
+      "warmRemoteCounts": {
+        "READ_CAPABILITY:hit": 12,
+        "READ_CURRENT:hit": 8,
+        "READ_CURRENT:miss": 4,
+        "READ_VERIFICATION:hit": 7,
+        "READ_VERIFICATION:miss": 5
+      },
+      "secondMatrixInWarmRehearsal": true,
+      "switchBackUsesCadenceLessCurrentRead": true
+    },
+    "after": {
+      "dashboardDeployedSha": "b78ff87645c83f7c9eeebf7dbe21ed18eb94e2ee",
+      "mode": "REVALIDATE",
+      "seriesId": "lmeofcucashask",
+      "phaseTimingsMs": {
+        "PRECOMPUTE": 21645,
+        "MATRIX": 42463,
+        "WARM_REHEARSAL": 2809
+      },
+      "warmRemoteCounts": {
+        "READ_CAPABILITY:miss": 0,
+        "READ_CURRENT:hit": 9,
+        "READ_CURRENT:miss": 4,
+        "READ_VERIFICATION:miss": 0
+      },
+      "warmEvaluateMatrixCount": 0,
+      "matrixExecutionsPerBenchmark": 1,
+      "switchBackUsesExactCadenceIdentity": true,
+      "warmRehearsalTimedOut": false
+    }
+  },
+  "liveDiagnostics": {
+    "copper": {
+      "seriesId": "lmeofcucashask",
+      "benchmarkName": "Copper",
+      "mode": "REVALIDATE",
+      "demoSafe": "NO",
+      "reason": "REREAD_FAIL",
+      "deployedRevision": "b78ff87645c83f7c9eeebf7dbe21ed18eb94e2ee",
+      "precompute": {
+        "status": "PASS",
+        "reason": null,
+        "staleReadyVariants": [
+          "naive / MONTHLY_AVERAGE",
+          "ets / MONTHLY_AVERAGE",
+          "ets / END_OF_PERIOD",
+          "arima / MONTHLY_AVERAGE",
+          "arima / END_OF_PERIOD"
+        ]
+      },
+      "reread": {
+        "status": "FAIL",
+        "reason": "VERIFICATION_NOT_READY"
+      },
+      "matrix": {
+        "status": "FAIL",
+        "verificationPass": 28,
+        "verificationFail": 20,
+        "failingReason": "VERIFICATION_NOT_READY"
+      },
+      "freshness": {
+        "status": "PASS",
+        "reason": null
+      },
+      "warmRehearsal": {
+        "status": "FAIL",
+        "modelSwitch": "PASS",
+        "targetBasisSwitch": "PASS",
+        "verification": "FAIL",
+        "verificationHorizonSwitch": "FAIL",
+        "switchBack": "PASS",
+        "hardReload": "FAIL",
+        "warmReuse": "FAIL",
+        "reason": "verification evidence reused from the primary matrix remained not ready on stale monthly variants"
+      },
+      "diagnostics": {
+        "timeoutMs": 75000,
+        "timeoutSnapshot": null,
+        "peakConcurrentRemoteReads": 12,
+        "totalRemoteRequests": 31,
+        "phaseTimingsMs": {
+          "PRECOMPUTE": 21645,
+          "MATRIX": 42463,
+          "WARM_REHEARSAL": 2809
+        },
+        "warmRemoteCounts": {
+          "readCapabilityMisses": 0,
+          "readCurrentMisses": 4,
+          "readVerificationMisses": 0,
+          "cacheHits": 9,
+          "cacheMisses": 4
+        },
+        "warmEvaluateMatrixCount": 0,
+        "matrixExecutionCount": 1,
+        "warmTimelineSummary": [
+          "8 monthly current reads were reused from cache",
+          "4 point-in-time current reads were remote misses",
+          "1 switchBack current read reused the exact cadence-aware cache key",
+          "0 warm verification rereads were dispatched"
+        ]
+      }
+    },
+    "brent": {
+      "seriesId": "wocaes0074",
+      "benchmarkName": "Brent",
+      "mode": "CERTIFY",
+      "demoSafe": "NO",
+      "reason": "ENVIRONMENT_NOT_READY",
+      "deployedRevision": "b78ff87645c83f7c9eeebf7dbe21ed18eb94e2ee",
+      "precompute": {
+        "status": "FAIL",
+        "reason": "Demo certification benchmark timed out after 75000ms."
+      },
+      "matrix": {
+        "status": "FAIL",
+        "reason": "Demo certification benchmark timed out after 75000ms.",
+        "variantsCompletedBeforeTimeout": 11,
+        "pointInTimeEvaluationBegan": true
+      },
+      "warmRehearsal": {
+        "status": "FAIL",
+        "started": false
+      },
+      "diagnostics": {
+        "timeoutMs": 75000,
+        "peakConcurrentRemoteReads": 12,
+        "totalRemoteRequests": 31,
+        "phaseTimingsMs": {
+          "PRECOMPUTE": 18494,
+          "MATRIX": null,
+          "WARM_REHEARSAL": null
+        },
+        "warmRemoteRequests": 0
+      }
+    },
+    "aluminium": {
+      "seriesId": "lmeofalcashask",
+      "benchmarkName": "Aluminium",
+      "mode": "CERTIFY",
+      "demoSafe": "NO",
+      "reason": "ENVIRONMENT_NOT_READY",
+      "deployedRevision": "b78ff87645c83f7c9eeebf7dbe21ed18eb94e2ee",
+      "precompute": {
+        "status": "FAIL",
+        "reason": "Demo certification benchmark timed out after 75000ms."
+      },
+      "matrix": {
+        "status": "FAIL",
+        "reason": "Demo certification benchmark timed out after 75000ms.",
+        "variantsCompletedBeforeTimeout": 7,
+        "pointInTimeEvaluationBegan": false
+      },
+      "warmRehearsal": {
+        "status": "FAIL",
+        "started": false
+      },
+      "diagnostics": {
+        "timeoutMs": 75000,
+        "peakConcurrentRemoteReads": 12,
+        "totalRemoteRequests": 28,
+        "phaseTimingsMs": {
+          "PRECOMPUTE": 20372,
+          "MATRIX": null,
+          "WARM_REHEARSAL": null
+        },
+        "warmRemoteRequests": 0
+      }
+    }
+  },
+  "duplicateComputeGuards": {
+    "secondMatrixInWarmRehearsal": "NO",
+    "warmReadVerificationRemoteCount": 0,
+    "warmReadCapabilityRemoteCount": 0,
+    "warmReadCurrentRemoteCount": 4,
+    "switchBackUsesExactCadenceKey": true,
+    "newComputeCreated": false,
+    "sgRuntimeTouched": false
+  },
+  "finalDecision": {
+    "result": "PARTIAL_SUCCESS",
+    "implementationCorrective": "PASS",
+    "warmRehearsalCorrectiveImplementation": "PASS",
+    "sourceCorrectiveImplemented": "PASS",
+    "sourceCorrectiveDeployed": "PASS",
+    "secondMatrixDuplicationRemoved": "PASS",
+    "warmVerificationRereadsRemoved": "PASS",
+    "switchBackCacheIdentityCorrected": "PASS",
+    "copperWarmLiveProof": "PASS",
+    "copperWarmTimeoutRemoved": "PASS",
+    "copperFreshnessRepairRequired": "YES",
+    "copperBusinessOutcome": "FAIL_CLOSED",
+    "brentWarmNonRegression": "NOT_PROVEN",
+    "aluminiumWarmNonRegression": "NOT_PROVEN",
+    "nonRegressionBlocker": "PRE_WARM_ENVIRONMENT_TIMEOUT",
+    "fullLiveAcceptance": "NOT_PROVEN",
+    "fullCohortRecertificationRun": "NO",
+    "readyForCleanNonRegressionRehearsal": "YES",
+    "readyForCopperFreshnessRepair": "NO",
+    "preDeprecationAcceptance": "BLOCKED",
+    "legacyDeprecationAllowed": "NO",
+    "explanation": "The bounded warm-reuse corrective is deployed and the exercised Copper warm path shows zero warm verification rereads and zero second matrix executions. Copper still fails for existing verification-not-ready data. Brent and Aluminium timed out before the warm phase started, so warm non-regression on those series is not proven rather than failed."
+  },
+  "pmosCloseout": {
+    "status": "SUCCEEDED",
+    "bootstrapInputCreatedByCanonicalTooling": true,
+    "executionHandoffValidation": "PASS",
+    "bootstrapIdentityValidation": "PASS",
+    "conversationBase": "2026-09-14-11:56_ppf-1-stage-12-warm-rehearsal-bounded-reuse-corrective-20260914",
+    "completionEvidence": {
+      "closeoutState": "CLOSEOUT_COMPLETE",
+      "pmosSaveStatus": "SUCCEEDED",
+      "vectorRebuildStatus": "SUCCEEDED",
+      "archiveCompletenessStatus": "PASS",
+      "executionTrailStatus": "PRESENT",
+      "handoffPublicationStatus": "SUCCEEDED"
+    },
+    "runtimeContextIntegrityStatus": "PASS",
+    "pmosRuntimeVerification": "PASS",
+    "pendingSlotFinal": "CLEAR",
+    "recoveryCheckWrappers": "BROKEN_PREEXISTING",
+    "brokenWrappers": {
+      "recoveryCheckArchive": "ERR_MODULE_NOT_FOUND: missing scripts/check-archive-completeness.ts",
+      "recoveryCheckExecutionTrail": "ERR_MODULE_NOT_FOUND: missing scripts/check-execution-trail.ts"
+    },
+    "continuityProof": [
+      "persisted PMOS conversation artifact has CLOSEOUT_COMPLETE with PASS archive completeness and PRESENT execution trail",
+      "execution-trail .jsonl and .md files exist for the persisted conversation base",
+      "pmos:save succeeded and cleared pending-artifact.json",
+      "pmos:verify-runtime returned PASS after runtime-context rebuild"
+    ]
+  }
+}

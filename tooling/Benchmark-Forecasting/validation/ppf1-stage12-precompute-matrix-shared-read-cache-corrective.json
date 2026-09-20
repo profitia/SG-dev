@@ -1,0 +1,178 @@
+{
+  "generatedAt": "2026-09-14T13:11:33.000Z",
+  "taskId": "ppf-1-stage-12-precompute-matrix-shared-read-cache-corrective-20260914",
+  "scope": "implementation",
+  "conversationId": "c5eb3948-6c1b-4de4-b3ca-2168a61c73b7",
+  "validationBranch": "ppf1/stage12-live-acceptance-legacy-deprecation-20260911",
+  "productOwner": "apps/dashboard-preview",
+  "source": {
+    "initialCommit": {
+      "sha": "4b3a5442fb5fc24f44676a9d8062f2f62fe8eed9",
+      "subject": "fix(stage12): share precompute matrix read cache"
+    },
+    "finalCommit": {
+      "sha": "db177e4931b9ce7247393b40448c11811bdc51cc",
+      "subject": "fix(stage12): sequence revalidate cache warmup"
+    },
+    "sgRuntimeMutated": false,
+    "pitPrewarmIntroduced": false,
+    "filesModified": [
+      "apps/dashboard-preview/lib/benchmark-forecast/demo-certification.ts",
+      "apps/dashboard-preview/tests/demo-certification.test.ts"
+    ]
+  },
+  "deployment": {
+    "dashboardService": "dashboards-library",
+    "dashboardServiceId": "srv-da2i7j9t0dsc73ag7qv0",
+    "dashboardUrl": "https://dashboards-library.onrender.com",
+    "initialDeploy": {
+      "deployId": "dep-dajutmad0e5s73dr49dg",
+      "sha": "4b3a5442fb5fc24f44676a9d8062f2f62fe8eed9",
+      "status": "SUCCEEDED"
+    },
+    "finalDeploy": {
+      "deployId": "dep-dajv1vmk1f9s739ho6ug",
+      "sha": "db177e4931b9ce7247393b40448c11811bdc51cc",
+      "status": "SUCCEEDED"
+    },
+    "dashboardDeployedSha": "db177e4931b9ce7247393b40448c11811bdc51cc",
+    "sgRuntimeDeployedSha": "f7761cc3ee56dd474667b89132747910d67c2517",
+    "releaseSnapshot": {
+      "sourceRevision": "db177e4931b9ce7247393b40448c11811bdc51cc",
+      "deployedRevision": "db177e4931b9ce7247393b40448c11811bdc51cc",
+      "environment": "render",
+      "environmentUrl": "https://dashboards-library.onrender.com"
+    }
+  },
+  "localValidation": {
+    "tests": {
+      "command": "cd apps/dashboard-preview && node --import tsx --test tests/demo-certification.test.ts",
+      "passCount": 39,
+      "failCount": 0,
+      "status": "PASS"
+    },
+    "typecheck": {
+      "command": "cd apps/dashboard-preview && npm run typecheck",
+      "status": "PASS"
+    },
+    "notExecuted": [
+      "A local direct runtime profiler was not completed because the worktree shell lacked SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN."
+    ]
+  },
+  "initialLiveFailure": {
+    "seriesId": "wocaes0074",
+    "deployedSha": "4b3a5442fb5fc24f44676a9d8062f2f62fe8eed9",
+    "demoSafe": "NO",
+    "reason": "ENVIRONMENT_NOT_READY",
+    "precomputeStatus": "FAIL",
+    "matrixStarted": false,
+    "peakConcurrentRemoteReads": 16,
+    "precomputeCurrentReadsNonPit": 4,
+    "precomputeVerificationReadsNonPit": 0,
+    "firstTimeout": {
+      "phase": "PRECOMPUTE",
+      "operation": "READ_CURRENT",
+      "modelId": "naive",
+      "targetBasis": "MONTHLY_AVERAGE",
+      "remoteElapsedMs": 20001
+    },
+    "classification": "CACHE_IDENTITY_FIXED_BUT_PRECOMPUTE_FANOUT_STILL_TOO_HIGH"
+  },
+  "finalLiveProof": {
+    "brent": {
+      "seriesId": "wocaes0074",
+      "mode": "REVALIDATE",
+      "demoSafe": "NO",
+      "reason": "REREAD_FAIL",
+      "precomputeStatus": "PASS",
+      "matrixStatus": "FAIL",
+      "warmStatus": "FAIL",
+      "peakConcurrentRemoteReads": 12,
+      "precomputeCurrentMissesNonPit": 8,
+      "precomputeVerificationMissesNonPit": 8,
+      "matrixCurrentMissesNonPit": 0,
+      "matrixVerificationMissesNonPit": 0,
+      "matrixCurrentHitsNonPit": 8,
+      "matrixVerificationHitsNonPit": 8,
+      "pointInTimeEvaluationBegan": true,
+      "variantsCompletedBeforeTimeout": 12,
+      "firstTimeout": null,
+      "cacheReuseGate": "PASS"
+    },
+    "aluminium": {
+      "seriesId": "lmeofalcashask",
+      "mode": "REVALIDATE",
+      "demoSafe": "NO",
+      "reason": "REREAD_FAIL",
+      "precomputeStatus": "PASS",
+      "matrixStatus": "FAIL",
+      "warmStatus": "FAIL",
+      "peakConcurrentRemoteReads": 12,
+      "precomputeCurrentMissesNonPit": 8,
+      "precomputeVerificationMissesNonPit": 8,
+      "matrixCurrentMissesNonPit": 0,
+      "matrixVerificationMissesNonPit": 0,
+      "matrixCurrentHitsNonPit": 8,
+      "matrixVerificationHitsNonPit": 8,
+      "pointInTimeEvaluationBegan": true,
+      "variantsCompletedBeforeTimeout": 12,
+      "firstTimeout": null,
+      "cacheReuseGate": "PASS"
+    }
+  },
+  "findings": {
+    "findings": [
+      "The first implementation on commit 4b3a5442fb5fc24f44676a9d8062f2f62fe8eed9 fixed shared cache identity but still failed live before MATRIX because PRECOMPUTE warm-up fan-out was too high.",
+      "The final implementation on commit db177e4931b9ce7247393b40448c11811bdc51cc preserved the shared-cache design and resolved the live fan-out issue by sequencing warm-up per variant.",
+      "Brent final live REVALIDATE showed PRECOMPUTE PASS, point-in-time evaluation began, all 12 variants completed, and MATRIX non-point-in-time current and verification misses both dropped to zero.",
+      "Aluminium final live REVALIDATE matched Brent on the targeted cache-reuse proof surface.",
+      "The targeted pre-MATRIX environment timeout regression is resolved on both validated series.",
+      "The remaining live failure class is REREAD_FAIL rather than ENVIRONMENT_NOT_READY.",
+      "No SG Runtime source change, timeout increase, MATRIX semantic change, or point-in-time PRECOMPUTE warm-up was introduced."
+    ],
+    "blockers": [],
+    "residualRisks": [
+      "Full benchmark acceptance remains partial because both validated series still fail closed with REREAD_FAIL.",
+      "This task does not repair runtime reread readiness or any separate freshness issue.",
+      "Legacy deprecation must remain blocked until the remaining benchmark-level fail-closed outcome is addressed by a separate task."
+    ]
+  },
+  "decisions": {
+    "decisions": [
+      "Keep the corrective inside apps/dashboard-preview and leave acceptance-matrix semantics unchanged.",
+      "Preserve exact cadence-derived cache identity between PRECOMPUTE and MATRIX.",
+      "Reduce live PRECOMPUTE pressure by sequencing non-point-in-time warm-up per variant instead of dispatching all variants at once.",
+      "Classify the task as PARTIAL_SUCCESS because the target cache-reuse regression is fixed and proven live, while full benchmark certification still fails closed for a different reason."
+    ]
+  },
+  "actions": {
+    "recommendations": [
+      "Treat the precompute-to-matrix shared read cache corrective as complete for the targeted regression.",
+      "Open a follow-up only for the remaining REREAD_FAIL benchmark outcome if full benchmark acceptance is required.",
+      "Keep any next task scoped away from SG Runtime mutation unless new evidence forces that boundary to move."
+    ],
+    "validationsExecuted": [
+      "Ran focused dashboard tests after the final source change and confirmed 39 of 39 passing.",
+      "Ran dashboard typecheck after the final source change and confirmed PASS.",
+      "Deployed exact commit db177e4931b9ce7247393b40448c11811bdc51cc to dashboards-library on Render.",
+      "Verified the public route release snapshot reported sourceRevision and deployedRevision equal to db177e4931b9ce7247393b40448c11811bdc51cc.",
+      "Ran Brent-only deployed REVALIDATE diagnostics with maxConcurrentMatrixVariants set to 1.",
+      "Ran Aluminium-only deployed REVALIDATE diagnostics with maxConcurrentMatrixVariants set to 1."
+    ],
+    "validationsNotExecuted": [
+      "No local direct runtime profiler was completed because SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN was not present in the worktree shell.",
+      "No SG Runtime source change was made.",
+      "No timeout increase was made.",
+      "No full benchmark pass or legacy deprecation validation was claimed."
+    ],
+    "artifactsCreated": [
+      "tooling/Benchmark-Forecasting/validation/ppf1-stage12-precompute-matrix-shared-read-cache-corrective.md",
+      "tooling/Benchmark-Forecasting/validation/ppf1-stage12-precompute-matrix-shared-read-cache-corrective.json",
+      "apps/pmos/.pmos/recovery/bootstrap-inputs/2026-09-14_ppf-1-stage-12-precompute-matrix-shared-read-cache-corrective-20260914.json"
+    ],
+    "artifactsModified": []
+  },
+  "result": {
+    "finalStatus": "PARTIAL_SUCCESS"
+  }
+}

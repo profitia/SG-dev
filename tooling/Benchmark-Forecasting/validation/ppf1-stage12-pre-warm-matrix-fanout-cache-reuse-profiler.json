@@ -1,0 +1,412 @@
+{
+  "generatedAt": "2026-09-14T11:53:37.000Z",
+  "taskId": "ppf-1-stage-12-pre-warm-matrix-fanout-cache-reuse-profiler-20260914",
+  "scope": "audit",
+  "upstreamIdentityAuthority": "EXTERNAL_CHATGPT_PROMPT_AUTHORING_LAYER",
+  "conversationId": "a619f3ef-7a76-4d9c-a747-c9f9a9917de4",
+  "validationBranch": "ppf1/stage12-live-acceptance-legacy-deprecation-20260911",
+  "evidenceBaselineCommit": "91174df504e05a93c8757d7ecc0cc4040b735d7d",
+  "deployment": {
+    "dashboardDeployedSha": "b78ff87645c83f7c9eeebf7dbe21ed18eb94e2ee",
+    "sgRuntimeDeployedSha": "f7761cc3ee56dd474667b89132747910d67c2517"
+  },
+  "acceptedPriorResult": {
+    "warmRehearsalCorrectiveImplementation": "PASS",
+    "secondMatrixDuplicationRemoved": "PASS",
+    "warmVerificationRereadsRemoved": "PASS",
+    "switchbackCacheIdentityCorrected": "PASS"
+  },
+  "sourceCallGraph": {
+    "matrixCallGraphMapped": "PASS",
+    "ownerSurface": "apps/dashboard-preview/lib/benchmark-forecast/demo-certification.ts",
+    "matrixServiceSurface": "apps/dashboard-preview/lib/benchmark-forecast/acceptance-matrix.ts",
+    "entrypoint": "createDemoCertificationService().run()",
+    "flow": [
+      "PRECOMPUTE capability fan-out across 12 variants",
+      "MATRIX via matrixEvaluator(entry.seriesId, mode === 'CERTIFY', ...)",
+      "WARM_REHEARSAL only after MATRIX returns"
+    ],
+    "matrixScheduling": {
+      "nonPointInTime": "Promise.all over all non-PIT variants",
+      "pointInTime": "after beforePointInTimeEvaluation, sequential for-of over POINT_IN_TIME variants"
+    },
+    "variantFlow": [
+      "evaluateCurrentCell",
+      "Promise.all of 4 evaluateVerificationCell horizon checks"
+    ]
+  },
+  "cacheTopology": {
+    "certificationCaches": {
+      "capability": {
+        "owner": "demo-certification.ts",
+        "key": "seriesId::modelId::targetBasis",
+        "populatedByPrecompute": true,
+        "reusedByMatrix": true,
+        "cadenceInKey": false
+      },
+      "preparation": {
+        "owner": "demo-certification.ts",
+        "key": "seriesId::modelId::targetBasis",
+        "populatedByPrecompute": false,
+        "reusedByMatrix": true,
+        "cadenceInKey": false
+      },
+      "current": {
+        "owner": "demo-certification.ts",
+        "key": "seriesId::modelId::targetBasis::sourceFrequency::targetCadence",
+        "populatedByPrecompute": false,
+        "reusedByMatrix": true,
+        "cadenceInKey": true
+      },
+      "verification": {
+        "owner": "demo-certification.ts",
+        "key": "seriesId::modelId::targetBasis::sourceFrequency::targetCadence",
+        "populatedByPrecompute": false,
+        "reusedByMatrix": true,
+        "cadenceInKey": true
+      }
+    },
+    "matrixLocalCaches": {
+      "readiness": {
+        "owner": "acceptance-matrix.ts",
+        "key": "seriesId::modelId::targetBasis",
+        "cadenceInKey": false
+      },
+      "preparation": {
+        "owner": "acceptance-matrix.ts",
+        "key": "seriesId::modelId::targetBasis",
+        "cadenceInKey": false
+      },
+      "current": {
+        "owner": "acceptance-matrix.ts",
+        "key": "seriesId::modelId::targetBasis",
+        "cadenceInKey": false
+      },
+      "verification": {
+        "owner": "acceptance-matrix.ts",
+        "key": "seriesId::modelId::targetBasis",
+        "cadenceInKey": false
+      }
+    },
+    "precomputeMatrixCapabilityCacheShared": "YES",
+    "precomputeMatrixCurrentCacheShared": "NO",
+    "precomputeMatrixVerificationCacheShared": "NO",
+    "matrixLocalCacheDuplicatesCertificationCache": "YES",
+    "matrixLocalCacheWorks": "YES",
+    "matrixLocalCacheScopeTooNarrow": "YES"
+  },
+  "identityKeyComparison": {
+    "capabilityKeyMatchCount": 8,
+    "currentCacheKeyMatchCount": 0,
+    "currentCacheKeyMismatchCount": 8,
+    "verificationCacheKeyMatchCount": 0,
+    "verificationCacheKeyMismatchCount": 7,
+    "persistedProofKeyMismatchCount": 0,
+    "observedMatrixCurrentKeys": [
+      "wocaes0074::naive::MONTHLY_AVERAGE::DAILY::MONTHLY",
+      "wocaes0074::naive::END_OF_PERIOD::DAILY::MONTHLY",
+      "wocaes0074::damped_holt::MONTHLY_AVERAGE::DAILY::MONTHLY",
+      "wocaes0074::damped_holt::END_OF_PERIOD::DAILY::MONTHLY",
+      "wocaes0074::ets::MONTHLY_AVERAGE::DAILY::MONTHLY",
+      "wocaes0074::ets::END_OF_PERIOD::DAILY::MONTHLY",
+      "wocaes0074::arima::MONTHLY_AVERAGE::DAILY::MONTHLY",
+      "wocaes0074::arima::END_OF_PERIOD::DAILY::MONTHLY"
+    ],
+    "note": "In REVALIDATE, PRECOMPUTE populates capability cache only. Current and Verification key overlap is zero because those cache spaces are not populated before MATRIX."
+  },
+  "matrixAccounting": {
+    "brent": {
+      "seriesId": "wocaes0074",
+      "matrixReadCapabilityCount": 8,
+      "matrixReadCurrentCount": 7,
+      "matrixReadVerificationCount": 7,
+      "matrixPersistedCurrentProofCount": 0,
+      "matrixPersistedVerificationProofCount": 0,
+      "matrixPrepareCurrentCount": 0,
+      "matrixCurrentHits": 0,
+      "matrixCurrentMisses": 7,
+      "matrixVerificationHits": 0,
+      "matrixVerificationMisses": 7,
+      "capabilityCacheHits": 8,
+      "capabilityCacheMisses": 0,
+      "capabilityRemoteElapsedTotalMs": 0,
+      "currentRemoteElapsedTotalMs": 23342,
+      "verificationRemoteElapsedTotalMs": 28711
+    }
+  },
+  "precomputeMatrixOverlap": {
+    "precomputeReadCapabilityCount": 12,
+    "precomputeReadCurrentCount": 0,
+    "precomputeReadVerificationCount": 0,
+    "precomputePrepareCurrentCount": 0,
+    "precomputeMatrixCapabilityKeyOverlap": 8,
+    "precomputeMatrixCurrentKeyOverlap": 0,
+    "precomputeMatrixVerificationKeyOverlap": 0,
+    "overlappingCurrentKeysRereadRemotely": 0,
+    "overlappingVerificationKeysRereadRemotely": 0
+  },
+  "variantTimeline": {
+    "brent": {
+      "variantsCompletedBeforeTimeout": 7,
+      "variantsActiveAtTimeout": [
+        "arima::END_OF_PERIOD"
+      ],
+      "variantsNotStartedAtTimeout": [
+        "naive::POINT_IN_TIME",
+        "damped_holt::POINT_IN_TIME",
+        "ets::POINT_IN_TIME",
+        "arima::POINT_IN_TIME"
+      ],
+      "variants": [
+        {
+          "modelId": "naive",
+          "targetBasis": "MONTHLY_AVERAGE",
+          "scheduledAt": "2026-09-14T11:48:53.096Z",
+          "startedAt": "2026-09-14T11:48:53.096Z",
+          "completedAt": "2026-09-14T11:49:00.414Z",
+          "state": "SUCCESS",
+          "current": {
+            "cacheStatus": "miss",
+            "remoteElapsedMs": 3369,
+            "budgetRemainingAtDispatchMs": 54013
+          },
+          "verification": {
+            "cacheStatus": "miss",
+            "remoteElapsedMs": 3949,
+            "budgetRemainingAtDispatchMs": 50644
+          }
+        },
+        {
+          "modelId": "naive",
+          "targetBasis": "END_OF_PERIOD",
+          "scheduledAt": "2026-09-14T11:48:53.096Z",
+          "startedAt": "2026-09-14T11:49:00.414Z",
+          "completedAt": "2026-09-14T11:49:07.638Z",
+          "state": "SUCCESS",
+          "current": {
+            "cacheStatus": "miss",
+            "remoteElapsedMs": 3431,
+            "budgetRemainingAtDispatchMs": 46695
+          },
+          "verification": {
+            "cacheStatus": "miss",
+            "remoteElapsedMs": 3793,
+            "budgetRemainingAtDispatchMs": 43264
+          }
+        },
+        {
+          "modelId": "damped_holt",
+          "targetBasis": "MONTHLY_AVERAGE",
+          "scheduledAt": "2026-09-14T11:48:53.096Z",
+          "startedAt": "2026-09-14T11:49:07.638Z",
+          "completedAt": "2026-09-14T11:49:14.569Z",
+          "state": "SUCCESS",
+          "current": {
+            "cacheStatus": "miss",
+            "remoteElapsedMs": 3058,
+            "budgetRemainingAtDispatchMs": 39471
+          },
+          "verification": {
+            "cacheStatus": "miss",
+            "remoteElapsedMs": 3847,
+            "budgetRemainingAtDispatchMs": 36413
+          }
+        },
+        {
+          "modelId": "damped_holt",
+          "targetBasis": "END_OF_PERIOD",
+          "scheduledAt": "2026-09-14T11:48:53.096Z",
+          "startedAt": "2026-09-14T11:49:14.569Z",
+          "completedAt": "2026-09-14T11:49:22.154Z",
+          "state": "SUCCESS",
+          "current": {
+            "cacheStatus": "miss",
+            "remoteElapsedMs": 3036,
+            "budgetRemainingAtDispatchMs": 32540
+          },
+          "verification": {
+            "cacheStatus": "miss",
+            "remoteElapsedMs": 4549,
+            "budgetRemainingAtDispatchMs": 29504
+          }
+        },
+        {
+          "modelId": "ets",
+          "targetBasis": "MONTHLY_AVERAGE",
+          "scheduledAt": "2026-09-14T11:48:53.096Z",
+          "startedAt": "2026-09-14T11:49:22.154Z",
+          "completedAt": "2026-09-14T11:49:29.961Z",
+          "state": "SUCCESS",
+          "current": {
+            "cacheStatus": "miss",
+            "remoteElapsedMs": 3630,
+            "budgetRemainingAtDispatchMs": 24954
+          },
+          "verification": {
+            "cacheStatus": "miss",
+            "remoteElapsedMs": 4176,
+            "budgetRemainingAtDispatchMs": 21324
+          }
+        },
+        {
+          "modelId": "ets",
+          "targetBasis": "END_OF_PERIOD",
+          "scheduledAt": "2026-09-14T11:48:53.096Z",
+          "startedAt": "2026-09-14T11:49:29.961Z",
+          "completedAt": "2026-09-14T11:49:37.479Z",
+          "state": "SUCCESS",
+          "current": {
+            "cacheStatus": "miss",
+            "remoteElapsedMs": 3328,
+            "budgetRemainingAtDispatchMs": 17147
+          },
+          "verification": {
+            "cacheStatus": "miss",
+            "remoteElapsedMs": 4188,
+            "budgetRemainingAtDispatchMs": 13818
+          }
+        },
+        {
+          "modelId": "arima",
+          "targetBasis": "MONTHLY_AVERAGE",
+          "scheduledAt": "2026-09-14T11:48:53.096Z",
+          "startedAt": "2026-09-14T11:49:37.479Z",
+          "completedAt": "2026-09-14T11:49:45.178Z",
+          "state": "SUCCESS",
+          "current": {
+            "cacheStatus": "miss",
+            "remoteElapsedMs": 3490,
+            "budgetRemainingAtDispatchMs": 9630
+          },
+          "verification": {
+            "cacheStatus": "miss",
+            "remoteElapsedMs": 4209,
+            "budgetRemainingAtDispatchMs": 6140
+          }
+        },
+        {
+          "modelId": "arima",
+          "targetBasis": "END_OF_PERIOD",
+          "scheduledAt": "2026-09-14T11:48:53.096Z",
+          "startedAt": "2026-09-14T11:49:45.178Z",
+          "completedAt": null,
+          "state": "TIMEOUT_DURING_CURRENT",
+          "current": {
+            "cacheStatus": "miss",
+            "remoteElapsedMs": null,
+            "budgetRemainingAtDispatchMs": null
+          },
+          "verification": {
+            "cacheStatus": null,
+            "remoteElapsedMs": null,
+            "budgetRemainingAtDispatchMs": null
+          }
+        }
+      ]
+    }
+  },
+  "timing": {
+    "brent": {
+      "precomputeElapsedMs": 20986,
+      "budgetRemainingAtMatrixStartMs": 54014,
+      "matrixElapsedBeforeAbortMs": 54073,
+      "matrixCurrentP50Ms": 3369,
+      "matrixCurrentP95Ms": 3630,
+      "matrixVerificationP50Ms": 4176,
+      "matrixVerificationP95Ms": 4549,
+      "matrixQueueWaitTotalMs": 0,
+      "matrixRemoteElapsedTotalMs": 52053
+    },
+    "aluminium": {
+      "precomputeElapsedMs": 21000,
+      "matrixCurrentP50Ms": 3140,
+      "matrixCurrentP95Ms": 3453,
+      "matrixVerificationP50Ms": 3630,
+      "matrixVerificationP95Ms": 4083
+    }
+  },
+  "budgetAnalysis": {
+    "benchmarkTimeoutMs": 75000,
+    "matrixIsolatedCompletesWithin75S": "NO",
+    "reason": "Removing approximately 21s of PRECOMPUTE still leaves unfinished non-PIT work plus all 4 PIT variants. The observed non-PIT Current+Verification remote time already reached 52.053s before the final non-PIT Current timed out, so a full 12-variant MATRIX pass does not fit cleanly within 75s without reducing repeated read cost."
+  },
+  "persistedProofCost": {
+    "currentPersistedProofMs": 0,
+    "verificationPersistedProofMs": 0,
+    "persistedProofIsPrimaryCost": "NO",
+    "note": "The deployed dashboard requires local persisted-proof checks only for POINT_IN_TIME or non-deployed environments. Brent and Aluminium both timed out before POINT_IN_TIME evaluation began."
+  },
+  "pitScheduling": {
+    "pointInTimeEvaluationBegan": "NO",
+    "pitNotStartedRootCause": "Non-PIT completion barrier exhausted the benchmark budget before beforePointInTimeEvaluation and the sequential POINT_IN_TIME loop could start."
+  },
+  "aluminiumConfirmation": {
+    "aluminiumMatrixRootCauseMatchesBrent": "YES",
+    "seriesId": "lmeofalcashask",
+    "peakConcurrentRemoteReads": 12,
+    "peakVariantConcurrency": 1,
+    "variantsCompletedBeforeTimeout": 7,
+    "pointInTimeEvaluationBegan": false,
+    "timeoutSnapshot": {
+      "phase": "MATRIX",
+      "operation": "READ_VERIFICATION",
+      "modelId": "arima",
+      "targetBasis": "END_OF_PERIOD",
+      "elapsedMsAtTimeout": 2649
+    },
+    "deltaVsBrent": "Aluminium reached the final variant verification step before timeout, while Brent timed out during the final variant current step. The structural cause remained the same."
+  },
+  "computeSafety": {
+    "prepareCurrentCount": 0,
+    "prepareVerificationCount": 0,
+    "modelFitCount": 0,
+    "pitMaterializationCount": 0,
+    "historicalComputeCount": 0,
+    "duplicateForecastCompute": 0
+  },
+  "rootCause": {
+    "classification": "CUMULATIVE_BUDGET_EXHAUSTION",
+    "supportingNumbers": {
+      "precomputeElapsedMs": 20986,
+      "budgetRemainingAtMatrixStartMs": 54014,
+      "matrixCurrentRemoteElapsedTotalMs": 23342,
+      "matrixVerificationRemoteElapsedTotalMs": 28711,
+      "variantsCompletedBeforeTimeout": 7,
+      "peakVariantConcurrency": 1
+    },
+    "note": "Capability reuse succeeds, queue wait is zero, and MATRIX read latencies are close to direct baseline. The timeout comes from paying serial non-PIT Current and Verification read cost after PRECOMPUTE has already spent about 21s of the shared 75s budget."
+  },
+  "recommendedCorrective": {
+    "recommendedMatrixCorrective": "Inject one shared cadence-aware Current/Verification read cache across PRECOMPUTE and MATRIX in REVALIDATE so MATRIX can reuse already-authoritative non-PIT read results instead of paying fresh serial remote reads for each variant while preserving matrix cell evaluation semantics.",
+    "readyForMatrixCorrective": "YES",
+    "forbiddenDirections": [
+      "increase timeout",
+      "skip MATRIX",
+      "hardcode PASS",
+      "reduce required model or target coverage",
+      "weaken readiness",
+      "change SG Runtime",
+      "change forecast math"
+    ]
+  },
+  "pmosCloseout": {
+    "status": "SUCCEEDED",
+    "closeoutState": "CLOSEOUT_COMPLETE",
+    "archiveCompleteness": "PASS",
+    "executionTrailStatus": "PRESENT",
+    "handoffPublicationStatus": "SUCCEEDED",
+    "vectorRebuildStatus": "SUCCEEDED",
+    "runtimeContextIntegrity": "PASS",
+    "runtimeVerification": "PASS",
+    "persistedConversationBaseName": "2026-09-14-13:55_ppf-1-stage-12-pre-warm-matrix-fanout-cache-reuse-profiler-20260914",
+    "bootstrapInput": "apps/pmos/.pmos/recovery/bootstrap-inputs/2026-09-14_ppf-1-stage-12-pre-warm-matrix-fanout-cache-reuse-profiler-20260914.json",
+    "pendingSlotFinal": "CLEAR"
+  },
+  "final": {
+    "matrixProfiler": "PASS",
+    "warmRehearsalCorrectiveFullLiveAcceptance": "NOT_PROVEN",
+    "readyForCopperFreshnessRepair": "NO",
+    "preDeprecationAcceptance": "BLOCKED",
+    "legacyDeprecationAllowed": "NO"
+  }
+}

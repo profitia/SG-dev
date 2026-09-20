@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import {
+  extractForecastBridgeErrorTrace,
   FORECAST_TRACE_HEADER,
   SgRuntimeForecastPreparationAuthError,
   parseBenchmarkForecastCurrentPreparationRequest,
@@ -36,11 +37,18 @@ export function createPrepareCurrentForecastRouteHandler(
       const traceEnabled = request.headers.get(FORECAST_TRACE_HEADER) === '1'
       return NextResponse.json(await gateway(parsed.data, traceEnabled, request.signal))
     } catch (error) {
+      const traceEnabled = request.headers.get(FORECAST_TRACE_HEADER) === '1'
       if (error instanceof SgRuntimeForecastPreparationAuthError) {
         return NextResponse.json({ error: error.message }, { status: error.statusCode })
       }
 
-      return NextResponse.json({ error: error instanceof Error ? error.message : 'Forecast preparation failed.' }, { status: 500 })
+      const bridgeFailure = traceEnabled ? extractForecastBridgeErrorTrace(error) : { trace: null, attempts: [] }
+
+      return NextResponse.json({
+        error: error instanceof Error ? error.message : 'Forecast preparation failed.',
+        ...(traceEnabled && bridgeFailure.trace ? { trace: bridgeFailure.trace } : {}),
+        ...(traceEnabled && bridgeFailure.attempts.length > 0 ? { bridgeAttempts: bridgeFailure.attempts } : {}),
+      }, { status: 500 })
     }
   }
 }

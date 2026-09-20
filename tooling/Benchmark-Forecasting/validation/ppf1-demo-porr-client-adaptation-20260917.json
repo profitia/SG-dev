@@ -1,0 +1,97 @@
+{
+  "evidenceId": "ppf1-demo-porr-client-adaptation-20260917",
+  "recordedAt": "2026-09-17T02:47:00Z",
+  "scope": "PORR dedicated client demo surface only",
+  "stage12CompletionClaimed": false,
+  "clientUrl": "https://demo-sg-porr.spendguru.app/",
+  "sourceBranch": "demo/porr-11-benchmark-readiness-20260916",
+  "frozenStage12Sha": "2f0e93c828fef22241affd4b703fc139b1759ca8",
+  "implementationCommits": {
+    "preparedReadClient": "e70d43a9eef107a396835541af1d8651d58d7e7e",
+    "verificationHistoryVisibility": "35f2cff318df9b6b14fbe04d917e15eeafddeea7"
+  },
+  "render": {
+    "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+    "runtime": {
+      "serviceId": "srv-daclno3m8hqs73bb7rrg",
+      "serviceName": "spendguru-porr-demo",
+      "deployedSha": "e70d43a9eef107a396835541af1d8651d58d7e7e",
+      "finalDeployId": "dep-dall74u5vjqs73fpuek0",
+      "status": "live",
+      "autoDeploy": "no"
+    },
+    "dashboard": {
+      "serviceId": "srv-dacln50jo6nc738lbag0",
+      "serviceName": "spendguru-porr-dashboard",
+      "deployedSha": "35f2cff318df9b6b14fbe04d917e15eeafddeea7",
+      "deployId": "dep-dall2jjl550s73bl58sg",
+      "status": "live",
+      "autoDeploy": "no"
+    }
+  },
+  "benchmarks": [
+    { "seriesId": "b_c1_cl", "clientSmoke": "PASS", "verificationVisiblePoints": 29 },
+    { "seriesId": "cl_c1_cl", "clientSmoke": "PASS", "verificationVisiblePoints": 29 },
+    { "seriesId": "wocaes0074", "clientSmoke": "PASS", "verificationVisiblePoints": 254 },
+    { "seriesId": "hg2027g_cl", "clientSmoke": "PASS", "verificationVisiblePoints": 30 },
+    { "seriesId": "lmeofcucashask", "clientSmoke": "PASS", "verificationVisiblePoints": 249 },
+    { "seriesId": "ehr2027g_cl", "clientSmoke": "PASS", "verificationVisiblePoints": 30 },
+    { "seriesId": "hwwi_gb_ironsteel_2021_eur", "clientSmoke": "PASS_ON_LAWFUL_END_OF_PERIOD_PATH", "verificationVisiblePoints": 1 },
+    { "seriesId": "lmescusd20270226", "clientSmoke": "PASS", "verificationVisiblePoints": 29 },
+    { "seriesId": "bz_c1_cl", "clientSmoke": "PASS", "verificationVisiblePoints": 248 },
+    { "seriesId": "hg_c1_cl", "clientSmoke": "PASS", "verificationVisiblePoints": 29 },
+    { "seriesId": "qm_c1_cl", "clientSmoke": "PASS", "verificationVisiblePoints": 29 }
+  ],
+  "representativeClientRead": {
+    "seriesId": "wocaes0074",
+    "model": "ARIMA",
+    "methodology": "POINT_IN_TIME",
+    "currentForecastVisible": true,
+    "upperBandVisible": true,
+    "lowerBandVisible": true,
+    "historicalVerificationVisible": true,
+    "allFourModelControlsVisible": true,
+    "allThreeMethodControlsVisible": true,
+    "queueMessageVisible": false,
+    "prepareActionVisible": false,
+    "technicalErrorVisible": false
+  },
+  "finalRuntimeObservationWindow": {
+    "from": "2026-09-17T02:45:42Z",
+    "to": "2026-09-17T02:46:36Z",
+    "forecastPrepareRouteCalls": 0,
+    "forecastProgressiveRouteCalls": 0,
+    "rollingDailyMaintenanceEvents": 0,
+    "rollingDailyProductionOperationEvents": 0,
+    "errorLogs": 0,
+    "observedMarketDataBehavior": "postgres cache hit",
+    "productionForecastComputeObserved": false
+  },
+  "validation": {
+    "sgRuntimeTests": "PASS: 4/4 targeted analytics tests and typecheck",
+    "dashboardTests": "PASS: 44/44 targeted tests and typecheck",
+    "gitDiffCheck": "PASS",
+    "neonAccess": "SELECT_ONLY",
+    "neonWrites": false,
+    "manualForecastArtifactSqlUsed": false
+  },
+  "lawfulLimitations": [
+    "hwwi_gb_ironsteel_2021_eur is monthly-source data and is exposed on its lawful END_OF_PERIOD path; Rolling Daily is not fabricated.",
+    "ehr2027g_cl has insufficient closed monthly periods for non-Naive period verification; the available Rolling Daily history remains factual.",
+    "lmescusd20270226 uncertainty calibration is available for the lawful 1M and 3M horizons; longer horizons are not fabricated."
+  ],
+  "declarations": {
+    "PORR_CLIENT_11_BENCHMARK_PATHS": "PASS",
+    "FIRST_FINAL_UI_READ_USES_PREPARED_ARTIFACT": "YES",
+    "FIRST_FINAL_UI_READ_STARTS_PRODUCTION_COMPUTE": "NO",
+    "DEMO_ONLY_SOURCE_CODE_CREATED": "NO",
+    "SERIES_SPECIFIC_FORECAST_LOGIC_CREATED": "NO",
+    "MANUAL_FORECAST_ARTIFACT_SQL_USED": "NO",
+    "SECOND_FORECAST_ENGINE_CREATED": "NO",
+    "CANONICAL_INGESTION_REUSED": "YES",
+    "CANONICAL_PPF_PREPARATION_REUSED": "YES",
+    "FULL_PPF1_REUSE_PRESERVED": "YES",
+    "STRICT_ALL_MODELS_ALL_METHODOLOGIES_READY": "NO_DUE_TO_RECORDED_LAWFUL_DATA_LIMITATIONS"
+  },
+  "pmosPhrCloseout": "DEFERRED_BY_BUSINESS_OWNER_UNTIL_AGGREGATE_DEMO_CLOSEOUT"
+}

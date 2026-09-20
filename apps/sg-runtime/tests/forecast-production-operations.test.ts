@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+import { createCurrentForecastStatisticalCompatibility } from '../lib/forecast/identity'
 import { resolveForecastCapabilities } from '../lib/forecast/capability-resolver'
 import { createForecastProductionOperationsService } from '../lib/forecast/production-operations'
 
@@ -40,6 +41,12 @@ function capabilityResolution(seriesId: string) {
 }
 
 function available(targetBasis: 'END_OF_PERIOD' | 'MONTHLY_AVERAGE', modelId: string, cacheStatus: 'hit' | 'miss') {
+  const statisticalCompatibility = createCurrentForecastStatisticalCompatibility({
+    sourceFrequency: 'DAILY',
+    targetCadence: 'MONTHLY',
+    targetSemantics: targetBasis,
+  })
+
   return {
     status: 'AVAILABLE',
     seriesId: 'generic.operations.series',
@@ -59,6 +66,7 @@ function available(targetBasis: 'END_OF_PERIOD' | 'MONTHLY_AVERAGE', modelId: st
       sourceFrequency: 'DAILY',
       historyFingerprint: `${targetBasis}-fingerprint`,
       preparation: null,
+      statisticalCompatibility,
     },
     historyFingerprint: `${targetBasis}-fingerprint`,
     history: { frequency: 'MONTHLY', start: '2021-01-01', end: '2024-12-01', observations: 48 },
@@ -83,6 +91,9 @@ test('generic operations prepare all selected monthly current variants before op
     async prepareMonthlyHistorical(input) {
       calls.push(`historical:${input.targetBasis}:${input.modelId}`)
       return { ...available(input.targetBasis as 'END_OF_PERIOD' | 'MONTHLY_AVERAGE', input.modelId, 'miss'), verification: {} } as never
+    },
+    async prepareMonthlyRecentVerification() {
+      throw new Error('Recent verification should not run for the default full scope.')
     },
     async runRollingDaily() {
       throw new Error('Rolling Daily should not run for monthly-only request.')
@@ -110,11 +121,82 @@ test('generic operations prepare all selected monthly current variants before op
   ])
   assert.ok(result.results.every((item) => item.current === 'READY'))
   assert.ok(result.results.every((item) => item.historical === 'READY'))
+  assert.equal(result.verificationScope, 'FULL')
+})
+
+test('generic operations can prepare bounded recent verification through the canonical owner', async () => {
+  const calls: string[] = []
+  const service = createForecastProductionOperationsService({
+    async resolveCapabilities(seriesId) {
+      return capabilityResolution(seriesId)
+    },
+    async prepareMonthlyCurrent(input) {
+      return { ...available(input.targetBasis as 'END_OF_PERIOD' | 'MONTHLY_AVERAGE', input.modelId, 'hit'), alignment: { status: 'ALIGNED', trainingFrequency: 'MONTHLY', lastHistoricalPeriod: null, forecastOrigin: null, firstForecastTarget: null }, currentForecast: {} } as never
+    },
+    async prepareMonthlyHistorical() {
+      throw new Error('Full verification should not run for the recent scope.')
+    },
+    async prepareMonthlyRecentVerification(input) {
+      calls.push(`recent:${input.targetBasis}:${input.modelId}`)
+      return { ...available(input.targetBasis as 'END_OF_PERIOD' | 'MONTHLY_AVERAGE', input.modelId, 'miss'), verification: {} } as never
+    },
+    async runRollingDaily() {
+      throw new Error('Rolling Daily should not run for monthly-only request.')
+    },
+  })
+
+  const result = await service.run({
+    seriesId: 'generic.operations.series',
+    targetSemantics: ['END_OF_PERIOD', 'MONTHLY_AVERAGE'],
+    modelIds: ['naive'],
+    prepareHistorical: true,
+    verificationScope: 'RECENT',
+  })
+
+  assert.equal(result.status, 'SUCCEEDED')
+  assert.equal(result.verificationScope, 'RECENT')
+  assert.deepEqual(calls, [
+    'recent:END_OF_PERIOD:naive',
+    'recent:MONTHLY_AVERAGE:naive',
+  ])
+})
+
+test('generic operations forward an explicit force-current request only to the canonical monthly owner', async () => {
+  const forceRefreshValues: Array<boolean | undefined> = []
+  const service = createForecastProductionOperationsService({
+    async resolveCapabilities(seriesId) {
+      return capabilityResolution(seriesId)
+    },
+    async prepareMonthlyCurrent(input) {
+      forceRefreshValues.push(input.forceRefresh)
+      return { ...available(input.targetBasis as 'END_OF_PERIOD' | 'MONTHLY_AVERAGE', input.modelId, 'miss'), alignment: { status: 'ALIGNED', trainingFrequency: 'MONTHLY', lastHistoricalPeriod: null, forecastOrigin: null, firstForecastTarget: null }, currentForecast: {} } as never
+    },
+    async prepareMonthlyHistorical() {
+      throw new Error('Historical preparation should not run.')
+    },
+    async prepareMonthlyRecentVerification() {
+      throw new Error('Recent verification should not run.')
+    },
+    async runRollingDaily() {
+      throw new Error('Rolling Daily should not run for a monthly-only request.')
+    },
+  })
+
+  const result = await service.run({
+    seriesId: 'generic.operations.series',
+    targetSemantics: ['END_OF_PERIOD', 'MONTHLY_AVERAGE'],
+    modelIds: ['naive'],
+    forceCurrent: true,
+  })
+
+  assert.equal(result.status, 'SUCCEEDED')
+  assert.deepEqual(forceRefreshValues, [true, true])
 })
 
 test('generic operations delegate Rolling Daily to its existing owner and keep historical opt-in', async () => {
   let rollingCalls = 0
   let capturedPrepareHistorical: boolean | undefined
+  let capturedMaxOriginsPerRun: number | undefined
   const service = createForecastProductionOperationsService({
     async resolveCapabilities(seriesId) {
       return capabilityResolution(seriesId)
@@ -125,9 +207,13 @@ test('generic operations delegate Rolling Daily to its existing owner and keep h
     async prepareMonthlyHistorical() {
       throw new Error('Historical preparation should not run.')
     },
+    async prepareMonthlyRecentVerification() {
+      throw new Error('Recent verification should not run.')
+    },
     async runRollingDaily(request) {
       rollingCalls += 1
       capturedPrepareHistorical = request.prepareHistorical
+      capturedMaxOriginsPerRun = request.maxOriginsPerRun
       return {
         status: 'NO_OP',
         seriesId: request.seriesId,
@@ -155,6 +241,7 @@ test('generic operations delegate Rolling Daily to its existing owner and keep h
 
   assert.equal(rollingCalls, 1)
   assert.equal(capturedPrepareHistorical, false)
+  assert.equal(capturedMaxOriginsPerRun, undefined)
   assert.equal(result.status, 'SUCCEEDED')
   assert.equal(result.results[0]?.current, 'REUSED')
   assert.equal(result.results[0]?.historical, 'NOT_REQUESTED')
@@ -162,6 +249,7 @@ test('generic operations delegate Rolling Daily to its existing owner and keep h
 
 test('generic operations request explicit rolling-daily historical bootstrap when historical preparation is enabled', async () => {
   let capturedPrepareHistorical: boolean | undefined
+  let capturedMaxOriginsPerRun: number | undefined
 
   const service = createForecastProductionOperationsService({
     async resolveCapabilities(seriesId) {
@@ -173,8 +261,12 @@ test('generic operations request explicit rolling-daily historical bootstrap whe
     async prepareMonthlyHistorical() {
       throw new Error('Monthly historical preparation should not run.')
     },
+    async prepareMonthlyRecentVerification() {
+      throw new Error('Monthly recent verification should not run.')
+    },
     async runRollingDaily(request) {
       capturedPrepareHistorical = request.prepareHistorical
+      capturedMaxOriginsPerRun = request.maxOriginsPerRun
       return {
         status: 'SUCCEEDED',
         seriesId: request.seriesId,
@@ -198,9 +290,11 @@ test('generic operations request explicit rolling-daily historical bootstrap whe
     targetSemantics: ['ROLLING_DAILY_POINT_IN_TIME'],
     modelIds: ['arima'],
     prepareHistorical: true,
+    maxOriginsPerRun: 3,
   })
 
   assert.equal(capturedPrepareHistorical, true)
+  assert.equal(capturedMaxOriginsPerRun, 3)
   assert.equal(result.status, 'SUCCEEDED')
   assert.equal(result.results[0]?.current, 'READY')
   assert.equal(result.results[0]?.historical, 'READY')
@@ -216,6 +310,9 @@ test('generic operations fail closed when current compute is not persisted', asy
     },
     async prepareMonthlyHistorical() {
       throw new Error('Historical preparation must not follow failed persistence.')
+    },
+    async prepareMonthlyRecentVerification() {
+      throw new Error('Recent verification must not follow failed persistence.')
     },
     async runRollingDaily() {
       throw new Error('unused')
@@ -310,4 +407,70 @@ test('generic operations execute admitted Quarterly variants with explicit nativ
   assert.equal(computeCalls.length, 16)
   assert.ok(computeCalls.every((call) => call.endsWith(':QUARTERLY:QUARTERLY')))
   assert.ok(result.results.every((item) => item.current === 'READY' && item.historical === 'READY'))
+})
+
+test('generic operations surface bounded non-daily historical work as IN_PROGRESS instead of FAILED', async () => {
+  const service = createForecastProductionOperationsService({
+    async resolveCapabilities(seriesId) {
+      return {
+        ...capabilityResolution(seriesId),
+        sourceMetadata: { ...capabilityResolution(seriesId).sourceMetadata, sourceFrequency: 'QUARTERLY' as const },
+        capabilities: resolveForecastCapabilities({
+          seriesId,
+          sourceFrequency: 'QUARTERLY',
+          sourceObservationCount: 40,
+          preparedObservationCounts: {},
+          provenance: [
+            {
+              sourceFrequency: 'QUARTERLY',
+              targetSemantics: 'END_OF_PERIOD',
+              preparation: { method: 'CONTROLLED_EOP', version: 'test-v1', provenanceStatus: 'PROVEN' },
+              sourceLineage: 'controlled-quarterly-lineage',
+              closedPeriod: true,
+              levelAtTimestamp: true,
+              exactSourceObservedAt: true,
+              aggregation: null,
+              underlyingObservationFrequency: null,
+              missingObservationPolicy: null,
+              syntheticObservations: null,
+            },
+          ],
+          preparedVariants: [],
+        }),
+      }
+    },
+    async prepareMonthlyCurrent(input) {
+      return {
+        ...available(input.targetBasis as 'END_OF_PERIOD', input.modelId, 'miss'),
+        alignment: { status: 'ALIGNED' },
+        currentForecast: {},
+      } as never
+    },
+    async prepareMonthlyHistorical() {
+      return {
+        status: 'NOT_AVAILABLE',
+        seriesId: 'generic.quarterly.series',
+        modelId: 'naive',
+        targetBasis: 'END_OF_PERIOD',
+        targetSemantics: 'END_OF_PERIOD',
+        methodId: 'END_OF_PERIOD',
+        reason: 'PREPARATION_REQUIRED: Exact-identity prepared Historical Verification is still being built in bounded batches.',
+      } as never
+    },
+    async runRollingDaily() {
+      throw new Error('unused')
+    },
+  })
+
+  const result = await service.run({
+    seriesId: 'generic.quarterly.series',
+    targetSemantics: ['END_OF_PERIOD'],
+    modelIds: ['naive'],
+    prepareHistorical: true,
+    maxOriginsPerRun: 1,
+  })
+
+  assert.equal(result.status, 'PARTIAL')
+  assert.equal(result.results[0]?.current, 'READY')
+  assert.equal(result.results[0]?.historical, 'IN_PROGRESS')
 })

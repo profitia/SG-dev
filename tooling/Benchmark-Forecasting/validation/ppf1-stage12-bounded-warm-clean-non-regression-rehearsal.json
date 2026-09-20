@@ -1,0 +1,219 @@
+{
+  "generatedAt": "2026-09-14T10:26:10.000Z",
+  "taskId": "ppf-1-stage-12-bounded-warm-clean-non-regression-rehearsal-20260914",
+  "scope": "audit",
+  "upstreamIdentityAuthority": "EXTERNAL_CHATGPT_PROMPT_AUTHORING_LAYER",
+  "failedConversationId": "948a4c53-b75a-493b-a1e0-09e18aa0c042",
+  "conversationId": "617411f5-8e5f-413b-a792-71d1a56e7389",
+  "validationBranch": "ppf1/stage12-live-acceptance-legacy-deprecation-20260911",
+  "benchmarkExecutionMode": "SEQUENTIAL_SINGLE_SERIES",
+  "deployment": {
+    "dashboardDeployedSha": "b78ff87645c83f7c9eeebf7dbe21ed18eb94e2ee",
+    "sgRuntimeDeployedSha": "f7761cc3ee56dd474667b89132747910d67c2517",
+    "dashboardHealth": "PASS",
+    "sgRuntimeHealth": "PASS",
+    "healthChecks": {
+      "dashboard": {
+        "url": "https://dashboards-library.onrender.com/",
+        "httpStatus": 200,
+        "elapsedSeconds": 0.401142
+      },
+      "sgRuntime": {
+        "url": "https://benchmark-finder-category-builder.onrender.com/",
+        "httpStatus": 200,
+        "elapsedSeconds": 0.312135
+      }
+    }
+  },
+  "directBaselines": {
+    "brent": {
+      "seriesId": "wocaes0074",
+      "result": "PASS",
+      "capability": {
+        "httpStatus": 200,
+        "elapsedSeconds": 5.595309,
+        "status": "AVAILABLE",
+        "currentReadiness": "READY",
+        "verificationReadiness": "READY",
+        "fullVerificationReadiness": "READY",
+        "prepareCount": 0,
+        "modelFitCount": 0
+      },
+      "current": {
+        "httpStatus": 200,
+        "elapsedSeconds": 3.094673,
+        "status": "AVAILABLE",
+        "cacheStatus": "hit"
+      },
+      "verification": {
+        "httpStatus": 200,
+        "elapsedSeconds": 3.794653,
+        "status": "AVAILABLE",
+        "cacheStatus": "hit"
+      }
+    },
+    "aluminium": {
+      "seriesId": "lmeofalcashask",
+      "result": "PASS",
+      "capability": {
+        "httpStatus": 200,
+        "elapsedSeconds": 4.499421,
+        "status": "AVAILABLE",
+        "currentReadiness": "READY",
+        "verificationReadiness": "READY",
+        "fullVerificationReadiness": "READY",
+        "prepareCount": 0,
+        "modelFitCount": 0
+      },
+      "current": {
+        "httpStatus": 200,
+        "elapsedSeconds": 3.041135,
+        "status": "AVAILABLE",
+        "cacheStatus": "hit"
+      },
+      "verification": {
+        "httpStatus": 200,
+        "elapsedSeconds": 4.367659,
+        "status": "AVAILABLE",
+        "cacheStatus": "hit"
+      }
+    }
+  },
+  "certificationRuns": {
+    "brent": {
+      "seriesId": "wocaes0074",
+      "mode": "REVALIDATE",
+      "precomputeMs": 19320,
+      "matrixMs": null,
+      "warmRehearsalMs": null,
+      "totalMs": 0,
+      "precompute": "FAIL",
+      "matrix": "FAIL",
+      "warmRehearsal": "NOT_REACHED",
+      "demoSafe": "NO",
+      "failureReason": "ENVIRONMENT_NOT_READY",
+      "warmNonRegression": "NOT_PROVEN",
+      "nonRegressionBlocker": "PRE_WARM_ENVIRONMENT_TIMEOUT",
+      "structuralGates": {
+        "warmEvaluateMatrixCount": 0,
+        "warmReadVerificationRemoteCount": 0,
+        "warmReadCurrentRemoteCount": 0,
+        "secondMatrixInWarmRehearsal": "NO",
+        "switchbackCadencelessRead": "NO"
+      },
+      "computeSafety": {
+        "prepareVerificationCount": 0,
+        "pitMaterializationCount": 0,
+        "requestPathHistoricalComputeCount": 0,
+        "modelFitCount": 0,
+        "duplicateComputePathCreated": "NO"
+      },
+      "diagnostics": {
+        "timeoutMs": 75000,
+        "peakConcurrentRemoteReads": 12,
+        "totalRemoteRequests": 27,
+        "variantsCompletedBeforeTimeout": 7,
+        "pointInTimeEvaluationBegan": false,
+        "timeoutSnapshot": {
+          "phase": "MATRIX",
+          "operation": "READ_CURRENT",
+          "modelId": "arima",
+          "targetBasis": "END_OF_PERIOD",
+          "elapsedMsAtTimeout": 3268
+        }
+      }
+    },
+    "aluminium": {
+      "seriesId": "lmeofalcashask",
+      "mode": "REVALIDATE",
+      "precomputeMs": 21066,
+      "matrixMs": null,
+      "warmRehearsalMs": null,
+      "totalMs": 0,
+      "precompute": "FAIL",
+      "matrix": "FAIL",
+      "warmRehearsal": "NOT_REACHED",
+      "demoSafe": "NO",
+      "failureReason": "ENVIRONMENT_NOT_READY",
+      "warmNonRegression": "NOT_PROVEN",
+      "nonRegressionBlocker": "PRE_WARM_ENVIRONMENT_TIMEOUT",
+      "structuralGates": {
+        "warmEvaluateMatrixCount": 0,
+        "warmReadVerificationRemoteCount": 0,
+        "warmReadCurrentRemoteCount": 0,
+        "secondMatrixInWarmRehearsal": "NO",
+        "switchbackCadencelessRead": "NO"
+      },
+      "computeSafety": {
+        "prepareVerificationCount": 0,
+        "pitMaterializationCount": 0,
+        "requestPathHistoricalComputeCount": 0,
+        "modelFitCount": 0,
+        "duplicateComputePathCreated": "NO"
+      },
+      "diagnostics": {
+        "timeoutMs": 75000,
+        "peakConcurrentRemoteReads": 12,
+        "totalRemoteRequests": 27,
+        "variantsCompletedBeforeTimeout": 7,
+        "pointInTimeEvaluationBegan": false,
+        "timeoutSnapshot": {
+          "phase": "MATRIX",
+          "operation": "READ_CURRENT",
+          "modelId": "arima",
+          "targetBasis": "END_OF_PERIOD",
+          "elapsedMsAtTimeout": 2193
+        }
+      }
+    }
+  },
+  "warmStructure": {
+    "warmEvaluateMatrixCount": 0,
+    "warmReadVerificationRemoteCount": 0,
+    "secondMatrixInWarmRehearsal": "NO",
+    "switchbackCadencelessRead": "NO",
+    "note": "WARM was not reached on either sequential run, so these observed counts reflect pre-WARM timeout rather than successful warm execution."
+  },
+  "computeSafety": {
+    "prepareVerificationCount": 0,
+    "pitMaterializationCount": 0,
+    "requestPathHistoricalComputeCount": 0,
+    "modelFitCount": 0,
+    "duplicateComputePathCreated": "NO"
+  },
+  "finalDecision": {
+    "warmRehearsalCorrectiveFullLiveAcceptance": "NOT_PROVEN",
+    "readyForCopperFreshnessRepair": "NO",
+    "fullCohortRecertificationRun": "NO",
+    "preDeprecationAcceptance": "BLOCKED",
+    "legacyDeprecationAllowed": "NO",
+    "reason": "Both direct baselines passed, but both sequential REVALIDATE runs timed out in MATRIX before WARM_REHEARSAL began. This preserves NOT_PROVEN rather than FAIL for warm non-regression."
+  },
+  "pmosCloseout": {
+    "governanceRecovery": {
+      "failedAttemptIdentityConfirmed": "PASS",
+      "failedPendingBackupPresent": "YES",
+      "failedCloseoutPreserved": "YES",
+      "failedExecutionHistoryPreserved": "YES",
+      "failedPendingRecovery": "PASS",
+      "pendingSlotAfterRecovery": "CLEAR",
+      "recoveryAction": {
+        "type": "MOVE_ACTIVE_PENDING_TO_RECOVERY_REPAIRS",
+        "target": "apps/pmos/.pmos/recovery/repairs/manual-pending-clear-ppf1-stage12-bounded-warm-clean-non-regression-rehearsal-2026-09-14T10-43-54Z/pending-artifact.json"
+      }
+    },
+    "status": "SUCCEEDED",
+    "closeoutState": "CLOSEOUT_COMPLETE",
+    "archiveCompleteness": "PASS",
+    "executionTrailStatus": "PRESENT",
+    "handoffPublicationStatus": "SUCCEEDED",
+    "vectorRebuildStatus": "SUCCEEDED",
+    "runtimeContextIntegrity": "PASS",
+    "runtimeVerification": "PASS",
+    "recoveryRequired": false,
+    "persistedConversationBaseName": "2026-09-14-12:44_ppf-1-stage-12-bounded-warm-clean-non-regression-rehearsal-20260914",
+    "bootstrapInput": "apps/pmos/.pmos/recovery/bootstrap-inputs/2026-09-14_ppf-1-stage-12-bounded-warm-clean-non-regression-rehearsal-20260914-recovery.json",
+    "executionHandoff": "apps/pmos/.pmos/recovery/bootstrap-inputs/2026-09-14_ppf-1-stage-12-bounded-warm-clean-non-regression-rehearsal-20260914-recovery.execution-handoff.json",
+    "pendingSlotFinal": "CLEAR"
+  }
+}

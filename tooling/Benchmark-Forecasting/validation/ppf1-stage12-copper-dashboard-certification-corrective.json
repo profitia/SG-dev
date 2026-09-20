@@ -1,0 +1,202 @@
+{
+  "taskId": "ppf-1-stage-12-copper-dashboard-certification-corrective-20260916",
+  "parentTaskId": "ppf-1-stage-12-copper-live-certification-timeout-root-cause-audit-20260916",
+  "etap": "MVP-11 - Stabilizacja / Deploy",
+  "subetap": "PPF-1 Stage 12 - Copper Dashboard Certification Corrective Publication and Live Validation",
+  "status": "LIVE_PROVEN",
+  "authority": {
+    "upstreamIdentityAuthority": "EXTERNAL_CHATGPT_PROMPT_AUTHORING_LAYER",
+    "remoteBranchHeadBeforeSourcePublication": "92158defcadce671acb522bb82ead5c419d35ad4",
+    "sourceCommitParent": "92158defcadce671acb522bb82ead5c419d35ad4",
+    "sourceCommitSha": "79a8a7f6d5b2e6ecf5095a17006b80f288e4e604",
+    "remoteBranchHeadAfterSourcePublication": "79a8a7f6d5b2e6ecf5095a17006b80f288e4e604",
+    "dashboardService": {
+      "serviceId": "srv-da2i7j9t0dsc73ag7qv0",
+      "serviceName": "dashboards-library",
+      "deployId": "dep-dal4b5mk1f9s73dlidb0",
+      "deployedSha": "79a8a7f6d5b2e6ecf5095a17006b80f288e4e604",
+      "deployStatus": "LIVE"
+    },
+    "unchangedSgRuntimeSurfaces": [
+      {
+        "serviceId": "srv-d9tmgddbedkc739jr24g",
+        "serviceName": "benchmark-finder-category-builder",
+        "deployedSha": "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85",
+        "source": "preserved-stage12-baseline"
+      },
+      {
+        "serviceId": "srv-d98a73btqb8s73fabp90",
+        "serviceName": "spendguru-stage",
+        "deployedSha": "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85",
+        "source": "preserved-stage12-baseline"
+      }
+    ]
+  },
+  "source": {
+    "intendedSourceFiles": [
+      "apps/dashboard-preview/lib/benchmark-forecast/demo-certification.ts",
+      "apps/dashboard-preview/lib/benchmark-forecast/acceptance-matrix.ts",
+      "apps/dashboard-preview/lib/benchmark-forecast/runtime-query.ts",
+      "apps/dashboard-preview/tests/demo-certification.test.ts",
+      "apps/dashboard-preview/tests/benchmark-forecast-runtime-query.test.ts",
+      "apps/dashboard-preview/tests/forecast-acceptance-matrix.test.ts"
+    ],
+    "actualSourceCommitFiles": [
+      "apps/dashboard-preview/lib/benchmark-forecast/demo-certification.ts",
+      "apps/dashboard-preview/lib/benchmark-forecast/acceptance-matrix.ts",
+      "apps/dashboard-preview/lib/benchmark-forecast/runtime-query.ts",
+      "apps/dashboard-preview/tests/demo-certification.test.ts",
+      "apps/dashboard-preview/tests/benchmark-forecast-runtime-query.test.ts",
+      "apps/dashboard-preview/tests/forecast-acceptance-matrix.test.ts"
+    ],
+    "preservedEvidenceFilesExcludedFromSourceCommit": [
+      "tooling/Benchmark-Forecasting/validation/ppf1-stage12-copper-dashboard-certification-corrective.json",
+      "tooling/Benchmark-Forecasting/validation/ppf1-stage12-copper-dashboard-certification-corrective.md"
+    ],
+    "scopeVerification": {
+      "boundedPrefetch": "PASS",
+      "maxFourMatrixVariants": "PASS",
+      "maxEightAssociatedPreparedReads": "PASS",
+      "currentVerificationReuse": "PASS",
+      "pitCapabilityReuse": "PASS",
+      "abortSignalPropagation": "PASS",
+      "retryMultiplication": "NO",
+      "forecastIdentityChange": "NO",
+      "timeoutIncrease": "NO",
+      "matrixConcurrencyPolicyChange": "NO",
+      "sgRuntimeChange": "NO",
+      "databaseSchemaMigrationEnvChange": "NO",
+      "renderConfigChange": "NO"
+    }
+  },
+  "validation": {
+    "focusedTests": [
+      {
+        "command": "node --import tsx --test tests/demo-certification.test.ts",
+        "result": "PASS",
+        "passCount": 43,
+        "totalCount": 43
+      },
+      {
+        "command": "node --import tsx --test tests/benchmark-forecast-runtime-query.test.ts",
+        "result": "PASS",
+        "passCount": 20,
+        "totalCount": 20
+      },
+      {
+        "command": "node --import tsx --test tests/forecast-acceptance-matrix.test.ts",
+        "result": "PASS",
+        "passCount": 22,
+        "totalCount": 22
+      }
+    ],
+    "typecheck": {
+      "command": "npm run typecheck",
+      "result": "PASS"
+    },
+    "packageTest": {
+      "command": "npm test",
+      "result": "PASS"
+    },
+    "diffCheck": {
+      "command": "git diff --check",
+      "result": "PASS"
+    }
+  },
+  "liveProof": {
+    "executed": true,
+    "endpoint": "https://dashboards-library.onrender.com/api/benchmark-forecast/demo-certification",
+    "httpStatus": 200,
+    "wallTimeSeconds": 56.77108,
+    "renderRequestId": "6cb88f69-8afd-4523",
+    "cloudflareRay": "a3be39de2a15c4fa-WAW",
+    "mode": "REVALIDATE",
+    "seriesId": "lmeofcucashask",
+    "benchmarkName": "Copper",
+    "executionId": "demo-certification-5154ce50-93fa-42d3-a8c4-b5cfe5597546",
+    "benchmarkTimeoutMs": 75000,
+    "releaseSnapshot": {
+      "sourceRevision": "79a8a7f6d5b2e6ecf5095a17006b80f288e4e604",
+      "deployedRevision": "79a8a7f6d5b2e6ecf5095a17006b80f288e4e604",
+      "environment": "render",
+      "environmentUrl": "https://dashboards-library.onrender.com",
+      "acceptedAt": "2026-09-16T07:40:58.326Z"
+    },
+    "result": {
+      "demoSafe": "YES",
+      "reason": null,
+      "precompute": "PASS",
+      "reread": "PASS",
+      "matrix": "PASS",
+      "freshness": "PASS",
+      "warmRehearsal": "PASS"
+    },
+    "phaseTimingsMs": {
+      "precompute": 21768,
+      "matrix": 11494,
+      "warmRehearsal": 2347
+    },
+    "boundedPrefetch": {
+      "nonPointInTimePreparedReadMisses": 16,
+      "elapsedMs": 20541,
+      "peakPreparedReadConcurrency": 8,
+      "matrixPreparedReadMissesAfterWarmup": 0
+    },
+    "matrixTelemetry": {
+      "status": "PASS",
+      "elapsedMs": 11494,
+      "maxConcurrentVariants": 1,
+      "peakVariantConcurrency": 1,
+      "currentPassCells": 12,
+      "currentFailCells": 0,
+      "verificationPassCells": 48,
+      "verificationFailCells": 0,
+      "failingReasons": []
+    },
+    "remoteRequests": {
+      "logicalCount": 78,
+      "physicalCount": 36,
+      "peakConcurrentRemoteReads": 12,
+      "byOperation": {
+        "READ_CAPABILITY": 29,
+        "READ_CURRENT": 29,
+        "READ_VERIFICATION": 20
+      },
+      "cacheReuse": {
+        "hit": 42,
+        "miss": 36
+      },
+      "pitCapabilityCacheHits": 4
+    },
+    "aborts": {
+      "count": 0,
+      "reason": null,
+      "timeoutSnapshot": null,
+      "activeRequestsAtCompletion": 0,
+      "postResponseSgRuntimeRequests": 0
+    },
+    "computeSafety": {
+      "prepareRouteCount": 0,
+      "secondForecastEngineCreated": "NO",
+      "duplicateComputeRegression": "NO",
+      "canonicalSingleFlightPreserved": "YES",
+      "uncontrolledPrecomputeFanout": "NO",
+      "productionForecastComputeStarted": "NO"
+    },
+    "sgRuntimeCorrelation": {
+      "serviceLevelEvidence": "PARTIAL",
+      "unchangedDeployedShas": [
+        "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85",
+        "3acfa25706f6d293e0a04ac4e7f7cabfb60bea85"
+      ],
+      "requestLevelCorrelation": "Dashboard diagnostics captured the upstream request counts and completion state, but the Render log UI available in-session did not expose the exact 09:41 request IDs for a one-to-one upstream log join."
+    }
+  },
+  "final": {
+    "copperDashboardCertificationCorrective": "LIVE_PROVEN",
+    "readyForFinalThreeBenchmarkCohort": "NOT_RUN",
+    "durableExecutionLedgerStillPending": "YES",
+    "pmosSave": "NOT_RUN_PENDING_ARTIFACT_ABSENT",
+    "finalTaskStatus": "INCOMPLETE - PMOS CLOSEOUT BLOCKED"
+  }
+}

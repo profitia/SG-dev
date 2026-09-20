@@ -1,0 +1,186 @@
+{
+  "evidenceVersion": "PPF1_DEMO_TASK4_ELEVEN_BENCHMARK_PRODUCTION_READINESS_V3",
+  "generatedAt": "2026-09-19T09:36:17+02:00",
+  "repository": "https://github.com/profitia/SG-dev.git",
+  "branch": "demo/porr-11-benchmark-readiness-20260916",
+  "sourceSha": "fa62b267406c08808da3d38e137d1f9d779015a8",
+  "frozenStage12Sha": "2f0e93c828fef22241affd4b703fc139b1759ca8",
+  "taskIdentity": {
+    "taskId": "ppf-1-demo-readiness-task-4-production-readiness-20260916",
+    "etap": "MVP-11 — Stabilizacja / Deploy"
+  },
+  "verdict": {
+    "task4Gate": "PASS",
+    "demoElevenBenchmarksReady": true,
+    "preparedSupportedDemoPathsReady": true,
+    "strictAllModelsAllMethodologiesContractMet": false,
+    "supportedCurrentVariants": 124,
+    "reason": "All lawful client-facing capability paths for the approved eleven-series cohort are prepared, persisted, deployed and smoke-tested. The UI gates unsupported or statistically immature paths instead of substituting another identity. The strict 132-cell interpretation remains false because the monthly HWWI source lawfully supports End of Period only."
+  },
+  "deployments": {
+    "sgRuntimeStage": {
+      "serviceName": "spendguru-stage",
+      "serviceId": "srv-d98a73btqb8s73fabp90",
+      "deployId": "dep-dan2ukbtqb8s73ad9u1g",
+      "deployedSha": "fa62b267406c08808da3d38e137d1f9d779015a8",
+      "status": "live",
+      "finishedAt": "2026-09-19T06:47:04.715619Z"
+    },
+    "sgRuntimePublic": {
+      "serviceName": "benchmark-finder-category-builder",
+      "serviceId": "srv-d9tmgddbedkc739jr24g",
+      "deployId": "dep-dan2uk6k1f9s73f8f4eg",
+      "deployedSha": "fa62b267406c08808da3d38e137d1f9d779015a8",
+      "status": "live",
+      "finishedAt": "2026-09-19T06:46:08.855989Z"
+    },
+    "dashboardLibrary": {
+      "serviceName": "dashboards-library",
+      "serviceId": "srv-da2i7j9t0dsc73ag7qv0",
+      "deployId": "dep-dampnav40ujc738sr150",
+      "deployedSha": "090ca4117580446afccbc00528d36250229ff5c6",
+      "status": "live"
+    },
+    "clientDashboard": {
+      "serviceName": "spendguru-porr-dashboard",
+      "serviceId": "srv-dacln50jo6nc738lbag0",
+      "deployId": "dep-dan3c3ek1f9s73f9ualg",
+      "deployedSha": "090ca4117580446afccbc00528d36250229ff5c6",
+      "status": "live",
+      "finishedAt": "2026-09-19T07:14:42.08185Z",
+      "clientHost": "analytics-demo-sg-porr.spendguru.app"
+    },
+    "clientFront": {
+      "serviceName": "spendguru-porr-demo",
+      "serviceId": "srv-daclno3m8hqs73bb7rrg",
+      "clientHost": "demo-sg-porr.spendguru.app",
+      "status": "live"
+    }
+  },
+  "persistenceAuthority": {
+    "provider": "Neon",
+    "projectName": "Dynamic Market Data Store",
+    "projectId": "autumn-waterfall-65938876",
+    "branchId": "br-purple-shape-b2az1npx",
+    "database": "neondb",
+    "verificationAccessMode": "SELECT_ONLY",
+    "directSqlWrites": false,
+    "canonicalHydrationWrites": true,
+    "trainingPolicyIdentityColumnsPresent": true,
+    "executionLedgerTablePresent": true,
+    "appliedIdentityMigrations": [
+      "20260907104500_forecast_artifact_training_policy_identity",
+      "20260918203500_forecast_artifact_frequency_identity"
+    ],
+    "preChangeRestoreBranch": {
+      "name": "pre-task-b-production-migration-20260918",
+      "branchId": "br-crimson-dust-b2pdkiis",
+      "expiresAt": "2026-09-19T22:06:00+02:00",
+      "deleted": false
+    }
+  },
+  "benchmarks": [
+    {"seriesId":"b_c1_cl","label":"ICE Brent Crude 1st Position Close","frequency":"Daily","supportedMethods":["MONTHLY_AVERAGE","ROLLING_DAILY_POINT_IN_TIME","END_OF_PERIOD"]},
+    {"seriesId":"cl_c1_cl","label":"CME Light Sweet WTI Physical 1st Position Close","frequency":"Daily","supportedMethods":["MONTHLY_AVERAGE","ROLLING_DAILY_POINT_IN_TIME","END_OF_PERIOD"]},
+    {"seriesId":"wocaes0074","label":"Brent Spot FOB North Sea","frequency":"Daily","supportedMethods":["MONTHLY_AVERAGE","ROLLING_DAILY_POINT_IN_TIME","END_OF_PERIOD"]},
+    {"seriesId":"hg2027g_cl","label":"CME Copper February 2027 Close","frequency":"Daily","supportedMethods":["MONTHLY_AVERAGE","ROLLING_DAILY_POINT_IN_TIME","END_OF_PERIOD"]},
+    {"seriesId":"lmeofcucashask","label":"LME Copper Official Cash Seller and Settlement","frequency":"Daily","supportedMethods":["MONTHLY_AVERAGE","ROLLING_DAILY_POINT_IN_TIME","END_OF_PERIOD"]},
+    {"seriesId":"ehr2027g_cl","label":"CME North European HRC Steel February 2027 Close","frequency":"Daily","supportedMethods":["MONTHLY_AVERAGE","ROLLING_DAILY_POINT_IN_TIME","END_OF_PERIOD"],"calibrationConstraint":"Only 1M Rolling Daily has at least 30 lawful residuals."},
+    {"seriesId":"hwwi_gb_ironsteel_2021_eur","label":"HWWI Iron Ore and Steel Scrap Index EUR","frequency":"Monthly","supportedMethods":["END_OF_PERIOD"],"unsupportedMethods":["MONTHLY_AVERAGE","ROLLING_DAILY_POINT_IN_TIME"]},
+    {"seriesId":"lmescusd20270226","label":"LME Steel Scrap CFR Turkey February 2027 Close","frequency":"Daily","supportedMethods":["MONTHLY_AVERAGE","ROLLING_DAILY_POINT_IN_TIME","END_OF_PERIOD"],"calibrationConstraint":"Rolling Daily 1M and 3M have at least 30 lawful residuals; 6M has 13 and 12M has zero."},
+    {"seriesId":"bz_c1_cl","label":"ICE Brent continuation","frequency":"Daily","supportedMethods":["MONTHLY_AVERAGE","ROLLING_DAILY_POINT_IN_TIME","END_OF_PERIOD"]},
+    {"seriesId":"hg_c1_cl","label":"Copper continuation","frequency":"Daily","supportedMethods":["MONTHLY_AVERAGE","ROLLING_DAILY_POINT_IN_TIME","END_OF_PERIOD"]},
+    {"seriesId":"qm_c1_cl","label":"NYMEX E-mini Crude Oil continuation","frequency":"Daily","supportedMethods":["MONTHLY_AVERAGE","ROLLING_DAILY_POINT_IN_TIME","END_OF_PERIOD"]}
+  ],
+  "preparation": {
+    "canonicalHydrationSeriesRequested": 11,
+    "canonicalHydrationSeriesSucceeded": 11,
+    "canonicalHydrationSeriesFailed": 0,
+    "periodCurrentAvailable": 84,
+    "periodFullVerificationAvailable": 84,
+    "rollingDailyCurrentAvailable": 40,
+    "supportedCurrentVariants": 124,
+    "rollingDailyCalibrationExactIdentities": 160,
+    "rollingDailyCalibratedIdentities": 140,
+    "rollingDailyStatisticallyInsufficientIdentities": 20,
+    "rollingMaintenanceExecutionsSucceeded": 40,
+    "rollingMaintenanceExecutionsFailed": 0,
+    "canonicalSgRuntimeOwnerUsed": true,
+    "boundedOperatorInvocationUsed": true,
+    "manualForecastArtifactSqlUsed": false,
+    "duplicateComputeObserved": false,
+    "clientWasBootstrapTrigger": false
+  },
+  "representativeExactVerification": {
+    "seriesId": "cl_c1_cl",
+    "modelId": "arima",
+    "targetBasis": "END_OF_PERIOD",
+    "runId": "cmu7kkybp000bulpgp3neyi0u",
+    "historyObservationCount": 522,
+    "historyStartAt": "1983-03-01",
+    "historyEndAt": "2026-08-01",
+    "horizons": {
+      "1M": {"comparable":516,"failed":0},
+      "3M": {"comparable":514,"failed":0},
+      "6M": {"comparable":511,"failed":0},
+      "12M": {"comparable":505,"failed":0}
+    },
+    "resolverCurrent": "READY",
+    "resolverFullVerification": "READY",
+    "bandsReady": true
+  },
+  "clientUiSmoke": {
+    "clientFrontUrlPl": "https://demo-sg-porr.spendguru.app/pl/benchmark-finder",
+    "clientFrontUrlEn": "https://demo-sg-porr.spendguru.app/en/benchmark-finder",
+    "allElevenShortcutsLoadedCorrectSeries": true,
+    "polishCohortSmoke": "PASS",
+    "englishRepresentativeSmoke": "PASS",
+    "allFourModelsReadyOnSupportedPaths": true,
+    "forecastAndBandsVisibleOnSupportedPaths": true,
+    "historicalVerificationVisibleOnSupportedPaths": true,
+    "hwwiCapabilityGatingTruthful": true,
+    "technicalErrorsVisible": false,
+    "browserConsoleErrors": 0,
+    "finalSmokeWindowUtc": "2026-09-19T07:14:42Z/2026-09-19T07:36:17Z",
+    "runtimePostRequestsObserved": 0,
+    "prepareRouteInvoked": false,
+    "productionComputeStarted": false,
+    "mainFrontPostRequests": "Only /api/benchmark/search and /api/benchmark/context, all HTTP 200.",
+    "renderTextAuditFinding": "The only prepare/compute text match was a dashboard build log phrase; no forecast preparation or production compute event was present."
+  },
+  "validation": {
+    "sgRuntimeFocusedTests": "79 PASS",
+    "sgRuntimeBroaderTests": "229 PASS",
+    "forecastToolingTests": "67 PASS",
+    "dashboardTests": "267 PASS",
+    "sgRuntimeTypecheck": "PASS",
+    "dashboardTypecheck": "PASS",
+    "sgRuntimeBuild": "PASS",
+    "dashboardBuild": "PASS",
+    "gitDiffCheck": "PASS"
+  },
+  "safety": {
+    "destructiveSqlUsed": false,
+    "manualForecastArtifactSqlUsed": false,
+    "demoOnlySourceCodeCreated": false,
+    "seriesSpecificForecastLogicCreated": false,
+    "secondForecastEngineCreated": false,
+    "canonicalIngestionReused": true,
+    "canonicalPpfPreparationReused": true,
+    "batchPreparationGeneric": true,
+    "batchPreparationIdempotent": true,
+    "fullPpf1ReusePreserved": true,
+    "stage12Modified": false,
+    "stage12CompletionClaimed": false
+  },
+  "governance": {
+    "pmosSave": "SUCCEEDED",
+    "pmosCloseout": "CLOSEOUT_COMPLETE",
+    "pmosRuntimeVerification": "PASS",
+    "phrPublication": "PUBLISHED",
+    "phrPublicationCommit": "586cc9917c8dac964fc7408c31787f2a398bf993",
+    "memorOSPublication": "SUCCEEDED_WITH_DOWNSTREAM_PROCESSING_PENDING",
+    "pendingArtifactSlotFinal": "CLEAR",
+    "pendingArtifactCreatedManually": false
+  }
+}

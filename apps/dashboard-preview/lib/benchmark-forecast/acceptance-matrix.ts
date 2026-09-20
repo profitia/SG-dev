@@ -18,7 +18,11 @@ import {
   prepareInteractiveCurrentForecast,
   readInteractiveForecastCapability,
 } from './interactive-current-preparation'
-import { getBenchmarkForecastVerification, resolveShowForecastCurrent } from './runtime-query'
+import {
+  getBenchmarkForecastVerification,
+  readPointInTimeCurrentForecastSnapshot,
+  resolveShowForecastCurrent,
+} from './runtime-query'
 
 import { getMarketDataPrismaClient } from '@/lib/db/market-data-prisma'
 
@@ -76,8 +80,30 @@ type ExactReadIdentity = Pick<ForecastAcceptanceIdentity, 'seriesId' | 'modelId'
 type AcceptanceMatrixDependencies = {
   readCapability: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => Promise<InteractiveForecastCapabilityResult>
   prepareCurrent: (input: BenchmarkForecastCurrentPreparationRequest, options?: { signal?: AbortSignal }) => Promise<BenchmarkForecastCurrentPreparationResult>
-  readCurrent: (seriesId: string, model: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => Promise<BenchmarkForecastCurrentResult>
-  readVerification: (seriesId: string, model: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => Promise<BenchmarkForecastVerificationResult>
+  readCurrent: (
+    seriesId: string,
+    model: ForecastPortfolioModelId,
+    targetBasis: ForecastTargetBasis,
+    cadence?: { sourceFrequency: string, targetCadence: string },
+    correlationHeaders?: Record<string, string>,
+    capability?: InteractiveForecastCapabilityResult | null,
+    options?: { signal?: AbortSignal },
+  ) => Promise<BenchmarkForecastCurrentResult>
+  readVerification: (
+    seriesId: string,
+    model: ForecastPortfolioModelId,
+    targetBasis: ForecastTargetBasis,
+    cadence?: { sourceFrequency: string, targetCadence: string },
+    correlationHeaders?: Record<string, string>,
+    capability?: InteractiveForecastCapabilityResult | null,
+    options?: { signal?: AbortSignal },
+  ) => Promise<BenchmarkForecastVerificationResult>
+  readPointInTimeCurrent: (
+    seriesId: string,
+    model: ForecastPortfolioModelId,
+    capability?: Pick<InteractiveForecastCapabilityResult, 'currentReadiness'>,
+    options?: { signal?: AbortSignal },
+  ) => Promise<BenchmarkForecastCurrentResult>
   getPrisma: () => PrismaClientLike | null
 }
 
@@ -125,6 +151,130 @@ export type ForecastAcceptanceSection = {
   unsupported: number
   cells: ForecastAcceptanceCell[]
 }
+
+export type ForecastAcceptanceMatrixRemoteOperation = 'READ_CURRENT' | 'READ_VERIFICATION'
+
+export type ForecastAcceptanceMatrixRemoteStepDiagnostic = {
+  cacheStatus: 'hit' | 'miss' | null
+  queuedAt: string | null
+  dispatchedAt: string | null
+  completedAt: string | null
+  queueWaitMs: number | null
+  remoteElapsedMs: number | null
+  elapsedMs: number | null
+  benchmarkBudgetRemainingMsAtDispatch: number | null
+  outcome: 'SUCCESS' | 'ERROR' | 'TIMEOUT' | null
+  status: string | null
+  reason: string | null
+}
+
+export type ForecastAcceptanceMatrixVariantDiagnostic = {
+  seriesId: string
+  modelId: ForecastPortfolioModelId
+  targetBasis: ForecastTargetBasis
+  targetSemantics: ForecastTargetSemantics
+  isPointInTime: boolean
+  scheduledAt: string | null
+  startedAt: string | null
+  completedAt: string | null
+  elapsedMs: number | null
+  outcome: 'SUCCESS' | 'ERROR' | 'TIMEOUT' | null
+  reason: string | null
+  readinessResolutionStartedAt: string | null
+  readinessResolutionCompletedAt: string | null
+  readinessResolutionElapsedMs: number | null
+  capabilityCacheStatus: 'hit' | 'miss' | null
+  preparationCacheStatus: 'hit' | 'miss' | null
+  persistedCurrentProofStartedAt: string | null
+  persistedCurrentProofCompletedAt: string | null
+  persistedCurrentProofElapsedMs: number | null
+  persistedVerificationProofStartedAt: string | null
+  persistedVerificationProofCompletedAt: string | null
+  persistedVerificationProofElapsedMs: number | null
+  currentRead: ForecastAcceptanceMatrixRemoteStepDiagnostic
+  verificationRead: ForecastAcceptanceMatrixRemoteStepDiagnostic
+}
+
+export type ForecastAcceptanceMatrixDiagnostics = {
+  phaseStartedAt: string | null
+  phaseCompletedAt: string | null
+  elapsedMs: number | null
+  maxConcurrentVariants: number | null
+  peakVariantConcurrency: number
+  variantsCompletedBeforeTimeout: number
+  nonPointInTimeCompletedAt: string | null
+  pointInTimeEvaluationBegan: boolean
+  pointInTimeEvaluationStartedAt: string | null
+  pointInTimeEvaluationCompletedAt: string | null
+  firstCurrentDispatchAt: string | null
+  lastCurrentCompletionAt: string | null
+  firstVerificationDispatchAt: string | null
+  lastVerificationCompletionAt: string | null
+  variants: ForecastAcceptanceMatrixVariantDiagnostic[]
+}
+
+export type ForecastAcceptanceMatrixDiagnosticsRecorder = {
+  enabled: boolean
+  maxConcurrentVariants: number | null
+  notePhaseStart: () => void
+  notePhaseEnd: () => void
+  noteNonPointInTimeEnd: () => void
+  notePointInTimeStart: () => void
+  notePointInTimeEnd: () => void
+  noteVariantScheduled: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => void
+  noteVariantStarted: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => void
+  noteVariantCompleted: (
+    seriesId: string,
+    modelId: ForecastPortfolioModelId,
+    targetBasis: ForecastTargetBasis,
+    outcome: 'SUCCESS' | 'ERROR' | 'TIMEOUT',
+    reason?: string | null,
+  ) => void
+  noteReadinessStart: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => void
+  noteReadinessEnd: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => void
+  noteCapabilityCacheStatus: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis, cacheStatus: 'hit' | 'miss') => void
+  notePreparationCacheStatus: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis, cacheStatus: 'hit' | 'miss') => void
+  notePersistedProofStart: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis, kind: 'CURRENT' | 'VERIFICATION') => void
+  notePersistedProofEnd: (seriesId: string, modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis, kind: 'CURRENT' | 'VERIFICATION') => void
+  noteRemoteQueued: (
+    seriesId: string,
+    modelId: ForecastPortfolioModelId,
+    targetBasis: ForecastTargetBasis,
+    operation: ForecastAcceptanceMatrixRemoteOperation,
+    cacheStatus: 'hit' | 'miss',
+  ) => void
+  noteRemoteDispatched: (
+    seriesId: string,
+    modelId: ForecastPortfolioModelId,
+    targetBasis: ForecastTargetBasis,
+    operation: ForecastAcceptanceMatrixRemoteOperation,
+    dispatchedAt: string,
+    queueWaitMs: number,
+    benchmarkBudgetRemainingMsAtDispatch: number | null,
+  ) => void
+  noteRemoteCompleted: (
+    seriesId: string,
+    modelId: ForecastPortfolioModelId,
+    targetBasis: ForecastTargetBasis,
+    operation: ForecastAcceptanceMatrixRemoteOperation,
+    completedAt: string,
+    remoteElapsedMs: number,
+    elapsedMs: number,
+    outcome: 'SUCCESS' | 'ERROR' | 'TIMEOUT',
+    status: string | null,
+    reason: string | null,
+  ) => void
+  build: () => ForecastAcceptanceMatrixDiagnostics
+}
+
+type MatrixEvaluationOptions = {
+  signal?: AbortSignal
+  diagnosticsRecorder?: ForecastAcceptanceMatrixDiagnosticsRecorder
+  maxConcurrentVariants?: number | null
+  beforePointInTimeEvaluation?: () => Promise<void> | void
+}
+
+export type ForecastAcceptanceMatrixEvaluationOptions = MatrixEvaluationOptions
 
 export type ForecastAcceptanceMatrixReport = {
   seriesId: string
@@ -174,6 +324,49 @@ function summarize(cells: ForecastAcceptanceCell[]): ForecastAcceptanceSection {
   }
 }
 
+function normalizeMaxConcurrentVariants(value: number | null | undefined) {
+  if (!Number.isFinite(value)) {
+    return null
+  }
+
+  const normalized = Math.floor(value ?? 0)
+  return normalized > 0 ? normalized : null
+}
+
+function createVariantLimiter(maxConcurrentVariants: number | null) {
+  let activeCount = 0
+  const waiters: Array<() => void> = []
+
+  return async function run<T>(operation: () => Promise<T>) {
+    if (maxConcurrentVariants) {
+      if (activeCount >= maxConcurrentVariants) {
+        await new Promise<void>((resolve) => {
+          waiters.push(resolve)
+        })
+      }
+
+      activeCount += 1
+    }
+
+    try {
+      return await operation()
+    } finally {
+      if (maxConcurrentVariants) {
+        activeCount = Math.max(0, activeCount - 1)
+        waiters.shift()?.()
+      }
+    }
+  }
+}
+
+function isDeployedDashboardEnvironment() {
+  return Boolean(process.env.RENDER_EXTERNAL_URL?.trim() || process.env.VERCEL_URL?.trim())
+}
+
+function shouldRequireLocalPersistedArtifactProof(targetBasis: ForecastTargetBasis) {
+  return targetBasis === 'POINT_IN_TIME' || !isDeployedDashboardEnvironment()
+}
+
 function capabilityFailureState(capability: InteractiveForecastCapabilityResult): ForecastAcceptanceCellState {
   return capability.status === 'NOT_LAWFUL' || capability.status === 'NOT_IMPLEMENTED'
     ? 'UNSUPPORTED'
@@ -182,6 +375,10 @@ function capabilityFailureState(capability: InteractiveForecastCapabilityResult)
 
 function capabilityFailureReason(capability: InteractiveForecastCapabilityResult): ForecastAcceptanceReasonCode {
   switch (capability.status) {
+    case 'STALE':
+      return capability.currentReadiness === 'STALE' || capability.verificationReadiness === 'STALE'
+        ? 'PREPARED_STATE_NOT_READY'
+        : 'UNEXPECTED_RUNTIME_ERROR'
     case 'NOT_LAWFUL':
       return 'UNSUPPORTED_COMBINATION'
     case 'NOT_IMPLEMENTED':
@@ -200,6 +397,7 @@ function capabilityFailureReason(capability: InteractiveForecastCapabilityResult
 function capabilityAllowsMatrixEvaluation(capability: InteractiveForecastCapabilityResult) {
   return capability.status === 'AVAILABLE'
     || capability.status === 'READY'
+    || capability.status === 'STALE'
     || capability.status === 'PREPARATION_REQUIRED'
     || capability.status === 'NOT_PREPARED'
 }
@@ -320,6 +518,7 @@ async function checkPersistedVerificationArtifact(
   modelId: ForecastPortfolioModelId,
   targetBasis: ForecastTargetBasis,
   horizon: string,
+  expectedHistoryFingerprint?: string | null,
 ): Promise<PersistedArtifactCheckResult> {
   if (!prisma) {
     return { ok: false, reasonCode: 'MISSING_ARTIFACT', diagnostic: 'Market-data Prisma client is unavailable.', historyFingerprint: null }
@@ -358,8 +557,15 @@ async function checkPersistedVerificationArtifact(
       targetBasis,
       methodId: resolveForecastTargetSemantics(targetBasis),
       methodVersion: resolveMethodVersion(targetBasis),
+      ...(expectedHistoryFingerprint ? { historyFingerprint: expectedHistoryFingerprint } : {}),
     },
-    include: { metrics: true, points: true },
+    select: {
+      status: true,
+      failureReason: true,
+      historyFingerprint: true,
+      metrics: true,
+      points: true,
+    },
     orderBy: [{ updatedAt: 'desc' }],
   })
 
@@ -384,12 +590,17 @@ export function createForecastAcceptanceMatrixService(
   dependencies: Partial<AcceptanceMatrixDependencies> = {},
 ) {
   const resolvedDependencies: AcceptanceMatrixDependencies = {
-    readCapability: dependencies.readCapability ?? readInteractiveForecastCapability,
-    prepareCurrent: dependencies.prepareCurrent ?? prepareInteractiveCurrentForecast,
-    readCurrent: dependencies.readCurrent ?? ((seriesId, model, targetBasis) => (
-      resolveShowForecastCurrent(seriesId, model, targetBasis) as Promise<BenchmarkForecastCurrentResult>
+    readCapability: dependencies.readCapability ?? ((input, options) => (
+      readInteractiveForecastCapability(input, undefined, options ? { signal: options.signal } : undefined)
+    )),
+    prepareCurrent: dependencies.prepareCurrent ?? ((input, options) => (
+      prepareInteractiveCurrentForecast(input, false, options ? { signal: options.signal } : undefined)
+    )),
+    readCurrent: dependencies.readCurrent ?? ((seriesId, model, targetBasis, cadence, correlationHeaders, capability) => (
+      resolveShowForecastCurrent(seriesId, model, targetBasis, undefined, cadence, correlationHeaders, capability) as Promise<BenchmarkForecastCurrentResult>
     )),
     readVerification: dependencies.readVerification ?? getBenchmarkForecastVerification,
+    readPointInTimeCurrent: dependencies.readPointInTimeCurrent ?? readPointInTimeCurrentForecastSnapshot,
     getPrisma: dependencies.getPrisma ?? getMarketDataPrismaClient,
   }
 
@@ -408,13 +619,16 @@ export function createForecastAcceptanceMatrixService(
 
   async function ensurePrepared(
     input: BenchmarkForecastCurrentPreparationRequest,
-    options?: { signal?: AbortSignal },
+    options?: MatrixEvaluationOptions,
   ): Promise<PreparationEvidence> {
     const cacheKey = createVariantKey(input.seriesId, input.modelId, input.targetBasis)
     const cached = preparationCache.get(cacheKey)
     if (cached) {
+      options?.diagnosticsRecorder?.notePreparationCacheStatus(input.seriesId, input.modelId, input.targetBasis, 'hit')
       return cached
     }
+
+    options?.diagnosticsRecorder?.notePreparationCacheStatus(input.seriesId, input.modelId, input.targetBasis, 'miss')
 
     const pending = resolvedDependencies.prepareCurrent(input, options)
       .then((result) => ({
@@ -431,6 +645,9 @@ export function createForecastAcceptanceMatrixService(
     seriesId: string,
     modelId: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
+    capability?: Pick<InteractiveForecastCapabilityResult, 'currentReadiness'>,
+    cadence?: { sourceFrequency: string, targetCadence: string },
+    options?: MatrixEvaluationOptions,
   ): Promise<BenchmarkForecastCurrentResult> {
     const cacheKey = createVariantKey(seriesId, modelId, targetBasis)
     const cached = currentReadCache.get(cacheKey)
@@ -438,7 +655,17 @@ export function createForecastAcceptanceMatrixService(
       return cached
     }
 
-    const pending = resolvedDependencies.readCurrent(seriesId, modelId, targetBasis)
+    const pending = targetBasis === 'POINT_IN_TIME'
+      ? resolvedDependencies.readPointInTimeCurrent(seriesId, modelId, capability, options ? { signal: options.signal } : undefined)
+      : resolvedDependencies.readCurrent(
+          seriesId,
+          modelId,
+          targetBasis,
+          cadence,
+          undefined,
+          capability as InteractiveForecastCapabilityResult | null | undefined,
+          options ? { signal: options.signal } : undefined,
+        )
     currentReadCache.set(cacheKey, pending)
     return pending
   }
@@ -447,6 +674,9 @@ export function createForecastAcceptanceMatrixService(
     seriesId: string,
     modelId: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
+    capability?: InteractiveForecastCapabilityResult | null,
+    cadence?: { sourceFrequency: string, targetCadence: string },
+    options?: MatrixEvaluationOptions,
   ): Promise<BenchmarkForecastVerificationResult> {
     const cacheKey = createVariantKey(seriesId, modelId, targetBasis)
     const cached = verificationReadCache.get(cacheKey)
@@ -454,28 +684,54 @@ export function createForecastAcceptanceMatrixService(
       return cached
     }
 
-    const pending = resolvedDependencies.readVerification(seriesId, modelId, targetBasis)
+    const pending = resolvedDependencies.readVerification(
+      seriesId,
+      modelId,
+      targetBasis,
+      cadence,
+      undefined,
+      capability,
+      options ? { signal: options.signal } : undefined,
+    )
     verificationReadCache.set(cacheKey, pending)
     return pending
   }
 
   async function resolveVariantReadiness(
     input: BenchmarkForecastCurrentPreparationRequest,
-    options?: { signal?: AbortSignal },
+    options?: MatrixEvaluationOptions,
   ): Promise<ResolvedVariantReadiness> {
     const cacheKey = createVariantKey(input.seriesId, input.modelId, input.targetBasis)
     const cached = readinessCache.get(cacheKey)
     if (cached) {
+      options?.diagnosticsRecorder?.noteCapabilityCacheStatus(input.seriesId, input.modelId, input.targetBasis, 'hit')
       return cached
     }
 
+    options?.diagnosticsRecorder?.noteCapabilityCacheStatus(input.seriesId, input.modelId, input.targetBasis, 'miss')
+
     const pending = (async () => {
+      options?.diagnosticsRecorder?.noteReadinessStart(input.seriesId, input.modelId, input.targetBasis)
       const initialCapability = await resolvedDependencies.readCapability(input, options)
 
-      if (
-        (initialCapability.currentReadiness === 'READY' || initialCapability.verificationReadiness === 'READY')
-        || (initialCapability.status !== 'PREPARATION_REQUIRED' && initialCapability.status !== 'NOT_PREPARED')
-      ) {
+      const readinessAlreadyUsable = initialCapability.currentReadiness === 'READY'
+        || initialCapability.verificationReadiness === 'READY'
+      const warmablePreparedState = initialCapability.status === 'PREPARATION_REQUIRED'
+        || initialCapability.status === 'NOT_PREPARED'
+        || initialCapability.status === 'STALE'
+      const staleNeedsWarmup = initialCapability.currentReadiness === 'STALE'
+        || initialCapability.verificationReadiness === 'STALE'
+
+      if (readinessAlreadyUsable && !staleNeedsWarmup) {
+        options?.diagnosticsRecorder?.noteReadinessEnd(input.seriesId, input.modelId, input.targetBasis)
+        return {
+          capability: initialCapability,
+          preparation: null,
+        }
+      }
+
+      if (!warmablePreparedState) {
+        options?.diagnosticsRecorder?.noteReadinessEnd(input.seriesId, input.modelId, input.targetBasis)
         return {
           capability: initialCapability,
           preparation: null,
@@ -484,6 +740,8 @@ export function createForecastAcceptanceMatrixService(
 
       const preparation = await ensurePrepared(input, options)
       const warmedCapability = await resolvedDependencies.readCapability(input, options)
+
+      options?.diagnosticsRecorder?.noteReadinessEnd(input.seriesId, input.modelId, input.targetBasis)
 
       return {
         capability: warmedCapability,
@@ -507,7 +765,7 @@ export function createForecastAcceptanceMatrixService(
     seriesId: string,
     modelId: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
-    options?: { signal?: AbortSignal },
+    options?: MatrixEvaluationOptions,
   ): Promise<ForecastAcceptanceCell> {
     try {
       const resolvedReadiness = await resolveVariantReadiness({ seriesId, modelId, targetBasis }, options)
@@ -515,6 +773,12 @@ export function createForecastAcceptanceMatrixService(
       const prepareEvidence = resolvedReadiness.preparation
 
       const identityBase = resolveIdentityBase(seriesId, modelId, targetBasis, effectiveCapability.sourceFrequency)
+      const cadence = effectiveCapability.sourceFrequency && effectiveCapability.targetCadence
+        ? {
+            sourceFrequency: effectiveCapability.sourceFrequency,
+            targetCadence: effectiveCapability.targetCadence,
+          }
+        : undefined
 
       if (!capabilityAllowsMatrixEvaluation(effectiveCapability)) {
         return {
@@ -538,7 +802,16 @@ export function createForecastAcceptanceMatrixService(
         }
       }
 
-      const persisted = await checkPersistedCurrentArtifact(resolvedDependencies.getPrisma(), seriesId, modelId, targetBasis)
+      const persisted = shouldRequireLocalPersistedArtifactProof(targetBasis)
+        ? await (async () => {
+            options?.diagnosticsRecorder?.notePersistedProofStart(seriesId, modelId, targetBasis, 'CURRENT')
+            try {
+              return await checkPersistedCurrentArtifact(resolvedDependencies.getPrisma(), seriesId, modelId, targetBasis)
+            } finally {
+              options?.diagnosticsRecorder?.notePersistedProofEnd(seriesId, modelId, targetBasis, 'CURRENT')
+            }
+          })()
+        : { ok: true, reasonCode: null, diagnostic: null, historyFingerprint: null }
       if (!persisted.ok) {
         return {
           identity: { ...identityBase, kind: 'CURRENT', historyFingerprint: persisted.historyFingerprint, verificationHorizon: null },
@@ -550,7 +823,7 @@ export function createForecastAcceptanceMatrixService(
         }
       }
 
-      const current = await readCurrentOnce(seriesId, modelId, targetBasis)
+      const current = await readCurrentOnce(seriesId, modelId, targetBasis, effectiveCapability, cadence, options)
       if (current.status !== 'AVAILABLE') {
         return {
           identity: { ...identityBase, kind: 'CURRENT', historyFingerprint: persisted.historyFingerprint, verificationHorizon: null },
@@ -587,9 +860,10 @@ export function createForecastAcceptanceMatrixService(
         }
       }
 
+      const availableCurrentHistoryFingerprint = availableCurrent.lineage.historyFingerprint
       if (!isRenderableCurrentResult(availableCurrent)) {
         return {
-          identity: { ...identityBase, kind: 'CURRENT', historyFingerprint: availableCurrent.lineage.historyFingerprint, verificationHorizon: null },
+          identity: { ...identityBase, kind: 'CURRENT', historyFingerprint: availableCurrentHistoryFingerprint, verificationHorizon: null },
           state: 'FAIL',
           failingLayer: 'RENDERABLE_PAYLOAD',
           reasonCode: 'INVALID_PAYLOAD',
@@ -626,7 +900,7 @@ export function createForecastAcceptanceMatrixService(
     modelId: ForecastPortfolioModelId,
     targetBasis: ForecastTargetBasis,
     horizon: string,
-    options?: { signal?: AbortSignal },
+    options?: MatrixEvaluationOptions,
   ): Promise<ForecastAcceptanceCell> {
     try {
       const resolvedReadiness = await resolveVariantReadiness({ seriesId, modelId, targetBasis }, options)
@@ -634,6 +908,12 @@ export function createForecastAcceptanceMatrixService(
       const prepareEvidence = resolvedReadiness.preparation
 
       const identityBase = resolveIdentityBase(seriesId, modelId, targetBasis, effectiveCapability.sourceFrequency)
+      const cadence = effectiveCapability.sourceFrequency && effectiveCapability.targetCadence
+        ? {
+            sourceFrequency: effectiveCapability.sourceFrequency,
+            targetCadence: effectiveCapability.targetCadence,
+          }
+        : undefined
 
       if (!capabilityAllowsMatrixEvaluation(effectiveCapability)) {
         return {
@@ -646,7 +926,7 @@ export function createForecastAcceptanceMatrixService(
         }
       }
 
-      if (effectiveCapability.verificationReadiness !== 'READY') {
+      if (effectiveCapability.fullVerificationReadiness !== 'READY') {
         return {
           identity: { ...identityBase, kind: 'VERIFICATION', historyFingerprint: null, verificationHorizon: horizon },
           state: 'FAIL',
@@ -657,7 +937,16 @@ export function createForecastAcceptanceMatrixService(
         }
       }
 
-      const persisted = await checkPersistedVerificationArtifact(resolvedDependencies.getPrisma(), seriesId, modelId, targetBasis, horizon)
+      const persisted = shouldRequireLocalPersistedArtifactProof(targetBasis)
+        ? await (async () => {
+            options?.diagnosticsRecorder?.notePersistedProofStart(seriesId, modelId, targetBasis, 'VERIFICATION')
+            try {
+              return await checkPersistedVerificationArtifact(resolvedDependencies.getPrisma(), seriesId, modelId, targetBasis, horizon)
+            } finally {
+              options?.diagnosticsRecorder?.notePersistedProofEnd(seriesId, modelId, targetBasis, 'VERIFICATION')
+            }
+          })()
+        : { ok: true, reasonCode: null, diagnostic: null, historyFingerprint: null }
       if (!persisted.ok) {
         return {
           identity: { ...identityBase, kind: 'VERIFICATION', historyFingerprint: persisted.historyFingerprint, verificationHorizon: horizon },
@@ -669,7 +958,7 @@ export function createForecastAcceptanceMatrixService(
         }
       }
 
-      const verification = await readVerificationOnce(seriesId, modelId, targetBasis)
+      const verification = await readVerificationOnce(seriesId, modelId, targetBasis, effectiveCapability, cadence, options)
       if (!isAvailableVerificationResult(verification)) {
         return {
           identity: { ...identityBase, kind: 'VERIFICATION', historyFingerprint: persisted.historyFingerprint, verificationHorizon: horizon },
@@ -693,7 +982,29 @@ export function createForecastAcceptanceMatrixService(
         }
       }
 
-      const verificationStaleFingerprint = resolvePersistedFingerprintMismatch(persisted.historyFingerprint, verification.lineage.historyFingerprint)
+      const exactPersisted = shouldRequireLocalPersistedArtifactProof(targetBasis)
+        && persisted.historyFingerprint !== verification.lineage.historyFingerprint
+        ? await checkPersistedVerificationArtifact(
+            resolvedDependencies.getPrisma(),
+            seriesId,
+            modelId,
+            targetBasis,
+            horizon,
+            verification.lineage.historyFingerprint,
+          )
+        : persisted
+      if (!exactPersisted.ok) {
+        return {
+          identity: { ...identityBase, kind: 'VERIFICATION', historyFingerprint: verification.lineage.historyFingerprint, verificationHorizon: horizon },
+          state: 'FAIL',
+          failingLayer: 'POSTGRES_ARTIFACT',
+          reasonCode: exactPersisted.reasonCode,
+          diagnostic: exactPersisted.diagnostic,
+          preparation: buildPreparation(Boolean(prepareEvidence), prepareEvidence?.prepareStatus ?? null, Boolean(prepareEvidence)),
+        }
+      }
+
+      const verificationStaleFingerprint = resolvePersistedFingerprintMismatch(exactPersisted.historyFingerprint, verification.lineage.historyFingerprint)
       if (verificationStaleFingerprint) {
         return {
           identity: { ...identityBase, kind: 'VERIFICATION', historyFingerprint: verification.lineage.historyFingerprint, verificationHorizon: horizon },
@@ -750,19 +1061,58 @@ export function createForecastAcceptanceMatrixService(
   }
 
   return {
-    async evaluateSeries(seriesId: string, options?: { signal?: AbortSignal }): Promise<ForecastAcceptanceMatrixReport> {
-      const variantResults = await Promise.all(
+    async evaluateSeries(seriesId: string, options?: MatrixEvaluationOptions): Promise<ForecastAcceptanceMatrixReport> {
+      const diagnosticsRecorder = options?.diagnosticsRecorder
+      const maxConcurrentVariants = normalizeMaxConcurrentVariants(options?.maxConcurrentVariants ?? diagnosticsRecorder?.maxConcurrentVariants)
+      const runVariant = createVariantLimiter(maxConcurrentVariants)
+
+      const evaluateVariant = async (modelId: ForecastPortfolioModelId, targetBasis: ForecastTargetBasis) => {
+        diagnosticsRecorder?.noteVariantScheduled(seriesId, modelId, targetBasis)
+
+        return runVariant(async () => {
+          diagnosticsRecorder?.noteVariantStarted(seriesId, modelId, targetBasis)
+
+          try {
+            const result = {
+              current: await evaluateCurrentCell(seriesId, modelId, targetBasis, options),
+              verification: await Promise.all(
+                DEFAULT_VERIFICATION_HORIZONS.map((horizon) => (
+                  evaluateVerificationCell(seriesId, modelId, targetBasis, horizon, options)
+                )),
+              ),
+            }
+
+            diagnosticsRecorder?.noteVariantCompleted(seriesId, modelId, targetBasis, 'SUCCESS')
+            return result
+          } catch (error) {
+            const reason = error instanceof Error ? error.message : String(error)
+            const outcome = reason.toLowerCase().includes('timed out') ? 'TIMEOUT' : 'ERROR'
+            diagnosticsRecorder?.noteVariantCompleted(seriesId, modelId, targetBasis, outcome, reason)
+            throw error
+          }
+        })
+      }
+
+      diagnosticsRecorder?.notePhaseStart()
+
+      const nonPointInTimeVariantResults = await Promise.all(
         FORECAST_PORTFOLIO_MODELS.flatMap((modelId) => (
-          FORECAST_TARGET_BASES.map(async (targetBasis) => ({
-            current: await evaluateCurrentCell(seriesId, modelId, targetBasis, options),
-            verification: await Promise.all(
-              DEFAULT_VERIFICATION_HORIZONS.map((horizon) => (
-                evaluateVerificationCell(seriesId, modelId, targetBasis, horizon, options)
-              )),
-            ),
-          }))
+          FORECAST_TARGET_BASES
+            .filter((targetBasis) => targetBasis !== 'POINT_IN_TIME')
+            .map((targetBasis) => evaluateVariant(modelId, targetBasis))
         )),
       )
+      diagnosticsRecorder?.noteNonPointInTimeEnd()
+
+      const pointInTimeVariantResults = [] as Awaited<ReturnType<typeof evaluateVariant>>[]
+      await options?.beforePointInTimeEvaluation?.()
+      diagnosticsRecorder?.notePointInTimeStart()
+      for (const modelId of FORECAST_PORTFOLIO_MODELS) {
+        pointInTimeVariantResults.push(await evaluateVariant(modelId, 'POINT_IN_TIME'))
+      }
+      diagnosticsRecorder?.notePointInTimeEnd()
+
+      const variantResults = [...nonPointInTimeVariantResults, ...pointInTimeVariantResults]
 
       const currentCells = variantResults.map((result) => result.current)
       const verificationCells = variantResults.flatMap((result) => result.verification)
@@ -774,6 +1124,8 @@ export function createForecastAcceptanceMatrixService(
         : current.pass + verification.pass === 0 && current.unsupported + verification.unsupported === 0
           ? 'INCOMPLETE'
           : 'FAIL'
+
+      diagnosticsRecorder?.notePhaseEnd()
 
       return {
         seriesId,

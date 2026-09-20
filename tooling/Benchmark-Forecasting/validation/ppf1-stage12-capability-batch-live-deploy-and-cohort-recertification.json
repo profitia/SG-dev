@@ -1,0 +1,239 @@
+{
+  "generatedAt": "2026-09-13T17:46:49.000Z",
+  "taskId": "ppf-1-stage-12-capability-batch-live-deploy-and-cohort-recertification-20260913",
+  "status": "PASS",
+  "classification": {
+    "changeType": "DEPLOYMENT_VALIDATION",
+    "productSourceMutated": false,
+    "validatedSourceSha": "f7761cc3ee56dd474667b89132747910d67c2517",
+    "validationBranch": "ppf1/stage12-live-acceptance-legacy-deprecation-20260911",
+    "liveDeployPerformed": true,
+    "legacyDeprecationAttempted": false
+  },
+  "deployment": {
+    "sgRuntime": {
+      "serviceName": "spendguru-stage",
+      "serviceId": "srv-d98a73btqb8s73fabp90",
+      "publicUrl": "https://sg2-0-charts-preview.onrender.com",
+      "deployId": "dep-dajdghp5efls738gsc8g",
+      "providerStatus": "Deploy succeeded",
+      "sourceRevision": "f7761cc3ee56dd474667b89132747910d67c2517",
+      "sourceRevisionShort": "f7761cc"
+    },
+    "dashboard": {
+      "serviceName": "dashboards-library",
+      "serviceId": "srv-da2i7j9t0dsc73ag7qv0",
+      "publicUrl": "https://dashboards-library.onrender.com",
+      "deployId": "dep-dajdlqh5efls738hf1u0",
+      "providerStatus": "Deploy succeeded",
+      "sourceRevision": "f7761cc3ee56dd474667b89132747910d67c2517",
+      "sourceRevisionShort": "f7761cc",
+      "serviceLive": true
+    }
+  },
+  "environment": {
+    "internalBatchTokenAvailable": false,
+    "internalBatchTokenState": "TOKEN_MISSING",
+    "publicValidationOnly": true
+  },
+  "liveValidation": {
+    "brentColdCertify": {
+      "route": "/api/benchmark-forecast/demo-certification",
+      "mode": "CERTIFY",
+      "seriesIds": [
+        "wocaes0074"
+      ],
+      "status": "FAIL",
+      "demoSafe": false,
+      "reason": "ENVIRONMENT_NOT_READY",
+      "releaseSnapshot": {
+        "sourceRevision": "f7761cc3ee56dd474667b89132747910d67c2517",
+        "deployedRevision": "f7761cc3ee56dd474667b89132747910d67c2517",
+        "environment": "render",
+        "environmentUrl": "https://dashboards-library.onrender.com"
+      },
+      "phaseStatuses": {
+        "precompute": "PASS",
+        "matrix": "PASS",
+        "warmRehearsal": "TIMEOUT"
+      },
+      "timeout": {
+        "benchmarkTimeoutMs": 75000,
+        "timedOutDuring": "WARM_REHEARSAL"
+      },
+      "batchProof": {
+        "precomputeReadCapabilityEvents": 12,
+        "remoteSeriesSnapshotMisses": 1,
+        "cacheReuses": 11
+      }
+    },
+    "brentWarmRevalidate": {
+      "route": "/api/benchmark-forecast/demo-certification",
+      "mode": "REVALIDATE",
+      "seriesIds": [
+        "wocaes0074"
+      ],
+      "status": "PASS",
+      "demoSafe": true,
+      "phaseStatuses": {
+        "precompute": "PASS",
+        "matrix": "PASS",
+        "freshness": "PASS",
+        "warmRehearsal": "PASS"
+      },
+      "timeoutSnapshot": null
+    },
+    "primaryCohortRevalidate": {
+      "route": "/api/benchmark-forecast/demo-certification",
+      "mode": "REVALIDATE",
+      "seriesIds": [
+        "wocaes0074",
+        "lmeofcucashask",
+        "lmeofalcashask"
+      ],
+      "status": "FAIL",
+      "demoSafe": false,
+      "commonFailureStage": "PRECOMPUTE",
+      "commonFailureReason": "SG Runtime interactive forecast request timed out.",
+      "benchmarks": [
+        {
+          "seriesId": "wocaes0074",
+          "status": "FAIL",
+          "stage": "PRECOMPUTE",
+          "reason": "SG Runtime interactive forecast request timed out."
+        },
+        {
+          "seriesId": "lmeofcucashask",
+          "status": "FAIL",
+          "stage": "PRECOMPUTE",
+          "reason": "SG Runtime interactive forecast request timed out."
+        },
+        {
+          "seriesId": "lmeofalcashask",
+          "status": "FAIL",
+          "stage": "PRECOMPUTE",
+          "reason": "SG Runtime interactive forecast request timed out."
+        }
+      ]
+    },
+    "directExactCapabilitySweep": {
+      "route": "/api/benchmark-forecast/current/capability",
+      "series": [
+        {
+          "seriesId": "wocaes0074",
+          "allHttp200": true,
+          "allAvailable": true,
+          "allCurrentReady": true,
+          "allVerificationReady": true,
+          "allFullVerificationReady": true,
+          "failingVariants": []
+        },
+        {
+          "seriesId": "lmeofcucashask",
+          "allHttp200": true,
+          "allAvailable": false,
+          "allCurrentReady": true,
+          "allVerificationReady": false,
+          "allFullVerificationReady": false,
+          "failingVariants": [
+            {
+              "modelId": "naive",
+              "targetBasis": "MONTHLY_AVERAGE",
+              "httpStatus": 200,
+              "status": "STALE",
+              "currentReadiness": "READY",
+              "verificationReadiness": "STALE",
+              "fullVerificationReadiness": "NOT_PREPARED",
+              "sourceFrequency": "DAILY",
+              "targetCadence": "MONTHLY",
+              "reason": null
+            },
+            {
+              "modelId": "naive",
+              "targetBasis": "END_OF_PERIOD",
+              "httpStatus": 200,
+              "status": "STALE",
+              "currentReadiness": "READY",
+              "verificationReadiness": "STALE",
+              "fullVerificationReadiness": "NOT_PREPARED",
+              "sourceFrequency": "DAILY",
+              "targetCadence": "MONTHLY",
+              "reason": null
+            },
+            {
+              "modelId": "damped_holt",
+              "targetBasis": "MONTHLY_AVERAGE",
+              "httpStatus": 200,
+              "status": "STALE",
+              "currentReadiness": "READY",
+              "verificationReadiness": "STALE",
+              "fullVerificationReadiness": "NOT_PREPARED",
+              "sourceFrequency": "DAILY",
+              "targetCadence": "MONTHLY",
+              "reason": null
+            },
+            {
+              "modelId": "damped_holt",
+              "targetBasis": "END_OF_PERIOD",
+              "httpStatus": 200,
+              "status": "STALE",
+              "currentReadiness": "READY",
+              "verificationReadiness": "STALE",
+              "fullVerificationReadiness": "NOT_PREPARED",
+              "sourceFrequency": "DAILY",
+              "targetCadence": "MONTHLY",
+              "reason": null
+            }
+          ]
+        },
+        {
+          "seriesId": "lmeofalcashask",
+          "allHttp200": true,
+          "allAvailable": true,
+          "allCurrentReady": true,
+          "allVerificationReady": true,
+          "allFullVerificationReady": true,
+          "failingVariants": []
+        }
+      ]
+    },
+    "userFacingSmoke": {
+      "status": "PASS",
+      "url": "https://dashboards-library.onrender.com/pl?variantId=forecast-portfolio-v3&seriesId=wocaes0074&displayName=Brent",
+      "pageTitle": "Time Series Intelligence Viewer",
+      "surface": "Forecast Portfolio v3",
+      "seriesDisplayName": "Brent",
+      "loadingResolved": true,
+      "readyControls": [
+        "Naive",
+        "Damped Holt",
+        "ETS",
+        "ARIMA",
+        "Srednia miesieczna",
+        "Dzienna",
+        "Koniec okresu"
+      ]
+    }
+  },
+  "finalGates": {
+    "SG_RUNTIME_EXACT_DEPLOY_GATE": "PASS",
+    "DASHBOARD_EXACT_DEPLOY_GATE": "PASS",
+    "BRENT_PRECOMPUTE_BATCH_PROOF_GATE": "PASS",
+    "BRENT_EXACT_DIRECT_READ_GATE": "PASS",
+    "BRENT_WARM_RECERTIFICATION_GATE": "PASS",
+    "PRIMARY_COHORT_RECERTIFICATION_GATE": "FAIL",
+    "COPPER_EXACT_READINESS_GATE": "FAIL",
+    "USER_FACING_SMOKE_GATE": "PASS",
+    "READY_FOR_LEGACY_DEPRECATION": "NO"
+  },
+  "finalDecision": {
+    "status": "FAIL_CLOSED",
+    "summary": "The exact Stage 12 release f7761cc3ee56dd474667b89132747910d67c2517 was successfully deployed to both Render services and Brent proved the intended one-snapshot PRECOMPUTE batch behavior live, but full primary cohort recertification failed in PRECOMPUTE and Copper still exposed four stale exact capability variants, so live recertification remains blocked and legacy deprecation must not proceed.",
+    "deploySuccess": true,
+    "brentBatchCorrectiveProven": true,
+    "brentWarmRecertified": true,
+    "primaryCohortRecertified": false,
+    "legacyDeprecationAllowed": false,
+    "followUpRequired": true
+  }
+}
