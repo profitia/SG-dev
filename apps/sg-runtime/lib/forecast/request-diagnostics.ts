@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
+import { randomUUID } from 'node:crypto'
 import { performance } from 'node:perf_hooks'
 
 import { type NextResponse } from 'next/server'
@@ -312,6 +313,10 @@ export function finalizeForecastRequestDiagnostics(status: number) {
 
 export function currentForecastRequestDiagnostics() {
   return storage.getStore()?.snapshot ?? null
+}
+
+export function resolveForecastOperationRequestId(fallback: () => string = randomUUID) {
+  return currentForecastRequestDiagnostics()?.requestId ?? fallback()
 }
 
 export function isForecastRequestDiagnosticsEnabled(headers: Headers) {

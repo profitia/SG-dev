@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 
 import {
@@ -43,6 +42,7 @@ import {
   resolveForecastStage3HeartbeatIntervalMs,
   startForecastExecutionLeaseHeartbeat,
 } from '@/lib/forecast/stage3-lease-heartbeat'
+import { resolveForecastOperationRequestId } from '@/lib/forecast/request-diagnostics'
 
 export const InteractiveForecastIdentitySchema = z.object({
   seriesId: z.string().trim().min(1).refine((seriesId) => seriesId !== '*', 'A concrete seriesId is required.'),
@@ -774,7 +774,7 @@ export function createInteractiveForecastPreparationService(
           seriesId: input.seriesId,
           modelId: input.modelId,
         })
-        const requestId = randomUUID()
+        const requestId = resolveForecastOperationRequestId()
         const waitDeadline = Date.now() + (resolvedDependencies.executionAdmission.leaseDurationMs * ROLLING_DAILY_STAGE3_WAITER_MULTIPLIER)
         const readPreparedSnapshot = () => resolvedDependencies.readRollingCurrentSnapshot({
           seriesId: input.seriesId,

@@ -1,5 +1,5 @@
 import { execFile, spawn } from 'node:child_process'
-import { createHash, randomUUID } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -35,6 +35,7 @@ import {
   startForecastExecutionLeaseHeartbeat,
 } from '@/lib/forecast/stage3-lease-heartbeat'
 import {
+  resolveForecastOperationRequestId,
   traceForecastRequestDiagnosticsSpan,
   updateForecastRequestDiagnosticsIdentity,
 } from '@/lib/forecast/request-diagnostics'
@@ -1706,7 +1707,7 @@ export function createRollingDailyMaintenanceService(
         })
       }
 
-      const requestId = randomUUID()
+      const requestId = resolveForecastOperationRequestId()
       const waitDeadline = Date.now() + (resolvedDependencies.executionAdmission.leaseDurationMs * ROLLING_DAILY_HISTORICAL_WAITER_MULTIPLIER)
       const stage3HeartbeatIntervalMs = resolveForecastStage3HeartbeatIntervalMs(
         resolvedDependencies.executionAdmission.leaseDurationMs,
