@@ -394,6 +394,9 @@ model ForecastPreparationExecutionLedger {
   persistenceCompletedAt      DateTime?
   failurePhase                String?
   failureReason               String?
+  resourceCorrelationId       String?
+  resourceMeasuredAt          DateTime?
+  resourceSummaryJson         Json?
   logicalArtifactIdentityJson Json
   eventsJson                  Json
   createdAt                   DateTime            @default(now())
@@ -403,7 +406,40 @@ model ForecastPreparationExecutionLedger {
   @@index([logicalArtifactKey, executionStatus, leaseExpiresAt, startedAt], map: "forecast_preparation_execution_ledger_active_lookup_idx")
   @@index([recoveredFromExecutionId], map: "forecast_preparation_execution_ledger_recovery_idx")
   @@index([seriesId, operationFamily, executionStatus, updatedAt], map: "forecast_preparation_execution_ledger_series_status_idx")
+  @@index([resourceCorrelationId, resourceMeasuredAt], map: "forecast_preparation_execution_ledger_resource_correlation_idx")
   @@map("forecast_preparation_execution_ledger")
+}
+
+model ForecastActionTrace {
+  /// Action-level observability for one user-triggered Forecast preparation flow.
+  id                            String              @id @default(cuid())
+  correlationId                 String              @unique
+  actionType                    String
+  seriesId                      String
+  targetBasis                   ForecastTargetBasis
+  targetSemantics               String
+  modelId                       String
+  jobKey                        String?
+  executionId                   String?
+  actionRequestedAt             DateTime
+  queueAcceptedAt               DateTime?
+  artifactReadyAt               DateTime?
+  dashboardFirstReadyObservedAt DateTime?
+  uiVisibleClientAt             DateTime?
+  uiAckReceivedAt               DateTime?
+  uiVisibilityState             String              @default("NOT_OBSERVED")
+  pageInstanceId                String?
+  responseToVisibleMs           Float?
+  eventCount                    Int                 @default(0)
+  eventsJson                    Json
+  metadataJson                  Json?
+  createdAt                     DateTime            @default(now())
+  updatedAt                     DateTime            @updatedAt
+
+  @@index([jobKey, artifactReadyAt], map: "forecast_action_trace_job_ready_idx")
+  @@index([executionId], map: "forecast_action_trace_execution_idx")
+  @@index([seriesId, targetSemantics, modelId, createdAt], map: "forecast_action_trace_identity_idx")
+  @@map("forecast_action_trace")
 }
 
 model ForecastPreparationJob {

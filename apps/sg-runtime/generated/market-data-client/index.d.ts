@@ -79,6 +79,11 @@ export type RollingDailyMaintenanceState = $Result.DefaultSelection<Prisma.$Roll
  */
 export type ForecastPreparationExecutionLedger = $Result.DefaultSelection<Prisma.$ForecastPreparationExecutionLedgerPayload>
 /**
+ * Model ForecastActionTrace
+ *
+ */
+export type ForecastActionTrace = $Result.DefaultSelection<Prisma.$ForecastActionTracePayload>
+/**
  * Model ForecastPreparationJob
  *
  */
@@ -388,6 +393,16 @@ export class PrismaClient<
     * ```
     */
   get forecastPreparationExecutionLedger(): Prisma.ForecastPreparationExecutionLedgerDelegate<ExtArgs>;
+
+  /**
+   * `prisma.forecastActionTrace`: Exposes CRUD operations for the **ForecastActionTrace** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ForecastActionTraces
+    * const forecastActionTraces = await prisma.forecastActionTrace.findMany()
+    * ```
+    */
+  get forecastActionTrace(): Prisma.ForecastActionTraceDelegate<ExtArgs>;
 
   /**
    * `prisma.forecastPreparationJob`: Exposes CRUD operations for the **ForecastPreparationJob** model.
@@ -872,6 +887,7 @@ export namespace Prisma {
     RollingDailyCalibrationGroup: 'RollingDailyCalibrationGroup',
     RollingDailyMaintenanceState: 'RollingDailyMaintenanceState',
     ForecastPreparationExecutionLedger: 'ForecastPreparationExecutionLedger',
+    ForecastActionTrace: 'ForecastActionTrace',
     ForecastPreparationJob: 'ForecastPreparationJob',
     BenchmarkMetadataFacetRecord: 'BenchmarkMetadataFacetRecord',
     BenchmarkMetadataValueRecord: 'BenchmarkMetadataValueRecord'
@@ -890,7 +906,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "marketSeries" | "marketObservation" | "marketHydrationState" | "forecastCurrentRun" | "forecastCurrentPoint" | "forecastVerificationRun" | "forecastVerificationMetric" | "forecastVerificationPoint" | "rollingDailyVerificationRecord" | "rollingDailyCurrentForecastSnapshot" | "rollingDailyCalibrationGroup" | "rollingDailyMaintenanceState" | "forecastPreparationExecutionLedger" | "forecastPreparationJob" | "benchmarkMetadataFacetRecord" | "benchmarkMetadataValueRecord"
+      modelProps: "marketSeries" | "marketObservation" | "marketHydrationState" | "forecastCurrentRun" | "forecastCurrentPoint" | "forecastVerificationRun" | "forecastVerificationMetric" | "forecastVerificationPoint" | "rollingDailyVerificationRecord" | "rollingDailyCurrentForecastSnapshot" | "rollingDailyCalibrationGroup" | "rollingDailyMaintenanceState" | "forecastPreparationExecutionLedger" | "forecastActionTrace" | "forecastPreparationJob" | "benchmarkMetadataFacetRecord" | "benchmarkMetadataValueRecord"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1801,6 +1817,76 @@ export namespace Prisma {
           count: {
             args: Prisma.ForecastPreparationExecutionLedgerCountArgs<ExtArgs>
             result: $Utils.Optional<ForecastPreparationExecutionLedgerCountAggregateOutputType> | number
+          }
+        }
+      }
+      ForecastActionTrace: {
+        payload: Prisma.$ForecastActionTracePayload<ExtArgs>
+        fields: Prisma.ForecastActionTraceFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ForecastActionTraceFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastActionTracePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ForecastActionTraceFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastActionTracePayload>
+          }
+          findFirst: {
+            args: Prisma.ForecastActionTraceFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastActionTracePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ForecastActionTraceFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastActionTracePayload>
+          }
+          findMany: {
+            args: Prisma.ForecastActionTraceFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastActionTracePayload>[]
+          }
+          create: {
+            args: Prisma.ForecastActionTraceCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastActionTracePayload>
+          }
+          createMany: {
+            args: Prisma.ForecastActionTraceCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ForecastActionTraceCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastActionTracePayload>[]
+          }
+          delete: {
+            args: Prisma.ForecastActionTraceDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastActionTracePayload>
+          }
+          update: {
+            args: Prisma.ForecastActionTraceUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastActionTracePayload>
+          }
+          deleteMany: {
+            args: Prisma.ForecastActionTraceDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ForecastActionTraceUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ForecastActionTraceUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastActionTracePayload>
+          }
+          aggregate: {
+            args: Prisma.ForecastActionTraceAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateForecastActionTrace>
+          }
+          groupBy: {
+            args: Prisma.ForecastActionTraceGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ForecastActionTraceGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ForecastActionTraceCountArgs<ExtArgs>
+            result: $Utils.Optional<ForecastActionTraceCountAggregateOutputType> | number
           }
         }
       }
@@ -15903,6 +15989,8 @@ export namespace Prisma {
     persistenceCompletedAt: Date | null
     failurePhase: string | null
     failureReason: string | null
+    resourceCorrelationId: string | null
+    resourceMeasuredAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -15950,6 +16038,8 @@ export namespace Prisma {
     persistenceCompletedAt: Date | null
     failurePhase: string | null
     failureReason: string | null
+    resourceCorrelationId: string | null
+    resourceMeasuredAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -15997,6 +16087,9 @@ export namespace Prisma {
     persistenceCompletedAt: number
     failurePhase: number
     failureReason: number
+    resourceCorrelationId: number
+    resourceMeasuredAt: number
+    resourceSummaryJson: number
     logicalArtifactIdentityJson: number
     eventsJson: number
     createdAt: number
@@ -16060,6 +16153,8 @@ export namespace Prisma {
     persistenceCompletedAt?: true
     failurePhase?: true
     failureReason?: true
+    resourceCorrelationId?: true
+    resourceMeasuredAt?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -16107,6 +16202,8 @@ export namespace Prisma {
     persistenceCompletedAt?: true
     failurePhase?: true
     failureReason?: true
+    resourceCorrelationId?: true
+    resourceMeasuredAt?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -16154,6 +16251,9 @@ export namespace Prisma {
     persistenceCompletedAt?: true
     failurePhase?: true
     failureReason?: true
+    resourceCorrelationId?: true
+    resourceMeasuredAt?: true
+    resourceSummaryJson?: true
     logicalArtifactIdentityJson?: true
     eventsJson?: true
     createdAt?: true
@@ -16290,6 +16390,9 @@ export namespace Prisma {
     persistenceCompletedAt: Date | null
     failurePhase: string | null
     failureReason: string | null
+    resourceCorrelationId: string | null
+    resourceMeasuredAt: Date | null
+    resourceSummaryJson: JsonValue | null
     logicalArtifactIdentityJson: JsonValue
     eventsJson: JsonValue
     createdAt: Date
@@ -16358,6 +16461,9 @@ export namespace Prisma {
     persistenceCompletedAt?: boolean
     failurePhase?: boolean
     failureReason?: boolean
+    resourceCorrelationId?: boolean
+    resourceMeasuredAt?: boolean
+    resourceSummaryJson?: boolean
     logicalArtifactIdentityJson?: boolean
     eventsJson?: boolean
     createdAt?: boolean
@@ -16407,6 +16513,9 @@ export namespace Prisma {
     persistenceCompletedAt?: boolean
     failurePhase?: boolean
     failureReason?: boolean
+    resourceCorrelationId?: boolean
+    resourceMeasuredAt?: boolean
+    resourceSummaryJson?: boolean
     logicalArtifactIdentityJson?: boolean
     eventsJson?: boolean
     createdAt?: boolean
@@ -16456,6 +16565,9 @@ export namespace Prisma {
     persistenceCompletedAt?: boolean
     failurePhase?: boolean
     failureReason?: boolean
+    resourceCorrelationId?: boolean
+    resourceMeasuredAt?: boolean
+    resourceSummaryJson?: boolean
     logicalArtifactIdentityJson?: boolean
     eventsJson?: boolean
     createdAt?: boolean
@@ -16512,6 +16624,9 @@ export namespace Prisma {
       persistenceCompletedAt: Date | null
       failurePhase: string | null
       failureReason: string | null
+      resourceCorrelationId: string | null
+      resourceMeasuredAt: Date | null
+      resourceSummaryJson: Prisma.JsonValue | null
       logicalArtifactIdentityJson: Prisma.JsonValue
       eventsJson: Prisma.JsonValue
       createdAt: Date
@@ -16951,6 +17066,9 @@ export namespace Prisma {
     readonly persistenceCompletedAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
     readonly failurePhase: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
     readonly failureReason: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly resourceCorrelationId: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
+    readonly resourceMeasuredAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
+    readonly resourceSummaryJson: FieldRef<"ForecastPreparationExecutionLedger", 'Json'>
     readonly logicalArtifactIdentityJson: FieldRef<"ForecastPreparationExecutionLedger", 'Json'>
     readonly eventsJson: FieldRef<"ForecastPreparationExecutionLedger", 'Json'>
     readonly createdAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
@@ -17240,6 +17358,1133 @@ export namespace Prisma {
      * Select specific fields to fetch from the ForecastPreparationExecutionLedger
      */
     select?: ForecastPreparationExecutionLedgerSelect<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ForecastActionTrace
+   */
+
+  export type AggregateForecastActionTrace = {
+    _count: ForecastActionTraceCountAggregateOutputType | null
+    _avg: ForecastActionTraceAvgAggregateOutputType | null
+    _sum: ForecastActionTraceSumAggregateOutputType | null
+    _min: ForecastActionTraceMinAggregateOutputType | null
+    _max: ForecastActionTraceMaxAggregateOutputType | null
+  }
+
+  export type ForecastActionTraceAvgAggregateOutputType = {
+    responseToVisibleMs: number | null
+    eventCount: number | null
+  }
+
+  export type ForecastActionTraceSumAggregateOutputType = {
+    responseToVisibleMs: number | null
+    eventCount: number | null
+  }
+
+  export type ForecastActionTraceMinAggregateOutputType = {
+    id: string | null
+    correlationId: string | null
+    actionType: string | null
+    seriesId: string | null
+    targetBasis: $Enums.ForecastTargetBasis | null
+    targetSemantics: string | null
+    modelId: string | null
+    jobKey: string | null
+    executionId: string | null
+    actionRequestedAt: Date | null
+    queueAcceptedAt: Date | null
+    artifactReadyAt: Date | null
+    dashboardFirstReadyObservedAt: Date | null
+    uiVisibleClientAt: Date | null
+    uiAckReceivedAt: Date | null
+    uiVisibilityState: string | null
+    pageInstanceId: string | null
+    responseToVisibleMs: number | null
+    eventCount: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ForecastActionTraceMaxAggregateOutputType = {
+    id: string | null
+    correlationId: string | null
+    actionType: string | null
+    seriesId: string | null
+    targetBasis: $Enums.ForecastTargetBasis | null
+    targetSemantics: string | null
+    modelId: string | null
+    jobKey: string | null
+    executionId: string | null
+    actionRequestedAt: Date | null
+    queueAcceptedAt: Date | null
+    artifactReadyAt: Date | null
+    dashboardFirstReadyObservedAt: Date | null
+    uiVisibleClientAt: Date | null
+    uiAckReceivedAt: Date | null
+    uiVisibilityState: string | null
+    pageInstanceId: string | null
+    responseToVisibleMs: number | null
+    eventCount: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ForecastActionTraceCountAggregateOutputType = {
+    id: number
+    correlationId: number
+    actionType: number
+    seriesId: number
+    targetBasis: number
+    targetSemantics: number
+    modelId: number
+    jobKey: number
+    executionId: number
+    actionRequestedAt: number
+    queueAcceptedAt: number
+    artifactReadyAt: number
+    dashboardFirstReadyObservedAt: number
+    uiVisibleClientAt: number
+    uiAckReceivedAt: number
+    uiVisibilityState: number
+    pageInstanceId: number
+    responseToVisibleMs: number
+    eventCount: number
+    eventsJson: number
+    metadataJson: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type ForecastActionTraceAvgAggregateInputType = {
+    responseToVisibleMs?: true
+    eventCount?: true
+  }
+
+  export type ForecastActionTraceSumAggregateInputType = {
+    responseToVisibleMs?: true
+    eventCount?: true
+  }
+
+  export type ForecastActionTraceMinAggregateInputType = {
+    id?: true
+    correlationId?: true
+    actionType?: true
+    seriesId?: true
+    targetBasis?: true
+    targetSemantics?: true
+    modelId?: true
+    jobKey?: true
+    executionId?: true
+    actionRequestedAt?: true
+    queueAcceptedAt?: true
+    artifactReadyAt?: true
+    dashboardFirstReadyObservedAt?: true
+    uiVisibleClientAt?: true
+    uiAckReceivedAt?: true
+    uiVisibilityState?: true
+    pageInstanceId?: true
+    responseToVisibleMs?: true
+    eventCount?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ForecastActionTraceMaxAggregateInputType = {
+    id?: true
+    correlationId?: true
+    actionType?: true
+    seriesId?: true
+    targetBasis?: true
+    targetSemantics?: true
+    modelId?: true
+    jobKey?: true
+    executionId?: true
+    actionRequestedAt?: true
+    queueAcceptedAt?: true
+    artifactReadyAt?: true
+    dashboardFirstReadyObservedAt?: true
+    uiVisibleClientAt?: true
+    uiAckReceivedAt?: true
+    uiVisibilityState?: true
+    pageInstanceId?: true
+    responseToVisibleMs?: true
+    eventCount?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ForecastActionTraceCountAggregateInputType = {
+    id?: true
+    correlationId?: true
+    actionType?: true
+    seriesId?: true
+    targetBasis?: true
+    targetSemantics?: true
+    modelId?: true
+    jobKey?: true
+    executionId?: true
+    actionRequestedAt?: true
+    queueAcceptedAt?: true
+    artifactReadyAt?: true
+    dashboardFirstReadyObservedAt?: true
+    uiVisibleClientAt?: true
+    uiAckReceivedAt?: true
+    uiVisibilityState?: true
+    pageInstanceId?: true
+    responseToVisibleMs?: true
+    eventCount?: true
+    eventsJson?: true
+    metadataJson?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type ForecastActionTraceAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ForecastActionTrace to aggregate.
+     */
+    where?: ForecastActionTraceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of ForecastActionTraces to fetch.
+     */
+    orderBy?: ForecastActionTraceOrderByWithRelationInput | ForecastActionTraceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the start position
+     */
+    cursor?: ForecastActionTraceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` ForecastActionTraces from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` ForecastActionTraces.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Count returned ForecastActionTraces
+    **/
+    _count?: true | ForecastActionTraceCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to average
+    **/
+    _avg?: ForecastActionTraceAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to sum
+    **/
+    _sum?: ForecastActionTraceSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to find the minimum value
+    **/
+    _min?: ForecastActionTraceMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to find the maximum value
+    **/
+    _max?: ForecastActionTraceMaxAggregateInputType
+  }
+
+  export type GetForecastActionTraceAggregateType<T extends ForecastActionTraceAggregateArgs> = {
+        [P in keyof T & keyof AggregateForecastActionTrace]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateForecastActionTrace[P]>
+      : GetScalarType<T[P], AggregateForecastActionTrace[P]>
+  }
+
+
+
+
+  export type ForecastActionTraceGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ForecastActionTraceWhereInput
+    orderBy?: ForecastActionTraceOrderByWithAggregationInput | ForecastActionTraceOrderByWithAggregationInput[]
+    by: ForecastActionTraceScalarFieldEnum[] | ForecastActionTraceScalarFieldEnum
+    having?: ForecastActionTraceScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ForecastActionTraceCountAggregateInputType | true
+    _avg?: ForecastActionTraceAvgAggregateInputType
+    _sum?: ForecastActionTraceSumAggregateInputType
+    _min?: ForecastActionTraceMinAggregateInputType
+    _max?: ForecastActionTraceMaxAggregateInputType
+  }
+
+  export type ForecastActionTraceGroupByOutputType = {
+    id: string
+    correlationId: string
+    actionType: string
+    seriesId: string
+    targetBasis: $Enums.ForecastTargetBasis
+    targetSemantics: string
+    modelId: string
+    jobKey: string | null
+    executionId: string | null
+    actionRequestedAt: Date
+    queueAcceptedAt: Date | null
+    artifactReadyAt: Date | null
+    dashboardFirstReadyObservedAt: Date | null
+    uiVisibleClientAt: Date | null
+    uiAckReceivedAt: Date | null
+    uiVisibilityState: string
+    pageInstanceId: string | null
+    responseToVisibleMs: number | null
+    eventCount: number
+    eventsJson: JsonValue
+    metadataJson: JsonValue | null
+    createdAt: Date
+    updatedAt: Date
+    _count: ForecastActionTraceCountAggregateOutputType | null
+    _avg: ForecastActionTraceAvgAggregateOutputType | null
+    _sum: ForecastActionTraceSumAggregateOutputType | null
+    _min: ForecastActionTraceMinAggregateOutputType | null
+    _max: ForecastActionTraceMaxAggregateOutputType | null
+  }
+
+  type GetForecastActionTraceGroupByPayload<T extends ForecastActionTraceGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ForecastActionTraceGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ForecastActionTraceGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ForecastActionTraceGroupByOutputType[P]>
+            : GetScalarType<T[P], ForecastActionTraceGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ForecastActionTraceSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    correlationId?: boolean
+    actionType?: boolean
+    seriesId?: boolean
+    targetBasis?: boolean
+    targetSemantics?: boolean
+    modelId?: boolean
+    jobKey?: boolean
+    executionId?: boolean
+    actionRequestedAt?: boolean
+    queueAcceptedAt?: boolean
+    artifactReadyAt?: boolean
+    dashboardFirstReadyObservedAt?: boolean
+    uiVisibleClientAt?: boolean
+    uiAckReceivedAt?: boolean
+    uiVisibilityState?: boolean
+    pageInstanceId?: boolean
+    responseToVisibleMs?: boolean
+    eventCount?: boolean
+    eventsJson?: boolean
+    metadataJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["forecastActionTrace"]>
+
+  export type ForecastActionTraceSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    correlationId?: boolean
+    actionType?: boolean
+    seriesId?: boolean
+    targetBasis?: boolean
+    targetSemantics?: boolean
+    modelId?: boolean
+    jobKey?: boolean
+    executionId?: boolean
+    actionRequestedAt?: boolean
+    queueAcceptedAt?: boolean
+    artifactReadyAt?: boolean
+    dashboardFirstReadyObservedAt?: boolean
+    uiVisibleClientAt?: boolean
+    uiAckReceivedAt?: boolean
+    uiVisibilityState?: boolean
+    pageInstanceId?: boolean
+    responseToVisibleMs?: boolean
+    eventCount?: boolean
+    eventsJson?: boolean
+    metadataJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["forecastActionTrace"]>
+
+  export type ForecastActionTraceSelectScalar = {
+    id?: boolean
+    correlationId?: boolean
+    actionType?: boolean
+    seriesId?: boolean
+    targetBasis?: boolean
+    targetSemantics?: boolean
+    modelId?: boolean
+    jobKey?: boolean
+    executionId?: boolean
+    actionRequestedAt?: boolean
+    queueAcceptedAt?: boolean
+    artifactReadyAt?: boolean
+    dashboardFirstReadyObservedAt?: boolean
+    uiVisibleClientAt?: boolean
+    uiAckReceivedAt?: boolean
+    uiVisibilityState?: boolean
+    pageInstanceId?: boolean
+    responseToVisibleMs?: boolean
+    eventCount?: boolean
+    eventsJson?: boolean
+    metadataJson?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+
+  export type $ForecastActionTracePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ForecastActionTrace"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      /**
+       * Action-level observability for one user-triggered Forecast preparation flow.
+       */
+      id: string
+      correlationId: string
+      actionType: string
+      seriesId: string
+      targetBasis: $Enums.ForecastTargetBasis
+      targetSemantics: string
+      modelId: string
+      jobKey: string | null
+      executionId: string | null
+      actionRequestedAt: Date
+      queueAcceptedAt: Date | null
+      artifactReadyAt: Date | null
+      dashboardFirstReadyObservedAt: Date | null
+      uiVisibleClientAt: Date | null
+      uiAckReceivedAt: Date | null
+      uiVisibilityState: string
+      pageInstanceId: string | null
+      responseToVisibleMs: number | null
+      eventCount: number
+      eventsJson: Prisma.JsonValue
+      metadataJson: Prisma.JsonValue | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["forecastActionTrace"]>
+    composites: {}
+  }
+
+  type ForecastActionTraceGetPayload<S extends boolean | null | undefined | ForecastActionTraceDefaultArgs> = $Result.GetResult<Prisma.$ForecastActionTracePayload, S>
+
+  type ForecastActionTraceCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<ForecastActionTraceFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: ForecastActionTraceCountAggregateInputType | true
+    }
+
+  export interface ForecastActionTraceDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ForecastActionTrace'], meta: { name: 'ForecastActionTrace' } }
+    /**
+     * Find zero or one ForecastActionTrace that matches the filter.
+     * @param {ForecastActionTraceFindUniqueArgs} args - Arguments to find a ForecastActionTrace
+     * @example
+     * // Get one ForecastActionTrace
+     * const forecastActionTrace = await prisma.forecastActionTrace.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ForecastActionTraceFindUniqueArgs>(args: SelectSubset<T, ForecastActionTraceFindUniqueArgs<ExtArgs>>): Prisma__ForecastActionTraceClient<$Result.GetResult<Prisma.$ForecastActionTracePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ForecastActionTrace that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {ForecastActionTraceFindUniqueOrThrowArgs} args - Arguments to find a ForecastActionTrace
+     * @example
+     * // Get one ForecastActionTrace
+     * const forecastActionTrace = await prisma.forecastActionTrace.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ForecastActionTraceFindUniqueOrThrowArgs>(args: SelectSubset<T, ForecastActionTraceFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ForecastActionTraceClient<$Result.GetResult<Prisma.$ForecastActionTracePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ForecastActionTrace that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastActionTraceFindFirstArgs} args - Arguments to find a ForecastActionTrace
+     * @example
+     * // Get one ForecastActionTrace
+     * const forecastActionTrace = await prisma.forecastActionTrace.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ForecastActionTraceFindFirstArgs>(args?: SelectSubset<T, ForecastActionTraceFindFirstArgs<ExtArgs>>): Prisma__ForecastActionTraceClient<$Result.GetResult<Prisma.$ForecastActionTracePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ForecastActionTrace that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastActionTraceFindFirstOrThrowArgs} args - Arguments to find a ForecastActionTrace
+     * @example
+     * // Get one ForecastActionTrace
+     * const forecastActionTrace = await prisma.forecastActionTrace.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ForecastActionTraceFindFirstOrThrowArgs>(args?: SelectSubset<T, ForecastActionTraceFindFirstOrThrowArgs<ExtArgs>>): Prisma__ForecastActionTraceClient<$Result.GetResult<Prisma.$ForecastActionTracePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ForecastActionTraces that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastActionTraceFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ForecastActionTraces
+     * const forecastActionTraces = await prisma.forecastActionTrace.findMany()
+     *
+     * // Get first 10 ForecastActionTraces
+     * const forecastActionTraces = await prisma.forecastActionTrace.findMany({ take: 10 })
+     *
+     * // Only select the `id`
+     * const forecastActionTraceWithIdOnly = await prisma.forecastActionTrace.findMany({ select: { id: true } })
+     *
+     */
+    findMany<T extends ForecastActionTraceFindManyArgs>(args?: SelectSubset<T, ForecastActionTraceFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastActionTracePayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ForecastActionTrace.
+     * @param {ForecastActionTraceCreateArgs} args - Arguments to create a ForecastActionTrace.
+     * @example
+     * // Create one ForecastActionTrace
+     * const ForecastActionTrace = await prisma.forecastActionTrace.create({
+     *   data: {
+     *     // ... data to create a ForecastActionTrace
+     *   }
+     * })
+     *
+     */
+    create<T extends ForecastActionTraceCreateArgs>(args: SelectSubset<T, ForecastActionTraceCreateArgs<ExtArgs>>): Prisma__ForecastActionTraceClient<$Result.GetResult<Prisma.$ForecastActionTracePayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ForecastActionTraces.
+     * @param {ForecastActionTraceCreateManyArgs} args - Arguments to create many ForecastActionTraces.
+     * @example
+     * // Create many ForecastActionTraces
+     * const forecastActionTrace = await prisma.forecastActionTrace.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *
+     */
+    createMany<T extends ForecastActionTraceCreateManyArgs>(args?: SelectSubset<T, ForecastActionTraceCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ForecastActionTraces and returns the data saved in the database.
+     * @param {ForecastActionTraceCreateManyAndReturnArgs} args - Arguments to create many ForecastActionTraces.
+     * @example
+     * // Create many ForecastActionTraces
+     * const forecastActionTrace = await prisma.forecastActionTrace.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *
+     * // Create many ForecastActionTraces and only return the `id`
+     * const forecastActionTraceWithIdOnly = await prisma.forecastActionTrace.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     *
+     */
+    createManyAndReturn<T extends ForecastActionTraceCreateManyAndReturnArgs>(args?: SelectSubset<T, ForecastActionTraceCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastActionTracePayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a ForecastActionTrace.
+     * @param {ForecastActionTraceDeleteArgs} args - Arguments to delete one ForecastActionTrace.
+     * @example
+     * // Delete one ForecastActionTrace
+     * const ForecastActionTrace = await prisma.forecastActionTrace.delete({
+     *   where: {
+     *     // ... filter to delete one ForecastActionTrace
+     *   }
+     * })
+     *
+     */
+    delete<T extends ForecastActionTraceDeleteArgs>(args: SelectSubset<T, ForecastActionTraceDeleteArgs<ExtArgs>>): Prisma__ForecastActionTraceClient<$Result.GetResult<Prisma.$ForecastActionTracePayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ForecastActionTrace.
+     * @param {ForecastActionTraceUpdateArgs} args - Arguments to update one ForecastActionTrace.
+     * @example
+     * // Update one ForecastActionTrace
+     * const forecastActionTrace = await prisma.forecastActionTrace.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     *
+     */
+    update<T extends ForecastActionTraceUpdateArgs>(args: SelectSubset<T, ForecastActionTraceUpdateArgs<ExtArgs>>): Prisma__ForecastActionTraceClient<$Result.GetResult<Prisma.$ForecastActionTracePayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ForecastActionTraces.
+     * @param {ForecastActionTraceDeleteManyArgs} args - Arguments to filter ForecastActionTraces to delete.
+     * @example
+     * // Delete a few ForecastActionTraces
+     * const { count } = await prisma.forecastActionTrace.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     *
+     */
+    deleteMany<T extends ForecastActionTraceDeleteManyArgs>(args?: SelectSubset<T, ForecastActionTraceDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ForecastActionTraces.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastActionTraceUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ForecastActionTraces
+     * const forecastActionTrace = await prisma.forecastActionTrace.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     *
+     */
+    updateMany<T extends ForecastActionTraceUpdateManyArgs>(args: SelectSubset<T, ForecastActionTraceUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ForecastActionTrace.
+     * @param {ForecastActionTraceUpsertArgs} args - Arguments to update or create a ForecastActionTrace.
+     * @example
+     * // Update or create a ForecastActionTrace
+     * const forecastActionTrace = await prisma.forecastActionTrace.upsert({
+     *   create: {
+     *     // ... data to create a ForecastActionTrace
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ForecastActionTrace we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ForecastActionTraceUpsertArgs>(args: SelectSubset<T, ForecastActionTraceUpsertArgs<ExtArgs>>): Prisma__ForecastActionTraceClient<$Result.GetResult<Prisma.$ForecastActionTracePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ForecastActionTraces.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastActionTraceCountArgs} args - Arguments to filter ForecastActionTraces to count.
+     * @example
+     * // Count the number of ForecastActionTraces
+     * const count = await prisma.forecastActionTrace.count({
+     *   where: {
+     *     // ... the filter for the ForecastActionTraces we want to count
+     *   }
+     * })
+    **/
+    count<T extends ForecastActionTraceCountArgs>(
+      args?: Subset<T, ForecastActionTraceCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ForecastActionTraceCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ForecastActionTrace.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastActionTraceAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ForecastActionTraceAggregateArgs>(args: Subset<T, ForecastActionTraceAggregateArgs>): Prisma.PrismaPromise<GetForecastActionTraceAggregateType<T>>
+
+    /**
+     * Group by ForecastActionTrace.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastActionTraceGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     *
+    **/
+    groupBy<
+      T extends ForecastActionTraceGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ForecastActionTraceGroupByArgs['orderBy'] }
+        : { orderBy?: ForecastActionTraceGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ForecastActionTraceGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetForecastActionTraceGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ForecastActionTrace model
+   */
+  readonly fields: ForecastActionTraceFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ForecastActionTrace.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ForecastActionTraceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ForecastActionTrace model
+   */
+  interface ForecastActionTraceFieldRefs {
+    readonly id: FieldRef<"ForecastActionTrace", 'String'>
+    readonly correlationId: FieldRef<"ForecastActionTrace", 'String'>
+    readonly actionType: FieldRef<"ForecastActionTrace", 'String'>
+    readonly seriesId: FieldRef<"ForecastActionTrace", 'String'>
+    readonly targetBasis: FieldRef<"ForecastActionTrace", 'ForecastTargetBasis'>
+    readonly targetSemantics: FieldRef<"ForecastActionTrace", 'String'>
+    readonly modelId: FieldRef<"ForecastActionTrace", 'String'>
+    readonly jobKey: FieldRef<"ForecastActionTrace", 'String'>
+    readonly executionId: FieldRef<"ForecastActionTrace", 'String'>
+    readonly actionRequestedAt: FieldRef<"ForecastActionTrace", 'DateTime'>
+    readonly queueAcceptedAt: FieldRef<"ForecastActionTrace", 'DateTime'>
+    readonly artifactReadyAt: FieldRef<"ForecastActionTrace", 'DateTime'>
+    readonly dashboardFirstReadyObservedAt: FieldRef<"ForecastActionTrace", 'DateTime'>
+    readonly uiVisibleClientAt: FieldRef<"ForecastActionTrace", 'DateTime'>
+    readonly uiAckReceivedAt: FieldRef<"ForecastActionTrace", 'DateTime'>
+    readonly uiVisibilityState: FieldRef<"ForecastActionTrace", 'String'>
+    readonly pageInstanceId: FieldRef<"ForecastActionTrace", 'String'>
+    readonly responseToVisibleMs: FieldRef<"ForecastActionTrace", 'Float'>
+    readonly eventCount: FieldRef<"ForecastActionTrace", 'Int'>
+    readonly eventsJson: FieldRef<"ForecastActionTrace", 'Json'>
+    readonly metadataJson: FieldRef<"ForecastActionTrace", 'Json'>
+    readonly createdAt: FieldRef<"ForecastActionTrace", 'DateTime'>
+    readonly updatedAt: FieldRef<"ForecastActionTrace", 'DateTime'>
+  }
+
+
+  // Custom InputTypes
+  /**
+   * ForecastActionTrace findUnique
+   */
+  export type ForecastActionTraceFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastActionTrace
+     */
+    select?: ForecastActionTraceSelect<ExtArgs> | null
+    /**
+     * Filter, which ForecastActionTrace to fetch.
+     */
+    where: ForecastActionTraceWhereUniqueInput
+  }
+
+  /**
+   * ForecastActionTrace findUniqueOrThrow
+   */
+  export type ForecastActionTraceFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastActionTrace
+     */
+    select?: ForecastActionTraceSelect<ExtArgs> | null
+    /**
+     * Filter, which ForecastActionTrace to fetch.
+     */
+    where: ForecastActionTraceWhereUniqueInput
+  }
+
+  /**
+   * ForecastActionTrace findFirst
+   */
+  export type ForecastActionTraceFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastActionTrace
+     */
+    select?: ForecastActionTraceSelect<ExtArgs> | null
+    /**
+     * Filter, which ForecastActionTrace to fetch.
+     */
+    where?: ForecastActionTraceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of ForecastActionTraces to fetch.
+     */
+    orderBy?: ForecastActionTraceOrderByWithRelationInput | ForecastActionTraceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the position for searching for ForecastActionTraces.
+     */
+    cursor?: ForecastActionTraceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` ForecastActionTraces from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` ForecastActionTraces.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     *
+     * Filter by unique combinations of ForecastActionTraces.
+     */
+    distinct?: ForecastActionTraceScalarFieldEnum | ForecastActionTraceScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastActionTrace findFirstOrThrow
+   */
+  export type ForecastActionTraceFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastActionTrace
+     */
+    select?: ForecastActionTraceSelect<ExtArgs> | null
+    /**
+     * Filter, which ForecastActionTrace to fetch.
+     */
+    where?: ForecastActionTraceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of ForecastActionTraces to fetch.
+     */
+    orderBy?: ForecastActionTraceOrderByWithRelationInput | ForecastActionTraceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the position for searching for ForecastActionTraces.
+     */
+    cursor?: ForecastActionTraceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` ForecastActionTraces from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` ForecastActionTraces.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     *
+     * Filter by unique combinations of ForecastActionTraces.
+     */
+    distinct?: ForecastActionTraceScalarFieldEnum | ForecastActionTraceScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastActionTrace findMany
+   */
+  export type ForecastActionTraceFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastActionTrace
+     */
+    select?: ForecastActionTraceSelect<ExtArgs> | null
+    /**
+     * Filter, which ForecastActionTraces to fetch.
+     */
+    where?: ForecastActionTraceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of ForecastActionTraces to fetch.
+     */
+    orderBy?: ForecastActionTraceOrderByWithRelationInput | ForecastActionTraceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the position for listing ForecastActionTraces.
+     */
+    cursor?: ForecastActionTraceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` ForecastActionTraces from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` ForecastActionTraces.
+     */
+    skip?: number
+    distinct?: ForecastActionTraceScalarFieldEnum | ForecastActionTraceScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastActionTrace create
+   */
+  export type ForecastActionTraceCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastActionTrace
+     */
+    select?: ForecastActionTraceSelect<ExtArgs> | null
+    /**
+     * The data needed to create a ForecastActionTrace.
+     */
+    data: XOR<ForecastActionTraceCreateInput, ForecastActionTraceUncheckedCreateInput>
+  }
+
+  /**
+   * ForecastActionTrace createMany
+   */
+  export type ForecastActionTraceCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ForecastActionTraces.
+     */
+    data: ForecastActionTraceCreateManyInput | ForecastActionTraceCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ForecastActionTrace createManyAndReturn
+   */
+  export type ForecastActionTraceCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastActionTrace
+     */
+    select?: ForecastActionTraceSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many ForecastActionTraces.
+     */
+    data: ForecastActionTraceCreateManyInput | ForecastActionTraceCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ForecastActionTrace update
+   */
+  export type ForecastActionTraceUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastActionTrace
+     */
+    select?: ForecastActionTraceSelect<ExtArgs> | null
+    /**
+     * The data needed to update a ForecastActionTrace.
+     */
+    data: XOR<ForecastActionTraceUpdateInput, ForecastActionTraceUncheckedUpdateInput>
+    /**
+     * Choose, which ForecastActionTrace to update.
+     */
+    where: ForecastActionTraceWhereUniqueInput
+  }
+
+  /**
+   * ForecastActionTrace updateMany
+   */
+  export type ForecastActionTraceUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ForecastActionTraces.
+     */
+    data: XOR<ForecastActionTraceUpdateManyMutationInput, ForecastActionTraceUncheckedUpdateManyInput>
+    /**
+     * Filter which ForecastActionTraces to update
+     */
+    where?: ForecastActionTraceWhereInput
+  }
+
+  /**
+   * ForecastActionTrace upsert
+   */
+  export type ForecastActionTraceUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastActionTrace
+     */
+    select?: ForecastActionTraceSelect<ExtArgs> | null
+    /**
+     * The filter to search for the ForecastActionTrace to update in case it exists.
+     */
+    where: ForecastActionTraceWhereUniqueInput
+    /**
+     * In case the ForecastActionTrace found by the `where` argument doesn't exist, create a new ForecastActionTrace with this data.
+     */
+    create: XOR<ForecastActionTraceCreateInput, ForecastActionTraceUncheckedCreateInput>
+    /**
+     * In case the ForecastActionTrace was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ForecastActionTraceUpdateInput, ForecastActionTraceUncheckedUpdateInput>
+  }
+
+  /**
+   * ForecastActionTrace delete
+   */
+  export type ForecastActionTraceDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastActionTrace
+     */
+    select?: ForecastActionTraceSelect<ExtArgs> | null
+    /**
+     * Filter which ForecastActionTrace to delete.
+     */
+    where: ForecastActionTraceWhereUniqueInput
+  }
+
+  /**
+   * ForecastActionTrace deleteMany
+   */
+  export type ForecastActionTraceDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ForecastActionTraces to delete
+     */
+    where?: ForecastActionTraceWhereInput
+  }
+
+  /**
+   * ForecastActionTrace without action
+   */
+  export type ForecastActionTraceDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastActionTrace
+     */
+    select?: ForecastActionTraceSelect<ExtArgs> | null
   }
 
 
@@ -20902,6 +22147,9 @@ export namespace Prisma {
     persistenceCompletedAt: 'persistenceCompletedAt',
     failurePhase: 'failurePhase',
     failureReason: 'failureReason',
+    resourceCorrelationId: 'resourceCorrelationId',
+    resourceMeasuredAt: 'resourceMeasuredAt',
+    resourceSummaryJson: 'resourceSummaryJson',
     logicalArtifactIdentityJson: 'logicalArtifactIdentityJson',
     eventsJson: 'eventsJson',
     createdAt: 'createdAt',
@@ -20909,6 +22157,35 @@ export namespace Prisma {
   };
 
   export type ForecastPreparationExecutionLedgerScalarFieldEnum = (typeof ForecastPreparationExecutionLedgerScalarFieldEnum)[keyof typeof ForecastPreparationExecutionLedgerScalarFieldEnum]
+
+
+  export const ForecastActionTraceScalarFieldEnum: {
+    id: 'id',
+    correlationId: 'correlationId',
+    actionType: 'actionType',
+    seriesId: 'seriesId',
+    targetBasis: 'targetBasis',
+    targetSemantics: 'targetSemantics',
+    modelId: 'modelId',
+    jobKey: 'jobKey',
+    executionId: 'executionId',
+    actionRequestedAt: 'actionRequestedAt',
+    queueAcceptedAt: 'queueAcceptedAt',
+    artifactReadyAt: 'artifactReadyAt',
+    dashboardFirstReadyObservedAt: 'dashboardFirstReadyObservedAt',
+    uiVisibleClientAt: 'uiVisibleClientAt',
+    uiAckReceivedAt: 'uiAckReceivedAt',
+    uiVisibilityState: 'uiVisibilityState',
+    pageInstanceId: 'pageInstanceId',
+    responseToVisibleMs: 'responseToVisibleMs',
+    eventCount: 'eventCount',
+    eventsJson: 'eventsJson',
+    metadataJson: 'metadataJson',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type ForecastActionTraceScalarFieldEnum = (typeof ForecastActionTraceScalarFieldEnum)[keyof typeof ForecastActionTraceScalarFieldEnum]
 
 
   export const ForecastPreparationJobScalarFieldEnum: {
@@ -22740,6 +24017,9 @@ export namespace Prisma {
     persistenceCompletedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
     failurePhase?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
     failureReason?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
+    resourceCorrelationId?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
+    resourceMeasuredAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    resourceSummaryJson?: JsonNullableFilter<"ForecastPreparationExecutionLedger">
     logicalArtifactIdentityJson?: JsonFilter<"ForecastPreparationExecutionLedger">
     eventsJson?: JsonFilter<"ForecastPreparationExecutionLedger">
     createdAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
@@ -22789,6 +24069,9 @@ export namespace Prisma {
     persistenceCompletedAt?: SortOrderInput | SortOrder
     failurePhase?: SortOrderInput | SortOrder
     failureReason?: SortOrderInput | SortOrder
+    resourceCorrelationId?: SortOrderInput | SortOrder
+    resourceMeasuredAt?: SortOrderInput | SortOrder
+    resourceSummaryJson?: SortOrderInput | SortOrder
     logicalArtifactIdentityJson?: SortOrder
     eventsJson?: SortOrder
     createdAt?: SortOrder
@@ -22841,6 +24124,9 @@ export namespace Prisma {
     persistenceCompletedAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
     failurePhase?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
     failureReason?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
+    resourceCorrelationId?: StringNullableFilter<"ForecastPreparationExecutionLedger"> | string | null
+    resourceMeasuredAt?: DateTimeNullableFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    resourceSummaryJson?: JsonNullableFilter<"ForecastPreparationExecutionLedger">
     logicalArtifactIdentityJson?: JsonFilter<"ForecastPreparationExecutionLedger">
     eventsJson?: JsonFilter<"ForecastPreparationExecutionLedger">
     createdAt?: DateTimeFilter<"ForecastPreparationExecutionLedger"> | Date | string
@@ -22890,6 +24176,9 @@ export namespace Prisma {
     persistenceCompletedAt?: SortOrderInput | SortOrder
     failurePhase?: SortOrderInput | SortOrder
     failureReason?: SortOrderInput | SortOrder
+    resourceCorrelationId?: SortOrderInput | SortOrder
+    resourceMeasuredAt?: SortOrderInput | SortOrder
+    resourceSummaryJson?: SortOrderInput | SortOrder
     logicalArtifactIdentityJson?: SortOrder
     eventsJson?: SortOrder
     createdAt?: SortOrder
@@ -22947,10 +24236,157 @@ export namespace Prisma {
     persistenceCompletedAt?: DateTimeNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
     failurePhase?: StringNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string | null
     failureReason?: StringNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string | null
+    resourceCorrelationId?: StringNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | string | null
+    resourceMeasuredAt?: DateTimeNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string | null
+    resourceSummaryJson?: JsonNullableWithAggregatesFilter<"ForecastPreparationExecutionLedger">
     logicalArtifactIdentityJson?: JsonWithAggregatesFilter<"ForecastPreparationExecutionLedger">
     eventsJson?: JsonWithAggregatesFilter<"ForecastPreparationExecutionLedger">
     createdAt?: DateTimeWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string
+  }
+
+  export type ForecastActionTraceWhereInput = {
+    AND?: ForecastActionTraceWhereInput | ForecastActionTraceWhereInput[]
+    OR?: ForecastActionTraceWhereInput[]
+    NOT?: ForecastActionTraceWhereInput | ForecastActionTraceWhereInput[]
+    id?: StringFilter<"ForecastActionTrace"> | string
+    correlationId?: StringFilter<"ForecastActionTrace"> | string
+    actionType?: StringFilter<"ForecastActionTrace"> | string
+    seriesId?: StringFilter<"ForecastActionTrace"> | string
+    targetBasis?: EnumForecastTargetBasisFilter<"ForecastActionTrace"> | $Enums.ForecastTargetBasis
+    targetSemantics?: StringFilter<"ForecastActionTrace"> | string
+    modelId?: StringFilter<"ForecastActionTrace"> | string
+    jobKey?: StringNullableFilter<"ForecastActionTrace"> | string | null
+    executionId?: StringNullableFilter<"ForecastActionTrace"> | string | null
+    actionRequestedAt?: DateTimeFilter<"ForecastActionTrace"> | Date | string
+    queueAcceptedAt?: DateTimeNullableFilter<"ForecastActionTrace"> | Date | string | null
+    artifactReadyAt?: DateTimeNullableFilter<"ForecastActionTrace"> | Date | string | null
+    dashboardFirstReadyObservedAt?: DateTimeNullableFilter<"ForecastActionTrace"> | Date | string | null
+    uiVisibleClientAt?: DateTimeNullableFilter<"ForecastActionTrace"> | Date | string | null
+    uiAckReceivedAt?: DateTimeNullableFilter<"ForecastActionTrace"> | Date | string | null
+    uiVisibilityState?: StringFilter<"ForecastActionTrace"> | string
+    pageInstanceId?: StringNullableFilter<"ForecastActionTrace"> | string | null
+    responseToVisibleMs?: FloatNullableFilter<"ForecastActionTrace"> | number | null
+    eventCount?: IntFilter<"ForecastActionTrace"> | number
+    eventsJson?: JsonFilter<"ForecastActionTrace">
+    metadataJson?: JsonNullableFilter<"ForecastActionTrace">
+    createdAt?: DateTimeFilter<"ForecastActionTrace"> | Date | string
+    updatedAt?: DateTimeFilter<"ForecastActionTrace"> | Date | string
+  }
+
+  export type ForecastActionTraceOrderByWithRelationInput = {
+    id?: SortOrder
+    correlationId?: SortOrder
+    actionType?: SortOrder
+    seriesId?: SortOrder
+    targetBasis?: SortOrder
+    targetSemantics?: SortOrder
+    modelId?: SortOrder
+    jobKey?: SortOrderInput | SortOrder
+    executionId?: SortOrderInput | SortOrder
+    actionRequestedAt?: SortOrder
+    queueAcceptedAt?: SortOrderInput | SortOrder
+    artifactReadyAt?: SortOrderInput | SortOrder
+    dashboardFirstReadyObservedAt?: SortOrderInput | SortOrder
+    uiVisibleClientAt?: SortOrderInput | SortOrder
+    uiAckReceivedAt?: SortOrderInput | SortOrder
+    uiVisibilityState?: SortOrder
+    pageInstanceId?: SortOrderInput | SortOrder
+    responseToVisibleMs?: SortOrderInput | SortOrder
+    eventCount?: SortOrder
+    eventsJson?: SortOrder
+    metadataJson?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastActionTraceWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    correlationId?: string
+    AND?: ForecastActionTraceWhereInput | ForecastActionTraceWhereInput[]
+    OR?: ForecastActionTraceWhereInput[]
+    NOT?: ForecastActionTraceWhereInput | ForecastActionTraceWhereInput[]
+    actionType?: StringFilter<"ForecastActionTrace"> | string
+    seriesId?: StringFilter<"ForecastActionTrace"> | string
+    targetBasis?: EnumForecastTargetBasisFilter<"ForecastActionTrace"> | $Enums.ForecastTargetBasis
+    targetSemantics?: StringFilter<"ForecastActionTrace"> | string
+    modelId?: StringFilter<"ForecastActionTrace"> | string
+    jobKey?: StringNullableFilter<"ForecastActionTrace"> | string | null
+    executionId?: StringNullableFilter<"ForecastActionTrace"> | string | null
+    actionRequestedAt?: DateTimeFilter<"ForecastActionTrace"> | Date | string
+    queueAcceptedAt?: DateTimeNullableFilter<"ForecastActionTrace"> | Date | string | null
+    artifactReadyAt?: DateTimeNullableFilter<"ForecastActionTrace"> | Date | string | null
+    dashboardFirstReadyObservedAt?: DateTimeNullableFilter<"ForecastActionTrace"> | Date | string | null
+    uiVisibleClientAt?: DateTimeNullableFilter<"ForecastActionTrace"> | Date | string | null
+    uiAckReceivedAt?: DateTimeNullableFilter<"ForecastActionTrace"> | Date | string | null
+    uiVisibilityState?: StringFilter<"ForecastActionTrace"> | string
+    pageInstanceId?: StringNullableFilter<"ForecastActionTrace"> | string | null
+    responseToVisibleMs?: FloatNullableFilter<"ForecastActionTrace"> | number | null
+    eventCount?: IntFilter<"ForecastActionTrace"> | number
+    eventsJson?: JsonFilter<"ForecastActionTrace">
+    metadataJson?: JsonNullableFilter<"ForecastActionTrace">
+    createdAt?: DateTimeFilter<"ForecastActionTrace"> | Date | string
+    updatedAt?: DateTimeFilter<"ForecastActionTrace"> | Date | string
+  }, "id" | "correlationId">
+
+  export type ForecastActionTraceOrderByWithAggregationInput = {
+    id?: SortOrder
+    correlationId?: SortOrder
+    actionType?: SortOrder
+    seriesId?: SortOrder
+    targetBasis?: SortOrder
+    targetSemantics?: SortOrder
+    modelId?: SortOrder
+    jobKey?: SortOrderInput | SortOrder
+    executionId?: SortOrderInput | SortOrder
+    actionRequestedAt?: SortOrder
+    queueAcceptedAt?: SortOrderInput | SortOrder
+    artifactReadyAt?: SortOrderInput | SortOrder
+    dashboardFirstReadyObservedAt?: SortOrderInput | SortOrder
+    uiVisibleClientAt?: SortOrderInput | SortOrder
+    uiAckReceivedAt?: SortOrderInput | SortOrder
+    uiVisibilityState?: SortOrder
+    pageInstanceId?: SortOrderInput | SortOrder
+    responseToVisibleMs?: SortOrderInput | SortOrder
+    eventCount?: SortOrder
+    eventsJson?: SortOrder
+    metadataJson?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: ForecastActionTraceCountOrderByAggregateInput
+    _avg?: ForecastActionTraceAvgOrderByAggregateInput
+    _max?: ForecastActionTraceMaxOrderByAggregateInput
+    _min?: ForecastActionTraceMinOrderByAggregateInput
+    _sum?: ForecastActionTraceSumOrderByAggregateInput
+  }
+
+  export type ForecastActionTraceScalarWhereWithAggregatesInput = {
+    AND?: ForecastActionTraceScalarWhereWithAggregatesInput | ForecastActionTraceScalarWhereWithAggregatesInput[]
+    OR?: ForecastActionTraceScalarWhereWithAggregatesInput[]
+    NOT?: ForecastActionTraceScalarWhereWithAggregatesInput | ForecastActionTraceScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ForecastActionTrace"> | string
+    correlationId?: StringWithAggregatesFilter<"ForecastActionTrace"> | string
+    actionType?: StringWithAggregatesFilter<"ForecastActionTrace"> | string
+    seriesId?: StringWithAggregatesFilter<"ForecastActionTrace"> | string
+    targetBasis?: EnumForecastTargetBasisWithAggregatesFilter<"ForecastActionTrace"> | $Enums.ForecastTargetBasis
+    targetSemantics?: StringWithAggregatesFilter<"ForecastActionTrace"> | string
+    modelId?: StringWithAggregatesFilter<"ForecastActionTrace"> | string
+    jobKey?: StringNullableWithAggregatesFilter<"ForecastActionTrace"> | string | null
+    executionId?: StringNullableWithAggregatesFilter<"ForecastActionTrace"> | string | null
+    actionRequestedAt?: DateTimeWithAggregatesFilter<"ForecastActionTrace"> | Date | string
+    queueAcceptedAt?: DateTimeNullableWithAggregatesFilter<"ForecastActionTrace"> | Date | string | null
+    artifactReadyAt?: DateTimeNullableWithAggregatesFilter<"ForecastActionTrace"> | Date | string | null
+    dashboardFirstReadyObservedAt?: DateTimeNullableWithAggregatesFilter<"ForecastActionTrace"> | Date | string | null
+    uiVisibleClientAt?: DateTimeNullableWithAggregatesFilter<"ForecastActionTrace"> | Date | string | null
+    uiAckReceivedAt?: DateTimeNullableWithAggregatesFilter<"ForecastActionTrace"> | Date | string | null
+    uiVisibilityState?: StringWithAggregatesFilter<"ForecastActionTrace"> | string
+    pageInstanceId?: StringNullableWithAggregatesFilter<"ForecastActionTrace"> | string | null
+    responseToVisibleMs?: FloatNullableWithAggregatesFilter<"ForecastActionTrace"> | number | null
+    eventCount?: IntWithAggregatesFilter<"ForecastActionTrace"> | number
+    eventsJson?: JsonWithAggregatesFilter<"ForecastActionTrace">
+    metadataJson?: JsonNullableWithAggregatesFilter<"ForecastActionTrace">
+    createdAt?: DateTimeWithAggregatesFilter<"ForecastActionTrace"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"ForecastActionTrace"> | Date | string
   }
 
   export type ForecastPreparationJobWhereInput = {
@@ -25254,6 +26690,9 @@ export namespace Prisma {
     persistenceCompletedAt?: Date | string | null
     failurePhase?: string | null
     failureReason?: string | null
+    resourceCorrelationId?: string | null
+    resourceMeasuredAt?: Date | string | null
+    resourceSummaryJson?: NullableJsonNullValueInput | InputJsonValue
     logicalArtifactIdentityJson: JsonNullValueInput | InputJsonValue
     eventsJson: JsonNullValueInput | InputJsonValue
     createdAt?: Date | string
@@ -25303,6 +26742,9 @@ export namespace Prisma {
     persistenceCompletedAt?: Date | string | null
     failurePhase?: string | null
     failureReason?: string | null
+    resourceCorrelationId?: string | null
+    resourceMeasuredAt?: Date | string | null
+    resourceSummaryJson?: NullableJsonNullValueInput | InputJsonValue
     logicalArtifactIdentityJson: JsonNullValueInput | InputJsonValue
     eventsJson: JsonNullValueInput | InputJsonValue
     createdAt?: Date | string
@@ -25352,6 +26794,9 @@ export namespace Prisma {
     persistenceCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     failurePhase?: NullableStringFieldUpdateOperationsInput | string | null
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    resourceCorrelationId?: NullableStringFieldUpdateOperationsInput | string | null
+    resourceMeasuredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    resourceSummaryJson?: NullableJsonNullValueInput | InputJsonValue
     logicalArtifactIdentityJson?: JsonNullValueInput | InputJsonValue
     eventsJson?: JsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25401,6 +26846,9 @@ export namespace Prisma {
     persistenceCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     failurePhase?: NullableStringFieldUpdateOperationsInput | string | null
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    resourceCorrelationId?: NullableStringFieldUpdateOperationsInput | string | null
+    resourceMeasuredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    resourceSummaryJson?: NullableJsonNullValueInput | InputJsonValue
     logicalArtifactIdentityJson?: JsonNullValueInput | InputJsonValue
     eventsJson?: JsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25450,6 +26898,9 @@ export namespace Prisma {
     persistenceCompletedAt?: Date | string | null
     failurePhase?: string | null
     failureReason?: string | null
+    resourceCorrelationId?: string | null
+    resourceMeasuredAt?: Date | string | null
+    resourceSummaryJson?: NullableJsonNullValueInput | InputJsonValue
     logicalArtifactIdentityJson: JsonNullValueInput | InputJsonValue
     eventsJson: JsonNullValueInput | InputJsonValue
     createdAt?: Date | string
@@ -25499,6 +26950,9 @@ export namespace Prisma {
     persistenceCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     failurePhase?: NullableStringFieldUpdateOperationsInput | string | null
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    resourceCorrelationId?: NullableStringFieldUpdateOperationsInput | string | null
+    resourceMeasuredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    resourceSummaryJson?: NullableJsonNullValueInput | InputJsonValue
     logicalArtifactIdentityJson?: JsonNullValueInput | InputJsonValue
     eventsJson?: JsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25548,8 +27002,193 @@ export namespace Prisma {
     persistenceCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     failurePhase?: NullableStringFieldUpdateOperationsInput | string | null
     failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    resourceCorrelationId?: NullableStringFieldUpdateOperationsInput | string | null
+    resourceMeasuredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    resourceSummaryJson?: NullableJsonNullValueInput | InputJsonValue
     logicalArtifactIdentityJson?: JsonNullValueInput | InputJsonValue
     eventsJson?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastActionTraceCreateInput = {
+    id?: string
+    correlationId: string
+    actionType: string
+    seriesId: string
+    targetBasis: $Enums.ForecastTargetBasis
+    targetSemantics: string
+    modelId: string
+    jobKey?: string | null
+    executionId?: string | null
+    actionRequestedAt: Date | string
+    queueAcceptedAt?: Date | string | null
+    artifactReadyAt?: Date | string | null
+    dashboardFirstReadyObservedAt?: Date | string | null
+    uiVisibleClientAt?: Date | string | null
+    uiAckReceivedAt?: Date | string | null
+    uiVisibilityState?: string
+    pageInstanceId?: string | null
+    responseToVisibleMs?: number | null
+    eventCount?: number
+    eventsJson: JsonNullValueInput | InputJsonValue
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastActionTraceUncheckedCreateInput = {
+    id?: string
+    correlationId: string
+    actionType: string
+    seriesId: string
+    targetBasis: $Enums.ForecastTargetBasis
+    targetSemantics: string
+    modelId: string
+    jobKey?: string | null
+    executionId?: string | null
+    actionRequestedAt: Date | string
+    queueAcceptedAt?: Date | string | null
+    artifactReadyAt?: Date | string | null
+    dashboardFirstReadyObservedAt?: Date | string | null
+    uiVisibleClientAt?: Date | string | null
+    uiAckReceivedAt?: Date | string | null
+    uiVisibilityState?: string
+    pageInstanceId?: string | null
+    responseToVisibleMs?: number | null
+    eventCount?: number
+    eventsJson: JsonNullValueInput | InputJsonValue
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastActionTraceUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    correlationId?: StringFieldUpdateOperationsInput | string
+    actionType?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    targetSemantics?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    jobKey?: NullableStringFieldUpdateOperationsInput | string | null
+    executionId?: NullableStringFieldUpdateOperationsInput | string | null
+    actionRequestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    queueAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    artifactReadyAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dashboardFirstReadyObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uiVisibleClientAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uiAckReceivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uiVisibilityState?: StringFieldUpdateOperationsInput | string
+    pageInstanceId?: NullableStringFieldUpdateOperationsInput | string | null
+    responseToVisibleMs?: NullableFloatFieldUpdateOperationsInput | number | null
+    eventCount?: IntFieldUpdateOperationsInput | number
+    eventsJson?: JsonNullValueInput | InputJsonValue
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastActionTraceUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    correlationId?: StringFieldUpdateOperationsInput | string
+    actionType?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    targetSemantics?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    jobKey?: NullableStringFieldUpdateOperationsInput | string | null
+    executionId?: NullableStringFieldUpdateOperationsInput | string | null
+    actionRequestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    queueAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    artifactReadyAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dashboardFirstReadyObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uiVisibleClientAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uiAckReceivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uiVisibilityState?: StringFieldUpdateOperationsInput | string
+    pageInstanceId?: NullableStringFieldUpdateOperationsInput | string | null
+    responseToVisibleMs?: NullableFloatFieldUpdateOperationsInput | number | null
+    eventCount?: IntFieldUpdateOperationsInput | number
+    eventsJson?: JsonNullValueInput | InputJsonValue
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastActionTraceCreateManyInput = {
+    id?: string
+    correlationId: string
+    actionType: string
+    seriesId: string
+    targetBasis: $Enums.ForecastTargetBasis
+    targetSemantics: string
+    modelId: string
+    jobKey?: string | null
+    executionId?: string | null
+    actionRequestedAt: Date | string
+    queueAcceptedAt?: Date | string | null
+    artifactReadyAt?: Date | string | null
+    dashboardFirstReadyObservedAt?: Date | string | null
+    uiVisibleClientAt?: Date | string | null
+    uiAckReceivedAt?: Date | string | null
+    uiVisibilityState?: string
+    pageInstanceId?: string | null
+    responseToVisibleMs?: number | null
+    eventCount?: number
+    eventsJson: JsonNullValueInput | InputJsonValue
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastActionTraceUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    correlationId?: StringFieldUpdateOperationsInput | string
+    actionType?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    targetSemantics?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    jobKey?: NullableStringFieldUpdateOperationsInput | string | null
+    executionId?: NullableStringFieldUpdateOperationsInput | string | null
+    actionRequestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    queueAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    artifactReadyAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dashboardFirstReadyObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uiVisibleClientAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uiAckReceivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uiVisibilityState?: StringFieldUpdateOperationsInput | string
+    pageInstanceId?: NullableStringFieldUpdateOperationsInput | string | null
+    responseToVisibleMs?: NullableFloatFieldUpdateOperationsInput | number | null
+    eventCount?: IntFieldUpdateOperationsInput | number
+    eventsJson?: JsonNullValueInput | InputJsonValue
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastActionTraceUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    correlationId?: StringFieldUpdateOperationsInput | string
+    actionType?: StringFieldUpdateOperationsInput | string
+    seriesId?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    targetSemantics?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    jobKey?: NullableStringFieldUpdateOperationsInput | string | null
+    executionId?: NullableStringFieldUpdateOperationsInput | string | null
+    actionRequestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    queueAcceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    artifactReadyAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dashboardFirstReadyObservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uiVisibleClientAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uiAckReceivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    uiVisibilityState?: StringFieldUpdateOperationsInput | string
+    pageInstanceId?: NullableStringFieldUpdateOperationsInput | string | null
+    responseToVisibleMs?: NullableFloatFieldUpdateOperationsInput | number | null
+    eventCount?: IntFieldUpdateOperationsInput | number
+    eventsJson?: JsonNullValueInput | InputJsonValue
+    metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -27623,6 +29262,9 @@ export namespace Prisma {
     persistenceCompletedAt?: SortOrder
     failurePhase?: SortOrder
     failureReason?: SortOrder
+    resourceCorrelationId?: SortOrder
+    resourceMeasuredAt?: SortOrder
+    resourceSummaryJson?: SortOrder
     logicalArtifactIdentityJson?: SortOrder
     eventsJson?: SortOrder
     createdAt?: SortOrder
@@ -27678,6 +29320,8 @@ export namespace Prisma {
     persistenceCompletedAt?: SortOrder
     failurePhase?: SortOrder
     failureReason?: SortOrder
+    resourceCorrelationId?: SortOrder
+    resourceMeasuredAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -27725,6 +29369,8 @@ export namespace Prisma {
     persistenceCompletedAt?: SortOrder
     failurePhase?: SortOrder
     failureReason?: SortOrder
+    resourceCorrelationId?: SortOrder
+    resourceMeasuredAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -27732,6 +29378,90 @@ export namespace Prisma {
   export type ForecastPreparationExecutionLedgerSumOrderByAggregateInput = {
     leaseVersion?: SortOrder
     waiterCount?: SortOrder
+    eventCount?: SortOrder
+  }
+
+  export type ForecastActionTraceCountOrderByAggregateInput = {
+    id?: SortOrder
+    correlationId?: SortOrder
+    actionType?: SortOrder
+    seriesId?: SortOrder
+    targetBasis?: SortOrder
+    targetSemantics?: SortOrder
+    modelId?: SortOrder
+    jobKey?: SortOrder
+    executionId?: SortOrder
+    actionRequestedAt?: SortOrder
+    queueAcceptedAt?: SortOrder
+    artifactReadyAt?: SortOrder
+    dashboardFirstReadyObservedAt?: SortOrder
+    uiVisibleClientAt?: SortOrder
+    uiAckReceivedAt?: SortOrder
+    uiVisibilityState?: SortOrder
+    pageInstanceId?: SortOrder
+    responseToVisibleMs?: SortOrder
+    eventCount?: SortOrder
+    eventsJson?: SortOrder
+    metadataJson?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastActionTraceAvgOrderByAggregateInput = {
+    responseToVisibleMs?: SortOrder
+    eventCount?: SortOrder
+  }
+
+  export type ForecastActionTraceMaxOrderByAggregateInput = {
+    id?: SortOrder
+    correlationId?: SortOrder
+    actionType?: SortOrder
+    seriesId?: SortOrder
+    targetBasis?: SortOrder
+    targetSemantics?: SortOrder
+    modelId?: SortOrder
+    jobKey?: SortOrder
+    executionId?: SortOrder
+    actionRequestedAt?: SortOrder
+    queueAcceptedAt?: SortOrder
+    artifactReadyAt?: SortOrder
+    dashboardFirstReadyObservedAt?: SortOrder
+    uiVisibleClientAt?: SortOrder
+    uiAckReceivedAt?: SortOrder
+    uiVisibilityState?: SortOrder
+    pageInstanceId?: SortOrder
+    responseToVisibleMs?: SortOrder
+    eventCount?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastActionTraceMinOrderByAggregateInput = {
+    id?: SortOrder
+    correlationId?: SortOrder
+    actionType?: SortOrder
+    seriesId?: SortOrder
+    targetBasis?: SortOrder
+    targetSemantics?: SortOrder
+    modelId?: SortOrder
+    jobKey?: SortOrder
+    executionId?: SortOrder
+    actionRequestedAt?: SortOrder
+    queueAcceptedAt?: SortOrder
+    artifactReadyAt?: SortOrder
+    dashboardFirstReadyObservedAt?: SortOrder
+    uiVisibleClientAt?: SortOrder
+    uiAckReceivedAt?: SortOrder
+    uiVisibilityState?: SortOrder
+    pageInstanceId?: SortOrder
+    responseToVisibleMs?: SortOrder
+    eventCount?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastActionTraceSumOrderByAggregateInput = {
+    responseToVisibleMs?: SortOrder
     eventCount?: SortOrder
   }
 
@@ -30002,6 +31732,10 @@ export namespace Prisma {
      * @deprecated Use ForecastPreparationExecutionLedgerDefaultArgs instead
      */
     export type ForecastPreparationExecutionLedgerArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ForecastPreparationExecutionLedgerDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ForecastActionTraceDefaultArgs instead
+     */
+    export type ForecastActionTraceArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ForecastActionTraceDefaultArgs<ExtArgs>
     /**
      * @deprecated Use ForecastPreparationJobDefaultArgs instead
      */

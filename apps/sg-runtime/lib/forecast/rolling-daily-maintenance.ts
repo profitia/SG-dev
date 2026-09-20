@@ -19,6 +19,7 @@ import {
   type ForecastPreparationOwnedExecutionContext,
 } from '@/lib/forecast/execution-ledger'
 import { normalizeForecastLibraryDecimal } from '@/lib/forecast/persistence-decimal'
+import { buildForecastPythonInvocation, consumeForecastPythonResourceTelemetry } from '@/lib/forecast/python-resource-telemetry'
 import {
   buildHistoricalMaintenanceLogicalArtifactKey,
   createRollingDailyHistoricalLogicalArtifactIdentity,
@@ -541,15 +542,15 @@ async function runBridgeWithStreamingTrace(params: {
   cwd: string
   onTraceLine: (line: string) => void
 }): Promise<{ stderr: string }> {
+  const invocation = buildForecastPythonInvocation(params.scriptPath, [
+    '--input-json',
+    params.inputPath,
+    '--output-json',
+    params.outputPath,
+  ])
   const child = spawn(
     params.pythonBin,
-    [
-      params.scriptPath,
-      '--input-json',
-      params.inputPath,
-      '--output-json',
-      params.outputPath,
-    ],
+    invocation.args,
     {
       cwd: params.cwd,
       env: process.env,
@@ -559,6 +560,7 @@ async function runBridgeWithStreamingTrace(params: {
 
   let stderr = ''
   let stderrRemainder = ''
+  const applicationStderrLines: string[] = []
 
   child.stderr?.setEncoding('utf8')
   child.stderr?.on('data', (chunk: string) => {
@@ -569,7 +571,11 @@ async function runBridgeWithStreamingTrace(params: {
     for (const line of lines) {
       const trimmed = line.trim()
       if (trimmed) {
-        params.onTraceLine(trimmed)
+        const applicationLine = consumeForecastPythonResourceTelemetry(trimmed)
+        if (applicationLine) {
+          applicationStderrLines.push(applicationLine)
+          params.onTraceLine(applicationLine)
+        }
       }
     }
   })
@@ -578,13 +584,18 @@ async function runBridgeWithStreamingTrace(params: {
     child.once('error', reject)
     child.once('close', (code, signal) => {
       if (stderrRemainder.trim()) {
-        params.onTraceLine(stderrRemainder.trim())
+        const applicationLine = consumeForecastPythonResourceTelemetry(stderrRemainder.trim())
+        if (applicationLine) {
+          applicationStderrLines.push(applicationLine)
+          params.onTraceLine(applicationLine)
+        }
       }
+      const applicationStderr = applicationStderrLines.join('\n')
       if (code === 0) {
-        resolve({ stderr })
+        resolve({ stderr: applicationStderr })
         return
       }
-      reject(new Error(`Rolling daily maintenance bridge exited with code ${code ?? 'unknown'}${signal ? ` (${signal})` : ''}${stderr.trim() ? `: ${stderr.trim()}` : ''}`))
+      reject(new Error(`Rolling daily maintenance bridge exited with code ${code ?? 'unknown'}${signal ? ` (${signal})` : ''}${applicationStderr.trim() ? `: ${applicationStderr.trim()}` : ''}`))
     })
   })
 }
@@ -881,6 +892,12 @@ function createDefaultRunner(): RollingDailyMaintenanceRunner {
 
         const bridgeStartedAt = performance.now()
 
+        const bridgeArgs = [
+          '--input-json',
+          inputPath,
+          '--output-json',
+          outputPath,
+        ]
         const bridgeExecution = trace
           ? runBridgeWithStreamingTrace({
               pythonBin,
@@ -894,13 +911,7 @@ function createDefaultRunner(): RollingDailyMaintenanceRunner {
             })
           : execFileAsync(
               pythonBin,
-              [
-                scriptPath,
-                '--input-json',
-                inputPath,
-                '--output-json',
-                outputPath,
-              ],
+              buildForecastPythonInvocation(scriptPath, bridgeArgs).args,
               {
                 cwd: labRoot,
                 maxBuffer: BRIDGE_BUFFER_BYTES,
@@ -908,6 +919,7 @@ function createDefaultRunner(): RollingDailyMaintenanceRunner {
             )
 
         const { stderr } = await bridgeExecution
+        const applicationStderr = trace ? stderr : consumeForecastPythonResourceTelemetry(stderr)
 
         emitRollingDailyHistoricalTrace(trace, 'bridge_returned', {
           seriesId: request.seriesId,
@@ -926,8 +938,8 @@ function createDefaultRunner(): RollingDailyMaintenanceRunner {
           maturedRecordCount: output.maintenance.maturedRecordCount,
           calibrationGroupCount: output.calibrationGroups.length,
         })
-        if (output.status === 'FAILED' && stderr.trim().length > 0 && !output.reason) {
-          output.reason = stderr.trim()
+        if (output.status === 'FAILED' && applicationStderr.trim().length > 0 && !output.reason) {
+          output.reason = applicationStderr.trim()
         }
         return output
       } finally {

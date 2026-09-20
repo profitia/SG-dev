@@ -9,6 +9,8 @@ import type {
   ForecastTrainingWindowPolicyId,
 } from '@/lib/forecast/identity'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
+import { linkForecastActionExecution } from '@/lib/forecast/forecast-action-trace'
+import type { ForecastWorkerResourceSummary } from '@/lib/forecast/worker-resource-telemetry'
 import type { HistoricalMaintenanceLogicalArtifactIdentity } from '@/lib/forecast/rolling-daily-historical-admission'
 import type { VerificationLogicalArtifactIdentity } from '@/lib/forecast/verification-single-flight'
 
@@ -34,6 +36,7 @@ export type ForecastPreparationExecutionEventType =
   | 'persistence_failed'
   | 'execution_completed'
   | 'execution_failed'
+  | 'resource_usage_summary'
 
 export type ForecastPreparationLogicalArtifactIdentity =
   | CurrentLogicalArtifactIdentity
@@ -1666,4 +1669,65 @@ export function createDefaultForecastPreparationExecutionLedger() {
 
 export function createNoopForecastPreparationExecutionLedger(): ForecastPreparationExecutionLedger {
   return createForecastPreparationExecutionLedger({ store: createNoopStore() })
+}
+
+export async function persistForecastExecutionResourceSummary(
+  correlationId: string,
+  summary: ForecastWorkerResourceSummary,
+  prisma = getMarketDataPrisma(),
+) {
+  if (!prisma) return []
+
+  const measuredFrom = new Date(summary.startedAt)
+  const measuredAt = new Date(summary.completedAt)
+  const executions = await prisma.forecastPreparationExecutionLedger.findMany({
+    where: {
+      AND: [
+        {
+          OR: [
+            { ownerRequestId: correlationId },
+            { latestRequestId: correlationId },
+          ],
+        },
+        {
+          startedAt: {
+            gte: measuredFrom,
+            lte: measuredAt,
+          },
+        },
+      ],
+    },
+    orderBy: { startedAt: 'desc' },
+    select: { executionId: true },
+    take: 16,
+  })
+  const summaryJson = JSON.stringify(summary)
+
+  for (const execution of executions) {
+    const eventJson = JSON.stringify({
+      eventType: 'resource_usage_summary',
+      requestId: correlationId,
+      observedAt: summary.completedAt,
+      durationMs: summary.wallMs,
+      payload: summary,
+    })
+    await prisma.$executeRaw(Prisma.sql`
+      UPDATE "forecast_preparation_execution_ledger"
+      SET "resourceCorrelationId" = ${correlationId},
+          "resourceMeasuredAt" = ${measuredAt},
+          "resourceSummaryJson" = CAST(${summaryJson} AS jsonb),
+          "eventsJson" = COALESCE("eventsJson", '[]'::jsonb) || jsonb_build_array(
+            CAST(${eventJson} AS jsonb) || jsonb_build_object('sequence', "eventCount" + 1)
+          ),
+          "eventCount" = "eventCount" + 1,
+          "updatedAt" = NOW()
+      WHERE "executionId" = ${execution.executionId}
+    `)
+  }
+
+  const primaryExecutionId = executions[0]?.executionId ?? null
+  if (primaryExecutionId) {
+    await linkForecastActionExecution(correlationId, primaryExecutionId, measuredAt, prisma)
+  }
+  return executions.map((execution) => execution.executionId)
 }

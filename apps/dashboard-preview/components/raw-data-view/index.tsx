@@ -29,6 +29,7 @@ import {
   type InteractiveForecastCapabilityResult,
 } from '@/lib/benchmark-forecast/forecast-contract'
 import {
+  acknowledgeForecastVisibleThroughDashboard,
   explicitlyPrepareForecastCurrent,
   readProgressiveForecastPreparationThroughDashboard,
   resolveForecastCurrentObservedProgressState,
@@ -2770,6 +2771,9 @@ export function RawDataView({
   const forecastVerificationReadRetryRef = useRef<Map<string, number>>(new Map())
   const forecastPreparationRequestRef = useRef(0)
   const forecastCorrelationIdsRef = useRef<Map<string, string>>(new Map())
+  const forecastPreparedResponseAtRef = useRef<Map<string, number>>(new Map())
+  const forecastUiAckSentRef = useRef<Set<string>>(new Set())
+  const forecastPageInstanceIdRef = useRef<string | null>(null)
   const seriesCacheRef = useRef<Map<string, CachedSeriesEntry>>(new Map())
   const forecastLayerCacheRef = useRef<Map<string, ForecastLayerCacheEntry<BenchmarkForecastCurrentResult | BenchmarkForecastVerificationResult>>>(new Map())
   const backgroundWarmupAttemptedRef = useRef<Set<string>>(new Set())
@@ -2777,6 +2781,10 @@ export function RawDataView({
   const forecastSelectionTouchedRef = useRef(false)
   const selectedProgressiveCurrentStateRef = useRef<ProgressiveForecastPreparationState | null>(null)
   const selectedProgressiveVerificationStateRef = useRef<ProgressiveForecastPreparationState | null>(null)
+
+  useEffect(() => {
+    forecastPageInstanceIdRef.current = window.crypto.randomUUID()
+  }, [])
 
   useEffect(() => {
     if (!isForecastPortfolioVariant) {
@@ -3627,6 +3635,9 @@ export function RawDataView({
           cachedAt: Date.now(),
         })
         const nextState = resolveForecastCurrentUiState(payload)
+        if (nextState === 'AVAILABLE') {
+          forecastPreparedResponseAtRef.current.set(`CURRENT|${requestIdentity.seriesId}|${requestIdentity.modelId}|${requestIdentity.targetBasis}`, performance.now())
+        }
         setForecastCurrentResult(payload)
         setForecastCurrentState(nextState)
         setForecastErrorState(null)
@@ -4068,6 +4079,7 @@ export function RawDataView({
         }
 
         const cachedAt = Date.now()
+        forecastPreparedResponseAtRef.current.set(`VERIFICATION|${activeSeriesId}|${forecastModel}|${selectedForecastTargetBasis}`, performance.now())
         forecastLayerCacheRef.current.set(cacheKey, {
           payload: normalizedPayload,
           cachedAt,
@@ -4105,6 +4117,64 @@ export function RawDataView({
       controller.abort()
     }
   }, [benchmarkSeriesId, forecastModel, forecastVerificationReloadNonce, forecastVerificationResult, isForecastPortfolioVariant, locale, preparedReadsOnly, selectedForecastTargetBasis, selectedProgressiveVariant?.verificationState, selectedVerificationPrepared, showForecast, showForecastVerification, t])
+
+  useEffect(() => {
+    if (!selectedForecastIdentity || !isExactSelectedRenderableCurrentResult(displayedForecastCurrentResult, selectedForecastIdentity)) return
+    const identityKey = `${selectedForecastIdentity.seriesId}|${selectedForecastIdentity.modelId}|${selectedForecastIdentity.targetBasis}`
+    const correlationId = forecastCorrelationIdsRef.current.get(identityKey)
+    const pageInstanceId = forecastPageInstanceIdRef.current
+    const ackKey = correlationId ? `CURRENT|${correlationId}` : null
+    if (!correlationId || !pageInstanceId || !ackKey || forecastUiAckSentRef.current.has(ackKey)) return
+
+    let secondFrame = 0
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        forecastUiAckSentRef.current.add(ackKey)
+        const responseAt = forecastPreparedResponseAtRef.current.get(`CURRENT|${identityKey}`)
+        void acknowledgeForecastVisibleThroughDashboard(fetch, {
+          ...selectedForecastIdentity,
+          correlationId,
+          layer: 'CURRENT',
+          pageInstanceId,
+          clientVisibleAt: new Date().toISOString(),
+          responseToVisibleMs: responseAt === undefined ? null : Math.max(0, performance.now() - responseAt),
+        }).catch(() => forecastUiAckSentRef.current.delete(ackKey))
+      })
+    })
+    return () => {
+      window.cancelAnimationFrame(firstFrame)
+      if (secondFrame) window.cancelAnimationFrame(secondFrame)
+    }
+  }, [displayedForecastCurrentResult, selectedForecastIdentity])
+
+  useEffect(() => {
+    if (!selectedForecastIdentity || !showForecastVerification || !isExactSelectedVerificationResult(forecastVerificationResult, selectedForecastIdentity)) return
+    const identityKey = `${selectedForecastIdentity.seriesId}|${selectedForecastIdentity.modelId}|${selectedForecastIdentity.targetBasis}`
+    const correlationId = forecastCorrelationIdsRef.current.get(identityKey)
+    const pageInstanceId = forecastPageInstanceIdRef.current
+    const ackKey = correlationId ? `VERIFICATION|${correlationId}` : null
+    if (!correlationId || !pageInstanceId || !ackKey || forecastUiAckSentRef.current.has(ackKey)) return
+
+    let secondFrame = 0
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        forecastUiAckSentRef.current.add(ackKey)
+        const responseAt = forecastPreparedResponseAtRef.current.get(`VERIFICATION|${identityKey}`)
+        void acknowledgeForecastVisibleThroughDashboard(fetch, {
+          ...selectedForecastIdentity,
+          correlationId,
+          layer: 'VERIFICATION',
+          pageInstanceId,
+          clientVisibleAt: new Date().toISOString(),
+          responseToVisibleMs: responseAt === undefined ? null : Math.max(0, performance.now() - responseAt),
+        }).catch(() => forecastUiAckSentRef.current.delete(ackKey))
+      })
+    })
+    return () => {
+      window.cancelAnimationFrame(firstFrame)
+      if (secondFrame) window.cancelAnimationFrame(secondFrame)
+    }
+  }, [forecastVerificationResult, selectedForecastIdentity, showForecastVerification])
 
   useEffect(() => {
     if (isBenchmarkMode) {
