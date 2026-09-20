@@ -21,6 +21,7 @@ import {
   shouldHideEmbeddedBenchmarkShell,
   isPreparedReadsOnlyForecastSession,
   isRecentVerificationPrepared,
+  isSelectedVerificationPrepared,
   isFullVerificationPrepared,
   mergeExactCapabilitySnapshot,
   shouldRunProgressiveForecastPreparation,
@@ -96,10 +97,24 @@ test('prepared verification readiness distinguishes Recent from Full artifacts',
 test('client-facing verification readiness uses the prepared Recent Verification contract', () => {
   const source = fs.readFileSync(new URL('../components/raw-data-view/index.tsx', import.meta.url), 'utf8')
 
-  assert.match(source, /selectedVerificationPrepared = !preparedReadsOnly\s*\|\| isRecentVerificationPrepared\(selectedCapabilityVariant\)/)
+  assert.doesNotMatch(source, /selectedVerificationPrepared = !preparedReadsOnly/)
   assert.match(source, /capability\.currentReadiness === 'READY' && isRecentVerificationPrepared\(capability\)/)
   assert.match(source, /forecastCapabilityState !== 'ready'/)
   assert.match(source, /selectedCapabilityVariant\?\.currentReadiness === 'READY'\s*&& isRecentVerificationPrepared\(selectedCapabilityVariant\)/)
+})
+
+test('verification preparation stays available outside prepared-read-only demo mode and becomes ready from durable progress', () => {
+  assert.equal(isSelectedVerificationPrepared(null, null), false)
+  assert.equal(isSelectedVerificationPrepared(null, {
+    seriesId: 'pl2023g_cl',
+    modelId: 'arima',
+    targetBasis: 'POINT_IN_TIME',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    currentState: 'READY',
+    currentReason: null,
+    verificationState: 'READY',
+    verificationReason: null,
+  }), true)
 })
 
 test('an exact capability refresh replaces only the matching model and methodology', () => {
@@ -177,6 +192,15 @@ test('forecast-portfolio-v3 keeps a dynamic non-Brent seriesId authoritative', (
 })
 
 test('forecast control button metadata keeps readiness text separate from the primary label', () => {
+  assert.deepEqual(
+    buildForecastControlButtonMeta('Daily', 'pl', 'NOT_PREPARED'),
+    {
+      label: 'Daily',
+      statusLabel: 'Do przygotowania',
+      state: 'NOT_PREPARED',
+    },
+  )
+
   assert.deepEqual(
     buildForecastControlButtonMeta('ARIMA', 'pl', 'QUEUED'),
     {

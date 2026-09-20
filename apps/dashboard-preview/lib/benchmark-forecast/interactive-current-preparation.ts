@@ -647,12 +647,18 @@ export async function readDurableForecastPreparationSnapshot(
 export function durableSnapshotToProgressiveSnapshot(
   snapshot: DurableForecastPreparationSnapshot,
 ): ProgressiveForecastPreparationSnapshot {
-  const currentState = snapshot.current.state === 'PREPARING'
+  const currentState = snapshot.current.state === 'UNSUPPORTED'
+    && snapshot.current.reason?.startsWith('No preparation request has been submitted')
+    ? 'NOT_PREPARED'
+    : snapshot.current.state === 'PREPARING'
     ? 'PREPARING'
     : snapshot.current.state === 'QUEUED'
       ? 'QUEUED'
       : snapshot.current.state
-  const verificationState = snapshot.verification.state === 'PREPARING'
+  const verificationState = snapshot.verification.state === 'UNSUPPORTED'
+    && snapshot.verification.reason?.startsWith('No preparation request has been submitted')
+    ? 'NOT_PREPARED'
+    : snapshot.verification.state === 'PREPARING'
     ? 'PREPARING'
     : snapshot.verification.state === 'QUEUED'
       ? 'QUEUED'
