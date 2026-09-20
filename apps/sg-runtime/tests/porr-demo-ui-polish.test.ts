@@ -67,11 +67,16 @@ test('login reuses the canonical eleven-benchmark portfolio and exposes version 
 test('PORR demo exposes one bilingual, operator-approved eleven-benchmark portfolio', () => {
   const polish = readBenchmarkFinderMessages(polishMessages)
   const english = readBenchmarkFinderMessages(englishMessages)
+  const polishPortfolio = polish.portfolio as Record<string, unknown>
+  const englishPortfolio = english.portfolio as Record<string, unknown>
 
   assert.equal(PORR_DEMO_FORECAST_BENCHMARKS.length, 11)
   assert.equal(new Set(PORR_DEMO_FORECAST_BENCHMARKS.map((item) => item.seriesId)).size, 11)
   assert.match(benchmarkFinderClientSource, /data-testid="porr-demo-forecast-portfolio"/)
   assert.match(benchmarkFinderClientSource, /openPorrDemoPortfolioBenchmark/)
-  assert.ok(polish.portfolio)
-  assert.ok(english.portfolio)
+  assert.match(String(polishPortfolio.subtitle), /przygotować prognozę/)
+  assert.match(String(englishPortfolio.subtitle), /prepare a forecast/)
+  assert.doesNotMatch(benchmarkFinderClientSource, /portfolio\.historyOnlyMessage/)
+  assert.equal('historyOnlyMessage' in polishPortfolio, false)
+  assert.equal('historyOnlyMessage' in englishPortfolio, false)
 })

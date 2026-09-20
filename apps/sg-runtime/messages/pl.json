@@ -304,9 +304,8 @@
     },
     "portfolio": {
       "title": "Benchmarki z prognozami",
-      "subtitle": "Dla poniższych benchmarków dostępne są przygotowane prognozy, górne i dolne ograniczenia oraz Historyczna Sprawdzalność. Pozostałe benchmarki można analizować na wykresach historycznych.",
+      "subtitle": "Dla poniższych benchmarków prognozy, górne i dolne ograniczenia oraz Historyczna Sprawdzalność są przygotowane z wyprzedzeniem. Dla pozostałych benchmarków możesz przeglądać historię i przygotować prognozę dla wybranego modelu i sposobu wyznaczenia wartości.",
       "openBenchmark": "Otwórz benchmark: {benchmark}",
-      "historyOnlyMessage": "Dla tego benchmarku dostępna jest analiza danych historycznych. Prognozy są obecnie przygotowane dla benchmarków wskazanych w sekcji „Benchmarki z prognozami”.",
       "families": {
         "oil": "Ropa naftowa",
         "copper": "Miedź",
