@@ -377,21 +377,30 @@ function resolvePreparedStateOnlyReadiness(
     add('CURRENT_MISSING')
   }
 
+  const verificationRenderable = capability.historicalPreparedState === 'READY'
+    && capability.verificationEvidenceState !== 'NOT_AVAILABLE'
+
   if (capability.historicalPreparedState === 'STALE') {
     add('RECENT_STALE', 'FULL_HISTORICAL_STALE', 'SOURCE_REVISION_REBUILD_REQUIRED')
   } else if (capability.historicalPreparedState !== 'READY') {
     add('RECENT_MISSING', 'FULL_HISTORICAL_MISSING')
+  } else if (!verificationRenderable) {
+    add('RECENT_PARTIAL', 'FULL_HISTORICAL_PARTIAL')
   }
 
   add('BANDS_NOT_AVAILABLE')
   if (capability.predictionBandState !== 'AVAILABLE') add('CALIBRATION_INSUFFICIENT_SAMPLES')
 
   const currentReady = capability.currentPreparedState === 'READY'
-  const verificationReady = capability.historicalPreparedState === 'READY'
+  const verificationReady = verificationRenderable
 
   return {
-    recentVerificationReadiness: capability.historicalPreparedState,
-    fullVerificationReadiness: capability.historicalPreparedState,
+    recentVerificationReadiness: capability.historicalPreparedState === 'STALE'
+      ? 'STALE'
+      : verificationReady ? 'READY' : 'NOT_PREPARED',
+    fullVerificationReadiness: capability.historicalPreparedState === 'STALE'
+      ? 'STALE'
+      : verificationReady ? 'READY' : 'NOT_PREPARED',
     predictionBandResidualCount: capability.predictionBandResidualCount,
     predictionBandState: capability.predictionBandState,
     readiness: {
