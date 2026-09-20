@@ -1,7 +1,42 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { forwardForecastUiVisibleTelemetry } from '@/lib/benchmark-forecast/forecast-action-telemetry'
+import {
+  buildForecastActionCorrelationKey,
+  forwardForecastUiVisibleTelemetry,
+  resolveForecastPollingCorrelation,
+} from '@/lib/benchmark-forecast/forecast-action-telemetry'
+
+test('current and verification actions keep distinct correlation identities for the same forecast identity', () => {
+  const identity = {
+    seriesId: 'series-1',
+    modelId: 'arima',
+    targetBasis: 'POINT_IN_TIME' as const,
+  }
+
+  assert.equal(buildForecastActionCorrelationKey('CURRENT', identity), 'CURRENT|series-1|arima|POINT_IN_TIME')
+  assert.equal(buildForecastActionCorrelationKey('VERIFICATION', identity), 'VERIFICATION|series-1|arima|POINT_IN_TIME')
+  assert.notEqual(
+    buildForecastActionCorrelationKey('CURRENT', identity),
+    buildForecastActionCorrelationKey('VERIFICATION', identity),
+  )
+})
+
+test('verification polling uses its active correlation without replacing the current render identity', () => {
+  const result = resolveForecastPollingCorrelation({
+    activeCorrelationId: 'verification-correlation',
+    activeCorrelationKey: 'VERIFICATION|series-1|arima|POINT_IN_TIME',
+    currentCorrelationId: 'current-correlation',
+    currentCorrelationKey: 'CURRENT|series-1|arima|POINT_IN_TIME',
+    verificationCorrelationKey: 'VERIFICATION|series-1|arima|POINT_IN_TIME',
+    createCorrelationId: () => 'unexpected-new-correlation',
+  })
+
+  assert.deepEqual(result, {
+    correlationId: 'verification-correlation',
+    shouldStoreAsCurrent: false,
+  })
+})
 
 test('Dashboard forwards post-render acknowledgement with the action correlation identity', async () => {
   const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL

@@ -46,6 +46,10 @@ import {
   warmCurrentForecastThroughDashboard,
 } from '@/lib/benchmark-forecast/interactive-current-client'
 import { createForecastCorrelationId } from '@/lib/benchmark-forecast/forecast-correlation'
+import {
+  buildForecastActionCorrelationKey,
+  resolveForecastPollingCorrelation,
+} from '@/lib/benchmark-forecast/forecast-action-telemetry'
 
 import type {
   ComponentListItem,
@@ -2771,6 +2775,8 @@ export function RawDataView({
   const forecastVerificationReadRetryRef = useRef<Map<string, number>>(new Map())
   const forecastPreparationRequestRef = useRef(0)
   const forecastCorrelationIdsRef = useRef<Map<string, string>>(new Map())
+  const forecastActivePreparationCorrelationIdRef = useRef<string | null>(null)
+  const forecastActivePreparationCorrelationKeyRef = useRef<string | null>(null)
   const forecastPreparedResponseAtRef = useRef<Map<string, number>>(new Map())
   const forecastUiAckSentRef = useRef<Set<string>>(new Set())
   const forecastPageInstanceIdRef = useRef<string | null>(null)
@@ -3674,9 +3680,29 @@ export function RawDataView({
     }
 
     const activeSeriesId = benchmarkSeriesId
-    const correlationKey = `${activeSeriesId}|${forecastModel}|${selectedForecastTargetBasis}`
-    const correlationId = forecastCorrelationIdsRef.current.get(correlationKey) ?? createForecastCorrelationId()
-    forecastCorrelationIdsRef.current.set(correlationKey, correlationId)
+    const currentCorrelationKey = buildForecastActionCorrelationKey('CURRENT', {
+      seriesId: activeSeriesId,
+      modelId: forecastModel,
+      targetBasis: selectedForecastTargetBasis,
+    })
+    const verificationCorrelationKey = buildForecastActionCorrelationKey('VERIFICATION', {
+      seriesId: activeSeriesId,
+      modelId: forecastModel,
+      targetBasis: selectedForecastTargetBasis,
+    })
+    const existingCurrentCorrelationId = forecastCorrelationIdsRef.current.get(currentCorrelationKey)
+    const pollingCorrelation = resolveForecastPollingCorrelation({
+      activeCorrelationId: forecastActivePreparationCorrelationIdRef.current,
+      activeCorrelationKey: forecastActivePreparationCorrelationKeyRef.current,
+      currentCorrelationId: existingCurrentCorrelationId ?? null,
+      currentCorrelationKey,
+      verificationCorrelationKey,
+      createCorrelationId: createForecastCorrelationId,
+    })
+    if (pollingCorrelation.shouldStoreAsCurrent) {
+      forecastCorrelationIdsRef.current.set(currentCorrelationKey, pollingCorrelation.correlationId)
+    }
+    const correlationId = pollingCorrelation.correlationId
     const controller = new AbortController()
     let cancelled = false
 
@@ -3815,9 +3841,11 @@ export function RawDataView({
       modelId: forecastModel,
       targetBasis: selectedForecastTargetBasis,
     } as const
-    const correlationKey = `${identity.seriesId}|${identity.modelId}|${identity.targetBasis}`
+    const correlationKey = buildForecastActionCorrelationKey('CURRENT', identity)
     const correlationId = createForecastCorrelationId()
     forecastCorrelationIdsRef.current.set(correlationKey, correlationId)
+    forecastActivePreparationCorrelationIdRef.current = correlationId
+    forecastActivePreparationCorrelationKeyRef.current = correlationKey
     const cacheKey = buildForecastLayerCacheKey(locale, identity.seriesId, identity.modelId, identity.targetBasis, 'current')
     const inFlightWarmup = backgroundWarmupInflightRef.current.get(cacheKey)
 
@@ -3916,9 +3944,15 @@ export function RawDataView({
   async function handlePrepareForecastVerification() {
     if (!benchmarkSeriesId) return
 
-    const correlationKey = `${benchmarkSeriesId}|${forecastModel}|${selectedForecastTargetBasis}`
+    const correlationKey = buildForecastActionCorrelationKey('VERIFICATION', {
+      seriesId: benchmarkSeriesId,
+      modelId: forecastModel,
+      targetBasis: selectedForecastTargetBasis,
+    })
     const correlationId = createForecastCorrelationId()
     forecastCorrelationIdsRef.current.set(correlationKey, correlationId)
+    forecastActivePreparationCorrelationIdRef.current = correlationId
+    forecastActivePreparationCorrelationKeyRef.current = correlationKey
 
     setShowForecastVerification(true)
     setForecastVerificationState('loading')
@@ -4121,7 +4155,7 @@ export function RawDataView({
   useEffect(() => {
     if (!selectedForecastIdentity || !isExactSelectedRenderableCurrentResult(displayedForecastCurrentResult, selectedForecastIdentity)) return
     const identityKey = `${selectedForecastIdentity.seriesId}|${selectedForecastIdentity.modelId}|${selectedForecastIdentity.targetBasis}`
-    const correlationId = forecastCorrelationIdsRef.current.get(identityKey)
+    const correlationId = forecastCorrelationIdsRef.current.get(buildForecastActionCorrelationKey('CURRENT', selectedForecastIdentity))
     const pageInstanceId = forecastPageInstanceIdRef.current
     const ackKey = correlationId ? `CURRENT|${correlationId}` : null
     if (!correlationId || !pageInstanceId || !ackKey || forecastUiAckSentRef.current.has(ackKey)) return
@@ -4150,7 +4184,7 @@ export function RawDataView({
   useEffect(() => {
     if (!selectedForecastIdentity || !showForecastVerification || !isExactSelectedVerificationResult(forecastVerificationResult, selectedForecastIdentity)) return
     const identityKey = `${selectedForecastIdentity.seriesId}|${selectedForecastIdentity.modelId}|${selectedForecastIdentity.targetBasis}`
-    const correlationId = forecastCorrelationIdsRef.current.get(identityKey)
+    const correlationId = forecastCorrelationIdsRef.current.get(buildForecastActionCorrelationKey('VERIFICATION', selectedForecastIdentity))
     const pageInstanceId = forecastPageInstanceIdRef.current
     const ackKey = correlationId ? `VERIFICATION|${correlationId}` : null
     if (!correlationId || !pageInstanceId || !ackKey || forecastUiAckSentRef.current.has(ackKey)) return
