@@ -319,16 +319,22 @@ export function isForecastRequestDiagnosticsEnabled(headers: Headers) {
 }
 
 export function appendForecastRequestDiagnosticsHeader(response: NextResponse) {
-  const snapshot = finalizeForecastRequestDiagnostics(response.status)
+  const snapshot = completeForecastRequestDiagnostics(response.status)
   if (!snapshot) {
     return response
   }
-
-  logForecastRequestDiagnostics(snapshot)
 
   response.headers.set(
     FORECAST_REQUEST_DIAGNOSTICS_HEADER,
     Buffer.from(JSON.stringify(buildForecastRequestDiagnosticsHeaderSummary(snapshot)), 'utf8').toString('base64url'),
   )
   return response
+}
+
+export function completeForecastRequestDiagnostics(status: number) {
+  const snapshot = finalizeForecastRequestDiagnostics(status)
+  if (snapshot) {
+    logForecastRequestDiagnostics(snapshot)
+  }
+  return snapshot
 }

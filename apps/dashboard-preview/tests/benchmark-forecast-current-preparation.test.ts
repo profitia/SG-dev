@@ -472,9 +472,9 @@ test('interactive current capability route forwards request abort signal to the 
 })
 
 test('interactive current preparation route forwards request abort signal to the gateway', async () => {
-  let capturedSignal: unknown
-  const handler = createPrepareCurrentForecastRouteHandler(async (_input, _traceEnabled, signal) => {
-    capturedSignal = signal
+  let capturedOptions: { signal?: AbortSignal, headers?: Record<string, string> } | undefined
+  const handler = createPrepareCurrentForecastRouteHandler(async (_input, _traceEnabled, options) => {
+    capturedOptions = options instanceof AbortSignal ? { signal: options } : options
 
     return {
       seriesId: 'usnaac0169',
@@ -500,7 +500,9 @@ test('interactive current preparation route forwards request abort signal to the
   const response = await handler(request)
 
   assert.equal(response.status, 200)
-  assert.equal(capturedSignal, request.signal)
+  assert.equal(capturedOptions?.signal, request.signal)
+  assert.equal(capturedOptions?.headers?.['x-sg-forecast-correlation-id'], capturedOptions?.headers?.['x-request-id'])
+  assert.equal(response.headers.get('x-sg-forecast-correlation-id'), capturedOptions?.headers?.['x-request-id'])
 })
 
 test('progressive preparation route forwards the exact identity and returns snapshot payload', async () => {

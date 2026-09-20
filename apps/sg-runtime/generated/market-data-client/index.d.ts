@@ -17286,6 +17286,8 @@ export namespace Prisma {
     sourceFrequency: string | null
     targetCadence: string | null
     historyFingerprint: string | null
+    originCorrelationId: string | null
+    latestCorrelationId: string | null
     requestCount: number | null
     sliceCount: number | null
     failureCount: number | null
@@ -17319,6 +17321,8 @@ export namespace Prisma {
     sourceFrequency: string | null
     targetCadence: string | null
     historyFingerprint: string | null
+    originCorrelationId: string | null
+    latestCorrelationId: string | null
     requestCount: number | null
     sliceCount: number | null
     failureCount: number | null
@@ -17352,6 +17356,8 @@ export namespace Prisma {
     sourceFrequency: number
     targetCadence: number
     historyFingerprint: number
+    originCorrelationId: number
+    latestCorrelationId: number
     requestCount: number
     sliceCount: number
     failureCount: number
@@ -17406,6 +17412,8 @@ export namespace Prisma {
     sourceFrequency?: true
     targetCadence?: true
     historyFingerprint?: true
+    originCorrelationId?: true
+    latestCorrelationId?: true
     requestCount?: true
     sliceCount?: true
     failureCount?: true
@@ -17439,6 +17447,8 @@ export namespace Prisma {
     sourceFrequency?: true
     targetCadence?: true
     historyFingerprint?: true
+    originCorrelationId?: true
+    latestCorrelationId?: true
     requestCount?: true
     sliceCount?: true
     failureCount?: true
@@ -17472,6 +17482,8 @@ export namespace Prisma {
     sourceFrequency?: true
     targetCadence?: true
     historyFingerprint?: true
+    originCorrelationId?: true
+    latestCorrelationId?: true
     requestCount?: true
     sliceCount?: true
     failureCount?: true
@@ -17593,6 +17605,8 @@ export namespace Prisma {
     sourceFrequency: string
     targetCadence: string
     historyFingerprint: string
+    originCorrelationId: string | null
+    latestCorrelationId: string | null
     requestCount: number
     sliceCount: number
     failureCount: number
@@ -17646,6 +17660,8 @@ export namespace Prisma {
     sourceFrequency?: boolean
     targetCadence?: boolean
     historyFingerprint?: boolean
+    originCorrelationId?: boolean
+    latestCorrelationId?: boolean
     requestCount?: boolean
     sliceCount?: boolean
     failureCount?: boolean
@@ -17680,6 +17696,8 @@ export namespace Prisma {
     sourceFrequency?: boolean
     targetCadence?: boolean
     historyFingerprint?: boolean
+    originCorrelationId?: boolean
+    latestCorrelationId?: boolean
     requestCount?: boolean
     sliceCount?: boolean
     failureCount?: boolean
@@ -17714,6 +17732,8 @@ export namespace Prisma {
     sourceFrequency?: boolean
     targetCadence?: boolean
     historyFingerprint?: boolean
+    originCorrelationId?: boolean
+    latestCorrelationId?: boolean
     requestCount?: boolean
     sliceCount?: boolean
     failureCount?: boolean
@@ -17755,6 +17775,14 @@ export namespace Prisma {
       sourceFrequency: string
       targetCadence: string
       historyFingerprint: string
+      /**
+       * First user action that created this durable exact-identity job.
+       */
+      originCorrelationId: string | null
+      /**
+       * Most recent user action that requested this durable exact-identity job.
+       */
+      latestCorrelationId: string | null
       requestCount: number
       sliceCount: number
       failureCount: number
@@ -18179,6 +18207,8 @@ export namespace Prisma {
     readonly sourceFrequency: FieldRef<"ForecastPreparationJob", 'String'>
     readonly targetCadence: FieldRef<"ForecastPreparationJob", 'String'>
     readonly historyFingerprint: FieldRef<"ForecastPreparationJob", 'String'>
+    readonly originCorrelationId: FieldRef<"ForecastPreparationJob", 'String'>
+    readonly latestCorrelationId: FieldRef<"ForecastPreparationJob", 'String'>
     readonly requestCount: FieldRef<"ForecastPreparationJob", 'Int'>
     readonly sliceCount: FieldRef<"ForecastPreparationJob", 'Int'>
     readonly failureCount: FieldRef<"ForecastPreparationJob", 'Int'>
@@ -20894,6 +20924,8 @@ export namespace Prisma {
     sourceFrequency: 'sourceFrequency',
     targetCadence: 'targetCadence',
     historyFingerprint: 'historyFingerprint',
+    originCorrelationId: 'originCorrelationId',
+    latestCorrelationId: 'latestCorrelationId',
     requestCount: 'requestCount',
     sliceCount: 'sliceCount',
     failureCount: 'failureCount',
@@ -22937,6 +22969,8 @@ export namespace Prisma {
     sourceFrequency?: StringFilter<"ForecastPreparationJob"> | string
     targetCadence?: StringFilter<"ForecastPreparationJob"> | string
     historyFingerprint?: StringFilter<"ForecastPreparationJob"> | string
+    originCorrelationId?: StringNullableFilter<"ForecastPreparationJob"> | string | null
+    latestCorrelationId?: StringNullableFilter<"ForecastPreparationJob"> | string | null
     requestCount?: IntFilter<"ForecastPreparationJob"> | number
     sliceCount?: IntFilter<"ForecastPreparationJob"> | number
     failureCount?: IntFilter<"ForecastPreparationJob"> | number
@@ -22971,6 +23005,8 @@ export namespace Prisma {
     sourceFrequency?: SortOrder
     targetCadence?: SortOrder
     historyFingerprint?: SortOrder
+    originCorrelationId?: SortOrderInput | SortOrder
+    latestCorrelationId?: SortOrderInput | SortOrder
     requestCount?: SortOrder
     sliceCount?: SortOrder
     failureCount?: SortOrder
@@ -23008,6 +23044,8 @@ export namespace Prisma {
     sourceFrequency?: StringFilter<"ForecastPreparationJob"> | string
     targetCadence?: StringFilter<"ForecastPreparationJob"> | string
     historyFingerprint?: StringFilter<"ForecastPreparationJob"> | string
+    originCorrelationId?: StringNullableFilter<"ForecastPreparationJob"> | string | null
+    latestCorrelationId?: StringNullableFilter<"ForecastPreparationJob"> | string | null
     requestCount?: IntFilter<"ForecastPreparationJob"> | number
     sliceCount?: IntFilter<"ForecastPreparationJob"> | number
     failureCount?: IntFilter<"ForecastPreparationJob"> | number
@@ -23042,6 +23080,8 @@ export namespace Prisma {
     sourceFrequency?: SortOrder
     targetCadence?: SortOrder
     historyFingerprint?: SortOrder
+    originCorrelationId?: SortOrderInput | SortOrder
+    latestCorrelationId?: SortOrderInput | SortOrder
     requestCount?: SortOrder
     sliceCount?: SortOrder
     failureCount?: SortOrder
@@ -23084,6 +23124,8 @@ export namespace Prisma {
     sourceFrequency?: StringWithAggregatesFilter<"ForecastPreparationJob"> | string
     targetCadence?: StringWithAggregatesFilter<"ForecastPreparationJob"> | string
     historyFingerprint?: StringWithAggregatesFilter<"ForecastPreparationJob"> | string
+    originCorrelationId?: StringNullableWithAggregatesFilter<"ForecastPreparationJob"> | string | null
+    latestCorrelationId?: StringNullableWithAggregatesFilter<"ForecastPreparationJob"> | string | null
     requestCount?: IntWithAggregatesFilter<"ForecastPreparationJob"> | number
     sliceCount?: IntWithAggregatesFilter<"ForecastPreparationJob"> | number
     failureCount?: IntWithAggregatesFilter<"ForecastPreparationJob"> | number
@@ -25525,6 +25567,8 @@ export namespace Prisma {
     sourceFrequency: string
     targetCadence: string
     historyFingerprint: string
+    originCorrelationId?: string | null
+    latestCorrelationId?: string | null
     requestCount?: number
     sliceCount?: number
     failureCount?: number
@@ -25559,6 +25603,8 @@ export namespace Prisma {
     sourceFrequency: string
     targetCadence: string
     historyFingerprint: string
+    originCorrelationId?: string | null
+    latestCorrelationId?: string | null
     requestCount?: number
     sliceCount?: number
     failureCount?: number
@@ -25593,6 +25639,8 @@ export namespace Prisma {
     sourceFrequency?: StringFieldUpdateOperationsInput | string
     targetCadence?: StringFieldUpdateOperationsInput | string
     historyFingerprint?: StringFieldUpdateOperationsInput | string
+    originCorrelationId?: NullableStringFieldUpdateOperationsInput | string | null
+    latestCorrelationId?: NullableStringFieldUpdateOperationsInput | string | null
     requestCount?: IntFieldUpdateOperationsInput | number
     sliceCount?: IntFieldUpdateOperationsInput | number
     failureCount?: IntFieldUpdateOperationsInput | number
@@ -25627,6 +25675,8 @@ export namespace Prisma {
     sourceFrequency?: StringFieldUpdateOperationsInput | string
     targetCadence?: StringFieldUpdateOperationsInput | string
     historyFingerprint?: StringFieldUpdateOperationsInput | string
+    originCorrelationId?: NullableStringFieldUpdateOperationsInput | string | null
+    latestCorrelationId?: NullableStringFieldUpdateOperationsInput | string | null
     requestCount?: IntFieldUpdateOperationsInput | number
     sliceCount?: IntFieldUpdateOperationsInput | number
     failureCount?: IntFieldUpdateOperationsInput | number
@@ -25661,6 +25711,8 @@ export namespace Prisma {
     sourceFrequency: string
     targetCadence: string
     historyFingerprint: string
+    originCorrelationId?: string | null
+    latestCorrelationId?: string | null
     requestCount?: number
     sliceCount?: number
     failureCount?: number
@@ -25695,6 +25747,8 @@ export namespace Prisma {
     sourceFrequency?: StringFieldUpdateOperationsInput | string
     targetCadence?: StringFieldUpdateOperationsInput | string
     historyFingerprint?: StringFieldUpdateOperationsInput | string
+    originCorrelationId?: NullableStringFieldUpdateOperationsInput | string | null
+    latestCorrelationId?: NullableStringFieldUpdateOperationsInput | string | null
     requestCount?: IntFieldUpdateOperationsInput | number
     sliceCount?: IntFieldUpdateOperationsInput | number
     failureCount?: IntFieldUpdateOperationsInput | number
@@ -25729,6 +25783,8 @@ export namespace Prisma {
     sourceFrequency?: StringFieldUpdateOperationsInput | string
     targetCadence?: StringFieldUpdateOperationsInput | string
     historyFingerprint?: StringFieldUpdateOperationsInput | string
+    originCorrelationId?: NullableStringFieldUpdateOperationsInput | string | null
+    latestCorrelationId?: NullableStringFieldUpdateOperationsInput | string | null
     requestCount?: IntFieldUpdateOperationsInput | number
     sliceCount?: IntFieldUpdateOperationsInput | number
     failureCount?: IntFieldUpdateOperationsInput | number
@@ -27692,6 +27748,8 @@ export namespace Prisma {
     sourceFrequency?: SortOrder
     targetCadence?: SortOrder
     historyFingerprint?: SortOrder
+    originCorrelationId?: SortOrder
+    latestCorrelationId?: SortOrder
     requestCount?: SortOrder
     sliceCount?: SortOrder
     failureCount?: SortOrder
@@ -27735,6 +27793,8 @@ export namespace Prisma {
     sourceFrequency?: SortOrder
     targetCadence?: SortOrder
     historyFingerprint?: SortOrder
+    originCorrelationId?: SortOrder
+    latestCorrelationId?: SortOrder
     requestCount?: SortOrder
     sliceCount?: SortOrder
     failureCount?: SortOrder
@@ -27768,6 +27828,8 @@ export namespace Prisma {
     sourceFrequency?: SortOrder
     targetCadence?: SortOrder
     historyFingerprint?: SortOrder
+    originCorrelationId?: SortOrder
+    latestCorrelationId?: SortOrder
     requestCount?: SortOrder
     sliceCount?: SortOrder
     failureCount?: SortOrder

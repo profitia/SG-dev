@@ -32,6 +32,8 @@ test('durable queue status projects to the existing UI progress contract', () =>
         startedAt: null,
         completedAt: null,
         failureReason: null,
+        originCorrelationId: 'forecast-action-origin',
+        latestCorrelationId: 'forecast-action-latest',
       },
     },
   }
