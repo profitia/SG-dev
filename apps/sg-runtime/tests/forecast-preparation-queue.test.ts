@@ -8,9 +8,29 @@ import {
   ForecastPreparationCommandSchema,
   buildForecastPreparationJobKey,
   createForecastPreparationWorker,
+  shouldRequeueSucceededPreparationJob,
   type ClaimedForecastPreparationJob,
   type ForecastPreparationQueueService,
 } from '@/lib/forecast/preparation-queue'
+
+test('a succeeded queue record is reopened only when its exact artifact remains missing', () => {
+  assert.equal(shouldRequeueSucceededPreparationJob({
+    jobStatus: 'SUCCEEDED',
+    artifactReadiness: 'NOT_PREPARED',
+  }), true)
+  assert.equal(shouldRequeueSucceededPreparationJob({
+    jobStatus: 'SUCCEEDED',
+    artifactReadiness: 'STALE',
+  }), true)
+  assert.equal(shouldRequeueSucceededPreparationJob({
+    jobStatus: 'SUCCEEDED',
+    artifactReadiness: 'READY',
+  }), false)
+  assert.equal(shouldRequeueSucceededPreparationJob({
+    jobStatus: 'RUNNING',
+    artifactReadiness: 'NOT_PREPARED',
+  }), false)
+})
 
 function legacyJobKey(input: {
   kind: 'CURRENT' | 'VERIFICATION'
