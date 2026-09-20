@@ -6,7 +6,7 @@ import { createForecastPreparationQueueService } from '@/lib/forecast/preparatio
 
 const databaseUrl = process.env.FORECAST_QUEUE_TEST_DATABASE_URL?.trim()
 
-test('Postgres queue claim is priority ordered and cross-worker single-owner', {
+test('Postgres queue claim is priority ordered, fair between slices, and cross-worker single-owner', {
   skip: !databaseUrl,
 }, async () => {
   const prisma = new PrismaClient({ datasources: { db: { url: databaseUrl! } } })
@@ -35,6 +35,35 @@ test('Postgres queue claim is priority ordered and cross-worker single-owner', {
 
     const first = await queue.claimNext('worker-priority')
     assert.equal(first?.jobKind, 'CURRENT')
+
+    await prisma.forecastPreparationJob.deleteMany()
+    await prisma.forecastPreparationJob.createMany({
+      data: [
+        {
+          ...base,
+          id: 'older-verification',
+          jobKey: 'older-verification',
+          jobKind: 'VERIFICATION',
+          priority: 100,
+          requestedAt: new Date(now.getTime() - 60_000),
+          availableAt: new Date(now.getTime() - 60_000),
+        },
+        {
+          ...base,
+          id: 'newer-verification',
+          jobKey: 'newer-verification',
+          jobKind: 'VERIFICATION',
+          priority: 100,
+          requestedAt: new Date(now.getTime() - 30_000),
+          availableAt: new Date(now.getTime() - 30_000),
+        },
+      ],
+    })
+    const olderVerification = await queue.claimNext('worker-fairness-first')
+    assert.equal(olderVerification?.jobKey, 'older-verification')
+    await queue.continueAfterSlice(olderVerification!, { progress: 'partial' })
+    const newerVerification = await queue.claimNext('worker-fairness-second')
+    assert.equal(newerVerification?.jobKey, 'newer-verification')
 
     await prisma.forecastPreparationJob.deleteMany()
     await prisma.forecastPreparationJob.create({

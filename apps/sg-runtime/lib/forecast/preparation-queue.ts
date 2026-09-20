@@ -398,7 +398,7 @@ export function createForecastPreparationQueueService(options: {
                 AND dependency."status" = 'SUCCEEDED'
             )
           )
-        ORDER BY job."priority" ASC, job."requestedAt" ASC
+        ORDER BY job."priority" ASC, job."availableAt" ASC, job."requestedAt" ASC
         FOR UPDATE SKIP LOCKED
         LIMIT 1
       )
