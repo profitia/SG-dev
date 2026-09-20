@@ -25,6 +25,7 @@ const INTERNAL_FORECAST_READINESS_ROUTE_PATH = '/api/internal/forecast/readiness
 const INTERNAL_FORECAST_PREPARE_CURRENT_ROUTE_PATH = '/api/internal/forecast/prepare/current'
 const INTERNAL_FORECAST_VERIFICATION_ROUTE_PATH = '/api/internal/forecast/verification'
 const INTERNAL_FORECAST_PROGRESSIVE_ROUTE_PATH = '/api/internal/forecast/progressive'
+const INTERNAL_FORECAST_PREPARATION_JOBS_ROUTE_PATH = '/api/internal/forecast/preparation/jobs'
 const INTERNAL_FORECAST_TIMEOUT_MS = 75_000
 const INTERNAL_FORECAST_TIMEOUT_ERROR = 'SG Runtime interactive forecast request timed out.'
 export const FORECAST_TRACE_HEADER = 'x-sg-forecast-trace'
@@ -69,6 +70,38 @@ export type ForecastBridgeTrace = {
   dashboardBridgeTotalMs: number
   attempts: ForecastBridgeAttemptTrace[]
   fallbackUsed: boolean
+}
+
+export type DurableForecastPreparationJob = {
+  jobKey: string
+  kind: 'CURRENT' | 'VERIFICATION'
+  status: 'QUEUED' | 'RUNNING' | 'RETRY_WAIT' | 'SUCCEEDED' | 'FAILED' | 'SUPERSEDED'
+  seriesId: string
+  modelId: ForecastPortfolioModelId
+  targetSemantics: ReturnType<typeof resolveForecastTargetSemantics>
+  targetBasis: ForecastTargetBasis
+  requestCount: number
+  sliceCount: number
+  failureCount: number
+  requestedAt: string
+  startedAt: string | null
+  completedAt: string | null
+  failureReason: string | null
+}
+
+export type DurableForecastPreparationCommandResult = {
+  state: 'READY' | 'QUEUED' | 'PREPARING' | 'FAILED' | 'UNSUPPORTED'
+  reason: string | null
+  job: DurableForecastPreparationJob | null
+}
+
+export type DurableForecastPreparationSnapshot = {
+  seriesId: string
+  modelId: ForecastPortfolioModelId
+  targetSemantics: ReturnType<typeof resolveForecastTargetSemantics>
+  targetBasis: ForecastTargetBasis
+  current: DurableForecastPreparationCommandResult
+  verification: DurableForecastPreparationCommandResult
 }
 
 type ForecastBridgeErrorWithTrace = Error & {
@@ -573,6 +606,89 @@ export async function requestProgressiveForecastPreparationSnapshot(
   }, traceOptions)
 }
 
+export async function requestDurableForecastPreparation(
+  input: BenchmarkForecastCurrentPreparationRequest,
+  kind: 'CURRENT' | 'VERIFICATION',
+  traceOptions?: TraceOptions,
+  options?: ForecastBridgeRequestOptions,
+) {
+  return readInternalJson<DurableForecastPreparationCommandResult>(INTERNAL_FORECAST_PREPARATION_JOBS_ROUTE_PATH, {
+    method: 'POST',
+    signal: options?.signal,
+    headers: {
+      ...resolveAuthorizedHeaders(options?.headers),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      seriesId: input.seriesId,
+      modelId: input.modelId,
+      targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
+      kind,
+    }),
+  }, traceOptions)
+}
+
+export async function readDurableForecastPreparationSnapshot(
+  input: BenchmarkForecastCurrentPreparationRequest,
+  traceOptions?: TraceOptions,
+  options?: ForecastBridgeRequestOptions,
+) {
+  const url = new URL(INTERNAL_FORECAST_PREPARATION_JOBS_ROUTE_PATH, LOCAL_SG_RUNTIME_BASE_URL)
+  url.searchParams.set('seriesId', input.seriesId)
+  url.searchParams.set('modelId', input.modelId)
+  url.searchParams.set('targetSemantics', resolveForecastTargetSemantics(input.targetBasis))
+  return readInternalJson<DurableForecastPreparationSnapshot>(url.pathname + url.search, {
+    method: 'GET',
+    signal: options?.signal,
+    headers: resolveAuthorizedHeaders(options?.headers),
+  }, traceOptions)
+}
+
+export function durableSnapshotToProgressiveSnapshot(
+  snapshot: DurableForecastPreparationSnapshot,
+): ProgressiveForecastPreparationSnapshot {
+  const currentState = snapshot.current.state === 'PREPARING'
+    ? 'PREPARING'
+    : snapshot.current.state === 'QUEUED'
+      ? 'QUEUED'
+      : snapshot.current.state
+  const verificationState = snapshot.verification.state === 'PREPARING'
+    ? 'PREPARING'
+    : snapshot.verification.state === 'QUEUED'
+      ? 'QUEUED'
+      : snapshot.verification.state
+  const activeJob = snapshot.current.job?.status === 'RUNNING'
+    ? snapshot.current.job
+    : snapshot.verification.job?.status === 'RUNNING'
+      ? snapshot.verification.job
+      : null
+  const queuedCount = [snapshot.current.job, snapshot.verification.job]
+    .filter((job) => job && (job.status === 'QUEUED' || job.status === 'RETRY_WAIT')).length
+
+  return {
+    seriesId: snapshot.seriesId,
+    variants: [{
+      seriesId: snapshot.seriesId,
+      modelId: snapshot.modelId,
+      targetBasis: snapshot.targetBasis,
+      targetSemantics: snapshot.targetSemantics,
+      currentState,
+      currentReason: snapshot.current.reason,
+      verificationState,
+      verificationReason: snapshot.verification.reason,
+    }],
+    firstReadyCurrent: currentState === 'READY'
+      ? { modelId: snapshot.modelId, targetBasis: snapshot.targetBasis, targetSemantics: snapshot.targetSemantics }
+      : null,
+    activeItem: activeJob
+      ? { modelId: snapshot.modelId, targetBasis: snapshot.targetBasis, kind: activeJob.kind }
+      : null,
+    queuedCount,
+    currentReadyCount: currentState === 'READY' ? 1 : 0,
+    verificationReadyCount: verificationState === 'READY' ? 1 : 0,
+  }
+}
+
 export async function requestInteractiveForecastVerificationPreparation(
   input: BenchmarkForecastCurrentPreparationRequest,
   cadence?: { sourceFrequency: string, targetCadence: string },
@@ -757,4 +873,33 @@ export function createInteractiveCurrentPreparationGateway(
   }
 }
 
-export const prepareInteractiveCurrentForecast = createInteractiveCurrentPreparationGateway()
+export function createDurableInteractiveCurrentPreparationGateway(
+  enqueue = requestDurableForecastPreparation,
+) {
+  return async function prepareCurrent(
+    input: BenchmarkForecastCurrentPreparationRequest,
+    traceEnabled = false,
+    requestOptions?: AbortSignal | ForecastBridgeRequestOptions,
+  ): Promise<BenchmarkForecastCurrentPreparationResult & { trace?: ForecastBridgeTrace }> {
+    const startedAt = Date.now()
+    const attempts: ForecastBridgeAttemptTrace[] = []
+    const traceOptions = traceEnabled ? { enabled: true, attempts } : undefined
+    const result = await enqueue(input, 'CURRENT', traceOptions, normalizeForecastBridgeRequestOptions(requestOptions))
+    return {
+      seriesId: input.seriesId,
+      modelId: input.modelId,
+      targetBasis: input.targetBasis,
+      targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
+      state: result.state,
+      capabilityStatus: result.state === 'UNSUPPORTED' ? 'NOT_IMPLEMENTED' : result.state === 'FAILED' ? 'FAILED' : 'PREPARATION_REQUIRED',
+      currentReadiness: result.state === 'READY' ? 'READY' : 'NOT_PREPARED',
+      prepareAttempted: result.state !== 'UNSUPPORTED',
+      prepareStatus: result.state === 'READY' ? 'READY' : result.state === 'FAILED' ? 'FAILED' : 'PREPARATION_REQUIRED',
+      reason: result.reason,
+      timingMs: Math.max(0, Date.now() - startedAt),
+      ...buildTracePayload(traceEnabled, attempts, Math.max(0, Date.now() - startedAt)),
+    }
+  }
+}
+
+export const prepareInteractiveCurrentForecast = createDurableInteractiveCurrentPreparationGateway()

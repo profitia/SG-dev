@@ -8,6 +8,7 @@ import type {
   ProgressiveForecastPreparationSnapshot,
   ProgressiveForecastVariantSnapshot,
 } from './forecast-contract'
+import type { DurableForecastPreparationCommandResult } from './interactive-current-preparation'
 import { isRenderableCurrentResult } from './forecast-contract'
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>
@@ -185,6 +186,25 @@ export async function requestExplicitCurrentForecastPreparationThroughDashboard(
   }
 
   return payload as BenchmarkForecastCurrentPreparationResult
+}
+
+export async function requestExplicitVerificationPreparationThroughDashboard(
+  fetchLike: FetchLike,
+  input: BenchmarkForecastCurrentPreparationRequest,
+  signal?: AbortSignal,
+) {
+  const response = await fetchLike('/api/benchmark-forecast/verification/prepare', {
+    method: 'POST',
+    cache: 'no-store',
+    signal,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  const payload = await response.json() as DurableForecastPreparationCommandResult | { error?: string }
+  if (!response.ok) {
+    throw new Error('error' in payload ? payload.error ?? 'Historical Verification queue request failed.' : 'Historical Verification queue request failed.')
+  }
+  return payload as DurableForecastPreparationCommandResult
 }
 
 export async function readProgressiveForecastPreparationThroughDashboard(

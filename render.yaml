@@ -20,6 +20,34 @@
 # It remains provider-managed and is not Blueprint-owned in this file.
 
 services:
+  # PPF-1 durable background preparation owner. It consumes Postgres-backed
+  # jobs and writes only through the canonical SG Runtime forecast services.
+  - type: worker
+    name: spendguru-forecast-preparation-worker
+    runtime: node
+    region: frankfurt
+    repo: https://github.com/profitia/SG-dev
+    rootDir: .
+    buildCommand: bash ./scripts/build-sg-runtime-private-service.sh
+    startCommand: cd apps/sg-runtime && npm run forecast:worker
+    plan: standard
+    branch: main
+    autoDeployTrigger: off
+    maxShutdownDelaySeconds: 300
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MARKET_DATA_DATABASE_URL
+        fromService:
+          type: web
+          name: spendguru-stage
+          envVarKey: MARKET_DATA_DATABASE_URL
+      - key: NPM_TOKEN
+        fromService:
+          type: web
+          name: spendguru-stage
+          envVarKey: NPM_TOKEN
+
   # PMOS — Developer Workflow Tool (dev-time only, NOT SG2 production runtime)
   - type: web
     name: pmos-spendguru2-development

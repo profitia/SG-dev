@@ -15,10 +15,10 @@ import {
   type InteractiveForecastPreparationResult,
 } from '@/lib/forecast/interactive-preparation'
 import {
-  progressiveForecastPreparationService,
   type ProgressiveForecastPreparationRequest,
   type ProgressiveForecastPreparationSnapshot,
 } from '@/lib/forecast/progressive-preparation'
+import { createForecastPreparationQueueService } from '@/lib/forecast/preparation-queue'
 import {
   appendForecastRequestDiagnosticsHeader,
   isForecastRequestDiagnosticsEnabled,
@@ -34,6 +34,46 @@ type CurrentPreparationResolver = (input: InteractiveForecastIdentity) => Promis
 type ProgressivePreparationResolver = (input: ProgressiveForecastPreparationRequest) => Promise<ProgressiveForecastPreparationSnapshot>
 const FORECAST_TRACE_HEADER = 'x-sg-forecast-trace'
 const SG_RUNTIME_CAPABILITY_TOTAL_MS_HEADER = 'x-sg-runtime-capability-total-ms'
+
+const durableProgressivePreparationSnapshot: ProgressivePreparationResolver = async (input) => {
+  const targetSemantics = input.preferredTargetBasis === 'POINT_IN_TIME'
+    ? 'ROLLING_DAILY_POINT_IN_TIME'
+    : input.preferredTargetBasis
+  const snapshot = await createForecastPreparationQueueService().snapshot({
+    seriesId: input.seriesId,
+    modelId: input.preferredModelId,
+    targetSemantics,
+  })
+  const activeJob = snapshot.current.job?.status === 'RUNNING'
+    ? snapshot.current.job
+    : snapshot.verification.job?.status === 'RUNNING'
+      ? snapshot.verification.job
+      : null
+  const queuedCount = [snapshot.current.job, snapshot.verification.job]
+    .filter((job) => job && (job.status === 'QUEUED' || job.status === 'RETRY_WAIT')).length
+  return {
+    seriesId: snapshot.seriesId,
+    variants: [{
+      seriesId: snapshot.seriesId,
+      modelId: snapshot.modelId,
+      targetBasis: snapshot.targetBasis,
+      targetSemantics: snapshot.targetSemantics,
+      currentState: snapshot.current.state,
+      currentReason: snapshot.current.reason,
+      verificationState: snapshot.verification.state,
+      verificationReason: snapshot.verification.reason,
+    }],
+    firstReadyCurrent: snapshot.current.state === 'READY'
+      ? { modelId: snapshot.modelId, targetBasis: snapshot.targetBasis, targetSemantics: snapshot.targetSemantics }
+      : null,
+    activeItem: activeJob
+      ? { modelId: snapshot.modelId, targetBasis: snapshot.targetBasis, kind: activeJob.kind }
+      : null,
+    queuedCount,
+    currentReadyCount: snapshot.current.state === 'READY' ? 1 : 0,
+    verificationReadyCount: snapshot.verification.state === 'READY' ? 1 : 0,
+  }
+}
 
 function internalRouteError(error: unknown, requestId: string) {
   return cognitionError(
@@ -211,7 +251,7 @@ export function createInternalCurrentForecastPreparationRouteHandler(
 }
 
 export function createInternalProgressiveForecastPreparationRouteHandler(
-  prepareProgressively: ProgressivePreparationResolver = progressiveForecastPreparationService.snapshotAndKickoff,
+  prepareProgressively: ProgressivePreparationResolver = durableProgressivePreparationSnapshot,
 ) {
   return withInternalForecastServiceAuth(async (principal, request: NextRequest) => {
     return runWithForecastRequestDiagnostics({
