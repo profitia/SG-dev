@@ -517,7 +517,7 @@ test('stage 3 migration enforces one active durable owner per logical artifact k
   assert.match(migration, /CREATE INDEX "forecast_preparation_execution_ledger_active_lookup_idx"/)
 })
 
-test('default execution admission falls back to in-memory coordination when the ledger relation is unavailable', async () => {
+test('default execution admission fails closed when the durable ledger relation is unavailable', async () => {
   const previousUrl = process.env.MARKET_DATA_DATABASE_URL
   const previousPrisma = globalThis.__sgRuntimeMarketDataPrisma__
   let transactionAttempts = 0
@@ -533,35 +533,18 @@ test('default execution admission falls back to in-memory coordination when the 
 
   try {
     const admission = createDefaultForecastPreparationExecutionAdmission()
-    const owner = await admission.acquireExecution({
-      operationFamily: 'CURRENT',
-      logicalArtifactKey: 'legacy-ledger-current',
-      logicalArtifactIdentity: currentIdentity,
-      requestId: 'req-owner',
-      ownerRequestId: 'req-owner',
-      observedAt: '2026-09-11T16:00:00.000Z',
-    })
+    await assert.rejects(
+      () => admission.acquireExecution({
+        operationFamily: 'CURRENT',
+        logicalArtifactKey: 'missing-ledger-current',
+        logicalArtifactIdentity: currentIdentity,
+        requestId: 'req-owner',
+        ownerRequestId: 'req-owner',
+        observedAt: '2026-09-11T16:00:00.000Z',
+      }),
+      /forecast_preparation_execution_ledger.*does not exist/,
+    )
 
-    assert.equal(owner.role, 'OWNER')
-    if (owner.role !== 'OWNER') {
-      throw new Error('Expected owner admission from in-memory legacy fallback.')
-    }
-
-    const waiter = await admission.acquireExecution({
-      operationFamily: 'CURRENT',
-      logicalArtifactKey: 'legacy-ledger-current',
-      logicalArtifactIdentity: currentIdentity,
-      requestId: 'req-waiter',
-      ownerRequestId: 'req-owner',
-      observedAt: '2026-09-11T16:00:01.000Z',
-    })
-
-    assert.equal(waiter.role, 'WAITER')
-
-    const latest = await admission.readLatestExecutionForLogicalArtifact('legacy-ledger-current')
-    assert.ok(latest)
-    assert.equal(latest?.executionId, owner.ownership.executionId)
-    assert.equal(latest?.waiterCount, 1)
     assert.equal(transactionAttempts, 1)
   } finally {
     if (previousUrl === undefined) {
