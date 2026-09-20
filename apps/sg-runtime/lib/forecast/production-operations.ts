@@ -43,6 +43,7 @@ export type ForecastProductionOperationItem = {
   historical: 'READY' | 'REUSED' | 'IN_PROGRESS' | 'NOT_REQUESTED' | 'FAILED'
   currentCacheStatus: string | null
   historicalCacheStatus: string | null
+  historicalProgressOriginCount?: number | null
   error: string | null
 }
 
@@ -228,6 +229,7 @@ export function createForecastProductionOperationsService(
               : 'NOT_REQUESTED',
             currentCacheStatus: item?.snapshot.status ?? null,
             historicalCacheStatus: item?.maintenance?.status ?? null,
+            historicalProgressOriginCount: item?.maintenance?.newOriginCount ?? null,
             error: item?.error ?? null,
           })
         }

@@ -114,6 +114,10 @@ export function resolveTerminalVerificationUnavailability(
     item
     && ['READY', 'REUSED'].includes(item.historical)
     && capability?.verificationOriginCount === 0
+    && (
+      input.targetSemantics !== 'ROLLING_DAILY_POINT_IN_TIME'
+      || item.historicalProgressOriginCount === 0
+    )
   ) {
     return 'Historical Verification completed with zero lawful comparisons for the requested horizons because the available history is insufficient.'
   }
