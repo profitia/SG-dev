@@ -193,6 +193,52 @@ test('completed verification compute with zero lawful origins is terminal instea
   assert.deepEqual(harness.events, ['unavailable'])
 })
 
+test('rolling daily verification continues when a bounded slice persisted a lawful origin', () => {
+  const operationResult = {
+    results: [{
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      modelId: 'arima',
+      historical: 'READY',
+      historicalProgressOriginCount: 1,
+    }],
+    after: {
+      capabilities: [{
+        identity: { targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME', modelId: 'arima' },
+        verificationOriginCount: 0,
+      }],
+    },
+  } as never
+
+  assert.equal(resolveTerminalVerificationUnavailability(operationResult, {
+    seriesId: 'series-1',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'arima',
+  }), null)
+})
+
+test('rolling daily verification is terminal only when a bounded slice cannot add another lawful origin', () => {
+  const operationResult = {
+    results: [{
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      modelId: 'arima',
+      historical: 'REUSED',
+      historicalProgressOriginCount: 0,
+    }],
+    after: {
+      capabilities: [{
+        identity: { targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME', modelId: 'arima' },
+        verificationOriginCount: 0,
+      }],
+    },
+  } as never
+
+  assert.match(resolveTerminalVerificationUnavailability(operationResult, {
+    seriesId: 'series-1',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'arima',
+  }) ?? '', /zero lawful comparisons/)
+})
+
 test('durable queue migration defines constrained scheduling state and claim indexes', async () => {
   const migration = await readFile(new URL('../prisma-market-data/migrations/20260920120000_forecast_preparation_job_queue/migration.sql', import.meta.url), 'utf8')
   assert.match(migration, /CREATE TABLE "forecast_preparation_job"/)
