@@ -218,6 +218,50 @@ function unsupportedResult(reason: string): ForecastPreparationCommandResult {
   return { state: 'UNSUPPORTED', reason, job: null }
 }
 
+export function shouldRequeueSucceededPreparationJob(input: {
+  jobStatus: ForecastPreparationJobStatus
+  artifactReadiness: 'READY' | 'NOT_PREPARED' | 'STALE'
+}) {
+  return input.jobStatus === 'SUCCEEDED' && input.artifactReadiness !== 'READY'
+}
+
+async function requeueSucceededJobIfArtifactIsMissing(
+  prisma: PrismaClient,
+  job: ForecastPreparationJob,
+  input: InteractiveForecastIdentity,
+) {
+  if (job.status !== 'SUCCEEDED') return job
+
+  // The artifact can become ready between the initial capability read and the
+  // idempotent job upsert. Re-read before reopening a terminal job so a race
+  // with worker completion never creates duplicate compute.
+  const capability = await resolveInteractiveForecastCapability(input)
+  const artifactReadiness = job.jobKind === 'CURRENT'
+    ? capability.currentReadiness
+    : capability.fullVerificationReadiness
+
+  if (!shouldRequeueSucceededPreparationJob({
+    jobStatus: job.status as ForecastPreparationJobStatus,
+    artifactReadiness,
+  })) {
+    return job
+  }
+
+  const now = new Date()
+  await prisma.forecastPreparationJob.updateMany({
+    where: { id: job.id, status: 'SUCCEEDED' },
+    data: {
+      status: 'QUEUED',
+      availableAt: now,
+      completedAt: null,
+      failureCount: 0,
+      failureCode: null,
+      failureReason: null,
+    },
+  })
+  return prisma.forecastPreparationJob.findUniqueOrThrow({ where: { id: job.id } })
+}
+
 async function upsertJob(
   prisma: PrismaClient,
   input: ForecastPreparationCommand,
@@ -332,12 +376,14 @@ export function createForecastPreparationQueueService(options: {
     let dependencyJobKey: string | null = null
     if (input.kind === 'VERIFICATION' && interactiveCapability.currentReadiness !== 'READY') {
       const currentInput = { ...parsed.data, kind: 'CURRENT' as const }
-      const current = await upsertJob(prisma, currentInput, await resolveJobAuthority(currentInput, capability!), null)
+      const persistedCurrent = await upsertJob(prisma, currentInput, await resolveJobAuthority(currentInput, capability!), null)
+      const current = await requeueSucceededJobIfArtifactIsMissing(prisma, persistedCurrent, currentInput)
       dependencyJobKey = current.jobKey
     }
 
     const command = parsed.data
-    const job = await upsertJob(prisma, command, await resolveJobAuthority(command, capability!), dependencyJobKey)
+    const persistedJob = await upsertJob(prisma, command, await resolveJobAuthority(command, capability!), dependencyJobKey)
+    const job = await requeueSucceededJobIfArtifactIsMissing(prisma, persistedJob, command)
     return stateForJob(job)
   }
 
