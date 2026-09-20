@@ -12,6 +12,7 @@ import {
   resolveDisplayedRenderableCurrentResult,
   resolveDefaultForecastTargetBasis,
   resolveForecastVerificationBannerState,
+  resolveForecastCurrentControlState,
   resolveHistoricalVerificationNotice,
   resolveInitialForecastVerificationVisibility,
   resolveInitialForecastVisibility,
@@ -26,7 +27,11 @@ import {
   mergeExactCapabilitySnapshot,
   shouldRunProgressiveForecastPreparation,
 } from '@/components/raw-data-view/index'
-import type { BenchmarkForecastCurrentAvailableResult } from '@/lib/benchmark-forecast/forecast-contract'
+import type {
+  BenchmarkForecastCurrentAvailableResult,
+  InteractiveForecastCapabilityResult,
+  ProgressiveForecastPreparationSnapshot,
+} from '@/lib/benchmark-forecast/forecast-contract'
 import { FORECAST_ACCURACY_HORIZONS } from '@/lib/forecast-accuracy/forecast-accuracy-contract'
 
 test('forecast-portfolio-v3 defaults target basis to point in time', () => {
@@ -218,6 +223,64 @@ test('forecast control button metadata keeps readiness text separate from the pr
       state: null,
     },
   )
+})
+
+test('a selected durable progress snapshot does not mark other ready controls unsupported', () => {
+  const capability: InteractiveForecastCapabilityResult = {
+    seriesId: 'pl2023g_cl',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'naive',
+    sourceFrequency: 'DAILY',
+    targetCadence: 'DAILY',
+    sourceAvailability: 'AVAILABLE',
+    lawfulTargetSemantics: 'LAWFUL',
+    status: 'NOT_PREPARED',
+    currentReadiness: 'READY',
+    verificationReadiness: 'NOT_PREPARED',
+    recentVerificationReadiness: 'NOT_PREPARED',
+    fullVerificationReadiness: 'NOT_PREPARED',
+    predictionBandResidualCount: 0,
+    predictionBandState: 'NOT_AVAILABLE',
+    readiness: {
+      fastReady: false,
+      bandsReady: false,
+      calibratedReady: false,
+      fullReady: false,
+      blockers: ['RECENT_MISSING'],
+    },
+    targetedDataScope: 'SINGLE_SERIES',
+    timingMs: 1,
+    reason: null,
+  }
+  const snapshot: ProgressiveForecastPreparationSnapshot = {
+    seriesId: 'pl2023g_cl',
+    variants: [{
+      seriesId: 'pl2023g_cl',
+      modelId: 'arima',
+      targetBasis: 'POINT_IN_TIME',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      currentState: 'READY',
+      currentReason: null,
+      verificationState: 'FAILED',
+      verificationReason: 'INSUFFICIENT_VERIFICATION_HISTORY',
+    }],
+    firstReadyCurrent: null,
+    activeItem: null,
+    queuedCount: 0,
+    currentReadyCount: 1,
+    verificationReadyCount: 0,
+  }
+
+  assert.equal(resolveForecastCurrentControlState(snapshot, {
+    seriesId: 'pl2023g_cl',
+    modelId: 'naive',
+    targetBasis: 'POINT_IN_TIME',
+  }, capability), 'READY')
+  assert.equal(resolveForecastCurrentControlState(snapshot, {
+    seriesId: 'pl2023g_cl',
+    modelId: 'arima',
+    targetBasis: 'POINT_IN_TIME',
+  }, capability), 'READY')
 })
 
 test('verification banner stays hidden once the exact selected verification artifact is already available', () => {

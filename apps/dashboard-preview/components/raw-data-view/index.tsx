@@ -659,6 +659,19 @@ function capabilityCurrentControlState(
   return 'UNSUPPORTED'
 }
 
+export function resolveForecastCurrentControlState(
+  snapshot: ProgressiveForecastPreparationSnapshot | null,
+  input: {
+    seriesId: string
+    modelId: ForecastPortfolioModelId
+    targetBasis: ForecastTargetBasis
+  },
+  capability: InteractiveForecastCapabilityResult | null,
+): ProgressiveForecastPreparationState | null {
+  return resolveSelectedProgressiveVariant(snapshot, input)?.currentState
+    ?? capabilityCurrentControlState(capability)
+}
+
 export function resolveRangeForForecastVerification(
   currentRange: RangePreset,
   _verificationEnabled: boolean,
@@ -4283,13 +4296,11 @@ export function RawDataView({
                       const buttonMeta = buildForecastControlButtonMeta(
                         forecastModelLabel(locale, model),
                         locale,
-                        progressivePreparationSnapshot
-                          ? resolveSelectedProgressiveVariant(progressivePreparationSnapshot, {
-                            seriesId: benchmarkSeriesId ?? '',
-                            modelId: model,
-                            targetBasis: selectedForecastTargetBasis,
-                          })?.currentState ?? 'UNSUPPORTED'
-                          : capabilityCurrentControlState(capability),
+                        resolveForecastCurrentControlState(progressivePreparationSnapshot, {
+                          seriesId: benchmarkSeriesId ?? '',
+                          modelId: model,
+                          targetBasis: selectedForecastTargetBasis,
+                        }, capability),
                       )
                       const disabled = !showForecast || (preparedReadsOnly && capability != null && [
                         'NOT_LAWFUL', 'PROVENANCE_REQUIRED', 'NOT_IMPLEMENTED', 'INSUFFICIENT_HISTORY', 'DATA_NOT_AVAILABLE',
@@ -4340,13 +4351,11 @@ export function RawDataView({
                       const buttonMeta = buildForecastControlButtonMeta(
                         forecastTargetBasisLabel(locale, targetBasis),
                         locale,
-                        progressivePreparationSnapshot
-                          ? resolveSelectedProgressiveVariant(progressivePreparationSnapshot, {
-                            seriesId: benchmarkSeriesId ?? '',
-                            modelId: forecastModel,
-                            targetBasis,
-                          })?.currentState ?? 'UNSUPPORTED'
-                          : capabilityCurrentControlState(capability),
+                        resolveForecastCurrentControlState(progressivePreparationSnapshot, {
+                          seriesId: benchmarkSeriesId ?? '',
+                          modelId: forecastModel,
+                          targetBasis,
+                        }, capability),
                       )
                       const disabled = !showForecast || (preparedReadsOnly && capability != null && [
                         'NOT_LAWFUL', 'PROVENANCE_REQUIRED', 'NOT_IMPLEMENTED', 'INSUFFICIENT_HISTORY', 'DATA_NOT_AVAILABLE',
