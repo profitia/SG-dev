@@ -342,7 +342,10 @@ export type RollingDailyCurrentForecastSnapshotReadResult =
     }
   | {
       status: 'STALE'
-      reason: 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH'
+      reason:
+        | 'EXACT_SNAPSHOT_IDENTITY_MISSING'
+        | 'SOURCE_HISTORY_FINGERPRINT_MISSING'
+        | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH'
       payload: RollingDailyProductionForecastResult
     }
 
@@ -532,6 +535,7 @@ export async function readRollingDailyCurrentForecastSnapshot(
   const readLegacySnapshot = async () => readLegacyRollingDailyCurrentForecastSnapshot(prisma, request)
 
   let snapshot: Awaited<ReturnType<typeof prisma.rollingDailyCurrentForecastSnapshot.findUnique>> | null
+  let exactIdentityColumnsUnavailable = false
 
   try {
     snapshot = await prisma.rollingDailyCurrentForecastSnapshot.findUnique({
@@ -554,6 +558,7 @@ export async function readRollingDailyCurrentForecastSnapshot(
       throw error
     }
 
+    exactIdentityColumnsUnavailable = true
     snapshot = null
   }
 
@@ -576,6 +581,14 @@ export async function readRollingDailyCurrentForecastSnapshot(
     }
 
     if (persistedFingerprint === request.sourceHistoryFingerprint) {
+      if (!exactIdentityColumnsUnavailable) {
+        return {
+          status: 'STALE',
+          reason: 'EXACT_SNAPSHOT_IDENTITY_MISSING',
+          payload,
+        }
+      }
+
       return {
         status: 'HIT',
         payload,

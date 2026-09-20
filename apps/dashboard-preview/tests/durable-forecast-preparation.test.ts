@@ -64,6 +64,29 @@ test('missing durable request projects to preparation-required instead of unsupp
   assert.equal(projected.variants[0]?.verificationState, 'NOT_PREPARED')
 })
 
+test('stale durable artifacts project to preparation-required instead of unsupported', () => {
+  const snapshot: DurableForecastPreparationSnapshot = {
+    seriesId: 'series-1',
+    modelId: 'arima',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    targetBasis: 'POINT_IN_TIME',
+    current: {
+      state: 'UNSUPPORTED',
+      reason: 'The prepared Current Forecast is stale; submit a new preparation request.',
+      job: null,
+    },
+    verification: {
+      state: 'UNSUPPORTED',
+      reason: 'The prepared Historical Verification is stale; submit a new preparation request.',
+      job: null,
+    },
+  }
+
+  const projected = durableSnapshotToProgressiveSnapshot(snapshot)
+  assert.equal(projected.variants[0]?.currentState, 'NOT_PREPARED')
+  assert.equal(projected.variants[0]?.verificationState, 'NOT_PREPARED')
+})
+
 test('verification preparation client submits an explicit durable command', async () => {
   let observedUrl = ''
   let observedBody = ''

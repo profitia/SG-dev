@@ -967,6 +967,89 @@ test('rolling-daily current snapshot read falls back to legacy lookup when exact
   assert.equal(rawLegacyLookupCalled, true)
 })
 
+test('rolling-daily current snapshot rebuilds a legacy row when exact identity columns exist', async () => {
+  const readResult = await readRollingDailyCurrentForecastSnapshot(
+    {
+      seriesId: 'wocaes0074',
+      modelId: 'arima',
+      sourceHistoryFingerprint: 'history-fingerprint-v2',
+    },
+    {
+      prisma: {
+        rollingDailyCurrentForecastSnapshot: {
+          async findUnique() {
+            return null
+          },
+          async findFirst() {
+            return {
+              payloadJson: {
+                contractVersion: '1',
+                status: 'AVAILABLE',
+                benchmark: {
+                  benchmarkId: 'wocaes0074',
+                  displayName: 'Brent, Spot, FOB North Sea',
+                  frequency: 'DAILY',
+                  unit: 'USD/bbl',
+                  currency: 'USD',
+                  provider: 'macrobond',
+                  providerSeriesId: 'wocaes0074',
+                },
+                forecastMethod: { id: 'ROLLING_DAILY_POINT_IN_TIME', version: 'rolling-daily-point-in-time-v1' },
+                model: {
+                  id: 'arima',
+                  selectedCandidate: 'ARIMA(2,1,2)',
+                  selectionMetric: 'AICc',
+                  selectionScore: 33370.94305202132,
+                  selectedParameters: null,
+                },
+                origin: { date: '2026-08-18', value: 90.1 },
+                maxHorizonMonths: 12,
+                anchors: [
+                  { horizon: '1M', horizonMonths: 1, targetCalendarDate: '2026-09-18', pointForecast: 90.3, band: { status: 'NOT_AVAILABLE', reasonCode: 'CALIBRATION_NOT_AVAILABLE', source: null, lower: null, upper: null, sampleCount: null, p10ResidualOffset: null, p90ResidualOffset: null } },
+                  { horizon: '3M', horizonMonths: 3, targetCalendarDate: '2026-11-18', pointForecast: 90.5, band: { status: 'NOT_AVAILABLE', reasonCode: 'CALIBRATION_NOT_AVAILABLE', source: null, lower: null, upper: null, sampleCount: null, p10ResidualOffset: null, p90ResidualOffset: null } },
+                  { horizon: '6M', horizonMonths: 6, targetCalendarDate: '2027-02-18', pointForecast: 90.9, band: { status: 'NOT_AVAILABLE', reasonCode: 'CALIBRATION_NOT_AVAILABLE', source: null, lower: null, upper: null, sampleCount: null, p10ResidualOffset: null, p90ResidualOffset: null } },
+                  { horizon: '12M', horizonMonths: 12, targetCalendarDate: '2027-08-18', pointForecast: 91.7, band: { status: 'NOT_AVAILABLE', reasonCode: 'CALIBRATION_NOT_AVAILABLE', source: null, lower: null, upper: null, sampleCount: null, p10ResidualOffset: null, p90ResidualOffset: null } },
+                ],
+                path: [
+                  { date: '2026-08-19', pointForecast: 90.1, band: { status: 'NOT_AVAILABLE', reasonCode: 'CALIBRATION_NOT_AVAILABLE', source: null, lower: null, upper: null } },
+                  { date: '2027-08-18', pointForecast: 91.7, band: { status: 'NOT_AVAILABLE', reasonCode: 'CALIBRATION_NOT_AVAILABLE', source: null, lower: null, upper: null } },
+                ],
+                calibration: {
+                  availabilityStatus: 'NOT_AVAILABLE',
+                  freshnessStatus: null,
+                  quantileConvention: 'HF7_LINEAR_INTERPOLATION',
+                  coverageLabel: '80% empirical prediction band',
+                  methodologicalMinimumStatus: 'OPEN',
+                  updatedAt: null,
+                  processedThrough: null,
+                  lastResidualAvailabilityDate: null,
+                },
+                audit: {
+                  generatedAt: '2026-08-20T00:00:00.000Z',
+                  sourceLatestObservationDate: '2026-08-18',
+                  calendarProjectionMode: 'CALENDAR_MONTH_CLAMP',
+                  projectionCalendarStrategy: 'CALENDAR_MONTH_CLAMP',
+                  technicalMinimumTrainingObservations: 60,
+                  methodologicalTrainingEligibilityStatus: 'ELIGIBLE',
+                  calibrationUpdatedAt: null,
+                  calibrationLastResidualAvailabilityDate: null,
+                  inputSource: 'DYNAMIC_MARKET_DATA_STORE',
+                  sourceHistoryFingerprint: 'history-fingerprint-v2',
+                },
+                warnings: [],
+              },
+            }
+          },
+        },
+      } as never,
+    },
+  )
+
+  assert.equal(readResult.status, 'STALE')
+  if (readResult.status !== 'STALE') throw new Error('Expected STALE.')
+  assert.equal(readResult.reason, 'EXACT_SNAPSHOT_IDENTITY_MISSING')
+})
+
 test('rolling-daily current snapshot detects source fingerprint drift and marks the prepared payload stale', async () => {
   const readResult = await readRollingDailyCurrentForecastSnapshot(
     {
