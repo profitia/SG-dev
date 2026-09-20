@@ -95,16 +95,16 @@ export async function resolveBenchmarkAnalyticsEligibility(
   }
 
   const porrDemoProfile = options?.porrDemoProfile ?? isPorrDemoProfile
-  const forecastPortfolioEnabled = !porrDemoProfile || isPorrDemoForecastBenchmark(seriesId)
+  const preparedReadsOnly = porrDemoProfile && isPorrDemoForecastBenchmark(seriesId)
 
   return {
     eligible: true,
     componentCode: null,
     analyticsUrl: buildDashboardPreviewAnalyticsUrl(locale, seriesId, displayName, {
       ...options,
-      forecastPortfolioEnabled,
-      preparedReadsOnly: porrDemoProfile && forecastPortfolioEnabled,
+      forecastPortfolioEnabled: true,
+      preparedReadsOnly,
     }),
-    forecastPortfolioEnabled,
+    forecastPortfolioEnabled: true,
   }
 }

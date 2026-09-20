@@ -35,7 +35,7 @@ test('analytics URL keeps warm-up off for the PORR demo profile', async () => {
   assert.equal(eligibility.forecastPortfolioEnabled, true)
 })
 
-test('PORR demo limits forecast controls to the configured eleven while preserving historical analytics', async () => {
+test('PORR demo keeps the configured eleven prepared-read only without blocking canonical preparation for other benchmarks', async () => {
   const { resolveBenchmarkAnalyticsEligibility } = await import('@/lib/benchmark/analytics')
   const { PORR_DEMO_FORECAST_BENCHMARKS } = await import('@/lib/benchmark/porr-demo-forecast-portfolio')
 
@@ -43,17 +43,17 @@ test('PORR demo limits forecast controls to the configured eleven while preservi
   assert.equal(new Set(PORR_DEMO_FORECAST_BENCHMARKS.map((item) => item.seriesId)).size, 11)
 
   const portfolio = await resolveBenchmarkAnalyticsEligibility('en', 'lmeofcucashask', 'LME Copper', { porrDemoProfile: true })
-  const historyOnly = await resolveBenchmarkAnalyticsEligibility('en', 'lmeofalcashask', 'LME Aluminium', { porrDemoProfile: true })
+  const canonicalPreparation = await resolveBenchmarkAnalyticsEligibility('en', 'lmeofalcashask', 'LME Aluminium', { porrDemoProfile: true })
 
   assert.equal(portfolio.eligible, true)
   assert.equal(portfolio.forecastPortfolioEnabled, true)
   assert.equal(new URL(portfolio.analyticsUrl ?? '').searchParams.get('variantId'), 'forecast-portfolio-v3')
   assert.equal(new URL(portfolio.analyticsUrl ?? '').searchParams.get('preparedReadsOnly'), '1')
 
-  assert.equal(historyOnly.eligible, true)
-  assert.equal(historyOnly.forecastPortfolioEnabled, false)
-  assert.equal(new URL(historyOnly.analyticsUrl ?? '').searchParams.get('variantId'), 'finder-embedded-v2')
-  assert.equal(new URL(historyOnly.analyticsUrl ?? '').searchParams.has('preparedReadsOnly'), false)
+  assert.equal(canonicalPreparation.eligible, true)
+  assert.equal(canonicalPreparation.forecastPortfolioEnabled, true)
+  assert.equal(new URL(canonicalPreparation.analyticsUrl ?? '').searchParams.get('variantId'), 'forecast-portfolio-v3')
+  assert.equal(new URL(canonicalPreparation.analyticsUrl ?? '').searchParams.has('preparedReadsOnly'), false)
 })
 
 test('analytics URL propagates the warm-up flag for explicit experiment requests without duplication', async () => {
