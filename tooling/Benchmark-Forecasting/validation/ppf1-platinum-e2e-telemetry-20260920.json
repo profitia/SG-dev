@@ -1,0 +1,136 @@
+{
+  "artifactVersion": "PPF1_PLATINUM_E2E_TELEMETRY_V1",
+  "testDate": "2026-09-20",
+  "verdict": {
+    "currentForecastOnDemand": "LIVE_PROVEN",
+    "durableQueueAfterBrowserClose": "LIVE_PROVEN",
+    "preparedReadReuse": "LIVE_PROVEN",
+    "fullHistoricalVerification": "FACTUALLY_INSUFFICIENT_HISTORY",
+    "zeroOriginLoop": "CORRECTED_AND_LIVE_PROVEN",
+    "overall": "PASS_WITH_FACTUAL_VERIFICATION_LIMITATION"
+  },
+  "authority": {
+    "repository": "https://github.com/profitia/SG-dev",
+    "baselineMainSha": "a367bbcbbd2a2c448f2c6d63a0f95a9f2cf0a6f0",
+    "finalSourceMergeSha": "1a1f69c8e0dac763b2deb297dd2615df9e1da883",
+    "branch": "test/ppf1-platinum-e2e-telemetry-20260920",
+    "neon": {
+      "projectId": "autumn-waterfall-65938876",
+      "branchId": "br-purple-shape-b2az1npx",
+      "database": "neondb",
+      "access": "READ_ONLY_VERIFICATION"
+    }
+  },
+  "benchmark": {
+    "seriesId": "pl2023g_cl",
+    "marketDataSeriesId": "cmtm79kbh000nh4hhwx3wtbqd",
+    "provider": "CME Group",
+    "frequency": "DAILY",
+    "unit": "USD/Troy Ounce",
+    "observationCount": 61,
+    "firstObservation": "2022-11-28",
+    "lastObservation": "2023-02-24",
+    "initialExactCurrentArtifacts": 0,
+    "initialExactVerificationArtifacts": 0,
+    "legacyDailySnapshots": ["naive", "damped_holt", "arima"]
+  },
+  "timing": {
+    "searchTotalMs": 1770,
+    "reference": {
+      "identity": "naive/MONTHLY_AVERAGE",
+      "queueAckMs": 641,
+      "dashboardBridgeMs": 535,
+      "requestedAt": "2026-09-20T16:28:23.316Z",
+      "startedAt": "2026-09-20T16:28:24.253Z",
+      "artifactCreatedAt": "2026-09-20T16:28:28.456Z",
+      "completedAt": "2026-09-20T16:28:28.593Z",
+      "queueWaitMs": 937,
+      "workerMs": 4340,
+      "requestToArtifactMs": 5140,
+      "approximateSubmitToArtifactMs": 6000,
+      "approximateClientObservedReadyMs": 13000,
+      "approximateObservationGapMs": 7000,
+      "warmReadMs": 133
+    },
+    "warmReadsMs": {
+      "naive/MONTHLY_AVERAGE": 1302,
+      "naive/END_OF_PERIOD": 227,
+      "naive/POINT_IN_TIME": 842,
+      "damped_holt/POINT_IN_TIME": 611,
+      "ets/POINT_IN_TIME": 645,
+      "arima/POINT_IN_TIME": 575
+    }
+  },
+  "capabilitySummary": {
+    "totalIdentities": 12,
+    "currentReady": 6,
+    "insufficientHistory": 6,
+    "verificationReady": 0,
+    "verificationTerminalInsufficient": 5,
+    "complexMonthlyMinimumObservations": 6,
+    "availableContiguousMonthlyObservations": 4
+  },
+  "verificationJobs": [
+    {"identity": "naive/MONTHLY_AVERAGE", "status": "FAILED", "sliceCount": 118, "failureCode": "INSUFFICIENT_VERIFICATION_HISTORY", "completedAt": "2026-09-20T17:20:20.467Z"},
+    {"identity": "naive/END_OF_PERIOD", "status": "FAILED", "sliceCount": 103, "failureCode": "INSUFFICIENT_VERIFICATION_HISTORY", "completedAt": "2026-09-20T17:15:34.200Z"},
+    {"identity": "naive/POINT_IN_TIME", "status": "FAILED", "sliceCount": 121, "failureCode": "INSUFFICIENT_VERIFICATION_HISTORY", "completedAt": "2026-09-20T17:26:26.513Z"},
+    {"identity": "damped_holt/POINT_IN_TIME", "status": "FAILED", "sliceCount": 75, "failureCode": "INSUFFICIENT_VERIFICATION_HISTORY", "completedAt": "2026-09-20T17:15:38.487Z"},
+    {"identity": "ets/POINT_IN_TIME", "status": "FAILED", "sliceCount": 71, "failureCode": "INSUFFICIENT_VERIFICATION_HISTORY", "completedAt": "2026-09-20T17:15:42.298Z"}
+  ],
+  "resourceEvidence": {
+    "workerInstances": 1,
+    "loopCpuRange": "0.68-1.00 CPU",
+    "loopPeakMemoryBytes": 682721300,
+    "postFixCpuRange": "0.002-0.114 CPU",
+    "postFixMemoryRangeBytes": [158638080, 228032510],
+    "metricResolutionSeconds": 60
+  },
+  "deployments": {
+    "dashboard": {"serviceId": "srv-da2i7j9t0dsc73ag7qv0", "deployId": "dep-dao1k8dg1s2s7393q09g", "sourceSha": "1a1f69c8e0dac763b2deb297dd2615df9e1da883", "status": "live"},
+    "sgRuntime": {"serviceId": "srv-d98a73btqb8s73fabp90", "deployId": "dep-dao1fu8473hc73b3fnv0", "sourceSha": "06250b8c047d28efd7457cfbf4988f3441446a20", "status": "live"},
+    "benchmarkFinder": {"serviceId": "srv-d9tmgddbedkc739jr24g", "deployId": "dep-dao1fsugekts73ai0cog", "sourceSha": "06250b8c047d28efd7457cfbf4988f3441446a20", "status": "live"},
+    "preparationWorker": {"serviceId": "srv-dansibrtqb8s73d0nn3g", "deployId": "dep-dao1fvg473hc73b3fsg0", "sourceSha": "06250b8c047d28efd7457cfbf4988f3441446a20", "status": "live"}
+  },
+  "liveUiSmoke": {
+    "search": "PASS",
+    "analyticsExpansion": "PASS",
+    "showForecast": "PASS",
+    "showVerification": "PASS",
+    "durableVerificationActionVisible": true,
+    "browserClosureMessageVisible": true,
+    "arimaDailyCurrent": "READY",
+    "naiveDailyCurrent": "READY",
+    "falseUnsupportedPeerLabels": 0
+  },
+  "correctives": [
+    {"pr": 17, "mergeSha": "db1cfe5d1c63884dcda0f9753e9433f2000af8fb", "purpose": "durable verification action and UI projection"},
+    {"pr": 18, "mergeSha": "ace2c8bf45c68997ad09f24745542b43dbe87239", "purpose": "exact Daily recovery from legacy snapshots"},
+    {"pr": 19, "mergeSha": "6dc1165da9f4d960af02d45c812082e07dd22f3f", "purpose": "reopen stale succeeded preparation jobs"},
+    {"pr": 20, "mergeSha": "fb8dcefeeca79884146f6f415516ea817667ede9", "purpose": "reset attempt telemetry on reopen"},
+    {"pr": 21, "mergeSha": "66746ee5cc8b91f67c4305e295ca06c4829b1bcd", "purpose": "terminate zero-origin verification jobs"},
+    {"pr": 22, "mergeSha": "3ff24a02e7a71107afb4746fb220879bc466c59d", "purpose": "reject zero-comparison exact readiness"},
+    {"pr": 23, "mergeSha": "06250b8c047d28efd7457cfbf4988f3441446a20", "purpose": "align batch readiness with exact evidence"},
+    {"pr": 24, "mergeSha": "1a1f69c8e0dac763b2deb297dd2615df9e1da883", "purpose": "preserve peer readiness during selected queue progress"}
+  ],
+  "validation": {
+    "dashboardTests": "276/276 PASS",
+    "dashboardTypecheck": "PASS",
+    "dashboardProductionBuild": "PASS",
+    "sgRuntimeTargetedTests": "57/57 PASS",
+    "sgRuntimeTypecheck": "PASS",
+    "sgRuntimeProductionBuild": "PASS",
+    "sgRuntimeWildcardSuite": "PARTIAL_ENVIRONMENT_BLOCKED_LOCAL_POSTGRES_127.0.0.1_55421",
+    "gitDiffCheck": "PASS",
+    "neonManualArtifactWrites": 0
+  },
+  "telemetryGaps": [
+    {"priority": "P0", "gap": "No universal browser-to-artifact correlation identity"},
+    {"priority": "P0", "gap": "No pre-admission lawful comparison count by horizon"},
+    {"priority": "P1", "gap": "Artifact-ready to UI-visible delay is not persisted"},
+    {"priority": "P1", "gap": "No graceful lease release on worker SIGTERM"},
+    {"priority": "P1", "gap": "No immutable attempt-level job timeline"},
+    {"priority": "P1", "gap": "No processed/expected origin progress and factual ETA"},
+    {"priority": "P2", "gap": "Incomplete model/Python sub-stage timing"},
+    {"priority": "P2", "gap": "Render resource metrics cannot be attributed per job"}
+  ]
+}
