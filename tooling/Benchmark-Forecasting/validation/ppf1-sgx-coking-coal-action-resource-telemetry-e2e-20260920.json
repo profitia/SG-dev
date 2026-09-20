@@ -1,0 +1,173 @@
+{
+  "schemaVersion": "ppf1-action-resource-telemetry-e2e-v1",
+  "taskId": "PPF1-ACTION-RESOURCE-TELEMETRY-20260920",
+  "capturedAt": "2026-09-20T21:00:31.643Z",
+  "benchmark": {
+    "seriesId": "sgx_acf2027f_cl",
+    "description": "Future · Singapore Exchange · SGX TSI Australia Premium Coking Coal · January 2027 · Close",
+    "frequency": "Daily",
+    "unit": "USD/Metric Ton",
+    "sourceHistory": {
+      "earliestObservation": "2023-01-03",
+      "latestObservation": "2026-09-18",
+      "validObservationCountApprox": 960
+    }
+  },
+  "publication": {
+    "initialBaseSha": "9ff72ef32c4077ee259b9e93084a1d0a35d326c3",
+    "finalSourceSha": "f9674c955860f79816ff5fb3076bda5090c053e2",
+    "sourceCommits": [
+      "53663ca9867e14cbdd2140d176c4c73d5c49fc6c",
+      "5d129a0dad3d3faad7b7600069171b45af2125de",
+      "402bdc21e4290ec3b7d381f001a15980052c9ba5"
+    ],
+    "pullRequests": [28, 29, 30],
+    "migration": "20260920233000_forecast_action_trace_and_resource_summary"
+  },
+  "deployments": {
+    "spendguruStage": {
+      "serviceId": "srv-d98a73btqb8s73fabp90",
+      "deployId": "dep-dao475mk1f9s73ajno30",
+      "status": "live",
+      "commit": "f9674c955860f79816ff5fb3076bda5090c053e2"
+    },
+    "forecastPreparationWorker": {
+      "serviceId": "srv-dansibrtqb8s73d0nn3g",
+      "deployId": "dep-dao477ajnfac73ague00",
+      "status": "live",
+      "commit": "f9674c955860f79816ff5fb3076bda5090c053e2"
+    },
+    "dashboardsLibrary": {
+      "serviceId": "srv-da2i7j9t0dsc73ag7qv0",
+      "deployId": "dep-dao478ugekts73aqsdf0",
+      "status": "live",
+      "commit": "f9674c955860f79816ff5fb3076bda5090c053e2"
+    }
+  },
+  "currentForecastE2e": {
+    "finalCorrectiveRun": {
+      "correlationId": "5ede2f17-4336-444d-8b7e-a89973404686",
+      "modelId": "naive",
+      "targetBasis": "POINT_IN_TIME",
+      "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+      "actionRequestedAt": "2026-09-20T20:39:26.066Z",
+      "queueAcceptedAt": "2026-09-20T20:39:26.945Z",
+      "artifactReadyAt": "2026-09-20T20:39:29.926Z",
+      "dashboardFirstReadyObservedAt": "2026-09-20T20:39:30.449Z",
+      "uiVisibleClientAt": "2026-09-20T20:39:32.081Z",
+      "uiAckReceivedAt": "2026-09-20T20:39:32.157Z",
+      "responseToVisibleMs": 606.5,
+      "derivedDurationsMs": {
+        "requestToQueue": 879,
+        "queueToArtifactReady": 2981,
+        "artifactReadyToDashboardObservation": 523,
+        "dashboardObservationToClientVisible": 1632,
+        "clientVisibleToAckReceived": 76,
+        "requestToAckReceived": 6091
+      },
+      "resourceSummary": {
+        "workerWallMs": 1247.349,
+        "nodeUserCpuMs": 809.641,
+        "nodeSystemCpuMs": 90.139,
+        "nodeMaxRssBytes": 149467136,
+        "nodeSampledPeakRssBytes": 147369984,
+        "pythonProcessCount": 0
+      }
+    },
+    "pythonAttributionRun": {
+      "correlationId": "ff0feab8-ff3c-4fac-9331-f816798cc19c",
+      "modelId": "arima",
+      "requestToAckReceivedMs": 25042,
+      "workerWallMs": 21116.305,
+      "python": {
+        "processCount": 1,
+        "script": "export_rolling_daily_current_forecast.py",
+        "wallMs": 19260.875,
+        "userCpuMs": 17991.898,
+        "systemCpuMs": 580.761,
+        "maxRssBytes": 170176512
+      }
+    }
+  },
+  "verificationE2e": {
+    "correlationId": "842467c9-1671-4c51-ac48-17307ac2132c",
+    "jobKey": "3c5742b66d852a5370ac0160da4ff26f723e2f0f114fb11866c15e37a521375d",
+    "modelId": "naive",
+    "targetBasis": "POINT_IN_TIME",
+    "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+    "actionRequestedAt": "2026-09-20T20:39:51.375Z",
+    "queueAcceptedAt": "2026-09-20T20:39:52.386Z",
+    "browserClosedAfterQueueAcceptance": true,
+    "browserReopenedAndJobStillRunning": true,
+    "captureState": {
+      "status": "RUNNING",
+      "sliceCount": 205,
+      "failureCount": 0,
+      "artifactReadyAt": null,
+      "dashboardFirstReadyObservedAt": null,
+      "uiAckReceivedAt": null,
+      "fullVerificationReadiness": "STALE",
+      "blockers": [
+        "RECENT_MISSING",
+        "FULL_HISTORICAL_STALE",
+        "BANDS_NOT_AVAILABLE",
+        "CALIBRATION_INSUFFICIENT_SAMPLES"
+      ]
+    },
+    "resourceAggregateAtCapture": {
+      "measuredSlices": 205,
+      "totalWorkerWallMs": 1219636.057,
+      "averageWorkerWallMs": 5949.444,
+      "peakNodeSampledRssBytes": 291528704,
+      "pythonProcessCount": 410,
+      "totalPythonWallMs": 668546.564,
+      "peakPythonRssBytes": 165560320
+    },
+    "firstSliceRenderLog": {
+      "requestAcceptedAt": "2026-09-20T20:39:52.412Z",
+      "workerStartedAt": "2026-09-20T20:39:54.163Z",
+      "workerFinishedAt": "2026-09-20T20:40:02.306Z",
+      "status": 200,
+      "nextState": "QUEUED",
+      "workerWallMs": 8143.432,
+      "pythonProcessCount": 2,
+      "pythonWallMs": 5645.609
+    }
+  },
+  "renderContext": {
+    "window": {
+      "start": "2026-09-20T20:38:00Z",
+      "end": "2026-09-20T21:01:00Z"
+    },
+    "workerInstanceCount": 1,
+    "peakCpuCores": 1,
+    "peakMemoryBytes": 393465860,
+    "attribution": "SERVICE_LEVEL_CONTEXT_ONLY"
+  },
+  "correctivesDiscoveredByLiveE2e": [
+    {
+      "finding": "Current UI visibility ACK could be attributed to a verification correlation while verification polling was active.",
+      "corrective": "Layer-qualified current and verification correlation identities; polling no longer replaces the current render identity.",
+      "commit": "5d129a0dad3d3faad7b7600069171b45af2125de"
+    },
+    {
+      "finding": "A successful first bounded Daily verification slice was treated as terminal when capability origin count was zero.",
+      "corrective": "Daily terminalization now considers actual historical progress origin count and continues after a productive slice.",
+      "commit": "402bdc21e4290ec3b7d381f001a15980052c9ba5"
+    }
+  ],
+  "verdict": {
+    "eventContract": "PASS",
+    "artifactReadyTimestamp": "PASS",
+    "dashboardReadyObservation": "PASS",
+    "postRenderUiAck": "PASS",
+    "nodeResourceMeasurement": "PASS",
+    "pythonResourceMeasurement": "PASS",
+    "executionLedgerResourceSummary": "PASS",
+    "singleCorrelationTimelineReport": "PASS",
+    "githubRenderNeonParity": "PASS",
+    "durableQueueAcrossBrowserClose": "PASS",
+    "fullVerificationAtCapture": "IN_PROGRESS_EXPECTED",
+    "overall": "PASS_WITH_BACKGROUND_VERIFICATION_IN_PROGRESS"
+  }
+}
