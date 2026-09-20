@@ -12,6 +12,7 @@ import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 import { serverEnv } from '@/lib/env'
 import type { ForecastTargetBasis, ForecastUncertaintyBand } from '@/lib/forecast/contracts'
 import { createCurrentForecastStatisticalCompatibility } from '@/lib/forecast/identity'
+import { buildForecastPythonInvocation, consumeForecastPythonResourceTelemetry } from '@/lib/forecast/python-resource-telemetry'
 import { selectTrailingRollingDailyCurrentHistory } from '@/lib/forecast/rolling-daily-current-ownership'
 import {
   ROLLING_DAILY_INSUFFICIENT_TECHNICAL_TRAINING_REASON,
@@ -1054,24 +1055,25 @@ function createDefaultRunner(): RollingDailyCurrentForecastRunner {
 
       try {
         await writeFile(inputPath, JSON.stringify(request), 'utf8')
+        const invocation = buildForecastPythonInvocation(configuration.scriptPath, [
+          '--input-json',
+          inputPath,
+          '--output-json',
+          outputPath,
+        ])
         const { stderr } = await execFileAsync(
           configuration.pythonBin,
-          [
-            configuration.scriptPath,
-            '--input-json',
-            inputPath,
-            '--output-json',
-            outputPath,
-          ],
+          invocation.args,
           {
             cwd: configuration.labRoot,
             maxBuffer: BRIDGE_BUFFER_BYTES,
           },
         )
 
+        const applicationStderr = consumeForecastPythonResourceTelemetry(stderr)
         const output = JSON.parse(await readFile(outputPath, 'utf8')) as RollingDailyCurrentForecastBridgeResponse
-        if (output.status === 'FAILED' && stderr.trim().length > 0 && !output.reason) {
-          output.reason = stderr.trim()
+        if (output.status === 'FAILED' && applicationStderr.trim().length > 0 && !output.reason) {
+          output.reason = applicationStderr.trim()
         }
         return output
       } finally {

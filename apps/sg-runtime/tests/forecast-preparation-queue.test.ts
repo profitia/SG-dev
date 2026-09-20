@@ -225,6 +225,26 @@ test('worker completes a Current job through the canonical preparation owner', a
   assert.deepEqual(harness.events, ['complete'])
 })
 
+test('observability persistence cannot turn a completed Forecast job into a retry', async () => {
+  const harness = queueHarness(claimedJob('CURRENT'))
+  const worker = createForecastPreparationWorker({
+    queue: harness.queue,
+    prepareCurrent: async (input) => ({
+      ...input,
+      operation: 'CURRENT_FORECAST',
+      status: 'READY',
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 1,
+      reason: null,
+    }),
+    recordArtifactReady: async () => { throw new Error('telemetry unavailable') },
+    persistResourceSummary: async () => { throw new Error('ledger unavailable') },
+  })
+
+  assert.equal(await worker.runOne(), true)
+  assert.deepEqual(harness.events, ['complete'])
+})
+
 test('worker preserves the durable user correlation in compute diagnostics', async () => {
   const harness = queueHarness(claimedJob('CURRENT'))
   let observedRequestId: string | null = null

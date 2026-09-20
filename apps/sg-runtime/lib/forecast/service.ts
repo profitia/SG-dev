@@ -10,6 +10,7 @@ import { Prisma } from '@/generated/market-data-client'
 import { serverEnv } from '@/lib/env'
 import { resolveExactForecastCapability } from '@/lib/forecast/capability-resolver'
 import { buildForecastHistoryFingerprint as buildCanonicalForecastHistoryFingerprint } from '@/lib/forecast/history-fingerprint'
+import { buildForecastPythonInvocation, consumeForecastPythonResourceTelemetry } from '@/lib/forecast/python-resource-telemetry'
 import {
   createForecastCadence,
   normalizeForecastSourceFrequency,
@@ -2343,24 +2344,26 @@ async function executeForecastBridge(
   modelId?: string,
   extraArgs: string[] = [],
 ): Promise<ForecastHistoryBridgeResponse | ForecastCurrentBridgeResponse | ForecastVerificationBridgeResponse> {
-  const args = [configuration.scriptPath, '--mode', mode, '--series-id', seriesId, ...extraArgs]
+  const args = ['--mode', mode, '--series-id', seriesId, ...extraArgs]
   if (modelId) {
     args.push('--model', modelId)
   }
+  const invocation = buildForecastPythonInvocation(configuration.scriptPath, args)
 
   try {
-    const { stdout, stderr } = await execFileAsync(configuration.pythonBin, args, {
+    const { stdout, stderr } = await execFileAsync(configuration.pythonBin, invocation.args, {
       cwd: configuration.labRoot,
       maxBuffer: BRIDGE_BUFFER_BYTES,
     })
+    const applicationStderr = consumeForecastPythonResourceTelemetry(stderr)
 
     const payload = JSON.parse(stdout) as
       | ForecastHistoryBridgeResponse
       | ForecastCurrentBridgeResponse
       | ForecastVerificationBridgeResponse
 
-    if (payload.status === 'FAILED' && stderr.trim().length > 0) {
-      payload.reason = `${payload.reason} | stderr: ${stderr.trim()}`
+    if (payload.status === 'FAILED' && applicationStderr.trim().length > 0) {
+      payload.reason = `${payload.reason} | stderr: ${applicationStderr.trim()}`
     }
 
     return payload

@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { withInternalForecastServiceAuth } from '@/lib/api/internal-forecast-service-auth'
 import { cognitionError, cognitionOk, parseJsonBody, parseSearchParams } from '@/lib/api/middleware'
 import { InteractiveForecastIdentitySchema } from '@/lib/forecast/interactive-preparation'
+import { recordDashboardReadyObservationForSnapshot } from '@/lib/forecast/forecast-action-trace'
 import {
   createForecastPreparationQueueService,
   ForecastPreparationCommandSchema,
@@ -49,7 +50,19 @@ export function createForecastPreparationJobsGetHandler(
     const parsed = parseSearchParams(request, InteractiveForecastIdentitySchema)
     if (!parsed.ok) return cognitionError('VALIDATION_ERROR', parsed.message, 400, principal.requestId)
     try {
-      return cognitionOk(await snapshot(parsed.data))
+      const result = await snapshot(parsed.data)
+      try {
+        await recordDashboardReadyObservationForSnapshot(principal.requestId, {
+          currentReady: result.current.state === 'READY',
+          verificationReady: result.verification.state === 'READY',
+        })
+      } catch (error) {
+        console.error('[forecast-preparation] Dashboard-ready telemetry failed', {
+          correlationId: principal.requestId,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+      return cognitionOk(result)
     } catch (error) {
       return cognitionError(
         'FORECAST_PREPARATION_QUEUE_FAILED',

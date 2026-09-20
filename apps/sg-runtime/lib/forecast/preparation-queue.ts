@@ -29,11 +29,18 @@ import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 import { ADAPTIVE_HISTORICAL_VERIFICATION_ORIGIN_POLICY_VERSION } from '@/lib/forecast/historical-verification-origin-policy'
 import { resolveForecastJobCorrelationId } from '@/lib/forecast/forecast-correlation'
 import {
+  recordForecastActionRequested,
+  recordForecastArtifactReady,
+  recordForecastQueueAccepted,
+} from '@/lib/forecast/forecast-action-trace'
+import { persistForecastExecutionResourceSummary } from '@/lib/forecast/execution-ledger'
+import {
   completeForecastRequestDiagnostics,
   noteForecastRequestDiagnosticsEvent,
   runWithForecastRequestDiagnostics,
   updateForecastRequestDiagnosticsIdentity,
 } from '@/lib/forecast/request-diagnostics'
+import { measureForecastWorkerJob } from '@/lib/forecast/worker-resource-telemetry'
 
 export const FORECAST_PREPARATION_JOB_KINDS = ['CURRENT', 'VERIFICATION'] as const
 export const FORECAST_PREPARATION_JOB_STATUSES = [
@@ -406,6 +413,29 @@ export function createForecastPreparationQueueService(options: {
     return exact.capability
   }
 
+  async function safelyRecordActionRequested(input: Parameters<typeof recordForecastActionRequested>[0]) {
+    try {
+      await recordForecastActionRequested(input, prisma)
+    } catch (error) {
+      console.error('[forecast-preparation] action-request telemetry failed', {
+        correlationId: input.correlationId,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
+  async function safelyRecordQueueAccepted(correlationId: string, jobKey: string) {
+    try {
+      await recordForecastQueueAccepted(correlationId, jobKey, new Date(), prisma)
+    } catch (error) {
+      console.error('[forecast-preparation] queue-accepted telemetry failed', {
+        correlationId,
+        jobKey,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
   async function enqueue(
     input: ForecastPreparationCommand,
     options: { correlationId: string },
@@ -414,6 +444,15 @@ export function createForecastPreparationQueueService(options: {
     if (!parsed.success) {
       return unsupportedResult('The exact Forecast preparation identity is invalid.')
     }
+
+    await safelyRecordActionRequested({
+      correlationId: options.correlationId,
+      actionType: parsed.data.kind === 'CURRENT' ? 'CURRENT_PREPARATION' : 'VERIFICATION_PREPARATION',
+      seriesId: parsed.data.seriesId,
+      targetBasis: TARGET_BASIS_BY_SEMANTICS[parsed.data.targetSemantics],
+      targetSemantics: parsed.data.targetSemantics,
+      modelId: parsed.data.modelId,
+    })
 
     const interactiveCapability = await resolveInteractiveForecastCapability(parsed.data)
     if (input.kind === 'CURRENT' && interactiveCapability.currentReadiness === 'READY') {
@@ -451,6 +490,7 @@ export function createForecastPreparationQueueService(options: {
       options.correlationId,
     )
     const job = await requeueSucceededJobIfArtifactIsMissing(prisma, persistedJob, command)
+    await safelyRecordQueueAccepted(options.correlationId, job.jobKey)
     return stateForJob(job)
   }
 
@@ -645,6 +685,8 @@ export function createForecastPreparationWorker(options: {
   prepareCurrent?: typeof prepareInteractiveCurrentForecast
   prepareVerificationSlice?: (job: ClaimedForecastPreparationJob) => Promise<ForecastProductionOperationsResult | void>
   resolveReadiness?: typeof resolveInteractiveForecastCapability
+  recordArtifactReady?: typeof recordForecastArtifactReady
+  persistResourceSummary?: typeof persistForecastExecutionResourceSummary
 } = {}) {
   const queue = options.queue ?? createForecastPreparationQueueService()
   const workerId = options.workerId ?? `forecast-worker-${randomUUID()}`
@@ -666,6 +708,34 @@ export function createForecastPreparationWorker(options: {
     return result
   })
   const resolveReadiness = options.resolveReadiness ?? resolveInteractiveForecastCapability
+  const recordArtifactReady = options.recordArtifactReady ?? recordForecastArtifactReady
+  const persistResourceSummary = options.persistResourceSummary ?? persistForecastExecutionResourceSummary
+
+  async function safelyRecordArtifactReady(jobKey: string, kind: ForecastPreparationJobKind) {
+    try {
+      await recordArtifactReady(jobKey, kind)
+    } catch (error) {
+      console.error('[forecast-preparation-worker] artifact-ready telemetry failed', {
+        jobKey,
+        kind,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
+  async function safelyPersistResourceSummary(
+    correlationId: string,
+    summary: Awaited<ReturnType<typeof measureForecastWorkerJob>>['summary'],
+  ) {
+    try {
+      await persistResourceSummary(correlationId, summary)
+    } catch (error) {
+      console.error('[forecast-preparation-worker] resource-summary telemetry failed', {
+        correlationId,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
 
   async function execute(job: ClaimedForecastPreparationJob) {
     const input = InteractiveForecastIdentitySchema.parse({
@@ -680,7 +750,7 @@ export function createForecastPreparationWorker(options: {
     const correlationId = resolveForecastJobCorrelationId(job)
     const operationType = job.jobKind === 'CURRENT' ? 'CURRENT_MATERIALIZATION' : 'VERIFICATION_MATERIALIZATION'
 
-    await runWithForecastRequestDiagnostics({
+    const measured = await measureForecastWorkerJob({ correlationId, jobKey: job.jobKey }, async () => runWithForecastRequestDiagnostics({
       enabled: true,
       requestId: correlationId,
       route: 'forecast-preparation-worker',
@@ -722,6 +792,7 @@ export function createForecastPreparationWorker(options: {
             throw new Error(result.reason ?? `Current Forecast preparation ended with ${result.status}.`)
           }
           await queue.complete(job)
+          await safelyRecordArtifactReady(job.jobKey, 'CURRENT')
           noteForecastRequestDiagnosticsEvent('durable_job_completed', 'APPLICATION', { jobKey: job.jobKey, state: 'SUCCEEDED' })
           return
         }
@@ -730,6 +801,7 @@ export function createForecastPreparationWorker(options: {
         const readiness = await resolveReadiness(input)
         if (readiness.fullVerificationReadiness === 'READY') {
           await queue.complete(job)
+          await safelyRecordArtifactReady(job.jobKey, 'VERIFICATION')
           noteForecastRequestDiagnosticsEvent('durable_job_completed', 'APPLICATION', { jobKey: job.jobKey, state: 'SUCCEEDED' })
         } else {
           const terminalReason = resolveTerminalVerificationUnavailability(sliceResult, input)
@@ -765,7 +837,14 @@ export function createForecastPreparationWorker(options: {
         }))
         completeForecastRequestDiagnostics(completionStatus)
       }
-    })
+    }))
+    await safelyPersistResourceSummary(correlationId, measured.summary)
+    console.info(JSON.stringify({
+      event: 'FORECAST_PREPARATION_RESOURCE_SUMMARY',
+      correlationId,
+      jobKey: job.jobKey,
+      summary: measured.summary,
+    }))
   }
 
   return {

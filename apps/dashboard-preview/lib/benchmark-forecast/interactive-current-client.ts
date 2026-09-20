@@ -17,6 +17,14 @@ import {
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>
 
+export type ForecastUiVisibleAckInput = BenchmarkForecastCurrentPreparationRequest & {
+  correlationId: string
+  layer: 'CURRENT' | 'VERIFICATION'
+  pageInstanceId: string
+  clientVisibleAt: string
+  responseToVisibleMs: number | null
+}
+
 type ExplicitPreparationDependencies = {
   prepareCurrent: (input: BenchmarkForecastCurrentPreparationRequest) => Promise<BenchmarkForecastCurrentPreparationResult>
   readPrepared: (input: BenchmarkForecastCurrentPreparationRequest) => Promise<BenchmarkForecastCurrentResult>
@@ -243,6 +251,26 @@ export async function readProgressiveForecastPreparationThroughDashboard(
   }
 
   return payload as ProgressiveForecastPreparationSnapshot
+}
+
+export async function acknowledgeForecastVisibleThroughDashboard(
+  fetchLike: FetchLike,
+  input: ForecastUiVisibleAckInput,
+) {
+  const response = await fetchLike('/api/benchmark-forecast/telemetry', {
+    method: 'POST',
+    cache: 'no-store',
+    keepalive: true,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...input,
+      targetSemantics: input.targetBasis === 'POINT_IN_TIME'
+        ? 'ROLLING_DAILY_POINT_IN_TIME'
+        : input.targetBasis,
+    }),
+  })
+  if (!response.ok) throw new Error('Forecast UI visibility acknowledgement failed.')
+  return response.json() as Promise<{ recorded?: boolean }>
 }
 
 export async function warmCurrentForecastThroughDashboard(
