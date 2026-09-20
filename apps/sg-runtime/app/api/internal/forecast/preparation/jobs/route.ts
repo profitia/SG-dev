@@ -6,17 +6,13 @@ import { cognitionError, cognitionOk, parseJsonBody, parseSearchParams } from '@
 import { InteractiveForecastIdentitySchema } from '@/lib/forecast/interactive-preparation'
 import {
   createForecastPreparationQueueService,
-  FORECAST_PREPARATION_JOB_KINDS,
+  ForecastPreparationCommandSchema,
 } from '@/lib/forecast/preparation-queue'
 
 export const dynamic = 'force-dynamic'
 
-const ForecastPreparationCommandSchema = InteractiveForecastIdentitySchema.extend({
-  kind: z.enum(FORECAST_PREPARATION_JOB_KINDS),
-}).strict()
-
 function createForecastPreparationJobsPostHandler(
-  enqueue = (input: z.infer<typeof ForecastPreparationCommandSchema>) => createForecastPreparationQueueService().enqueue(input),
+  enqueue = (input: Parameters<ReturnType<typeof createForecastPreparationQueueService>['enqueue']>[0]) => createForecastPreparationQueueService().enqueue(input),
 ) {
   return withInternalForecastServiceAuth(async (principal, request: NextRequest) => {
     const parsed = await parseJsonBody(request, ForecastPreparationCommandSchema)

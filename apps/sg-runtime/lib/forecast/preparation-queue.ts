@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 
 import { Prisma, type ForecastPreparationJob, type PrismaClient } from '@/generated/market-data-client'
+import { z } from 'zod'
 import {
   resolveExactForecastCapability,
   type ForecastPreparedReadAuthority,
@@ -39,6 +40,10 @@ export type ForecastPreparationJobStatus = (typeof FORECAST_PREPARATION_JOB_STAT
 export type ForecastPreparationCommand = InteractiveForecastIdentity & {
   kind: ForecastPreparationJobKind
 }
+
+export const ForecastPreparationCommandSchema = InteractiveForecastIdentitySchema.extend({
+  kind: z.enum(FORECAST_PREPARATION_JOB_KINDS),
+}).strict()
 
 export type ForecastPreparationJobView = {
   jobKey: string
@@ -294,8 +299,8 @@ export function createForecastPreparationQueueService(options: {
   }
 
   async function enqueue(input: ForecastPreparationCommand): Promise<ForecastPreparationCommandResult> {
-    const parsed = InteractiveForecastIdentitySchema.safeParse(input)
-    if (!parsed.success || !FORECAST_PREPARATION_JOB_KINDS.includes(input.kind)) {
+    const parsed = ForecastPreparationCommandSchema.safeParse(input)
+    if (!parsed.success) {
       return unsupportedResult('The exact Forecast preparation identity is invalid.')
     }
 
@@ -319,7 +324,7 @@ export function createForecastPreparationQueueService(options: {
       dependencyJobKey = current.jobKey
     }
 
-    const command = { ...parsed.data, kind: input.kind }
+    const command = parsed.data
     const job = await upsertJob(prisma, command, await resolveJobAuthority(command, capability!), dependencyJobKey)
     return stateForJob(job)
   }

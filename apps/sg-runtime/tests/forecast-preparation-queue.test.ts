@@ -4,10 +4,25 @@ import test from 'node:test'
 
 import type { ForecastPreparationJob } from '@/generated/market-data-client'
 import {
+  ForecastPreparationCommandSchema,
   createForecastPreparationWorker,
   type ClaimedForecastPreparationJob,
   type ForecastPreparationQueueService,
 } from '@/lib/forecast/preparation-queue'
+
+test('durable command schema accepts the job kind sent by the Dashboard', () => {
+  assert.deepEqual(ForecastPreparationCommandSchema.parse({
+    seriesId: 'series-1',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'arima',
+    kind: 'CURRENT',
+  }), {
+    seriesId: 'series-1',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'arima',
+    kind: 'CURRENT',
+  })
+})
 
 function claimedJob(kind: 'CURRENT' | 'VERIFICATION'): ClaimedForecastPreparationJob {
   const now = new Date('2026-09-20T12:00:00.000Z')
