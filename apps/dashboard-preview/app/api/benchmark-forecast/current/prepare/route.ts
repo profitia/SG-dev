@@ -7,6 +7,11 @@ import {
   parseBenchmarkForecastCurrentPreparationRequest,
   prepareInteractiveCurrentForecast,
 } from '@/lib/benchmark-forecast/interactive-current-preparation'
+import {
+  buildForecastCorrelationHeaders,
+  createForecastCorrelationId,
+  FORECAST_CORRELATION_HEADER,
+} from '@/lib/benchmark-forecast/forecast-correlation'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,13 +38,20 @@ export function createPrepareCurrentForecastRouteHandler(
       return NextResponse.json({ error: parsed.error }, { status: 400 })
     }
 
+    const correlationId = createForecastCorrelationId(request.headers.get(FORECAST_CORRELATION_HEADER))
+    const responseHeaders = { [FORECAST_CORRELATION_HEADER]: correlationId }
+
     try {
       const traceEnabled = request.headers.get(FORECAST_TRACE_HEADER) === '1'
-      return NextResponse.json(await gateway(parsed.data, traceEnabled, request.signal))
+      const result = await gateway(parsed.data, traceEnabled, {
+        signal: request.signal,
+        headers: buildForecastCorrelationHeaders(correlationId),
+      })
+      return NextResponse.json({ ...result, correlationId }, { headers: responseHeaders })
     } catch (error) {
       const traceEnabled = request.headers.get(FORECAST_TRACE_HEADER) === '1'
       if (error instanceof SgRuntimeForecastPreparationAuthError) {
-        return NextResponse.json({ error: error.message }, { status: error.statusCode })
+        return NextResponse.json({ error: error.message, correlationId }, { status: error.statusCode, headers: responseHeaders })
       }
 
       const bridgeFailure = traceEnabled ? extractForecastBridgeErrorTrace(error) : { trace: null, attempts: [] }
@@ -48,7 +60,7 @@ export function createPrepareCurrentForecastRouteHandler(
         error: error instanceof Error ? error.message : 'Forecast preparation failed.',
         ...(traceEnabled && bridgeFailure.trace ? { trace: bridgeFailure.trace } : {}),
         ...(traceEnabled && bridgeFailure.attempts.length > 0 ? { bridgeAttempts: bridgeFailure.attempts } : {}),
-      }, { status: 500 })
+      }, { status: 500, headers: responseHeaders })
     }
   }
 }

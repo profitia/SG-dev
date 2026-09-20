@@ -44,6 +44,7 @@ import {
   shouldShowExplicitCurrentPreparation,
   warmCurrentForecastThroughDashboard,
 } from '@/lib/benchmark-forecast/interactive-current-client'
+import { createForecastCorrelationId } from '@/lib/benchmark-forecast/forecast-correlation'
 
 import type {
   ComponentListItem,
@@ -2768,6 +2769,7 @@ export function RawDataView({
   const forecastVerificationAbortRef = useRef<AbortController | null>(null)
   const forecastVerificationReadRetryRef = useRef<Map<string, number>>(new Map())
   const forecastPreparationRequestRef = useRef(0)
+  const forecastCorrelationIdsRef = useRef<Map<string, string>>(new Map())
   const seriesCacheRef = useRef<Map<string, CachedSeriesEntry>>(new Map())
   const forecastLayerCacheRef = useRef<Map<string, ForecastLayerCacheEntry<BenchmarkForecastCurrentResult | BenchmarkForecastVerificationResult>>>(new Map())
   const backgroundWarmupAttemptedRef = useRef<Set<string>>(new Set())
@@ -3661,6 +3663,9 @@ export function RawDataView({
     }
 
     const activeSeriesId = benchmarkSeriesId
+    const correlationKey = `${activeSeriesId}|${forecastModel}|${selectedForecastTargetBasis}`
+    const correlationId = forecastCorrelationIdsRef.current.get(correlationKey) ?? createForecastCorrelationId()
+    forecastCorrelationIdsRef.current.set(correlationKey, correlationId)
     const controller = new AbortController()
     let cancelled = false
 
@@ -3671,7 +3676,7 @@ export function RawDataView({
             seriesId: activeSeriesId,
             modelId: forecastModel,
             targetBasis: selectedForecastTargetBasis,
-          }, controller.signal)
+          }, controller.signal, correlationId)
 
           if (cancelled) {
             return
@@ -3799,6 +3804,9 @@ export function RawDataView({
       modelId: forecastModel,
       targetBasis: selectedForecastTargetBasis,
     } as const
+    const correlationKey = `${identity.seriesId}|${identity.modelId}|${identity.targetBasis}`
+    const correlationId = createForecastCorrelationId()
+    forecastCorrelationIdsRef.current.set(correlationKey, correlationId)
     const cacheKey = buildForecastLayerCacheKey(locale, identity.seriesId, identity.modelId, identity.targetBasis, 'current')
     const inFlightWarmup = backgroundWarmupInflightRef.current.get(cacheKey)
 
@@ -3841,7 +3849,7 @@ export function RawDataView({
       }
 
       const outcome = await explicitlyPrepareForecastCurrent(identity, {
-        prepareCurrent: (input) => requestExplicitCurrentForecastPreparationThroughDashboard(fetch, input),
+        prepareCurrent: (input) => requestExplicitCurrentForecastPreparationThroughDashboard(fetch, input, undefined, correlationId),
         readPrepared: (input) => readPreparedCurrentForecastThroughDashboard(fetch, input),
       })
 
@@ -3897,6 +3905,10 @@ export function RawDataView({
   async function handlePrepareForecastVerification() {
     if (!benchmarkSeriesId) return
 
+    const correlationKey = `${benchmarkSeriesId}|${forecastModel}|${selectedForecastTargetBasis}`
+    const correlationId = createForecastCorrelationId()
+    forecastCorrelationIdsRef.current.set(correlationKey, correlationId)
+
     setShowForecastVerification(true)
     setForecastVerificationState('loading')
     setForecastVerificationErrorState(null)
@@ -3905,7 +3917,7 @@ export function RawDataView({
         seriesId: benchmarkSeriesId,
         modelId: forecastModel,
         targetBasis: selectedForecastTargetBasis,
-      })
+      }, undefined, correlationId)
       if (result.state === 'FAILED' || result.state === 'UNSUPPORTED') {
         setForecastVerificationState('error')
         setForecastVerificationErrorState({

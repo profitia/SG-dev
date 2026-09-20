@@ -420,6 +420,10 @@ model ForecastPreparationJob {
   sourceFrequency             String
   targetCadence               String
   historyFingerprint          String
+  /// First user action that created this durable exact-identity job.
+  originCorrelationId         String?
+  /// Most recent user action that requested this durable exact-identity job.
+  latestCorrelationId         String?
   requestCount                Int                 @default(1)
   sliceCount                  Int                 @default(0)
   failureCount                Int                 @default(0)
@@ -444,6 +448,7 @@ model ForecastPreparationJob {
   @@index([seriesId, targetSemantics, modelId, jobKind, updatedAt], map: "forecast_preparation_job_identity_idx")
   @@index([dependencyJobKey, status], map: "forecast_preparation_job_dependency_idx")
   @@index([leaseExpiresAt, status], map: "forecast_preparation_job_lease_idx")
+  @@index([latestCorrelationId, updatedAt], map: "forecast_preparation_job_correlation_idx")
   @@map("forecast_preparation_job")
 }
 

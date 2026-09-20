@@ -27,6 +27,13 @@ import {
 import { selectTrailingRollingDailyCurrentHistory } from '@/lib/forecast/rolling-daily-current-ownership'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 import { ADAPTIVE_HISTORICAL_VERIFICATION_ORIGIN_POLICY_VERSION } from '@/lib/forecast/historical-verification-origin-policy'
+import { resolveForecastJobCorrelationId } from '@/lib/forecast/forecast-correlation'
+import {
+  completeForecastRequestDiagnostics,
+  noteForecastRequestDiagnosticsEvent,
+  runWithForecastRequestDiagnostics,
+  updateForecastRequestDiagnosticsIdentity,
+} from '@/lib/forecast/request-diagnostics'
 
 export const FORECAST_PREPARATION_JOB_KINDS = ['CURRENT', 'VERIFICATION'] as const
 export const FORECAST_PREPARATION_JOB_STATUSES = [
@@ -64,6 +71,8 @@ export type ForecastPreparationJobView = {
   startedAt: string | null
   completedAt: string | null
   failureReason: string | null
+  originCorrelationId: string | null
+  latestCorrelationId: string | null
 }
 
 export type ForecastPreparationCommandResult = {
@@ -219,6 +228,8 @@ function toView(job: ForecastPreparationJob): ForecastPreparationJobView {
     startedAt: job.startedAt?.toISOString() ?? null,
     completedAt: job.completedAt?.toISOString() ?? null,
     failureReason: job.failureReason,
+    originCorrelationId: job.originCorrelationId,
+    latestCorrelationId: job.latestCorrelationId,
   }
 }
 
@@ -304,6 +315,7 @@ async function upsertJob(
   input: ForecastPreparationCommand,
   authority: ForecastPreparedReadAuthority,
   dependencyJobKey: string | null,
+  correlationId: string,
 ) {
   const key = buildForecastPreparationJobKey({
     kind: input.kind,
@@ -349,12 +361,15 @@ async function upsertJob(
         targetCadence: authority.targetCadence,
         historyFingerprint: authority.expectedHistoryFingerprint,
         dependencyJobKey,
+        originCorrelationId: correlationId,
+        latestCorrelationId: correlationId,
       },
       update: {
         requestCount: { increment: 1 },
         requestedAt: now,
         dependencyJobKey,
         priority: input.kind === 'CURRENT' ? CURRENT_PRIORITY : VERIFICATION_PRIORITY,
+        latestCorrelationId: correlationId,
       },
     })
 
@@ -391,7 +406,10 @@ export function createForecastPreparationQueueService(options: {
     return exact.capability
   }
 
-  async function enqueue(input: ForecastPreparationCommand): Promise<ForecastPreparationCommandResult> {
+  async function enqueue(
+    input: ForecastPreparationCommand,
+    options: { correlationId: string },
+  ): Promise<ForecastPreparationCommandResult> {
     const parsed = ForecastPreparationCommandSchema.safeParse(input)
     if (!parsed.success) {
       return unsupportedResult('The exact Forecast preparation identity is invalid.')
@@ -413,13 +431,25 @@ export function createForecastPreparationQueueService(options: {
     let dependencyJobKey: string | null = null
     if (input.kind === 'VERIFICATION' && interactiveCapability.currentReadiness !== 'READY') {
       const currentInput = { ...parsed.data, kind: 'CURRENT' as const }
-      const persistedCurrent = await upsertJob(prisma, currentInput, await resolveJobAuthority(currentInput, capability!), null)
+      const persistedCurrent = await upsertJob(
+        prisma,
+        currentInput,
+        await resolveJobAuthority(currentInput, capability!),
+        null,
+        options.correlationId,
+      )
       const current = await requeueSucceededJobIfArtifactIsMissing(prisma, persistedCurrent, currentInput)
       dependencyJobKey = current.jobKey
     }
 
     const command = parsed.data
-    const persistedJob = await upsertJob(prisma, command, await resolveJobAuthority(command, capability!), dependencyJobKey)
+    const persistedJob = await upsertJob(
+      prisma,
+      command,
+      await resolveJobAuthority(command, capability!),
+      dependencyJobKey,
+      options.correlationId,
+    )
     const job = await requeueSucceededJobIfArtifactIsMissing(prisma, persistedJob, command)
     return stateForJob(job)
   }
@@ -647,37 +677,95 @@ export function createForecastPreparationWorker(options: {
       void queue.heartbeat(job).catch((error) => console.error('[forecast-preparation-worker] heartbeat failed', error))
     }, heartbeatMs)
 
-    try {
-      if (job.jobKind === 'CURRENT') {
-        const result = await prepareCurrent(input)
-        if (result.status !== 'READY' && result.status !== 'REUSED') {
-          throw new Error(result.reason ?? `Current Forecast preparation ended with ${result.status}.`)
-        }
-        await queue.complete(job)
-        return
-      }
+    const correlationId = resolveForecastJobCorrelationId(job)
+    const operationType = job.jobKind === 'CURRENT' ? 'CURRENT_MATERIALIZATION' : 'VERIFICATION_MATERIALIZATION'
 
-      const sliceResult = await prepareVerificationSlice(job)
-      const readiness = await resolveReadiness(input)
-      if (readiness.fullVerificationReadiness === 'READY') {
-        await queue.complete(job)
-      } else {
-        const terminalReason = resolveTerminalVerificationUnavailability(sliceResult, input)
-        if (terminalReason) {
-          await queue.completeUnavailable(job, terminalReason)
+    await runWithForecastRequestDiagnostics({
+      enabled: true,
+      requestId: correlationId,
+      route: 'forecast-preparation-worker',
+      method: 'WORKER',
+      operationType,
+    }, async () => {
+      updateForecastRequestDiagnosticsIdentity({
+        seriesId: job.seriesId,
+        modelId: job.modelId,
+        targetBasis: job.targetBasis,
+        targetSemantics: job.targetSemantics,
+        sourceFrequency: job.sourceFrequency,
+        targetCadence: job.targetCadence,
+      })
+      noteForecastRequestDiagnosticsEvent('durable_job_started', 'APPLICATION', {
+        jobKey: job.jobKey,
+        jobKind: job.jobKind,
+        workerId,
+        historyFingerprint: job.historyFingerprint,
+      })
+      console.info(JSON.stringify({
+        event: 'FORECAST_PREPARATION_JOB_STARTED',
+        correlationId,
+        jobKey: job.jobKey,
+        jobKind: job.jobKind,
+        workerId,
+        seriesId: job.seriesId,
+        modelId: job.modelId,
+        targetSemantics: job.targetSemantics,
+        historyFingerprint: job.historyFingerprint,
+      }))
+
+      let completionStatus = 200
+
+      try {
+        if (job.jobKind === 'CURRENT') {
+          const result = await prepareCurrent(input)
+          if (result.status !== 'READY' && result.status !== 'REUSED') {
+            throw new Error(result.reason ?? `Current Forecast preparation ended with ${result.status}.`)
+          }
+          await queue.complete(job)
+          noteForecastRequestDiagnosticsEvent('durable_job_completed', 'APPLICATION', { jobKey: job.jobKey, state: 'SUCCEEDED' })
           return
         }
-        await queue.continueAfterSlice(job, {
-          fullVerificationReadiness: readiness.fullVerificationReadiness,
-          blockers: readiness.readiness.blockers,
-          checkedAt: new Date().toISOString(),
+
+        const sliceResult = await prepareVerificationSlice(job)
+        const readiness = await resolveReadiness(input)
+        if (readiness.fullVerificationReadiness === 'READY') {
+          await queue.complete(job)
+          noteForecastRequestDiagnosticsEvent('durable_job_completed', 'APPLICATION', { jobKey: job.jobKey, state: 'SUCCEEDED' })
+        } else {
+          const terminalReason = resolveTerminalVerificationUnavailability(sliceResult, input)
+          if (terminalReason) {
+            await queue.completeUnavailable(job, terminalReason)
+            completionStatus = 422
+            noteForecastRequestDiagnosticsEvent('durable_job_completed', 'APPLICATION', { jobKey: job.jobKey, state: 'FAILED' })
+            return
+          }
+          await queue.continueAfterSlice(job, {
+            fullVerificationReadiness: readiness.fullVerificationReadiness,
+            blockers: readiness.readiness.blockers,
+            checkedAt: new Date().toISOString(),
+          })
+          noteForecastRequestDiagnosticsEvent('durable_job_completed', 'APPLICATION', { jobKey: job.jobKey, state: 'QUEUED' })
+        }
+      } catch (error) {
+        completionStatus = 500
+        noteForecastRequestDiagnosticsEvent('durable_job_failed', 'APPLICATION', {
+          jobKey: job.jobKey,
+          error: error instanceof Error ? error.message : String(error),
         })
+        await queue.failOrRetry(job, error)
+      } finally {
+        clearInterval(heartbeat)
+        console.info(JSON.stringify({
+          event: 'FORECAST_PREPARATION_JOB_FINISHED',
+          correlationId,
+          jobKey: job.jobKey,
+          jobKind: job.jobKind,
+          workerId,
+          status: completionStatus,
+        }))
+        completeForecastRequestDiagnostics(completionStatus)
       }
-    } catch (error) {
-      await queue.failOrRetry(job, error)
-    } finally {
-      clearInterval(heartbeat)
-    }
+    })
   }
 
   return {

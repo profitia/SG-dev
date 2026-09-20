@@ -14,6 +14,7 @@ import {
   type ClaimedForecastPreparationJob,
   type ForecastPreparationQueueService,
 } from '@/lib/forecast/preparation-queue'
+import { currentForecastRequestDiagnostics } from '@/lib/forecast/request-diagnostics'
 
 test('a succeeded queue record is reopened only when its exact artifact remains missing', () => {
   assert.equal(shouldRequeueSucceededPreparationJob({
@@ -117,6 +118,8 @@ function claimedJob(kind: 'CURRENT' | 'VERIFICATION'): ClaimedForecastPreparatio
     sourceFrequency: 'DAILY',
     targetCadence: 'MONTHLY',
     historyFingerprint: 'history-1',
+    originCorrelationId: 'ppf1-e2e-origin',
+    latestCorrelationId: 'ppf1-e2e-latest',
     requestCount: 1,
     sliceCount: 0,
     failureCount: 0,
@@ -195,6 +198,13 @@ test('durable queue migration defines constrained scheduling state and claim ind
   assert.match(migration, /forecast_preparation_job_jobKey_key/)
 })
 
+test('correlation migration keeps legacy jobs compatible and adds the lookup index', async () => {
+  const migration = await readFile(new URL('../prisma-market-data/migrations/20260920202000_forecast_e2e_correlation_id/migration.sql', import.meta.url), 'utf8')
+  assert.match(migration, /ADD COLUMN "originCorrelationId" TEXT/)
+  assert.match(migration, /ADD COLUMN "latestCorrelationId" TEXT/)
+  assert.match(migration, /forecast_preparation_job_correlation_idx/)
+})
+
 test('worker completes a Current job through the canonical preparation owner', async () => {
   const harness = queueHarness(claimedJob('CURRENT'))
   const worker = createForecastPreparationWorker({
@@ -209,6 +219,30 @@ test('worker completes a Current job through the canonical preparation owner', a
     }),
   })
   assert.equal(await worker.runOne(), true)
+  assert.deepEqual(harness.events, ['complete'])
+})
+
+test('worker preserves the durable user correlation in compute diagnostics', async () => {
+  const harness = queueHarness(claimedJob('CURRENT'))
+  let observedRequestId: string | null = null
+  const worker = createForecastPreparationWorker({
+    queue: harness.queue,
+    workerId: 'worker-correlation-test',
+    prepareCurrent: async (input) => {
+      observedRequestId = currentForecastRequestDiagnostics()?.requestId ?? null
+      return {
+        ...input,
+        operation: 'CURRENT_FORECAST',
+        status: 'READY',
+        targetedDataScope: 'SINGLE_SERIES',
+        timingMs: 1,
+        reason: null,
+      }
+    },
+  })
+
+  assert.equal(await worker.runOne(), true)
+  assert.equal(observedRequestId, 'ppf1-e2e-latest')
   assert.deepEqual(harness.events, ['complete'])
 })
 

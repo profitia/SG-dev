@@ -10,6 +10,10 @@ import type {
 } from './forecast-contract'
 import type { DurableForecastPreparationCommandResult } from './interactive-current-preparation'
 import { isRenderableCurrentResult } from './forecast-contract'
+import {
+  buildForecastCorrelationHeaders,
+  createForecastCorrelationId,
+} from './forecast-correlation'
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>
 
@@ -169,13 +173,16 @@ export async function requestExplicitCurrentForecastPreparationThroughDashboard(
   fetchLike: FetchLike,
   input: BenchmarkForecastCurrentPreparationRequest,
   signal?: AbortSignal,
+  correlationId?: string,
 ) {
+  const resolvedCorrelationId = createForecastCorrelationId(correlationId)
   const response = await fetchLike('/api/benchmark-forecast/current/prepare', {
     method: 'POST',
     cache: 'no-store',
     signal,
     headers: {
       'Content-Type': 'application/json',
+      ...buildForecastCorrelationHeaders(resolvedCorrelationId),
     },
     body: JSON.stringify(input),
   })
@@ -192,12 +199,17 @@ export async function requestExplicitVerificationPreparationThroughDashboard(
   fetchLike: FetchLike,
   input: BenchmarkForecastCurrentPreparationRequest,
   signal?: AbortSignal,
+  correlationId?: string,
 ) {
+  const resolvedCorrelationId = createForecastCorrelationId(correlationId)
   const response = await fetchLike('/api/benchmark-forecast/verification/prepare', {
     method: 'POST',
     cache: 'no-store',
     signal,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...buildForecastCorrelationHeaders(resolvedCorrelationId),
+    },
     body: JSON.stringify(input),
   })
   const payload = await response.json() as DurableForecastPreparationCommandResult | { error?: string }
@@ -211,13 +223,16 @@ export async function readProgressiveForecastPreparationThroughDashboard(
   fetchLike: FetchLike,
   input: BenchmarkForecastCurrentPreparationRequest,
   signal?: AbortSignal,
+  correlationId?: string,
 ) {
+  const resolvedCorrelationId = createForecastCorrelationId(correlationId)
   const response = await fetchLike('/api/benchmark-forecast/progressive', {
     method: 'POST',
     cache: 'no-store',
     signal,
     headers: {
       'Content-Type': 'application/json',
+      ...buildForecastCorrelationHeaders(resolvedCorrelationId),
     },
     body: JSON.stringify(input),
   })

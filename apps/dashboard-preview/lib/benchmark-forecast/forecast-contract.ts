@@ -88,6 +88,7 @@ export interface InteractiveForecastPreparationResult {
 }
 
 export interface BenchmarkForecastCurrentPreparationResult {
+  correlationId?: string
   seriesId: string
   modelId: ForecastPortfolioModelId
   targetBasis: ForecastTargetBasis
@@ -113,6 +114,7 @@ export interface ProgressiveForecastVariantSnapshot {
 }
 
 export interface ProgressiveForecastPreparationSnapshot {
+  correlationId?: string
   seriesId: string
   variants: ProgressiveForecastVariantSnapshot[]
   firstReadyCurrent: {

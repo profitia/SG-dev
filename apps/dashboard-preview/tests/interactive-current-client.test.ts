@@ -701,8 +701,10 @@ test('explicit current preparation does not reread after preparation failure', a
 
 test('explicit current preparation request uses the exact target-specific identity', async () => {
   let capturedBody: Record<string, string> | null = null
+  let capturedCorrelationId: string | null = null
   const payload = await requestExplicitCurrentForecastPreparationThroughDashboard(async (_input, init) => {
     capturedBody = JSON.parse(String(init?.body)) as Record<string, string>
+    capturedCorrelationId = new Headers(init?.headers).get('x-sg-forecast-correlation-id')
     return new Response(JSON.stringify({
       seriesId: 'usnaac0169',
       modelId: 'arima',
@@ -723,7 +725,7 @@ test('explicit current preparation request uses the exact target-specific identi
     seriesId: 'usnaac0169',
     modelId: 'arima',
     targetBasis: 'POINT_IN_TIME',
-  })
+  }, undefined, 'ppf1-browser-action-1234')
 
   assert.equal(payload.state, 'UNSUPPORTED')
   assert.deepEqual(capturedBody, {
@@ -731,6 +733,7 @@ test('explicit current preparation request uses the exact target-specific identi
     modelId: 'arima',
     targetBasis: 'POINT_IN_TIME',
   })
+  assert.equal(capturedCorrelationId, 'ppf1-browser-action-1234')
 })
 
 test('model and target switches preserve exact peer identity instead of reusing another variant', async () => {

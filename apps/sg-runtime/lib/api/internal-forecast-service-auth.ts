@@ -1,8 +1,9 @@
-import { randomUUID, timingSafeEqual } from 'node:crypto'
+import { timingSafeEqual } from 'node:crypto'
 
 import { type NextRequest, NextResponse } from 'next/server'
 
 import { cognitionError } from '@/lib/api/middleware'
+import { resolveForecastCorrelationId } from '@/lib/forecast/forecast-correlation'
 
 export type InternalForecastServicePrincipal = {
   kind: 'INTERNAL_SERVICE'
@@ -49,7 +50,7 @@ export function withInternalForecastServiceAuth<TArgs extends unknown[]>(
 
   return async (request: NextRequest, ...args: TArgs): Promise<NextResponse> => {
     const configuredToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN?.trim() ?? ''
-    const requestId = request.headers.get('x-request-id') ?? randomUUID()
+    const requestId = resolveForecastCorrelationId(request.headers)
 
     if (!configuredToken) {
       return cognitionError(

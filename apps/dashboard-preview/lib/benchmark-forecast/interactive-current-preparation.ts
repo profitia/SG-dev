@@ -87,6 +87,8 @@ export type DurableForecastPreparationJob = {
   startedAt: string | null
   completedAt: string | null
   failureReason: string | null
+  originCorrelationId: string | null
+  latestCorrelationId: string | null
 }
 
 export type DurableForecastPreparationCommandResult = {
