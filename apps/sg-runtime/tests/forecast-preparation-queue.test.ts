@@ -9,6 +9,7 @@ import {
   buildSucceededPreparationJobRequeueData,
   buildForecastPreparationJobKey,
   createForecastPreparationWorker,
+  resolveTerminalVerificationUnavailability,
   shouldRequeueSucceededPreparationJob,
   type ClaimedForecastPreparationJob,
   type ForecastPreparationQueueService,
@@ -144,11 +145,47 @@ function queueHarness(job: ForecastPreparationJob | null) {
     claimNext: async () => job,
     heartbeat: async () => undefined,
     complete: async () => { events.push('complete') },
+    completeUnavailable: async () => { events.push('unavailable') },
     continueAfterSlice: async () => { events.push('continue') },
     failOrRetry: async () => { events.push('retry') },
   } as unknown as ForecastPreparationQueueService
   return { queue, events }
 }
+
+test('completed verification compute with zero lawful origins is terminal instead of looping', async () => {
+  const job = claimedJob('VERIFICATION')
+  const harness = queueHarness(job)
+  const operationResult = {
+    results: [{
+      targetSemantics: 'MONTHLY_AVERAGE',
+      modelId: 'arima',
+      historical: 'REUSED',
+    }],
+    after: {
+      capabilities: [{
+        identity: { targetSemantics: 'MONTHLY_AVERAGE', modelId: 'arima' },
+        verificationOriginCount: 0,
+      }],
+    },
+  } as never
+
+  assert.match(resolveTerminalVerificationUnavailability(operationResult, {
+    seriesId: 'series-1',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'arima',
+  }) ?? '', /zero lawful comparisons/)
+
+  const worker = createForecastPreparationWorker({
+    queue: harness.queue,
+    prepareVerificationSlice: async () => operationResult,
+    resolveReadiness: async () => ({
+      fullVerificationReadiness: 'NOT_PREPARED',
+      readiness: { blockers: ['FULL_HISTORICAL_PARTIAL'] },
+    }) as never,
+  })
+  assert.equal(await worker.runOne(), true)
+  assert.deepEqual(harness.events, ['unavailable'])
+})
 
 test('durable queue migration defines constrained scheduling state and claim indexes', async () => {
   const migration = await readFile(new URL('../prisma-market-data/migrations/20260920120000_forecast_preparation_job_queue/migration.sql', import.meta.url), 'utf8')
