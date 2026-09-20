@@ -41,6 +41,29 @@ test('durable queue status projects to the existing UI progress contract', () =>
   assert.equal(projected.queuedCount, 1)
 })
 
+test('missing durable request projects to preparation-required instead of unsupported', () => {
+  const snapshot: DurableForecastPreparationSnapshot = {
+    seriesId: 'series-1',
+    modelId: 'arima',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    targetBasis: 'POINT_IN_TIME',
+    current: {
+      state: 'UNSUPPORTED',
+      reason: 'No preparation request has been submitted for this exact identity.',
+      job: null,
+    },
+    verification: {
+      state: 'UNSUPPORTED',
+      reason: 'No preparation request has been submitted for this exact identity.',
+      job: null,
+    },
+  }
+
+  const projected = durableSnapshotToProgressiveSnapshot(snapshot)
+  assert.equal(projected.variants[0]?.currentState, 'NOT_PREPARED')
+  assert.equal(projected.variants[0]?.verificationState, 'NOT_PREPARED')
+})
+
 test('verification preparation client submits an explicit durable command', async () => {
   let observedUrl = ''
   let observedBody = ''

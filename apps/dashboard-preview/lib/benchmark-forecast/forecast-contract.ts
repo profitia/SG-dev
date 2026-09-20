@@ -9,7 +9,7 @@ export type ForecastTargetBasis = (typeof FORECAST_TARGET_BASES)[number]
 export type ForecastTargetSemantics = (typeof FORECAST_TARGET_SEMANTICS)[number]
 export type ForecastMethodId = (typeof FORECAST_METHOD_IDS)[number]
 export type ForecastCurrentUiState = 'IDLE' | 'READING' | 'AVAILABLE' | 'NOT_PREPARED' | 'PREPARING' | 'QUEUED' | 'FAILED' | 'UNSUPPORTED'
-export type ProgressiveForecastPreparationState = 'READY' | 'PREPARING' | 'QUEUED' | 'UNSUPPORTED' | 'FAILED'
+export type ProgressiveForecastPreparationState = 'READY' | 'NOT_PREPARED' | 'PREPARING' | 'QUEUED' | 'UNSUPPORTED' | 'FAILED'
 export type BenchmarkForecastPreparationState = 'READY' | 'NOT_PREPARED' | 'PREPARING' | 'QUEUED' | 'UNSUPPORTED' | 'FAILED'
 export type InteractiveForecastCapabilityStatus =
   | 'AVAILABLE'

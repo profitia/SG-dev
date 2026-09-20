@@ -24,6 +24,7 @@ import {
   type ForecastPortfolioModelId,
   type ProgressiveForecastPreparationSnapshot,
   type ProgressiveForecastPreparationState,
+  type ProgressiveForecastVariantSnapshot,
   type InteractiveForecastCapabilitySeriesSnapshot,
   type InteractiveForecastCapabilityResult,
 } from '@/lib/benchmark-forecast/forecast-contract'
@@ -485,6 +486,8 @@ function forecastPreparationStateLabel(locale: Locale, state: ProgressiveForecas
       return locale === 'pl' ? 'Przygotowywanie' : 'Preparing'
     case 'QUEUED':
       return locale === 'pl' ? 'W kolejce' : 'Queued'
+    case 'NOT_PREPARED':
+      return locale === 'pl' ? 'Do przygotowania' : 'Preparation required'
     case 'FAILED':
       return locale === 'pl' ? 'Błąd' : 'Failed'
     case 'UNSUPPORTED':
@@ -612,6 +615,14 @@ export function isFullVerificationPrepared(
   capability: InteractiveForecastCapabilityResult | null,
 ) {
   return capability?.fullVerificationReadiness === 'READY'
+}
+
+export function isSelectedVerificationPrepared(
+  capability: InteractiveForecastCapabilityResult | null,
+  progressiveVariant: ProgressiveForecastVariantSnapshot | null,
+) {
+  return isRecentVerificationPrepared(capability)
+    || progressiveVariant?.verificationState === 'READY'
 }
 
 export function mergeExactCapabilitySnapshot(
@@ -2784,8 +2795,10 @@ export function RawDataView({
     selectedForecastTargetBasis,
   )
   const selectedCurrentPrepared = !preparedReadsOnly || selectedCapabilityVariant?.currentReadiness === 'READY'
-  const selectedVerificationPrepared = !preparedReadsOnly
-    || isRecentVerificationPrepared(selectedCapabilityVariant)
+  const selectedVerificationPrepared = isSelectedVerificationPrepared(
+    selectedCapabilityVariant,
+    selectedProgressiveVariant,
+  )
   const forecastCurrentDisplayState = resolveForecastCurrentDisplayState(forecastCurrentState, selectedProgressiveVariant)
   const forecastCurrentObservedProgressState = resolveForecastCurrentObservedProgressState(
     forecastCurrentState,
