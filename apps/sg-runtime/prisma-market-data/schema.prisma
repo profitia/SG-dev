@@ -406,6 +406,47 @@ model ForecastPreparationExecutionLedger {
   @@map("forecast_preparation_execution_ledger")
 }
 
+model ForecastPreparationJob {
+  /// Durable user intent and scheduling state. Forecast artifacts and execution ownership remain authoritative elsewhere.
+  id                          String              @id @default(cuid())
+  jobKey                      String              @unique
+  jobKind                     String
+  status                      String
+  priority                    Int
+  seriesId                    String
+  targetBasis                 ForecastTargetBasis
+  targetSemantics             String
+  modelId                     String
+  sourceFrequency             String
+  targetCadence               String
+  historyFingerprint          String
+  requestCount                Int                 @default(1)
+  sliceCount                  Int                 @default(0)
+  failureCount                Int                 @default(0)
+  maxFailureCount             Int                 @default(5)
+  availableAt                 DateTime            @default(now())
+  leaseOwnerToken             String?
+  leaseVersion                Int                 @default(0)
+  leaseAcquiredAt             DateTime?
+  leaseExpiresAt              DateTime?
+  lastHeartbeatAt             DateTime?
+  dependencyJobKey            String?
+  checkpointJson              Json?
+  failureCode                 String?
+  failureReason               String?
+  requestedAt                 DateTime            @default(now())
+  startedAt                   DateTime?
+  completedAt                 DateTime?
+  createdAt                   DateTime            @default(now())
+  updatedAt                   DateTime            @updatedAt
+
+  @@index([status, priority, availableAt, requestedAt], map: "forecast_preparation_job_claim_idx")
+  @@index([seriesId, targetSemantics, modelId, jobKind, updatedAt], map: "forecast_preparation_job_identity_idx")
+  @@index([dependencyJobKey, status], map: "forecast_preparation_job_dependency_idx")
+  @@index([leaseExpiresAt, status], map: "forecast_preparation_job_lease_idx")
+  @@map("forecast_preparation_job")
+}
+
 model BenchmarkMetadataFacetRecord {
   id                  String   @id
   providerCode        String

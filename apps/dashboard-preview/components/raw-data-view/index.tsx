@@ -35,6 +35,7 @@ import {
   readCurrentForecastCapabilityThroughDashboard,
   readCurrentForecastCapabilitiesThroughDashboard,
   requestExplicitCurrentForecastPreparationThroughDashboard,
+  requestExplicitVerificationPreparationThroughDashboard,
   resolveForecastCurrentDisplayState,
   resolveForecastCurrentUiState,
   resolveSelectedProgressiveVariant,
@@ -2696,7 +2697,8 @@ export function RawDataView({
   const benchmarkDisplayName = benchmarkSubject?.displayName ?? null
   const initialRange = readInitialRange(searchParams)
   const backgroundCurrentForecastWarmupEnabled = shouldWarmCurrentForecastInBackground(searchParams, { embedded, variant })
-  const progressiveForecastPreparationEnabled = shouldRunProgressiveForecastPreparation(searchParams, { embedded, variant })
+  const progressiveForecastPreparationEnabled = isForecastPortfolioVariant
+    || shouldRunProgressiveForecastPreparation(searchParams, { embedded, variant })
   const preparedReadsOnly = isPreparedReadsOnlyForecastSession(searchParams)
   const defaultForecastTargetBasis = resolveDefaultForecastTargetBasis(variant)
   const initialForecastVisibility = resolveInitialForecastVisibility(variant, embedded)
@@ -2728,6 +2730,7 @@ export function RawDataView({
   const [forecastCapabilityState, setForecastCapabilityState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
   const [forecastCurrentReloadNonce, setForecastCurrentReloadNonce] = useState(0)
   const [forecastVerificationReloadNonce, setForecastVerificationReloadNonce] = useState(0)
+  const [forecastPreparationPollNonce, setForecastPreparationPollNonce] = useState(0)
   const [forecastVerificationState, setForecastVerificationState] = useState<LoadState>(initialForecastVerificationVisibility ? 'loading' : 'idle')
   const [forecastVerificationResult, setForecastVerificationResult] = useState<BenchmarkForecastVerificationResult | null>(null)
   const [forecastErrorState, setForecastErrorState] = useState<UiLoadErrorState | null>(null)
@@ -3704,7 +3707,7 @@ export function RawDataView({
       cancelled = true
       controller.abort()
     }
-  }, [benchmarkSeriesId, forecastCurrentState, forecastModel, isForecastPortfolioVariant, locale, progressiveForecastPreparationEnabled, selectedForecastTargetBasis, showForecast])
+  }, [benchmarkSeriesId, forecastCurrentState, forecastModel, forecastPreparationPollNonce, isForecastPortfolioVariant, locale, progressiveForecastPreparationEnabled, selectedForecastTargetBasis, showForecast])
 
   useEffect(() => {
     if (!backgroundCurrentForecastWarmupEnabled || !benchmarkSeriesId) {
@@ -3844,6 +3847,9 @@ export function RawDataView({
       }
 
       setForecastErrorState(null)
+      if (outcome.currentState === 'QUEUED' || outcome.currentState === 'PREPARING') {
+        setForecastPreparationPollNonce((value) => value + 1)
+      }
     } catch (error) {
       if (requestId !== forecastPreparationRequestRef.current) {
         return
@@ -3862,6 +3868,40 @@ export function RawDataView({
     }
   }
 
+  async function handlePrepareForecastVerification() {
+    if (!benchmarkSeriesId) return
+
+    setShowForecastVerification(true)
+    setForecastVerificationState('loading')
+    setForecastVerificationErrorState(null)
+    try {
+      const result = await requestExplicitVerificationPreparationThroughDashboard(fetch, {
+        seriesId: benchmarkSeriesId,
+        modelId: forecastModel,
+        targetBasis: selectedForecastTargetBasis,
+      })
+      if (result.state === 'FAILED' || result.state === 'UNSUPPORTED') {
+        setForecastVerificationState('error')
+        setForecastVerificationErrorState({
+          title: t('verificationFailed'),
+          message: result.reason ?? t('verificationUnavailableHint'),
+        })
+        return
+      }
+      setForecastPreparationPollNonce((value) => value + 1)
+    } catch (error) {
+      setForecastVerificationState('error')
+      setForecastVerificationErrorState(toUiLoadErrorState(
+        error,
+        t('verificationFailed'),
+        t('verificationUnavailableHint'),
+        t('errors.timeout'),
+        t('verificationBlocked'),
+        t('verificationBlockedHint'),
+      ))
+    }
+  }
+
   useEffect(() => {
     if (!isForecastPortfolioVariant || !benchmarkSeriesId) {
       return
@@ -3869,7 +3909,7 @@ export function RawDataView({
 
     const activeSeriesId = benchmarkSeriesId
 
-    if (!showForecast || !showForecastVerification || (preparedReadsOnly && !selectedVerificationPrepared)) {
+    if (!showForecast || !showForecastVerification || !selectedVerificationPrepared) {
       forecastVerificationAbortRef.current?.abort()
       setForecastVerificationState('idle')
       setForecastVerificationResult(null)
@@ -4238,7 +4278,9 @@ export function RawDataView({
                           })?.currentState ?? 'UNSUPPORTED'
                           : capabilityCurrentControlState(capability),
                       )
-                      const disabled = !showForecast || (preparedReadsOnly && capability?.currentReadiness !== 'READY')
+                      const disabled = !showForecast || (preparedReadsOnly && capability != null && [
+                        'NOT_LAWFUL', 'PROVENANCE_REQUIRED', 'NOT_IMPLEMENTED', 'INSUFFICIENT_HISTORY', 'DATA_NOT_AVAILABLE',
+                      ].includes(capability.status))
 
                       return (
                         <button
@@ -4293,7 +4335,9 @@ export function RawDataView({
                           })?.currentState ?? 'UNSUPPORTED'
                           : capabilityCurrentControlState(capability),
                       )
-                      const disabled = !showForecast || (preparedReadsOnly && capability?.currentReadiness !== 'READY')
+                      const disabled = !showForecast || (preparedReadsOnly && capability != null && [
+                        'NOT_LAWFUL', 'PROVENANCE_REQUIRED', 'NOT_IMPLEMENTED', 'INSUFFICIENT_HISTORY', 'DATA_NOT_AVAILABLE',
+                      ].includes(capability.status))
 
                       return (
                         <button
@@ -4329,7 +4373,7 @@ export function RawDataView({
                     <input
                       type="checkbox"
                       checked={showForecast && showForecastVerification}
-                      disabled={!showForecast || !selectedCurrentPrepared || !selectedVerificationPrepared}
+                      disabled={!showForecast || !selectedCurrentPrepared}
                       onChange={(event) => {
                         const verificationEnabled = event.target.checked
                         setShowForecastVerification(verificationEnabled)
@@ -4341,7 +4385,7 @@ export function RawDataView({
                     />
                     <span className="forecast-portfolio-toggle-copy">
                       <strong>{t('showForecastVerification')}</strong>
-                      <small>{selectedVerificationPrepared ? t('showForecastVerificationHint') : t('verificationUnavailableForSelection')}</small>
+                      <small>{selectedVerificationPrepared ? t('showForecastVerificationHint') : t('verificationPreparationAvailableHint')}</small>
                     </span>
                   </label>
 
@@ -4544,8 +4588,13 @@ export function RawDataView({
         ) : null}
         {isForecastPortfolioVariant && preparedReadsOnly && forecastCurrentDisplayState === 'NOT_PREPARED' && !forecastCurrentObservedProgressState ? (
           <div className="callout" role="status" aria-live="polite">
-            <strong>{t('exactVariantUnavailable')}</strong>
-            <p>{t('exactVariantUnavailableHint')}</p>
+            <strong>{t('forecastPreparationRequired')}</strong>
+            <p>{t('forecastPreparationRequiredHint')}</p>
+            <div className="callout-actions">
+              <button type="button" className="callout-button" onClick={handlePrepareForecastCurrent}>
+                {t('prepareForecast')}
+              </button>
+            </div>
           </div>
         ) : null}
         {isForecastPortfolioVariant && !preparedReadsOnly && forecastCurrentDisplayState === 'NOT_PREPARED' && !forecastCurrentObservedProgressState ? (
@@ -4587,6 +4636,17 @@ export function RawDataView({
           <div className="callout" role="status" aria-live="polite">
             <strong>{forecastVerificationBannerState === 'PREPARING' ? t('verificationPreparing') : t('verificationQueued')}</strong>
             <p>{forecastVerificationBannerState === 'PREPARING' ? t('verificationPreparingHint') : t('verificationQueuedHint')}</p>
+          </div>
+        ) : null}
+        {isForecastPortfolioVariant && showForecast && showForecastVerification && !selectedVerificationPrepared && !forecastVerificationBannerState ? (
+          <div className="callout" role="status" aria-live="polite">
+            <strong>{t('verificationNotPrepared')}</strong>
+            <p>{t('verificationNotPreparedHint')}</p>
+            <div className="callout-actions">
+              <button type="button" className="callout-button" onClick={handlePrepareForecastVerification}>
+                {t('prepareVerification')}
+              </button>
+            </div>
           </div>
         ) : null}
         {isForecastPortfolioVariant && showForecast && showForecastVerification && showHistoricalVerificationNotice ? (

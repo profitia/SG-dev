@@ -1,21 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import {
+  durableSnapshotToProgressiveSnapshot,
   parseBenchmarkForecastCurrentPreparationRequest,
-  requestProgressiveForecastPreparationSnapshot,
+  readDurableForecastPreparationSnapshot,
   SgRuntimeForecastPreparationAuthError,
 } from '@/lib/benchmark-forecast/interactive-current-preparation'
+import type { BenchmarkForecastCurrentPreparationRequest, ProgressiveForecastPreparationSnapshot } from '@/lib/benchmark-forecast/forecast-contract'
 
 export const dynamic = 'force-dynamic'
 
 type ProgressiveSnapshotReader = (
-  input: Parameters<typeof requestProgressiveForecastPreparationSnapshot>[0],
-  traceOptions?: Parameters<typeof requestProgressiveForecastPreparationSnapshot>[1],
-  options?: Parameters<typeof requestProgressiveForecastPreparationSnapshot>[2],
-) => ReturnType<typeof requestProgressiveForecastPreparationSnapshot>
+  input: BenchmarkForecastCurrentPreparationRequest,
+  traceOptions?: unknown,
+  options?: { signal?: AbortSignal },
+) => Promise<ProgressiveForecastPreparationSnapshot>
+
+const readDurableProgressiveSnapshot: ProgressiveSnapshotReader = async (input, _traceOptions, options) => (
+  durableSnapshotToProgressiveSnapshot(await readDurableForecastPreparationSnapshot(input, undefined, options))
+)
 
 export function createProgressiveForecastPreparationRouteHandler(
-  reader: ProgressiveSnapshotReader = requestProgressiveForecastPreparationSnapshot,
+  reader: ProgressiveSnapshotReader = readDurableProgressiveSnapshot,
 ) {
   return async function POST(request: NextRequest) {
     let body: unknown

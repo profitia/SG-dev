@@ -15,77 +15,82 @@ export type PrismaPromise<T> = $Public.PrismaPromise<T>
 
 /**
  * Model MarketSeries
- * 
+ *
  */
 export type MarketSeries = $Result.DefaultSelection<Prisma.$MarketSeriesPayload>
 /**
  * Model MarketObservation
- * 
+ *
  */
 export type MarketObservation = $Result.DefaultSelection<Prisma.$MarketObservationPayload>
 /**
  * Model MarketHydrationState
- * 
+ *
  */
 export type MarketHydrationState = $Result.DefaultSelection<Prisma.$MarketHydrationStatePayload>
 /**
  * Model ForecastCurrentRun
- * 
+ *
  */
 export type ForecastCurrentRun = $Result.DefaultSelection<Prisma.$ForecastCurrentRunPayload>
 /**
  * Model ForecastCurrentPoint
- * 
+ *
  */
 export type ForecastCurrentPoint = $Result.DefaultSelection<Prisma.$ForecastCurrentPointPayload>
 /**
  * Model ForecastVerificationRun
- * 
+ *
  */
 export type ForecastVerificationRun = $Result.DefaultSelection<Prisma.$ForecastVerificationRunPayload>
 /**
  * Model ForecastVerificationMetric
- * 
+ *
  */
 export type ForecastVerificationMetric = $Result.DefaultSelection<Prisma.$ForecastVerificationMetricPayload>
 /**
  * Model ForecastVerificationPoint
- * 
+ *
  */
 export type ForecastVerificationPoint = $Result.DefaultSelection<Prisma.$ForecastVerificationPointPayload>
 /**
  * Model RollingDailyVerificationRecord
- * 
+ *
  */
 export type RollingDailyVerificationRecord = $Result.DefaultSelection<Prisma.$RollingDailyVerificationRecordPayload>
 /**
  * Model RollingDailyCurrentForecastSnapshot
- * 
+ *
  */
 export type RollingDailyCurrentForecastSnapshot = $Result.DefaultSelection<Prisma.$RollingDailyCurrentForecastSnapshotPayload>
 /**
  * Model RollingDailyCalibrationGroup
- * 
+ *
  */
 export type RollingDailyCalibrationGroup = $Result.DefaultSelection<Prisma.$RollingDailyCalibrationGroupPayload>
 /**
  * Model RollingDailyMaintenanceState
- * 
+ *
  */
 export type RollingDailyMaintenanceState = $Result.DefaultSelection<Prisma.$RollingDailyMaintenanceStatePayload>
 /**
  * Model ForecastPreparationExecutionLedger
- * 
+ *
  */
 export type ForecastPreparationExecutionLedger = $Result.DefaultSelection<Prisma.$ForecastPreparationExecutionLedgerPayload>
 /**
+ * Model ForecastPreparationJob
+ *
+ */
+export type ForecastPreparationJob = $Result.DefaultSelection<Prisma.$ForecastPreparationJobPayload>
+/**
  * Model BenchmarkMetadataFacetRecord
- * 
+ *
  */
 export type BenchmarkMetadataFacetRecord = $Result.DefaultSelection<Prisma.$BenchmarkMetadataFacetRecordPayload>
 /**
  * Model BenchmarkMetadataValueRecord
- * 
+ *
  */
 export type BenchmarkMetadataValueRecord = $Result.DefaultSelection<Prisma.$BenchmarkMetadataValueRecordPayload>
 
@@ -133,7 +138,7 @@ export const RollingDailyCalibrationStatus: typeof $Enums.RollingDailyCalibratio
 
 /**
  * ##  Prisma Client ʲˢ
- * 
+ *
  * Type-safe database client for TypeScript & Node.js
  * @example
  * ```
@@ -142,7 +147,7 @@ export const RollingDailyCalibrationStatus: typeof $Enums.RollingDailyCalibratio
  * const marketSeries = await prisma.marketSeries.findMany()
  * ```
  *
- * 
+ *
  * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
  */
 export class PrismaClient<
@@ -154,7 +159,7 @@ export class PrismaClient<
 
     /**
    * ##  Prisma Client ʲˢ
-   * 
+   *
    * Type-safe database client for TypeScript & Node.js
    * @example
    * ```
@@ -163,7 +168,7 @@ export class PrismaClient<
    * const marketSeries = await prisma.marketSeries.findMany()
    * ```
    *
-   * 
+   *
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
    */
 
@@ -193,7 +198,7 @@ export class PrismaClient<
    * ```
    * const result = await prisma.$executeRaw`UPDATE User SET cool = ${true} WHERE email = ${'user@email.com'};`
    * ```
-   * 
+   *
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $executeRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<number>;
@@ -205,7 +210,7 @@ export class PrismaClient<
    * ```
    * const result = await prisma.$executeRawUnsafe('UPDATE User SET cool = $1 WHERE email = $2 ;', true, 'user@email.com')
    * ```
-   * 
+   *
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $executeRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<number>;
@@ -216,7 +221,7 @@ export class PrismaClient<
    * ```
    * const result = await prisma.$queryRaw`SELECT * FROM User WHERE id = ${1} OR email = ${'user@email.com'};`
    * ```
-   * 
+   *
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $queryRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<T>;
@@ -228,7 +233,7 @@ export class PrismaClient<
    * ```
    * const result = await prisma.$queryRawUnsafe('SELECT * FROM User WHERE id = $1 OR email = $2;', 1, 'user@email.com')
    * ```
-   * 
+   *
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $queryRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<T>;
@@ -244,7 +249,7 @@ export class PrismaClient<
    *   prisma.user.create({ data: { name: 'Alice' } }),
    * ])
    * ```
-   * 
+   *
    * Read more in our [docs](https://www.prisma.io/docs/concepts/components/prisma-client/transactions).
    */
   $transaction<P extends Prisma.PrismaPromise<any>[]>(arg: [...P], options?: { isolationLevel?: Prisma.TransactionIsolationLevel }): $Utils.JsPromise<runtime.Types.Utils.UnwrapTuple<P>>
@@ -385,6 +390,16 @@ export class PrismaClient<
   get forecastPreparationExecutionLedger(): Prisma.ForecastPreparationExecutionLedgerDelegate<ExtArgs>;
 
   /**
+   * `prisma.forecastPreparationJob`: Exposes CRUD operations for the **ForecastPreparationJob** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ForecastPreparationJobs
+    * const forecastPreparationJobs = await prisma.forecastPreparationJob.findMany()
+    * ```
+    */
+  get forecastPreparationJob(): Prisma.ForecastPreparationJobDelegate<ExtArgs>;
+
+  /**
    * `prisma.benchmarkMetadataFacetRecord`: Exposes CRUD operations for the **BenchmarkMetadataFacetRecord** model.
     * Example usage:
     * ```ts
@@ -444,7 +459,7 @@ export namespace Prisma {
   export type DecimalJsLike = runtime.DecimalJsLike
 
   /**
-   * Metrics 
+   * Metrics
    */
   export type Metrics = runtime.Metrics
   export type Metric<T> = runtime.Metric<T>
@@ -469,7 +484,7 @@ export namespace Prisma {
     client: string
   }
 
-  export const prismaVersion: PrismaVersion 
+  export const prismaVersion: PrismaVersion
 
   /**
    * Utility Types
@@ -485,15 +500,15 @@ export namespace Prisma {
 
   /**
    * Types of the values used to represent different kinds of `null` values when working with JSON fields.
-   * 
+   *
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   namespace NullTypes {
     /**
     * Type of `Prisma.DbNull`.
-    * 
+    *
     * You cannot use other instances of this class. Please use the `Prisma.DbNull` value.
-    * 
+    *
     * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
     */
     class DbNull {
@@ -503,9 +518,9 @@ export namespace Prisma {
 
     /**
     * Type of `Prisma.JsonNull`.
-    * 
+    *
     * You cannot use other instances of this class. Please use the `Prisma.JsonNull` value.
-    * 
+    *
     * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
     */
     class JsonNull {
@@ -515,9 +530,9 @@ export namespace Prisma {
 
     /**
     * Type of `Prisma.AnyNull`.
-    * 
+    *
     * You cannot use other instances of this class. Please use the `Prisma.AnyNull` value.
-    * 
+    *
     * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
     */
     class AnyNull {
@@ -528,21 +543,21 @@ export namespace Prisma {
 
   /**
    * Helper for filtering JSON entries that have `null` on the database (empty on the db)
-   * 
+   *
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   export const DbNull: NullTypes.DbNull
 
   /**
    * Helper for filtering JSON entries that have JSON `null` values (not empty on the db)
-   * 
+   *
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   export const JsonNull: NullTypes.JsonNull
 
   /**
    * Helper for filtering JSON entries that are `Prisma.DbNull` or `Prisma.JsonNull`
-   * 
+   *
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   export const AnyNull: NullTypes.AnyNull
@@ -857,6 +872,7 @@ export namespace Prisma {
     RollingDailyCalibrationGroup: 'RollingDailyCalibrationGroup',
     RollingDailyMaintenanceState: 'RollingDailyMaintenanceState',
     ForecastPreparationExecutionLedger: 'ForecastPreparationExecutionLedger',
+    ForecastPreparationJob: 'ForecastPreparationJob',
     BenchmarkMetadataFacetRecord: 'BenchmarkMetadataFacetRecord',
     BenchmarkMetadataValueRecord: 'BenchmarkMetadataValueRecord'
   };
@@ -874,7 +890,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "marketSeries" | "marketObservation" | "marketHydrationState" | "forecastCurrentRun" | "forecastCurrentPoint" | "forecastVerificationRun" | "forecastVerificationMetric" | "forecastVerificationPoint" | "rollingDailyVerificationRecord" | "rollingDailyCurrentForecastSnapshot" | "rollingDailyCalibrationGroup" | "rollingDailyMaintenanceState" | "forecastPreparationExecutionLedger" | "benchmarkMetadataFacetRecord" | "benchmarkMetadataValueRecord"
+      modelProps: "marketSeries" | "marketObservation" | "marketHydrationState" | "forecastCurrentRun" | "forecastCurrentPoint" | "forecastVerificationRun" | "forecastVerificationMetric" | "forecastVerificationPoint" | "rollingDailyVerificationRecord" | "rollingDailyCurrentForecastSnapshot" | "rollingDailyCalibrationGroup" | "rollingDailyMaintenanceState" | "forecastPreparationExecutionLedger" | "forecastPreparationJob" | "benchmarkMetadataFacetRecord" | "benchmarkMetadataValueRecord"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1788,6 +1804,76 @@ export namespace Prisma {
           }
         }
       }
+      ForecastPreparationJob: {
+        payload: Prisma.$ForecastPreparationJobPayload<ExtArgs>
+        fields: Prisma.ForecastPreparationJobFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ForecastPreparationJobFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationJobPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ForecastPreparationJobFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationJobPayload>
+          }
+          findFirst: {
+            args: Prisma.ForecastPreparationJobFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationJobPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ForecastPreparationJobFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationJobPayload>
+          }
+          findMany: {
+            args: Prisma.ForecastPreparationJobFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationJobPayload>[]
+          }
+          create: {
+            args: Prisma.ForecastPreparationJobCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationJobPayload>
+          }
+          createMany: {
+            args: Prisma.ForecastPreparationJobCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ForecastPreparationJobCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationJobPayload>[]
+          }
+          delete: {
+            args: Prisma.ForecastPreparationJobDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationJobPayload>
+          }
+          update: {
+            args: Prisma.ForecastPreparationJobUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationJobPayload>
+          }
+          deleteMany: {
+            args: Prisma.ForecastPreparationJobDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ForecastPreparationJobUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ForecastPreparationJobUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ForecastPreparationJobPayload>
+          }
+          aggregate: {
+            args: Prisma.ForecastPreparationJobAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateForecastPreparationJob>
+          }
+          groupBy: {
+            args: Prisma.ForecastPreparationJobGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ForecastPreparationJobGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ForecastPreparationJobCountArgs<ExtArgs>
+            result: $Utils.Optional<ForecastPreparationJobCountAggregateOutputType> | number
+          }
+        }
+      }
       BenchmarkMetadataFacetRecord: {
         payload: Prisma.$BenchmarkMetadataFacetRecordPayload<ExtArgs>
         fields: Prisma.BenchmarkMetadataFacetRecordFieldRefs
@@ -1973,7 +2059,7 @@ export namespace Prisma {
      * ```
      * // Defaults to stdout
      * log: ['query', 'info', 'warn', 'error']
-     * 
+     *
      * // Emit as events
      * log: [
      *   { emit: 'stdout', level: 'query' },
@@ -2294,43 +2380,43 @@ export namespace Prisma {
     where?: MarketSeriesWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of MarketSeries to fetch.
      */
     orderBy?: MarketSeriesOrderByWithRelationInput | MarketSeriesOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the start position
      */
     cursor?: MarketSeriesWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` MarketSeries from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` MarketSeries.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Count returned MarketSeries
     **/
     _count?: true | MarketSeriesCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the minimum value
     **/
     _min?: MarketSeriesMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the maximum value
     **/
     _max?: MarketSeriesMaxAggregateInputType
@@ -2466,7 +2552,7 @@ export namespace Prisma {
 
   type MarketSeriesGetPayload<S extends boolean | null | undefined | MarketSeriesDefaultArgs> = $Result.GetResult<Prisma.$MarketSeriesPayload, S>
 
-  type MarketSeriesCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+  type MarketSeriesCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
     Omit<MarketSeriesFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: MarketSeriesCountAggregateInputType | true
     }
@@ -2487,7 +2573,7 @@ export namespace Prisma {
     findUnique<T extends MarketSeriesFindUniqueArgs>(args: SelectSubset<T, MarketSeriesFindUniqueArgs<ExtArgs>>): Prisma__MarketSeriesClient<$Result.GetResult<Prisma.$MarketSeriesPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
-     * Find one MarketSeries that matches the filter or throw an error with `error.code='P2025'` 
+     * Find one MarketSeries that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
      * @param {MarketSeriesFindUniqueOrThrowArgs} args - Arguments to find a MarketSeries
      * @example
@@ -2539,13 +2625,13 @@ export namespace Prisma {
      * @example
      * // Get all MarketSeries
      * const marketSeries = await prisma.marketSeries.findMany()
-     * 
+     *
      * // Get first 10 MarketSeries
      * const marketSeries = await prisma.marketSeries.findMany({ take: 10 })
-     * 
+     *
      * // Only select the `id`
      * const marketSeriesWithIdOnly = await prisma.marketSeries.findMany({ select: { id: true } })
-     * 
+     *
      */
     findMany<T extends MarketSeriesFindManyArgs>(args?: SelectSubset<T, MarketSeriesFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MarketSeriesPayload<ExtArgs>, T, "findMany">>
 
@@ -2559,7 +2645,7 @@ export namespace Prisma {
      *     // ... data to create a MarketSeries
      *   }
      * })
-     * 
+     *
      */
     create<T extends MarketSeriesCreateArgs>(args: SelectSubset<T, MarketSeriesCreateArgs<ExtArgs>>): Prisma__MarketSeriesClient<$Result.GetResult<Prisma.$MarketSeriesPayload<ExtArgs>, T, "create">, never, ExtArgs>
 
@@ -2573,7 +2659,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     *     
+     *
      */
     createMany<T extends MarketSeriesCreateManyArgs>(args?: SelectSubset<T, MarketSeriesCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -2587,9 +2673,9 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     * 
+     *
      * // Create many MarketSeries and only return the `id`
-     * const marketSeriesWithIdOnly = await prisma.marketSeries.createManyAndReturn({ 
+     * const marketSeriesWithIdOnly = await prisma.marketSeries.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -2597,7 +2683,7 @@ export namespace Prisma {
      * })
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * 
+     *
      */
     createManyAndReturn<T extends MarketSeriesCreateManyAndReturnArgs>(args?: SelectSubset<T, MarketSeriesCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MarketSeriesPayload<ExtArgs>, T, "createManyAndReturn">>
 
@@ -2611,7 +2697,7 @@ export namespace Prisma {
      *     // ... filter to delete one MarketSeries
      *   }
      * })
-     * 
+     *
      */
     delete<T extends MarketSeriesDeleteArgs>(args: SelectSubset<T, MarketSeriesDeleteArgs<ExtArgs>>): Prisma__MarketSeriesClient<$Result.GetResult<Prisma.$MarketSeriesPayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
@@ -2628,7 +2714,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     update<T extends MarketSeriesUpdateArgs>(args: SelectSubset<T, MarketSeriesUpdateArgs<ExtArgs>>): Prisma__MarketSeriesClient<$Result.GetResult<Prisma.$MarketSeriesPayload<ExtArgs>, T, "update">, never, ExtArgs>
 
@@ -2642,7 +2728,7 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     * 
+     *
      */
     deleteMany<T extends MarketSeriesDeleteManyArgs>(args?: SelectSubset<T, MarketSeriesDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -2661,7 +2747,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     updateMany<T extends MarketSeriesUpdateManyArgs>(args: SelectSubset<T, MarketSeriesUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -2750,7 +2836,7 @@ export namespace Prisma {
      *     _all: true
      *   },
      * })
-     * 
+     *
     **/
     groupBy<
       T extends MarketSeriesGroupByArgs,
@@ -2853,7 +2939,7 @@ export namespace Prisma {
 
   /**
    * Fields of the MarketSeries model
-   */ 
+   */
   interface MarketSeriesFieldRefs {
     readonly id: FieldRef<"MarketSeries", 'String'>
     readonly providerCode: FieldRef<"MarketSeries", 'String'>
@@ -2867,7 +2953,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"MarketSeries", 'DateTime'>
     readonly updatedAt: FieldRef<"MarketSeries", 'DateTime'>
   }
-    
+
 
   // Custom InputTypes
   /**
@@ -2924,31 +3010,31 @@ export namespace Prisma {
     where?: MarketSeriesWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of MarketSeries to fetch.
      */
     orderBy?: MarketSeriesOrderByWithRelationInput | MarketSeriesOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for MarketSeries.
      */
     cursor?: MarketSeriesWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` MarketSeries from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` MarketSeries.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of MarketSeries.
      */
     distinct?: MarketSeriesScalarFieldEnum | MarketSeriesScalarFieldEnum[]
@@ -2972,31 +3058,31 @@ export namespace Prisma {
     where?: MarketSeriesWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of MarketSeries to fetch.
      */
     orderBy?: MarketSeriesOrderByWithRelationInput | MarketSeriesOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for MarketSeries.
      */
     cursor?: MarketSeriesWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` MarketSeries from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` MarketSeries.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of MarketSeries.
      */
     distinct?: MarketSeriesScalarFieldEnum | MarketSeriesScalarFieldEnum[]
@@ -3020,25 +3106,25 @@ export namespace Prisma {
     where?: MarketSeriesWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of MarketSeries to fetch.
      */
     orderBy?: MarketSeriesOrderByWithRelationInput | MarketSeriesOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for listing MarketSeries.
      */
     cursor?: MarketSeriesWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` MarketSeries from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` MarketSeries.
      */
     skip?: number
@@ -3321,55 +3407,55 @@ export namespace Prisma {
     where?: MarketObservationWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of MarketObservations to fetch.
      */
     orderBy?: MarketObservationOrderByWithRelationInput | MarketObservationOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the start position
      */
     cursor?: MarketObservationWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` MarketObservations from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` MarketObservations.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Count returned MarketObservations
     **/
     _count?: true | MarketObservationCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to average
     **/
     _avg?: MarketObservationAvgAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to sum
     **/
     _sum?: MarketObservationSumAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the minimum value
     **/
     _min?: MarketObservationMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the maximum value
     **/
     _max?: MarketObservationMaxAggregateInputType
@@ -3482,7 +3568,7 @@ export namespace Prisma {
 
   type MarketObservationGetPayload<S extends boolean | null | undefined | MarketObservationDefaultArgs> = $Result.GetResult<Prisma.$MarketObservationPayload, S>
 
-  type MarketObservationCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+  type MarketObservationCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
     Omit<MarketObservationFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: MarketObservationCountAggregateInputType | true
     }
@@ -3503,7 +3589,7 @@ export namespace Prisma {
     findUnique<T extends MarketObservationFindUniqueArgs>(args: SelectSubset<T, MarketObservationFindUniqueArgs<ExtArgs>>): Prisma__MarketObservationClient<$Result.GetResult<Prisma.$MarketObservationPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
-     * Find one MarketObservation that matches the filter or throw an error with `error.code='P2025'` 
+     * Find one MarketObservation that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
      * @param {MarketObservationFindUniqueOrThrowArgs} args - Arguments to find a MarketObservation
      * @example
@@ -3555,13 +3641,13 @@ export namespace Prisma {
      * @example
      * // Get all MarketObservations
      * const marketObservations = await prisma.marketObservation.findMany()
-     * 
+     *
      * // Get first 10 MarketObservations
      * const marketObservations = await prisma.marketObservation.findMany({ take: 10 })
-     * 
+     *
      * // Only select the `id`
      * const marketObservationWithIdOnly = await prisma.marketObservation.findMany({ select: { id: true } })
-     * 
+     *
      */
     findMany<T extends MarketObservationFindManyArgs>(args?: SelectSubset<T, MarketObservationFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MarketObservationPayload<ExtArgs>, T, "findMany">>
 
@@ -3575,7 +3661,7 @@ export namespace Prisma {
      *     // ... data to create a MarketObservation
      *   }
      * })
-     * 
+     *
      */
     create<T extends MarketObservationCreateArgs>(args: SelectSubset<T, MarketObservationCreateArgs<ExtArgs>>): Prisma__MarketObservationClient<$Result.GetResult<Prisma.$MarketObservationPayload<ExtArgs>, T, "create">, never, ExtArgs>
 
@@ -3589,7 +3675,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     *     
+     *
      */
     createMany<T extends MarketObservationCreateManyArgs>(args?: SelectSubset<T, MarketObservationCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -3603,9 +3689,9 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     * 
+     *
      * // Create many MarketObservations and only return the `id`
-     * const marketObservationWithIdOnly = await prisma.marketObservation.createManyAndReturn({ 
+     * const marketObservationWithIdOnly = await prisma.marketObservation.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -3613,7 +3699,7 @@ export namespace Prisma {
      * })
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * 
+     *
      */
     createManyAndReturn<T extends MarketObservationCreateManyAndReturnArgs>(args?: SelectSubset<T, MarketObservationCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MarketObservationPayload<ExtArgs>, T, "createManyAndReturn">>
 
@@ -3627,7 +3713,7 @@ export namespace Prisma {
      *     // ... filter to delete one MarketObservation
      *   }
      * })
-     * 
+     *
      */
     delete<T extends MarketObservationDeleteArgs>(args: SelectSubset<T, MarketObservationDeleteArgs<ExtArgs>>): Prisma__MarketObservationClient<$Result.GetResult<Prisma.$MarketObservationPayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
@@ -3644,7 +3730,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     update<T extends MarketObservationUpdateArgs>(args: SelectSubset<T, MarketObservationUpdateArgs<ExtArgs>>): Prisma__MarketObservationClient<$Result.GetResult<Prisma.$MarketObservationPayload<ExtArgs>, T, "update">, never, ExtArgs>
 
@@ -3658,7 +3744,7 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     * 
+     *
      */
     deleteMany<T extends MarketObservationDeleteManyArgs>(args?: SelectSubset<T, MarketObservationDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -3677,7 +3763,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     updateMany<T extends MarketObservationUpdateManyArgs>(args: SelectSubset<T, MarketObservationUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -3766,7 +3852,7 @@ export namespace Prisma {
      *     _all: true
      *   },
      * })
-     * 
+     *
     **/
     groupBy<
       T extends MarketObservationGroupByArgs,
@@ -3868,7 +3954,7 @@ export namespace Prisma {
 
   /**
    * Fields of the MarketObservation model
-   */ 
+   */
   interface MarketObservationFieldRefs {
     readonly id: FieldRef<"MarketObservation", 'String'>
     readonly seriesId: FieldRef<"MarketObservation", 'String'>
@@ -3877,7 +3963,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"MarketObservation", 'DateTime'>
     readonly updatedAt: FieldRef<"MarketObservation", 'DateTime'>
   }
-    
+
 
   // Custom InputTypes
   /**
@@ -3934,31 +4020,31 @@ export namespace Prisma {
     where?: MarketObservationWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of MarketObservations to fetch.
      */
     orderBy?: MarketObservationOrderByWithRelationInput | MarketObservationOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for MarketObservations.
      */
     cursor?: MarketObservationWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` MarketObservations from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` MarketObservations.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of MarketObservations.
      */
     distinct?: MarketObservationScalarFieldEnum | MarketObservationScalarFieldEnum[]
@@ -3982,31 +4068,31 @@ export namespace Prisma {
     where?: MarketObservationWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of MarketObservations to fetch.
      */
     orderBy?: MarketObservationOrderByWithRelationInput | MarketObservationOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for MarketObservations.
      */
     cursor?: MarketObservationWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` MarketObservations from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` MarketObservations.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of MarketObservations.
      */
     distinct?: MarketObservationScalarFieldEnum | MarketObservationScalarFieldEnum[]
@@ -4030,25 +4116,25 @@ export namespace Prisma {
     where?: MarketObservationWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of MarketObservations to fetch.
      */
     orderBy?: MarketObservationOrderByWithRelationInput | MarketObservationOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for listing MarketObservations.
      */
     cursor?: MarketObservationWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` MarketObservations from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` MarketObservations.
      */
     skip?: number
@@ -4324,55 +4410,55 @@ export namespace Prisma {
     where?: MarketHydrationStateWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of MarketHydrationStates to fetch.
      */
     orderBy?: MarketHydrationStateOrderByWithRelationInput | MarketHydrationStateOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the start position
      */
     cursor?: MarketHydrationStateWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` MarketHydrationStates from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` MarketHydrationStates.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Count returned MarketHydrationStates
     **/
     _count?: true | MarketHydrationStateCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to average
     **/
     _avg?: MarketHydrationStateAvgAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to sum
     **/
     _sum?: MarketHydrationStateSumAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the minimum value
     **/
     _min?: MarketHydrationStateMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the maximum value
     **/
     _max?: MarketHydrationStateMaxAggregateInputType
@@ -4505,7 +4591,7 @@ export namespace Prisma {
 
   type MarketHydrationStateGetPayload<S extends boolean | null | undefined | MarketHydrationStateDefaultArgs> = $Result.GetResult<Prisma.$MarketHydrationStatePayload, S>
 
-  type MarketHydrationStateCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+  type MarketHydrationStateCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
     Omit<MarketHydrationStateFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: MarketHydrationStateCountAggregateInputType | true
     }
@@ -4526,7 +4612,7 @@ export namespace Prisma {
     findUnique<T extends MarketHydrationStateFindUniqueArgs>(args: SelectSubset<T, MarketHydrationStateFindUniqueArgs<ExtArgs>>): Prisma__MarketHydrationStateClient<$Result.GetResult<Prisma.$MarketHydrationStatePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
-     * Find one MarketHydrationState that matches the filter or throw an error with `error.code='P2025'` 
+     * Find one MarketHydrationState that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
      * @param {MarketHydrationStateFindUniqueOrThrowArgs} args - Arguments to find a MarketHydrationState
      * @example
@@ -4578,13 +4664,13 @@ export namespace Prisma {
      * @example
      * // Get all MarketHydrationStates
      * const marketHydrationStates = await prisma.marketHydrationState.findMany()
-     * 
+     *
      * // Get first 10 MarketHydrationStates
      * const marketHydrationStates = await prisma.marketHydrationState.findMany({ take: 10 })
-     * 
+     *
      * // Only select the `id`
      * const marketHydrationStateWithIdOnly = await prisma.marketHydrationState.findMany({ select: { id: true } })
-     * 
+     *
      */
     findMany<T extends MarketHydrationStateFindManyArgs>(args?: SelectSubset<T, MarketHydrationStateFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MarketHydrationStatePayload<ExtArgs>, T, "findMany">>
 
@@ -4598,7 +4684,7 @@ export namespace Prisma {
      *     // ... data to create a MarketHydrationState
      *   }
      * })
-     * 
+     *
      */
     create<T extends MarketHydrationStateCreateArgs>(args: SelectSubset<T, MarketHydrationStateCreateArgs<ExtArgs>>): Prisma__MarketHydrationStateClient<$Result.GetResult<Prisma.$MarketHydrationStatePayload<ExtArgs>, T, "create">, never, ExtArgs>
 
@@ -4612,7 +4698,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     *     
+     *
      */
     createMany<T extends MarketHydrationStateCreateManyArgs>(args?: SelectSubset<T, MarketHydrationStateCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -4626,9 +4712,9 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     * 
+     *
      * // Create many MarketHydrationStates and only return the `id`
-     * const marketHydrationStateWithIdOnly = await prisma.marketHydrationState.createManyAndReturn({ 
+     * const marketHydrationStateWithIdOnly = await prisma.marketHydrationState.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -4636,7 +4722,7 @@ export namespace Prisma {
      * })
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * 
+     *
      */
     createManyAndReturn<T extends MarketHydrationStateCreateManyAndReturnArgs>(args?: SelectSubset<T, MarketHydrationStateCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MarketHydrationStatePayload<ExtArgs>, T, "createManyAndReturn">>
 
@@ -4650,7 +4736,7 @@ export namespace Prisma {
      *     // ... filter to delete one MarketHydrationState
      *   }
      * })
-     * 
+     *
      */
     delete<T extends MarketHydrationStateDeleteArgs>(args: SelectSubset<T, MarketHydrationStateDeleteArgs<ExtArgs>>): Prisma__MarketHydrationStateClient<$Result.GetResult<Prisma.$MarketHydrationStatePayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
@@ -4667,7 +4753,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     update<T extends MarketHydrationStateUpdateArgs>(args: SelectSubset<T, MarketHydrationStateUpdateArgs<ExtArgs>>): Prisma__MarketHydrationStateClient<$Result.GetResult<Prisma.$MarketHydrationStatePayload<ExtArgs>, T, "update">, never, ExtArgs>
 
@@ -4681,7 +4767,7 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     * 
+     *
      */
     deleteMany<T extends MarketHydrationStateDeleteManyArgs>(args?: SelectSubset<T, MarketHydrationStateDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -4700,7 +4786,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     updateMany<T extends MarketHydrationStateUpdateManyArgs>(args: SelectSubset<T, MarketHydrationStateUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -4789,7 +4875,7 @@ export namespace Prisma {
      *     _all: true
      *   },
      * })
-     * 
+     *
     **/
     groupBy<
       T extends MarketHydrationStateGroupByArgs,
@@ -4891,7 +4977,7 @@ export namespace Prisma {
 
   /**
    * Fields of the MarketHydrationState model
-   */ 
+   */
   interface MarketHydrationStateFieldRefs {
     readonly id: FieldRef<"MarketHydrationState", 'String'>
     readonly seriesId: FieldRef<"MarketHydrationState", 'String'>
@@ -4904,7 +4990,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"MarketHydrationState", 'DateTime'>
     readonly updatedAt: FieldRef<"MarketHydrationState", 'DateTime'>
   }
-    
+
 
   // Custom InputTypes
   /**
@@ -4961,31 +5047,31 @@ export namespace Prisma {
     where?: MarketHydrationStateWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of MarketHydrationStates to fetch.
      */
     orderBy?: MarketHydrationStateOrderByWithRelationInput | MarketHydrationStateOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for MarketHydrationStates.
      */
     cursor?: MarketHydrationStateWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` MarketHydrationStates from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` MarketHydrationStates.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of MarketHydrationStates.
      */
     distinct?: MarketHydrationStateScalarFieldEnum | MarketHydrationStateScalarFieldEnum[]
@@ -5009,31 +5095,31 @@ export namespace Prisma {
     where?: MarketHydrationStateWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of MarketHydrationStates to fetch.
      */
     orderBy?: MarketHydrationStateOrderByWithRelationInput | MarketHydrationStateOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for MarketHydrationStates.
      */
     cursor?: MarketHydrationStateWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` MarketHydrationStates from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` MarketHydrationStates.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of MarketHydrationStates.
      */
     distinct?: MarketHydrationStateScalarFieldEnum | MarketHydrationStateScalarFieldEnum[]
@@ -5057,25 +5143,25 @@ export namespace Prisma {
     where?: MarketHydrationStateWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of MarketHydrationStates to fetch.
      */
     orderBy?: MarketHydrationStateOrderByWithRelationInput | MarketHydrationStateOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for listing MarketHydrationStates.
      */
     cursor?: MarketHydrationStateWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` MarketHydrationStates from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` MarketHydrationStates.
      */
     skip?: number
@@ -5451,55 +5537,55 @@ export namespace Prisma {
     where?: ForecastCurrentRunWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastCurrentRuns to fetch.
      */
     orderBy?: ForecastCurrentRunOrderByWithRelationInput | ForecastCurrentRunOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the start position
      */
     cursor?: ForecastCurrentRunWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastCurrentRuns from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastCurrentRuns.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Count returned ForecastCurrentRuns
     **/
     _count?: true | ForecastCurrentRunCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to average
     **/
     _avg?: ForecastCurrentRunAvgAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to sum
     **/
     _sum?: ForecastCurrentRunSumAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the minimum value
     **/
     _min?: ForecastCurrentRunMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the maximum value
     **/
     _max?: ForecastCurrentRunMaxAggregateInputType
@@ -5711,7 +5797,7 @@ export namespace Prisma {
 
   type ForecastCurrentRunGetPayload<S extends boolean | null | undefined | ForecastCurrentRunDefaultArgs> = $Result.GetResult<Prisma.$ForecastCurrentRunPayload, S>
 
-  type ForecastCurrentRunCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+  type ForecastCurrentRunCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
     Omit<ForecastCurrentRunFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: ForecastCurrentRunCountAggregateInputType | true
     }
@@ -5732,7 +5818,7 @@ export namespace Prisma {
     findUnique<T extends ForecastCurrentRunFindUniqueArgs>(args: SelectSubset<T, ForecastCurrentRunFindUniqueArgs<ExtArgs>>): Prisma__ForecastCurrentRunClient<$Result.GetResult<Prisma.$ForecastCurrentRunPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
-     * Find one ForecastCurrentRun that matches the filter or throw an error with `error.code='P2025'` 
+     * Find one ForecastCurrentRun that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
      * @param {ForecastCurrentRunFindUniqueOrThrowArgs} args - Arguments to find a ForecastCurrentRun
      * @example
@@ -5784,13 +5870,13 @@ export namespace Prisma {
      * @example
      * // Get all ForecastCurrentRuns
      * const forecastCurrentRuns = await prisma.forecastCurrentRun.findMany()
-     * 
+     *
      * // Get first 10 ForecastCurrentRuns
      * const forecastCurrentRuns = await prisma.forecastCurrentRun.findMany({ take: 10 })
-     * 
+     *
      * // Only select the `id`
      * const forecastCurrentRunWithIdOnly = await prisma.forecastCurrentRun.findMany({ select: { id: true } })
-     * 
+     *
      */
     findMany<T extends ForecastCurrentRunFindManyArgs>(args?: SelectSubset<T, ForecastCurrentRunFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastCurrentRunPayload<ExtArgs>, T, "findMany">>
 
@@ -5804,7 +5890,7 @@ export namespace Prisma {
      *     // ... data to create a ForecastCurrentRun
      *   }
      * })
-     * 
+     *
      */
     create<T extends ForecastCurrentRunCreateArgs>(args: SelectSubset<T, ForecastCurrentRunCreateArgs<ExtArgs>>): Prisma__ForecastCurrentRunClient<$Result.GetResult<Prisma.$ForecastCurrentRunPayload<ExtArgs>, T, "create">, never, ExtArgs>
 
@@ -5818,7 +5904,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     *     
+     *
      */
     createMany<T extends ForecastCurrentRunCreateManyArgs>(args?: SelectSubset<T, ForecastCurrentRunCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -5832,9 +5918,9 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     * 
+     *
      * // Create many ForecastCurrentRuns and only return the `id`
-     * const forecastCurrentRunWithIdOnly = await prisma.forecastCurrentRun.createManyAndReturn({ 
+     * const forecastCurrentRunWithIdOnly = await prisma.forecastCurrentRun.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -5842,7 +5928,7 @@ export namespace Prisma {
      * })
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * 
+     *
      */
     createManyAndReturn<T extends ForecastCurrentRunCreateManyAndReturnArgs>(args?: SelectSubset<T, ForecastCurrentRunCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastCurrentRunPayload<ExtArgs>, T, "createManyAndReturn">>
 
@@ -5856,7 +5942,7 @@ export namespace Prisma {
      *     // ... filter to delete one ForecastCurrentRun
      *   }
      * })
-     * 
+     *
      */
     delete<T extends ForecastCurrentRunDeleteArgs>(args: SelectSubset<T, ForecastCurrentRunDeleteArgs<ExtArgs>>): Prisma__ForecastCurrentRunClient<$Result.GetResult<Prisma.$ForecastCurrentRunPayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
@@ -5873,7 +5959,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     update<T extends ForecastCurrentRunUpdateArgs>(args: SelectSubset<T, ForecastCurrentRunUpdateArgs<ExtArgs>>): Prisma__ForecastCurrentRunClient<$Result.GetResult<Prisma.$ForecastCurrentRunPayload<ExtArgs>, T, "update">, never, ExtArgs>
 
@@ -5887,7 +5973,7 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     * 
+     *
      */
     deleteMany<T extends ForecastCurrentRunDeleteManyArgs>(args?: SelectSubset<T, ForecastCurrentRunDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -5906,7 +5992,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     updateMany<T extends ForecastCurrentRunUpdateManyArgs>(args: SelectSubset<T, ForecastCurrentRunUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -5995,7 +6081,7 @@ export namespace Prisma {
      *     _all: true
      *   },
      * })
-     * 
+     *
     **/
     groupBy<
       T extends ForecastCurrentRunGroupByArgs,
@@ -6097,7 +6183,7 @@ export namespace Prisma {
 
   /**
    * Fields of the ForecastCurrentRun model
-   */ 
+   */
   interface ForecastCurrentRunFieldRefs {
     readonly id: FieldRef<"ForecastCurrentRun", 'String'>
     readonly seriesId: FieldRef<"ForecastCurrentRun", 'String'>
@@ -6126,7 +6212,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"ForecastCurrentRun", 'DateTime'>
     readonly updatedAt: FieldRef<"ForecastCurrentRun", 'DateTime'>
   }
-    
+
 
   // Custom InputTypes
   /**
@@ -6183,31 +6269,31 @@ export namespace Prisma {
     where?: ForecastCurrentRunWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastCurrentRuns to fetch.
      */
     orderBy?: ForecastCurrentRunOrderByWithRelationInput | ForecastCurrentRunOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for ForecastCurrentRuns.
      */
     cursor?: ForecastCurrentRunWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastCurrentRuns from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastCurrentRuns.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of ForecastCurrentRuns.
      */
     distinct?: ForecastCurrentRunScalarFieldEnum | ForecastCurrentRunScalarFieldEnum[]
@@ -6231,31 +6317,31 @@ export namespace Prisma {
     where?: ForecastCurrentRunWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastCurrentRuns to fetch.
      */
     orderBy?: ForecastCurrentRunOrderByWithRelationInput | ForecastCurrentRunOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for ForecastCurrentRuns.
      */
     cursor?: ForecastCurrentRunWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastCurrentRuns from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastCurrentRuns.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of ForecastCurrentRuns.
      */
     distinct?: ForecastCurrentRunScalarFieldEnum | ForecastCurrentRunScalarFieldEnum[]
@@ -6279,25 +6365,25 @@ export namespace Prisma {
     where?: ForecastCurrentRunWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastCurrentRuns to fetch.
      */
     orderBy?: ForecastCurrentRunOrderByWithRelationInput | ForecastCurrentRunOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for listing ForecastCurrentRuns.
      */
     cursor?: ForecastCurrentRunWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastCurrentRuns from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastCurrentRuns.
      */
     skip?: number
@@ -6617,55 +6703,55 @@ export namespace Prisma {
     where?: ForecastCurrentPointWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastCurrentPoints to fetch.
      */
     orderBy?: ForecastCurrentPointOrderByWithRelationInput | ForecastCurrentPointOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the start position
      */
     cursor?: ForecastCurrentPointWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastCurrentPoints from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastCurrentPoints.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Count returned ForecastCurrentPoints
     **/
     _count?: true | ForecastCurrentPointCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to average
     **/
     _avg?: ForecastCurrentPointAvgAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to sum
     **/
     _sum?: ForecastCurrentPointSumAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the minimum value
     **/
     _min?: ForecastCurrentPointMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the maximum value
     **/
     _max?: ForecastCurrentPointMaxAggregateInputType
@@ -6818,7 +6904,7 @@ export namespace Prisma {
 
   type ForecastCurrentPointGetPayload<S extends boolean | null | undefined | ForecastCurrentPointDefaultArgs> = $Result.GetResult<Prisma.$ForecastCurrentPointPayload, S>
 
-  type ForecastCurrentPointCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+  type ForecastCurrentPointCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
     Omit<ForecastCurrentPointFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: ForecastCurrentPointCountAggregateInputType | true
     }
@@ -6839,7 +6925,7 @@ export namespace Prisma {
     findUnique<T extends ForecastCurrentPointFindUniqueArgs>(args: SelectSubset<T, ForecastCurrentPointFindUniqueArgs<ExtArgs>>): Prisma__ForecastCurrentPointClient<$Result.GetResult<Prisma.$ForecastCurrentPointPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
-     * Find one ForecastCurrentPoint that matches the filter or throw an error with `error.code='P2025'` 
+     * Find one ForecastCurrentPoint that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
      * @param {ForecastCurrentPointFindUniqueOrThrowArgs} args - Arguments to find a ForecastCurrentPoint
      * @example
@@ -6891,13 +6977,13 @@ export namespace Prisma {
      * @example
      * // Get all ForecastCurrentPoints
      * const forecastCurrentPoints = await prisma.forecastCurrentPoint.findMany()
-     * 
+     *
      * // Get first 10 ForecastCurrentPoints
      * const forecastCurrentPoints = await prisma.forecastCurrentPoint.findMany({ take: 10 })
-     * 
+     *
      * // Only select the `id`
      * const forecastCurrentPointWithIdOnly = await prisma.forecastCurrentPoint.findMany({ select: { id: true } })
-     * 
+     *
      */
     findMany<T extends ForecastCurrentPointFindManyArgs>(args?: SelectSubset<T, ForecastCurrentPointFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastCurrentPointPayload<ExtArgs>, T, "findMany">>
 
@@ -6911,7 +6997,7 @@ export namespace Prisma {
      *     // ... data to create a ForecastCurrentPoint
      *   }
      * })
-     * 
+     *
      */
     create<T extends ForecastCurrentPointCreateArgs>(args: SelectSubset<T, ForecastCurrentPointCreateArgs<ExtArgs>>): Prisma__ForecastCurrentPointClient<$Result.GetResult<Prisma.$ForecastCurrentPointPayload<ExtArgs>, T, "create">, never, ExtArgs>
 
@@ -6925,7 +7011,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     *     
+     *
      */
     createMany<T extends ForecastCurrentPointCreateManyArgs>(args?: SelectSubset<T, ForecastCurrentPointCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -6939,9 +7025,9 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     * 
+     *
      * // Create many ForecastCurrentPoints and only return the `id`
-     * const forecastCurrentPointWithIdOnly = await prisma.forecastCurrentPoint.createManyAndReturn({ 
+     * const forecastCurrentPointWithIdOnly = await prisma.forecastCurrentPoint.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -6949,7 +7035,7 @@ export namespace Prisma {
      * })
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * 
+     *
      */
     createManyAndReturn<T extends ForecastCurrentPointCreateManyAndReturnArgs>(args?: SelectSubset<T, ForecastCurrentPointCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastCurrentPointPayload<ExtArgs>, T, "createManyAndReturn">>
 
@@ -6963,7 +7049,7 @@ export namespace Prisma {
      *     // ... filter to delete one ForecastCurrentPoint
      *   }
      * })
-     * 
+     *
      */
     delete<T extends ForecastCurrentPointDeleteArgs>(args: SelectSubset<T, ForecastCurrentPointDeleteArgs<ExtArgs>>): Prisma__ForecastCurrentPointClient<$Result.GetResult<Prisma.$ForecastCurrentPointPayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
@@ -6980,7 +7066,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     update<T extends ForecastCurrentPointUpdateArgs>(args: SelectSubset<T, ForecastCurrentPointUpdateArgs<ExtArgs>>): Prisma__ForecastCurrentPointClient<$Result.GetResult<Prisma.$ForecastCurrentPointPayload<ExtArgs>, T, "update">, never, ExtArgs>
 
@@ -6994,7 +7080,7 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     * 
+     *
      */
     deleteMany<T extends ForecastCurrentPointDeleteManyArgs>(args?: SelectSubset<T, ForecastCurrentPointDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -7013,7 +7099,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     updateMany<T extends ForecastCurrentPointUpdateManyArgs>(args: SelectSubset<T, ForecastCurrentPointUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -7102,7 +7188,7 @@ export namespace Prisma {
      *     _all: true
      *   },
      * })
-     * 
+     *
     **/
     groupBy<
       T extends ForecastCurrentPointGroupByArgs,
@@ -7204,7 +7290,7 @@ export namespace Prisma {
 
   /**
    * Fields of the ForecastCurrentPoint model
-   */ 
+   */
   interface ForecastCurrentPointFieldRefs {
     readonly id: FieldRef<"ForecastCurrentPoint", 'String'>
     readonly runId: FieldRef<"ForecastCurrentPoint", 'String'>
@@ -7221,7 +7307,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"ForecastCurrentPoint", 'DateTime'>
     readonly updatedAt: FieldRef<"ForecastCurrentPoint", 'DateTime'>
   }
-    
+
 
   // Custom InputTypes
   /**
@@ -7278,31 +7364,31 @@ export namespace Prisma {
     where?: ForecastCurrentPointWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastCurrentPoints to fetch.
      */
     orderBy?: ForecastCurrentPointOrderByWithRelationInput | ForecastCurrentPointOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for ForecastCurrentPoints.
      */
     cursor?: ForecastCurrentPointWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastCurrentPoints from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastCurrentPoints.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of ForecastCurrentPoints.
      */
     distinct?: ForecastCurrentPointScalarFieldEnum | ForecastCurrentPointScalarFieldEnum[]
@@ -7326,31 +7412,31 @@ export namespace Prisma {
     where?: ForecastCurrentPointWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastCurrentPoints to fetch.
      */
     orderBy?: ForecastCurrentPointOrderByWithRelationInput | ForecastCurrentPointOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for ForecastCurrentPoints.
      */
     cursor?: ForecastCurrentPointWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastCurrentPoints from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastCurrentPoints.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of ForecastCurrentPoints.
      */
     distinct?: ForecastCurrentPointScalarFieldEnum | ForecastCurrentPointScalarFieldEnum[]
@@ -7374,25 +7460,25 @@ export namespace Prisma {
     where?: ForecastCurrentPointWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastCurrentPoints to fetch.
      */
     orderBy?: ForecastCurrentPointOrderByWithRelationInput | ForecastCurrentPointOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for listing ForecastCurrentPoints.
      */
     cursor?: ForecastCurrentPointWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastCurrentPoints from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastCurrentPoints.
      */
     skip?: number
@@ -7768,55 +7854,55 @@ export namespace Prisma {
     where?: ForecastVerificationRunWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastVerificationRuns to fetch.
      */
     orderBy?: ForecastVerificationRunOrderByWithRelationInput | ForecastVerificationRunOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the start position
      */
     cursor?: ForecastVerificationRunWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastVerificationRuns from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastVerificationRuns.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Count returned ForecastVerificationRuns
     **/
     _count?: true | ForecastVerificationRunCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to average
     **/
     _avg?: ForecastVerificationRunAvgAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to sum
     **/
     _sum?: ForecastVerificationRunSumAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the minimum value
     **/
     _min?: ForecastVerificationRunMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the maximum value
     **/
     _max?: ForecastVerificationRunMaxAggregateInputType
@@ -8031,7 +8117,7 @@ export namespace Prisma {
 
   type ForecastVerificationRunGetPayload<S extends boolean | null | undefined | ForecastVerificationRunDefaultArgs> = $Result.GetResult<Prisma.$ForecastVerificationRunPayload, S>
 
-  type ForecastVerificationRunCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+  type ForecastVerificationRunCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
     Omit<ForecastVerificationRunFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: ForecastVerificationRunCountAggregateInputType | true
     }
@@ -8052,7 +8138,7 @@ export namespace Prisma {
     findUnique<T extends ForecastVerificationRunFindUniqueArgs>(args: SelectSubset<T, ForecastVerificationRunFindUniqueArgs<ExtArgs>>): Prisma__ForecastVerificationRunClient<$Result.GetResult<Prisma.$ForecastVerificationRunPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
-     * Find one ForecastVerificationRun that matches the filter or throw an error with `error.code='P2025'` 
+     * Find one ForecastVerificationRun that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
      * @param {ForecastVerificationRunFindUniqueOrThrowArgs} args - Arguments to find a ForecastVerificationRun
      * @example
@@ -8104,13 +8190,13 @@ export namespace Prisma {
      * @example
      * // Get all ForecastVerificationRuns
      * const forecastVerificationRuns = await prisma.forecastVerificationRun.findMany()
-     * 
+     *
      * // Get first 10 ForecastVerificationRuns
      * const forecastVerificationRuns = await prisma.forecastVerificationRun.findMany({ take: 10 })
-     * 
+     *
      * // Only select the `id`
      * const forecastVerificationRunWithIdOnly = await prisma.forecastVerificationRun.findMany({ select: { id: true } })
-     * 
+     *
      */
     findMany<T extends ForecastVerificationRunFindManyArgs>(args?: SelectSubset<T, ForecastVerificationRunFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastVerificationRunPayload<ExtArgs>, T, "findMany">>
 
@@ -8124,7 +8210,7 @@ export namespace Prisma {
      *     // ... data to create a ForecastVerificationRun
      *   }
      * })
-     * 
+     *
      */
     create<T extends ForecastVerificationRunCreateArgs>(args: SelectSubset<T, ForecastVerificationRunCreateArgs<ExtArgs>>): Prisma__ForecastVerificationRunClient<$Result.GetResult<Prisma.$ForecastVerificationRunPayload<ExtArgs>, T, "create">, never, ExtArgs>
 
@@ -8138,7 +8224,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     *     
+     *
      */
     createMany<T extends ForecastVerificationRunCreateManyArgs>(args?: SelectSubset<T, ForecastVerificationRunCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -8152,9 +8238,9 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     * 
+     *
      * // Create many ForecastVerificationRuns and only return the `id`
-     * const forecastVerificationRunWithIdOnly = await prisma.forecastVerificationRun.createManyAndReturn({ 
+     * const forecastVerificationRunWithIdOnly = await prisma.forecastVerificationRun.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -8162,7 +8248,7 @@ export namespace Prisma {
      * })
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * 
+     *
      */
     createManyAndReturn<T extends ForecastVerificationRunCreateManyAndReturnArgs>(args?: SelectSubset<T, ForecastVerificationRunCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastVerificationRunPayload<ExtArgs>, T, "createManyAndReturn">>
 
@@ -8176,7 +8262,7 @@ export namespace Prisma {
      *     // ... filter to delete one ForecastVerificationRun
      *   }
      * })
-     * 
+     *
      */
     delete<T extends ForecastVerificationRunDeleteArgs>(args: SelectSubset<T, ForecastVerificationRunDeleteArgs<ExtArgs>>): Prisma__ForecastVerificationRunClient<$Result.GetResult<Prisma.$ForecastVerificationRunPayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
@@ -8193,7 +8279,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     update<T extends ForecastVerificationRunUpdateArgs>(args: SelectSubset<T, ForecastVerificationRunUpdateArgs<ExtArgs>>): Prisma__ForecastVerificationRunClient<$Result.GetResult<Prisma.$ForecastVerificationRunPayload<ExtArgs>, T, "update">, never, ExtArgs>
 
@@ -8207,7 +8293,7 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     * 
+     *
      */
     deleteMany<T extends ForecastVerificationRunDeleteManyArgs>(args?: SelectSubset<T, ForecastVerificationRunDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -8226,7 +8312,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     updateMany<T extends ForecastVerificationRunUpdateManyArgs>(args: SelectSubset<T, ForecastVerificationRunUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -8315,7 +8401,7 @@ export namespace Prisma {
      *     _all: true
      *   },
      * })
-     * 
+     *
     **/
     groupBy<
       T extends ForecastVerificationRunGroupByArgs,
@@ -8418,7 +8504,7 @@ export namespace Prisma {
 
   /**
    * Fields of the ForecastVerificationRun model
-   */ 
+   */
   interface ForecastVerificationRunFieldRefs {
     readonly id: FieldRef<"ForecastVerificationRun", 'String'>
     readonly seriesId: FieldRef<"ForecastVerificationRun", 'String'>
@@ -8447,7 +8533,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"ForecastVerificationRun", 'DateTime'>
     readonly updatedAt: FieldRef<"ForecastVerificationRun", 'DateTime'>
   }
-    
+
 
   // Custom InputTypes
   /**
@@ -8504,31 +8590,31 @@ export namespace Prisma {
     where?: ForecastVerificationRunWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastVerificationRuns to fetch.
      */
     orderBy?: ForecastVerificationRunOrderByWithRelationInput | ForecastVerificationRunOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for ForecastVerificationRuns.
      */
     cursor?: ForecastVerificationRunWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastVerificationRuns from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastVerificationRuns.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of ForecastVerificationRuns.
      */
     distinct?: ForecastVerificationRunScalarFieldEnum | ForecastVerificationRunScalarFieldEnum[]
@@ -8552,31 +8638,31 @@ export namespace Prisma {
     where?: ForecastVerificationRunWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastVerificationRuns to fetch.
      */
     orderBy?: ForecastVerificationRunOrderByWithRelationInput | ForecastVerificationRunOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for ForecastVerificationRuns.
      */
     cursor?: ForecastVerificationRunWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastVerificationRuns from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastVerificationRuns.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of ForecastVerificationRuns.
      */
     distinct?: ForecastVerificationRunScalarFieldEnum | ForecastVerificationRunScalarFieldEnum[]
@@ -8600,25 +8686,25 @@ export namespace Prisma {
     where?: ForecastVerificationRunWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastVerificationRuns to fetch.
      */
     orderBy?: ForecastVerificationRunOrderByWithRelationInput | ForecastVerificationRunOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for listing ForecastVerificationRuns.
      */
     cursor?: ForecastVerificationRunWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastVerificationRuns from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastVerificationRuns.
      */
     skip?: number
@@ -9008,55 +9094,55 @@ export namespace Prisma {
     where?: ForecastVerificationMetricWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastVerificationMetrics to fetch.
      */
     orderBy?: ForecastVerificationMetricOrderByWithRelationInput | ForecastVerificationMetricOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the start position
      */
     cursor?: ForecastVerificationMetricWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastVerificationMetrics from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastVerificationMetrics.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Count returned ForecastVerificationMetrics
     **/
     _count?: true | ForecastVerificationMetricCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to average
     **/
     _avg?: ForecastVerificationMetricAvgAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to sum
     **/
     _sum?: ForecastVerificationMetricSumAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the minimum value
     **/
     _min?: ForecastVerificationMetricMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the maximum value
     **/
     _max?: ForecastVerificationMetricMaxAggregateInputType
@@ -9224,7 +9310,7 @@ export namespace Prisma {
 
   type ForecastVerificationMetricGetPayload<S extends boolean | null | undefined | ForecastVerificationMetricDefaultArgs> = $Result.GetResult<Prisma.$ForecastVerificationMetricPayload, S>
 
-  type ForecastVerificationMetricCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+  type ForecastVerificationMetricCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
     Omit<ForecastVerificationMetricFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: ForecastVerificationMetricCountAggregateInputType | true
     }
@@ -9245,7 +9331,7 @@ export namespace Prisma {
     findUnique<T extends ForecastVerificationMetricFindUniqueArgs>(args: SelectSubset<T, ForecastVerificationMetricFindUniqueArgs<ExtArgs>>): Prisma__ForecastVerificationMetricClient<$Result.GetResult<Prisma.$ForecastVerificationMetricPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
-     * Find one ForecastVerificationMetric that matches the filter or throw an error with `error.code='P2025'` 
+     * Find one ForecastVerificationMetric that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
      * @param {ForecastVerificationMetricFindUniqueOrThrowArgs} args - Arguments to find a ForecastVerificationMetric
      * @example
@@ -9297,13 +9383,13 @@ export namespace Prisma {
      * @example
      * // Get all ForecastVerificationMetrics
      * const forecastVerificationMetrics = await prisma.forecastVerificationMetric.findMany()
-     * 
+     *
      * // Get first 10 ForecastVerificationMetrics
      * const forecastVerificationMetrics = await prisma.forecastVerificationMetric.findMany({ take: 10 })
-     * 
+     *
      * // Only select the `id`
      * const forecastVerificationMetricWithIdOnly = await prisma.forecastVerificationMetric.findMany({ select: { id: true } })
-     * 
+     *
      */
     findMany<T extends ForecastVerificationMetricFindManyArgs>(args?: SelectSubset<T, ForecastVerificationMetricFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastVerificationMetricPayload<ExtArgs>, T, "findMany">>
 
@@ -9317,7 +9403,7 @@ export namespace Prisma {
      *     // ... data to create a ForecastVerificationMetric
      *   }
      * })
-     * 
+     *
      */
     create<T extends ForecastVerificationMetricCreateArgs>(args: SelectSubset<T, ForecastVerificationMetricCreateArgs<ExtArgs>>): Prisma__ForecastVerificationMetricClient<$Result.GetResult<Prisma.$ForecastVerificationMetricPayload<ExtArgs>, T, "create">, never, ExtArgs>
 
@@ -9331,7 +9417,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     *     
+     *
      */
     createMany<T extends ForecastVerificationMetricCreateManyArgs>(args?: SelectSubset<T, ForecastVerificationMetricCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -9345,9 +9431,9 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     * 
+     *
      * // Create many ForecastVerificationMetrics and only return the `id`
-     * const forecastVerificationMetricWithIdOnly = await prisma.forecastVerificationMetric.createManyAndReturn({ 
+     * const forecastVerificationMetricWithIdOnly = await prisma.forecastVerificationMetric.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -9355,7 +9441,7 @@ export namespace Prisma {
      * })
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * 
+     *
      */
     createManyAndReturn<T extends ForecastVerificationMetricCreateManyAndReturnArgs>(args?: SelectSubset<T, ForecastVerificationMetricCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastVerificationMetricPayload<ExtArgs>, T, "createManyAndReturn">>
 
@@ -9369,7 +9455,7 @@ export namespace Prisma {
      *     // ... filter to delete one ForecastVerificationMetric
      *   }
      * })
-     * 
+     *
      */
     delete<T extends ForecastVerificationMetricDeleteArgs>(args: SelectSubset<T, ForecastVerificationMetricDeleteArgs<ExtArgs>>): Prisma__ForecastVerificationMetricClient<$Result.GetResult<Prisma.$ForecastVerificationMetricPayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
@@ -9386,7 +9472,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     update<T extends ForecastVerificationMetricUpdateArgs>(args: SelectSubset<T, ForecastVerificationMetricUpdateArgs<ExtArgs>>): Prisma__ForecastVerificationMetricClient<$Result.GetResult<Prisma.$ForecastVerificationMetricPayload<ExtArgs>, T, "update">, never, ExtArgs>
 
@@ -9400,7 +9486,7 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     * 
+     *
      */
     deleteMany<T extends ForecastVerificationMetricDeleteManyArgs>(args?: SelectSubset<T, ForecastVerificationMetricDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -9419,7 +9505,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     updateMany<T extends ForecastVerificationMetricUpdateManyArgs>(args: SelectSubset<T, ForecastVerificationMetricUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -9508,7 +9594,7 @@ export namespace Prisma {
      *     _all: true
      *   },
      * })
-     * 
+     *
     **/
     groupBy<
       T extends ForecastVerificationMetricGroupByArgs,
@@ -9610,7 +9696,7 @@ export namespace Prisma {
 
   /**
    * Fields of the ForecastVerificationMetric model
-   */ 
+   */
   interface ForecastVerificationMetricFieldRefs {
     readonly id: FieldRef<"ForecastVerificationMetric", 'String'>
     readonly runId: FieldRef<"ForecastVerificationMetric", 'String'>
@@ -9630,7 +9716,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"ForecastVerificationMetric", 'DateTime'>
     readonly updatedAt: FieldRef<"ForecastVerificationMetric", 'DateTime'>
   }
-    
+
 
   // Custom InputTypes
   /**
@@ -9687,31 +9773,31 @@ export namespace Prisma {
     where?: ForecastVerificationMetricWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastVerificationMetrics to fetch.
      */
     orderBy?: ForecastVerificationMetricOrderByWithRelationInput | ForecastVerificationMetricOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for ForecastVerificationMetrics.
      */
     cursor?: ForecastVerificationMetricWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastVerificationMetrics from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastVerificationMetrics.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of ForecastVerificationMetrics.
      */
     distinct?: ForecastVerificationMetricScalarFieldEnum | ForecastVerificationMetricScalarFieldEnum[]
@@ -9735,31 +9821,31 @@ export namespace Prisma {
     where?: ForecastVerificationMetricWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastVerificationMetrics to fetch.
      */
     orderBy?: ForecastVerificationMetricOrderByWithRelationInput | ForecastVerificationMetricOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for ForecastVerificationMetrics.
      */
     cursor?: ForecastVerificationMetricWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastVerificationMetrics from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastVerificationMetrics.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of ForecastVerificationMetrics.
      */
     distinct?: ForecastVerificationMetricScalarFieldEnum | ForecastVerificationMetricScalarFieldEnum[]
@@ -9783,25 +9869,25 @@ export namespace Prisma {
     where?: ForecastVerificationMetricWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastVerificationMetrics to fetch.
      */
     orderBy?: ForecastVerificationMetricOrderByWithRelationInput | ForecastVerificationMetricOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for listing ForecastVerificationMetrics.
      */
     cursor?: ForecastVerificationMetricWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastVerificationMetrics from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastVerificationMetrics.
      */
     skip?: number
@@ -10175,55 +10261,55 @@ export namespace Prisma {
     where?: ForecastVerificationPointWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastVerificationPoints to fetch.
      */
     orderBy?: ForecastVerificationPointOrderByWithRelationInput | ForecastVerificationPointOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the start position
      */
     cursor?: ForecastVerificationPointWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastVerificationPoints from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastVerificationPoints.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Count returned ForecastVerificationPoints
     **/
     _count?: true | ForecastVerificationPointCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to average
     **/
     _avg?: ForecastVerificationPointAvgAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to sum
     **/
     _sum?: ForecastVerificationPointSumAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the minimum value
     **/
     _min?: ForecastVerificationPointMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the maximum value
     **/
     _max?: ForecastVerificationPointMaxAggregateInputType
@@ -10411,7 +10497,7 @@ export namespace Prisma {
 
   type ForecastVerificationPointGetPayload<S extends boolean | null | undefined | ForecastVerificationPointDefaultArgs> = $Result.GetResult<Prisma.$ForecastVerificationPointPayload, S>
 
-  type ForecastVerificationPointCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+  type ForecastVerificationPointCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
     Omit<ForecastVerificationPointFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: ForecastVerificationPointCountAggregateInputType | true
     }
@@ -10432,7 +10518,7 @@ export namespace Prisma {
     findUnique<T extends ForecastVerificationPointFindUniqueArgs>(args: SelectSubset<T, ForecastVerificationPointFindUniqueArgs<ExtArgs>>): Prisma__ForecastVerificationPointClient<$Result.GetResult<Prisma.$ForecastVerificationPointPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
-     * Find one ForecastVerificationPoint that matches the filter or throw an error with `error.code='P2025'` 
+     * Find one ForecastVerificationPoint that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
      * @param {ForecastVerificationPointFindUniqueOrThrowArgs} args - Arguments to find a ForecastVerificationPoint
      * @example
@@ -10484,13 +10570,13 @@ export namespace Prisma {
      * @example
      * // Get all ForecastVerificationPoints
      * const forecastVerificationPoints = await prisma.forecastVerificationPoint.findMany()
-     * 
+     *
      * // Get first 10 ForecastVerificationPoints
      * const forecastVerificationPoints = await prisma.forecastVerificationPoint.findMany({ take: 10 })
-     * 
+     *
      * // Only select the `id`
      * const forecastVerificationPointWithIdOnly = await prisma.forecastVerificationPoint.findMany({ select: { id: true } })
-     * 
+     *
      */
     findMany<T extends ForecastVerificationPointFindManyArgs>(args?: SelectSubset<T, ForecastVerificationPointFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastVerificationPointPayload<ExtArgs>, T, "findMany">>
 
@@ -10504,7 +10590,7 @@ export namespace Prisma {
      *     // ... data to create a ForecastVerificationPoint
      *   }
      * })
-     * 
+     *
      */
     create<T extends ForecastVerificationPointCreateArgs>(args: SelectSubset<T, ForecastVerificationPointCreateArgs<ExtArgs>>): Prisma__ForecastVerificationPointClient<$Result.GetResult<Prisma.$ForecastVerificationPointPayload<ExtArgs>, T, "create">, never, ExtArgs>
 
@@ -10518,7 +10604,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     *     
+     *
      */
     createMany<T extends ForecastVerificationPointCreateManyArgs>(args?: SelectSubset<T, ForecastVerificationPointCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -10532,9 +10618,9 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     * 
+     *
      * // Create many ForecastVerificationPoints and only return the `id`
-     * const forecastVerificationPointWithIdOnly = await prisma.forecastVerificationPoint.createManyAndReturn({ 
+     * const forecastVerificationPointWithIdOnly = await prisma.forecastVerificationPoint.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -10542,7 +10628,7 @@ export namespace Prisma {
      * })
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * 
+     *
      */
     createManyAndReturn<T extends ForecastVerificationPointCreateManyAndReturnArgs>(args?: SelectSubset<T, ForecastVerificationPointCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastVerificationPointPayload<ExtArgs>, T, "createManyAndReturn">>
 
@@ -10556,7 +10642,7 @@ export namespace Prisma {
      *     // ... filter to delete one ForecastVerificationPoint
      *   }
      * })
-     * 
+     *
      */
     delete<T extends ForecastVerificationPointDeleteArgs>(args: SelectSubset<T, ForecastVerificationPointDeleteArgs<ExtArgs>>): Prisma__ForecastVerificationPointClient<$Result.GetResult<Prisma.$ForecastVerificationPointPayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
@@ -10573,7 +10659,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     update<T extends ForecastVerificationPointUpdateArgs>(args: SelectSubset<T, ForecastVerificationPointUpdateArgs<ExtArgs>>): Prisma__ForecastVerificationPointClient<$Result.GetResult<Prisma.$ForecastVerificationPointPayload<ExtArgs>, T, "update">, never, ExtArgs>
 
@@ -10587,7 +10673,7 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     * 
+     *
      */
     deleteMany<T extends ForecastVerificationPointDeleteManyArgs>(args?: SelectSubset<T, ForecastVerificationPointDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -10606,7 +10692,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     updateMany<T extends ForecastVerificationPointUpdateManyArgs>(args: SelectSubset<T, ForecastVerificationPointUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -10695,7 +10781,7 @@ export namespace Prisma {
      *     _all: true
      *   },
      * })
-     * 
+     *
     **/
     groupBy<
       T extends ForecastVerificationPointGroupByArgs,
@@ -10797,7 +10883,7 @@ export namespace Prisma {
 
   /**
    * Fields of the ForecastVerificationPoint model
-   */ 
+   */
   interface ForecastVerificationPointFieldRefs {
     readonly id: FieldRef<"ForecastVerificationPoint", 'String'>
     readonly runId: FieldRef<"ForecastVerificationPoint", 'String'>
@@ -10821,7 +10907,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"ForecastVerificationPoint", 'DateTime'>
     readonly updatedAt: FieldRef<"ForecastVerificationPoint", 'DateTime'>
   }
-    
+
 
   // Custom InputTypes
   /**
@@ -10878,31 +10964,31 @@ export namespace Prisma {
     where?: ForecastVerificationPointWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastVerificationPoints to fetch.
      */
     orderBy?: ForecastVerificationPointOrderByWithRelationInput | ForecastVerificationPointOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for ForecastVerificationPoints.
      */
     cursor?: ForecastVerificationPointWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastVerificationPoints from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastVerificationPoints.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of ForecastVerificationPoints.
      */
     distinct?: ForecastVerificationPointScalarFieldEnum | ForecastVerificationPointScalarFieldEnum[]
@@ -10926,31 +11012,31 @@ export namespace Prisma {
     where?: ForecastVerificationPointWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastVerificationPoints to fetch.
      */
     orderBy?: ForecastVerificationPointOrderByWithRelationInput | ForecastVerificationPointOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for ForecastVerificationPoints.
      */
     cursor?: ForecastVerificationPointWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastVerificationPoints from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastVerificationPoints.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of ForecastVerificationPoints.
      */
     distinct?: ForecastVerificationPointScalarFieldEnum | ForecastVerificationPointScalarFieldEnum[]
@@ -10974,25 +11060,25 @@ export namespace Prisma {
     where?: ForecastVerificationPointWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastVerificationPoints to fetch.
      */
     orderBy?: ForecastVerificationPointOrderByWithRelationInput | ForecastVerificationPointOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for listing ForecastVerificationPoints.
      */
     cursor?: ForecastVerificationPointWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastVerificationPoints from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastVerificationPoints.
      */
     skip?: number
@@ -11456,55 +11542,55 @@ export namespace Prisma {
     where?: RollingDailyVerificationRecordWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of RollingDailyVerificationRecords to fetch.
      */
     orderBy?: RollingDailyVerificationRecordOrderByWithRelationInput | RollingDailyVerificationRecordOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the start position
      */
     cursor?: RollingDailyVerificationRecordWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` RollingDailyVerificationRecords from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` RollingDailyVerificationRecords.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Count returned RollingDailyVerificationRecords
     **/
     _count?: true | RollingDailyVerificationRecordCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to average
     **/
     _avg?: RollingDailyVerificationRecordAvgAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to sum
     **/
     _sum?: RollingDailyVerificationRecordSumAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the minimum value
     **/
     _min?: RollingDailyVerificationRecordMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the maximum value
     **/
     _max?: RollingDailyVerificationRecordMaxAggregateInputType
@@ -11750,7 +11836,7 @@ export namespace Prisma {
 
   type RollingDailyVerificationRecordGetPayload<S extends boolean | null | undefined | RollingDailyVerificationRecordDefaultArgs> = $Result.GetResult<Prisma.$RollingDailyVerificationRecordPayload, S>
 
-  type RollingDailyVerificationRecordCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+  type RollingDailyVerificationRecordCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
     Omit<RollingDailyVerificationRecordFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: RollingDailyVerificationRecordCountAggregateInputType | true
     }
@@ -11771,7 +11857,7 @@ export namespace Prisma {
     findUnique<T extends RollingDailyVerificationRecordFindUniqueArgs>(args: SelectSubset<T, RollingDailyVerificationRecordFindUniqueArgs<ExtArgs>>): Prisma__RollingDailyVerificationRecordClient<$Result.GetResult<Prisma.$RollingDailyVerificationRecordPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
-     * Find one RollingDailyVerificationRecord that matches the filter or throw an error with `error.code='P2025'` 
+     * Find one RollingDailyVerificationRecord that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
      * @param {RollingDailyVerificationRecordFindUniqueOrThrowArgs} args - Arguments to find a RollingDailyVerificationRecord
      * @example
@@ -11823,13 +11909,13 @@ export namespace Prisma {
      * @example
      * // Get all RollingDailyVerificationRecords
      * const rollingDailyVerificationRecords = await prisma.rollingDailyVerificationRecord.findMany()
-     * 
+     *
      * // Get first 10 RollingDailyVerificationRecords
      * const rollingDailyVerificationRecords = await prisma.rollingDailyVerificationRecord.findMany({ take: 10 })
-     * 
+     *
      * // Only select the `id`
      * const rollingDailyVerificationRecordWithIdOnly = await prisma.rollingDailyVerificationRecord.findMany({ select: { id: true } })
-     * 
+     *
      */
     findMany<T extends RollingDailyVerificationRecordFindManyArgs>(args?: SelectSubset<T, RollingDailyVerificationRecordFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RollingDailyVerificationRecordPayload<ExtArgs>, T, "findMany">>
 
@@ -11843,7 +11929,7 @@ export namespace Prisma {
      *     // ... data to create a RollingDailyVerificationRecord
      *   }
      * })
-     * 
+     *
      */
     create<T extends RollingDailyVerificationRecordCreateArgs>(args: SelectSubset<T, RollingDailyVerificationRecordCreateArgs<ExtArgs>>): Prisma__RollingDailyVerificationRecordClient<$Result.GetResult<Prisma.$RollingDailyVerificationRecordPayload<ExtArgs>, T, "create">, never, ExtArgs>
 
@@ -11857,7 +11943,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     *     
+     *
      */
     createMany<T extends RollingDailyVerificationRecordCreateManyArgs>(args?: SelectSubset<T, RollingDailyVerificationRecordCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -11871,9 +11957,9 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     * 
+     *
      * // Create many RollingDailyVerificationRecords and only return the `id`
-     * const rollingDailyVerificationRecordWithIdOnly = await prisma.rollingDailyVerificationRecord.createManyAndReturn({ 
+     * const rollingDailyVerificationRecordWithIdOnly = await prisma.rollingDailyVerificationRecord.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -11881,7 +11967,7 @@ export namespace Prisma {
      * })
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * 
+     *
      */
     createManyAndReturn<T extends RollingDailyVerificationRecordCreateManyAndReturnArgs>(args?: SelectSubset<T, RollingDailyVerificationRecordCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RollingDailyVerificationRecordPayload<ExtArgs>, T, "createManyAndReturn">>
 
@@ -11895,7 +11981,7 @@ export namespace Prisma {
      *     // ... filter to delete one RollingDailyVerificationRecord
      *   }
      * })
-     * 
+     *
      */
     delete<T extends RollingDailyVerificationRecordDeleteArgs>(args: SelectSubset<T, RollingDailyVerificationRecordDeleteArgs<ExtArgs>>): Prisma__RollingDailyVerificationRecordClient<$Result.GetResult<Prisma.$RollingDailyVerificationRecordPayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
@@ -11912,7 +11998,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     update<T extends RollingDailyVerificationRecordUpdateArgs>(args: SelectSubset<T, RollingDailyVerificationRecordUpdateArgs<ExtArgs>>): Prisma__RollingDailyVerificationRecordClient<$Result.GetResult<Prisma.$RollingDailyVerificationRecordPayload<ExtArgs>, T, "update">, never, ExtArgs>
 
@@ -11926,7 +12012,7 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     * 
+     *
      */
     deleteMany<T extends RollingDailyVerificationRecordDeleteManyArgs>(args?: SelectSubset<T, RollingDailyVerificationRecordDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -11945,7 +12031,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     updateMany<T extends RollingDailyVerificationRecordUpdateManyArgs>(args: SelectSubset<T, RollingDailyVerificationRecordUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -12034,7 +12120,7 @@ export namespace Prisma {
      *     _all: true
      *   },
      * })
-     * 
+     *
     **/
     groupBy<
       T extends RollingDailyVerificationRecordGroupByArgs,
@@ -12135,7 +12221,7 @@ export namespace Prisma {
 
   /**
    * Fields of the RollingDailyVerificationRecord model
-   */ 
+   */
   interface RollingDailyVerificationRecordFieldRefs {
     readonly id: FieldRef<"RollingDailyVerificationRecord", 'String'>
     readonly seriesId: FieldRef<"RollingDailyVerificationRecord", 'String'>
@@ -12172,7 +12258,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"RollingDailyVerificationRecord", 'DateTime'>
     readonly updatedAt: FieldRef<"RollingDailyVerificationRecord", 'DateTime'>
   }
-    
+
 
   // Custom InputTypes
   /**
@@ -12217,31 +12303,31 @@ export namespace Prisma {
     where?: RollingDailyVerificationRecordWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of RollingDailyVerificationRecords to fetch.
      */
     orderBy?: RollingDailyVerificationRecordOrderByWithRelationInput | RollingDailyVerificationRecordOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for RollingDailyVerificationRecords.
      */
     cursor?: RollingDailyVerificationRecordWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` RollingDailyVerificationRecords from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` RollingDailyVerificationRecords.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of RollingDailyVerificationRecords.
      */
     distinct?: RollingDailyVerificationRecordScalarFieldEnum | RollingDailyVerificationRecordScalarFieldEnum[]
@@ -12261,31 +12347,31 @@ export namespace Prisma {
     where?: RollingDailyVerificationRecordWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of RollingDailyVerificationRecords to fetch.
      */
     orderBy?: RollingDailyVerificationRecordOrderByWithRelationInput | RollingDailyVerificationRecordOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for RollingDailyVerificationRecords.
      */
     cursor?: RollingDailyVerificationRecordWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` RollingDailyVerificationRecords from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` RollingDailyVerificationRecords.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of RollingDailyVerificationRecords.
      */
     distinct?: RollingDailyVerificationRecordScalarFieldEnum | RollingDailyVerificationRecordScalarFieldEnum[]
@@ -12305,25 +12391,25 @@ export namespace Prisma {
     where?: RollingDailyVerificationRecordWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of RollingDailyVerificationRecords to fetch.
      */
     orderBy?: RollingDailyVerificationRecordOrderByWithRelationInput | RollingDailyVerificationRecordOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for listing RollingDailyVerificationRecords.
      */
     cursor?: RollingDailyVerificationRecordWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` RollingDailyVerificationRecords from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` RollingDailyVerificationRecords.
      */
     skip?: number
@@ -12613,43 +12699,43 @@ export namespace Prisma {
     where?: RollingDailyCurrentForecastSnapshotWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of RollingDailyCurrentForecastSnapshots to fetch.
      */
     orderBy?: RollingDailyCurrentForecastSnapshotOrderByWithRelationInput | RollingDailyCurrentForecastSnapshotOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the start position
      */
     cursor?: RollingDailyCurrentForecastSnapshotWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` RollingDailyCurrentForecastSnapshots from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` RollingDailyCurrentForecastSnapshots.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Count returned RollingDailyCurrentForecastSnapshots
     **/
     _count?: true | RollingDailyCurrentForecastSnapshotCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the minimum value
     **/
     _min?: RollingDailyCurrentForecastSnapshotMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the maximum value
     **/
     _max?: RollingDailyCurrentForecastSnapshotMaxAggregateInputType
@@ -12821,7 +12907,7 @@ export namespace Prisma {
 
   type RollingDailyCurrentForecastSnapshotGetPayload<S extends boolean | null | undefined | RollingDailyCurrentForecastSnapshotDefaultArgs> = $Result.GetResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload, S>
 
-  type RollingDailyCurrentForecastSnapshotCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+  type RollingDailyCurrentForecastSnapshotCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
     Omit<RollingDailyCurrentForecastSnapshotFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: RollingDailyCurrentForecastSnapshotCountAggregateInputType | true
     }
@@ -12842,7 +12928,7 @@ export namespace Prisma {
     findUnique<T extends RollingDailyCurrentForecastSnapshotFindUniqueArgs>(args: SelectSubset<T, RollingDailyCurrentForecastSnapshotFindUniqueArgs<ExtArgs>>): Prisma__RollingDailyCurrentForecastSnapshotClient<$Result.GetResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
-     * Find one RollingDailyCurrentForecastSnapshot that matches the filter or throw an error with `error.code='P2025'` 
+     * Find one RollingDailyCurrentForecastSnapshot that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
      * @param {RollingDailyCurrentForecastSnapshotFindUniqueOrThrowArgs} args - Arguments to find a RollingDailyCurrentForecastSnapshot
      * @example
@@ -12894,13 +12980,13 @@ export namespace Prisma {
      * @example
      * // Get all RollingDailyCurrentForecastSnapshots
      * const rollingDailyCurrentForecastSnapshots = await prisma.rollingDailyCurrentForecastSnapshot.findMany()
-     * 
+     *
      * // Get first 10 RollingDailyCurrentForecastSnapshots
      * const rollingDailyCurrentForecastSnapshots = await prisma.rollingDailyCurrentForecastSnapshot.findMany({ take: 10 })
-     * 
+     *
      * // Only select the `id`
      * const rollingDailyCurrentForecastSnapshotWithIdOnly = await prisma.rollingDailyCurrentForecastSnapshot.findMany({ select: { id: true } })
-     * 
+     *
      */
     findMany<T extends RollingDailyCurrentForecastSnapshotFindManyArgs>(args?: SelectSubset<T, RollingDailyCurrentForecastSnapshotFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload<ExtArgs>, T, "findMany">>
 
@@ -12914,7 +13000,7 @@ export namespace Prisma {
      *     // ... data to create a RollingDailyCurrentForecastSnapshot
      *   }
      * })
-     * 
+     *
      */
     create<T extends RollingDailyCurrentForecastSnapshotCreateArgs>(args: SelectSubset<T, RollingDailyCurrentForecastSnapshotCreateArgs<ExtArgs>>): Prisma__RollingDailyCurrentForecastSnapshotClient<$Result.GetResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload<ExtArgs>, T, "create">, never, ExtArgs>
 
@@ -12928,7 +13014,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     *     
+     *
      */
     createMany<T extends RollingDailyCurrentForecastSnapshotCreateManyArgs>(args?: SelectSubset<T, RollingDailyCurrentForecastSnapshotCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -12942,9 +13028,9 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     * 
+     *
      * // Create many RollingDailyCurrentForecastSnapshots and only return the `id`
-     * const rollingDailyCurrentForecastSnapshotWithIdOnly = await prisma.rollingDailyCurrentForecastSnapshot.createManyAndReturn({ 
+     * const rollingDailyCurrentForecastSnapshotWithIdOnly = await prisma.rollingDailyCurrentForecastSnapshot.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -12952,7 +13038,7 @@ export namespace Prisma {
      * })
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * 
+     *
      */
     createManyAndReturn<T extends RollingDailyCurrentForecastSnapshotCreateManyAndReturnArgs>(args?: SelectSubset<T, RollingDailyCurrentForecastSnapshotCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload<ExtArgs>, T, "createManyAndReturn">>
 
@@ -12966,7 +13052,7 @@ export namespace Prisma {
      *     // ... filter to delete one RollingDailyCurrentForecastSnapshot
      *   }
      * })
-     * 
+     *
      */
     delete<T extends RollingDailyCurrentForecastSnapshotDeleteArgs>(args: SelectSubset<T, RollingDailyCurrentForecastSnapshotDeleteArgs<ExtArgs>>): Prisma__RollingDailyCurrentForecastSnapshotClient<$Result.GetResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
@@ -12983,7 +13069,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     update<T extends RollingDailyCurrentForecastSnapshotUpdateArgs>(args: SelectSubset<T, RollingDailyCurrentForecastSnapshotUpdateArgs<ExtArgs>>): Prisma__RollingDailyCurrentForecastSnapshotClient<$Result.GetResult<Prisma.$RollingDailyCurrentForecastSnapshotPayload<ExtArgs>, T, "update">, never, ExtArgs>
 
@@ -12997,7 +13083,7 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     * 
+     *
      */
     deleteMany<T extends RollingDailyCurrentForecastSnapshotDeleteManyArgs>(args?: SelectSubset<T, RollingDailyCurrentForecastSnapshotDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -13016,7 +13102,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     updateMany<T extends RollingDailyCurrentForecastSnapshotUpdateManyArgs>(args: SelectSubset<T, RollingDailyCurrentForecastSnapshotUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -13105,7 +13191,7 @@ export namespace Prisma {
      *     _all: true
      *   },
      * })
-     * 
+     *
     **/
     groupBy<
       T extends RollingDailyCurrentForecastSnapshotGroupByArgs,
@@ -13206,7 +13292,7 @@ export namespace Prisma {
 
   /**
    * Fields of the RollingDailyCurrentForecastSnapshot model
-   */ 
+   */
   interface RollingDailyCurrentForecastSnapshotFieldRefs {
     readonly id: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
     readonly seriesId: FieldRef<"RollingDailyCurrentForecastSnapshot", 'String'>
@@ -13229,7 +13315,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"RollingDailyCurrentForecastSnapshot", 'DateTime'>
     readonly updatedAt: FieldRef<"RollingDailyCurrentForecastSnapshot", 'DateTime'>
   }
-    
+
 
   // Custom InputTypes
   /**
@@ -13274,31 +13360,31 @@ export namespace Prisma {
     where?: RollingDailyCurrentForecastSnapshotWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of RollingDailyCurrentForecastSnapshots to fetch.
      */
     orderBy?: RollingDailyCurrentForecastSnapshotOrderByWithRelationInput | RollingDailyCurrentForecastSnapshotOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for RollingDailyCurrentForecastSnapshots.
      */
     cursor?: RollingDailyCurrentForecastSnapshotWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` RollingDailyCurrentForecastSnapshots from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` RollingDailyCurrentForecastSnapshots.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of RollingDailyCurrentForecastSnapshots.
      */
     distinct?: RollingDailyCurrentForecastSnapshotScalarFieldEnum | RollingDailyCurrentForecastSnapshotScalarFieldEnum[]
@@ -13318,31 +13404,31 @@ export namespace Prisma {
     where?: RollingDailyCurrentForecastSnapshotWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of RollingDailyCurrentForecastSnapshots to fetch.
      */
     orderBy?: RollingDailyCurrentForecastSnapshotOrderByWithRelationInput | RollingDailyCurrentForecastSnapshotOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for RollingDailyCurrentForecastSnapshots.
      */
     cursor?: RollingDailyCurrentForecastSnapshotWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` RollingDailyCurrentForecastSnapshots from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` RollingDailyCurrentForecastSnapshots.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of RollingDailyCurrentForecastSnapshots.
      */
     distinct?: RollingDailyCurrentForecastSnapshotScalarFieldEnum | RollingDailyCurrentForecastSnapshotScalarFieldEnum[]
@@ -13362,25 +13448,25 @@ export namespace Prisma {
     where?: RollingDailyCurrentForecastSnapshotWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of RollingDailyCurrentForecastSnapshots to fetch.
      */
     orderBy?: RollingDailyCurrentForecastSnapshotOrderByWithRelationInput | RollingDailyCurrentForecastSnapshotOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for listing RollingDailyCurrentForecastSnapshots.
      */
     cursor?: RollingDailyCurrentForecastSnapshotWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` RollingDailyCurrentForecastSnapshots from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` RollingDailyCurrentForecastSnapshots.
      */
     skip?: number
@@ -13704,55 +13790,55 @@ export namespace Prisma {
     where?: RollingDailyCalibrationGroupWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of RollingDailyCalibrationGroups to fetch.
      */
     orderBy?: RollingDailyCalibrationGroupOrderByWithRelationInput | RollingDailyCalibrationGroupOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the start position
      */
     cursor?: RollingDailyCalibrationGroupWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` RollingDailyCalibrationGroups from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` RollingDailyCalibrationGroups.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Count returned RollingDailyCalibrationGroups
     **/
     _count?: true | RollingDailyCalibrationGroupCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to average
     **/
     _avg?: RollingDailyCalibrationGroupAvgAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to sum
     **/
     _sum?: RollingDailyCalibrationGroupSumAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the minimum value
     **/
     _min?: RollingDailyCalibrationGroupMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the maximum value
     **/
     _max?: RollingDailyCalibrationGroupMaxAggregateInputType
@@ -13928,7 +14014,7 @@ export namespace Prisma {
 
   type RollingDailyCalibrationGroupGetPayload<S extends boolean | null | undefined | RollingDailyCalibrationGroupDefaultArgs> = $Result.GetResult<Prisma.$RollingDailyCalibrationGroupPayload, S>
 
-  type RollingDailyCalibrationGroupCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+  type RollingDailyCalibrationGroupCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
     Omit<RollingDailyCalibrationGroupFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: RollingDailyCalibrationGroupCountAggregateInputType | true
     }
@@ -13949,7 +14035,7 @@ export namespace Prisma {
     findUnique<T extends RollingDailyCalibrationGroupFindUniqueArgs>(args: SelectSubset<T, RollingDailyCalibrationGroupFindUniqueArgs<ExtArgs>>): Prisma__RollingDailyCalibrationGroupClient<$Result.GetResult<Prisma.$RollingDailyCalibrationGroupPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
-     * Find one RollingDailyCalibrationGroup that matches the filter or throw an error with `error.code='P2025'` 
+     * Find one RollingDailyCalibrationGroup that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
      * @param {RollingDailyCalibrationGroupFindUniqueOrThrowArgs} args - Arguments to find a RollingDailyCalibrationGroup
      * @example
@@ -14001,13 +14087,13 @@ export namespace Prisma {
      * @example
      * // Get all RollingDailyCalibrationGroups
      * const rollingDailyCalibrationGroups = await prisma.rollingDailyCalibrationGroup.findMany()
-     * 
+     *
      * // Get first 10 RollingDailyCalibrationGroups
      * const rollingDailyCalibrationGroups = await prisma.rollingDailyCalibrationGroup.findMany({ take: 10 })
-     * 
+     *
      * // Only select the `id`
      * const rollingDailyCalibrationGroupWithIdOnly = await prisma.rollingDailyCalibrationGroup.findMany({ select: { id: true } })
-     * 
+     *
      */
     findMany<T extends RollingDailyCalibrationGroupFindManyArgs>(args?: SelectSubset<T, RollingDailyCalibrationGroupFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RollingDailyCalibrationGroupPayload<ExtArgs>, T, "findMany">>
 
@@ -14021,7 +14107,7 @@ export namespace Prisma {
      *     // ... data to create a RollingDailyCalibrationGroup
      *   }
      * })
-     * 
+     *
      */
     create<T extends RollingDailyCalibrationGroupCreateArgs>(args: SelectSubset<T, RollingDailyCalibrationGroupCreateArgs<ExtArgs>>): Prisma__RollingDailyCalibrationGroupClient<$Result.GetResult<Prisma.$RollingDailyCalibrationGroupPayload<ExtArgs>, T, "create">, never, ExtArgs>
 
@@ -14035,7 +14121,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     *     
+     *
      */
     createMany<T extends RollingDailyCalibrationGroupCreateManyArgs>(args?: SelectSubset<T, RollingDailyCalibrationGroupCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -14049,9 +14135,9 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     * 
+     *
      * // Create many RollingDailyCalibrationGroups and only return the `id`
-     * const rollingDailyCalibrationGroupWithIdOnly = await prisma.rollingDailyCalibrationGroup.createManyAndReturn({ 
+     * const rollingDailyCalibrationGroupWithIdOnly = await prisma.rollingDailyCalibrationGroup.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -14059,7 +14145,7 @@ export namespace Prisma {
      * })
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * 
+     *
      */
     createManyAndReturn<T extends RollingDailyCalibrationGroupCreateManyAndReturnArgs>(args?: SelectSubset<T, RollingDailyCalibrationGroupCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RollingDailyCalibrationGroupPayload<ExtArgs>, T, "createManyAndReturn">>
 
@@ -14073,7 +14159,7 @@ export namespace Prisma {
      *     // ... filter to delete one RollingDailyCalibrationGroup
      *   }
      * })
-     * 
+     *
      */
     delete<T extends RollingDailyCalibrationGroupDeleteArgs>(args: SelectSubset<T, RollingDailyCalibrationGroupDeleteArgs<ExtArgs>>): Prisma__RollingDailyCalibrationGroupClient<$Result.GetResult<Prisma.$RollingDailyCalibrationGroupPayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
@@ -14090,7 +14176,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     update<T extends RollingDailyCalibrationGroupUpdateArgs>(args: SelectSubset<T, RollingDailyCalibrationGroupUpdateArgs<ExtArgs>>): Prisma__RollingDailyCalibrationGroupClient<$Result.GetResult<Prisma.$RollingDailyCalibrationGroupPayload<ExtArgs>, T, "update">, never, ExtArgs>
 
@@ -14104,7 +14190,7 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     * 
+     *
      */
     deleteMany<T extends RollingDailyCalibrationGroupDeleteManyArgs>(args?: SelectSubset<T, RollingDailyCalibrationGroupDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -14123,7 +14209,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     updateMany<T extends RollingDailyCalibrationGroupUpdateManyArgs>(args: SelectSubset<T, RollingDailyCalibrationGroupUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -14212,7 +14298,7 @@ export namespace Prisma {
      *     _all: true
      *   },
      * })
-     * 
+     *
     **/
     groupBy<
       T extends RollingDailyCalibrationGroupGroupByArgs,
@@ -14313,7 +14399,7 @@ export namespace Prisma {
 
   /**
    * Fields of the RollingDailyCalibrationGroup model
-   */ 
+   */
   interface RollingDailyCalibrationGroupFieldRefs {
     readonly id: FieldRef<"RollingDailyCalibrationGroup", 'String'>
     readonly seriesId: FieldRef<"RollingDailyCalibrationGroup", 'String'>
@@ -14336,7 +14422,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"RollingDailyCalibrationGroup", 'DateTime'>
     readonly updatedAt: FieldRef<"RollingDailyCalibrationGroup", 'DateTime'>
   }
-    
+
 
   // Custom InputTypes
   /**
@@ -14381,31 +14467,31 @@ export namespace Prisma {
     where?: RollingDailyCalibrationGroupWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of RollingDailyCalibrationGroups to fetch.
      */
     orderBy?: RollingDailyCalibrationGroupOrderByWithRelationInput | RollingDailyCalibrationGroupOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for RollingDailyCalibrationGroups.
      */
     cursor?: RollingDailyCalibrationGroupWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` RollingDailyCalibrationGroups from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` RollingDailyCalibrationGroups.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of RollingDailyCalibrationGroups.
      */
     distinct?: RollingDailyCalibrationGroupScalarFieldEnum | RollingDailyCalibrationGroupScalarFieldEnum[]
@@ -14425,31 +14511,31 @@ export namespace Prisma {
     where?: RollingDailyCalibrationGroupWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of RollingDailyCalibrationGroups to fetch.
      */
     orderBy?: RollingDailyCalibrationGroupOrderByWithRelationInput | RollingDailyCalibrationGroupOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for RollingDailyCalibrationGroups.
      */
     cursor?: RollingDailyCalibrationGroupWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` RollingDailyCalibrationGroups from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` RollingDailyCalibrationGroups.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of RollingDailyCalibrationGroups.
      */
     distinct?: RollingDailyCalibrationGroupScalarFieldEnum | RollingDailyCalibrationGroupScalarFieldEnum[]
@@ -14469,25 +14555,25 @@ export namespace Prisma {
     where?: RollingDailyCalibrationGroupWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of RollingDailyCalibrationGroups to fetch.
      */
     orderBy?: RollingDailyCalibrationGroupOrderByWithRelationInput | RollingDailyCalibrationGroupOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for listing RollingDailyCalibrationGroups.
      */
     cursor?: RollingDailyCalibrationGroupWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` RollingDailyCalibrationGroups from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` RollingDailyCalibrationGroups.
      */
     skip?: number
@@ -14819,55 +14905,55 @@ export namespace Prisma {
     where?: RollingDailyMaintenanceStateWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of RollingDailyMaintenanceStates to fetch.
      */
     orderBy?: RollingDailyMaintenanceStateOrderByWithRelationInput | RollingDailyMaintenanceStateOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the start position
      */
     cursor?: RollingDailyMaintenanceStateWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` RollingDailyMaintenanceStates from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` RollingDailyMaintenanceStates.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Count returned RollingDailyMaintenanceStates
     **/
     _count?: true | RollingDailyMaintenanceStateCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to average
     **/
     _avg?: RollingDailyMaintenanceStateAvgAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to sum
     **/
     _sum?: RollingDailyMaintenanceStateSumAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the minimum value
     **/
     _min?: RollingDailyMaintenanceStateMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the maximum value
     **/
     _max?: RollingDailyMaintenanceStateMaxAggregateInputType
@@ -15053,7 +15139,7 @@ export namespace Prisma {
 
   type RollingDailyMaintenanceStateGetPayload<S extends boolean | null | undefined | RollingDailyMaintenanceStateDefaultArgs> = $Result.GetResult<Prisma.$RollingDailyMaintenanceStatePayload, S>
 
-  type RollingDailyMaintenanceStateCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+  type RollingDailyMaintenanceStateCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
     Omit<RollingDailyMaintenanceStateFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: RollingDailyMaintenanceStateCountAggregateInputType | true
     }
@@ -15074,7 +15160,7 @@ export namespace Prisma {
     findUnique<T extends RollingDailyMaintenanceStateFindUniqueArgs>(args: SelectSubset<T, RollingDailyMaintenanceStateFindUniqueArgs<ExtArgs>>): Prisma__RollingDailyMaintenanceStateClient<$Result.GetResult<Prisma.$RollingDailyMaintenanceStatePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
-     * Find one RollingDailyMaintenanceState that matches the filter or throw an error with `error.code='P2025'` 
+     * Find one RollingDailyMaintenanceState that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
      * @param {RollingDailyMaintenanceStateFindUniqueOrThrowArgs} args - Arguments to find a RollingDailyMaintenanceState
      * @example
@@ -15126,13 +15212,13 @@ export namespace Prisma {
      * @example
      * // Get all RollingDailyMaintenanceStates
      * const rollingDailyMaintenanceStates = await prisma.rollingDailyMaintenanceState.findMany()
-     * 
+     *
      * // Get first 10 RollingDailyMaintenanceStates
      * const rollingDailyMaintenanceStates = await prisma.rollingDailyMaintenanceState.findMany({ take: 10 })
-     * 
+     *
      * // Only select the `id`
      * const rollingDailyMaintenanceStateWithIdOnly = await prisma.rollingDailyMaintenanceState.findMany({ select: { id: true } })
-     * 
+     *
      */
     findMany<T extends RollingDailyMaintenanceStateFindManyArgs>(args?: SelectSubset<T, RollingDailyMaintenanceStateFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RollingDailyMaintenanceStatePayload<ExtArgs>, T, "findMany">>
 
@@ -15146,7 +15232,7 @@ export namespace Prisma {
      *     // ... data to create a RollingDailyMaintenanceState
      *   }
      * })
-     * 
+     *
      */
     create<T extends RollingDailyMaintenanceStateCreateArgs>(args: SelectSubset<T, RollingDailyMaintenanceStateCreateArgs<ExtArgs>>): Prisma__RollingDailyMaintenanceStateClient<$Result.GetResult<Prisma.$RollingDailyMaintenanceStatePayload<ExtArgs>, T, "create">, never, ExtArgs>
 
@@ -15160,7 +15246,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     *     
+     *
      */
     createMany<T extends RollingDailyMaintenanceStateCreateManyArgs>(args?: SelectSubset<T, RollingDailyMaintenanceStateCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -15174,9 +15260,9 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     * 
+     *
      * // Create many RollingDailyMaintenanceStates and only return the `id`
-     * const rollingDailyMaintenanceStateWithIdOnly = await prisma.rollingDailyMaintenanceState.createManyAndReturn({ 
+     * const rollingDailyMaintenanceStateWithIdOnly = await prisma.rollingDailyMaintenanceState.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -15184,7 +15270,7 @@ export namespace Prisma {
      * })
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * 
+     *
      */
     createManyAndReturn<T extends RollingDailyMaintenanceStateCreateManyAndReturnArgs>(args?: SelectSubset<T, RollingDailyMaintenanceStateCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RollingDailyMaintenanceStatePayload<ExtArgs>, T, "createManyAndReturn">>
 
@@ -15198,7 +15284,7 @@ export namespace Prisma {
      *     // ... filter to delete one RollingDailyMaintenanceState
      *   }
      * })
-     * 
+     *
      */
     delete<T extends RollingDailyMaintenanceStateDeleteArgs>(args: SelectSubset<T, RollingDailyMaintenanceStateDeleteArgs<ExtArgs>>): Prisma__RollingDailyMaintenanceStateClient<$Result.GetResult<Prisma.$RollingDailyMaintenanceStatePayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
@@ -15215,7 +15301,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     update<T extends RollingDailyMaintenanceStateUpdateArgs>(args: SelectSubset<T, RollingDailyMaintenanceStateUpdateArgs<ExtArgs>>): Prisma__RollingDailyMaintenanceStateClient<$Result.GetResult<Prisma.$RollingDailyMaintenanceStatePayload<ExtArgs>, T, "update">, never, ExtArgs>
 
@@ -15229,7 +15315,7 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     * 
+     *
      */
     deleteMany<T extends RollingDailyMaintenanceStateDeleteManyArgs>(args?: SelectSubset<T, RollingDailyMaintenanceStateDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -15248,7 +15334,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     updateMany<T extends RollingDailyMaintenanceStateUpdateManyArgs>(args: SelectSubset<T, RollingDailyMaintenanceStateUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -15337,7 +15423,7 @@ export namespace Prisma {
      *     _all: true
      *   },
      * })
-     * 
+     *
     **/
     groupBy<
       T extends RollingDailyMaintenanceStateGroupByArgs,
@@ -15438,7 +15524,7 @@ export namespace Prisma {
 
   /**
    * Fields of the RollingDailyMaintenanceState model
-   */ 
+   */
   interface RollingDailyMaintenanceStateFieldRefs {
     readonly id: FieldRef<"RollingDailyMaintenanceState", 'String'>
     readonly seriesId: FieldRef<"RollingDailyMaintenanceState", 'String'>
@@ -15463,7 +15549,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"RollingDailyMaintenanceState", 'DateTime'>
     readonly updatedAt: FieldRef<"RollingDailyMaintenanceState", 'DateTime'>
   }
-    
+
 
   // Custom InputTypes
   /**
@@ -15508,31 +15594,31 @@ export namespace Prisma {
     where?: RollingDailyMaintenanceStateWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of RollingDailyMaintenanceStates to fetch.
      */
     orderBy?: RollingDailyMaintenanceStateOrderByWithRelationInput | RollingDailyMaintenanceStateOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for RollingDailyMaintenanceStates.
      */
     cursor?: RollingDailyMaintenanceStateWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` RollingDailyMaintenanceStates from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` RollingDailyMaintenanceStates.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of RollingDailyMaintenanceStates.
      */
     distinct?: RollingDailyMaintenanceStateScalarFieldEnum | RollingDailyMaintenanceStateScalarFieldEnum[]
@@ -15552,31 +15638,31 @@ export namespace Prisma {
     where?: RollingDailyMaintenanceStateWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of RollingDailyMaintenanceStates to fetch.
      */
     orderBy?: RollingDailyMaintenanceStateOrderByWithRelationInput | RollingDailyMaintenanceStateOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for RollingDailyMaintenanceStates.
      */
     cursor?: RollingDailyMaintenanceStateWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` RollingDailyMaintenanceStates from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` RollingDailyMaintenanceStates.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of RollingDailyMaintenanceStates.
      */
     distinct?: RollingDailyMaintenanceStateScalarFieldEnum | RollingDailyMaintenanceStateScalarFieldEnum[]
@@ -15596,25 +15682,25 @@ export namespace Prisma {
     where?: RollingDailyMaintenanceStateWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of RollingDailyMaintenanceStates to fetch.
      */
     orderBy?: RollingDailyMaintenanceStateOrderByWithRelationInput | RollingDailyMaintenanceStateOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for listing RollingDailyMaintenanceStates.
      */
     cursor?: RollingDailyMaintenanceStateWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` RollingDailyMaintenanceStates from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` RollingDailyMaintenanceStates.
      */
     skip?: number
@@ -16082,55 +16168,55 @@ export namespace Prisma {
     where?: ForecastPreparationExecutionLedgerWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastPreparationExecutionLedgers to fetch.
      */
     orderBy?: ForecastPreparationExecutionLedgerOrderByWithRelationInput | ForecastPreparationExecutionLedgerOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the start position
      */
     cursor?: ForecastPreparationExecutionLedgerWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastPreparationExecutionLedgers from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastPreparationExecutionLedgers.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Count returned ForecastPreparationExecutionLedgers
     **/
     _count?: true | ForecastPreparationExecutionLedgerCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to average
     **/
     _avg?: ForecastPreparationExecutionLedgerAvgAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to sum
     **/
     _sum?: ForecastPreparationExecutionLedgerSumAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the minimum value
     **/
     _min?: ForecastPreparationExecutionLedgerMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the maximum value
     **/
     _max?: ForecastPreparationExecutionLedgerMaxAggregateInputType
@@ -16436,7 +16522,7 @@ export namespace Prisma {
 
   type ForecastPreparationExecutionLedgerGetPayload<S extends boolean | null | undefined | ForecastPreparationExecutionLedgerDefaultArgs> = $Result.GetResult<Prisma.$ForecastPreparationExecutionLedgerPayload, S>
 
-  type ForecastPreparationExecutionLedgerCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+  type ForecastPreparationExecutionLedgerCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
     Omit<ForecastPreparationExecutionLedgerFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: ForecastPreparationExecutionLedgerCountAggregateInputType | true
     }
@@ -16457,7 +16543,7 @@ export namespace Prisma {
     findUnique<T extends ForecastPreparationExecutionLedgerFindUniqueArgs>(args: SelectSubset<T, ForecastPreparationExecutionLedgerFindUniqueArgs<ExtArgs>>): Prisma__ForecastPreparationExecutionLedgerClient<$Result.GetResult<Prisma.$ForecastPreparationExecutionLedgerPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
-     * Find one ForecastPreparationExecutionLedger that matches the filter or throw an error with `error.code='P2025'` 
+     * Find one ForecastPreparationExecutionLedger that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
      * @param {ForecastPreparationExecutionLedgerFindUniqueOrThrowArgs} args - Arguments to find a ForecastPreparationExecutionLedger
      * @example
@@ -16509,13 +16595,13 @@ export namespace Prisma {
      * @example
      * // Get all ForecastPreparationExecutionLedgers
      * const forecastPreparationExecutionLedgers = await prisma.forecastPreparationExecutionLedger.findMany()
-     * 
+     *
      * // Get first 10 ForecastPreparationExecutionLedgers
      * const forecastPreparationExecutionLedgers = await prisma.forecastPreparationExecutionLedger.findMany({ take: 10 })
-     * 
+     *
      * // Only select the `id`
      * const forecastPreparationExecutionLedgerWithIdOnly = await prisma.forecastPreparationExecutionLedger.findMany({ select: { id: true } })
-     * 
+     *
      */
     findMany<T extends ForecastPreparationExecutionLedgerFindManyArgs>(args?: SelectSubset<T, ForecastPreparationExecutionLedgerFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastPreparationExecutionLedgerPayload<ExtArgs>, T, "findMany">>
 
@@ -16529,7 +16615,7 @@ export namespace Prisma {
      *     // ... data to create a ForecastPreparationExecutionLedger
      *   }
      * })
-     * 
+     *
      */
     create<T extends ForecastPreparationExecutionLedgerCreateArgs>(args: SelectSubset<T, ForecastPreparationExecutionLedgerCreateArgs<ExtArgs>>): Prisma__ForecastPreparationExecutionLedgerClient<$Result.GetResult<Prisma.$ForecastPreparationExecutionLedgerPayload<ExtArgs>, T, "create">, never, ExtArgs>
 
@@ -16543,7 +16629,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     *     
+     *
      */
     createMany<T extends ForecastPreparationExecutionLedgerCreateManyArgs>(args?: SelectSubset<T, ForecastPreparationExecutionLedgerCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -16557,9 +16643,9 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     * 
+     *
      * // Create many ForecastPreparationExecutionLedgers and only return the `id`
-     * const forecastPreparationExecutionLedgerWithIdOnly = await prisma.forecastPreparationExecutionLedger.createManyAndReturn({ 
+     * const forecastPreparationExecutionLedgerWithIdOnly = await prisma.forecastPreparationExecutionLedger.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -16567,7 +16653,7 @@ export namespace Prisma {
      * })
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * 
+     *
      */
     createManyAndReturn<T extends ForecastPreparationExecutionLedgerCreateManyAndReturnArgs>(args?: SelectSubset<T, ForecastPreparationExecutionLedgerCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastPreparationExecutionLedgerPayload<ExtArgs>, T, "createManyAndReturn">>
 
@@ -16581,7 +16667,7 @@ export namespace Prisma {
      *     // ... filter to delete one ForecastPreparationExecutionLedger
      *   }
      * })
-     * 
+     *
      */
     delete<T extends ForecastPreparationExecutionLedgerDeleteArgs>(args: SelectSubset<T, ForecastPreparationExecutionLedgerDeleteArgs<ExtArgs>>): Prisma__ForecastPreparationExecutionLedgerClient<$Result.GetResult<Prisma.$ForecastPreparationExecutionLedgerPayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
@@ -16598,7 +16684,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     update<T extends ForecastPreparationExecutionLedgerUpdateArgs>(args: SelectSubset<T, ForecastPreparationExecutionLedgerUpdateArgs<ExtArgs>>): Prisma__ForecastPreparationExecutionLedgerClient<$Result.GetResult<Prisma.$ForecastPreparationExecutionLedgerPayload<ExtArgs>, T, "update">, never, ExtArgs>
 
@@ -16612,7 +16698,7 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     * 
+     *
      */
     deleteMany<T extends ForecastPreparationExecutionLedgerDeleteManyArgs>(args?: SelectSubset<T, ForecastPreparationExecutionLedgerDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -16631,7 +16717,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     updateMany<T extends ForecastPreparationExecutionLedgerUpdateManyArgs>(args: SelectSubset<T, ForecastPreparationExecutionLedgerUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -16720,7 +16806,7 @@ export namespace Prisma {
      *     _all: true
      *   },
      * })
-     * 
+     *
     **/
     groupBy<
       T extends ForecastPreparationExecutionLedgerGroupByArgs,
@@ -16821,7 +16907,7 @@ export namespace Prisma {
 
   /**
    * Fields of the ForecastPreparationExecutionLedger model
-   */ 
+   */
   interface ForecastPreparationExecutionLedgerFieldRefs {
     readonly id: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
     readonly executionId: FieldRef<"ForecastPreparationExecutionLedger", 'String'>
@@ -16870,7 +16956,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
     readonly updatedAt: FieldRef<"ForecastPreparationExecutionLedger", 'DateTime'>
   }
-    
+
 
   // Custom InputTypes
   /**
@@ -16915,31 +17001,31 @@ export namespace Prisma {
     where?: ForecastPreparationExecutionLedgerWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastPreparationExecutionLedgers to fetch.
      */
     orderBy?: ForecastPreparationExecutionLedgerOrderByWithRelationInput | ForecastPreparationExecutionLedgerOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for ForecastPreparationExecutionLedgers.
      */
     cursor?: ForecastPreparationExecutionLedgerWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastPreparationExecutionLedgers from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastPreparationExecutionLedgers.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of ForecastPreparationExecutionLedgers.
      */
     distinct?: ForecastPreparationExecutionLedgerScalarFieldEnum | ForecastPreparationExecutionLedgerScalarFieldEnum[]
@@ -16959,31 +17045,31 @@ export namespace Prisma {
     where?: ForecastPreparationExecutionLedgerWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastPreparationExecutionLedgers to fetch.
      */
     orderBy?: ForecastPreparationExecutionLedgerOrderByWithRelationInput | ForecastPreparationExecutionLedgerOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for ForecastPreparationExecutionLedgers.
      */
     cursor?: ForecastPreparationExecutionLedgerWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastPreparationExecutionLedgers from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastPreparationExecutionLedgers.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of ForecastPreparationExecutionLedgers.
      */
     distinct?: ForecastPreparationExecutionLedgerScalarFieldEnum | ForecastPreparationExecutionLedgerScalarFieldEnum[]
@@ -17003,25 +17089,25 @@ export namespace Prisma {
     where?: ForecastPreparationExecutionLedgerWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of ForecastPreparationExecutionLedgers to fetch.
      */
     orderBy?: ForecastPreparationExecutionLedgerOrderByWithRelationInput | ForecastPreparationExecutionLedgerOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for listing ForecastPreparationExecutionLedgers.
      */
     cursor?: ForecastPreparationExecutionLedgerWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` ForecastPreparationExecutionLedgers from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` ForecastPreparationExecutionLedgers.
      */
     skip?: number
@@ -17154,6 +17240,1249 @@ export namespace Prisma {
      * Select specific fields to fetch from the ForecastPreparationExecutionLedger
      */
     select?: ForecastPreparationExecutionLedgerSelect<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ForecastPreparationJob
+   */
+
+  export type AggregateForecastPreparationJob = {
+    _count: ForecastPreparationJobCountAggregateOutputType | null
+    _avg: ForecastPreparationJobAvgAggregateOutputType | null
+    _sum: ForecastPreparationJobSumAggregateOutputType | null
+    _min: ForecastPreparationJobMinAggregateOutputType | null
+    _max: ForecastPreparationJobMaxAggregateOutputType | null
+  }
+
+  export type ForecastPreparationJobAvgAggregateOutputType = {
+    priority: number | null
+    requestCount: number | null
+    sliceCount: number | null
+    failureCount: number | null
+    maxFailureCount: number | null
+    leaseVersion: number | null
+  }
+
+  export type ForecastPreparationJobSumAggregateOutputType = {
+    priority: number | null
+    requestCount: number | null
+    sliceCount: number | null
+    failureCount: number | null
+    maxFailureCount: number | null
+    leaseVersion: number | null
+  }
+
+  export type ForecastPreparationJobMinAggregateOutputType = {
+    id: string | null
+    jobKey: string | null
+    jobKind: string | null
+    status: string | null
+    priority: number | null
+    seriesId: string | null
+    targetBasis: $Enums.ForecastTargetBasis | null
+    targetSemantics: string | null
+    modelId: string | null
+    sourceFrequency: string | null
+    targetCadence: string | null
+    historyFingerprint: string | null
+    requestCount: number | null
+    sliceCount: number | null
+    failureCount: number | null
+    maxFailureCount: number | null
+    availableAt: Date | null
+    leaseOwnerToken: string | null
+    leaseVersion: number | null
+    leaseAcquiredAt: Date | null
+    leaseExpiresAt: Date | null
+    lastHeartbeatAt: Date | null
+    dependencyJobKey: string | null
+    failureCode: string | null
+    failureReason: string | null
+    requestedAt: Date | null
+    startedAt: Date | null
+    completedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ForecastPreparationJobMaxAggregateOutputType = {
+    id: string | null
+    jobKey: string | null
+    jobKind: string | null
+    status: string | null
+    priority: number | null
+    seriesId: string | null
+    targetBasis: $Enums.ForecastTargetBasis | null
+    targetSemantics: string | null
+    modelId: string | null
+    sourceFrequency: string | null
+    targetCadence: string | null
+    historyFingerprint: string | null
+    requestCount: number | null
+    sliceCount: number | null
+    failureCount: number | null
+    maxFailureCount: number | null
+    availableAt: Date | null
+    leaseOwnerToken: string | null
+    leaseVersion: number | null
+    leaseAcquiredAt: Date | null
+    leaseExpiresAt: Date | null
+    lastHeartbeatAt: Date | null
+    dependencyJobKey: string | null
+    failureCode: string | null
+    failureReason: string | null
+    requestedAt: Date | null
+    startedAt: Date | null
+    completedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ForecastPreparationJobCountAggregateOutputType = {
+    id: number
+    jobKey: number
+    jobKind: number
+    status: number
+    priority: number
+    seriesId: number
+    targetBasis: number
+    targetSemantics: number
+    modelId: number
+    sourceFrequency: number
+    targetCadence: number
+    historyFingerprint: number
+    requestCount: number
+    sliceCount: number
+    failureCount: number
+    maxFailureCount: number
+    availableAt: number
+    leaseOwnerToken: number
+    leaseVersion: number
+    leaseAcquiredAt: number
+    leaseExpiresAt: number
+    lastHeartbeatAt: number
+    dependencyJobKey: number
+    checkpointJson: number
+    failureCode: number
+    failureReason: number
+    requestedAt: number
+    startedAt: number
+    completedAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type ForecastPreparationJobAvgAggregateInputType = {
+    priority?: true
+    requestCount?: true
+    sliceCount?: true
+    failureCount?: true
+    maxFailureCount?: true
+    leaseVersion?: true
+  }
+
+  export type ForecastPreparationJobSumAggregateInputType = {
+    priority?: true
+    requestCount?: true
+    sliceCount?: true
+    failureCount?: true
+    maxFailureCount?: true
+    leaseVersion?: true
+  }
+
+  export type ForecastPreparationJobMinAggregateInputType = {
+    id?: true
+    jobKey?: true
+    jobKind?: true
+    status?: true
+    priority?: true
+    seriesId?: true
+    targetBasis?: true
+    targetSemantics?: true
+    modelId?: true
+    sourceFrequency?: true
+    targetCadence?: true
+    historyFingerprint?: true
+    requestCount?: true
+    sliceCount?: true
+    failureCount?: true
+    maxFailureCount?: true
+    availableAt?: true
+    leaseOwnerToken?: true
+    leaseVersion?: true
+    leaseAcquiredAt?: true
+    leaseExpiresAt?: true
+    lastHeartbeatAt?: true
+    dependencyJobKey?: true
+    failureCode?: true
+    failureReason?: true
+    requestedAt?: true
+    startedAt?: true
+    completedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ForecastPreparationJobMaxAggregateInputType = {
+    id?: true
+    jobKey?: true
+    jobKind?: true
+    status?: true
+    priority?: true
+    seriesId?: true
+    targetBasis?: true
+    targetSemantics?: true
+    modelId?: true
+    sourceFrequency?: true
+    targetCadence?: true
+    historyFingerprint?: true
+    requestCount?: true
+    sliceCount?: true
+    failureCount?: true
+    maxFailureCount?: true
+    availableAt?: true
+    leaseOwnerToken?: true
+    leaseVersion?: true
+    leaseAcquiredAt?: true
+    leaseExpiresAt?: true
+    lastHeartbeatAt?: true
+    dependencyJobKey?: true
+    failureCode?: true
+    failureReason?: true
+    requestedAt?: true
+    startedAt?: true
+    completedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ForecastPreparationJobCountAggregateInputType = {
+    id?: true
+    jobKey?: true
+    jobKind?: true
+    status?: true
+    priority?: true
+    seriesId?: true
+    targetBasis?: true
+    targetSemantics?: true
+    modelId?: true
+    sourceFrequency?: true
+    targetCadence?: true
+    historyFingerprint?: true
+    requestCount?: true
+    sliceCount?: true
+    failureCount?: true
+    maxFailureCount?: true
+    availableAt?: true
+    leaseOwnerToken?: true
+    leaseVersion?: true
+    leaseAcquiredAt?: true
+    leaseExpiresAt?: true
+    lastHeartbeatAt?: true
+    dependencyJobKey?: true
+    checkpointJson?: true
+    failureCode?: true
+    failureReason?: true
+    requestedAt?: true
+    startedAt?: true
+    completedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type ForecastPreparationJobAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ForecastPreparationJob to aggregate.
+     */
+    where?: ForecastPreparationJobWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of ForecastPreparationJobs to fetch.
+     */
+    orderBy?: ForecastPreparationJobOrderByWithRelationInput | ForecastPreparationJobOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the start position
+     */
+    cursor?: ForecastPreparationJobWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` ForecastPreparationJobs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` ForecastPreparationJobs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Count returned ForecastPreparationJobs
+    **/
+    _count?: true | ForecastPreparationJobCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to average
+    **/
+    _avg?: ForecastPreparationJobAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to sum
+    **/
+    _sum?: ForecastPreparationJobSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to find the minimum value
+    **/
+    _min?: ForecastPreparationJobMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to find the maximum value
+    **/
+    _max?: ForecastPreparationJobMaxAggregateInputType
+  }
+
+  export type GetForecastPreparationJobAggregateType<T extends ForecastPreparationJobAggregateArgs> = {
+        [P in keyof T & keyof AggregateForecastPreparationJob]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateForecastPreparationJob[P]>
+      : GetScalarType<T[P], AggregateForecastPreparationJob[P]>
+  }
+
+
+
+
+  export type ForecastPreparationJobGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ForecastPreparationJobWhereInput
+    orderBy?: ForecastPreparationJobOrderByWithAggregationInput | ForecastPreparationJobOrderByWithAggregationInput[]
+    by: ForecastPreparationJobScalarFieldEnum[] | ForecastPreparationJobScalarFieldEnum
+    having?: ForecastPreparationJobScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ForecastPreparationJobCountAggregateInputType | true
+    _avg?: ForecastPreparationJobAvgAggregateInputType
+    _sum?: ForecastPreparationJobSumAggregateInputType
+    _min?: ForecastPreparationJobMinAggregateInputType
+    _max?: ForecastPreparationJobMaxAggregateInputType
+  }
+
+  export type ForecastPreparationJobGroupByOutputType = {
+    id: string
+    jobKey: string
+    jobKind: string
+    status: string
+    priority: number
+    seriesId: string
+    targetBasis: $Enums.ForecastTargetBasis
+    targetSemantics: string
+    modelId: string
+    sourceFrequency: string
+    targetCadence: string
+    historyFingerprint: string
+    requestCount: number
+    sliceCount: number
+    failureCount: number
+    maxFailureCount: number
+    availableAt: Date
+    leaseOwnerToken: string | null
+    leaseVersion: number
+    leaseAcquiredAt: Date | null
+    leaseExpiresAt: Date | null
+    lastHeartbeatAt: Date | null
+    dependencyJobKey: string | null
+    checkpointJson: JsonValue | null
+    failureCode: string | null
+    failureReason: string | null
+    requestedAt: Date
+    startedAt: Date | null
+    completedAt: Date | null
+    createdAt: Date
+    updatedAt: Date
+    _count: ForecastPreparationJobCountAggregateOutputType | null
+    _avg: ForecastPreparationJobAvgAggregateOutputType | null
+    _sum: ForecastPreparationJobSumAggregateOutputType | null
+    _min: ForecastPreparationJobMinAggregateOutputType | null
+    _max: ForecastPreparationJobMaxAggregateOutputType | null
+  }
+
+  type GetForecastPreparationJobGroupByPayload<T extends ForecastPreparationJobGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ForecastPreparationJobGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ForecastPreparationJobGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ForecastPreparationJobGroupByOutputType[P]>
+            : GetScalarType<T[P], ForecastPreparationJobGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ForecastPreparationJobSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    jobKey?: boolean
+    jobKind?: boolean
+    status?: boolean
+    priority?: boolean
+    seriesId?: boolean
+    targetBasis?: boolean
+    targetSemantics?: boolean
+    modelId?: boolean
+    sourceFrequency?: boolean
+    targetCadence?: boolean
+    historyFingerprint?: boolean
+    requestCount?: boolean
+    sliceCount?: boolean
+    failureCount?: boolean
+    maxFailureCount?: boolean
+    availableAt?: boolean
+    leaseOwnerToken?: boolean
+    leaseVersion?: boolean
+    leaseAcquiredAt?: boolean
+    leaseExpiresAt?: boolean
+    lastHeartbeatAt?: boolean
+    dependencyJobKey?: boolean
+    checkpointJson?: boolean
+    failureCode?: boolean
+    failureReason?: boolean
+    requestedAt?: boolean
+    startedAt?: boolean
+    completedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["forecastPreparationJob"]>
+
+  export type ForecastPreparationJobSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    jobKey?: boolean
+    jobKind?: boolean
+    status?: boolean
+    priority?: boolean
+    seriesId?: boolean
+    targetBasis?: boolean
+    targetSemantics?: boolean
+    modelId?: boolean
+    sourceFrequency?: boolean
+    targetCadence?: boolean
+    historyFingerprint?: boolean
+    requestCount?: boolean
+    sliceCount?: boolean
+    failureCount?: boolean
+    maxFailureCount?: boolean
+    availableAt?: boolean
+    leaseOwnerToken?: boolean
+    leaseVersion?: boolean
+    leaseAcquiredAt?: boolean
+    leaseExpiresAt?: boolean
+    lastHeartbeatAt?: boolean
+    dependencyJobKey?: boolean
+    checkpointJson?: boolean
+    failureCode?: boolean
+    failureReason?: boolean
+    requestedAt?: boolean
+    startedAt?: boolean
+    completedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["forecastPreparationJob"]>
+
+  export type ForecastPreparationJobSelectScalar = {
+    id?: boolean
+    jobKey?: boolean
+    jobKind?: boolean
+    status?: boolean
+    priority?: boolean
+    seriesId?: boolean
+    targetBasis?: boolean
+    targetSemantics?: boolean
+    modelId?: boolean
+    sourceFrequency?: boolean
+    targetCadence?: boolean
+    historyFingerprint?: boolean
+    requestCount?: boolean
+    sliceCount?: boolean
+    failureCount?: boolean
+    maxFailureCount?: boolean
+    availableAt?: boolean
+    leaseOwnerToken?: boolean
+    leaseVersion?: boolean
+    leaseAcquiredAt?: boolean
+    leaseExpiresAt?: boolean
+    lastHeartbeatAt?: boolean
+    dependencyJobKey?: boolean
+    checkpointJson?: boolean
+    failureCode?: boolean
+    failureReason?: boolean
+    requestedAt?: boolean
+    startedAt?: boolean
+    completedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+
+  export type $ForecastPreparationJobPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ForecastPreparationJob"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      /**
+       * Durable user intent and scheduling state. Forecast artifacts and execution ownership remain authoritative elsewhere.
+       */
+      id: string
+      jobKey: string
+      jobKind: string
+      status: string
+      priority: number
+      seriesId: string
+      targetBasis: $Enums.ForecastTargetBasis
+      targetSemantics: string
+      modelId: string
+      sourceFrequency: string
+      targetCadence: string
+      historyFingerprint: string
+      requestCount: number
+      sliceCount: number
+      failureCount: number
+      maxFailureCount: number
+      availableAt: Date
+      leaseOwnerToken: string | null
+      leaseVersion: number
+      leaseAcquiredAt: Date | null
+      leaseExpiresAt: Date | null
+      lastHeartbeatAt: Date | null
+      dependencyJobKey: string | null
+      checkpointJson: Prisma.JsonValue | null
+      failureCode: string | null
+      failureReason: string | null
+      requestedAt: Date
+      startedAt: Date | null
+      completedAt: Date | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["forecastPreparationJob"]>
+    composites: {}
+  }
+
+  type ForecastPreparationJobGetPayload<S extends boolean | null | undefined | ForecastPreparationJobDefaultArgs> = $Result.GetResult<Prisma.$ForecastPreparationJobPayload, S>
+
+  type ForecastPreparationJobCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<ForecastPreparationJobFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: ForecastPreparationJobCountAggregateInputType | true
+    }
+
+  export interface ForecastPreparationJobDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ForecastPreparationJob'], meta: { name: 'ForecastPreparationJob' } }
+    /**
+     * Find zero or one ForecastPreparationJob that matches the filter.
+     * @param {ForecastPreparationJobFindUniqueArgs} args - Arguments to find a ForecastPreparationJob
+     * @example
+     * // Get one ForecastPreparationJob
+     * const forecastPreparationJob = await prisma.forecastPreparationJob.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ForecastPreparationJobFindUniqueArgs>(args: SelectSubset<T, ForecastPreparationJobFindUniqueArgs<ExtArgs>>): Prisma__ForecastPreparationJobClient<$Result.GetResult<Prisma.$ForecastPreparationJobPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ForecastPreparationJob that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {ForecastPreparationJobFindUniqueOrThrowArgs} args - Arguments to find a ForecastPreparationJob
+     * @example
+     * // Get one ForecastPreparationJob
+     * const forecastPreparationJob = await prisma.forecastPreparationJob.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ForecastPreparationJobFindUniqueOrThrowArgs>(args: SelectSubset<T, ForecastPreparationJobFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ForecastPreparationJobClient<$Result.GetResult<Prisma.$ForecastPreparationJobPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ForecastPreparationJob that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastPreparationJobFindFirstArgs} args - Arguments to find a ForecastPreparationJob
+     * @example
+     * // Get one ForecastPreparationJob
+     * const forecastPreparationJob = await prisma.forecastPreparationJob.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ForecastPreparationJobFindFirstArgs>(args?: SelectSubset<T, ForecastPreparationJobFindFirstArgs<ExtArgs>>): Prisma__ForecastPreparationJobClient<$Result.GetResult<Prisma.$ForecastPreparationJobPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ForecastPreparationJob that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastPreparationJobFindFirstOrThrowArgs} args - Arguments to find a ForecastPreparationJob
+     * @example
+     * // Get one ForecastPreparationJob
+     * const forecastPreparationJob = await prisma.forecastPreparationJob.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ForecastPreparationJobFindFirstOrThrowArgs>(args?: SelectSubset<T, ForecastPreparationJobFindFirstOrThrowArgs<ExtArgs>>): Prisma__ForecastPreparationJobClient<$Result.GetResult<Prisma.$ForecastPreparationJobPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ForecastPreparationJobs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastPreparationJobFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ForecastPreparationJobs
+     * const forecastPreparationJobs = await prisma.forecastPreparationJob.findMany()
+     *
+     * // Get first 10 ForecastPreparationJobs
+     * const forecastPreparationJobs = await prisma.forecastPreparationJob.findMany({ take: 10 })
+     *
+     * // Only select the `id`
+     * const forecastPreparationJobWithIdOnly = await prisma.forecastPreparationJob.findMany({ select: { id: true } })
+     *
+     */
+    findMany<T extends ForecastPreparationJobFindManyArgs>(args?: SelectSubset<T, ForecastPreparationJobFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastPreparationJobPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ForecastPreparationJob.
+     * @param {ForecastPreparationJobCreateArgs} args - Arguments to create a ForecastPreparationJob.
+     * @example
+     * // Create one ForecastPreparationJob
+     * const ForecastPreparationJob = await prisma.forecastPreparationJob.create({
+     *   data: {
+     *     // ... data to create a ForecastPreparationJob
+     *   }
+     * })
+     *
+     */
+    create<T extends ForecastPreparationJobCreateArgs>(args: SelectSubset<T, ForecastPreparationJobCreateArgs<ExtArgs>>): Prisma__ForecastPreparationJobClient<$Result.GetResult<Prisma.$ForecastPreparationJobPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ForecastPreparationJobs.
+     * @param {ForecastPreparationJobCreateManyArgs} args - Arguments to create many ForecastPreparationJobs.
+     * @example
+     * // Create many ForecastPreparationJobs
+     * const forecastPreparationJob = await prisma.forecastPreparationJob.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *
+     */
+    createMany<T extends ForecastPreparationJobCreateManyArgs>(args?: SelectSubset<T, ForecastPreparationJobCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ForecastPreparationJobs and returns the data saved in the database.
+     * @param {ForecastPreparationJobCreateManyAndReturnArgs} args - Arguments to create many ForecastPreparationJobs.
+     * @example
+     * // Create many ForecastPreparationJobs
+     * const forecastPreparationJob = await prisma.forecastPreparationJob.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *
+     * // Create many ForecastPreparationJobs and only return the `id`
+     * const forecastPreparationJobWithIdOnly = await prisma.forecastPreparationJob.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     *
+     */
+    createManyAndReturn<T extends ForecastPreparationJobCreateManyAndReturnArgs>(args?: SelectSubset<T, ForecastPreparationJobCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ForecastPreparationJobPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a ForecastPreparationJob.
+     * @param {ForecastPreparationJobDeleteArgs} args - Arguments to delete one ForecastPreparationJob.
+     * @example
+     * // Delete one ForecastPreparationJob
+     * const ForecastPreparationJob = await prisma.forecastPreparationJob.delete({
+     *   where: {
+     *     // ... filter to delete one ForecastPreparationJob
+     *   }
+     * })
+     *
+     */
+    delete<T extends ForecastPreparationJobDeleteArgs>(args: SelectSubset<T, ForecastPreparationJobDeleteArgs<ExtArgs>>): Prisma__ForecastPreparationJobClient<$Result.GetResult<Prisma.$ForecastPreparationJobPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ForecastPreparationJob.
+     * @param {ForecastPreparationJobUpdateArgs} args - Arguments to update one ForecastPreparationJob.
+     * @example
+     * // Update one ForecastPreparationJob
+     * const forecastPreparationJob = await prisma.forecastPreparationJob.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     *
+     */
+    update<T extends ForecastPreparationJobUpdateArgs>(args: SelectSubset<T, ForecastPreparationJobUpdateArgs<ExtArgs>>): Prisma__ForecastPreparationJobClient<$Result.GetResult<Prisma.$ForecastPreparationJobPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ForecastPreparationJobs.
+     * @param {ForecastPreparationJobDeleteManyArgs} args - Arguments to filter ForecastPreparationJobs to delete.
+     * @example
+     * // Delete a few ForecastPreparationJobs
+     * const { count } = await prisma.forecastPreparationJob.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     *
+     */
+    deleteMany<T extends ForecastPreparationJobDeleteManyArgs>(args?: SelectSubset<T, ForecastPreparationJobDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ForecastPreparationJobs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastPreparationJobUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ForecastPreparationJobs
+     * const forecastPreparationJob = await prisma.forecastPreparationJob.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     *
+     */
+    updateMany<T extends ForecastPreparationJobUpdateManyArgs>(args: SelectSubset<T, ForecastPreparationJobUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ForecastPreparationJob.
+     * @param {ForecastPreparationJobUpsertArgs} args - Arguments to update or create a ForecastPreparationJob.
+     * @example
+     * // Update or create a ForecastPreparationJob
+     * const forecastPreparationJob = await prisma.forecastPreparationJob.upsert({
+     *   create: {
+     *     // ... data to create a ForecastPreparationJob
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ForecastPreparationJob we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ForecastPreparationJobUpsertArgs>(args: SelectSubset<T, ForecastPreparationJobUpsertArgs<ExtArgs>>): Prisma__ForecastPreparationJobClient<$Result.GetResult<Prisma.$ForecastPreparationJobPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ForecastPreparationJobs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastPreparationJobCountArgs} args - Arguments to filter ForecastPreparationJobs to count.
+     * @example
+     * // Count the number of ForecastPreparationJobs
+     * const count = await prisma.forecastPreparationJob.count({
+     *   where: {
+     *     // ... the filter for the ForecastPreparationJobs we want to count
+     *   }
+     * })
+    **/
+    count<T extends ForecastPreparationJobCountArgs>(
+      args?: Subset<T, ForecastPreparationJobCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ForecastPreparationJobCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ForecastPreparationJob.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastPreparationJobAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ForecastPreparationJobAggregateArgs>(args: Subset<T, ForecastPreparationJobAggregateArgs>): Prisma.PrismaPromise<GetForecastPreparationJobAggregateType<T>>
+
+    /**
+     * Group by ForecastPreparationJob.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ForecastPreparationJobGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     *
+    **/
+    groupBy<
+      T extends ForecastPreparationJobGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ForecastPreparationJobGroupByArgs['orderBy'] }
+        : { orderBy?: ForecastPreparationJobGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ForecastPreparationJobGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetForecastPreparationJobGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ForecastPreparationJob model
+   */
+  readonly fields: ForecastPreparationJobFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ForecastPreparationJob.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ForecastPreparationJobClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ForecastPreparationJob model
+   */
+  interface ForecastPreparationJobFieldRefs {
+    readonly id: FieldRef<"ForecastPreparationJob", 'String'>
+    readonly jobKey: FieldRef<"ForecastPreparationJob", 'String'>
+    readonly jobKind: FieldRef<"ForecastPreparationJob", 'String'>
+    readonly status: FieldRef<"ForecastPreparationJob", 'String'>
+    readonly priority: FieldRef<"ForecastPreparationJob", 'Int'>
+    readonly seriesId: FieldRef<"ForecastPreparationJob", 'String'>
+    readonly targetBasis: FieldRef<"ForecastPreparationJob", 'ForecastTargetBasis'>
+    readonly targetSemantics: FieldRef<"ForecastPreparationJob", 'String'>
+    readonly modelId: FieldRef<"ForecastPreparationJob", 'String'>
+    readonly sourceFrequency: FieldRef<"ForecastPreparationJob", 'String'>
+    readonly targetCadence: FieldRef<"ForecastPreparationJob", 'String'>
+    readonly historyFingerprint: FieldRef<"ForecastPreparationJob", 'String'>
+    readonly requestCount: FieldRef<"ForecastPreparationJob", 'Int'>
+    readonly sliceCount: FieldRef<"ForecastPreparationJob", 'Int'>
+    readonly failureCount: FieldRef<"ForecastPreparationJob", 'Int'>
+    readonly maxFailureCount: FieldRef<"ForecastPreparationJob", 'Int'>
+    readonly availableAt: FieldRef<"ForecastPreparationJob", 'DateTime'>
+    readonly leaseOwnerToken: FieldRef<"ForecastPreparationJob", 'String'>
+    readonly leaseVersion: FieldRef<"ForecastPreparationJob", 'Int'>
+    readonly leaseAcquiredAt: FieldRef<"ForecastPreparationJob", 'DateTime'>
+    readonly leaseExpiresAt: FieldRef<"ForecastPreparationJob", 'DateTime'>
+    readonly lastHeartbeatAt: FieldRef<"ForecastPreparationJob", 'DateTime'>
+    readonly dependencyJobKey: FieldRef<"ForecastPreparationJob", 'String'>
+    readonly checkpointJson: FieldRef<"ForecastPreparationJob", 'Json'>
+    readonly failureCode: FieldRef<"ForecastPreparationJob", 'String'>
+    readonly failureReason: FieldRef<"ForecastPreparationJob", 'String'>
+    readonly requestedAt: FieldRef<"ForecastPreparationJob", 'DateTime'>
+    readonly startedAt: FieldRef<"ForecastPreparationJob", 'DateTime'>
+    readonly completedAt: FieldRef<"ForecastPreparationJob", 'DateTime'>
+    readonly createdAt: FieldRef<"ForecastPreparationJob", 'DateTime'>
+    readonly updatedAt: FieldRef<"ForecastPreparationJob", 'DateTime'>
+  }
+
+
+  // Custom InputTypes
+  /**
+   * ForecastPreparationJob findUnique
+   */
+  export type ForecastPreparationJobFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationJob
+     */
+    select?: ForecastPreparationJobSelect<ExtArgs> | null
+    /**
+     * Filter, which ForecastPreparationJob to fetch.
+     */
+    where: ForecastPreparationJobWhereUniqueInput
+  }
+
+  /**
+   * ForecastPreparationJob findUniqueOrThrow
+   */
+  export type ForecastPreparationJobFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationJob
+     */
+    select?: ForecastPreparationJobSelect<ExtArgs> | null
+    /**
+     * Filter, which ForecastPreparationJob to fetch.
+     */
+    where: ForecastPreparationJobWhereUniqueInput
+  }
+
+  /**
+   * ForecastPreparationJob findFirst
+   */
+  export type ForecastPreparationJobFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationJob
+     */
+    select?: ForecastPreparationJobSelect<ExtArgs> | null
+    /**
+     * Filter, which ForecastPreparationJob to fetch.
+     */
+    where?: ForecastPreparationJobWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of ForecastPreparationJobs to fetch.
+     */
+    orderBy?: ForecastPreparationJobOrderByWithRelationInput | ForecastPreparationJobOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the position for searching for ForecastPreparationJobs.
+     */
+    cursor?: ForecastPreparationJobWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` ForecastPreparationJobs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` ForecastPreparationJobs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     *
+     * Filter by unique combinations of ForecastPreparationJobs.
+     */
+    distinct?: ForecastPreparationJobScalarFieldEnum | ForecastPreparationJobScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastPreparationJob findFirstOrThrow
+   */
+  export type ForecastPreparationJobFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationJob
+     */
+    select?: ForecastPreparationJobSelect<ExtArgs> | null
+    /**
+     * Filter, which ForecastPreparationJob to fetch.
+     */
+    where?: ForecastPreparationJobWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of ForecastPreparationJobs to fetch.
+     */
+    orderBy?: ForecastPreparationJobOrderByWithRelationInput | ForecastPreparationJobOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the position for searching for ForecastPreparationJobs.
+     */
+    cursor?: ForecastPreparationJobWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` ForecastPreparationJobs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` ForecastPreparationJobs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     *
+     * Filter by unique combinations of ForecastPreparationJobs.
+     */
+    distinct?: ForecastPreparationJobScalarFieldEnum | ForecastPreparationJobScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastPreparationJob findMany
+   */
+  export type ForecastPreparationJobFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationJob
+     */
+    select?: ForecastPreparationJobSelect<ExtArgs> | null
+    /**
+     * Filter, which ForecastPreparationJobs to fetch.
+     */
+    where?: ForecastPreparationJobWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of ForecastPreparationJobs to fetch.
+     */
+    orderBy?: ForecastPreparationJobOrderByWithRelationInput | ForecastPreparationJobOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the position for listing ForecastPreparationJobs.
+     */
+    cursor?: ForecastPreparationJobWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` ForecastPreparationJobs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` ForecastPreparationJobs.
+     */
+    skip?: number
+    distinct?: ForecastPreparationJobScalarFieldEnum | ForecastPreparationJobScalarFieldEnum[]
+  }
+
+  /**
+   * ForecastPreparationJob create
+   */
+  export type ForecastPreparationJobCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationJob
+     */
+    select?: ForecastPreparationJobSelect<ExtArgs> | null
+    /**
+     * The data needed to create a ForecastPreparationJob.
+     */
+    data: XOR<ForecastPreparationJobCreateInput, ForecastPreparationJobUncheckedCreateInput>
+  }
+
+  /**
+   * ForecastPreparationJob createMany
+   */
+  export type ForecastPreparationJobCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ForecastPreparationJobs.
+     */
+    data: ForecastPreparationJobCreateManyInput | ForecastPreparationJobCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ForecastPreparationJob createManyAndReturn
+   */
+  export type ForecastPreparationJobCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationJob
+     */
+    select?: ForecastPreparationJobSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many ForecastPreparationJobs.
+     */
+    data: ForecastPreparationJobCreateManyInput | ForecastPreparationJobCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ForecastPreparationJob update
+   */
+  export type ForecastPreparationJobUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationJob
+     */
+    select?: ForecastPreparationJobSelect<ExtArgs> | null
+    /**
+     * The data needed to update a ForecastPreparationJob.
+     */
+    data: XOR<ForecastPreparationJobUpdateInput, ForecastPreparationJobUncheckedUpdateInput>
+    /**
+     * Choose, which ForecastPreparationJob to update.
+     */
+    where: ForecastPreparationJobWhereUniqueInput
+  }
+
+  /**
+   * ForecastPreparationJob updateMany
+   */
+  export type ForecastPreparationJobUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ForecastPreparationJobs.
+     */
+    data: XOR<ForecastPreparationJobUpdateManyMutationInput, ForecastPreparationJobUncheckedUpdateManyInput>
+    /**
+     * Filter which ForecastPreparationJobs to update
+     */
+    where?: ForecastPreparationJobWhereInput
+  }
+
+  /**
+   * ForecastPreparationJob upsert
+   */
+  export type ForecastPreparationJobUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationJob
+     */
+    select?: ForecastPreparationJobSelect<ExtArgs> | null
+    /**
+     * The filter to search for the ForecastPreparationJob to update in case it exists.
+     */
+    where: ForecastPreparationJobWhereUniqueInput
+    /**
+     * In case the ForecastPreparationJob found by the `where` argument doesn't exist, create a new ForecastPreparationJob with this data.
+     */
+    create: XOR<ForecastPreparationJobCreateInput, ForecastPreparationJobUncheckedCreateInput>
+    /**
+     * In case the ForecastPreparationJob was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ForecastPreparationJobUpdateInput, ForecastPreparationJobUncheckedUpdateInput>
+  }
+
+  /**
+   * ForecastPreparationJob delete
+   */
+  export type ForecastPreparationJobDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationJob
+     */
+    select?: ForecastPreparationJobSelect<ExtArgs> | null
+    /**
+     * Filter which ForecastPreparationJob to delete.
+     */
+    where: ForecastPreparationJobWhereUniqueInput
+  }
+
+  /**
+   * ForecastPreparationJob deleteMany
+   */
+  export type ForecastPreparationJobDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ForecastPreparationJobs to delete
+     */
+    where?: ForecastPreparationJobWhereInput
+  }
+
+  /**
+   * ForecastPreparationJob without action
+   */
+  export type ForecastPreparationJobDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ForecastPreparationJob
+     */
+    select?: ForecastPreparationJobSelect<ExtArgs> | null
   }
 
 
@@ -17327,55 +18656,55 @@ export namespace Prisma {
     where?: BenchmarkMetadataFacetRecordWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of BenchmarkMetadataFacetRecords to fetch.
      */
     orderBy?: BenchmarkMetadataFacetRecordOrderByWithRelationInput | BenchmarkMetadataFacetRecordOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the start position
      */
     cursor?: BenchmarkMetadataFacetRecordWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` BenchmarkMetadataFacetRecords from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` BenchmarkMetadataFacetRecords.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Count returned BenchmarkMetadataFacetRecords
     **/
     _count?: true | BenchmarkMetadataFacetRecordCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to average
     **/
     _avg?: BenchmarkMetadataFacetRecordAvgAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to sum
     **/
     _sum?: BenchmarkMetadataFacetRecordSumAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the minimum value
     **/
     _min?: BenchmarkMetadataFacetRecordMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the maximum value
     **/
     _max?: BenchmarkMetadataFacetRecordMaxAggregateInputType
@@ -17543,7 +18872,7 @@ export namespace Prisma {
 
   type BenchmarkMetadataFacetRecordGetPayload<S extends boolean | null | undefined | BenchmarkMetadataFacetRecordDefaultArgs> = $Result.GetResult<Prisma.$BenchmarkMetadataFacetRecordPayload, S>
 
-  type BenchmarkMetadataFacetRecordCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+  type BenchmarkMetadataFacetRecordCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
     Omit<BenchmarkMetadataFacetRecordFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: BenchmarkMetadataFacetRecordCountAggregateInputType | true
     }
@@ -17564,7 +18893,7 @@ export namespace Prisma {
     findUnique<T extends BenchmarkMetadataFacetRecordFindUniqueArgs>(args: SelectSubset<T, BenchmarkMetadataFacetRecordFindUniqueArgs<ExtArgs>>): Prisma__BenchmarkMetadataFacetRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataFacetRecordPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
-     * Find one BenchmarkMetadataFacetRecord that matches the filter or throw an error with `error.code='P2025'` 
+     * Find one BenchmarkMetadataFacetRecord that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
      * @param {BenchmarkMetadataFacetRecordFindUniqueOrThrowArgs} args - Arguments to find a BenchmarkMetadataFacetRecord
      * @example
@@ -17616,13 +18945,13 @@ export namespace Prisma {
      * @example
      * // Get all BenchmarkMetadataFacetRecords
      * const benchmarkMetadataFacetRecords = await prisma.benchmarkMetadataFacetRecord.findMany()
-     * 
+     *
      * // Get first 10 BenchmarkMetadataFacetRecords
      * const benchmarkMetadataFacetRecords = await prisma.benchmarkMetadataFacetRecord.findMany({ take: 10 })
-     * 
+     *
      * // Only select the `id`
      * const benchmarkMetadataFacetRecordWithIdOnly = await prisma.benchmarkMetadataFacetRecord.findMany({ select: { id: true } })
-     * 
+     *
      */
     findMany<T extends BenchmarkMetadataFacetRecordFindManyArgs>(args?: SelectSubset<T, BenchmarkMetadataFacetRecordFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BenchmarkMetadataFacetRecordPayload<ExtArgs>, T, "findMany">>
 
@@ -17636,7 +18965,7 @@ export namespace Prisma {
      *     // ... data to create a BenchmarkMetadataFacetRecord
      *   }
      * })
-     * 
+     *
      */
     create<T extends BenchmarkMetadataFacetRecordCreateArgs>(args: SelectSubset<T, BenchmarkMetadataFacetRecordCreateArgs<ExtArgs>>): Prisma__BenchmarkMetadataFacetRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataFacetRecordPayload<ExtArgs>, T, "create">, never, ExtArgs>
 
@@ -17650,7 +18979,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     *     
+     *
      */
     createMany<T extends BenchmarkMetadataFacetRecordCreateManyArgs>(args?: SelectSubset<T, BenchmarkMetadataFacetRecordCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -17664,9 +18993,9 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     * 
+     *
      * // Create many BenchmarkMetadataFacetRecords and only return the `id`
-     * const benchmarkMetadataFacetRecordWithIdOnly = await prisma.benchmarkMetadataFacetRecord.createManyAndReturn({ 
+     * const benchmarkMetadataFacetRecordWithIdOnly = await prisma.benchmarkMetadataFacetRecord.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -17674,7 +19003,7 @@ export namespace Prisma {
      * })
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * 
+     *
      */
     createManyAndReturn<T extends BenchmarkMetadataFacetRecordCreateManyAndReturnArgs>(args?: SelectSubset<T, BenchmarkMetadataFacetRecordCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BenchmarkMetadataFacetRecordPayload<ExtArgs>, T, "createManyAndReturn">>
 
@@ -17688,7 +19017,7 @@ export namespace Prisma {
      *     // ... filter to delete one BenchmarkMetadataFacetRecord
      *   }
      * })
-     * 
+     *
      */
     delete<T extends BenchmarkMetadataFacetRecordDeleteArgs>(args: SelectSubset<T, BenchmarkMetadataFacetRecordDeleteArgs<ExtArgs>>): Prisma__BenchmarkMetadataFacetRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataFacetRecordPayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
@@ -17705,7 +19034,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     update<T extends BenchmarkMetadataFacetRecordUpdateArgs>(args: SelectSubset<T, BenchmarkMetadataFacetRecordUpdateArgs<ExtArgs>>): Prisma__BenchmarkMetadataFacetRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataFacetRecordPayload<ExtArgs>, T, "update">, never, ExtArgs>
 
@@ -17719,7 +19048,7 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     * 
+     *
      */
     deleteMany<T extends BenchmarkMetadataFacetRecordDeleteManyArgs>(args?: SelectSubset<T, BenchmarkMetadataFacetRecordDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -17738,7 +19067,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     updateMany<T extends BenchmarkMetadataFacetRecordUpdateManyArgs>(args: SelectSubset<T, BenchmarkMetadataFacetRecordUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -17827,7 +19156,7 @@ export namespace Prisma {
      *     _all: true
      *   },
      * })
-     * 
+     *
     **/
     groupBy<
       T extends BenchmarkMetadataFacetRecordGroupByArgs,
@@ -17928,7 +19257,7 @@ export namespace Prisma {
 
   /**
    * Fields of the BenchmarkMetadataFacetRecord model
-   */ 
+   */
   interface BenchmarkMetadataFacetRecordFieldRefs {
     readonly id: FieldRef<"BenchmarkMetadataFacetRecord", 'String'>
     readonly providerCode: FieldRef<"BenchmarkMetadataFacetRecord", 'String'>
@@ -17950,7 +19279,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"BenchmarkMetadataFacetRecord", 'DateTime'>
     readonly updatedAt: FieldRef<"BenchmarkMetadataFacetRecord", 'DateTime'>
   }
-    
+
 
   // Custom InputTypes
   /**
@@ -17995,31 +19324,31 @@ export namespace Prisma {
     where?: BenchmarkMetadataFacetRecordWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of BenchmarkMetadataFacetRecords to fetch.
      */
     orderBy?: BenchmarkMetadataFacetRecordOrderByWithRelationInput | BenchmarkMetadataFacetRecordOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for BenchmarkMetadataFacetRecords.
      */
     cursor?: BenchmarkMetadataFacetRecordWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` BenchmarkMetadataFacetRecords from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` BenchmarkMetadataFacetRecords.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of BenchmarkMetadataFacetRecords.
      */
     distinct?: BenchmarkMetadataFacetRecordScalarFieldEnum | BenchmarkMetadataFacetRecordScalarFieldEnum[]
@@ -18039,31 +19368,31 @@ export namespace Prisma {
     where?: BenchmarkMetadataFacetRecordWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of BenchmarkMetadataFacetRecords to fetch.
      */
     orderBy?: BenchmarkMetadataFacetRecordOrderByWithRelationInput | BenchmarkMetadataFacetRecordOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for BenchmarkMetadataFacetRecords.
      */
     cursor?: BenchmarkMetadataFacetRecordWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` BenchmarkMetadataFacetRecords from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` BenchmarkMetadataFacetRecords.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of BenchmarkMetadataFacetRecords.
      */
     distinct?: BenchmarkMetadataFacetRecordScalarFieldEnum | BenchmarkMetadataFacetRecordScalarFieldEnum[]
@@ -18083,25 +19412,25 @@ export namespace Prisma {
     where?: BenchmarkMetadataFacetRecordWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of BenchmarkMetadataFacetRecords to fetch.
      */
     orderBy?: BenchmarkMetadataFacetRecordOrderByWithRelationInput | BenchmarkMetadataFacetRecordOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for listing BenchmarkMetadataFacetRecords.
      */
     cursor?: BenchmarkMetadataFacetRecordWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` BenchmarkMetadataFacetRecords from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` BenchmarkMetadataFacetRecords.
      */
     skip?: number
@@ -18341,43 +19670,43 @@ export namespace Prisma {
     where?: BenchmarkMetadataValueRecordWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of BenchmarkMetadataValueRecords to fetch.
      */
     orderBy?: BenchmarkMetadataValueRecordOrderByWithRelationInput | BenchmarkMetadataValueRecordOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the start position
      */
     cursor?: BenchmarkMetadataValueRecordWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` BenchmarkMetadataValueRecords from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` BenchmarkMetadataValueRecords.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Count returned BenchmarkMetadataValueRecords
     **/
     _count?: true | BenchmarkMetadataValueRecordCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the minimum value
     **/
     _min?: BenchmarkMetadataValueRecordMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
+     *
      * Select which fields to find the maximum value
     **/
     _max?: BenchmarkMetadataValueRecordMaxAggregateInputType
@@ -18501,7 +19830,7 @@ export namespace Prisma {
 
   type BenchmarkMetadataValueRecordGetPayload<S extends boolean | null | undefined | BenchmarkMetadataValueRecordDefaultArgs> = $Result.GetResult<Prisma.$BenchmarkMetadataValueRecordPayload, S>
 
-  type BenchmarkMetadataValueRecordCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+  type BenchmarkMetadataValueRecordCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
     Omit<BenchmarkMetadataValueRecordFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: BenchmarkMetadataValueRecordCountAggregateInputType | true
     }
@@ -18522,7 +19851,7 @@ export namespace Prisma {
     findUnique<T extends BenchmarkMetadataValueRecordFindUniqueArgs>(args: SelectSubset<T, BenchmarkMetadataValueRecordFindUniqueArgs<ExtArgs>>): Prisma__BenchmarkMetadataValueRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataValueRecordPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
-     * Find one BenchmarkMetadataValueRecord that matches the filter or throw an error with `error.code='P2025'` 
+     * Find one BenchmarkMetadataValueRecord that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
      * @param {BenchmarkMetadataValueRecordFindUniqueOrThrowArgs} args - Arguments to find a BenchmarkMetadataValueRecord
      * @example
@@ -18574,13 +19903,13 @@ export namespace Prisma {
      * @example
      * // Get all BenchmarkMetadataValueRecords
      * const benchmarkMetadataValueRecords = await prisma.benchmarkMetadataValueRecord.findMany()
-     * 
+     *
      * // Get first 10 BenchmarkMetadataValueRecords
      * const benchmarkMetadataValueRecords = await prisma.benchmarkMetadataValueRecord.findMany({ take: 10 })
-     * 
+     *
      * // Only select the `id`
      * const benchmarkMetadataValueRecordWithIdOnly = await prisma.benchmarkMetadataValueRecord.findMany({ select: { id: true } })
-     * 
+     *
      */
     findMany<T extends BenchmarkMetadataValueRecordFindManyArgs>(args?: SelectSubset<T, BenchmarkMetadataValueRecordFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BenchmarkMetadataValueRecordPayload<ExtArgs>, T, "findMany">>
 
@@ -18594,7 +19923,7 @@ export namespace Prisma {
      *     // ... data to create a BenchmarkMetadataValueRecord
      *   }
      * })
-     * 
+     *
      */
     create<T extends BenchmarkMetadataValueRecordCreateArgs>(args: SelectSubset<T, BenchmarkMetadataValueRecordCreateArgs<ExtArgs>>): Prisma__BenchmarkMetadataValueRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataValueRecordPayload<ExtArgs>, T, "create">, never, ExtArgs>
 
@@ -18608,7 +19937,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     *     
+     *
      */
     createMany<T extends BenchmarkMetadataValueRecordCreateManyArgs>(args?: SelectSubset<T, BenchmarkMetadataValueRecordCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -18622,9 +19951,9 @@ export namespace Prisma {
      *     // ... provide data here
      *   ]
      * })
-     * 
+     *
      * // Create many BenchmarkMetadataValueRecords and only return the `id`
-     * const benchmarkMetadataValueRecordWithIdOnly = await prisma.benchmarkMetadataValueRecord.createManyAndReturn({ 
+     * const benchmarkMetadataValueRecordWithIdOnly = await prisma.benchmarkMetadataValueRecord.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -18632,7 +19961,7 @@ export namespace Prisma {
      * })
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * 
+     *
      */
     createManyAndReturn<T extends BenchmarkMetadataValueRecordCreateManyAndReturnArgs>(args?: SelectSubset<T, BenchmarkMetadataValueRecordCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BenchmarkMetadataValueRecordPayload<ExtArgs>, T, "createManyAndReturn">>
 
@@ -18646,7 +19975,7 @@ export namespace Prisma {
      *     // ... filter to delete one BenchmarkMetadataValueRecord
      *   }
      * })
-     * 
+     *
      */
     delete<T extends BenchmarkMetadataValueRecordDeleteArgs>(args: SelectSubset<T, BenchmarkMetadataValueRecordDeleteArgs<ExtArgs>>): Prisma__BenchmarkMetadataValueRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataValueRecordPayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
@@ -18663,7 +19992,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     update<T extends BenchmarkMetadataValueRecordUpdateArgs>(args: SelectSubset<T, BenchmarkMetadataValueRecordUpdateArgs<ExtArgs>>): Prisma__BenchmarkMetadataValueRecordClient<$Result.GetResult<Prisma.$BenchmarkMetadataValueRecordPayload<ExtArgs>, T, "update">, never, ExtArgs>
 
@@ -18677,7 +20006,7 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     * 
+     *
      */
     deleteMany<T extends BenchmarkMetadataValueRecordDeleteManyArgs>(args?: SelectSubset<T, BenchmarkMetadataValueRecordDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -18696,7 +20025,7 @@ export namespace Prisma {
      *     // ... provide data here
      *   }
      * })
-     * 
+     *
      */
     updateMany<T extends BenchmarkMetadataValueRecordUpdateManyArgs>(args: SelectSubset<T, BenchmarkMetadataValueRecordUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
@@ -18785,7 +20114,7 @@ export namespace Prisma {
      *     _all: true
      *   },
      * })
-     * 
+     *
     **/
     groupBy<
       T extends BenchmarkMetadataValueRecordGroupByArgs,
@@ -18886,7 +20215,7 @@ export namespace Prisma {
 
   /**
    * Fields of the BenchmarkMetadataValueRecord model
-   */ 
+   */
   interface BenchmarkMetadataValueRecordFieldRefs {
     readonly id: FieldRef<"BenchmarkMetadataValueRecord", 'String'>
     readonly providerCode: FieldRef<"BenchmarkMetadataValueRecord", 'String'>
@@ -18900,7 +20229,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"BenchmarkMetadataValueRecord", 'DateTime'>
     readonly updatedAt: FieldRef<"BenchmarkMetadataValueRecord", 'DateTime'>
   }
-    
+
 
   // Custom InputTypes
   /**
@@ -18945,31 +20274,31 @@ export namespace Prisma {
     where?: BenchmarkMetadataValueRecordWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of BenchmarkMetadataValueRecords to fetch.
      */
     orderBy?: BenchmarkMetadataValueRecordOrderByWithRelationInput | BenchmarkMetadataValueRecordOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for BenchmarkMetadataValueRecords.
      */
     cursor?: BenchmarkMetadataValueRecordWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` BenchmarkMetadataValueRecords from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` BenchmarkMetadataValueRecords.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of BenchmarkMetadataValueRecords.
      */
     distinct?: BenchmarkMetadataValueRecordScalarFieldEnum | BenchmarkMetadataValueRecordScalarFieldEnum[]
@@ -18989,31 +20318,31 @@ export namespace Prisma {
     where?: BenchmarkMetadataValueRecordWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of BenchmarkMetadataValueRecords to fetch.
      */
     orderBy?: BenchmarkMetadataValueRecordOrderByWithRelationInput | BenchmarkMetadataValueRecordOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for searching for BenchmarkMetadataValueRecords.
      */
     cursor?: BenchmarkMetadataValueRecordWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` BenchmarkMetadataValueRecords from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` BenchmarkMetadataValueRecords.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
+     *
      * Filter by unique combinations of BenchmarkMetadataValueRecords.
      */
     distinct?: BenchmarkMetadataValueRecordScalarFieldEnum | BenchmarkMetadataValueRecordScalarFieldEnum[]
@@ -19033,25 +20362,25 @@ export namespace Prisma {
     where?: BenchmarkMetadataValueRecordWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
+     *
      * Determine the order of BenchmarkMetadataValueRecords to fetch.
      */
     orderBy?: BenchmarkMetadataValueRecordOrderByWithRelationInput | BenchmarkMetadataValueRecordOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
+     *
      * Sets the position for listing BenchmarkMetadataValueRecords.
      */
     cursor?: BenchmarkMetadataValueRecordWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Take `±n` BenchmarkMetadataValueRecords from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
+     *
      * Skip the first `n` BenchmarkMetadataValueRecords.
      */
     skip?: number
@@ -19552,6 +20881,43 @@ export namespace Prisma {
   export type ForecastPreparationExecutionLedgerScalarFieldEnum = (typeof ForecastPreparationExecutionLedgerScalarFieldEnum)[keyof typeof ForecastPreparationExecutionLedgerScalarFieldEnum]
 
 
+  export const ForecastPreparationJobScalarFieldEnum: {
+    id: 'id',
+    jobKey: 'jobKey',
+    jobKind: 'jobKind',
+    status: 'status',
+    priority: 'priority',
+    seriesId: 'seriesId',
+    targetBasis: 'targetBasis',
+    targetSemantics: 'targetSemantics',
+    modelId: 'modelId',
+    sourceFrequency: 'sourceFrequency',
+    targetCadence: 'targetCadence',
+    historyFingerprint: 'historyFingerprint',
+    requestCount: 'requestCount',
+    sliceCount: 'sliceCount',
+    failureCount: 'failureCount',
+    maxFailureCount: 'maxFailureCount',
+    availableAt: 'availableAt',
+    leaseOwnerToken: 'leaseOwnerToken',
+    leaseVersion: 'leaseVersion',
+    leaseAcquiredAt: 'leaseAcquiredAt',
+    leaseExpiresAt: 'leaseExpiresAt',
+    lastHeartbeatAt: 'lastHeartbeatAt',
+    dependencyJobKey: 'dependencyJobKey',
+    checkpointJson: 'checkpointJson',
+    failureCode: 'failureCode',
+    failureReason: 'failureReason',
+    requestedAt: 'requestedAt',
+    startedAt: 'startedAt',
+    completedAt: 'completedAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type ForecastPreparationJobScalarFieldEnum = (typeof ForecastPreparationJobScalarFieldEnum)[keyof typeof ForecastPreparationJobScalarFieldEnum]
+
+
   export const BenchmarkMetadataFacetRecordScalarFieldEnum: {
     id: 'id',
     providerCode: 'providerCode',
@@ -19643,7 +21009,7 @@ export namespace Prisma {
 
 
   /**
-   * Field references 
+   * Field references
    */
 
 
@@ -19651,126 +21017,126 @@ export namespace Prisma {
    * Reference to a field of type 'String'
    */
   export type StringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'String'>
-    
+
 
 
   /**
    * Reference to a field of type 'String[]'
    */
   export type ListStringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'String[]'>
-    
+
 
 
   /**
    * Reference to a field of type 'DateTime'
    */
   export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
-    
+
 
 
   /**
    * Reference to a field of type 'DateTime[]'
    */
   export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
-    
+
 
 
   /**
    * Reference to a field of type 'Decimal'
    */
   export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
-    
+
 
 
   /**
    * Reference to a field of type 'Decimal[]'
    */
   export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
-    
+
 
 
   /**
    * Reference to a field of type 'Int'
    */
   export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
-    
+
 
 
   /**
    * Reference to a field of type 'Int[]'
    */
   export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
-    
+
 
 
   /**
    * Reference to a field of type 'ForecastTargetBasis'
    */
   export type EnumForecastTargetBasisFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ForecastTargetBasis'>
-    
+
 
 
   /**
    * Reference to a field of type 'ForecastTargetBasis[]'
    */
   export type ListEnumForecastTargetBasisFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ForecastTargetBasis[]'>
-    
+
 
 
   /**
    * Reference to a field of type 'Float'
    */
   export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
-    
+
 
 
   /**
    * Reference to a field of type 'Float[]'
    */
   export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
-    
+
 
 
   /**
    * Reference to a field of type 'Json'
    */
   export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
-    
+
 
 
   /**
    * Reference to a field of type 'RollingDailyVerificationMaturityStatus'
    */
   export type EnumRollingDailyVerificationMaturityStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RollingDailyVerificationMaturityStatus'>
-    
+
 
 
   /**
    * Reference to a field of type 'RollingDailyVerificationMaturityStatus[]'
    */
   export type ListEnumRollingDailyVerificationMaturityStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RollingDailyVerificationMaturityStatus[]'>
-    
+
 
 
   /**
    * Reference to a field of type 'RollingDailyCalibrationStatus'
    */
   export type EnumRollingDailyCalibrationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RollingDailyCalibrationStatus'>
-    
+
 
 
   /**
    * Reference to a field of type 'RollingDailyCalibrationStatus[]'
    */
   export type ListEnumRollingDailyCalibrationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RollingDailyCalibrationStatus[]'>
-    
+
 
 
   /**
    * Reference to a field of type 'Boolean'
    */
   export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
-    
+
   /**
    * Deep Input Types
    */
@@ -21553,6 +22919,190 @@ export namespace Prisma {
     eventsJson?: JsonWithAggregatesFilter<"ForecastPreparationExecutionLedger">
     createdAt?: DateTimeWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"ForecastPreparationExecutionLedger"> | Date | string
+  }
+
+  export type ForecastPreparationJobWhereInput = {
+    AND?: ForecastPreparationJobWhereInput | ForecastPreparationJobWhereInput[]
+    OR?: ForecastPreparationJobWhereInput[]
+    NOT?: ForecastPreparationJobWhereInput | ForecastPreparationJobWhereInput[]
+    id?: StringFilter<"ForecastPreparationJob"> | string
+    jobKey?: StringFilter<"ForecastPreparationJob"> | string
+    jobKind?: StringFilter<"ForecastPreparationJob"> | string
+    status?: StringFilter<"ForecastPreparationJob"> | string
+    priority?: IntFilter<"ForecastPreparationJob"> | number
+    seriesId?: StringFilter<"ForecastPreparationJob"> | string
+    targetBasis?: EnumForecastTargetBasisFilter<"ForecastPreparationJob"> | $Enums.ForecastTargetBasis
+    targetSemantics?: StringFilter<"ForecastPreparationJob"> | string
+    modelId?: StringFilter<"ForecastPreparationJob"> | string
+    sourceFrequency?: StringFilter<"ForecastPreparationJob"> | string
+    targetCadence?: StringFilter<"ForecastPreparationJob"> | string
+    historyFingerprint?: StringFilter<"ForecastPreparationJob"> | string
+    requestCount?: IntFilter<"ForecastPreparationJob"> | number
+    sliceCount?: IntFilter<"ForecastPreparationJob"> | number
+    failureCount?: IntFilter<"ForecastPreparationJob"> | number
+    maxFailureCount?: IntFilter<"ForecastPreparationJob"> | number
+    availableAt?: DateTimeFilter<"ForecastPreparationJob"> | Date | string
+    leaseOwnerToken?: StringNullableFilter<"ForecastPreparationJob"> | string | null
+    leaseVersion?: IntFilter<"ForecastPreparationJob"> | number
+    leaseAcquiredAt?: DateTimeNullableFilter<"ForecastPreparationJob"> | Date | string | null
+    leaseExpiresAt?: DateTimeNullableFilter<"ForecastPreparationJob"> | Date | string | null
+    lastHeartbeatAt?: DateTimeNullableFilter<"ForecastPreparationJob"> | Date | string | null
+    dependencyJobKey?: StringNullableFilter<"ForecastPreparationJob"> | string | null
+    checkpointJson?: JsonNullableFilter<"ForecastPreparationJob">
+    failureCode?: StringNullableFilter<"ForecastPreparationJob"> | string | null
+    failureReason?: StringNullableFilter<"ForecastPreparationJob"> | string | null
+    requestedAt?: DateTimeFilter<"ForecastPreparationJob"> | Date | string
+    startedAt?: DateTimeNullableFilter<"ForecastPreparationJob"> | Date | string | null
+    completedAt?: DateTimeNullableFilter<"ForecastPreparationJob"> | Date | string | null
+    createdAt?: DateTimeFilter<"ForecastPreparationJob"> | Date | string
+    updatedAt?: DateTimeFilter<"ForecastPreparationJob"> | Date | string
+  }
+
+  export type ForecastPreparationJobOrderByWithRelationInput = {
+    id?: SortOrder
+    jobKey?: SortOrder
+    jobKind?: SortOrder
+    status?: SortOrder
+    priority?: SortOrder
+    seriesId?: SortOrder
+    targetBasis?: SortOrder
+    targetSemantics?: SortOrder
+    modelId?: SortOrder
+    sourceFrequency?: SortOrder
+    targetCadence?: SortOrder
+    historyFingerprint?: SortOrder
+    requestCount?: SortOrder
+    sliceCount?: SortOrder
+    failureCount?: SortOrder
+    maxFailureCount?: SortOrder
+    availableAt?: SortOrder
+    leaseOwnerToken?: SortOrderInput | SortOrder
+    leaseVersion?: SortOrder
+    leaseAcquiredAt?: SortOrderInput | SortOrder
+    leaseExpiresAt?: SortOrderInput | SortOrder
+    lastHeartbeatAt?: SortOrderInput | SortOrder
+    dependencyJobKey?: SortOrderInput | SortOrder
+    checkpointJson?: SortOrderInput | SortOrder
+    failureCode?: SortOrderInput | SortOrder
+    failureReason?: SortOrderInput | SortOrder
+    requestedAt?: SortOrder
+    startedAt?: SortOrderInput | SortOrder
+    completedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastPreparationJobWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    jobKey?: string
+    AND?: ForecastPreparationJobWhereInput | ForecastPreparationJobWhereInput[]
+    OR?: ForecastPreparationJobWhereInput[]
+    NOT?: ForecastPreparationJobWhereInput | ForecastPreparationJobWhereInput[]
+    jobKind?: StringFilter<"ForecastPreparationJob"> | string
+    status?: StringFilter<"ForecastPreparationJob"> | string
+    priority?: IntFilter<"ForecastPreparationJob"> | number
+    seriesId?: StringFilter<"ForecastPreparationJob"> | string
+    targetBasis?: EnumForecastTargetBasisFilter<"ForecastPreparationJob"> | $Enums.ForecastTargetBasis
+    targetSemantics?: StringFilter<"ForecastPreparationJob"> | string
+    modelId?: StringFilter<"ForecastPreparationJob"> | string
+    sourceFrequency?: StringFilter<"ForecastPreparationJob"> | string
+    targetCadence?: StringFilter<"ForecastPreparationJob"> | string
+    historyFingerprint?: StringFilter<"ForecastPreparationJob"> | string
+    requestCount?: IntFilter<"ForecastPreparationJob"> | number
+    sliceCount?: IntFilter<"ForecastPreparationJob"> | number
+    failureCount?: IntFilter<"ForecastPreparationJob"> | number
+    maxFailureCount?: IntFilter<"ForecastPreparationJob"> | number
+    availableAt?: DateTimeFilter<"ForecastPreparationJob"> | Date | string
+    leaseOwnerToken?: StringNullableFilter<"ForecastPreparationJob"> | string | null
+    leaseVersion?: IntFilter<"ForecastPreparationJob"> | number
+    leaseAcquiredAt?: DateTimeNullableFilter<"ForecastPreparationJob"> | Date | string | null
+    leaseExpiresAt?: DateTimeNullableFilter<"ForecastPreparationJob"> | Date | string | null
+    lastHeartbeatAt?: DateTimeNullableFilter<"ForecastPreparationJob"> | Date | string | null
+    dependencyJobKey?: StringNullableFilter<"ForecastPreparationJob"> | string | null
+    checkpointJson?: JsonNullableFilter<"ForecastPreparationJob">
+    failureCode?: StringNullableFilter<"ForecastPreparationJob"> | string | null
+    failureReason?: StringNullableFilter<"ForecastPreparationJob"> | string | null
+    requestedAt?: DateTimeFilter<"ForecastPreparationJob"> | Date | string
+    startedAt?: DateTimeNullableFilter<"ForecastPreparationJob"> | Date | string | null
+    completedAt?: DateTimeNullableFilter<"ForecastPreparationJob"> | Date | string | null
+    createdAt?: DateTimeFilter<"ForecastPreparationJob"> | Date | string
+    updatedAt?: DateTimeFilter<"ForecastPreparationJob"> | Date | string
+  }, "id" | "jobKey">
+
+  export type ForecastPreparationJobOrderByWithAggregationInput = {
+    id?: SortOrder
+    jobKey?: SortOrder
+    jobKind?: SortOrder
+    status?: SortOrder
+    priority?: SortOrder
+    seriesId?: SortOrder
+    targetBasis?: SortOrder
+    targetSemantics?: SortOrder
+    modelId?: SortOrder
+    sourceFrequency?: SortOrder
+    targetCadence?: SortOrder
+    historyFingerprint?: SortOrder
+    requestCount?: SortOrder
+    sliceCount?: SortOrder
+    failureCount?: SortOrder
+    maxFailureCount?: SortOrder
+    availableAt?: SortOrder
+    leaseOwnerToken?: SortOrderInput | SortOrder
+    leaseVersion?: SortOrder
+    leaseAcquiredAt?: SortOrderInput | SortOrder
+    leaseExpiresAt?: SortOrderInput | SortOrder
+    lastHeartbeatAt?: SortOrderInput | SortOrder
+    dependencyJobKey?: SortOrderInput | SortOrder
+    checkpointJson?: SortOrderInput | SortOrder
+    failureCode?: SortOrderInput | SortOrder
+    failureReason?: SortOrderInput | SortOrder
+    requestedAt?: SortOrder
+    startedAt?: SortOrderInput | SortOrder
+    completedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: ForecastPreparationJobCountOrderByAggregateInput
+    _avg?: ForecastPreparationJobAvgOrderByAggregateInput
+    _max?: ForecastPreparationJobMaxOrderByAggregateInput
+    _min?: ForecastPreparationJobMinOrderByAggregateInput
+    _sum?: ForecastPreparationJobSumOrderByAggregateInput
+  }
+
+  export type ForecastPreparationJobScalarWhereWithAggregatesInput = {
+    AND?: ForecastPreparationJobScalarWhereWithAggregatesInput | ForecastPreparationJobScalarWhereWithAggregatesInput[]
+    OR?: ForecastPreparationJobScalarWhereWithAggregatesInput[]
+    NOT?: ForecastPreparationJobScalarWhereWithAggregatesInput | ForecastPreparationJobScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ForecastPreparationJob"> | string
+    jobKey?: StringWithAggregatesFilter<"ForecastPreparationJob"> | string
+    jobKind?: StringWithAggregatesFilter<"ForecastPreparationJob"> | string
+    status?: StringWithAggregatesFilter<"ForecastPreparationJob"> | string
+    priority?: IntWithAggregatesFilter<"ForecastPreparationJob"> | number
+    seriesId?: StringWithAggregatesFilter<"ForecastPreparationJob"> | string
+    targetBasis?: EnumForecastTargetBasisWithAggregatesFilter<"ForecastPreparationJob"> | $Enums.ForecastTargetBasis
+    targetSemantics?: StringWithAggregatesFilter<"ForecastPreparationJob"> | string
+    modelId?: StringWithAggregatesFilter<"ForecastPreparationJob"> | string
+    sourceFrequency?: StringWithAggregatesFilter<"ForecastPreparationJob"> | string
+    targetCadence?: StringWithAggregatesFilter<"ForecastPreparationJob"> | string
+    historyFingerprint?: StringWithAggregatesFilter<"ForecastPreparationJob"> | string
+    requestCount?: IntWithAggregatesFilter<"ForecastPreparationJob"> | number
+    sliceCount?: IntWithAggregatesFilter<"ForecastPreparationJob"> | number
+    failureCount?: IntWithAggregatesFilter<"ForecastPreparationJob"> | number
+    maxFailureCount?: IntWithAggregatesFilter<"ForecastPreparationJob"> | number
+    availableAt?: DateTimeWithAggregatesFilter<"ForecastPreparationJob"> | Date | string
+    leaseOwnerToken?: StringNullableWithAggregatesFilter<"ForecastPreparationJob"> | string | null
+    leaseVersion?: IntWithAggregatesFilter<"ForecastPreparationJob"> | number
+    leaseAcquiredAt?: DateTimeNullableWithAggregatesFilter<"ForecastPreparationJob"> | Date | string | null
+    leaseExpiresAt?: DateTimeNullableWithAggregatesFilter<"ForecastPreparationJob"> | Date | string | null
+    lastHeartbeatAt?: DateTimeNullableWithAggregatesFilter<"ForecastPreparationJob"> | Date | string | null
+    dependencyJobKey?: StringNullableWithAggregatesFilter<"ForecastPreparationJob"> | string | null
+    checkpointJson?: JsonNullableWithAggregatesFilter<"ForecastPreparationJob">
+    failureCode?: StringNullableWithAggregatesFilter<"ForecastPreparationJob"> | string | null
+    failureReason?: StringNullableWithAggregatesFilter<"ForecastPreparationJob"> | string | null
+    requestedAt?: DateTimeWithAggregatesFilter<"ForecastPreparationJob"> | Date | string
+    startedAt?: DateTimeNullableWithAggregatesFilter<"ForecastPreparationJob"> | Date | string | null
+    completedAt?: DateTimeNullableWithAggregatesFilter<"ForecastPreparationJob"> | Date | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"ForecastPreparationJob"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"ForecastPreparationJob"> | Date | string
   }
 
   export type BenchmarkMetadataFacetRecordWhereInput = {
@@ -23962,6 +25512,244 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type ForecastPreparationJobCreateInput = {
+    id?: string
+    jobKey: string
+    jobKind: string
+    status: string
+    priority: number
+    seriesId: string
+    targetBasis: $Enums.ForecastTargetBasis
+    targetSemantics: string
+    modelId: string
+    sourceFrequency: string
+    targetCadence: string
+    historyFingerprint: string
+    requestCount?: number
+    sliceCount?: number
+    failureCount?: number
+    maxFailureCount?: number
+    availableAt?: Date | string
+    leaseOwnerToken?: string | null
+    leaseVersion?: number
+    leaseAcquiredAt?: Date | string | null
+    leaseExpiresAt?: Date | string | null
+    lastHeartbeatAt?: Date | string | null
+    dependencyJobKey?: string | null
+    checkpointJson?: NullableJsonNullValueInput | InputJsonValue
+    failureCode?: string | null
+    failureReason?: string | null
+    requestedAt?: Date | string
+    startedAt?: Date | string | null
+    completedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastPreparationJobUncheckedCreateInput = {
+    id?: string
+    jobKey: string
+    jobKind: string
+    status: string
+    priority: number
+    seriesId: string
+    targetBasis: $Enums.ForecastTargetBasis
+    targetSemantics: string
+    modelId: string
+    sourceFrequency: string
+    targetCadence: string
+    historyFingerprint: string
+    requestCount?: number
+    sliceCount?: number
+    failureCount?: number
+    maxFailureCount?: number
+    availableAt?: Date | string
+    leaseOwnerToken?: string | null
+    leaseVersion?: number
+    leaseAcquiredAt?: Date | string | null
+    leaseExpiresAt?: Date | string | null
+    lastHeartbeatAt?: Date | string | null
+    dependencyJobKey?: string | null
+    checkpointJson?: NullableJsonNullValueInput | InputJsonValue
+    failureCode?: string | null
+    failureReason?: string | null
+    requestedAt?: Date | string
+    startedAt?: Date | string | null
+    completedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastPreparationJobUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    jobKey?: StringFieldUpdateOperationsInput | string
+    jobKind?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    priority?: IntFieldUpdateOperationsInput | number
+    seriesId?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    targetSemantics?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    sourceFrequency?: StringFieldUpdateOperationsInput | string
+    targetCadence?: StringFieldUpdateOperationsInput | string
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    requestCount?: IntFieldUpdateOperationsInput | number
+    sliceCount?: IntFieldUpdateOperationsInput | number
+    failureCount?: IntFieldUpdateOperationsInput | number
+    maxFailureCount?: IntFieldUpdateOperationsInput | number
+    availableAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    leaseOwnerToken?: NullableStringFieldUpdateOperationsInput | string | null
+    leaseVersion?: IntFieldUpdateOperationsInput | number
+    leaseAcquiredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastHeartbeatAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dependencyJobKey?: NullableStringFieldUpdateOperationsInput | string | null
+    checkpointJson?: NullableJsonNullValueInput | InputJsonValue
+    failureCode?: NullableStringFieldUpdateOperationsInput | string | null
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastPreparationJobUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    jobKey?: StringFieldUpdateOperationsInput | string
+    jobKind?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    priority?: IntFieldUpdateOperationsInput | number
+    seriesId?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    targetSemantics?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    sourceFrequency?: StringFieldUpdateOperationsInput | string
+    targetCadence?: StringFieldUpdateOperationsInput | string
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    requestCount?: IntFieldUpdateOperationsInput | number
+    sliceCount?: IntFieldUpdateOperationsInput | number
+    failureCount?: IntFieldUpdateOperationsInput | number
+    maxFailureCount?: IntFieldUpdateOperationsInput | number
+    availableAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    leaseOwnerToken?: NullableStringFieldUpdateOperationsInput | string | null
+    leaseVersion?: IntFieldUpdateOperationsInput | number
+    leaseAcquiredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastHeartbeatAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dependencyJobKey?: NullableStringFieldUpdateOperationsInput | string | null
+    checkpointJson?: NullableJsonNullValueInput | InputJsonValue
+    failureCode?: NullableStringFieldUpdateOperationsInput | string | null
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastPreparationJobCreateManyInput = {
+    id?: string
+    jobKey: string
+    jobKind: string
+    status: string
+    priority: number
+    seriesId: string
+    targetBasis: $Enums.ForecastTargetBasis
+    targetSemantics: string
+    modelId: string
+    sourceFrequency: string
+    targetCadence: string
+    historyFingerprint: string
+    requestCount?: number
+    sliceCount?: number
+    failureCount?: number
+    maxFailureCount?: number
+    availableAt?: Date | string
+    leaseOwnerToken?: string | null
+    leaseVersion?: number
+    leaseAcquiredAt?: Date | string | null
+    leaseExpiresAt?: Date | string | null
+    lastHeartbeatAt?: Date | string | null
+    dependencyJobKey?: string | null
+    checkpointJson?: NullableJsonNullValueInput | InputJsonValue
+    failureCode?: string | null
+    failureReason?: string | null
+    requestedAt?: Date | string
+    startedAt?: Date | string | null
+    completedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ForecastPreparationJobUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    jobKey?: StringFieldUpdateOperationsInput | string
+    jobKind?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    priority?: IntFieldUpdateOperationsInput | number
+    seriesId?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    targetSemantics?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    sourceFrequency?: StringFieldUpdateOperationsInput | string
+    targetCadence?: StringFieldUpdateOperationsInput | string
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    requestCount?: IntFieldUpdateOperationsInput | number
+    sliceCount?: IntFieldUpdateOperationsInput | number
+    failureCount?: IntFieldUpdateOperationsInput | number
+    maxFailureCount?: IntFieldUpdateOperationsInput | number
+    availableAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    leaseOwnerToken?: NullableStringFieldUpdateOperationsInput | string | null
+    leaseVersion?: IntFieldUpdateOperationsInput | number
+    leaseAcquiredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastHeartbeatAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dependencyJobKey?: NullableStringFieldUpdateOperationsInput | string | null
+    checkpointJson?: NullableJsonNullValueInput | InputJsonValue
+    failureCode?: NullableStringFieldUpdateOperationsInput | string | null
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ForecastPreparationJobUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    jobKey?: StringFieldUpdateOperationsInput | string
+    jobKind?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    priority?: IntFieldUpdateOperationsInput | number
+    seriesId?: StringFieldUpdateOperationsInput | string
+    targetBasis?: EnumForecastTargetBasisFieldUpdateOperationsInput | $Enums.ForecastTargetBasis
+    targetSemantics?: StringFieldUpdateOperationsInput | string
+    modelId?: StringFieldUpdateOperationsInput | string
+    sourceFrequency?: StringFieldUpdateOperationsInput | string
+    targetCadence?: StringFieldUpdateOperationsInput | string
+    historyFingerprint?: StringFieldUpdateOperationsInput | string
+    requestCount?: IntFieldUpdateOperationsInput | number
+    sliceCount?: IntFieldUpdateOperationsInput | number
+    failureCount?: IntFieldUpdateOperationsInput | number
+    maxFailureCount?: IntFieldUpdateOperationsInput | number
+    availableAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    leaseOwnerToken?: NullableStringFieldUpdateOperationsInput | string | null
+    leaseVersion?: IntFieldUpdateOperationsInput | number
+    leaseAcquiredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastHeartbeatAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dependencyJobKey?: NullableStringFieldUpdateOperationsInput | string | null
+    checkpointJson?: NullableJsonNullValueInput | InputJsonValue
+    failureCode?: NullableStringFieldUpdateOperationsInput | string | null
+    failureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type BenchmarkMetadataFacetRecordCreateInput = {
     id: string
     providerCode: string
@@ -24733,7 +26521,7 @@ export namespace Prisma {
     _min?: NestedFloatNullableFilter<$PrismaModel>
     _max?: NestedFloatNullableFilter<$PrismaModel>
   }
-  export type JsonNullableFilter<$PrismaModel = never> = 
+  export type JsonNullableFilter<$PrismaModel = never> =
     | PatchUndefined<
         Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
         Required<JsonNullableFilterBase<$PrismaModel>>
@@ -24826,7 +26614,7 @@ export namespace Prisma {
     forecastValue?: SortOrder
     selectionScore?: SortOrder
   }
-  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> = 
+  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> =
     | PatchUndefined<
         Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
         Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
@@ -25403,7 +27191,7 @@ export namespace Prisma {
     _min?: NestedEnumRollingDailyVerificationMaturityStatusFilter<$PrismaModel>
     _max?: NestedEnumRollingDailyVerificationMaturityStatusFilter<$PrismaModel>
   }
-  export type JsonFilter<$PrismaModel = never> = 
+  export type JsonFilter<$PrismaModel = never> =
     | PatchUndefined<
         Either<Required<JsonFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonFilterBase<$PrismaModel>>, 'path'>>,
         Required<JsonFilterBase<$PrismaModel>>
@@ -25504,7 +27292,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
-  export type JsonWithAggregatesFilter<$PrismaModel = never> = 
+  export type JsonWithAggregatesFilter<$PrismaModel = never> =
     | PatchUndefined<
         Either<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
         Required<JsonWithAggregatesFilterBase<$PrismaModel>>
@@ -25889,6 +27677,124 @@ export namespace Prisma {
     leaseVersion?: SortOrder
     waiterCount?: SortOrder
     eventCount?: SortOrder
+  }
+
+  export type ForecastPreparationJobCountOrderByAggregateInput = {
+    id?: SortOrder
+    jobKey?: SortOrder
+    jobKind?: SortOrder
+    status?: SortOrder
+    priority?: SortOrder
+    seriesId?: SortOrder
+    targetBasis?: SortOrder
+    targetSemantics?: SortOrder
+    modelId?: SortOrder
+    sourceFrequency?: SortOrder
+    targetCadence?: SortOrder
+    historyFingerprint?: SortOrder
+    requestCount?: SortOrder
+    sliceCount?: SortOrder
+    failureCount?: SortOrder
+    maxFailureCount?: SortOrder
+    availableAt?: SortOrder
+    leaseOwnerToken?: SortOrder
+    leaseVersion?: SortOrder
+    leaseAcquiredAt?: SortOrder
+    leaseExpiresAt?: SortOrder
+    lastHeartbeatAt?: SortOrder
+    dependencyJobKey?: SortOrder
+    checkpointJson?: SortOrder
+    failureCode?: SortOrder
+    failureReason?: SortOrder
+    requestedAt?: SortOrder
+    startedAt?: SortOrder
+    completedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastPreparationJobAvgOrderByAggregateInput = {
+    priority?: SortOrder
+    requestCount?: SortOrder
+    sliceCount?: SortOrder
+    failureCount?: SortOrder
+    maxFailureCount?: SortOrder
+    leaseVersion?: SortOrder
+  }
+
+  export type ForecastPreparationJobMaxOrderByAggregateInput = {
+    id?: SortOrder
+    jobKey?: SortOrder
+    jobKind?: SortOrder
+    status?: SortOrder
+    priority?: SortOrder
+    seriesId?: SortOrder
+    targetBasis?: SortOrder
+    targetSemantics?: SortOrder
+    modelId?: SortOrder
+    sourceFrequency?: SortOrder
+    targetCadence?: SortOrder
+    historyFingerprint?: SortOrder
+    requestCount?: SortOrder
+    sliceCount?: SortOrder
+    failureCount?: SortOrder
+    maxFailureCount?: SortOrder
+    availableAt?: SortOrder
+    leaseOwnerToken?: SortOrder
+    leaseVersion?: SortOrder
+    leaseAcquiredAt?: SortOrder
+    leaseExpiresAt?: SortOrder
+    lastHeartbeatAt?: SortOrder
+    dependencyJobKey?: SortOrder
+    failureCode?: SortOrder
+    failureReason?: SortOrder
+    requestedAt?: SortOrder
+    startedAt?: SortOrder
+    completedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastPreparationJobMinOrderByAggregateInput = {
+    id?: SortOrder
+    jobKey?: SortOrder
+    jobKind?: SortOrder
+    status?: SortOrder
+    priority?: SortOrder
+    seriesId?: SortOrder
+    targetBasis?: SortOrder
+    targetSemantics?: SortOrder
+    modelId?: SortOrder
+    sourceFrequency?: SortOrder
+    targetCadence?: SortOrder
+    historyFingerprint?: SortOrder
+    requestCount?: SortOrder
+    sliceCount?: SortOrder
+    failureCount?: SortOrder
+    maxFailureCount?: SortOrder
+    availableAt?: SortOrder
+    leaseOwnerToken?: SortOrder
+    leaseVersion?: SortOrder
+    leaseAcquiredAt?: SortOrder
+    leaseExpiresAt?: SortOrder
+    lastHeartbeatAt?: SortOrder
+    dependencyJobKey?: SortOrder
+    failureCode?: SortOrder
+    failureReason?: SortOrder
+    requestedAt?: SortOrder
+    startedAt?: SortOrder
+    completedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ForecastPreparationJobSumOrderByAggregateInput = {
+    priority?: SortOrder
+    requestCount?: SortOrder
+    sliceCount?: SortOrder
+    failureCount?: SortOrder
+    maxFailureCount?: SortOrder
+    leaseVersion?: SortOrder
   }
 
   export type BoolFilter<$PrismaModel = never> = {
@@ -26628,7 +28534,7 @@ export namespace Prisma {
     _min?: NestedFloatNullableFilter<$PrismaModel>
     _max?: NestedFloatNullableFilter<$PrismaModel>
   }
-  export type NestedJsonNullableFilter<$PrismaModel = never> = 
+  export type NestedJsonNullableFilter<$PrismaModel = never> =
     | PatchUndefined<
         Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
         Required<NestedJsonNullableFilterBase<$PrismaModel>>
@@ -26710,7 +28616,7 @@ export namespace Prisma {
     _min?: NestedEnumRollingDailyVerificationMaturityStatusFilter<$PrismaModel>
     _max?: NestedEnumRollingDailyVerificationMaturityStatusFilter<$PrismaModel>
   }
-  export type NestedJsonFilter<$PrismaModel = never> = 
+  export type NestedJsonFilter<$PrismaModel = never> =
     | PatchUndefined<
         Either<Required<NestedJsonFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>,
         Required<NestedJsonFilterBase<$PrismaModel>>
@@ -28034,6 +29940,10 @@ export namespace Prisma {
      * @deprecated Use ForecastPreparationExecutionLedgerDefaultArgs instead
      */
     export type ForecastPreparationExecutionLedgerArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ForecastPreparationExecutionLedgerDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ForecastPreparationJobDefaultArgs instead
+     */
+    export type ForecastPreparationJobArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ForecastPreparationJobDefaultArgs<ExtArgs>
     /**
      * @deprecated Use BenchmarkMetadataFacetRecordDefaultArgs instead
      */
