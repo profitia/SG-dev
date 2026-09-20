@@ -110,7 +110,7 @@ export function resolvePmosProjectProfile(params: {
       memorosMode: 'required',
       memorosAuditStatus: 'MEMOROS_REQUIRED',
       memorosEnabled: true,
-      phrRequiredForCloseout: false,
+      phrRequiredForCloseout: true,
     }
   }
 
@@ -133,7 +133,7 @@ export function resolvePmosProjectProfile(params: {
     memorosMode: normalizedMode,
     memorosAuditStatus: normalizedMode === 'disabled' ? 'MEMOROS_DISABLED_BY_PROJECT_PROFILE' : 'MEMOROS_REQUIRED',
     memorosEnabled: normalizedMode !== 'disabled',
-    phrRequiredForCloseout: normalizedMode === 'disabled',
+    phrRequiredForCloseout: true,
   }
 }
 

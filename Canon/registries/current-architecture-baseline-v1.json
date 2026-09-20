@@ -132,6 +132,23 @@
       "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
     },
     {
+      "id": "SG2-BASE-020",
+      "capability": "Governance",
+      "name": "Agent Governance Entrypoints and Enforcement",
+      "pathPatterns": [
+        "AGENTS.md",
+        ".github/copilot-instructions.md",
+        ".github/workflows/governance-preflight.yml",
+        "scripts/governance/**"
+      ],
+      "currentOwner": "Governance Source Layer",
+      "currentResponsibility": "Tool-neutral agent entrypoints, adapters, executable preflight, governance validation, and CI enforcement.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": "SG2-BASE-019",
+      "cleanupReason": null,
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
       "id": "SG2-BASE-014",
       "capability": "PCOS Contracts",
       "name": "PCOS Shared Contracts Package",

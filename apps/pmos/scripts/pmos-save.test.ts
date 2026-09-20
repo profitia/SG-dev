@@ -8,11 +8,12 @@ import test from 'node:test'
 import { CloseoutState } from '../../../packages/governance/src'
 
 import {
+  applyRequiredPhrPublicationOutcome,
   applySrmPhrPublicationOutcome,
   buildConversationArtifactSummary,
   buildPhrPublicationReadyHandoff,
   buildSrmPhrPublicationCandidate,
-  publishOptionalSpendGuruPhrAfterPendingClear,
+  publishRequiredSpendGuruPhrBeforePendingClear,
 } from './pmos-save'
 import { buildPhrPublicationInput, publishPhrPublicationOnCompletedCloseout, writePhrPublicationAttempt } from '../src/lib/pmos/phr-publication'
 import { DEFAULT_PMOS_PROJECT_NAME, resolvePmosProjectProfile } from '../src/lib/pmos/project-profile'
@@ -24,10 +25,13 @@ function runGit(cwd: string, args: string[]) {
   }
 }
 
-function createHistoryLayoutPhrRepo(originRemote: string) {
+function createHistoryLayoutPhrRepo(_originRemote: string) {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'pmos-phr-history-layout-'))
   const repoPath = path.join(tempRoot, 'phr')
+  const originPath = path.join(tempRoot, 'profitia', 'project-history-repository.git')
 
+  fs.mkdirSync(path.dirname(originPath), { recursive: true })
+  runGit(tempRoot, ['init', '--bare', originPath])
   runGit(tempRoot, ['init', repoPath])
   runGit(repoPath, ['config', 'user.email', 'phr-test@example.com'])
   runGit(repoPath, ['config', 'user.name', 'PHR Test'])
@@ -39,6 +43,7 @@ function createHistoryLayoutPhrRepo(originRemote: string) {
   fs.writeFileSync(path.join(repoPath, 'schemas', 'publication-manifest-v1.schema.json'), '{}\n', 'utf8')
   fs.writeFileSync(path.join(repoPath, 'scripts', 'publish-bundle.mjs'), [
     '#!/usr/bin/env node',
+    'import { execFileSync } from "node:child_process"',
     'import fs from "node:fs"',
     'import path from "node:path"',
     'import { createHash } from "node:crypto"',
@@ -62,12 +67,17 @@ function createHistoryLayoutPhrRepo(originRemote: string) {
     '  fs.mkdirSync(historyRoot, { recursive: true })',
     '  fs.writeFileSync(fingerprintPath, JSON.stringify({ fingerprint }, null, 2))',
     '  fs.writeFileSync(manifestPath, JSON.stringify({ fingerprint, publicationId: publication.publicationId }, null, 2))',
-    '  console.log(JSON.stringify({ status: "PUBLISHED", bundlePath: historyRoot, manifestPath, commitSha: "abc123", publicationId: publication.publicationId, taskId: publication.taskId, artifactCount: publication.artifacts.length }))',
+    '  execFileSync("git", ["add", "."], { cwd: process.env.PHR_REPOSITORY_PATH })',
+    '  execFileSync("git", ["commit", "-m", `Publish ${publication.publicationId}`], { cwd: process.env.PHR_REPOSITORY_PATH })',
+    '  execFileSync("git", ["push", "origin", "HEAD:main"], { cwd: process.env.PHR_REPOSITORY_PATH })',
+    '  const commitSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: process.env.PHR_REPOSITORY_PATH, encoding: "utf8" }).trim()',
+    '  console.log(JSON.stringify({ status: "PUBLISHED", bundlePath: historyRoot, manifestPath, commitSha, publicationId: publication.publicationId, taskId: publication.taskId, artifactCount: publication.artifacts.length }))',
     '  process.exit(0)',
     '}',
     'const existing = JSON.parse(fs.readFileSync(fingerprintPath, "utf8")).fingerprint',
     'if (existing === fingerprint) {',
-    '  console.log(JSON.stringify({ status: "IDEMPOTENT", bundlePath: historyRoot, manifestPath, commitSha: "abc123", publicationId: publication.publicationId, taskId: publication.taskId, artifactCount: publication.artifacts.length }))',
+    '  const commitSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: process.env.PHR_REPOSITORY_PATH, encoding: "utf8" }).trim()',
+    '  console.log(JSON.stringify({ status: "IDEMPOTENT", bundlePath: historyRoot, manifestPath, commitSha, publicationId: publication.publicationId, taskId: publication.taskId, artifactCount: publication.artifacts.length }))',
     '  process.exit(0)',
     '}',
     'console.error("Bundle conflict detected for immutable publication input")',
@@ -75,7 +85,9 @@ function createHistoryLayoutPhrRepo(originRemote: string) {
   ].join('\n'), 'utf8')
   runGit(repoPath, ['add', '.'])
   runGit(repoPath, ['commit', '-m', 'init history layout phr'])
-  runGit(repoPath, ['remote', 'add', 'origin', originRemote])
+  runGit(repoPath, ['branch', '-M', 'main'])
+  runGit(repoPath, ['remote', 'add', 'origin', originPath])
+  runGit(repoPath, ['push', '-u', 'origin', 'main'])
 
   return { tempRoot, repoPath }
 }
@@ -237,7 +249,7 @@ function makeSpendGuruFinalizationContext(params?: {
     memorosMode: 'required',
     memorosAuditStatus: 'MEMOROS_REQUIRED',
     phrPublicationStatus: params?.phrPublicationStatus ?? 'NOT_ATTEMPTED',
-    phrRequiredForCompletion: false,
+    phrRequiredForCompletion: true,
   } as never
 }
 
@@ -263,10 +275,10 @@ test('SRM bundle passed to PHR is already canonical and gated', () => {
   assert.equal(candidate.handoff.createdAt, '2026-09-14T09:00:00.000Z')
 })
 
-test('SpendGuru publishes one optional PHR handoff only after pending clear and preserves final success', () => {
+test('SpendGuru keeps pending occupied until required PHR publication succeeds', () => {
   const artifact = makeSpendGuruArtifact()
   const spendGuruProfile = resolvePmosProjectProfile({ projectName: DEFAULT_PMOS_PROJECT_NAME })
-  const statuses = ['PUBLISHED', 'IDEMPOTENT', 'FAILED', 'FAILED_RETRYABLE'] as const
+  const statuses = ['PUBLISHED', 'IDEMPOTENT'] as const
 
   for (const status of statuses) {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), `pmos-spendguru-${status.toLowerCase()}-`))
@@ -282,10 +294,9 @@ test('SpendGuru publishes one optional PHR handoff only after pending clear and 
       handoffPublicationCompletedAt: '2026-09-14T09:03:00.000Z',
     } as never
 
-    const phaseOrder: string[] = ['memoros-succeeded']
     let publisherCalls = 0
 
-    const optionalPhr = publishOptionalSpendGuruPhrAfterPendingClear({
+    const requiredPhr = publishRequiredSpendGuruPhrBeforePendingClear({
       pendingArtifactPath,
       artifact,
       closeout: evidence,
@@ -296,15 +307,11 @@ test('SpendGuru publishes one optional PHR handoff only after pending clear and 
       projectProfile: spendGuruProfile,
       publicationArtifact: makeSpendGuruFinalizationContext().publicationArtifact,
       publicationAck: makeSpendGuruFinalizationContext().publicationAck,
-      clearPendingArtifact: (targetPath) => {
-        phaseOrder.push('pending-cleared')
-        fs.unlinkSync(targetPath)
-      },
       publishPhr: (params) => {
         publisherCalls += 1
-        phaseOrder.push('phr-published')
-        assert.equal(fs.existsSync(pendingArtifactPath), false)
-        assert.equal(params.handoff?.payload.currentState.includes('PENDING_ARTIFACT_SLOT_FINAL = CLEAR'), true)
+        assert.equal(fs.existsSync(pendingArtifactPath), true)
+        assert.equal(params.handoff?.payload.currentState.includes('PENDING_ARTIFACT_SLOT_FINAL = OCCUPIED'), true)
+        assert.equal(params.handoff?.payload.currentState.includes('PHR_PUBLICATION_POSTCONDITION = SATISFIED_ON_PUBLISHER_SUCCESS'), true)
         assert.equal(params.handoff?.payload.currentState.includes('FINAL_VERDICT = PASS'), true)
         assert.equal(params.handoff?.payload.currentState.includes('MEMOROS Publication: SUCCEEDED'), true)
         return {
@@ -312,7 +319,7 @@ test('SpendGuru publishes one optional PHR handoff only after pending clear and 
           attemptedAt: '2026-09-14T09:03:30.000Z',
           result: {
             status,
-            retryable: status === 'FAILED_RETRYABLE',
+            retryable: false,
             bundlePath: null,
             manifestPath: null,
             commitSha: null,
@@ -320,7 +327,7 @@ test('SpendGuru publishes one optional PHR handoff only after pending clear and 
             taskId: artifact.metadata.taskId,
             artifactCount: 5,
             repositoryPath: '/tmp/phr',
-            error: status.startsWith('FAILED') ? 'optional downstream failure' : null,
+            error: null,
           },
         }
       },
@@ -339,11 +346,17 @@ test('SpendGuru publishes one optional PHR handoff only after pending clear and 
     })
     const finalSummary = buildConversationArtifactSummary(artifact, evidence, finalContext)
 
-    assert.deepEqual(phaseOrder, ['memoros-succeeded', 'pending-cleared', 'phr-published'])
-    assert.equal(fs.existsSync(pendingArtifactPath), false)
-    assert.equal(optionalPhr.handoffForPublication.payload.currentState.includes('PENDING_ARTIFACT_SLOT_FINAL = CLEAR'), true)
-    assert.equal(optionalPhr.publication.attempted, true)
-    assert.equal(optionalPhr.publication.result?.status, status)
+    const outcome = applyRequiredPhrPublicationOutcome({
+      evidence,
+      publication: { status, error: null },
+      projectName: spendGuruProfile.projectName,
+    })
+
+    assert.equal(fs.existsSync(pendingArtifactPath), true)
+    assert.equal(requiredPhr.handoffForPublication.payload.currentState.includes('PENDING_ARTIFACT_SLOT_FINAL = OCCUPIED'), true)
+    assert.equal(requiredPhr.publication.attempted, true)
+    assert.equal(requiredPhr.publication.result?.status, status)
+    assert.deepEqual(outcome, { canCompleteTask: true, canClearPending: true })
     assert.equal(publisherCalls, 1)
     assert.equal(finalHandoff.payload.currentState.includes('PENDING_ARTIFACT_SLOT_FINAL = CLEAR'), true)
     assert.equal(finalSummary.includes('PENDING_ARTIFACT_SLOT_FINAL = CLEAR'), true)
@@ -353,7 +366,55 @@ test('SpendGuru publishes one optional PHR handoff only after pending clear and 
   }
 
   assert.equal(spendGuruProfile.memorosEnabled, true)
-  assert.equal(spendGuruProfile.phrRequiredForCloseout, false)
+  assert.equal(spendGuruProfile.phrRequiredForCloseout, true)
+})
+
+test('SpendGuru required PHR failure retains pending and marks recovery required', () => {
+  const artifact = makeSpendGuruArtifact()
+  const evidence = makeEvidence()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pmos-spendguru-required-failure-'))
+  const pendingArtifactPath = path.join(tempDir, 'pending-artifact.json')
+  fs.writeFileSync(pendingArtifactPath, '{"pending":true}\n', 'utf8')
+
+  const publication = publishRequiredSpendGuruPhrBeforePendingClear({
+    pendingArtifactPath,
+    artifact,
+    closeout: evidence,
+    closeoutRef: 'apps/pmos/.pmos/recovery/closeouts/test.closeout.json',
+    conversationArtifactPath: 'apps/pmos/.pmos/conversations/test.json',
+    sidecarPath: path.join(tempDir, 'phr-sidecar.json'),
+    repositoryPath: '/tmp/phr',
+    projectProfile: resolvePmosProjectProfile({ projectName: DEFAULT_PMOS_PROJECT_NAME }),
+    publishPhr: () => ({
+      attempted: true,
+      attemptedAt: '2026-09-14T09:03:30.000Z',
+      result: {
+        status: 'FAILED_RETRYABLE',
+        retryable: true,
+        bundlePath: null,
+        manifestPath: null,
+        commitSha: null,
+        publicationId: artifact.metadata.taskId,
+        taskId: artifact.metadata.taskId,
+        artifactCount: 5,
+        repositoryPath: '/tmp/phr',
+        error: 'non-fast-forward after bounded retry',
+      },
+    }),
+  })
+  const outcome = applyRequiredPhrPublicationOutcome({
+    evidence,
+    publication: {
+      status: publication.publication.result?.status ?? 'FAILED',
+      error: publication.publication.result?.error ?? null,
+    },
+    projectName: DEFAULT_PMOS_PROJECT_NAME,
+  })
+
+  assert.equal(fs.existsSync(pendingArtifactPath), true)
+  assert.deepEqual(outcome, { canCompleteTask: false, canClearPending: false })
+  assert.equal(evidence.recoveryRequired, true)
+  assert.equal(evidence.stateHistory.includes(CloseoutState.RECOVERY_REQUIRED), true)
 })
 
 test('PUBLISHED gives final SRM summary and handoff state with PASS and pending CLEAR', () => {
