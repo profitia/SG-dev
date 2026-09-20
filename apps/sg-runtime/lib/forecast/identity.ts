@@ -6,6 +6,7 @@ import type {
 } from '@/lib/forecast/cadence'
 import { normalizeForecastSourceFrequency } from '@/lib/forecast/cadence'
 import { getPeriodForecastTrainingPolicyVersion } from '@/lib/forecast/period-forecast-policy'
+import { ADAPTIVE_HISTORICAL_VERIFICATION_ORIGIN_POLICY_VERSION } from '@/lib/forecast/historical-verification-origin-policy'
 
 export const FORECAST_TARGET_SEMANTICS = [
   'END_OF_PERIOD',
@@ -362,6 +363,10 @@ function buildEffectiveTrainingPolicyId(
   const policyVersionPart = context.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
     ? []
     : [`periodPolicy=${getPeriodForecastTrainingPolicyVersion()}`]
+  const verificationOriginPolicyPart = policyFamily === 'FULL_EXPANDING_HISTORY_PER_ORIGIN'
+    && context.targetSemantics !== 'ROLLING_DAILY_POINT_IN_TIME'
+    ? [`originPolicy=${ADAPTIVE_HISTORICAL_VERIFICATION_ORIGIN_POLICY_VERSION}`]
+    : []
 
   return [
     `${policyFamily}@${FORECAST_EFFECTIVE_TRAINING_POLICY_ID_VERSION}`,
@@ -369,6 +374,7 @@ function buildEffectiveTrainingPolicyId(
     `target=${context.targetCadence}`,
     `semantics=${context.targetSemantics}`,
     ...policyVersionPart,
+    ...verificationOriginPolicyPart,
   ].join('|')
 }
 

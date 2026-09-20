@@ -97,6 +97,10 @@ import {
   type ForecastTargetSemantics,
 } from '@/lib/forecast/identity'
 import {
+  MINIMUM_ADAPTIVE_HISTORICAL_VERIFICATION_ORIGINS,
+  PREFERRED_HISTORICAL_VERIFICATION_ORIGIN_START_DATE,
+} from '@/lib/forecast/historical-verification-origin-policy'
+import {
   buildCurrentForecastExecutionPlan,
   buildCurrentHorizonConfigurationId,
   loadLiveForecastBridgePayload,
@@ -164,6 +168,7 @@ export type ForecastServiceRequest = {
     expectedHistoryFingerprint: string
   }
   historicalOriginStartDate?: string
+  minimumVerificationOrigins?: number
   lastProcessedOriginDate?: string | null
   maxOriginsPerRun?: number
   signal?: AbortSignal
@@ -171,7 +176,7 @@ export type ForecastServiceRequest = {
 
 type ForecastVerificationExecutionOptions = Pick<
   ForecastServiceRequest,
-  'historicalOriginStartDate' | 'lastProcessedOriginDate' | 'maxOriginsPerRun'
+  'historicalOriginStartDate' | 'minimumVerificationOrigins' | 'lastProcessedOriginDate' | 'maxOriginsPerRun'
 >
 
 const RECENT_VERIFICATION_MAX_ORIGINS = 1
@@ -1310,6 +1315,21 @@ function isAppendOnlyCompatibleVerificationArtifact(
     return false
   }
 
+  if (artifact.targetSemantics !== 'ROLLING_DAILY_POINT_IN_TIME') {
+    const longestHorizon = Object.values(artifact.verification)
+      .sort((left, right) => right.horizonSteps - left.horizonSteps)[0]
+    const earliestLongestHorizonOrigin = [
+      ...(longestHorizon?.records ?? []).map((record) => record.forecastOrigin),
+      ...(longestHorizon?.failures ?? []).map((failure) => failure.forecastOrigin),
+    ].sort()[0]
+    if (
+      !earliestLongestHorizonOrigin
+      || earliestLongestHorizonOrigin.slice(0, 10) < PREFERRED_HISTORICAL_VERIFICATION_ORIGIN_START_DATE
+    ) {
+      return false
+    }
+  }
+
   const historyPrefix = buildVerificationHistoryPrefix(history, artifact)
   if (!historyPrefix) {
     return false
@@ -2370,6 +2390,10 @@ function buildVerificationBridgeArgs(options: ForecastVerificationExecutionOptio
     args.push('--historical-origin-start-date', options.historicalOriginStartDate)
   }
 
+  if (options.minimumVerificationOrigins != null) {
+    args.push('--minimum-verification-origins', String(options.minimumVerificationOrigins))
+  }
+
   if (options.lastProcessedOriginDate) {
     args.push('--last-processed-origin-date', options.lastProcessedOriginDate)
   }
@@ -2648,6 +2672,7 @@ function createDefaultBridge(): ForecastBridge {
         input.modelId,
         {
           historicalOriginStartDate: input.historicalOriginStartDate,
+          minimumVerificationOrigins: input.minimumVerificationOrigins,
           lastProcessedOriginDate: input.lastProcessedOriginDate,
           maxOriginsPerRun: input.maxOriginsPerRun,
         },
@@ -5026,6 +5051,15 @@ export function createForecastLibraryService(
     },
 
     async resolveVerificationRequest(input: ForecastServiceRequest): Promise<BenchmarkForecastVerificationResult> {
+      if (input.targetBasis !== 'POINT_IN_TIME') {
+        input = {
+          ...input,
+          historicalOriginStartDate: input.historicalOriginStartDate
+            ?? PREFERRED_HISTORICAL_VERIFICATION_ORIGIN_START_DATE,
+          minimumVerificationOrigins: input.minimumVerificationOrigins
+            ?? MINIMUM_ADAPTIVE_HISTORICAL_VERIFICATION_ORIGINS,
+        }
+      }
       const startedAt = performance.now()
       const cadenceContext = resolveArtifactCadenceContext(input)
       const preparedExecutionContext = await resolvedDependencies.bridge.prepareExecutionContext?.({
@@ -5479,6 +5513,7 @@ export function createForecastLibraryService(
               const verificationResponse = preparedExecutionContext
                 ? await preparedExecutionContext.exportVerification(input.modelId, {
                     historicalOriginStartDate: input.historicalOriginStartDate,
+                    minimumVerificationOrigins: input.minimumVerificationOrigins,
                     lastProcessedOriginDate: resumeFromOriginDate,
                     maxOriginsPerRun: input.maxOriginsPerRun,
                   })

@@ -237,7 +237,13 @@ Origins must advance through lawful eligible observations in the declared cadenc
 
 If all available lawful eligible origins still fall below the approved minimum, preparation must use the available cohort and report limited-sample status truthfully. It must not create synthetic origins, interpolate, forward-fill, or derive the fallback floor by hardcoded calendar-year subtraction.
 
-No numeric `MIN_BACKTEST_ORIGINS` value is frozen by this section. The value `24` remains a design candidate pending evidence-backed approval and must not be treated as a production constant.
+The approved adaptive minimum is:
+
+```text
+MIN_BACKTEST_ORIGINS = 24
+```
+
+The minimum is evaluated against the longest configured verification horizon. If fewer than 24 lawful origins remain at or after the preferred floor, the effective floor moves backward only far enough to admit the latest 24 lawful origins for that longest horizon. Shorter horizons use the same effective floor. If fewer than 24 lawful origins exist in total, all lawful origins are used and limited-sample status remains explicit.
 
 ## 6. Shared Metric Definitions
 

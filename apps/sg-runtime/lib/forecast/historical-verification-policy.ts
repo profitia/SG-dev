@@ -5,9 +5,10 @@ import type {
   HistoricalVerificationHorizonSummary,
   HistoricalVerificationSummary,
 } from '@/lib/forecast/contracts'
+import { MINIMUM_ADAPTIVE_HISTORICAL_VERIFICATION_ORIGINS } from '@/lib/forecast/historical-verification-origin-policy'
 
 export const HISTORICAL_VERIFICATION_CONTRACT_VERSION = 'HISTORICAL_VERIFICATION_V2' as const
-export const MIN_HISTORICAL_VERIFICATION_ORIGINS = 24
+export const MIN_HISTORICAL_VERIFICATION_ORIGINS = MINIMUM_ADAPTIVE_HISTORICAL_VERIFICATION_ORIGINS
 export const FORECAST_VERIFICATION_QUALITY_POLICY_VERSION = 'FORECAST_VERIFICATION_QUALITY_V1' as const
 
 function clamp(value: number, minimum: number, maximum: number) {

@@ -13,6 +13,10 @@ import {
   resolveBenchmarkForecastVerification,
   resolveBenchmarkRecentForecastVerification,
 } from '@/lib/forecast/service'
+import {
+  MINIMUM_ADAPTIVE_HISTORICAL_VERIFICATION_ORIGINS,
+  PREFERRED_HISTORICAL_VERIFICATION_ORIGIN_START_DATE,
+} from '@/lib/forecast/historical-verification-origin-policy'
 
 export const OPERATIONAL_FORECAST_TARGETS = [
   'END_OF_PERIOD',
@@ -182,6 +186,12 @@ export function createForecastProductionOperationsService(
             targetBasis,
             sourceFrequency: capability?.sourceFrequency ?? undefined,
             targetCadence: capability?.targetCadence ?? undefined,
+            ...(verificationScope === 'FULL'
+              ? {
+                  historicalOriginStartDate: PREFERRED_HISTORICAL_VERIFICATION_ORIGIN_START_DATE,
+                  minimumVerificationOrigins: MINIMUM_ADAPTIVE_HISTORICAL_VERIFICATION_ORIGINS,
+                }
+              : {}),
             maxOriginsPerRun: request.maxOriginsPerRun,
           })
           const historicalPersisted = historical.status === 'AVAILABLE'

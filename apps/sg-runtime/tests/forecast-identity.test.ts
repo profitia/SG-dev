@@ -30,6 +30,7 @@ import {
   ROLLING_DAILY_VERIFICATION_CONFIGURATION_ID,
   resolveVerificationConfigurationId,
 } from '../lib/forecast/verification-single-flight'
+import { ADAPTIVE_HISTORICAL_VERIFICATION_ORIGIN_POLICY_VERSION } from '../lib/forecast/historical-verification-origin-policy'
 
 const MONTHLY_AVERAGE_POLICY_CONTEXT = {
   sourceFrequency: 'MONTHLY',
@@ -190,10 +191,20 @@ test('statistical compatibility keeps Current, Recent Verification, and Full Ver
   assert.notEqual(current.effectiveTrainingPolicyId, full.effectiveTrainingPolicyId)
   assert.equal(current.effectiveTrainingPolicyId.includes('periodPolicy=ADAPTIVE_SHORT_HISTORY_V1'), true)
   assert.equal(full.effectiveTrainingPolicyId.includes('periodPolicy=ADAPTIVE_SHORT_HISTORY_V1'), true)
+  assert.equal(full.effectiveTrainingPolicyId.includes(`originPolicy=${ADAPTIVE_HISTORICAL_VERIFICATION_ORIGIN_POLICY_VERSION}`), true)
   assert.equal(areForecastStatisticalCompatibilitiesEqual(current, current), true)
   assert.equal(areForecastStatisticalCompatibilitiesEqual(current, full), false)
   assert.equal(doesForecastArtifactSatisfyRequest(full, full), true)
   assert.equal(doesForecastArtifactSatisfyRequest(full, recent), false)
+})
+
+test('adaptive Full Verification origin policy changes period identity without invalidating Rolling Daily identity', () => {
+  const period = createFullVerificationStatisticalCompatibility(MONTHLY_AVERAGE_POLICY_CONTEXT)
+  const rollingDaily = createFullVerificationStatisticalCompatibility(DAILY_POINT_IN_TIME_POLICY_CONTEXT)
+
+  assert.equal(period.effectiveTrainingPolicyId.includes('originPolicy=ADAPTIVE_PREFERRED_2024_MINIMUM_24'), true)
+  assert.equal(rollingDaily.effectiveTrainingPolicyId.includes('originPolicy='), false)
+  assert.equal(rollingDaily.trainingWindowPolicyId, FULL_VERIFICATION_TRAINING_WINDOW_POLICY_ID)
 })
 
 test('adaptive short-history policy version separates legacy and current exact identities', () => {

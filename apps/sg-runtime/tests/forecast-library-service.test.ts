@@ -3333,6 +3333,7 @@ test('forecast library verification path backfills END_OF_PERIOD actualObservedA
 
 test('forecast library verification path forwards bounded execution options to the direct bridge', async () => {
   let capturedHistoricalOriginStartDate: string | undefined
+  let capturedMinimumVerificationOrigins: number | undefined
   let capturedLastProcessedOriginDate: string | null | undefined
   let capturedMaxOriginsPerRun: number | undefined
 
@@ -3346,6 +3347,7 @@ test('forecast library verification path forwards bounded execution options to t
     },
     async exportVerification(input) {
       capturedHistoricalOriginStartDate = input.historicalOriginStartDate
+      capturedMinimumVerificationOrigins = input.minimumVerificationOrigins
       capturedLastProcessedOriginDate = input.lastProcessedOriginDate
       capturedMaxOriginsPerRun = input.maxOriginsPerRun
       return createEndOfPeriodVerificationResponse()
@@ -3371,18 +3373,21 @@ test('forecast library verification path forwards bounded execution options to t
     modelId: 'ets',
     targetBasis: 'END_OF_PERIOD',
     historicalOriginStartDate: '2021-01-01',
+    minimumVerificationOrigins: 24,
     lastProcessedOriginDate: '2024-12-01',
     maxOriginsPerRun: 5,
   })
 
   assert.equal(result.status, 'AVAILABLE')
   assert.equal(capturedHistoricalOriginStartDate, '2021-01-01')
+  assert.equal(capturedMinimumVerificationOrigins, 24)
   assert.equal(capturedLastProcessedOriginDate, '2024-12-01')
   assert.equal(capturedMaxOriginsPerRun, 5)
 })
 
 test('forecast library verification path forwards bounded execution options to the prepared execution context', async () => {
   let verificationHistoricalOriginStartDate: string | undefined
+  let verificationMinimumVerificationOrigins: number | undefined
   let verificationLastProcessedOriginDate: string | null | undefined
   let verificationMaxOriginsPerRun: number | undefined
 
@@ -3397,6 +3402,7 @@ test('forecast library verification path forwards bounded execution options to t
         },
         async exportVerification(_modelId, options) {
           verificationHistoricalOriginStartDate = options?.historicalOriginStartDate
+          verificationMinimumVerificationOrigins = options?.minimumVerificationOrigins
           verificationLastProcessedOriginDate = options?.lastProcessedOriginDate
           verificationMaxOriginsPerRun = options?.maxOriginsPerRun
           return createEndOfPeriodVerificationResponse()
@@ -3433,12 +3439,14 @@ test('forecast library verification path forwards bounded execution options to t
     modelId: 'ets',
     targetBasis: 'END_OF_PERIOD',
     historicalOriginStartDate: '2021-01-01',
+    minimumVerificationOrigins: 24,
     lastProcessedOriginDate: '2024-12-01',
     maxOriginsPerRun: 3,
   })
 
   assert.equal(result.status, 'AVAILABLE')
   assert.equal(verificationHistoricalOriginStartDate, '2021-01-01')
+  assert.equal(verificationMinimumVerificationOrigins, 24)
   assert.equal(verificationLastProcessedOriginDate, '2024-12-01')
   assert.equal(verificationMaxOriginsPerRun, 3)
 })
