@@ -56,12 +56,12 @@ test('configured project and workspace default safely', () => {
   assert.equal(getConfiguredPmosWorkspaceName(makeEnv({ PMOS_WORKSPACE_NAME: 'sg dev codespaces srm' })), 'SG-dev Codespaces SRM')
 })
 
-test('missing PMOS_MEMOROS_MODE defaults to required and preserves SpendGuru behavior', () => {
+test('missing PMOS_MEMOROS_MODE defaults to required and requires PHR for SpendGuru governance v2', () => {
   const profile = resolvePmosProjectProfile({ projectName: 'SpendGuru 2.0' })
 
   assert.equal(profile.memorosMode, 'required')
   assert.equal(profile.memorosEnabled, true)
-  assert.equal(profile.phrRequiredForCloseout, false)
+  assert.equal(profile.phrRequiredForCloseout, true)
   assert.equal(profile.memorosAuditStatus, 'MEMOROS_REQUIRED')
 })
 
@@ -102,12 +102,13 @@ test('disabled Memoros mode is rejected for SpendGuru and unknown mode fails clo
   )
 })
 
-test('SRM closeout requires successful PHR without Memoros while required mode does not tighten PHR gate', () => {
+test('both SRM and SpendGuru closeout require successful PHR', () => {
   const srmProfile = resolvePmosProjectProfile({ projectName: 'SRM', memorosMode: 'disabled' })
   const sgProfile = resolvePmosProjectProfile({ projectName: 'SpendGuru 2.0', memorosMode: 'required' })
 
   assert.equal(isPhrSatisfiedForCloseout(srmProfile, 'FAILED'), false)
   assert.equal(isPhrSatisfiedForCloseout(srmProfile, 'PUBLISHED'), true)
   assert.equal(isPhrSatisfiedForCloseout(srmProfile, 'IDEMPOTENT'), true)
-  assert.equal(isPhrSatisfiedForCloseout(sgProfile, 'FAILED'), true)
+  assert.equal(isPhrSatisfiedForCloseout(sgProfile, 'FAILED'), false)
+  assert.equal(isPhrSatisfiedForCloseout(sgProfile, 'PUBLISHED'), true)
 })

@@ -2130,6 +2130,55 @@ export function publishOptionalSpendGuruPhrAfterPendingClear(params: {
   }
 }
 
+export function publishRequiredSpendGuruPhrBeforePendingClear(params: Omit<Parameters<typeof publishOptionalSpendGuruPhrAfterPendingClear>[0], 'clearPendingArtifact'>): ReturnType<typeof publishOptionalSpendGuruPhrAfterPendingClear> {
+  const publishPhr = params.publishPhr ?? publishPhrPublicationOnCompletedCloseout
+  const handoffForPublication = buildPhrPublicationReadyHandoff({
+    artifact: params.artifact,
+    closeout: params.closeout,
+    closeoutRef: params.closeoutRef,
+    finalizationContext: buildHandoffFinalizationContext({
+      profile: params.projectProfile,
+      publicationArtifact: params.publicationArtifact ?? null,
+      publicationAck: params.publicationAck ?? null,
+      pendingArtifactSlotFinal: 'OCCUPIED',
+      phrPublicationStatus: 'NOT_ATTEMPTED',
+      phrPublicationPostcondition: 'SATISFIED_ON_PUBLISHER_SUCCESS',
+    }),
+    createdAt: params.closeout.closeoutCompletedAt ?? params.closeout.handoffPublicationCompletedAt ?? params.artifact.metadata.timestamp,
+  })
+  return {
+    handoffForPublication,
+    publication: publishPhr({
+      artifact: params.artifact,
+      handoff: handoffForPublication,
+      closeout: params.closeout,
+      closeoutRef: params.closeoutRef,
+      conversationArtifactPath: params.conversationArtifactPath,
+      sidecarPath: params.sidecarPath,
+      repositoryPath: params.repositoryPath,
+    }),
+  }
+}
+
+export function applyRequiredPhrPublicationOutcome(params: {
+  evidence: CloseoutEvidence
+  publication: { status: PhrPublicationResult['status']; error: string | null }
+  projectName: string
+}): { canCompleteTask: boolean; canClearPending: boolean } {
+  if (isSuccessfulPhrPublicationStatus(params.publication.status)) {
+    return { canCompleteTask: true, canClearPending: true }
+  }
+  params.evidence.recoveryRequired = true
+  params.evidence.recoveryReason = `PHR publication is mandatory for ${params.projectName} closeout and did not succeed.`
+  params.evidence.manualRecoveryInstructions = [
+    'Resolve the retryable PHR publication failure and rerun canonical closeout.',
+    'Do not clear pending-artifact.json or report task completion.',
+  ]
+  appendState(params.evidence, CloseoutState.CLOSEOUT_PARTIAL)
+  appendState(params.evidence, CloseoutState.RECOVERY_REQUIRED)
+  return { canCompleteTask: false, canClearPending: false }
+}
+
 export function applySrmPhrPublicationOutcome(params: {
   evidence: CloseoutEvidence
   publication: { status: PhrPublicationResult['status']; error: string | null }
@@ -2336,10 +2385,10 @@ async function refreshPersistedHandoffForCompletedTask(taskId: string): Promise<
     throw new Error(`Task ${taskId} does not have a delivered MEMOROS publication artifact.`)
   }
 
-  const phrPublicationStatus = profile.memorosEnabled
-    ? 'NOT_ATTEMPTED'
-    : readSuccessfulPhrPublicationStatusFromSidecar(path.join(PHR_PUBLICATIONS_DIR, `${baseName}.json`))
-  if (!profile.memorosEnabled && !phrPublicationStatus) {
+  const phrPublicationStatus = readSuccessfulPhrPublicationStatusFromSidecar(
+    path.join(PHR_PUBLICATIONS_DIR, `${baseName}.json`),
+  )
+  if (profile.phrRequiredForCloseout && !phrPublicationStatus) {
     throw new Error(`Task ${taskId} does not have a successful PHR publication sidecar.`)
   }
 
@@ -2349,7 +2398,7 @@ async function refreshPersistedHandoffForCompletedTask(taskId: string): Promise<
     pendingArtifactSlotFinal: fs.existsSync(PENDING_FILE) ? 'OCCUPIED' : 'CLEAR',
     memorosMode: profile.memorosMode,
     memorosAuditStatus: profile.memorosAuditStatus,
-    phrPublicationStatus,
+    phrPublicationStatus: phrPublicationStatus ?? 'NOT_ATTEMPTED',
     phrRequiredForCompletion: profile.phrRequiredForCloseout,
   }
 
@@ -2768,6 +2817,33 @@ async function main() {
     throw new Error('Pending artifact payload is empty.')
   }
   artifact = normalizePendingArtifact(artifact)
+  const projectProfile = resolveArtifactProjectProfile(artifact)
+  const executionRegistration = await prisma.promptExecution.findUnique({
+    where: { taskId: artifact.metadata.taskId },
+    select: {
+      id: true,
+      conversationId: true,
+      project: true,
+      status: true,
+    },
+  })
+  if (!executionRegistration) {
+    throw new Error(`PMOS_BEGIN_GATE failed: no pmos:begin registration exists for task ${artifact.metadata.taskId}.`)
+  }
+  if (executionRegistration.conversationId !== artifact.metadata.conversationId) {
+    throw new Error(`PMOS_BEGIN_GATE failed: conversation identity does not match task ${artifact.metadata.taskId}.`)
+  }
+  if (normalizePmosProjectName(executionRegistration.project ?? '') !== projectProfile.projectName) {
+    throw new Error(`PMOS_BEGIN_GATE failed: project identity does not match task ${artifact.metadata.taskId}.`)
+  }
+  if (!['queued', 'running'].includes(executionRegistration.status)) {
+    throw new Error(`PMOS_BEGIN_GATE failed: registration status ${executionRegistration.status} cannot enter closeout.`)
+  }
+  artifact.contextLinks = {
+    ...(artifact.contextLinks ?? {}),
+    promptExecutionIds: [...new Set([...(artifact.contextLinks?.promptExecutionIds ?? []), executionRegistration.id])],
+  }
+
   const normalizedPendingArtifactPayload = createCanonicalFlightRecordPayload(artifact)
   const canonicalizationErrors = validateCanonicalizedMetadata(artifact)
   baseName = buildArtifactBaseName(artifact)
@@ -2781,7 +2857,7 @@ async function main() {
 
   console.log(`[pmos-save] Artifact: ${artifact.metadata.conversationId}`)
   console.log(`[pmos-save] Task: ${artifact.metadata.taskId}`)
-  const projectProfile = resolveArtifactProjectProfile(artifact)
+  console.log(`[pmos-save] PMOS begin registration: ${executionRegistration.id}`)
   console.log(`[pmos-save] Project: ${projectProfile.projectName}`)
   console.log(`[pmos-save] MEMOROS mode: ${projectProfile.memorosMode}`)
   const legacyPlanningContext = readLegacyPlanningContext(artifact.metadata as Record<string, unknown>)
@@ -2799,6 +2875,11 @@ async function main() {
 
   if (orphanReplayDetected) {
     fs.unlinkSync(PENDING_FILE)
+    await prisma.promptExecution.update({
+      where: { id: executionRegistration.id },
+      data: { status: 'completed', completedAt: new Date() },
+      select: { id: true },
+    })
     console.log('[pmos-save] ✓ Reconciled orphaned pending-artifact from completed closeout evidence')
     console.log('[pmos-save] ✓ Cleared pending-artifact.json')
     releaseAdvisoryLock()
@@ -3396,9 +3477,8 @@ async function main() {
 
   canonicalFlightRecordPayload = createCanonicalFlightRecordPayload(artifact)
 
-  let spendGuruOptionalPhrReadyHandoff: GptHandoffArtifactV1 | null = null
   if (projectProfile.memorosEnabled) {
-    const spendGuruOptionalPhr = publishOptionalSpendGuruPhrAfterPendingClear({
+    const spendGuruRequiredPhr = publishRequiredSpendGuruPhrBeforePendingClear({
       pendingArtifactPath: PENDING_FILE,
       artifact: canonicalFlightRecordPayload,
       closeout: evidence,
@@ -3410,8 +3490,20 @@ async function main() {
       publicationArtifact: memorosPublication?.publicationArtifact ?? null,
       publicationAck: memorosPublication?.ack ?? null,
     })
-    spendGuruOptionalPhrReadyHandoff = spendGuruOptionalPhr.handoffForPublication
-    phrPublicationResult = spendGuruOptionalPhr.publication
+    phrPublicationResult = spendGuruRequiredPhr.publication
+    const publicationOutcome = applyRequiredPhrPublicationOutcome({
+      evidence,
+      publication: {
+        status: phrPublicationResult.result?.status ?? 'FAILED',
+        error: phrPublicationResult.result?.error ?? 'PHR publication did not return a completion result.',
+      },
+      projectName: projectProfile.projectName,
+    })
+    if (!publicationOutcome.canCompleteTask) {
+      writeJson(closeoutEvidencePath, evidence)
+      throw new Error(evidence.recoveryReason ?? 'Required PHR publication failed.')
+    }
+    fs.unlinkSync(PENDING_FILE)
   } else {
     fs.unlinkSync(PENDING_FILE)
   }
@@ -3485,6 +3577,19 @@ async function main() {
     },
     status: ExecutionTrailEventStatus.SUCCEEDED,
     source: 'pmos-save/handoff',
+  })
+
+  await prisma.promptExecution.update({
+    where: { id: executionRegistration.id },
+    data: {
+      status: 'completed',
+      completedAt: new Date(),
+      executionSummary: artifact.analysis.executionSummary,
+      changedFiles: [...new Set([...artifact.actions.artifactsCreated, ...artifact.actions.artifactsModified])],
+      blockers: artifact.findings.blockers.join('\n') || null,
+      nextSteps: artifact.actions.recommendations.join('\n') || null,
+    },
+    select: { id: true },
   })
 
   if (fs.existsSync(ACTIVE_CLOSEOUT_FILE)) {

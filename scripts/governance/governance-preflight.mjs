@@ -1,0 +1,133 @@
+#!/usr/bin/env node
+
+import { spawnSync } from 'node:child_process'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { validateGovernanceManifest } from './validate-governance-manifest.mjs'
+
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+
+function parseArgs(argv) {
+  const result = { mode: 'development', targets: [], legacyExceptions: [], json: false, ci: false, offline: false, allowDirty: false, requireBegin: false, skipRuntime: false, checkEstate: false }
+  for (let index = 0; index < argv.length; index += 1) {
+    const key = argv[index]
+    if (key === '--target') result.targets.push(argv[++index])
+    else if (key === '--legacy-exception') result.legacyExceptions.push(argv[++index])
+    else if (key === '--json') result.json = true
+    else if (key === '--ci') { result.ci = true; result.offline = true; result.skipRuntime = true }
+    else if (key === '--offline') result.offline = true
+    else if (key === '--allow-dirty') result.allowDirty = true
+    else if (key === '--require-begin') result.requireBegin = true
+    else if (key === '--skip-pmos-runtime') result.skipRuntime = true
+    else if (key === '--check-estate') result.checkEstate = true
+    else if (key.startsWith('--')) result[key.slice(2).replaceAll('-', '_')] = argv[++index]
+    else throw new Error(`Unexpected argument: ${key}`)
+  }
+  return result
+}
+
+function run(command, args, cwd = repositoryRoot, env = process.env) {
+  const result = spawnSync(command, args, { cwd, env, encoding: 'utf8' })
+  return { ok: result.status === 0, status: result.status, stdout: result.stdout?.trim() ?? '', stderr: result.stderr?.trim() ?? '' }
+}
+
+function gate(status, details) {
+  return { status, details: Array.isArray(details) ? details : [details] }
+}
+
+function requiredInput(args, name) {
+  return typeof args[name] === 'string' && args[name].trim().length > 0
+}
+
+function resolveRouting(targets) {
+  if (targets.length === 0) return { ok: false, results: [], error: 'At least one exact --target is required for development mode.' }
+  const resolution = run(process.execPath, ['scripts/architecture-classify.mjs', '--json', ...targets])
+  if (!resolution.ok) return { ok: false, results: [], error: resolution.stderr || resolution.stdout }
+  try {
+    const parsed = JSON.parse(resolution.stdout)
+    return { ok: Boolean(parsed.registryValid && parsed.summary?.allPathsResolved), results: parsed.results ?? [], error: null }
+  } catch (error) {
+    return { ok: false, results: [], error: `Routing resolver returned invalid JSON: ${error.message}` }
+  }
+}
+
+export function runGovernancePreflight(args) {
+  const gates = {}
+  const manifest = validateGovernanceManifest(repositoryRoot)
+  gates.GOVERNANCE_MANIFEST_GATE = manifest.valid ? gate('PASS', `${manifest.activeDocuments.length} active documents validated.`) : gate('BLOCKED', manifest.errors)
+
+  const remote = run('git', ['remote', 'get-url', 'origin'])
+  const topLevel = run('git', ['rev-parse', '--show-toplevel'])
+  const repositoryMatches = remote.ok && /profitia\/SG-dev(?:\.git)?$/i.test(remote.stdout) && topLevel.ok && path.resolve(topLevel.stdout) === repositoryRoot
+  gates.REPOSITORY_GATE = repositoryMatches
+    ? gate('PASS', [`origin=${remote.stdout}`, `root=${topLevel.stdout}`])
+    : gate('BLOCKED', [`origin=${remote.stdout || '<missing>'}`, `root=${topLevel.stdout || '<missing>'}`])
+
+  if (!args.offline) run('git', ['fetch', '--quiet', 'origin', 'main'])
+  const branch = run('git', ['branch', '--show-current'])
+  const head = run('git', ['rev-parse', 'HEAD'])
+  const originMain = run('git', ['rev-parse', 'origin/main'])
+  const ancestry = head.ok && originMain.ok ? run('git', ['merge-base', '--is-ancestor', originMain.stdout, head.stdout]) : { ok: false }
+  const status = run('git', ['status', '--porcelain'])
+  const dirtyAccepted = status.ok && (status.stdout === '' || args.allowDirty)
+  gates.CODE_STATE_GATE = head.ok && originMain.ok && ancestry.ok && dirtyAccepted
+    ? gate(status.stdout === '' ? 'PASS' : 'WARNING', [`branch=${branch.stdout || '<detached>'}`, `HEAD=${head.stdout}`, `origin/main=${originMain.stdout}`, `dirty=${status.stdout !== ''}`])
+    : gate('BLOCKED', [`branch=${branch.stdout || '<detached>'}`, `HEAD=${head.stdout || '<missing>'}`, `origin/main=${originMain.stdout || '<missing>'}`, `dirty=${status.stdout !== ''}`])
+
+  const requiredNames = ['task_id', 'conversation_id', 'title', 'project', 'workspace', 'execution_environment', 'scope']
+  const missing = requiredNames.filter((name) => !requiredInput(args, name))
+  if (args.mode === 'development' && args.targets.length === 0) missing.push('target')
+  gates.TASK_INPUT_GATE = missing.length === 0 ? gate('PASS', `task=${args.task_id}`) : gate('BLOCKED', `Missing inputs: ${missing.join(', ')}`)
+
+  const routing = resolveRouting(args.targets)
+  const legacyWithoutException = routing.results.filter((entry) => entry.baselineClassification === 'LEGACY' && !args.legacyExceptions.includes(entry.normalizedPath))
+  gates.ROUTING_GATE = routing.ok && legacyWithoutException.length === 0
+    ? gate('PASS', routing.results.map((entry) => `${entry.normalizedPath} -> ${entry.currentOwner} / ${entry.baselineClassification}`))
+    : gate('BLOCKED', [routing.error ?? '', ...legacyWithoutException.map((entry) => `Legacy target requires explicit exception: ${entry.normalizedPath}`)].filter(Boolean))
+
+  if (args.skipRuntime) {
+    gates.PMOS_RUNTIME_GATE = gate('NOT_APPLICABLE', args.ci ? 'Live PMOS runtime verification is not available in CI.' : 'Explicitly skipped for this invocation.')
+  } else {
+    const runtime = run('npm', ['run', 'pmos:verify-runtime'], path.join(repositoryRoot, 'apps', 'pmos'))
+    gates.PMOS_RUNTIME_GATE = runtime.ok ? gate('PASS', 'Current PMOS runtime verification passed.') : gate('BLOCKED', runtime.stderr || runtime.stdout)
+  }
+
+  if (args.requireBegin) {
+    const begin = run('npm', ['run', 'pmos:begin', '--', '--check-task-id', args.task_id], path.join(repositoryRoot, 'apps', 'pmos'))
+    gates.PMOS_BEGIN_GATE = begin.ok ? gate('PASS', `Registered task ${args.task_id}.`) : gate('BLOCKED', begin.stderr || begin.stdout)
+  } else {
+    gates.PMOS_BEGIN_GATE = gate('PASS', 'READY_TO_REGISTER — run pmos:begin before implementation, then rerun with --require-begin.')
+  }
+
+  if (args.checkEstate) {
+    const estate = run('npm', ['run', 'recovery:check-archive'], path.join(repositoryRoot, 'apps', 'pmos'))
+    gates.PMOS_ESTATE_GATE = estate.ok ? gate('PASS', 'Historical estate verification passed.') : gate('WARNING', estate.stderr || estate.stdout)
+  } else {
+    gates.PMOS_ESTATE_GATE = gate('NOT_APPLICABLE', 'Historical estate audit was not requested; it is independent of runtime readiness.')
+  }
+
+  const blockingGates = Object.entries(gates).filter(([, value]) => value.status === 'BLOCKED').map(([name]) => name)
+  return {
+    schemaVersion: '2.0',
+    mode: args.mode,
+    repositoryRoot,
+    gates,
+    verdict: blockingGates.length === 0 ? 'PASS' : 'BLOCKED',
+    blockingGates,
+  }
+}
+
+const isDirectExecution = process.argv[1] && import.meta.url === new URL(`file://${path.resolve(process.argv[1])}`).href
+if (isDirectExecution) {
+  try {
+    const args = parseArgs(process.argv.slice(2))
+    const result = runGovernancePreflight(args)
+    console.log(JSON.stringify(result, null, 2))
+    if (result.verdict !== 'PASS') process.exitCode = 1
+  } catch (error) {
+    console.error(JSON.stringify({ schemaVersion: '2.0', verdict: 'BLOCKED', error: error.message }, null, 2))
+    process.exitCode = 1
+  }
+}

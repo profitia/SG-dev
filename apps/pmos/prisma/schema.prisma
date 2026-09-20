@@ -332,6 +332,16 @@ model DecisionPrinciple {
 model PromptExecution {
   id                  String        @id @default(cuid())
   title               String
+  taskId              String?       @unique @map("task_id")
+  conversationId      String?       @unique @map("conversation_id")
+  project             String?
+  workspace           String?
+  executionEnvironment String?      @map("execution_environment")
+  scope               String?
+  declaredTargetPaths String[]      @default([]) @map("declared_target_paths")
+  gateSnapshot        Json?         @map("gate_snapshot")
+  startedAt           DateTime?     @map("started_at")
+  completedAt         DateTime?     @map("completed_at")
   etap                String?
   subetap             String?
   node                String?

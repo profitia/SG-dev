@@ -86,7 +86,12 @@ export function isSuccessfulPhrPublicationStatus(status: PhrPublicationResult['s
 }
 
 function classifyPublicationFailure(message: string): Pick<PhrPublicationResult, 'status' | 'retryable'> {
-  if (message.includes('not configured') || message.includes('unavailable')) {
+  if (
+    message.includes('not configured')
+    || message.includes('unavailable')
+    || message.includes('[RETRYABLE]')
+    || /non-fast-forward|fetch first|failed to push some refs/i.test(message)
+  ) {
     return { status: 'FAILED_RETRYABLE', retryable: true }
   }
 
@@ -182,6 +187,28 @@ export function validatePhrRepositoryPath(repositoryPath: string): PhrRepository
       repositoryPath: resolvedPath,
       originUrl: origin.stdout,
       error: `PHR repository is missing canonical files: ${missingFiles.join(', ')}`,
+    }
+  }
+
+  const branch = runGitCommand(resolvedPath, ['branch', '--show-current'])
+  if (!branch.ok || branch.stdout !== 'main') {
+    return {
+      ok: false,
+      retryable: false,
+      repositoryPath: resolvedPath,
+      originUrl: origin.stdout,
+      error: `PHR repository must be on branch main; current branch is ${branch.stdout || '<detached>'}.`,
+    }
+  }
+
+  const status = runGitCommand(resolvedPath, ['status', '--porcelain'])
+  if (!status.ok || status.stdout !== '') {
+    return {
+      ok: false,
+      retryable: true,
+      repositoryPath: resolvedPath,
+      originUrl: origin.stdout,
+      error: 'PHR repository must be clean before publication.',
     }
   }
 
@@ -485,12 +512,44 @@ export function writePhrPublicationAttempt(params: {
       artifactCount?: number
     }
 
+    const commitSha = parsed.commitSha ?? null
+    if (!commitSha) {
+      return {
+        status: 'FAILED_RETRYABLE',
+        retryable: true,
+        bundlePath: parsed.bundlePath ?? null,
+        manifestPath: parsed.manifestPath ?? null,
+        commitSha: null,
+        publicationId: parsed.publicationId ?? params.publication.publicationId,
+        taskId: parsed.taskId ?? params.publication.taskId,
+        artifactCount: parsed.artifactCount ?? params.publication.artifacts.length,
+        repositoryPath: repositoryValidation.repositoryPath,
+        error: 'PHR publisher did not return a publication commit SHA.',
+      }
+    }
+    runGitCommand(repositoryValidation.repositoryPath ?? params.repositoryPath, ['fetch', 'origin', 'main'])
+    const reachability = runGitCommand(repositoryValidation.repositoryPath ?? params.repositoryPath, ['merge-base', '--is-ancestor', commitSha, 'origin/main'])
+    if (!reachability.ok) {
+      return {
+        status: 'FAILED_RETRYABLE',
+        retryable: true,
+        bundlePath: parsed.bundlePath ?? null,
+        manifestPath: parsed.manifestPath ?? null,
+        commitSha,
+        publicationId: parsed.publicationId ?? params.publication.publicationId,
+        taskId: parsed.taskId ?? params.publication.taskId,
+        artifactCount: parsed.artifactCount ?? params.publication.artifacts.length,
+        repositoryPath: repositoryValidation.repositoryPath,
+        error: `PHR publication commit ${commitSha} is not reachable from origin/main.`,
+      }
+    }
+
     return {
       status: parsed.status === 'IDEMPOTENT' ? 'IDEMPOTENT' : 'PUBLISHED',
       retryable: false,
       bundlePath: parsed.bundlePath ?? null,
       manifestPath: parsed.manifestPath ?? null,
-      commitSha: parsed.commitSha ?? null,
+      commitSha,
       publicationId: parsed.publicationId ?? params.publication.publicationId,
       taskId: parsed.taskId ?? params.publication.taskId,
       artifactCount: parsed.artifactCount ?? params.publication.artifacts.length,

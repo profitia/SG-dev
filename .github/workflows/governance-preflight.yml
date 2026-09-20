@@ -1,0 +1,67 @@
+name: Governance preflight
+
+on:
+  pull_request:
+    paths:
+      - 'AGENTS.md'
+      - '.github/copilot-instructions.md'
+      - '.github/workflows/governance-preflight.yml'
+      - 'Canon/**'
+      - 'scripts/governance/**'
+      - 'apps/pmos/**'
+  push:
+    branches: [main]
+    paths:
+      - 'AGENTS.md'
+      - '.github/copilot-instructions.md'
+      - '.github/workflows/governance-preflight.yml'
+      - 'Canon/**'
+      - 'scripts/governance/**'
+      - 'apps/pmos/**'
+
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate governance manifest
+        run: node scripts/governance/validate-governance-manifest.mjs
+      - name: Test governance validators
+        run: node --test scripts/governance/governance.test.mjs
+      - name: Install PMOS dependencies
+        working-directory: apps/pmos
+        run: npm ci
+      - name: Generate PMOS database client
+        working-directory: apps/pmos
+        run: npm run db:generate
+      - name: Type-check PMOS
+        working-directory: apps/pmos
+        run: npm run typecheck
+      - name: Test PMOS lifecycle and PHR gates
+        working-directory: apps/pmos
+        run: >-
+          node_modules/.bin/tsx --test
+          src/lib/pmos/execution-registration.test.ts
+          src/lib/pmos/project-profile.test.ts
+          src/lib/pmos/phr-publication.test.ts
+          scripts/pmos-save.test.ts
+      - name: Run repository governance gate
+        run: >-
+          node scripts/governance/governance-preflight.mjs
+          --ci
+          --mode development
+          --task-id CI-GOVERNANCE-PREFLIGHT
+          --conversation-id CI-GOVERNANCE-PREFLIGHT
+          --title "Governance CI"
+          --project "SpendGuru 2.0"
+          --workspace "GitHub Actions"
+          --execution-environment ci
+          --scope governance
+          --target AGENTS.md
+          --target Canon/v2.0-mandatory-agent-execution-canon.md
+          --target scripts/governance/governance-preflight.mjs

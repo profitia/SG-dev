@@ -46,10 +46,13 @@ function createTempPhrRepo(originRemote: string) {
   return { tempRoot, repoPath }
 }
 
-function createReplayableTempPhrRepo(originRemote: string) {
+function createReplayableTempPhrRepo(_originRemote: string) {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'pmos-phr-replay-'))
   const repoPath = path.join(tempRoot, 'phr')
+  const originPath = path.join(tempRoot, 'profitia', 'project-history-repository.git')
 
+  fs.mkdirSync(path.dirname(originPath), { recursive: true })
+  runGit(tempRoot, ['init', '--bare', originPath])
   runGit(tempRoot, ['init', repoPath])
   runGit(repoPath, ['config', 'user.email', 'phr-test@example.com'])
   runGit(repoPath, ['config', 'user.name', 'PHR Test'])
@@ -61,6 +64,7 @@ function createReplayableTempPhrRepo(originRemote: string) {
   fs.writeFileSync(path.join(repoPath, 'schemas', 'publication-manifest-v1.schema.json'), '{}\n', 'utf8')
   fs.writeFileSync(path.join(repoPath, 'scripts', 'publish-bundle.mjs'), [
     '#!/usr/bin/env node',
+    'import { execFileSync } from "node:child_process"',
     'import fs from "node:fs"',
     'import path from "node:path"',
     'import { createHash } from "node:crypto"',
@@ -87,12 +91,17 @@ function createReplayableTempPhrRepo(originRemote: string) {
     '  fs.mkdirSync(historyRoot, { recursive: true })',
     '  fs.writeFileSync(fingerprintPath, JSON.stringify({ fingerprint }, null, 2))',
     '  fs.writeFileSync(manifestPath, JSON.stringify({ fingerprint, publicationId: publication.publicationId }, null, 2))',
-    '  console.log(JSON.stringify({ status: "PUBLISHED", bundlePath: historyRoot, manifestPath, commitSha: "abc123", publicationId: publication.publicationId, taskId: publication.taskId, artifactCount: publication.artifacts.length }))',
+    '  execFileSync("git", ["add", "."], { cwd: process.env.PHR_REPOSITORY_PATH })',
+    '  execFileSync("git", ["commit", "-m", `Publish ${publication.publicationId}`], { cwd: process.env.PHR_REPOSITORY_PATH })',
+    '  execFileSync("git", ["push", "origin", "HEAD:main"], { cwd: process.env.PHR_REPOSITORY_PATH })',
+    '  const commitSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: process.env.PHR_REPOSITORY_PATH, encoding: "utf8" }).trim()',
+    '  console.log(JSON.stringify({ status: "PUBLISHED", bundlePath: historyRoot, manifestPath, commitSha, publicationId: publication.publicationId, taskId: publication.taskId, artifactCount: publication.artifacts.length }))',
     '  process.exit(0)',
     '}',
     'const existing = JSON.parse(fs.readFileSync(fingerprintPath, "utf8")).fingerprint',
     'if (existing === fingerprint) {',
-    '  console.log(JSON.stringify({ status: "IDEMPOTENT", bundlePath: historyRoot, manifestPath, commitSha: "abc123", publicationId: publication.publicationId, taskId: publication.taskId, artifactCount: publication.artifacts.length }))',
+    '  const commitSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: process.env.PHR_REPOSITORY_PATH, encoding: "utf8" }).trim()',
+    '  console.log(JSON.stringify({ status: "IDEMPOTENT", bundlePath: historyRoot, manifestPath, commitSha, publicationId: publication.publicationId, taskId: publication.taskId, artifactCount: publication.artifacts.length }))',
     '  process.exit(0)',
     '}',
     'console.error("Bundle conflict detected for handoff.md")',
@@ -100,7 +109,9 @@ function createReplayableTempPhrRepo(originRemote: string) {
   ].join('\n'), 'utf8')
   runGit(repoPath, ['add', '.'])
   runGit(repoPath, ['commit', '-m', 'init replayable phr'])
-  runGit(repoPath, ['remote', 'add', 'origin', originRemote])
+  runGit(repoPath, ['branch', '-M', 'main'])
+  runGit(repoPath, ['remote', 'add', 'origin', originPath])
+  runGit(repoPath, ['push', '-u', 'origin', 'main'])
 
   return { tempRoot, repoPath }
 }

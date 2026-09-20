@@ -1,0 +1,98 @@
+{
+  "schemaVersion": "2.0",
+  "manifestVersion": "2.0.0",
+  "owner": "SG2 Governance Source Layer",
+  "entrypoint": "AGENTS.md",
+  "preflight": "scripts/governance/governance-preflight.mjs",
+  "validation": {
+    "failClosed": true,
+    "rejectMissing": true,
+    "rejectDuplicateId": true,
+    "rejectActiveDependencyOnSuperseded": true,
+    "requireOrderedActiveDocuments": true
+  },
+  "documents": [
+    {
+      "id": "agent-execution-canon",
+      "version": "2.0",
+      "path": "Canon/v2.0-mandatory-agent-execution-canon.md",
+      "status": "ACTIVE",
+      "loadOrder": 10,
+      "owner": "SG2 Governance Source Layer",
+      "dependsOn": []
+    },
+    {
+      "id": "current-architecture-development",
+      "version": "1.0",
+      "path": "Canon/v1.0-current-architecture-development-canon.md",
+      "status": "ACTIVE",
+      "loadOrder": 20,
+      "owner": "SG2 Architecture Governance",
+      "dependsOn": ["agent-execution-canon"]
+    },
+    {
+      "id": "post-migration-classification",
+      "version": "1.0",
+      "path": "Canon/v1.0-post-migration-architecture-state-and-change-classification-canon.md",
+      "status": "ACTIVE",
+      "loadOrder": 30,
+      "owner": "SG2 Architecture Governance",
+      "dependsOn": ["current-architecture-development"]
+    },
+    {
+      "id": "repository-routing",
+      "version": "1.0",
+      "path": "Canon/v1.0-repository-routing-and-module-ownership-canon.md",
+      "status": "ACTIVE",
+      "loadOrder": 40,
+      "owner": "SG2 Architecture Governance",
+      "dependsOn": ["current-architecture-development"]
+    },
+    {
+      "id": "routing-guard",
+      "version": "1.0",
+      "path": "Canon/v1.0-mandatory-canonical-routing-guard-wrapper.md",
+      "status": "ACTIVE",
+      "loadOrder": 50,
+      "owner": "SG2 Architecture Governance",
+      "dependsOn": ["repository-routing", "post-migration-classification"]
+    },
+    {
+      "id": "architecture-baseline",
+      "version": "1.0",
+      "path": "Canon/registries/current-architecture-baseline-v1.json",
+      "status": "ACTIVE",
+      "loadOrder": 60,
+      "owner": "SG2 Architecture Governance",
+      "dependsOn": ["repository-routing"]
+    },
+    {
+      "id": "developer-lifecycle",
+      "version": "1.0",
+      "path": "Canon/v1.0-developer-lifecycle-specification.md",
+      "status": "ACTIVE",
+      "loadOrder": 70,
+      "owner": "SG2 Governance Source Layer",
+      "dependsOn": ["agent-execution-canon"]
+    },
+    {
+      "id": "srm-execution-adapter",
+      "version": "1.0",
+      "path": "Canon/v1.0-srm-mandatory-task-wrapper.md",
+      "status": "ACTIVE_ADAPTER",
+      "loadOrder": 80,
+      "owner": "SRM Runtime",
+      "dependsOn": ["agent-execution-canon"]
+    },
+    {
+      "id": "vsc-execution-canon",
+      "version": "1.0",
+      "path": "Canon/v1.0-vsc-mandatory-execution-canon.md",
+      "status": "SUPERSEDED",
+      "loadOrder": null,
+      "owner": "SG2 Governance Source Layer",
+      "dependsOn": [],
+      "supersededBy": "agent-execution-canon"
+    }
+  ]
+}
