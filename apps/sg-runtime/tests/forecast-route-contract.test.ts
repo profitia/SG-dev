@@ -11,7 +11,10 @@ import {
   createInternalProductionForecastRouteHandler,
   resolvePreparedForecastVerification,
 } from '../lib/forecast/route-handlers'
-import { createInteractiveForecastPreparationService } from '../lib/forecast/interactive-preparation'
+import {
+  createInteractiveForecastPreparationService,
+  isPreparedVerificationAvailable,
+} from '../lib/forecast/interactive-preparation'
 import {
   createInternalCurrentForecastPreparationRouteHandler,
   createInternalForecastCapabilityRouteHandler,
@@ -44,6 +47,35 @@ import type { ForecastCapabilityResolution, ForecastVariantCapability } from '..
 function buildRequest(url: string, headers: Record<string, string> = {}) {
   return new NextRequest(url, { headers })
 }
+
+test('zero-comparison prepared verification is not reported as ready', () => {
+  assert.equal(isPreparedVerificationAvailable({
+    status: 'AVAILABLE',
+    historicalVerification: {
+      contractVersion: 'HISTORICAL_VERIFICATION_V2',
+      status: 'INSUFFICIENT_HISTORY',
+      originCount: 0,
+      expectedOriginCount: 0,
+      failedOriginCount: 0,
+      pendingOriginCount: 0,
+      coverage: 0,
+      horizons: {},
+    },
+  } as never), false)
+  assert.equal(isPreparedVerificationAvailable({
+    status: 'AVAILABLE',
+    historicalVerification: {
+      contractVersion: 'HISTORICAL_VERIFICATION_V2',
+      status: 'LIMITED_SAMPLE',
+      originCount: 3,
+      expectedOriginCount: 3,
+      failedOriginCount: 0,
+      pendingOriginCount: 0,
+      coverage: 1,
+      horizons: {},
+    },
+  } as never), true)
+})
 
 function buildUserRequest(url: string, headers: Record<string, string> = {}) {
   return buildRequest(url, {
