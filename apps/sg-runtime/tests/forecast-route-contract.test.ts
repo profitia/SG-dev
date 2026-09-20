@@ -520,6 +520,41 @@ test('interactive readiness snapshot reuses prepared-state metadata without rere
   assert.ok(snapshot.variants.every((variant) => variant.recentVerificationReadiness === 'READY'))
 })
 
+test('interactive readiness snapshot does not project zero-origin prepared metadata as ready', async () => {
+  const candidates = buildSeriesCapabilityCandidates()
+  const zeroOrigin = candidates[0]
+  if (!zeroOrigin) throw new Error('Expected a capability fixture.')
+
+  const service = createInteractiveForecastPreparationService({
+    resolveCapabilitiesBySeriesId: async () => buildCapabilityResolution({
+      capabilities: [{
+        ...zeroOrigin,
+        verificationOriginCount: 0,
+        verificationEvidenceState: 'NOT_AVAILABLE',
+        predictionBandResidualCount: 0,
+        predictionBandState: 'NOT_AVAILABLE',
+        currentPreparedState: 'READY',
+        historicalPreparedState: 'READY',
+        capabilityState: 'AVAILABLE',
+      }],
+    }),
+  })
+
+  const snapshot = await service.readinessSnapshotBySeriesId('wocaes0074')
+  const variant = snapshot.variants.find((candidate) => (
+    candidate.modelId === zeroOrigin.identity.modelId
+    && candidate.targetSemantics === zeroOrigin.identity.targetSemantics
+  ))
+
+  assert.equal(variant?.currentReadiness, 'READY')
+  assert.equal(variant?.recentVerificationReadiness, 'NOT_PREPARED')
+  assert.equal(variant?.fullVerificationReadiness, 'NOT_PREPARED')
+  assert.equal(variant?.readiness.fastReady, false)
+  assert.equal(variant?.readiness.fullReady, false)
+  assert.ok(variant?.readiness.blockers.includes('RECENT_PARTIAL'))
+  assert.ok(variant?.readiness.blockers.includes('FULL_HISTORICAL_PARTIAL'))
+})
+
 test('interactive capability snapshot preserves exact interactive semantics for the same variant', async () => {
   const capabilityResolution = buildCapabilityResolution({
     sourceMetadata: {
