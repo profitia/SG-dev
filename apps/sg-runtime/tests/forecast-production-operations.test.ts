@@ -4,6 +4,10 @@ import test from 'node:test'
 import { createCurrentForecastStatisticalCompatibility } from '../lib/forecast/identity'
 import { resolveForecastCapabilities } from '../lib/forecast/capability-resolver'
 import { createForecastProductionOperationsService } from '../lib/forecast/production-operations'
+import {
+  MINIMUM_ADAPTIVE_HISTORICAL_VERIFICATION_ORIGINS,
+  PREFERRED_HISTORICAL_VERIFICATION_ORIGIN_START_DATE,
+} from '../lib/forecast/historical-verification-origin-policy'
 
 function capabilityResolution(seriesId: string) {
   return {
@@ -78,6 +82,7 @@ function available(targetBasis: 'END_OF_PERIOD' | 'MONTHLY_AVERAGE', modelId: st
 
 test('generic operations prepare all selected monthly current variants before optional historical evidence', async () => {
   const calls: string[] = []
+  const originPolicies: Array<{ start: string | undefined, minimum: number | undefined }> = []
   let capabilityCalls = 0
   const service = createForecastProductionOperationsService({
     async resolveCapabilities(seriesId) {
@@ -90,6 +95,10 @@ test('generic operations prepare all selected monthly current variants before op
     },
     async prepareMonthlyHistorical(input) {
       calls.push(`historical:${input.targetBasis}:${input.modelId}`)
+      originPolicies.push({
+        start: input.historicalOriginStartDate,
+        minimum: input.minimumVerificationOrigins,
+      })
       return { ...available(input.targetBasis as 'END_OF_PERIOD' | 'MONTHLY_AVERAGE', input.modelId, 'miss'), verification: {} } as never
     },
     async prepareMonthlyRecentVerification() {
@@ -119,6 +128,10 @@ test('generic operations prepare all selected monthly current variants before op
     'historical:MONTHLY_AVERAGE:naive',
     'historical:MONTHLY_AVERAGE:arima',
   ])
+  assert.deepEqual(originPolicies, Array.from({ length: 4 }, () => ({
+    start: PREFERRED_HISTORICAL_VERIFICATION_ORIGIN_START_DATE,
+    minimum: MINIMUM_ADAPTIVE_HISTORICAL_VERIFICATION_ORIGINS,
+  })))
   assert.ok(result.results.every((item) => item.current === 'READY'))
   assert.ok(result.results.every((item) => item.historical === 'READY'))
   assert.equal(result.verificationScope, 'FULL')

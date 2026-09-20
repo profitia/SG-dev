@@ -23,6 +23,7 @@ import {
 } from '@/lib/forecast/rolling-daily-maintenance'
 import { selectTrailingRollingDailyCurrentHistory } from '@/lib/forecast/rolling-daily-current-ownership'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
+import { ADAPTIVE_HISTORICAL_VERIFICATION_ORIGIN_POLICY_VERSION } from '@/lib/forecast/historical-verification-origin-policy'
 
 export const FORECAST_PREPARATION_JOB_KINDS = ['CURRENT', 'VERIFICATION'] as const
 export const FORECAST_PREPARATION_JOB_STATUSES = [
@@ -101,15 +102,26 @@ function requirePrisma(prisma?: PrismaClient | null) {
   return resolved
 }
 
-function jobKey(input: {
+export function buildForecastPreparationJobKey(input: {
   kind: ForecastPreparationJobKind
   seriesId: string
   targetSemantics: string
   modelId: string
   historyFingerprint: string
 }) {
+  const identityParts = [
+    'PPF1_DURABLE_QUEUE_V1',
+    input.kind,
+    input.seriesId,
+    input.targetSemantics,
+    input.modelId,
+    input.historyFingerprint,
+  ]
+  if (input.kind === 'VERIFICATION' && input.targetSemantics !== 'ROLLING_DAILY_POINT_IN_TIME') {
+    identityParts.push(ADAPTIVE_HISTORICAL_VERIFICATION_ORIGIN_POLICY_VERSION)
+  }
   return createHash('sha256')
-    .update(['PPF1_DURABLE_QUEUE_V1', input.kind, input.seriesId, input.targetSemantics, input.modelId, input.historyFingerprint].join('|'))
+    .update(identityParts.join('|'))
     .digest('hex')
 }
 
@@ -212,7 +224,7 @@ async function upsertJob(
   authority: ForecastPreparedReadAuthority,
   dependencyJobKey: string | null,
 ) {
-  const key = jobKey({
+  const key = buildForecastPreparationJobKey({
     kind: input.kind,
     seriesId: input.seriesId,
     targetSemantics: input.targetSemantics,

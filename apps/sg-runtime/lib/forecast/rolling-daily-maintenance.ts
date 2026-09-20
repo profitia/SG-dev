@@ -9,6 +9,7 @@ import { promisify } from 'node:util'
 import { Prisma } from '@/generated/market-data-client'
 import { serverEnv } from '@/lib/env'
 import type { ForecastTargetBasis } from '@/lib/forecast/contracts'
+import { PREFERRED_HISTORICAL_VERIFICATION_ORIGIN_START_DATE } from '@/lib/forecast/historical-verification-origin-policy'
 import {
   createDefaultForecastPreparationExecutionAdmission,
   createDefaultForecastPreparationExecutionLedger,
@@ -61,7 +62,7 @@ export const ROLLING_DAILY_INPUT_SOURCE = 'DYNAMIC_MARKET_DATA_STORE'
 export const ROLLING_DAILY_VERIFICATION_IDENTITY_VERSION = 'ROLLING_DAILY_VERIFICATION_IDENTITY_V2'
 export const DEFAULT_ROLLING_DAILY_MINIMUM_TRAINING_OBSERVATIONS = ROLLING_DAILY_TECHNICAL_MINIMUM_TRAINING_OBSERVATIONS
 export const DEFAULT_ROLLING_DAILY_MINIMUM_CALIBRATION_SAMPLES = ROLLING_DAILY_CONFIGURED_CALIBRATION_MINIMUM_SAMPLES
-export const DEFAULT_ROLLING_DAILY_HISTORICAL_ORIGIN_START_DATE = '2024-01-01'
+export const DEFAULT_ROLLING_DAILY_HISTORICAL_ORIGIN_START_DATE = PREFERRED_HISTORICAL_VERIFICATION_ORIGIN_START_DATE
 export const ROLLING_DAILY_REBUILD_REQUIRED_REASON = 'SOURCE_HISTORY_REVISION_DETECTED'
 
 export type RollingDailyHistoricalTraceMode = 'basic' | 'detailed'

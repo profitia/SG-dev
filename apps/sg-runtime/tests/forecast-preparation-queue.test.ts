@@ -1,14 +1,25 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 import type { ForecastPreparationJob } from '@/generated/market-data-client'
 import {
   ForecastPreparationCommandSchema,
+  buildForecastPreparationJobKey,
   createForecastPreparationWorker,
   type ClaimedForecastPreparationJob,
   type ForecastPreparationQueueService,
 } from '@/lib/forecast/preparation-queue'
+
+function legacyJobKey(input: {
+  kind: 'CURRENT' | 'VERIFICATION'
+  targetSemantics: string
+}) {
+  return createHash('sha256')
+    .update(['PPF1_DURABLE_QUEUE_V1', input.kind, 'series-1', input.targetSemantics, 'arima', 'history-1'].join('|'))
+    .digest('hex')
+}
 
 test('durable command schema accepts the job kind sent by the Dashboard', () => {
   assert.deepEqual(ForecastPreparationCommandSchema.parse({
@@ -22,6 +33,34 @@ test('durable command schema accepts the job kind sent by the Dashboard', () => 
     modelId: 'arima',
     kind: 'CURRENT',
   })
+})
+
+test('adaptive period verification rotates only the affected durable job identity', () => {
+  const current = buildForecastPreparationJobKey({
+    kind: 'CURRENT',
+    seriesId: 'series-1',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'arima',
+    historyFingerprint: 'history-1',
+  })
+  const rollingDaily = buildForecastPreparationJobKey({
+    kind: 'VERIFICATION',
+    seriesId: 'series-1',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'arima',
+    historyFingerprint: 'history-1',
+  })
+  const periodVerification = buildForecastPreparationJobKey({
+    kind: 'VERIFICATION',
+    seriesId: 'series-1',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'arima',
+    historyFingerprint: 'history-1',
+  })
+
+  assert.equal(current, legacyJobKey({ kind: 'CURRENT', targetSemantics: 'MONTHLY_AVERAGE' }))
+  assert.equal(rollingDaily, legacyJobKey({ kind: 'VERIFICATION', targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME' }))
+  assert.notEqual(periodVerification, legacyJobKey({ kind: 'VERIFICATION', targetSemantics: 'MONTHLY_AVERAGE' }))
 })
 
 function claimedJob(kind: 'CURRENT' | 'VERIFICATION'): ClaimedForecastPreparationJob {

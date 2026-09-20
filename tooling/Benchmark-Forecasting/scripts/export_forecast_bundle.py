@@ -351,6 +351,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model", choices=SUPPORTED_MODEL_IDS, help="Forecast model family id.")
     parser.add_argument("--history-json", help="Path to a pre-canonicalized MONTHLY history payload for live forecast input.")
     parser.add_argument("--historical-origin-start-date", help="Inclusive lower bound for verification forecast origins as an ISO date.")
+    parser.add_argument("--minimum-verification-origins", type=int, help="Minimum lawful cohort for the longest verification horizon; may adapt the effective origin floor backward.")
     parser.add_argument("--last-processed-origin-date", help="Exclusive resume checkpoint for verification forecast origins as an ISO date.")
     parser.add_argument("--max-origins-per-run", type=int, help="Maximum number of verification origins to process in this run.")
     args = parser.parse_args()
@@ -368,9 +369,15 @@ def parse_args() -> argparse.Namespace:
             parser.error("--last-processed-origin-date is only supported when --mode=verification")
         if args.max_origins_per_run is not None:
             parser.error("--max-origins-per-run is only supported when --mode=verification")
+        if args.minimum_verification_origins is not None:
+            parser.error("--minimum-verification-origins is only supported when --mode=verification")
 
     if args.max_origins_per_run is not None and args.max_origins_per_run < 1:
         parser.error("--max-origins-per-run must be >= 1")
+    if args.minimum_verification_origins is not None and args.minimum_verification_origins < 1:
+        parser.error("--minimum-verification-origins must be >= 1")
+    if args.minimum_verification_origins is not None and args.historical_origin_start_date is None:
+        parser.error("--minimum-verification-origins requires --historical-origin-start-date")
 
     return args
 
@@ -501,6 +508,7 @@ def main() -> int:
         result = service.run_benchmark(
             benchmark,
             historical_origin_start_date=parse_optional_cli_date(args.historical_origin_start_date),
+            minimum_verification_origins=args.minimum_verification_origins,
             last_processed_origin_date=parse_optional_cli_date(args.last_processed_origin_date),
             max_origins_per_run=args.max_origins_per_run,
         )
