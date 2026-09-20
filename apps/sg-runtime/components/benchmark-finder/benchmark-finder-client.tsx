@@ -2463,11 +2463,6 @@ export function BenchmarkFinderClient({
                     <div className="mt-4 space-y-4 border-t border-slate-200 pt-4">
                       {previewState.analyticsEligibility.status === 'ready' && previewState.analyticsEligibility.eligible && previewState.analyticsEligibility.analyticsUrl ? (
                         <>
-                          {showPorrDemoPortfolio && !previewState.analyticsEligibility.forecastPortfolioEnabled ? (
-                            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-600" role="status">
-                              {t('portfolio.historyOnlyMessage')}
-                            </div>
-                          ) : null}
                           <iframe
                             key={localizeDashboardPreviewAnalyticsUrl(previewState.analyticsEligibility.analyticsUrl, locale)}
                             title={`${previewState.preview?.displayName ?? candidate.displayName} analytics`}
