@@ -14,6 +14,34 @@ export type ForecastUiVisibleTelemetry = {
   responseToVisibleMs: number | null
 }
 
+export type ForecastActionTelemetryLayer = ForecastUiVisibleTelemetry['layer']
+
+export function buildForecastActionCorrelationKey(
+  layer: ForecastActionTelemetryLayer,
+  identity: Pick<ForecastUiVisibleTelemetry, 'seriesId' | 'modelId' | 'targetBasis'>,
+) {
+  return `${layer}|${identity.seriesId}|${identity.modelId}|${identity.targetBasis}`
+}
+
+export function resolveForecastPollingCorrelation(input: {
+  activeCorrelationId: string | null
+  activeCorrelationKey: string | null
+  currentCorrelationId: string | null
+  currentCorrelationKey: string
+  verificationCorrelationKey: string
+  createCorrelationId: () => string
+}) {
+  const activeMatchesIdentity = input.activeCorrelationKey === input.currentCorrelationKey
+    || input.activeCorrelationKey === input.verificationCorrelationKey
+  if (activeMatchesIdentity && input.activeCorrelationId) {
+    return { correlationId: input.activeCorrelationId, shouldStoreAsCurrent: false }
+  }
+  if (input.currentCorrelationId) {
+    return { correlationId: input.currentCorrelationId, shouldStoreAsCurrent: false }
+  }
+  return { correlationId: input.createCorrelationId(), shouldStoreAsCurrent: true }
+}
+
 function runtimeBaseUrl() {
   return process.env.SG_RUNTIME_BASE_URL?.trim() || LOCAL_SG_RUNTIME_BASE_URL
 }
