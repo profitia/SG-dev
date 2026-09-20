@@ -648,7 +648,10 @@ export function durableSnapshotToProgressiveSnapshot(
   snapshot: DurableForecastPreparationSnapshot,
 ): ProgressiveForecastPreparationSnapshot {
   const currentState = snapshot.current.state === 'UNSUPPORTED'
-    && snapshot.current.reason?.startsWith('No preparation request has been submitted')
+    && (
+      snapshot.current.reason?.startsWith('No preparation request has been submitted')
+      || snapshot.current.reason?.includes('is stale; submit a new preparation request')
+    )
     ? 'NOT_PREPARED'
     : snapshot.current.state === 'PREPARING'
     ? 'PREPARING'
@@ -656,7 +659,10 @@ export function durableSnapshotToProgressiveSnapshot(
       ? 'QUEUED'
       : snapshot.current.state
   const verificationState = snapshot.verification.state === 'UNSUPPORTED'
-    && snapshot.verification.reason?.startsWith('No preparation request has been submitted')
+    && (
+      snapshot.verification.reason?.startsWith('No preparation request has been submitted')
+      || snapshot.verification.reason?.includes('is stale; submit a new preparation request')
+    )
     ? 'NOT_PREPARED'
     : snapshot.verification.state === 'PREPARING'
     ? 'PREPARING'

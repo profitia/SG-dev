@@ -53,7 +53,7 @@ export type RollingDailyProductionOperationsSnapshotResult =
     }
   | {
       status: 'REFRESHED_AFTER_RECOVERY'
-      reason: 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH'
+      reason: 'EXACT_SNAPSHOT_IDENTITY_MISSING' | 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH'
       parityStatus: RollingDailyCurrentForecastSnapshotPersistenceResult['parityStatus']
     }
   | {
@@ -136,7 +136,7 @@ async function refreshSnapshot(
   options: { resolvePersistenceOwnership?: () => Promise<ForecastPersistenceOwnership> },
   trace: RollingDailyHistoricalTraceConfig | null,
   status: 'REFRESHED_AFTER_RECOVERY',
-  reason: 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
+  reason: 'EXACT_SNAPSHOT_IDENTITY_MISSING' | 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
 ): Promise<Extract<RollingDailyProductionOperationsSnapshotResult, { status: 'REFRESHED_AFTER_RECOVERY' }>>
 async function refreshSnapshot(
   resolveCurrentForecast: NonNullable<RollingDailyProductionOperationsDependencies['resolveCurrentForecast']>,
@@ -145,7 +145,7 @@ async function refreshSnapshot(
   options: { resolvePersistenceOwnership?: () => Promise<ForecastPersistenceOwnership> },
   trace: RollingDailyHistoricalTraceConfig | null,
   status: 'REFRESHED_AFTER_MAINTENANCE' | 'REFRESHED_AFTER_RECOVERY',
-  reason: 'MAINTENANCE_DELTA_APPLIED' | 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
+  reason: 'EXACT_SNAPSHOT_IDENTITY_MISSING' | 'MAINTENANCE_DELTA_APPLIED' | 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
 ): Promise<Extract<RollingDailyProductionOperationsSnapshotResult, { status: 'REFRESHED_AFTER_MAINTENANCE' | 'REFRESHED_AFTER_RECOVERY' }>> {
   const refreshStartedAt = performance.now()
   updateForecastRequestDiagnosticsIdentity({
@@ -216,7 +216,7 @@ async function refreshSnapshot(
 
   return {
     status,
-    reason: reason as 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
+    reason: reason as 'EXACT_SNAPSHOT_IDENTITY_MISSING' | 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
     parityStatus: persisted.parityStatus,
   }
 }
