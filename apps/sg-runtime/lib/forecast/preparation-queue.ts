@@ -225,6 +225,24 @@ export function shouldRequeueSucceededPreparationJob(input: {
   return input.jobStatus === 'SUCCEEDED' && input.artifactReadiness !== 'READY'
 }
 
+export function buildSucceededPreparationJobRequeueData(now: Date) {
+  return {
+    status: 'QUEUED' as const,
+    availableAt: now,
+    startedAt: null,
+    completedAt: null,
+    sliceCount: 0,
+    failureCount: 0,
+    leaseOwnerToken: null,
+    leaseAcquiredAt: null,
+    leaseExpiresAt: null,
+    lastHeartbeatAt: null,
+    checkpointJson: Prisma.DbNull,
+    failureCode: null,
+    failureReason: null,
+  }
+}
+
 async function requeueSucceededJobIfArtifactIsMissing(
   prisma: PrismaClient,
   job: ForecastPreparationJob,
@@ -250,14 +268,7 @@ async function requeueSucceededJobIfArtifactIsMissing(
   const now = new Date()
   await prisma.forecastPreparationJob.updateMany({
     where: { id: job.id, status: 'SUCCEEDED' },
-    data: {
-      status: 'QUEUED',
-      availableAt: now,
-      completedAt: null,
-      failureCount: 0,
-      failureCode: null,
-      failureReason: null,
-    },
+    data: buildSucceededPreparationJobRequeueData(now),
   })
   return prisma.forecastPreparationJob.findUniqueOrThrow({ where: { id: job.id } })
 }

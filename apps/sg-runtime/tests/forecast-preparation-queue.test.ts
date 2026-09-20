@@ -3,9 +3,10 @@ import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
-import type { ForecastPreparationJob } from '@/generated/market-data-client'
+import { Prisma, type ForecastPreparationJob } from '@/generated/market-data-client'
 import {
   ForecastPreparationCommandSchema,
+  buildSucceededPreparationJobRequeueData,
   buildForecastPreparationJobKey,
   createForecastPreparationWorker,
   shouldRequeueSucceededPreparationJob,
@@ -30,6 +31,23 @@ test('a succeeded queue record is reopened only when its exact artifact remains 
     jobStatus: 'RUNNING',
     artifactReadiness: 'NOT_PREPARED',
   }), false)
+
+  const now = new Date('2026-09-20T17:04:14.091Z')
+  assert.deepEqual(buildSucceededPreparationJobRequeueData(now), {
+    status: 'QUEUED',
+    availableAt: now,
+    startedAt: null,
+    completedAt: null,
+    sliceCount: 0,
+    failureCount: 0,
+    leaseOwnerToken: null,
+    leaseAcquiredAt: null,
+    leaseExpiresAt: null,
+    lastHeartbeatAt: null,
+    checkpointJson: Prisma.DbNull,
+    failureCode: null,
+    failureReason: null,
+  })
 })
 
 function legacyJobKey(input: {
