@@ -284,8 +284,10 @@ function buildPreparedReadAuthority(
   }
 }
 
-function isPreparedVerificationAvailable(result: BenchmarkForecastVerificationResult) {
-  return result.status === 'AVAILABLE'
+export function isPreparedVerificationAvailable(result: BenchmarkForecastVerificationResult) {
+  if (result.status !== 'AVAILABLE') return false
+  const status = result.historicalVerification?.status
+  return status == null || status === 'AVAILABLE' || status === 'LIMITED_SAMPLE'
 }
 
 function normalizeVerificationReadiness(input: {
@@ -299,6 +301,10 @@ function normalizeVerificationReadiness(input: {
 } {
   if (isPreparedVerificationAvailable(input.result)) {
     return { readiness: 'READY', blockers: [] }
+  }
+
+  if (input.result.status === 'AVAILABLE') {
+    return { readiness: 'NOT_PREPARED', blockers: [input.partial] }
   }
 
   if (input.result.status === 'FAILED') {
