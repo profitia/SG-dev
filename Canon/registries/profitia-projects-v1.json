@@ -12,7 +12,7 @@
       "workspaces": ["SG-dev", "sg2-pcog-runtime"],
       "repository": {"slug": "profitia/SG-dev", "defaultBranch": "main", "routingRegistry": "Canon/registries/current-architecture-baseline-v1.json"},
       "database": {"provider": "neon", "projectId": "lucky-dream-96138453", "databaseName": "neondb", "allowedHosts": ["ep-plain-king-al45f92h.c-3.eu-central-1.aws.neon.tech", "ep-plain-king-al45f92h-pooler.c-3.eu-central-1.aws.neon.tech"]},
-      "continuity": {"pmos": "required", "memoros": "required", "phr": "required"},
+      "continuity": {"pmos": "required", "memoros": "required", "phr": "required", "memorosProjectId": "cmptxz92m000023gjw2r3gbf5"},
       "adapter": "Canon/adapters/sg2-project-adapter-v1.md",
       "status": "ACTIVE"
     },
@@ -23,7 +23,7 @@
       "workspaces": ["SG-dev Codespaces SRM"],
       "repository": {"slug": "profitia/SG-dev", "defaultBranch": "main", "routingRegistry": "Canon/registries/current-architecture-baseline-v1.json"},
       "database": {"provider": "neon", "projectId": "bold-breeze-68888550", "databaseName": "srm_pmos", "allowedHosts": ["ep-dark-frost-b1fmda7e.c-5.eu-central-1.aws.neon.tech", "ep-dark-frost-b1fmda7e-pooler.c-5.eu-central-1.aws.neon.tech"]},
-      "continuity": {"pmos": "required", "memoros": "disabled", "phr": "required"},
+      "continuity": {"pmos": "required", "memoros": "disabled", "phr": "required", "memorosProjectId": null},
       "adapter": "Canon/adapters/srm-project-adapter-v2.md",
       "status": "ACTIVE"
     },
@@ -48,7 +48,7 @@
         ]
       },
       "database": {"provider": "neon", "projectId": "jolly-heart-70236009", "databaseName": "neondb", "allowedHosts": ["ep-tiny-mud-b15mh3kq.c-5.eu-central-1.aws.neon.tech", "ep-tiny-mud-b15mh3kq-pooler.c-5.eu-central-1.aws.neon.tech"]},
-      "continuity": {"pmos": "required", "memoros": "required", "phr": "required"},
+      "continuity": {"pmos": "required", "memoros": "required", "phr": "required", "memorosProjectId": "cmubasxat03t71glbo4x0nhfn"},
       "adapter": "Canon/adapters/cic-project-adapter-v1.md",
       "status": "ACTIVE"
     }

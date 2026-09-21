@@ -95,6 +95,7 @@ import {
   isPhrSatisfiedForCloseout,
   normalizePmosProjectName,
   normalizePmosWorkspaceName,
+  requireCanonicalMemorosProjectId,
   resolvePmosProjectProfile,
   runMemorosPublicationIfEnabled,
   type PmosProjectProfile,
@@ -443,14 +444,18 @@ function normalizeStringList(values: string[]): string[] {
     .filter((value) => value.length > 0)
 }
 
-function getMemorosPublicationTargetSnapshot(): MemorosPublicationTargetSnapshot {
+function getMemorosPublicationTargetSnapshot(profile = resolvePmosProjectProfile({
+  projectName: normalizePmosProjectName(process.env.PMOS_PROJECT_NAME ?? 'SpendGuru 2.0'),
+  workspaceName: getConfiguredPmosWorkspaceName(),
+  memorosMode: process.env.PMOS_MEMOROS_MODE,
+})): MemorosPublicationTargetSnapshot {
   const configuredBaseUrl = normalizeOptionalString(process.env.MEMOROS_API_BASE_URL)
   const baseUrl = configuredBaseUrl ? configuredBaseUrl.replace(/\/+$/, '') : ''
 
   return {
     baseUrl,
     endpoint: baseUrl ? `${baseUrl}${MEMOROS_IMPORT_ROUTE}` : '',
-    projectId: normalizeOptionalString(process.env.MEMOROS_PROJECT_ID) ?? null,
+    projectId: profile.memorosEnabled ? requireCanonicalMemorosProjectId(profile) : null,
   }
 }
 
@@ -465,14 +470,13 @@ function getMemorosPublicationConfigOrThrow(): MemorosPublicationConfig {
     throw new Error('MEMOROS publication is disabled by project profile.')
   }
 
-  const snapshot = getMemorosPublicationTargetSnapshot()
+  const snapshot = getMemorosPublicationTargetSnapshot(profile)
 
   if (!snapshot.baseUrl) {
     throw new Error('MEMOROS_API_BASE_URL is not configured. Publication aborted.')
   }
-
   if (!snapshot.projectId) {
-    throw new Error('MEMOROS_PROJECT_ID is not configured. Publication aborted.')
+    throw new Error(`Canonical MEMOROS project id is unavailable for ${profile.projectKey}. Publication aborted.`)
   }
 
   return {
