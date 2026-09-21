@@ -9,6 +9,8 @@ on:
       - 'Canon/**'
       - 'scripts/governance/**'
       - 'apps/pmos/**'
+      - 'apps/pcos-explorer/**'
+      - 'render.yaml'
   push:
     branches: [main]
     paths:
@@ -18,6 +20,8 @@ on:
       - 'Canon/**'
       - 'scripts/governance/**'
       - 'apps/pmos/**'
+      - 'apps/pcos-explorer/**'
+      - 'render.yaml'
 
 jobs:
   governance:

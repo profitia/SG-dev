@@ -11,6 +11,7 @@ type RegistryProject = {
   projectKey: string
   displayName: string
   aliases: string[]
+  legacyAliases?: string[]
   workspaces: string[]
   repository: { slug: string; defaultBranch: string; routingRegistry: string | null }
   database: { provider: 'neon'; projectId: string; databaseName: string; allowedHosts: string[] }
@@ -47,6 +48,10 @@ function projectIdentifiers(project: RegistryProject): string[] {
   return [project.projectKey, project.displayName, ...project.aliases].map(normalizeLooseIdentifier)
 }
 
+function historicalProjectIdentifiers(project: RegistryProject): string[] {
+  return [...projectIdentifiers(project), ...(project.legacyAliases ?? []).map(normalizeLooseIdentifier)]
+}
+
 export function listActivePmosProjectProfiles(): readonly RegistryProject[] {
   return ACTIVE_PROJECTS
 }
@@ -54,6 +59,11 @@ export function listActivePmosProjectProfiles(): readonly RegistryProject[] {
 export function findPmosProjectProfile(projectIdentity: string): RegistryProject | null {
   const key = normalizeLooseIdentifier(projectIdentity)
   return ACTIVE_PROJECTS.find((project) => projectIdentifiers(project).includes(key)) ?? null
+}
+
+export function findHistoricalPmosProjectProfile(projectIdentity: string): RegistryProject | null {
+  const key = normalizeLooseIdentifier(projectIdentity)
+  return ACTIVE_PROJECTS.find((project) => historicalProjectIdentifiers(project).includes(key)) ?? null
 }
 
 export function requirePmosProjectProfile(projectIdentity: string): RegistryProject {
@@ -69,6 +79,11 @@ export const CANONICAL_PMOS_WORKSPACE_NAMES: ReadonlySet<string> = new Set(ACTIV
 
 export function normalizePmosProjectName(projectName: string): string {
   const profile = findPmosProjectProfile(projectName)
+  return profile?.displayName ?? normalizeWhitespace(projectName).replace(/\s*\[[^\]]+\]\s*$/g, '')
+}
+
+export function normalizeHistoricalPmosProjectName(projectName: string): string {
+  const profile = findHistoricalPmosProjectProfile(projectName)
   return profile?.displayName ?? normalizeWhitespace(projectName).replace(/\s*\[[^\]]+\]\s*$/g, '')
 }
 

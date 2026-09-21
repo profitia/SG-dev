@@ -57,7 +57,13 @@ services:
     startCommand: npm run start
     plan: starter
     branch: main
-    autoDeploy: true
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - apps/pmos/**
+        - Canon/registries/profitia-projects-v1.json
+        - render.yaml
+      ignoredPaths: []
     envVars:
       - key: NODE_ENV
         value: production

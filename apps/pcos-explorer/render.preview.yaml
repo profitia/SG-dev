@@ -3,7 +3,12 @@ services:
     name: sg2-pcos-cognition-explorer-preview
     runtime: node
     branch: main
-    autoDeploy: true
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - apps/pcos-explorer/**
+        - packages/pcos-contracts/**
+      ignoredPaths: []
     buildCommand: cd apps/pcos-explorer && npm ci --include=dev && npx prisma generate && PCOS_EXPLORER_PREVIEW_MODE=mock npm run build
     startCommand: cd apps/pcos-explorer && npm run start
     plan: starter
@@ -16,7 +21,3 @@ services:
         value: SANDBOX
       - key: PCOS_EXPLORER_ORG_ID
         value: pcos-default
-      - key: DATABASE_URL
-        sync: false
-      - key: DIRECT_URL
-        sync: false
