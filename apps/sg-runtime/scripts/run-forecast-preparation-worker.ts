@@ -1,4 +1,7 @@
-import { createForecastPreparationWorker } from '@/lib/forecast/preparation-queue'
+import {
+  createForecastPreparationWorker,
+  resolveForecastPreparationWorkerMode,
+} from '@/lib/forecast/preparation-queue'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 
 const IDLE_POLL_MS = 2_000
@@ -18,10 +21,12 @@ function wait(ms: number) {
 }
 
 async function main() {
+  const mode = resolveForecastPreparationWorkerMode(process.env.FORECAST_PREPARATION_WORKER_MODE)
   const worker = createForecastPreparationWorker({
     workerId: process.env.RENDER_INSTANCE_ID?.trim() || undefined,
+    mode,
   })
-  console.info(`[forecast-preparation-worker] started workerId=${worker.workerId}`)
+  console.info(`[forecast-preparation-worker] started workerId=${worker.workerId} mode=${worker.mode}`)
 
   while (!stopping) {
     try {

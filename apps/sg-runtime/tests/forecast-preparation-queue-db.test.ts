@@ -39,6 +39,19 @@ test('Postgres queue claim is priority ordered, fair between slices, and cross-w
     await prisma.forecastPreparationJob.deleteMany()
     await prisma.forecastPreparationJob.createMany({
       data: [
+        { ...base, id: 'lane-verification', jobKey: 'lane-verification', jobKind: 'VERIFICATION', priority: 100, updatedAt: now },
+        { ...base, id: 'lane-current', jobKey: 'lane-current', jobKind: 'CURRENT', priority: 10, updatedAt: now },
+      ],
+    })
+    const runningVerification = await queue.claimNext('worker-verification-lane', ['VERIFICATION'])
+    assert.equal(runningVerification?.jobKind, 'VERIFICATION')
+    const currentWhileVerificationRuns = await queue.claimNext('worker-current-lane', ['CURRENT'])
+    assert.equal(currentWhileVerificationRuns?.jobKind, 'CURRENT')
+    assert.notEqual(currentWhileVerificationRuns?.jobKey, runningVerification?.jobKey)
+
+    await prisma.forecastPreparationJob.deleteMany()
+    await prisma.forecastPreparationJob.createMany({
+      data: [
         {
           ...base,
           id: 'older-verification',

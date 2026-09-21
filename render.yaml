@@ -37,6 +37,39 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: FORECAST_PREPARATION_WORKER_MODE
+        value: VERIFICATION_ONLY
+      - key: MARKET_DATA_DATABASE_URL
+        fromService:
+          type: web
+          name: spendguru-stage
+          envVarKey: MARKET_DATA_DATABASE_URL
+      - key: NPM_TOKEN
+        fromService:
+          type: web
+          name: spendguru-stage
+          envVarKey: NPM_TOKEN
+
+  # Dedicated Current Forecast fast lane. It shares the same durable Postgres
+  # queue and canonical SG Runtime preparation owner, but never claims long
+  # Historical Verification jobs.
+  - type: worker
+    name: spendguru-forecast-current-worker
+    runtime: node
+    region: frankfurt
+    repo: https://github.com/profitia/SG-dev
+    rootDir: .
+    buildCommand: bash ./scripts/build-sg-runtime-private-service.sh
+    startCommand: cd apps/sg-runtime && npm run forecast:worker
+    plan: standard
+    branch: main
+    autoDeployTrigger: off
+    maxShutdownDelaySeconds: 300
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FORECAST_PREPARATION_WORKER_MODE
+        value: CURRENT_ONLY
       - key: MARKET_DATA_DATABASE_URL
         fromService:
           type: web
