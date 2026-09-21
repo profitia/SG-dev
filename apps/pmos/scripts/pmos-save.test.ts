@@ -13,6 +13,7 @@ import {
   buildConversationArtifactSummary,
   buildPhrPublicationReadyHandoff,
   buildSrmPhrPublicationCandidate,
+  projectCanonicalFlightRecordScalarParity,
   publishRequiredSpendGuruPhrBeforePendingClear,
 } from './pmos-save'
 import { buildPhrPublicationInput, publishPhrPublicationOnCompletedCloseout, writePhrPublicationAttempt } from '../src/lib/pmos/phr-publication'
@@ -252,6 +253,17 @@ function makeSpendGuruFinalizationContext(params?: {
     phrRequiredForCompletion: true,
   } as never
 }
+
+test('scalar parity omits absent legacy ETAP metadata', () => {
+  const projected = projectCanonicalFlightRecordScalarParity(
+    makeSpendGuruArtifact(),
+    'conversation.md',
+    'summary',
+  ) as { metadata: Record<string, unknown> }
+
+  assert.equal(Object.hasOwn(projected.metadata, 'etap'), false)
+  assert.equal(Object.hasOwn(projected.metadata, 'subetap'), false)
+})
 
 test('SRM bundle passed to PHR is already canonical and gated', () => {
   const candidate = buildSrmPhrPublicationCandidate({
