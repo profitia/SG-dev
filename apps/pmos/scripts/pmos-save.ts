@@ -1343,7 +1343,7 @@ function projectConversationArtifactScalarParity(record: {
   }
 }
 
-function projectCanonicalFlightRecordScalarParity(
+export function projectCanonicalFlightRecordScalarParity(
   artifact: FlightRecordV1,
   filesPath: string,
   summary: string,
@@ -1354,7 +1354,7 @@ function projectCanonicalFlightRecordScalarParity(
     taskId: artifact.metadata.taskId,
     scope: artifact.metadata.scope,
     timestamp: artifact.metadata.timestamp,
-    etap: artifact.metadata.etap,
+    ...(artifact.metadata.etap != null ? { etap: artifact.metadata.etap } : {}),
     ...(artifact.metadata.subetap != null ? { subetap: artifact.metadata.subetap } : {}),
     ...(artifact.metadata.conversationType != null ? { conversationType: artifact.metadata.conversationType } : {}),
     ...(artifact.metadata.importanceLevel != null ? { importanceLevel: artifact.metadata.importanceLevel } : {}),
