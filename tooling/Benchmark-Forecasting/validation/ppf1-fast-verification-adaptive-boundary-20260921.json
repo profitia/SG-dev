@@ -30,10 +30,51 @@
     "excludedEnvironmentTest": "forecast-stage3-cross-instance.test.ts requires unavailable local PostgreSQL at 127.0.0.1:55421"
   },
   "publication": {
-    "sourceCommit": null,
-    "mergeCommit": null,
-    "deployedServices": [],
-    "liveCanary": null
+    "implementationCommit": "c92e20ae805448dcdede2d9a28eed8fb088be184",
+    "telemetryCorrectiveCommit": "7dcc61873727b2ac1075a8c916196c394f2d0098",
+    "mergeCommits": [
+      "d70f6e0abab8a9b36fd23a9f30097b0b4c765bae",
+      "b7ae5a69f789146bdf209b078bf224e0778c44bb"
+    ],
+    "pullRequests": [35, 36],
+    "deployedSourceSha": "b7ae5a69f789146bdf209b078bf224e0778c44bb",
+    "deployedServices": [
+      {"name": "spendguru-stage", "serviceId": "srv-d98a73btqb8s73fabp90", "deployId": "dep-daochr3tqb8s73eq42s0", "status": "live"},
+      {"name": "BENCHMARK-FINDER-CATEGORY-BUILDER", "serviceId": "srv-d9tmgddbedkc739jr24g", "deployId": "dep-daochph42hec739ams2g", "status": "live"},
+      {"name": "spendguru-forecast-preparation-worker", "serviceId": "srv-dansibrtqb8s73d0nn3g", "deployId": "dep-daochtbtqb8s73eq4ac0", "status": "live"},
+      {"name": "dashboards-library", "serviceId": "srv-da2i7j9t0dsc73ag7qv0", "deployId": "dep-daoe0o0ae00c73c58070", "status": "live"}
+    ],
+    "liveCanary": {
+      "seriesId": "sgx_acf2027f_cl",
+      "modelId": "naive",
+      "targetBasis": "MONTHLY_AVERAGE",
+      "correlationId": "ppf1-fast-canary-verification-20260921",
+      "jobKey": "a88f79905cf642808686acced6c6049887c0818e18dcf48486a2b7ef2b007aef",
+      "actionRequestedAt": "2026-09-21T06:07:39.882Z",
+      "queueAcceptedAt": "2026-09-21T06:07:43.273Z",
+      "artifactReadyAt": "2026-09-21T06:09:04.791Z",
+      "completedAt": "2026-09-21T06:09:04.896Z",
+      "adaptiveBatchSequence": [1, 2, 4, 8, 16],
+      "sliceCount": 6,
+      "failedSliceCount": 0,
+      "successfulComparisons": {"1M": 35, "3M": 33, "6M": 30, "12M": 24},
+      "preparedReadStatus": "AVAILABLE",
+      "readiness": "FULL_READY",
+      "pendingCount": 0,
+      "failureCount": 0,
+      "fastAndFullReachedInSameTerminalSlice": true
+    },
+    "dashboardSmoke": {
+      "pageHttp": 200,
+      "progressiveHttp": 200,
+      "currentState": "READY",
+      "verificationState": "READY",
+      "uiRendered": ["Current Forecast", "Historical Verification", "quality metrics"],
+      "uiTelemetryHttp": 200
+    },
+    "neonVerification": "READ_ONLY",
+    "manualForecastArtifactWrites": 0,
+    "finalVerdict": "ADAPTIVE_FAST_VERIFICATION_LIVE_PROVEN"
   },
   "matrixTest": "DEFERRED_TO_SEPARATE_TASK"
 }
