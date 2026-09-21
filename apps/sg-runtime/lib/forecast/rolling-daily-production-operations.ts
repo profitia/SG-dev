@@ -296,21 +296,37 @@ export function createRollingDailyProductionOperationsService(
           }
 
           if (maintenance.status === 'SUCCEEDED') {
-            if (recentVerificationRequested || request.snapshotRefreshMode === 'WHEN_REQUIRED') {
+            const terminalHistoricalSlice = Boolean(
+              maintenance.lastProcessedOriginAt
+              && maintenance.latestSourceObservationAt
+              && maintenance.lastProcessedOriginAt.slice(0, 10) === maintenance.latestSourceObservationAt.slice(0, 10),
+            )
+            if (request.snapshotRefreshMode === 'WHEN_REQUIRED' && !terminalHistoricalSlice) {
+              // The durable verification job is admitted only after its exact Current
+              // dependency succeeds. Current and Full Verification intentionally use
+              // different history fingerprints, so the maintenance fingerprint must
+              // never be used to revalidate the Current snapshot between slices.
+              results.push({
+                status: 'SUCCEEDED',
+                modelId,
+                maintenance,
+                snapshot: {
+                  status: 'SKIPPED_ALREADY_FRESH',
+                  reason: null,
+                  parityStatus: null,
+                },
+                error: null,
+              })
+              continue
+            }
+
+            if (recentVerificationRequested) {
               const snapshotState = await readSnapshot({
                 seriesId: request.seriesId,
                 modelId,
                 sourceHistoryFingerprint: maintenance.sourceHistoryFingerprint,
               })
-              const terminalHistoricalSlice = Boolean(
-                maintenance.lastProcessedOriginAt
-                && maintenance.latestSourceObservationAt
-                && maintenance.lastProcessedOriginAt.slice(0, 10) === maintenance.latestSourceObservationAt.slice(0, 10),
-              )
-              if (
-                snapshotState.status === 'HIT'
-                && (recentVerificationRequested || !terminalHistoricalSlice)
-              ) {
+              if (snapshotState.status === 'HIT') {
                 results.push({
                   status: 'SUCCEEDED',
                   modelId,

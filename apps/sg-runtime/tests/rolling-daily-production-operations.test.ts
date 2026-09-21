@@ -634,6 +634,7 @@ test('production operations fails closed on rebuild required and preserves the l
 
 test('adaptive verification skips repeated Current recompute for an intermediate prepared-history slice', async () => {
   let currentRefreshes = 0
+  let snapshotReads = 0
   const service = createRollingDailyProductionOperationsService({
     async runMaintenance(request) {
       return createMaintenanceResult({
@@ -643,6 +644,7 @@ test('adaptive verification skips repeated Current recompute for an intermediate
       })
     },
     async readSnapshot() {
+      snapshotReads += 1
       return { status: 'HIT', payload: {} as never }
     },
     async resolveCurrentForecast() {
@@ -663,6 +665,7 @@ test('adaptive verification skips repeated Current recompute for an intermediate
 
   assert.equal(result.status, 'SUCCEEDED')
   assert.equal(currentRefreshes, 0)
+  assert.equal(snapshotReads, 0)
   assert.equal(result.results[0]?.snapshot.status, 'SKIPPED_ALREADY_FRESH')
   assert.equal(result.results[0]?.maintenance?.newOriginCount, 1)
 })
@@ -675,7 +678,7 @@ test('adaptive verification refreshes Current once when the terminal history sli
       return createMaintenanceResult({ modelId: request.modelId })
     },
     async readSnapshot() {
-      return { status: 'HIT', payload: {} as never }
+      throw new Error('terminal adaptive slice refreshes once without comparing incompatible Current and Verification fingerprints')
     },
     async resolveCurrentForecast() {
       currentRefreshes += 1
@@ -714,8 +717,9 @@ test('adaptive verification refreshes Current once when the terminal history sli
   assert.equal(result.results[0]?.snapshot.status, 'REFRESHED_AFTER_MAINTENANCE')
 })
 
-test('adaptive verification repairs a missing Current snapshot even before the terminal slice', async () => {
+test('adaptive verification trusts the completed durable Current dependency between intermediate slices', async () => {
   let currentRefreshes = 0
+  let snapshotReads = 0
   const service = createRollingDailyProductionOperationsService({
     async runMaintenance(request) {
       return createMaintenanceResult({
@@ -725,6 +729,7 @@ test('adaptive verification repairs a missing Current snapshot even before the t
       })
     },
     async readSnapshot() {
+      snapshotReads += 1
       return { status: 'MISS' }
     },
     async resolveCurrentForecast() {
@@ -757,8 +762,9 @@ test('adaptive verification repairs a missing Current snapshot even before the t
   })
 
   assert.equal(result.status, 'SUCCEEDED')
-  assert.equal(currentRefreshes, 1)
-  assert.equal(result.results[0]?.snapshot.status, 'REFRESHED_AFTER_MAINTENANCE')
+  assert.equal(currentRefreshes, 0)
+  assert.equal(snapshotReads, 0)
+  assert.equal(result.results[0]?.snapshot.status, 'SKIPPED_ALREADY_FRESH')
 })
 
 test('production operations emits current refresh trace when opt-in tracing is enabled', async () => {
