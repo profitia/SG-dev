@@ -94,6 +94,30 @@ test('Fast Verification requires 24 lawful metric-bearing comparisons for every 
   assert.equal(isFastHistoricalVerificationReady(verification), false)
 })
 
+test('non-daily Fast Verification becomes lawful at the moderate-confidence boundary before FULL', () => {
+  const metrics = { mae: 1, rmse: 2, mase: 0.8, smape: 4, directionalAccuracy: 0.5, bias: 0 }
+  const verification = Object.fromEntries(['1M', '3M', '6M', '12M'].map((label) => [
+    label,
+    horizon({
+      horizon: label,
+      origins: 8,
+      expectedOrigins: 24,
+      successfulOrigins: 8,
+      pendingOrigins: 16,
+      coverage: 8 / 24,
+      metrics,
+    }),
+  ]))
+
+  assert.equal(isFastHistoricalVerificationReady(verification), false)
+  assert.equal(isFastHistoricalVerificationReady(verification, { targetSemantics: 'MONTHLY_AVERAGE' }), true)
+  assert.equal(isFastHistoricalVerificationReady(verification, { targetSemantics: 'END_OF_PERIOD' }), true)
+  assert.equal(resolveHistoricalVerificationSummary(verification, {
+    fullHistoryReady: false,
+    targetSemantics: 'MONTHLY_AVERAGE',
+  }).preparationState, 'FAST_READY')
+})
+
 test('verification quality uses 24 lawful comparisons as the versioned common denominator', () => {
   const quality = resolveForecastVerificationQuality(horizon({
     origins: 17,

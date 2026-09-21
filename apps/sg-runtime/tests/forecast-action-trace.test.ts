@@ -23,6 +23,18 @@ test('action telemetry event contract is versioned and correlation scoped', () =
   })
 })
 
+test('admission-stage telemetry exposes the previously opaque request-to-queue work', () => {
+  const event = buildForecastActionTraceEvent(
+    'ADMISSION_STAGE_COMPLETED',
+    'corr-admission',
+    new Date('2026-09-21T20:00:01.000Z'),
+    { stage: 'INTERACTIVE_CAPABILITY', durationMs: 1_000 },
+  )
+
+  assert.equal(event.eventType, 'ADMISSION_STAGE_COMPLETED')
+  assert.deepEqual(event.payload, { stage: 'INTERACTIVE_CAPABILITY', durationMs: 1_000 })
+})
+
 test('action telemetry migration stores lifecycle events and resource summaries', async () => {
   const migration = await readFile(new URL('../prisma-market-data/migrations/20260920233000_forecast_action_trace_and_resource_summary/migration.sql', import.meta.url), 'utf8')
   assert.match(migration, /CREATE TABLE "forecast_action_trace"/)

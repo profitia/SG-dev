@@ -6,6 +6,7 @@ import {
   fallbackAdaptiveVerificationBatchAfterFailure,
   observeSuccessfulVerificationBatch,
   readAdaptiveVerificationBatchCheckpoint,
+  shouldContinueFastVerificationBootstrap,
 } from '@/lib/forecast/adaptive-verification-batching'
 
 test('adaptive verification starts with one origin to preserve the fastest first partial result', () => {
@@ -75,4 +76,33 @@ test('invalid or legacy checkpoint data fails safely to the initial batch', () =
     policyVersion: 'unexpected',
     nextBatchSize: 32,
   }).nextBatchSize, 1)
+})
+
+test('FAST bootstrap keeps a bounded lease only until readiness or its safety envelope', () => {
+  assert.equal(shouldContinueFastVerificationBootstrap({
+    fastReady: false,
+    processedSliceCount: 1,
+    elapsedMs: 5_000,
+  }), true)
+  assert.equal(shouldContinueFastVerificationBootstrap({
+    fastReady: true,
+    processedSliceCount: 1,
+    elapsedMs: 5_000,
+  }), false)
+  assert.equal(shouldContinueFastVerificationBootstrap({
+    fastReady: false,
+    processedSliceCount: 4,
+    elapsedMs: 20_000,
+  }), false)
+  assert.equal(shouldContinueFastVerificationBootstrap({
+    fastReady: false,
+    processedSliceCount: 2,
+    elapsedMs: 45_000,
+  }), false)
+  assert.equal(shouldContinueFastVerificationBootstrap({
+    fastReady: false,
+    processedSliceCount: 2,
+    elapsedMs: 30_000,
+    estimatedNextSliceMs: 20_000,
+  }), false)
 })

@@ -115,6 +115,7 @@ test('client-facing verification readiness accepts exact ready artifacts and the
   assert.match(source, /\(!preparedReadsOnly \|\| forecastCapabilityState === 'ready'\)\s*&& !selectedVerificationPrepared/)
   assert.match(source, /verificationQueuedCurrentReadyHint/)
   assert.match(source, /verificationProgressDetail/)
+  assert.match(source, /selectedForecastTargetBasis === 'POINT_IN_TIME'[\s\S]*?buildForecastLayerCacheKey\(locale, activeSeriesId, forecastModel, selectedForecastTargetBasis, 'current'\)[\s\S]*?setForecastCurrentReloadNonce/)
 })
 
 test('verification preparation stays available outside prepared-read-only demo mode and becomes ready from durable progress', () => {

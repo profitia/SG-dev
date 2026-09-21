@@ -8,6 +8,7 @@ export type ForecastActionType = 'CURRENT_PREPARATION' | 'VERIFICATION_PREPARATI
 export type ForecastActionLayer = 'CURRENT' | 'VERIFICATION'
 export type ForecastActionTraceEventType =
   | 'ACTION_REQUESTED'
+  | 'ADMISSION_STAGE_COMPLETED'
   | 'QUEUE_ACCEPTED'
   | 'ARTIFACT_READY'
   | 'DASHBOARD_READY_OBSERVED'
@@ -127,6 +128,25 @@ export async function recordForecastQueueAccepted(
   if (updated.count === 1) {
     await appendEventByCorrelation(db, correlationId, buildForecastActionTraceEvent('QUEUE_ACCEPTED', correlationId, observedAt, { jobKey }))
   }
+}
+
+export async function recordForecastAdmissionStage(
+  correlationId: string,
+  stage: 'INTERACTIVE_CAPABILITY' | 'EXACT_CAPABILITY' | 'CURRENT_DEPENDENCY' | 'JOB_UPSERT',
+  startedAt: Date,
+  observedAt = new Date(),
+  prisma?: PrismaClient | null,
+) {
+  const db = requirePrisma(prisma)
+  await appendEventByCorrelation(db, correlationId, buildForecastActionTraceEvent(
+    'ADMISSION_STAGE_COMPLETED',
+    correlationId,
+    observedAt,
+    {
+      stage,
+      durationMs: Math.max(0, observedAt.getTime() - startedAt.getTime()),
+    },
+  ))
 }
 
 export async function recordForecastArtifactReady(

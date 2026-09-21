@@ -5,21 +5,32 @@ import type {
   HistoricalVerificationHorizonSummary,
   HistoricalVerificationSummary,
 } from '@/lib/forecast/contracts'
-import { MINIMUM_ADAPTIVE_HISTORICAL_VERIFICATION_ORIGINS } from '@/lib/forecast/historical-verification-origin-policy'
+import {
+  MINIMUM_ADAPTIVE_HISTORICAL_VERIFICATION_ORIGINS,
+  MINIMUM_NON_DAILY_FAST_HISTORICAL_VERIFICATION_ORIGINS,
+} from '@/lib/forecast/historical-verification-origin-policy'
 
 export const HISTORICAL_VERIFICATION_CONTRACT_VERSION = 'HISTORICAL_VERIFICATION_V2' as const
 export const MIN_HISTORICAL_VERIFICATION_ORIGINS = MINIMUM_ADAPTIVE_HISTORICAL_VERIFICATION_ORIGINS
 export const FORECAST_VERIFICATION_QUALITY_POLICY_VERSION = 'FORECAST_VERIFICATION_QUALITY_V1' as const
 export const FAST_HISTORICAL_VERIFICATION_HORIZONS = ['1M', '3M', '6M', '12M'] as const
 
+export function resolveFastHistoricalVerificationMinimumOrigins(targetSemantics?: string) {
+  return targetSemantics === 'MONTHLY_AVERAGE' || targetSemantics === 'END_OF_PERIOD'
+    ? MINIMUM_NON_DAILY_FAST_HISTORICAL_VERIFICATION_ORIGINS
+    : MIN_HISTORICAL_VERIFICATION_ORIGINS
+}
+
 export function isFastHistoricalVerificationReady(
   verification: Record<string, ForecastVerificationHorizon>,
+  options: { targetSemantics?: string } = {},
 ) {
+  const minimumOrigins = resolveFastHistoricalVerificationMinimumOrigins(options.targetSemantics)
   return FAST_HISTORICAL_VERIFICATION_HORIZONS.every((label) => {
     const horizon = verification[label]
     return Boolean(
       horizon
-      && horizon.successfulOrigins >= MIN_HISTORICAL_VERIFICATION_ORIGINS
+      && horizon.successfulOrigins >= minimumOrigins
       && horizon.metrics?.smape !== null
       && horizon.metrics?.smape !== undefined
       && Number.isFinite(horizon.metrics.smape)
@@ -198,7 +209,7 @@ export function resolveHistoricalVerificationHorizon(
 
 export function resolveHistoricalVerificationSummary(
   verification: Record<string, ForecastVerificationHorizon>,
-  options: { fullHistoryReady?: boolean } = {},
+  options: { fullHistoryReady?: boolean, targetSemantics?: string } = {},
 ): HistoricalVerificationSummary {
   const horizons = Object.fromEntries(
     Object.entries(verification).map(([label, horizon]) => [
@@ -239,7 +250,7 @@ export function resolveHistoricalVerificationSummary(
     contractVersion: HISTORICAL_VERIFICATION_CONTRACT_VERSION,
     preparationState: fullHistoryReady
       ? 'FULL_READY'
-      : isFastHistoricalVerificationReady(verification)
+      : isFastHistoricalVerificationReady(verification, { targetSemantics: options.targetSemantics })
         ? 'FAST_READY'
         : null,
     fullHistoryReady,

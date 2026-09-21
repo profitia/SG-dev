@@ -32,6 +32,7 @@ import {
 } from '@/lib/forecast/historical-verification-origin-policy'
 import { resolveForecastJobCorrelationId } from '@/lib/forecast/forecast-correlation'
 import {
+  recordForecastAdmissionStage,
   recordForecastActionRequested,
   recordForecastArtifactReady,
   recordForecastQueueAccepted,
@@ -49,6 +50,7 @@ import {
   fallbackAdaptiveVerificationBatchAfterFailure,
   observeSuccessfulVerificationBatch,
   readAdaptiveVerificationBatchCheckpoint,
+  shouldContinueFastVerificationBootstrap,
   type AdaptiveVerificationBatchCheckpoint,
 } from '@/lib/forecast/adaptive-verification-batching'
 
@@ -182,7 +184,10 @@ const RETRY_BASE_MS = 5_000
 const MAX_RETRY_DELAY_MS = 5 * 60_000
 export const DEFAULT_FAST_VERIFICATION_SLA_MS = 2 * 60_000
 
-function readCheckpointTimestamp(value: Prisma.JsonValue | null, key: 'fastReadyAt' | 'fullReadyAt') {
+function readCheckpointTimestamp(
+  value: Prisma.JsonValue | null,
+  key: 'fastReadyAt' | 'fullReadyAt' | 'currentBandsRefreshedAt',
+) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
   const timestamp = (value as Record<string, unknown>)[key]
   if (typeof timestamp !== 'string' || Number.isNaN(Date.parse(timestamp))) return null
@@ -537,6 +542,22 @@ export function createForecastPreparationQueueService(options: {
     }
   }
 
+  async function safelyRecordAdmissionStage(
+    correlationId: string,
+    stage: 'INTERACTIVE_CAPABILITY' | 'EXACT_CAPABILITY' | 'CURRENT_DEPENDENCY' | 'JOB_UPSERT',
+    startedAt: Date,
+  ) {
+    try {
+      await recordForecastAdmissionStage(correlationId, stage, startedAt, new Date(), prisma)
+    } catch (error) {
+      console.error('[forecast-preparation] admission-stage telemetry failed', {
+        correlationId,
+        stage,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
   async function enqueue(
     input: ForecastPreparationCommand,
     options: { correlationId: string },
@@ -555,7 +576,9 @@ export function createForecastPreparationQueueService(options: {
       modelId: parsed.data.modelId,
     })
 
+    let admissionStageStartedAt = new Date()
     const interactiveCapability = await resolveInteractiveForecastCapability(parsed.data)
+    await safelyRecordAdmissionStage(options.correlationId, 'INTERACTIVE_CAPABILITY', admissionStageStartedAt)
     if (input.kind === 'CURRENT' && interactiveCapability.currentReadiness === 'READY') {
       return preparedResult('The exact Current Forecast artifact is already prepared.')
     }
@@ -563,13 +586,16 @@ export function createForecastPreparationQueueService(options: {
       return preparedResult('The exact Historical Verification artifact is already prepared.')
     }
 
+    admissionStageStartedAt = new Date()
     const capability = await resolveCapability(parsed.data)
+    await safelyRecordAdmissionStage(options.correlationId, 'EXACT_CAPABILITY', admissionStageStartedAt)
     if (!isEligible(capability)) {
       return unsupportedResult(interactiveCapability.reason ?? capability?.capabilityState ?? 'Exact Forecast preparation is not eligible.')
     }
 
     let dependencyJobKey: string | null = null
     if (input.kind === 'VERIFICATION' && interactiveCapability.currentReadiness !== 'READY') {
+      admissionStageStartedAt = new Date()
       const currentInput = { ...parsed.data, kind: 'CURRENT' as const }
       const persistedCurrent = await upsertJob(
         prisma,
@@ -580,9 +606,11 @@ export function createForecastPreparationQueueService(options: {
       )
       const current = await requeueSucceededJobIfArtifactIsMissing(prisma, persistedCurrent, currentInput)
       dependencyJobKey = current.jobKey
+      await safelyRecordAdmissionStage(options.correlationId, 'CURRENT_DEPENDENCY', admissionStageStartedAt)
     }
 
     const command = parsed.data
+    admissionStageStartedAt = new Date()
     const persistedJob = await upsertJob(
       prisma,
       command,
@@ -591,6 +619,7 @@ export function createForecastPreparationQueueService(options: {
       options.correlationId,
     )
     const job = await requeueSucceededJobIfArtifactIsMissing(prisma, persistedJob, command)
+    await safelyRecordAdmissionStage(options.correlationId, 'JOB_UPSERT', admissionStageStartedAt)
     await safelyRecordQueueAccepted(options.correlationId, job.jobKey)
     return stateForJob(job)
   }
@@ -747,6 +776,19 @@ export function createForecastPreparationQueueService(options: {
     if (updated.count !== 1) throw new Error(`Forecast preparation checkpoint lost its lease for ${job.jobKey}.`)
   }
 
+  async function checkpointInLease(job: ClaimedForecastPreparationJob, checkpoint: Record<string, unknown>) {
+    const updated = await prisma.forecastPreparationJob.updateMany({
+      where: { id: job.id, status: 'RUNNING', leaseOwnerToken: job.leaseOwnerToken, leaseVersion: job.leaseVersion },
+      data: {
+        sliceCount: { increment: 1 },
+        checkpointJson: checkpoint as Prisma.InputJsonValue,
+        lastHeartbeatAt: new Date(),
+        leaseExpiresAt: new Date(Date.now() + leaseMs),
+      },
+    })
+    if (updated.count !== 1) throw new Error(`Forecast preparation bootstrap checkpoint lost its lease for ${job.jobKey}.`)
+  }
+
   async function failOrRetry(
     job: ClaimedForecastPreparationJob,
     error: unknown,
@@ -790,7 +832,7 @@ export function createForecastPreparationQueueService(options: {
     if (updated.count !== 1) throw new Error(`Forecast preparation terminal-unavailable handling lost its lease for ${job.jobKey}.`)
   }
 
-  return { enqueue, snapshot, claimNext, heartbeat, complete, completeUnavailable, continueAfterSlice, failOrRetry }
+  return { enqueue, snapshot, claimNext, heartbeat, complete, completeUnavailable, checkpointInLease, continueAfterSlice, failOrRetry }
 }
 
 export type ForecastPreparationQueueService = ReturnType<typeof createForecastPreparationQueueService>
@@ -953,71 +995,86 @@ export function createForecastPreparationWorker(options: {
           return
         }
 
-        const batchSize = adaptiveCheckpoint?.nextBatchSize ?? 1
-        const sliceStartedAt = performance.now()
-        const sliceResult = await prepareVerificationSlice(job, { maxOriginsPerRun: batchSize })
-        const sliceMs = Math.max(1, performance.now() - sliceStartedAt)
-        adaptiveCheckpoint = observeSuccessfulVerificationBatch(
-          adaptiveCheckpoint ?? readAdaptiveVerificationBatchCheckpoint(null),
-          {
+        const bootstrapStartedAt = performance.now()
+        let processedSliceCount = 0
+        let priorFastReadyAt = readCheckpointTimestamp(job.checkpointJson, 'fastReadyAt')
+        let currentBandsRefreshedAt = readCheckpointTimestamp(job.checkpointJson, 'currentBandsRefreshedAt')
+
+        while (true) {
+          const batchSize = adaptiveCheckpoint?.nextBatchSize ?? 1
+          const sliceStartedAt = performance.now()
+          const sliceResult = await prepareVerificationSlice(job, { maxOriginsPerRun: batchSize })
+          const sliceMs = Math.max(1, performance.now() - sliceStartedAt)
+          processedSliceCount += 1
+          adaptiveCheckpoint = observeSuccessfulVerificationBatch(
+            adaptiveCheckpoint ?? readAdaptiveVerificationBatchCheckpoint(null),
+            {
+              batchSize,
+              sliceMs,
+              originCount: resolvePreparedOriginCount(sliceResult, job, batchSize),
+            },
+          )
+          console.info(JSON.stringify({
+            event: 'FORECAST_VERIFICATION_ADAPTIVE_BATCH_DECISION',
+            correlationId,
+            jobKey: job.jobKey,
             batchSize,
+            nextBatchSize: adaptiveCheckpoint.nextBatchSize,
             sliceMs,
-            originCount: resolvePreparedOriginCount(sliceResult, job, batchSize),
-          },
-        )
-        console.info(JSON.stringify({
-          event: 'FORECAST_VERIFICATION_ADAPTIVE_BATCH_DECISION',
-          correlationId,
-          jobKey: job.jobKey,
-          batchSize,
-          nextBatchSize: adaptiveCheckpoint.nextBatchSize,
-          sliceMs,
-          originCount: adaptiveCheckpoint.lastOriginCount,
-          decision: adaptiveCheckpoint.decision,
-          reason: adaptiveCheckpoint.reason,
-        }))
-        let readiness = await resolveReadiness(input)
-        const priorFastReadyAt = readCheckpointTimestamp(job.checkpointJson, 'fastReadyAt')
-        if (
-          job.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
-          && readiness.fastVerificationReadiness === 'READY'
-          && !priorFastReadyAt
-          && !readiness.readiness.bandsReady
-        ) {
-          const refreshResult = await refreshCurrentAfterCalibration(job)
-          if (refreshResult.status === 'FAILED') {
-            throw new Error(refreshResult.results[0]?.error ?? 'Current Daily calibration-band refresh failed.')
+            originCount: adaptiveCheckpoint.lastOriginCount,
+            decision: adaptiveCheckpoint.decision,
+            reason: adaptiveCheckpoint.reason,
+            bootstrapSliceNumber: processedSliceCount,
+          }))
+          let readiness = await resolveReadiness(input)
+          if (
+            job.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+            && readiness.fastVerificationReadiness === 'READY'
+            && readiness.predictionBandState === 'AVAILABLE'
+            && !readiness.readiness.bandsReady
+            && !currentBandsRefreshedAt
+          ) {
+            const refreshResult = await refreshCurrentAfterCalibration(job)
+            if (refreshResult.status === 'FAILED') {
+              throw new Error(refreshResult.results[0]?.error ?? 'Current Daily calibration-band refresh failed.')
+            }
+            readiness = await resolveReadiness(input)
+            if (readiness.readiness.bandsReady) {
+              currentBandsRefreshedAt = new Date().toISOString()
+              noteForecastRequestDiagnosticsEvent('current_daily_bands_refreshed', 'APPLICATION', {
+                jobKey: job.jobKey,
+                modelId: job.modelId,
+              })
+            }
           }
-          noteForecastRequestDiagnosticsEvent('current_daily_bands_refreshed', 'APPLICATION', {
-            jobKey: job.jobKey,
-            modelId: job.modelId,
-          })
-          readiness = await resolveReadiness(input)
-        }
-        const readyObservedAt = new Date().toISOString()
-        const fastReadyAt = priorFastReadyAt
-          ?? (readiness.fastVerificationReadiness === 'READY' ? readyObservedAt : null)
-        const fullReadyAt = readiness.fullVerificationReadiness === 'READY' ? readyObservedAt : null
-        const checkpoint = {
-          ...adaptiveCheckpoint,
-          fastVerificationReadiness: readiness.fastVerificationReadiness,
-          fullVerificationReadiness: readiness.fullVerificationReadiness,
-          fastReadyAt,
-          fullReadyAt,
-          blockers: readiness.readiness.blockers,
-          checkedAt: new Date().toISOString(),
-        }
-        if (!priorFastReadyAt && (readiness.fastVerificationReadiness === 'READY' || readiness.fullVerificationReadiness === 'READY')) {
-          await safelyRecordArtifactReady(job.jobKey, 'VERIFICATION')
-          noteForecastRequestDiagnosticsEvent('fast_verification_ready', 'APPLICATION', {
-            jobKey: job.jobKey,
+          const readyObservedAt = new Date().toISOString()
+          const fastReadyAt = priorFastReadyAt
+            ?? (readiness.fastVerificationReadiness === 'READY' ? readyObservedAt : null)
+          const fullReadyAt = readiness.fullVerificationReadiness === 'READY' ? readyObservedAt : null
+          const checkpoint = {
+            ...adaptiveCheckpoint,
+            fastVerificationReadiness: readiness.fastVerificationReadiness,
             fullVerificationReadiness: readiness.fullVerificationReadiness,
-          })
-        }
-        if (readiness.fullVerificationReadiness === 'READY') {
-          await queue.complete(job, { ...checkpoint, terminal: true })
-          noteForecastRequestDiagnosticsEvent('durable_job_completed', 'APPLICATION', { jobKey: job.jobKey, state: 'SUCCEEDED' })
-        } else {
+            fastReadyAt,
+            fullReadyAt,
+            currentBandsRefreshedAt,
+            blockers: readiness.readiness.blockers,
+            checkedAt: new Date().toISOString(),
+          }
+          if (!priorFastReadyAt && (readiness.fastVerificationReadiness === 'READY' || readiness.fullVerificationReadiness === 'READY')) {
+            await safelyRecordArtifactReady(job.jobKey, 'VERIFICATION')
+            noteForecastRequestDiagnosticsEvent('fast_verification_ready', 'APPLICATION', {
+              jobKey: job.jobKey,
+              fullVerificationReadiness: readiness.fullVerificationReadiness,
+            })
+            priorFastReadyAt = fastReadyAt
+          }
+          if (readiness.fullVerificationReadiness === 'READY') {
+            await queue.complete(job, { ...checkpoint, terminal: true })
+            noteForecastRequestDiagnosticsEvent('durable_job_completed', 'APPLICATION', { jobKey: job.jobKey, state: 'SUCCEEDED' })
+            return
+          }
+
           const terminalReason = resolveTerminalVerificationUnavailability(sliceResult, input)
           if (terminalReason) {
             await queue.completeUnavailable(job, terminalReason)
@@ -1025,8 +1082,35 @@ export function createForecastPreparationWorker(options: {
             noteForecastRequestDiagnosticsEvent('durable_job_completed', 'APPLICATION', { jobKey: job.jobKey, state: 'FAILED' })
             return
           }
+
+          const bootstrapElapsedMs = Math.max(0, performance.now() - bootstrapStartedAt)
+          if (shouldContinueFastVerificationBootstrap({
+            fastReady: readiness.fastVerificationReadiness === 'READY',
+            processedSliceCount,
+            elapsedMs: bootstrapElapsedMs,
+            estimatedNextSliceMs: adaptiveCheckpoint.ewmaMsPerOrigin === null
+              ? null
+              : adaptiveCheckpoint.ewmaMsPerOrigin * adaptiveCheckpoint.nextBatchSize,
+          })) {
+            await queue.checkpointInLease(job, checkpoint)
+            job.sliceCount += 1
+            job.checkpointJson = checkpoint as Prisma.JsonObject
+            noteForecastRequestDiagnosticsEvent('fast_verification_bootstrap_continued', 'APPLICATION', {
+              jobKey: job.jobKey,
+              processedSliceCount,
+              bootstrapElapsedMs,
+            })
+            continue
+          }
+
           await queue.continueAfterSlice(job, checkpoint)
-          noteForecastRequestDiagnosticsEvent('durable_job_completed', 'APPLICATION', { jobKey: job.jobKey, state: 'QUEUED' })
+          noteForecastRequestDiagnosticsEvent('durable_job_completed', 'APPLICATION', {
+            jobKey: job.jobKey,
+            state: 'QUEUED',
+            fastBootstrapSlices: processedSliceCount,
+            fastBootstrapElapsedMs: bootstrapElapsedMs,
+          })
+          return
         }
       } catch (error) {
         completionStatus = 500

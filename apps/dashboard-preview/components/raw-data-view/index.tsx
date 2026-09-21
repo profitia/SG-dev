@@ -3804,6 +3804,10 @@ export function RawDataView({
           ) {
             forecastLayerCacheRef.current.delete(buildForecastLayerCacheKey(locale, activeSeriesId, forecastModel, selectedForecastTargetBasis, 'verification'))
             setForecastVerificationReloadNonce((value) => value + 1)
+            if (selectedForecastTargetBasis === 'POINT_IN_TIME') {
+              forecastLayerCacheRef.current.delete(buildForecastLayerCacheKey(locale, activeSeriesId, forecastModel, selectedForecastTargetBasis, 'current'))
+              setForecastCurrentReloadNonce((value) => value + 1)
+            }
           }
 
           selectedProgressiveCurrentStateRef.current = selectedVariant?.currentState ?? null
