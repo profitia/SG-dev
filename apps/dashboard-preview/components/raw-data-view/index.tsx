@@ -638,7 +638,8 @@ export function isSelectedVerificationPrepared(
   capability: InteractiveForecastCapabilityResult | null,
   progressiveVariant: ProgressiveForecastVariantSnapshot | null,
 ) {
-  return isFastVerificationPrepared(capability)
+  return capability?.verificationReadiness === 'READY'
+    || isFastVerificationPrepared(capability)
     || progressiveVariant?.verificationState === 'FAST_READY'
     || progressiveVariant?.verificationState === 'READY'
 }
@@ -2995,7 +2996,7 @@ export function RawDataView({
 
     if (
       selectedCapabilityVariant?.currentReadiness === 'READY'
-      && isFastVerificationPrepared(selectedCapabilityVariant)
+      && isSelectedVerificationPrepared(selectedCapabilityVariant, selectedProgressiveVariant)
     ) {
       return
     }
@@ -3023,7 +3024,7 @@ export function RawDataView({
         setForecastCapabilitySnapshot((snapshot) => mergeExactCapabilitySnapshot(snapshot, capability))
         setForecastCapabilityState('ready')
 
-        if (capability.currentReadiness === 'READY' && isFastVerificationPrepared(capability)) {
+        if (capability.currentReadiness === 'READY' && isSelectedVerificationPrepared(capability, null)) {
           return
         }
       } catch (error) {
@@ -3054,6 +3055,7 @@ export function RawDataView({
     preparedReadsOnly,
     selectedCapabilityVariant,
     selectedForecastTargetBasis,
+    selectedProgressiveVariant,
     showForecast,
   ])
 
@@ -4844,7 +4846,12 @@ export function RawDataView({
             {verificationProgressDetail ? <p>{verificationProgressDetail}</p> : null}
           </div>
         ) : null}
-        {isForecastPortfolioVariant && showForecast && showForecastVerification && !selectedVerificationPrepared && !forecastVerificationBannerState ? (
+        {isForecastPortfolioVariant
+        && showForecast
+        && showForecastVerification
+        && (!preparedReadsOnly || forecastCapabilityState === 'ready')
+        && !selectedVerificationPrepared
+        && !forecastVerificationBannerState ? (
           <div className="callout" role="status" aria-live="polite">
             <strong>{t('verificationNotPrepared')}</strong>
             <p>{t('verificationNotPreparedHint')}</p>

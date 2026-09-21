@@ -3,15 +3,25 @@ from __future__ import annotations
 import unittest
 from dataclasses import dataclass
 from datetime import date
+from unittest.mock import MagicMock, patch
+
+import numpy as np
 
 from forecasting.backtest import generate_backtest_records
 from forecasting.contracts import ForecastMetadata, Frequency, ModelForecast, Observation, TimeSeries
 from forecasting.models.base import ModelForecastError
 from forecasting.models.arima import (
     ARIMA_CANDIDATE_GRID,
+    ARIMA_ESTIMATION_METHOD,
+    ARIMA_ESTIMATION_POLICY_ID,
+    ARIMA_FALLBACK_FIT_IMPLEMENTATION,
+    ARIMA_FIT_IMPLEMENTATION,
+    ARIMA_INNOVATIONS_MIN_SAMPLE_SIZE,
+    ARIMA_STATESPACE_FIT_IMPLEMENTATION,
     ARIMACandidate,
     ARIMACandidateResult,
     ARIMAModelFamily,
+    fit_arima_candidate_endog,
     resolve_sample_feasible_arima_candidates,
 )
 from forecasting.models.damped_holt import DampedHoltModel
@@ -341,6 +351,75 @@ class ETSPhase2Tests(unittest.TestCase):
 
 
 class ARIMAPhase2Tests(unittest.TestCase):
+    @staticmethod
+    def fitted_result() -> MagicMock:
+        fitted = MagicMock()
+        fitted.mle_retvals = None
+        fitted.params = np.asarray([0.25, 1.0], dtype=float)
+        fitted.param_names = ["ar.L1", "sigma2"]
+        fitted.aicc = 10.0
+        fitted.forecast.return_value = np.asarray([101.0, 102.0], dtype=float)
+        return fitted
+
+    def test_arima_candidate_uses_innovations_likelihood_for_long_histories(self) -> None:
+        fitted = self.fitted_result()
+        with patch("forecasting.models.arima.ARIMA") as arima_constructor:
+            arima_constructor.return_value.fit.return_value = fitted
+
+            result = fit_arima_candidate_endog(
+                endog=np.asarray([100.0, 101.0, 102.0, 103.0, 104.0, 105.0], dtype=float),
+                candidate=ARIMACandidate(order=(1, 0, 0), trend="c"),
+                sample_size=ARIMA_INNOVATIONS_MIN_SAMPLE_SIZE,
+                horizon_steps=2,
+            )
+
+        arima_constructor.return_value.fit.assert_called_once_with(
+            method=ARIMA_ESTIMATION_METHOD,
+            low_memory=False,
+        )
+        self.assertEqual(result.fit_implementation, ARIMA_FIT_IMPLEMENTATION)
+        self.assertEqual(result.forecast_value, 102.0)
+
+    def test_arima_candidate_falls_back_to_statespace_when_innovations_fails(self) -> None:
+        fitted = self.fitted_result()
+        with patch("forecasting.models.arima.ARIMA") as arima_constructor:
+            arima_constructor.return_value.fit.side_effect = [RuntimeError("unsupported"), fitted]
+
+            result = fit_arima_candidate_endog(
+                endog=np.asarray([100.0, 101.0, 102.0, 103.0, 104.0, 105.0], dtype=float),
+                candidate=ARIMACandidate(order=(1, 0, 0), trend="c"),
+                sample_size=ARIMA_INNOVATIONS_MIN_SAMPLE_SIZE,
+                horizon_steps=1,
+            )
+
+        self.assertEqual(
+            arima_constructor.return_value.fit.call_args_list[0].kwargs["method"],
+            ARIMA_ESTIMATION_METHOD,
+        )
+        self.assertEqual(
+            arima_constructor.return_value.fit.call_args_list[1].kwargs["method"],
+            "statespace",
+        )
+        self.assertEqual(result.fit_implementation, ARIMA_FALLBACK_FIT_IMPLEMENTATION)
+
+    def test_arima_candidate_preserves_statespace_for_short_samples(self) -> None:
+        fitted = self.fitted_result()
+        with patch("forecasting.models.arima.ARIMA") as arima_constructor:
+            arima_constructor.return_value.fit.return_value = fitted
+
+            result = fit_arima_candidate_endog(
+                endog=np.asarray([100.0, 101.0, 102.0, 103.0, 104.0, 105.0], dtype=float),
+                candidate=ARIMACandidate(order=(1, 0, 0), trend="c"),
+                sample_size=ARIMA_INNOVATIONS_MIN_SAMPLE_SIZE - 1,
+                horizon_steps=1,
+            )
+
+        arima_constructor.return_value.fit.assert_called_once_with(
+            method="statespace",
+            low_memory=False,
+        )
+        self.assertEqual(result.fit_implementation, ARIMA_STATESPACE_FIT_IMPLEMENTATION)
+
     def test_arima_rejects_five_observations_exactly(self) -> None:
         model = ARIMAModelFamily()
 
@@ -475,6 +554,18 @@ class NaivePhase2Tests(unittest.TestCase):
 
         self.assertTrue(float(forecast.forecast_value) == forecast.forecast_value)
         self.assertEqual(forecast.metadata.model_family, "arima")
+        self.assertEqual(
+            forecast.metadata.selected_parameters["estimationPolicyIdentity"],
+            ARIMA_ESTIMATION_POLICY_ID,
+        )
+        self.assertIn(
+            forecast.metadata.selected_parameters["fitImplementation"],
+            {
+                ARIMA_FIT_IMPLEMENTATION,
+                ARIMA_STATESPACE_FIT_IMPLEMENTATION,
+                ARIMA_FALLBACK_FIT_IMPLEMENTATION,
+            },
+        )
 
     def test_arima_no_future_leakage_for_same_origin(self) -> None:
         model = ARIMAModelFamily()
