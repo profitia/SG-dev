@@ -105,7 +105,7 @@ export function runGovernancePreflight(args) {
   }
 
   if (args.checkEstate) {
-    const estate = run('npm', ['run', 'recovery:check-archive'], path.join(repositoryRoot, 'apps', 'pmos'))
+    const estate = run('npm', ['run', 'pmos:audit-estate'], path.join(repositoryRoot, 'apps', 'pmos'))
     gates.PMOS_ESTATE_GATE = estate.ok ? gate('PASS', 'Historical estate verification passed.') : gate('WARNING', estate.stderr || estate.stdout)
   } else {
     gates.PMOS_ESTATE_GATE = gate('NOT_APPLICABLE', 'Historical estate audit was not requested; it is independent of runtime readiness.')

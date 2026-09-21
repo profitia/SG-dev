@@ -58,6 +58,9 @@ CIC product-code mutation remains fail-closed until the CIC repository publishes
 - PMOS authority enforcement: PASS.
 - PMOS production build: PASS; 18 application routes generated.
 - Governance preflight for this evidence path: PASS.
+- Aggregate estate audit: operational command restored and correctly reported the historical debt as a non-blocking preflight warning: one conversation, one missing closeout, one missing integrity sidecar, and one missing lock sidecar.
+
+The single-artifact recovery validator is also restored as a tracked executable. It remains distinct from the aggregate estate audit and requires an explicit artifact base name.
 
 ## Concurrency finding and correction
 
