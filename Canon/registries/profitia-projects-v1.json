@@ -32,7 +32,21 @@
       "displayName": "Conversational Intelligence Core",
       "aliases": ["CIC", "conversational-intelligence-core"],
       "workspaces": ["conversational-intelligence-core"],
-      "repository": {"slug": "profitia/conversational-intelligence-core", "defaultBranch": "main", "routingRegistry": null},
+      "repository": {
+        "slug": "profitia/conversational-intelligence-core",
+        "defaultBranch": "main",
+        "routingRegistry": "governance/registries/cic-architecture-baseline-v1.json",
+        "routingBootstrapPaths": [
+          "AGENTS.md",
+          ".github/copilot-instructions.md",
+          ".github/workflows/governance-preflight.yml",
+          "governance/**",
+          "scripts/governance/**",
+          "package.json",
+          "README.md",
+          ".pmos/README.md"
+        ]
+      },
       "database": {"provider": "neon", "projectId": "jolly-heart-70236009", "databaseName": "neondb", "allowedHosts": ["ep-tiny-mud-b15mh3kq.c-5.eu-central-1.aws.neon.tech", "ep-tiny-mud-b15mh3kq-pooler.c-5.eu-central-1.aws.neon.tech"]},
       "continuity": {"pmos": "required", "memoros": "required", "phr": "required"},
       "adapter": "Canon/adapters/cic-project-adapter-v1.md",

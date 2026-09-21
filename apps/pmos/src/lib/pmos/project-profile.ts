@@ -13,7 +13,7 @@ type RegistryProject = {
   aliases: string[]
   legacyAliases?: string[]
   workspaces: string[]
-  repository: { slug: string; defaultBranch: string; routingRegistry: string | null }
+  repository: { slug: string; defaultBranch: string; routingRegistry: string | null; routingBootstrapPaths?: string[] }
   database: { provider: 'neon'; projectId: string; databaseName: string; allowedHosts: string[] }
   continuity: { pmos: PmosContinuityMode; memoros: PmosMemorosMode; phr: PmosContinuityMode }
   adapter: string

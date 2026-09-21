@@ -82,6 +82,16 @@ export function validateGovernanceManifest(repositoryRoot, manifestRelativePath 
         if (!project.projectKey || projectKeys.has(project.projectKey)) errors.push(`Invalid or duplicate projectKey: ${project.projectKey ?? '<missing>'}`)
         projectKeys.add(project.projectKey)
         if (!project.displayName || !project.repository?.slug || !project.repository?.defaultBranch) errors.push(`Project ${project.projectKey ?? '<unknown>'} has incomplete repository identity.`)
+        if (project.repository?.routingRegistry !== null && typeof project.repository?.routingRegistry !== 'string') {
+          errors.push(`Project ${project.projectKey ?? '<unknown>'} has invalid routingRegistry.`)
+        }
+        if (project.repository?.routingBootstrapPaths !== undefined) {
+          if (!Array.isArray(project.repository.routingBootstrapPaths) || project.repository.routingBootstrapPaths.length === 0) {
+            errors.push(`Project ${project.projectKey ?? '<unknown>'} routingBootstrapPaths must be a non-empty array.`)
+          } else if (project.repository.routingBootstrapPaths.some((entry) => typeof entry !== 'string' || entry.length === 0 || entry.startsWith('/') || entry.includes('..') || (/[*]/.test(entry) && !entry.endsWith('/**')))) {
+            errors.push(`Project ${project.projectKey ?? '<unknown>'} has invalid routingBootstrapPaths.`)
+          }
+        }
         if (!project.database?.projectId || !project.database?.databaseName || !Array.isArray(project.database?.allowedHosts) || project.database.allowedHosts.length === 0) {
           errors.push(`Project ${project.projectKey ?? '<unknown>'} has incomplete database identity.`)
         }

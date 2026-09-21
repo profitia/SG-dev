@@ -19,7 +19,7 @@ test('repository governance manifest is valid and has one active execution canon
   assert.equal(result.manifest.documents.find((document) => document.id === 'sg2-agent-execution-canon-v2').status, 'SUPERSEDED')
 })
 
-test('project profiles route SG2 and fail closed for unknown projects or missing CIC ownership registry', () => {
+test('project profiles route SG2 and allow only bounded CIC governance bootstrap before its registry exists', () => {
   const sg2 = resolveProjectProfile('sg-dev', repositoryRoot)
   const cic = resolveProjectProfile('CIC', repositoryRoot)
   assert.equal(sg2.projectKey, 'SG2')
@@ -28,9 +28,36 @@ test('project profiles route SG2 and fail closed for unknown projects or missing
 
   const sg2Routing = resolveProjectRouting({ profile: sg2, targets: ['apps/pmos/package.json'], repositoryRoot })
   assert.equal(sg2Routing.ok, true)
-  const cicRouting = resolveProjectRouting({ profile: cic, targets: ['src/index.ts'], repositoryRoot })
-  assert.equal(cicRouting.ok, false)
-  assert.match(cicRouting.error, /no active routing registry/)
+  const tempCicRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cic-governance-bootstrap-'))
+  const bootstrapRouting = resolveProjectRouting({
+    profile: cic,
+    targets: ['AGENTS.md', 'governance/registries/cic-architecture-baseline-v1.json'],
+    repositoryRoot: tempCicRoot,
+  })
+  assert.equal(bootstrapRouting.ok, true)
+  assert.equal(bootstrapRouting.bootstrapMode, true)
+
+  const productRouting = resolveProjectRouting({ profile: cic, targets: ['packages/cic-core/src/index.ts'], repositoryRoot: tempCicRoot })
+  assert.equal(productRouting.ok, false)
+  assert.match(productRouting.error, /restricted to declared governance paths/)
+
+  const registryPath = path.join(tempCicRoot, cic.repository.routingRegistry)
+  fs.mkdirSync(path.dirname(registryPath), { recursive: true })
+  fs.writeFileSync(registryPath, JSON.stringify({
+    schemaVersion: '1.0',
+    classificationReferenceSha: '2f59a86144b9f578b6cdc78746bee22192b1cb9f',
+    pathResolutionStrategy: 'MOST_SPECIFIC_MATCH_WINS',
+    surfaces: [{
+      id: 'CIC-BASE-001',
+      pathPatterns: ['packages/cic-core/**'],
+      currentOwner: 'CIC Core',
+      currentResponsibility: 'Canonical shared conversation contracts.',
+      baselineClassification: 'ALIGNED',
+    }],
+  }))
+  const onboardedRouting = resolveProjectRouting({ profile: cic, targets: ['packages/cic-core/src/index.ts'], repositoryRoot: tempCicRoot })
+  assert.equal(onboardedRouting.ok, true)
+  assert.equal(onboardedRouting.bootstrapMode, undefined)
 })
 
 test('PCOS is not an active PMOS project identity and cross-runtime coupling stays blocked', () => {
