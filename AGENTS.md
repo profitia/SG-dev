@@ -1,15 +1,16 @@
-# SG2 Agent Entrypoint
+# Profitia Governance Agent Entrypoint
 
-This file is the stable, tool-neutral loader for repository work in `profitia/SG-dev`.
+This is the stable, tool-neutral loader for governed work in this repository.
 
-Before any repository mutation:
+Before any mutation:
 
-1. Load and apply `Canon/v2.0-mandatory-agent-execution-canon.md`.
-2. Load every active document in `Canon/registries/governance-manifest-v2.json` in its declared order.
-3. Run `node scripts/governance/validate-governance-manifest.mjs`.
-4. Run `node scripts/governance/governance-preflight.mjs` with the exact task identity and target paths.
-5. Register the task through `apps/pmos` command `npm run pmos:begin -- --input <file>` before implementation.
+1. Identify the project through `Canon/registries/profitia-projects-v1.json`; unknown projects fail closed.
+2. Load `Canon/v3.0-profitia-agent-execution-canon.md` and every active document whose `appliesTo` contains `CORE` or the selected project key, in declared order.
+3. Load every nested `AGENTS.md` covering the exact target paths.
+4. Run `node scripts/governance/validate-governance-manifest.mjs`.
+5. Run `node scripts/governance/governance-preflight.mjs` with the project, task identity, and every exact target path.
+6. Register the task with `npm run pmos:begin -- --input <file>` from `apps/pmos`, then rerun preflight with `--require-begin`.
 
-All gates are fail-closed. No source, configuration, schema, data, deployment, or infrastructure mutation is allowed before the applicable gates pass. Read-only work follows the read-only policy in the v2 Canon and still requires PMOS continuity, but must not fabricate a final closeout artifact before findings exist.
+All gates fail closed. No source, configuration, schema, data, deployment, or infrastructure mutation is allowed before the applicable gates pass. Read-only audits still use PMOS registration but do not create closeout evidence until factual findings exist.
 
-Tool-specific instruction files are adapters only. If an adapter conflicts with the v2 Canon, the v2 Canon and executable validation win.
+Tool adapters and short project wrappers only select a project profile. They never replace or weaken the active Canon, routing registry, executable preflight, or PMOS lifecycle.

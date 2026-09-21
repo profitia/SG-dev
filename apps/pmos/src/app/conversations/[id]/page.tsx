@@ -185,7 +185,7 @@ export default async function ConversationPage({ params }: { params: { id: strin
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <EvidencePill label="closeoutState" value={canonical.completionEvidence.closeoutState} />
                 <EvidencePill label="pmosSaveStatus" value={canonical.completionEvidence.pmosSaveStatus} />
-                <EvidencePill label="vectorRebuildStatus" value={canonical.completionEvidence.vectorRebuildStatus} />
+                <EvidencePill label="runtimeContextRefreshStatus" value={canonical.completionEvidence.runtimeContextRefreshStatus} />
                 <EvidencePill label="archiveCompletenessStatus" value={canonical.completionEvidence.archiveCompletenessStatus} />
                 <EvidencePill label="executionTrailStatus" value={canonical.completionEvidence.executionTrailStatus} />
               </div>

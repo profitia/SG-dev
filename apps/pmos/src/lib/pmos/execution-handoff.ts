@@ -42,7 +42,7 @@ function createValidationArtifact(input: BootstrapInput): PendingArtifact {
     completionEvidence: {
       closeoutState: CloseoutState.PENDING_ARTIFACT_CREATED,
       pmosSaveStatus: "NOT_STARTED",
-      vectorRebuildStatus: "NOT_STARTED",
+      runtimeContextRefreshStatus: "NOT_STARTED",
       archiveCompletenessStatus: "UNKNOWN",
       executionTrailStatus: ExecutionTrailStatus.MISSING,
     },

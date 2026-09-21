@@ -69,7 +69,7 @@ async function begin(inputPath: string): Promise<void> {
   }
 
   const databaseName = await currentDatabaseName()
-  assertDatabaseIdentity(databaseName, input.project)
+  assertDatabaseIdentity(databaseName, input.project, process.env.DATABASE_URL)
 
   const [byTask, byConversation] = await Promise.all([
     prisma.promptExecution.findUnique({ where: { taskId: input.taskId }, select: registrationSelect }),

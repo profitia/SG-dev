@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "allowJs": false,
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "scripts/pmos-begin.ts",
+    "scripts/pmos-publish-phr.ts",
+    "src/lib/pmos/atomic-io.ts",
+    "src/lib/pmos/completion-authority.ts",
+    "src/lib/pmos/execution-handoff.ts",
+    "src/lib/pmos/execution-registration.ts",
+    "src/lib/pmos/flight-record-read.ts",
+    "src/lib/pmos/flight-record-snapshot.ts",
+    "src/lib/pmos/operator-preflight.ts",
+    "src/lib/pmos/phr-publication.ts",
+    "src/lib/pmos/project-profile.ts",
+    "../../packages/governance/src/**/*.ts"
+  ],
+  "exclude": ["node_modules", "**/*.test.ts"]
+}

@@ -50,7 +50,7 @@ export interface CanonicalConversationReadModel {
   completionEvidence: {
     closeoutState: string | null
     pmosSaveStatus: string | null
-    vectorRebuildStatus: string | null
+    runtimeContextRefreshStatus: string | null
     archiveCompletenessStatus: string | null
     executionTrailStatus: string | null
   }
@@ -135,7 +135,7 @@ export function buildCanonicalConversationReadModel(value: unknown): CanonicalCo
       completionEvidence: {
         closeoutState: null,
         pmosSaveStatus: null,
-        vectorRebuildStatus: null,
+        runtimeContextRefreshStatus: null,
         archiveCompletenessStatus: null,
         executionTrailStatus: null,
       },
@@ -183,7 +183,10 @@ export function buildCanonicalConversationReadModel(value: unknown): CanonicalCo
     completionEvidence: {
       closeoutState: typeof flightRecord.completionEvidence.closeoutState === 'string' ? flightRecord.completionEvidence.closeoutState : null,
       pmosSaveStatus: asString(flightRecord.completionEvidence.pmosSaveStatus),
-      vectorRebuildStatus: asString(flightRecord.completionEvidence.vectorRebuildStatus),
+      runtimeContextRefreshStatus: asString(
+        flightRecord.completionEvidence.runtimeContextRefreshStatus
+          ?? flightRecord.completionEvidence.vectorRebuildStatus,
+      ),
       archiveCompletenessStatus: asString(flightRecord.completionEvidence.archiveCompletenessStatus),
       executionTrailStatus: asString(flightRecord.completionEvidence.executionTrailStatus),
     },

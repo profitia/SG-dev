@@ -573,11 +573,16 @@ function normalizePendingArtifact(artifact: PendingArtifact): PendingArtifact {
   const rawMetadata = artifact.metadata as Record<string, unknown>
   const rawWorkspace = getArtifactWorkspaceName(rawMetadata)
   const compatibility = normalizeLegacyPlanningCompatibility(rawMetadata)
+  const { etap: _legacyEtap, subetap: _legacySubetap, compatibility: _legacyCompatibility, ...metadataWithoutLegacyPlanning } = artifact.metadata as FlightRecordV1['metadata'] & Record<string, unknown>
+  const legacyRuntimeRefreshStatus = artifact.completionEvidence.runtimeContextRefreshStatus
+    ?? artifact.completionEvidence.vectorRebuildStatus
+    ?? 'NOT_STARTED'
+  const { vectorRebuildStatus: _legacyVectorRebuildStatus, ...completionEvidenceWithoutVector } = artifact.completionEvidence
 
   return {
     ...artifact,
     metadata: {
-      ...artifact.metadata,
+      ...metadataWithoutLegacyPlanning,
       conversationId: normalizeWhitespace(artifact.metadata.conversationId),
       project: normalizeProjectName(artifact.metadata.project),
       taskId: normalizeWhitespace(artifact.metadata.taskId),
@@ -616,7 +621,8 @@ function normalizePendingArtifact(artifact: PendingArtifact): PendingArtifact {
       ...artifact.result,
     },
     completionEvidence: {
-      ...artifact.completionEvidence,
+      ...completionEvidenceWithoutVector,
+      runtimeContextRefreshStatus: legacyRuntimeRefreshStatus,
     },
     ...(artifact.contextLinks ? { contextLinks: { ...artifact.contextLinks } } : {}),
   }
@@ -736,10 +742,10 @@ function createInitialEvidence(backupPath: string): CloseoutEvidence {
     pmosSaveConversationJsonPath: null,
     pmosSaveIntegrityPath: null,
     pmosSaveLockPath: null,
-    vectorRebuildStatus: 'NOT_STARTED',
-    vectorRebuildStartedAt: null,
-    vectorRebuildCompletedAt: null,
-    vectorRebuildError: null,
+    runtimeContextRefreshStatus: 'NOT_STARTED',
+    runtimeContextRefreshStartedAt: null,
+    runtimeContextRefreshCompletedAt: null,
+    runtimeContextRefreshError: null,
     handoffPublicationStatus: 'NOT_STARTED',
     handoffPublicationStartedAt: null,
     handoffPublicationCompletedAt: null,
@@ -1037,7 +1043,7 @@ function buildMarkdown(
   lines.push('')
   lines.push(`- closeoutState: ${artifact.completionEvidence.closeoutState}`)
   lines.push(`- pmosSaveStatus: ${artifact.completionEvidence.pmosSaveStatus}`)
-  lines.push(`- vectorRebuildStatus: ${artifact.completionEvidence.vectorRebuildStatus}`)
+  lines.push(`- runtimeContextRefreshStatus: ${artifact.completionEvidence.runtimeContextRefreshStatus}`)
   if (artifact.completionEvidence.handoffPublicationStatus) {
     lines.push(`- handoffPublicationStatus: ${artifact.completionEvidence.handoffPublicationStatus}`)
   }
@@ -1372,7 +1378,7 @@ function projectFlightRecordCompletionEvidence(closeout: CloseoutEvidence): Flig
   return {
     closeoutState: closeout.closeoutState,
     pmosSaveStatus: closeout.pmosSaveStatus,
-    vectorRebuildStatus: closeout.vectorRebuildStatus,
+    runtimeContextRefreshStatus: closeout.runtimeContextRefreshStatus,
     handoffPublicationStatus: closeout.handoffPublicationStatus,
     archiveCompletenessStatus: closeout.archiveCompletenessStatus,
     executionTrailStatus: closeout.executionTrailStatus,
@@ -1536,7 +1542,7 @@ function reconstructFlightRecordFromDbOrThrow(dbRecord: { conversationId: string
 function syncFlightRecordCompletionEvidence(artifact: FlightRecordV1, closeout: CloseoutEvidence): FlightRecordV1 {
   artifact.completionEvidence.closeoutState = closeout.closeoutState
   artifact.completionEvidence.pmosSaveStatus = closeout.pmosSaveStatus
-  artifact.completionEvidence.vectorRebuildStatus = closeout.vectorRebuildStatus
+  artifact.completionEvidence.runtimeContextRefreshStatus = closeout.runtimeContextRefreshStatus
   artifact.completionEvidence.handoffPublicationStatus = closeout.handoffPublicationStatus
   artifact.completionEvidence.archiveCompletenessStatus = closeout.archiveCompletenessStatus
   artifact.completionEvidence.executionTrailStatus = closeout.executionTrailStatus
@@ -1643,7 +1649,7 @@ function shouldKeepValidationNotExecuted(
     return false
   }
 
-  if (closeout.vectorRebuildStatus === 'SUCCEEDED' && /runtime rebuild|pmos:context|runtime-context/.test(normalized)) {
+  if (closeout.runtimeContextRefreshStatus === 'SUCCEEDED' && /runtime rebuild|runtime refresh|pmos:context|runtime-context/.test(normalized)) {
     return false
   }
 
@@ -1969,8 +1975,8 @@ function buildDeterministicSrmPhrStateHistory(): CloseoutState[] {
     CloseoutState.PENDING_ARTIFACT_VALIDATED,
     CloseoutState.PMOS_SAVE_STARTED,
     CloseoutState.PMOS_SAVE_SUCCEEDED,
-    CloseoutState.VECTOR_REBUILD_STARTED,
-    CloseoutState.VECTOR_REBUILD_SUCCEEDED,
+    CloseoutState.RUNTIME_CONTEXT_REFRESH_STARTED,
+    CloseoutState.RUNTIME_CONTEXT_REFRESH_SUCCEEDED,
     CloseoutState.RUNTIME_CONTEXT_VERIFIED,
     CloseoutState.HANDOFF_PUBLICATION_STARTED,
     CloseoutState.HANDOFF_PUBLICATION_SUCCEEDED,
@@ -2001,10 +2007,10 @@ function buildDeterministicSrmPhrCloseoutSnapshot(params: {
     pmosSaveConversationJsonPath: null,
     pmosSaveIntegrityPath: null,
     pmosSaveLockPath: null,
-    vectorRebuildStatus: params.closeout.vectorRebuildStatus,
-    vectorRebuildStartedAt: null,
-    vectorRebuildCompletedAt: null,
-    vectorRebuildError: null,
+    runtimeContextRefreshStatus: params.closeout.runtimeContextRefreshStatus,
+    runtimeContextRefreshStartedAt: null,
+    runtimeContextRefreshCompletedAt: null,
+    runtimeContextRefreshError: null,
     handoffPublicationStartedAt: null,
     handoffPublicationStatus: 'SUCCEEDED',
     handoffPublicationCompletedAt: completedAt,
@@ -2687,10 +2693,10 @@ async function finalizeRuntimeContextCloseout(params: {
 }): Promise<void> {
   const { artifact, conversationArtifactSnapshot, evidence, baseName, mdPath, jsonPath, integrityPath, lockPath, traceability } = params
 
-  evidence.vectorRebuildStatus = 'STARTED'
-  evidence.vectorRebuildStartedAt = new Date().toISOString()
-  appendState(evidence, CloseoutState.VECTOR_REBUILD_STARTED)
-  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.VECTOR_REBUILD_STARTED, 'PMOS runtime-context rebuild started from canonical PMOS authority.', {
+  evidence.runtimeContextRefreshStatus = 'STARTED'
+  evidence.runtimeContextRefreshStartedAt = new Date().toISOString()
+  appendState(evidence, CloseoutState.RUNTIME_CONTEXT_REFRESH_STARTED)
+  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.RUNTIME_CONTEXT_REFRESH_STARTED, 'PMOS runtime-context refresh started from canonical PMOS authority.', {
     relatedCommands: ['cd apps/pmos && npm run pmos:context'],
     status: ExecutionTrailEventStatus.STARTED,
     source: 'pmos-save/runtime-context',
@@ -2722,7 +2728,7 @@ async function finalizeRuntimeContextCloseout(params: {
     persistedRuntimeIntegrity.value,
   )
 
-  evidence.vectorRebuildCompletedAt = new Date().toISOString()
+  evidence.runtimeContextRefreshCompletedAt = new Date().toISOString()
   evidence.runtimeContextPath = relativize(RUNTIME_CONTEXT_FILE)
   evidence.runtimeContextIntegrityPath = relativize(RUNTIME_CONTEXT_INTEGRITY_FILE)
   evidence.runtimeContextVerificationSource = 'PMOS runtime authority'
@@ -2732,20 +2738,20 @@ async function finalizeRuntimeContextCloseout(params: {
   }
 
   if (!verification.valid) {
-    evidence.vectorRebuildStatus = 'FAILED'
-    evidence.vectorRebuildError = 'PMOS runtime-context integrity verification failed after write.'
-    appendState(evidence, CloseoutState.VECTOR_REBUILD_FAILED)
+    evidence.runtimeContextRefreshStatus = 'FAILED'
+    evidence.runtimeContextRefreshError = 'PMOS runtime-context integrity verification failed after write.'
+    appendState(evidence, CloseoutState.RUNTIME_CONTEXT_REFRESH_FAILED)
     appendState(evidence, CloseoutState.RUNTIME_CONTEXT_VERIFICATION_FAILED)
     appendState(evidence, CloseoutState.CLOSEOUT_FAILED)
     appendState(evidence, CloseoutState.RECOVERY_REQUIRED)
     evidence.recoveryRequired = true
-    evidence.recoveryReason = evidence.vectorRebuildError
+    evidence.recoveryReason = evidence.runtimeContextRefreshError
     evidence.manualRecoveryInstructions = [
       'Inspect apps/pmos/.context/runtime-context.md and its .integrity.json companion.',
       'Rerun cd apps/pmos && npm run pmos:context after resolving the integrity mismatch.',
       'Do not call task_complete. Task state is INCOMPLETE - RECOVERY REQUIRED.',
     ]
-    appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.VECTOR_REBUILD_FAILED, 'PMOS runtime-context verification failed.', {
+    appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.RUNTIME_CONTEXT_REFRESH_FAILED, 'PMOS runtime-context verification failed.', {
       details: { integrityStatus: verification.status, findings: verification.findings },
       relatedFiles: [evidence.runtimeContextPath, evidence.runtimeContextIntegrityPath].filter(Boolean) as string[],
       status: ExecutionTrailEventStatus.FAILED,
@@ -2756,12 +2762,12 @@ async function finalizeRuntimeContextCloseout(params: {
     syncFlightRecordCompletionEvidence(artifact, evidence)
     writeConversationArtifactFiles({ artifact: conversationArtifactSnapshot, baseName, mdPath, jsonPath, integrityPath, lockPath, recoveryDir: QUARANTINE_DIR, traceability })
     writeJson(closeoutEvidencePath!, evidence)
-    throw new Error(evidence.vectorRebuildError)
+    throw new Error(evidence.runtimeContextRefreshError)
   }
 
-  evidence.vectorRebuildStatus = 'SUCCEEDED'
-  evidence.vectorRebuildError = null
-  appendState(evidence, CloseoutState.VECTOR_REBUILD_SUCCEEDED)
+  evidence.runtimeContextRefreshStatus = 'SUCCEEDED'
+  evidence.runtimeContextRefreshError = null
+  appendState(evidence, CloseoutState.RUNTIME_CONTEXT_REFRESH_SUCCEEDED)
   appendState(evidence, CloseoutState.RUNTIME_CONTEXT_VERIFIED)
   evidence.recoveryRequired = false
   evidence.recoveryReason = null
@@ -2770,7 +2776,7 @@ async function finalizeRuntimeContextCloseout(params: {
     'Do not call task_complete until HANDOFF publication succeeds and closeoutState = CLOSEOUT_COMPLETE.',
   ]
 
-  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.VECTOR_REBUILD_SUCCEEDED, 'PMOS runtime-context rebuild succeeded.', {
+  appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.RUNTIME_CONTEXT_REFRESH_SUCCEEDED, 'PMOS runtime-context refresh succeeded.', {
     details: { runtimeContextPath: evidence.runtimeContextPath },
     relatedFiles: [evidence.runtimeContextPath, evidence.runtimeContextIntegrityPath].filter(Boolean) as string[],
     status: ExecutionTrailEventStatus.SUCCEEDED,

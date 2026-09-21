@@ -1,7 +1,6 @@
 import crypto from "crypto"
 
-import { ConversationType, ExecutionType, GovernanceState, ImportanceLevel, PipelineStatus, ReadinessState, RoadmapPosition } from "../enums/index.js"
-import { CANONICAL_ETAPS, CANONICAL_PIPELINES } from "../registries/index.js"
+import { ConversationType, ExecutionType, GovernanceState, ImportanceLevel, ReadinessState, ScopeClassification } from "../enums/index.js"
 
 export function stableStringify(obj: unknown): string {
   if (obj === null || obj === undefined) return JSON.stringify(obj)
@@ -27,25 +26,13 @@ export function hashText(text: string): string {
 
 export function computeCanonicalGovernanceHash(): string {
   return hashObject({
-    etaps: CANONICAL_ETAPS.map((entry) => ({
-      name: entry.name,
-      order: entry.order,
-      pipeline: entry.pipeline,
-      roadmapPosition: entry.roadmapPosition,
-    })),
-    pipelines: CANONICAL_PIPELINES.map((entry) => ({
-      name: entry.name,
-      order: entry.order,
-      status: entry.status,
-    })),
     enums: {
       ConversationType: Object.values(ConversationType).sort(),
       ExecutionType: Object.values(ExecutionType).sort(),
       GovernanceState: Object.values(GovernanceState).sort(),
       ImportanceLevel: Object.values(ImportanceLevel).sort(),
-      PipelineStatus: Object.values(PipelineStatus).sort(),
       ReadinessState: Object.values(ReadinessState).sort(),
-      RoadmapPosition: Object.values(RoadmapPosition).sort(),
+      ScopeClassification: Object.values(ScopeClassification).sort(),
     },
   })
 }

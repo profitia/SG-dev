@@ -4,111 +4,71 @@ import test from 'node:test'
 import {
   DEFAULT_PMOS_PROJECT_NAME,
   SRM_PMOS_PROJECT_NAME,
+  buildNamespacedPublicationId,
   getConfiguredPmosProjectName,
   getConfiguredPmosWorkspaceName,
   isPhrSatisfiedForCloseout,
+  listActivePmosProjectProfiles,
   normalizePmosProjectName,
   normalizePmosWorkspaceName,
+  requirePmosProjectProfile,
   resolvePmosProjectProfile,
   runMemorosPublicationIfEnabled,
 } from './project-profile'
 
 function makeEnv(values: Record<string, string | undefined>): NodeJS.ProcessEnv {
-  return {
-    ...process.env,
-    ...values,
-  }
+  return { ...process.env, ...values }
 }
 
-test('project normalization preserves SpendGuru aliases and adds SRM aliases', () => {
-  const spendGuruAliases = [
-    'SpendGuru 2.0',
-    'Spend Guru',
-    'SpendGuru',
-    'SpendGuru 2 0',
-    'SpendGuru-2',
-    'sg2-discovery-runtime',
-    'sg-dev',
-    'SpendGuru 2.0 - PMOS',
-    'SpendGuru 2.0 - PCOS Runtime',
-    'SpendGuru 2.0 — PMOS',
-    'SpendGuru 2.0 — PCOS Runtime',
-  ]
-
-  spendGuruAliases.forEach((alias) => {
-    assert.equal(normalizePmosProjectName(alias), DEFAULT_PMOS_PROJECT_NAME)
-  })
-
-  assert.equal(normalizePmosProjectName('SRM'), SRM_PMOS_PROJECT_NAME)
-  assert.equal(normalizePmosProjectName('srm porr'), 'srm porr')
-  assert.equal(normalizePmosProjectName('srm / porr'), 'srm / porr')
+test('registry exposes isolated SG2, SRM, and CIC profiles', () => {
+  assert.deepEqual(listActivePmosProjectProfiles().map((profile) => profile.projectKey), ['SG2', 'SRM', 'CIC'])
+  assert.notEqual(requirePmosProjectProfile('SG2').database.projectId, requirePmosProjectProfile('CIC').database.projectId)
 })
 
-test('workspace normalization accepts SRM Codespaces variants', () => {
+test('project normalization resolves registered aliases and rejects unknown profiles at execution', () => {
+  assert.equal(normalizePmosProjectName('sg-dev'), DEFAULT_PMOS_PROJECT_NAME)
+  assert.equal(normalizePmosProjectName('srm'), SRM_PMOS_PROJECT_NAME)
+  assert.equal(normalizePmosProjectName('CIC'), 'Conversational Intelligence Core')
+  assert.throws(() => requirePmosProjectProfile('unknown project'), /Unknown PMOS project/)
+})
+
+test('workspace normalization is registry driven', () => {
   assert.equal(normalizePmosWorkspaceName('SG-dev'), 'SG-dev')
-  assert.equal(normalizePmosWorkspaceName('SG dev codespaces srm'), 'SG-dev Codespaces SRM')
   assert.equal(normalizePmosWorkspaceName('SG-dev-codespaces-srm'), 'SG-dev Codespaces SRM')
+  assert.equal(normalizePmosWorkspaceName('conversational-intelligence-core'), 'conversational-intelligence-core')
 })
 
-test('configured project and workspace default safely', () => {
+test('configured project and workspace preserve safe SG2 compatibility default', () => {
   assert.equal(getConfiguredPmosProjectName(makeEnv({ PMOS_PROJECT_NAME: undefined })), DEFAULT_PMOS_PROJECT_NAME)
   assert.equal(getConfiguredPmosProjectName(makeEnv({ PMOS_PROJECT_NAME: 'srm' })), SRM_PMOS_PROJECT_NAME)
   assert.equal(getConfiguredPmosWorkspaceName(makeEnv({ PMOS_WORKSPACE_NAME: 'sg dev codespaces srm' })), 'SG-dev Codespaces SRM')
 })
 
-test('missing PMOS_MEMOROS_MODE defaults to required and requires PHR for SpendGuru governance v2', () => {
-  const profile = resolvePmosProjectProfile({ projectName: 'SpendGuru 2.0' })
+test('continuity policies come from the canonical registry and cannot be weakened by environment', async () => {
+  const sg2 = resolvePmosProjectProfile({ projectName: 'SpendGuru 2.0', workspaceName: 'SG-dev' })
+  const srm = resolvePmosProjectProfile({ projectName: 'SRM', workspaceName: 'SG-dev Codespaces SRM', memorosMode: 'disabled' })
+  const cic = resolvePmosProjectProfile({ projectName: 'CIC', workspaceName: 'conversational-intelligence-core' })
 
-  assert.equal(profile.memorosMode, 'required')
-  assert.equal(profile.memorosEnabled, true)
-  assert.equal(profile.phrRequiredForCloseout, true)
-  assert.equal(profile.memorosAuditStatus, 'MEMOROS_REQUIRED')
-})
-
-test('disabled Memoros mode is allowed only for SRM', async () => {
-  const profile = resolvePmosProjectProfile({
-    projectName: 'SRM',
-    workspaceName: 'SG-dev Codespaces SRM',
-    memorosMode: 'disabled',
-  })
+  assert.equal(sg2.memorosEnabled, true)
+  assert.equal(cic.memorosEnabled, true)
+  assert.equal(srm.memorosEnabled, false)
+  assert.equal(srm.memorosAuditStatus, 'MEMOROS_DISABLED_BY_PROJECT_PROFILE')
+  assert.throws(() => resolvePmosProjectProfile({ projectName: 'SG2', memorosMode: 'disabled' }), /conflicts with the canonical SG2/)
+  assert.throws(() => resolvePmosProjectProfile({ projectName: 'CIC', workspaceName: 'SG-dev' }), /not allowed/)
 
   let called = false
-  const result = await runMemorosPublicationIfEnabled(profile, async () => {
-    called = true
-    return 'should-not-run'
-  })
-
-  assert.equal(profile.memorosEnabled, false)
-  assert.equal(profile.memorosAuditStatus, 'MEMOROS_DISABLED_BY_PROJECT_PROFILE')
-  assert.equal(result.attempted, false)
-  assert.equal(result.result, null)
+  const publication = await runMemorosPublicationIfEnabled(srm, async () => { called = true; return 'unexpected' })
+  assert.equal(publication.attempted, false)
   assert.equal(called, false)
 })
 
-test('disabled Memoros mode is rejected for SpendGuru and unknown mode fails closed', () => {
-  assert.throws(
-    () => resolvePmosProjectProfile({ projectName: 'SpendGuru 2.0', memorosMode: 'disabled' }),
-    /allowed only for project SRM/,
-  )
+test('PHR ids are namespaced and every active profile requires successful PHR closeout', () => {
+  const sg2 = resolvePmosProjectProfile({ projectName: 'SG2' })
+  const srm = resolvePmosProjectProfile({ projectName: 'SRM' })
 
-  assert.throws(
-    () => resolvePmosProjectProfile({ projectName: 'SRM', memorosMode: 'shadow' }),
-    /invalid\. Valid values: required, disabled/,
-  )
-
-  assert.throws(
-    () => resolvePmosProjectProfile({ projectName: 'SRM', memorosMode: '   ' }),
-    /set but empty/,
-  )
-})
-
-test('both SRM and SpendGuru closeout require successful PHR', () => {
-  const srmProfile = resolvePmosProjectProfile({ projectName: 'SRM', memorosMode: 'disabled' })
-  const sgProfile = resolvePmosProjectProfile({ projectName: 'SpendGuru 2.0', memorosMode: 'required' })
-
-  assert.equal(isPhrSatisfiedForCloseout(srmProfile, 'FAILED'), false)
-  assert.equal(isPhrSatisfiedForCloseout(srmProfile, 'PUBLISHED'), true)
-  assert.equal(isPhrSatisfiedForCloseout(srmProfile, 'IDEMPOTENT'), true)
-  assert.equal(isPhrSatisfiedForCloseout(sgProfile, 'FAILED'), false)
-  assert.equal(isPhrSatisfiedForCloseout(sgProfile, 'PUBLISHED'), true)
+  assert.equal(buildNamespacedPublicationId('SG2', 'TASK-1'), 'SG2:TASK-1')
+  assert.equal(buildNamespacedPublicationId('SRM', 'TASK-1'), 'SRM:TASK-1')
+  assert.equal(isPhrSatisfiedForCloseout(sg2, 'FAILED'), false)
+  assert.equal(isPhrSatisfiedForCloseout(sg2, 'PUBLISHED'), true)
+  assert.equal(isPhrSatisfiedForCloseout(srm, 'IDEMPOTENT'), true)
 })

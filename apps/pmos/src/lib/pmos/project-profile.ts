@@ -1,21 +1,25 @@
+import projectRegistry from '../../../../../Canon/registries/profitia-projects-v1.json'
+
 export const DEFAULT_PMOS_PROJECT_NAME = 'SpendGuru 2.0'
 export const SRM_PMOS_PROJECT_NAME = 'SRM'
 
-export const CANONICAL_PMOS_PROJECT_NAMES: ReadonlySet<string> = new Set([
-  DEFAULT_PMOS_PROJECT_NAME,
-  SRM_PMOS_PROJECT_NAME,
-])
-
-export const CANONICAL_PMOS_WORKSPACE_NAMES: ReadonlySet<string> = new Set([
-  'SG-dev',
-  'sg2-pcog-runtime',
-  'SG-dev Codespaces SRM',
-])
-
 export type PmosMemorosMode = 'required' | 'disabled'
 export type PmosMemorosAuditStatus = 'MEMOROS_REQUIRED' | 'MEMOROS_DISABLED_BY_PROJECT_PROFILE'
+export type PmosContinuityMode = 'required' | 'disabled'
 
-export type PmosProjectProfile = {
+type RegistryProject = {
+  projectKey: string
+  displayName: string
+  aliases: string[]
+  workspaces: string[]
+  repository: { slug: string; defaultBranch: string; routingRegistry: string | null }
+  database: { provider: 'neon'; projectId: string; databaseName: string; allowedHosts: string[] }
+  continuity: { pmos: PmosContinuityMode; memoros: PmosMemorosMode; phr: PmosContinuityMode }
+  adapter: string
+  status: 'ACTIVE' | 'SUPERSEDED'
+}
+
+export type PmosProjectProfile = RegistryProject & {
   projectName: string
   workspaceName?: string
   memorosMode: PmosMemorosMode
@@ -23,6 +27,8 @@ export type PmosProjectProfile = {
   memorosEnabled: boolean
   phrRequiredForCloseout: boolean
 }
+
+const ACTIVE_PROJECTS = (projectRegistry.projects as RegistryProject[]).filter((project) => project.status === 'ACTIVE')
 
 function normalizeWhitespace(value: string): string {
   return value.replace(/\s+/g, ' ').trim()
@@ -37,49 +43,42 @@ function normalizeLooseIdentifier(value: string): string {
     .trim()
 }
 
+function projectIdentifiers(project: RegistryProject): string[] {
+  return [project.projectKey, project.displayName, ...project.aliases].map(normalizeLooseIdentifier)
+}
+
+export function listActivePmosProjectProfiles(): readonly RegistryProject[] {
+  return ACTIVE_PROJECTS
+}
+
+export function findPmosProjectProfile(projectIdentity: string): RegistryProject | null {
+  const key = normalizeLooseIdentifier(projectIdentity)
+  return ACTIVE_PROJECTS.find((project) => projectIdentifiers(project).includes(key)) ?? null
+}
+
+export function requirePmosProjectProfile(projectIdentity: string): RegistryProject {
+  const profile = findPmosProjectProfile(projectIdentity)
+  if (!profile) {
+    throw new Error(`Unknown PMOS project "${projectIdentity}". Add an ACTIVE profile to Canon/registries/profitia-projects-v1.json before execution.`)
+  }
+  return profile
+}
+
+export const CANONICAL_PMOS_PROJECT_NAMES: ReadonlySet<string> = new Set(ACTIVE_PROJECTS.map((project) => project.displayName))
+export const CANONICAL_PMOS_WORKSPACE_NAMES: ReadonlySet<string> = new Set(ACTIVE_PROJECTS.flatMap((project) => project.workspaces))
+
 export function normalizePmosProjectName(projectName: string): string {
-  const normalized = normalizeWhitespace(projectName).replace(/\s*\[[^\]]+\]\s*$/g, '')
-  const key = normalizeLooseIdentifier(projectName)
-
-  if (
-    key === 'spendguru 2.0'
-    || key === 'spend guru'
-    || key === 'spendguru'
-    || key === 'spendguru 2 0'
-    || key === 'spendguru 2'
-    || key === 'spendguru 2 pmos'
-    || key === 'sg2 discovery runtime'
-    || key === 'sg dev'
-    || key === 'spendguru 2.0 pmos'
-    || key === 'spendguru 2.0 pcos runtime'
-  ) {
-    return DEFAULT_PMOS_PROJECT_NAME
-  }
-
-  if (key === 'srm') {
-    return SRM_PMOS_PROJECT_NAME
-  }
-
-  return normalized
+  const profile = findPmosProjectProfile(projectName)
+  return profile?.displayName ?? normalizeWhitespace(projectName).replace(/\s*\[[^\]]+\]\s*$/g, '')
 }
 
 export function normalizePmosWorkspaceName(workspaceName: string): string {
-  const normalized = normalizeWhitespace(workspaceName).replace(/\s*\[[^\]]+\]\s*$/g, '')
   const key = normalizeLooseIdentifier(workspaceName)
-
-  if (key === 'sg dev' || key === 'sgdev') {
-    return 'SG-dev'
+  for (const project of ACTIVE_PROJECTS) {
+    const workspace = project.workspaces.find((candidate) => normalizeLooseIdentifier(candidate) === key)
+    if (workspace) return workspace
   }
-
-  if (key === 'sg2 pcog runtime') {
-    return 'sg2-pcog-runtime'
-  }
-
-  if (key === 'sg dev codespaces srm' || key === 'sg dev codespace srm') {
-    return 'SG-dev Codespaces SRM'
-  }
-
-  return normalized
+  return normalizeWhitespace(workspaceName).replace(/\s*\[[^\]]+\]\s*$/g, '')
 }
 
 export function getConfiguredPmosProjectName(env: NodeJS.ProcessEnv = process.env): string {
@@ -94,66 +93,39 @@ export function getConfiguredPmosWorkspaceName(env: NodeJS.ProcessEnv = process.
   return normalizePmosWorkspaceName(configured)
 }
 
-export function resolvePmosProjectProfile(params: {
-  projectName: string
-  workspaceName?: string
-  memorosMode?: string
-}): PmosProjectProfile {
-  const projectName = normalizePmosProjectName(params.projectName)
+export function resolvePmosProjectProfile(params: { projectName: string; workspaceName?: string; memorosMode?: string }): PmosProjectProfile {
+  const registryProfile = requirePmosProjectProfile(params.projectName)
   const workspaceName = params.workspaceName ? normalizePmosWorkspaceName(params.workspaceName) : undefined
-  const configuredMode = params.memorosMode
-
-  if (configuredMode === undefined) {
-    return {
-      projectName,
-      workspaceName,
-      memorosMode: 'required',
-      memorosAuditStatus: 'MEMOROS_REQUIRED',
-      memorosEnabled: true,
-      phrRequiredForCloseout: true,
-    }
+  if (workspaceName && !registryProfile.workspaces.includes(workspaceName)) {
+    throw new Error(`Workspace "${workspaceName}" is not allowed for project ${registryProfile.displayName}.`)
   }
 
-  const normalizedMode = configuredMode.trim().toLowerCase()
-  if (!normalizedMode) {
+  const configuredMode = params.memorosMode?.trim().toLowerCase()
+  if (params.memorosMode !== undefined && !configuredMode) {
     throw new Error('PMOS_MEMOROS_MODE is set but empty. Valid values: required, disabled.')
   }
-
-  if (normalizedMode !== 'required' && normalizedMode !== 'disabled') {
-    throw new Error(`PMOS_MEMOROS_MODE \"${configuredMode}\" is invalid. Valid values: required, disabled.`)
+  if (configuredMode && configuredMode !== 'required' && configuredMode !== 'disabled') {
+    throw new Error(`PMOS_MEMOROS_MODE "${params.memorosMode}" is invalid. Valid values: required, disabled.`)
+  }
+  if (configuredMode && configuredMode !== registryProfile.continuity.memoros) {
+    throw new Error(`PMOS_MEMOROS_MODE=${configuredMode} conflicts with the canonical ${registryProfile.projectKey} project profile (${registryProfile.continuity.memoros}).`)
   }
 
-  if (normalizedMode === 'disabled' && projectName !== SRM_PMOS_PROJECT_NAME) {
-    throw new Error('PMOS_MEMOROS_MODE=disabled is allowed only for project SRM.')
-  }
-
+  const memorosMode = registryProfile.continuity.memoros
   return {
-    projectName,
+    ...registryProfile,
+    projectName: registryProfile.displayName,
     workspaceName,
-    memorosMode: normalizedMode,
-    memorosAuditStatus: normalizedMode === 'disabled' ? 'MEMOROS_DISABLED_BY_PROJECT_PROFILE' : 'MEMOROS_REQUIRED',
-    memorosEnabled: normalizedMode !== 'disabled',
-    phrRequiredForCloseout: true,
+    memorosMode,
+    memorosAuditStatus: memorosMode === 'disabled' ? 'MEMOROS_DISABLED_BY_PROJECT_PROFILE' : 'MEMOROS_REQUIRED',
+    memorosEnabled: memorosMode !== 'disabled',
+    phrRequiredForCloseout: registryProfile.continuity.phr === 'required',
   }
 }
 
-export function runMemorosPublicationIfEnabled<T>(
-  profile: PmosProjectProfile,
-  publish: () => Promise<T>,
-): Promise<{ attempted: boolean; auditStatus: PmosMemorosAuditStatus; result: T | null }> {
-  if (!profile.memorosEnabled) {
-    return Promise.resolve({
-      attempted: false,
-      auditStatus: profile.memorosAuditStatus,
-      result: null,
-    })
-  }
-
-  return publish().then((result) => ({
-    attempted: true,
-    auditStatus: profile.memorosAuditStatus,
-    result,
-  }))
+export function runMemorosPublicationIfEnabled<T>(profile: PmosProjectProfile, publish: () => Promise<T>): Promise<{ attempted: boolean; auditStatus: PmosMemorosAuditStatus; result: T | null }> {
+  if (!profile.memorosEnabled) return Promise.resolve({ attempted: false, auditStatus: profile.memorosAuditStatus, result: null })
+  return publish().then((result) => ({ attempted: true, auditStatus: profile.memorosAuditStatus, result }))
 }
 
 export function isSuccessfulPhrCloseoutStatus(status: string | null | undefined): boolean {
@@ -161,6 +133,9 @@ export function isSuccessfulPhrCloseoutStatus(status: string | null | undefined)
 }
 
 export function isPhrSatisfiedForCloseout(profile: PmosProjectProfile, status: string | null | undefined): boolean {
-  if (!profile.phrRequiredForCloseout) return true
-  return isSuccessfulPhrCloseoutStatus(status)
+  return !profile.phrRequiredForCloseout || isSuccessfulPhrCloseoutStatus(status)
+}
+
+export function buildNamespacedPublicationId(projectIdentity: string, taskId: string): string {
+  return `${requirePmosProjectProfile(projectIdentity).projectKey}:${taskId}`
 }

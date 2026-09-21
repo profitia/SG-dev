@@ -37,11 +37,22 @@ test('rejects completion evidence, blocked gates, and escaping paths', () => {
   assert.throws(() => validateExecutionRegistrationInput({ ...input, declaredTargetPaths: ['../other-repo/file'] }), /repository-relative/)
 })
 
-test('enforces database identity for SG2 and SRM', () => {
+test('enforces project-specific database name and Neon endpoint identity', () => {
   assert.equal(expectedDatabaseName('SRM'), 'srm_pmos')
   assert.equal(expectedDatabaseName('SpendGuru 2.0'), 'neondb')
-  assert.doesNotThrow(() => assertDatabaseIdentity('srm_pmos', 'SRM'))
-  assert.throws(() => assertDatabaseIdentity('undefined', 'SRM'), /identity mismatch/)
+  assert.equal(expectedDatabaseName('CIC'), 'neondb')
+  assert.doesNotThrow(() => assertDatabaseIdentity(
+    'srm_pmos',
+    'SRM',
+    'postgresql://user:secret@ep-dark-frost-b1fmda7e.c-5.eu-central-1.aws.neon.tech/srm_pmos',
+  ))
+  assert.throws(() => assertDatabaseIdentity(
+    'neondb',
+    'CIC',
+    'postgresql://user:secret@ep-plain-king-al45f92h.c-3.eu-central-1.aws.neon.tech/neondb',
+  ), /endpoint identity mismatch/)
+  assert.throws(() => assertDatabaseIdentity('undefined', 'SRM', 'postgresql://user:secret@example.com/undefined'), /identity mismatch/)
+  assert.throws(() => expectedDatabaseName('unknown'), /Unknown PMOS project/)
 })
 
 test('idempotence accepts the same registration and rejects identity drift', () => {
