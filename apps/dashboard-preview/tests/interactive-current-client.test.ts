@@ -5,11 +5,13 @@ import {
   explicitlyPrepareForecastCurrent,
   readCurrentForecastCapabilityThroughDashboard,
   readProgressiveForecastPreparationThroughDashboard,
+  readPreparedVerificationThroughDashboard,
   readPreparedCurrentForecastThroughDashboard,
   requestExplicitCurrentForecastPreparationThroughDashboard,
   resolveForecastCurrentDisplayState,
   resolveForecastCurrentObservedProgressState,
   resolveForecastCurrentUiState,
+  resolveProgressivePollingRetryDelayMs,
   resolveSelectedProgressiveVariant,
   shouldReadCurrentForecast,
   shouldPrepareCurrentForecastFromCapability,
@@ -533,6 +535,43 @@ test('dashboard progressive preparation route forwards exact model and target id
 
   assert.equal(payload.activeItem?.kind, 'CURRENT')
   assert.equal(payload.variants[0]?.currentState, 'PREPARING')
+})
+
+test('dashboard prepared verification read forwards exact identity and verification correlation', async () => {
+  let capturedUrl = ''
+  let capturedHeaders = new Headers()
+  const payload = await readPreparedVerificationThroughDashboard(async (input, init) => {
+    capturedUrl = new URL(String(input), 'https://dashboard.example.invalid').toString()
+    capturedHeaders = new Headers(init?.headers)
+    return new Response(JSON.stringify({
+      status: 'NOT_AVAILABLE',
+      seriesId: 'wocaes0280',
+      modelId: 'ets',
+      targetBasis: 'END_OF_PERIOD',
+      targetSemantics: 'END_OF_PERIOD',
+      methodId: 'END_OF_PERIOD',
+      reason: 'PREPARATION_REQUIRED',
+    }), { status: 200, headers: { 'content-type': 'application/json' } })
+  }, {
+    seriesId: 'wocaes0280',
+    modelId: 'ets',
+    targetBasis: 'END_OF_PERIOD',
+    sourceFrequency: 'DAILY',
+    targetCadence: 'MONTHLY',
+  }, undefined, 'verification-correlation-1')
+
+  assert.equal(payload.seriesId, 'wocaes0280')
+  assert.equal(new URL(capturedUrl).searchParams.get('sourceFrequency'), 'DAILY')
+  assert.equal(new URL(capturedUrl).searchParams.get('targetCadence'), 'MONTHLY')
+  assert.equal(capturedHeaders.get('x-sg-forecast-correlation-id'), 'verification-correlation-1')
+  assert.equal(capturedHeaders.get('x-request-id'), 'verification-correlation-1')
+})
+
+test('progressive polling retries use bounded backoff and then fail closed', () => {
+  assert.equal(resolveProgressivePollingRetryDelayMs(0), 1_000)
+  assert.equal(resolveProgressivePollingRetryDelayMs(1), 2_500)
+  assert.equal(resolveProgressivePollingRetryDelayMs(2), 5_000)
+  assert.equal(resolveProgressivePollingRetryDelayMs(3), null)
 })
 
 test('dashboard current read forwards exact model and target identity', async () => {

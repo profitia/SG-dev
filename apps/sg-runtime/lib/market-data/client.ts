@@ -58,9 +58,7 @@ export function getMarketDataPrisma() {
     }),
   )
 
-  if (process.env.NODE_ENV !== 'production') {
-    globalThis.__sgRuntimeMarketDataPrisma__ = prisma
-  }
+  globalThis.__sgRuntimeMarketDataPrisma__ = prisma
 
   return prisma
 }

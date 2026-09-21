@@ -27,6 +27,24 @@ test('verification polling uses its active correlation without replacing the cur
     activeCorrelationId: 'verification-correlation',
     activeCorrelationKey: 'VERIFICATION|series-1|arima|POINT_IN_TIME',
     currentCorrelationId: 'current-correlation',
+    verificationCorrelationId: 'verification-correlation',
+    currentCorrelationKey: 'CURRENT|series-1|arima|POINT_IN_TIME',
+    verificationCorrelationKey: 'VERIFICATION|series-1|arima|POINT_IN_TIME',
+    createCorrelationId: () => 'unexpected-new-correlation',
+  })
+
+  assert.deepEqual(result, {
+    correlationId: 'verification-correlation',
+    shouldStoreAsCurrent: false,
+  })
+})
+
+test('verification polling keeps its own correlation after the active marker is cleared', () => {
+  const result = resolveForecastPollingCorrelation({
+    activeCorrelationId: null,
+    activeCorrelationKey: null,
+    currentCorrelationId: 'current-correlation',
+    verificationCorrelationId: 'verification-correlation',
     currentCorrelationKey: 'CURRENT|series-1|arima|POINT_IN_TIME',
     verificationCorrelationKey: 'VERIFICATION|series-1|arima|POINT_IN_TIME',
     createCorrelationId: () => 'unexpected-new-correlation',

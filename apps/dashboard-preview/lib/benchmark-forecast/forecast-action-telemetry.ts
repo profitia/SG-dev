@@ -27,6 +27,7 @@ export function resolveForecastPollingCorrelation(input: {
   activeCorrelationId: string | null
   activeCorrelationKey: string | null
   currentCorrelationId: string | null
+  verificationCorrelationId: string | null
   currentCorrelationKey: string
   verificationCorrelationKey: string
   createCorrelationId: () => string
@@ -35,6 +36,9 @@ export function resolveForecastPollingCorrelation(input: {
     || input.activeCorrelationKey === input.verificationCorrelationKey
   if (activeMatchesIdentity && input.activeCorrelationId) {
     return { correlationId: input.activeCorrelationId, shouldStoreAsCurrent: false }
+  }
+  if (input.verificationCorrelationId) {
+    return { correlationId: input.verificationCorrelationId, shouldStoreAsCurrent: false }
   }
   if (input.currentCorrelationId) {
     return { correlationId: input.currentCorrelationId, shouldStoreAsCurrent: false }
