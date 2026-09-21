@@ -34,6 +34,17 @@ test('durable queue status projects to the existing UI progress contract', () =>
         failureReason: null,
         originCorrelationId: 'forecast-action-origin',
         latestCorrelationId: 'forecast-action-latest',
+        verificationProgress: {
+          phase: 'WAITING_FOR_WORKER',
+          sliceNumber: 1,
+          queueWaitMs: 30_000,
+          currentSliceWaitMs: 30_000,
+          fastReadyAt: null,
+          fastReadyElapsedMs: null,
+          fullReadyAt: null,
+          fastSlaMs: 120_000,
+          fastSlaStatus: 'PENDING',
+        },
       },
     },
   }
@@ -41,6 +52,8 @@ test('durable queue status projects to the existing UI progress contract', () =>
   assert.equal(projected.variants[0]?.currentState, 'READY')
   assert.equal(projected.variants[0]?.verificationState, 'QUEUED')
   assert.equal(projected.queuedCount, 1)
+  assert.equal(projected.variants[0]?.verificationProgress?.sliceNumber, 1)
+  assert.equal(projected.variants[0]?.verificationProgress?.phase, 'WAITING_FOR_WORKER')
 })
 
 test('missing durable request projects to preparation-required instead of unsupported', () => {
@@ -116,6 +129,17 @@ test('Fast Verification projects as ready while preserving the active full-histo
         failureReason: null,
         originCorrelationId: 'forecast-action-fast',
         latestCorrelationId: 'forecast-action-fast',
+        verificationProgress: {
+          phase: 'FAST_READY',
+          sliceNumber: 5,
+          queueWaitMs: 1_000,
+          currentSliceWaitMs: 0,
+          fastReadyAt: '2026-09-21T10:01:10.000Z',
+          fastReadyElapsedMs: 70_000,
+          fullReadyAt: null,
+          fastSlaMs: 120_000,
+          fastSlaStatus: 'MET',
+        },
       },
     },
   }
@@ -123,6 +147,7 @@ test('Fast Verification projects as ready while preserving the active full-histo
   const projected = durableSnapshotToProgressiveSnapshot(snapshot)
   assert.equal(projected.variants[0]?.verificationState, 'FAST_READY')
   assert.equal(projected.verificationReadyCount, 1)
+  assert.equal(projected.variants[0]?.verificationProgress?.phase, 'FAST_READY')
   assert.deepEqual(projected.activeItem, {
     modelId: 'arima',
     targetBasis: 'MONTHLY_AVERAGE',

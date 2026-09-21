@@ -37,6 +37,7 @@ import {
   recordForecastQueueAccepted,
 } from '@/lib/forecast/forecast-action-trace'
 import { persistForecastExecutionResourceSummary } from '@/lib/forecast/execution-ledger'
+import { createRollingDailyProductionOperationsService } from '@/lib/forecast/rolling-daily-production-operations'
 import {
   completeForecastRequestDiagnostics,
   noteForecastRequestDiagnosticsEvent,
@@ -107,6 +108,19 @@ export type ForecastPreparationJobView = {
   failureReason: string | null
   originCorrelationId: string | null
   latestCorrelationId: string | null
+  verificationProgress: ForecastVerificationProgress | null
+}
+
+export type ForecastVerificationProgress = {
+  phase: 'WAITING_FOR_WORKER' | 'RUNNING' | 'FAST_READY' | 'FULL_READY'
+  sliceNumber: number
+  queueWaitMs: number
+  currentSliceWaitMs: number
+  fastReadyAt: string | null
+  fastReadyElapsedMs: number | null
+  fullReadyAt: string | null
+  fastSlaMs: number
+  fastSlaStatus: 'PENDING' | 'MET' | 'MISSED'
 }
 
 export type ForecastPreparationCommandResult = {
@@ -166,6 +180,50 @@ const VERIFICATION_PRIORITY = 100
 const DEFAULT_LEASE_MS = 10 * 60_000
 const RETRY_BASE_MS = 5_000
 const MAX_RETRY_DELAY_MS = 5 * 60_000
+export const DEFAULT_FAST_VERIFICATION_SLA_MS = 2 * 60_000
+
+function readCheckpointTimestamp(value: Prisma.JsonValue | null, key: 'fastReadyAt' | 'fullReadyAt') {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const timestamp = (value as Record<string, unknown>)[key]
+  if (typeof timestamp !== 'string' || Number.isNaN(Date.parse(timestamp))) return null
+  return timestamp
+}
+
+export function resolveVerificationProgress(job: ForecastPreparationJob, now = new Date()): ForecastVerificationProgress | null {
+  if (job.jobKind !== 'VERIFICATION') return null
+  const fastReadyAt = readCheckpointTimestamp(job.checkpointJson, 'fastReadyAt')
+  const fullReadyAt = readCheckpointTimestamp(job.checkpointJson, 'fullReadyAt')
+    ?? (job.status === 'SUCCEEDED' ? job.completedAt?.toISOString() ?? null : null)
+  const queueWaitEnd = job.startedAt ?? now
+  const queueWaitMs = Math.max(0, queueWaitEnd.getTime() - job.requestedAt.getTime())
+  const currentSliceWaitEnd = job.status === 'RUNNING' ? job.leaseAcquiredAt ?? now : now
+  const currentSliceWaitMs = ['QUEUED', 'RETRY_WAIT', 'RUNNING'].includes(job.status)
+    ? Math.max(0, currentSliceWaitEnd.getTime() - job.availableAt.getTime())
+    : 0
+  const elapsedToFastMs = fastReadyAt
+    ? Math.max(0, Date.parse(fastReadyAt) - job.requestedAt.getTime())
+    : Math.max(0, now.getTime() - job.requestedAt.getTime())
+
+  return {
+    phase: fullReadyAt
+      ? 'FULL_READY'
+      : fastReadyAt
+        ? 'FAST_READY'
+        : job.status === 'RUNNING'
+          ? 'RUNNING'
+          : 'WAITING_FOR_WORKER',
+    sliceNumber: Math.max(1, job.sliceCount + (['SUCCEEDED', 'FAILED', 'SUPERSEDED'].includes(job.status) ? 0 : 1)),
+    queueWaitMs,
+    currentSliceWaitMs,
+    fastReadyAt,
+    fastReadyElapsedMs: fastReadyAt ? elapsedToFastMs : null,
+    fullReadyAt,
+    fastSlaMs: DEFAULT_FAST_VERIFICATION_SLA_MS,
+    fastSlaStatus: fastReadyAt
+      ? elapsedToFastMs <= DEFAULT_FAST_VERIFICATION_SLA_MS ? 'MET' : 'MISSED'
+      : elapsedToFastMs <= DEFAULT_FAST_VERIFICATION_SLA_MS ? 'PENDING' : 'MISSED',
+  }
+}
 
 function requirePrisma(prisma?: PrismaClient | null) {
   const resolved = prisma ?? getMarketDataPrisma()
@@ -271,6 +329,7 @@ function toView(job: ForecastPreparationJob): ForecastPreparationJobView {
     failureReason: job.failureReason,
     originCorrelationId: job.originCorrelationId,
     latestCorrelationId: job.latestCorrelationId,
+    verificationProgress: resolveVerificationProgress(job),
   }
 }
 
@@ -749,6 +808,10 @@ export function createForecastPreparationWorker(options: {
   resolveReadiness?: typeof resolveInteractiveForecastCapability
   recordArtifactReady?: typeof recordForecastArtifactReady
   persistResourceSummary?: typeof persistForecastExecutionResourceSummary
+  refreshCurrentAfterCalibration?: (job: ClaimedForecastPreparationJob) => Promise<{
+    status: 'SUCCEEDED' | 'NO_OP' | 'FAILED'
+    results: Array<{ error: string | null }>
+  }>
 } = {}) {
   const queue = options.queue ?? createForecastPreparationQueueService()
   const workerId = options.workerId ?? `forecast-worker-${randomUUID()}`
@@ -756,6 +819,7 @@ export function createForecastPreparationWorker(options: {
   const allowedJobKinds = resolveForecastPreparationWorkerJobKinds(mode)
   const heartbeatMs = options.heartbeatMs ?? 60_000
   const operations = createForecastProductionOperationsService()
+  const rollingDailyCurrentOperations = createRollingDailyProductionOperationsService()
   const prepareCurrent = options.prepareCurrent ?? prepareInteractiveCurrentForecast
   const prepareVerificationSlice = options.prepareVerificationSlice ?? (async (
     job: ClaimedForecastPreparationJob,
@@ -778,6 +842,11 @@ export function createForecastPreparationWorker(options: {
   const resolveReadiness = options.resolveReadiness ?? resolveInteractiveForecastCapability
   const recordArtifactReady = options.recordArtifactReady ?? recordForecastArtifactReady
   const persistResourceSummary = options.persistResourceSummary ?? persistForecastExecutionResourceSummary
+  const refreshCurrentAfterCalibration = options.refreshCurrentAfterCalibration ?? (async (job) => rollingDailyCurrentOperations.runCurrentOnly({
+    seriesId: job.seriesId,
+    modelIds: [job.modelId as InteractiveForecastIdentity['modelId']],
+    forceSnapshotRefresh: true,
+  }))
 
   function resolvePreparedOriginCount(
     result: ForecastProductionOperationsResult | void,
@@ -907,15 +976,38 @@ export function createForecastPreparationWorker(options: {
           decision: adaptiveCheckpoint.decision,
           reason: adaptiveCheckpoint.reason,
         }))
-        const readiness = await resolveReadiness(input)
+        let readiness = await resolveReadiness(input)
+        const priorFastReadyAt = readCheckpointTimestamp(job.checkpointJson, 'fastReadyAt')
+        if (
+          job.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+          && readiness.fastVerificationReadiness === 'READY'
+          && !priorFastReadyAt
+          && !readiness.readiness.bandsReady
+        ) {
+          const refreshResult = await refreshCurrentAfterCalibration(job)
+          if (refreshResult.status === 'FAILED') {
+            throw new Error(refreshResult.results[0]?.error ?? 'Current Daily calibration-band refresh failed.')
+          }
+          noteForecastRequestDiagnosticsEvent('current_daily_bands_refreshed', 'APPLICATION', {
+            jobKey: job.jobKey,
+            modelId: job.modelId,
+          })
+          readiness = await resolveReadiness(input)
+        }
+        const readyObservedAt = new Date().toISOString()
+        const fastReadyAt = priorFastReadyAt
+          ?? (readiness.fastVerificationReadiness === 'READY' ? readyObservedAt : null)
+        const fullReadyAt = readiness.fullVerificationReadiness === 'READY' ? readyObservedAt : null
         const checkpoint = {
           ...adaptiveCheckpoint,
           fastVerificationReadiness: readiness.fastVerificationReadiness,
           fullVerificationReadiness: readiness.fullVerificationReadiness,
+          fastReadyAt,
+          fullReadyAt,
           blockers: readiness.readiness.blockers,
           checkedAt: new Date().toISOString(),
         }
-        if (readiness.fastVerificationReadiness === 'READY' || readiness.fullVerificationReadiness === 'READY') {
+        if (!priorFastReadyAt && (readiness.fastVerificationReadiness === 'READY' || readiness.fullVerificationReadiness === 'READY')) {
           await safelyRecordArtifactReady(job.jobKey, 'VERIFICATION')
           noteForecastRequestDiagnosticsEvent('fast_verification_ready', 'APPLICATION', {
             jobKey: job.jobKey,

@@ -31,6 +31,7 @@ services:
     buildCommand: bash ./scripts/build-sg-runtime-private-service.sh
     startCommand: cd apps/sg-runtime && npm run forecast:worker
     plan: standard
+    numInstances: 2
     branch: main
     autoDeployTrigger: off
     maxShutdownDelaySeconds: 300

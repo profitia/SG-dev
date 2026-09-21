@@ -353,6 +353,76 @@ test('current-only production refresh bypasses maintenance and still serves Curr
   assert.equal(result.results[0]?.snapshot.status, 'REFRESHED_AFTER_RECOVERY')
 })
 
+test('forced Daily refresh replaces a cached Current snapshot after calibration becomes available', async () => {
+  let forecastCalls = 0
+  let persistenceCalls = 0
+  const service = createRollingDailyProductionOperationsService({
+    async runMaintenance(request) {
+      return createMaintenanceResult({
+        modelId: request.modelId,
+        status: 'NO_OP',
+        calibrationRefreshCount: 4,
+        affectedCalibrationGroupCount: 4,
+      })
+    },
+    async readSnapshot() {
+      return { status: 'HIT', payload: { status: 'AVAILABLE' } } as never
+    },
+    async resolveCurrentForecast() {
+      forecastCalls += 1
+      return {
+        status: 'AVAILABLE',
+        forecastMethod: { version: 'rolling-daily-point-in-time-v1' },
+        audit: { inputSource: 'DYNAMIC_MARKET_DATA_STORE', sourceHistoryFingerprint: 'hist-1', sourceLatestObservationDate: '2026-08-20' },
+        origin: { date: '2026-08-20' },
+      } as never
+    },
+    async persistSnapshot(request) {
+      persistenceCalls += 1
+      return {
+        seriesId: request.seriesId,
+        modelId: request.modelId,
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodVersion: 'rolling-daily-point-in-time-v1',
+        contractVersion: '1',
+        status: 'AVAILABLE',
+        reasonCode: null,
+        parityStatus: 'MATCHED',
+      }
+    },
+    logEvent: () => {},
+  })
+
+  const preparedHistory = {
+    seriesId: 'wocaes0074',
+    displayName: 'Brent',
+    description: 'Brent',
+    frequency: 'DAILY',
+    source: 'DYNAMIC_MARKET_DATA_STORE',
+    points: [{ date: '2026-08-20', value: 89.9 }],
+  }
+  const cached = await service.runCurrentOnly({
+    seriesId: 'wocaes0074',
+    modelIds: ['naive'],
+    preparedHistory,
+  })
+  assert.equal(cached.results[0]?.status, 'NO_OP')
+  assert.equal(forecastCalls, 0)
+
+  const refreshed = await service.runCurrentOnly({
+    seriesId: 'wocaes0074',
+    modelIds: ['naive'],
+    preparedHistory,
+    forceSnapshotRefresh: true,
+  })
+  assert.equal(refreshed.status, 'SUCCEEDED')
+  assert.equal(refreshed.results[0]?.status, 'RECOVERED')
+  assert.equal(forecastCalls, 1)
+  assert.equal(persistenceCalls, 1)
+})
+
 test('production operations returns NO_OP when maintenance is idle and snapshots are already fresh', async () => {
   let snapshotRefreshes = 0
 

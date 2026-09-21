@@ -24,6 +24,18 @@ export type ProgressiveForecastPreparationRequest = {
 
 export type ProgressiveForecastPreparationState = 'READY' | 'FAST_READY' | 'PREPARING' | 'QUEUED' | 'UNSUPPORTED' | 'FAILED'
 
+export type ProgressiveForecastVerificationProgress = {
+  phase: 'WAITING_FOR_WORKER' | 'RUNNING' | 'FAST_READY' | 'FULL_READY'
+  sliceNumber: number
+  queueWaitMs: number
+  currentSliceWaitMs: number
+  fastReadyAt: string | null
+  fastReadyElapsedMs: number | null
+  fullReadyAt: string | null
+  fastSlaMs: number
+  fastSlaStatus: 'PENDING' | 'MET' | 'MISSED'
+}
+
 export type ProgressiveForecastVariantSnapshot = {
   seriesId: string
   modelId: UserFacingForecastModelId
@@ -33,6 +45,7 @@ export type ProgressiveForecastVariantSnapshot = {
   currentReason: string | null
   verificationState: ProgressiveForecastPreparationState
   verificationReason: string | null
+  verificationProgress?: ProgressiveForecastVerificationProgress | null
 }
 
 export type ProgressiveForecastPreparationSnapshot = {
@@ -312,6 +325,7 @@ function buildVariantSnapshot(
       : verificationState === 'UNSUPPORTED'
         ? resolveUnsupportedReason(capability)
         : null,
+    verificationProgress: null,
   }
 }
 

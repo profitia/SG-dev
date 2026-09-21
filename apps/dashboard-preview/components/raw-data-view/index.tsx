@@ -491,6 +491,8 @@ function forecastPreparationStateLabel(locale: Locale, state: ProgressiveForecas
   switch (state) {
     case 'READY':
       return locale === 'pl' ? 'Gotowe' : 'Ready'
+    case 'FAST_READY':
+      return locale === 'pl' ? 'FAST gotowe' : 'FAST ready'
     case 'PREPARING':
       return locale === 'pl' ? 'Przygotowywanie' : 'Preparing'
     case 'QUEUED':
@@ -2868,6 +2870,30 @@ export function RawDataView({
         identity: selectedForecastIdentity,
       })
     : null
+  const selectedVerificationProgress = selectedProgressiveVariant?.verificationProgress ?? null
+  const verificationFastSlaLabel = selectedVerificationProgress?.fastSlaStatus === 'MET'
+    ? t('verificationFastSlaMet')
+    : selectedVerificationProgress?.fastSlaStatus === 'MISSED'
+      ? t('verificationFastSlaMissed')
+      : t('verificationFastSlaPending')
+  const verificationProgressDetail = selectedVerificationProgress
+    ? selectedVerificationProgress.phase === 'FAST_READY' || selectedVerificationProgress.phase === 'FULL_READY'
+      ? t('verificationFastProgress', {
+          seconds: Math.ceil((selectedVerificationProgress.fastReadyElapsedMs ?? selectedVerificationProgress.queueWaitMs) / 1000),
+          sliceNumber: selectedVerificationProgress.sliceNumber,
+        })
+      : selectedVerificationProgress.phase === 'RUNNING'
+        ? t('verificationRunProgress', {
+            seconds: Math.ceil(selectedVerificationProgress.queueWaitMs / 1000),
+            sliceNumber: selectedVerificationProgress.sliceNumber,
+            slaStatus: verificationFastSlaLabel,
+          })
+        : t('verificationQueueProgress', {
+            seconds: Math.ceil(selectedVerificationProgress.currentSliceWaitMs / 1000),
+            sliceNumber: selectedVerificationProgress.sliceNumber,
+            slaStatus: verificationFastSlaLabel,
+          })
+    : null
   const historicalVerificationNotice = resolveHistoricalVerificationNotice(
     forecastVerificationResult,
     `${forecastAccuracyHorizon}M`,
@@ -4810,7 +4836,12 @@ export function RawDataView({
         {isForecastPortfolioVariant && showForecast && showForecastVerification && forecastVerificationBannerState ? (
           <div className="callout" role="status" aria-live="polite">
             <strong>{forecastVerificationBannerState === 'PREPARING' ? t('verificationPreparing') : t('verificationQueued')}</strong>
-            <p>{forecastVerificationBannerState === 'PREPARING' ? t('verificationPreparingHint') : t('verificationQueuedHint')}</p>
+            <p>{forecastVerificationBannerState === 'PREPARING'
+              ? t('verificationPreparingHint')
+              : selectedProgressiveVariant?.currentState === 'READY'
+                ? t('verificationQueuedCurrentReadyHint')
+                : t('verificationQueuedHint')}</p>
+            {verificationProgressDetail ? <p>{verificationProgressDetail}</p> : null}
           </div>
         ) : null}
         {isForecastPortfolioVariant && showForecast && showForecastVerification && !selectedVerificationPrepared && !forecastVerificationBannerState ? (
@@ -4853,6 +4884,7 @@ export function RawDataView({
           <div className="callout" role="status" aria-live="polite">
             <strong>{t('verificationFastReady')}</strong>
             <p>{t('verificationFastReadyHint')}</p>
+            {verificationProgressDetail ? <p>{verificationProgressDetail}</p> : null}
           </div>
         ) : null}
         {isForecastPortfolioVariant && forecastVerificationErrorState ? (
