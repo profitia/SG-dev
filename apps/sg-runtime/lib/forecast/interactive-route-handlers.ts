@@ -62,6 +62,7 @@ const durableProgressivePreparationSnapshot: ProgressivePreparationResolver = as
       currentReason: snapshot.current.reason,
       verificationState: snapshot.verification.state,
       verificationReason: snapshot.verification.reason,
+      verificationProgress: snapshot.verification.job?.verificationProgress ?? null,
     }],
     firstReadyCurrent: snapshot.current.state === 'READY'
       ? { modelId: snapshot.modelId, targetBasis: snapshot.targetBasis, targetSemantics: snapshot.targetSemantics }

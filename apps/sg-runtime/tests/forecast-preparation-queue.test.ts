@@ -12,6 +12,7 @@ import {
   createForecastPreparationWorker,
   resolveForecastPreparationWorkerJobKinds,
   resolveForecastPreparationWorkerMode,
+  resolveVerificationProgress,
   resolveTerminalVerificationUnavailability,
   shouldRequeueSucceededPreparationJob,
   type ClaimedForecastPreparationJob,
@@ -181,6 +182,30 @@ function claimedJob(kind: 'CURRENT' | 'VERIFICATION'): ClaimedForecastPreparatio
     updatedAt: now,
   }
 }
+
+test('verification progress reports queue wait, slice and FAST SLA independently from FULL completion', () => {
+  const job = claimedJob('VERIFICATION')
+  job.status = 'QUEUED'
+  job.requestedAt = new Date('2026-09-20T12:00:00.000Z')
+  job.startedAt = new Date('2026-09-20T12:00:30.000Z')
+  job.availableAt = new Date('2026-09-20T12:01:00.000Z')
+  job.sliceCount = 3
+  job.checkpointJson = {
+    fastReadyAt: '2026-09-20T12:01:20.000Z',
+  }
+
+  assert.deepEqual(resolveVerificationProgress(job, new Date('2026-09-20T12:01:45.000Z')), {
+    phase: 'FAST_READY',
+    sliceNumber: 4,
+    queueWaitMs: 30_000,
+    currentSliceWaitMs: 45_000,
+    fastReadyAt: '2026-09-20T12:01:20.000Z',
+    fastReadyElapsedMs: 80_000,
+    fullReadyAt: null,
+    fastSlaMs: 120_000,
+    fastSlaStatus: 'MET',
+  })
+})
 
 function queueHarness(job: ForecastPreparationJob | null) {
   const events: string[] = []
@@ -431,6 +456,43 @@ test('worker publishes Fast Verification readiness without completing the full-h
   assert.deepEqual(readyKinds, ['VERIFICATION'])
   assert.equal(harness.checkpoints[0]?.fastVerificationReadiness, 'READY')
   assert.equal(harness.checkpoints[0]?.fullVerificationReadiness, 'NOT_PREPARED')
+  assert.equal(typeof harness.checkpoints[0]?.fastReadyAt, 'string')
+  assert.equal(harness.checkpoints[0]?.fullReadyAt, null)
+})
+
+test('Naive Daily automatically refreshes Current bands on the first FAST calibration transition', async () => {
+  const job = claimedJob('VERIFICATION')
+  job.targetBasis = 'POINT_IN_TIME'
+  job.targetSemantics = 'ROLLING_DAILY_POINT_IN_TIME'
+  job.modelId = 'naive'
+  const harness = queueHarness(job)
+  let readinessCall = 0
+  let refreshCount = 0
+  const worker = createForecastPreparationWorker({
+    queue: harness.queue,
+    prepareVerificationSlice: async () => undefined,
+    resolveReadiness: async () => {
+      readinessCall += 1
+      return {
+        fastVerificationReadiness: 'READY',
+        fullVerificationReadiness: 'NOT_PREPARED',
+        readiness: {
+          bandsReady: readinessCall > 1,
+          blockers: readinessCall > 1 ? ['FULL_HISTORICAL_PARTIAL'] : ['BANDS_NOT_AVAILABLE', 'FULL_HISTORICAL_PARTIAL'],
+        },
+      } as never
+    },
+    refreshCurrentAfterCalibration: async () => {
+      refreshCount += 1
+      return { status: 'SUCCEEDED', results: [] } as never
+    },
+  })
+
+  assert.equal(await worker.runOne(), true)
+  assert.equal(refreshCount, 1)
+  assert.equal(readinessCall, 2)
+  assert.deepEqual(harness.events, ['continue'])
+  assert.equal(harness.checkpoints[0]?.fastVerificationReadiness, 'READY')
 })
 
 test('worker resumes from the durable adaptive batch checkpoint', async () => {

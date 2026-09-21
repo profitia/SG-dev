@@ -39,6 +39,7 @@ export type RollingDailyProductionOperationsRequest = {
   verificationScope?: 'RECENT' | 'FULL'
   maxOriginsPerRun?: number
   snapshotRefreshMode?: 'ALWAYS' | 'WHEN_REQUIRED'
+  forceSnapshotRefresh?: boolean
   fullRebuild?: boolean
   trace?: RollingDailyHistoricalTraceInput | RollingDailyHistoricalTraceConfig
   resolvePersistenceOwnership?: () => Promise<ForecastPersistenceOwnership>
@@ -54,7 +55,7 @@ export type RollingDailyProductionOperationsSnapshotResult =
     }
   | {
       status: 'REFRESHED_AFTER_RECOVERY'
-      reason: 'EXACT_SNAPSHOT_IDENTITY_MISSING' | 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH'
+      reason: 'CALIBRATION_AVAILABLE' | 'EXACT_SNAPSHOT_IDENTITY_MISSING' | 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH'
       parityStatus: RollingDailyCurrentForecastSnapshotPersistenceResult['parityStatus']
     }
   | {
@@ -137,7 +138,7 @@ async function refreshSnapshot(
   options: { resolvePersistenceOwnership?: () => Promise<ForecastPersistenceOwnership> },
   trace: RollingDailyHistoricalTraceConfig | null,
   status: 'REFRESHED_AFTER_RECOVERY',
-  reason: 'EXACT_SNAPSHOT_IDENTITY_MISSING' | 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
+  reason: 'CALIBRATION_AVAILABLE' | 'EXACT_SNAPSHOT_IDENTITY_MISSING' | 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
 ): Promise<Extract<RollingDailyProductionOperationsSnapshotResult, { status: 'REFRESHED_AFTER_RECOVERY' }>>
 async function refreshSnapshot(
   resolveCurrentForecast: NonNullable<RollingDailyProductionOperationsDependencies['resolveCurrentForecast']>,
@@ -146,7 +147,7 @@ async function refreshSnapshot(
   options: { resolvePersistenceOwnership?: () => Promise<ForecastPersistenceOwnership> },
   trace: RollingDailyHistoricalTraceConfig | null,
   status: 'REFRESHED_AFTER_MAINTENANCE' | 'REFRESHED_AFTER_RECOVERY',
-  reason: 'EXACT_SNAPSHOT_IDENTITY_MISSING' | 'MAINTENANCE_DELTA_APPLIED' | 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
+  reason: 'CALIBRATION_AVAILABLE' | 'EXACT_SNAPSHOT_IDENTITY_MISSING' | 'MAINTENANCE_DELTA_APPLIED' | 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
 ): Promise<Extract<RollingDailyProductionOperationsSnapshotResult, { status: 'REFRESHED_AFTER_MAINTENANCE' | 'REFRESHED_AFTER_RECOVERY' }>> {
   const refreshStartedAt = performance.now()
   updateForecastRequestDiagnosticsIdentity({
@@ -217,7 +218,7 @@ async function refreshSnapshot(
 
   return {
     status,
-    reason: reason as 'EXACT_SNAPSHOT_IDENTITY_MISSING' | 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
+    reason: reason as 'CALIBRATION_AVAILABLE' | 'EXACT_SNAPSHOT_IDENTITY_MISSING' | 'SNAPSHOT_MISS' | 'SOURCE_HISTORY_FINGERPRINT_MISSING' | 'SOURCE_HISTORY_FINGERPRINT_MISMATCH',
     parityStatus: persisted.parityStatus,
   }
 }
@@ -301,7 +302,7 @@ export function createRollingDailyProductionOperationsService(
               && maintenance.latestSourceObservationAt
               && maintenance.lastProcessedOriginAt.slice(0, 10) === maintenance.latestSourceObservationAt.slice(0, 10),
             )
-            if (request.snapshotRefreshMode === 'WHEN_REQUIRED' && !terminalHistoricalSlice) {
+            if (request.snapshotRefreshMode === 'WHEN_REQUIRED' && !terminalHistoricalSlice && !request.forceSnapshotRefresh) {
               // The durable verification job is admitted only after its exact Current
               // dependency succeeds. Current and Full Verification intentionally use
               // different history fingerprints, so the maintenance fingerprint must
@@ -368,7 +369,7 @@ export function createRollingDailyProductionOperationsService(
             sourceHistoryFingerprint: maintenance.sourceHistoryFingerprint,
           })
 
-          if (snapshotState.status === 'HIT') {
+          if (snapshotState.status === 'HIT' && !request.forceSnapshotRefresh) {
             results.push({
               status: 'NO_OP',
               modelId,
@@ -390,7 +391,11 @@ export function createRollingDailyProductionOperationsService(
             { resolvePersistenceOwnership: request.resolvePersistenceOwnership },
             trace,
             'REFRESHED_AFTER_RECOVERY',
-            snapshotState.status === 'MISS' ? 'SNAPSHOT_MISS' : snapshotState.reason,
+            snapshotState.status === 'HIT'
+              ? 'CALIBRATION_AVAILABLE'
+              : snapshotState.status === 'MISS'
+                ? 'SNAPSHOT_MISS'
+                : snapshotState.reason,
           )
 
           results.push({
@@ -472,7 +477,7 @@ export function createRollingDailyProductionOperationsService(
               })
             : { status: 'MISS' as const }
 
-          if (snapshotState.status === 'HIT') {
+          if (snapshotState.status === 'HIT' && !request.forceSnapshotRefresh) {
             results.push({
               status: 'NO_OP',
               modelId,
@@ -494,7 +499,11 @@ export function createRollingDailyProductionOperationsService(
             { resolvePersistenceOwnership: request.resolvePersistenceOwnership },
             trace,
             'REFRESHED_AFTER_RECOVERY',
-            snapshotState.status === 'MISS' ? 'SNAPSHOT_MISS' : snapshotState.reason,
+            snapshotState.status === 'HIT'
+              ? 'CALIBRATION_AVAILABLE'
+              : snapshotState.status === 'MISS'
+                ? 'SNAPSHOT_MISS'
+                : snapshotState.reason,
           )
 
           results.push({

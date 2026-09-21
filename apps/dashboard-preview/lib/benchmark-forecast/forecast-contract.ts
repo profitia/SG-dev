@@ -10,6 +10,17 @@ export type ForecastTargetSemantics = (typeof FORECAST_TARGET_SEMANTICS)[number]
 export type ForecastMethodId = (typeof FORECAST_METHOD_IDS)[number]
 export type ForecastCurrentUiState = 'IDLE' | 'READING' | 'AVAILABLE' | 'NOT_PREPARED' | 'PREPARING' | 'QUEUED' | 'FAILED' | 'UNSUPPORTED'
 export type ProgressiveForecastPreparationState = 'READY' | 'FAST_READY' | 'NOT_PREPARED' | 'PREPARING' | 'QUEUED' | 'UNSUPPORTED' | 'FAILED'
+export type ProgressiveForecastVerificationProgress = {
+  phase: 'WAITING_FOR_WORKER' | 'RUNNING' | 'FAST_READY' | 'FULL_READY'
+  sliceNumber: number
+  queueWaitMs: number
+  currentSliceWaitMs: number
+  fastReadyAt: string | null
+  fastReadyElapsedMs: number | null
+  fullReadyAt: string | null
+  fastSlaMs: number
+  fastSlaStatus: 'PENDING' | 'MET' | 'MISSED'
+}
 export type BenchmarkForecastPreparationState = 'READY' | 'NOT_PREPARED' | 'PREPARING' | 'QUEUED' | 'UNSUPPORTED' | 'FAILED'
 export type InteractiveForecastCapabilityStatus =
   | 'AVAILABLE'
@@ -112,6 +123,7 @@ export interface ProgressiveForecastVariantSnapshot {
   currentReason: string | null
   verificationState: ProgressiveForecastPreparationState
   verificationReason: string | null
+  verificationProgress?: ProgressiveForecastVerificationProgress | null
 }
 
 export interface ProgressiveForecastPreparationSnapshot {

@@ -89,6 +89,17 @@ export type DurableForecastPreparationJob = {
   failureReason: string | null
   originCorrelationId: string | null
   latestCorrelationId: string | null
+  verificationProgress?: {
+    phase: 'WAITING_FOR_WORKER' | 'RUNNING' | 'FAST_READY' | 'FULL_READY'
+    sliceNumber: number
+    queueWaitMs: number
+    currentSliceWaitMs: number
+    fastReadyAt: string | null
+    fastReadyElapsedMs: number | null
+    fullReadyAt: string | null
+    fastSlaMs: number
+    fastSlaStatus: 'PENDING' | 'MET' | 'MISSED'
+  } | null
 }
 
 export type DurableForecastPreparationCommandResult = {
@@ -690,6 +701,7 @@ export function durableSnapshotToProgressiveSnapshot(
       currentReason: snapshot.current.reason,
       verificationState,
       verificationReason: snapshot.verification.reason,
+      verificationProgress: snapshot.verification.job?.verificationProgress ?? null,
     }],
     firstReadyCurrent: currentState === 'READY'
       ? { modelId: snapshot.modelId, targetBasis: snapshot.targetBasis, targetSemantics: snapshot.targetSemantics }

@@ -112,6 +112,8 @@ test('client-facing verification readiness uses the prepared Fast Verification c
   assert.match(source, /capability\.currentReadiness === 'READY' && isFastVerificationPrepared\(capability\)/)
   assert.match(source, /forecastCapabilityState !== 'ready'/)
   assert.match(source, /selectedCapabilityVariant\?\.currentReadiness === 'READY'\s*&& isFastVerificationPrepared\(selectedCapabilityVariant\)/)
+  assert.match(source, /verificationQueuedCurrentReadyHint/)
+  assert.match(source, /verificationProgressDetail/)
 })
 
 test('verification preparation stays available outside prepared-read-only demo mode and becomes ready from durable progress', () => {
