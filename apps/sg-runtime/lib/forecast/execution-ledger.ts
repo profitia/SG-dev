@@ -1675,15 +1675,45 @@ export function buildForecastResourceSummaryExecutionFilter(
   correlationId: string,
   measuredFrom: Date,
   measuredAt: Date,
-) {
+  jobIdentity?: {
+    jobKind: 'CURRENT' | 'VERIFICATION'
+    seriesId: string
+    targetBasis: ForecastTargetBasis
+    targetSemantics: ForecastTargetSemantics
+    modelId: string
+    historyFingerprint: string
+    sourceFrequency: string
+    targetCadence: string
+  } | null,
+): Prisma.ForecastPreparationExecutionLedgerWhereInput {
+  const correlationMatch = {
+    OR: [
+      { ownerRequestId: correlationId },
+      { latestRequestId: correlationId },
+    ],
+  }
+  const exactJobMatch = jobIdentity
+    ? {
+        AND: [
+          { seriesId: jobIdentity.seriesId },
+          { targetBasis: jobIdentity.targetBasis },
+          { targetSemantics: jobIdentity.targetSemantics },
+          { modelId: jobIdentity.modelId },
+          { historyFingerprint: jobIdentity.historyFingerprint },
+          { sourceFrequency: jobIdentity.sourceFrequency },
+          { targetCadence: jobIdentity.targetCadence },
+          {
+            operationFamily: jobIdentity.jobKind === 'CURRENT'
+              ? 'CURRENT'
+              : { in: ['VERIFICATION', 'HISTORICAL_MAINTENANCE'] },
+          },
+        ],
+      }
+    : null
+
   return {
     AND: [
-      {
-        OR: [
-          { ownerRequestId: correlationId },
-          { latestRequestId: correlationId },
-        ],
-      },
+      exactJobMatch ? { OR: [correlationMatch, exactJobMatch] } : correlationMatch,
       {
         lastEventAt: {
           gte: measuredFrom,
@@ -1703,8 +1733,43 @@ export async function persistForecastExecutionResourceSummary(
 
   const measuredFrom = new Date(summary.startedAt)
   const measuredAt = new Date(summary.completedAt)
+  const jobIdentity = await prisma.forecastPreparationJob.findUnique({
+    where: { jobKey: summary.jobKey },
+    select: {
+      jobKind: true,
+      seriesId: true,
+      targetBasis: true,
+      targetSemantics: true,
+      modelId: true,
+      historyFingerprint: true,
+      sourceFrequency: true,
+      targetCadence: true,
+    },
+  })
+  const exactJobIdentity = jobIdentity
+    && (jobIdentity.jobKind === 'CURRENT' || jobIdentity.jobKind === 'VERIFICATION')
+    && (
+      jobIdentity.targetSemantics === 'MONTHLY_AVERAGE'
+      || jobIdentity.targetSemantics === 'END_OF_PERIOD'
+      || jobIdentity.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+    )
+    ? {
+        jobKind: jobIdentity.jobKind === 'CURRENT' ? 'CURRENT' as const : 'VERIFICATION' as const,
+        seriesId: jobIdentity.seriesId,
+        targetBasis: jobIdentity.targetBasis,
+        targetSemantics: jobIdentity.targetSemantics === 'MONTHLY_AVERAGE'
+          ? 'MONTHLY_AVERAGE' as const
+          : jobIdentity.targetSemantics === 'END_OF_PERIOD'
+            ? 'END_OF_PERIOD' as const
+            : 'ROLLING_DAILY_POINT_IN_TIME' as const,
+        modelId: jobIdentity.modelId,
+        historyFingerprint: jobIdentity.historyFingerprint,
+        sourceFrequency: jobIdentity.sourceFrequency,
+        targetCadence: jobIdentity.targetCadence,
+      }
+    : null
   const executions = await prisma.forecastPreparationExecutionLedger.findMany({
-    where: buildForecastResourceSummaryExecutionFilter(correlationId, measuredFrom, measuredAt),
+    where: buildForecastResourceSummaryExecutionFilter(correlationId, measuredFrom, measuredAt, exactJobIdentity),
     orderBy: { lastEventAt: 'desc' },
     select: { executionId: true },
     take: 64,
