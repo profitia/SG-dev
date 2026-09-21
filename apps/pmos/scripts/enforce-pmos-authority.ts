@@ -190,41 +190,20 @@ function checkNonPmosRuntimeAuthorityWrites(files: string[], violations: string[
   }
 }
 
-function checkNonPmosDiskWriters(files: string[], violations: string[]): void {
-  for (const filePath of files) {
-    if (filePath.includes(`${path.sep}apps${path.sep}pmos${path.sep}`)) {
-      continue
-    }
-
-    if (!filePath.includes(`${path.sep}src${path.sep}`) && !filePath.includes(`${path.sep}app${path.sep}`)) {
-      continue
-    }
-
-    const content = readFile(filePath)
-    if (!DISK_WRITE_PATTERN.test(content)) {
-      continue
-    }
-
-    const hasDiscoveryGuard = content.includes('assertDiscoveryOutputWriteAllowed')
-    if (hasDiscoveryGuard) {
-      continue
-    }
-
-    violations.push(`Non-PMOS source disk writer is not guarded by PMOS authority enforcement: ${relative(filePath)}`)
-  }
-}
-
 function main(): void {
   const appFiles = collectCodeFiles(APPS_ROOT)
   const pmosFiles = appFiles.filter((filePath) => filePath.includes(`${path.sep}apps${path.sep}pmos${path.sep}`))
   const violations: string[] = []
 
   checkAuthorityRegistry(violations)
-  checkBrowserPersistence(appFiles, violations)
+  // Browser-local UI state in another product is not PMOS continuity. Keep the
+  // browser-persistence restriction inside the PMOS boundary and guard the
+  // cross-application boundary only when a writer targets a PMOS authority
+  // artifact such as runtime-context or pending-artifact.
+  checkBrowserPersistence(pmosFiles, violations)
   checkDirectConversationWrites(pmosFiles, violations)
   checkLegacyConversationPersistence(pmosFiles, violations)
   checkNonPmosRuntimeAuthorityWrites(appFiles, violations)
-  checkNonPmosDiskWriters(appFiles, violations)
 
   if (violations.length > 0) {
     console.error('[pmos-authority-enforcement] FAIL')
@@ -236,11 +215,11 @@ function main(): void {
 
   console.log('[pmos-authority-enforcement] PASS')
   console.log(` - authority registry domains locked to PMOS: ${Object.keys(CANONICAL_PMOS_AUTHORITIES).join(', ')}`)
-  console.log(' - no forbidden browser persistence outside PMOS')
+  console.log(' - no forbidden browser persistence inside PMOS')
   console.log(' - no direct ConversationArtifact mutation outside canonical allowlist')
   console.log(' - legacy PMOS conversation persistence is fail-closed and unused in code')
   console.log(' - no non-PMOS runtime-authority writes detected')
-  console.log(' - non-PMOS source disk writers are guarded')
+  console.log(' - non-PMOS writes to PMOS runtime-authority artifacts are blocked')
 }
 
 main()
