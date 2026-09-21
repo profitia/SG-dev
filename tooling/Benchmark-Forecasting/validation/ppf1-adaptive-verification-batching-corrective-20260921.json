@@ -1,0 +1,120 @@
+{
+  "schemaVersion": "ppf1-adaptive-verification-batching-corrective-v1",
+  "taskId": "PPF1-ADAPTIVE-VERIFICATION-BATCHING-CORRECTIVE-20260921",
+  "decisionQuestion": "Can PPF-1 shorten full Daily Historical Verification without delaying Current Forecast or the first partial verification result?",
+  "verdict": "LIVE_PROVEN",
+  "repository": {
+    "remote": "https://github.com/profitia/SG-dev",
+    "baseSha": "5f2a72de1b150b99a2f8101623a5d56255df2be2",
+    "adaptiveBatchingSourceCommit": "d80c37a242913caa95551cb1b8bf2fcaa0fa8955",
+    "adaptiveBatchingMergeSha": "852b090dfa52e2bf9f73a5e2dcfd7ee735fcef5c",
+    "adaptiveBatchingPullRequest": "https://github.com/profitia/SG-dev/pull/32",
+    "currentRefreshHotfixCommit": "197e4d4840b34f771e0ecd024e7921310e617dc6",
+    "liveSourceSha": "9ca0d92613ee693a9cbbbed460d1453ef2c756a8",
+    "currentRefreshHotfixPullRequest": "https://github.com/profitia/SG-dev/pull/33"
+  },
+  "policy": {
+    "version": "PPF1_ADAPTIVE_VERIFICATION_BATCH_V1",
+    "batchSizes": [1, 2, 4, 8, 16, 32],
+    "initialBatchSize": 1,
+    "sequentialExecution": true,
+    "firstPartialResultPreserved": true,
+    "currentDependencyPriorityPreserved": true,
+    "durableCheckpoint": true,
+    "failureFallbackBatchSize": 1,
+    "intermediateCurrentRefresh": "SKIPPED",
+    "terminalCurrentRefresh": "ONCE"
+  },
+  "deployments": [
+    {
+      "service": "spendguru-forecast-preparation-worker",
+      "serviceId": "srv-dansibrtqb8s73d0nn3g",
+      "deployId": "dep-daob98rtqb8s73el8tv0",
+      "status": "live",
+      "commit": "9ca0d92613ee693a9cbbbed460d1453ef2c756a8"
+    },
+    {
+      "service": "spendguru-stage",
+      "serviceId": "srv-d98a73btqb8s73fabp90",
+      "deployId": "dep-daob98jtqb8s73el8so0",
+      "status": "live",
+      "commit": "9ca0d92613ee693a9cbbbed460d1453ef2c756a8",
+      "healthHttp": 200
+    },
+    {
+      "service": "BENCHMARK-FINDER-CATEGORY-BUILDER",
+      "serviceId": "srv-d9tmgddbedkc739jr24g",
+      "deployId": "dep-daob98jtqb8s73el8sb0",
+      "status": "live",
+      "commit": "9ca0d92613ee693a9cbbbed460d1453ef2c756a8",
+      "healthHttp": 200
+    }
+  ],
+  "validation": {
+    "targetedTests": { "passed": 39, "failed": 0 },
+    "sgRuntimeRegression": { "passed": 464, "failed": 0, "skipped": 1 },
+    "typecheck": "PASS",
+    "productionBuild": "PASS",
+    "gitDiffCheck": "PASS",
+    "crossInstanceTest": "NOT_RUN_LOCAL_POSTGRES_UNAVAILABLE"
+  },
+  "preHotfixCanaryFinding": {
+    "correlationId": "b6c2f9a4-7d31-4e85-9a60-2f1c8b4d5e73",
+    "seriesId": "sgx_acf2027f_cl",
+    "modelId": "damped_holt",
+    "finding": "The first deployed implementation compared the Full Verification history fingerprint with the distinct Current snapshot fingerprint and therefore recomputed Current between intermediate slices.",
+    "decision": "HOTFIX_REQUIRED"
+  },
+  "liveCanary": {
+    "correlationId": "ppf1-adaptive-hotfix-sgx-ets-20260921",
+    "seriesId": "sgx_acf2027f_cl",
+    "series": "SGX TSI Australia Premium Coking Coal January 2027 Close",
+    "modelId": "ets",
+    "targetBasis": "POINT_IN_TIME",
+    "targetSemantics": "ROLLING_DAILY_POINT_IN_TIME",
+    "currentJobKey": "aed7a18fea4248619075c9a27173282cd652834eb8522bf01606cc7bfb2ee080",
+    "verificationJobKey": "dcb6cc39a741de907de79419fd78354ae88401e5e59e1939a45057081405db41",
+    "requestedAt": "2026-09-21T04:41:17.883Z",
+    "currentReadyAt": "2026-09-21T04:41:24.782Z",
+    "firstPartialVerificationAt": "2026-09-21T04:41:28.455Z",
+    "verificationReadyAt": "2026-09-21T04:45:51.618Z",
+    "requestToCurrentReadyMs": 6899,
+    "requestToFirstPartialVerificationMs": 10572,
+    "requestToFullVerificationReadyMs": 273735,
+    "verificationExecutionMs": 266760,
+    "sliceCount": 27,
+    "totalOrigins": 704,
+    "batchGrowth": [1, 2, 4, 8, 16, 32],
+    "steadyBatchSize": 32,
+    "firstSliceMs": 3146.989180999997,
+    "firstSliceOriginCount": 1,
+    "terminalSliceOriginCount": 1,
+    "currentState": "READY",
+    "verificationState": "READY",
+    "failureCount": 0,
+    "intermediateSnapshotComputeCount": 0,
+    "intermediateCurrentPythonProcessCount": 0,
+    "intermediatePythonProcessesPerSlice": 1,
+    "terminalSnapshotRefreshCount": 1,
+    "terminalPythonProcesses": [
+      "export_rolling_daily_incremental_maintenance.py",
+      "export_rolling_daily_current_forecast.py"
+    ]
+  },
+  "acceptance": {
+    "fastCurrentPreserved": "PASS",
+    "firstPartialResultPreserved": "PASS",
+    "adaptiveGrowthObserved": "PASS",
+    "sequentialExecutionPreserved": "PASS",
+    "durableCompletionObserved": "PASS",
+    "repeatedCurrentRecomputeRemoved": "PASS",
+    "terminalCurrentRefreshObservedOnce": "PASS",
+    "liveSourceDeployParity": "PASS",
+    "corrective": "LIVE_PROVEN"
+  },
+  "residualRisks": [
+    "Only the ETS Daily point-in-time identity was used for the final live canary; other exact model and target identities continue to rely on the same generic policy and regression coverage.",
+    "The intentionally omitted local cross-instance test still requires its isolated PostgreSQL runtime; this was an environment limitation, not a failed assertion.",
+    "Render resource attribution remains service-level context outside the exact per-process Node and Python measurements already stored in the execution ledger."
+  ]
+}
