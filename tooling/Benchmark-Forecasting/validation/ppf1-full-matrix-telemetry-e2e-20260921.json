@@ -1,0 +1,160 @@
+{
+  "taskId": "PPF1-FULL-MATRIX-TELEMETRY-E2E-20260921",
+  "testType": "LIVE_END_TO_END_FULL_MATRIX_FAIL_CLOSED",
+  "decision": "CORRECTIVE_REQUIRED_BEFORE_PPF1_MATRIX_ACCEPTANCE",
+  "cutoffAt": "2026-09-21T08:58:35.429Z",
+  "authority": {
+    "repository": "https://github.com/profitia/SG-dev.git",
+    "remoteBaseSha": "29a6b717d9e043baa2ec0719fdce06edb64b061a",
+    "deployedSourceSha": "b7ae5a69f789146bdf209b078bf224e0778c44bb",
+    "services": [
+      {"name": "spendguru-stage", "serviceId": "srv-d98a73btqb8s73fabp90", "deployId": "dep-daochr3tqb8s73eq42s0", "status": "live"},
+      {"name": "BENCHMARK-FINDER-CATEGORY-BUILDER", "serviceId": "srv-d9tmgddbedkc739jr24g", "deployId": "dep-daochph42hec739ams2g", "status": "live"},
+      {"name": "spendguru-forecast-preparation-worker", "serviceId": "srv-dansibrtqb8s73d0nn3g", "deployId": "dep-daochtbtqb8s73eq4ac0", "status": "live"},
+      {"name": "dashboards-library", "serviceId": "srv-da2i7j9t0dsc73ag7qv0", "deployId": "dep-daoe0o0ae00c73c58070", "status": "live"}
+    ],
+    "neon": {"projectId": "autumn-waterfall-65938876", "branchId": "br-purple-shape-b2az1npx", "database": "neondb", "access": "READ_ONLY"}
+  },
+  "benchmark": {
+    "providerSeriesId": "cnprod4431",
+    "marketSeriesId": "cmssipq3j000dsobhcp0pohy1",
+    "displayName": "Tangshan Billet, Daily",
+    "provider": "MACROBOND",
+    "frequency": "Daily",
+    "unit": "Tonnes",
+    "validObservationCount": 1643,
+    "earliestObservation": "2020-01-02",
+    "latestObservation": "2026-09-20",
+    "preTestArtifacts": {"currentRuns": 0, "verificationRuns": 0, "dailySnapshots": 0, "durableJobs": 0}
+  },
+  "matrix": {
+    "models": ["naive", "damped_holt", "ets", "arima"],
+    "targetSemantics": ["ROLLING_DAILY_POINT_IN_TIME", "MONTHLY_AVERAGE", "END_OF_PERIOD"],
+    "verificationHorizons": ["1M", "3M", "6M", "12M"],
+    "currentIdentityCount": 12,
+    "verificationIdentityCount": 12,
+    "verificationPresentationCellCount": 48
+  },
+  "currentForecast": {
+    "result": "PASS_12_OF_12",
+    "allChartsRendered": true,
+    "allUiAcknowledgementsPersisted": true,
+    "latencyMs": {"minimum": 4759, "p50": 15316, "p95": 52081, "maximum": 52093, "average": 21844},
+    "averagePhaseMs": {"requestToQueue": 1655, "queueToArtifact": 14946, "artifactToDashboard": 4386, "dashboardToUiAck": 856},
+    "identities": [
+      {"model": "naive", "target": "ROLLING_DAILY_POINT_IN_TIME", "totalMs": 4759, "correlationId": "50b92d4a-2c80-47b1-be58-052bb3f7a3c1"},
+      {"model": "naive", "target": "MONTHLY_AVERAGE", "totalMs": 38125, "correlationId": "3e255799-4671-4ebf-88f1-607a75dee961"},
+      {"model": "naive", "target": "END_OF_PERIOD", "totalMs": 15782, "correlationId": "dd22fcf5-d924-4fc9-b27b-329ecfd8081e"},
+      {"model": "damped_holt", "target": "ROLLING_DAILY_POINT_IN_TIME", "totalMs": 8819, "correlationId": "39e9518e-6f3b-410b-8a4a-5a1244462c41"},
+      {"model": "damped_holt", "target": "MONTHLY_AVERAGE", "totalMs": 12978, "correlationId": "6f7f7f09-467b-4d5c-81a2-7a1e5b268aa5"},
+      {"model": "damped_holt", "target": "END_OF_PERIOD", "totalMs": 17522, "correlationId": "f28ea166-7da5-41e5-ac17-de3ad2febdce"},
+      {"model": "ets", "target": "ROLLING_DAILY_POINT_IN_TIME", "totalMs": 9698, "correlationId": "69f5d01c-89e8-4b63-8f04-2b09eb760aea"},
+      {"model": "ets", "target": "MONTHLY_AVERAGE", "totalMs": 13190, "correlationId": "516e9310-04ee-4d84-9832-7d9f2c29f7d2"},
+      {"model": "ets", "target": "END_OF_PERIOD", "totalMs": 14851, "correlationId": "0e4dab5d-c139-4534-88e8-817f33ca3f21"},
+      {"model": "arima", "target": "ROLLING_DAILY_POINT_IN_TIME", "totalMs": 22234, "correlationId": "4553165e-be54-4b6c-8970-64a386a42650"},
+      {"model": "arima", "target": "MONTHLY_AVERAGE", "totalMs": 52072, "correlationId": "6fd5daea-e3b8-4631-990b-974e1b11f89b"},
+      {"model": "arima", "target": "END_OF_PERIOD", "totalMs": 52093, "correlationId": "47d16a3a-b42a-4646-a030-07598246a058"}
+    ]
+  },
+  "historicalVerification": {
+    "queueAcceptance": "PASS_12_OF_12",
+    "durabilityAfterBrowserLifecycle": "PASS",
+    "failureCount": 0,
+    "fastReadyAtCutoff": 7,
+    "fullReadyAtCutoff": 4,
+    "notFastReadyAtCutoff": 5,
+    "fastPresentation": "FAIL",
+    "matrixAcceptance": "FAIL_CLOSED",
+    "decisiveTrace": {
+      "model": "naive",
+      "target": "END_OF_PERIOD",
+      "correlationId": "3552fee4-c1d5-462f-b6fa-6733c55ad71e",
+      "actionRequestedAt": "2026-09-21T08:30:50.042Z",
+      "queueAcceptedAt": "2026-09-21T08:30:56.112Z",
+      "fastArtifactReadyAt": "2026-09-21T08:37:34.475Z",
+      "fullReadyAt": "2026-09-21T08:41:53.757Z",
+      "uiVisibleClientAt": "2026-09-21T08:41:53.555Z",
+      "uiAckReceivedAt": "2026-09-21T08:41:53.965Z",
+      "dashboardFirstReadyObservedAt": null,
+      "fastArtifactToUiAckMs": 259490,
+      "observation": "The UI remained unavailable after FAST_READY and rendered only at FULL_READY."
+    },
+    "statusAtCutoff": [
+      {"model": "naive", "target": "END_OF_PERIOD", "jobStatus": "SUCCEEDED", "slices": 6, "fast": "READY", "full": "READY"},
+      {"model": "naive", "target": "MONTHLY_AVERAGE", "jobStatus": "SUCCEEDED", "slices": 6, "fast": "READY", "full": "READY"},
+      {"model": "naive", "target": "ROLLING_DAILY_POINT_IN_TIME", "jobStatus": "QUEUED", "slices": 9, "fast": "READY", "full": "STALE"},
+      {"model": "damped_holt", "target": "END_OF_PERIOD", "jobStatus": "SUCCEEDED", "slices": 6, "fast": "READY", "full": "READY"},
+      {"model": "damped_holt", "target": "MONTHLY_AVERAGE", "jobStatus": "SUCCEEDED", "slices": 6, "fast": "READY", "full": "READY"},
+      {"model": "damped_holt", "target": "ROLLING_DAILY_POINT_IN_TIME", "jobStatus": "QUEUED", "slices": 8, "fast": "READY", "full": "STALE"},
+      {"model": "ets", "target": "END_OF_PERIOD", "jobStatus": "QUEUED", "slices": 6, "fast": "NOT_PREPARED", "full": "NOT_PREPARED"},
+      {"model": "ets", "target": "MONTHLY_AVERAGE", "jobStatus": "QUEUED", "slices": 6, "fast": "NOT_PREPARED", "full": "NOT_PREPARED"},
+      {"model": "ets", "target": "ROLLING_DAILY_POINT_IN_TIME", "jobStatus": "QUEUED", "slices": 7, "fast": "READY", "full": "STALE"},
+      {"model": "arima", "target": "END_OF_PERIOD", "jobStatus": "QUEUED", "slices": 6, "fast": "NOT_PREPARED", "full": "NOT_PREPARED"},
+      {"model": "arima", "target": "MONTHLY_AVERAGE", "jobStatus": "RUNNING", "slices": 5, "fast": "NOT_PREPARED", "full": "NOT_PREPARED"},
+      {"model": "arima", "target": "ROLLING_DAILY_POINT_IN_TIME", "jobStatus": "QUEUED", "slices": 6, "fast": "NOT_PREPARED", "full": "STALE"}
+    ],
+    "verifiedUiHorizons": {
+      "identity": "naive/END_OF_PERIOD",
+      "1M": {"averageVerificationPercent": 84.1, "directionAgreementPercent": 0.0, "confidence": "sufficient"},
+      "3M": {"averageVerificationPercent": 68.5, "directionAgreementPercent": 0.0, "confidence": "sufficient"},
+      "6M": {"averageVerificationPercent": 70.1, "directionAgreementPercent": 0.0, "confidence": "sufficient"},
+      "12M": {"averageVerificationPercent": 67.2, "directionAgreementPercent": 0.0, "confidence": "sufficient"}
+    }
+  },
+  "executionLedger": {
+    "CURRENT": {"executions": 12, "resourceSummaries": 4, "averageTotalMs": 9967, "maximumTotalMs": 41411, "averageComputeMs": 11890, "maximumComputeMs": 41035, "averagePersistMs": 191, "maximumPersistMs": 257},
+    "HISTORICAL_MAINTENANCE": {"executions": 26, "resourceSummaries": 26, "averageTotalMs": 9744, "maximumTotalMs": 31152, "averageComputeMs": 9218, "maximumComputeMs": 30632, "averagePersistMs": 396, "maximumPersistMs": 893},
+    "VERIFICATION": {"executions": 43, "resourceSummaries": 0, "averageTotalMs": 15869, "maximumTotalMs": 55598, "averageComputeMs": 15825, "maximumComputeMs": 55268, "averagePersistMs": 209, "maximumPersistMs": 294}
+  },
+  "resources": {
+    "window": {"start": "2026-09-21T08:20:00Z", "end": "2026-09-21T08:55:00Z"},
+    "runtime": {"cpuPeakCores": 2.0, "cpuLimitCores": 2.0, "memoryPeakBytes": 1672278000, "memoryLimitBytes": 4294967300, "instances": 1},
+    "worker": {"cpuPeakCores": 1.0, "cpuLimitCores": 1.0, "memoryPeakBytes": 545046500, "memoryLimitBytes": 2147483600, "instances": 1},
+    "dashboard": {"cpuPeakCores": 0.0339, "cpuLimitCores": 0.5, "memoryPeakBytes": 185106430, "memoryLimitBytes": 536870900, "instances": 1},
+    "finder": {"cpuPeakCores": 0.00138, "cpuLimitCores": 1.0, "memoryPeakBytes": 149319680, "memoryLimitBytes": 2147483600, "instances": 1},
+    "interpretation": "Worker CPU and transient runtime connection amplification are bottlenecks; RAM is not the limiting resource."
+  },
+  "runtimeIncidents": {
+    "databaseUnreachableBurstCount": 6,
+    "databaseUnreachableWindow": {"first": "2026-09-21T08:32:03.796755168Z", "last": "2026-09-21T08:32:03.902466419Z"},
+    "fallbackProvider": "macrobond",
+    "progressiveRuntime500": {"path": "/api/internal/forecast/preparation/jobs", "durationMs": 14477},
+    "progressiveDashboard500": {"path": "/api/benchmark-forecast/progressive", "durationMs": 14506},
+    "neonPostTestSnapshot": {"connections": 7, "active": 1, "idleClientRead": 6, "lockWaitEvidence": false}
+  },
+  "telemetryGaps": [
+    "Dashboard prepared verification reads are hard-coded to FULL; no FAST prepared-read presentation path exists.",
+    "Verification polling can reuse the Current correlation ID, so dashboardFirstReadyObservedAt remains null for verification actions.",
+    "Non-point-in-time Current and Verification executions do not persist per-action worker resource summaries.",
+    "Verification horizon changes have no distinct user-action-to-render correlation trace.",
+    "A single progressive polling 500 terminates the polling loop instead of retrying with bounded backoff.",
+    "Render CPU and RAM remain service-level context and cannot be attributed exactly to one correlation ID.",
+    "Client and server clocks are not synchronized tightly enough for sub-second cross-host ordering."
+  ],
+  "findings": [
+    {"priority": "P0", "id": "FAST_READY_NOT_CONSUMED", "decision": "CORRECT", "evidence": "Dashboard getBenchmarkForecastVerification always sends verificationScope=FULL; live UI did not render at FAST_READY."},
+    {"priority": "P1", "id": "PRODUCTION_PRISMA_CLIENT_PROLIFERATION", "decision": "CORRECT", "evidence": "SG Runtime caches its Prisma client only when NODE_ENV is not production; six simultaneous database-unreachable events occurred during matrix fan-out."},
+    {"priority": "P1", "id": "PROGRESSIVE_POLLING_FAILS_STOPPED", "decision": "CORRECT", "evidence": "One transient 500 stops the UI polling loop and clears the snapshot."},
+    {"priority": "P1", "id": "WORKER_CPU_SATURATION", "decision": "OPTIMIZE_AFTER_CORRECTNESS", "evidence": "The one-core worker repeatedly reached 100% CPU while memory stayed below 26% of its limit."},
+    {"priority": "P2", "id": "CAPABILITY_LABEL_NOT_PREPARED_AS_UNSUPPORTED", "decision": "CORRECT", "evidence": "Unprepared lawful variants are displayed as Unsupported even though their preparation buttons remain enabled."}
+  ],
+  "recommendedCorrectiveOrder": [
+    "Route verification presentation reads to FAST scope while keeping the durable job running to FULL_READY.",
+    "Carry the verification correlation ID through progressive polling and first-ready observation.",
+    "Make the SG Runtime market-data Prisma client a production singleton and bound/coalesce identical reads.",
+    "Retry transient progressive polling failures with bounded backoff.",
+    "Extend exact resource summaries to non-point-in-time verification and current executions.",
+    "After correctness fixes, benchmark worker CPU scaling or controlled parallelism; do not buy RAM first.",
+    "Map lawful NOT_PREPARED capability to a preparable UI state rather than Unsupported."
+  ],
+  "gates": {
+    "CURRENT_FORECAST_MATRIX": "PASS",
+    "DURABLE_VERIFICATION_QUEUE": "PASS",
+    "ADAPTIVE_BATCHING": "PASS_WITH_LONG_RUNNING_WORK",
+    "FAST_VERIFICATION_COMPUTE": "PARTIAL_7_OF_12_AT_CUTOFF",
+    "FAST_VERIFICATION_PRESENTATION": "FAIL",
+    "END_TO_END_TELEMETRY_COMPLETENESS": "FAIL",
+    "FULL_PPF1_MATRIX_ACCEPTANCE": "BLOCKED_BY_CORRECTIVE"
+  },
+  "writes": {"forecastArtifactManualWrites": 0, "neonMutations": 0, "productionCodeChanges": 0, "deployments": 0}
+}
