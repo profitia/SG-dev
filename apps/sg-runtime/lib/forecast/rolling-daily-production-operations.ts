@@ -38,6 +38,7 @@ export type RollingDailyProductionOperationsRequest = {
   prepareHistorical?: boolean
   verificationScope?: 'RECENT' | 'FULL'
   maxOriginsPerRun?: number
+  snapshotRefreshMode?: 'ALWAYS' | 'WHEN_REQUIRED'
   fullRebuild?: boolean
   trace?: RollingDailyHistoricalTraceInput | RollingDailyHistoricalTraceConfig
   resolvePersistenceOwnership?: () => Promise<ForecastPersistenceOwnership>
@@ -295,13 +296,21 @@ export function createRollingDailyProductionOperationsService(
           }
 
           if (maintenance.status === 'SUCCEEDED') {
-            if (recentVerificationRequested) {
+            if (recentVerificationRequested || request.snapshotRefreshMode === 'WHEN_REQUIRED') {
               const snapshotState = await readSnapshot({
                 seriesId: request.seriesId,
                 modelId,
                 sourceHistoryFingerprint: maintenance.sourceHistoryFingerprint,
               })
-              if (snapshotState.status === 'HIT') {
+              const terminalHistoricalSlice = Boolean(
+                maintenance.lastProcessedOriginAt
+                && maintenance.latestSourceObservationAt
+                && maintenance.lastProcessedOriginAt.slice(0, 10) === maintenance.latestSourceObservationAt.slice(0, 10),
+              )
+              if (
+                snapshotState.status === 'HIT'
+                && (recentVerificationRequested || !terminalHistoricalSlice)
+              ) {
                 results.push({
                   status: 'SUCCEEDED',
                   modelId,

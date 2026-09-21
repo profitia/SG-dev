@@ -34,6 +34,7 @@ export type ForecastProductionOperationsRequest = {
   prepareHistorical?: boolean
   verificationScope?: 'RECENT' | 'FULL'
   maxOriginsPerRun?: number
+  rollingDailySnapshotRefreshMode?: 'ALWAYS' | 'WHEN_REQUIRED'
 }
 
 export type ForecastProductionOperationItem = {
@@ -216,6 +217,7 @@ export function createForecastProductionOperationsService(
           prepareHistorical,
           verificationScope,
           maxOriginsPerRun: request.maxOriginsPerRun,
+          snapshotRefreshMode: request.rollingDailySnapshotRefreshMode,
         })
         for (const modelId of requestedModels) {
           const item = rolling.results.find((candidate) => candidate.modelId === modelId)

@@ -632,6 +632,135 @@ test('production operations fails closed on rebuild required and preserves the l
   assert.equal(snapshotRefreshes, 0)
 })
 
+test('adaptive verification skips repeated Current recompute for an intermediate prepared-history slice', async () => {
+  let currentRefreshes = 0
+  const service = createRollingDailyProductionOperationsService({
+    async runMaintenance(request) {
+      return createMaintenanceResult({
+        modelId: request.modelId,
+        lastProcessedOriginAt: '2026-08-19',
+        latestSourceObservationAt: '2026-08-20',
+      })
+    },
+    async readSnapshot() {
+      return { status: 'HIT', payload: {} as never }
+    },
+    async resolveCurrentForecast() {
+      currentRefreshes += 1
+      throw new Error('intermediate adaptive slice must reuse the ready Current snapshot')
+    },
+    logEvent: () => {},
+  })
+
+  const result = await service.run({
+    seriesId: 'wocaes0074',
+    modelIds: ['naive'],
+    prepareHistorical: true,
+    verificationScope: 'FULL',
+    maxOriginsPerRun: 4,
+    snapshotRefreshMode: 'WHEN_REQUIRED',
+  })
+
+  assert.equal(result.status, 'SUCCEEDED')
+  assert.equal(currentRefreshes, 0)
+  assert.equal(result.results[0]?.snapshot.status, 'SKIPPED_ALREADY_FRESH')
+  assert.equal(result.results[0]?.maintenance?.newOriginCount, 1)
+})
+
+test('adaptive verification refreshes Current once when the terminal history slice is reached', async () => {
+  let currentRefreshes = 0
+  let snapshotWrites = 0
+  const service = createRollingDailyProductionOperationsService({
+    async runMaintenance(request) {
+      return createMaintenanceResult({ modelId: request.modelId })
+    },
+    async readSnapshot() {
+      return { status: 'HIT', payload: {} as never }
+    },
+    async resolveCurrentForecast() {
+      currentRefreshes += 1
+      return { status: 'AVAILABLE' } as never
+    },
+    async persistSnapshot(request) {
+      snapshotWrites += 1
+      return {
+        seriesId: request.seriesId,
+        modelId: request.modelId,
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodVersion: 'rolling-daily-point-in-time-v1',
+        contractVersion: '1',
+        status: 'AVAILABLE',
+        reasonCode: null,
+        parityStatus: 'MATCHED',
+      }
+    },
+    logEvent: () => {},
+  })
+
+  const result = await service.run({
+    seriesId: 'wocaes0074',
+    modelIds: ['naive'],
+    prepareHistorical: true,
+    verificationScope: 'FULL',
+    maxOriginsPerRun: 8,
+    snapshotRefreshMode: 'WHEN_REQUIRED',
+  })
+
+  assert.equal(result.status, 'SUCCEEDED')
+  assert.equal(currentRefreshes, 1)
+  assert.equal(snapshotWrites, 1)
+  assert.equal(result.results[0]?.snapshot.status, 'REFRESHED_AFTER_MAINTENANCE')
+})
+
+test('adaptive verification repairs a missing Current snapshot even before the terminal slice', async () => {
+  let currentRefreshes = 0
+  const service = createRollingDailyProductionOperationsService({
+    async runMaintenance(request) {
+      return createMaintenanceResult({
+        modelId: request.modelId,
+        lastProcessedOriginAt: '2026-08-19',
+        latestSourceObservationAt: '2026-08-20',
+      })
+    },
+    async readSnapshot() {
+      return { status: 'MISS' }
+    },
+    async resolveCurrentForecast() {
+      currentRefreshes += 1
+      return { status: 'AVAILABLE' } as never
+    },
+    async persistSnapshot(request) {
+      return {
+        seriesId: request.seriesId,
+        modelId: request.modelId,
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodVersion: 'rolling-daily-point-in-time-v1',
+        contractVersion: '1',
+        status: 'AVAILABLE',
+        reasonCode: null,
+        parityStatus: 'MATCHED',
+      }
+    },
+    logEvent: () => {},
+  })
+
+  const result = await service.run({
+    seriesId: 'wocaes0074',
+    modelIds: ['naive'],
+    prepareHistorical: true,
+    verificationScope: 'FULL',
+    snapshotRefreshMode: 'WHEN_REQUIRED',
+  })
+
+  assert.equal(result.status, 'SUCCEEDED')
+  assert.equal(currentRefreshes, 1)
+  assert.equal(result.results[0]?.snapshot.status, 'REFRESHED_AFTER_MAINTENANCE')
+})
+
 test('production operations emits current refresh trace when opt-in tracing is enabled', async () => {
   const messages: string[] = []
   const originalConsoleInfo = console.info

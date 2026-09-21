@@ -147,15 +147,25 @@ function claimedJob(kind: 'CURRENT' | 'VERIFICATION'): ClaimedForecastPreparatio
 
 function queueHarness(job: ForecastPreparationJob | null) {
   const events: string[] = []
+  const checkpoints: Array<Record<string, unknown> | undefined> = []
   const queue = {
     claimNext: async () => job,
     heartbeat: async () => undefined,
-    complete: async () => { events.push('complete') },
+    complete: async (_job: ClaimedForecastPreparationJob, checkpoint?: Record<string, unknown>) => {
+      events.push('complete')
+      checkpoints.push(checkpoint)
+    },
     completeUnavailable: async () => { events.push('unavailable') },
-    continueAfterSlice: async () => { events.push('continue') },
-    failOrRetry: async () => { events.push('retry') },
+    continueAfterSlice: async (_job: ClaimedForecastPreparationJob, checkpoint: Record<string, unknown>) => {
+      events.push('continue')
+      checkpoints.push(checkpoint)
+    },
+    failOrRetry: async (_job: ClaimedForecastPreparationJob, _error: unknown, checkpoint?: Record<string, unknown>) => {
+      events.push('retry')
+      checkpoints.push(checkpoint)
+    },
   } as unknown as ForecastPreparationQueueService
-  return { queue, events }
+  return { queue, events, checkpoints }
 }
 
 test('completed verification compute with zero lawful origins is terminal instead of looping', async () => {
@@ -318,9 +328,13 @@ test('worker preserves the durable user correlation in compute diagnostics', asy
 
 test('worker checkpoints an incomplete Historical Verification slice', async () => {
   const harness = queueHarness(claimedJob('VERIFICATION'))
+  const observedBatchSizes: number[] = []
   const worker = createForecastPreparationWorker({
     queue: harness.queue,
-    prepareVerificationSlice: async () => undefined,
+    prepareVerificationSlice: async (_job, options) => {
+      observedBatchSizes.push(options.maxOriginsPerRun)
+      return undefined
+    },
     resolveReadiness: async () => ({
       fullVerificationReadiness: 'NOT_PREPARED',
       readiness: { blockers: ['FULL_HISTORICAL_PARTIAL'] },
@@ -328,6 +342,72 @@ test('worker checkpoints an incomplete Historical Verification slice', async () 
   })
   assert.equal(await worker.runOne(), true)
   assert.deepEqual(harness.events, ['continue'])
+  assert.deepEqual(observedBatchSizes, [1])
+  assert.equal(harness.checkpoints[0]?.nextBatchSize, 2)
+  assert.equal(harness.checkpoints[0]?.fullVerificationReadiness, 'NOT_PREPARED')
+})
+
+test('worker resumes from the durable adaptive batch checkpoint', async () => {
+  const job = claimedJob('VERIFICATION')
+  job.checkpointJson = {
+    schemaVersion: 'adaptive-verification-batch-v1',
+    policyVersion: 'PPF1_ADAPTIVE_VERIFICATION_BATCH_V1',
+    nextBatchSize: 4,
+    lastBatchSize: 2,
+    lastSliceMs: 12_000,
+    lastOriginCount: 2,
+    ewmaMsPerOrigin: 6_000,
+    successfulSliceCount: 2,
+    fallbackCount: 0,
+    decision: 'GROW',
+    reason: 'test',
+  }
+  const harness = queueHarness(job)
+  const observedBatchSizes: number[] = []
+  const worker = createForecastPreparationWorker({
+    queue: harness.queue,
+    prepareVerificationSlice: async (_claimed, options) => {
+      observedBatchSizes.push(options.maxOriginsPerRun)
+      return undefined
+    },
+    resolveReadiness: async () => ({
+      fullVerificationReadiness: 'READY',
+      readiness: { blockers: [] },
+    }) as never,
+  })
+
+  assert.equal(await worker.runOne(), true)
+  assert.deepEqual(observedBatchSizes, [4])
+  assert.deepEqual(harness.events, ['complete'])
+  assert.equal(harness.checkpoints[0]?.terminal, true)
+  assert.equal(harness.checkpoints[0]?.fullVerificationReadiness, 'READY')
+})
+
+test('worker resets adaptive verification to one origin after a retryable slice failure', async () => {
+  const job = claimedJob('VERIFICATION')
+  job.checkpointJson = {
+    schemaVersion: 'adaptive-verification-batch-v1',
+    policyVersion: 'PPF1_ADAPTIVE_VERIFICATION_BATCH_V1',
+    nextBatchSize: 8,
+    lastBatchSize: 4,
+    lastSliceMs: 30_000,
+    lastOriginCount: 4,
+    ewmaMsPerOrigin: 7_500,
+    successfulSliceCount: 3,
+    fallbackCount: 0,
+    decision: 'GROW',
+    reason: 'test',
+  }
+  const harness = queueHarness(job)
+  const worker = createForecastPreparationWorker({
+    queue: harness.queue,
+    prepareVerificationSlice: async () => { throw new Error('transient verification failure') },
+  })
+
+  assert.equal(await worker.runOne(), true)
+  assert.deepEqual(harness.events, ['retry'])
+  assert.equal(harness.checkpoints[0]?.nextBatchSize, 1)
+  assert.equal(harness.checkpoints[0]?.decision, 'FALLBACK')
 })
 
 test('worker marks retryable failure without claiming a second job', async () => {

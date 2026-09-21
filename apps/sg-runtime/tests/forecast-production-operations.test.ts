@@ -263,6 +263,7 @@ test('generic operations delegate Rolling Daily to its existing owner and keep h
 test('generic operations request explicit rolling-daily historical bootstrap when historical preparation is enabled', async () => {
   let capturedPrepareHistorical: boolean | undefined
   let capturedMaxOriginsPerRun: number | undefined
+  let capturedSnapshotRefreshMode: string | undefined
 
   const service = createForecastProductionOperationsService({
     async resolveCapabilities(seriesId) {
@@ -280,6 +281,7 @@ test('generic operations request explicit rolling-daily historical bootstrap whe
     async runRollingDaily(request) {
       capturedPrepareHistorical = request.prepareHistorical
       capturedMaxOriginsPerRun = request.maxOriginsPerRun
+      capturedSnapshotRefreshMode = request.snapshotRefreshMode
       return {
         status: 'SUCCEEDED',
         seriesId: request.seriesId,
@@ -304,10 +306,12 @@ test('generic operations request explicit rolling-daily historical bootstrap whe
     modelIds: ['arima'],
     prepareHistorical: true,
     maxOriginsPerRun: 3,
+    rollingDailySnapshotRefreshMode: 'WHEN_REQUIRED',
   })
 
   assert.equal(capturedPrepareHistorical, true)
   assert.equal(capturedMaxOriginsPerRun, 3)
+  assert.equal(capturedSnapshotRefreshMode, 'WHEN_REQUIRED')
   assert.equal(result.status, 'SUCCEEDED')
   assert.equal(result.results[0]?.current, 'READY')
   assert.equal(result.results[0]?.historical, 'READY')

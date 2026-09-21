@@ -41,6 +41,12 @@ import {
   updateForecastRequestDiagnosticsIdentity,
 } from '@/lib/forecast/request-diagnostics'
 import { measureForecastWorkerJob } from '@/lib/forecast/worker-resource-telemetry'
+import {
+  fallbackAdaptiveVerificationBatchAfterFailure,
+  observeSuccessfulVerificationBatch,
+  readAdaptiveVerificationBatchCheckpoint,
+  type AdaptiveVerificationBatchCheckpoint,
+} from '@/lib/forecast/adaptive-verification-batching'
 
 export const FORECAST_PREPARATION_JOB_KINDS = ['CURRENT', 'VERIFICATION'] as const
 export const FORECAST_PREPARATION_JOB_STATUSES = [
@@ -606,7 +612,7 @@ export function createForecastPreparationQueueService(options: {
     if (updated.count !== 1) throw new Error(`Forecast preparation lease lost for ${job.jobKey}.`)
   }
 
-  async function complete(job: ClaimedForecastPreparationJob) {
+  async function complete(job: ClaimedForecastPreparationJob, checkpoint?: Record<string, unknown>) {
     const updated = await prisma.forecastPreparationJob.updateMany({
       where: { id: job.id, status: 'RUNNING', leaseOwnerToken: job.leaseOwnerToken, leaseVersion: job.leaseVersion },
       data: {
@@ -616,6 +622,7 @@ export function createForecastPreparationQueueService(options: {
         leaseOwnerToken: null,
         leaseExpiresAt: null,
         lastHeartbeatAt: null,
+        checkpointJson: checkpoint ? checkpoint as Prisma.InputJsonValue : Prisma.DbNull,
         failureCode: null,
         failureReason: null,
       },
@@ -639,7 +646,11 @@ export function createForecastPreparationQueueService(options: {
     if (updated.count !== 1) throw new Error(`Forecast preparation checkpoint lost its lease for ${job.jobKey}.`)
   }
 
-  async function failOrRetry(job: ClaimedForecastPreparationJob, error: unknown) {
+  async function failOrRetry(
+    job: ClaimedForecastPreparationJob,
+    error: unknown,
+    checkpoint?: Record<string, unknown>,
+  ) {
     const failureCount = job.failureCount + 1
     const terminal = failureCount >= job.maxFailureCount
     const delayMs = Math.min(MAX_RETRY_DELAY_MS, RETRY_BASE_MS * (2 ** Math.max(0, failureCount - 1)))
@@ -653,6 +664,7 @@ export function createForecastPreparationQueueService(options: {
         leaseOwnerToken: null,
         leaseExpiresAt: null,
         lastHeartbeatAt: null,
+        ...(checkpoint ? { checkpointJson: checkpoint as Prisma.InputJsonValue } : {}),
         failureCode: terminal ? 'RETRY_EXHAUSTED' : 'TRANSIENT_FAILURE',
         failureReason: error instanceof Error ? error.message : String(error),
       },
@@ -687,7 +699,10 @@ export function createForecastPreparationWorker(options: {
   workerId?: string
   heartbeatMs?: number
   prepareCurrent?: typeof prepareInteractiveCurrentForecast
-  prepareVerificationSlice?: (job: ClaimedForecastPreparationJob) => Promise<ForecastProductionOperationsResult | void>
+  prepareVerificationSlice?: (
+    job: ClaimedForecastPreparationJob,
+    options: { maxOriginsPerRun: number },
+  ) => Promise<ForecastProductionOperationsResult | void>
   resolveReadiness?: typeof resolveInteractiveForecastCapability
   recordArtifactReady?: typeof recordForecastArtifactReady
   persistResourceSummary?: typeof persistForecastExecutionResourceSummary
@@ -697,14 +712,18 @@ export function createForecastPreparationWorker(options: {
   const heartbeatMs = options.heartbeatMs ?? 60_000
   const operations = createForecastProductionOperationsService()
   const prepareCurrent = options.prepareCurrent ?? prepareInteractiveCurrentForecast
-  const prepareVerificationSlice = options.prepareVerificationSlice ?? (async (job: ClaimedForecastPreparationJob) => {
+  const prepareVerificationSlice = options.prepareVerificationSlice ?? (async (
+    job: ClaimedForecastPreparationJob,
+    slice: { maxOriginsPerRun: number },
+  ) => {
     const result = await operations.run({
       seriesId: job.seriesId,
       targetSemantics: [job.targetSemantics as 'END_OF_PERIOD' | 'MONTHLY_AVERAGE' | 'ROLLING_DAILY_POINT_IN_TIME'],
       modelIds: [job.modelId as InteractiveForecastIdentity['modelId']],
       prepareHistorical: true,
       verificationScope: 'FULL',
-      maxOriginsPerRun: 1,
+      maxOriginsPerRun: slice.maxOriginsPerRun,
+      rollingDailySnapshotRefreshMode: 'WHEN_REQUIRED',
     })
     if (result.status === 'FAILED') {
       throw new Error(result.results[0]?.error ?? 'Historical Verification preparation failed.')
@@ -714,6 +733,18 @@ export function createForecastPreparationWorker(options: {
   const resolveReadiness = options.resolveReadiness ?? resolveInteractiveForecastCapability
   const recordArtifactReady = options.recordArtifactReady ?? recordForecastArtifactReady
   const persistResourceSummary = options.persistResourceSummary ?? persistForecastExecutionResourceSummary
+
+  function resolvePreparedOriginCount(
+    result: ForecastProductionOperationsResult | void,
+    job: ClaimedForecastPreparationJob,
+    requestedBatchSize: number,
+  ) {
+    const item = result?.results.find((candidate) => (
+      candidate.targetSemantics === job.targetSemantics
+      && candidate.modelId === job.modelId
+    ))
+    return item?.historicalProgressOriginCount ?? requestedBatchSize
+  }
 
   async function safelyRecordArtifactReady(jobKey: string, kind: ForecastPreparationJobKind) {
     try {
@@ -753,6 +784,9 @@ export function createForecastPreparationWorker(options: {
 
     const correlationId = resolveForecastJobCorrelationId(job)
     const operationType = job.jobKind === 'CURRENT' ? 'CURRENT_MATERIALIZATION' : 'VERIFICATION_MATERIALIZATION'
+    let adaptiveCheckpoint: AdaptiveVerificationBatchCheckpoint | null = job.jobKind === 'VERIFICATION'
+      ? readAdaptiveVerificationBatchCheckpoint(job.checkpointJson)
+      : null
 
     const measured = await measureForecastWorkerJob({ correlationId, jobKey: job.jobKey }, async () => runWithForecastRequestDiagnostics({
       enabled: true,
@@ -801,10 +835,38 @@ export function createForecastPreparationWorker(options: {
           return
         }
 
-        const sliceResult = await prepareVerificationSlice(job)
+        const batchSize = adaptiveCheckpoint?.nextBatchSize ?? 1
+        const sliceStartedAt = performance.now()
+        const sliceResult = await prepareVerificationSlice(job, { maxOriginsPerRun: batchSize })
+        const sliceMs = Math.max(1, performance.now() - sliceStartedAt)
+        adaptiveCheckpoint = observeSuccessfulVerificationBatch(
+          adaptiveCheckpoint ?? readAdaptiveVerificationBatchCheckpoint(null),
+          {
+            batchSize,
+            sliceMs,
+            originCount: resolvePreparedOriginCount(sliceResult, job, batchSize),
+          },
+        )
+        console.info(JSON.stringify({
+          event: 'FORECAST_VERIFICATION_ADAPTIVE_BATCH_DECISION',
+          correlationId,
+          jobKey: job.jobKey,
+          batchSize,
+          nextBatchSize: adaptiveCheckpoint.nextBatchSize,
+          sliceMs,
+          originCount: adaptiveCheckpoint.lastOriginCount,
+          decision: adaptiveCheckpoint.decision,
+          reason: adaptiveCheckpoint.reason,
+        }))
         const readiness = await resolveReadiness(input)
+        const checkpoint = {
+          ...adaptiveCheckpoint,
+          fullVerificationReadiness: readiness.fullVerificationReadiness,
+          blockers: readiness.readiness.blockers,
+          checkedAt: new Date().toISOString(),
+        }
         if (readiness.fullVerificationReadiness === 'READY') {
-          await queue.complete(job)
+          await queue.complete(job, { ...checkpoint, terminal: true })
           await safelyRecordArtifactReady(job.jobKey, 'VERIFICATION')
           noteForecastRequestDiagnosticsEvent('durable_job_completed', 'APPLICATION', { jobKey: job.jobKey, state: 'SUCCEEDED' })
         } else {
@@ -815,11 +877,7 @@ export function createForecastPreparationWorker(options: {
             noteForecastRequestDiagnosticsEvent('durable_job_completed', 'APPLICATION', { jobKey: job.jobKey, state: 'FAILED' })
             return
           }
-          await queue.continueAfterSlice(job, {
-            fullVerificationReadiness: readiness.fullVerificationReadiness,
-            blockers: readiness.readiness.blockers,
-            checkedAt: new Date().toISOString(),
-          })
+          await queue.continueAfterSlice(job, checkpoint)
           noteForecastRequestDiagnosticsEvent('durable_job_completed', 'APPLICATION', { jobKey: job.jobKey, state: 'QUEUED' })
         }
       } catch (error) {
@@ -828,7 +886,13 @@ export function createForecastPreparationWorker(options: {
           jobKey: job.jobKey,
           error: error instanceof Error ? error.message : String(error),
         })
-        await queue.failOrRetry(job, error)
+        const failureCheckpoint = adaptiveCheckpoint
+          ? fallbackAdaptiveVerificationBatchAfterFailure(
+              adaptiveCheckpoint,
+              `Reset after failed slice: ${error instanceof Error ? error.message : String(error)}`,
+            )
+          : null
+        await queue.failOrRetry(job, error, failureCheckpoint ?? undefined)
       } finally {
         clearInterval(heartbeat)
         console.info(JSON.stringify({
