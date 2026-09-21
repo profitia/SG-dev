@@ -21,6 +21,19 @@ from forecasting.training_policy import resolve_period_model_minimum_training_ob
 from forecasting.uncertainty_bands import build_arima_model_native_band
 
 
+ARIMA_POLICY_ID = "ARIMA_NON_SEASONAL_BOUNDED_AICC_V1"
+ARIMA_TIE_BREAK_POLICY_ID = "LOWER_D_THEN_LOWER_P_PLUS_Q_THEN_P_THEN_Q"
+ARIMA_ESTIMATION_METHOD = "innovations_mle"
+# The optimization targets CPU-dominant long-history verification. Short
+# samples retain the established statespace fit to avoid optimizer instability;
+# no observations are truncated on either path.
+ARIMA_INNOVATIONS_MIN_SAMPLE_SIZE = 1_000
+ARIMA_ESTIMATION_POLICY_ID = "ARIMA_SAMPLE_SIZE_ADAPTIVE_EXACT_MLE_V1"
+ARIMA_FIT_IMPLEMENTATION = "STATSMODELS_ARIMA_INNOVATIONS_MLE"
+ARIMA_STATESPACE_FIT_IMPLEMENTATION = "STATSMODELS_ARIMA_STATESPACE"
+ARIMA_FALLBACK_FIT_IMPLEMENTATION = "STATSMODELS_ARIMA_STATESPACE_FALLBACK"
+
+
 @dataclass(frozen=True)
 class ARIMACandidate:
     order: tuple[int, int, int]
@@ -40,6 +53,7 @@ class ARIMACandidateResult:
     aicc: float
     parameters: dict[str, float]
     fitted: object | None = None
+    fit_implementation: str = ARIMA_STATESPACE_FIT_IMPLEMENTATION
 
 
 @dataclass(frozen=True)
@@ -79,11 +93,6 @@ ARIMA_CANDIDATE_GRID: tuple[ARIMACandidate, ...] = tuple(
         key=_arima_tie_break_key,
     )
 )
-
-ARIMA_POLICY_ID = "ARIMA_NON_SEASONAL_BOUNDED_AICC_V1"
-ARIMA_TIE_BREAK_POLICY_ID = "LOWER_D_THEN_LOWER_P_PLUS_Q_THEN_P_THEN_Q"
-ARIMA_FIT_IMPLEMENTATION = "STATSMODELS_ARIMA_STATESPACE"
-
 
 class ARIMAModelFamily(ForecastModel):
     model_id = "arima"
@@ -131,7 +140,8 @@ class ARIMAModelFamily(ForecastModel):
             "policyIdentity": ARIMA_POLICY_ID,
             "candidateCount": len(eligible_candidates),
             "tieBreakPolicy": ARIMA_TIE_BREAK_POLICY_ID,
-            "fitImplementation": ARIMA_FIT_IMPLEMENTATION,
+            "estimationPolicyIdentity": ARIMA_ESTIMATION_POLICY_ID,
+            "fitImplementation": selected.fit_implementation,
         }
         selected_parameters.update(selected.parameters)
 
@@ -210,54 +220,80 @@ def fit_arima_candidate_endog(
     sample_size: int,
     horizon_steps: int,
 ) -> ARIMACandidateResult:
-
-        with warnings.catch_warnings(record=True) as captured_warnings:
-            warnings.simplefilter("always")
-            try:
-                fitted = ARIMA(
-                    endog,
-                    order=candidate.order,
-                    seasonal_order=candidate.seasonal_order,
-                    trend=candidate.trend,
-                    enforce_stationarity=True,
-                    enforce_invertibility=True,
-                    concentrate_scale=False,
-                    validate_specification=True,
-                ).fit(
+    use_innovations_mle = sample_size >= ARIMA_INNOVATIONS_MIN_SAMPLE_SIZE
+    fit_implementation = (
+        ARIMA_FIT_IMPLEMENTATION
+        if use_innovations_mle
+        else ARIMA_STATESPACE_FIT_IMPLEMENTATION
+    )
+    with warnings.catch_warnings(record=True) as captured_warnings:
+        warnings.simplefilter("always")
+        try:
+            model = ARIMA(
+                endog,
+                order=candidate.order,
+                seasonal_order=candidate.seasonal_order,
+                trend=candidate.trend,
+                enforce_stationarity=True,
+                enforce_invertibility=True,
+                concentrate_scale=False,
+                validate_specification=True,
+            )
+            if use_innovations_mle:
+                try:
+                    fitted = model.fit(
+                        method=ARIMA_ESTIMATION_METHOD,
+                        low_memory=False,
+                    )
+                except Exception:
+                    # Keep the existing statespace implementation as a lawful
+                    # candidate-local availability fallback. The primary
+                    # innovations likelihood is materially cheaper for long
+                    # Daily histories while preserving the same bounded grid,
+                    # AICc selection and statsmodels ARIMA model family.
+                    captured_warnings.clear()
+                    fit_implementation = ARIMA_FALLBACK_FIT_IMPLEMENTATION
+                    fitted = model.fit(
+                        method="statespace",
+                        low_memory=False,
+                    )
+            else:
+                fitted = model.fit(
                     method="statespace",
                     low_memory=False,
                 )
-            except Exception as error:
-                raise ModelForecastError(f"FIT_EXCEPTION: {error}") from error
-
-        if has_convergence_warning(captured_warnings):
-            raise ModelForecastError("NON_CONVERGENCE: ARIMA emitted a convergence warning.")
-
-        converged = fit_converged(fitted)
-        if converged is False:
-            raise ModelForecastError("NON_CONVERGENCE: ARIMA optimizer did not converge.")
-
-        parameters = extract_named_parameter_map(fitted)
-        aicc = compute_aicc(fitted, sample_size)
-        if not math.isfinite(aicc):
-            raise ModelForecastError("NON_FINITE_AICC: ARIMA candidate produced a non-finite AICc.")
-
-        try:
-            forecast = fitted.forecast(horizon_steps)
-            forecast_value = float(forecast[-1])
         except Exception as error:
-            raise ModelForecastError(f"FORECAST_EXCEPTION: {error}") from error
+            raise ModelForecastError(f"FIT_EXCEPTION: {error}") from error
 
-        if not math.isfinite(forecast_value):
-            raise ModelForecastError("NON_FINITE_FORECAST: ARIMA candidate produced a non-finite forecast.")
+    if has_convergence_warning(captured_warnings):
+        raise ModelForecastError("NON_CONVERGENCE: ARIMA emitted a convergence warning.")
 
-        return ARIMACandidateResult(
-            candidate=candidate,
-            forecast_value=forecast_value,
-            aicc=aicc,
-            parameters=parameters,
-            fitted=fitted,
-        )
+    converged = fit_converged(fitted)
+    if converged is False:
+        raise ModelForecastError("NON_CONVERGENCE: ARIMA optimizer did not converge.")
+
+    parameters = extract_named_parameter_map(fitted)
+    aicc = compute_aicc(fitted, sample_size)
+    if not math.isfinite(aicc):
+        raise ModelForecastError("NON_FINITE_AICC: ARIMA candidate produced a non-finite AICc.")
+
+    try:
+        forecast = fitted.forecast(horizon_steps)
+        forecast_value = float(forecast[-1])
+    except Exception as error:
+        raise ModelForecastError(f"FORECAST_EXCEPTION: {error}") from error
+
+    if not math.isfinite(forecast_value):
+        raise ModelForecastError("NON_FINITE_FORECAST: ARIMA candidate produced a non-finite forecast.")
+
+    return ARIMACandidateResult(
+        candidate=candidate,
+        forecast_value=forecast_value,
+        aicc=aicc,
+        parameters=parameters,
+        fitted=fitted,
+        fit_implementation=fit_implementation,
+    )
 
 
 def is_sample_feasible_arima_candidate(candidate: ARIMACandidate, sample_size: int) -> bool:
@@ -314,7 +350,8 @@ def fit_selected_arima_endog(
         "policyIdentity": ARIMA_POLICY_ID,
         "candidateCount": len(eligible_candidates),
         "tieBreakPolicy": ARIMA_TIE_BREAK_POLICY_ID,
-        "fitImplementation": ARIMA_FIT_IMPLEMENTATION,
+        "estimationPolicyIdentity": ARIMA_ESTIMATION_POLICY_ID,
+        "fitImplementation": selected.fit_implementation,
     }
     selected_parameters.update(selected.parameters)
 

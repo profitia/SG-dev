@@ -105,19 +105,39 @@ test('prepared verification readiness distinguishes Recent from Full artifacts',
   }), true)
 })
 
-test('client-facing verification readiness uses the prepared Fast Verification contract', () => {
+test('client-facing verification readiness accepts exact ready artifacts and the Fast Verification contract', () => {
   const source = fs.readFileSync(new URL('../components/raw-data-view/index.tsx', import.meta.url), 'utf8')
 
   assert.doesNotMatch(source, /selectedVerificationPrepared = !preparedReadsOnly/)
-  assert.match(source, /capability\.currentReadiness === 'READY' && isFastVerificationPrepared\(capability\)/)
+  assert.match(source, /capability\.currentReadiness === 'READY' && isSelectedVerificationPrepared\(capability, null\)/)
   assert.match(source, /forecastCapabilityState !== 'ready'/)
-  assert.match(source, /selectedCapabilityVariant\?\.currentReadiness === 'READY'\s*&& isFastVerificationPrepared\(selectedCapabilityVariant\)/)
+  assert.match(source, /selectedCapabilityVariant\?\.currentReadiness === 'READY'\s*&& isSelectedVerificationPrepared\(selectedCapabilityVariant, selectedProgressiveVariant\)/)
+  assert.match(source, /\(!preparedReadsOnly \|\| forecastCapabilityState === 'ready'\)\s*&& !selectedVerificationPrepared/)
   assert.match(source, /verificationQueuedCurrentReadyHint/)
   assert.match(source, /verificationProgressDetail/)
 })
 
 test('verification preparation stays available outside prepared-read-only demo mode and becomes ready from durable progress', () => {
   assert.equal(isSelectedVerificationPrepared(null, null), false)
+  assert.equal(isSelectedVerificationPrepared({
+    seriesId: 'w_c1_cl',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'naive',
+    preparedReadAuthority: null,
+    sourceFrequency: 'DAILY',
+    targetCadence: 'DAILY',
+    sourceAvailability: 'AVAILABLE',
+    lawfulTargetSemantics: 'LAWFUL',
+    status: 'AVAILABLE',
+    currentReadiness: 'READY',
+    verificationReadiness: 'READY',
+    recentVerificationReadiness: 'NOT_PREPARED',
+    fastVerificationReadiness: 'NOT_PREPARED',
+    fullVerificationReadiness: 'NOT_PREPARED',
+    targetedDataScope: 'SINGLE_SERIES',
+    reason: null,
+    timingMs: 4,
+  }, null), true)
   assert.equal(isSelectedVerificationPrepared(null, {
     seriesId: 'pl2023g_cl',
     modelId: 'arima',
