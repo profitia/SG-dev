@@ -9,7 +9,7 @@ import { validateGovernanceManifest } from './validate-governance-manifest.mjs'
 import { normalizeRepositorySlug, resolveProjectProfile } from './project-profile.mjs'
 import { resolveProjectRouting } from './routing-engine.mjs'
 
-const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+const governanceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 
 function parseArgs(argv) {
   const result = { mode: 'development', targets: [], legacyExceptions: [], json: false, ci: false, offline: false, allowDirty: false, requireBegin: false, skipRuntime: false, checkEstate: false }
@@ -30,7 +30,7 @@ function parseArgs(argv) {
   return result
 }
 
-function run(command, args, cwd = repositoryRoot, env = process.env) {
+function run(command, args, cwd = governanceRoot, env = process.env) {
   const result = spawnSync(command, args, { cwd, env, encoding: 'utf8' })
   return { ok: result.status === 0, status: result.status, stdout: result.stdout?.trim() ?? '', stderr: result.stderr?.trim() ?? '' }
 }
@@ -44,20 +44,21 @@ function requiredInput(args, name) {
 }
 
 export function runGovernancePreflight(args) {
+  const repositoryRoot = args.repository_root ? path.resolve(args.repository_root) : governanceRoot
   const gates = {}
-  const manifest = validateGovernanceManifest(repositoryRoot)
+  const manifest = validateGovernanceManifest(governanceRoot)
   gates.GOVERNANCE_MANIFEST_GATE = manifest.valid ? gate('PASS', `${manifest.activeDocuments.length} active documents validated.`) : gate('BLOCKED', manifest.errors)
 
   let profile = null
   try {
-    profile = resolveProjectProfile(args.project, repositoryRoot)
+    profile = resolveProjectProfile(args.project, governanceRoot)
     gates.PROJECT_PROFILE_GATE = gate('PASS', `${profile.projectKey} -> ${profile.repository.slug}`)
   } catch (error) {
     gates.PROJECT_PROFILE_GATE = gate('BLOCKED', error.message)
   }
 
-  const remote = run('git', ['remote', 'get-url', 'origin'])
-  const topLevel = run('git', ['rev-parse', '--show-toplevel'])
+  const remote = run('git', ['remote', 'get-url', 'origin'], repositoryRoot)
+  const topLevel = run('git', ['rev-parse', '--show-toplevel'], repositoryRoot)
   const repositoryMatches = Boolean(profile) && remote.ok
     && normalizeRepositorySlug(remote.stdout) === profile.repository.slug.toLowerCase()
     && topLevel.ok && path.resolve(topLevel.stdout) === repositoryRoot
@@ -66,12 +67,12 @@ export function runGovernancePreflight(args) {
     : gate('BLOCKED', [`origin=${remote.stdout || '<missing>'}`, `root=${topLevel.stdout || '<missing>'}`])
 
   const authorityBranch = profile?.repository.defaultBranch ?? 'main'
-  if (!args.offline) run('git', ['fetch', '--quiet', 'origin', authorityBranch])
-  const branch = run('git', ['branch', '--show-current'])
-  const head = run('git', ['rev-parse', 'HEAD'])
-  const originMain = run('git', ['rev-parse', `origin/${authorityBranch}`])
-  const ancestry = head.ok && originMain.ok ? run('git', ['merge-base', '--is-ancestor', originMain.stdout, head.stdout]) : { ok: false }
-  const status = run('git', ['status', '--porcelain'])
+  if (!args.offline) run('git', ['fetch', '--quiet', 'origin', authorityBranch], repositoryRoot)
+  const branch = run('git', ['branch', '--show-current'], repositoryRoot)
+  const head = run('git', ['rev-parse', 'HEAD'], repositoryRoot)
+  const originMain = run('git', ['rev-parse', `origin/${authorityBranch}`], repositoryRoot)
+  const ancestry = head.ok && originMain.ok ? run('git', ['merge-base', '--is-ancestor', originMain.stdout, head.stdout], repositoryRoot) : { ok: false }
+  const status = run('git', ['status', '--porcelain'], repositoryRoot)
   const dirtyAccepted = status.ok && (status.stdout === '' || args.allowDirty)
   gates.CODE_STATE_GATE = head.ok && originMain.ok && ancestry.ok && dirtyAccepted
     ? gate(status.stdout === '' ? 'PASS' : 'WARNING', [`branch=${branch.stdout || '<detached>'}`, `HEAD=${head.stdout}`, `origin/${authorityBranch}=${originMain.stdout}`, `dirty=${status.stdout !== ''}`])
@@ -93,19 +94,19 @@ export function runGovernancePreflight(args) {
   if (args.skipRuntime) {
     gates.PMOS_RUNTIME_GATE = gate('NOT_APPLICABLE', args.ci ? 'Live PMOS runtime verification is not available in CI.' : 'Explicitly skipped for this invocation.')
   } else {
-    const runtime = run('npm', ['run', 'pmos:verify-runtime'], path.join(repositoryRoot, 'apps', 'pmos'))
+    const runtime = run('npm', ['run', 'pmos:verify-runtime'], path.join(governanceRoot, 'apps', 'pmos'))
     gates.PMOS_RUNTIME_GATE = runtime.ok ? gate('PASS', 'Current PMOS runtime verification passed.') : gate('BLOCKED', runtime.stderr || runtime.stdout)
   }
 
   if (args.requireBegin) {
-    const begin = run('npm', ['run', 'pmos:begin', '--', '--check-task-id', args.task_id], path.join(repositoryRoot, 'apps', 'pmos'))
+    const begin = run('npm', ['run', 'pmos:begin', '--', '--check-task-id', args.task_id], path.join(governanceRoot, 'apps', 'pmos'))
     gates.PMOS_BEGIN_GATE = begin.ok ? gate('PASS', `Registered task ${args.task_id}.`) : gate('BLOCKED', begin.stderr || begin.stdout)
   } else {
     gates.PMOS_BEGIN_GATE = gate('PASS', 'READY_TO_REGISTER — run pmos:begin before implementation, then rerun with --require-begin.')
   }
 
   if (args.checkEstate) {
-    const estate = run('npm', ['run', 'pmos:audit-estate'], path.join(repositoryRoot, 'apps', 'pmos'))
+    const estate = run('npm', ['run', 'pmos:audit-estate'], path.join(governanceRoot, 'apps', 'pmos'))
     gates.PMOS_ESTATE_GATE = estate.ok ? gate('PASS', 'Historical estate verification passed.') : gate('WARNING', estate.stderr || estate.stdout)
   } else {
     gates.PMOS_ESTATE_GATE = gate('NOT_APPLICABLE', 'Historical estate audit was not requested; it is independent of runtime readiness.')
@@ -116,6 +117,7 @@ export function runGovernancePreflight(args) {
     schemaVersion: '3.0',
     mode: args.mode,
     projectKey: profile?.projectKey ?? null,
+    governanceRoot,
     repositoryRoot,
     gates,
     verdict: blockingGates.length === 0 ? 'PASS' : 'BLOCKED',
