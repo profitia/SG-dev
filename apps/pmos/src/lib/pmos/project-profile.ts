@@ -15,7 +15,7 @@ type RegistryProject = {
   workspaces: string[]
   repository: { slug: string; defaultBranch: string; routingRegistry: string | null; routingBootstrapPaths?: string[] }
   database: { provider: 'neon'; projectId: string; databaseName: string; allowedHosts: string[] }
-  continuity: { pmos: PmosContinuityMode; memoros: PmosMemorosMode; phr: PmosContinuityMode }
+  continuity: { pmos: PmosContinuityMode; memoros: PmosMemorosMode; phr: PmosContinuityMode; memorosProjectId: string | null }
   adapter: string
   status: 'ACTIVE' | 'SUPERSEDED'
 }
@@ -149,6 +149,17 @@ export function isSuccessfulPhrCloseoutStatus(status: string | null | undefined)
 
 export function isPhrSatisfiedForCloseout(profile: PmosProjectProfile, status: string | null | undefined): boolean {
   return !profile.phrRequiredForCloseout || isSuccessfulPhrCloseoutStatus(status)
+}
+
+export function requireCanonicalMemorosProjectId(profile: PmosProjectProfile): string {
+  if (!profile.memorosEnabled) {
+    throw new Error(`MEMOROS publication is disabled for project ${profile.projectKey}.`)
+  }
+  const projectId = profile.continuity.memorosProjectId?.trim()
+  if (!projectId) {
+    throw new Error(`Project ${profile.projectKey} is missing continuity.memorosProjectId in the canonical project profile.`)
+  }
+  return projectId
 }
 
 export function buildNamespacedPublicationId(projectIdentity: string, taskId: string): string {

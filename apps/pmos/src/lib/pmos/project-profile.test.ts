@@ -13,6 +13,7 @@ import {
   normalizePmosProjectName,
   normalizeHistoricalPmosProjectName,
   normalizePmosWorkspaceName,
+  requireCanonicalMemorosProjectId,
   requirePmosProjectProfile,
   resolvePmosProjectProfile,
   runMemorosPublicationIfEnabled,
@@ -81,4 +82,14 @@ test('PHR ids are namespaced and every active profile requires successful PHR cl
   assert.equal(isPhrSatisfiedForCloseout(sg2, 'FAILED'), false)
   assert.equal(isPhrSatisfiedForCloseout(sg2, 'PUBLISHED'), true)
   assert.equal(isPhrSatisfiedForCloseout(srm, 'IDEMPOTENT'), true)
+})
+
+test('MEMOROS destination identity is canonical and isolated per enabled project', () => {
+  const sg2 = resolvePmosProjectProfile({ projectName: 'SG2', workspaceName: 'SG-dev' })
+  const cic = resolvePmosProjectProfile({ projectName: 'CIC', workspaceName: 'conversational-intelligence-core' })
+  const srm = resolvePmosProjectProfile({ projectName: 'SRM', workspaceName: 'SG-dev Codespaces SRM' })
+  assert.equal(requireCanonicalMemorosProjectId(sg2), 'cmptxz92m000023gjw2r3gbf5')
+  assert.equal(requireCanonicalMemorosProjectId(cic), 'cmubasxat03t71glbo4x0nhfn')
+  assert.notEqual(requireCanonicalMemorosProjectId(sg2), requireCanonicalMemorosProjectId(cic))
+  assert.throws(() => requireCanonicalMemorosProjectId(srm), /disabled/)
 })
