@@ -1671,6 +1671,29 @@ export function createNoopForecastPreparationExecutionLedger(): ForecastPreparat
   return createForecastPreparationExecutionLedger({ store: createNoopStore() })
 }
 
+export function buildForecastResourceSummaryExecutionFilter(
+  correlationId: string,
+  measuredFrom: Date,
+  measuredAt: Date,
+) {
+  return {
+    AND: [
+      {
+        OR: [
+          { ownerRequestId: correlationId },
+          { latestRequestId: correlationId },
+        ],
+      },
+      {
+        lastEventAt: {
+          gte: measuredFrom,
+          lte: measuredAt,
+        },
+      },
+    ],
+  }
+}
+
 export async function persistForecastExecutionResourceSummary(
   correlationId: string,
   summary: ForecastWorkerResourceSummary,
@@ -1681,25 +1704,10 @@ export async function persistForecastExecutionResourceSummary(
   const measuredFrom = new Date(summary.startedAt)
   const measuredAt = new Date(summary.completedAt)
   const executions = await prisma.forecastPreparationExecutionLedger.findMany({
-    where: {
-      AND: [
-        {
-          OR: [
-            { ownerRequestId: correlationId },
-            { latestRequestId: correlationId },
-          ],
-        },
-        {
-          startedAt: {
-            gte: measuredFrom,
-            lte: measuredAt,
-          },
-        },
-      ],
-    },
-    orderBy: { startedAt: 'desc' },
+    where: buildForecastResourceSummaryExecutionFilter(correlationId, measuredFrom, measuredAt),
+    orderBy: { lastEventAt: 'desc' },
     select: { executionId: true },
-    take: 16,
+    take: 64,
   })
   const summaryJson = JSON.stringify(summary)
 
