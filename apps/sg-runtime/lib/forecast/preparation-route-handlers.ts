@@ -45,6 +45,7 @@ export function createForecastPreparationJobsPostHandler(
 
 export function createForecastPreparationJobsGetHandler(
   snapshot = (input: z.infer<typeof InteractiveForecastIdentitySchema>) => createForecastPreparationQueueService().snapshot(input),
+  recordReadyObservation = recordDashboardReadyObservationForSnapshot,
 ) {
   return withInternalForecastServiceAuth(async (principal, request: NextRequest) => {
     const parsed = parseSearchParams(request, InteractiveForecastIdentitySchema)
@@ -52,9 +53,9 @@ export function createForecastPreparationJobsGetHandler(
     try {
       const result = await snapshot(parsed.data)
       try {
-        await recordDashboardReadyObservationForSnapshot(principal.requestId, {
+        await recordReadyObservation(principal.requestId, {
           currentReady: result.current.state === 'READY',
-          verificationReady: result.verification.state === 'READY',
+          verificationReady: result.verification.state === 'FAST_READY' || result.verification.state === 'READY',
         })
       } catch (error) {
         console.error('[forecast-preparation] Dashboard-ready telemetry failed', {
