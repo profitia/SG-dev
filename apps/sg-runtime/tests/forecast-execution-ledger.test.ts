@@ -206,6 +206,56 @@ test('resource summaries select executions touched during the measured worker sl
   )
 })
 
+test('resource summaries fall back to exact durable-job identity when inner compute mints a technical request id', () => {
+  const measuredFrom = new Date('2026-09-21T08:00:00.000Z')
+  const measuredAt = new Date('2026-09-21T08:05:00.000Z')
+
+  assert.deepEqual(
+    buildForecastResourceSummaryExecutionFilter(
+      'verification-correlation-1',
+      measuredFrom,
+      measuredAt,
+      {
+        jobKind: 'VERIFICATION',
+        seriesId: 'wocaes0280',
+        targetBasis: 'MONTHLY_AVERAGE',
+        targetSemantics: 'MONTHLY_AVERAGE',
+        modelId: 'ets',
+        historyFingerprint: 'history-verification',
+        sourceFrequency: 'DAILY',
+        targetCadence: 'MONTHLY',
+      },
+    ),
+    {
+      AND: [
+        {
+          OR: [
+            {
+              OR: [
+                { ownerRequestId: 'verification-correlation-1' },
+                { latestRequestId: 'verification-correlation-1' },
+              ],
+            },
+            {
+              AND: [
+                { seriesId: 'wocaes0280' },
+                { targetBasis: 'MONTHLY_AVERAGE' },
+                { targetSemantics: 'MONTHLY_AVERAGE' },
+                { modelId: 'ets' },
+                { historyFingerprint: 'history-verification' },
+                { sourceFrequency: 'DAILY' },
+                { targetCadence: 'MONTHLY' },
+                { operationFamily: { in: ['VERIFICATION', 'HISTORICAL_MAINTENANCE'] } },
+              ],
+            },
+          ],
+        },
+        { lastEventAt: { gte: measuredFrom, lte: measuredAt } },
+      ],
+    },
+  )
+})
+
 test('execution ledger serializes concurrent writes per execution id', async () => {
   const ledger = createForecastPreparationExecutionLedger({ store: createInMemoryStore() })
   const executionId = '4d71e28e-d7eb-44c1-aec1-a5aa2c1cc1d8'
