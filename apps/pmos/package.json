@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev --port 3200",
     "build": "prisma generate && next build",
-    "start": "next start --port 3200",
+    "start": "next start --hostname 0.0.0.0 --port ${PORT:-3200}",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "typecheck:lifecycle": "tsc --noEmit -p tsconfig.lifecycle.json",
