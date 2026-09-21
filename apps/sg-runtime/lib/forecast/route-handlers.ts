@@ -13,6 +13,7 @@ import { createRollingDailyProductionOperationsService } from '@/lib/forecast/ro
 import { readRollingDailyCurrentForecastSnapshot } from '@/lib/forecast/rolling-daily-current-forecast-snapshot'
 import { buildRollingDailyHistoryFingerprint } from '@/lib/forecast/rolling-daily-maintenance'
 import {
+  readPreparedRollingDailyFastForecastVerification,
   readPreparedRollingDailyForecastVerification,
   readPreparedRollingDailyRecentForecastVerification,
 } from '@/lib/forecast/rolling-daily-verification'
@@ -26,6 +27,7 @@ import {
 } from '@/lib/forecast/request-contract'
 import {
   readPreparedBenchmarkCurrentForecast,
+  readPreparedBenchmarkFastForecastVerification,
   resolveBenchmarkForecastVerification,
   readPreparedBenchmarkForecastVerification,
   readPreparedBenchmarkRecentForecastVerification,
@@ -55,6 +57,7 @@ type ProductionForecastResolver = (input: ProductionForecastRequestInput) => Pro
 
 type PreparedVerificationDependencies = {
   readRecentVerification: ForecastVerificationResolver
+  readFastVerification?: ForecastVerificationResolver
   readRollingDailyVerification: ForecastVerificationResolver
   readGenericPeriodVerification: ForecastVerificationResolver
 }
@@ -145,6 +148,9 @@ const preparedVerificationDependencies: PreparedVerificationDependencies = {
     ? readPreparedRollingDailyRecentForecastVerification(input)
     : readPreparedBenchmarkRecentForecastVerification(input),
   readRollingDailyVerification: readPreparedRollingDailyForecastVerification,
+  readFastVerification: (input) => input.targetBasis === 'POINT_IN_TIME'
+    ? readPreparedRollingDailyFastForecastVerification(input)
+    : readPreparedBenchmarkFastForecastVerification(input),
   readGenericPeriodVerification: readPreparedBenchmarkForecastVerification,
 }
 
@@ -204,15 +210,15 @@ export async function resolvePreparedForecastVerification(
     return ensureHistoricalVerificationContract(requireExactFullVerification(full, input))
   }
 
-  const recent = await dependencies.readRecentVerification(input)
-  if (recent.status === 'AVAILABLE' || input.verificationScope === 'RECENT') {
-    return ensureHistoricalVerificationContract(recent)
+  if (input.verificationScope === 'RECENT') {
+    return ensureHistoricalVerificationContract(await dependencies.readRecentVerification(input))
   }
 
-  const full = await (input.targetBasis === 'POINT_IN_TIME'
-    ? dependencies.readRollingDailyVerification(input)
-    : dependencies.readGenericPeriodVerification(input))
-  return ensureHistoricalVerificationContract(full)
+  const fastReader = dependencies.readFastVerification ?? (input.targetBasis === 'POINT_IN_TIME'
+    ? dependencies.readRollingDailyVerification
+    : dependencies.readGenericPeriodVerification)
+  const fast = await fastReader({ ...input, verificationScope: 'FAST' })
+  return ensureHistoricalVerificationContract(fast)
 }
 
 export function createInternalForecastVerificationResolver(

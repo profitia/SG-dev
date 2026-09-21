@@ -9,7 +9,7 @@ export type ForecastTargetBasis = (typeof FORECAST_TARGET_BASES)[number]
 export type ForecastTargetSemantics = (typeof FORECAST_TARGET_SEMANTICS)[number]
 export type ForecastMethodId = (typeof FORECAST_METHOD_IDS)[number]
 export type ForecastCurrentUiState = 'IDLE' | 'READING' | 'AVAILABLE' | 'NOT_PREPARED' | 'PREPARING' | 'QUEUED' | 'FAILED' | 'UNSUPPORTED'
-export type ProgressiveForecastPreparationState = 'READY' | 'NOT_PREPARED' | 'PREPARING' | 'QUEUED' | 'UNSUPPORTED' | 'FAILED'
+export type ProgressiveForecastPreparationState = 'READY' | 'FAST_READY' | 'NOT_PREPARED' | 'PREPARING' | 'QUEUED' | 'UNSUPPORTED' | 'FAILED'
 export type BenchmarkForecastPreparationState = 'READY' | 'NOT_PREPARED' | 'PREPARING' | 'QUEUED' | 'UNSUPPORTED' | 'FAILED'
 export type InteractiveForecastCapabilityStatus =
   | 'AVAILABLE'
@@ -50,6 +50,7 @@ export interface InteractiveForecastCapabilityResult {
   currentReadiness: 'READY' | 'NOT_PREPARED' | 'STALE'
   verificationReadiness: 'READY' | 'NOT_PREPARED' | 'STALE'
   recentVerificationReadiness?: 'READY' | 'NOT_PREPARED' | 'STALE'
+  fastVerificationReadiness?: 'READY' | 'NOT_PREPARED' | 'STALE'
   fullVerificationReadiness?: 'READY' | 'NOT_PREPARED' | 'STALE'
   predictionBandResidualCount?: number
   predictionBandState?: 'AVAILABLE' | 'INSUFFICIENT_SAMPLE' | 'NOT_AVAILABLE'
@@ -466,6 +467,8 @@ export interface HistoricalVerificationHorizonSummary {
 
 export interface HistoricalVerificationSummary {
   contractVersion: 'HISTORICAL_VERIFICATION_V2'
+  preparationState?: 'FAST_READY' | 'FULL_READY' | null
+  fullHistoryReady?: boolean
   status: HistoricalVerificationStatus
   originCount: number
   expectedOriginCount: number

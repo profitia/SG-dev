@@ -169,6 +169,8 @@ export interface HistoricalVerificationHorizonSummary {
 
 export interface HistoricalVerificationSummary {
   contractVersion: 'HISTORICAL_VERIFICATION_V2'
+  preparationState: 'FAST_READY' | 'FULL_READY' | null
+  fullHistoryReady: boolean
   status: HistoricalVerificationStatus
   originCount: number
   expectedOriginCount: number

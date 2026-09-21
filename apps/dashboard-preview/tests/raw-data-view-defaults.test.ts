@@ -21,6 +21,7 @@ import {
   shouldApplyCurrentResultForActiveRequest,
   shouldHideEmbeddedBenchmarkShell,
   isPreparedReadsOnlyForecastSession,
+  isFastVerificationPrepared,
   isRecentVerificationPrepared,
   isSelectedVerificationPrepared,
   isFullVerificationPrepared,
@@ -88,6 +89,7 @@ test('prepared verification readiness distinguishes Recent from Full artifacts',
   } as const
 
   assert.equal(isRecentVerificationPrepared(capability), false)
+  assert.equal(isFastVerificationPrepared(capability), false)
   assert.equal(isFullVerificationPrepared(capability), false)
   assert.equal(isRecentVerificationPrepared({
     ...capability,
@@ -97,15 +99,19 @@ test('prepared verification readiness distinguishes Recent from Full artifacts',
     ...capability,
     fullVerificationReadiness: 'READY',
   }), true)
+  assert.equal(isFastVerificationPrepared({
+    ...capability,
+    fastVerificationReadiness: 'READY',
+  }), true)
 })
 
-test('client-facing verification readiness uses the prepared Recent Verification contract', () => {
+test('client-facing verification readiness uses the prepared Fast Verification contract', () => {
   const source = fs.readFileSync(new URL('../components/raw-data-view/index.tsx', import.meta.url), 'utf8')
 
   assert.doesNotMatch(source, /selectedVerificationPrepared = !preparedReadsOnly/)
-  assert.match(source, /capability\.currentReadiness === 'READY' && isRecentVerificationPrepared\(capability\)/)
+  assert.match(source, /capability\.currentReadiness === 'READY' && isFastVerificationPrepared\(capability\)/)
   assert.match(source, /forecastCapabilityState !== 'ready'/)
-  assert.match(source, /selectedCapabilityVariant\?\.currentReadiness === 'READY'\s*&& isRecentVerificationPrepared\(selectedCapabilityVariant\)/)
+  assert.match(source, /selectedCapabilityVariant\?\.currentReadiness === 'READY'\s*&& isFastVerificationPrepared\(selectedCapabilityVariant\)/)
 })
 
 test('verification preparation stays available outside prepared-read-only demo mode and becomes ready from durable progress', () => {
@@ -119,6 +125,16 @@ test('verification preparation stays available outside prepared-read-only demo m
     currentReason: null,
     verificationState: 'READY',
     verificationReason: null,
+  }), true)
+  assert.equal(isSelectedVerificationPrepared(null, {
+    seriesId: 'pl2023g_cl',
+    modelId: 'arima',
+    targetBasis: 'POINT_IN_TIME',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    currentState: 'READY',
+    currentReason: null,
+    verificationState: 'FAST_READY',
+    verificationReason: 'Full-history preparation continues.',
   }), true)
 })
 

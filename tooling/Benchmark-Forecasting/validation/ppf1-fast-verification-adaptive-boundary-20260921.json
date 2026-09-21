@@ -1,0 +1,38 @@
+{
+  "taskId": "PPF1-FAST-VERIFICATION-ADAPTIVE-BOUNDARY-20260921",
+  "decision": "FAST_VERIFICATION_BOUNDARY_ACCEPTED",
+  "policy": {
+    "version": "PPF1_FAST_VERIFICATION_MINIMUM_24_PER_HORIZON_V1",
+    "horizons": ["1M", "3M", "6M", "12M"],
+    "minimumSuccessfulComparisonsPerHorizon": 24,
+    "requiredFiniteMetrics": ["smape", "directionalAccuracy"],
+    "fastReadyIsTerminal": false,
+    "fullHistoryContinuesDurably": true
+  },
+  "invariants": {
+    "currentForecastPathChanged": false,
+    "fullPreparedReadAcceptsPartial": false,
+    "benchmarkSpecificLogicAdded": false,
+    "secondForecastEngineAdded": false,
+    "schemaMigrationAdded": false,
+    "newRuntimeAdded": false
+  },
+  "localVerification": {
+    "sgRuntimeTargeted": {"passed": 133, "failed": 0},
+    "sgRuntimeNonDatabase": {"passed": 467, "failed": 0, "skipped": 1},
+    "dashboardFull": {"passed": 282, "failed": 0},
+    "sgRuntimeTypecheck": "PASS",
+    "dashboardTypecheck": "PASS",
+    "sgRuntimeBuild": "PASS",
+    "dashboardBuild": "PASS",
+    "diffCheck": "PASS",
+    "excludedEnvironmentTest": "forecast-stage3-cross-instance.test.ts requires unavailable local PostgreSQL at 127.0.0.1:55421"
+  },
+  "publication": {
+    "sourceCommit": null,
+    "mergeCommit": null,
+    "deployedServices": [],
+    "liveCanary": null
+  },
+  "matrixTest": "DEFERRED_TO_SEPARATE_TASK"
+}

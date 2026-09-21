@@ -78,7 +78,7 @@ test('durable command schema accepts the job kind sent by the Dashboard', () => 
   })
 })
 
-test('adaptive period verification rotates only the affected durable job identity', () => {
+test('versioned Fast Verification policy rotates every verification job without rotating Current jobs', () => {
   const current = buildForecastPreparationJobKey({
     kind: 'CURRENT',
     seriesId: 'series-1',
@@ -102,7 +102,7 @@ test('adaptive period verification rotates only the affected durable job identit
   })
 
   assert.equal(current, legacyJobKey({ kind: 'CURRENT', targetSemantics: 'MONTHLY_AVERAGE' }))
-  assert.equal(rollingDaily, legacyJobKey({ kind: 'VERIFICATION', targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME' }))
+  assert.notEqual(rollingDaily, legacyJobKey({ kind: 'VERIFICATION', targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME' }))
   assert.notEqual(periodVerification, legacyJobKey({ kind: 'VERIFICATION', targetSemantics: 'MONTHLY_AVERAGE' }))
 })
 
@@ -344,6 +344,29 @@ test('worker checkpoints an incomplete Historical Verification slice', async () 
   assert.deepEqual(harness.events, ['continue'])
   assert.deepEqual(observedBatchSizes, [1])
   assert.equal(harness.checkpoints[0]?.nextBatchSize, 2)
+  assert.equal(harness.checkpoints[0]?.fullVerificationReadiness, 'NOT_PREPARED')
+})
+
+test('worker publishes Fast Verification readiness without completing the full-history job', async () => {
+  const harness = queueHarness(claimedJob('VERIFICATION'))
+  const readyKinds: string[] = []
+  const worker = createForecastPreparationWorker({
+    queue: harness.queue,
+    prepareVerificationSlice: async () => undefined,
+    resolveReadiness: async () => ({
+      fastVerificationReadiness: 'READY',
+      fullVerificationReadiness: 'NOT_PREPARED',
+      readiness: { blockers: ['FULL_HISTORICAL_PARTIAL'] },
+    }) as never,
+    recordArtifactReady: async (_jobKey, kind) => {
+      readyKinds.push(kind)
+    },
+  })
+
+  assert.equal(await worker.runOne(), true)
+  assert.deepEqual(harness.events, ['continue'])
+  assert.deepEqual(readyKinds, ['VERIFICATION'])
+  assert.equal(harness.checkpoints[0]?.fastVerificationReadiness, 'READY')
   assert.equal(harness.checkpoints[0]?.fullVerificationReadiness, 'NOT_PREPARED')
 })
 

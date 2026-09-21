@@ -824,6 +824,7 @@ test('prepared verification routes point-in-time and period requests to their la
   }
   const dependencies = {
     readRecentVerification: resolveOwner('RECENT'),
+    readFastVerification: resolveOwner('FAST'),
     readRollingDailyVerification: resolveOwner('ROLLING_DAILY'),
     readGenericPeriodVerification: resolveOwner('GENERIC_PERIOD'),
   }
@@ -868,8 +869,8 @@ test('prepared verification routes point-in-time and period requests to their la
   }, dependencies)
 
   assert.deepEqual(owners, [
-    'RECENT', 'ROLLING_DAILY',
-    'RECENT', 'GENERIC_PERIOD',
+    'FAST',
+    'FAST',
     'ROLLING_DAILY',
     'GENERIC_PERIOD',
     'RECENT',
@@ -2061,12 +2062,13 @@ test('interactive capability downgrades full readiness when exact historical ide
   })
 
   assert.deepEqual(result.readiness, {
-    fastReady: true,
+    fastReady: false,
     bandsReady: true,
-    calibratedReady: true,
+    calibratedReady: false,
     fullReady: false,
-    blockers: ['FULL_HISTORICAL_STALE', 'SOURCE_REVISION_REBUILD_REQUIRED'],
+    blockers: ['FAST_VERIFICATION_STALE', 'SOURCE_REVISION_REBUILD_REQUIRED', 'FULL_HISTORICAL_STALE'],
   })
+  assert.equal(result.fastVerificationReadiness, 'STALE')
   assert.equal(result.fullVerificationReadiness, 'STALE')
 })
 
@@ -2251,7 +2253,7 @@ test('interactive capability keeps point-in-time full verification not prepared 
   assert.equal(genericReads, 0)
   assert.equal(result.fullVerificationReadiness, 'NOT_PREPARED')
   assert.equal(result.readiness.fullReady, false)
-  assert.deepEqual(result.readiness.blockers, ['FULL_HISTORICAL_MISSING'])
+  assert.deepEqual(result.readiness.blockers, ['FAST_VERIFICATION_MISSING', 'FULL_HISTORICAL_MISSING'])
 })
 
 test('interactive capability keeps point-in-time full verification stale when rolling-daily authority is incomplete', async () => {
@@ -2338,7 +2340,7 @@ test('interactive capability keeps point-in-time full verification stale when ro
   assert.equal(genericReads, 0)
   assert.equal(result.fullVerificationReadiness, 'STALE')
   assert.equal(result.readiness.fullReady, false)
-  assert.deepEqual(result.readiness.blockers, ['FULL_HISTORICAL_STALE'])
+  assert.deepEqual(result.readiness.blockers, ['FAST_VERIFICATION_STALE', 'FULL_HISTORICAL_STALE'])
 })
 
 test('interactive capability keeps non-point-in-time full verification authority on the generic prepared reader', async () => {

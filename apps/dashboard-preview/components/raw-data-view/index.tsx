@@ -617,6 +617,12 @@ export function isRecentVerificationPrepared(
   return capability?.recentVerificationReadiness === 'READY'
 }
 
+export function isFastVerificationPrepared(
+  capability: InteractiveForecastCapabilityResult | null,
+) {
+  return capability?.fastVerificationReadiness === 'READY'
+}
+
 export function isFullVerificationPrepared(
   capability: InteractiveForecastCapabilityResult | null,
 ) {
@@ -627,7 +633,8 @@ export function isSelectedVerificationPrepared(
   capability: InteractiveForecastCapabilityResult | null,
   progressiveVariant: ProgressiveForecastVariantSnapshot | null,
 ) {
-  return isRecentVerificationPrepared(capability)
+  return isFastVerificationPrepared(capability)
+    || progressiveVariant?.verificationState === 'FAST_READY'
     || progressiveVariant?.verificationState === 'READY'
 }
 
@@ -2853,6 +2860,8 @@ export function RawDataView({
     forecastVerificationResult,
     `${forecastAccuracyHorizon}M`,
   )
+  const showFastVerificationNotice = isAvailableVerificationResult(forecastVerificationResult)
+    && forecastVerificationResult.historicalVerification?.preparationState === 'FAST_READY'
   const selectedVerificationQuality = isAvailableVerificationResult(forecastVerificationResult)
     ? forecastVerificationResult.verification[`${forecastAccuracyHorizon}M`]?.quality ?? null
     : null
@@ -2948,7 +2957,7 @@ export function RawDataView({
 
     if (
       selectedCapabilityVariant?.currentReadiness === 'READY'
-      && isRecentVerificationPrepared(selectedCapabilityVariant)
+      && isFastVerificationPrepared(selectedCapabilityVariant)
     ) {
       return
     }
@@ -2976,7 +2985,7 @@ export function RawDataView({
         setForecastCapabilitySnapshot((snapshot) => mergeExactCapabilitySnapshot(snapshot, capability))
         setForecastCapabilityState('ready')
 
-        if (capability.currentReadiness === 'READY' && isRecentVerificationPrepared(capability)) {
+        if (capability.currentReadiness === 'READY' && isFastVerificationPrepared(capability)) {
           return
         }
       } catch (error) {
@@ -3745,7 +3754,10 @@ export function RawDataView({
             setForecastCurrentReloadNonce((value) => value + 1)
           }
 
-          if (selectedVariant?.verificationState === 'READY' && selectedProgressiveVerificationStateRef.current !== 'READY') {
+          if (
+            (selectedVariant?.verificationState === 'FAST_READY' || selectedVariant?.verificationState === 'READY')
+            && selectedProgressiveVerificationStateRef.current !== selectedVariant.verificationState
+          ) {
             forecastLayerCacheRef.current.delete(buildForecastLayerCacheKey(locale, activeSeriesId, forecastModel, selectedForecastTargetBasis, 'verification'))
             setForecastVerificationReloadNonce((value) => value + 1)
           }
@@ -4008,6 +4020,7 @@ export function RawDataView({
 
     if (
       selectedProgressiveVariant
+      && selectedProgressiveVariant.verificationState !== 'FAST_READY'
       && selectedProgressiveVariant.verificationState !== 'READY'
       && selectedProgressiveVariant.verificationState !== 'UNSUPPORTED'
       && selectedProgressiveVariant.verificationState !== 'FAILED'
@@ -4810,6 +4823,12 @@ export function RawDataView({
                 : showHistoricalVerificationNotice.status === 'FAILED'
                   ? t('verificationFailedHint', { failedOriginCount: showHistoricalVerificationNotice.failedOriginCount })
                   : t('verificationUnavailableHint')}</p>
+          </div>
+        ) : null}
+        {isForecastPortfolioVariant && showForecast && showForecastVerification && showFastVerificationNotice ? (
+          <div className="callout" role="status" aria-live="polite">
+            <strong>{t('verificationFastReady')}</strong>
+            <p>{t('verificationFastReadyHint')}</p>
           </div>
         ) : null}
         {isForecastPortfolioVariant && forecastVerificationErrorState ? (

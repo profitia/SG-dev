@@ -10,6 +10,25 @@ import { MINIMUM_ADAPTIVE_HISTORICAL_VERIFICATION_ORIGINS } from '@/lib/forecast
 export const HISTORICAL_VERIFICATION_CONTRACT_VERSION = 'HISTORICAL_VERIFICATION_V2' as const
 export const MIN_HISTORICAL_VERIFICATION_ORIGINS = MINIMUM_ADAPTIVE_HISTORICAL_VERIFICATION_ORIGINS
 export const FORECAST_VERIFICATION_QUALITY_POLICY_VERSION = 'FORECAST_VERIFICATION_QUALITY_V1' as const
+export const FAST_HISTORICAL_VERIFICATION_HORIZONS = ['1M', '3M', '6M', '12M'] as const
+
+export function isFastHistoricalVerificationReady(
+  verification: Record<string, ForecastVerificationHorizon>,
+) {
+  return FAST_HISTORICAL_VERIFICATION_HORIZONS.every((label) => {
+    const horizon = verification[label]
+    return Boolean(
+      horizon
+      && horizon.successfulOrigins >= MIN_HISTORICAL_VERIFICATION_ORIGINS
+      && horizon.metrics?.smape !== null
+      && horizon.metrics?.smape !== undefined
+      && Number.isFinite(horizon.metrics.smape)
+      && horizon.metrics.directionalAccuracy !== null
+      && horizon.metrics.directionalAccuracy !== undefined
+      && Number.isFinite(horizon.metrics.directionalAccuracy),
+    )
+  })
+}
 
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(maximum, Math.max(minimum, value))
@@ -91,6 +110,8 @@ export function createUnavailableHistoricalVerificationSummary(
 ): HistoricalVerificationSummary {
   return {
     contractVersion: HISTORICAL_VERIFICATION_CONTRACT_VERSION,
+    preparationState: null,
+    fullHistoryReady: false,
     status,
     originCount: 0,
     expectedOriginCount: 0,
@@ -119,13 +140,18 @@ export function ensureHistoricalVerificationContract(
 export function resolveHistoricalVerificationHorizon(
   horizon: ForecastVerificationHorizon,
 ): HistoricalVerificationHorizonSummary {
+  const pendingOriginCount = Math.max(
+    0,
+    horizon.pendingOrigins
+      ?? horizon.expectedOrigins - horizon.successfulOrigins - horizon.failedOrigins,
+  )
   if (horizon.expectedOrigins === 0) {
     return {
       status: 'INSUFFICIENT_HISTORY',
       originCount: 0,
       expectedOriginCount: 0,
       failedOriginCount: 0,
-      pendingOriginCount: horizon.pendingOrigins ?? 0,
+      pendingOriginCount,
       minimumOriginCount: MIN_HISTORICAL_VERIFICATION_ORIGINS,
       coverage: 0,
       warningCode: 'NO_LAWFUL_OUT_OF_SAMPLE_ORIGIN',
@@ -138,7 +164,7 @@ export function resolveHistoricalVerificationHorizon(
       originCount: 0,
       expectedOriginCount: horizon.expectedOrigins,
       failedOriginCount: horizon.failedOrigins,
-      pendingOriginCount: horizon.pendingOrigins ?? 0,
+      pendingOriginCount,
       minimumOriginCount: MIN_HISTORICAL_VERIFICATION_ORIGINS,
       coverage: horizon.coverage,
       warningCode: 'ALL_ORIGINS_FAILED',
@@ -151,7 +177,7 @@ export function resolveHistoricalVerificationHorizon(
       originCount: horizon.successfulOrigins,
       expectedOriginCount: horizon.expectedOrigins,
       failedOriginCount: horizon.failedOrigins,
-      pendingOriginCount: horizon.pendingOrigins ?? 0,
+      pendingOriginCount,
       minimumOriginCount: MIN_HISTORICAL_VERIFICATION_ORIGINS,
       coverage: horizon.coverage,
       warningCode: 'SMALL_SAMPLE',
@@ -163,7 +189,7 @@ export function resolveHistoricalVerificationHorizon(
     originCount: horizon.successfulOrigins,
     expectedOriginCount: horizon.expectedOrigins,
     failedOriginCount: horizon.failedOrigins,
-    pendingOriginCount: horizon.pendingOrigins ?? 0,
+    pendingOriginCount,
     minimumOriginCount: MIN_HISTORICAL_VERIFICATION_ORIGINS,
     coverage: horizon.coverage,
     warningCode: null,
@@ -172,6 +198,7 @@ export function resolveHistoricalVerificationHorizon(
 
 export function resolveHistoricalVerificationSummary(
   verification: Record<string, ForecastVerificationHorizon>,
+  options: { fullHistoryReady?: boolean } = {},
 ): HistoricalVerificationSummary {
   const horizons = Object.fromEntries(
     Object.entries(verification).map(([label, horizon]) => [
@@ -183,6 +210,8 @@ export function resolveHistoricalVerificationSummary(
   if (values.length === 0) {
     return {
       contractVersion: HISTORICAL_VERIFICATION_CONTRACT_VERSION,
+      preparationState: null,
+      fullHistoryReady: false,
       status: 'NOT_PREPARED',
       originCount: 0,
       expectedOriginCount: 0,
@@ -197,6 +226,7 @@ export function resolveHistoricalVerificationSummary(
   const expectedOriginCount = values.reduce((sum, horizon) => sum + horizon.expectedOriginCount, 0)
   const failedOriginCount = values.reduce((sum, horizon) => sum + horizon.failedOriginCount, 0)
   const pendingOriginCount = values.reduce((sum, horizon) => sum + horizon.pendingOriginCount, 0)
+  const fullHistoryReady = options.fullHistoryReady ?? pendingOriginCount === 0
   const status = values.every((horizon) => horizon.status === 'AVAILABLE')
     ? 'AVAILABLE'
     : values.every((horizon) => horizon.status === 'INSUFFICIENT_HISTORY')
@@ -207,6 +237,12 @@ export function resolveHistoricalVerificationSummary(
 
   return {
     contractVersion: HISTORICAL_VERIFICATION_CONTRACT_VERSION,
+    preparationState: fullHistoryReady
+      ? 'FULL_READY'
+      : isFastHistoricalVerificationReady(verification)
+        ? 'FAST_READY'
+        : null,
+    fullHistoryReady,
     status,
     originCount,
     expectedOriginCount,

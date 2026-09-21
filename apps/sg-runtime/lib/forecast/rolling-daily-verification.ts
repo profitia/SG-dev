@@ -20,6 +20,7 @@ import { getMarketDataPrisma } from '@/lib/market-data/client'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 import {
   createUnavailableHistoricalVerificationSummary,
+  isFastHistoricalVerificationReady,
   resolveHistoricalVerificationSummary,
 } from '@/lib/forecast/historical-verification-policy'
 import { calculateForecastVerificationMetrics } from '@/lib/forecast/verification-metrics'
@@ -62,7 +63,7 @@ function subtractCalendarMonthsClamped(value: string, months: number) {
 }
 
 function createPreparedRollingDailyForecastVerificationReaderForScope(
-  scope: 'FULL' | 'RECENT',
+  scope: 'FULL' | 'FAST' | 'RECENT',
   dependencies: PreparedRollingDailyForecastVerificationDependencies = {},
 ) {
   return async function readPreparedRollingDailyForecastVerification(
@@ -165,16 +166,28 @@ function createPreparedRollingDailyForecastVerificationReaderForScope(
           return lagDays >= 0 && lagDays <= 7
         })),
     )
-    const prepared = scope === 'FULL' ? fullPrepared : recentPrepared
+    const latestSourceReady = Boolean(
+      records.length > 0
+      && maintenanceState
+      && (maintenanceState.lastMaintenanceStatus === 'SUCCEEDED' || maintenanceState.lastMaintenanceStatus === 'NO_OP')
+      && maintenanceState.latestSourceHistoryFingerprint === sourceHistoryFingerprint
+      && latestSourceObservationDate
+      && maintenanceState.latestSourceObservationAt
+      && normalizeDailyObservationDay(maintenanceState.latestSourceObservationAt) === normalizeDailyObservationDay(latestSourceObservationDate),
+    )
+    const preliminaryPrepared = scope === 'FULL'
+      ? fullPrepared
+      : scope === 'RECENT'
+        ? recentPrepared
+        : latestSourceReady
 
-    emitPreparedRead('prepared_read', {
-      kind: 'verification',
-      store: 'rolling_daily_verification_records',
-      hit: prepared,
-      stale: records.length > 0 && !prepared,
-    })
-
-    if (!prepared) {
+    if (!preliminaryPrepared) {
+      emitPreparedRead('prepared_read', {
+        kind: 'verification',
+        store: 'rolling_daily_verification_records',
+        hit: false,
+        stale: records.length > 0,
+      })
       return {
         status: 'NOT_AVAILABLE',
         seriesId: input.seriesId,
@@ -183,8 +196,8 @@ function createPreparedRollingDailyForecastVerificationReaderForScope(
         targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
         methodId: ROLLING_DAILY_METHOD_ID,
         reason: records.length === 0
-          ? `PREPARATION_REQUIRED: No exact-identity prepared Rolling Daily ${scope === 'FULL' ? 'Historical' : 'Recent'} Verification is available.`
-          : `PREPARATION_REQUIRED: Prepared Rolling Daily ${scope === 'FULL' ? 'Historical Verification is incomplete' : 'Recent Verification is not ready'} for the latest lawful source observation.`,
+          ? `PREPARATION_REQUIRED: No exact-identity prepared Rolling Daily ${scope === 'RECENT' ? 'Recent' : scope === 'FAST' ? 'Fast Historical' : 'Historical'} Verification is available.`
+          : `PREPARATION_REQUIRED: Prepared Rolling Daily ${scope === 'RECENT' ? 'Recent Verification is not ready' : scope === 'FAST' ? 'Fast Historical Verification is not ready' : 'Historical Verification is incomplete'} for the latest lawful source observation.`,
         historicalVerification: createUnavailableHistoricalVerificationSummary('NOT_PREPARED'),
       }
     }
@@ -232,6 +245,25 @@ function createPreparedRollingDailyForecastVerificationReaderForScope(
         failures: [],
       }]
     }))
+    const prepared = scope !== 'FAST' || isFastHistoricalVerificationReady(verification)
+    emitPreparedRead('prepared_read', {
+      kind: 'verification',
+      store: 'rolling_daily_verification_records',
+      hit: prepared,
+      stale: records.length > 0 && !prepared,
+    })
+    if (!prepared) {
+      return {
+        status: 'NOT_AVAILABLE',
+        seriesId: input.seriesId,
+        modelId: input.modelId,
+        targetBasis: 'POINT_IN_TIME',
+        targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+        methodId: ROLLING_DAILY_METHOD_ID,
+        reason: 'PREPARATION_REQUIRED: Prepared Rolling Daily Fast Historical Verification has fewer than 24 lawful comparisons for one or more horizons.',
+        historicalVerification: createUnavailableHistoricalVerificationSummary('NOT_PREPARED'),
+      }
+    }
     const latestRecord = records.reduce((latest, record) => (
       record.forecastOriginAt > latest.forecastOriginAt ? record : latest
     ))
@@ -239,9 +271,9 @@ function createPreparedRollingDailyForecastVerificationReaderForScope(
       if (!record.trainingHistoryStartAt) return earliest
       return !earliest || record.trainingHistoryStartAt < earliest ? record.trainingHistoryStartAt : earliest
     }, null)
-    const statisticalCompatibility = (scope === 'FULL'
-      ? createFullVerificationStatisticalCompatibility
-      : createRecentVerificationStatisticalCompatibility)({
+    const statisticalCompatibility = (scope === 'RECENT'
+      ? createRecentVerificationStatisticalCompatibility
+      : createFullVerificationStatisticalCompatibility)({
       sourceFrequency: 'DAILY',
       targetCadence: 'DAILY',
       targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
@@ -279,7 +311,7 @@ function createPreparedRollingDailyForecastVerificationReaderForScope(
       runtimeSeconds: null,
       cacheStatus: 'hit',
       verification,
-      historicalVerification: resolveHistoricalVerificationSummary(verification),
+      historicalVerification: resolveHistoricalVerificationSummary(verification, { fullHistoryReady: fullPrepared }),
     }
   }
 }
@@ -296,8 +328,15 @@ export function createPreparedRollingDailyRecentForecastVerificationReader(
   return createPreparedRollingDailyForecastVerificationReaderForScope('RECENT', dependencies)
 }
 
+export function createPreparedRollingDailyFastForecastVerificationReader(
+  dependencies: PreparedRollingDailyForecastVerificationDependencies = {},
+) {
+  return createPreparedRollingDailyForecastVerificationReaderForScope('FAST', dependencies)
+}
+
 const defaultPreparedRollingDailyForecastVerificationReader = createPreparedRollingDailyForecastVerificationReader()
 const defaultPreparedRollingDailyRecentForecastVerificationReader = createPreparedRollingDailyRecentForecastVerificationReader()
+const defaultPreparedRollingDailyFastForecastVerificationReader = createPreparedRollingDailyFastForecastVerificationReader()
 
 export async function readPreparedRollingDailyForecastVerification(
   input: ForecastRequestInput,
@@ -309,4 +348,10 @@ export async function readPreparedRollingDailyRecentForecastVerification(
   input: ForecastRequestInput,
 ): Promise<BenchmarkForecastVerificationResult> {
   return defaultPreparedRollingDailyRecentForecastVerificationReader(input)
+}
+
+export async function readPreparedRollingDailyFastForecastVerification(
+  input: ForecastRequestInput,
+): Promise<BenchmarkForecastVerificationResult> {
+  return defaultPreparedRollingDailyFastForecastVerificationReader(input)
 }

@@ -92,7 +92,7 @@ export type DurableForecastPreparationJob = {
 }
 
 export type DurableForecastPreparationCommandResult = {
-  state: 'READY' | 'QUEUED' | 'PREPARING' | 'FAILED' | 'UNSUPPORTED'
+  state: 'READY' | 'FAST_READY' | 'QUEUED' | 'PREPARING' | 'FAILED' | 'UNSUPPORTED'
   reason: string | null
   job: DurableForecastPreparationJob | null
 }
@@ -699,7 +699,7 @@ export function durableSnapshotToProgressiveSnapshot(
       : null,
     queuedCount,
     currentReadyCount: currentState === 'READY' ? 1 : 0,
-    verificationReadyCount: verificationState === 'READY' ? 1 : 0,
+    verificationReadyCount: verificationState === 'READY' || verificationState === 'FAST_READY' ? 1 : 0,
   }
 }
 
@@ -904,7 +904,7 @@ export function createDurableInteractiveCurrentPreparationGateway(
       modelId: input.modelId,
       targetBasis: input.targetBasis,
       targetSemantics: resolveForecastTargetSemantics(input.targetBasis),
-      state: result.state,
+      state: result.state === 'FAST_READY' ? 'READY' : result.state,
       capabilityStatus: result.state === 'UNSUPPORTED' ? 'NOT_IMPLEMENTED' : result.state === 'FAILED' ? 'FAILED' : 'PREPARATION_REQUIRED',
       currentReadiness: result.state === 'READY' ? 'READY' : 'NOT_PREPARED',
       prepareAttempted: result.state !== 'UNSUPPORTED',

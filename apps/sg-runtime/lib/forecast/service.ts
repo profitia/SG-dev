@@ -127,6 +127,7 @@ import {
 import { attachExactUncertaintyBandIdentity } from '@/lib/forecast/uncertainty-band-policy'
 import {
   ensureHistoricalVerificationContract,
+  isFastHistoricalVerificationReady,
   resolveHistoricalVerificationHorizon,
   resolveHistoricalVerificationSummary,
 } from '@/lib/forecast/historical-verification-policy'
@@ -172,6 +173,7 @@ export type ForecastServiceRequest = {
   minimumVerificationOrigins?: number
   lastProcessedOriginDate?: string | null
   maxOriginsPerRun?: number
+  verificationScope?: 'RECENT' | 'FAST' | 'FULL'
   signal?: AbortSignal
 }
 
@@ -2095,7 +2097,9 @@ function toVerificationAvailable(
     runtimeSeconds: artifact.runtimeSeconds,
     cacheStatus,
     verification: artifact.verification,
-    historicalVerification: resolveHistoricalVerificationSummary(artifact.verification),
+    historicalVerification: resolveHistoricalVerificationSummary(artifact.verification, {
+      fullHistoryReady: isVerificationArtifactComplete(artifact),
+    }),
   }
 }
 
@@ -4074,7 +4078,9 @@ export function createForecastLibraryService(
         }
       }
 
-      if (!isVerificationArtifactComplete(prepared)) {
+      const fullHistoryReady = isVerificationArtifactComplete(prepared)
+      const fastHistoryReady = isFastHistoricalVerificationReady(prepared.verification)
+      if (!fullHistoryReady && (input.verificationScope !== 'FAST' || !fastHistoryReady)) {
         return {
           status: 'NOT_AVAILABLE',
           seriesId: input.seriesId,
@@ -6487,6 +6493,13 @@ export async function readPreparedBenchmarkCurrentForecast(input: ForecastServic
 
 export async function readPreparedBenchmarkForecastVerification(input: ForecastServiceRequest) {
   return ensureHistoricalVerificationContract(await forecastLibraryService.readPreparedVerificationRequest(input))
+}
+
+export async function readPreparedBenchmarkFastForecastVerification(input: ForecastServiceRequest) {
+  return ensureHistoricalVerificationContract(await forecastLibraryService.readPreparedVerificationRequest({
+    ...input,
+    verificationScope: 'FAST',
+  }))
 }
 
 export async function readPreparedBenchmarkRecentForecastVerification(input: ForecastServiceRequest) {

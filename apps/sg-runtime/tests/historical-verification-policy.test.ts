@@ -6,6 +6,7 @@ import {
   ensureHistoricalVerificationContract,
   FORECAST_VERIFICATION_QUALITY_POLICY_VERSION,
   HISTORICAL_VERIFICATION_CONTRACT_VERSION,
+  isFastHistoricalVerificationReady,
   resolveForecastVerificationQuality,
   resolveHistoricalVerificationHorizon,
   resolveHistoricalVerificationSummary,
@@ -66,6 +67,31 @@ test('24 lawful origins report AVAILABLE without changing metric definitions', (
   assert.equal(resolved.status, 'AVAILABLE')
   assert.equal(resolved.originCount, 24)
   assert.deepEqual(input.metrics, metrics)
+})
+
+test('Fast Verification requires 24 lawful metric-bearing comparisons for every supported horizon', () => {
+  const metrics = { mae: 1, rmse: 2, mase: 0.8, smape: 4, directionalAccuracy: 0.5, bias: 0 }
+  const verification = Object.fromEntries(['1M', '3M', '6M', '12M'].map((label) => [
+    label,
+    horizon({
+      horizon: label,
+      origins: 24,
+      expectedOrigins: 40,
+      successfulOrigins: 24,
+      pendingOrigins: 16,
+      coverage: 24 / 40,
+      metrics,
+    }),
+  ]))
+
+  assert.equal(isFastHistoricalVerificationReady(verification), true)
+  const summary = resolveHistoricalVerificationSummary(verification, { fullHistoryReady: false })
+  assert.equal(summary.preparationState, 'FAST_READY')
+  assert.equal(summary.fullHistoryReady, false)
+  assert.equal(summary.status, 'AVAILABLE')
+
+  verification['12M']!.successfulOrigins = 23
+  assert.equal(isFastHistoricalVerificationReady(verification), false)
 })
 
 test('verification quality uses 24 lawful comparisons as the versioned common denominator', () => {

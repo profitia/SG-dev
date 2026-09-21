@@ -22,7 +22,7 @@ export type ProgressiveForecastPreparationRequest = {
   preferredTargetBasis: ForecastTargetBasis
 }
 
-export type ProgressiveForecastPreparationState = 'READY' | 'PREPARING' | 'QUEUED' | 'UNSUPPORTED' | 'FAILED'
+export type ProgressiveForecastPreparationState = 'READY' | 'FAST_READY' | 'PREPARING' | 'QUEUED' | 'UNSUPPORTED' | 'FAILED'
 
 export type ProgressiveForecastVariantSnapshot = {
   seriesId: string
