@@ -26,7 +26,10 @@ import {
 } from '@/lib/forecast/rolling-daily-maintenance'
 import { selectTrailingRollingDailyCurrentHistory } from '@/lib/forecast/rolling-daily-current-ownership'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
-import { ADAPTIVE_HISTORICAL_VERIFICATION_ORIGIN_POLICY_VERSION } from '@/lib/forecast/historical-verification-origin-policy'
+import {
+  ADAPTIVE_HISTORICAL_VERIFICATION_ORIGIN_POLICY_VERSION,
+  FAST_HISTORICAL_VERIFICATION_POLICY_VERSION,
+} from '@/lib/forecast/historical-verification-origin-policy'
 import { resolveForecastJobCorrelationId } from '@/lib/forecast/forecast-correlation'
 import {
   recordForecastActionRequested,
@@ -89,7 +92,7 @@ export type ForecastPreparationJobView = {
 }
 
 export type ForecastPreparationCommandResult = {
-  state: 'READY' | 'QUEUED' | 'PREPARING' | 'FAILED' | 'UNSUPPORTED'
+  state: 'READY' | 'FAST_READY' | 'QUEUED' | 'PREPARING' | 'FAILED' | 'UNSUPPORTED'
   reason: string | null
   job: ForecastPreparationJobView | null
 }
@@ -171,6 +174,9 @@ export function buildForecastPreparationJobKey(input: {
   ]
   if (input.kind === 'VERIFICATION' && input.targetSemantics !== 'ROLLING_DAILY_POINT_IN_TIME') {
     identityParts.push(ADAPTIVE_HISTORICAL_VERIFICATION_ORIGIN_POLICY_VERSION)
+  }
+  if (input.kind === 'VERIFICATION') {
+    identityParts.push(FAST_HISTORICAL_VERIFICATION_POLICY_VERSION)
   }
   return createHash('sha256')
     .update(identityParts.join('|'))
@@ -266,6 +272,14 @@ function stateForJob(job: ForecastPreparationJob | null): ForecastPreparationCom
 
 function preparedResult(reason: string | null = null): ForecastPreparationCommandResult {
   return { state: 'READY', reason, job: null }
+}
+
+function fastPreparedResult(job: ForecastPreparationJob | null): ForecastPreparationCommandResult {
+  return {
+    state: 'FAST_READY',
+    reason: 'A representative Fast Historical Verification sample is ready; full-history preparation continues in the background.',
+    job: job ? toView(job) : null,
+  }
 }
 
 function unsupportedResult(reason: string): ForecastPreparationCommandResult {
@@ -528,6 +542,8 @@ export function createForecastPreparationQueueService(options: {
           : stateForJob(currentJob),
       verification: capability.fullVerificationReadiness === 'READY'
         ? preparedResult()
+        : capability.fastVerificationReadiness === 'READY'
+          ? fastPreparedResult(verificationJob)
         : verificationJob?.status === 'SUCCEEDED'
           ? unsupportedResult('The prepared Historical Verification is stale; submit a new preparation request.')
           : stateForJob(verificationJob),
@@ -861,13 +877,20 @@ export function createForecastPreparationWorker(options: {
         const readiness = await resolveReadiness(input)
         const checkpoint = {
           ...adaptiveCheckpoint,
+          fastVerificationReadiness: readiness.fastVerificationReadiness,
           fullVerificationReadiness: readiness.fullVerificationReadiness,
           blockers: readiness.readiness.blockers,
           checkedAt: new Date().toISOString(),
         }
+        if (readiness.fastVerificationReadiness === 'READY' || readiness.fullVerificationReadiness === 'READY') {
+          await safelyRecordArtifactReady(job.jobKey, 'VERIFICATION')
+          noteForecastRequestDiagnosticsEvent('fast_verification_ready', 'APPLICATION', {
+            jobKey: job.jobKey,
+            fullVerificationReadiness: readiness.fullVerificationReadiness,
+          })
+        }
         if (readiness.fullVerificationReadiness === 'READY') {
           await queue.complete(job, { ...checkpoint, terminal: true })
-          await safelyRecordArtifactReady(job.jobKey, 'VERIFICATION')
           noteForecastRequestDiagnosticsEvent('durable_job_completed', 'APPLICATION', { jobKey: job.jobKey, state: 'SUCCEEDED' })
         } else {
           const terminalReason = resolveTerminalVerificationUnavailability(sliceResult, input)

@@ -75,6 +75,8 @@
     "verificationPreparingHint": "Możesz już korzystać z bieżącej prognozy. Historyczna weryfikacja przygotowuje się w tle.",
     "verificationQueued": "Historyczna weryfikacja prognozy jest w kolejce",
     "verificationQueuedHint": "Najpierw przygotowujemy bieżące prognozy dla poprawnych wariantów. Historyczna weryfikacja uruchomi się później.",
+    "verificationFastReady": "Szybka sprawdzalność jest już dostępna",
+    "verificationFastReadyHint": "Wyniki obejmują reprezentatywną próbkę co najmniej 24 porównań dla każdego horyzontu. Pełna historia nadal uzupełnia się w tle i nie wymaga otwartej przeglądarki.",
     "verificationNotPrepared": "Historyczna sprawdzalność nie została jeszcze przygotowana",
     "verificationNotPreparedHint": "Bieżąca prognoza pozostaje dostępna. Możesz zlecić przygotowanie sprawdzalności w tle i bezpiecznie zamknąć przeglądarkę.",
     "prepareVerification": "Przygotuj sprawdzalność",

@@ -75,6 +75,8 @@
     "verificationPreparingHint": "You can already use the current forecast. Historical verification is preparing in the background.",
     "verificationQueued": "Historical forecast verification is queued",
     "verificationQueuedHint": "Current forecast variants are prepared first. Historical verification will start afterward.",
+    "verificationFastReady": "Fast verification is now available",
+    "verificationFastReadyHint": "The results cover a representative sample of at least 24 comparisons for every horizon. Full-history preparation continues in the background without requiring the browser to stay open.",
     "verificationNotPrepared": "Historical Verification has not been prepared yet",
     "verificationNotPreparedHint": "Current Forecast remains available. You can request Historical Verification in the background and safely close the browser.",
     "prepareVerification": "Prepare verification",

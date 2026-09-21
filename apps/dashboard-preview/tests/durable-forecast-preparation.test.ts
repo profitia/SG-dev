@@ -89,6 +89,47 @@ test('stale durable artifacts project to preparation-required instead of unsuppo
   assert.equal(projected.variants[0]?.verificationState, 'NOT_PREPARED')
 })
 
+test('Fast Verification projects as ready while preserving the active full-history job', () => {
+  const snapshot: DurableForecastPreparationSnapshot = {
+    seriesId: 'series-1',
+    modelId: 'arima',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    targetBasis: 'MONTHLY_AVERAGE',
+    current: { state: 'READY', reason: null, job: null },
+    verification: {
+      state: 'FAST_READY',
+      reason: 'Full-history preparation continues.',
+      job: {
+        jobKey: 'verification-fast-1',
+        kind: 'VERIFICATION',
+        status: 'RUNNING',
+        seriesId: 'series-1',
+        modelId: 'arima',
+        targetSemantics: 'MONTHLY_AVERAGE',
+        targetBasis: 'MONTHLY_AVERAGE',
+        requestCount: 1,
+        sliceCount: 4,
+        failureCount: 0,
+        requestedAt: '2026-09-21T10:00:00.000Z',
+        startedAt: '2026-09-21T10:00:01.000Z',
+        completedAt: null,
+        failureReason: null,
+        originCorrelationId: 'forecast-action-fast',
+        latestCorrelationId: 'forecast-action-fast',
+      },
+    },
+  }
+
+  const projected = durableSnapshotToProgressiveSnapshot(snapshot)
+  assert.equal(projected.variants[0]?.verificationState, 'FAST_READY')
+  assert.equal(projected.verificationReadyCount, 1)
+  assert.deepEqual(projected.activeItem, {
+    modelId: 'arima',
+    targetBasis: 'MONTHLY_AVERAGE',
+    kind: 'VERIFICATION',
+  })
+})
+
 test('verification preparation client submits an explicit durable command', async () => {
   let observedUrl = ''
   let observedBody = ''

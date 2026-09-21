@@ -12,7 +12,7 @@ import {
 } from '@/lib/forecast/contracts'
 
 export const ForecastTargetBasisSchema = z.enum(FORECAST_TARGET_BASES)
-export const ForecastVerificationScopeSchema = z.enum(['RECENT', 'FULL'])
+export const ForecastVerificationScopeSchema = z.enum(['RECENT', 'FAST', 'FULL'])
 
 export const ForecastRouteQuerySchema = z.object({
   seriesId: z.string().trim().min(1),

@@ -22,11 +22,13 @@ import {
   type ForecastPreparationOwnedExecutionContext,
 } from '@/lib/forecast/execution-ledger'
 import {
+  readPreparedRollingDailyFastForecastVerification,
   readPreparedRollingDailyForecastVerification,
   readPreparedRollingDailyRecentForecastVerification,
 } from '@/lib/forecast/rolling-daily-verification'
 import {
   type ForecastPersistenceOwnership,
+  readPreparedBenchmarkFastForecastVerification,
   readPreparedBenchmarkForecastVerification,
   readPreparedBenchmarkCurrentForecast,
   readPreparedBenchmarkRecentForecastVerification,
@@ -86,6 +88,7 @@ export type InteractiveForecastCapabilityResult = {
   currentReadiness: ForecastVariantCapability['currentPreparedState'] | 'NOT_PREPARED'
   verificationReadiness: ForecastVariantCapability['historicalPreparedState'] | 'NOT_PREPARED'
   recentVerificationReadiness: ForecastVariantCapability['historicalPreparedState'] | 'NOT_PREPARED'
+  fastVerificationReadiness: 'READY' | 'NOT_PREPARED' | 'STALE'
   fullVerificationReadiness: 'READY' | 'NOT_PREPARED' | 'STALE'
   predictionBandResidualCount: number
   predictionBandState: ForecastVariantCapability['predictionBandState']
@@ -108,6 +111,9 @@ export type InteractiveForecastReadinessBlocker =
   | 'RECENT_MISSING'
   | 'RECENT_PARTIAL'
   | 'RECENT_STALE'
+  | 'FAST_VERIFICATION_MISSING'
+  | 'FAST_VERIFICATION_PARTIAL'
+  | 'FAST_VERIFICATION_STALE'
   | 'FULL_HISTORICAL_MISSING'
   | 'FULL_HISTORICAL_PARTIAL'
   | 'FULL_HISTORICAL_STALE'
@@ -150,8 +156,10 @@ type InteractiveForecastPreparationDependencies = {
   prepareRollingDailyOwnership: typeof prepareRollingDailyCurrentOwnership
   readRollingCurrentSnapshot: typeof readRollingDailyCurrentForecastSnapshot
   readPreparedFullVerification: typeof readPreparedBenchmarkForecastVerification
+  readPreparedFastVerification: typeof readPreparedBenchmarkFastForecastVerification
   readPreparedCurrent: typeof readPreparedBenchmarkCurrentForecast
   readPreparedRollingDailyFullVerification: typeof readPreparedRollingDailyForecastVerification
+  readPreparedRollingDailyFastVerification: typeof readPreparedRollingDailyFastForecastVerification
   readPreparedRecentVerification: (input: ForecastServiceRequest) => Promise<BenchmarkForecastVerificationResult>
   executionAdmission: ForecastPreparationExecutionAdmission
   now: () => number
@@ -342,16 +350,17 @@ function normalizeVerificationReadiness(input: {
 
 function resolvePreparedStateOnlyReadiness(
   capability: ForecastVariantCapability | null,
-): Pick<InteractiveForecastCapabilityResult, 'recentVerificationReadiness' | 'fullVerificationReadiness' | 'predictionBandResidualCount' | 'predictionBandState' | 'readiness'> {
+): Pick<InteractiveForecastCapabilityResult, 'recentVerificationReadiness' | 'fastVerificationReadiness' | 'fullVerificationReadiness' | 'predictionBandResidualCount' | 'predictionBandState' | 'readiness'> {
   const blockers = new Set<InteractiveForecastReadinessBlocker>()
   const add = (...next: InteractiveForecastReadinessBlocker[]) => {
     for (const blocker of next) blockers.add(blocker)
   }
 
   if (!capability) {
-    add('CURRENT_MISSING', 'RECENT_MISSING', 'FULL_HISTORICAL_MISSING')
+    add('CURRENT_MISSING', 'RECENT_MISSING', 'FAST_VERIFICATION_MISSING', 'FULL_HISTORICAL_MISSING')
     return {
       recentVerificationReadiness: 'NOT_PREPARED',
+      fastVerificationReadiness: 'NOT_PREPARED',
       fullVerificationReadiness: 'NOT_PREPARED',
       predictionBandResidualCount: 0,
       predictionBandState: 'NOT_AVAILABLE',
@@ -381,11 +390,11 @@ function resolvePreparedStateOnlyReadiness(
     && capability.verificationEvidenceState !== 'NOT_AVAILABLE'
 
   if (capability.historicalPreparedState === 'STALE') {
-    add('RECENT_STALE', 'FULL_HISTORICAL_STALE', 'SOURCE_REVISION_REBUILD_REQUIRED')
+    add('RECENT_STALE', 'FAST_VERIFICATION_STALE', 'FULL_HISTORICAL_STALE', 'SOURCE_REVISION_REBUILD_REQUIRED')
   } else if (capability.historicalPreparedState !== 'READY') {
-    add('RECENT_MISSING', 'FULL_HISTORICAL_MISSING')
+    add('RECENT_MISSING', 'FAST_VERIFICATION_MISSING', 'FULL_HISTORICAL_MISSING')
   } else if (!verificationRenderable) {
-    add('RECENT_PARTIAL', 'FULL_HISTORICAL_PARTIAL')
+    add('RECENT_PARTIAL', 'FAST_VERIFICATION_PARTIAL', 'FULL_HISTORICAL_PARTIAL')
   }
 
   add('BANDS_NOT_AVAILABLE')
@@ -396,6 +405,9 @@ function resolvePreparedStateOnlyReadiness(
 
   return {
     recentVerificationReadiness: capability.historicalPreparedState === 'STALE'
+      ? 'STALE'
+      : verificationReady ? 'READY' : 'NOT_PREPARED',
+    fastVerificationReadiness: capability.historicalPreparedState === 'STALE'
       ? 'STALE'
       : verificationReady ? 'READY' : 'NOT_PREPARED',
     fullVerificationReadiness: capability.historicalPreparedState === 'STALE'
@@ -414,11 +426,11 @@ function resolvePreparedStateOnlyReadiness(
 }
 
 async function resolveInteractiveForecastReadiness(
-  dependencies: Pick<InteractiveForecastPreparationDependencies, 'readPreparedCurrent' | 'readRollingCurrentSnapshot' | 'readPreparedFullVerification' | 'readPreparedRollingDailyFullVerification' | 'readPreparedRecentVerification'>,
+  dependencies: Pick<InteractiveForecastPreparationDependencies, 'readPreparedCurrent' | 'readRollingCurrentSnapshot' | 'readPreparedFastVerification' | 'readPreparedFullVerification' | 'readPreparedRollingDailyFastVerification' | 'readPreparedRollingDailyFullVerification' | 'readPreparedRecentVerification'>,
   input: InteractiveForecastIdentity,
   capability: ForecastVariantCapability | null,
   sourceFrequency: InteractiveForecastCapabilityResult['sourceFrequency'],
-): Promise<Pick<InteractiveForecastCapabilityResult, 'recentVerificationReadiness' | 'fullVerificationReadiness' | 'predictionBandResidualCount' | 'predictionBandState' | 'readiness'>> {
+): Promise<Pick<InteractiveForecastCapabilityResult, 'recentVerificationReadiness' | 'fastVerificationReadiness' | 'fullVerificationReadiness' | 'predictionBandResidualCount' | 'predictionBandState' | 'readiness'>> {
   const blockers = new Set<InteractiveForecastReadinessBlocker>()
   const addBlockers = (next: InteractiveForecastReadinessBlocker[]) => {
     for (const blocker of next) blockers.add(blocker)
@@ -428,6 +440,7 @@ async function resolveInteractiveForecastReadiness(
     addBlockers(['CURRENT_MISSING'])
     return {
       recentVerificationReadiness: 'NOT_PREPARED',
+      fastVerificationReadiness: 'NOT_PREPARED',
       fullVerificationReadiness: 'NOT_PREPARED',
       predictionBandResidualCount: 0,
       predictionBandState: 'NOT_AVAILABLE',
@@ -454,6 +467,7 @@ async function resolveInteractiveForecastReadiness(
   }
 
   let recentVerificationReadiness: InteractiveForecastCapabilityResult['recentVerificationReadiness'] = capability.historicalPreparedState
+  let fastVerificationReadiness: InteractiveForecastCapabilityResult['fastVerificationReadiness'] = 'NOT_PREPARED'
   let fullVerificationReadiness: InteractiveForecastCapabilityResult['fullVerificationReadiness'] = 'NOT_PREPARED'
   let bandsReady = false
   let calibratedBandsReady = false
@@ -506,12 +520,21 @@ async function resolveInteractiveForecastReadiness(
             )),
           }
         })
-    const [resolvedBandReadiness, recentVerification, fullVerification] = await Promise.all([
+    const fullVerificationReader = input.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+      ? dependencies.readPreparedRollingDailyFullVerification
+      : dependencies.readPreparedFullVerification
+    const fastVerificationReader = input.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+      ? dependencies.readPreparedRollingDailyFastVerification
+      : dependencies.readPreparedFastVerification
+    const fullVerificationPromise = fullVerificationReader(rollingDailyFullVerificationRequest)
+    const fastVerificationPromise = fastVerificationReader === fullVerificationReader
+      ? fullVerificationPromise
+      : fastVerificationReader(rollingDailyFullVerificationRequest)
+    const [resolvedBandReadiness, recentVerification, fastVerification, fullVerification] = await Promise.all([
       bandReadinessPromise,
       dependencies.readPreparedRecentVerification(recentVerificationRequest),
-      input.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
-        ? dependencies.readPreparedRollingDailyFullVerification(rollingDailyFullVerificationRequest)
-        : dependencies.readPreparedFullVerification(request),
+      fastVerificationPromise,
+      fullVerificationPromise,
     ])
     bandsReady = resolvedBandReadiness.bandsReady
     calibratedBandsReady = resolvedBandReadiness.calibratedBandsReady
@@ -527,13 +550,21 @@ async function resolveInteractiveForecastReadiness(
       partial: 'FULL_HISTORICAL_PARTIAL',
       stale: 'FULL_HISTORICAL_STALE',
     })
+    const normalizedFast = normalizeVerificationReadiness({
+      result: fastVerification,
+      missing: 'FAST_VERIFICATION_MISSING',
+      partial: 'FAST_VERIFICATION_PARTIAL',
+      stale: 'FAST_VERIFICATION_STALE',
+    })
     recentVerificationReadiness = normalizedRecent.readiness
+    fastVerificationReadiness = normalizedFast.readiness
     fullVerificationReadiness = normalizedFull.readiness
     addBlockers(normalizedRecent.blockers)
+    addBlockers(normalizedFast.blockers)
     addBlockers(normalizedFull.blockers)
   }
 
-  const fastReady = capability.currentPreparedState === 'READY' && recentVerificationReadiness === 'READY'
+  const fastReady = capability.currentPreparedState === 'READY' && fastVerificationReadiness === 'READY'
   const calibratedReady = fastReady && calibratedBandsReady && capability.predictionBandState === 'AVAILABLE'
   const fullReady = capability.currentPreparedState === 'READY' && fullVerificationReadiness === 'READY'
 
@@ -544,6 +575,7 @@ async function resolveInteractiveForecastReadiness(
 
   return {
     recentVerificationReadiness,
+    fastVerificationReadiness,
     fullVerificationReadiness,
     predictionBandResidualCount: capability.predictionBandResidualCount,
     predictionBandState: capability.predictionBandState,
@@ -558,7 +590,7 @@ async function resolveInteractiveForecastReadiness(
 }
 
 async function projectInteractiveForecastCapability(
-  dependencies: Pick<InteractiveForecastPreparationDependencies, 'readPreparedCurrent' | 'readRollingCurrentSnapshot' | 'readPreparedFullVerification' | 'readPreparedRollingDailyFullVerification' | 'readPreparedRecentVerification'>,
+  dependencies: Pick<InteractiveForecastPreparationDependencies, 'readPreparedCurrent' | 'readRollingCurrentSnapshot' | 'readPreparedFastVerification' | 'readPreparedFullVerification' | 'readPreparedRollingDailyFastVerification' | 'readPreparedRollingDailyFullVerification' | 'readPreparedRecentVerification'>,
   input: InteractiveForecastIdentity,
   resolution: ForecastCapabilityResolution,
   capability: ForecastVariantCapability | null,
@@ -570,7 +602,9 @@ async function projectInteractiveForecastCapability(
         {
           readPreparedCurrent: dependencies.readPreparedCurrent,
           readRollingCurrentSnapshot: dependencies.readRollingCurrentSnapshot,
+          readPreparedFastVerification: dependencies.readPreparedFastVerification,
           readPreparedFullVerification: dependencies.readPreparedFullVerification,
+          readPreparedRollingDailyFastVerification: dependencies.readPreparedRollingDailyFastVerification,
           readPreparedRollingDailyFullVerification: dependencies.readPreparedRollingDailyFullVerification,
           readPreparedRecentVerification: dependencies.readPreparedRecentVerification,
         },
@@ -592,6 +626,7 @@ async function projectInteractiveForecastCapability(
     currentReadiness: capability?.currentPreparedState ?? 'NOT_PREPARED',
     verificationReadiness: capability?.historicalPreparedState ?? 'NOT_PREPARED',
     recentVerificationReadiness: readiness.recentVerificationReadiness,
+    fastVerificationReadiness: readiness.fastVerificationReadiness,
     fullVerificationReadiness: readiness.fullVerificationReadiness,
     predictionBandResidualCount: readiness.predictionBandResidualCount,
     predictionBandState: readiness.predictionBandState,
@@ -613,7 +648,13 @@ export function createInteractiveForecastPreparationService(
     prepareRollingDailyOwnership: dependencies.prepareRollingDailyOwnership ?? prepareRollingDailyCurrentOwnership,
     readRollingCurrentSnapshot: dependencies.readRollingCurrentSnapshot ?? readRollingDailyCurrentForecastSnapshot,
     readPreparedCurrent: dependencies.readPreparedCurrent ?? readPreparedBenchmarkCurrentForecast,
+    readPreparedFastVerification: dependencies.readPreparedFastVerification
+      ?? (dependencies.readPreparedFullVerification ? dependencies.readPreparedFullVerification : readPreparedBenchmarkFastForecastVerification),
     readPreparedFullVerification: dependencies.readPreparedFullVerification ?? readPreparedBenchmarkForecastVerification,
+    readPreparedRollingDailyFastVerification: dependencies.readPreparedRollingDailyFastVerification
+      ?? (dependencies.readPreparedRollingDailyFullVerification
+        ? dependencies.readPreparedRollingDailyFullVerification
+        : readPreparedRollingDailyFastForecastVerification),
     readPreparedRollingDailyFullVerification: dependencies.readPreparedRollingDailyFullVerification ?? readPreparedRollingDailyForecastVerification,
     readPreparedRecentVerification: dependencies.readPreparedRecentVerification ?? ((request) => {
       if (request.targetBasis !== 'POINT_IN_TIME') {

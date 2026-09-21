@@ -846,6 +846,81 @@ test('prepared-only Forecast Library reads exact persisted artifacts without com
   assert.equal(writeCalls, 0)
 })
 
+test('prepared Fast Verification serves a 24-per-horizon partial artifact while Full remains fail-closed', async () => {
+  const history = createHistoryResponse()
+  const baseHorizon = createPersistedVerificationPayload('arima')['1M']!
+  const verification = Object.fromEntries(['1M', '3M', '6M', '12M'].map((label, index) => [
+    label,
+    {
+      ...baseHorizon,
+      horizon: label,
+      horizonSteps: [1, 3, 6, 12][index]!,
+      origins: 24,
+      expectedOrigins: 40,
+      successfulOrigins: 24,
+      failedOrigins: 0,
+      pendingOrigins: 16,
+      coverage: 24 / 40,
+    },
+  ]))
+  const artifact = {
+    seriesId: 'wocaes0280',
+    modelId: 'arima',
+    displayName: 'Baltic Exchange, Dry Index (BDI), USD',
+    description: null,
+    targetBasis: 'END_OF_PERIOD' as const,
+    ...persistedIdentity('END_OF_PERIOD'),
+    methodVersion: 'benchmark-forecasting-mvp-phase2-v1',
+    source: { kind: 'POSTGRES_RUNTIME_SNAPSHOT' as const, runId: 'fast-verification-run' },
+    historyFingerprint: buildForecastHistoryFingerprint(history.history, {
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+    }),
+    cadence: { sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' } as const,
+    frequencyIdentity: 'FORECAST_CADENCE_V1|source=MONTHLY|target=MONTHLY',
+    statisticalCompatibility: createFullVerificationStatisticalCompatibility({
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      targetSemantics: 'END_OF_PERIOD',
+    }),
+    preparation: null,
+    history: { frequency: 'MONTHLY', start: history.history.start, end: history.history.end, observations: history.history.observations },
+    forecastOrigin: history.history.end,
+    runtimeSeconds: 1,
+    verification,
+  }
+  const service = createTestForecastLibraryService({
+    bridge: createPreparedReadBridge(history),
+    repository: {
+      async readCurrentRun() { throw new Error('unused') },
+      async readVerificationRun() { return artifact },
+      async writeCurrentRun() { throw new Error('prepared read must not write') },
+      async writeVerificationRun() { throw new Error('prepared read must not write') },
+      async readLatestCurrentRun() { return null },
+      async readLatestVerificationRun() { return artifact },
+    },
+    resolveExactPreparedCapability: async () => createPreparedCapability({
+      seriesId: 'wocaes0280',
+      modelId: 'arima',
+      targetSemantics: 'END_OF_PERIOD',
+      sourceFrequency: 'MONTHLY',
+      targetCadence: 'MONTHLY',
+      availableObservations: 64,
+    }),
+    logEvent: () => {},
+  })
+  const request = { seriesId: 'wocaes0280', modelId: 'arima', targetBasis: 'END_OF_PERIOD' as const }
+
+  const fast = await service.readPreparedVerificationRequest({ ...request, verificationScope: 'FAST' })
+  const full = await service.readPreparedVerificationRequest({ ...request, verificationScope: 'FULL' })
+
+  assert.equal(fast.status, 'AVAILABLE')
+  assert.equal(fast.historicalVerification?.preparationState, 'FAST_READY')
+  assert.equal(fast.historicalVerification?.fullHistoryReady, false)
+  assert.equal(full.status, 'NOT_AVAILABLE')
+  assert.match(full.reason ?? '', /still being built in bounded batches/)
+})
+
 test('prepared recent verification lookup uses the recent policy identity and current-mode prepared history', async () => {
   let historyMode: 'current' | 'verification' | null = null
   let historyModelId: string | undefined
