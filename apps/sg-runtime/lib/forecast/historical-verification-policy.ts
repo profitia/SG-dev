@@ -26,11 +26,17 @@ export function isFastHistoricalVerificationReady(
   options: { targetSemantics?: string } = {},
 ) {
   const minimumOrigins = resolveFastHistoricalVerificationMinimumOrigins(options.targetSemantics)
+  const useAvailableHistoryBoundary = options.targetSemantics === 'MONTHLY_AVERAGE'
+    || options.targetSemantics === 'END_OF_PERIOD'
   return FAST_HISTORICAL_VERIFICATION_HORIZONS.every((label) => {
     const horizon = verification[label]
+    const requiredOrigins = horizon && useAvailableHistoryBoundary
+      ? Math.min(minimumOrigins, Math.max(0, horizon.expectedOrigins))
+      : minimumOrigins
     return Boolean(
       horizon
-      && horizon.successfulOrigins >= minimumOrigins
+      && requiredOrigins > 0
+      && horizon.successfulOrigins >= requiredOrigins
       && horizon.metrics?.smape !== null
       && horizon.metrics?.smape !== undefined
       && Number.isFinite(horizon.metrics.smape)

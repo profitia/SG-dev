@@ -118,6 +118,40 @@ test('non-daily Fast Verification becomes lawful at the moderate-confidence boun
   }).preparationState, 'FAST_READY')
 })
 
+test('non-daily Fast Verification adapts to the lawful history available for each horizon', () => {
+  const metrics = { mae: 1, rmse: 2, mase: 0.8, smape: 4, directionalAccuracy: 0.5, bias: 0 }
+  const verification = {
+    '1M': horizon({ horizon: '1M', origins: 8, expectedOrigins: 12, successfulOrigins: 8, metrics }),
+    '3M': horizon({ horizon: '3M', origins: 8, expectedOrigins: 10, successfulOrigins: 8, metrics }),
+    '6M': horizon({ horizon: '6M', origins: 7, expectedOrigins: 7, successfulOrigins: 7, metrics }),
+    '12M': horizon({ horizon: '12M', origins: 1, expectedOrigins: 1, successfulOrigins: 1, metrics }),
+  }
+
+  assert.equal(isFastHistoricalVerificationReady(verification), false)
+  assert.equal(isFastHistoricalVerificationReady(verification, { targetSemantics: 'MONTHLY_AVERAGE' }), true)
+  assert.equal(isFastHistoricalVerificationReady(verification, { targetSemantics: 'END_OF_PERIOD' }), true)
+
+  verification['6M'].successfulOrigins = 6
+  assert.equal(isFastHistoricalVerificationReady(verification, { targetSemantics: 'MONTHLY_AVERAGE' }), false)
+})
+
+test('non-daily Fast Verification still requires at least one lawful comparison for every horizon', () => {
+  const metrics = { mae: 1, rmse: 2, mase: 0.8, smape: 4, directionalAccuracy: 0.5, bias: 0 }
+  const verification = Object.fromEntries(['1M', '3M', '6M', '12M'].map((label) => [
+    label,
+    horizon({
+      horizon: label,
+      origins: 8,
+      expectedOrigins: 8,
+      successfulOrigins: 8,
+      metrics,
+    }),
+  ]))
+  verification['12M'] = horizon({ horizon: '12M', expectedOrigins: 0, successfulOrigins: 0, metrics: null })
+
+  assert.equal(isFastHistoricalVerificationReady(verification, { targetSemantics: 'MONTHLY_AVERAGE' }), false)
+})
+
 test('verification quality uses 24 lawful comparisons as the versioned common denominator', () => {
   const quality = resolveForecastVerificationQuality(horizon({
     origins: 17,
