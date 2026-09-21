@@ -1,0 +1,136 @@
+{
+  "schemaVersion": "ppf1-fast-presentation-corrective-evidence-v1",
+  "taskId": "PPF1-FAST-PRESENTATION-CORRECTIVE-20260921",
+  "conversationId": "01a0a8e3-4cb3-7a43-8680-22132e5ee2a2",
+  "result": "PASS",
+  "source": {
+    "initialCorrectiveCommit": "d5e0141475d91b00f48c1cff931a29c78e145913",
+    "initialMergeCommit": "62883eea7dab48b388ffdce02c12e41c9b65bf47",
+    "resourceAttributionCorrectiveCommit": "05d5d06c643bb97f137f470eb697ac195ee581b9",
+    "resourceAttributionMergeCommit": "f7201cc7c187f2d54a043dbca177cd49a7842086",
+    "pullRequests": [
+      "https://github.com/profitia/SG-dev/pull/39",
+      "https://github.com/profitia/SG-dev/pull/41"
+    ]
+  },
+  "deployments": {
+    "dashboard": {
+      "serviceId": "srv-da2i7j9t0dsc73ag7qv0",
+      "deployId": "dep-daog660ae00c73cd9m6g",
+      "commit": "62883eea7dab48b388ffdce02c12e41c9b65bf47",
+      "status": "live"
+    },
+    "sgRuntime": {
+      "serviceId": "srv-d98a73btqb8s73fabp90",
+      "deployId": "dep-daogje6gekts73c72ehg",
+      "commit": "f7201cc7c187f2d54a043dbca177cd49a7842086",
+      "status": "live"
+    },
+    "worker": {
+      "serviceId": "srv-dansibrtqb8s73d0nn3g",
+      "deployId": "dep-daogjf0473hc73a8ga6g",
+      "commit": "f7201cc7c187f2d54a043dbca177cd49a7842086",
+      "status": "live"
+    }
+  },
+  "correctiveScope": {
+    "dashboardRendersFastWhileFullContinues": "PASS",
+    "separateVerificationCorrelation": "PASS",
+    "marketDataPrismaSingletonAndExactReadCoalescing": "PASS",
+    "boundedProgressiveRetryBackoff": "PASS",
+    "nonDailyResourceSummary": "PASS_AFTER_LIVE_FINDING_AND_FOLLOW_UP",
+    "matrixRerunAndCapacityDecision": "PASS",
+    "notPreparedPresentedAsPreparable": "PASS"
+  },
+  "matrix": {
+    "seriesId": "cnprod4431",
+    "models": ["naive", "damped_holt", "ets", "arima"],
+    "targetBases": ["POINT_IN_TIME", "MONTHLY_AVERAGE", "END_OF_PERIOD"],
+    "total": 12,
+    "passed": 12,
+    "failed": 0,
+    "allCurrentReady": true,
+    "allVerificationVisible": true,
+    "allCurrentAndVerificationCorrelationsDistinct": true,
+    "allUiTelemetryAcksRecorded": true,
+    "currentReadMs": {"min": 48, "max": 1040, "average": 298.5},
+    "verificationReadMs": {"min": 302, "max": 2431, "average": 1709.83},
+    "progressiveSnapshotMs": {"min": 377, "max": 3331, "average": 2235.58},
+    "fastWhileFullContinues": [
+      {
+        "modelId": "arima",
+        "targetBasis": "POINT_IN_TIME",
+        "verificationCorrelationId": "ppf1-verification-arima-point-in-time-mub3p8yf"
+      },
+      {
+        "modelId": "arima",
+        "targetBasis": "END_OF_PERIOD",
+        "verificationCorrelationId": "ppf1-verification-arima-end-of-period-mub3pjt0"
+      }
+    ]
+  },
+  "nonDailyResourceProof": {
+    "seriesId": "wocaes0293",
+    "modelId": "naive",
+    "targetBasis": "MONTHLY_AVERAGE",
+    "verificationCorrelationId": "ppf1-resource-verification-naive-monthly-mub4bpby",
+    "currentReadyAt": "2026-09-21T10:45:02.535Z",
+    "verificationReadyAt": "2026-09-21T10:45:59.580Z",
+    "currentExecution": {
+      "executionId": "0061d3c7-e5ab-41cc-9bcc-e1847e27bc36",
+      "resourceSummaryPersisted": true,
+      "wallMs": 7226.82,
+      "nodePeakSampledRssBytes": 187453440,
+      "pythonMaxRssBytes": 158117888,
+      "pythonUserCpuMs": 4357.789
+    },
+    "verificationExecution": {
+      "executionId": "dca4a2cf-527e-4f3d-a43b-c9b84eea347d",
+      "resourceSummaryPersisted": true,
+      "wallMs": 13695.64,
+      "nodePeakSampledRssBytes": 222330880,
+      "pythonMaxRssBytes": 149299200,
+      "pythonUserCpuMs": 7090.052
+    }
+  },
+  "capacity": {
+    "workerPlan": "standard",
+    "workerCpuLimitCores": 1,
+    "observedCpuPeakCores": 1,
+    "observedMemoryPeakBytes": 332242940,
+    "memoryLimitBytes": 2147483600,
+    "decision": "CPU_BOUND_NOT_MEMORY_BOUND",
+    "ramIncreaseRecommended": false,
+    "controlledParallelismOnCurrentOneCpuRecommended": false,
+    "nextCapacityExperiment": "If materially faster FULL_READY is required, test a reversible Worker CPU upgrade before increasing concurrency."
+  },
+  "validation": {
+    "dashboardTargetedTests": "83/83 PASS",
+    "dashboardFullTests": "PASS",
+    "dashboardTypecheck": "PASS",
+    "dashboardBuild": "PASS",
+    "sgRuntimeTargetedTestsBeforeFollowUp": "28/28 PASS",
+    "sgRuntimeTargetedTestsAfterFollowUp": "29/29 PASS",
+    "sgRuntimeTypecheck": "PASS",
+    "sgRuntimeBuild": "PASS",
+    "gitDiffCheck": "PASS",
+    "liveUiFastMessageAndMetrics": "PASS",
+    "http5xxDuringEvidenceWindow": 0,
+    "neonTraceRowsVerified": true,
+    "neonResourceRowsVerified": true,
+    "renderLogsCorrelated": true
+  },
+  "findings": [
+    {
+      "severity": "P1",
+      "status": "FIXED_AND_LIVE_PROVEN",
+      "finding": "Inner non-daily compute minted technical request IDs, so correlation-only resource attribution missed executions.",
+      "corrective": "Resource attribution now also matches the exact durable-job identity within the measured worker slice."
+    },
+    {
+      "severity": "P2",
+      "status": "OPEN_NON_BLOCKING",
+      "finding": "FORECAST_REQUEST_DIAGNOSTICS entries with responseStatus 200 are emitted at Render error level, creating false-positive error log noise."
+    }
+  ]
+}
