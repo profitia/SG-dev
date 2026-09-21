@@ -11,6 +11,7 @@ import {
   applyRequiredPhrPublicationOutcome,
   applySrmPhrPublicationOutcome,
   buildConversationArtifactSummary,
+  projectCanonicalFlightRecordScalarParity,
   buildPhrPublicationReadyHandoff,
   buildSrmPhrPublicationCandidate,
   projectCanonicalFlightRecordScalarParity,
@@ -138,6 +139,13 @@ function makeSpendGuruArtifact() {
     },
   } as never
 }
+
+test('scalar parity omits absent legacy etap metadata for project-neutral closeout records', () => {
+  const artifact = makeSpendGuruArtifact()
+  const projection = projectCanonicalFlightRecordScalarParity(artifact, 'conversation.md', 'summary')
+
+  assert.equal(Object.hasOwn(projection.metadata as object, 'etap'), false)
+})
 
 function makeEvidence() {
   return {
