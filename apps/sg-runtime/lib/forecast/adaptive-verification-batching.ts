@@ -2,6 +2,9 @@ export const ADAPTIVE_VERIFICATION_BATCH_POLICY_VERSION = 'PPF1_ADAPTIVE_VERIFIC
 
 export const ADAPTIVE_VERIFICATION_BATCH_SIZES = [1, 2, 4, 8, 16, 32] as const
 
+export const FAST_VERIFICATION_BOOTSTRAP_MAX_SLICES = 4
+export const FAST_VERIFICATION_BOOTSTRAP_MAX_ELAPSED_MS = 45_000
+
 export type AdaptiveVerificationBatchDecision =
   | 'INITIAL'
   | 'GROW'
@@ -21,6 +24,21 @@ export type AdaptiveVerificationBatchCheckpoint = {
   fallbackCount: number
   decision: AdaptiveVerificationBatchDecision
   reason: string
+}
+
+export function shouldContinueFastVerificationBootstrap(input: {
+  fastReady: boolean
+  processedSliceCount: number
+  elapsedMs: number
+  estimatedNextSliceMs?: number | null
+}) {
+  // The initial lease may advance through a few small slices to make FAST useful,
+  // but the time and slice caps return long-running FULL work to fair scheduling.
+  const estimatedNextSliceMs = Math.max(0, input.estimatedNextSliceMs ?? 0)
+  return !input.fastReady
+    && input.processedSliceCount < FAST_VERIFICATION_BOOTSTRAP_MAX_SLICES
+    && input.elapsedMs < FAST_VERIFICATION_BOOTSTRAP_MAX_ELAPSED_MS
+    && input.elapsedMs + estimatedNextSliceMs <= FAST_VERIFICATION_BOOTSTRAP_MAX_ELAPSED_MS
 }
 
 const TARGET_SLICE_MS = 60_000

@@ -222,6 +222,10 @@ function queueHarness(job: ForecastPreparationJob | null) {
       checkpoints.push(checkpoint)
     },
     completeUnavailable: async () => { events.push('unavailable') },
+    checkpointInLease: async (_job: ClaimedForecastPreparationJob, checkpoint: Record<string, unknown>) => {
+      events.push('checkpoint')
+      checkpoints.push(checkpoint)
+    },
     continueAfterSlice: async (_job: ClaimedForecastPreparationJob, checkpoint: Record<string, unknown>) => {
       events.push('continue')
       checkpoints.push(checkpoint)
@@ -429,10 +433,37 @@ test('worker checkpoints an incomplete Historical Verification slice', async () 
     }) as never,
   })
   assert.equal(await worker.runOne(), true)
-  assert.deepEqual(harness.events, ['continue'])
-  assert.deepEqual(observedBatchSizes, [1])
-  assert.equal(harness.checkpoints[0]?.nextBatchSize, 2)
-  assert.equal(harness.checkpoints[0]?.fullVerificationReadiness, 'NOT_PREPARED')
+  assert.deepEqual(harness.events, ['checkpoint', 'checkpoint', 'checkpoint', 'continue'])
+  assert.deepEqual(observedBatchSizes, [1, 2, 4, 8])
+  assert.equal(harness.checkpoints.at(-1)?.nextBatchSize, 16)
+  assert.equal(harness.checkpoints.at(-1)?.fullVerificationReadiness, 'NOT_PREPARED')
+})
+
+test('worker reaches Fast Verification inside one bounded lease and returns FULL continuation to fair scheduling', async () => {
+  const harness = queueHarness(claimedJob('VERIFICATION'))
+  const observedBatchSizes: number[] = []
+  let readinessCall = 0
+  const worker = createForecastPreparationWorker({
+    queue: harness.queue,
+    prepareVerificationSlice: async (_job, options) => {
+      observedBatchSizes.push(options.maxOriginsPerRun)
+      return undefined
+    },
+    resolveReadiness: async () => {
+      readinessCall += 1
+      return {
+        fastVerificationReadiness: readinessCall >= 3 ? 'READY' : 'NOT_PREPARED',
+        fullVerificationReadiness: 'NOT_PREPARED',
+        predictionBandState: 'NOT_AVAILABLE',
+        readiness: { bandsReady: false, blockers: ['FULL_HISTORICAL_PARTIAL'] },
+      } as never
+    },
+  })
+
+  assert.equal(await worker.runOne(), true)
+  assert.deepEqual(observedBatchSizes, [1, 2, 4])
+  assert.deepEqual(harness.events, ['checkpoint', 'checkpoint', 'continue'])
+  assert.equal(harness.checkpoints.at(-1)?.fastVerificationReadiness, 'READY')
 })
 
 test('worker publishes Fast Verification readiness without completing the full-history job', async () => {
@@ -476,6 +507,7 @@ test('Naive Daily automatically refreshes Current bands on the first FAST calibr
       return {
         fastVerificationReadiness: 'READY',
         fullVerificationReadiness: 'NOT_PREPARED',
+        predictionBandState: 'AVAILABLE',
         readiness: {
           bandsReady: readinessCall > 1,
           blockers: readinessCall > 1 ? ['FULL_HISTORICAL_PARTIAL'] : ['BANDS_NOT_AVAILABLE', 'FULL_HISTORICAL_PARTIAL'],
@@ -493,6 +525,7 @@ test('Naive Daily automatically refreshes Current bands on the first FAST calibr
   assert.equal(readinessCall, 2)
   assert.deepEqual(harness.events, ['continue'])
   assert.equal(harness.checkpoints[0]?.fastVerificationReadiness, 'READY')
+  assert.equal(typeof harness.checkpoints[0]?.currentBandsRefreshedAt, 'string')
 })
 
 test('worker resumes from the durable adaptive batch checkpoint', async () => {

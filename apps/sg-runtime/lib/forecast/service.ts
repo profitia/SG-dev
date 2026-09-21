@@ -2099,6 +2099,7 @@ function toVerificationAvailable(
     verification: artifact.verification,
     historicalVerification: resolveHistoricalVerificationSummary(artifact.verification, {
       fullHistoryReady: isVerificationArtifactComplete(artifact),
+      targetSemantics: artifact.targetSemantics,
     }),
   }
 }
@@ -4079,7 +4080,9 @@ export function createForecastLibraryService(
       }
 
       const fullHistoryReady = isVerificationArtifactComplete(prepared)
-      const fastHistoryReady = isFastHistoricalVerificationReady(prepared.verification)
+      const fastHistoryReady = isFastHistoricalVerificationReady(prepared.verification, {
+        targetSemantics: prepared.targetSemantics,
+      })
       if (!fullHistoryReady && (input.verificationScope !== 'FAST' || !fastHistoryReady)) {
         return {
           status: 'NOT_AVAILABLE',
