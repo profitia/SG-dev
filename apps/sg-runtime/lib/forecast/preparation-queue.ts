@@ -52,6 +52,7 @@ import {
 } from '@/lib/forecast/adaptive-verification-batching'
 
 export const FORECAST_PREPARATION_JOB_KINDS = ['CURRENT', 'VERIFICATION'] as const
+export const FORECAST_PREPARATION_WORKER_MODES = ['ALL', 'CURRENT_ONLY', 'VERIFICATION_ONLY'] as const
 export const FORECAST_PREPARATION_JOB_STATUSES = [
   'QUEUED',
   'RUNNING',
@@ -62,7 +63,24 @@ export const FORECAST_PREPARATION_JOB_STATUSES = [
 ] as const
 
 export type ForecastPreparationJobKind = (typeof FORECAST_PREPARATION_JOB_KINDS)[number]
+export type ForecastPreparationWorkerMode = (typeof FORECAST_PREPARATION_WORKER_MODES)[number]
 export type ForecastPreparationJobStatus = (typeof FORECAST_PREPARATION_JOB_STATUSES)[number]
+
+export function resolveForecastPreparationWorkerMode(value: string | undefined): ForecastPreparationWorkerMode {
+  const normalized = value?.trim().toUpperCase() || 'ALL'
+  if (!FORECAST_PREPARATION_WORKER_MODES.includes(normalized as ForecastPreparationWorkerMode)) {
+    throw new Error(`FORECAST_PREPARATION_WORKER_MODE must be one of ${FORECAST_PREPARATION_WORKER_MODES.join(', ')}; received ${JSON.stringify(value)}.`)
+  }
+  return normalized as ForecastPreparationWorkerMode
+}
+
+export function resolveForecastPreparationWorkerJobKinds(
+  mode: ForecastPreparationWorkerMode,
+): readonly ForecastPreparationJobKind[] {
+  if (mode === 'CURRENT_ONLY') return ['CURRENT']
+  if (mode === 'VERIFICATION_ONLY') return ['VERIFICATION']
+  return FORECAST_PREPARATION_JOB_KINDS
+}
 
 export type ForecastPreparationCommand = InteractiveForecastIdentity & {
   kind: ForecastPreparationJobKind
@@ -550,9 +568,16 @@ export function createForecastPreparationQueueService(options: {
     }
   }
 
-  async function claimNext(workerId: string): Promise<ClaimedForecastPreparationJob | null> {
+  async function claimNext(
+    workerId: string,
+    allowedJobKinds: readonly ForecastPreparationJobKind[] = FORECAST_PREPARATION_JOB_KINDS,
+  ): Promise<ClaimedForecastPreparationJob | null> {
+    if (allowedJobKinds.length === 0) {
+      throw new Error('At least one Forecast preparation job kind must be allowed for a worker claim.')
+    }
     const ownerToken = `${workerId}:${randomUUID()}`
     const leaseExpiresAt = new Date(Date.now() + leaseMs)
+    const jobKindFilter = Prisma.join([...allowedJobKinds])
     const rows = await prisma.$queryRaw<ForecastPreparationJob[]>(Prisma.sql`
       WITH recover_expired AS (
         UPDATE "forecast_preparation_job"
@@ -580,6 +605,7 @@ export function createForecastPreparationQueueService(options: {
         SELECT job."id"
         FROM "forecast_preparation_job" job
         WHERE job."status" IN ('QUEUED', 'RETRY_WAIT')
+          AND job."jobKind" IN (${jobKindFilter})
           AND job."availableAt" <= NOW()
           AND (
             job."dependencyJobKey" IS NULL
@@ -713,6 +739,7 @@ export type ForecastPreparationQueueService = ReturnType<typeof createForecastPr
 export function createForecastPreparationWorker(options: {
   queue?: ForecastPreparationQueueService
   workerId?: string
+  mode?: ForecastPreparationWorkerMode
   heartbeatMs?: number
   prepareCurrent?: typeof prepareInteractiveCurrentForecast
   prepareVerificationSlice?: (
@@ -725,6 +752,8 @@ export function createForecastPreparationWorker(options: {
 } = {}) {
   const queue = options.queue ?? createForecastPreparationQueueService()
   const workerId = options.workerId ?? `forecast-worker-${randomUUID()}`
+  const mode = options.mode ?? 'ALL'
+  const allowedJobKinds = resolveForecastPreparationWorkerJobKinds(mode)
   const heartbeatMs = options.heartbeatMs ?? 60_000
   const operations = createForecastProductionOperationsService()
   const prepareCurrent = options.prepareCurrent ?? prepareInteractiveCurrentForecast
@@ -831,6 +860,10 @@ export function createForecastPreparationWorker(options: {
         jobKey: job.jobKey,
         jobKind: job.jobKind,
         workerId,
+        workerMode: mode,
+        queueWaitMs: Math.max(0, (job.leaseAcquiredAt ?? new Date()).getTime() - job.requestedAt.getTime()),
+        readyWaitMs: Math.max(0, (job.leaseAcquiredAt ?? new Date()).getTime() - job.availableAt.getTime()),
+        sliceNumber: job.sliceCount + 1,
         seriesId: job.seriesId,
         modelId: job.modelId,
         targetSemantics: job.targetSemantics,
@@ -940,8 +973,9 @@ export function createForecastPreparationWorker(options: {
 
   return {
     workerId,
+    mode,
     async runOne() {
-      const job = await queue.claimNext(workerId)
+      const job = await queue.claimNext(workerId, allowedJobKinds)
       if (!job) return false
       await execute(job)
       return true

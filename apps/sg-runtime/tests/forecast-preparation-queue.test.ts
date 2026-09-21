@@ -3,12 +3,15 @@ import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
-import { Prisma, type ForecastPreparationJob } from '@/generated/market-data-client'
+import { Prisma, type ForecastPreparationJob, type PrismaClient } from '@/generated/market-data-client'
 import {
   ForecastPreparationCommandSchema,
   buildSucceededPreparationJobRequeueData,
   buildForecastPreparationJobKey,
+  createForecastPreparationQueueService,
   createForecastPreparationWorker,
+  resolveForecastPreparationWorkerJobKinds,
+  resolveForecastPreparationWorkerMode,
   resolveTerminalVerificationUnavailability,
   shouldRequeueSucceededPreparationJob,
   type ClaimedForecastPreparationJob,
@@ -76,6 +79,40 @@ test('durable command schema accepts the job kind sent by the Dashboard', () => 
     modelId: 'arima',
     kind: 'CURRENT',
   })
+})
+
+test('worker mode defaults safely and rejects unknown deployment configuration', () => {
+  assert.equal(resolveForecastPreparationWorkerMode(undefined), 'ALL')
+  assert.equal(resolveForecastPreparationWorkerMode(' current_only '), 'CURRENT_ONLY')
+  assert.equal(resolveForecastPreparationWorkerMode('verification_only'), 'VERIFICATION_ONLY')
+  assert.deepEqual(resolveForecastPreparationWorkerJobKinds('ALL'), ['CURRENT', 'VERIFICATION'])
+  assert.deepEqual(resolveForecastPreparationWorkerJobKinds('CURRENT_ONLY'), ['CURRENT'])
+  assert.deepEqual(resolveForecastPreparationWorkerJobKinds('VERIFICATION_ONLY'), ['VERIFICATION'])
+  assert.throws(
+    () => resolveForecastPreparationWorkerMode('current-and-verification-sometimes'),
+    /must be one of ALL, CURRENT_ONLY, VERIFICATION_ONLY/,
+  )
+})
+
+test('durable claim SQL binds the exact worker lane instead of relying on priority alone', async () => {
+  const observedQueries: Prisma.Sql[] = []
+  const prisma = {
+    $queryRaw: async (query: Prisma.Sql) => {
+      observedQueries.push(query)
+      return []
+    },
+  } as unknown as PrismaClient
+  const queue = createForecastPreparationQueueService({ prisma })
+
+  assert.equal(await queue.claimNext('current-lane-sql-test', ['CURRENT']), null)
+  assert.equal(observedQueries.length, 1)
+  assert.match(observedQueries[0]!.sql, /job\."jobKind" IN \(\?\)/)
+  assert.ok(observedQueries[0]!.values.includes('CURRENT'))
+  assert.ok(!observedQueries[0]!.values.includes('VERIFICATION'))
+  await assert.rejects(
+    queue.claimNext('empty-lane-sql-test', []),
+    /At least one Forecast preparation job kind/,
+  )
 })
 
 test('versioned Fast Verification policy rotates every verification job without rotating Current jobs', () => {
@@ -148,8 +185,12 @@ function claimedJob(kind: 'CURRENT' | 'VERIFICATION'): ClaimedForecastPreparatio
 function queueHarness(job: ForecastPreparationJob | null) {
   const events: string[] = []
   const checkpoints: Array<Record<string, unknown> | undefined> = []
+  const claims: Array<readonly string[]> = []
   const queue = {
-    claimNext: async () => job,
+    claimNext: async (_workerId: string, allowedJobKinds: readonly string[]) => {
+      claims.push(allowedJobKinds)
+      return job
+    },
     heartbeat: async () => undefined,
     complete: async (_job: ClaimedForecastPreparationJob, checkpoint?: Record<string, unknown>) => {
       events.push('complete')
@@ -165,7 +206,7 @@ function queueHarness(job: ForecastPreparationJob | null) {
       checkpoints.push(checkpoint)
     },
   } as unknown as ForecastPreparationQueueService
-  return { queue, events, checkpoints }
+  return { queue, events, checkpoints, claims }
 }
 
 test('completed verification compute with zero lawful origins is terminal instead of looping', async () => {
@@ -279,6 +320,28 @@ test('worker completes a Current job through the canonical preparation owner', a
   })
   assert.equal(await worker.runOne(), true)
   assert.deepEqual(harness.events, ['complete'])
+})
+
+test('dedicated worker lanes pass mutually exclusive job-kind claims to the shared durable queue', async () => {
+  const currentHarness = queueHarness(null)
+  const verificationHarness = queueHarness(null)
+  const currentWorker = createForecastPreparationWorker({
+    queue: currentHarness.queue,
+    workerId: 'current-fast-lane',
+    mode: 'CURRENT_ONLY',
+  })
+  const verificationWorker = createForecastPreparationWorker({
+    queue: verificationHarness.queue,
+    workerId: 'verification-background-lane',
+    mode: 'VERIFICATION_ONLY',
+  })
+
+  assert.equal(await currentWorker.runOne(), false)
+  assert.equal(await verificationWorker.runOne(), false)
+  assert.deepEqual(currentHarness.claims, [['CURRENT']])
+  assert.deepEqual(verificationHarness.claims, [['VERIFICATION']])
+  assert.equal(currentWorker.mode, 'CURRENT_ONLY')
+  assert.equal(verificationWorker.mode, 'VERIFICATION_ONLY')
 })
 
 test('observability persistence cannot turn a completed Forecast job into a retry', async () => {
