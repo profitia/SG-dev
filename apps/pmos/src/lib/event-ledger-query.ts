@@ -173,6 +173,13 @@ const ARCHIVE_EVENT_SOURCE_KINDS = [
   'PMOS_EXECUTION_TRAILS',
 ] as const
 
+const EVENT_LEDGER_QUERY_LIMIT = 100
+
+type ConversationSearchCandidate = {
+  conversation: ConversationEventRecord
+  searchText: string
+}
+
 async function findManyIfAvailable<T>(
   delegate: { findMany?: (args: unknown) => Promise<T[]> } | undefined,
   args: unknown,
@@ -360,17 +367,16 @@ function scoreConversationCandidate(
 function findHeuristicConversation(
   title: string,
   eventTimestamp: Date,
-  conversations: ConversationEventRecord[],
+  candidates: ConversationSearchCandidate[],
 ): EventLedgerSourceRecord['linkedConversation'] {
   let bestMatch: ConversationEventRecord | null = null
   let bestScore = 0
 
-  for (const conversation of conversations) {
-    const searchText = buildConversationSearchText(conversation)
-    const score = scoreConversationCandidate(title, eventTimestamp, conversation, searchText)
+  for (const candidate of candidates) {
+    const score = scoreConversationCandidate(title, eventTimestamp, candidate.conversation, candidate.searchText)
     if (score > bestScore) {
       bestScore = score
-      bestMatch = conversation
+      bestMatch = candidate.conversation
     }
   }
 
@@ -441,7 +447,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
         created_at AS "createdAt"
       FROM conversation_artifacts
       ORDER BY timestamp DESC
-      LIMIT 250
+      LIMIT ${EVENT_LEDGER_QUERY_LIMIT}
     `),
     db.$queryRaw<PromptExecutionEventRecord[]>(Prisma.sql`
       SELECT
@@ -454,11 +460,11 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
         domain
       FROM prompt_executions
       ORDER BY created_at DESC
-      LIMIT 250
+      LIMIT ${EVENT_LEDGER_QUERY_LIMIT}
     `),
     findManyIfAvailable(executionLogDelegate, {
       orderBy: { createdAt: 'desc' },
-      take: 250,
+      take: EVENT_LEDGER_QUERY_LIMIT,
       include: {
         conversations: {
           take: 1,
@@ -470,7 +476,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
     }),
     findManyIfAvailable(decisionDelegate, {
       orderBy: { createdAt: 'desc' },
-      take: 250,
+      take: EVENT_LEDGER_QUERY_LIMIT,
       include: {
         conversations: {
           take: 1,
@@ -487,11 +493,11 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
         title
       FROM architecture_warnings
       ORDER BY created_at DESC
-      LIMIT 250
+      LIMIT ${EVENT_LEDGER_QUERY_LIMIT}
     `),
     findManyIfAvailable(changedFileDelegate, {
       orderBy: { createdAt: 'desc' },
-      take: 250,
+      take: EVENT_LEDGER_QUERY_LIMIT,
     }),
     findManyIfAvailable(archiveSourceDelegate, {
       where: {
@@ -502,7 +508,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       include: {
         artifacts: {
           orderBy: { observedAt: 'desc' },
-          take: 250,
+          take: EVENT_LEDGER_QUERY_LIMIT,
         },
       },
     }),
@@ -517,6 +523,11 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
       },
     })),
   )
+
+  const conversationSearchCandidates = conversations.map((conversation) => ({
+    conversation,
+    searchText: buildConversationSearchText(conversation),
+  }))
 
   const conversationIds = Array.from(new Set(conversations.map((record) => record.conversationId).filter(Boolean)))
   const handoffArtifacts = conversationIds.length > 0
@@ -568,7 +579,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
   })
 
   const promptEvents: EventRow[] = prompts.map((record) => {
-    const linkedConversation = findHeuristicConversation(record.title, record.createdAt, conversations)
+    const linkedConversation = findHeuristicConversation(record.title, record.createdAt, conversationSearchCandidates)
     sourceRecords[`prompt_executions:${record.id}`] = {
       sourceTable: 'prompt_executions',
       record: toJsonObject(record),
@@ -588,7 +599,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
   })
 
   const logEvents: EventRow[] = logs.map((record) => {
-    const linkedConversation = toLinkedConversationRecord(record.conversations) ?? findHeuristicConversation(record.title, record.createdAt, conversations)
+    const linkedConversation = toLinkedConversationRecord(record.conversations) ?? findHeuristicConversation(record.title, record.createdAt, conversationSearchCandidates)
     sourceRecords[`execution_logs:${record.id}`] = {
       sourceTable: 'execution_logs',
       record: toJsonObject(record),
@@ -608,7 +619,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
   })
 
   const decisionEvents: EventRow[] = decisions.map((record) => {
-    const linkedConversation = toLinkedConversationRecord(record.conversations) ?? findHeuristicConversation(record.title, record.createdAt, conversations)
+    const linkedConversation = toLinkedConversationRecord(record.conversations) ?? findHeuristicConversation(record.title, record.createdAt, conversationSearchCandidates)
     sourceRecords[`decisions:${record.id}`] = {
       sourceTable: 'decisions',
       record: toJsonObject(record),
@@ -628,7 +639,7 @@ export async function eventLedgerQuery(): Promise<EventLedgerData> {
   })
 
   const warningEvents: EventRow[] = warnings.map((record) => {
-    const linkedConversation = findHeuristicConversation(record.title, record.createdAt, conversations)
+    const linkedConversation = findHeuristicConversation(record.title, record.createdAt, conversationSearchCandidates)
     sourceRecords[`architecture_warnings:${record.id}`] = {
       sourceTable: 'architecture_warnings',
       record: toJsonObject(record),
