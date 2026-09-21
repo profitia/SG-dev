@@ -42,6 +42,9 @@ export function validateGovernanceManifest(repositoryRoot, manifestRelativePath 
     if (ACTIVE_STATUSES.has(document.status) && (!Number.isInteger(document.loadOrder) || document.loadOrder < 0)) {
       errors.push(`Active document ${document.id} requires a non-negative integer loadOrder.`)
     }
+    if (ACTIVE_STATUSES.has(document.status) && (!Array.isArray(document.appliesTo) || document.appliesTo.length === 0)) {
+      errors.push(`Active document ${document.id} requires a non-empty appliesTo array.`)
+    }
     if (document.status === 'SUPERSEDED' && !document.supersededBy) errors.push(`Superseded document ${document.id} requires supersededBy.`)
   }
 
@@ -63,6 +66,36 @@ export function validateGovernanceManifest(repositoryRoot, manifestRelativePath 
 
   for (const requiredPath of [manifest.entrypoint, manifest.preflight]) {
     if (!requiredPath || !fs.existsSync(path.join(repositoryRoot, requiredPath))) errors.push(`Missing required governance surface: ${requiredPath ?? '<unset>'}`)
+  }
+
+  if (!manifest.projectRegistry || !fs.existsSync(path.join(repositoryRoot, manifest.projectRegistry))) {
+    errors.push(`Missing project registry: ${manifest.projectRegistry ?? '<unset>'}`)
+  } else {
+    try {
+      const projectRegistry = JSON.parse(fs.readFileSync(path.join(repositoryRoot, manifest.projectRegistry), 'utf8'))
+      const projectKeys = new Set()
+      const neonProjectIds = new Set()
+      if (projectRegistry.schemaVersion !== '1.0' || projectRegistry.defaultPolicy !== 'FAIL_CLOSED') {
+        errors.push('Project registry must use schemaVersion 1.0 and defaultPolicy FAIL_CLOSED.')
+      }
+      for (const project of projectRegistry.projects ?? []) {
+        if (!project.projectKey || projectKeys.has(project.projectKey)) errors.push(`Invalid or duplicate projectKey: ${project.projectKey ?? '<missing>'}`)
+        projectKeys.add(project.projectKey)
+        if (!project.displayName || !project.repository?.slug || !project.repository?.defaultBranch) errors.push(`Project ${project.projectKey ?? '<unknown>'} has incomplete repository identity.`)
+        if (!project.database?.projectId || !project.database?.databaseName || !Array.isArray(project.database?.allowedHosts) || project.database.allowedHosts.length === 0) {
+          errors.push(`Project ${project.projectKey ?? '<unknown>'} has incomplete database identity.`)
+        }
+        if (neonProjectIds.has(project.database?.projectId)) errors.push(`Neon project ${project.database?.projectId} is assigned to more than one project profile.`)
+        neonProjectIds.add(project.database?.projectId)
+        if (!['required', 'disabled'].includes(project.continuity?.pmos) || !['required', 'disabled'].includes(project.continuity?.memoros) || !['required', 'disabled'].includes(project.continuity?.phr)) {
+          errors.push(`Project ${project.projectKey ?? '<unknown>'} has invalid continuity policy.`)
+        }
+        const adapter = documents.find((document) => document.path === project.adapter)
+        if (!adapter || adapter.status !== 'ACTIVE_ADAPTER') errors.push(`Project ${project.projectKey ?? '<unknown>'} adapter is not active in the governance manifest: ${project.adapter ?? '<missing>'}`)
+      }
+    } catch (error) {
+      errors.push(`Invalid project registry JSON: ${error.message}`)
+    }
   }
 
   const activeDocuments = documents

@@ -10,6 +10,7 @@ import type {
 } from '../../../../../packages/governance/src/index.js'
 
 import { atomicWriteJsonFile } from './atomic-io.js'
+import { buildNamespacedPublicationId, requirePmosProjectProfile } from './project-profile.js'
 
 export type PhrPublicationArtifactInput = {
   type: string
@@ -308,7 +309,7 @@ function buildRejectedPhrPublicationResult(params: {
     bundlePath: null,
     manifestPath: null,
     commitSha: null,
-    publicationId: params.artifact.metadata.taskId,
+    publicationId: buildNamespacedPublicationId(params.artifact.metadata.project, params.artifact.metadata.taskId),
     taskId: params.artifact.metadata.taskId,
     artifactCount: params.handoff ? 5 : 0,
     repositoryPath: params.repositoryPath || null,
@@ -370,9 +371,9 @@ export function buildPhrPublicationInput(params: {
 
   return {
     schemaVersion: '1.0',
-    publicationId: params.artifact.metadata.taskId,
+    publicationId: buildNamespacedPublicationId(params.artifact.metadata.project, params.artifact.metadata.taskId),
     taskId: params.artifact.metadata.taskId,
-    projectId: params.artifact.metadata.project,
+    projectId: requirePmosProjectProfile(params.artifact.metadata.project).projectKey,
     createdAt: params.artifact.metadata.timestamp,
     publishedAt,
     result: params.artifact.result.finalStatus,

@@ -202,12 +202,6 @@ export function validatePendingArtifact(artifact: PendingArtifact): PendingArtif
     }
     if (!isNonEmptyString(artifact.metadata.project)) errors.push("metadata.project is required")
     if (!isNonEmptyString(artifact.metadata.taskId)) errors.push("metadata.taskId is required")
-    if (!isNonEmptyString(artifact.metadata.etap)) {
-      errors.push("metadata.etap is required")
-    } else if (!isCanonicalEtap(artifact.metadata.etap)) {
-      errors.push(`metadata.etap "${artifact.metadata.etap}" is not a canonical ETAP name`)
-    }
-
     if (!isNonEmptyString(artifact.metadata.scope)) {
       errors.push("metadata.scope is required")
     } else if (!isCanonicalScopeClassification(artifact.metadata.scope)) {
@@ -296,10 +290,12 @@ export function validatePendingArtifact(artifact: PendingArtifact): PendingArtif
       errors.push(`completionEvidence.pmosSaveStatus "${artifact.completionEvidence.pmosSaveStatus}" is invalid — valid: ${phaseStatusValues.join(", ")}`)
     }
 
-    if (!isNonEmptyString(artifact.completionEvidence.vectorRebuildStatus)) {
-      errors.push("completionEvidence.vectorRebuildStatus is required")
-    } else if (!phaseStatusValues.includes(artifact.completionEvidence.vectorRebuildStatus)) {
-      errors.push(`completionEvidence.vectorRebuildStatus "${artifact.completionEvidence.vectorRebuildStatus}" is invalid — valid: ${phaseStatusValues.join(", ")}`)
+    const runtimeContextRefreshStatus = artifact.completionEvidence.runtimeContextRefreshStatus
+      ?? artifact.completionEvidence.vectorRebuildStatus
+    if (!isNonEmptyString(runtimeContextRefreshStatus)) {
+      errors.push("completionEvidence.runtimeContextRefreshStatus is required")
+    } else if (!phaseStatusValues.includes(runtimeContextRefreshStatus)) {
+      errors.push(`completionEvidence.runtimeContextRefreshStatus "${runtimeContextRefreshStatus}" is invalid — valid: ${phaseStatusValues.join(", ")}`)
     }
 
     if (!isNonEmptyString(artifact.completionEvidence.archiveCompletenessStatus)) {

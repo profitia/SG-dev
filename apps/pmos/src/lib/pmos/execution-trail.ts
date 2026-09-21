@@ -160,8 +160,8 @@ export function validateExecutionTrail(baseName: string): ExecutionTrailValidati
     if (!presentEventTypes.includes(requiredEvent)) issues.push({ severity: "WARN", message: `Missing baseline event: ${requiredEvent}` })
   }
 
-  if (!presentEventTypes.includes(ExecutionTrailEventType.VECTOR_REBUILD_STARTED)) {
-    issues.push({ severity: "WARN", message: "Missing VECTOR_REBUILD_STARTED event or explicit non-applicable reason" })
+  if (!presentEventTypes.includes(ExecutionTrailEventType.RUNTIME_CONTEXT_REFRESH_STARTED)) {
+    issues.push({ severity: "WARN", message: "Missing RUNTIME_CONTEXT_REFRESH_STARTED event or explicit non-applicable reason" })
   }
   if (!presentEventTypes.some((eventType) => COMPLETION_EVENTS.includes(eventType))) {
     issues.push({ severity: "WARN", message: "Missing completion event (PMOS save, closeout, or task completion)" })

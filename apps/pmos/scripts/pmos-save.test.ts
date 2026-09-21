@@ -153,10 +153,10 @@ function makeEvidence() {
     pmosSaveConversationJsonPath: 'conversation.json',
     pmosSaveIntegrityPath: 'conversation.integrity.json',
     pmosSaveLockPath: 'conversation.lock.json',
-    vectorRebuildStatus: 'SUCCEEDED',
-    vectorRebuildStartedAt: '2026-09-14T09:01:00.000Z',
-    vectorRebuildCompletedAt: '2026-09-14T09:02:00.000Z',
-    vectorRebuildError: null,
+    runtimeContextRefreshStatus: 'SUCCEEDED',
+    runtimeContextRefreshStartedAt: '2026-09-14T09:01:00.000Z',
+    runtimeContextRefreshCompletedAt: '2026-09-14T09:02:00.000Z',
+    runtimeContextRefreshError: null,
     handoffPublicationStatus: 'STARTED',
     handoffPublicationStartedAt: '2026-09-14T09:02:00.000Z',
     handoffPublicationCompletedAt: null,
@@ -181,8 +181,8 @@ function makeRetryEvidence(params: {
   closeoutStartedAt: string
   pmosSaveStartedAt: string
   pmosSaveCompletedAt: string
-  vectorRebuildStartedAt: string
-  vectorRebuildCompletedAt: string
+  runtimeContextRefreshStartedAt: string
+  runtimeContextRefreshCompletedAt: string
   handoffPublicationStartedAt: string
   pendingArtifactBackupPath: string
   executionTrailPath: string
@@ -197,8 +197,8 @@ function makeRetryEvidence(params: {
     closeoutStartedAt: params.closeoutStartedAt,
     pmosSaveStartedAt: params.pmosSaveStartedAt,
     pmosSaveCompletedAt: params.pmosSaveCompletedAt,
-    vectorRebuildStartedAt: params.vectorRebuildStartedAt,
-    vectorRebuildCompletedAt: params.vectorRebuildCompletedAt,
+    runtimeContextRefreshStartedAt: params.runtimeContextRefreshStartedAt,
+    runtimeContextRefreshCompletedAt: params.runtimeContextRefreshCompletedAt,
     handoffPublicationStartedAt: params.handoffPublicationStartedAt,
     pendingArtifactBackupPath: params.pendingArtifactBackupPath,
     executionTrailPath: params.executionTrailPath,
@@ -475,8 +475,8 @@ test('SRM retry builds identical publication input and maps to one history bundl
     closeoutStartedAt: '2026-09-14T09:00:00.000Z',
     pmosSaveStartedAt: '2026-09-14T09:00:10.000Z',
     pmosSaveCompletedAt: '2026-09-14T09:00:20.000Z',
-    vectorRebuildStartedAt: '2026-09-14T09:00:30.000Z',
-    vectorRebuildCompletedAt: '2026-09-14T09:00:40.000Z',
+    runtimeContextRefreshStartedAt: '2026-09-14T09:00:30.000Z',
+    runtimeContextRefreshCompletedAt: '2026-09-14T09:00:40.000Z',
     handoffPublicationStartedAt: '2026-09-14T09:00:50.000Z',
     pendingArtifactBackupPath: 'pending-attempt-1.json',
     executionTrailPath: 'trail-attempt-1.jsonl',
@@ -493,8 +493,8 @@ test('SRM retry builds identical publication input and maps to one history bundl
       CloseoutState.PENDING_ARTIFACT_VALIDATED,
       CloseoutState.PMOS_SAVE_STARTED,
       CloseoutState.PMOS_SAVE_SUCCEEDED,
-      CloseoutState.VECTOR_REBUILD_STARTED,
-      CloseoutState.VECTOR_REBUILD_SUCCEEDED,
+      CloseoutState.RUNTIME_CONTEXT_REFRESH_STARTED,
+      CloseoutState.RUNTIME_CONTEXT_REFRESH_SUCCEEDED,
       CloseoutState.RUNTIME_CONTEXT_VERIFIED,
       CloseoutState.HANDOFF_PUBLICATION_STARTED,
       CloseoutState.HANDOFF_PUBLICATION_STARTED,
@@ -505,8 +505,8 @@ test('SRM retry builds identical publication input and maps to one history bundl
     closeoutStartedAt: '2026-09-14T10:10:00.000Z',
     pmosSaveStartedAt: '2026-09-14T10:10:10.000Z',
     pmosSaveCompletedAt: '2026-09-14T10:10:20.000Z',
-    vectorRebuildStartedAt: '2026-09-14T10:10:30.000Z',
-    vectorRebuildCompletedAt: '2026-09-14T10:10:40.000Z',
+    runtimeContextRefreshStartedAt: '2026-09-14T10:10:30.000Z',
+    runtimeContextRefreshCompletedAt: '2026-09-14T10:10:40.000Z',
     handoffPublicationStartedAt: '2026-09-14T10:10:50.000Z',
     pendingArtifactBackupPath: 'pending-attempt-2.json',
     executionTrailPath: 'trail-attempt-2.jsonl',
@@ -519,8 +519,8 @@ test('SRM retry builds identical publication input and maps to one history bundl
     stateHistory: [
       CloseoutState.HANDOFF_PUBLICATION_STARTED,
       CloseoutState.RUNTIME_CONTEXT_VERIFIED,
-      CloseoutState.VECTOR_REBUILD_SUCCEEDED,
-      CloseoutState.VECTOR_REBUILD_STARTED,
+      CloseoutState.RUNTIME_CONTEXT_REFRESH_SUCCEEDED,
+      CloseoutState.RUNTIME_CONTEXT_REFRESH_STARTED,
       CloseoutState.PMOS_SAVE_SUCCEEDED,
       CloseoutState.PMOS_SAVE_STARTED,
       CloseoutState.PENDING_ARTIFACT_VALIDATED,
@@ -580,8 +580,8 @@ test('SRM retry builds identical publication input and maps to one history bundl
     CloseoutState.PENDING_ARTIFACT_VALIDATED,
     CloseoutState.PMOS_SAVE_STARTED,
     CloseoutState.PMOS_SAVE_SUCCEEDED,
-    CloseoutState.VECTOR_REBUILD_STARTED,
-    CloseoutState.VECTOR_REBUILD_SUCCEEDED,
+    CloseoutState.RUNTIME_CONTEXT_REFRESH_STARTED,
+    CloseoutState.RUNTIME_CONTEXT_REFRESH_SUCCEEDED,
     CloseoutState.RUNTIME_CONTEXT_VERIFIED,
     CloseoutState.HANDOFF_PUBLICATION_STARTED,
     CloseoutState.HANDOFF_PUBLICATION_SUCCEEDED,
@@ -594,7 +594,7 @@ test('SRM retry builds identical publication input and maps to one history bundl
   assert.equal(first.status, 'PUBLISHED')
   assert.equal(second.status, 'IDEMPOTENT')
   assert.equal(first.bundlePath, second.bundlePath)
-  assert.match(first.bundlePath ?? '', /history\/2026\/09\/14\/2026-09-14-09-00-00Z__srm-bootstrap-0001$/)
+  assert.match(first.bundlePath ?? '', /history\/2026\/09\/14\/2026-09-14-09-00-00Z__srm-srm-bootstrap-0001$/)
 
   const conflictingPublication = buildPhrPublicationInput({
     artifact: makeArtifact(),

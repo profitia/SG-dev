@@ -1,4 +1,3 @@
-import { CANONICAL_ETAPS, CANONICAL_PIPELINES } from "../registries/index.js"
 import type { ArtifactLockMetadata, ArtifactLockResult, IntegrityFinding, IntegrityMetadata, IntegrityResult, IntegrityStatus, ProjectionDeterminismResult } from "./types.js"
 import { computeCanonicalGovernanceHash, hashObject, hashText } from "./hash.js"
 
@@ -108,24 +107,12 @@ export interface GovernanceIntegrityResult {
 
 export function verifyGovernanceIntegrity(): GovernanceIntegrityResult {
   const findings: IntegrityFinding[] = []
-  let hasError = false
-
-  if (!CANONICAL_ETAPS.length) {
-    findings.push({ severity: "ERROR", area: "ETAP_REGISTRY", message: "CANONICAL_ETAPS is empty" })
-    hasError = true
-  }
-
-  if (!CANONICAL_PIPELINES.length) {
-    findings.push({ severity: "ERROR", area: "PIPELINE_REGISTRY", message: "CANONICAL_PIPELINES is empty" })
-    hasError = true
-  }
-
   const canonicalHash = computeCanonicalGovernanceHash()
-  findings.push({ severity: hasError ? "ERROR" : "INFO", area: "CANONICAL_HASH", message: `Governance fingerprint: ${canonicalHash}` })
+  findings.push({ severity: "INFO", area: "CANONICAL_HASH", message: `Project-agnostic governance fingerprint: ${canonicalHash}` })
 
   return {
-    valid: !hasError,
-    status: hasError ? "FAIL" : "PASS",
+    valid: true,
+    status: "PASS",
     canonicalHash,
     findings,
   }

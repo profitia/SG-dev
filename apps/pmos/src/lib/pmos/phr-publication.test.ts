@@ -165,7 +165,7 @@ function makePublication() {
       metadata: {
         taskId: 'phr-adapter-test',
         conversationId: 'conversation',
-        project: 'Project History Repository',
+        project: 'SpendGuru 2.0',
         timestamp: '2026-09-05T12:00:00.000Z',
       },
       result: { finalStatus: 'SUCCESS' },
@@ -186,7 +186,7 @@ function makeRefreshedPublication(options?: { pendingArtifactSlotFinal?: 'CLEAR'
       metadata: {
         taskId: 'phr-adapter-test',
         conversationId: 'conversation',
-        project: 'Project History Repository',
+        project: 'SpendGuru 2.0',
         timestamp: '2026-09-05T12:00:00.000Z',
       },
       result: { finalStatus: 'SUCCESS' },
@@ -264,7 +264,7 @@ test('publishPhrPublicationOnCompletedCloseout skips incomplete closeouts', () =
       metadata: {
         taskId: 'phr-adapter-test',
         conversationId: 'conversation',
-        project: 'Project History Repository',
+        project: 'SpendGuru 2.0',
         timestamp: '2026-09-05T12:00:00.000Z',
       },
       result: { finalStatus: 'SUCCESS' },
@@ -299,7 +299,7 @@ test('publishPhrPublicationOnCompletedCloseout rejects a non-final handoff candi
       metadata: {
         taskId: 'phr-adapter-test',
         conversationId: 'conversation',
-        project: 'Project History Repository',
+        project: 'SpendGuru 2.0',
         timestamp: '2026-09-05T12:00:00.000Z',
       },
       result: { finalStatus: 'SUCCESS' },
@@ -345,7 +345,7 @@ test('publishPhrPublicationOnCompletedCloseout writes sidecar on lawful closeout
       metadata: {
         taskId: 'phr-adapter-test',
         conversationId: 'conversation',
-        project: 'Project History Repository',
+        project: 'SpendGuru 2.0',
         timestamp: '2026-09-05T12:00:00.000Z',
       },
       result: { finalStatus: 'SUCCESS' },
@@ -411,7 +411,7 @@ test('writePhrPublicationAttempt publishes once, replays idempotently, and confl
   const bundleEntries = fs.readdirSync(bundlePath)
   assert.equal(bundleEntries.filter((entry) => entry === 'manifest.json').length, 1)
   assert.equal(bundleEntries.filter((entry) => entry === 'fingerprint.json').length, 1)
-  assert.match(bundlePath, /history\/2026\/09\/05\/2026-09-05-12-01-00Z__phr-adapter-test$/)
+  assert.match(bundlePath, /history\/2026\/09\/05\/2026-09-05-12-01-00Z__sg2-phr-adapter-test$/)
 
   const conflictingPublication = makeRefreshedPublication({ pendingArtifactSlotFinal: 'OCCUPIED' })
   const conflict = writePhrPublicationAttempt({ publication: conflictingPublication, repositoryPath: repoPath })
@@ -426,7 +426,7 @@ test('publishPhrPublicationOnCompletedCloseout keeps PMOS closeout independent f
       metadata: {
         taskId: 'phr-adapter-test',
         conversationId: 'conversation',
-        project: 'Project History Repository',
+        project: 'SpendGuru 2.0',
         timestamp: '2026-09-05T12:00:00.000Z',
       },
       result: { finalStatus: 'SUCCESS' },

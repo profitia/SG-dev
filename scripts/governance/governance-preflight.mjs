@@ -6,6 +6,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { validateGovernanceManifest } from './validate-governance-manifest.mjs'
+import { normalizeRepositorySlug, resolveProjectProfile } from './project-profile.mjs'
+import { resolveProjectRouting } from './routing-engine.mjs'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 
@@ -41,47 +43,48 @@ function requiredInput(args, name) {
   return typeof args[name] === 'string' && args[name].trim().length > 0
 }
 
-function resolveRouting(targets) {
-  if (targets.length === 0) return { ok: false, results: [], error: 'At least one exact --target is required for development mode.' }
-  const resolution = run(process.execPath, ['scripts/architecture-classify.mjs', '--json', ...targets])
-  if (!resolution.ok) return { ok: false, results: [], error: resolution.stderr || resolution.stdout }
-  try {
-    const parsed = JSON.parse(resolution.stdout)
-    return { ok: Boolean(parsed.registryValid && parsed.summary?.allPathsResolved), results: parsed.results ?? [], error: null }
-  } catch (error) {
-    return { ok: false, results: [], error: `Routing resolver returned invalid JSON: ${error.message}` }
-  }
-}
-
 export function runGovernancePreflight(args) {
   const gates = {}
   const manifest = validateGovernanceManifest(repositoryRoot)
   gates.GOVERNANCE_MANIFEST_GATE = manifest.valid ? gate('PASS', `${manifest.activeDocuments.length} active documents validated.`) : gate('BLOCKED', manifest.errors)
 
+  let profile = null
+  try {
+    profile = resolveProjectProfile(args.project, repositoryRoot)
+    gates.PROJECT_PROFILE_GATE = gate('PASS', `${profile.projectKey} -> ${profile.repository.slug}`)
+  } catch (error) {
+    gates.PROJECT_PROFILE_GATE = gate('BLOCKED', error.message)
+  }
+
   const remote = run('git', ['remote', 'get-url', 'origin'])
   const topLevel = run('git', ['rev-parse', '--show-toplevel'])
-  const repositoryMatches = remote.ok && /profitia\/SG-dev(?:\.git)?$/i.test(remote.stdout) && topLevel.ok && path.resolve(topLevel.stdout) === repositoryRoot
+  const repositoryMatches = Boolean(profile) && remote.ok
+    && normalizeRepositorySlug(remote.stdout) === profile.repository.slug.toLowerCase()
+    && topLevel.ok && path.resolve(topLevel.stdout) === repositoryRoot
   gates.REPOSITORY_GATE = repositoryMatches
     ? gate('PASS', [`origin=${remote.stdout}`, `root=${topLevel.stdout}`])
     : gate('BLOCKED', [`origin=${remote.stdout || '<missing>'}`, `root=${topLevel.stdout || '<missing>'}`])
 
-  if (!args.offline) run('git', ['fetch', '--quiet', 'origin', 'main'])
+  const authorityBranch = profile?.repository.defaultBranch ?? 'main'
+  if (!args.offline) run('git', ['fetch', '--quiet', 'origin', authorityBranch])
   const branch = run('git', ['branch', '--show-current'])
   const head = run('git', ['rev-parse', 'HEAD'])
-  const originMain = run('git', ['rev-parse', 'origin/main'])
+  const originMain = run('git', ['rev-parse', `origin/${authorityBranch}`])
   const ancestry = head.ok && originMain.ok ? run('git', ['merge-base', '--is-ancestor', originMain.stdout, head.stdout]) : { ok: false }
   const status = run('git', ['status', '--porcelain'])
   const dirtyAccepted = status.ok && (status.stdout === '' || args.allowDirty)
   gates.CODE_STATE_GATE = head.ok && originMain.ok && ancestry.ok && dirtyAccepted
-    ? gate(status.stdout === '' ? 'PASS' : 'WARNING', [`branch=${branch.stdout || '<detached>'}`, `HEAD=${head.stdout}`, `origin/main=${originMain.stdout}`, `dirty=${status.stdout !== ''}`])
-    : gate('BLOCKED', [`branch=${branch.stdout || '<detached>'}`, `HEAD=${head.stdout || '<missing>'}`, `origin/main=${originMain.stdout || '<missing>'}`, `dirty=${status.stdout !== ''}`])
+    ? gate(status.stdout === '' ? 'PASS' : 'WARNING', [`branch=${branch.stdout || '<detached>'}`, `HEAD=${head.stdout}`, `origin/${authorityBranch}=${originMain.stdout}`, `dirty=${status.stdout !== ''}`])
+    : gate('BLOCKED', [`branch=${branch.stdout || '<detached>'}`, `HEAD=${head.stdout || '<missing>'}`, `origin/${authorityBranch}=${originMain.stdout || '<missing>'}`, `dirty=${status.stdout !== ''}`])
 
   const requiredNames = ['task_id', 'conversation_id', 'title', 'project', 'workspace', 'execution_environment', 'scope']
   const missing = requiredNames.filter((name) => !requiredInput(args, name))
   if (args.mode === 'development' && args.targets.length === 0) missing.push('target')
   gates.TASK_INPUT_GATE = missing.length === 0 ? gate('PASS', `task=${args.task_id}`) : gate('BLOCKED', `Missing inputs: ${missing.join(', ')}`)
 
-  const routing = resolveRouting(args.targets)
+  const routing = profile
+    ? resolveProjectRouting({ profile, targets: args.targets, repositoryRoot })
+    : { ok: false, results: [], error: 'Project profile is unavailable.' }
   const legacyWithoutException = routing.results.filter((entry) => entry.baselineClassification === 'LEGACY' && !args.legacyExceptions.includes(entry.normalizedPath))
   gates.ROUTING_GATE = routing.ok && legacyWithoutException.length === 0
     ? gate('PASS', routing.results.map((entry) => `${entry.normalizedPath} -> ${entry.currentOwner} / ${entry.baselineClassification}`))
@@ -102,7 +105,7 @@ export function runGovernancePreflight(args) {
   }
 
   if (args.checkEstate) {
-    const estate = run('npm', ['run', 'recovery:check-archive'], path.join(repositoryRoot, 'apps', 'pmos'))
+    const estate = run('npm', ['run', 'pmos:audit-estate'], path.join(repositoryRoot, 'apps', 'pmos'))
     gates.PMOS_ESTATE_GATE = estate.ok ? gate('PASS', 'Historical estate verification passed.') : gate('WARNING', estate.stderr || estate.stdout)
   } else {
     gates.PMOS_ESTATE_GATE = gate('NOT_APPLICABLE', 'Historical estate audit was not requested; it is independent of runtime readiness.')
@@ -110,8 +113,9 @@ export function runGovernancePreflight(args) {
 
   const blockingGates = Object.entries(gates).filter(([, value]) => value.status === 'BLOCKED').map(([name]) => name)
   return {
-    schemaVersion: '2.0',
+    schemaVersion: '3.0',
     mode: args.mode,
+    projectKey: profile?.projectKey ?? null,
     repositoryRoot,
     gates,
     verdict: blockingGates.length === 0 ? 'PASS' : 'BLOCKED',
@@ -127,7 +131,7 @@ if (isDirectExecution) {
     console.log(JSON.stringify(result, null, 2))
     if (result.verdict !== 'PASS') process.exitCode = 1
   } catch (error) {
-    console.error(JSON.stringify({ schemaVersion: '2.0', verdict: 'BLOCKED', error: error.message }, null, 2))
+    console.error(JSON.stringify({ schemaVersion: '3.0', verdict: 'BLOCKED', error: error.message }, null, 2))
     process.exitCode = 1
   }
 }

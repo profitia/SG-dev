@@ -2,7 +2,7 @@
 /**
  * check-enum-purity.ts — GOV-1-2 Compile-Time Enum Purity Checker
  *
- * Scans runtime TypeScript files in apps/pmos/scripts/ and apps/vector/scripts/
+ * Scans PMOS-owned runtime TypeScript files in apps/pmos/scripts/.
  * for raw governance string literals that should be replaced with canonical
  * enum references from @sg/governance.
  *
@@ -22,7 +22,6 @@ import path from "path"
 const SG_DEV_ROOT = path.resolve(__dirname, "../../..")
 const SCAN_DIRS = [
   path.join(SG_DEV_ROOT, "apps/pmos/scripts"),
-  path.join(SG_DEV_ROOT, "apps/vector/scripts"),
 ]
 
 // ── Files that are allowlisted (governance package itself, this checker) ──────

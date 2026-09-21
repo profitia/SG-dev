@@ -1,5 +1,7 @@
 import path from 'node:path'
 
+import { requirePmosProjectProfile } from './project-profile'
+
 export const EXECUTION_REGISTRATION_SCHEMA_VERSION = '1.0' as const
 
 export type ExecutionGateStatus = 'PASS' | 'WARNING' | 'BLOCKED' | 'NOT_APPLICABLE'
@@ -114,13 +116,35 @@ export function validateExecutionRegistrationInput(raw: unknown): ExecutionRegis
 }
 
 export function expectedDatabaseName(project: string): string {
-  return project.trim().toLowerCase() === 'srm' ? 'srm_pmos' : 'neondb'
+  return requirePmosProjectProfile(project).database.databaseName
 }
 
-export function assertDatabaseIdentity(actualDatabaseName: string, project: string): void {
-  const expected = expectedDatabaseName(project)
+function endpointIdentity(host: string): string {
+  return host.split('.')[0].replace(/-pooler$/i, '').replace(/-[a-z0-9]{3}$/i, '')
+}
+
+export function assertDatabaseIdentity(actualDatabaseName: string, project: string, databaseUrl?: string): void {
+  const profile = requirePmosProjectProfile(project)
+  const expected = profile.database.databaseName
   if (actualDatabaseName !== expected) {
     throw new Error(`PMOS database identity mismatch: project ${project} requires ${expected}, connected to ${actualDatabaseName}.`)
+  }
+
+  if (!databaseUrl) {
+    throw new Error(`PMOS database endpoint identity cannot be verified for project ${profile.projectKey}: DATABASE_URL is missing.`)
+  }
+
+  let actualHost: string
+  try {
+    actualHost = new URL(databaseUrl).hostname
+  } catch {
+    throw new Error(`PMOS database endpoint identity cannot be verified for project ${profile.projectKey}: DATABASE_URL is invalid.`)
+  }
+
+  const actualEndpoint = endpointIdentity(actualHost)
+  const allowed = profile.database.allowedHosts.some((host) => endpointIdentity(host) === actualEndpoint)
+  if (!allowed) {
+    throw new Error(`PMOS database endpoint identity mismatch: project ${profile.projectKey} is not allowed to use host ${actualHost}.`)
   }
 }
 

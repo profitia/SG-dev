@@ -41,7 +41,7 @@ jobs:
         run: npm run db:generate
       - name: Type-check PMOS
         working-directory: apps/pmos
-        run: npm run typecheck
+        run: npm run typecheck && npm run typecheck:lifecycle
       - name: Test PMOS lifecycle and PHR gates
         working-directory: apps/pmos
         run: >-
@@ -63,5 +63,6 @@ jobs:
           --execution-environment ci
           --scope governance
           --target AGENTS.md
-          --target Canon/v2.0-mandatory-agent-execution-canon.md
+          --target Canon/v3.0-profitia-agent-execution-canon.md
+          --target Canon/registries/profitia-projects-v1.json
           --target scripts/governance/governance-preflight.mjs

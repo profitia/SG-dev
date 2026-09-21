@@ -63,7 +63,8 @@ export interface FlightRecordMetadata {
   conversationId: string
   project: string
   taskId: string
-  etap: string
+  /** @deprecated Project-local planning metadata. Never a PMOS lifecycle gate. */
+  etap?: string
   scope: ScopeClassification | string
   timestamp: string
   subetap?: string
@@ -105,9 +106,12 @@ export interface FlightRecordResult {
 export interface FlightRecordCompletionEvidence {
   closeoutState: CloseoutState | string
   pmosSaveStatus: CloseoutPhaseStatus
-  vectorRebuildStatus: CloseoutPhaseStatus
+  runtimeContextRefreshStatus: CloseoutPhaseStatus
+  /** @deprecated Dual-read compatibility for records produced before Governance v3. */
+  vectorRebuildStatus?: CloseoutPhaseStatus
   archiveCompletenessStatus: ArchiveCompletenessStatus
   executionTrailStatus: ExecutionTrailStatus
+  handoffPublicationStatus?: CloseoutPhaseStatus
 }
 
 export interface FlightRecordContextLinks {
@@ -243,14 +247,26 @@ export interface CloseoutEvidence {
   pmosSaveConversationJsonPath: string | null
   pmosSaveIntegrityPath: string | null
   pmosSaveLockPath: string | null
-  vectorRebuildStatus: CloseoutPhaseStatus
-  vectorRebuildStartedAt: string | null
-  vectorRebuildCompletedAt: string | null
-  vectorRebuildError: string | null
+  runtimeContextRefreshStatus: CloseoutPhaseStatus
+  runtimeContextRefreshStartedAt: string | null
+  runtimeContextRefreshCompletedAt: string | null
+  runtimeContextRefreshError: string | null
+  /** @deprecated Dual-read compatibility for records produced before Governance v3. */
+  vectorRebuildStatus?: CloseoutPhaseStatus
+  /** @deprecated Dual-read compatibility for records produced before Governance v3. */
+  vectorRebuildStartedAt?: string | null
+  /** @deprecated Dual-read compatibility for records produced before Governance v3. */
+  vectorRebuildCompletedAt?: string | null
+  /** @deprecated Dual-read compatibility for records produced before Governance v3. */
+  vectorRebuildError?: string | null
   runtimeContextPath: string | null
   runtimeContextIntegrityPath: string | null
   runtimeContextIntegrityStatus: RuntimeContextIntegrityStatus
   runtimeContextVerificationSource: string | null
+  handoffPublicationStatus: CloseoutPhaseStatus
+  handoffPublicationStartedAt: string | null
+  handoffPublicationCompletedAt: string | null
+  handoffPublicationError: string | null
   archiveCompletenessStatus: ArchiveCompletenessStatus
   archiveCompletenessErrors: string[]
   executionTrailPath: string | null

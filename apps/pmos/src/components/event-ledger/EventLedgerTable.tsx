@@ -263,7 +263,9 @@ function buildCanonicalConversationView(selectedRecord: EventLedgerSourceRecord)
   const evidenceLines = [
     asString(completionEvidence?.closeoutState) ? `- closeoutState: ${asString(completionEvidence?.closeoutState)}` : null,
     asString(completionEvidence?.pmosSaveStatus) ? `- pmosSaveStatus: ${asString(completionEvidence?.pmosSaveStatus)}` : null,
-    asString(completionEvidence?.vectorRebuildStatus) ? `- vectorRebuildStatus: ${asString(completionEvidence?.vectorRebuildStatus)}` : null,
+    asString(completionEvidence?.runtimeContextRefreshStatus ?? completionEvidence?.vectorRebuildStatus)
+      ? `- runtimeContextRefreshStatus: ${asString(completionEvidence?.runtimeContextRefreshStatus ?? completionEvidence?.vectorRebuildStatus)}`
+      : null,
     asString(completionEvidence?.archiveCompletenessStatus)
       ? `- archiveCompletenessStatus: ${asString(completionEvidence?.archiveCompletenessStatus)}`
       : null,
