@@ -20,13 +20,15 @@ Fast Historical Verification becomes client-readable only when every canonical h
 ## Local verification
 
 - SG Runtime targeted regression suite: `133/133 PASS`.
-- SG Runtime non-database suite: `467 PASS`, `0 FAIL`, `1 SKIP`.
+- SG Runtime non-database suite: `468 PASS`, `0 FAIL`, `1 SKIP`.
 - Dashboard full suite: `282/282 PASS`.
 - SG Runtime typecheck: `PASS`.
 - Dashboard typecheck: `PASS`.
 - SG Runtime production build: `PASS`.
 - Dashboard production build: `PASS`.
 - `git diff --check`: `PASS` after removing build-generated files from the source surface.
+
+The durable status endpoint treats both `FAST_READY` and `READY` as a first Dashboard-ready observation. This preserves the existing correlation timeline at the new adaptive presentation boundary; a focused route regression test proves the mapping.
 
 The excluded SG Runtime cross-instance test requires a local PostgreSQL endpoint at `127.0.0.1:55421`, which was unavailable in the isolated worktree. This is an environment constraint, not a source-test failure; deployed persistence is verified in the live canary.
 

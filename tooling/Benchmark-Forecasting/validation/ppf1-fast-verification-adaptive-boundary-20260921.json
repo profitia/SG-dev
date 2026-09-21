@@ -19,13 +19,14 @@
   },
   "localVerification": {
     "sgRuntimeTargeted": {"passed": 133, "failed": 0},
-    "sgRuntimeNonDatabase": {"passed": 467, "failed": 0, "skipped": 1},
+    "sgRuntimeNonDatabase": {"passed": 468, "failed": 0, "skipped": 1},
     "dashboardFull": {"passed": 282, "failed": 0},
     "sgRuntimeTypecheck": "PASS",
     "dashboardTypecheck": "PASS",
     "sgRuntimeBuild": "PASS",
     "dashboardBuild": "PASS",
     "diffCheck": "PASS",
+    "fastReadyDashboardObservation": "PASS",
     "excludedEnvironmentTest": "forecast-stage3-cross-instance.test.ts requires unavailable local PostgreSQL at 127.0.0.1:55421"
   },
   "publication": {
