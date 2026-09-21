@@ -6,7 +6,7 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 import { validateGovernanceManifest } from './validate-governance-manifest.mjs'
-import { resolveProjectProfile } from './project-profile.mjs'
+import { resolveHistoricalProjectProfile, resolveProjectProfile } from './project-profile.mjs'
 import { resolveProjectRouting } from './routing-engine.mjs'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -31,6 +31,53 @@ test('project profiles route SG2 and fail closed for unknown projects or missing
   const cicRouting = resolveProjectRouting({ profile: cic, targets: ['src/index.ts'], repositoryRoot })
   assert.equal(cicRouting.ok, false)
   assert.match(cicRouting.error, /no active routing registry/)
+})
+
+test('PCOS is not an active PMOS project identity and cross-runtime coupling stays blocked', () => {
+  const retiredLabel = 'SpendGuru 2.0 - PCOS Runtime'
+  assert.throws(() => resolveProjectProfile(retiredLabel, repositoryRoot), /Unknown project/)
+  assert.equal(resolveHistoricalProjectProfile(retiredLabel, repositoryRoot)?.projectKey, 'SG2')
+
+  const projectRegistry = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'Canon/registries/profitia-projects-v1.json'), 'utf8'))
+  const sg2 = projectRegistry.projects.find((project) => project.projectKey === 'SG2')
+  assert.equal(sg2.aliases.includes(retiredLabel), false)
+  assert.equal(sg2.legacyAliases.includes(retiredLabel), true)
+
+  const sourceFiles = (root) => {
+    const pending = [root]
+    const result = []
+    while (pending.length > 0) {
+      const current = pending.pop()
+      for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+        const resolved = path.join(current, entry.name)
+        if (entry.isDirectory()) pending.push(resolved)
+        else if (/\.(?:[cm]?[jt]sx?)$/.test(entry.name)) result.push(resolved)
+      }
+    }
+    return result
+  }
+  const importsFrom = (root) => sourceFiles(root)
+    .flatMap((file) => fs.readFileSync(file, 'utf8').split('\n').filter((line) => /(?:from\s+|import\s*\(|require\s*\()/.test(line)))
+    .join('\n')
+
+  assert.doesNotMatch(importsFrom(path.join(repositoryRoot, 'apps/pcos-explorer/src')), /pmos/i)
+  assert.doesNotMatch(importsFrom(path.join(repositoryRoot, 'apps/pmos/src')), /pcos/i)
+
+  const pcosBlueprint = fs.readFileSync(path.join(repositoryRoot, 'apps/pcos-explorer/render.preview.yaml'), 'utf8')
+  assert.match(pcosBlueprint, /buildFilter:/)
+  assert.match(pcosBlueprint, /apps\/pcos-explorer\/\*\*/)
+  assert.doesNotMatch(pcosBlueprint, /(?:DATABASE_URL|DIRECT_URL)/)
+
+  const pcosPackage = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'apps/pcos-explorer/package.json'), 'utf8'))
+  assert.equal('db:sync' in pcosPackage.scripts, false)
+  assert.equal('db:check-sync' in pcosPackage.scripts, false)
+  assert.equal(fs.existsSync(path.join(repositoryRoot, 'apps/pcos-explorer/scripts/sync-schema.mjs')), false)
+
+  const rootBlueprint = fs.readFileSync(path.join(repositoryRoot, 'render.yaml'), 'utf8')
+  const pmosService = rootBlueprint.slice(rootBlueprint.indexOf('name: pmos-spendguru2-development'))
+  assert.match(pmosService, /buildFilter:/)
+  assert.match(pmosService, /apps\/pmos\/\*\*/)
+  assert.doesNotMatch(pmosService, /apps\/pcos-explorer/)
 })
 
 test('manifest validation rejects an active dependency on a superseded document', () => {

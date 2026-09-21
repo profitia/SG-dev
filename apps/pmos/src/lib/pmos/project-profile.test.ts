@@ -5,11 +5,13 @@ import {
   DEFAULT_PMOS_PROJECT_NAME,
   SRM_PMOS_PROJECT_NAME,
   buildNamespacedPublicationId,
+  findHistoricalPmosProjectProfile,
   getConfiguredPmosProjectName,
   getConfiguredPmosWorkspaceName,
   isPhrSatisfiedForCloseout,
   listActivePmosProjectProfiles,
   normalizePmosProjectName,
+  normalizeHistoricalPmosProjectName,
   normalizePmosWorkspaceName,
   requirePmosProjectProfile,
   resolvePmosProjectProfile,
@@ -30,6 +32,14 @@ test('project normalization resolves registered aliases and rejects unknown prof
   assert.equal(normalizePmosProjectName('srm'), SRM_PMOS_PROJECT_NAME)
   assert.equal(normalizePmosProjectName('CIC'), 'Conversational Intelligence Core')
   assert.throws(() => requirePmosProjectProfile('unknown project'), /Unknown PMOS project/)
+})
+
+test('retired PCOS runtime label remains readable as history but cannot select an active PMOS profile', () => {
+  const retiredLabel = 'SpendGuru 2.0 - PCOS Runtime'
+  assert.equal(normalizePmosProjectName(retiredLabel), retiredLabel)
+  assert.throws(() => requirePmosProjectProfile(retiredLabel), /Unknown PMOS project/)
+  assert.equal(findHistoricalPmosProjectProfile(retiredLabel)?.projectKey, 'SG2')
+  assert.equal(normalizeHistoricalPmosProjectName(retiredLabel), DEFAULT_PMOS_PROJECT_NAME)
 })
 
 test('workspace normalization is registry driven', () => {

@@ -7,7 +7,8 @@
     {
       "projectKey": "SG2",
       "displayName": "SpendGuru 2.0",
-      "aliases": ["Spend Guru", "SpendGuru", "SpendGuru 2 0", "SpendGuru-2", "sg2-discovery-runtime", "sg-dev", "SpendGuru 2.0 - PMOS", "SpendGuru 2.0 - PCOS Runtime"],
+      "aliases": ["Spend Guru", "SpendGuru", "SpendGuru 2 0", "SpendGuru-2", "sg2-discovery-runtime", "sg-dev", "SpendGuru 2.0 - PMOS"],
+      "legacyAliases": ["SpendGuru 2.0 - PCOS Runtime"],
       "workspaces": ["SG-dev", "sg2-pcog-runtime"],
       "repository": {"slug": "profitia/SG-dev", "defaultBranch": "main", "routingRegistry": "Canon/registries/current-architecture-baseline-v1.json"},
       "database": {"provider": "neon", "projectId": "lucky-dream-96138453", "databaseName": "neondb", "allowedHosts": ["ep-plain-king-al45f92h.c-3.eu-central-1.aws.neon.tech", "ep-plain-king-al45f92h-pooler.c-3.eu-central-1.aws.neon.tech"]},

@@ -13,7 +13,7 @@ Safe preview routes:
 - `/datasets/normalized_cost_components_mock`
 - `/datasets/sync_metadata_mock`
 
-Routes outside that scope still belong to the live cognition explorer surface and may require a Prisma-backed PostgreSQL source.
+Routes outside that scope still belong to the live cognition explorer surface and require an explicitly configured PCOS-owned PostgreSQL source. They are not part of the mock preview contract.
 
 ## Preview modes
 
@@ -32,16 +32,16 @@ Required for mock preview:
 - `PCOS_EXPLORER_ENV=SANDBOX`
 - `PCOS_EXPLORER_ORG_ID=pcos-default`
 
-Optional for mock preview:
-
-- `DATABASE_URL`
-- `DIRECT_URL`
-
 Notes:
 
 - In `mock` preview mode, the root dashboard does not execute Prisma-backed queries.
 - Dataset preview routes are mock-backed and do not require the live cognition database.
-- Live cognition routes should not be treated as supported preview routes unless the database connection is configured.
+- `DATABASE_URL` and `DIRECT_URL` must not be configured on the mock preview service.
+- A live cognition deployment must use a separate, PCOS-owned database profile. A PMOS endpoint or PMOS database is never a valid PCOS source.
+
+## Database and schema authority
+
+The checked-in Prisma schema is a frozen, read-only legacy reference. The former `db:sync` command pointed to the removed `apps/pcos-runtime` tree and has been retired. Do not regenerate or overwrite the reference schema until a current PCOS runtime authority is explicitly restored and registered in governance.
 
 ## Local validation
 
@@ -58,12 +58,15 @@ Use [render.preview.yaml](render.preview.yaml) as the minimal service blueprint 
 
 Recommended Render service settings:
 
-- `Root Directory`: `apps/pcos-explorer`
-- `Build Command`: `npm ci && npx prisma generate && npm run build`
-- `Start Command`: `npm run start`
+- `Root Directory`: empty (commands are repository-root relative)
+- `Build Command`: `cd apps/pcos-explorer && npm ci --include=dev && npx prisma generate && PCOS_EXPLORER_PREVIEW_MODE=mock npm run build`
+- `Start Command`: `cd apps/pcos-explorer && npm run start`
+- `Included Paths`: `apps/pcos-explorer/**`, `packages/pcos-contracts/**`
+- `Ignored Paths`: empty
 
 ## Deployment notes
 
 - Do not treat this as a production deployment contract.
 - Do not expose DB-backed cognition routes as part of the preview promise.
+- Do not configure PMOS database credentials on this service.
 - Keep the preview branch/commit set isolated and intentional before any push.

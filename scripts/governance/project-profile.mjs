@@ -35,6 +35,15 @@ export function resolveProjectProfile(projectIdentity, governanceRoot = GOVERNAN
   return profile
 }
 
+export function resolveHistoricalProjectProfile(projectIdentity, governanceRoot = GOVERNANCE_ROOT) {
+  const key = normalize(projectIdentity)
+  return loadProjectRegistry(governanceRoot).projects.find((project) => (
+    project.status === 'ACTIVE'
+    && [project.projectKey, project.displayName, ...(project.aliases ?? []), ...(project.legacyAliases ?? [])]
+      .some((candidate) => normalize(candidate) === key)
+  )) ?? null
+}
+
 export function normalizeRepositorySlug(remoteUrl) {
   const value = String(remoteUrl ?? '').trim().replace(/\.git$/i, '')
   const match = value.match(/(?:github\.com[/:])([^/]+\/[^/]+)$/i)
