@@ -4,6 +4,7 @@ import test from 'node:test'
 
 import {
   createDefaultForecastPreparationExecutionAdmission,
+  buildForecastResourceSummaryExecutionFilter,
   createForecastPreparationExecutionContextRegistry,
   createInMemoryForecastPreparationExecutionAdmission,
   createForecastPreparationExecutionLedger,
@@ -183,6 +184,26 @@ test('execution ledger reducer preserves owner/waiter lineage and phase timestam
   assert.equal(record.eventCount, 7)
   assert.equal(record.events[1]?.role, 'WAITER')
   assert.equal(record.events[6]?.eventType, 'execution_completed')
+})
+
+test('resource summaries select executions touched during the measured worker slice', () => {
+  const measuredFrom = new Date('2026-09-21T08:00:00.000Z')
+  const measuredAt = new Date('2026-09-21T08:05:00.000Z')
+
+  assert.deepEqual(
+    buildForecastResourceSummaryExecutionFilter('verification-correlation-1', measuredFrom, measuredAt),
+    {
+      AND: [
+        {
+          OR: [
+            { ownerRequestId: 'verification-correlation-1' },
+            { latestRequestId: 'verification-correlation-1' },
+          ],
+        },
+        { lastEventAt: { gte: measuredFrom, lte: measuredAt } },
+      ],
+    },
+  )
 })
 
 test('execution ledger serializes concurrent writes per execution id', async () => {

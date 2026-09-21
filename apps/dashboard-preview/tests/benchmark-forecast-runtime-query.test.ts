@@ -256,7 +256,7 @@ test('deployed non-point-in-time verification reads do not forward prepared-read
   const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
   const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
   const originalFetch = global.fetch
-  let capturedUrl: URL | null = null
+  let capturedUrl = ''
   let capturedInit: RequestInit | undefined
 
   process.env.RENDER_EXTERNAL_URL = 'https://profitia-pl.onrender.com'
@@ -264,7 +264,7 @@ test('deployed non-point-in-time verification reads do not forward prepared-read
   process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime-primary.example.invalid'
 
   global.fetch = (async (input: URL | RequestInfo | string, init?: RequestInit) => {
-    capturedUrl = new URL(String(input))
+    capturedUrl = String(input)
     capturedInit = init
     return new Response(JSON.stringify({
       status: 'NOT_AVAILABLE',
@@ -331,7 +331,7 @@ test('deployed non-point-in-time verification reads do not forward prepared-read
     throw new Error('Expected runtime query to issue an internal prepared verification request.')
   }
 
-  const requestUrl = capturedUrl as URL
+  const requestUrl = new URL(capturedUrl)
   const headers = capturedInit.headers as Record<string, string>
   assert.equal(requestUrl.pathname, '/api/internal/forecast/prepared/verification')
   assert.equal(requestUrl.searchParams.get('seriesId'), 'wocaes0074')
@@ -345,6 +345,52 @@ test('deployed non-point-in-time verification reads do not forward prepared-read
   assert.equal(headers['x-sg-prepared-source-frequency'], undefined)
   assert.equal(headers['x-sg-prepared-target-cadence'], undefined)
   assert.equal(headers['x-sg-prepared-history-fingerprint'], undefined)
+})
+
+test('interactive verification reads may request FAST readiness without changing the FULL default', async () => {
+  const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+  const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const originalFetch = global.fetch
+  let capturedUrl = ''
+
+  process.env.RENDER_EXTERNAL_URL = 'https://profitia-pl.onrender.com'
+  process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
+  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime-primary.example.invalid'
+  global.fetch = (async (input: URL | RequestInfo | string) => {
+    capturedUrl = String(input)
+    return new Response(JSON.stringify({
+      status: 'NOT_AVAILABLE',
+      seriesId: 'wocaes0074',
+      modelId: 'ets',
+      targetBasis: 'END_OF_PERIOD',
+      targetSemantics: 'END_OF_PERIOD',
+      methodId: 'END_OF_PERIOD',
+      reason: 'PREPARATION_REQUIRED',
+    }), { status: 200, headers: { 'content-type': 'application/json' } })
+  }) as typeof fetch
+
+  try {
+    await getBenchmarkForecastVerification(
+      'wocaes0074',
+      'ets',
+      'END_OF_PERIOD',
+      undefined,
+      {},
+      undefined,
+      { verificationScope: 'FAST' },
+    )
+  } finally {
+    global.fetch = originalFetch
+    if (previousRenderExternalUrl === undefined) delete process.env.RENDER_EXTERNAL_URL
+    else process.env.RENDER_EXTERNAL_URL = previousRenderExternalUrl
+    if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
+    else process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = previousToken
+    if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
+    else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+  }
+
+  assert.equal(new URL(capturedUrl).searchParams.get('verificationScope'), 'FAST')
 })
 
 test('deployed non-point-in-time prepared current read falls back after an empty JSON response from the explicit primary SG Runtime base URL', async () => {

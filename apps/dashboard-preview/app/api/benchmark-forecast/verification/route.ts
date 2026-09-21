@@ -7,6 +7,11 @@ import {
   type ForecastTargetBasis,
   type ForecastPortfolioModelId,
 } from '@/lib/benchmark-forecast/forecast-contract'
+import {
+  buildForecastCorrelationHeaders,
+  FORECAST_CORRELATION_HEADER,
+  normalizeForecastCorrelationId,
+} from '@/lib/benchmark-forecast/forecast-correlation'
 import { getBenchmarkForecastVerification } from '@/lib/benchmark-forecast/runtime-query'
 
 export const dynamic = 'force-dynamic'
@@ -47,11 +52,18 @@ export async function GET(request: NextRequest) {
     : DEFAULT_FORECAST_TARGET_BASIS
 
   try {
+    const correlationId = normalizeForecastCorrelationId(request.headers.get(FORECAST_CORRELATION_HEADER))
     const payload = await getBenchmarkForecastVerification(
       seriesId,
       model,
       normalizedTargetBasis,
       sourceFrequency && targetCadence ? { sourceFrequency, targetCadence } : undefined,
+      correlationId ? buildForecastCorrelationHeaders(correlationId) : {},
+      undefined,
+      {
+        signal: request.signal,
+        verificationScope: 'FAST',
+      },
     )
     return NextResponse.json(payload)
   } catch (error) {

@@ -64,6 +64,7 @@ const VALID_PREPARED_ARTIFACT_FREQUENCIES = [
 
 type RuntimeQueryRequestOptions = {
   signal?: AbortSignal
+  verificationScope?: 'FAST' | 'FULL'
 }
 
 function parsePreparedArtifactFrequency(value: string | null | undefined) {
@@ -1421,7 +1422,7 @@ export async function getBenchmarkForecastVerification(
       seriesId,
       model,
       targetBasis,
-      verificationScope: 'FULL',
+      verificationScope: requestOptions?.verificationScope ?? 'FULL',
     }
     if (cadence) {
       params.sourceFrequency = cadence.sourceFrequency

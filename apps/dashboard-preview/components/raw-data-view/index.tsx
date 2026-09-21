@@ -32,6 +32,8 @@ import {
   acknowledgeForecastVisibleThroughDashboard,
   explicitlyPrepareForecastCurrent,
   readProgressiveForecastPreparationThroughDashboard,
+  readPreparedVerificationThroughDashboard,
+  resolveProgressivePollingRetryDelayMs,
   resolveForecastCurrentObservedProgressState,
   readPreparedCurrentForecastThroughDashboard,
   readCurrentForecastCapabilityThroughDashboard,
@@ -43,6 +45,7 @@ import {
   resolveSelectedProgressiveVariant,
   shouldReadCurrentForecast,
   shouldShowExplicitCurrentPreparation,
+  waitForProgressivePollingRetry,
   warmCurrentForecastThroughDashboard,
 } from '@/lib/benchmark-forecast/interactive-current-client'
 import { createForecastCorrelationId } from '@/lib/benchmark-forecast/forecast-correlation'
@@ -669,6 +672,15 @@ function capabilityCurrentControlState(
   if (!capability) return null
   if (capability.currentReadiness === 'READY') return 'READY'
   if (capability.status === 'FAILED') return 'FAILED'
+  if (
+    capability.sourceAvailability === 'AVAILABLE'
+    && capability.lawfulTargetSemantics !== 'NOT_LAWFUL'
+    && capability.status !== 'INSUFFICIENT_HISTORY'
+    && capability.status !== 'PROVENANCE_REQUIRED'
+    && capability.status !== 'NOT_IMPLEMENTED'
+  ) {
+    return 'NOT_PREPARED'
+  }
   return 'UNSUPPORTED'
 }
 
@@ -3700,10 +3712,12 @@ export function RawDataView({
       targetBasis: selectedForecastTargetBasis,
     })
     const existingCurrentCorrelationId = forecastCorrelationIdsRef.current.get(currentCorrelationKey)
+    const existingVerificationCorrelationId = forecastCorrelationIdsRef.current.get(verificationCorrelationKey)
     const pollingCorrelation = resolveForecastPollingCorrelation({
       activeCorrelationId: forecastActivePreparationCorrelationIdRef.current,
       activeCorrelationKey: forecastActivePreparationCorrelationKeyRef.current,
       currentCorrelationId: existingCurrentCorrelationId ?? null,
+      verificationCorrelationId: existingVerificationCorrelationId ?? null,
       currentCorrelationKey,
       verificationCorrelationKey,
       createCorrelationId: createForecastCorrelationId,
@@ -3714,6 +3728,7 @@ export function RawDataView({
     const correlationId = pollingCorrelation.correlationId
     const controller = new AbortController()
     let cancelled = false
+    let consecutiveFailureCount = 0
 
     async function pollProgressivePreparation() {
       while (!cancelled) {
@@ -3729,6 +3744,7 @@ export function RawDataView({
           }
 
           setProgressivePreparationSnapshot(snapshot)
+          consecutiveFailureCount = 0
 
           const selectedVariant = resolveSelectedProgressiveVariant(snapshot, {
             seriesId: activeSeriesId,
@@ -3775,8 +3791,15 @@ export function RawDataView({
             return
           }
 
-          setProgressivePreparationSnapshot(null)
-          return
+          const retryDelayMs = resolveProgressivePollingRetryDelayMs(consecutiveFailureCount)
+          if (retryDelayMs === null) return
+          consecutiveFailureCount += 1
+          try {
+            await waitForProgressivePollingRetry(retryDelayMs, controller.signal)
+          } catch (retryError) {
+            if ((retryError as Error).name === 'AbortError') return
+            throw retryError
+          }
         }
       }
     }
@@ -4069,29 +4092,30 @@ export function RawDataView({
       setForecastVerificationErrorState(null)
 
       try {
-        const params = new URLSearchParams({
+        const verificationCorrelationId = forecastCorrelationIdsRef.current.get(buildForecastActionCorrelationKey('VERIFICATION', {
           seriesId: activeSeriesId,
-          model: forecastModel,
+          modelId: forecastModel,
           targetBasis: selectedForecastTargetBasis,
-        })
-        const response = await fetch(`/api/benchmark-forecast/verification?${params.toString()}`, { cache: 'no-store', signal: controller.signal })
-        const payload = await response.json() as BenchmarkForecastVerificationResult | { error?: string }
-
-        if (!response.ok) {
-          throw new Error('error' in payload ? payload.error ?? t('verificationUnavailable') : t('verificationUnavailable'))
-        }
+        }))
+        const payload = await readPreparedVerificationThroughDashboard(fetch, {
+          seriesId: activeSeriesId,
+          modelId: forecastModel,
+          targetBasis: selectedForecastTargetBasis,
+          sourceFrequency: selectedCapabilityVariant?.sourceFrequency ?? undefined,
+          targetCadence: selectedCapabilityVariant?.targetCadence ?? undefined,
+        }, controller.signal, verificationCorrelationId)
 
         if (cancelled) {
           return
         }
 
-        if ((payload as BenchmarkForecastVerificationResult).seriesId !== activeSeriesId
-          || (payload as BenchmarkForecastVerificationResult).modelId !== forecastModel
-          || (payload as BenchmarkForecastVerificationResult).targetBasis !== selectedForecastTargetBasis) {
+        if (payload.seriesId !== activeSeriesId
+          || payload.modelId !== forecastModel
+          || payload.targetBasis !== selectedForecastTargetBasis) {
           return
         }
 
-        const normalizedPayload = payload as BenchmarkForecastVerificationResult
+        const normalizedPayload = payload
 
         if (!isAvailableVerificationResult(normalizedPayload)) {
           const readRetryCount = forecastVerificationReadRetryRef.current.get(cacheKey) ?? 0
@@ -4163,7 +4187,7 @@ export function RawDataView({
       }
       controller.abort()
     }
-  }, [benchmarkSeriesId, forecastModel, forecastVerificationReloadNonce, forecastVerificationResult, isForecastPortfolioVariant, locale, preparedReadsOnly, selectedForecastTargetBasis, selectedProgressiveVariant?.verificationState, selectedVerificationPrepared, showForecast, showForecastVerification, t])
+  }, [benchmarkSeriesId, forecastModel, forecastVerificationReloadNonce, forecastVerificationResult, isForecastPortfolioVariant, locale, preparedReadsOnly, selectedCapabilityVariant?.sourceFrequency, selectedCapabilityVariant?.targetCadence, selectedForecastTargetBasis, selectedProgressiveVariant?.verificationState, selectedVerificationPrepared, showForecast, showForecastVerification, t])
 
   useEffect(() => {
     if (!selectedForecastIdentity || !isExactSelectedRenderableCurrentResult(displayedForecastCurrentResult, selectedForecastIdentity)) return

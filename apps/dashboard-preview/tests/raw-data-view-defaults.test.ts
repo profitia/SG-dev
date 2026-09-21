@@ -299,6 +299,30 @@ test('a selected durable progress snapshot does not mark other ready controls un
   }, capability), 'READY')
 })
 
+test('a lawful not-prepared current identity remains preparable instead of unsupported', () => {
+  const capability: InteractiveForecastCapabilityResult = {
+    seriesId: 'fresh-series',
+    targetSemantics: 'MONTHLY_AVERAGE',
+    modelId: 'ets',
+    sourceFrequency: 'DAILY',
+    targetCadence: 'MONTHLY',
+    sourceAvailability: 'AVAILABLE',
+    lawfulTargetSemantics: 'LAWFUL',
+    status: 'PREPARATION_REQUIRED',
+    currentReadiness: 'NOT_PREPARED',
+    verificationReadiness: 'NOT_PREPARED',
+    targetedDataScope: 'SINGLE_SERIES',
+    timingMs: 2,
+    reason: 'PREPARATION_REQUIRED',
+  }
+
+  assert.equal(resolveForecastCurrentControlState(null, {
+    seriesId: 'fresh-series',
+    modelId: 'ets',
+    targetBasis: 'MONTHLY_AVERAGE',
+  }, capability), 'NOT_PREPARED')
+})
+
 test('verification banner stays hidden once the exact selected verification artifact is already available', () => {
   assert.equal(resolveForecastVerificationBannerState({
     forecastVerificationState: 'loading',

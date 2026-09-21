@@ -2,6 +2,7 @@ import type {
   BenchmarkForecastCurrentPreparationRequest,
   BenchmarkForecastCurrentPreparationResult,
   BenchmarkForecastCurrentResult,
+  BenchmarkForecastVerificationResult,
   ForecastCurrentUiState,
   InteractiveForecastCapabilityResult,
   InteractiveForecastCapabilitySeriesSnapshot,
@@ -251,6 +252,61 @@ export async function readProgressiveForecastPreparationThroughDashboard(
   }
 
   return payload as ProgressiveForecastPreparationSnapshot
+}
+
+export async function readPreparedVerificationThroughDashboard(
+  fetchLike: FetchLike,
+  input: BenchmarkForecastCurrentPreparationRequest,
+  signal?: AbortSignal,
+  correlationId?: string,
+) {
+  const params = new URLSearchParams({
+    seriesId: input.seriesId,
+    model: input.modelId,
+    targetBasis: input.targetBasis,
+  })
+  if (input.sourceFrequency && input.targetCadence) {
+    params.set('sourceFrequency', input.sourceFrequency)
+    params.set('targetCadence', input.targetCadence)
+  }
+  const headers = correlationId
+    ? buildForecastCorrelationHeaders(createForecastCorrelationId(correlationId))
+    : undefined
+  const response = await fetchLike(`/api/benchmark-forecast/verification?${params.toString()}`, {
+    cache: 'no-store',
+    signal,
+    headers,
+  })
+  const payload = await response.json() as BenchmarkForecastVerificationResult | { error?: string }
+  if (!response.ok) {
+    throw new Error('error' in payload ? payload.error ?? 'Historical Verification unavailable' : 'Historical Verification unavailable')
+  }
+  return payload as BenchmarkForecastVerificationResult
+}
+
+const PROGRESSIVE_POLL_RETRY_DELAYS_MS = [1_000, 2_500, 5_000] as const
+
+export function resolveProgressivePollingRetryDelayMs(consecutiveFailureCount: number) {
+  return PROGRESSIVE_POLL_RETRY_DELAYS_MS[consecutiveFailureCount] ?? null
+}
+
+export function waitForProgressivePollingRetry(delayMs: number, signal?: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('The operation was aborted.', 'AbortError'))
+      return
+    }
+
+    const timeout = setTimeout(() => {
+      signal?.removeEventListener('abort', handleAbort)
+      resolve()
+    }, delayMs)
+    const handleAbort = () => {
+      clearTimeout(timeout)
+      reject(new DOMException('The operation was aborted.', 'AbortError'))
+    }
+    signal?.addEventListener('abort', handleAbort, { once: true })
+  })
 }
 
 export async function acknowledgeForecastVisibleThroughDashboard(
