@@ -7,6 +7,7 @@ import { assertDatabaseUrl } from '../src/lib/pmos/operator-preflight'
 import {
   assertDatabaseIdentity,
   assertRegistrationMatches,
+  registrationGateSnapshot,
   validateExecutionRegistrationInput,
   type ExistingExecutionRegistration,
 } from '../src/lib/pmos/execution-registration'
@@ -97,7 +98,7 @@ async function begin(inputPath: string): Promise<void> {
       executionEnvironment: input.executionEnvironment,
       scope: input.scope,
       declaredTargetPaths: input.declaredTargetPaths,
-      gateSnapshot: input.gates,
+      gateSnapshot: registrationGateSnapshot(input),
       startedAt: new Date(),
       etap: input.etap,
       subetap: input.subetap,

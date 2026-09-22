@@ -9,8 +9,8 @@ Before any mutation:
 3. Load every nested `AGENTS.md` covering the exact target paths.
 4. Run `node scripts/governance/validate-governance-manifest.mjs`.
 5. Declare `TARGET_ENVIRONMENT` (`development`, `staging`, or `production`) and run `node scripts/governance/governance-preflight.mjs` with the project, target environment, task identity, and every exact target path.
-6. Register the task with `npm run pmos:begin -- --input <file>` from `apps/pmos`, then rerun preflight with `--require-begin`.
+6. For SG2 tasks targeting `development`, register with `npm run pmos:begin -- --input <file>` from `apps/pmos`, then rerun preflight with `--require-begin`. The registration input must declare `targetEnvironment: "development"`. For SG2 tasks targeting `staging` or `production`, do not call PMOS; their PMOS gates are `NOT_APPLICABLE`.
 
-All gates fail closed. No source, configuration, schema, data, deployment, or infrastructure mutation is allowed before the applicable gates pass. Read-only audits still use PMOS registration but do not create closeout evidence until factual findings exist.
+All gates fail closed. No source, configuration, schema, data, deployment, or infrastructure mutation is allowed before the applicable gates pass. Read-only Development audits use PMOS registration but do not create closeout evidence until factual findings exist.
 
 Tool adapters and short project wrappers only select a project profile. They never replace or weaken the active Canon, routing registry, executable preflight, or PMOS lifecycle.

@@ -6,7 +6,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { validateGovernanceManifest } from './validate-governance-manifest.mjs'
-import { resolveEnvironmentProfile } from './environment-profile.mjs'
+import { compareProviderSnapshot, loadEnvironmentTopology, resolveEnvironmentProfile, validateEnvironmentTopology } from './environment-profile.mjs'
 import { normalizeRepositorySlug, resolveProjectProfile } from './project-profile.mjs'
 import { resolveProjectRouting } from './routing-engine.mjs'
 
@@ -61,6 +61,9 @@ export function runGovernancePreflight(args) {
   let environmentProfile = null
   if (profile?.repository?.environmentTopologyRegistry) {
     try {
+      const { registry } = loadEnvironmentTopology(profile, governanceRoot)
+      const topology = validateEnvironmentTopology(registry)
+      gates.TOPOLOGY_REGISTRY_GATE = topology.valid ? gate('PASS', 'Registered environment identities are internally consistent.') : gate('BLOCKED', topology.errors)
       environmentProfile = resolveEnvironmentProfile({
         profile,
         targetEnvironment: args.target_environment,
@@ -73,11 +76,26 @@ export function runGovernancePreflight(args) {
         `renderEnvironmentId=${environmentProfile.environment.render.environmentId}`,
         `neonBranchId=${environmentProfile.environment.neon.branchId}`,
       ])
+      if (args.provider_snapshot) {
+        try {
+          const snapshot = JSON.parse(fs.readFileSync(path.resolve(args.provider_snapshot), 'utf8'))
+          const drift = compareProviderSnapshot(registry, environmentProfile.targetEnvironment, snapshot)
+          gates.LIVE_PROVIDER_DRIFT_GATE = drift.valid ? gate('PASS', `Read-only provider snapshot verified at ${snapshot.capturedAt}.`) : gate('BLOCKED', drift.errors)
+        } catch (error) {
+          gates.LIVE_PROVIDER_DRIFT_GATE = gate('BLOCKED', `Provider snapshot could not be read: ${error.message}`)
+        }
+      } else if (args.ci || environmentProfile.targetEnvironment === 'development') {
+        gates.LIVE_PROVIDER_DRIFT_GATE = gate('NOT_APPLICABLE', args.ci ? 'CI validates static topology; live provider evidence is required before Staging or Production mutation.' : 'Live provider snapshot was not requested for Development source work.')
+      } else {
+        gates.LIVE_PROVIDER_DRIFT_GATE = gate('BLOCKED', 'A fresh read-only Render and Neon provider snapshot is required for Staging or Production work.')
+      }
     } catch (error) {
       gates.TARGET_ENVIRONMENT_GATE = gate('BLOCKED', error.message)
+      gates.LIVE_PROVIDER_DRIFT_GATE = gate('BLOCKED', 'Target environment could not be verified.')
     }
   } else {
     gates.TARGET_ENVIRONMENT_GATE = gate('NOT_APPLICABLE', `${profile?.projectKey ?? '<unknown>'} is not yet onboarded to an environment topology registry.`)
+    gates.LIVE_PROVIDER_DRIFT_GATE = gate('NOT_APPLICABLE', 'Project has no environment topology registry.')
   }
 
   let pmosLifecycleApplicable = true
@@ -86,7 +104,7 @@ export function runGovernancePreflight(args) {
     if (continuityEnvironment !== null && !['development', 'staging', 'production'].includes(continuityEnvironment)) {
       throw new Error(`Invalid continuity.controlPlaneEnvironment for ${profile?.projectKey ?? '<unknown>'}: ${String(continuityEnvironment)}`)
     }
-    pmosLifecycleApplicable = continuityEnvironment === null || args.target_environment === continuityEnvironment
+    pmosLifecycleApplicable = continuityEnvironment === null || environmentProfile?.targetEnvironment === continuityEnvironment
     if (!pmosLifecycleApplicable) {
       gates.PMOS_CONTROL_PLANE_GATE = gate('NOT_APPLICABLE', `PMOS continuity applies only to ${profile.projectKey}/${continuityEnvironment}; product target ${args.target_environment} creates no PMOS history or closeout.`)
     } else if (args.ci) {

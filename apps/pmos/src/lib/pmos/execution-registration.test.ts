@@ -5,6 +5,7 @@ import {
   assertDatabaseIdentity,
   assertRegistrationMatches,
   expectedDatabaseName,
+  registrationGateSnapshot,
   validateExecutionRegistrationInput,
 } from './execution-registration'
 
@@ -16,6 +17,7 @@ const input = {
   project: 'SpendGuru 2.0',
   workspace: 'SG-dev',
   executionEnvironment: 'codex',
+  targetEnvironment: 'development',
   scope: 'governance',
   originalTaskRequest: 'Implement governance.',
   declaredTargetPaths: ['Canon/a.md', './apps/pmos/a.ts', 'Canon/a.md'],
@@ -24,6 +26,8 @@ const input = {
     CODE_STATE_GATE: 'PASS',
     TASK_INPUT_GATE: 'PASS',
     PMOS_RUNTIME_GATE: 'WARNING',
+    TARGET_ENVIRONMENT_GATE: 'PASS',
+    PMOS_CONTROL_PLANE_GATE: 'PASS',
   },
 } as const
 
@@ -35,6 +39,15 @@ test('validates and normalizes an honest pre-execution registration', () => {
 test('rejects completion evidence, blocked gates, and escaping paths', () => {
   assert.throws(() => validateExecutionRegistrationInput({ ...input, gates: { ...input.gates, ROUTING_GATE: 'BLOCKED' } }), /BLOCKED/)
   assert.throws(() => validateExecutionRegistrationInput({ ...input, declaredTargetPaths: ['../other-repo/file'] }), /repository-relative/)
+})
+
+test('direct PMOS registration refuses SG2 Staging, Production and missing target identity', () => {
+  for (const targetEnvironment of ['staging', 'production']) {
+    assert.throws(() => validateExecutionRegistrationInput({ ...input, targetEnvironment }), /allowed for SG2 only/)
+  }
+  assert.throws(() => validateExecutionRegistrationInput({ ...input, targetEnvironment: undefined }), /allowed for SG2 only/)
+  assert.throws(() => validateExecutionRegistrationInput({ ...input, gates: { ...input.gates, TARGET_ENVIRONMENT_GATE: 'NOT_APPLICABLE' } }), /requires passing/)
+  assert.throws(() => validateExecutionRegistrationInput({ ...input, gates: { ...input.gates, PMOS_CONTROL_PLANE_GATE: 'NOT_APPLICABLE' } }), /requires passing/)
 })
 
 test('enforces project-specific database name and Neon endpoint identity', () => {
@@ -68,9 +81,10 @@ test('idempotence accepts the same registration and rejects identity drift', () 
     scope: parsed.scope,
     promptContent: parsed.originalTaskRequest,
     declaredTargetPaths: parsed.declaredTargetPaths,
-    gateSnapshot: parsed.gates,
+    gateSnapshot: registrationGateSnapshot(parsed),
     status: 'running',
   }
   assert.doesNotThrow(() => assertRegistrationMatches(existing, parsed))
+  assert.doesNotThrow(() => assertRegistrationMatches({ ...existing, gateSnapshot: parsed.gates }, parsed))
   assert.throws(() => assertRegistrationMatches({ ...existing, conversationId: 'other-conversation' }, parsed), /different input/)
 })

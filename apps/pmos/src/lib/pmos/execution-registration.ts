@@ -14,6 +14,7 @@ export type ExecutionRegistrationInput = {
   project: string
   workspace: string
   executionEnvironment: string
+  targetEnvironment?: string
   scope: string
   originalTaskRequest: string
   declaredTargetPaths: string[]
@@ -96,15 +97,27 @@ export function validateExecutionRegistrationInput(raw: unknown): ExecutionRegis
   if (Object.values(gates).includes('BLOCKED')) {
     throw new Error('pmos:begin refuses registration while a declared gate is BLOCKED.')
   }
+  const project = requiredString(raw.project, 'project')
+  const profile = requirePmosProjectProfile(project)
+  const targetEnvironment = raw.targetEnvironment === undefined ? undefined : requiredString(raw.targetEnvironment, 'targetEnvironment').toLowerCase()
+  if (profile.continuity.controlPlaneEnvironment) {
+    if (targetEnvironment !== profile.continuity.controlPlaneEnvironment) {
+      throw new Error(`pmos:begin is allowed for ${profile.projectKey} only when targetEnvironment=${profile.continuity.controlPlaneEnvironment}; received ${targetEnvironment ?? '<missing>'}.`)
+    }
+    if (gates.TARGET_ENVIRONMENT_GATE !== 'PASS' || gates.PMOS_CONTROL_PLANE_GATE !== 'PASS') {
+      throw new Error('pmos:begin requires passing TARGET_ENVIRONMENT_GATE and PMOS_CONTROL_PLANE_GATE.')
+    }
+  }
 
   return {
     schemaVersion: EXECUTION_REGISTRATION_SCHEMA_VERSION,
     taskId,
     conversationId,
     title: requiredString(raw.title, 'title'),
-    project: requiredString(raw.project, 'project'),
+    project,
     workspace: requiredString(raw.workspace, 'workspace'),
     executionEnvironment: requiredString(raw.executionEnvironment, 'executionEnvironment'),
+    targetEnvironment,
     scope: requiredString(raw.scope, 'scope'),
     originalTaskRequest: requiredString(raw.originalTaskRequest, 'originalTaskRequest'),
     declaredTargetPaths,
@@ -113,6 +126,12 @@ export function validateExecutionRegistrationInput(raw: unknown): ExecutionRegis
     subetap: optionalString(raw.subetap, 'subetap'),
     promptType: optionalString(raw.promptType, 'promptType'),
   }
+}
+
+export function registrationGateSnapshot(input: ExecutionRegistrationInput): Record<string, string> {
+  return input.targetEnvironment
+    ? { ...input.gates, __targetEnvironment: input.targetEnvironment }
+    : { ...input.gates }
 }
 
 export function expectedDatabaseName(project: string): string {
@@ -160,6 +179,10 @@ export function assertRegistrationMatches(existing: ExistingExecutionRegistratio
     return JSON.stringify(value)
   }
   const mismatches: string[] = []
+  const legacyGateSnapshot = existing.gateSnapshot && typeof existing.gateSnapshot === 'object'
+    && !Array.isArray(existing.gateSnapshot)
+    && !('__targetEnvironment' in existing.gateSnapshot)
+  const expectedSnapshot = legacyGateSnapshot ? input.gates : registrationGateSnapshot(input)
   const checks: Array<[string, unknown, unknown]> = [
     ['taskId', existing.taskId, input.taskId],
     ['conversationId', existing.conversationId, input.conversationId],
@@ -170,7 +193,7 @@ export function assertRegistrationMatches(existing: ExistingExecutionRegistratio
     ['scope', existing.scope, input.scope],
     ['originalTaskRequest', existing.promptContent, input.originalTaskRequest],
     ['declaredTargetPaths', JSON.stringify([...existing.declaredTargetPaths].sort()), JSON.stringify(input.declaredTargetPaths)],
-    ['gates', canonicalJson(existing.gateSnapshot), canonicalJson(input.gates)],
+    ['gates', canonicalJson(existing.gateSnapshot), canonicalJson(expectedSnapshot)],
   ]
   for (const [field, actual, expected] of checks) {
     if (actual !== expected) mismatches.push(field)

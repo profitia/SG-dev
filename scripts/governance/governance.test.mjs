@@ -6,7 +6,7 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 import { validateGovernanceManifest } from './validate-governance-manifest.mjs'
-import { loadEnvironmentTopology, resolveEnvironmentProfile, validateEnvironmentTopology } from './environment-profile.mjs'
+import { compareProviderSnapshot, loadEnvironmentTopology, resolveEnvironmentProfile, validateEnvironmentTopology } from './environment-profile.mjs'
 import { runGovernancePreflight } from './governance-preflight.mjs'
 import { resolveHistoricalProjectProfile, resolveProjectProfile } from './project-profile.mjs'
 import { resolveProjectRouting } from './routing-engine.mjs'
@@ -66,7 +66,7 @@ test('project profiles route SG2 and allow only bounded CIC governance bootstrap
 
 test('SG2 environment topology resolves exact project and provider identities', () => {
   const sg2 = resolveProjectProfile('SG2', repositoryRoot)
-  for (const targetEnvironment of ['development', 'staging', 'production']) {
+  for (const targetEnvironment of ['development', 'staging']) {
     const resolved = resolveEnvironmentProfile({ profile: sg2, targetEnvironment, governanceRoot: repositoryRoot })
     assert.equal(resolved.targetEnvironment, targetEnvironment)
     assert.equal(resolved.environment.github.repository, 'profitia/SG-dev')
@@ -74,6 +74,10 @@ test('SG2 environment topology resolves exact project and provider identities', 
     assert.match(resolved.environment.render.environmentId, /^evm-/)
     assert.match(resolved.environment.neon.branchId, /^br-/)
   }
+  assert.throws(
+    () => resolveEnvironmentProfile({ profile: sg2, targetEnvironment: 'production', governanceRoot: repositoryRoot }),
+    /not ACTIVE.*RESERVED/,
+  )
   assert.throws(
     () => resolveEnvironmentProfile({ profile: sg2, targetEnvironment: 'client-demo', governanceRoot: repositoryRoot }),
     /Unknown TARGET_ENVIRONMENT/,
@@ -114,6 +118,38 @@ test('SG2 environment topology prevents cross-environment service and database i
   assert.doesNotMatch(JSON.stringify(registry), /postgres(?:ql)?:\/\//i)
 })
 
+test('fresh provider snapshots detect Staging SHA drift, auto-deploy drift and unregistered services', () => {
+  const sg2 = resolveProjectProfile('SG2', repositoryRoot)
+  const { registry } = loadEnvironmentTopology(sg2, repositoryRoot)
+  const staging = registry.environments.staging
+  const capturedAt = new Date().toISOString()
+  const snapshot = {
+    capturedAt,
+    source: { render: 'render-api', neon: 'neon-api' },
+    renderServices: Object.values(staging.render.services).map((service) => ({
+      id: service.serviceId,
+      environmentId: staging.render.environmentId,
+      repo: 'https://github.com/profitia/SG-dev',
+      autoDeploy: service.autoDeploy,
+      liveStatus: 'live',
+      liveDeployId: service.baselineDeployId,
+      liveSha: service.baselineSha,
+    })),
+    neonBranches: [{ id: staging.neon.branchId, projectId: staging.neon.projectId, name: staging.neon.branchName }],
+  }
+  assert.equal(compareProviderSnapshot(registry, 'staging', snapshot).valid, true)
+  const drifted = structuredClone(snapshot)
+  drifted.renderServices[0].liveSha = '48dfcd8af93fa9f5e9708653a868b89c138b6b91'
+  drifted.renderServices[1].autoDeploy = true
+  drifted.renderServices.push({ ...drifted.renderServices[0], id: 'srv-unregistered' })
+  const result = compareProviderSnapshot(registry, 'staging', drifted)
+  assert.equal(result.valid, false)
+  assert.match(result.errors.join('\n'), /Staging baseline drift/)
+  assert.match(result.errors.join('\n'), /autoDeploy drift/)
+  assert.match(result.errors.join('\n'), /Unregistered SG2 Render service/)
+  assert.equal(compareProviderSnapshot(registry, 'staging', { ...snapshot, capturedAt: '2020-01-01T00:00:00Z' }).valid, false)
+})
+
 test('SG2 PMOS applies only to Development and creates no Staging or Production continuity', () => {
   const input = {
     mode: 'development',
@@ -141,7 +177,16 @@ test('SG2 PMOS applies only to Development and creates no Staging or Production 
   assert.equal(staging.gates.PMOS_CONTROL_PLANE_GATE.status, 'NOT_APPLICABLE')
   assert.equal(staging.gates.PMOS_RUNTIME_GATE.status, 'NOT_APPLICABLE')
   assert.equal(staging.gates.PMOS_BEGIN_GATE.status, 'NOT_APPLICABLE')
-  assert.equal(staging.verdict, 'PASS')
+  assert.equal(staging.gates.LIVE_PROVIDER_DRIFT_GATE.status, 'BLOCKED')
+  assert.equal(staging.verdict, 'BLOCKED')
+  const unreadableSnapshot = runGovernancePreflight({ ...input, provider_snapshot: path.join(os.tmpdir(), 'missing-sg2-provider-snapshot.json') })
+  assert.equal(unreadableSnapshot.gates.TARGET_ENVIRONMENT_GATE.status, 'PASS')
+  assert.equal(unreadableSnapshot.gates.LIVE_PROVIDER_DRIFT_GATE.status, 'BLOCKED')
+
+  const reservedProduction = runGovernancePreflight({ ...input, target_environment: 'production' })
+  assert.equal(reservedProduction.gates.TARGET_ENVIRONMENT_GATE.status, 'BLOCKED')
+  assert.equal(reservedProduction.gates.PMOS_BEGIN_GATE.status, 'NOT_APPLICABLE')
+  assert.equal(reservedProduction.verdict, 'BLOCKED')
 
   const development = runGovernancePreflight({ ...input, target_environment: 'development' })
   assert.equal(development.gates.PMOS_CONTROL_PLANE_GATE.status, 'PASS')
