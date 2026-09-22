@@ -133,6 +133,10 @@ export function registrationGateSnapshot(input: ExecutionRegistrationInput): Rec
 }
 
 function registeredTargetEnvironment(gateSnapshot: Record<string, unknown>): unknown {
+  if (gateSnapshot.targetEnvironment !== undefined && gateSnapshot.__targetEnvironment !== undefined
+    && gateSnapshot.targetEnvironment !== gateSnapshot.__targetEnvironment) {
+    throw new Error('PMOS registration snapshot has conflicting target-environment fields.')
+  }
   return gateSnapshot.targetEnvironment ?? gateSnapshot.__targetEnvironment
 }
 

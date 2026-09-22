@@ -83,6 +83,9 @@ test('historical registrations remain recoverable but new snapshots cannot omit 
   assert.throws(() => assertPmosCloseoutIdentity('SRM', 'SRM', parsed.gates, 'staging'), /artifact requires TARGET_ENVIRONMENT=development/)
   assert.doesNotThrow(() => assertControlPlaneContinuity('SG2', { ...parsed.gates, __targetEnvironment: 'development' }))
   assert.throws(() => assertControlPlaneContinuity('SG2', { ...parsed.gates, __targetEnvironment: 'staging' }), /TARGET_ENVIRONMENT=development/)
+  assert.throws(() => assertControlPlaneContinuity('SG2', {
+    ...parsed.gates, targetEnvironment: 'development', __targetEnvironment: 'staging',
+  }), /conflicting target-environment fields/)
 })
 
 test('enforces project-specific database name and Neon endpoint identity', () => {
@@ -121,5 +124,8 @@ test('idempotence accepts the same registration and rejects identity drift', () 
   }
   assert.doesNotThrow(() => assertRegistrationMatches(existing, parsed))
   assert.doesNotThrow(() => assertRegistrationMatches({ ...existing, gateSnapshot: parsed.gates }, parsed))
+  assert.doesNotThrow(() => assertRegistrationMatches({
+    ...existing, gateSnapshot: { ...parsed.gates, __targetEnvironment: 'development' },
+  }, parsed))
   assert.throws(() => assertRegistrationMatches({ ...existing, conversationId: 'other-conversation' }, parsed), /different input/)
 })

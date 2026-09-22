@@ -222,6 +222,27 @@ test('fresh provider snapshots detect Staging SHA drift, auto-deploy drift and u
   assert.equal(compareProviderSnapshot(registry, 'staging', { ...snapshot, capturedAt: '2020-01-01T00:00:00Z' }).valid, false)
 })
 
+test('SRM provider snapshot detects an unregistered Development service without borrowing SG2 identity', () => {
+  const srm = resolveProjectProfile('SRM', repositoryRoot)
+  const { registry } = loadEnvironmentTopology(srm, repositoryRoot)
+  const development = registry.environments.development
+  const snapshot = {
+    capturedAt: new Date().toISOString(),
+    source: { render: 'render-api', neon: 'neon-api' },
+    renderServices: [{
+      id: 'srv-unregistered-srm',
+      environmentId: development.render.environmentId,
+      repo: 'https://github.com/profitia/SG-dev.git',
+      autoDeploy: 'no',
+      liveStatus: 'live',
+    }],
+    neonBranches: [{ id: development.neon.branchId, projectId: development.neon.projectId, name: development.neon.branchName }],
+  }
+  const result = compareProviderSnapshot(registry, 'development', snapshot)
+  assert.equal(result.valid, false)
+  assert.match(result.errors.join('\n'), /Unregistered SRM Render service/)
+})
+
 test('SG2 PMOS applies only to Development and creates no Staging or Production continuity', () => {
   const input = {
     mode: 'development',

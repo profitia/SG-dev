@@ -131,11 +131,12 @@ export function compareProviderSnapshot(registry, targetEnvironment, snapshot, n
       }
     }
   }
+  const sourceRepo = `https://github.com/${registry.policy.sourceAuthority}`
   for (const actual of snapshot.renderServices) {
     if (actual.environmentId === environment.render.environmentId
-      && actual.repo === 'https://github.com/profitia/SG-dev'
+      && String(actual.repo ?? '').replace(/\.git$/, '') === sourceRepo
       && !expectedIds.has(actual.id)) {
-      errors.push(`Unregistered SG2 Render service in ${targetEnvironment}: ${actual.id}`)
+      errors.push(`Unregistered ${registry.projectKey} Render service in ${targetEnvironment}: ${actual.id}`)
     }
   }
   const branch = snapshot.neonBranches.find((candidate) => candidate.id === environment.neon.branchId)

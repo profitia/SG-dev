@@ -170,7 +170,10 @@ export function runGovernancePreflight(args) {
   if (!pmosLifecycleApplicable) {
     gates.PMOS_BEGIN_GATE = gate('NOT_APPLICABLE', `PMOS registration is forbidden for target environment ${args.target_environment}.`)
   } else if (args.requireBegin) {
-    const begin = run('npm', ['run', 'pmos:begin', '--', '--check-task-id', args.task_id], path.join(governanceRoot, 'apps', 'pmos'))
+    const checkArgs = ['run', 'pmos:begin', '--', '--check-task-id', args.task_id,
+      '--check-conversation-id', args.conversation_id, '--check-project', args.project]
+    if (args.target_environment) checkArgs.push('--check-target-environment', args.target_environment)
+    const begin = run('npm', checkArgs, path.join(governanceRoot, 'apps', 'pmos'))
     gates.PMOS_BEGIN_GATE = begin.ok ? gate('PASS', `Registered task ${args.task_id}.`) : gate('BLOCKED', begin.stderr || begin.stdout)
   } else {
     gates.PMOS_BEGIN_GATE = gate('PASS', 'READY_TO_REGISTER — run pmos:begin before implementation, then rerun with --require-begin.')
