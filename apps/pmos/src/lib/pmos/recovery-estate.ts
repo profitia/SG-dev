@@ -5,6 +5,9 @@ type CompletedCloseoutEvidence = {
   closeoutState?: string
   pmosSaveStatus?: string
   runtimeContextRefreshStatus?: string
+  runtimeContextIntegrityStatus?: string
+  runtimeContextVerificationSource?: string
+  vectorRebuildStatus?: string
   handoffPublicationStatus?: string
   archiveCompletenessStatus?: string
   executionTrailStatus?: string
@@ -30,11 +33,19 @@ function readJson(filePath: string): CompletedCloseoutEvidence | null {
 }
 
 function isCompletedCloseoutForBackup(closeout: CompletedCloseoutEvidence | null, backupName: string): boolean {
+  // Pre-refresh closeouts used the old field name, but also verified PMOS-owned runtime context.
+  // This is recovery-only compatibility: new closeouts must pass runtimeContextRefreshStatus.
+  const runtimeContextComplete = closeout?.runtimeContextRefreshStatus === 'SUCCEEDED'
+    || (closeout?.runtimeContextRefreshStatus === undefined
+      && closeout?.vectorRebuildStatus === 'SUCCEEDED'
+      && closeout?.runtimeContextIntegrityStatus === 'PASS'
+      && closeout?.runtimeContextVerificationSource === 'PMOS runtime authority')
+
   return Boolean(
     closeout
     && closeout.closeoutState === 'CLOSEOUT_COMPLETE'
     && closeout.pmosSaveStatus === 'SUCCEEDED'
-    && closeout.runtimeContextRefreshStatus === 'SUCCEEDED'
+    && runtimeContextComplete
     && closeout.handoffPublicationStatus === 'SUCCEEDED'
     && closeout.archiveCompletenessStatus === 'PASS'
     && closeout.executionTrailStatus === 'PRESENT'
