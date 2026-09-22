@@ -41,6 +41,60 @@ test('classifies a backup referenced by a completed closeout as retained forensi
   assert.deepEqual(result.unresolvedPendingBackups, [])
 })
 
+test('recognizes a completed pre-refresh closeout with verified PMOS runtime context', () => {
+  const paths = fixture()
+  const baseName = '2026-09-15-16:22_srm-completed-task'
+  const backupName = `${baseName}__backup_2026-09-15__14-22-44-679Z.json`
+  writeCompletedPair(paths, baseName, backupName)
+  const closeoutPath = path.join(paths.closeoutsDir, `${baseName}.closeout.json`)
+  const closeout = JSON.parse(fs.readFileSync(closeoutPath, 'utf8'))
+  delete closeout.runtimeContextRefreshStatus
+  closeout.vectorRebuildStatus = 'SUCCEEDED'
+  closeout.runtimeContextIntegrityStatus = 'PASS'
+  closeout.runtimeContextVerificationSource = 'PMOS runtime authority'
+  fs.writeFileSync(closeoutPath, JSON.stringify(closeout))
+
+  const result = classifyPendingArtifactBackups(paths.backupsDir, paths.closeoutsDir)
+  assert.deepEqual(result.retainedCompletedBackups, [backupName])
+  assert.deepEqual(result.unresolvedPendingBackups, [])
+})
+
+test('keeps a legacy closeout without verified PMOS runtime context unresolved', () => {
+  const paths = fixture()
+  const baseName = '2026-09-15-16:22_srm-unverified-task'
+  const backupName = `${baseName}__backup_2026-09-15__14-22-44-679Z.json`
+  writeCompletedPair(paths, baseName, backupName)
+  const closeoutPath = path.join(paths.closeoutsDir, `${baseName}.closeout.json`)
+  const closeout = JSON.parse(fs.readFileSync(closeoutPath, 'utf8'))
+  delete closeout.runtimeContextRefreshStatus
+  closeout.vectorRebuildStatus = 'SUCCEEDED'
+  closeout.runtimeContextIntegrityStatus = 'FAIL'
+  closeout.runtimeContextVerificationSource = 'PMOS runtime authority'
+  fs.writeFileSync(closeoutPath, JSON.stringify(closeout))
+
+  const result = classifyPendingArtifactBackups(paths.backupsDir, paths.closeoutsDir)
+  assert.deepEqual(result.retainedCompletedBackups, [])
+  assert.deepEqual(result.unresolvedPendingBackups, [backupName])
+})
+
+test('a failed modern refresh cannot be overridden by historical fields', () => {
+  const paths = fixture()
+  const baseName = '2026-09-22-13:55_failed-refresh'
+  const backupName = `${baseName}__backup_2026-09-22__11-55-18-249Z.json`
+  writeCompletedPair(paths, baseName, backupName)
+  const closeoutPath = path.join(paths.closeoutsDir, `${baseName}.closeout.json`)
+  const closeout = JSON.parse(fs.readFileSync(closeoutPath, 'utf8'))
+  closeout.runtimeContextRefreshStatus = 'FAILED'
+  closeout.vectorRebuildStatus = 'SUCCEEDED'
+  closeout.runtimeContextIntegrityStatus = 'PASS'
+  closeout.runtimeContextVerificationSource = 'PMOS runtime authority'
+  fs.writeFileSync(closeoutPath, JSON.stringify(closeout))
+
+  const result = classifyPendingArtifactBackups(paths.backupsDir, paths.closeoutsDir)
+  assert.deepEqual(result.retainedCompletedBackups, [])
+  assert.deepEqual(result.unresolvedPendingBackups, [backupName])
+})
+
 test('keeps orphaned and malformed backups visible as unresolved recovery debt', () => {
   const paths = fixture()
   fs.writeFileSync(path.join(paths.backupsDir, '2026-09-22-13:55_orphan__backup_stamp.json'), '{}\n')
