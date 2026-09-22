@@ -702,6 +702,12 @@ export function durableSnapshotToProgressiveSnapshot(
       verificationState,
       verificationReason: snapshot.verification.reason,
       verificationProgress: snapshot.verification.job?.verificationProgress ?? null,
+      currentCorrelationId: snapshot.current.job?.latestCorrelationId
+        ?? snapshot.current.job?.originCorrelationId
+        ?? null,
+      verificationCorrelationId: snapshot.verification.job?.latestCorrelationId
+        ?? snapshot.verification.job?.originCorrelationId
+        ?? null,
     }],
     firstReadyCurrent: currentState === 'READY'
       ? { modelId: snapshot.modelId, targetBasis: snapshot.targetBasis, targetSemantics: snapshot.targetSemantics }

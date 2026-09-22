@@ -54,6 +54,7 @@ test('durable queue status projects to the existing UI progress contract', () =>
   assert.equal(projected.queuedCount, 1)
   assert.equal(projected.variants[0]?.verificationProgress?.sliceNumber, 1)
   assert.equal(projected.variants[0]?.verificationProgress?.phase, 'WAITING_FOR_WORKER')
+  assert.equal(projected.variants[0]?.verificationCorrelationId, 'forecast-action-latest')
 })
 
 test('missing durable request projects to preparation-required instead of unsupported', () => {
