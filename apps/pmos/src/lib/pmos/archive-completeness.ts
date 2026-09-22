@@ -1,7 +1,7 @@
 import fs from "fs"
 import path from "path"
 
-import { ArchiveCompletenessStatus } from "../../../../../packages/governance/src/index.ts"
+import { ArchiveCompletenessStatus } from "../../../../../packages/governance/src/index"
 
 export interface ArchiveCompletenessIssue {
   severity: "ERROR" | "WARN"

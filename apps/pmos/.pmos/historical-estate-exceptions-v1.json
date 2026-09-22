@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0",
+  "exceptions": [
+    {
+      "baseName": "2026-05-23-19:30_continuity-protocol",
+      "classification": "PRE_CLOSEOUT_STANDARD_ARTIFACT",
+      "taskId": "PMOS-CONTINUITY-PROTOCOL-V1",
+      "introducedByCommit": "ada51680b1201eda0053c7208883d31e30647334",
+      "introducedAt": "2026-05-23T20:06:04.000Z",
+      "reason": "This first-generation PMOS continuity artifact predates integrity, lock, closeout, MEMOROS, and PHR evidence. Git preserves the original implementation and artifact, but no lawful modern closeout can be reconstructed.",
+      "expectedMissing": [
+        "integrity",
+        "lock",
+        "closeout"
+      ],
+      "contentSha256": {
+        "json": "b31b6ba83e672a06cec4b120ef8014e981687811774159142d03ff1baba4d2a7",
+        "markdown": "72dd26c2c4a16a0eae8112ce81a7252b34f0152ed9cb8027ef544ffe5bdd4e60"
+      }
+    }
+  ]
+}
