@@ -13,6 +13,7 @@ import {
 import { validateConversationArtifactSet } from './archive-completeness'
 import { readJsonFileSafe } from './atomic-io'
 import { readCanonicalFlightRecord } from './flight-record-read'
+import { applyHistoricalEstateExceptions } from './historical-estate'
 
 const APP_ROOT = process.cwd()
 const PMOS_DIR = path.join(APP_ROOT, '.pmos')
@@ -68,6 +69,12 @@ export interface RuntimeVerificationSnapshot {
 
 export interface EstateAuditSnapshot {
   status: VerificationStatus
+  historicalExceptions?: {
+    status: VerificationStatus
+    acknowledged: number
+    artifacts: string[]
+    errors: string[]
+  }
   archive: {
     status: VerificationStatus
     conversationCount: number
@@ -393,6 +400,7 @@ export function collectRuntimeVerificationSnapshot(): RuntimeVerificationSnapsho
     },
     lifecycle: buildLifecyclePolicy(),
   }
+
 }
 
 export function collectEstateAuditSnapshot(): EstateAuditSnapshot {
@@ -463,7 +471,7 @@ export function collectEstateAuditSnapshot(): EstateAuditSnapshot {
     runtimeRebuildCount,
   }
 
-  return {
+  const snapshot: EstateAuditSnapshot = {
     status: deriveEstateAuditStatus([archiveStatus, integrityStatus, closeoutStatus, recoveryStatus, maintenanceStatus]),
     archive: {
       status: archiveStatus,
@@ -502,6 +510,8 @@ export function collectEstateAuditSnapshot(): EstateAuditSnapshot {
     metrics,
     lifecycle: buildLifecyclePolicy(),
   }
+
+  return applyHistoricalEstateExceptions(snapshot).snapshot
 }
 
 export function collectPmosStatusSnapshot(): PmosStatusSnapshot {
@@ -522,6 +532,9 @@ export function formatOperatorStatus(snapshot: PmosStatusSnapshot): string {
   lines.push(` - runtime: ${snapshot.runtimeVerification.runtime.status} | context=${snapshot.runtimeVerification.runtime.contextExists ? 'present' : 'missing'} | integrity=${snapshot.runtimeVerification.runtime.integrityVerified ? 'verified' : snapshot.runtimeVerification.runtime.integrityExists ? 'present-unverified' : 'missing'}`)
   lines.push(` - handoff: ${snapshot.runtimeVerification.handoff.status} | pending-artifact=${snapshot.runtimeVerification.handoff.pendingArtifactOccupied ? 'occupied' : 'clear'} | pending-valid=${snapshot.runtimeVerification.handoff.pendingArtifactValid ? 'yes' : 'no'} | advisory-lock=${snapshot.runtimeVerification.handoff.advisoryLockPresent ? 'present' : 'clear'}`)
   lines.push(` - estate-audit: ${snapshot.estateAudit.status}`)
+  if (snapshot.estateAudit.historicalExceptions) {
+    lines.push(` - historical-exceptions: ${snapshot.estateAudit.historicalExceptions.status} | acknowledged=${snapshot.estateAudit.historicalExceptions.acknowledged} | artifacts=${snapshot.estateAudit.historicalExceptions.artifacts.join(',') || 'none'}`)
+  }
   lines.push(` - archive: ${snapshot.estateAudit.archive.status} | conversations=${snapshot.estateAudit.archive.conversationCount} | invalid=${snapshot.estateAudit.archive.invalidArtifacts} | warnings=${snapshot.estateAudit.archive.warnings}`)
   lines.push(` - integrity: ${snapshot.estateAudit.integrity.status} | missing-integrity=${snapshot.estateAudit.integrity.missingIntegrity} | missing-locks=${snapshot.estateAudit.integrity.missingLocks} | corrupt-integrity=${snapshot.estateAudit.integrity.corruptedIntegrity} | corrupt-locks=${snapshot.estateAudit.integrity.corruptedLocks}`)
   lines.push(` - closeouts: ${snapshot.estateAudit.closeouts.status} | present=${snapshot.estateAudit.closeouts.present}/${snapshot.estateAudit.closeouts.expected} | missing=${snapshot.estateAudit.closeouts.missing} | recovery-required=${snapshot.estateAudit.closeouts.recoveryRequired}`)
@@ -538,6 +551,9 @@ export function formatHealthStatus(runtimeSnapshot: RuntimeVerificationSnapshot,
   lines.push(` - handoff: ${runtimeSnapshot.handoff.status} | pending-artifact=${runtimeSnapshot.handoff.pendingArtifactOccupied ? 'occupied' : 'clear'} | pending-valid=${runtimeSnapshot.handoff.pendingArtifactValid ? 'yes' : 'no'} | advisory-lock=${runtimeSnapshot.handoff.advisoryLockPresent ? 'present' : 'clear'}`)
   if (estateSnapshot.status !== 'PASS') {
     lines.push(` - estate-advisory: ${estateSnapshot.status} | closeouts=${estateSnapshot.closeouts.status} | recovery=${estateSnapshot.recovery.status} | maintenance=${estateSnapshot.maintenance.status}`)
+  }
+  if (estateSnapshot.historicalExceptions) {
+    lines.push(` - historical-exceptions: ${estateSnapshot.historicalExceptions.status} | acknowledged=${estateSnapshot.historicalExceptions.acknowledged} | artifacts=${estateSnapshot.historicalExceptions.artifacts.join(',') || 'none'}`)
   }
   lines.push(` - lifecycle: retention=${runtimeSnapshot.lifecycle.archiveRetention}`)
   lines.push(` - lifecycle: compaction=${runtimeSnapshot.lifecycle.archiveCompaction}`)
@@ -559,6 +575,10 @@ export function formatRuntimeVerificationStatus(snapshot: RuntimeVerificationSna
 export function formatEstateAuditStatus(snapshot: EstateAuditSnapshot): string {
   const lines: string[] = []
   lines.push(`[pmos:audit-estate] ${snapshot.status}`)
+  if (snapshot.historicalExceptions) {
+    lines.push(` - historical-exceptions: ${snapshot.historicalExceptions.status} | acknowledged=${snapshot.historicalExceptions.acknowledged} | artifacts=${snapshot.historicalExceptions.artifacts.join(',') || 'none'}`)
+    for (const error of snapshot.historicalExceptions.errors) lines.push(` - historical-exception-error: ${error}`)
+  }
   lines.push(` - archive: ${snapshot.archive.status} | conversations=${snapshot.archive.conversationCount} | invalid=${snapshot.archive.invalidArtifacts} | warnings=${snapshot.archive.warnings}`)
   lines.push(` - integrity: ${snapshot.integrity.status} | missing-integrity=${snapshot.integrity.missingIntegrity} | missing-locks=${snapshot.integrity.missingLocks} | corrupt-integrity=${snapshot.integrity.corruptedIntegrity} | corrupt-locks=${snapshot.integrity.corruptedLocks}`)
   lines.push(` - closeouts: ${snapshot.closeouts.status} | present=${snapshot.closeouts.present}/${snapshot.closeouts.expected} | missing=${snapshot.closeouts.missing} | recovery-required=${snapshot.closeouts.recoveryRequired}`)

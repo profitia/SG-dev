@@ -51,6 +51,7 @@ jobs:
         run: >-
           node_modules/.bin/tsx --test
           src/lib/pmos/execution-registration.test.ts
+          src/lib/pmos/historical-estate.test.ts
           src/lib/pmos/project-profile.test.ts
           src/lib/pmos/phr-publication.test.ts
           scripts/pmos-save.test.ts
