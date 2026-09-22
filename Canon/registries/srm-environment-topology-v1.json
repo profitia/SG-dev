@@ -4,10 +4,12 @@
   "projectKey": "SRM",
   "owner": "SRM Platform",
   "onboardingStatus": "DEVELOPMENT_RESOURCES_REGISTERED",
-  "executableGateStatus": "NOT_ENABLED_UNTIL_ALL_REQUIRED_PROVIDER_IDENTITIES_ARE_REGISTERED",
+  "executableGateStatus": "DEVELOPMENT_ENABLED_RESERVED_ENVIRONMENTS_BLOCKED",
   "policy": {
     "sourceAuthority": "profitia/SG-dev",
     "sourceRepositoryId": 1247665550,
+    "renderProjectId": "prj-dapbd3hsrm7s73es53fg",
+    "productNeonProjectId": "snowy-breeze-40315151",
     "authorityBranch": "main",
     "promotionFlow": [
       "development",
@@ -20,6 +22,7 @@
     "environmentBranchesAllowed": false,
     "crossEnvironmentWritesAllowed": false,
     "pmosScope": "DEVELOPMENT_CONTINUITY_ONLY",
+    "continuityControlPlaneEnvironment": "development",
     "pmosDatabaseName": "srm_pmos",
     "productDatabaseName": "srm_app",
     "productAndPmosDatabasesMayBeShared": false

@@ -7,6 +7,8 @@ import { assertDatabaseUrl } from '../src/lib/pmos/operator-preflight'
 import {
   assertDatabaseIdentity,
   assertRegistrationMatches,
+  assertSrmDevelopmentContinuity,
+  registrationGateSnapshot,
   validateExecutionRegistrationInput,
   type ExistingExecutionRegistration,
 } from '../src/lib/pmos/execution-registration'
@@ -51,12 +53,14 @@ async function checkRegistration(taskId: string): Promise<void> {
   if (!['queued', 'running', 'completed'].includes(record.status)) {
     throw new Error(`PMOS execution registration ${taskId} has unusable status ${record.status}.`)
   }
+  assertSrmDevelopmentContinuity(record.project ?? '', record.gateSnapshot)
   process.stdout.write(`${JSON.stringify({ status: 'PASS', taskId, registrationId: record.id, executionStatus: record.status }, null, 2)}\n`)
 }
 
 async function begin(inputPath: string): Promise<void> {
   const resolved = path.resolve(inputPath)
   const input = validateExecutionRegistrationInput(JSON.parse(fs.readFileSync(resolved, 'utf8')))
+  assertSrmDevelopmentContinuity(input.project, registrationGateSnapshot(input))
   const configuredProject = getConfiguredPmosProjectName()
   const configuredWorkspace = getConfiguredPmosWorkspaceName()
   if (normalizePmosProjectName(input.project) !== configuredProject) {
@@ -97,7 +101,7 @@ async function begin(inputPath: string): Promise<void> {
       executionEnvironment: input.executionEnvironment,
       scope: input.scope,
       declaredTargetPaths: input.declaredTargetPaths,
-      gateSnapshot: input.gates,
+      gateSnapshot: registrationGateSnapshot(input),
       startedAt: new Date(),
       etap: input.etap,
       subetap: input.subetap,

@@ -8,6 +8,7 @@ import { PrismaClient, ArtifactKind as PrismaArtifactKind, ArtifactNature as Pri
 import { validateGptHandoffArtifact, type CloseoutEvidence, type GptHandoffArtifactV1 } from '../../../packages/governance/src'
 
 import { readJsonFileSafe } from '../src/lib/pmos/atomic-io'
+import { assertSrmDevelopmentContinuity } from '../src/lib/pmos/execution-registration'
 import { buildPhrPublicationInput, writePhrPublicationAttempt, writePhrPublicationSidecar } from '../src/lib/pmos/phr-publication'
 
 const prisma = new PrismaClient()
@@ -131,6 +132,14 @@ async function main(): Promise<void> {
   }
 
   const handoff = readPersistedHandoffArtifactOrThrow(persistedHandoff)
+  const registration = await prisma.promptExecution.findUnique({
+    where: { taskId: handoff.taskId },
+    select: { project: true, conversationId: true, gateSnapshot: true },
+  })
+  if (!registration || registration.conversationId !== handoff.conversationId) {
+    throw new Error(`PHR publication requires a matching PMOS registration for ${handoff.taskId}.`)
+  }
+  assertSrmDevelopmentContinuity(registration.project ?? '', registration.gateSnapshot)
   const publication = buildPhrPublicationInput({
     artifact: conversationArtifact.value as never,
     handoff,

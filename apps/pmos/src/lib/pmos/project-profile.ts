@@ -78,7 +78,7 @@ export function requirePmosProjectProfile(projectIdentity: string): RegistryProj
 export function assertPmosControlPlaneEnvironment(profile: RegistryProject, executionEnvironment: string): void {
   const expected = profile.continuity.controlPlaneEnvironment
   if (!expected) return
-  if (executionEnvironment !== expected) {
+  if (['development', 'staging', 'production'].includes(executionEnvironment) && executionEnvironment !== expected) {
     throw new Error(`PMOS execution environment ${executionEnvironment} conflicts with the canonical ${profile.projectKey} continuity control plane ${expected}.`)
   }
 }

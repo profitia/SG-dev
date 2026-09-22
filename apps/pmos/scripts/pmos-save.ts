@@ -73,6 +73,7 @@ import {
 } from '../src/lib/pmos/runtime-authority'
 import { createCanonicalFlightRecordPayload } from '../src/lib/pmos/flight-record-snapshot'
 import { assertDatabaseUrl } from '../src/lib/pmos/operator-preflight'
+import { assertSrmDevelopmentContinuity } from '../src/lib/pmos/execution-registration'
 import {
   atomicCopyFile,
   atomicWriteFileSet,
@@ -2834,6 +2835,7 @@ async function main() {
       id: true,
       conversationId: true,
       project: true,
+      gateSnapshot: true,
       status: true,
     },
   })
@@ -2846,6 +2848,7 @@ async function main() {
   if (normalizePmosProjectName(executionRegistration.project ?? '') !== projectProfile.projectName) {
     throw new Error(`PMOS_BEGIN_GATE failed: project identity does not match task ${artifact.metadata.taskId}.`)
   }
+  assertSrmDevelopmentContinuity(executionRegistration.project ?? '', executionRegistration.gateSnapshot)
   if (!['queued', 'running'].includes(executionRegistration.status)) {
     throw new Error(`PMOS_BEGIN_GATE failed: registration status ${executionRegistration.status} cannot enter closeout.`)
   }

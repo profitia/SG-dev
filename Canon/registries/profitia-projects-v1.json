@@ -21,9 +21,9 @@
       "displayName": "SRM",
       "aliases": ["srm"],
       "workspaces": ["SG-dev Codespaces SRM"],
-      "repository": {"slug": "profitia/SG-dev", "defaultBranch": "main", "routingRegistry": "Canon/registries/current-architecture-baseline-v1.json"},
+      "repository": {"slug": "profitia/SG-dev", "defaultBranch": "main", "routingRegistry": "Canon/registries/current-architecture-baseline-v1.json", "environmentTopologyRegistry": "Canon/registries/srm-environment-topology-v1.json"},
       "database": {"purpose": "PMOS_CONTINUITY", "provider": "neon", "projectId": "bold-breeze-68888550", "databaseName": "srm_pmos", "allowedHosts": ["ep-dark-frost-b1fmda7e.c-5.eu-central-1.aws.neon.tech", "ep-dark-frost-b1fmda7e-pooler.c-5.eu-central-1.aws.neon.tech"]},
-      "continuity": {"pmos": "required", "memoros": "disabled", "phr": "required", "memorosProjectId": null},
+      "continuity": {"pmos": "required", "controlPlaneEnvironment": "development", "memoros": "disabled", "phr": "required", "memorosProjectId": null},
       "adapter": "Canon/adapters/srm-project-adapter-v2.md",
       "status": "ACTIVE"
     },
