@@ -124,6 +124,8 @@ export interface ProgressiveForecastVariantSnapshot {
   verificationState: ProgressiveForecastPreparationState
   verificationReason: string | null
   verificationProgress?: ProgressiveForecastVerificationProgress | null
+  currentCorrelationId?: string | null
+  verificationCorrelationId?: string | null
 }
 
 export interface ProgressiveForecastPreparationSnapshot {

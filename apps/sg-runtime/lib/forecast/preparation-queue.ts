@@ -184,9 +184,29 @@ const RETRY_BASE_MS = 5_000
 const MAX_RETRY_DELAY_MS = 5 * 60_000
 export const DEFAULT_FAST_VERIFICATION_SLA_MS = 2 * 60_000
 
+export function shouldRefreshCurrentBandsAfterFastVerification(options: {
+  targetSemantics: string
+  modelId: string
+  fastVerificationReadiness: 'READY' | 'NOT_PREPARED' | 'STALE'
+  predictionBandState: ForecastVariantCapability['predictionBandState']
+  bandsReady: boolean
+  currentBandsRefreshAttemptedAt: string | null
+  currentBandsRefreshedAt: string | null
+}) {
+  return options.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
+    && options.fastVerificationReadiness === 'READY'
+    && !options.bandsReady
+    && !options.currentBandsRefreshAttemptedAt
+    && !options.currentBandsRefreshedAt
+    && (
+      options.modelId === 'naive'
+      || options.predictionBandState === 'AVAILABLE'
+    )
+}
+
 function readCheckpointTimestamp(
   value: Prisma.JsonValue | null,
-  key: 'fastReadyAt' | 'fullReadyAt' | 'currentBandsRefreshedAt',
+  key: 'fastReadyAt' | 'fullReadyAt' | 'currentBandsRefreshAttemptedAt' | 'currentBandsRefreshedAt',
 ) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
   const timestamp = (value as Record<string, unknown>)[key]
@@ -1009,17 +1029,20 @@ export function createForecastPreparationWorker(options: {
             throw new Error(result.reason ?? `Current Forecast preparation ended with ${result.status}.`)
           }
           if (job.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME' && job.modelId === 'naive') {
+            const verificationCorrelationId = randomUUID()
             await queue.enqueue({
               seriesId: job.seriesId,
               targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
               modelId: 'naive',
               kind: 'VERIFICATION',
             }, {
-              correlationId,
+              correlationId: verificationCorrelationId,
               calibrationOnly: true,
             })
             noteForecastRequestDiagnosticsEvent('naive_daily_calibration_queued', 'APPLICATION', {
               currentJobKey: job.jobKey,
+              currentCorrelationId: correlationId,
+              verificationCorrelationId,
             })
           }
           await queue.complete(job)
@@ -1031,6 +1054,7 @@ export function createForecastPreparationWorker(options: {
         const bootstrapStartedAt = performance.now()
         let processedSliceCount = 0
         let priorFastReadyAt = readCheckpointTimestamp(job.checkpointJson, 'fastReadyAt')
+        let currentBandsRefreshAttemptedAt = readCheckpointTimestamp(job.checkpointJson, 'currentBandsRefreshAttemptedAt')
         let currentBandsRefreshedAt = readCheckpointTimestamp(job.checkpointJson, 'currentBandsRefreshedAt')
         const calibrationOnly = readCheckpointFlag(job.checkpointJson, 'calibrationOnly')
 
@@ -1061,13 +1085,16 @@ export function createForecastPreparationWorker(options: {
             bootstrapSliceNumber: processedSliceCount,
           }))
           let readiness = await resolveReadiness(input)
-          if (
-            job.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME'
-            && readiness.fastVerificationReadiness === 'READY'
-            && readiness.predictionBandState === 'AVAILABLE'
-            && !readiness.readiness.bandsReady
-            && !currentBandsRefreshedAt
-          ) {
+          if (shouldRefreshCurrentBandsAfterFastVerification({
+            targetSemantics: job.targetSemantics,
+            modelId: job.modelId,
+            fastVerificationReadiness: readiness.fastVerificationReadiness,
+            predictionBandState: readiness.predictionBandState,
+            bandsReady: readiness.readiness.bandsReady,
+            currentBandsRefreshAttemptedAt,
+            currentBandsRefreshedAt,
+          })) {
+            currentBandsRefreshAttemptedAt = new Date().toISOString()
             const refreshResult = await refreshCurrentAfterCalibration(job)
             if (refreshResult.status === 'FAILED') {
               throw new Error(refreshResult.results[0]?.error ?? 'Current Daily calibration-band refresh failed.')
@@ -1081,6 +1108,9 @@ export function createForecastPreparationWorker(options: {
               })
             }
           }
+          if (currentBandsRefreshAttemptedAt && readiness.readiness.bandsReady && !currentBandsRefreshedAt) {
+            currentBandsRefreshedAt = new Date().toISOString()
+          }
           const readyObservedAt = new Date().toISOString()
           const fastReadyAt = priorFastReadyAt
             ?? (readiness.fastVerificationReadiness === 'READY' ? readyObservedAt : null)
@@ -1091,6 +1121,7 @@ export function createForecastPreparationWorker(options: {
             fullVerificationReadiness: readiness.fullVerificationReadiness,
             fastReadyAt,
             fullReadyAt,
+            currentBandsRefreshAttemptedAt,
             currentBandsRefreshedAt,
             calibrationOnly,
             blockers: readiness.readiness.blockers,

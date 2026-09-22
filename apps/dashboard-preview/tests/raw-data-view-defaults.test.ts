@@ -9,9 +9,11 @@ import {
   forecastModelLabel,
   forecastTargetBasisLabel,
   isExactSelectedRenderableCurrentResult,
+  isHistoricalVerificationChartRenderable,
   resolveDisplayedRenderableCurrentResult,
   resolveDefaultForecastTargetBasis,
   resolveForecastVerificationBannerState,
+  resolveSelectedForecastVerificationResult,
   resolveForecastCurrentControlState,
   resolveHistoricalVerificationNotice,
   resolveInitialForecastVerificationVisibility,
@@ -30,9 +32,11 @@ import {
 } from '@/components/raw-data-view/index'
 import type {
   BenchmarkForecastCurrentAvailableResult,
+  BenchmarkForecastVerificationResult,
   InteractiveForecastCapabilityResult,
   ProgressiveForecastPreparationSnapshot,
 } from '@/lib/benchmark-forecast/forecast-contract'
+import type { TimeSeriesViewerPayload } from '@/lib/time-series-viewer/time-series-viewer-contract'
 import { FORECAST_ACCURACY_HORIZONS } from '@/lib/forecast-accuracy/forecast-accuracy-contract'
 
 test('forecast-portfolio-v3 defaults target basis to point in time', () => {
@@ -477,6 +481,81 @@ test('verification banner preserves a truthful preparing state when the exact ar
       targetBasis: 'END_OF_PERIOD',
     },
   }), 'PREPARING')
+})
+
+function availableVerificationResult(
+  modelId: 'naive' | 'arima',
+): BenchmarkForecastVerificationResult {
+  return {
+    status: 'AVAILABLE',
+    seriesId: 'corn-2027-03',
+    modelId,
+    targetBasis: 'POINT_IN_TIME',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    methodId: 'ROLLING_DAILY_POINT_IN_TIME',
+    displayName: 'Corn',
+    description: null,
+    methodVersion: 'test-method-v1',
+    lineage: {
+      inputSource: 'POSTGRES_RUNTIME_SNAPSHOT',
+      inputRunId: null,
+      sourceSeriesId: 'corn-2027-03',
+      sourceFrequency: 'DAILY',
+      historyFingerprint: 'history-fingerprint',
+      preparation: null,
+    },
+    history: {
+      frequency: 'DAILY',
+      start: '2026-01-01',
+      end: '2026-09-01',
+      observations: 170,
+    },
+    forecastOrigin: '2026-09-01',
+    verification: {},
+  }
+}
+
+test('ready verification remains monotonic across Naive to ARIMA to Naive switching after cache TTL', () => {
+  const naive = availableVerificationResult('naive')
+  const arima = availableVerificationResult('arima')
+
+  assert.equal(resolveSelectedForecastVerificationResult({
+    activeResult: null,
+    durableReadyResult: naive,
+    cachedEntry: { payload: naive, cachedAt: 0 },
+    now: 31_000,
+    identity: { seriesId: 'corn-2027-03', modelId: 'naive', targetBasis: 'POINT_IN_TIME' },
+  }), naive)
+  assert.equal(resolveSelectedForecastVerificationResult({
+    activeResult: arima,
+    durableReadyResult: arima,
+    cachedEntry: null,
+    now: 31_000,
+    identity: { seriesId: 'corn-2027-03', modelId: 'arima', targetBasis: 'POINT_IN_TIME' },
+  }), arima)
+  assert.equal(resolveSelectedForecastVerificationResult({
+    activeResult: null,
+    durableReadyResult: naive,
+    cachedEntry: null,
+    now: 62_000,
+    identity: { seriesId: 'corn-2027-03', modelId: 'naive', targetBasis: 'POINT_IN_TIME' },
+  }), naive)
+})
+
+test('verification ACK eligibility requires a renderable historical forecast series', () => {
+  const basePayload = {
+    verificationTargetBasis: 'POINT_IN_TIME',
+    series: [],
+  } as unknown as TimeSeriesViewerPayload
+  assert.equal(isHistoricalVerificationChartRenderable(basePayload, 'POINT_IN_TIME'), false)
+  assert.equal(isHistoricalVerificationChartRenderable({
+    ...basePayload,
+    series: [{ kind: 'historical-forecast', points: [] }],
+  } as unknown as TimeSeriesViewerPayload, 'POINT_IN_TIME'), false)
+  assert.equal(isHistoricalVerificationChartRenderable({
+    ...basePayload,
+    series: [{ kind: 'historical-forecast', points: [{ date: '2026-09-01', value: 1 }] }],
+  } as unknown as TimeSeriesViewerPayload, 'POINT_IN_TIME'), true)
 })
 
 test('historical verification notice exposes a limited sample without hiding available results', () => {

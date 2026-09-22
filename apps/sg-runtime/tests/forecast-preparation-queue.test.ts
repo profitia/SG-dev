@@ -14,6 +14,7 @@ import {
   resolveForecastPreparationWorkerMode,
   resolveVerificationProgress,
   resolveTerminalVerificationUnavailability,
+  shouldRefreshCurrentBandsAfterFastVerification,
   shouldRequeueSucceededPreparationJob,
   type ClaimedForecastPreparationJob,
   type ForecastPreparationQueueService,
@@ -378,18 +379,15 @@ test('Naive Daily Current completion queues bounded calibration before publishin
 
   assert.equal(await worker.runOne(), true)
   assert.deepEqual(harness.events, ['enqueue', 'complete'])
-  assert.deepEqual(harness.enqueues, [{
-    input: {
-      seriesId: 'series-1',
-      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
-      modelId: 'naive',
-      kind: 'VERIFICATION',
-    },
-    options: {
-      correlationId: 'ppf1-e2e-latest',
-      calibrationOnly: true,
-    },
-  }])
+  assert.deepEqual(harness.enqueues[0]?.input, {
+    seriesId: 'series-1',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'naive',
+    kind: 'VERIFICATION',
+  })
+  assert.equal((harness.enqueues[0]?.options as { calibrationOnly?: boolean }).calibrationOnly, true)
+  assert.match((harness.enqueues[0]?.options as { correlationId: string }).correlationId, /^[0-9a-f-]{36}$/)
+  assert.notEqual((harness.enqueues[0]?.options as { correlationId: string }).correlationId, 'ppf1-e2e-latest')
 })
 
 test('dedicated worker lanes pass mutually exclusive job-kind claims to the shared durable queue', async () => {
@@ -532,7 +530,7 @@ test('worker publishes Fast Verification readiness without completing the full-h
   assert.equal(harness.checkpoints[0]?.fullReadyAt, null)
 })
 
-test('Naive Daily automatically refreshes Current bands on the first FAST calibration transition', async () => {
+test('Naive Daily automatically refreshes native Current bands on the first FAST transition without empirical calibration', async () => {
   const job = claimedJob('VERIFICATION')
   job.targetBasis = 'POINT_IN_TIME'
   job.targetSemantics = 'ROLLING_DAILY_POINT_IN_TIME'
@@ -548,7 +546,7 @@ test('Naive Daily automatically refreshes Current bands on the first FAST calibr
       return {
         fastVerificationReadiness: 'READY',
         fullVerificationReadiness: 'NOT_PREPARED',
-        predictionBandState: 'AVAILABLE',
+        predictionBandState: 'INSUFFICIENT_SAMPLE',
         readiness: {
           bandsReady: readinessCall > 1,
           blockers: readinessCall > 1 ? ['FULL_HISTORICAL_PARTIAL'] : ['BANDS_NOT_AVAILABLE', 'FULL_HISTORICAL_PARTIAL'],
@@ -566,7 +564,29 @@ test('Naive Daily automatically refreshes Current bands on the first FAST calibr
   assert.equal(readinessCall, 2)
   assert.deepEqual(harness.events, ['continue'])
   assert.equal(harness.checkpoints[0]?.fastVerificationReadiness, 'READY')
+  assert.equal(typeof harness.checkpoints[0]?.currentBandsRefreshAttemptedAt, 'string')
   assert.equal(typeof harness.checkpoints[0]?.currentBandsRefreshedAt, 'string')
+})
+
+test('Naive Daily first-FAST band refresh is not repeated after the durable attempt checkpoint', () => {
+  assert.equal(shouldRefreshCurrentBandsAfterFastVerification({
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'naive',
+    fastVerificationReadiness: 'READY',
+    predictionBandState: 'INSUFFICIENT_SAMPLE',
+    bandsReady: false,
+    currentBandsRefreshAttemptedAt: null,
+    currentBandsRefreshedAt: null,
+  }), true)
+  assert.equal(shouldRefreshCurrentBandsAfterFastVerification({
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'naive',
+    fastVerificationReadiness: 'READY',
+    predictionBandState: 'INSUFFICIENT_SAMPLE',
+    bandsReady: false,
+    currentBandsRefreshAttemptedAt: '2026-09-22T10:00:00.000Z',
+    currentBandsRefreshedAt: null,
+  }), false)
 })
 
 test('bounded Naive Daily calibration completes after bands are refreshed without forcing FULL verification', async () => {
@@ -585,7 +605,7 @@ test('bounded Naive Daily calibration completes after bands are refreshed withou
       return {
         fastVerificationReadiness: 'READY',
         fullVerificationReadiness: 'NOT_PREPARED',
-        predictionBandState: 'AVAILABLE',
+        predictionBandState: 'INSUFFICIENT_SAMPLE',
         readiness: {
           bandsReady: readinessCall > 1,
           blockers: readinessCall > 1 ? ['FULL_HISTORICAL_PARTIAL'] : ['BANDS_NOT_AVAILABLE'],
