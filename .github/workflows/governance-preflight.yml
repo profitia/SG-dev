@@ -65,6 +65,7 @@ jobs:
           --conversation-id CI-GOVERNANCE-PREFLIGHT
           --title "Governance CI"
           --project "SpendGuru 2.0"
+          --target-environment development
           --workspace "GitHub Actions"
           --execution-environment ci
           --scope governance

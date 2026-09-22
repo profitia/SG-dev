@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.3.0",
+  "manifestVersion": "3.4.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -21,6 +21,8 @@
     {"id": "routing-guard", "version": "1.0", "path": "Canon/v1.0-mandatory-canonical-routing-guard-wrapper.md", "status": "ACTIVE", "loadOrder": 60, "owner": "SG2 Architecture Governance", "appliesTo": ["SG2", "SRM"], "dependsOn": ["repository-routing", "post-migration-classification"]},
     {"id": "architecture-baseline", "version": "1.0", "path": "Canon/registries/current-architecture-baseline-v1.json", "status": "ACTIVE", "loadOrder": 70, "owner": "SG2 Architecture Governance", "appliesTo": ["SG2", "SRM"], "dependsOn": ["repository-routing"]},
     {"id": "developer-lifecycle", "version": "1.1", "path": "Canon/v1.1-developer-lifecycle-specification.md", "status": "ACTIVE", "loadOrder": 80, "owner": "Profitia Governance", "appliesTo": ["CORE"], "dependsOn": ["agent-execution-canon"]},
+    {"id": "environment-release-promotion", "version": "1.0", "path": "Canon/v1.0-profitia-environment-and-release-promotion-canon.md", "status": "ACTIVE", "loadOrder": 85, "owner": "Profitia Governance", "appliesTo": ["CORE"], "dependsOn": ["agent-execution-canon", "project-profile-registry", "developer-lifecycle"]},
+    {"id": "sg2-environment-topology", "version": "1.0", "path": "Canon/registries/sg2-environment-topology-v1.json", "status": "ACTIVE", "loadOrder": 95, "owner": "SG2 Platform", "appliesTo": ["SG2"], "dependsOn": ["environment-release-promotion", "sg2-execution-adapter"]},
     {"id": "sg2-execution-adapter", "version": "1.0", "path": "Canon/adapters/sg2-project-adapter-v1.md", "status": "ACTIVE_ADAPTER", "loadOrder": 90, "owner": "SG2", "appliesTo": ["SG2"], "dependsOn": ["agent-execution-canon", "project-profile-registry"]},
     {"id": "srm-execution-adapter", "version": "2.0", "path": "Canon/adapters/srm-project-adapter-v2.md", "status": "ACTIVE_ADAPTER", "loadOrder": 100, "owner": "SRM", "appliesTo": ["SRM"], "dependsOn": ["agent-execution-canon", "project-profile-registry"]},
     {"id": "cic-execution-adapter", "version": "1.0", "path": "Canon/adapters/cic-project-adapter-v1.md", "status": "ACTIVE_ADAPTER", "loadOrder": 110, "owner": "CIC", "appliesTo": ["CIC"], "dependsOn": ["agent-execution-canon", "project-profile-registry"]},

@@ -6,6 +6,7 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 import { validateGovernanceManifest } from './validate-governance-manifest.mjs'
+import { loadEnvironmentTopology, resolveEnvironmentProfile, validateEnvironmentTopology } from './environment-profile.mjs'
 import { resolveHistoricalProjectProfile, resolveProjectProfile } from './project-profile.mjs'
 import { resolveProjectRouting } from './routing-engine.mjs'
 
@@ -60,6 +61,49 @@ test('project profiles route SG2 and allow only bounded CIC governance bootstrap
   assert.equal(onboardedRouting.bootstrapMode, undefined)
 })
 
+test('SG2 environment topology resolves exact project and provider identities', () => {
+  const sg2 = resolveProjectProfile('SG2', repositoryRoot)
+  for (const targetEnvironment of ['development', 'staging', 'production']) {
+    const resolved = resolveEnvironmentProfile({ profile: sg2, targetEnvironment, governanceRoot: repositoryRoot })
+    assert.equal(resolved.targetEnvironment, targetEnvironment)
+    assert.equal(resolved.environment.github.repository, 'profitia/SG-dev')
+    assert.equal(resolved.environment.github.exclusiveProjectKey, 'SG2')
+    assert.match(resolved.environment.render.environmentId, /^evm-/)
+    assert.match(resolved.environment.neon.branchId, /^br-/)
+  }
+  assert.throws(
+    () => resolveEnvironmentProfile({ profile: sg2, targetEnvironment: 'client-demo', governanceRoot: repositoryRoot }),
+    /Unknown TARGET_ENVIRONMENT/,
+  )
+})
+
+test('SG2 environment topology prevents cross-environment service and database identities', () => {
+  const sg2 = resolveProjectProfile('SG2', repositoryRoot)
+  const { registry } = loadEnvironmentTopology(sg2, repositoryRoot)
+  const result = validateEnvironmentTopology(registry)
+  assert.equal(result.valid, true, result.errors.join('\n'))
+
+  const staging = registry.environments.staging
+  const development = registry.environments.development
+  assert.equal(staging.deploymentPolicy, 'MANUAL_EXACT_SHA')
+  assert.equal(staging.render.services.dashboard.autoDeploy, false)
+  assert.equal(staging.render.services.runtime.autoDeploy, false)
+  assert.equal(staging.frozenBaseline.sourceSha, '518f1ad9d6143748d9d5f42a084cae6135b66799')
+  assert.equal(staging.frozenBaseline.databaseBranchId, staging.neon.branchId)
+  assert.equal(development.status, 'ACTIVE')
+  assert.equal(development.github.environmentName, 'sg2-development')
+  assert.equal(staging.github.environmentName, 'sg2-staging')
+  assert.equal(registry.environments.production.github.environmentName, 'sg2-production')
+  assert.equal(new Set(Object.values(registry.environments).map((environment) => environment.github.environmentId)).size, 3)
+  assert.equal(development.isolationProof.developmentDurableJobCount, 1)
+  assert.equal(development.isolationProof.stagingDurableJobCount, 0)
+  assert.equal(development.isolationProof.stagingActionTraceCount, 0)
+  for (const service of Object.values(development.render.services)) {
+    assert.match(service.currentDeployId, /^dep-/)
+  }
+  assert.doesNotMatch(JSON.stringify(registry), /postgres(?:ql)?:\/\//i)
+})
+
 test('PCOS is not an active PMOS project identity and cross-runtime coupling stays blocked', () => {
   const retiredLabel = 'SpendGuru 2.0 - PCOS Runtime'
   assert.throws(() => resolveProjectProfile(retiredLabel, repositoryRoot), /Unknown project/)
@@ -67,8 +111,12 @@ test('PCOS is not an active PMOS project identity and cross-runtime coupling sta
 
   const projectRegistry = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'Canon/registries/profitia-projects-v1.json'), 'utf8'))
   const sg2 = projectRegistry.projects.find((project) => project.projectKey === 'SG2')
+  const srm = projectRegistry.projects.find((project) => project.projectKey === 'SRM')
   assert.equal(sg2.aliases.includes(retiredLabel), false)
   assert.equal(sg2.legacyAliases.includes(retiredLabel), true)
+  assert.equal(sg2.database.purpose, 'PMOS_CONTINUITY')
+  assert.equal(srm.database.purpose, 'PMOS_CONTINUITY')
+  assert.equal(srm.database.databaseName, 'srm_pmos')
 
   const sourceFiles = (root) => {
     const pending = [root]
