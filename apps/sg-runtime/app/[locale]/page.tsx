@@ -4,7 +4,7 @@ import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 
 import { PORR_DEMO_FORECAST_BENCHMARKS } from '@/lib/benchmark/porr-demo-forecast-portfolio'
-import { isPorrDemoProfile } from '@/lib/env'
+import { isPorrDemoProfile, serverEnv } from '@/lib/env'
 import {
   PORR_DEMO_SESSION_COOKIE_NAME,
   isPorrDemoRuntimeReady,
@@ -27,7 +27,12 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
   const locale = params.locale === 'en' ? 'en' : 'pl'
   const t = await getTranslations({ locale, namespace: 'HomePage' })
 
-  const env = process.env.APP_ENV ?? 'development'
+  const env = serverEnv.APP_ENV
+  const environmentDisplayName = env === 'staging'
+    ? 'Staging'
+    : env === 'production'
+      ? 'Production'
+      : 'Development'
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3001'
 
   if (!isPorrDemoProfile) {
@@ -196,7 +201,7 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
             <section className="flex min-h-full min-w-0 flex-col xl:pl-[clamp(36px,4vw,56px)]">
               <div className="flex min-h-0 flex-col gap-6 text-sm leading-6 text-slate-950 xl:max-h-[calc(100vh-5rem)] xl:overflow-y-auto xl:pr-3">
               <div className="space-y-1">
-                <p>{t('porrDemo.versionLabel')}</p>
+                <p>{t('porrDemo.versionLabel')} {environmentDisplayName}</p>
                 <p>{t('porrDemo.publicationDateLabel')}</p>
               </div>
 
