@@ -54,8 +54,8 @@
             "customDomainStatus": "WAITING_FOR_DNS",
             "dnsCnameTarget": "sg2-development-dashboard.onrender.com",
             "autoDeploy": false,
-            "currentDeployId": "dep-dapam11srm7s73ep31fg",
-            "deployedSha": "07c3459d4b29630de526c6637027423a093f3119"
+            "currentDeployId": "dep-dapb8frm8hqs7395vro0",
+            "deployedSha": "97d81393e1dc97b47c3c95ef9acd668d1a39f3a6"
           },
           "runtime": {
             "serviceId": "srv-dapa3tid0e5s73f8bc5g",
@@ -65,24 +65,24 @@
             "customDomainStatus": "WAITING_FOR_DNS",
             "dnsCnameTarget": "sg2-development-runtime.onrender.com",
             "autoDeploy": false,
-            "currentDeployId": "dep-dapam23m8hqs7393eq60",
-            "deployedSha": "07c3459d4b29630de526c6637027423a093f3119"
+            "currentDeployId": "dep-dapb8g8473hc738s5vn0",
+            "deployedSha": "97d81393e1dc97b47c3c95ef9acd668d1a39f3a6"
           },
           "currentWorker": {
             "serviceId": "srv-dapa3vlg1s2s739vp7dg",
             "name": "sg2-development-forecast-current-worker",
             "autoDeploy": false,
             "workerMode": "CURRENT_ONLY",
-            "currentDeployId": "dep-dapb2unf3r2c73c2sce0",
-            "deployedSha": "07c3459d4b29630de526c6637027423a093f3119"
+            "currentDeployId": "dep-dapb8gm0tbcc73dpl650",
+            "deployedSha": "97d81393e1dc97b47c3c95ef9acd668d1a39f3a6"
           },
           "verificationWorker": {
             "serviceId": "srv-dapa40ad0e5s73f8bjm0",
             "name": "sg2-development-forecast-verification-worker",
             "autoDeploy": false,
             "workerMode": "VERIFICATION_ONLY",
-            "currentDeployId": "dep-dapb34bm8hqs7395akpg",
-            "deployedSha": "07c3459d4b29630de526c6637027423a093f3119"
+            "currentDeployId": "dep-dapb8h8ae00c73cg8hp0",
+            "deployedSha": "97d81393e1dc97b47c3c95ef9acd668d1a39f3a6"
           }
         }
       },
