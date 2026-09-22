@@ -6,6 +6,7 @@ export const SRM_PMOS_PROJECT_NAME = 'SRM'
 export type PmosMemorosMode = 'required' | 'disabled'
 export type PmosMemorosAuditStatus = 'MEMOROS_REQUIRED' | 'MEMOROS_DISABLED_BY_PROJECT_PROFILE'
 export type PmosContinuityMode = 'required' | 'disabled'
+export type PmosControlPlaneEnvironment = 'development' | 'staging' | 'production'
 
 type RegistryProject = {
   projectKey: string
@@ -15,7 +16,7 @@ type RegistryProject = {
   workspaces: string[]
   repository: { slug: string; defaultBranch: string; routingRegistry: string | null; routingBootstrapPaths?: string[] }
   database: { provider: 'neon'; projectId: string; databaseName: string; allowedHosts: string[] }
-  continuity: { pmos: PmosContinuityMode; memoros: PmosMemorosMode; phr: PmosContinuityMode; memorosProjectId: string | null }
+  continuity: { pmos: PmosContinuityMode; controlPlaneEnvironment?: PmosControlPlaneEnvironment; memoros: PmosMemorosMode; phr: PmosContinuityMode; memorosProjectId: string | null }
   adapter: string
   status: 'ACTIVE' | 'SUPERSEDED'
 }
@@ -72,6 +73,14 @@ export function requirePmosProjectProfile(projectIdentity: string): RegistryProj
     throw new Error(`Unknown PMOS project "${projectIdentity}". Add an ACTIVE profile to Canon/registries/profitia-projects-v1.json before execution.`)
   }
   return profile
+}
+
+export function assertPmosControlPlaneEnvironment(profile: RegistryProject, executionEnvironment: string): void {
+  const expected = profile.continuity.controlPlaneEnvironment
+  if (!expected) return
+  if (executionEnvironment !== expected) {
+    throw new Error(`PMOS execution environment ${executionEnvironment} conflicts with the canonical ${profile.projectKey} continuity control plane ${expected}.`)
+  }
 }
 
 export const CANONICAL_PMOS_PROJECT_NAMES: ReadonlySet<string> = new Set(ACTIVE_PROJECTS.map((project) => project.displayName))

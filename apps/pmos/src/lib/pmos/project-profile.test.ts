@@ -4,6 +4,7 @@ import test from 'node:test'
 import {
   DEFAULT_PMOS_PROJECT_NAME,
   SRM_PMOS_PROJECT_NAME,
+  assertPmosControlPlaneEnvironment,
   buildNamespacedPublicationId,
   findHistoricalPmosProjectProfile,
   getConfiguredPmosProjectName,
@@ -26,6 +27,14 @@ function makeEnv(values: Record<string, string | undefined>): NodeJS.ProcessEnv 
 test('registry exposes isolated SG2, SRM, and CIC profiles', () => {
   assert.deepEqual(listActivePmosProjectProfiles().map((profile) => profile.projectKey), ['SG2', 'SRM', 'CIC'])
   assert.notEqual(requirePmosProjectProfile('SG2').database.projectId, requirePmosProjectProfile('CIC').database.projectId)
+  assert.equal(requirePmosProjectProfile('SG2').continuity.controlPlaneEnvironment, 'development')
+})
+
+test('SG2 PMOS is bound to the Development continuity control plane', () => {
+  const sg2 = requirePmosProjectProfile('SG2')
+  assert.doesNotThrow(() => assertPmosControlPlaneEnvironment(sg2, 'development'))
+  assert.throws(() => assertPmosControlPlaneEnvironment(sg2, 'staging'), /conflicts with the canonical SG2 continuity control plane development/)
+  assert.throws(() => assertPmosControlPlaneEnvironment(sg2, 'production'), /conflicts with the canonical SG2 continuity control plane development/)
 })
 
 test('project normalization resolves registered aliases and rejects unknown profiles at execution', () => {

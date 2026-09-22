@@ -11,10 +11,12 @@ import {
   type ExistingExecutionRegistration,
 } from '../src/lib/pmos/execution-registration'
 import {
+  assertPmosControlPlaneEnvironment,
   getConfiguredPmosProjectName,
   getConfiguredPmosWorkspaceName,
   normalizePmosProjectName,
   normalizePmosWorkspaceName,
+  requirePmosProjectProfile,
 } from '../src/lib/pmos/project-profile'
 
 const prisma = new PrismaClient()
@@ -63,6 +65,7 @@ async function begin(inputPath: string): Promise<void> {
   if (!configuredWorkspace || normalizePmosWorkspaceName(input.workspace) !== configuredWorkspace) {
     throw new Error(`PMOS workspace profile mismatch: input=${input.workspace}, configured=${configuredWorkspace ?? '<unset>'}.`)
   }
+  assertPmosControlPlaneEnvironment(requirePmosProjectProfile(input.project), input.executionEnvironment)
   const configuredEnvironment = process.env.PMOS_EXECUTION_ENVIRONMENT?.trim()
   if (!configuredEnvironment || input.executionEnvironment !== configuredEnvironment) {
     throw new Error(`PMOS execution environment mismatch: input=${input.executionEnvironment}, configured=${configuredEnvironment ?? '<unset>'}.`)

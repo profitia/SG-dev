@@ -11,7 +11,30 @@
     "sameImmutableArtifactPromotionTarget": true,
     "artifactDigestPromotionStatus": "PLANNED_HARDENING",
     "environmentBranchesAllowed": false,
-    "crossEnvironmentWritesAllowed": false
+    "crossEnvironmentWritesAllowed": false,
+    "continuityControlPlaneEnvironment": "development"
+  },
+  "continuityControlPlane": {
+    "logicalEnvironment": "development",
+    "servesGovernedTasksTargeting": ["development", "staging", "production"],
+    "stagingOrProductionRuntimeAllowed": false,
+    "render": {
+      "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+      "projectId": "prj-d88urem7r5hc73csgg90",
+      "environmentId": "evm-d88urem7r5hc73csgga0",
+      "providerLabel": "Production",
+      "providerLabelMismatch": "Historical Render label retained; the service identity and SG2 project profile define this as the Development-only continuity control plane.",
+      "serviceId": "srv-d88utm77f7vs73blrj1g",
+      "serviceName": "pmos-spendguru2-development",
+      "url": "https://pmos-spendguru2-development.onrender.com",
+      "currentDeployId": "dep-daomo3cs728c73b397cg",
+      "deployedSha": "1a42005a37d82fbc9ba5741108f2411ee1c25a32"
+    },
+    "neon": {
+      "projectId": "lucky-dream-96138453",
+      "databaseName": "neondb",
+      "purpose": "PMOS_CONTINUITY"
+    }
   },
   "legacyGithubEnvironments": [
     {
@@ -51,7 +74,7 @@
             "name": "sg2-development-dashboard",
             "url": "https://sg2-development-dashboard.onrender.com",
             "customDomain": "analytics-dev-sg2.spendguru.app",
-            "customDomainStatus": "WAITING_FOR_DNS",
+            "customDomainStatus": "VERIFIED_CERTIFICATE_ISSUED",
             "dnsCnameTarget": "sg2-development-dashboard.onrender.com",
             "autoDeploy": false,
             "currentDeployId": "dep-dapb8frm8hqs7395vro0",
@@ -62,7 +85,7 @@
             "name": "sg2-development-runtime",
             "url": "https://sg2-development-runtime.onrender.com",
             "customDomain": "dev-sg2.spendguru.app",
-            "customDomainStatus": "WAITING_FOR_DNS",
+            "customDomainStatus": "VERIFIED_CERTIFICATE_ISSUED",
             "dnsCnameTarget": "sg2-development-runtime.onrender.com",
             "autoDeploy": false,
             "currentDeployId": "dep-dapb8g8473hc738s5vn0",
@@ -99,12 +122,15 @@
         "sg2-development-runtime.onrender.com",
         "sg2-development-dashboard.onrender.com"
       ],
-      "domainReadiness": "CUSTOM_DOMAINS_REGISTERED_DNS_PENDING",
+      "domainReadiness": "READY",
       "deploymentPolicy": "MUTABLE_INTEGRATION",
       "smokeProof": {
-        "verifiedAt": "2026-09-22T16:54:00Z",
+        "verifiedAt": "2026-09-22T17:41:00Z",
         "runtimeHealthHttp": 200,
-        "runtimeUiHttp": 200
+        "runtimeUiHttp": 200,
+        "customRuntimeHttpsHttp": 307,
+        "customDashboardHttpsHttp": 307,
+        "customDomainTlsVerified": true
       },
       "isolationProof": {
         "verifiedAt": "2026-09-22T16:52:00Z",

@@ -80,6 +80,27 @@ export function runGovernancePreflight(args) {
     gates.TARGET_ENVIRONMENT_GATE = gate('NOT_APPLICABLE', `${profile?.projectKey ?? '<unknown>'} is not yet onboarded to an environment topology registry.`)
   }
 
+  try {
+    const continuityEnvironment = profile?.continuity?.controlPlaneEnvironment ?? null
+    if (continuityEnvironment !== null && !['development', 'staging', 'production'].includes(continuityEnvironment)) {
+      throw new Error(`Invalid continuity.controlPlaneEnvironment for ${profile?.projectKey ?? '<unknown>'}: ${String(continuityEnvironment)}`)
+    }
+    if (args.ci) {
+      gates.PMOS_CONTROL_PLANE_GATE = gate('NOT_APPLICABLE', `CI validates the registered ${profile?.projectKey ?? '<unknown>'} control-plane policy without executing PMOS.`)
+    } else if (continuityEnvironment === null) {
+      gates.PMOS_CONTROL_PLANE_GATE = gate('NOT_APPLICABLE', `${profile?.projectKey ?? '<unknown>'} does not declare a continuity control-plane environment.`)
+    } else if (args.execution_environment === continuityEnvironment) {
+      gates.PMOS_CONTROL_PLANE_GATE = gate('PASS', [
+        `controlPlaneEnvironment=${continuityEnvironment}`,
+        `productTargetEnvironment=${args.target_environment}`,
+      ])
+    } else {
+      gates.PMOS_CONTROL_PLANE_GATE = gate('BLOCKED', `PMOS execution environment ${args.execution_environment ?? '<missing>'} conflicts with ${profile.projectKey} continuity control plane ${continuityEnvironment}.`)
+    }
+  } catch (error) {
+    gates.PMOS_CONTROL_PLANE_GATE = gate('BLOCKED', error.message)
+  }
+
   const remote = run('git', ['remote', 'get-url', 'origin'], repositoryRoot)
   const topLevel = run('git', ['rev-parse', '--show-toplevel'], repositoryRoot)
   const repositoryMatches = Boolean(profile) && remote.ok
