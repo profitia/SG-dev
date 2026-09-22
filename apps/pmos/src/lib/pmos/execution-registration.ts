@@ -97,16 +97,15 @@ export function validateExecutionRegistrationInput(raw: unknown): ExecutionRegis
   if (Object.values(gates).includes('BLOCKED')) {
     throw new Error('pmos:begin refuses registration while a declared gate is BLOCKED.')
   }
-
   const project = requiredString(raw.project, 'project')
   const profile = requirePmosProjectProfile(project)
-  const targetEnvironment = raw.targetEnvironment === undefined ? undefined : requiredString(raw.targetEnvironment, 'targetEnvironment')
-  if (profile.projectKey === 'SRM') {
-    if (targetEnvironment !== 'development') {
-      throw new Error('SRM PMOS registration requires TARGET_ENVIRONMENT=development.')
+  const targetEnvironment = raw.targetEnvironment === undefined ? undefined : requiredString(raw.targetEnvironment, 'targetEnvironment').toLowerCase()
+  if (profile.continuity.controlPlaneEnvironment) {
+    if (targetEnvironment !== profile.continuity.controlPlaneEnvironment) {
+      throw new Error(`pmos:begin is allowed for ${profile.projectKey} only when targetEnvironment=${profile.continuity.controlPlaneEnvironment}; received ${targetEnvironment ?? '<missing>'}.`)
     }
     if (gates.TARGET_ENVIRONMENT_GATE !== 'PASS' || gates.PMOS_CONTROL_PLANE_GATE !== 'PASS') {
-      throw new Error('SRM PMOS registration requires passing TARGET_ENVIRONMENT_GATE and PMOS_CONTROL_PLANE_GATE.')
+      throw new Error('pmos:begin requires passing TARGET_ENVIRONMENT_GATE and PMOS_CONTROL_PLANE_GATE.')
     }
   }
 
@@ -130,17 +129,27 @@ export function validateExecutionRegistrationInput(raw: unknown): ExecutionRegis
 }
 
 export function registrationGateSnapshot(input: ExecutionRegistrationInput): Record<string, string> {
-  return input.targetEnvironment ? { ...input.gates, targetEnvironment: input.targetEnvironment } : input.gates
+  return input.targetEnvironment ? { ...input.gates, targetEnvironment: input.targetEnvironment } : { ...input.gates }
 }
 
-export function assertSrmDevelopmentContinuity(project: string, gateSnapshot: unknown): void {
-  if (requirePmosProjectProfile(project).projectKey !== 'SRM') return
+function registeredTargetEnvironment(gateSnapshot: Record<string, unknown>): unknown {
+  return gateSnapshot.targetEnvironment ?? gateSnapshot.__targetEnvironment
+}
+
+export function assertControlPlaneContinuity(project: string, gateSnapshot: unknown): void {
+  const profile = requirePmosProjectProfile(project)
+  const expected = profile.continuity.controlPlaneEnvironment
+  if (!expected) return
   if (!gateSnapshot || typeof gateSnapshot !== 'object' || Array.isArray(gateSnapshot)) {
-    throw new Error('SRM PMOS/PHR closeout requires a Development registration snapshot.')
+    throw new Error(`${profile.projectKey} PMOS/PHR closeout requires a registration snapshot.`)
   }
   const gates = gateSnapshot as Record<string, unknown>
-  if (gates.targetEnvironment !== 'development' || gates.TARGET_ENVIRONMENT_GATE !== 'PASS' || gates.PMOS_CONTROL_PLANE_GATE !== 'PASS') {
-    throw new Error('SRM PMOS/PHR closeout requires TARGET_ENVIRONMENT=development and passing environment gates.')
+  const targetEnvironment = registeredTargetEnvironment(gates)
+  // Registrations made before environment targeting was enforced have no target field.
+  // Canonical pmos:begin now always records one, so only those historical rows use this path.
+  if (targetEnvironment === undefined) return
+  if (targetEnvironment !== expected || gates.TARGET_ENVIRONMENT_GATE !== 'PASS' || gates.PMOS_CONTROL_PLANE_GATE !== 'PASS') {
+    throw new Error(`${profile.projectKey} PMOS/PHR closeout requires TARGET_ENVIRONMENT=${expected} and passing environment gates.`)
   }
 }
 
@@ -150,9 +159,17 @@ export function assertPmosCloseoutIdentity(artifactProject: string, registeredPr
   if (artifactProfile.projectKey !== registrationProfile.projectKey) {
     throw new Error(`PMOS/PHR closeout project mismatch: artifact=${artifactProfile.projectKey}, registration=${registrationProfile.projectKey}.`)
   }
-  assertSrmDevelopmentContinuity(registeredProject, gateSnapshot)
-  if (artifactProfile.projectKey === 'SRM' && artifactTargetEnvironment !== 'development') {
-    throw new Error('SRM PMOS/PHR artifact requires TARGET_ENVIRONMENT=development.')
+  assertControlPlaneContinuity(registeredProject, gateSnapshot)
+  const expected = registrationProfile.continuity.controlPlaneEnvironment
+  if (expected) {
+    const gates = gateSnapshot as Record<string, unknown>
+    const registeredTarget = registeredTargetEnvironment(gates)
+    if (artifactTargetEnvironment !== undefined && artifactTargetEnvironment !== expected) {
+      throw new Error(`${artifactProfile.projectKey} PMOS/PHR artifact requires TARGET_ENVIRONMENT=${expected}.`)
+    }
+    if (registeredTarget !== undefined && artifactTargetEnvironment !== expected) {
+      throw new Error(`${artifactProfile.projectKey} PMOS/PHR artifact requires TARGET_ENVIRONMENT=${expected}.`)
+    }
   }
 }
 
@@ -201,6 +218,14 @@ export function assertRegistrationMatches(existing: ExistingExecutionRegistratio
     return JSON.stringify(value)
   }
   const mismatches: string[] = []
+  const existingGates = existing.gateSnapshot && typeof existing.gateSnapshot === 'object' && !Array.isArray(existing.gateSnapshot)
+    ? existing.gateSnapshot as Record<string, unknown>
+    : null
+  const expectedSnapshot = existingGates && '__targetEnvironment' in existingGates
+    ? { ...input.gates, __targetEnvironment: input.targetEnvironment }
+    : existingGates && !('targetEnvironment' in existingGates)
+      ? input.gates
+      : registrationGateSnapshot(input)
   const checks: Array<[string, unknown, unknown]> = [
     ['taskId', existing.taskId, input.taskId],
     ['conversationId', existing.conversationId, input.conversationId],
@@ -211,7 +236,7 @@ export function assertRegistrationMatches(existing: ExistingExecutionRegistratio
     ['scope', existing.scope, input.scope],
     ['originalTaskRequest', existing.promptContent, input.originalTaskRequest],
     ['declaredTargetPaths', JSON.stringify([...existing.declaredTargetPaths].sort()), JSON.stringify(input.declaredTargetPaths)],
-    ['gates', canonicalJson(existing.gateSnapshot), canonicalJson(registrationGateSnapshot(input))],
+    ['gates', canonicalJson(existing.gateSnapshot), canonicalJson(expectedSnapshot)],
   ]
   for (const [field, actual, expected] of checks) {
     if (actual !== expected) mismatches.push(field)

@@ -12,6 +12,10 @@ Registry: `Canon/registries/sg2-environment-topology-v1.json`
 
 Every task declares one `TARGET_ENVIRONMENT`: `development`, `staging`, or `production`. Run governance preflight with `--target-environment <value>`. Resolve every provider resource from the registry; never route by a similar-looking name.
 
+Only an `ACTIVE` environment may pass `TARGET_ENVIRONMENT_GATE`. A `RESERVED` Production identity is an inventory reservation, not deployment authority. SG2 PMOS registration and closeout apply only to Development; a Staging or Production task must not call `pmos:begin` or `pmos:save`.
+
+Before Staging or Production work, capture a complete read-only Render service inventory for the target Render environment and a Neon branch inventory directly from their provider APIs. Supply the fresh JSON capture with `--provider-snapshot <file>` to governance preflight. The capture has `capturedAt` (UTC ISO time, at most 15 minutes old), `source: {"render":"render-api","neon":"neon-api"}`, `renderServices` entries with `id`, `environmentId`, `repo`, `autoDeploy` (boolean), `liveStatus`, `liveDeployId`, and `liveSha`, plus `neonBranches` entries with `id`, `projectId`, and `name`. Include all SG-dev services in the target Render environment, including services absent from the registry. A missing or drifted snapshot blocks preflight. A Development audit may provide the same capture to surface its drift. Do not convert a detected mismatch into a registry change without a release decision and provider verification.
+
 The GitHub deployment environments are namespaced: `sg2-development`, `sg2-staging`, and `sg2-production`. The older generic `Development`, `Staging`, and `Production` entries are legacy and must not be selected by SG2 workflows.
 
 ## 2. Development
@@ -67,4 +71,4 @@ PPF-1 queues are database-backed. Runtime and both workers in one environment mu
 - Neon project and branch IDs plus non-secret schema/data checks;
 - cross-environment canary proof;
 - client-demo smoke test for Staging;
-- PMOS, MEMOROS, and PHR completion evidence.
+- PMOS, MEMOROS, and PHR completion evidence for Development tasks only.

@@ -9,7 +9,7 @@ Before any mutation:
 3. Load every nested `AGENTS.md` covering the exact target paths.
 4. Run `node scripts/governance/validate-governance-manifest.mjs`.
 5. Declare `TARGET_ENVIRONMENT` (`development`, `staging`, or `production`) and run `node scripts/governance/governance-preflight.mjs` with the project, target environment, task identity, and every exact target path.
-6. When the selected profile's continuity control plane applies to `TARGET_ENVIRONMENT`, register the task with `npm run pmos:begin -- --input <file>` from `apps/pmos`, then rerun preflight with `--require-begin`. For SRM this is Development only. Staging and Production never create PMOS or PHR continuity records.
+6. When the selected profile's continuity control plane applies to `TARGET_ENVIRONMENT`, register the task with `npm run pmos:begin -- --input <file>` from `apps/pmos`, including that target environment in the input, then rerun preflight with `--require-begin`. SG2 and SRM currently bind PMOS to Development only. Staging and Production never create PMOS or PHR continuity records for those profiles.
 
 All gates fail closed. No source, configuration, schema, data, deployment, or infrastructure mutation is allowed before the applicable gates pass. Read-only audits use PMOS registration only when the selected project's continuity control plane applies; they do not create closeout evidence until factual findings exist.
 
