@@ -1,0 +1,217 @@
+{
+  "schemaVersion": "1.0",
+  "registryId": "sg2-environment-topology",
+  "projectKey": "SG2",
+  "owner": "SG2 Platform",
+  "policy": {
+    "sourceAuthority": "profitia/SG-dev",
+    "authorityBranch": "main",
+    "promotionFlow": ["development", "staging", "production"],
+    "sameSourceRevisionMinimumRequired": true,
+    "sameImmutableArtifactPromotionTarget": true,
+    "artifactDigestPromotionStatus": "PLANNED_HARDENING",
+    "environmentBranchesAllowed": false,
+    "crossEnvironmentWritesAllowed": false
+  },
+  "legacyGithubEnvironments": [
+    {
+      "environmentName": "Development",
+      "environmentId": 22486062301,
+      "status": "LEGACY_PENDING_SEPARATE_RETIREMENT"
+    },
+    {
+      "environmentName": "Staging",
+      "environmentId": 22486092131,
+      "status": "LEGACY_PENDING_SEPARATE_RETIREMENT"
+    },
+    {
+      "environmentName": "Production",
+      "environmentId": 22486117481,
+      "status": "LEGACY_PENDING_SEPARATE_RETIREMENT"
+    }
+  ],
+  "environments": {
+    "development": {
+      "status": "ACTIVE",
+      "github": {
+        "environmentName": "sg2-development",
+        "environmentId": 22494582122,
+        "repository": "profitia/SG-dev",
+        "exclusiveProjectKey": "SG2",
+        "protectionStatus": "UNCONFIGURED"
+      },
+      "render": {
+        "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+        "projectId": "prj-dap98ddg1s2s739ssatg",
+        "environmentId": "evm-dap98hm0tbcc738rro10",
+        "providerLabel": "Development",
+        "services": {
+          "dashboard": {
+            "serviceId": "srv-dapa3ujm8hqs73a9t2og",
+            "name": "sg2-development-dashboard",
+            "url": "https://sg2-development-dashboard.onrender.com",
+            "customDomain": "analytics-dev-sg2.spendguru.app",
+            "customDomainStatus": "WAITING_FOR_DNS",
+            "dnsCnameTarget": "sg2-development-dashboard.onrender.com",
+            "autoDeploy": false,
+            "currentDeployId": "dep-dapam11srm7s73ep31fg",
+            "deployedSha": "07c3459d4b29630de526c6637027423a093f3119"
+          },
+          "runtime": {
+            "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+            "name": "sg2-development-runtime",
+            "url": "https://sg2-development-runtime.onrender.com",
+            "customDomain": "dev-sg2.spendguru.app",
+            "customDomainStatus": "WAITING_FOR_DNS",
+            "dnsCnameTarget": "sg2-development-runtime.onrender.com",
+            "autoDeploy": false,
+            "currentDeployId": "dep-dapam23m8hqs7393eq60",
+            "deployedSha": "07c3459d4b29630de526c6637027423a093f3119"
+          },
+          "currentWorker": {
+            "serviceId": "srv-dapa3vlg1s2s739vp7dg",
+            "name": "sg2-development-forecast-current-worker",
+            "autoDeploy": false,
+            "workerMode": "CURRENT_ONLY",
+            "currentDeployId": "dep-dapb2unf3r2c73c2sce0",
+            "deployedSha": "07c3459d4b29630de526c6637027423a093f3119"
+          },
+          "verificationWorker": {
+            "serviceId": "srv-dapa40ad0e5s73f8bjm0",
+            "name": "sg2-development-forecast-verification-worker",
+            "autoDeploy": false,
+            "workerMode": "VERIFICATION_ONLY",
+            "currentDeployId": "dep-dapb34bm8hqs7395akpg",
+            "deployedSha": "07c3459d4b29630de526c6637027423a093f3119"
+          }
+        }
+      },
+      "neon": {
+        "projectId": "autumn-waterfall-65938876",
+        "branchId": "br-dry-hall-b294222f",
+        "branchName": "Development",
+        "parentBranchId": "br-purple-shape-b2az1npx",
+        "databaseName": "neondb"
+      },
+      "domains": [
+        "dev-sg2.spendguru.app",
+        "analytics-dev-sg2.spendguru.app",
+        "sg2-development-runtime.onrender.com",
+        "sg2-development-dashboard.onrender.com"
+      ],
+      "domainReadiness": "CUSTOM_DOMAINS_REGISTERED_DNS_PENDING",
+      "deploymentPolicy": "MUTABLE_INTEGRATION",
+      "smokeProof": {
+        "verifiedAt": "2026-09-22T16:54:00Z",
+        "runtimeHealthHttp": 200,
+        "runtimeUiHttp": 200
+      },
+      "isolationProof": {
+        "verifiedAt": "2026-09-22T16:52:00Z",
+        "supportedCanaryCorrelationId": "2ef9da11-cb39-4e9c-8922-fb99480f497a",
+        "developmentDurableJobCount": 1,
+        "stagingDurableJobCount": 0,
+        "stagingActionTraceCount": 0,
+        "developmentCanaryFinalStatus": "SUCCEEDED",
+        "developmentCanaryStartedAt": "2026-09-22T16:51:12.714Z",
+        "developmentCanaryCompletedAt": "2026-09-22T16:51:21.753Z"
+      }
+    },
+    "staging": {
+      "status": "ACTIVE",
+      "github": {
+        "environmentName": "sg2-staging",
+        "environmentId": 22494585971,
+        "repository": "profitia/SG-dev",
+        "exclusiveProjectKey": "SG2",
+        "protectionStatus": "UNCONFIGURED"
+      },
+      "render": {
+        "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+        "projectId": "prj-d98a52eq1p3s73835qh0",
+        "environmentId": "evm-d98a52eq1p3s73835qi0",
+        "providerLabel": "Production",
+        "providerLabelMismatch": "Historical Render label retained to avoid moving live client domains; logical environment is staging.",
+        "services": {
+          "dashboard": {
+            "serviceId": "srv-dacln50jo6nc738lbag0",
+            "name": "spendguru-porr-dashboard",
+            "autoDeploy": false,
+            "baselineDeployId": "dep-dapam17f3r2c73c11th0",
+            "baselineSha": "518f1ad9d6143748d9d5f42a084cae6135b66799"
+          },
+          "runtime": {
+            "serviceId": "srv-daclno3m8hqs73bb7rrg",
+            "name": "spendguru-porr-demo",
+            "autoDeploy": false,
+            "baselineDeployId": "dep-dapam11srm7s73ep31hg",
+            "baselineSha": "518f1ad9d6143748d9d5f42a084cae6135b66799"
+          },
+          "currentWorker": {
+            "serviceId": "srv-daoksvuk1f9s73cg4bk0",
+            "name": "spendguru-forecast-current-worker",
+            "autoDeploy": false,
+            "baselineDeployId": "dep-dapam0sja7ms73akipp0",
+            "baselineSha": "518f1ad9d6143748d9d5f42a084cae6135b66799"
+          },
+          "verificationWorker": {
+            "serviceId": "srv-dansibrtqb8s73d0nn3g",
+            "name": "spendguru-forecast-preparation-worker",
+            "autoDeploy": false,
+            "baselineDeployId": "dep-dapam0hsrm7s73ep2v50",
+            "baselineSha": "518f1ad9d6143748d9d5f42a084cae6135b66799"
+          }
+        }
+      },
+      "neon": {
+        "projectId": "autumn-waterfall-65938876",
+        "branchId": "br-wandering-dew-b2izo8fg",
+        "branchName": "Staging",
+        "parentBranchId": "br-purple-shape-b2az1npx",
+        "databaseName": "neondb"
+      },
+      "domains": [
+        "demo-sg-porr.spendguru.app",
+        "analytics-demo-sg-porr.spendguru.app"
+      ],
+      "deploymentPolicy": "MANUAL_EXACT_SHA",
+      "smokeProof": {
+        "verifiedAt": "2026-09-22T16:54:00Z",
+        "runtimeHealthHttp": 200,
+        "runtimeUiHttp": 200,
+        "clientBrowserFlow": "PASS",
+        "embeddedDashboardLoaded": true
+      },
+      "frozenBaseline": {
+        "sourceSha": "518f1ad9d6143748d9d5f42a084cae6135b66799",
+        "capturedAt": "2026-09-22T15:57:10Z",
+        "databaseBranchId": "br-wandering-dew-b2izo8fg"
+      }
+    },
+    "production": {
+      "status": "RESERVED",
+      "github": {
+        "environmentName": "sg2-production",
+        "environmentId": 22494589864,
+        "repository": "profitia/SG-dev",
+        "exclusiveProjectKey": "SG2",
+        "protectionStatus": "UNCONFIGURED"
+      },
+      "render": {
+        "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+        "projectId": "prj-dap98ddg1s2s739ssatg",
+        "environmentId": "evm-dap98ddg1s2s739ssaug",
+        "providerLabel": "Production",
+        "services": {}
+      },
+      "neon": {
+        "projectId": "autumn-waterfall-65938876",
+        "branchId": "br-purple-shape-b2az1npx",
+        "branchName": "production",
+        "databaseName": "neondb"
+      },
+      "domains": [],
+      "deploymentPolicy": "PROMOTE_ACCEPTED_STAGING_ARTIFACT_ONLY"
+    }
+  }
+}

@@ -6,6 +6,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { validateGovernanceManifest } from './validate-governance-manifest.mjs'
+import { resolveEnvironmentProfile } from './environment-profile.mjs'
 import { normalizeRepositorySlug, resolveProjectProfile } from './project-profile.mjs'
 import { resolveProjectRouting } from './routing-engine.mjs'
 
@@ -57,6 +58,28 @@ export function runGovernancePreflight(args) {
     gates.PROJECT_PROFILE_GATE = gate('BLOCKED', error.message)
   }
 
+  let environmentProfile = null
+  if (profile?.repository?.environmentTopologyRegistry) {
+    try {
+      environmentProfile = resolveEnvironmentProfile({
+        profile,
+        targetEnvironment: args.target_environment,
+        governanceRoot,
+      })
+      gates.TARGET_ENVIRONMENT_GATE = gate('PASS', [
+        `${profile.projectKey}/${environmentProfile.targetEnvironment}`,
+        `registry=${environmentProfile.registryPath}`,
+        `githubEnvironmentId=${environmentProfile.environment.github.environmentId}`,
+        `renderEnvironmentId=${environmentProfile.environment.render.environmentId}`,
+        `neonBranchId=${environmentProfile.environment.neon.branchId}`,
+      ])
+    } catch (error) {
+      gates.TARGET_ENVIRONMENT_GATE = gate('BLOCKED', error.message)
+    }
+  } else {
+    gates.TARGET_ENVIRONMENT_GATE = gate('NOT_APPLICABLE', `${profile?.projectKey ?? '<unknown>'} is not yet onboarded to an environment topology registry.`)
+  }
+
   const remote = run('git', ['remote', 'get-url', 'origin'], repositoryRoot)
   const topLevel = run('git', ['rev-parse', '--show-toplevel'], repositoryRoot)
   const repositoryMatches = Boolean(profile) && remote.ok
@@ -79,6 +102,7 @@ export function runGovernancePreflight(args) {
     : gate('BLOCKED', [`branch=${branch.stdout || '<detached>'}`, `HEAD=${head.stdout || '<missing>'}`, `origin/${authorityBranch}=${originMain.stdout || '<missing>'}`, `dirty=${status.stdout !== ''}`])
 
   const requiredNames = ['task_id', 'conversation_id', 'title', 'project', 'workspace', 'execution_environment', 'scope']
+  if (profile?.repository?.environmentTopologyRegistry) requiredNames.push('target_environment')
   const missing = requiredNames.filter((name) => !requiredInput(args, name))
   if (args.mode === 'development' && args.targets.length === 0) missing.push('target')
   gates.TASK_INPUT_GATE = missing.length === 0 ? gate('PASS', `task=${args.task_id}`) : gate('BLOCKED', `Missing inputs: ${missing.join(', ')}`)
@@ -117,6 +141,7 @@ export function runGovernancePreflight(args) {
     schemaVersion: '3.0',
     mode: args.mode,
     projectKey: profile?.projectKey ?? null,
+    targetEnvironment: environmentProfile?.targetEnvironment ?? null,
     governanceRoot,
     repositoryRoot,
     gates,
