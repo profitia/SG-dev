@@ -91,8 +91,9 @@ test('SG2 environment topology prevents cross-environment service and database i
   assert.equal(registry.policy.continuityControlPlaneEnvironment, 'development')
   assert.equal(registry.continuityControlPlane.logicalEnvironment, 'development')
   assert.equal(registry.continuityControlPlane.stagingOrProductionRuntimeAllowed, false)
-  assert.deepEqual(registry.continuityControlPlane.servesGovernedTasksTargeting, ['development', 'staging', 'production'])
+  assert.deepEqual(registry.continuityControlPlane.servesGovernedTasksTargeting, ['development'])
   assert.match(registry.continuityControlPlane.render.serviceId, /^srv-/)
+  assert.equal(registry.continuityControlPlane.stagingOrProductionContinuityAllowed, false)
   assert.equal(registry.continuityControlPlane.neon.projectId, 'lucky-dream-96138453')
   assert.equal(staging.deploymentPolicy, 'MANUAL_EXACT_SHA')
   assert.equal(staging.render.services.dashboard.autoDeploy, false)
@@ -113,7 +114,7 @@ test('SG2 environment topology prevents cross-environment service and database i
   assert.doesNotMatch(JSON.stringify(registry), /postgres(?:ql)?:\/\//i)
 })
 
-test('SG2 Staging tasks use the Development PMOS control plane and reject a Staging PMOS execution environment', () => {
+test('SG2 PMOS applies only to Development and creates no Staging or Production continuity', () => {
   const input = {
     mode: 'development',
     project: 'SG2',
@@ -136,11 +137,17 @@ test('SG2 Staging tasks use the Development PMOS control plane and reject a Stag
     checkEstate: false,
   }
 
-  const lawful = runGovernancePreflight(input)
-  assert.equal(lawful.gates.PMOS_CONTROL_PLANE_GATE.status, 'PASS')
-  assert.equal(lawful.verdict, 'PASS')
+  const staging = runGovernancePreflight(input)
+  assert.equal(staging.gates.PMOS_CONTROL_PLANE_GATE.status, 'NOT_APPLICABLE')
+  assert.equal(staging.gates.PMOS_RUNTIME_GATE.status, 'NOT_APPLICABLE')
+  assert.equal(staging.gates.PMOS_BEGIN_GATE.status, 'NOT_APPLICABLE')
+  assert.equal(staging.verdict, 'PASS')
 
-  const unlawful = runGovernancePreflight({ ...input, execution_environment: 'staging' })
+  const development = runGovernancePreflight({ ...input, target_environment: 'development' })
+  assert.equal(development.gates.PMOS_CONTROL_PLANE_GATE.status, 'PASS')
+  assert.equal(development.verdict, 'PASS')
+
+  const unlawful = runGovernancePreflight({ ...input, target_environment: 'development', execution_environment: 'staging' })
   assert.equal(unlawful.gates.PMOS_CONTROL_PLANE_GATE.status, 'BLOCKED')
   assert.equal(unlawful.verdict, 'BLOCKED')
 

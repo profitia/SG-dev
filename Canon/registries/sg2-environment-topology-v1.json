@@ -16,8 +16,9 @@
   },
   "continuityControlPlane": {
     "logicalEnvironment": "development",
-    "servesGovernedTasksTargeting": ["development", "staging", "production"],
+    "servesGovernedTasksTargeting": ["development"],
     "stagingOrProductionRuntimeAllowed": false,
+    "stagingOrProductionContinuityAllowed": false,
     "render": {
       "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
       "projectId": "prj-d88urem7r5hc73csgg90",

@@ -80,12 +80,16 @@ export function runGovernancePreflight(args) {
     gates.TARGET_ENVIRONMENT_GATE = gate('NOT_APPLICABLE', `${profile?.projectKey ?? '<unknown>'} is not yet onboarded to an environment topology registry.`)
   }
 
+  let pmosLifecycleApplicable = true
   try {
     const continuityEnvironment = profile?.continuity?.controlPlaneEnvironment ?? null
     if (continuityEnvironment !== null && !['development', 'staging', 'production'].includes(continuityEnvironment)) {
       throw new Error(`Invalid continuity.controlPlaneEnvironment for ${profile?.projectKey ?? '<unknown>'}: ${String(continuityEnvironment)}`)
     }
-    if (args.ci) {
+    pmosLifecycleApplicable = continuityEnvironment === null || args.target_environment === continuityEnvironment
+    if (!pmosLifecycleApplicable) {
+      gates.PMOS_CONTROL_PLANE_GATE = gate('NOT_APPLICABLE', `PMOS continuity applies only to ${profile.projectKey}/${continuityEnvironment}; product target ${args.target_environment} creates no PMOS history or closeout.`)
+    } else if (args.ci) {
       gates.PMOS_CONTROL_PLANE_GATE = gate('NOT_APPLICABLE', `CI validates the registered ${profile?.projectKey ?? '<unknown>'} control-plane policy without executing PMOS.`)
     } else if (continuityEnvironment === null) {
       gates.PMOS_CONTROL_PLANE_GATE = gate('NOT_APPLICABLE', `${profile?.projectKey ?? '<unknown>'} does not declare a continuity control-plane environment.`)
@@ -136,14 +140,18 @@ export function runGovernancePreflight(args) {
     ? gate('PASS', routing.results.map((entry) => `${entry.normalizedPath} -> ${entry.currentOwner} / ${entry.baselineClassification}`))
     : gate('BLOCKED', [routing.error ?? '', ...legacyWithoutException.map((entry) => `Legacy target requires explicit exception: ${entry.normalizedPath}`)].filter(Boolean))
 
-  if (args.skipRuntime) {
+  if (!pmosLifecycleApplicable) {
+    gates.PMOS_RUNTIME_GATE = gate('NOT_APPLICABLE', `PMOS continuity does not apply to target environment ${args.target_environment}.`)
+  } else if (args.skipRuntime) {
     gates.PMOS_RUNTIME_GATE = gate('NOT_APPLICABLE', args.ci ? 'Live PMOS runtime verification is not available in CI.' : 'Explicitly skipped for this invocation.')
   } else {
     const runtime = run('npm', ['run', 'pmos:verify-runtime'], path.join(governanceRoot, 'apps', 'pmos'))
     gates.PMOS_RUNTIME_GATE = runtime.ok ? gate('PASS', 'Current PMOS runtime verification passed.') : gate('BLOCKED', runtime.stderr || runtime.stdout)
   }
 
-  if (args.requireBegin) {
+  if (!pmosLifecycleApplicable) {
+    gates.PMOS_BEGIN_GATE = gate('NOT_APPLICABLE', `PMOS registration is forbidden for target environment ${args.target_environment}.`)
+  } else if (args.requireBegin) {
     const begin = run('npm', ['run', 'pmos:begin', '--', '--check-task-id', args.task_id], path.join(governanceRoot, 'apps', 'pmos'))
     gates.PMOS_BEGIN_GATE = begin.ok ? gate('PASS', `Registered task ${args.task_id}.`) : gate('BLOCKED', begin.stderr || begin.stdout)
   } else {
