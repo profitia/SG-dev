@@ -14,6 +14,7 @@ import { validateConversationArtifactSet } from './archive-completeness'
 import { readJsonFileSafe } from './atomic-io'
 import { readCanonicalFlightRecord } from './flight-record-read'
 import { applyHistoricalEstateExceptions } from './historical-estate'
+import { classifyPendingArtifactBackups } from './recovery-estate'
 
 const APP_ROOT = process.cwd()
 const PMOS_DIR = path.join(APP_ROOT, '.pmos')
@@ -98,6 +99,7 @@ export interface EstateAuditSnapshot {
   recovery: {
     status: VerificationStatus
     pendingBackups: number
+    retainedCompletedBackups?: number
     failedArtifacts: number
     quarantinedArtifacts: number
     repairRuns: number
@@ -447,9 +449,10 @@ export function collectEstateAuditSnapshot(): EstateAuditSnapshot {
 
   const repairHistory = readRepairHistory(500)
   const maintenanceCandidates = findMaintenanceCandidates()
-  const recoveryArtifacts = countFilesRecursively(PENDING_BACKUP_DIR).count
-    + countFilesRecursively(FAILED_ARTIFACTS_DIR).count
-    + countFilesRecursively(QUARANTINE_DIR).count
+  const backupClassification = classifyPendingArtifactBackups(PENDING_BACKUP_DIR, CLOSEOUTS_DIR)
+  const failedArtifactsCount = countFilesRecursively(FAILED_ARTIFACTS_DIR).count
+  const quarantinedArtifactsCount = countFilesRecursively(QUARANTINE_DIR).count
+  const recoveryArtifacts = backupClassification.totalBackups + failedArtifactsCount + quarantinedArtifactsCount
   const repairsCount = repairHistory.length
   const repairFailures = repairHistory.filter((repair) => repair.repairResult === 'FAIL').length
   const archiveGrowth = countFilesRecursively(CONVERSATIONS_DIR).bytes
@@ -458,7 +461,10 @@ export function collectEstateAuditSnapshot(): EstateAuditSnapshot {
   const archiveStatus = resolveStatus(invalidArtifacts > 0, archiveWarnings > 0)
   const integrityStatus = resolveStatus(corruptedIntegrity > 0 || corruptedLocks > 0, missingIntegrity > 0 || missingLocks > 0)
   const closeoutStatus = resolveStatus(closeoutsMissing > 0, closeoutsRecoveryRequired > 0)
-  const recoveryStatus = resolveStatus(repairFailures > 0, recoveryArtifacts > 0)
+  const recoveryStatus = resolveStatus(
+    repairFailures > 0,
+    backupClassification.unresolvedPendingBackups.length > 0 || failedArtifactsCount > 0 || quarantinedArtifactsCount > 0,
+  )
   const maintenanceStatus = resolveStatus(false, maintenanceCandidates.staleLocks.length > 0 || maintenanceCandidates.orphanTempFiles.length > 0 || maintenanceCandidates.abandonedJournals.length > 0)
 
   const metrics: PmosMetrics = {
@@ -495,9 +501,10 @@ export function collectEstateAuditSnapshot(): EstateAuditSnapshot {
     },
     recovery: {
       status: recoveryStatus,
-      pendingBackups: countFilesRecursively(PENDING_BACKUP_DIR).count,
-      failedArtifacts: countFilesRecursively(FAILED_ARTIFACTS_DIR).count,
-      quarantinedArtifacts: countFilesRecursively(QUARANTINE_DIR).count,
+      pendingBackups: backupClassification.unresolvedPendingBackups.length,
+      retainedCompletedBackups: backupClassification.retainedCompletedBackups.length,
+      failedArtifacts: failedArtifactsCount,
+      quarantinedArtifacts: quarantinedArtifactsCount,
       repairRuns: repairsCount,
       latestRepairAt: repairHistory[0]?.completedAt ?? repairHistory[0]?.startedAt ?? null,
     },
@@ -538,7 +545,7 @@ export function formatOperatorStatus(snapshot: PmosStatusSnapshot): string {
   lines.push(` - archive: ${snapshot.estateAudit.archive.status} | conversations=${snapshot.estateAudit.archive.conversationCount} | invalid=${snapshot.estateAudit.archive.invalidArtifacts} | warnings=${snapshot.estateAudit.archive.warnings}`)
   lines.push(` - integrity: ${snapshot.estateAudit.integrity.status} | missing-integrity=${snapshot.estateAudit.integrity.missingIntegrity} | missing-locks=${snapshot.estateAudit.integrity.missingLocks} | corrupt-integrity=${snapshot.estateAudit.integrity.corruptedIntegrity} | corrupt-locks=${snapshot.estateAudit.integrity.corruptedLocks}`)
   lines.push(` - closeouts: ${snapshot.estateAudit.closeouts.status} | present=${snapshot.estateAudit.closeouts.present}/${snapshot.estateAudit.closeouts.expected} | missing=${snapshot.estateAudit.closeouts.missing} | recovery-required=${snapshot.estateAudit.closeouts.recoveryRequired}`)
-  lines.push(` - recovery: ${snapshot.estateAudit.recovery.status} | pending-backups=${snapshot.estateAudit.recovery.pendingBackups} | failed=${snapshot.estateAudit.recovery.failedArtifacts} | quarantined=${snapshot.estateAudit.recovery.quarantinedArtifacts} | repairs=${snapshot.estateAudit.recovery.repairRuns}`)
+  lines.push(` - recovery: ${snapshot.estateAudit.recovery.status} | pending-backups=${snapshot.estateAudit.recovery.pendingBackups} | retained-completed-backups=${snapshot.estateAudit.recovery.retainedCompletedBackups ?? 0} | failed=${snapshot.estateAudit.recovery.failedArtifacts} | quarantined=${snapshot.estateAudit.recovery.quarantinedArtifacts} | repairs=${snapshot.estateAudit.recovery.repairRuns}`)
   lines.push(` - maintenance: ${snapshot.estateAudit.maintenance.status} | stale-locks=${snapshot.estateAudit.maintenance.staleLocks} | orphan-temp=${snapshot.estateAudit.maintenance.orphanTempFiles} | abandoned-journals=${snapshot.estateAudit.maintenance.abandonedJournals}`)
   lines.push(` - metrics: conversations=${snapshot.estateAudit.metrics.conversationArtifacts} | closeouts=${snapshot.estateAudit.metrics.closeouts} | recovery-actions=${snapshot.estateAudit.metrics.recoveryArtifacts} | repair-actions=${snapshot.estateAudit.metrics.repairActions} | archive-growth-bytes=${snapshot.estateAudit.metrics.archiveGrowthBytes} | runtime-rebuilds=${snapshot.estateAudit.metrics.runtimeRebuildCount}`)
   return lines.join('\n')
@@ -582,7 +589,7 @@ export function formatEstateAuditStatus(snapshot: EstateAuditSnapshot): string {
   lines.push(` - archive: ${snapshot.archive.status} | conversations=${snapshot.archive.conversationCount} | invalid=${snapshot.archive.invalidArtifacts} | warnings=${snapshot.archive.warnings}`)
   lines.push(` - integrity: ${snapshot.integrity.status} | missing-integrity=${snapshot.integrity.missingIntegrity} | missing-locks=${snapshot.integrity.missingLocks} | corrupt-integrity=${snapshot.integrity.corruptedIntegrity} | corrupt-locks=${snapshot.integrity.corruptedLocks}`)
   lines.push(` - closeouts: ${snapshot.closeouts.status} | present=${snapshot.closeouts.present}/${snapshot.closeouts.expected} | missing=${snapshot.closeouts.missing} | recovery-required=${snapshot.closeouts.recoveryRequired}`)
-  lines.push(` - recovery: ${snapshot.recovery.status} | pending-backups=${snapshot.recovery.pendingBackups} | failed=${snapshot.recovery.failedArtifacts} | quarantined=${snapshot.recovery.quarantinedArtifacts} | repairs=${snapshot.recovery.repairRuns}`)
+  lines.push(` - recovery: ${snapshot.recovery.status} | pending-backups=${snapshot.recovery.pendingBackups} | retained-completed-backups=${snapshot.recovery.retainedCompletedBackups ?? 0} | failed=${snapshot.recovery.failedArtifacts} | quarantined=${snapshot.recovery.quarantinedArtifacts} | repairs=${snapshot.recovery.repairRuns}`)
   lines.push(` - maintenance: ${snapshot.maintenance.status} | stale-locks=${snapshot.maintenance.staleLocks} | orphan-temp=${snapshot.maintenance.orphanTempFiles} | abandoned-journals=${snapshot.maintenance.abandonedJournals}`)
   lines.push(` - metrics: conversations=${snapshot.metrics.conversationArtifacts} | closeouts=${snapshot.metrics.closeouts} | recovery-actions=${snapshot.metrics.recoveryArtifacts} | repair-actions=${snapshot.metrics.repairActions} | archive-growth-bytes=${snapshot.metrics.archiveGrowthBytes} | runtime-rebuilds=${snapshot.metrics.runtimeRebuildCount}`)
   lines.push(` - lifecycle: retention=${snapshot.lifecycle.archiveRetention}`)

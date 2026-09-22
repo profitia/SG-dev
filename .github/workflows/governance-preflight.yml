@@ -55,6 +55,7 @@ jobs:
           src/lib/pmos/project-profile.test.ts
           src/lib/pmos/phr-publication.test.ts
           scripts/pmos-save.test.ts
+          src/lib/pmos/recovery-estate.test.ts
       - name: Run repository governance gate
         run: >-
           node scripts/governance/governance-preflight.mjs
