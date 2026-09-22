@@ -4,6 +4,7 @@ import test from 'node:test'
 import {
   assertDatabaseIdentity,
   assertRegistrationMatches,
+  assertPmosCloseoutIdentity,
   assertSrmDevelopmentContinuity,
   expectedDatabaseName,
   registrationGateSnapshot,
@@ -53,6 +54,10 @@ test('SRM PMOS registration and PHR closeout require a verified Development targ
   assert.throws(() => validateExecutionRegistrationInput({ ...srm, gates: { ...srm.gates, TARGET_ENVIRONMENT_GATE: 'NOT_APPLICABLE' } }), /passing TARGET_ENVIRONMENT_GATE/)
   assert.throws(() => assertSrmDevelopmentContinuity('SRM', { ...registrationGateSnapshot(parsed), targetEnvironment: 'staging' }), /TARGET_ENVIRONMENT=development/)
   assert.throws(() => assertSrmDevelopmentContinuity('SRM', input.gates), /TARGET_ENVIRONMENT=development/)
+  assert.doesNotThrow(() => assertPmosCloseoutIdentity('SRM', 'SRM', registrationGateSnapshot(parsed), 'development'))
+  assert.throws(() => assertPmosCloseoutIdentity('SRM', 'SG2', registrationGateSnapshot(parsed), 'development'), /project mismatch/)
+  assert.throws(() => assertPmosCloseoutIdentity('SRM', 'SRM', registrationGateSnapshot(parsed), 'staging'), /artifact requires TARGET_ENVIRONMENT=development/)
+  assert.throws(() => assertPmosCloseoutIdentity('SRM', 'SRM', registrationGateSnapshot(parsed)), /artifact requires TARGET_ENVIRONMENT=development/)
 })
 
 test('enforces project-specific database name and Neon endpoint identity', () => {

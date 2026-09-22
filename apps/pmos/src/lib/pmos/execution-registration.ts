@@ -144,6 +144,18 @@ export function assertSrmDevelopmentContinuity(project: string, gateSnapshot: un
   }
 }
 
+export function assertPmosCloseoutIdentity(artifactProject: string, registeredProject: string, gateSnapshot: unknown, artifactTargetEnvironment?: unknown): void {
+  const artifactProfile = requirePmosProjectProfile(artifactProject)
+  const registrationProfile = requirePmosProjectProfile(registeredProject)
+  if (artifactProfile.projectKey !== registrationProfile.projectKey) {
+    throw new Error(`PMOS/PHR closeout project mismatch: artifact=${artifactProfile.projectKey}, registration=${registrationProfile.projectKey}.`)
+  }
+  assertSrmDevelopmentContinuity(registeredProject, gateSnapshot)
+  if (artifactProfile.projectKey === 'SRM' && artifactTargetEnvironment !== 'development') {
+    throw new Error('SRM PMOS/PHR artifact requires TARGET_ENVIRONMENT=development.')
+  }
+}
+
 export function expectedDatabaseName(project: string): string {
   return requirePmosProjectProfile(project).database.databaseName
 }
