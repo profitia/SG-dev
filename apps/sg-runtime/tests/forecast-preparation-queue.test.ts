@@ -211,6 +211,7 @@ function queueHarness(job: ForecastPreparationJob | null) {
   const events: string[] = []
   const checkpoints: Array<Record<string, unknown> | undefined> = []
   const claims: Array<readonly string[]> = []
+  const enqueues: Array<{ input: unknown, options: unknown }> = []
   const queue = {
     claimNext: async (_workerId: string, allowedJobKinds: readonly string[]) => {
       claims.push(allowedJobKinds)
@@ -234,8 +235,14 @@ function queueHarness(job: ForecastPreparationJob | null) {
       events.push('retry')
       checkpoints.push(checkpoint)
     },
+    enqueue: async (input: unknown, options: unknown) => {
+      enqueues.push({ input, options })
+      events.push('enqueue')
+      return { state: 'QUEUED', reason: null, job: null }
+    },
+    shouldCompleteCalibrationOnly: async () => true,
   } as unknown as ForecastPreparationQueueService
-  return { queue, events, checkpoints, claims }
+  return { queue, events, checkpoints, claims, enqueues }
 }
 
 test('completed verification compute with zero lawful origins is terminal instead of looping', async () => {
@@ -349,6 +356,40 @@ test('worker completes a Current job through the canonical preparation owner', a
   })
   assert.equal(await worker.runOne(), true)
   assert.deepEqual(harness.events, ['complete'])
+})
+
+test('Naive Daily Current completion queues bounded calibration before publishing completion', async () => {
+  const job = claimedJob('CURRENT')
+  job.targetBasis = 'POINT_IN_TIME'
+  job.targetSemantics = 'ROLLING_DAILY_POINT_IN_TIME'
+  job.modelId = 'naive'
+  const harness = queueHarness(job)
+  const worker = createForecastPreparationWorker({
+    queue: harness.queue,
+    prepareCurrent: async (input) => ({
+      ...input,
+      operation: 'CURRENT_FORECAST',
+      status: 'READY',
+      targetedDataScope: 'SINGLE_SERIES',
+      timingMs: 1,
+      reason: null,
+    }),
+  })
+
+  assert.equal(await worker.runOne(), true)
+  assert.deepEqual(harness.events, ['enqueue', 'complete'])
+  assert.deepEqual(harness.enqueues, [{
+    input: {
+      seriesId: 'series-1',
+      targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+      modelId: 'naive',
+      kind: 'VERIFICATION',
+    },
+    options: {
+      correlationId: 'ppf1-e2e-latest',
+      calibrationOnly: true,
+    },
+  }])
 })
 
 test('dedicated worker lanes pass mutually exclusive job-kind claims to the shared durable queue', async () => {
@@ -525,6 +566,39 @@ test('Naive Daily automatically refreshes Current bands on the first FAST calibr
   assert.equal(readinessCall, 2)
   assert.deepEqual(harness.events, ['continue'])
   assert.equal(harness.checkpoints[0]?.fastVerificationReadiness, 'READY')
+  assert.equal(typeof harness.checkpoints[0]?.currentBandsRefreshedAt, 'string')
+})
+
+test('bounded Naive Daily calibration completes after bands are refreshed without forcing FULL verification', async () => {
+  const job = claimedJob('VERIFICATION')
+  job.targetBasis = 'POINT_IN_TIME'
+  job.targetSemantics = 'ROLLING_DAILY_POINT_IN_TIME'
+  job.modelId = 'naive'
+  job.checkpointJson = { calibrationOnly: true }
+  const harness = queueHarness(job)
+  let readinessCall = 0
+  const worker = createForecastPreparationWorker({
+    queue: harness.queue,
+    prepareVerificationSlice: async () => undefined,
+    resolveReadiness: async () => {
+      readinessCall += 1
+      return {
+        fastVerificationReadiness: 'READY',
+        fullVerificationReadiness: 'NOT_PREPARED',
+        predictionBandState: 'AVAILABLE',
+        readiness: {
+          bandsReady: readinessCall > 1,
+          blockers: readinessCall > 1 ? ['FULL_HISTORICAL_PARTIAL'] : ['BANDS_NOT_AVAILABLE'],
+        },
+      } as never
+    },
+    refreshCurrentAfterCalibration: async () => ({ status: 'SUCCEEDED', results: [] }) as never,
+  })
+
+  assert.equal(await worker.runOne(), true)
+  assert.deepEqual(harness.events, ['complete'])
+  assert.equal(harness.checkpoints[0]?.calibrationOnly, true)
+  assert.equal(harness.checkpoints[0]?.terminal, false)
   assert.equal(typeof harness.checkpoints[0]?.currentBandsRefreshedAt, 'string')
 })
 

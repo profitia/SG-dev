@@ -648,6 +648,42 @@ export function mergeExactCapabilitySnapshot(
   snapshot: InteractiveForecastCapabilitySeriesSnapshot | null,
   capability: InteractiveForecastCapabilityResult,
 ): InteractiveForecastCapabilitySeriesSnapshot {
+  const previous = snapshot?.seriesId === capability.seriesId
+    ? snapshot.variants.find((variant) => (
+        variant.modelId === capability.modelId
+        && variant.targetSemantics === capability.targetSemantics
+      )) ?? null
+    : null
+  const preserveReady = <T extends string | undefined>(prior: T, next: T) => (
+    prior === 'READY' && next === 'NOT_PREPARED' ? prior : next
+  )
+  const mergedCapability: InteractiveForecastCapabilityResult = previous
+    ? {
+        ...capability,
+        currentReadiness: preserveReady(previous.currentReadiness, capability.currentReadiness),
+        verificationReadiness: preserveReady(previous.verificationReadiness, capability.verificationReadiness),
+        recentVerificationReadiness: preserveReady(previous.recentVerificationReadiness, capability.recentVerificationReadiness),
+        fastVerificationReadiness: preserveReady(previous.fastVerificationReadiness, capability.fastVerificationReadiness),
+        fullVerificationReadiness: preserveReady(previous.fullVerificationReadiness, capability.fullVerificationReadiness),
+        predictionBandResidualCount: Math.max(
+          previous.predictionBandResidualCount ?? 0,
+          capability.predictionBandResidualCount ?? 0,
+        ),
+        predictionBandState: previous.predictionBandState === 'AVAILABLE'
+          && capability.predictionBandState === 'NOT_AVAILABLE'
+          ? 'AVAILABLE'
+          : capability.predictionBandState,
+        readiness: previous.readiness && capability.readiness
+          ? {
+              ...capability.readiness,
+              fastReady: previous.readiness.fastReady || capability.readiness.fastReady,
+              bandsReady: previous.readiness.bandsReady || capability.readiness.bandsReady,
+              calibratedReady: previous.readiness.calibratedReady || capability.readiness.calibratedReady,
+              fullReady: previous.readiness.fullReady || capability.readiness.fullReady,
+            }
+          : capability.readiness ?? previous.readiness,
+      }
+    : capability
   const variants = snapshot?.seriesId === capability.seriesId
     ? snapshot.variants.filter((variant) => !(
         variant.modelId === capability.modelId
@@ -665,7 +701,7 @@ export function mergeExactCapabilitySnapshot(
     reason: capability.reason,
     targetedDataScope: 'SINGLE_SERIES',
     timingMs: capability.timingMs,
-    variants: [...variants, capability],
+    variants: [...variants, mergedCapability],
   }
 }
 
@@ -2846,10 +2882,6 @@ export function RawDataView({
     selectedForecastTargetBasis,
   )
   const selectedCurrentPrepared = !preparedReadsOnly || selectedCapabilityVariant?.currentReadiness === 'READY'
-  const selectedVerificationPrepared = isSelectedVerificationPrepared(
-    selectedCapabilityVariant,
-    selectedProgressiveVariant,
-  )
   const forecastCurrentDisplayState = resolveForecastCurrentDisplayState(forecastCurrentState, selectedProgressiveVariant)
   const forecastCurrentObservedProgressState = resolveForecastCurrentObservedProgressState(
     forecastCurrentState,
@@ -2862,10 +2894,39 @@ export function RawDataView({
         targetBasis: selectedForecastTargetBasis,
       }
     : null
+  const selectedVerificationCacheKey = selectedForecastIdentity
+    ? buildForecastLayerCacheKey(
+        locale,
+        selectedForecastIdentity.seriesId,
+        selectedForecastIdentity.modelId,
+        selectedForecastIdentity.targetBasis,
+        'verification',
+      )
+    : null
+  const selectedVerificationCacheEntry = selectedVerificationCacheKey
+    ? forecastLayerCacheRef.current.get(selectedVerificationCacheKey)
+    : null
+  const selectedCachedVerificationResult = selectedVerificationCacheEntry
+    && Date.now() - selectedVerificationCacheEntry.cachedAt <= CLIENT_SERIES_CACHE_TTL_MS
+    && selectedForecastIdentity
+    && isExactSelectedVerificationResult(
+      selectedVerificationCacheEntry.payload as BenchmarkForecastVerificationResult,
+      selectedForecastIdentity,
+    )
+    ? selectedVerificationCacheEntry.payload as BenchmarkForecastVerificationResult
+    : null
+  const selectedForecastVerificationResult = selectedForecastIdentity
+    && isExactSelectedVerificationResult(forecastVerificationResult, selectedForecastIdentity)
+    ? forecastVerificationResult
+    : selectedCachedVerificationResult
+  const selectedVerificationPrepared = isSelectedVerificationPrepared(
+    selectedCapabilityVariant,
+    selectedProgressiveVariant,
+  ) || Boolean(selectedForecastVerificationResult)
   const forecastVerificationBannerState = selectedForecastIdentity
     ? resolveForecastVerificationBannerState({
         forecastVerificationState,
-        forecastVerificationResult,
+        forecastVerificationResult: selectedForecastVerificationResult,
         forecastVerificationErrorState,
         selectedProgressiveVariant,
         identity: selectedForecastIdentity,
@@ -2896,13 +2957,13 @@ export function RawDataView({
           })
     : null
   const historicalVerificationNotice = resolveHistoricalVerificationNotice(
-    forecastVerificationResult,
+    selectedForecastVerificationResult,
     `${forecastAccuracyHorizon}M`,
   )
-  const showFastVerificationNotice = isAvailableVerificationResult(forecastVerificationResult)
-    && forecastVerificationResult.historicalVerification?.preparationState === 'FAST_READY'
-  const selectedVerificationQuality = isAvailableVerificationResult(forecastVerificationResult)
-    ? forecastVerificationResult.verification[`${forecastAccuracyHorizon}M`]?.quality ?? null
+  const showFastVerificationNotice = isAvailableVerificationResult(selectedForecastVerificationResult)
+    && selectedForecastVerificationResult.historicalVerification?.preparationState === 'FAST_READY'
+  const selectedVerificationQuality = isAvailableVerificationResult(selectedForecastVerificationResult)
+    ? selectedForecastVerificationResult.verification[`${forecastAccuracyHorizon}M`]?.quality ?? null
     : null
   const selectedVerificationConfidenceLabel = selectedVerificationQuality?.confidenceCode === 'LIMITED'
     ? t('verificationConfidenceLimited')
@@ -3053,9 +3114,13 @@ export function RawDataView({
     forecastModel,
     isForecastPortfolioVariant,
     preparedReadsOnly,
-    selectedCapabilityVariant,
+    selectedCapabilityVariant?.currentReadiness,
+    selectedCapabilityVariant?.fastVerificationReadiness,
+    selectedCapabilityVariant?.fullVerificationReadiness,
+    selectedCapabilityVariant?.verificationReadiness,
     selectedForecastTargetBasis,
-    selectedProgressiveVariant,
+    selectedProgressiveVariant?.currentState,
+    selectedProgressiveVariant?.verificationState,
     showForecast,
   ])
 
@@ -4067,7 +4132,7 @@ export function RawDataView({
       return
     }
 
-    const selectedVerificationResultReady = isExactSelectedVerificationResult(forecastVerificationResult, {
+    const selectedVerificationResultReady = isExactSelectedVerificationResult(selectedForecastVerificationResult, {
       seriesId: activeSeriesId,
       modelId: forecastModel,
       targetBasis: selectedForecastTargetBasis,
@@ -4219,7 +4284,7 @@ export function RawDataView({
       }
       controller.abort()
     }
-  }, [benchmarkSeriesId, forecastModel, forecastVerificationReloadNonce, forecastVerificationResult, isForecastPortfolioVariant, locale, preparedReadsOnly, selectedCapabilityVariant?.sourceFrequency, selectedCapabilityVariant?.targetCadence, selectedForecastTargetBasis, selectedProgressiveVariant?.verificationState, selectedVerificationPrepared, showForecast, showForecastVerification, t])
+  }, [benchmarkSeriesId, forecastModel, forecastVerificationReloadNonce, isForecastPortfolioVariant, locale, preparedReadsOnly, selectedCapabilityVariant?.sourceFrequency, selectedCapabilityVariant?.targetCadence, selectedForecastTargetBasis, selectedForecastVerificationResult, selectedProgressiveVariant?.verificationState, selectedVerificationPrepared, showForecast, showForecastVerification, t])
 
   useEffect(() => {
     if (!selectedForecastIdentity || !isExactSelectedRenderableCurrentResult(displayedForecastCurrentResult, selectedForecastIdentity)) return
@@ -4251,7 +4316,7 @@ export function RawDataView({
   }, [displayedForecastCurrentResult, selectedForecastIdentity])
 
   useEffect(() => {
-    if (!selectedForecastIdentity || !showForecastVerification || !isExactSelectedVerificationResult(forecastVerificationResult, selectedForecastIdentity)) return
+    if (!selectedForecastIdentity || !showForecastVerification || !isExactSelectedVerificationResult(selectedForecastVerificationResult, selectedForecastIdentity)) return
     const identityKey = `${selectedForecastIdentity.seriesId}|${selectedForecastIdentity.modelId}|${selectedForecastIdentity.targetBasis}`
     const correlationId = forecastCorrelationIdsRef.current.get(buildForecastActionCorrelationKey('VERIFICATION', selectedForecastIdentity))
     const pageInstanceId = forecastPageInstanceIdRef.current
@@ -4277,7 +4342,7 @@ export function RawDataView({
       window.cancelAnimationFrame(firstFrame)
       if (secondFrame) window.cancelAnimationFrame(secondFrame)
     }
-  }, [forecastVerificationResult, selectedForecastIdentity, showForecastVerification])
+  }, [selectedForecastIdentity, selectedForecastVerificationResult, showForecastVerification])
 
   useEffect(() => {
     if (isBenchmarkMode) {
@@ -4367,8 +4432,8 @@ export function RawDataView({
         currentResult: showForecast && isRenderableCurrentResult(displayedForecastCurrentResult)
           ? displayedForecastCurrentResult
           : null,
-        verificationResult: showForecast && showForecastVerification && isAvailableVerificationResult(forecastVerificationResult)
-          ? forecastVerificationResult
+        verificationResult: showForecast && showForecastVerification && isAvailableVerificationResult(selectedForecastVerificationResult)
+          ? selectedForecastVerificationResult
           : null,
         verificationHorizon: `${forecastAccuracyHorizon}M`,
       })
