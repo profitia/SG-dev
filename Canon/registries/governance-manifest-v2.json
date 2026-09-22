@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.2.0",
+  "manifestVersion": "3.3.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -27,6 +27,7 @@
     {"id": "srm-business-capability-canon", "version": "1.0", "path": "Canon/v1.0-srm-business-capability-canon.md", "status": "ACTIVE", "loadOrder": 120, "owner": "SRM Product Governance", "appliesTo": ["SRM"], "dependsOn": ["agent-execution-canon", "project-profile-registry", "srm-execution-adapter"]},
     {"id": "srm-architecture-component-placement", "version": "1.0", "path": "Canon/v1.0-srm-architecture-and-component-placement-canon.md", "status": "ACTIVE", "loadOrder": 130, "owner": "SRM Architecture Governance", "appliesTo": ["SRM"], "dependsOn": ["srm-business-capability-canon", "repository-routing", "architecture-baseline", "srm-execution-adapter"]},
     {"id": "srm-delivery-roadmap", "version": "1.0", "path": "Canon/v1.0-srm-delivery-roadmap.md", "status": "ACTIVE", "loadOrder": 140, "owner": "SRM Delivery Governance", "appliesTo": ["SRM"], "dependsOn": ["srm-business-capability-canon", "srm-architecture-component-placement", "srm-execution-adapter"]},
+    {"id": "srm-provider-capability-contract-audit", "version": "1.0", "path": "Canon/v1.0-srm-provider-capability-and-contract-audit.md", "status": "ACTIVE", "loadOrder": 150, "owner": "SRM Integration Governance", "appliesTo": ["SRM"], "dependsOn": ["srm-business-capability-canon", "srm-architecture-component-placement", "srm-delivery-roadmap", "srm-execution-adapter"]},
     {"id": "sg2-agent-execution-canon-v2", "version": "2.0", "path": "Canon/v2.0-mandatory-agent-execution-canon.md", "status": "SUPERSEDED", "loadOrder": null, "owner": "SG2 Governance Source Layer", "dependsOn": [], "supersededBy": "agent-execution-canon"},
     {"id": "developer-lifecycle-v1", "version": "1.0", "path": "Canon/v1.0-developer-lifecycle-specification.md", "status": "SUPERSEDED", "loadOrder": null, "owner": "SG2 Governance Source Layer", "dependsOn": [], "supersededBy": "developer-lifecycle"},
     {"id": "repository-routing-v1", "version": "1.0", "path": "Canon/v1.0-repository-routing-and-module-ownership-canon.md", "status": "SUPERSEDED", "loadOrder": null, "owner": "SG2 Architecture Governance", "dependsOn": [], "supersededBy": "repository-routing"},
