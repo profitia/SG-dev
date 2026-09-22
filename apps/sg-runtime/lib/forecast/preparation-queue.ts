@@ -194,6 +194,11 @@ function readCheckpointTimestamp(
   return timestamp
 }
 
+function readCheckpointFlag(value: Prisma.JsonValue | null, key: 'calibrationOnly') {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  return (value as Record<string, unknown>)[key] === true
+}
+
 export function resolveVerificationProgress(job: ForecastPreparationJob, now = new Date()): ForecastVerificationProgress | null {
   if (job.jobKind !== 'VERIFICATION') return null
   const fastReadyAt = readCheckpointTimestamp(job.checkpointJson, 'fastReadyAt')
@@ -429,6 +434,7 @@ async function upsertJob(
   authority: ForecastPreparedReadAuthority,
   dependencyJobKey: string | null,
   correlationId: string,
+  options: { calibrationOnly?: boolean } = {},
 ) {
   const key = buildForecastPreparationJobKey({
     kind: input.kind,
@@ -476,6 +482,9 @@ async function upsertJob(
         dependencyJobKey,
         originCorrelationId: correlationId,
         latestCorrelationId: correlationId,
+        checkpointJson: options.calibrationOnly
+          ? { calibrationOnly: true }
+          : Prisma.DbNull,
       },
       update: {
         requestCount: { increment: 1 },
@@ -560,7 +569,7 @@ export function createForecastPreparationQueueService(options: {
 
   async function enqueue(
     input: ForecastPreparationCommand,
-    options: { correlationId: string },
+    options: { correlationId: string, calibrationOnly?: boolean },
   ): Promise<ForecastPreparationCommandResult> {
     const parsed = ForecastPreparationCommandSchema.safeParse(input)
     if (!parsed.success) {
@@ -617,6 +626,7 @@ export function createForecastPreparationQueueService(options: {
       await resolveJobAuthority(command, capability!),
       dependencyJobKey,
       options.correlationId,
+      { calibrationOnly: options.calibrationOnly },
     )
     const job = await requeueSucceededJobIfArtifactIsMissing(prisma, persistedJob, command)
     await safelyRecordAdmissionStage(options.correlationId, 'JOB_UPSERT', admissionStageStartedAt)
@@ -832,7 +842,16 @@ export function createForecastPreparationQueueService(options: {
     if (updated.count !== 1) throw new Error(`Forecast preparation terminal-unavailable handling lost its lease for ${job.jobKey}.`)
   }
 
-  return { enqueue, snapshot, claimNext, heartbeat, complete, completeUnavailable, checkpointInLease, continueAfterSlice, failOrRetry }
+  async function shouldCompleteCalibrationOnly(job: ClaimedForecastPreparationJob) {
+    if (!readCheckpointFlag(job.checkpointJson, 'calibrationOnly')) return false
+    const latest = await prisma.forecastPreparationJob.findUnique({
+      where: { id: job.id },
+      select: { requestCount: true },
+    })
+    return (latest?.requestCount ?? job.requestCount) <= 1
+  }
+
+  return { enqueue, snapshot, claimNext, heartbeat, complete, completeUnavailable, checkpointInLease, continueAfterSlice, failOrRetry, shouldCompleteCalibrationOnly }
 }
 
 export type ForecastPreparationQueueService = ReturnType<typeof createForecastPreparationQueueService>
@@ -989,6 +1008,20 @@ export function createForecastPreparationWorker(options: {
           if (result.status !== 'READY' && result.status !== 'REUSED') {
             throw new Error(result.reason ?? `Current Forecast preparation ended with ${result.status}.`)
           }
+          if (job.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME' && job.modelId === 'naive') {
+            await queue.enqueue({
+              seriesId: job.seriesId,
+              targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+              modelId: 'naive',
+              kind: 'VERIFICATION',
+            }, {
+              correlationId,
+              calibrationOnly: true,
+            })
+            noteForecastRequestDiagnosticsEvent('naive_daily_calibration_queued', 'APPLICATION', {
+              currentJobKey: job.jobKey,
+            })
+          }
           await queue.complete(job)
           await safelyRecordArtifactReady(job.jobKey, 'CURRENT')
           noteForecastRequestDiagnosticsEvent('durable_job_completed', 'APPLICATION', { jobKey: job.jobKey, state: 'SUCCEEDED' })
@@ -999,6 +1032,7 @@ export function createForecastPreparationWorker(options: {
         let processedSliceCount = 0
         let priorFastReadyAt = readCheckpointTimestamp(job.checkpointJson, 'fastReadyAt')
         let currentBandsRefreshedAt = readCheckpointTimestamp(job.checkpointJson, 'currentBandsRefreshedAt')
+        const calibrationOnly = readCheckpointFlag(job.checkpointJson, 'calibrationOnly')
 
         while (true) {
           const batchSize = adaptiveCheckpoint?.nextBatchSize ?? 1
@@ -1058,6 +1092,7 @@ export function createForecastPreparationWorker(options: {
             fastReadyAt,
             fullReadyAt,
             currentBandsRefreshedAt,
+            calibrationOnly,
             blockers: readiness.readiness.blockers,
             checkedAt: new Date().toISOString(),
           }
@@ -1072,6 +1107,19 @@ export function createForecastPreparationWorker(options: {
           if (readiness.fullVerificationReadiness === 'READY') {
             await queue.complete(job, { ...checkpoint, terminal: true })
             noteForecastRequestDiagnosticsEvent('durable_job_completed', 'APPLICATION', { jobKey: job.jobKey, state: 'SUCCEEDED' })
+            return
+          }
+
+          if (
+            calibrationOnly
+            && currentBandsRefreshedAt
+            && await queue.shouldCompleteCalibrationOnly(job)
+          ) {
+            await queue.complete(job, { ...checkpoint, terminal: false, calibrationOnly: true })
+            noteForecastRequestDiagnosticsEvent('durable_job_completed', 'APPLICATION', {
+              jobKey: job.jobKey,
+              state: 'CALIBRATION_READY',
+            })
             return
           }
 
@@ -1119,10 +1167,13 @@ export function createForecastPreparationWorker(options: {
           error: error instanceof Error ? error.message : String(error),
         })
         const failureCheckpoint = adaptiveCheckpoint
-          ? fallbackAdaptiveVerificationBatchAfterFailure(
-              adaptiveCheckpoint,
-              `Reset after failed slice: ${error instanceof Error ? error.message : String(error)}`,
-            )
+          ? {
+              ...fallbackAdaptiveVerificationBatchAfterFailure(
+                adaptiveCheckpoint,
+                `Reset after failed slice: ${error instanceof Error ? error.message : String(error)}`,
+              ),
+              ...(readCheckpointFlag(job.checkpointJson, 'calibrationOnly') ? { calibrationOnly: true } : {}),
+            }
           : null
         await queue.failOrRetry(job, error, failureCheckpoint ?? undefined)
       } finally {

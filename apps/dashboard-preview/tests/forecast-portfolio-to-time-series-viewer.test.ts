@@ -586,6 +586,43 @@ test('point-in-time historical verification keeps every exact target comparison 
   assert.ok((payload?.deltaOverlays.length ?? 0) > 0)
 })
 
+test('point-in-time verification ribbon follows the actual observation date and historical value', () => {
+  const payload = buildForecastPortfolioPayload({
+    basePayload: createBasePayloadWithHistorical([
+      { date: '2026-04-20T00:00:00.000Z', value: 94 },
+      { date: '2026-04-21T00:00:00.000Z', value: 95 },
+    ]),
+    locale: 'pl',
+    model: 'damped_holt',
+    currentResult: null,
+    verificationResult: createVerificationResultForTargetBasis('POINT_IN_TIME', [
+      createRecord({
+        forecastDate: '2026-04-18T00:00:00.000Z',
+        actualObservedAt: '2026-04-20T00:00:00.000Z',
+        forecastValue: 90,
+        actualValue: 999,
+      }),
+      createRecord({
+        forecastDate: '2026-04-19T00:00:00.000Z',
+        actualObservedAt: '2026-04-21T00:00:00.000Z',
+        forecastValue: 92,
+        actualValue: 999,
+      }),
+    ]),
+    verificationHorizon: '3M',
+  })
+
+  const verificationSeries = payload?.series.find((entry) => entry.kind === 'historical-forecast')
+  assert.deepEqual(verificationSeries?.points.map((point) => point.date), [
+    '2026-04-20T00:00:00.000Z',
+    '2026-04-21T00:00:00.000Z',
+  ])
+  assert.deepEqual(payload?.deltaOverlays[0]?.points.slice(0, 2), [
+    { date: '2026-04-20T00:00:00.000Z', value: 94 },
+    { date: '2026-04-21T00:00:00.000Z', value: 95 },
+  ])
+})
+
 function interpolateByDate(
   leftDate: string,
   rightDate: string,

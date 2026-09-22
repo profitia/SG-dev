@@ -535,7 +535,7 @@ function collectVerificationDisplayRecordsForTargetBasis(
       .map((record) => ({
         key: `${record.modelId}:${record.horizon}:${record.forecastDate}`,
         monthKey: record.forecastDate,
-        displayDate: normalizePointInTimeDisplayDate(record.forecastDate),
+        displayDate: normalizePointInTimeDisplayDate(record.actualObservedAt ?? record.forecastDate),
         forecastDate: record.forecastDate,
         forecastOrigin: record.forecastOrigin,
         actualObservedAt: record.actualObservedAt,
@@ -715,16 +715,28 @@ function buildPointInTimeVerificationSeries(
   }
 }
 
-function buildPointInTimeHistoricalDeltaOverlays(records: VerificationDisplayRecord[]) {
+function buildPointInTimeHistoricalDeltaOverlays(
+  basePayload: TimeSeriesViewerPayload,
+  records: VerificationDisplayRecord[],
+) {
   if (records.length < 2) {
     return [] as TimeSeriesViewerDeltaOverlay[]
   }
 
-  return buildLocalDeltaOverlaysFromSamples(records.map((record) => ({
-    date: record.displayDate,
-    actualValue: record.actualValue,
-    forecastValue: record.forecastValue,
-  })))
+  const historicalPoints = new Map(
+    buildHistoricalActualPointLookup(basePayload).points.map((point) => [
+      normalizePointInTimeDisplayDate(point.date),
+      point,
+    ]),
+  )
+  return buildLocalDeltaOverlaysFromSamples(records.map((record) => {
+    const actualPoint = historicalPoints.get(record.displayDate)
+    return {
+      date: record.displayDate,
+      actualValue: actualPoint?.value ?? record.actualValue,
+      forecastValue: record.forecastValue,
+    }
+  }))
 }
 
 function findHistoricalSeries(basePayload: TimeSeriesViewerPayload) {
@@ -1383,7 +1395,7 @@ export function buildForecastPortfolioPayload({
         if (verificationSeries) {
           series.push(verificationSeries)
           deltaOverlays = verificationResult.targetBasis === 'POINT_IN_TIME'
-            ? buildPointInTimeHistoricalDeltaOverlays(verificationRecords)
+            ? buildPointInTimeHistoricalDeltaOverlays(basePayload, verificationRecords)
             : verificationResult.targetBasis === 'END_OF_PERIOD'
               ? buildEndOfPeriodDeltaOverlays(basePayload, verificationRecords)
             : buildDeltaOverlays(verificationRecords)

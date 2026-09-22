@@ -25,12 +25,17 @@ export function isFastHistoricalVerificationReady(
   verification: Record<string, ForecastVerificationHorizon>,
   options: { targetSemantics?: string } = {},
 ) {
+  return resolveFastHistoricalVerificationReadyHorizons(verification, options).length > 0
+}
+
+export function resolveFastHistoricalVerificationReadyHorizons(
+  verification: Record<string, ForecastVerificationHorizon>,
+  options: { targetSemantics?: string } = {},
+) {
   const minimumOrigins = resolveFastHistoricalVerificationMinimumOrigins(options.targetSemantics)
-  const useAvailableHistoryBoundary = options.targetSemantics === 'MONTHLY_AVERAGE'
-    || options.targetSemantics === 'END_OF_PERIOD'
-  return FAST_HISTORICAL_VERIFICATION_HORIZONS.every((label) => {
+  return FAST_HISTORICAL_VERIFICATION_HORIZONS.filter((label) => {
     const horizon = verification[label]
-    const requiredOrigins = horizon && useAvailableHistoryBoundary
+    const requiredOrigins = horizon
       ? Math.min(minimumOrigins, Math.max(0, horizon.expectedOrigins))
       : minimumOrigins
     return Boolean(

@@ -206,6 +206,71 @@ test('an exact capability refresh replaces only the matching model and methodolo
   assert.equal(merged.variants.find((variant) => variant.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME')?.recentVerificationReadiness, 'READY')
 })
 
+test('an eventually consistent capability refresh cannot downgrade an exact ready identity to not prepared', () => {
+  const ready = {
+    seriesId: 'rr2027f_cl',
+    targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME',
+    modelId: 'naive',
+    sourceFrequency: 'DAILY',
+    targetCadence: 'DAILY',
+    sourceAvailability: 'AVAILABLE',
+    lawfulTargetSemantics: 'LAWFUL',
+    status: 'READY',
+    currentReadiness: 'READY',
+    verificationReadiness: 'READY',
+    recentVerificationReadiness: 'READY',
+    fastVerificationReadiness: 'READY',
+    fullVerificationReadiness: 'NOT_PREPARED',
+    predictionBandResidualCount: 32,
+    predictionBandState: 'AVAILABLE',
+    readiness: {
+      fastReady: true,
+      bandsReady: true,
+      calibratedReady: true,
+      fullReady: false,
+      blockers: ['FULL_HISTORICAL_PARTIAL'],
+    },
+    targetedDataScope: 'SINGLE_SERIES',
+    timingMs: 4,
+    reason: null,
+  } as const satisfies InteractiveForecastCapabilityResult
+  const staleQueueRead = {
+    ...ready,
+    status: 'PREPARATION_REQUIRED',
+    verificationReadiness: 'NOT_PREPARED',
+    recentVerificationReadiness: 'NOT_PREPARED',
+    fastVerificationReadiness: 'NOT_PREPARED',
+    predictionBandResidualCount: 0,
+    predictionBandState: 'NOT_AVAILABLE',
+    readiness: {
+      fastReady: false,
+      bandsReady: false,
+      calibratedReady: false,
+      fullReady: false,
+      blockers: ['RECENT_MISSING'],
+    },
+    reason: 'PREPARATION_REQUIRED',
+  } as const satisfies InteractiveForecastCapabilityResult
+
+  const merged = mergeExactCapabilitySnapshot({
+    seriesId: ready.seriesId,
+    sourceFrequency: 'DAILY',
+    sourceAvailability: 'AVAILABLE',
+    status: 'AVAILABLE',
+    reason: null,
+    targetedDataScope: 'SINGLE_SERIES',
+    timingMs: 4,
+    variants: [ready],
+  }, staleQueueRead)
+  const exact = merged.variants[0]
+
+  assert.equal(exact?.verificationReadiness, 'READY')
+  assert.equal(exact?.fastVerificationReadiness, 'READY')
+  assert.equal(exact?.predictionBandState, 'AVAILABLE')
+  assert.equal(exact?.predictionBandResidualCount, 32)
+  assert.equal(exact?.readiness?.bandsReady, true)
+})
+
 test('showing Historical Verification preserves the chart range selected by the user', () => {
   assert.equal(resolveRangeForForecastVerification('3M', true), '3M')
   assert.equal(resolveRangeForForecastVerification('6M', true), '6M')

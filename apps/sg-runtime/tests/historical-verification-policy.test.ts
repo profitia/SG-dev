@@ -7,6 +7,7 @@ import {
   FORECAST_VERIFICATION_QUALITY_POLICY_VERSION,
   HISTORICAL_VERIFICATION_CONTRACT_VERSION,
   isFastHistoricalVerificationReady,
+  resolveFastHistoricalVerificationReadyHorizons,
   resolveForecastVerificationQuality,
   resolveHistoricalVerificationHorizon,
   resolveHistoricalVerificationSummary,
@@ -69,7 +70,7 @@ test('24 lawful origins report AVAILABLE without changing metric definitions', (
   assert.deepEqual(input.metrics, metrics)
 })
 
-test('Fast Verification requires 24 lawful metric-bearing comparisons for every supported horizon', () => {
+test('Fast Verification becomes readable when the first exact horizon reaches its lawful boundary', () => {
   const metrics = { mae: 1, rmse: 2, mase: 0.8, smape: 4, directionalAccuracy: 0.5, bias: 0 }
   const verification = Object.fromEntries(['1M', '3M', '6M', '12M'].map((label) => [
     label,
@@ -91,6 +92,12 @@ test('Fast Verification requires 24 lawful metric-bearing comparisons for every 
   assert.equal(summary.status, 'AVAILABLE')
 
   verification['12M']!.successfulOrigins = 23
+  assert.equal(isFastHistoricalVerificationReady(verification), true)
+  assert.deepEqual(resolveFastHistoricalVerificationReadyHorizons(verification), ['1M', '3M', '6M'])
+
+  verification['1M']!.successfulOrigins = 23
+  verification['3M']!.successfulOrigins = 23
+  verification['6M']!.successfulOrigins = 23
   assert.equal(isFastHistoricalVerificationReady(verification), false)
 })
 
@@ -127,15 +134,19 @@ test('non-daily Fast Verification adapts to the lawful history available for eac
     '12M': horizon({ horizon: '12M', origins: 1, expectedOrigins: 1, successfulOrigins: 1, metrics }),
   }
 
-  assert.equal(isFastHistoricalVerificationReady(verification), false)
+  assert.equal(isFastHistoricalVerificationReady(verification), true)
   assert.equal(isFastHistoricalVerificationReady(verification, { targetSemantics: 'MONTHLY_AVERAGE' }), true)
   assert.equal(isFastHistoricalVerificationReady(verification, { targetSemantics: 'END_OF_PERIOD' }), true)
 
   verification['6M'].successfulOrigins = 6
-  assert.equal(isFastHistoricalVerificationReady(verification, { targetSemantics: 'MONTHLY_AVERAGE' }), false)
+  assert.equal(isFastHistoricalVerificationReady(verification, { targetSemantics: 'MONTHLY_AVERAGE' }), true)
+  assert.deepEqual(
+    resolveFastHistoricalVerificationReadyHorizons(verification, { targetSemantics: 'MONTHLY_AVERAGE' }),
+    ['1M', '3M', '12M'],
+  )
 })
 
-test('non-daily Fast Verification still requires at least one lawful comparison for every horizon', () => {
+test('Fast Verification excludes unavailable horizons without blocking a ready exact horizon', () => {
   const metrics = { mae: 1, rmse: 2, mase: 0.8, smape: 4, directionalAccuracy: 0.5, bias: 0 }
   const verification = Object.fromEntries(['1M', '3M', '6M', '12M'].map((label) => [
     label,
@@ -149,7 +160,27 @@ test('non-daily Fast Verification still requires at least one lawful comparison 
   ]))
   verification['12M'] = horizon({ horizon: '12M', expectedOrigins: 0, successfulOrigins: 0, metrics: null })
 
-  assert.equal(isFastHistoricalVerificationReady(verification, { targetSemantics: 'MONTHLY_AVERAGE' }), false)
+  assert.equal(isFastHistoricalVerificationReady(verification, { targetSemantics: 'MONTHLY_AVERAGE' }), true)
+  assert.deepEqual(
+    resolveFastHistoricalVerificationReadyHorizons(verification, { targetSemantics: 'MONTHLY_AVERAGE' }),
+    ['1M', '3M', '6M'],
+  )
+})
+
+test('Daily Fast Verification adapts to available history independently per horizon', () => {
+  const metrics = { mae: 1, rmse: 2, mase: 0.8, smape: 4, directionalAccuracy: 0.5, bias: 0 }
+  const verification = {
+    '1M': horizon({ horizon: '1M', expectedOrigins: 40, successfulOrigins: 24, metrics }),
+    '3M': horizon({ horizon: '3M', expectedOrigins: 40, successfulOrigins: 18, metrics }),
+    '6M': horizon({ horizon: '6M', expectedOrigins: 12, successfulOrigins: 12, metrics }),
+    '12M': horizon({ horizon: '12M', expectedOrigins: 0, successfulOrigins: 0, metrics: null }),
+  }
+
+  assert.equal(isFastHistoricalVerificationReady(verification, { targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME' }), true)
+  assert.deepEqual(
+    resolveFastHistoricalVerificationReadyHorizons(verification, { targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME' }),
+    ['1M', '6M'],
+  )
 })
 
 test('verification quality uses 24 lawful comparisons as the versioned common denominator', () => {
