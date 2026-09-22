@@ -41,12 +41,18 @@ test('benchmark finder starts from Search while preserving the outer PORR frame'
   assert.doesNotMatch(shellSource, /getTranslations|openFinder|Overview|Przegląd/)
 })
 
-test('login messages publish version 1.2 with three next-version topics', () => {
+test('login publishes version 1.2 with an explicit environment label and three next-version topics', () => {
   const porrDemoPl = readPorrDemoMessages(polishMessages)
   const porrDemoEn = readPorrDemoMessages(englishMessages)
 
   assert.equal(porrDemoPl.versionLabel, 'Wersja: 1.2')
   assert.equal(porrDemoEn.versionLabel, 'Version: 1.2')
+  assert.match(homePageSource, /env === 'staging'/)
+  assert.match(homePageSource, /\? 'Staging'/)
+  assert.match(homePageSource, /env === 'production'/)
+  assert.match(homePageSource, /\? 'Production'/)
+  assert.match(homePageSource, /: 'Development'/)
+  assert.match(homePageSource, /t\('porrDemo\.versionLabel'\)\}\s+\{environmentDisplayName\}/)
   assert.equal(porrDemoPl.publicationDateLabel, 'Data publikacji: 2026.09.17')
   assert.equal(porrDemoEn.publicationDateLabel, 'Publication date: 2026-09-17')
   assert.ok(porrDemoPl.plannedTopicsItemOne)
