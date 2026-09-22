@@ -8,6 +8,8 @@ import { PrismaClient, ArtifactKind as PrismaArtifactKind, ArtifactNature as Pri
 import { validateGptHandoffArtifact, type CloseoutEvidence, type GptHandoffArtifactV1 } from '../../../packages/governance/src'
 
 import { readJsonFileSafe } from '../src/lib/pmos/atomic-io'
+import { assertPmosCloseoutIdentity, assertDatabaseIdentity } from '../src/lib/pmos/execution-registration'
+import { assertDatabaseUrl } from '../src/lib/pmos/operator-preflight'
 import { buildPhrPublicationInput, writePhrPublicationAttempt, writePhrPublicationSidecar } from '../src/lib/pmos/phr-publication'
 
 const prisma = new PrismaClient()
@@ -90,6 +92,7 @@ function readPersistedHandoffArtifactOrThrow(row: {
 }
 
 async function main(): Promise<void> {
+  assertDatabaseUrl('pmos:publish-phr')
   const { baseName } = parseArgs(process.argv)
   if (!baseName) {
     throw new Error('Missing --base-name argument.')
@@ -131,6 +134,17 @@ async function main(): Promise<void> {
   }
 
   const handoff = readPersistedHandoffArtifactOrThrow(persistedHandoff)
+  const registration = await prisma.promptExecution.findUnique({
+    where: { taskId: handoff.taskId },
+    select: { project: true, conversationId: true, gateSnapshot: true },
+  })
+  if (!registration || registration.conversationId !== handoff.conversationId) {
+    throw new Error(`PHR publication requires a matching PMOS registration for ${handoff.taskId}.`)
+  }
+  const metadata = conversationArtifact.value.metadata as Record<string, unknown>
+  assertPmosCloseoutIdentity(String(metadata.project ?? ''), registration.project ?? '', registration.gateSnapshot, metadata.targetEnvironment)
+  const databaseRows = await prisma.$queryRaw<Array<{ current_database: string }>>`SELECT current_database()`
+  assertDatabaseIdentity(databaseRows[0]?.current_database ?? '', registration.project ?? '', process.env.DATABASE_URL)
   const publication = buildPhrPublicationInput({
     artifact: conversationArtifact.value as never,
     handoff,

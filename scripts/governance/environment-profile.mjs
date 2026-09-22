@@ -27,11 +27,43 @@ export function resolveEnvironmentProfile({ profile, targetEnvironment, governan
   }
   const { registry, registryPath } = loadEnvironmentTopology(profile, governanceRoot)
   const environment = registry.environments[normalized]
-  if (!environment || !['ACTIVE', 'PROVISIONING', 'RESERVED'].includes(environment.status)) {
+  if (!environment) {
     throw new Error(`TARGET_ENVIRONMENT ${normalized} is not registered for ${profile.projectKey}.`)
+  }
+  if (environment.status !== 'ACTIVE') {
+    throw new Error(`TARGET_ENVIRONMENT ${normalized} is ${environment.status ?? 'UNREGISTERED'} for ${profile.projectKey}; only ACTIVE environments may pass.`)
   }
   if (environment.github?.exclusiveProjectKey !== profile.projectKey) {
     throw new Error(`TARGET_ENVIRONMENT ${normalized} is not exclusively assigned to ${profile.projectKey}.`)
+  }
+  if (!environment.github.environmentId || !environment.render?.environmentId || !environment.neon?.branchId) {
+    throw new Error(`TARGET_ENVIRONMENT ${normalized} lacks required provider identities for ${profile.projectKey}.`)
+  }
+  if (environment.github.repository && environment.github.repository !== profile.repository.slug) {
+    throw new Error(`TARGET_ENVIRONMENT ${normalized} has the wrong GitHub repository for ${profile.projectKey}.`)
+  }
+  if (registry.policy?.sourceAuthority !== profile.repository.slug) {
+    throw new Error(`TARGET_ENVIRONMENT ${normalized} has the wrong source authority for ${profile.projectKey}.`)
+  }
+  if (profile.projectKey === 'SRM') {
+    if (environment.verificationStatus !== 'VERIFIED' || !environment.github.repositoryId || environment.github.repositoryId !== registry.policy.sourceRepositoryId) {
+      throw new Error(`TARGET_ENVIRONMENT ${normalized} lacks verified SRM GitHub identity.`)
+    }
+    if (environment.neon.projectId === profile.database.projectId || environment.neon.databaseName === profile.database.databaseName) {
+      throw new Error(`TARGET_ENVIRONMENT ${normalized} uses the SRM PMOS database identity for product data.`)
+    }
+    if (environment.render.projectId !== registry.policy.renderProjectId || !registry.policy.renderProjectId) {
+      throw new Error(`TARGET_ENVIRONMENT ${normalized} has the wrong SRM Render project identity.`)
+    }
+    if (environment.neon.projectId !== registry.policy.productNeonProjectId || registry.policy.productNeonProjectId === profile.database.projectId) {
+      throw new Error(`TARGET_ENVIRONMENT ${normalized} has the wrong SRM product Neon project identity.`)
+    }
+    if (environment.neon.databaseName !== registry.policy.productDatabaseName || registry.policy.productDatabaseName === profile.database.databaseName) {
+      throw new Error(`TARGET_ENVIRONMENT ${normalized} has the wrong SRM product database identity.`)
+    }
+    if (!environment.neon.projectId || !environment.neon.databaseId || !environment.neon.databaseName || environment.neon.purpose !== 'SRM_APPLICATION_DATA') {
+      throw new Error(`TARGET_ENVIRONMENT ${normalized} lacks a registered SRM application database identity.`)
+    }
   }
   return { targetEnvironment: normalized, environment, registryPath }
 }
@@ -52,13 +84,13 @@ export function validateEnvironmentTopology(registry) {
       errors.push(`GitHub environment for ${name} must be namespaced as ${expectedGithubEnvironmentName}`)
     }
     const githubEnvironmentId = environment.github?.environmentId
-    if (!githubEnvironmentId) errors.push(`Missing GitHub environment ID for ${name}`)
-    else if (githubEnvironmentIds.has(githubEnvironmentId)) errors.push(`GitHub environment ${githubEnvironmentId} is shared by ${githubEnvironmentIds.get(githubEnvironmentId)} and ${name}`)
-    else githubEnvironmentIds.set(githubEnvironmentId, name)
+    if (!githubEnvironmentId && environment.status === 'ACTIVE') errors.push(`Missing GitHub environment ID for ${name}`)
+    else if (githubEnvironmentId && githubEnvironmentIds.has(githubEnvironmentId)) errors.push(`GitHub environment ${githubEnvironmentId} is shared by ${githubEnvironmentIds.get(githubEnvironmentId)} and ${name}`)
+    else if (githubEnvironmentId) githubEnvironmentIds.set(githubEnvironmentId, name)
     const branchId = environment.neon?.branchId
-    if (!branchId) errors.push(`Missing Neon branch ID for ${name}`)
-    else if (branchIds.has(branchId)) errors.push(`Neon branch ${branchId} is shared by ${branchIds.get(branchId)} and ${name}`)
-    else branchIds.set(branchId, name)
+    if (!branchId && environment.status === 'ACTIVE') errors.push(`Missing Neon branch ID for ${name}`)
+    else if (branchId && branchIds.has(branchId)) errors.push(`Neon branch ${branchId} is shared by ${branchIds.get(branchId)} and ${name}`)
+    else if (branchId) branchIds.set(branchId, name)
 
     for (const service of Object.values(environment.render?.services ?? {})) {
       if (!service.serviceId) continue

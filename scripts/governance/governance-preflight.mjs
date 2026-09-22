@@ -93,7 +93,7 @@ export function runGovernancePreflight(args) {
       gates.PMOS_CONTROL_PLANE_GATE = gate('NOT_APPLICABLE', `CI validates the registered ${profile?.projectKey ?? '<unknown>'} control-plane policy without executing PMOS.`)
     } else if (continuityEnvironment === null) {
       gates.PMOS_CONTROL_PLANE_GATE = gate('NOT_APPLICABLE', `${profile?.projectKey ?? '<unknown>'} does not declare a continuity control-plane environment.`)
-    } else if (args.execution_environment === continuityEnvironment) {
+    } else if (!['development', 'staging', 'production'].includes(args.execution_environment) || args.execution_environment === continuityEnvironment) {
       gates.PMOS_CONTROL_PLANE_GATE = gate('PASS', [
         `controlPlaneEnvironment=${continuityEnvironment}`,
         `productTargetEnvironment=${args.target_environment}`,
