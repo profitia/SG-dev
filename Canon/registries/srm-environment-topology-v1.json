@@ -1,0 +1,136 @@
+{
+  "schemaVersion": "1.0",
+  "registryId": "srm-environment-topology",
+  "projectKey": "SRM",
+  "owner": "SRM Platform",
+  "onboardingStatus": "DEVELOPMENT_RESOURCES_REGISTERED",
+  "executableGateStatus": "NOT_ENABLED_UNTIL_ALL_REQUIRED_PROVIDER_IDENTITIES_ARE_REGISTERED",
+  "policy": {
+    "sourceAuthority": "profitia/SG-dev",
+    "sourceRepositoryId": 1247665550,
+    "authorityBranch": "main",
+    "promotionFlow": [
+      "development",
+      "staging",
+      "production"
+    ],
+    "sameSourceRevisionMinimumRequired": true,
+    "sameImmutableArtifactPromotionTarget": true,
+    "artifactDigestPromotionStatus": "PLANNED_HARDENING",
+    "environmentBranchesAllowed": false,
+    "crossEnvironmentWritesAllowed": false,
+    "pmosScope": "DEVELOPMENT_CONTINUITY_ONLY",
+    "pmosDatabaseName": "srm_pmos",
+    "productDatabaseName": "srm_app",
+    "productAndPmosDatabasesMayBeShared": false
+  },
+  "environments": {
+    "development": {
+      "status": "ACTIVE",
+      "verificationStatus": "VERIFIED",
+      "github": {
+        "environmentName": "srm-development",
+        "providerLabel": "SRM-development",
+        "providerLabelMismatch": "GitHub environment names are case-insensitive; the canonical logical name is lowercase.",
+        "environmentId": 22497985824,
+        "repository": "profitia/SG-dev",
+        "repositoryId": 1247665550,
+        "exclusiveProjectKey": "SRM",
+        "protectionStatus": "MAIN_ONLY",
+        "deploymentBranchPolicy": {
+          "customBranchPolicies": true,
+          "protectedBranches": false,
+          "branches": [
+            {
+              "id": 60721482,
+              "name": "main",
+              "type": "branch"
+            }
+          ]
+        }
+      },
+      "render": {
+        "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+        "projectId": "prj-dapbd3hsrm7s73es53fg",
+        "environmentId": "evm-dapbd70ae00c73cgrup0",
+        "providerLabel": "Development",
+        "networkIsolation": "ENABLED",
+        "services": {}
+      },
+      "neon": {
+        "projectId": "snowy-breeze-40315151",
+        "branchId": "br-dark-surf-b1vrhda9",
+        "branchName": "Development",
+        "parentBranchId": "br-nameless-bar-b1wlhjhx",
+        "branchState": "ready",
+        "branchProtected": false,
+        "databaseId": 308881,
+        "databaseName": "srm_app",
+        "databaseOwner": "neondb_owner",
+        "purpose": "SRM_APPLICATION_DATA"
+      },
+      "domains": [],
+      "deploymentPolicy": "MUTABLE_INTEGRATION",
+      "schemaStatus": "NOT_INITIALIZED"
+    },
+    "staging": {
+      "status": "RESERVED",
+      "activationStatus": "NOT_ONBOARDED",
+      "github": {
+        "environmentName": "srm-staging",
+        "environmentId": null,
+        "exclusiveProjectKey": "SRM",
+        "status": "NOT_PROVISIONED"
+      },
+      "render": {
+        "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+        "projectId": "prj-dapbd3hsrm7s73es53fg",
+        "environmentId": "evm-dapbdbbbc2fs73f4g7gg",
+        "providerLabel": "Staging",
+        "networkIsolation": "ENABLED",
+        "services": {}
+      },
+      "neon": {
+        "projectId": "snowy-breeze-40315151",
+        "branchId": "br-broad-butterfly-b11t4v01",
+        "branchName": "Staging",
+        "parentBranchId": "br-nameless-bar-b1wlhjhx",
+        "branchState": "ready",
+        "branchProtected": false,
+        "applicationDatabaseName": null,
+        "applicationDatabaseStatus": "NOT_CREATED"
+      },
+      "domains": [],
+      "deploymentPolicy": "NOT_ACTIVATED"
+    },
+    "production": {
+      "status": "RESERVED",
+      "activationStatus": "NOT_ONBOARDED",
+      "github": {
+        "environmentName": "srm-production",
+        "environmentId": null,
+        "exclusiveProjectKey": "SRM",
+        "status": "NOT_PROVISIONED"
+      },
+      "render": {
+        "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+        "projectId": "prj-dapbd3hsrm7s73es53fg",
+        "environmentId": "evm-dapbd3hsrm7s73es53h0",
+        "providerLabel": "Production",
+        "networkIsolation": "ENABLED",
+        "services": {}
+      },
+      "neon": {
+        "projectId": "snowy-breeze-40315151",
+        "branchId": "br-nameless-bar-b1wlhjhx",
+        "branchName": "Production",
+        "branchState": "ready",
+        "branchProtected": true,
+        "applicationDatabaseName": null,
+        "applicationDatabaseStatus": "NOT_CREATED"
+      },
+      "domains": [],
+      "deploymentPolicy": "PROMOTE_ACCEPTED_STAGING_ARTIFACT_ONLY_AFTER_ACTIVATION"
+    }
+  }
+}
