@@ -6,7 +6,7 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 import { validateGovernanceManifest } from './validate-governance-manifest.mjs'
-import { loadEnvironmentTopology, resolveEnvironmentProfile, validateEnvironmentTopology } from './environment-profile.mjs'
+import { compareProviderSnapshot, loadEnvironmentTopology, resolveEnvironmentProfile, validateEnvironmentTopology } from './environment-profile.mjs'
 import { runGovernancePreflight } from './governance-preflight.mjs'
 import { resolveHistoricalProjectProfile, resolveProjectProfile } from './project-profile.mjs'
 import { resolveProjectRouting } from './routing-engine.mjs'
@@ -66,7 +66,7 @@ test('project profiles route SG2 and allow only bounded CIC governance bootstrap
 
 test('SG2 environment topology resolves exact project and provider identities', () => {
   const sg2 = resolveProjectProfile('SG2', repositoryRoot)
-  for (const targetEnvironment of ['development', 'staging', 'production']) {
+  for (const targetEnvironment of ['development', 'staging']) {
     const resolved = resolveEnvironmentProfile({ profile: sg2, targetEnvironment, governanceRoot: repositoryRoot })
     assert.equal(resolved.targetEnvironment, targetEnvironment)
     assert.equal(resolved.environment.github.repository, 'profitia/SG-dev')
@@ -74,6 +74,10 @@ test('SG2 environment topology resolves exact project and provider identities', 
     assert.match(resolved.environment.render.environmentId, /^evm-/)
     assert.match(resolved.environment.neon.branchId, /^br-/)
   }
+  assert.throws(
+    () => resolveEnvironmentProfile({ profile: sg2, targetEnvironment: 'production', governanceRoot: repositoryRoot }),
+    /not ACTIVE.*RESERVED/,
+  )
   assert.throws(
     () => resolveEnvironmentProfile({ profile: sg2, targetEnvironment: 'client-demo', governanceRoot: repositoryRoot }),
     /Unknown TARGET_ENVIRONMENT/,
@@ -114,6 +118,131 @@ test('SG2 environment topology prevents cross-environment service and database i
   assert.doesNotMatch(JSON.stringify(registry), /postgres(?:ql)?:\/\//i)
 })
 
+test('SRM uses the shared routing registry and activates only verified Development topology', () => {
+  const srm = resolveProjectProfile('SRM', repositoryRoot)
+  assert.equal(srm.repository.routingRegistry, 'Canon/registries/current-architecture-baseline-v1.json')
+  assert.equal(srm.repository.environmentTopologyRegistry, 'Canon/registries/srm-environment-topology-v1.json')
+  assert.equal(srm.continuity.controlPlaneEnvironment, 'development')
+  const { registry } = loadEnvironmentTopology(srm, repositoryRoot)
+  assert.equal(validateEnvironmentTopology(registry).valid, true)
+  const development = resolveEnvironmentProfile({ profile: srm, targetEnvironment: 'development', governanceRoot: repositoryRoot })
+  assert.equal(development.environment.neon.databaseName, 'srm_app')
+  assert.notEqual(development.environment.neon.projectId, srm.database.projectId)
+  for (const name of ['staging', 'production']) {
+    assert.throws(() => resolveEnvironmentProfile({ profile: srm, targetEnvironment: name, governanceRoot: repositoryRoot }), /not ACTIVE.*RESERVED/)
+  }
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'srm-reserved-activation-'))
+  const topologyPath = path.join(temporaryRoot, srm.repository.environmentTopologyRegistry)
+  fs.mkdirSync(path.dirname(topologyPath), { recursive: true })
+  for (const name of ['staging', 'production']) {
+    const premature = structuredClone(registry)
+    premature.environments[name].status = 'ACTIVE'
+    premature.environments[name].verificationStatus = 'VERIFIED'
+    fs.writeFileSync(topologyPath, JSON.stringify(premature))
+    assert.throws(() => resolveEnvironmentProfile({ profile: srm, targetEnvironment: name, governanceRoot: temporaryRoot }), /lacks required provider identities/)
+  }
+  const routed = resolveProjectRouting({ profile: srm, targets: ['apps/srm/package.json', 'Canon/registries/srm-environment-topology-v1.json', 'scripts/governance/environment-profile.mjs'], repositoryRoot })
+  assert.equal(routed.ok, true)
+  assert.deepEqual(routed.results.map((entry) => entry.baselineClassification), ['ALIGNED', 'ALIGNED', 'ALIGNED'])
+})
+
+test('SRM active environment fails closed on wrong repository, Neon project, or product database', () => {
+  const srm = resolveProjectProfile('SRM', repositoryRoot)
+  const original = loadEnvironmentTopology(srm, repositoryRoot).registry
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'srm-environment-identity-'))
+  const topologyPath = path.join(temporaryRoot, srm.repository.environmentTopologyRegistry)
+  fs.mkdirSync(path.dirname(topologyPath), { recursive: true })
+  const resolve = (mutate) => {
+    const copy = structuredClone(original)
+    mutate(copy.environments.development)
+    fs.writeFileSync(topologyPath, JSON.stringify(copy))
+    return () => resolveEnvironmentProfile({ profile: srm, targetEnvironment: 'development', governanceRoot: temporaryRoot })
+  }
+  assert.throws(resolve((environment) => { environment.github.repository = 'profitia/other' }), /wrong GitHub repository/)
+  assert.throws(resolve((environment) => { environment.github.repositoryId = 999 }), /verified SRM GitHub identity/)
+  assert.throws(resolve((environment) => { environment.neon.projectId = srm.database.projectId }), /PMOS database identity/)
+  assert.throws(resolve((environment) => { environment.neon.databaseName = srm.database.databaseName }), /PMOS database identity/)
+  assert.throws(resolve((environment) => { environment.render.projectId = 'prj-other' }), /wrong SRM Render project identity/)
+  assert.throws(resolve((environment) => { environment.neon.projectId = 'wrong-neon-project' }), /wrong SRM product Neon project identity/)
+  assert.throws(resolve((environment) => { environment.neon.databaseName = 'wrong_database' }), /wrong SRM product database identity/)
+  assert.throws(resolve((environment) => { environment.neon.databaseId = null }), /application database identity/)
+})
+
+test('SRM preflight gates Development and blocks reserved environments without PMOS continuity', () => {
+  const input = {
+    mode: 'development', project: 'SRM', target_environment: 'development', task_id: 'srm-environment-test',
+    conversation_id: 'srm-environment-test-conversation', title: 'SRM governance test',
+    workspace: 'SG-dev Codespaces SRM', execution_environment: 'codespaces', scope: 'governance',
+    targets: ['Canon/registries/profitia-projects-v1.json'], legacyExceptions: [], repository_root: repositoryRoot,
+    ci: false, offline: true, allowDirty: true, requireBegin: false, skipRuntime: true, checkEstate: false,
+  }
+  const development = runGovernancePreflight(input)
+  assert.equal(development.gates.TARGET_ENVIRONMENT_GATE.status, 'PASS')
+  assert.equal(development.gates.PMOS_CONTROL_PLANE_GATE.status, 'PASS')
+  for (const target_environment of ['staging', 'production']) {
+    const result = runGovernancePreflight({ ...input, target_environment })
+    assert.equal(result.gates.TARGET_ENVIRONMENT_GATE.status, 'BLOCKED')
+    assert.equal(result.gates.PMOS_BEGIN_GATE.status, 'NOT_APPLICABLE')
+    assert.equal(result.gates.PMOS_RUNTIME_GATE.status, 'NOT_APPLICABLE')
+    assert.equal(result.verdict, 'BLOCKED')
+  }
+  const wrongExecution = runGovernancePreflight({ ...input, execution_environment: 'staging' })
+  assert.equal(wrongExecution.gates.PMOS_CONTROL_PLANE_GATE.status, 'BLOCKED')
+})
+
+test('fresh provider snapshots detect Staging SHA drift, auto-deploy drift and unregistered services', () => {
+  const sg2 = resolveProjectProfile('SG2', repositoryRoot)
+  const { registry } = loadEnvironmentTopology(sg2, repositoryRoot)
+  const staging = registry.environments.staging
+  const capturedAt = new Date().toISOString()
+  const snapshot = {
+    capturedAt,
+    source: { render: 'render-api', neon: 'neon-api' },
+    renderServices: Object.values(staging.render.services).map((service) => ({
+      id: service.serviceId,
+      environmentId: staging.render.environmentId,
+      repo: 'https://github.com/profitia/SG-dev',
+      autoDeploy: service.autoDeploy,
+      liveStatus: 'live',
+      liveDeployId: service.baselineDeployId,
+      liveSha: service.baselineSha,
+    })),
+    neonBranches: [{ id: staging.neon.branchId, projectId: staging.neon.projectId, name: staging.neon.branchName }],
+  }
+  assert.equal(compareProviderSnapshot(registry, 'staging', snapshot).valid, true)
+  const drifted = structuredClone(snapshot)
+  drifted.renderServices[0].liveSha = '48dfcd8af93fa9f5e9708653a868b89c138b6b91'
+  drifted.renderServices[1].autoDeploy = true
+  drifted.renderServices.push({ ...drifted.renderServices[0], id: 'srv-unregistered' })
+  const result = compareProviderSnapshot(registry, 'staging', drifted)
+  assert.equal(result.valid, false)
+  assert.match(result.errors.join('\n'), /Staging baseline drift/)
+  assert.match(result.errors.join('\n'), /autoDeploy drift/)
+  assert.match(result.errors.join('\n'), /Unregistered SG2 Render service/)
+  assert.equal(compareProviderSnapshot(registry, 'staging', { ...snapshot, capturedAt: '2020-01-01T00:00:00Z' }).valid, false)
+})
+
+test('SRM provider snapshot detects an unregistered Development service without borrowing SG2 identity', () => {
+  const srm = resolveProjectProfile('SRM', repositoryRoot)
+  const { registry } = loadEnvironmentTopology(srm, repositoryRoot)
+  const development = registry.environments.development
+  const snapshot = {
+    capturedAt: new Date().toISOString(),
+    source: { render: 'render-api', neon: 'neon-api' },
+    renderServices: [{
+      id: 'srv-unregistered-srm',
+      environmentId: development.render.environmentId,
+      repo: 'https://github.com/profitia/SG-dev.git',
+      autoDeploy: 'no',
+      liveStatus: 'live',
+    }],
+    neonBranches: [{ id: development.neon.branchId, projectId: development.neon.projectId, name: development.neon.branchName }],
+  }
+  const result = compareProviderSnapshot(registry, 'development', snapshot)
+  assert.equal(result.valid, false)
+  assert.match(result.errors.join('\n'), /Unregistered SRM Render service/)
+})
+
 test('SG2 PMOS applies only to Development and creates no Staging or Production continuity', () => {
   const input = {
     mode: 'development',
@@ -141,7 +270,16 @@ test('SG2 PMOS applies only to Development and creates no Staging or Production 
   assert.equal(staging.gates.PMOS_CONTROL_PLANE_GATE.status, 'NOT_APPLICABLE')
   assert.equal(staging.gates.PMOS_RUNTIME_GATE.status, 'NOT_APPLICABLE')
   assert.equal(staging.gates.PMOS_BEGIN_GATE.status, 'NOT_APPLICABLE')
-  assert.equal(staging.verdict, 'PASS')
+  assert.equal(staging.gates.LIVE_PROVIDER_DRIFT_GATE.status, 'BLOCKED')
+  assert.equal(staging.verdict, 'BLOCKED')
+  const unreadableSnapshot = runGovernancePreflight({ ...input, provider_snapshot: path.join(os.tmpdir(), 'missing-sg2-provider-snapshot.json') })
+  assert.equal(unreadableSnapshot.gates.TARGET_ENVIRONMENT_GATE.status, 'PASS')
+  assert.equal(unreadableSnapshot.gates.LIVE_PROVIDER_DRIFT_GATE.status, 'BLOCKED')
+
+  const reservedProduction = runGovernancePreflight({ ...input, target_environment: 'production' })
+  assert.equal(reservedProduction.gates.TARGET_ENVIRONMENT_GATE.status, 'BLOCKED')
+  assert.equal(reservedProduction.gates.PMOS_BEGIN_GATE.status, 'NOT_APPLICABLE')
+  assert.equal(reservedProduction.verdict, 'BLOCKED')
 
   const development = runGovernancePreflight({ ...input, target_environment: 'development' })
   assert.equal(development.gates.PMOS_CONTROL_PLANE_GATE.status, 'PASS')

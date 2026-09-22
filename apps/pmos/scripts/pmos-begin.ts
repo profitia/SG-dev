@@ -7,6 +7,8 @@ import { assertDatabaseUrl } from '../src/lib/pmos/operator-preflight'
 import {
   assertDatabaseIdentity,
   assertRegistrationMatches,
+  assertControlPlaneContinuity,
+  registrationGateSnapshot,
   validateExecutionRegistrationInput,
   type ExistingExecutionRegistration,
 } from '../src/lib/pmos/execution-registration'
@@ -45,18 +47,32 @@ async function currentDatabaseName(): Promise<string> {
   return rows[0]?.current_database ?? ''
 }
 
-async function checkRegistration(taskId: string): Promise<void> {
+async function checkRegistration(taskId: string, conversationId: string | null, project: string | null, targetEnvironment: string | null): Promise<void> {
   const record = await prisma.promptExecution.findUnique({ where: { taskId }, select: registrationSelect })
   if (!record) throw new Error(`No PMOS execution registration exists for task ${taskId}.`)
   if (!['queued', 'running', 'completed'].includes(record.status)) {
     throw new Error(`PMOS execution registration ${taskId} has unusable status ${record.status}.`)
   }
+  if (conversationId && record.conversationId !== conversationId) {
+    throw new Error(`PMOS execution registration ${taskId} belongs to another conversation.`)
+  }
+  if (project && normalizePmosProjectName(record.project ?? '') !== normalizePmosProjectName(project)) {
+    throw new Error(`PMOS execution registration ${taskId} belongs to another project.`)
+  }
+  const registeredProfile = requirePmosProjectProfile(record.project ?? '')
+  if (targetEnvironment && registeredProfile.continuity.controlPlaneEnvironment
+    && targetEnvironment !== registeredProfile.continuity.controlPlaneEnvironment) {
+    throw new Error(`PMOS execution registration ${taskId} cannot serve target environment ${targetEnvironment}.`)
+  }
+  assertDatabaseIdentity(await currentDatabaseName(), record.project ?? '', process.env.DATABASE_URL)
+  assertControlPlaneContinuity(record.project ?? '', record.gateSnapshot)
   process.stdout.write(`${JSON.stringify({ status: 'PASS', taskId, registrationId: record.id, executionStatus: record.status }, null, 2)}\n`)
 }
 
 async function begin(inputPath: string): Promise<void> {
   const resolved = path.resolve(inputPath)
   const input = validateExecutionRegistrationInput(JSON.parse(fs.readFileSync(resolved, 'utf8')))
+  assertControlPlaneContinuity(input.project, registrationGateSnapshot(input))
   const configuredProject = getConfiguredPmosProjectName()
   const configuredWorkspace = getConfiguredPmosWorkspaceName()
   if (normalizePmosProjectName(input.project) !== configuredProject) {
@@ -97,7 +113,7 @@ async function begin(inputPath: string): Promise<void> {
       executionEnvironment: input.executionEnvironment,
       scope: input.scope,
       declaredTargetPaths: input.declaredTargetPaths,
-      gateSnapshot: input.gates,
+      gateSnapshot: registrationGateSnapshot(input),
       startedAt: new Date(),
       etap: input.etap,
       subetap: input.subetap,
@@ -114,8 +130,8 @@ async function main(): Promise<void> {
   assertDatabaseUrl('pmos:begin')
   const checkTaskId = argument('--check-task-id')
   const inputPath = argument('--input')
-  if (checkTaskId) return checkRegistration(checkTaskId)
-  if (!inputPath) throw new Error('Usage: npm run pmos:begin -- --input <registration.json> OR --check-task-id <taskId>')
+  if (checkTaskId) return checkRegistration(checkTaskId, argument('--check-conversation-id'), argument('--check-project'), argument('--check-target-environment'))
+  if (!inputPath) throw new Error('Usage: npm run pmos:begin -- --input <registration.json> OR --check-task-id <taskId> [--check-conversation-id <id> --check-project <project> --check-target-environment <environment>]')
   return begin(inputPath)
 }
 

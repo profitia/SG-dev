@@ -73,3 +73,19 @@ jobs:
           --target Canon/v3.0-profitia-agent-execution-canon.md
           --target Canon/registries/profitia-projects-v1.json
           --target scripts/governance/governance-preflight.mjs
+      - name: Run SRM Development environment gate
+        run: >-
+          node scripts/governance/governance-preflight.mjs
+          --ci
+          --mode development
+          --task-id CI-SRM-GOVERNANCE-PREFLIGHT
+          --conversation-id CI-SRM-GOVERNANCE-PREFLIGHT
+          --title "SRM Development Governance CI"
+          --project SRM
+          --target-environment development
+          --workspace "GitHub Actions"
+          --execution-environment ci
+          --scope governance
+          --target Canon/registries/profitia-projects-v1.json
+          --target Canon/registries/srm-environment-topology-v1.json
+          --target scripts/governance/environment-profile.mjs

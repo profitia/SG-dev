@@ -73,6 +73,7 @@ import {
 } from '../src/lib/pmos/runtime-authority'
 import { createCanonicalFlightRecordPayload } from '../src/lib/pmos/flight-record-snapshot'
 import { assertDatabaseUrl } from '../src/lib/pmos/operator-preflight'
+import { assertPmosCloseoutIdentity, assertDatabaseIdentity } from '../src/lib/pmos/execution-registration'
 import {
   atomicCopyFile,
   atomicWriteFileSet,
@@ -2834,6 +2835,7 @@ async function main() {
       id: true,
       conversationId: true,
       project: true,
+      gateSnapshot: true,
       status: true,
     },
   })
@@ -2846,6 +2848,12 @@ async function main() {
   if (normalizePmosProjectName(executionRegistration.project ?? '') !== projectProfile.projectName) {
     throw new Error(`PMOS_BEGIN_GATE failed: project identity does not match task ${artifact.metadata.taskId}.`)
   }
+  assertPmosCloseoutIdentity(
+    String(artifact.metadata.project), executionRegistration.project ?? '', executionRegistration.gateSnapshot,
+    (artifact.metadata as unknown as Record<string, unknown>).targetEnvironment,
+  )
+  const databaseRows = await prisma.$queryRaw<Array<{ current_database: string }>>`SELECT current_database()`
+  assertDatabaseIdentity(databaseRows[0]?.current_database ?? '', executionRegistration.project ?? '', process.env.DATABASE_URL)
   if (!['queued', 'running'].includes(executionRegistration.status)) {
     throw new Error(`PMOS_BEGIN_GATE failed: registration status ${executionRegistration.status} cannot enter closeout.`)
   }
