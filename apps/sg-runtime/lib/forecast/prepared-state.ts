@@ -510,7 +510,11 @@ export async function readForecastPreparedVariants(
           latestSourceObservationDate: rollingHistory.points[rollingHistory.points.length - 1]?.date ?? null,
           verificationCount,
         }),
-        preparedReadAuthority: null,
+        preparedReadAuthority: createPreparedReadAuthority({
+          sourceFrequency: 'DAILY',
+          targetCadence: 'DAILY',
+          expectedHistoryFingerprint: rollingCurrentFingerprint,
+        }),
       }
     },
   )

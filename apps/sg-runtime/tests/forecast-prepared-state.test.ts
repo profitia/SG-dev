@@ -257,6 +257,11 @@ test('prepared-state binding is exact across semantics, models, versions, and cu
   assert.equal(find('MONTHLY_AVERAGE', 'ets')?.historical, 'READY')
   assert.equal(find('ROLLING_DAILY_POINT_IN_TIME', 'naive')?.current, 'READY')
   assert.equal(find('ROLLING_DAILY_POINT_IN_TIME', 'naive')?.historical, 'READY')
+  assert.deepEqual(find('ROLLING_DAILY_POINT_IN_TIME', 'naive')?.preparedReadAuthority, {
+    sourceFrequency: 'DAILY',
+    targetCadence: 'DAILY',
+    expectedHistoryFingerprint: rollingFingerprint,
+  })
   assert.equal(find('ROLLING_DAILY_POINT_IN_TIME', 'arima')?.current, 'NOT_PREPARED')
   assert.ok(maximumCurrentRunReadsInFlight > 1)
   assert.notEqual(fullEopHistoricalFingerprint, eopFingerprint)
