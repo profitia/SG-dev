@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 
 import { validateGovernanceManifest } from './validate-governance-manifest.mjs'
 import { loadEnvironmentTopology, resolveEnvironmentProfile, validateEnvironmentTopology } from './environment-profile.mjs'
+import { runGovernancePreflight } from './governance-preflight.mjs'
 import { resolveHistoricalProjectProfile, resolveProjectProfile } from './project-profile.mjs'
 import { resolveProjectRouting } from './routing-engine.mjs'
 
@@ -24,6 +25,8 @@ test('project profiles route SG2 and allow only bounded CIC governance bootstrap
   const sg2 = resolveProjectProfile('sg-dev', repositoryRoot)
   const cic = resolveProjectProfile('CIC', repositoryRoot)
   assert.equal(sg2.projectKey, 'SG2')
+  assert.equal(sg2.continuity.controlPlaneEnvironment, 'development')
+  assert.equal(cic.continuity?.controlPlaneEnvironment ?? null, null)
   assert.equal(cic.repository.slug, 'profitia/conversational-intelligence-core')
   assert.throws(() => resolveProjectProfile('unregistered', repositoryRoot), /Unknown project/)
 
@@ -85,6 +88,13 @@ test('SG2 environment topology prevents cross-environment service and database i
 
   const staging = registry.environments.staging
   const development = registry.environments.development
+  assert.equal(registry.policy.continuityControlPlaneEnvironment, 'development')
+  assert.equal(registry.continuityControlPlane.logicalEnvironment, 'development')
+  assert.equal(registry.continuityControlPlane.stagingOrProductionRuntimeAllowed, false)
+  assert.deepEqual(registry.continuityControlPlane.servesGovernedTasksTargeting, ['development'])
+  assert.match(registry.continuityControlPlane.render.serviceId, /^srv-/)
+  assert.equal(registry.continuityControlPlane.stagingOrProductionContinuityAllowed, false)
+  assert.equal(registry.continuityControlPlane.neon.projectId, 'lucky-dream-96138453')
   assert.equal(staging.deploymentPolicy, 'MANUAL_EXACT_SHA')
   assert.equal(staging.render.services.dashboard.autoDeploy, false)
   assert.equal(staging.render.services.runtime.autoDeploy, false)
@@ -102,6 +112,48 @@ test('SG2 environment topology prevents cross-environment service and database i
     assert.match(service.currentDeployId, /^dep-/)
   }
   assert.doesNotMatch(JSON.stringify(registry), /postgres(?:ql)?:\/\//i)
+})
+
+test('SG2 PMOS applies only to Development and creates no Staging or Production continuity', () => {
+  const input = {
+    mode: 'development',
+    project: 'SG2',
+    target_environment: 'staging',
+    task_id: 'governance-test-pmos-control-plane',
+    conversation_id: 'governance-test-pmos-control-plane-conversation',
+    title: 'Governance test PMOS control plane',
+    workspace: 'SG-dev',
+    execution_environment: 'development',
+    scope: 'governance-test',
+    targets: ['Canon/adapters/sg2-project-adapter-v1.md'],
+    legacyExceptions: [],
+    repository_root: repositoryRoot,
+    json: false,
+    ci: false,
+    offline: true,
+    allowDirty: true,
+    requireBegin: false,
+    skipRuntime: true,
+    checkEstate: false,
+  }
+
+  const staging = runGovernancePreflight(input)
+  assert.equal(staging.gates.PMOS_CONTROL_PLANE_GATE.status, 'NOT_APPLICABLE')
+  assert.equal(staging.gates.PMOS_RUNTIME_GATE.status, 'NOT_APPLICABLE')
+  assert.equal(staging.gates.PMOS_BEGIN_GATE.status, 'NOT_APPLICABLE')
+  assert.equal(staging.verdict, 'PASS')
+
+  const development = runGovernancePreflight({ ...input, target_environment: 'development' })
+  assert.equal(development.gates.PMOS_CONTROL_PLANE_GATE.status, 'PASS')
+  assert.equal(development.verdict, 'PASS')
+
+  const unlawful = runGovernancePreflight({ ...input, target_environment: 'development', execution_environment: 'staging' })
+  assert.equal(unlawful.gates.PMOS_CONTROL_PLANE_GATE.status, 'BLOCKED')
+  assert.equal(unlawful.verdict, 'BLOCKED')
+
+  const ci = runGovernancePreflight({ ...input, ci: true, execution_environment: 'ci' })
+  assert.equal(ci.gates.PMOS_CONTROL_PLANE_GATE.status, 'NOT_APPLICABLE')
+  assert.equal(ci.verdict, 'PASS')
 })
 
 test('PCOS is not an active PMOS project identity and cross-runtime coupling stays blocked', () => {
