@@ -151,7 +151,13 @@
         "environmentId": 22494585971,
         "repository": "profitia/SG-dev",
         "exclusiveProjectKey": "SG2",
-        "protectionStatus": "UNCONFIGURED"
+        "protectionStatus": "REVIEWER_AND_MAIN_ONLY",
+        "requiredReviewerLogin": "profitia",
+        "requiredReviewerId": 275643368,
+        "deploymentBranchPolicy": "EXACT_MAIN",
+        "releaseWorkflow": ".github/workflows/sg2-staging-release.yml",
+        "releaseCredentialStatus": "NOT_CONFIGURED_FAIL_CLOSED",
+        "providerDirectDeployBypass": "OPERATOR_BREAK_GLASS_ONLY"
       },
       "render": {
         "workspaceId": "tea-d7lps8rbc2fs73cn80dg",

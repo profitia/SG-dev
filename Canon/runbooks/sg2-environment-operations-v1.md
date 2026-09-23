@@ -38,9 +38,11 @@ Until both DNS records are published, verified, and covered by Render TLS, backe
 
 1. Record the current Last Known Good SHA, deploy IDs, Neon branch, domains, and smoke-test result.
 2. Keep auto-deploy disabled.
-3. Deploy an explicit SHA already verified in Development.
-4. Verify both client domains, runtime logs, worker behavior, and persistence.
-5. If validation fails, restore the recorded Last Known Good deploy. Do not reset or overwrite the database as part of an application rollback.
+3. Use only `.github/workflows/sg2-staging-release.yml` with `environment: sg2-staging` and an exact `main` SHA after the GitHub Environment reviewer and branch policy have passed. The workflow must check the registered five-service allowlist and must not use a repository-wide or Development deployment credential. If the Staging-scoped credential is absent, stop before any deploy.
+4. Confirm the approved service list, exact SHA, provider deploy IDs and live revision for each targeted service. Verify both client domains, runtime logs, worker behavior, and persistence. A source SHA shared by independently built services is not proof of identical artifacts.
+5. If validation fails, stop propagation and restore the recorded Last Known Good deploy through the same verified target IDs. Do not reset or overwrite the database as part of an application rollback.
+
+Direct Render-console/API deployment is an operator break-glass route, not protected by the GitHub Environment. It requires an explicit recorded exception, the same exact-SHA and service-ID checks, and post-deploy reconciliation. The existence of this bypass is an access-control limitation, not evidence that the workflow protection is ineffective for normal releases. No Staging deploy is required merely to install the release gate.
 
 The registered Render Staging environment has a historical provider label `Production`. This is an intentional recorded mismatch. Its immutable project and environment IDs, not the label, identify SG2 Staging.
 

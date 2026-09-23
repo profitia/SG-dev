@@ -1,0 +1,61 @@
+name: SG2 Staging release
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/sg2-staging-release.yml'
+      - 'scripts/governance/sg2-staging-release.mjs'
+      - 'scripts/governance/sg2-staging-release.test.mjs'
+      - 'Canon/registries/sg2-environment-topology-v1.json'
+  workflow_dispatch:
+    inputs:
+      service_role:
+        description: Exact SG2 Staging service role
+        required: true
+        type: choice
+        options:
+          - dashboard
+          - runtime
+          - mainRuntime
+          - currentWorker
+          - verificationWorker
+      source_sha:
+        description: Full 40-character main-ancestor Git SHA verified in Development
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sg2-staging-release
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --test scripts/governance/sg2-staging-release.test.mjs
+
+  release:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: sg2-staging
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Trigger only the registered service at the exact revision
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REF: ${{ github.ref }}
+          ROLE: ${{ inputs.service_role }}
+          SHA: ${{ inputs.source_sha }}
+          SG2_STAGING_DASHBOARD_DEPLOY_HOOK: ${{ secrets.SG2_STAGING_DASHBOARD_DEPLOY_HOOK }}
+          SG2_STAGING_RUNTIME_DEPLOY_HOOK: ${{ secrets.SG2_STAGING_RUNTIME_DEPLOY_HOOK }}
+          SG2_STAGING_MAIN_RUNTIME_DEPLOY_HOOK: ${{ secrets.SG2_STAGING_MAIN_RUNTIME_DEPLOY_HOOK }}
+          SG2_STAGING_CURRENT_WORKER_DEPLOY_HOOK: ${{ secrets.SG2_STAGING_CURRENT_WORKER_DEPLOY_HOOK }}
+          SG2_STAGING_VERIFICATION_WORKER_DEPLOY_HOOK: ${{ secrets.SG2_STAGING_VERIFICATION_WORKER_DEPLOY_HOOK }}
+        run: node scripts/governance/sg2-staging-release.mjs "$ROLE" "$SHA"
