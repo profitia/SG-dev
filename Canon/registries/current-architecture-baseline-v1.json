@@ -139,6 +139,7 @@
         "AGENTS.md",
         ".github/copilot-instructions.md",
         ".github/workflows/governance-preflight.yml",
+        ".github/workflows/sg2-staging-release.yml",
         "scripts/governance/**"
       ],
       "currentOwner": "Governance Source Layer",
