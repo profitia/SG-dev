@@ -574,7 +574,7 @@ function validateCanonicalizedMetadata(artifact: PendingArtifact): string[] {
   return errors
 }
 
-function normalizePendingArtifact(artifact: PendingArtifact): PendingArtifact {
+export function normalizePendingArtifact(artifact: PendingArtifact): PendingArtifact {
   const rawMetadata = artifact.metadata as Record<string, unknown>
   const rawWorkspace = getArtifactWorkspaceName(rawMetadata)
   const compatibility = normalizeLegacyPlanningCompatibility(rawMetadata)
@@ -583,6 +583,8 @@ function normalizePendingArtifact(artifact: PendingArtifact): PendingArtifact {
     ?? artifact.completionEvidence.vectorRebuildStatus
     ?? 'NOT_STARTED'
   const { vectorRebuildStatus: _legacyVectorRebuildStatus, ...completionEvidenceWithoutVector } = artifact.completionEvidence
+  const conversationType = normalizeConversationTypeValue(artifact.metadata.conversationType)
+  const importanceLevel = normalizeOptionalString(artifact.metadata.importanceLevel)
 
   return {
     ...artifact,
@@ -595,8 +597,8 @@ function normalizePendingArtifact(artifact: PendingArtifact): PendingArtifact {
       taskId: normalizeWhitespace(artifact.metadata.taskId),
       scope: normalizeScopeValue(artifact.metadata.scope),
       timestamp: normalizeWhitespace(artifact.metadata.timestamp),
-      conversationType: normalizeConversationTypeValue(artifact.metadata.conversationType),
-      importanceLevel: normalizeOptionalString(artifact.metadata.importanceLevel),
+      ...(conversationType !== undefined ? { conversationType } : {}),
+      ...(importanceLevel !== undefined ? { importanceLevel } : {}),
       ...(compatibility ? { compatibility } : {}),
       ...(rawWorkspace ? { workspace: normalizeWorkspaceName(rawWorkspace) } : {}),
     },
