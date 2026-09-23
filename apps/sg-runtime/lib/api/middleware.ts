@@ -26,9 +26,9 @@ import {
   serverEnv,
 } from '@/lib/env'
 import {
-  PORR_DEMO_SESSION_COOKIE_NAME,
   isPorrDemoAllowedApiRequest,
   isPorrDemoRuntimeReady,
+  resolvePorrDemoSessionCookieName,
 } from '@/lib/porr-demo-profile'
 import { verifyPorrDemoSessionToken } from '@/lib/porr-demo-session'
 
@@ -54,6 +54,7 @@ type CognitionAuthRuntimeConfig = {
   readonly developmentOrgRole?: string
   readonly porrDemoPassword?: string
   readonly porrDemoSessionSecret?: string
+  readonly appEnv?: 'development' | 'staging' | 'production'
 }
 
 type TemporaryPublicBenchmarkComponentRoute = {
@@ -162,11 +163,12 @@ async function resolvePorrDemoAuth(
     return null
   }
 
+  const cookieName = resolvePorrDemoSessionCookieName(config.appEnv ?? serverEnv.APP_ENV)
   const token = request.headers.get('cookie')
     ?.split(';')
     .map((entry) => entry.trim())
-    .find((entry) => entry.startsWith(`${PORR_DEMO_SESSION_COOKIE_NAME}=`))
-    ?.slice(PORR_DEMO_SESSION_COOKIE_NAME.length + 1)
+    .find((entry) => entry.startsWith(`${cookieName}=`))
+    ?.slice(cookieName.length + 1)
 
   const session = await verifyPorrDemoSessionToken(config.porrDemoSessionSecret!, token)
   if (!session) {
@@ -228,6 +230,7 @@ export async function extractCognitionAuth(request: NextRequest): Promise<Cognit
     developmentOrgRole: serverEnv.SG_RUNTIME_DEV_ORG_ROLE,
     porrDemoPassword: serverEnv.PORR_DEMO_PASSWORD,
     porrDemoSessionSecret: serverEnv.PORR_DEMO_SESSION_SECRET,
+    appEnv: serverEnv.APP_ENV,
   })
 }
 

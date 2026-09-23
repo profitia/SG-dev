@@ -1,8 +1,7 @@
 import {
-  PORR_DEMO_SESSION_COOKIE_NAME,
   PORR_DEMO_SESSION_MAX_AGE_SECONDS,
   isPorrDemoSecureCookie,
-  resolvePorrDemoCookieDomain,
+  resolvePorrDemoSessionCookieName,
 } from '@/lib/porr-demo-profile'
 
 export type PorrDemoSessionPayload = {
@@ -157,29 +156,26 @@ export async function verifyPorrDemoSessionToken(secret: string, token?: string 
 
 export function buildPorrDemoSessionCookie(
   value: string,
-  appUrl: string,
+  appEnv: 'development' | 'staging' | 'production',
   nodeEnv: 'development' | 'test' | 'production',
 ): CookieOptions {
-  const domain = resolvePorrDemoCookieDomain(appUrl)
-
   return {
-    name: PORR_DEMO_SESSION_COOKIE_NAME,
+    name: resolvePorrDemoSessionCookieName(appEnv),
     value,
     httpOnly: true,
     sameSite: 'lax',
     secure: isPorrDemoSecureCookie(nodeEnv),
     path: '/',
     maxAge: PORR_DEMO_SESSION_MAX_AGE_SECONDS,
-    ...(domain ? { domain } : {}),
   }
 }
 
 export function buildExpiredPorrDemoSessionCookie(
-  appUrl: string,
+  appEnv: 'development' | 'staging' | 'production',
   nodeEnv: 'development' | 'test' | 'production',
 ): CookieOptions {
   return {
-    ...buildPorrDemoSessionCookie('', appUrl, nodeEnv),
+    ...buildPorrDemoSessionCookie('', appEnv, nodeEnv),
     value: '',
     maxAge: 0,
   }

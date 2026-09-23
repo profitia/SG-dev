@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import createMiddleware from 'next-intl/middleware'
 
 import {
-  PORR_DEMO_SESSION_COOKIE_NAME,
   isPorrDemoProtectedPagePath,
   isPorrDemoRestrictedPagePath,
   isPorrDemoRuntimeReady,
@@ -10,6 +9,7 @@ import {
   resolvePorrDemoLocale,
   resolvePorrDemoNextPath,
   resolvePorrDemoRuntimeConfig,
+  resolvePorrDemoSessionCookieName,
 } from './lib/porr-demo-profile'
 import { verifyPorrDemoSessionToken } from './lib/porr-demo-session'
 import { routing } from './i18n/routing'
@@ -29,7 +29,7 @@ export default async function middleware(request: NextRequest) {
   }
 
   const locale = resolvePorrDemoLocale(request.nextUrl.pathname)
-  const token = request.cookies.get(PORR_DEMO_SESSION_COOKIE_NAME)?.value
+  const token = request.cookies.get(resolvePorrDemoSessionCookieName(runtimeConfig.appEnv))?.value
   const session = runtimeConfig.sessionSecret
     ? await verifyPorrDemoSessionToken(runtimeConfig.sessionSecret, token)
     : null
