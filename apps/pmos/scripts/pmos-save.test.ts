@@ -5,7 +5,7 @@ import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 
-import { CloseoutState } from '../../../packages/governance/src'
+import { CloseoutState, createArtifactLock, hashObject, verifyArtifactLock } from '../../../packages/governance/src'
 
 import {
   applyRequiredPhrPublicationOutcome,
@@ -13,9 +13,38 @@ import {
   buildConversationArtifactSummary,
   buildPhrPublicationReadyHandoff,
   buildSrmPhrPublicationCandidate,
+  normalizePendingArtifact,
   projectCanonicalFlightRecordScalarParity,
   publishRequiredSpendGuruPhrBeforePendingClear,
 } from './pmos-save'
+
+test('normalizing a persisted artifact with absent optional metadata preserves its immutable hash', () => {
+  const persisted = {
+    metadata: {
+      conversationId: 'pmos-task-v2:example',
+      taskId: 'SG2-RECOVERY-EXAMPLE',
+      project: 'SpendGuru 2.0',
+      workspace: 'SG-dev',
+      scope: 'implementation',
+      timestamp: '2026-09-23T06:51:46.535Z',
+      targetEnvironment: 'development',
+    },
+    task: { originalTaskRequest: 'Recover a completed PHR publication' },
+    analysis: { executionSummary: 'Work completed', reasoningSummary: 'Evidence verified' },
+    findings: { findings: [], blockers: [], residualRisks: [] },
+    decisions: { decisions: [] },
+    actions: { recommendations: [], validationsExecuted: [], validationsNotExecuted: [], artifactsCreated: [], artifactsModified: [] },
+    result: { finalStatus: 'SUCCESS' },
+    completionEvidence: { runtimeContextRefreshStatus: 'NOT_STARTED' },
+  } as never
+  const lock = createArtifactLock(persisted)
+  const normalized = normalizePendingArtifact(JSON.parse(JSON.stringify(persisted)))
+
+  assert.equal(hashObject(normalized), lock.integrityHash)
+  assert.equal(verifyArtifactLock(normalized, lock).valid, true)
+  assert.equal(Object.hasOwn(normalized.metadata, 'conversationType'), false)
+  assert.equal(Object.hasOwn(normalized.metadata, 'importanceLevel'), false)
+})
 import { buildPhrPublicationInput, publishPhrPublicationOnCompletedCloseout, writePhrPublicationAttempt } from '../src/lib/pmos/phr-publication'
 import { DEFAULT_PMOS_PROJECT_NAME, resolvePmosProjectProfile } from '../src/lib/pmos/project-profile'
 
