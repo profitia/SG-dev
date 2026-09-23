@@ -78,8 +78,8 @@
             "customDomainStatus": "VERIFIED_CERTIFICATE_ISSUED",
             "dnsCnameTarget": "sg2-development-dashboard.onrender.com",
             "autoDeploy": false,
-            "currentDeployId": "dep-dapb8frm8hqs7395vro0",
-            "deployedSha": "97d81393e1dc97b47c3c95ef9acd668d1a39f3a6"
+            "currentDeployId": "dep-dapu7hmk1f9s73ctr9ug",
+            "deployedSha": "993f539a46bd2c8d03fb2d99551535641e4efe0b"
           },
           "runtime": {
             "serviceId": "srv-dapa3tid0e5s73f8bc5g",
@@ -89,24 +89,24 @@
             "customDomainStatus": "VERIFIED_CERTIFICATE_ISSUED",
             "dnsCnameTarget": "sg2-development-runtime.onrender.com",
             "autoDeploy": false,
-            "currentDeployId": "dep-dapb8g8473hc738s5vn0",
-            "deployedSha": "97d81393e1dc97b47c3c95ef9acd668d1a39f3a6"
+            "currentDeployId": "dep-dapt24gu01pc73duorq0",
+            "deployedSha": "993f539a46bd2c8d03fb2d99551535641e4efe0b"
           },
           "currentWorker": {
             "serviceId": "srv-dapa3vlg1s2s739vp7dg",
             "name": "sg2-development-forecast-current-worker",
             "autoDeploy": false,
             "workerMode": "CURRENT_ONLY",
-            "currentDeployId": "dep-dapb8gm0tbcc73dpl650",
-            "deployedSha": "97d81393e1dc97b47c3c95ef9acd668d1a39f3a6"
+            "currentDeployId": "dep-dapu7es9v7es739uoql0",
+            "deployedSha": "993f539a46bd2c8d03fb2d99551535641e4efe0b"
           },
           "verificationWorker": {
             "serviceId": "srv-dapa40ad0e5s73f8bjm0",
             "name": "sg2-development-forecast-verification-worker",
             "autoDeploy": false,
             "workerMode": "VERIFICATION_ONLY",
-            "currentDeployId": "dep-dapb8h8ae00c73cg8hp0",
-            "deployedSha": "97d81393e1dc97b47c3c95ef9acd668d1a39f3a6"
+            "currentDeployId": "dep-dapu7g1srm7s73as83bg",
+            "deployedSha": "993f539a46bd2c8d03fb2d99551535641e4efe0b"
           }
         }
       },
@@ -126,7 +126,7 @@
       "domainReadiness": "READY",
       "deploymentPolicy": "MUTABLE_INTEGRATION",
       "smokeProof": {
-        "verifiedAt": "2026-09-22T17:41:00Z",
+        "verifiedAt": "2026-09-23T14:39:16Z",
         "runtimeHealthHttp": 200,
         "runtimeUiHttp": 200,
         "customRuntimeHttpsHttp": 307,
