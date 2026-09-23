@@ -73,7 +73,7 @@ import {
 } from '../src/lib/pmos/runtime-authority'
 import { createCanonicalFlightRecordPayload } from '../src/lib/pmos/flight-record-snapshot'
 import { assertDatabaseUrl } from '../src/lib/pmos/operator-preflight'
-import { assertPmosCloseoutIdentity, assertDatabaseIdentity } from '../src/lib/pmos/execution-registration'
+import { assertPmosCloseoutIdentity, assertDatabaseIdentity, assertTaskConversationBinding } from '../src/lib/pmos/execution-registration'
 import {
   atomicCopyFile,
   atomicWriteFileSet,
@@ -589,6 +589,8 @@ function normalizePendingArtifact(artifact: PendingArtifact): PendingArtifact {
     metadata: {
       ...metadataWithoutLegacyPlanning,
       conversationId: normalizeWhitespace(artifact.metadata.conversationId),
+      ...(artifact.metadata.hostConversationId !== undefined
+        ? { hostConversationId: normalizeWhitespace(artifact.metadata.hostConversationId) } : {}),
       project: normalizeProjectName(artifact.metadata.project),
       taskId: normalizeWhitespace(artifact.metadata.taskId),
       scope: normalizeScopeValue(artifact.metadata.scope),
@@ -2845,6 +2847,13 @@ async function main() {
   if (executionRegistration.conversationId !== artifact.metadata.conversationId) {
     throw new Error(`PMOS_BEGIN_GATE failed: conversation identity does not match task ${artifact.metadata.taskId}.`)
   }
+  assertTaskConversationBinding(
+    executionRegistration.project ?? '',
+    artifact.metadata.taskId,
+    artifact.metadata.conversationId,
+    executionRegistration.gateSnapshot,
+    artifact.metadata.hostConversationId,
+  )
   if (normalizePmosProjectName(executionRegistration.project ?? '') !== projectProfile.projectName) {
     throw new Error(`PMOS_BEGIN_GATE failed: project identity does not match task ${artifact.metadata.taskId}.`)
   }

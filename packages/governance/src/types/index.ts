@@ -60,7 +60,10 @@ export interface GovernanceResult {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface FlightRecordMetadata {
+  /** Unique, task-scoped PMOS artifact identity. */
   conversationId: string
+  /** Actual host chat/thread identity, shared by multiple task-scoped records. */
+  hostConversationId?: string
   project: string
   taskId: string
   /** @deprecated Project-local planning metadata. Never a PMOS lifecycle gate. */

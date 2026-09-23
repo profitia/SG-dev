@@ -1,15 +1,18 @@
 import path from 'node:path'
+import { createHash } from 'node:crypto'
 
 import { requirePmosProjectProfile } from './project-profile'
 
-export const EXECUTION_REGISTRATION_SCHEMA_VERSION = '1.0' as const
+export const EXECUTION_REGISTRATION_SCHEMA_VERSION = '2.0' as const
+export const LEGACY_EXECUTION_REGISTRATION_SCHEMA_VERSION = '1.0' as const
 
 export type ExecutionGateStatus = 'PASS' | 'WARNING' | 'BLOCKED' | 'NOT_APPLICABLE'
 
 export type ExecutionRegistrationInput = {
-  schemaVersion: typeof EXECUTION_REGISTRATION_SCHEMA_VERSION
+  schemaVersion: typeof EXECUTION_REGISTRATION_SCHEMA_VERSION | typeof LEGACY_EXECUTION_REGISTRATION_SCHEMA_VERSION
   taskId: string
   conversationId: string
+  hostConversationId?: string | null
   title: string
   project: string
   workspace: string
@@ -70,14 +73,32 @@ function normalizeTargetPath(value: unknown): string {
 
 export function validateExecutionRegistrationInput(raw: unknown): ExecutionRegistrationInput {
   assertObject(raw, 'pmos:begin input')
-  if (raw.schemaVersion !== EXECUTION_REGISTRATION_SCHEMA_VERSION) {
-    throw new Error(`schemaVersion must equal ${EXECUTION_REGISTRATION_SCHEMA_VERSION}.`)
+  if (raw.schemaVersion !== EXECUTION_REGISTRATION_SCHEMA_VERSION
+    && raw.schemaVersion !== LEGACY_EXECUTION_REGISTRATION_SCHEMA_VERSION) {
+    throw new Error(`schemaVersion must equal ${EXECUTION_REGISTRATION_SCHEMA_VERSION} (or ${LEGACY_EXECUTION_REGISTRATION_SCHEMA_VERSION} for an existing registration).`)
   }
 
   const taskId = requiredString(raw.taskId, 'taskId')
-  const conversationId = requiredString(raw.conversationId, 'conversationId')
   if (!IDENTIFIER.test(taskId)) throw new Error('taskId contains unsupported characters.')
-  if (!IDENTIFIER.test(conversationId)) throw new Error('conversationId contains unsupported characters.')
+  const project = requiredString(raw.project, 'project')
+  const profile = requirePmosProjectProfile(project)
+  let conversationId: string
+  let hostConversationId: string | null | undefined
+  if (raw.schemaVersion === EXECUTION_REGISTRATION_SCHEMA_VERSION) {
+    if (raw.hostConversationId === undefined) {
+      throw new Error('schemaVersion 2.0 requires the actual hostConversationId or explicit null when the host does not expose one.')
+    }
+    hostConversationId = raw.hostConversationId === null ? null : requiredString(raw.hostConversationId, 'hostConversationId')
+    if (hostConversationId !== null && !IDENTIFIER.test(hostConversationId)) throw new Error('hostConversationId contains unsupported characters.')
+    conversationId = deriveTaskConversationId(profile.projectKey, taskId)
+    if (raw.conversationId !== undefined && raw.conversationId !== conversationId) {
+      throw new Error('conversationId must be omitted or equal the canonical task-scoped identity derived from hostConversationId and taskId.')
+    }
+  } else {
+    if (raw.hostConversationId !== undefined) throw new Error('hostConversationId requires schemaVersion 2.0.')
+    conversationId = requiredString(raw.conversationId, 'conversationId')
+    if (!IDENTIFIER.test(conversationId)) throw new Error('conversationId contains unsupported characters.')
+  }
 
   if (!Array.isArray(raw.declaredTargetPaths)) {
     throw new Error('declaredTargetPaths must be an array.')
@@ -97,8 +118,6 @@ export function validateExecutionRegistrationInput(raw: unknown): ExecutionRegis
   if (Object.values(gates).includes('BLOCKED')) {
     throw new Error('pmos:begin refuses registration while a declared gate is BLOCKED.')
   }
-  const project = requiredString(raw.project, 'project')
-  const profile = requirePmosProjectProfile(project)
   const targetEnvironment = raw.targetEnvironment === undefined ? undefined : requiredString(raw.targetEnvironment, 'targetEnvironment').toLowerCase()
   if (profile.continuity.controlPlaneEnvironment) {
     if (targetEnvironment !== profile.continuity.controlPlaneEnvironment) {
@@ -110,9 +129,10 @@ export function validateExecutionRegistrationInput(raw: unknown): ExecutionRegis
   }
 
   return {
-    schemaVersion: EXECUTION_REGISTRATION_SCHEMA_VERSION,
+    schemaVersion: raw.schemaVersion,
     taskId,
     conversationId,
+    hostConversationId,
     title: requiredString(raw.title, 'title'),
     project,
     workspace: requiredString(raw.workspace, 'workspace'),
@@ -129,7 +149,59 @@ export function validateExecutionRegistrationInput(raw: unknown): ExecutionRegis
 }
 
 export function registrationGateSnapshot(input: ExecutionRegistrationInput): Record<string, string> {
-  return input.targetEnvironment ? { ...input.gates, targetEnvironment: input.targetEnvironment } : { ...input.gates }
+  return {
+    ...input.gates,
+    ...(input.targetEnvironment ? { targetEnvironment: input.targetEnvironment } : {}),
+    ...(input.schemaVersion === EXECUTION_REGISTRATION_SCHEMA_VERSION
+      ? input.hostConversationId === null
+        ? { hostConversationIdStatus: 'UNAVAILABLE' }
+        : { hostConversationId: input.hostConversationId! }
+      : {}),
+  }
+}
+
+export function assertNewRegistrationInput(input: ExecutionRegistrationInput): void {
+  if (input.schemaVersion !== EXECUTION_REGISTRATION_SCHEMA_VERSION || input.hostConversationId === undefined) {
+    throw new Error('New PMOS registrations require schemaVersion 2.0 and an explicit hostConversationId (or null if unavailable). SchemaVersion 1.0 may only resume an existing registration.')
+  }
+}
+
+export function deriveTaskConversationId(project: string, taskId: string): string {
+  if (!IDENTIFIER.test(taskId)) {
+    throw new Error('Task-scoped conversation identity requires a valid taskId.')
+  }
+  const projectKey = requirePmosProjectProfile(project).projectKey
+  const digest = createHash('sha256').update('profitia-pmos-task-conversation-v2\0')
+    .update(projectKey).update('\0').update(taskId).digest('hex')
+  return `pmos-task-v2:${digest}`
+}
+
+export function assertTaskConversationBinding(
+  project: string,
+  taskId: string,
+  conversationId: string,
+  gateSnapshot: unknown,
+  artifactHostConversationId?: unknown,
+): void {
+  const gates = gateSnapshot && typeof gateSnapshot === 'object' && !Array.isArray(gateSnapshot)
+    ? gateSnapshot as Record<string, unknown> : null
+  const hostConversationId = gates?.hostConversationId
+  if ((hostConversationId !== undefined && gates?.hostConversationIdStatus !== undefined)
+    || (hostConversationId === undefined && gates?.hostConversationIdStatus !== undefined
+      && gates.hostConversationIdStatus !== 'UNAVAILABLE')) {
+    throw new Error(`PMOS registration ${taskId} has conflicting host conversation identity fields.`)
+  }
+  if (hostConversationId === undefined && gates?.hostConversationIdStatus !== 'UNAVAILABLE') {
+    if (artifactHostConversationId !== undefined) {
+      throw new Error(`Historical PMOS registration ${taskId} cannot claim a hostConversationId absent from its registration.`)
+    }
+    return
+  }
+  if (conversationId !== deriveTaskConversationId(project, taskId)
+    || (hostConversationId === undefined && artifactHostConversationId !== undefined)
+    || (hostConversationId !== undefined && (typeof hostConversationId !== 'string' || artifactHostConversationId !== hostConversationId))) {
+    throw new Error(`PMOS host conversation identity does not match task ${taskId}.`)
+  }
 }
 
 function registeredTargetEnvironment(gateSnapshot: Record<string, unknown>): unknown {
@@ -227,7 +299,7 @@ export function assertRegistrationMatches(existing: ExistingExecutionRegistratio
     : null
   const expectedSnapshot = existingGates && '__targetEnvironment' in existingGates
     ? { ...input.gates, __targetEnvironment: input.targetEnvironment }
-    : existingGates && !('targetEnvironment' in existingGates)
+    : existingGates && !('targetEnvironment' in existingGates) && input.schemaVersion === LEGACY_EXECUTION_REGISTRATION_SCHEMA_VERSION
       ? input.gates
       : registrationGateSnapshot(input)
   const checks: Array<[string, unknown, unknown]> = [

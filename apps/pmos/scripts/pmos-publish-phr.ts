@@ -8,7 +8,7 @@ import { PrismaClient, ArtifactKind as PrismaArtifactKind, ArtifactNature as Pri
 import { validateGptHandoffArtifact, type CloseoutEvidence, type GptHandoffArtifactV1 } from '../../../packages/governance/src'
 
 import { readJsonFileSafe } from '../src/lib/pmos/atomic-io'
-import { assertPmosCloseoutIdentity, assertDatabaseIdentity } from '../src/lib/pmos/execution-registration'
+import { assertPmosCloseoutIdentity, assertDatabaseIdentity, assertTaskConversationBinding } from '../src/lib/pmos/execution-registration'
 import { assertDatabaseUrl } from '../src/lib/pmos/operator-preflight'
 import { buildPhrPublicationInput, writePhrPublicationAttempt, writePhrPublicationSidecar } from '../src/lib/pmos/phr-publication'
 
@@ -142,6 +142,7 @@ async function main(): Promise<void> {
     throw new Error(`PHR publication requires a matching PMOS registration for ${handoff.taskId}.`)
   }
   const metadata = conversationArtifact.value.metadata as Record<string, unknown>
+  assertTaskConversationBinding(registration.project ?? '', handoff.taskId, handoff.conversationId, registration.gateSnapshot, metadata.hostConversationId)
   assertPmosCloseoutIdentity(String(metadata.project ?? ''), registration.project ?? '', registration.gateSnapshot, metadata.targetEnvironment)
   const databaseRows = await prisma.$queryRaw<Array<{ current_database: string }>>`SELECT current_database()`
   assertDatabaseIdentity(databaseRows[0]?.current_database ?? '', registration.project ?? '', process.env.DATABASE_URL)

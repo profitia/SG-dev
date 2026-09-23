@@ -285,6 +285,19 @@ test('SG2 PMOS applies only to Development and creates no Staging or Production 
   assert.equal(development.gates.PMOS_CONTROL_PLANE_GATE.status, 'PASS')
   assert.equal(development.verdict, 'PASS')
 
+  const sameHostNewTask = runGovernancePreflight({
+    ...input, target_environment: 'development', conversation_id: undefined,
+    host_conversation_id: 'real-chat-001', task_id: 'governance-test-second-task',
+  })
+  assert.equal(sameHostNewTask.gates.TASK_INPUT_GATE.status, 'PASS')
+  assert.equal(sameHostNewTask.gates.PMOS_BEGIN_GATE.status, 'PASS')
+  assert.equal(sameHostNewTask.verdict, 'PASS')
+  const noHostId = runGovernancePreflight({ ...input, target_environment: 'development', conversation_id: undefined, hostConversationUnavailable: true })
+  assert.equal(noHostId.gates.TASK_INPUT_GATE.status, 'PASS')
+  assert.equal(noHostId.verdict, 'PASS')
+  assert.equal(runGovernancePreflight({ ...input, target_environment: 'development', conversation_id: undefined }).gates.TASK_INPUT_GATE.status, 'BLOCKED')
+  assert.equal(runGovernancePreflight({ ...input, target_environment: 'development', host_conversation_id: 'real-chat-001' }).gates.TASK_INPUT_GATE.status, 'BLOCKED')
+
   const unlawful = runGovernancePreflight({ ...input, target_environment: 'development', execution_environment: 'staging' })
   assert.equal(unlawful.gates.PMOS_CONTROL_PLANE_GATE.status, 'BLOCKED')
   assert.equal(unlawful.verdict, 'BLOCKED')
