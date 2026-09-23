@@ -25,6 +25,7 @@ function parseArgs(argv) {
     else if (key === '--require-begin') result.requireBegin = true
     else if (key === '--skip-pmos-runtime') result.skipRuntime = true
     else if (key === '--check-estate') result.checkEstate = true
+    else if (key === '--host-conversation-unavailable') result.hostConversationUnavailable = true
     else if (key.startsWith('--')) result[key.slice(2).replaceAll('-', '_')] = argv[++index]
     else throw new Error(`Unexpected argument: ${key}`)
   }
@@ -144,11 +145,13 @@ export function runGovernancePreflight(args) {
     ? gate(status.stdout === '' ? 'PASS' : 'WARNING', [`branch=${branch.stdout || '<detached>'}`, `HEAD=${head.stdout}`, `origin/${authorityBranch}=${originMain.stdout}`, `dirty=${status.stdout !== ''}`])
     : gate('BLOCKED', [`branch=${branch.stdout || '<detached>'}`, `HEAD=${head.stdout || '<missing>'}`, `origin/${authorityBranch}=${originMain.stdout || '<missing>'}`, `dirty=${status.stdout !== ''}`])
 
-  const requiredNames = ['task_id', 'conversation_id', 'title', 'project', 'workspace', 'execution_environment', 'scope']
+  const requiredNames = ['task_id', 'title', 'project', 'workspace', 'execution_environment', 'scope']
   if (profile?.repository?.environmentTopologyRegistry) requiredNames.push('target_environment')
   const missing = requiredNames.filter((name) => !requiredInput(args, name))
+  const identityModes = [requiredInput(args, 'host_conversation_id'), requiredInput(args, 'conversation_id'), args.hostConversationUnavailable === true].filter(Boolean).length
+  if (identityModes !== 1) missing.push('provide exactly one of host_conversation_id, conversation_id (historical), or host_conversation_unavailable')
   if (args.mode === 'development' && args.targets.length === 0) missing.push('target')
-  gates.TASK_INPUT_GATE = missing.length === 0 ? gate('PASS', `task=${args.task_id}`) : gate('BLOCKED', `Missing inputs: ${missing.join(', ')}`)
+  gates.TASK_INPUT_GATE = missing.length === 0 ? gate('PASS', `task=${args.task_id}`) : gate('BLOCKED', `Invalid or missing inputs: ${missing.join(', ')}`)
 
   const routing = profile
     ? resolveProjectRouting({ profile, targets: args.targets, repositoryRoot })
@@ -170,8 +173,11 @@ export function runGovernancePreflight(args) {
   if (!pmosLifecycleApplicable) {
     gates.PMOS_BEGIN_GATE = gate('NOT_APPLICABLE', `PMOS registration is forbidden for target environment ${args.target_environment}.`)
   } else if (args.requireBegin) {
-    const checkArgs = ['run', 'pmos:begin', '--', '--check-task-id', args.task_id,
-      '--check-conversation-id', args.conversation_id, '--check-project', args.project]
+    const checkArgs = ['run', 'pmos:begin', '--', '--check-task-id', args.task_id]
+    if (requiredInput(args, 'host_conversation_id')) checkArgs.push('--check-host-conversation-id', args.host_conversation_id)
+    else if (args.hostConversationUnavailable === true) checkArgs.push('--check-host-conversation-unavailable')
+    else if (requiredInput(args, 'conversation_id')) checkArgs.push('--check-conversation-id', args.conversation_id)
+    checkArgs.push('--check-project', args.project)
     if (args.target_environment) checkArgs.push('--check-target-environment', args.target_environment)
     const begin = run('npm', checkArgs, path.join(governanceRoot, 'apps', 'pmos'))
     gates.PMOS_BEGIN_GATE = begin.ok ? gate('PASS', `Registered task ${args.task_id}.`) : gate('BLOCKED', begin.stderr || begin.stdout)

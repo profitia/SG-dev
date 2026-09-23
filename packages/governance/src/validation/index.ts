@@ -195,6 +195,9 @@ export function validatePendingArtifact(artifact: PendingArtifact): PendingArtif
     errors.push("metadata is required and must be an object")
   } else {
     if (!isNonEmptyString(artifact.metadata.conversationId)) errors.push("metadata.conversationId is required")
+    if (artifact.metadata.hostConversationId !== undefined && !isNonEmptyString(artifact.metadata.hostConversationId)) {
+      errors.push("metadata.hostConversationId must be a non-empty string when present")
+    }
     if (!isNonEmptyString(artifact.metadata.timestamp)) {
       errors.push("metadata.timestamp is required")
     } else if (Number.isNaN(new Date(artifact.metadata.timestamp).getTime())) {

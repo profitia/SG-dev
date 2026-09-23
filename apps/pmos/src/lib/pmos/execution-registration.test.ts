@@ -3,9 +3,12 @@ import test from 'node:test'
 
 import {
   assertDatabaseIdentity,
+  assertNewRegistrationInput,
   assertRegistrationMatches,
   assertPmosCloseoutIdentity,
   assertControlPlaneContinuity,
+  assertTaskConversationBinding,
+  deriveTaskConversationId,
   expectedDatabaseName,
   registrationGateSnapshot,
   validateExecutionRegistrationInput,
@@ -128,4 +131,67 @@ test('idempotence accepts the same registration and rejects identity drift', () 
     ...existing, gateSnapshot: { ...parsed.gates, __targetEnvironment: 'development' },
   }, parsed))
   assert.throws(() => assertRegistrationMatches({ ...existing, conversationId: 'other-conversation' }, parsed), /different input/)
+})
+
+test('one real chat can own distinct immutable PMOS tasks in every active project', () => {
+  const hostConversationId = '01a0a8e3-4cb3-7a43-8680-22132e5ee2a2'
+  const projects = [
+    { project: 'SpendGuru 2.0', workspace: 'SG-dev' },
+    { project: 'SRM', workspace: 'SG-dev Codespaces SRM' },
+    { project: 'Conversational Intelligence Core', workspace: 'conversational-intelligence-core' },
+  ]
+  for (const profile of projects) {
+    const first = validateExecutionRegistrationInput({
+      ...input, ...profile, schemaVersion: '2.0', taskId: 'TASK-001', conversationId: undefined, hostConversationId,
+    })
+    const second = validateExecutionRegistrationInput({
+      ...input, ...profile, schemaVersion: '2.0', taskId: 'TASK-002', conversationId: undefined, hostConversationId,
+    })
+    assert.notEqual(first.conversationId, second.conversationId)
+    assert.equal(first.conversationId, deriveTaskConversationId(profile.project, 'TASK-001'))
+    assert.equal(registrationGateSnapshot(first).hostConversationId, hostConversationId)
+    assert.doesNotThrow(() => assertTaskConversationBinding(profile.project, first.taskId, first.conversationId, registrationGateSnapshot(first), hostConversationId))
+    assert.throws(() => assertTaskConversationBinding(profile.project, first.taskId, first.conversationId, registrationGateSnapshot(first), 'another-chat'), /does not match/)
+    assert.throws(() => assertTaskConversationBinding(profile.project, second.taskId, first.conversationId, registrationGateSnapshot(second), hostConversationId), /does not match/)
+  }
+})
+
+test('task-scoped identity is deterministic, rejects host impersonation, and preserves historical recovery', () => {
+  const first = validateExecutionRegistrationInput({
+    ...input, schemaVersion: '2.0', conversationId: undefined, hostConversationId: 'real-thread-001',
+  })
+  const replay = validateExecutionRegistrationInput({
+    ...input, schemaVersion: '2.0', conversationId: undefined, hostConversationId: 'real-thread-001',
+  })
+  assert.deepEqual(first, replay)
+  assert.doesNotThrow(() => assertNewRegistrationInput(first))
+  assert.throws(() => assertNewRegistrationInput(validateExecutionRegistrationInput(input)), /may only resume/)
+  const existing = {
+    id: 'prompt-v2', taskId: first.taskId, conversationId: first.conversationId,
+    title: first.title, project: first.project, workspace: first.workspace,
+    executionEnvironment: first.executionEnvironment, scope: first.scope,
+    promptContent: first.originalTaskRequest, declaredTargetPaths: first.declaredTargetPaths,
+    gateSnapshot: registrationGateSnapshot(first), status: 'running',
+  }
+  assert.doesNotThrow(() => assertRegistrationMatches(existing, replay))
+  assert.throws(() => assertRegistrationMatches({ ...existing, gateSnapshot: { ...existing.gateSnapshot, hostConversationId: 'real-thread-002' } }, replay), /different input/)
+  assert.equal(first.conversationId, validateExecutionRegistrationInput({
+    ...input, schemaVersion: '2.0', conversationId: undefined, hostConversationId: 'real-thread-002',
+  }).conversationId)
+  assert.throws(() => validateExecutionRegistrationInput({
+    ...input, schemaVersion: '2.0', hostConversationId: 'real-thread-001',
+  }), /canonical task-scoped identity/)
+  assert.throws(() => validateExecutionRegistrationInput({ ...input, hostConversationId: 'real-thread-001' }), /requires schemaVersion 2.0/)
+  assert.doesNotThrow(() => assertTaskConversationBinding(input.project, input.taskId, input.conversationId, registrationGateSnapshot(validateExecutionRegistrationInput(input))))
+  assert.throws(() => assertTaskConversationBinding(input.project, input.taskId, input.conversationId, registrationGateSnapshot(validateExecutionRegistrationInput(input)), 'false-host'), /cannot claim/)
+
+  const unavailable = validateExecutionRegistrationInput({ ...input, schemaVersion: '2.0', conversationId: undefined, hostConversationId: null })
+  assert.equal(unavailable.conversationId, first.conversationId)
+  assert.equal(registrationGateSnapshot(unavailable).hostConversationIdStatus, 'UNAVAILABLE')
+  assert.doesNotThrow(() => assertTaskConversationBinding(input.project, unavailable.taskId, unavailable.conversationId, registrationGateSnapshot(unavailable)))
+  assert.throws(() => assertTaskConversationBinding(input.project, unavailable.taskId, unavailable.conversationId, registrationGateSnapshot(unavailable), 'invented-host'), /does not match/)
+  assert.throws(() => assertTaskConversationBinding(input.project, first.taskId, first.conversationId, {
+    ...registrationGateSnapshot(first), hostConversationIdStatus: 'UNAVAILABLE',
+  }, 'real-thread-001'), /conflicting/)
+  assert.throws(() => validateExecutionRegistrationInput({ ...input, schemaVersion: '2.0', conversationId: undefined, hostConversationId: undefined }), /explicit null/)
 })

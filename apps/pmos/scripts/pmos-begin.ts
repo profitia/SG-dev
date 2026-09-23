@@ -6,8 +6,11 @@ import { PrismaClient } from '@prisma/client'
 import { assertDatabaseUrl } from '../src/lib/pmos/operator-preflight'
 import {
   assertDatabaseIdentity,
+  assertNewRegistrationInput,
   assertRegistrationMatches,
   assertControlPlaneContinuity,
+  assertTaskConversationBinding,
+  deriveTaskConversationId,
   registrationGateSnapshot,
   validateExecutionRegistrationInput,
   type ExistingExecutionRegistration,
@@ -47,7 +50,7 @@ async function currentDatabaseName(): Promise<string> {
   return rows[0]?.current_database ?? ''
 }
 
-async function checkRegistration(taskId: string, conversationId: string | null, project: string | null, targetEnvironment: string | null): Promise<void> {
+async function checkRegistration(taskId: string, conversationId: string | null, hostConversationId: string | null, hostUnavailable: boolean, project: string | null, targetEnvironment: string | null): Promise<void> {
   const record = await prisma.promptExecution.findUnique({ where: { taskId }, select: registrationSelect })
   if (!record) throw new Error(`No PMOS execution registration exists for task ${taskId}.`)
   if (!['queued', 'running', 'completed'].includes(record.status)) {
@@ -55,6 +58,16 @@ async function checkRegistration(taskId: string, conversationId: string | null, 
   }
   if (conversationId && record.conversationId !== conversationId) {
     throw new Error(`PMOS execution registration ${taskId} belongs to another conversation.`)
+  }
+  if (hostConversationId || hostUnavailable) {
+    const gates = record.gateSnapshot && typeof record.gateSnapshot === 'object' && !Array.isArray(record.gateSnapshot)
+      ? record.gateSnapshot as Record<string, unknown> : null
+    if ((hostConversationId && gates?.hostConversationId !== hostConversationId)
+      || (hostUnavailable && gates?.hostConversationIdStatus !== 'UNAVAILABLE')
+      || record.conversationId !== deriveTaskConversationId(record.project ?? '', taskId)) {
+      throw new Error(`PMOS execution registration ${taskId} belongs to another host conversation.`)
+    }
+    assertTaskConversationBinding(record.project ?? '', taskId, record.conversationId ?? '', record.gateSnapshot, hostConversationId ?? undefined)
   }
   if (project && normalizePmosProjectName(record.project ?? '') !== normalizePmosProjectName(project)) {
     throw new Error(`PMOS execution registration ${taskId} belongs to another project.`)
@@ -99,9 +112,11 @@ async function begin(inputPath: string): Promise<void> {
       throw new Error('Task or conversation identity is already owned by another PMOS registration.')
     }
     assertRegistrationMatches(byTask as ExistingExecutionRegistration, input)
-    process.stdout.write(`${JSON.stringify({ status: byTask.status === 'completed' ? 'ALREADY_COMPLETED' : 'RESUMED', taskId: input.taskId, conversationId: input.conversationId, registrationId: byTask.id, databaseName }, null, 2)}\n`)
+    process.stdout.write(`${JSON.stringify({ status: byTask.status === 'completed' ? 'ALREADY_COMPLETED' : 'RESUMED', taskId: input.taskId, conversationId: input.conversationId, ...(input.schemaVersion === '2.0' ? { hostConversationId: input.hostConversationId } : {}), registrationId: byTask.id, databaseName }, null, 2)}\n`)
     return
   }
+
+  assertNewRegistrationInput(input)
 
   const created = await prisma.promptExecution.create({
     data: {
@@ -123,15 +138,15 @@ async function begin(inputPath: string): Promise<void> {
     },
     select: registrationSelect,
   })
-  process.stdout.write(`${JSON.stringify({ status: 'REGISTERED', taskId: input.taskId, conversationId: input.conversationId, registrationId: created.id, databaseName }, null, 2)}\n`)
+  process.stdout.write(`${JSON.stringify({ status: 'REGISTERED', taskId: input.taskId, conversationId: input.conversationId, hostConversationId: input.hostConversationId, registrationId: created.id, databaseName }, null, 2)}\n`)
 }
 
 async function main(): Promise<void> {
   assertDatabaseUrl('pmos:begin')
   const checkTaskId = argument('--check-task-id')
   const inputPath = argument('--input')
-  if (checkTaskId) return checkRegistration(checkTaskId, argument('--check-conversation-id'), argument('--check-project'), argument('--check-target-environment'))
-  if (!inputPath) throw new Error('Usage: npm run pmos:begin -- --input <registration.json> OR --check-task-id <taskId> [--check-conversation-id <id> --check-project <project> --check-target-environment <environment>]')
+  if (checkTaskId) return checkRegistration(checkTaskId, argument('--check-conversation-id'), argument('--check-host-conversation-id'), process.argv.includes('--check-host-conversation-unavailable'), argument('--check-project'), argument('--check-target-environment'))
+  if (!inputPath) throw new Error('Usage: npm run pmos:begin -- --input <registration.json> OR --check-task-id <taskId> [--check-host-conversation-id <actual-chat-id> | --check-host-conversation-unavailable | --check-conversation-id <legacy-id>] [--check-project <project> --check-target-environment <environment>]')
   return begin(inputPath)
 }
 
