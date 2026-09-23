@@ -44,6 +44,8 @@ Until both DNS records are published, verified, and covered by Render TLS, backe
 
 The registered Render Staging environment has a historical provider label `Production`. This is an intentional recorded mismatch. Its immutable project and environment IDs, not the label, identify SG2 Staging.
 
+The Staging registry records the exact expected live deploy for each service. Its `frozenBaseline` preserves the original environment-split snapshot for rollback evidence; it does not assert that later explicitly deployed services still share that SHA. A later runtime deploy must be reconciled from provider evidence without restarting or redeploying the client stack merely to make the registry uniform. The separately deployed `spendguru-stage` service is also in the registered Render Staging environment and remains the historical main SG Runtime and Blueprint environment-variable source; it is not an additional client-domain destination. Any future change to its role or deployment requires its own verified release decision.
+
 ## 4. Production
 
 1. Promote exactly the artifact digest accepted in Staging when digest promotion is available; until then, promote no less than the exact accepted source SHA and record that independent rebuild parity remains a known limitation.

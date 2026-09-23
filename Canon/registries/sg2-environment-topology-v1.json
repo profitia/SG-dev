@@ -171,8 +171,17 @@
             "serviceId": "srv-daclno3m8hqs73bb7rrg",
             "name": "spendguru-porr-demo",
             "autoDeploy": false,
-            "baselineDeployId": "dep-dapam11srm7s73ep31hg",
-            "baselineSha": "518f1ad9d6143748d9d5f42a084cae6135b66799"
+            "baselineDeployId": "dep-dapctolbedkc738dv8vg",
+            "baselineSha": "48dfcd8af93fa9f5e9708653a868b89c138b6b91"
+          },
+          "mainRuntime": {
+            "serviceId": "srv-d98a73btqb8s73fabp90",
+            "name": "spendguru-stage",
+            "url": "https://sg2-0-charts-preview.onrender.com",
+            "role": "HISTORICAL_MAIN_RUNTIME_AND_BLUEPRINT_ENV_SOURCE",
+            "autoDeploy": false,
+            "baselineDeployId": "dep-dap3876gekts73fkkaug",
+            "baselineSha": "bd4139e727fd3f3b237cfa89afa60b7af6bec86c"
           },
           "currentWorker": {
             "serviceId": "srv-daoksvuk1f9s73cg4bk0",
@@ -212,7 +221,19 @@
       "frozenBaseline": {
         "sourceSha": "518f1ad9d6143748d9d5f42a084cae6135b66799",
         "capturedAt": "2026-09-22T15:57:10Z",
-        "databaseBranchId": "br-wandering-dew-b2izo8fg"
+        "databaseBranchId": "br-wandering-dew-b2izo8fg",
+        "status": "ORIGINAL_SPLIT_SNAPSHOT_PRESERVED_FOR_ROLLBACK",
+        "note": "The current expected live service/deploy composition is recorded per service above; the original split snapshot is historical and is not a claim that all current services run one SHA."
+      },
+      "liveReconciliation": {
+        "verifiedAt": "2026-09-23T11:15:23Z",
+        "reason": "Preserve the client-facing Staging runtime while recording its later login-environment-label deployment and the pre-existing SG Runtime service in the same Render environment.",
+        "clientRuntimeHealthHttp": 200,
+        "mainRuntimeHealthHttp": 200,
+        "clientLoginVersionLabel": "Version: 1.2 Staging",
+        "providerServiceInventoryComplete": true,
+        "sourceRevisionComposition": "MIXED_BY_SERVICE",
+        "runtimeMutationPerformed": false
       }
     },
     "production": {
