@@ -6,10 +6,10 @@ import Link from 'next/link'
 import { PORR_DEMO_FORECAST_BENCHMARKS } from '@/lib/benchmark/porr-demo-forecast-portfolio'
 import { isPorrDemoProfile, serverEnv } from '@/lib/env'
 import {
-  PORR_DEMO_SESSION_COOKIE_NAME,
   isPorrDemoRuntimeReady,
   resolvePorrDemoNextPath,
   resolvePorrDemoRuntimeConfig,
+  resolvePorrDemoSessionCookieName,
 } from '@/lib/porr-demo-profile'
 import { verifyPorrDemoSessionToken } from '@/lib/porr-demo-session'
 
@@ -87,7 +87,7 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
 
   const runtimeConfig = resolvePorrDemoRuntimeConfig()
   const runtimeReady = isPorrDemoRuntimeReady(runtimeConfig)
-  const token = cookies().get(PORR_DEMO_SESSION_COOKIE_NAME)?.value
+  const token = cookies().get(resolvePorrDemoSessionCookieName(runtimeConfig.appEnv))?.value
   const session = runtimeReady && runtimeConfig.sessionSecret
     ? await verifyPorrDemoSessionToken(runtimeConfig.sessionSecret, token)
     : null

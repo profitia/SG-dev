@@ -8,6 +8,7 @@ import {
   resolveCognitionAuth,
 } from '../lib/api/middleware'
 import { createPorrDemoSessionToken } from '../lib/porr-demo-session'
+import { resolvePorrDemoSessionCookieName } from '../lib/porr-demo-profile'
 
 function buildRequest(
   url: string,
@@ -181,7 +182,7 @@ test('PORR profile accepts a valid signed demo session for benchmark APIs only',
 
   const request = buildRequest('http://localhost/api/benchmark/metadata', {
     headers: {
-      cookie: `sg_porr_demo_session=${token}`,
+      cookie: `sg_porr_demo_session=stale-parent-cookie; ${resolvePorrDemoSessionCookieName('development')}=${token}`,
     },
   })
 
@@ -194,6 +195,7 @@ test('PORR profile accepts a valid signed demo session for benchmark APIs only',
     developmentOrgRole: 'viewer',
     porrDemoPassword: 'pw',
     porrDemoSessionSecret: 'secret',
+    appEnv: 'development',
   })
 
   assert.deepEqual(auth, {
@@ -202,6 +204,27 @@ test('PORR profile accepts a valid signed demo session for benchmark APIs only',
     orgRole: 'viewer',
     requestId: auth?.requestId,
   })
+})
+
+test('PORR profile does not accept a valid session cookie from another environment', async () => {
+  const token = await createPorrDemoSessionToken('secret', {
+    orgId: 'porr-org', userId: 'porr-user', orgRole: 'viewer',
+  })
+  const request = buildRequest('http://localhost/api/benchmark/search?q=steel', {
+    headers: { cookie: `${resolvePorrDemoSessionCookieName('staging')}=${token}` },
+  })
+  const auth = await resolveCognitionAuth(request, {
+    isDevelopmentRuntime: false,
+    isTemporaryPublicBenchmarkComponentProfile: false,
+    isPorrDemoProfile: true,
+    developmentOrgId: 'porr-org',
+    developmentUserId: 'porr-user',
+    developmentOrgRole: 'viewer',
+    porrDemoPassword: 'pw',
+    porrDemoSessionSecret: 'secret',
+    appEnv: 'development',
+  })
+  assert.equal(auth, null)
 })
 
 test('PORR profile keeps category APIs closed and suppresses development fallback', async () => {

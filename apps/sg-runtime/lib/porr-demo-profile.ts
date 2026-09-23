@@ -1,6 +1,6 @@
 import { isPorrDemoProfile, publicEnv, serverEnv } from '@/lib/env'
 
-export const PORR_DEMO_SESSION_COOKIE_NAME = 'sg_porr_demo_session'
+const PORR_DEMO_SESSION_COOKIE_PREFIX = 'sg_porr_demo_session'
 export const PORR_DEMO_SESSION_MAX_AGE_SECONDS = 60 * 60 * 8
 
 type PorrDemoAllowedApiRoute = {
@@ -113,17 +113,8 @@ export function isPorrDemoAllowedApiRequest(method: string, pathname: string) {
   ))
 }
 
-export function resolvePorrDemoCookieDomain(appUrl: string) {
-  try {
-    const hostname = new URL(appUrl).hostname
-    if (hostname === 'spendguru.app' || hostname.endsWith('.spendguru.app')) {
-      return '.spendguru.app'
-    }
-  } catch {
-    return undefined
-  }
-
-  return undefined
+export function resolvePorrDemoSessionCookieName(appEnv: PorrDemoRuntimeConfig['appEnv']) {
+  return `${PORR_DEMO_SESSION_COOKIE_PREFIX}_${appEnv}`
 }
 
 export function isPorrDemoSecureCookie(nodeEnv: PorrDemoRuntimeConfig['nodeEnv']) {

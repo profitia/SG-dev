@@ -5,9 +5,9 @@ import { BenchmarkFinderClient } from '@/components/benchmark-finder/benchmark-f
 import { PorrDemoShell } from '@/components/porr-demo/porr-demo-shell'
 import { isPorrDemoProfile } from '@/lib/env'
 import {
-  PORR_DEMO_SESSION_COOKIE_NAME,
   isPorrDemoRuntimeReady,
   resolvePorrDemoRuntimeConfig,
+  resolvePorrDemoSessionCookieName,
 } from '@/lib/porr-demo-profile'
 import { verifyPorrDemoSessionToken } from '@/lib/porr-demo-session'
 
@@ -25,7 +25,7 @@ export default async function BenchmarkFinderPage({ params }: BenchmarkFinderPag
   }
 
   const runtimeConfig = resolvePorrDemoRuntimeConfig()
-  const token = cookies().get(PORR_DEMO_SESSION_COOKIE_NAME)?.value
+  const token = cookies().get(resolvePorrDemoSessionCookieName(runtimeConfig.appEnv))?.value
   const session = isPorrDemoRuntimeReady(runtimeConfig) && runtimeConfig.sessionSecret
     ? await verifyPorrDemoSessionToken(runtimeConfig.sessionSecret, token)
     : null
