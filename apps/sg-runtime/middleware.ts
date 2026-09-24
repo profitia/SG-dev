@@ -6,12 +6,13 @@ import {
   isPorrDemoRestrictedPagePath,
   isPorrDemoRuntimeReady,
   resolvePorrDemoAbsoluteUrl,
+  resolvePorrDemoCookieDomain,
   resolvePorrDemoLocale,
   resolvePorrDemoNextPath,
   resolvePorrDemoRuntimeConfig,
   resolvePorrDemoSessionCookieName,
 } from './lib/porr-demo-profile'
-import { verifyPorrDemoSessionToken } from './lib/porr-demo-session'
+import { buildPorrDemoSessionCookie, verifyPorrDemoSessionToken } from './lib/porr-demo-session'
 import { routing } from './i18n/routing'
 
 // Locale-aware routing middleware.
@@ -53,6 +54,15 @@ export default async function middleware(request: NextRequest) {
   }
 
   if (session) {
+    // Upgrade an already signed-in Development browser's host-only cookie so the
+    // sibling analytics host receives it without requiring a second login.
+    const domain = resolvePorrDemoCookieDomain(runtimeConfig.appEnv, runtimeConfig.appUrl)
+    if (domain && token && request.nextUrl.hostname === new URL(runtimeConfig.appUrl).hostname) {
+      intlResponse.cookies.set({
+        ...buildPorrDemoSessionCookie(token, runtimeConfig.appEnv, runtimeConfig.nodeEnv, runtimeConfig.appUrl),
+        maxAge: Math.max(0, session.exp - Math.floor(Date.now() / 1000)),
+      })
+    }
     return intlResponse
   }
 
