@@ -83,4 +83,8 @@ test('Dashboard Preview extracts and rebuilds only the shared PORR cookie header
   assert.equal(extractPorrDemoSessionCookieValue(cookieHeader), 'signed.token')
   assert.equal(buildPorrDemoSessionCookieHeader('signed.token'), 'sg_porr_demo_session=signed.token')
   assert.equal(buildPorrDemoSessionCookieHeader(''), null)
+  assert.equal(extractPorrDemoSessionCookieValue('sg_porr_demo_session=stage; sg_porr_demo_session_development=dev', 'development'), 'dev')
+  assert.equal(buildPorrDemoSessionCookieHeader('dev', 'development'), 'sg_porr_demo_session_development=dev')
+  assert.equal(extractPorrDemoSessionCookieValue(cookieHeader, 'development'), null)
+  assert.equal(buildPorrDemoSessionCookieHeader('dev', 'invalid'), null)
 })

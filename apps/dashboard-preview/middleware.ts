@@ -45,7 +45,7 @@ export default async function middleware(request: NextRequest) {
       : new NextResponse('PORR dashboard access is not configured.', { status: 503 })
   }
 
-  const token = extractPorrDemoSessionCookieValue(request.headers.get('cookie'))
+  const token = extractPorrDemoSessionCookieValue(request.headers.get('cookie'), runtimeConfig.appEnv)
   const session = await verifyPorrDemoSessionToken(runtimeConfig.sessionSecret!, token)
 
   if (!session) {

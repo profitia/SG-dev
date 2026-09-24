@@ -14,6 +14,7 @@ import {
   isPorrDemoRestrictedPagePath,
   isPorrDemoRuntimeReady,
   resolvePorrDemoSessionCookieName,
+  resolvePorrDemoCookieDomain,
 } from '../lib/porr-demo-profile'
 
 const SECRET = 'porr-demo-test-secret'
@@ -66,6 +67,19 @@ test('builds host-only, environment-scoped cookie settings for deployments', () 
   assert.equal(cookie.sameSite, 'lax')
   assert.equal(cookie.secure, true)
   assert.equal(expiredCookie.maxAge, 0)
+})
+
+test('shares only registered Development and Staging demo cookies with their analytics subdomains', () => {
+  const development = buildPorrDemoSessionCookie('token', 'development', 'production', 'https://dev-sg2.spendguru.app')
+  const expired = buildExpiredPorrDemoSessionCookie('development', 'production', 'https://dev-sg2.spendguru.app')
+  assert.equal(development.name, 'sg_porr_demo_session_development')
+  assert.equal(development.domain, '.spendguru.app')
+  assert.equal(expired.domain, development.domain)
+  assert.equal(expired.maxAge, 0)
+  assert.equal(resolvePorrDemoCookieDomain('staging', 'https://demo-sg-porr.spendguru.app'), '.spendguru.app')
+  assert.equal(resolvePorrDemoCookieDomain('development', 'https://demo-sg-porr.spendguru.app'), undefined)
+  assert.equal(resolvePorrDemoCookieDomain('development', 'https://dev-sg2.spendguru.app.evil.example'), undefined)
+  assert.equal(resolvePorrDemoCookieDomain('production', 'https://dev-sg2.spendguru.app'), undefined)
 })
 
 test('PORR demo routing and readiness helpers fail closed by default', () => {
