@@ -3,7 +3,8 @@ import { getMessages, getTranslations } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { routing, type Locale } from '@/i18n/routing'
 import { SpendGuruAdvisoryWidget } from '@/components/advisory/spendguru-advisory-widget'
-import { isPorrDemoProfile } from '@/lib/env'
+import { isPorrDemoProfile, serverEnv } from '@/lib/env'
+import { getEnvironmentBrowserTabTitle } from '@/lib/browser-tab-title'
 
 interface LocaleLayoutProps {
   children: React.ReactNode
@@ -13,7 +14,7 @@ interface LocaleLayoutProps {
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }) {
   const t = await getTranslations({ locale, namespace: 'Metadata' })
   return {
-    title: t('title'),
+    title: getEnvironmentBrowserTabTitle(t('title'), serverEnv.APP_ENV),
     description: t('description'),
   }
 }
