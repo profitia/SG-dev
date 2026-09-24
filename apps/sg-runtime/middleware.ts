@@ -57,7 +57,10 @@ export default async function middleware(request: NextRequest) {
     // Upgrade an already signed-in Development browser's host-only cookie so the
     // sibling analytics host receives it without requiring a second login.
     const domain = resolvePorrDemoCookieDomain(runtimeConfig.appEnv, runtimeConfig.appUrl)
-    if (domain && token && request.nextUrl.hostname === new URL(runtimeConfig.appUrl).hostname) {
+    // The public host may be rewritten to the Render host before NextRequest is
+    // constructed. The browser itself accepts this domain cookie only when the
+    // response came from a spendguru.app host; it rejects it on *.onrender.com.
+    if (domain && token) {
       intlResponse.cookies.set({
         ...buildPorrDemoSessionCookie(token, runtimeConfig.appEnv, runtimeConfig.nodeEnv, runtimeConfig.appUrl),
         maxAge: Math.max(0, session.exp - Math.floor(Date.now() / 1000)),
