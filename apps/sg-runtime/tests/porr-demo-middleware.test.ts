@@ -40,7 +40,7 @@ test('upgrades a valid host-only Development session for the analytics sibling h
   assert.ok((cookie?.maxAge ?? 0) > 0)
 })
 
-test('does not reissue an invalid session or issue a cross-domain cookie on the technical host', async () => {
+test('does not reissue an invalid session and keeps the configured domain when proxy host differs', async () => {
   const invalid = await middleware(new NextRequest('https://dev-sg2.spendguru.app/en/benchmark-finder', {
     headers: { cookie: 'sg_porr_demo_session_development=invalid' },
   }))
@@ -55,5 +55,5 @@ test('does not reissue an invalid session or issue a cross-domain cookie on the 
   const technical = await middleware(new NextRequest('https://sg2-development-runtime.onrender.com/en/benchmark-finder', {
     headers: { cookie: `sg_porr_demo_session_development=${token}` },
   }))
-  assert.equal(technical.cookies.get('sg_porr_demo_session_development'), undefined)
+  assert.equal(technical.cookies.get('sg_porr_demo_session_development')?.domain, '.spendguru.app')
 })
