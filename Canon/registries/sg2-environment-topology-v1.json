@@ -89,8 +89,8 @@
             "customDomainStatus": "VERIFIED_CERTIFICATE_ISSUED",
             "dnsCnameTarget": "sg2-development-runtime.onrender.com",
             "autoDeploy": false,
-            "currentDeployId": "dep-daqbkr2d0e5s73a0g6u0",
-            "deployedSha": "dbd3e47196b3aeb65b77fe6d76bbf2fae2d68119"
+            "currentDeployId": "dep-daqbu6e7bikc73fvge2g",
+            "deployedSha": "e211657c02f2657ba12964ea432ec72508e44b21"
           },
           "currentWorker": {
             "serviceId": "srv-dapa3vlg1s2s739vp7dg",
