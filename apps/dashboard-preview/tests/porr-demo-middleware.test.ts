@@ -98,6 +98,28 @@ test('PORR middleware accepts a valid shared session for embedded dashboard requ
   })
 })
 
+test('Development dashboard accepts only the Development cookie, not the Staging cookie', async () => {
+  await withEnv({
+    APP_ENV: 'development',
+    DASHBOARD_PREVIEW_PORR_DEMO: 'true',
+    PORR_DEMO_ENTRY_URL: 'https://dev-sg2.spendguru.app/en',
+    PORR_DEMO_SESSION_SECRET: 'shared-secret',
+  }, async () => {
+    const token = await createSignedToken('shared-secret')
+    const url = 'https://analytics-dev-sg2.spendguru.app/en?embed=1'
+    const stagingCookie = await middleware(new NextRequest(url, {
+      headers: { cookie: `sg_porr_demo_session=${token}` },
+    }))
+    assert.equal(stagingCookie.headers.get('location'), 'https://dev-sg2.spendguru.app/en')
+
+    const developmentCookie = await middleware(new NextRequest(url, {
+      headers: { cookie: `sg_porr_demo_session_development=${token}` },
+    }))
+    assert.equal(developmentCookie.status, 200)
+    assert.notEqual(developmentCookie.headers.get('location'), 'https://dev-sg2.spendguru.app/en')
+  })
+})
+
 test('PORR middleware fails closed when profile is enabled without the shared session secret', async () => {
   await withEnv({
     DASHBOARD_PREVIEW_PORR_DEMO: 'true',

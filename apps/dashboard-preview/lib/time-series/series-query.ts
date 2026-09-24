@@ -162,13 +162,16 @@ async function getBenchmarkSeries(
   url.searchParams.set('seriesId', seriesId)
   url.searchParams.set('range', readBenchmarkAnalyticsRange(params))
 
+  const sessionCookieHeader = buildPorrDemoSessionCookieHeader(
+    extractPorrDemoSessionCookieValue(requestCookieHeader, process.env.APP_ENV),
+    process.env.APP_ENV,
+  )
+
   const response = await fetch(url, {
     cache: 'no-store',
     headers: {
       Accept: 'application/json',
-      ...(buildPorrDemoSessionCookieHeader(extractPorrDemoSessionCookieValue(requestCookieHeader))
-        ? { Cookie: buildPorrDemoSessionCookieHeader(extractPorrDemoSessionCookieValue(requestCookieHeader))! }
-        : {}),
+      ...(sessionCookieHeader ? { Cookie: sessionCookieHeader } : {}),
     },
   })
 

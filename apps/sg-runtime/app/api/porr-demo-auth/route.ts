@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   const submittedPassword = String(formData.get('password') ?? '').trim()
   if (submittedPassword !== runtimeConfig.password) {
     const response = NextResponse.redirect(buildAccessRedirect(runtimeConfig.appUrl, request, locale, nextPath, 'invalid-password'))
-    response.cookies.set(buildExpiredPorrDemoSessionCookie(runtimeConfig.appEnv, runtimeConfig.nodeEnv))
+    response.cookies.set(buildExpiredPorrDemoSessionCookie(runtimeConfig.appEnv, runtimeConfig.nodeEnv, runtimeConfig.appUrl))
     return response
   }
 
@@ -46,6 +46,6 @@ export async function POST(request: NextRequest) {
   })
 
   const response = NextResponse.redirect(resolvePorrDemoAbsoluteUrl(nextPath, runtimeConfig.appUrl, request.url))
-  response.cookies.set(buildPorrDemoSessionCookie(token, runtimeConfig.appEnv, runtimeConfig.nodeEnv))
+  response.cookies.set(buildPorrDemoSessionCookie(token, runtimeConfig.appEnv, runtimeConfig.nodeEnv, runtimeConfig.appUrl))
   return response
 }

@@ -116,6 +116,7 @@ test('preserves benchmark identity, Historical selection, and ascending series o
 
 test('forwards only the shared PORR demo cookie to SG Runtime benchmark analytics requests', async () => {
   const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
+  const previousAppEnv = process.env.APP_ENV
   const previousFetch = global.fetch
   let capturedCookieHeader: string | null = null
 
@@ -140,6 +141,7 @@ test('forwards only the shared PORR demo cookie to SG Runtime benchmark analytic
   }) as typeof global.fetch
 
   try {
+    delete process.env.APP_ENV
     await getSeries(
       new URLSearchParams('seriesId=wocaes0074&range=1Y&displayName=Brent'),
       'pl',
@@ -147,9 +149,19 @@ test('forwards only the shared PORR demo cookie to SG Runtime benchmark analytic
     )
 
     assert.equal(capturedCookieHeader, 'sg_porr_demo_session=signed.token')
+
+    process.env.APP_ENV = 'development'
+    await getSeries(
+      new URLSearchParams('seriesId=wocaes0074&range=1Y&displayName=Brent'),
+      'pl',
+      'sg_porr_demo_session=staging.token; sg_porr_demo_session_development=development.token',
+    )
+    assert.equal(capturedCookieHeader, 'sg_porr_demo_session_development=development.token')
   } finally {
     global.fetch = previousFetch
     if (previousBaseUrl === undefined) delete process.env.SG_RUNTIME_BASE_URL
     else process.env.SG_RUNTIME_BASE_URL = previousBaseUrl
+    if (previousAppEnv === undefined) delete process.env.APP_ENV
+    else process.env.APP_ENV = previousAppEnv
   }
 })

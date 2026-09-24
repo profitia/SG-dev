@@ -117,6 +117,22 @@ export function resolvePorrDemoSessionCookieName(appEnv: PorrDemoRuntimeConfig['
   return `${PORR_DEMO_SESSION_COOKIE_PREFIX}_${appEnv}`
 }
 
+export function resolvePorrDemoCookieDomain(appEnv: PorrDemoRuntimeConfig['appEnv'], appUrl: string) {
+  try {
+    const hostname = new URL(appUrl).hostname
+    if (
+      (appEnv === 'development' && hostname === 'dev-sg2.spendguru.app')
+      || (appEnv === 'staging' && hostname === 'demo-sg-porr.spendguru.app')
+    ) {
+      return '.spendguru.app'
+    }
+  } catch {
+    // Unknown hosts retain the safer host-only session cookie.
+  }
+
+  return undefined
+}
+
 export function isPorrDemoSecureCookie(nodeEnv: PorrDemoRuntimeConfig['nodeEnv']) {
   return nodeEnv === 'production'
 }
