@@ -82,6 +82,8 @@ export function mapMgbiFinancialRecords(body: unknown, identifier: CompanyIdenti
   if (!matches.length) return empty("ERROR", retrievedAt, "MGBI_IDENTIFIER_MISMATCH", "IDENTIFIER_MISMATCH");
   const documents: FinancialDocument[] = [];
   const candidates: FinancialCandidate[] = [];
+  const periods: Array<FinancialData["periods"][number]> = [];
+  const warnings: string[] = [];
   for (const item of matches) {
     const record = object(item);
     const source = object(record?.document);
@@ -95,14 +97,23 @@ export function mapMgbiFinancialRecords(body: unknown, identifier: CompanyIdenti
     documents.push({ recordId, documentId, type, from, to,
       filingDate: date(source.filing_date), isCorrection: source.is_correction === true,
       isIasCompliant: source.is_ias_compliant === true, scope: scope(type) });
-    candidates.push(...collectCandidates(object(object(record?.content)?.standardized_fields), documentId));
+    const content = object(record?.content);
+    const documentCandidates = collectCandidates(object(content?.standardized_fields), documentId);
+    candidates.push(...documentCandidates);
+    const schemaName = str(object(content?.schema)?.name);
+    const currentFacts = documentCandidates.filter((fact) => fact.comparison === "current");
+    if (from && to && scope(type) !== "unknown" && schemaName?.endsWith("WZlotych") && currentFacts.length) {
+      periods.push({ from, to, scope: scope(type) as "standalone" | "consolidated", documentId,
+        facts: currentFacts.map(({ metricCode, amount }) => ({ metricCode, amount, currency: "PLN", unit: "PLN" })) });
+    } else {
+      warnings.push(documentCandidates.length ? "MGBI_FINANCIAL_SCHEMA_OR_PERIOD_UNVERIFIED" : "MGBI_FINANCIAL_CONTENT_UNAVAILABLE");
+    }
   }
   if (!documents.length) return empty("EMPTY", retrievedAt, "MGBI_NO_FINANCIAL_DOCUMENT", null);
-  // Public financial taxonomy, unit and currency still require a live provider validation.
-  // Candidate numbers are never placed in the card or written to financial_facts here.
-  return { section: { status: "PARTIAL", source: { ...SOURCE, recordId: documents[0].recordId },
-    retrievedAt, effectiveAt: documents[0].to, data: { periods: [] },
-    warnings: ["MGBI_FINANCIAL_FACTS_AWAIT_LIVE_VALIDATION"] }, documents, candidates, errorCode: null };
+  return { section: { status: periods.length && !warnings.length ? "SUCCESS" : "PARTIAL",
+    source: { ...SOURCE, recordId: documents[0].recordId }, retrievedAt,
+    effectiveAt: documents[0].to, data: { periods }, warnings: [...new Set(warnings)] },
+    documents, candidates, errorCode: null };
 }
 export async function fetchMgbiFinancial(identifier: CompanyIdentifier, options: MgbiFinancialOptions = {}): Promise<MgbiFinancialResult> {
   if (!/^[0-9]{10}$/.test(identifier.value) || (identifier.type !== "NIP" && identifier.type !== "KRS")) throw new Error("A valid ten-digit NIP or KRS is required");
@@ -113,6 +124,9 @@ export async function fetchMgbiFinancial(identifier: CompanyIdentifier, options:
   url.searchParams.set("identifiers." + (identifier.type === "NIP" ? "pl_nip" : "pl_krs"), identifier.value);
   url.searchParams.set("document.type", "financial_statement");
   url.searchParams.set("per_page", "20");
+  for (const field of ["identifiers", "document", "content.schema", "content.standardized_fields"]) {
+    url.searchParams.append("content", field);
+  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 15_000);
   const now = options.now ?? (() => new Date());
