@@ -27,8 +27,21 @@ export async function withOrganization<T>(
   try {
     await client.query("BEGIN");
     inTransaction = true;
-    const identity = await client.query<{ database_name: string }>("SELECT current_database() AS database_name");
-    if (identity.rows[0]?.database_name !== "srm_app") throw new Error("SRM product database identity mismatch");
+    const identity = await client.query<{
+      database_name: string;
+      bypass_rls: boolean;
+      superuser: boolean;
+      neon_superuser_member: boolean;
+    }>(
+      "SELECT current_database() AS database_name, r.rolbypassrls AS bypass_rls, " +
+      "r.rolsuper AS superuser, pg_has_role(current_user, 'neon_superuser', 'member') AS neon_superuser_member " +
+      "FROM pg_roles r WHERE r.rolname = current_user",
+    );
+    const role = identity.rows[0];
+    if (role?.database_name !== "srm_app") throw new Error("SRM product database identity mismatch");
+    if (role.bypass_rls || role.superuser || role.neon_superuser_member) {
+      throw new Error("SRM application role must enforce row-level security");
+    }
     await client.query("SELECT set_config('srm.organization_id', $1, true)", [organizationId]);
     const result = await action(client);
     await client.query("COMMIT");
