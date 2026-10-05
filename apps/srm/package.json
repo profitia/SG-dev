@@ -7,18 +7,23 @@
     "dev": "next dev --port 3400",
     "build": "next build",
     "start": "next start --port 3400",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/server/*.test.ts",
+    "migrate:development": "node scripts/migrate.mjs"
   },
   "dependencies": {
     "@profitia/srm-xray": "file:../../packages/srm-xray",
     "next": "16.2.6",
+    "pg": "^8.23.1",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }

@@ -1,0 +1,116 @@
+import { createHash } from "node:crypto";
+import { withOrganization } from "./db";
+
+export type Identifier = { type: "NIP" | "KRS"; value: string };
+export type Section = "general" | "financial" | "kys";
+export type TerminalStatus = "SUCCESS" | "NO_DATA" | "TIMEOUT" | "ERROR";
+
+export async function registerOrganization(organizationId: string, slug: string): Promise<void> {
+  await withOrganization(organizationId, async (client) => {
+    await client.query("INSERT INTO srm.organizations(id, slug) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING", [organizationId, slug]);
+  });
+}
+
+export async function createLookup(organizationId: string, identifier: Identifier): Promise<{ supplierId: string; requestId: string }> {
+  if (!/^[0-9]{10}$/.test(identifier.value)) throw new Error("NIP or KRS must have ten digits");
+  return withOrganization(organizationId, async (client) => {
+    const column = identifier.type === "NIP" ? "nip" : "krs";
+    const supplier = await client.query<{ id: string }>(
+      "INSERT INTO srm.suppliers(organization_id, " + column + ") VALUES ($1, $2) " +
+      "ON CONFLICT (organization_id, " + column + ") WHERE " + column + " IS NOT NULL " +
+      "DO UPDATE SET updated_at = now() RETURNING id",
+      [organizationId, identifier.value],
+    );
+    const request = await client.query<{ id: string }>(
+      "INSERT INTO srm.lookup_requests(organization_id, supplier_id, identifier_type, identifier) VALUES ($1, $2, $3, $4) RETURNING id",
+      [organizationId, supplier.rows[0].id, identifier.type, identifier.value],
+    );
+    return { supplierId: supplier.rows[0].id, requestId: request.rows[0].id };
+  });
+}
+
+export async function startAttempt(organizationId: string, requestId: string, section: Section, attemptNo = 1): Promise<string> {
+  const provider = section === "kys" ? "VERCLY" : "MGBI";
+  return withOrganization(organizationId, async (client) => {
+    const result = await client.query<{ id: string }>(
+      "INSERT INTO srm.provider_attempts(organization_id, request_id, section, provider, attempt_no, status) VALUES ($1, $2, $3, $4, $5, 'PENDING') RETURNING id",
+      [organizationId, requestId, section, provider, attemptNo],
+    );
+    return result.rows[0].id;
+  });
+}
+
+export async function finishAttempt(
+  organizationId: string,
+  attemptId: string,
+  status: TerminalStatus,
+  details: { correlationId?: string; providerRecordId?: string; errorCode?: string } = {},
+): Promise<void> {
+  await withOrganization(organizationId, async (client) => {
+    const result = await client.query(
+      "UPDATE srm.provider_attempts SET status = $3, completed_at = now(), correlation_id = $4, " +
+      "provider_record_id = $5, error_code = $6 WHERE organization_id = $1 AND id = $2 AND status = 'PENDING'",
+      [organizationId, attemptId, status, details.correlationId ?? null, details.providerRecordId ?? null, details.errorCode ?? null],
+    );
+    if (result.rowCount !== 1) throw new Error("Attempt missing, foreign or already completed");
+  });
+}
+
+export interface SnapshotInput {
+  attemptId: string;
+  supplierId: string;
+  section: Section;
+  sourceRecordId?: string;
+  dataClass: "COMPANY" | "FINANCIAL" | "KYS_REDACTED";
+  payload: unknown;
+  retrievedAt: Date;
+  effectiveAt?: Date;
+  retentionUntil?: Date;
+}
+
+export async function appendSnapshot(organizationId: string, input: SnapshotInput): Promise<string> {
+  if (input.section === "kys" && input.dataClass !== "KYS_REDACTED") throw new Error("KYS snapshots must be redacted");
+  const serialized = JSON.stringify(input.payload);
+  if (!serialized) throw new Error("Snapshot payload is required");
+  const digest = createHash("sha256").update(serialized).digest("hex");
+  return withOrganization(organizationId, async (client) => {
+    const result = await client.query<{ id: string }>(
+      "INSERT INTO srm.source_snapshots(organization_id, attempt_id, supplier_id, section, source_record_id, " +
+      "payload_json, payload_sha256, data_class, retrieved_at, effective_at, retention_until) " +
+      "VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11) RETURNING id",
+      [organizationId, input.attemptId, input.supplierId, input.section, input.sourceRecordId ?? null,
+        serialized, digest, input.dataClass, input.retrievedAt, input.effectiveAt ?? null, input.retentionUntil ?? null],
+    );
+    return result.rows[0].id;
+  });
+}
+
+export interface FinancialFactInput {
+  supplierId: string;
+  snapshotId: string;
+  metricCode: string;
+  periodStart: string;
+  periodEnd: string;
+  periodType: "YEAR" | "QUARTER" | "MONTH" | "OTHER";
+  statementScope: "UNIT" | "CONSOLIDATED" | "UNKNOWN";
+  amount: string;
+  currencyCode?: string;
+  unitCode: string;
+  sourcePath: string;
+  validationStatus: "VALID" | "REVIEW" | "REJECTED";
+}
+
+export async function appendFinancialFacts(organizationId: string, facts: FinancialFactInput[]): Promise<void> {
+  await withOrganization(organizationId, async (client) => {
+    for (const fact of facts) {
+      await client.query(
+        "INSERT INTO srm.financial_facts(organization_id, supplier_id, snapshot_id, metric_code, " +
+        "period_start, period_end, period_type, statement_scope, amount, currency_code, unit_code, source_path, validation_status) " +
+        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)",
+        [organizationId, fact.supplierId, fact.snapshotId, fact.metricCode, fact.periodStart, fact.periodEnd,
+          fact.periodType, fact.statementScope, fact.amount, fact.currencyCode ?? null, fact.unitCode,
+          fact.sourcePath, fact.validationStatus],
+      );
+    }
+  });
+}
