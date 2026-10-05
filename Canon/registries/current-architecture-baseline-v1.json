@@ -288,6 +288,20 @@
       "parentSurfaceId": "SG2-BASE-008",
       "cleanupReason": "MISSING_RUNTIME_AUTHORITY_REFERENCE",
       "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+    },
+    {
+      "id": "SRM-BASE-001",
+      "capability": "SRM X-Ray",
+      "name": "SRM Reusable X-Ray Module",
+      "pathPatterns": [
+        "packages/srm-xray/**"
+      ],
+      "currentOwner": "SRM X-Ray Module",
+      "currentResponsibility": "Three independently mountable X-Ray sections and composite public module contracts; provider transport remains server-side in SRM AppShell.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "f5d671280b330edb51388d9d7c6d603bf504d7d6"
     }
   ],
   "cleanupFindings": [
