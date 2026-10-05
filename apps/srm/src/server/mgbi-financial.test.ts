@@ -71,6 +71,7 @@ test("marks a paginated RDF search as incomplete", async () => {
   const result = await fetchMgbiFinancial(id, { apiKey: "test-secret", now: () => new Date(timestamp),
     fetcher: (async () => new Response(JSON.stringify({ results: [record()], pages: 2 }), { status: 200 })) as typeof fetch });
   assert.equal(result.section.warnings.includes("MGBI_ADDITIONAL_PAGES_NOT_FETCHED"), true);
+  assert.equal(result.section.status, "PARTIAL");
 });
 
 test("keeps unknown financial schema out of displayed amounts", () => {

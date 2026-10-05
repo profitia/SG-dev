@@ -137,7 +137,7 @@ export async function fetchMgbiFinancial(identifier: CompanyIdentifier, options:
     if (!response.ok) return empty("ERROR", retrievedAt, "MGBI_HTTP_" + response.status, "HTTP_" + response.status);
     let body: unknown;
     try { body = await response.json(); } catch { return empty("ERROR", retrievedAt, "MGBI_INVALID_JSON", "INVALID_JSON"); }
-    const result = mapMgbiFinancialRecords(body, identifier, retrievedAt); return Number(object(body)?.pages ?? 1) > 1 ? { ...result, section: { ...result.section, warnings: [...result.section.warnings, "MGBI_ADDITIONAL_PAGES_NOT_FETCHED"] } } : result;
+    const result = mapMgbiFinancialRecords(body, identifier, retrievedAt); return Number(object(body)?.pages ?? 1) > 1 ? { ...result, section: { ...result.section, status: "PARTIAL", warnings: [...result.section.warnings, "MGBI_ADDITIONAL_PAGES_NOT_FETCHED"] } } : result;
   } catch (error) {
     const timedOut = controller.signal.aborted || (error instanceof Error && error.name === "AbortError");
     return empty("ERROR", now().toISOString(), timedOut ? "MGBI_TIMEOUT" : "MGBI_NETWORK_ERROR", timedOut ? "TIMEOUT" : "NETWORK_ERROR");
