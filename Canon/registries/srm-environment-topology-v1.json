@@ -58,7 +58,16 @@
         "environmentId": "evm-dapbd70ae00c73cgrup0",
         "providerLabel": "Development",
         "networkIsolation": "ENABLED",
-        "services": {}
+        "services": {
+          "runtime": {
+            "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+            "name": "srm-development-runtime",
+            "url": "https://srm-development-runtime.onrender.com",
+            "autoDeploy": false,
+            "currentDeployId": "dep-db20160m7kps73d0jg8g",
+            "deployedSha": "35da4d2f18319040a97df88f4547d0cde8e00d3e"
+          }
+        }
       },
       "neon": {
         "projectId": "snowy-breeze-40315151",
