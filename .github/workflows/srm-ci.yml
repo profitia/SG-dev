@@ -28,4 +28,5 @@ jobs:
           cache-dependency-path: apps/srm/package-lock.json
       - run: npm ci --install-links
       - run: npm run typecheck
+      - run: npm test
       - run: npm run build
