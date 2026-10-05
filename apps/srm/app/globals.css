@@ -25,3 +25,15 @@ body { margin: 0; }
 .xray-period { border-top: 1px solid #d9e2e5; margin-top: 14px; }
 .xray-warning { color: #9a4a15; }
 @media (max-width: 600px) { .appshield-search div { flex-direction: column; } .xray-card { display: block; } .xray-section { margin-bottom: 16px; } }
+.demo-notice { margin-top: 28px; padding: 16px 20px; border: 2px solid #a45414; border-radius: 10px; background: #fff4e7; color: #66340e; }
+.demo-notice p { margin: 8px 0 0; line-height: 1.5; }
+.appshield-search-fields { display: flex; gap: 12px; }
+.appshield-search select { padding: 12px 14px; border: 1px solid #afc2c8; border-radius: 8px; background: white; font: inherit; }
+.appshield-search button:disabled { opacity: .5; cursor: not-allowed; }
+.search-error { color: #a12323; font-weight: 700; }
+.search-caption { color: #34535d; }
+.harness-link { margin: -14px 0 24px; }
+.harness-link a, .harness-nav a { color: #155f64; }
+.harness-nav { display: flex; flex-wrap: wrap; gap: 16px; margin: 24px 0; }
+.harness-module { max-width: 560px; }
+@media (max-width: 600px) { .appshield-search-fields { flex-direction: column; } }
