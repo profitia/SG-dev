@@ -70,11 +70,12 @@
         "databaseId": 308881,
         "databaseName": "srm_app",
         "databaseOwner": "neondb_owner",
+        "runtimeRole": "srm_app_runtime",
         "purpose": "SRM_APPLICATION_DATA"
       },
       "domains": [],
       "deploymentPolicy": "MUTABLE_INTEGRATION",
-      "schemaStatus": "NOT_INITIALIZED"
+      "schemaStatus": "INITIALIZED"
     },
     "staging": {
       "status": "RESERVED",
