@@ -1,0 +1,16 @@
+{
+  "name": "@profitia/srm-xray",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reusable SRM X-Ray section mounts and host contract",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "peerDependencies": {
+    "react": "^19.2.0"
+  }
+}
