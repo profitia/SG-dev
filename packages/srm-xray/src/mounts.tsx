@@ -25,6 +25,9 @@ function value(text: string | null | undefined): string {
 }
 
 function warningLabel(code: string): string {
+  if (code === "FINANCIAL_NO_STRUCTURED_DATA") return "Nie znaleziono ustrukturyzowanych danych finansowych dla podanego NIP.";
+  if (code === "KYS_PROVIDER_NOTICE") return "Raport KYS zawiera uwagę dotyczącą części sprawdzeń.";
+  if (code === "KYS_INCOMPLETE_SOURCES") return "Nie wszystkie sprawdzane rejestry zwróciły dane.";
   if (code.startsWith("VERCLY_SEVERITY_")) return "Raport zawiera uwagę dostawcy danych.";
   if (code === "VERCLY_INCOMPLETE_SOURCES") return "Część źródeł nie zwróciła danych.";
   if (code === "IDENTIFIER_MISMATCH") return "Dane identyfikacyjne nie zgadzają się z zapytaniem.";
@@ -97,14 +100,15 @@ function SectionFrame({
   section: DisplaySection<unknown>;
   children: ReactNode;
 }) {
+  const missingFinancialReason = section.data == null && section.warnings.includes("FINANCIAL_NO_STRUCTURED_DATA");
   return (
     <section className="xray-section" aria-label={title}>
       <header className="xray-section-header">
         <h2>{title}</h2>
         <span>{statusLabel[section.status]}</span>
       </header>
-      {section.status === "PENDING" ? <div role="status"><p>Raport jest przygotowywany. Poczekaj na wynik…</p>{title === "Raport KYS" && <div className="kys-progress" role="progressbar" aria-label="Postęp pobierania raportu KYS" aria-valuetext="Pobieranie trwa"><span /></div>}</div> : section.data == null ? <p>brak danych</p> : children}
-      {section.warnings.map((warning, index) => <p className="xray-warning" key={index}>{warningLabel(warning)}</p>)}
+      {section.status === "PENDING" ? <div role="status"><p>Raport jest przygotowywany. Poczekaj na wynik…</p>{title === "Raport KYS" && <div className="kys-progress" role="progressbar" aria-label="Postęp pobierania raportu KYS" aria-valuetext="Pobieranie trwa"><span /></div>}</div> : section.data == null ? <p>{missingFinancialReason ? warningLabel("FINANCIAL_NO_STRUCTURED_DATA") : "brak danych"}</p> : children}
+      {section.warnings.filter((warning) => !missingFinancialReason || warning !== "FINANCIAL_NO_STRUCTURED_DATA").map((warning, index) => <p className="xray-warning" key={index}>{warningLabel(warning)}</p>)}
     </section>
   );
 }

@@ -9,12 +9,18 @@ export type XrayLookupRequest = { identifier: CompanyIdentifier & { type: "NIP" 
 
 /** The browser only needs status and display data; source provenance stays server-side. */
 export function toPublicSection<T>(section: SectionEnvelope<T>): Omit<SectionEnvelope<T>, "source"> {
+  const warningCodes = section.warnings.map((code) => {
+    if (code === "MGBI_NO_STRUCTURED_FINANCIAL_DATA") return "FINANCIAL_NO_STRUCTURED_DATA";
+    if (code === "VERCLY_INCOMPLETE_SOURCES") return "KYS_INCOMPLETE_SOURCES";
+    if (code.startsWith("VERCLY_SEVERITY_")) return "KYS_PROVIDER_NOTICE";
+    return "REPORT_WARNING";
+  });
   return {
     status: section.status,
     retrievedAt: section.retrievedAt,
     effectiveAt: section.effectiveAt,
     data: section.data,
-    warnings: section.warnings.map(() => "REPORT_WARNING"),
+    warnings: [...new Set(warningCodes)],
   };
 }
 
