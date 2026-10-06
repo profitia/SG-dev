@@ -32,6 +32,13 @@ const string = (input: unknown): string | null => {
 const count = (input: unknown): number | null => typeof input === "number" && Number.isSafeInteger(input) && input >= 0 ? input : null;
 const items = (input: unknown): unknown[] => Array.isArray(input) ? input : [];
 
+function vatActive(input: unknown): boolean | null {
+  const status = string(input)?.toUpperCase();
+  if (["CZYNNY", "ACTIVE"].includes(status ?? "")) return true;
+  if (["NIECZYNNY", "INACTIVE", "ZWOLNIONY", "EXEMPT", "NIEZAREJESTROWANY", "NOT_REGISTERED"].includes(status ?? "")) return false;
+  return null;
+}
+
 function validNip(input: string | null): string | null {
   const nip = input?.replace(/^PL/i, "") ?? "";
   if (!/^[0-9]{10}$/.test(nip)) return null;
@@ -106,8 +113,16 @@ function mapReport(report: unknown, requested: VerclyKysRequest, fallbackCorrela
     .map((entry) => `VERCLY_SEVERITY_${count(entry.Severity) ?? "UNKNOWN"}`);
   if (entity && attribute(entity, "isAllComplete") === "false") warnings.push("VERCLY_INCOMPLETE_SOURCES");
   const queriedRegisters = items(body.QueriedRegisters).map(string).filter((value): value is string => value !== null).slice(0, 30);
+  const krzCount = count(record(entity?.Krz)?.Count);
+  const vat = record(entity?.Vat);
+  const vies = record(entity?.Vies);
   const data: VerclyKysData = {
     correlationId, reportId, isComplete: complete, queriedRegisters,
+    registryChecks: {
+      krzListed: krzCount === null ? null : krzCount > 0,
+      vatActive: vatActive(vat?.ActivityStatus),
+      euVat: typeof vies?.EuVat === "boolean" ? vies.EuVat : null,
+    },
     stateAsOf: stateDate(body.StateAsOfDate), company, screenedLists: listResults,
     beneficialOwnersCount: count(record(entity?.Beneficiaries)?.Count),
     relatedPersonsCount: count(record(entity?.DepPersons)?.Count),

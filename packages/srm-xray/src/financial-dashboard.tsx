@@ -125,10 +125,14 @@ function MetricChart({ periods, code, title, color }: { periods: readonly Financ
             ? (maxPositive ? point.value / maxPositive * positiveHeight : 0)
             : (minNegative ? point.value / minNegative * negativeHeight : 0);
           const y = point.value !== null && point.value < 0 ? baseline : baseline - height;
+          const labelY = point.value !== null && point.value < 0
+            ? Math.min(195, baseline + height + 15)
+            : Math.max(14, y - 7);
           return <g key={`${point.year}-${index}`}>
             {point.value !== null && <rect x={x} y={y} width={barWidth} height={Math.max(1, height)} rx="3" fill={color}>
               <title>{`${point.year}: ${formatNumber(point.value)} tys. zł`}</title>
             </rect>}
+            {point.value !== null && <text className="financial-chart-value" x={x + barWidth / 2} y={labelY} textAnchor="middle" fontSize="10" fill="#153645">{formatNumber(point.value)}</text>}
             <text x={x + barWidth / 2} y="210" textAnchor="middle" fontSize="12" fill="#45606c">{point.year}</text>
           </g>;
         })}
@@ -147,7 +151,7 @@ function FinancialTable({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showMore, setShowMore] = useState(false);
-  const visible = (showMore ? allPeriods : periods).slice().reverse();
+  const visible = showMore ? allPeriods : periods;
   return <>
     <div className="financial-table-tools">
       <span>Kwoty w tys. zł · kolumny według roku sprawozdania</span>
@@ -193,7 +197,7 @@ export function FinancialDashboard({ data }: { data: FinancialData }) {
   const scope = requestedScope && scopes.includes(requestedScope) ? requestedScope : initialScope;
   const allPeriods = scope ? financialPeriodsByScope(data, scope) : [];
   const eightPeriods = allPeriods.slice(0, 8);
-  const chartPeriods = eightPeriods.slice().reverse();
+  const chartPeriods = eightPeriods;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -235,7 +239,7 @@ export function FinancialDashboard({ data }: { data: FinancialData }) {
       {selectedRow && <>
         <div className="financial-dialog-header"><h3>{selectedRow.label}</h3><button type="button" onClick={() => dialogRef.current?.close()} aria-label="Zamknij wykres">×</button></div>
         <p>Wartości w tysiącach złotych (tys. zł).</p>
-        <MetricChart periods={allPeriods.slice().reverse()} code={selectedRow.code} title={selectedRow.label} color="#173a59" />
+        <MetricChart periods={allPeriods} code={selectedRow.code} title={selectedRow.label} color="#173a59" />
       </>}
     </dialog>
   </div>;

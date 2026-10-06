@@ -1,4 +1,4 @@
-import type { SupplierXRayCard } from "@profitia/srm-xray";
+import type { SectionEnvelope, SupplierXRayCard } from "@profitia/srm-xray";
 import { emptyCard } from "../demo/fixture";
 import { fetchMgbiGeneral, type CompanyIdentifier } from "./mgbi-general";
 import { fetchMgbiFinancial, type FinancialSourceFact } from "./mgbi-financial";
@@ -6,6 +6,17 @@ import { fetchVerclyKys } from "./vercly-kys";
 import { appendFinancialFacts, appendSectionProjection, appendSnapshot, createLookup, finishAttempt, registerOrganization, startAttempt, type Section } from "./xray-repository";
 
 export type XrayLookupRequest = { identifier: CompanyIdentifier & { type: "NIP" } };
+
+/** The browser only needs status and display data; source provenance stays server-side. */
+export function toPublicSection<T>(section: SectionEnvelope<T>): Omit<SectionEnvelope<T>, "source"> {
+  return {
+    status: section.status,
+    retrievedAt: section.retrievedAt,
+    effectiveAt: section.effectiveAt,
+    data: section.data,
+    warnings: section.warnings.map(() => "REPORT_WARNING"),
+  };
+}
 
 export function validateXrayRequest(input: unknown): XrayLookupRequest {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("Nieprawidłowe dane wyszukiwania.");

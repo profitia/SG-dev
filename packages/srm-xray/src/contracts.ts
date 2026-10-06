@@ -58,6 +58,11 @@ export type VerclyKysData = {
   reportId: string | null;
   isComplete: boolean;
   queriedRegisters: readonly string[];
+  registryChecks?: {
+    krzListed: boolean | null;
+    vatActive: boolean | null;
+    euVat: boolean | null;
+  };
   stateAsOf: string | null;
   company?: {
     name: string | null;
