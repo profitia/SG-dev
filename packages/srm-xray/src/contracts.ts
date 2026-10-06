@@ -13,7 +13,7 @@ export type SupplierIdentity = {
 };
 
 export type SourceProvenance = {
-  provider: "MGBI" | "VERCLY";
+  provider: "MGBI" | "VERCLY" | "CEIDG";
   model: string;
   recordId: string | null;
 };
@@ -52,6 +52,24 @@ export type FinancialPeriod = {
 };
 
 export type FinancialData = { periods: readonly FinancialPeriod[] };
+
+export type JdgField = {
+  key: string;
+  label: string;
+  value: string | null;
+  children: readonly JdgField[];
+};
+
+export type JdgEntry = {
+  recordId: string;
+  name: string;
+  status: string | null;
+  nip: string;
+  regon: string | null;
+  fields: readonly JdgField[];
+};
+
+export type JdgRegistryData = { entries: readonly JdgEntry[] };
 
 export type VerclyKysData = {
   correlationId: string | null;

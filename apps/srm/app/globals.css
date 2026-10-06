@@ -4,6 +4,15 @@ body { margin: 0; }
 .appshield-header { display: flex; align-items: center; padding: 18px clamp(16px, 3vw, 48px); background: #153645; color: white; }
 .appshield-header h1 { margin: 0; font-size: clamp(1.3rem, 2vw, 1.7rem); letter-spacing: .025em; }
 .appshield-content { width: 100%; margin: 0 auto; padding: 28px clamp(16px, 3vw, 48px) 80px; }
+.registry-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+.registry-tabs button { padding: 11px 22px; border: 1px solid #afc2c8; border-radius: 9px; background: white; color: #153645; font: inherit; font-weight: 700; cursor: pointer; }
+.registry-tabs button[aria-pressed="true"] { background: #153645; border-color: #153645; color: white; }
+.jdg-entry { border-top: 1px solid #d9e2e5; margin-top: 18px; padding-top: 12px; }
+.jdg-entry h3 { margin: 0 0 6px; }
+.jdg-entry-meta { color: #526972; margin: 0 0 18px; }
+.jdg-nested-field { grid-column: 1 / -1; border-top: 1px solid #edf1f3; padding: 10px 0; min-width: 0; }
+.jdg-nested-field > strong { display: block; margin-bottom: 8px; color: #153645; }
+.jdg-nested-field .xray-facts { margin: 0; padding-left: 14px; }
 .eyebrow { color: #347b79; font-size: .8rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
 .appshield-intro h1 { font-size: clamp(2rem, 4vw, 3rem); margin: 12px 0; }
 .appshield-intro p { max-width: 680px; line-height: 1.5; }

@@ -6,9 +6,14 @@ export type {
   GeneralCompanyData,
   FinancialPeriod,
   FinancialData,
+  JdgField,
+  JdgEntry,
+  JdgRegistryData,
   VerclyKysData,
   SupplierXRayCard,
 } from "./contracts";
+
+export { JdgRegistryMount } from "./jdg";
 
 export {
   GeneralCompanyDataMount,
