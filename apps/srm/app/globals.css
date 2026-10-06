@@ -4,9 +4,6 @@ body { margin: 0; }
 .appshield-header { display: flex; align-items: center; padding: 18px clamp(16px, 3vw, 48px); background: #153645; color: white; }
 .appshield-header h1 { margin: 0; font-size: clamp(1.3rem, 2vw, 1.7rem); letter-spacing: .025em; }
 .appshield-content { width: 100%; margin: 0 auto; padding: 28px clamp(16px, 3vw, 48px) 80px; }
-.registry-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
-.registry-tabs button { padding: 11px 22px; border: 1px solid #afc2c8; border-radius: 9px; background: white; color: #153645; font: inherit; font-weight: 700; cursor: pointer; }
-.registry-tabs button[aria-pressed="true"] { background: #153645; border-color: #153645; color: white; }
 .jdg-entry { border-top: 1px solid #d9e2e5; margin-top: 18px; padding-top: 12px; }
 .jdg-entry h3 { margin: 0 0 6px; }
 .jdg-entry-meta { color: #526972; margin: 0 0 18px; }
