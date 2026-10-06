@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { hasDevelopmentAccess } from "../../../../src/server/development-access";
-import { runKysLookup, validateKysRequest } from "../../../../src/server/xray-lookup";
+import { runXrayLookup, validateXrayRequest } from "../../../../src/server/xray-lookup";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,11 +13,11 @@ export async function POST(request: Request) {
   let body: unknown;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Nieprawidłowe żądanie." }, { status: 400 }); }
   let input;
-  try { input = validateKysRequest(body); } catch (error) {
+  try { input = validateXrayRequest(body); } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Nieprawidłowe dane." }, { status: 400 });
   }
   try {
-    const card = await runKysLookup(organizationId, input);
+    const card = await runXrayLookup(organizationId, input);
     return NextResponse.json(card, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Nie udało się zapisać raportu. Spróbuj ponownie później." }, { status: 503 });
