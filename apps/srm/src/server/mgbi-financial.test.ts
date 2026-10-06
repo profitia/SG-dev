@@ -62,6 +62,45 @@ test("does not rewrite costs when the reported sales result cannot verify the si
   assert.deepEqual(result.section.warnings, ["MGBI_COST_SIGN_UNVERIFIED"]);
 });
 
+test("normalizes other operating, financial and tax expenses only after checking their statement equations", () => {
+  const source = {
+    id: "expense-report", identifiers: { pl_krs: identifier.value },
+    document: { type: "financial_statement", period_from_date: "2024-01-01", period_to_date: "2024-12-31" },
+    content: { schema: { name: "JednostkaInnaWZlotych" }, standardized_fields: { pala: {
+      nrfs_cfy: "1200", oac_cfy: "800", plfs_cfy: "400", oor_cfy: "25", ooc_cfy: "35",
+      plfoa_cfy: "390", fr_cfy: "10", fc_cfy: "20", gpl_cfy: "380", it_cfy: "80", npl_cfy: "300",
+      nrfs_pfy: "1000", oac_pfy: "-700", plfs_pfy: "300", oor_pfy: "20", ooc_pfy: "-30",
+      plfoa_pfy: "290", fr_pfy: "5", fc_pfy: "-15", gpl_pfy: "280", it_pfy: "-50", npl_pfy: "230",
+    } } },
+  };
+  const result = mapMgbiFinancialRecords([source], identifier, at);
+  for (const [code, value2023, value2024] of [
+    ["PALA_OAC", "700", "800"], ["PALA_OOC", "30", "35"],
+    ["PALA_FC", "15", "20"], ["PALA_IT", "50", "80"],
+  ]) {
+    const prior = result.facts.find((fact) => fact.metricCode === code && fact.periodEnd === "2023-12-31");
+    const current = result.facts.find((fact) => fact.metricCode === code && fact.periodEnd === "2024-12-31");
+    assert.equal(prior?.sourceAmount, `-${value2023}`);
+    assert.equal(prior?.amount, value2023);
+    assert.equal(current?.amount, value2024);
+    assert.equal(prior?.normalizationRule, "VERIFIED_COST_MAGNITUDE_V1");
+    assert.equal(current?.normalizationRule, "VERIFIED_COST_MAGNITUDE_V1");
+    assert.equal(result.sourceData?.periods.find((period) => period.to === "2023-12-31")?.facts.find((fact) => fact.metricCode === code)?.amount, `-${value2023}`);
+  }
+  assert.deepEqual(result.section.warnings, []);
+
+  // A mismatch must retain the source sign and flag the fact for review.
+  const disputed = structuredClone(source);
+  disputed.content.standardized_fields.pala.npl_pfy = "999";
+  const unresolved = mapMgbiFinancialRecords([disputed], identifier, at);
+  const tax = unresolved.facts.find((fact) => fact.metricCode === "PALA_IT" && fact.periodEnd === "2023-12-31");
+  assert.equal(tax?.sourceAmount, "-50");
+  assert.equal(tax?.amount, "-50");
+  assert.equal(tax?.validationStatus, "REVIEW");
+  assert.equal(tax?.normalizationRule, "UNVERIFIED_COST_SIGN");
+  assert.deepEqual(unresolved.section.warnings, ["MGBI_COST_SIGN_UNVERIFIED"]);
+});
+
 test("never uses document file or record-by-id endpoints", async () => {
   const result = await fetchMgbiFinancial(identifier, {
     apiKey: "test-key", now: () => new Date(at),

@@ -67,33 +67,42 @@ function reconcileCosts(periods: FinancialPeriod[], facts: FinancialSourceFact[]
   let unverified = false;
   for (const period of periods) {
     const values = new Map(period.facts.map((fact) => [fact.metricCode, fact.amount]));
-    const revenue = values.get("PALA_NRFS");
-    const cost = values.get("PALA_OAC");
-    const salesResult = values.get("PALA_PLFS");
-    if (!cost) continue;
-    const costValue = scaledAmount(cost);
-    // Compare only values from the same document, period and statement scope.
-    // One grosz covers decimal rounding in source reports, not a material mismatch.
-    const verified = revenue !== undefined && salesResult !== undefined && (
-      (costValue < 0n && abs(scaledAmount(revenue) + costValue - scaledAmount(salesResult)) <= 100n) ||
-      (costValue >= 0n && abs(scaledAmount(revenue) - costValue - scaledAmount(salesResult)) <= 100n)
-    );
-    if (!verified) unverified = true;
-    for (const displayFact of period.facts) {
-      if (displayFact.metricCode !== "PALA_OAC" && !displayFact.metricCode.startsWith("PALA_OAC_")) continue;
-      const stored = facts.find((fact) => fact.metricCode === displayFact.metricCode && fact.periodStart === period.from
-        && fact.periodEnd === period.to && fact.statementScope === (period.scope === "standalone" ? "UNIT" : "CONSOLIDATED"));
-      if (!stored) continue;
-      const sameSign = scaledAmount(stored.sourceAmount) === 0n || (scaledAmount(stored.sourceAmount) < 0n) === (costValue < 0n);
-      if (!verified || !sameSign) {
-        stored.normalizationRule = "UNVERIFIED_COST_SIGN";
-        stored.validationStatus = "REVIEW";
-        unverified = true;
-        continue;
+    const equations = [
+      { cost: "PALA_OAC", left: "PALA_NRFS", addition: null, result: "PALA_PLFS" },
+      { cost: "PALA_OOC", left: "PALA_PLFS", addition: "PALA_OOR", result: "PALA_PLFOA" },
+      { cost: "PALA_FC", left: "PALA_PLFOA", addition: "PALA_FR", result: "PALA_GPL" },
+      { cost: "PALA_IT", left: "PALA_GPL", addition: null, result: "PALA_NPL" },
+    ] as const;
+    for (const equation of equations) {
+      const sourceCost = values.get(equation.cost);
+      if (sourceCost === undefined) continue;
+      const left = values.get(equation.left);
+      const addition = equation.addition === null ? "0" : values.get(equation.addition);
+      const result = values.get(equation.result);
+      const costValue = scaledAmount(sourceCost);
+      // Compare only values from the same document, period and statement scope.
+      // One grosz covers decimal rounding in source reports, not a material mismatch.
+      const verified = left !== undefined && addition !== undefined && result !== undefined && (
+        (costValue < 0n && abs(scaledAmount(left) + scaledAmount(addition) + costValue - scaledAmount(result)) <= 100n) ||
+        (costValue >= 0n && abs(scaledAmount(left) + scaledAmount(addition) - costValue - scaledAmount(result)) <= 100n)
+      );
+      if (!verified) unverified = true;
+      for (const displayFact of period.facts) {
+        if (displayFact.metricCode !== equation.cost && !(equation.cost === "PALA_OAC" && displayFact.metricCode.startsWith("PALA_OAC_"))) continue;
+        const stored = facts.find((fact) => fact.metricCode === displayFact.metricCode && fact.periodStart === period.from
+          && fact.periodEnd === period.to && fact.statementScope === (period.scope === "standalone" ? "UNIT" : "CONSOLIDATED"));
+        if (!stored) continue;
+        const sameSign = scaledAmount(stored.sourceAmount) === 0n || (scaledAmount(stored.sourceAmount) < 0n) === (costValue < 0n);
+        if (!verified || !sameSign) {
+          stored.normalizationRule = "UNVERIFIED_COST_SIGN";
+          stored.validationStatus = "REVIEW";
+          unverified = true;
+          continue;
+        }
+        stored.amount = stored.sourceAmount.replace(/^-/, "");
+        stored.normalizationRule = "VERIFIED_COST_MAGNITUDE_V1";
+        displayFact.amount = stored.amount;
       }
-      stored.amount = stored.sourceAmount.replace(/^-/, "");
-      stored.normalizationRule = "VERIFIED_COST_MAGNITUDE_V1";
-      displayFact.amount = stored.amount;
     }
   }
   return unverified;
