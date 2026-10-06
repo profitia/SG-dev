@@ -132,7 +132,7 @@ function MetricChart({ periods, code, title, color }: { periods: readonly Financ
             {point.value !== null && <rect x={x} y={y} width={barWidth} height={Math.max(1, height)} rx="3" fill={color}>
               <title>{`${point.year}: ${formatNumber(point.value)} tys. zł`}</title>
             </rect>}
-            {point.value !== null && <text className="financial-chart-value" x={x + barWidth / 2} y={labelY} textAnchor="middle" fontSize="10" fill="#153645">{formatNumber(point.value)}</text>}
+            {point.value !== null && <text className="financial-chart-value" x={x + barWidth / 2} y={labelY} textAnchor="middle" fontSize="12" fill="#153645">{formatNumber(point.value)}</text>}
             <text x={x + barWidth / 2} y="210" textAnchor="middle" fontSize="12" fill="#45606c">{point.year}</text>
           </g>;
         })}

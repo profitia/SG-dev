@@ -96,7 +96,7 @@ body { margin: 0; }
 .financial-chart h4 { margin: 0 0 10px; color: #153645; }
 .financial-chart p { color: #526972; }
 .financial-chart-scroll { max-width: 100%; overflow-x: auto; }
-.financial-chart svg { display: block; width: 100%; min-width: 480px; height: auto; }
+.financial-chart svg { display: block; width: 100%; min-width: 640px; height: auto; }
 .financial-chart-value { font-weight: 700; font-variant-numeric: tabular-nums; }
 .financial-table-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; color: #526972; font-size: .85rem; margin: 8px 0 12px; }
 .financial-table-tools button { border: 1px solid #a9c0c7; border-radius: 7px; background: white; color: #155f64; padding: 8px 12px; font: inherit; cursor: pointer; }
@@ -121,6 +121,6 @@ body { margin: 0; }
 .financial-dialog-header h3 { margin: 0; color: #153645; }
 .financial-dialog-header button { border: 0; background: transparent; color: #153645; font-size: 1.7rem; cursor: pointer; }
 .financial-chart-dialog > .financial-chart { margin-top: 18px; }
-@media (max-width: 1100px) { .financial-charts { grid-template-columns: 1fr; } }
+@media (max-width: 1500px) { .financial-charts { grid-template-columns: 1fr; } }
 @media (max-width: 850px) { .xray-section[aria-label="Dane ogólne"] .xray-facts { grid-template-columns: minmax(110px, .6fr) minmax(0, 1fr); } }
 @media (max-width: 600px) { .appshield-search, .company-summary, .xray-section, .financial-accordion-body { padding: 16px; } .company-report-pill { white-space: normal; } .financial-table thead th:first-child, .financial-table tbody th[scope="row"] { width: 185px; min-width: 185px; max-width: 185px; } }
