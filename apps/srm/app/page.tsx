@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { FinancialDataMount, GeneralCompanyDataMount, latestAvailableFinancialYear, VerclyKysMount, type SupplierXRayCard } from "@profitia/srm-xray";
+import { FinancialDataMount, GeneralCompanyDataMount, JdgRegistryMount, latestAvailableFinancialYear, VerclyKysMount, type JdgRegistryData, type SectionEnvelope, type SupplierXRayCard } from "@profitia/srm-xray";
 
 type DisplayCard = {
   identity: SupplierXRayCard["identity"];
@@ -17,7 +17,9 @@ const emptyCard: DisplayCard = {
 };
 
 export default function Home() {
+  const [registry, setRegistry] = useState<"companies" | "jdg">("companies");
   const [card, setCard] = useState<DisplayCard>(emptyCard);
+  const [jdg, setJdg] = useState<{ nip: string; section: Omit<SectionEnvelope<JdgRegistryData>, "source"> } | null>(null);
   const [busy, setBusy] = useState(false);
   const [kysBusy, setKysBusy] = useState(false);
   const [kysError, setKysError] = useState<string | null>(null);
@@ -31,9 +33,10 @@ export default function Home() {
     setError(null);
     setKysError(null);
     setCard(emptyCard);
+    setJdg(null);
     setSearched(true);
     try {
-      const response = await fetch("/api/xray/lookup", {
+      const response = await fetch(registry === "jdg" ? "/api/xray/jdg" : "/api/xray/lookup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(Object.fromEntries(form.entries())),
@@ -41,7 +44,8 @@ export default function Home() {
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(typeof payload.error === "string" ? payload.error : "Nie udało się pobrać raportu.");
-      setCard(payload as DisplayCard);
+      if (registry === "jdg") setJdg(payload as { nip: string; section: Omit<SectionEnvelope<JdgRegistryData>, "source"> });
+      else setCard(payload as DisplayCard);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Nie udało się pobrać raportu.");
     } finally { setBusy(false); }
@@ -70,15 +74,26 @@ export default function Home() {
     <main className="appshield">
       <header className="appshield-header"><h1>SRM X-Ray</h1></header>
       <div className="appshield-content">
+        <nav className="registry-tabs" aria-label="Wybierz rejestr">
+          <button type="button" aria-pressed={registry === "companies"} onClick={() => { setRegistry("companies"); setSearched(false); setError(null); }}>Spółki</button>
+          <button type="button" aria-pressed={registry === "jdg"} onClick={() => { setRegistry("jdg"); setSearched(false); setError(null); }}>JDG</button>
+        </nav>
         <form className="appshield-search" aria-label="Wyszukaj firmę" onSubmit={search}>
           <label htmlFor="identifier">Wpisz numer NIP</label>
           <div className="appshield-search-fields">
             <input id="identifier" name="identifier" inputMode="numeric" pattern="[0-9]{10}" maxLength={10} placeholder="Wpisz numer NIP" required />
           </div>
-          <button type="submit" disabled={busy || kysBusy}>{busy ? "Pobieranie danych…" : "Pokaż dane firmy"}</button>
+          <button type="submit" disabled={busy || kysBusy}>{busy ? "Pobieranie danych…" : registry === "jdg" ? "Pokaż dane JDG" : "Pokaż dane firmy"}</button>
           {error && <p className="search-error" role="alert">{error}</p>}
         </form>
-        {searched && !busy && !error && <>
+        {registry === "jdg" && searched && !busy && !error && jdg && <>
+          <section className="company-summary" aria-label="Podsumowanie działalności">
+            <div><h2>{jdg.section.data?.entries[0]?.name ?? "brak danych"}</h2><p>NIP: {jdg.nip} · Rejestr: JDG</p></div>
+            <span className="company-report-pill">{jdg.section.data?.entries[0]?.status ?? "Brak danych"}</span>
+          </section>
+          <div className="xray-card"><JdgRegistryMount section={jdg.section} /></div>
+        </>}
+        {registry === "companies" && searched && !busy && !error && <>
           <section className="company-summary" aria-label="Podsumowanie spółki">
             <div><h2>{card.general.data?.legalName ?? card.identity.name ?? "brak danych"}</h2>
               <p>NIP: {card.identity.nip ?? "brak danych"} · KRS: {card.identity.krs ?? "brak danych"}</p>

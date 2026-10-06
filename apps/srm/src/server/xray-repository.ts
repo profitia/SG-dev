@@ -4,6 +4,7 @@ import { withOrganization } from "./db";
 
 export type Identifier = { type: "NIP" | "KRS"; value: string };
 export type Section = "general" | "financial" | "kys";
+export type PersistedSection = Section | "jdg";
 export type TerminalStatus = "SUCCESS" | "NO_DATA" | "TIMEOUT" | "ERROR";
 
 const developmentDailyLookupLimit = 60;
@@ -30,7 +31,7 @@ export async function registerOrganization(organizationId: string, slug: string)
   });
 }
 
-export async function createLookup(organizationId: string, identifier: Identifier): Promise<{ supplierId: string; requestId: string }> {
+export async function createLookup(organizationId: string, identifier: Identifier, entityType: "COMPANY" | "JDG" = "COMPANY"): Promise<{ supplierId: string; requestId: string }> {
   if (!/^[0-9]{10}$/.test(identifier.value)) throw new Error("NIP or KRS must have ten digits");
   return withOrganization(organizationId, async (client) => {
     if (process.env.TARGET_ENVIRONMENT === "development") {
@@ -44,15 +45,15 @@ export async function createLookup(organizationId: string, identifier: Identifie
       [organizationId, identifier.value],
     );
     const request = await client.query<{ id: string }>(
-      "INSERT INTO srm.lookup_requests(organization_id, supplier_id, identifier_type, identifier) VALUES ($1, $2, $3, $4) RETURNING id",
-      [organizationId, supplier.rows[0].id, identifier.type, identifier.value],
+      "INSERT INTO srm.lookup_requests(organization_id, supplier_id, identifier_type, identifier, entity_type) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+      [organizationId, supplier.rows[0].id, identifier.type, identifier.value, entityType],
     );
     return { supplierId: supplier.rows[0].id, requestId: request.rows[0].id };
   });
 }
 
-export async function startAttempt(organizationId: string, requestId: string, section: Section, attemptNo = 1): Promise<string> {
-  const provider = section === "kys" ? "VERCLY" : "MGBI";
+export async function startAttempt(organizationId: string, requestId: string, section: PersistedSection, attemptNo = 1): Promise<string> {
+  const provider = section === "kys" ? "VERCLY" : section === "jdg" ? "CEIDG" : "MGBI";
   return withOrganization(organizationId, async (client) => {
     const result = await client.query<{ id: string }>(
       "INSERT INTO srm.provider_attempts(organization_id, request_id, section, provider, attempt_no, status) VALUES ($1, $2, $3, $4, $5, 'PENDING') RETURNING id",
@@ -81,9 +82,9 @@ export async function finishAttempt(
 export interface SnapshotInput {
   attemptId: string;
   supplierId: string;
-  section: Section;
+  section: PersistedSection;
   sourceRecordId?: string;
-  dataClass: "COMPANY" | "FINANCIAL" | "KYS_REDACTED";
+  dataClass: "COMPANY" | "FINANCIAL" | "KYS_REDACTED" | "JDG_REGISTRY";
   payload: unknown;
   retrievedAt: Date;
   effectiveAt?: Date;
@@ -92,6 +93,7 @@ export interface SnapshotInput {
 
 export async function appendSnapshot(organizationId: string, input: SnapshotInput): Promise<string> {
   if (input.section === "kys" && input.dataClass !== "KYS_REDACTED") throw new Error("KYS snapshots must be redacted");
+  if (input.section === "jdg" && input.dataClass !== "JDG_REGISTRY") throw new Error("JDG snapshots must use the registry data class");
   const serialized = JSON.stringify(input.payload);
   if (!serialized) throw new Error("Snapshot payload is required");
   const digest = createHash("sha256").update(serialized).digest("hex");
@@ -109,7 +111,7 @@ export async function appendSnapshot(organizationId: string, input: SnapshotInpu
 
 export async function appendSectionProjection(
   organizationId: string,
-  input: { supplierId: string; snapshotId: string; section: Section; data: unknown; version: number },
+  input: { supplierId: string; snapshotId: string; section: PersistedSection; data: unknown; version: number },
 ): Promise<string> {
   const serialized = JSON.stringify(input.data);
   if (!serialized || !Number.isSafeInteger(input.version) || input.version < 1) throw new Error("A valid projection is required");
