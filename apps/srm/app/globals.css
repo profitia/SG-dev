@@ -11,6 +11,10 @@ body { margin: 0; }
 .appshield-search label { display: block; font-weight: 700; margin-bottom: 12px; }
 .appshield-search div { display: flex; gap: 12px; }
 .appshield-search input { min-width: 0; flex: 1; padding: 12px 14px; border: 1px solid #afc2c8; border-radius: 8px; font: inherit; }
+.development-unlock { max-width: 520px; }
+.development-unlock h2 { margin-top: 0; }
+.development-unlock p { line-height: 1.5; }
+.development-unlock input { display: block; width: 100%; }
 .appshield-search button { padding: 12px 20px; border: 0; border-radius: 8px; background: #317d78; color: white; font: inherit; }
 .appshield-search small { display: block; margin-top: 10px; color: #526972; }
 .xray-card { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }

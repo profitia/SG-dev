@@ -1,22 +1,13 @@
-import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { hasDevelopmentAccess } from "../../../../src/server/development-access";
 import { runKysLookup, validateKysRequest } from "../../../../src/server/xray-lookup";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function authorized(request: Request): boolean {
-  const configured = process.env.SRM_DEVELOPMENT_ACCESS_TOKEN;
-  const supplied = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  if (!configured || !supplied) return false;
-  const expected = Buffer.from(configured);
-  const actual = Buffer.from(supplied);
-  return expected.length === actual.length && timingSafeEqual(expected, actual);
-}
-
 export async function POST(request: Request) {
   if (process.env.TARGET_ENVIRONMENT !== "development") return NextResponse.json({ error: "Środowisko niedostępne." }, { status: 404 });
-  if (!authorized(request)) return NextResponse.json({ error: "Brak dostępu do raportu." }, { status: 401 });
+  if (!hasDevelopmentAccess(request)) return NextResponse.json({ error: "Brak dostępu do raportu." }, { status: 401 });
   const organizationId = process.env.SRM_DEVELOPMENT_ORGANIZATION_ID;
   if (!organizationId) return NextResponse.json({ error: "Środowisko SRM nie jest skonfigurowane." }, { status: 503 });
   let body: unknown;

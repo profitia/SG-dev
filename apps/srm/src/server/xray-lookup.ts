@@ -17,15 +17,17 @@ export function validateKysRequest(input: unknown): VerclyKysRequest {
   const name = typeof value.name === "string" ? value.name.trim() : "";
   const website = typeof value.website === "string" ? value.website.trim() : "";
   const phone = typeof value.phone === "string" ? value.phone.trim() : "";
-  if (!name || name.length > 200 || !website || website.length > 300 || !phone || phone.length > 40) {
-    throw new Error("Pełny raport Vercly wymaga nazwy, strony WWW i telefonu firmy.");
+  if (!name || name.length > 200 || website.length > 300 || !phone || phone.length > 40) {
+    throw new Error("Pełny raport Vercly wymaga nazwy i telefonu firmy.");
   }
-  try {
-    const url = new URL(website);
-    if (url.protocol !== "https:" || !url.hostname.includes(".")) throw new Error();
-  } catch { throw new Error("Podaj poprawny adres strony WWW z HTTPS."); }
+  if (website) {
+    try {
+      const url = new URL(website);
+      if (url.protocol !== "https:" || !url.hostname.includes(".")) throw new Error();
+    } catch { throw new Error("Podaj poprawny adres strony WWW z HTTPS."); }
+  }
   if (!/^[+0-9()\s-]{7,40}$/.test(phone)) throw new Error("Podaj poprawny telefon firmy.");
-  return { identifier: { type, value: identifier }, name, website, phone };
+  return { identifier: { type, value: identifier }, name, ...(website ? { website } : {}), phone };
 }
 
 export async function runKysLookup(organizationId: string, request: VerclyKysRequest): Promise<SupplierXRayCard> {
@@ -46,7 +48,7 @@ export async function runKysLookup(organizationId: string, request: VerclyKysReq
       await appendSectionProjection(organizationId, { supplierId: lookup.supplierId, snapshotId, section: "kys", version: 1, data: section.data });
     }
     await finishAttempt(organizationId, attemptId,
-      section.status === "ERROR" ? result.errorCode === "VERCLY_TIMEOUT" ? "TIMEOUT" : "ERROR" : section.status === "EMPTY" ? "NO_DATA" : "SUCCESS",
+      section.status === "ERROR" ? ["VERCLY_TIMEOUT", "VERCLY_REPORT_NOT_READY"].includes(result.errorCode ?? "") ? "TIMEOUT" : "ERROR" : section.status === "EMPTY" ? "NO_DATA" : "SUCCESS",
       { correlationId: result.correlationId ?? undefined, providerRecordId: result.reportId ?? undefined, errorCode: result.errorCode ?? undefined },
     );
     return {
