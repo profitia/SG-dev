@@ -9,6 +9,8 @@ export type FinancialSourceFact = {
   periodType: "YEAR" | "QUARTER" | "MONTH" | "OTHER";
   statementScope: "UNIT" | "CONSOLIDATED";
   amount: string;
+  sourceAmount: string;
+  normalizationRule: "SOURCE_VALUE" | "VERIFIED_COST_MAGNITUDE_V1" | "UNVERIFIED_COST_SIGN";
   currencyCode: string;
   unitCode: string;
   sourcePath: string;
@@ -16,6 +18,7 @@ export type FinancialSourceFact = {
 };
 export type MgbiFinancialResult = {
   section: SectionEnvelope<FinancialData>;
+  sourceData?: FinancialData;
   facts: FinancialSourceFact[];
   errorCode: string | null;
 };
@@ -23,6 +26,8 @@ export type MgbiFinancialResult = {
 const MODEL = "pl-krs-rdf-record";
 const SOURCE = { provider: "MGBI" as const, model: MODEL, recordId: null };
 const MAX_RESULTS = 100;
+const NO_FINANCIAL_FACTS = "MGBI_NO_STRUCTURED_FINANCIAL_DATA";
+const INTERNATIONAL_STATEMENT = "MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS";
 
 function obj(value: unknown): RecordObject | null {
   return value !== null && typeof value === "object" && !Array.isArray(value) ? value as RecordObject : null;
@@ -49,6 +54,63 @@ function amount(value: unknown): string | null {
 }
 function empty(status: "EMPTY" | "ERROR", at: string, warning: string, errorCode: string | null): MgbiFinancialResult {
   return { section: { status, source: SOURCE, retrievedAt: at, effectiveAt: null, data: null, warnings: [warning] }, facts: [], errorCode };
+}
+
+function scaledAmount(value: string): bigint {
+  const negative = value.startsWith("-");
+  const [whole, fraction = ""] = (negative ? value.slice(1) : value).split(".");
+  const result = BigInt(whole) * 10_000n + BigInt(fraction.padEnd(4, "0"));
+  return negative ? -result : result;
+}
+
+function reconcileCosts(periods: FinancialPeriod[], facts: FinancialSourceFact[]): boolean {
+  let unverified = false;
+  for (const period of periods) {
+    const values = new Map(period.facts.map((fact) => [fact.metricCode, fact.amount]));
+    const revenue = values.get("PALA_NRFS");
+    const cost = values.get("PALA_OAC");
+    const salesResult = values.get("PALA_PLFS");
+    if (!cost) continue;
+    const costValue = scaledAmount(cost);
+    // Compare only values from the same document, period and statement scope.
+    // One grosz covers decimal rounding in source reports, not a material mismatch.
+    const verified = revenue !== undefined && salesResult !== undefined && (
+      (costValue < 0n && abs(scaledAmount(revenue) + costValue - scaledAmount(salesResult)) <= 100n) ||
+      (costValue >= 0n && abs(scaledAmount(revenue) - costValue - scaledAmount(salesResult)) <= 100n)
+    );
+    if (!verified) unverified = true;
+    for (const displayFact of period.facts) {
+      if (displayFact.metricCode !== "PALA_OAC" && !displayFact.metricCode.startsWith("PALA_OAC_")) continue;
+      const stored = facts.find((fact) => fact.metricCode === displayFact.metricCode && fact.periodStart === period.from
+        && fact.periodEnd === period.to && fact.statementScope === (period.scope === "standalone" ? "UNIT" : "CONSOLIDATED"));
+      if (!stored) continue;
+      const sameSign = scaledAmount(stored.sourceAmount) === 0n || (scaledAmount(stored.sourceAmount) < 0n) === (costValue < 0n);
+      if (!verified || !sameSign) {
+        stored.normalizationRule = "UNVERIFIED_COST_SIGN";
+        stored.validationStatus = "REVIEW";
+        unverified = true;
+        continue;
+      }
+      stored.amount = stored.sourceAmount.replace(/^-/, "");
+      stored.normalizationRule = "VERIFIED_COST_MAGNITUDE_V1";
+      displayFact.amount = stored.amount;
+    }
+  }
+  return unverified;
+}
+
+function abs(value: bigint): bigint { return value < 0n ? -value : value; }
+
+function isInternationalStatementWithoutFacts(records: unknown[], identifier: CompanyIdentifier, totalCount: number): boolean {
+  // A partial page cannot prove that every available statement follows the same standard.
+  if (totalCount > records.length) return false;
+  const idKey = identifier.type === "KRS" ? "pl_krs" : "pl_nip";
+  const statements = records.filter((record) => {
+    const type = field(record, "document", "type");
+    return string(field(record, "identifiers", idKey)) === identifier.value
+      && (type === "financial_statement" || type === "consolidated_financial_statement");
+  });
+  return statements.length > 0 && statements.every((record) => field(record, "document", "is_ias_compliant") === true);
 }
 
 export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyIdentifier, retrievedAt: string, totalCount = records.length): MgbiFinancialResult {
@@ -93,7 +155,7 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
         const periodType = periodStart.slice(0, 4) === periodEnd.slice(0, 4) && periodStart.endsWith("-01-01") && periodEnd.endsWith("-12-31") ? "YEAR" : "OTHER";
         const fact: FinancialSourceFact = {
           metricCode, periodStart, periodEnd, periodType, statementScope: scope,
-          amount: numeric, currencyCode: "PLN", unitCode,
+          amount: numeric, sourceAmount: numeric, normalizationRule: "SOURCE_VALUE", currencyCode: "PLN", unitCode,
           sourcePath: `content.standardized_fields.${sectionName}.${sourceKey}`,
           validationStatus,
         };
@@ -109,7 +171,9 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
       }
     }
   }
-  if (!facts.length) return empty("EMPTY", retrievedAt, "MGBI_NO_STRUCTURED_FINANCIAL_DATA", null);
+  if (!facts.length) return empty("EMPTY", retrievedAt, NO_FINANCIAL_FACTS, null);
+  const sourceData: FinancialData = structuredClone({ periods });
+  const unverifiedCosts = reconcileCosts(periods, facts);
   const incomplete = totalCount > records.length;
   return {
     section: {
@@ -118,8 +182,9 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
       retrievedAt,
       effectiveAt: date(field(selected[0], "document", "period_to_date")),
       data: { periods },
-      warnings: incomplete ? ["MGBI_SEARCH_RESULT_LIMIT"] : [],
+      warnings: [...(incomplete ? ["MGBI_SEARCH_RESULT_LIMIT"] : []), ...(unverifiedCosts ? ["MGBI_COST_SIGN_UNVERIFIED"] : [])],
     },
+    sourceData,
     facts,
     errorCode: null,
   };
@@ -148,8 +213,33 @@ export async function fetchMgbiFinancial(identifier: CompanyIdentifier, options:
     try { body = await response.json(); } catch { return empty("ERROR", retrievedAt, "MGBI_INVALID_JSON", "INVALID_JSON"); }
     const results = obj(body)?.results;
     if (!Array.isArray(results)) return empty("ERROR", retrievedAt, "MGBI_INVALID_RESPONSE", "INVALID_RESPONSE");
-    if (!results.length) return empty("EMPTY", retrievedAt, "MGBI_NO_STRUCTURED_FINANCIAL_DATA", null);
-    return mapMgbiFinancialRecords(results, identifier, retrievedAt, typeof obj(body)?.count === "number" ? obj(body)!.count as number : results.length);
+    const count = typeof obj(body)?.count === "number" ? obj(body)!.count as number : results.length;
+    const mapped = mapMgbiFinancialRecords(results, identifier, retrievedAt, count);
+    if (mapped.section.status !== "EMPTY") return mapped;
+
+    // The structured-fields filter excludes reports whose metadata is still available.
+    // Inspect that metadata only for empty results; never request a paid file or record-by-id endpoint.
+    const metadataUrl = new URL(url);
+    metadataUrl.searchParams.delete("content.standardized_fields.is_available");
+    try {
+      const metadataResponse = await (options.fetcher ?? fetch)(metadataUrl, {
+        method: "GET", headers: { Accept: "application/json", Authorization: scheme === "bearer" ? `Bearer ${key.trim()}` : key.trim() },
+        signal: controller.signal, cache: "no-store",
+      });
+      if (!metadataResponse.ok) return mapped;
+      const metadataBody: unknown = await metadataResponse.json();
+      const metadataRecords = obj(metadataBody)?.results;
+      if (!Array.isArray(metadataRecords)) return mapped;
+      const metadataCount = typeof obj(metadataBody)?.count === "number" ? obj(metadataBody)!.count as number : metadataRecords.length;
+      const metadataMapped = mapMgbiFinancialRecords(metadataRecords, identifier, retrievedAt, metadataCount);
+      if (metadataMapped.section.status !== "EMPTY") return metadataMapped;
+      return isInternationalStatementWithoutFacts(metadataRecords, identifier, metadataCount)
+        ? empty("EMPTY", retrievedAt, INTERNATIONAL_STATEMENT, null)
+        : mapped;
+    } catch {
+      // Metadata only refines the empty-state reason; losing it must not hide the known result.
+      return mapped;
+    }
   } catch (error) {
     const timeout = controller.signal.aborted || (error instanceof Error && error.name === "AbortError");
     return empty("ERROR", now().toISOString(), timeout ? "MGBI_TIMEOUT" : "MGBI_NETWORK_ERROR", timeout ? "TIMEOUT" : "NETWORK_ERROR");

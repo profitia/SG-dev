@@ -24,6 +24,9 @@ test("public report preserves safe, distinct reasons for KYS notices and missing
   const financial = toPublicSection({ status: "EMPTY", source: { provider: "MGBI", model: "pl-krs-rdf-record", recordId: null },
     retrievedAt: null, effectiveAt: null, data: null, warnings: ["MGBI_NO_STRUCTURED_FINANCIAL_DATA"] });
   assert.deepEqual(financial.warnings, ["FINANCIAL_NO_STRUCTURED_DATA"]);
+  const international = toPublicSection({ status: "EMPTY", source: { provider: "MGBI", model: "pl-krs-rdf-record", recordId: null },
+    retrievedAt: null, effectiveAt: null, data: null, warnings: ["MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS"] });
+  assert.deepEqual(international.warnings, ["FINANCIAL_INTERNATIONAL_STANDARD_UNAVAILABLE"]);
   assert.ok(!JSON.stringify({ kys, financial }).includes("VERCLY"));
   assert.ok(!JSON.stringify({ kys, financial }).includes("MGBI"));
 });
@@ -159,14 +162,26 @@ test("JDG KYS notice does not claim the complete report is missing", () => {
   assert.ok(!html.includes("Źródło nie zwróciło pełnych danych"));
 });
 
-test("financial no-data message identifies absent structured facts", () => {
+test("financial no-data message avoids suggesting the financial report is absent", () => {
   const section: SectionEnvelope<FinancialData> = {
     status: "EMPTY", source: { provider: "MGBI", model: "pl-krs-rdf-record", recordId: null },
     retrievedAt: null, effectiveAt: null, data: null, warnings: ["FINANCIAL_NO_STRUCTURED_DATA"],
   };
   const html = renderToStaticMarkup(createElement(FinancialDataMount, { section }));
-  assert.match(html, /Nie znaleziono ustrukturyzowanych danych finansowych dla podanego NIP/);
+  assert.match(html, /Nie mamy obecnie kwot finansowych do wyświetlenia dla tej firmy/);
   assert.ok(!html.includes("Źródło nie zwróciło pełnych danych"));
+});
+
+test("financial mount explains confirmed international-standard report availability", () => {
+  const section: SectionEnvelope<FinancialData> = {
+    status: "EMPTY", source: { provider: "MGBI", model: "pl-krs-rdf-record", recordId: null },
+    retrievedAt: null, effectiveAt: null, data: null, warnings: ["FINANCIAL_INTERNATIONAL_STANDARD_UNAVAILABLE"],
+  };
+  const html = renderToStaticMarkup(createElement(FinancialDataMount, { section }));
+  assert.match(html, /Sprawozdanie finansowe jest dostępne/);
+  assert.match(html, /międzynarodowych standardów rachunkowości/);
+  assert.ok(!html.includes("MGBI"));
+  assert.ok(!html.includes("brak danych</p>"));
 });
 
 test("KYS pending state has an honest indeterminate progress indicator", () => {
