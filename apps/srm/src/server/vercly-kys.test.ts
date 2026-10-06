@@ -5,7 +5,7 @@ import { fetchVerclyKys } from "./vercly-kys";
 const request = {
   identifier: { type: "KRS" as const, value: "0000217580" },
   name: "XTB SPÓŁKA AKCYJNA",
-  phone: "+48222019550",
+  phone: "+48 222 019 550",
 };
 
 function response(value: unknown, status = 200): Response {
@@ -38,6 +38,7 @@ test("FULL lookup polls to completion and keeps only an allowlisted KYS projecti
   assert.equal(providerRequest.RegisterId, request.identifier.value);
   assert.equal(providerRequest.Id, undefined);
   assert.equal(providerRequest.WWW, undefined);
+  assert.equal(providerRequest.PhoneNo, "+48222019550");
   assert.equal(calls[0].init?.headers && (calls[0].init.headers as Record<string, string>).Authorization, "Bearer test-token");
   assert.equal(result.section.status, "PARTIAL");
   assert.equal(result.section.data?.company?.krs, request.identifier.value);
