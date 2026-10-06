@@ -16,3 +16,5 @@ export {
   VerclyKysMount,
   SupplierXRayMount,
 } from "./mounts";
+
+export { latestAvailableFinancialYear } from "./financial-dashboard";

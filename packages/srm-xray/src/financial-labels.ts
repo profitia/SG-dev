@@ -35,12 +35,17 @@ export const financialLabels: Record<string, { label: string; group: "Bilans" | 
   PALA_NPL: { label: "Zysk lub strata netto", group: "Rachunek zysków i strat" },
 };
 
+/** Presentation conversion only. Persisted MGBI amounts retain their original unit. */
+export function amountInThousands(amount: string, currency: string, unit: string): number | null {
+  if (!/^-?\d+(?:\.\d+)?$/.test(amount) || currency !== "PLN") return null;
+  if (unit !== "PLN" && unit !== "THOUSAND_PLN") return null;
+  const numeric = Number(amount);
+  if (!Number.isFinite(numeric) || Math.abs(numeric) > Number.MAX_SAFE_INTEGER) return null;
+  return unit === "PLN" ? numeric / 1000 : numeric;
+}
+
 export function formatFinancialAmount(amount: string, currency: string, unit: string): string {
-  if (!/^-?\d+(?:\.\d+)?$/.test(amount)) return "brak danych";
-  const [integer, fraction = ""] = amount.split(".");
-  const grouped = integer.replace(/\B(?=(\d{3})+(?!\d))/g, "\u00a0");
-  const displayed = `${grouped},${fraction.padEnd(2, "0")}`;
-  if (unit === "PLN" && currency === "PLN") return `${displayed} zł`;
-  if (unit === "THOUSAND_PLN" && currency === "PLN") return `${displayed} tys. zł`;
-  return `${displayed} (jednostka nieustalona)`;
+  const thousands = amountInThousands(amount, currency, unit);
+  if (thousands === null) return "brak danych";
+  return `${new Intl.NumberFormat("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(thousands)} tys. zł`;
 }

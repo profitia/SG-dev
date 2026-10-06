@@ -1,14 +1,13 @@
 import React, { type ReactNode } from "react";
 import type {
   FinancialData,
-  FinancialPeriod,
   GeneralCompanyData,
   SectionEnvelope,
   SectionStatus,
   SupplierXRayCard,
   VerclyKysData,
 } from "./contracts";
-import { financialLabels, formatFinancialAmount } from "./financial-labels";
+import { FinancialDashboard } from "./financial-dashboard";
 
 const statusLabel: Record<SectionStatus, string> = {
   SUCCESS: "Dostępne",
@@ -86,55 +85,10 @@ export function GeneralCompanyDataMount({ section }: { section: SectionEnvelope<
   );
 }
 
-function FinancialPeriodView({ period }: { period: FinancialPeriod }) {
-  const known = period.facts.filter((fact) => financialLabels[fact.metricCode]);
-  const remaining = period.facts.filter((fact) => !financialLabels[fact.metricCode]);
-  return <div className="xray-period">
-    <h3>{period.from} – {period.to} · {period.scope === "consolidated" ? "sprawozdanie skonsolidowane" : "sprawozdanie jednostkowe"}</h3>
-    {(["Bilans", "Rachunek zysków i strat"] as const).map((group) => {
-      const rows = known.filter((fact) => financialLabels[fact.metricCode].group === group);
-      return rows.length ? <div key={group}>
-        <h4 className="financial-group">{group}</h4>
-        <dl className="xray-facts">{rows.map((fact) => <div className="financial-fact" key={fact.metricCode}>
-          <dt>{financialLabels[fact.metricCode].label}</dt>
-          <dd>{formatFinancialAmount(fact.amount, fact.currency, fact.unit)}</dd>
-        </div>)}</dl>
-      </div> : null;
-    })}
-    {remaining.length > 0 && <details className="financial-technical">
-      <summary>Pozostałe pozycje źródłowe ({remaining.length})</summary>
-      <p>Te wartości są zapisane do dalszej analizy. Ich etykiety wymagają potwierdzenia w słowniku MGBI.</p>
-      <dl className="xray-facts">{remaining.map((fact) => <div className="financial-fact" key={fact.metricCode}>
-        <dt>Pozycja {fact.metricCode}</dt><dd>{formatFinancialAmount(fact.amount, fact.currency, fact.unit)}</dd>
-      </div>)}</dl>
-    </details>}
-  </div>;
-}
-
 export function FinancialDataMount({ section }: { section: SectionEnvelope<FinancialData> }) {
-  const sorted = [...(section.data?.periods ?? [])].filter((period) => period.facts.length > 0)
-    .sort((a, b) => b.to.localeCompare(a.to) || Number(b.documentId.endsWith(":cfy")) - Number(a.documentId.endsWith(":cfy")) || b.facts.length - a.facts.length);
-  const distinct = new Map<string, FinancialPeriod>();
-  for (const period of sorted) {
-    const key = `${period.from}:${period.to}:${period.scope}`;
-    const existing = distinct.get(key);
-    if (!existing || period.facts.length > existing.facts.length) distinct.set(key, period);
-  }
-  const periods = [...distinct.values()];
-  const complete = periods.find((period) => period.facts.some((fact) => fact.metricCode.startsWith("BS_"))
-    && period.facts.some((fact) => fact.metricCode.startsWith("PALA_")));
-  const latest = complete ?? periods[0];
-  const older = periods.filter((period) => period !== latest);
   return (
     <SectionFrame title="Dane finansowe" section={section}>
-      {latest ? <>
-        <p className="xray-period-caption">{complete ? "Najnowsze sprawozdanie z bilansem i rachunkiem wyników." : "Najnowsze dostępne dane finansowe; brak pełnego bilansu lub rachunku wyników."} Kwoty pokazano w jednostce raportu.</p>
-        <FinancialPeriodView period={latest} />
-        {older.length > 0 && <details className="financial-history">
-          <summary>Pokaż pozostałe sprawozdania i wcześniejsze okresy ({older.length})</summary>
-          {older.map((period) => <FinancialPeriodView key={period.documentId} period={period} />)}
-        </details>}
-      </> : <p>brak danych</p>}
+      {section.data ? <FinancialDashboard data={section.data} /> : <p>brak danych</p>}
     </SectionFrame>
   );
 }
