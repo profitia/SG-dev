@@ -17,7 +17,7 @@ body { margin: 0; }
 .development-unlock input { display: block; width: 100%; }
 .appshield-search button { padding: 12px 20px; border: 0; border-radius: 8px; background: #317d78; color: white; font: inherit; }
 .appshield-search small { display: block; margin-top: 10px; color: #526972; }
-.xray-card { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+.xray-card { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(0, 2fr); gap: 20px; align-items: start; }
 .xray-section { background: white; border: 1px solid #d9e2e5; border-radius: 12px; padding: 22px; min-height: 220px; }
 .xray-section-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .xray-section-header h2 { margin: 0; font-size: 1.25rem; }
@@ -38,7 +38,18 @@ body { margin: 0; }
 .kys-input-grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px !important; margin-top: 18px; }
 .kys-input-grid label { margin: 0; font-size: .85rem; }
 .kys-input-grid input { display: block; width: 100%; margin-top: 7px; }
-.xray-card .xray-section:last-child { grid-column: 1 / -1; }
+.xray-card .kys-step, .xray-card .xray-section[aria-label="Raport KYS"] { grid-column: 1 / -1; }
+.kys-step { padding: 20px 24px; border: 1px solid #d9e2e5; border-radius: 12px; background: #fff; }
+.kys-step h2 { margin: 0; font-size: 1.25rem; }
+.kys-step p { color: #526972; }
+.kys-step button { padding: 12px 18px; border: 0; border-radius: 8px; background: #317d78; color: white; font: inherit; cursor: pointer; }
+.kys-step button:disabled { opacity: .6; cursor: wait; }
+.xray-period h3 { font-size: 1rem; }
+.xray-period details { border-top: 1px solid #d9e2e5; padding-top: 12px; }
+.xray-period summary { cursor: pointer; font-weight: 700; color: #155f64; }
+.financial-fact { display: contents; }
+.financial-fact dd { font-variant-numeric: tabular-nums; text-align: right; }
+.financial-group { margin: 20px 0 6px; font-size: .9rem; color: #153645; }
 .kys-report { margin-top: 20px; }
 .kys-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 16px; border-top: 3px solid #52337f; background: #f3f0fa; }
 .kys-summary strong { flex-basis: 100%; font-size: 1.15rem; }
@@ -61,3 +72,4 @@ body { margin: 0; }
 .harness-module { max-width: 560px; }
 @media (max-width: 600px) { .appshield-search-fields { flex-direction: column; } }
 @media (max-width: 700px) { .kys-input-grid, .kys-grid { grid-template-columns: 1fr; } }
+@media (max-width: 800px) { .xray-card { grid-template-columns: 1fr; } }

@@ -1,12 +1,14 @@
-import type { ReactNode } from "react";
+import React, { type ReactNode } from "react";
 import type {
   FinancialData,
+  FinancialPeriod,
   GeneralCompanyData,
   SectionEnvelope,
   SectionStatus,
   SupplierXRayCard,
   VerclyKysData,
 } from "./contracts";
+import { financialLabels, formatFinancialAmount } from "./financial-labels";
 
 const statusLabel: Record<SectionStatus, string> = {
   SUCCESS: "Dostępne",
@@ -28,6 +30,20 @@ function warningLabel(code: string): string {
   return "Źródło nie zwróciło pełnych danych.";
 }
 
+const verclyListLabels: Record<string, string> = {
+  pl_mswia_sanctions: "Lista osób i podmiotów objętych sankcjami (MSWiA)",
+  eu_fsf_sanctions: "EU Consolidated Financial Sanctions List (DG FISMA)",
+  pl_giif_sanctions: "Lista osób i podmiotów objętych szczególnymi środkami ograniczającymi (GIIF)",
+  uk_ofsi_sanctions: "UK Office of Financial Sanctions Implementation (OFSI)",
+  uk_fcdo_sanctions: "UK Sanctions List (FCDO)",
+  us_ofac_sanctions: "US Specially Designated Nationals (SDN) List (OFAC)",
+  us_ofac_non_sdn_sanctions: "US Consolidated (non-SDN) List (OFAC)",
+  onz_sanctions: "UN Security Council Consolidated Sanctions (UNSC)",
+  ua_government_sanctions: "Ukraine State Sanctions Registry (NSDC)",
+  pl_knf_warnings: "Lista ostrzeżeń publicznych (KNF)",
+  pl_uokik_payment_backlog: "Lista zatorów płatniczych (UOKiK)",
+};
+
 function SectionFrame({
   title,
   section,
@@ -46,7 +62,7 @@ function SectionFrame({
       <p className="xray-source">
         Źródło: {section.source.provider} · {section.source.model} · pobrano: {value(section.retrievedAt)}
       </p>
-      {section.data == null ? <p>brak danych</p> : children}
+      {section.status === "PENDING" ? <p role="status">Raport jest przygotowywany. Poczekaj na wynik…</p> : section.data == null ? <p>brak danych</p> : children}
       {section.warnings.map((warning, index) => <p className="xray-warning" key={index}>{section.source.provider === "VERCLY" ? warningLabel(warning) : warning}</p>)}
     </section>
   );
@@ -70,22 +86,55 @@ export function GeneralCompanyDataMount({ section }: { section: SectionEnvelope<
   );
 }
 
+function FinancialPeriodView({ period }: { period: FinancialPeriod }) {
+  const known = period.facts.filter((fact) => financialLabels[fact.metricCode]);
+  const remaining = period.facts.filter((fact) => !financialLabels[fact.metricCode]);
+  return <div className="xray-period">
+    <h3>{period.from} – {period.to} · {period.scope === "consolidated" ? "sprawozdanie skonsolidowane" : "sprawozdanie jednostkowe"}</h3>
+    {(["Bilans", "Rachunek zysków i strat"] as const).map((group) => {
+      const rows = known.filter((fact) => financialLabels[fact.metricCode].group === group);
+      return rows.length ? <div key={group}>
+        <h4 className="financial-group">{group}</h4>
+        <dl className="xray-facts">{rows.map((fact) => <div className="financial-fact" key={fact.metricCode}>
+          <dt>{financialLabels[fact.metricCode].label}</dt>
+          <dd>{formatFinancialAmount(fact.amount, fact.currency, fact.unit)}</dd>
+        </div>)}</dl>
+      </div> : null;
+    })}
+    {remaining.length > 0 && <details className="financial-technical">
+      <summary>Pozostałe pozycje źródłowe ({remaining.length})</summary>
+      <p>Te wartości są zapisane do dalszej analizy. Ich etykiety wymagają potwierdzenia w słowniku MGBI.</p>
+      <dl className="xray-facts">{remaining.map((fact) => <div className="financial-fact" key={fact.metricCode}>
+        <dt>Pozycja {fact.metricCode}</dt><dd>{formatFinancialAmount(fact.amount, fact.currency, fact.unit)}</dd>
+      </div>)}</dl>
+    </details>}
+  </div>;
+}
+
 export function FinancialDataMount({ section }: { section: SectionEnvelope<FinancialData> }) {
+  const sorted = [...(section.data?.periods ?? [])].filter((period) => period.facts.length > 0)
+    .sort((a, b) => b.to.localeCompare(a.to) || Number(b.documentId.endsWith(":cfy")) - Number(a.documentId.endsWith(":cfy")) || b.facts.length - a.facts.length);
+  const distinct = new Map<string, FinancialPeriod>();
+  for (const period of sorted) {
+    const key = `${period.from}:${period.to}:${period.scope}`;
+    const existing = distinct.get(key);
+    if (!existing || period.facts.length > existing.facts.length) distinct.set(key, period);
+  }
+  const periods = [...distinct.values()];
+  const complete = periods.find((period) => period.facts.some((fact) => fact.metricCode.startsWith("BS_"))
+    && period.facts.some((fact) => fact.metricCode.startsWith("PALA_")));
+  const latest = complete ?? periods[0];
+  const older = periods.filter((period) => period !== latest);
   return (
     <SectionFrame title="Dane finansowe" section={section}>
-      {section.data?.periods.length ? section.data.periods.map((period) => (
-        <div key={period.documentId} className="xray-period">
-          <h3>{period.from} – {period.to} · {period.scope}</h3>
-          <dl className="xray-facts">
-            {period.facts.map((fact) => (
-              <div key={fact.metricCode}>
-                <dt>{fact.metricCode}</dt>
-                <dd>{fact.amount} {fact.currency} · {fact.unit}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      )) : <p>brak danych</p>}
+      {latest ? <>
+        <p className="xray-period-caption">{complete ? "Najnowsze sprawozdanie z bilansem i rachunkiem wyników." : "Najnowsze dostępne dane finansowe; brak pełnego bilansu lub rachunku wyników."} Kwoty pokazano w jednostce raportu.</p>
+        <FinancialPeriodView period={latest} />
+        {older.length > 0 && <details className="financial-history">
+          <summary>Pokaż pozostałe sprawozdania i wcześniejsze okresy ({older.length})</summary>
+          {older.map((period) => <FinancialPeriodView key={period.documentId} period={period} />)}
+        </details>}
+      </> : <p>brak danych</p>}
     </SectionFrame>
   );
 }
@@ -149,7 +198,7 @@ export function VerclyKysMount({ section }: { section: SectionEnvelope<VerclyKys
           <section className="kys-panel" aria-label="Listy sankcyjne i ostrzeżenia">
             <h3>Listy sankcyjne i ostrzeżenia</h3>
             {lists.length ? <table className="kys-lists"><thead><tr><th>Lista</th><th>Wynik</th></tr></thead><tbody>
-              {lists.map((entry) => <tr key={`${entry.type}:${entry.name}`}><td>{entry.name.replaceAll("_", " ")}</td><td>{entry.matched ? "trafienie" : "brak trafienia"}</td></tr>)}
+              {lists.map((entry) => <tr key={`${entry.type}:${entry.name}`}><td>{verclyListLabels[entry.name] ?? entry.name.replaceAll("_", " ")}</td><td>{entry.matched ? "trafienie" : "brak trafienia"}</td></tr>)}
             </tbody></table> : <p>brak danych</p>}
           </section>
         </div>
