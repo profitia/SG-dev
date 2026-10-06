@@ -21,6 +21,13 @@ function value(text: string | null | undefined): string {
   return text == null || text === "" ? "brak danych" : text;
 }
 
+function warningLabel(code: string): string {
+  if (code.startsWith("VERCLY_SEVERITY_")) return "Vercly zgłosiło uwagę do raportu.";
+  if (code === "VERCLY_INCOMPLETE_SOURCES") return "Część źródeł nie zwróciła danych.";
+  if (code === "IDENTIFIER_MISMATCH") return "Dane identyfikacyjne nie zgadzają się z zapytaniem.";
+  return "Źródło nie zwróciło pełnych danych.";
+}
+
 function SectionFrame({
   title,
   section,
@@ -40,7 +47,7 @@ function SectionFrame({
         Źródło: {section.source.provider} · {section.source.model} · pobrano: {value(section.retrievedAt)}
       </p>
       {section.data == null ? <p>brak danych</p> : children}
-      {section.warnings.map((warning, index) => <p className="xray-warning" key={index}>{warning}</p>)}
+      {section.warnings.map((warning, index) => <p className="xray-warning" key={index}>{section.source.provider === "VERCLY" ? warningLabel(warning) : warning}</p>)}
     </section>
   );
 }
