@@ -45,6 +45,26 @@ test("rejects a result for a different NIP", async () => {
   assert.equal(result.section.data, null);
 });
 
+test("accepts a completed sole proprietor report when VatID matches the JDG NIP", async () => {
+  const jdgRequest = { identifier: { type: "NIP" as const, value: "7972088368" } };
+  let calls = 0;
+  const fetcher = (async () => ++calls === 1 ? response(["jdgCorrelation123"]) : response([{
+    Header: { CorrelationId: "jdgCorrelation123", Id: "jdgReport123" },
+    Body: { IsComplete: true, Errors: [{ Severity: 0 }], Entity: {
+      Name: "Przykładowa JDG",
+      Ids: [{ Type: "ID", Value: "different-internal-id" }, { Type: "VatID", Value: "PL7972088368" }],
+      Attributes: [{ Name: "NormalizedDetailLegalForm", Value: "SOLE_PROPRIETORSHIP" }],
+      Sanctions: [{ ListName: "uk_ofsi_sanctions", ListType: "SANCTIONS", Value: false }],
+    } },
+  }])) as typeof fetch;
+  const result = await fetchVerclyKys(jdgRequest, { apiKey: "test-token", baseUrl: "https://vercly.example", fetcher, sleep: async () => {} });
+  assert.equal(result.section.status, "PARTIAL");
+  assert.equal(result.section.data?.company?.nip, "7972088368");
+  assert.equal(result.section.data?.company?.krs, null);
+  assert.equal(result.section.data?.company?.legalForm, "SOLE_PROPRIETORSHIP");
+  assert.equal(result.section.data?.screenedLists?.[0]?.matched, false);
+});
+
 test("retries temporary 404 while Vercly prepares the report", async () => {
   let calls = 0;
   const sleeps: number[] = [];
