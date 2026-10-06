@@ -2,34 +2,20 @@ import type { SupplierXRayCard } from "@profitia/srm-xray";
 import { emptyCard } from "../demo/fixture";
 import { fetchMgbiGeneral, type CompanyIdentifier } from "./mgbi-general";
 import { fetchMgbiFinancial, type FinancialSourceFact } from "./mgbi-financial";
-import { fetchVerclyKys, type VerclyKysRequest } from "./vercly-kys";
+import { fetchVerclyKys } from "./vercly-kys";
 import { appendFinancialFacts, appendSectionProjection, appendSnapshot, createLookup, finishAttempt, registerOrganization, startAttempt, type Section } from "./xray-repository";
 
-export type XrayLookupRequest = { identifier: CompanyIdentifier; name: string; phone: string; website?: string };
+export type XrayLookupRequest = { identifier: CompanyIdentifier & { type: "NIP" } };
 
 export function validateXrayRequest(input: unknown): XrayLookupRequest {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("Nieprawidłowe dane wyszukiwania.");
   const value = input as Record<string, unknown>;
-  const type = value.kind === "nip" ? "NIP" : value.kind === "krs" ? "KRS" : null;
   const identifier = typeof value.identifier === "string" ? value.identifier.replace(/[\s-]/g, "") : "";
-  if (!type || !/^[0-9]{10}$/.test(identifier)) throw new Error("Podaj poprawny NIP albo KRS (10 cyfr).");
-  if (type === "NIP") {
-    const weights = [6, 5, 7, 2, 3, 4, 5, 6, 7];
-    const check = weights.reduce((sum, weight, index) => sum + weight * Number(identifier[index]), 0) % 11;
-    if (check === 10 || check !== Number(identifier[9])) throw new Error("Nieprawidłowa cyfra kontrolna NIP.");
-  }
-  const name = typeof value.name === "string" ? value.name.trim() : "";
-  const website = typeof value.website === "string" ? value.website.trim() : "";
-  const phone = typeof value.phone === "string" ? value.phone.trim() : "";
-  if (name.length > 200 || website.length > 300 || phone.length > 40) throw new Error("Dane firmy są zbyt długie.");
-  if (website) {
-    try {
-      const url = new URL(website);
-      if (url.protocol !== "https:" || !url.hostname.includes(".")) throw new Error();
-    } catch { throw new Error("Podaj poprawny adres strony WWW z HTTPS."); }
-  }
-  if (phone && !/^[+0-9()\s-]{7,40}$/.test(phone)) throw new Error("Podaj poprawny telefon firmy.");
-  return { identifier: { type, value: identifier }, name, ...(website ? { website } : {}), phone };
+  if (!/^[0-9]{10}$/.test(identifier)) throw new Error("Podaj poprawny NIP (10 cyfr).");
+  const weights = [6, 5, 7, 2, 3, 4, 5, 6, 7];
+  const check = weights.reduce((sum, weight, index) => sum + weight * Number(identifier[index]), 0) % 11;
+  if (check === 10 || check !== Number(identifier[9])) throw new Error("Nieprawidłowa cyfra kontrolna NIP.");
+  return { identifier: { type: "NIP", value: identifier } };
 }
 
 function attemptStatus(status: string, errorCode: string | null): "SUCCESS" | "NO_DATA" | "TIMEOUT" | "ERROR" {
@@ -87,22 +73,22 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
   await persistSection(organizationId, lookup, "general", general.section, general.errorCode);
   await persistSection(organizationId, lookup, "financial", financial.section, financial.errorCode, financial.facts);
 
-  let kys = emptyCard.kys;
-  const name = request.name || general.section.data?.legalName || "";
-  if (name && request.phone) {
-    const verclyRequest: VerclyKysRequest = { identifier: request.identifier, name, phone: request.phone, ...(request.website ? { website: request.website } : {}) };
-    const result = await fetchVerclyKys(verclyRequest);
-    kys = result.section;
-    await persistSection(organizationId, lookup, "kys", kys, result.errorCode, [], result.correlationId);
-  }
   return {
     identity: {
-      krs: general.section.data?.krs ?? (request.identifier.type === "KRS" ? request.identifier.value : kys.data?.company?.krs ?? null),
-      nip: general.section.data?.nip ?? (request.identifier.type === "NIP" ? request.identifier.value : kys.data?.company?.nip ?? null),
-      name: general.section.data?.legalName ?? kys.data?.company?.name ?? request.name ?? null,
+      krs: general.section.data?.krs ?? null,
+      nip: general.section.data?.nip ?? request.identifier.value,
+      name: general.section.data?.legalName ?? null,
     },
     general: general.section,
     financial: financial.section,
-    kys,
+    kys: emptyCard.kys,
   };
+}
+
+export async function runXrayKysLookup(organizationId: string, request: XrayLookupRequest): Promise<SupplierXRayCard["kys"]> {
+  await registerOrganization(organizationId, "srm-development");
+  const lookup = await createLookup(organizationId, request.identifier);
+  const result = await fetchVerclyKys({ identifier: request.identifier });
+  await persistSection(organizationId, lookup, "kys", result.section, result.errorCode, [], result.correlationId);
+  return result.section;
 }
