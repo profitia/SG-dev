@@ -21,10 +21,10 @@ test("FULL lookup polls to completion and keeps only an allowlisted KYS projecti
     if (calls.length === 2) return response([{ Header: { CorrelationId: "correlation123" }, Body: { IsComplete: false } }]);
     return response([{
       Header: { CorrelationId: "correlation123", Id: "report456" },
-      Body: { IsComplete: true, StateAsOfDate: 1791260400722, QueriedRegisters: ["Regon"],
+      Body: { IsComplete: true, StateAsOfDate: 1791260400722, QueriedRegisters: ["Regon", "None"],
         Errors: [{ Severity: 0, Message: "private provider message" }],
-        Entity: { Name: "XTB SPÓŁKA AKCYJNA", Ids: [{ Type: "ID", Value: "0000217580" }],
-          Attributes: [{ Name: "Country", Value: "PL" }],
+        Entity: { Name: "XTB SPÓŁKA AKCYJNA", Ids: [{ Type: "ID", Value: "0000217580" }, { Type: "VatID", Value: "PL0000217580" }],
+          Attributes: [{ Name: "Country", Value: "PL" }, { Name: "Street", Value: "---" }, { Name: "ActivityStatus", Value: "UNKNOWN" }],
           DepPersons: { Count: 1, Persons: [{ Name: "PRIVATE PERSON", PersonalId: "12345678901" }] },
           Beneficiaries: { Count: 0 }, PepPositions: { Count: 0 },
           Sanctions: [{ ListName: "eu_fsf_sanctions", ListType: "SANCTIONS", Value: false }],
@@ -38,6 +38,10 @@ test("FULL lookup polls to completion and keeps only an allowlisted KYS projecti
   assert.equal(calls[0].init?.headers && (calls[0].init.headers as Record<string, string>).Authorization, "Bearer test-token");
   assert.equal(result.section.status, "PARTIAL");
   assert.equal(result.section.data?.company?.krs, request.identifier.value);
+  assert.equal(result.section.data?.company?.nip, null);
+  assert.equal(result.section.data?.company?.address, null);
+  assert.equal(result.section.data?.company?.activityStatus, null);
+  assert.deepEqual(result.section.data?.queriedRegisters, ["Regon"]);
   assert.equal(result.section.data?.screenedLists?.[0].matched, false);
   assert.equal(result.section.data?.relatedPersonsCount, 1);
   assert.equal(result.section.data?.riskLevel, null);
@@ -56,4 +60,19 @@ test("rejects a report for another company before it can be persisted", async ()
   assert.equal(result.section.status, "ERROR");
   assert.equal(result.errorCode, "IDENTIFIER_MISMATCH");
   assert.equal(result.section.data, null);
+});
+
+test("maps a checksum-valid NIP without mistaking it for KRS", async () => {
+  let call = 0;
+  const fetcher = (async () => ++call === 1 ? response(["correlation123"]) : response([{
+    Header: { CorrelationId: "correlation123" },
+    Body: { IsComplete: true, Entity: { Ids: [
+      { Type: "ID", Value: "0000217580" }, { Type: "VatID", Value: "PL5272443955" },
+    ] } },
+  }])) as typeof fetch;
+  const result = await fetchVerclyKys({ ...request, identifier: { type: "NIP", value: "5272443955" } },
+    { apiKey: "test-token", baseUrl: "https://vercly.example", fetcher });
+  assert.equal(result.section.status, "SUCCESS");
+  assert.equal(result.section.data?.company?.krs, "0000217580");
+  assert.equal(result.section.data?.company?.nip, "5272443955");
 });

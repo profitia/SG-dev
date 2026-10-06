@@ -27,9 +27,21 @@ type Options = {
 const MODEL = "KYS_FULL";
 const source = (recordId: string | null) => ({ provider: "VERCLY" as const, model: MODEL, recordId });
 const record = (input: unknown): Record<string, unknown> | null => input && typeof input === "object" && !Array.isArray(input) ? input as Record<string, unknown> : null;
-const string = (input: unknown): string | null => typeof input === "string" && input.trim() ? input.trim().slice(0, 300) : null;
+const string = (input: unknown): string | null => {
+  if (typeof input !== "string") return null;
+  const value = input.trim();
+  return value && !["---", "UNKNOWN", "NONE", "N/A", "NULL"].includes(value.toUpperCase()) ? value.slice(0, 300) : null;
+};
 const count = (input: unknown): number | null => typeof input === "number" && Number.isSafeInteger(input) && input >= 0 ? input : null;
 const items = (input: unknown): unknown[] => Array.isArray(input) ? input : [];
+
+function validNip(input: string | null): string | null {
+  const nip = input?.replace(/^PL/i, "") ?? "";
+  if (!/^[0-9]{10}$/.test(nip)) return null;
+  const weights = [6, 5, 7, 2, 3, 4, 5, 6, 7];
+  const check = weights.reduce((sum, weight, index) => sum + weight * Number(nip[index]), 0) % 11;
+  return check !== 10 && check === Number(nip[9]) ? nip : null;
+}
 
 function attribute(entity: Record<string, unknown>, ...names: string[]): string | null {
   const attributes = items(entity.Attributes).map(record).filter((value): value is Record<string, unknown> => value !== null);
@@ -62,9 +74,11 @@ function mapReport(report: unknown, requested: VerclyKysRequest, fallbackCorrela
   const reportId = string(header?.Id);
   const complete = body.IsComplete === true;
   const entity = record(body.Entity);
-  const providerId = entity && (identifier(entity, requested.identifier.type === "KRS" ? "ID" : "VatID")
-    ?? (requested.identifier.type === "NIP" ? identifier(entity, "ID") : null));
+  const providerId = entity && (requested.identifier.type === "KRS" ? identifier(entity, "ID")
+    : validNip(identifier(entity, "VatID")) ?? validNip(identifier(entity, "ID")));
   if (entity && (!providerId || providerId.replace(/\D/g, "") !== requested.identifier.value)) throw new Error("IDENTIFIER_MISMATCH");
+  const entityId = entity ? identifier(entity, "ID") : null;
+  const vatNip = entity ? validNip(identifier(entity, "VatID")) : null;
 
   // This is an allowlist projection. Never persist the provider response, person records,
   // free-text analysis, raw error messages or personal identifiers.
@@ -78,8 +92,8 @@ function mapReport(report: unknown, requested: VerclyKysRequest, fallbackCorrela
     })) : [];
   const company = entity ? {
     name: string(entity.Name),
-    krs: requested.identifier.type === "KRS" ? providerId : identifier(entity, "ID"),
-    nip: requested.identifier.type === "NIP" ? providerId : identifier(entity, "VatID")?.replace(/^PL/, "") ?? null,
+    krs: requested.identifier.type === "KRS" ? providerId : entityId && /^[0-9]{10}$/.test(entityId) && entityId !== providerId ? entityId : null,
+    nip: requested.identifier.type === "NIP" ? providerId : vatNip && vatNip !== providerId ? vatNip : null,
     regon: identifier(entity, "Regon"),
     legalForm: attribute(entity, "NormalizedDetailLegalForm", "DetailLegalForm", "MainLegalForm"),
     address: [attribute(entity, "Street", "KrsAddrStreet"), attribute(entity, "KrsAddrBuildingNo"), attribute(entity, "KrsAddrZipCode"), attribute(entity, "City", "KrsAddrCity")].filter(Boolean).join(", ") || null,
