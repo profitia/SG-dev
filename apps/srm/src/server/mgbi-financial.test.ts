@@ -20,10 +20,46 @@ test("maps JSON standardized fields extracted from an XML financial statement in
   assert.equal(result.facts.length, 4);
   assert.deepEqual(result.facts.find((fact) => fact.sourcePath.endsWith("a_ca_pfy")), {
     metricCode: "BS_A_CA", periodStart: "2024-01-01", periodEnd: "2024-12-31",
-    periodType: "YEAR", statementScope: "UNIT", amount: "153533017.28",
+    periodType: "YEAR", statementScope: "UNIT", amount: "153533017.28", sourceAmount: "153533017.28", normalizationRule: "SOURCE_VALUE",
     currencyCode: "PLN", unitCode: "PLN", sourcePath: "content.standardized_fields.bs.a_ca_pfy",
     validationStatus: "VALID",
   });
+});
+
+test("verifies both expense sign conventions and returns positive costs while preserving source figures", () => {
+  const source = {
+    id: "expense-report", identifiers: { pl_krs: identifier.value },
+    document: { type: "financial_statement", period_from_date: "2024-01-01", period_to_date: "2024-12-31" },
+    content: { schema: { name: "JednostkaInnaWZlotych" }, standardized_fields: { pala: {
+      nrfs_cfy: "2231084.47", oac_cfy: "2034049.83", plfs_cfy: "197034.64", oac_maec_cfy: "500000",
+      nrfs_pfy: "2018218.90", oac_pfy: "-1931510.83", plfs_pfy: "86708.07", oac_maec_pfy: "-400000",
+    } } },
+  };
+  const result = mapMgbiFinancialRecords([source], identifier, at);
+  const cost2023 = result.facts.find((fact) => fact.metricCode === "PALA_OAC" && fact.periodEnd === "2023-12-31");
+  const cost2024 = result.facts.find((fact) => fact.metricCode === "PALA_OAC" && fact.periodEnd === "2024-12-31");
+  assert.equal(cost2023?.sourceAmount, "-1931510.83");
+  assert.equal(cost2023?.amount, "1931510.83");
+  assert.equal(cost2024?.amount, "2034049.83");
+  assert.equal(cost2023?.normalizationRule, "VERIFIED_COST_MAGNITUDE_V1");
+  assert.equal(result.sourceData?.periods.find((period) => period.to === "2023-12-31")?.facts.find((fact) => fact.metricCode === "PALA_OAC")?.amount, "-1931510.83");
+  assert.equal(result.section.data?.periods.find((period) => period.to === "2023-12-31")?.facts.find((fact) => fact.metricCode === "PALA_OAC")?.amount, "1931510.83");
+  assert.equal(result.facts.find((fact) => fact.metricCode === "PALA_OAC_MAEC" && fact.periodEnd === "2023-12-31")?.amount, "400000");
+  assert.deepEqual(result.section.warnings, []);
+});
+
+test("does not rewrite costs when the reported sales result cannot verify the sign", () => {
+  const source = {
+    id: "expense-report", identifiers: { pl_krs: identifier.value },
+    document: { type: "financial_statement", period_from_date: "2023-01-01", period_to_date: "2023-12-31" },
+    content: { schema: { name: "JednostkaInnaWZlotych" }, standardized_fields: { pala: {
+      nrfs_cfy: "100", oac_cfy: "-80", plfs_cfy: "999",
+    } } },
+  };
+  const result = mapMgbiFinancialRecords([source], identifier, at);
+  assert.equal(result.facts.find((fact) => fact.metricCode === "PALA_OAC")?.amount, "-80");
+  assert.equal(result.facts.find((fact) => fact.metricCode === "PALA_OAC")?.normalizationRule, "UNVERIFIED_COST_SIGN");
+  assert.deepEqual(result.section.warnings, ["MGBI_COST_SIGN_UNVERIFIED"]);
 });
 
 test("never uses document file or record-by-id endpoints", async () => {
@@ -48,4 +84,41 @@ test("reports missing standardized data and identifier mismatch truthfully", asy
   const mismatch = mapMgbiFinancialRecords([{ ...record, identifiers: { pl_krs: "9999999999" } }], identifier, at);
   assert.equal(mismatch.errorCode, "IDENTIFIER_MISMATCH");
   assert.equal(mismatch.facts.length, 0);
+});
+
+test("identifies a complete set of international-standard statements without displayable facts", async () => {
+  const statements = [2025, 2024].map((year) => ({
+    id: `ias-${year}`, identifiers: { pl_krs: identifier.value },
+    document: { type: "financial_statement", is_ias_compliant: true, period_from_date: `${year}-01-01`, period_to_date: `${year}-12-31` },
+  }));
+  let requests = 0;
+  const result = await fetchMgbiFinancial(identifier, { apiKey: "test", fetcher: async (url) => {
+    const request = new URL(String(url));
+    requests++;
+    if (requests === 1) {
+      assert.equal(request.searchParams.get("content.standardized_fields.is_available"), "true");
+      return Response.json({ count: 0, results: [] });
+    }
+    assert.equal(request.searchParams.has("content.standardized_fields.is_available"), false);
+    assert.equal(request.pathname, "/v1/models/pl-krs-rdf-record/records");
+    return Response.json({ count: 2, results: statements });
+  } });
+  assert.equal(requests, 2);
+  assert.equal(result.section.status, "EMPTY");
+  assert.deepEqual(result.section.warnings, ["MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS"]);
+});
+
+test("does not attribute unknown or partial missing statements to international standards", async () => {
+  const statement = { id: "ias", identifiers: { pl_krs: identifier.value }, document: { type: "financial_statement", is_ias_compliant: true } };
+  for (const response of [
+    { count: 2, results: [statement] },
+    { count: 1, results: [{ ...statement, document: { type: "financial_statement" } }] },
+  ]) {
+    let requests = 0;
+    const result = await fetchMgbiFinancial(identifier, { apiKey: "test", fetcher: async () => {
+      requests++;
+      return Response.json(requests === 1 ? { count: 0, results: [] } : response);
+    } });
+    assert.deepEqual(result.section.warnings, ["MGBI_NO_STRUCTURED_FINANCIAL_DATA"]);
+  }
 });

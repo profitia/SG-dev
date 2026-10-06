@@ -113,6 +113,8 @@ export interface FinancialFactInput {
   periodType: "YEAR" | "QUARTER" | "MONTH" | "OTHER";
   statementScope: "UNIT" | "CONSOLIDATED" | "UNKNOWN";
   amount: string;
+  sourceAmount: string;
+  normalizationRule: "SOURCE_VALUE" | "VERIFIED_COST_MAGNITUDE_V1" | "UNVERIFIED_COST_SIGN";
   currencyCode?: string;
   unitCode: string;
   sourcePath: string;
@@ -126,17 +128,18 @@ export async function appendFinancialFacts(organizationId: string, facts: Financ
   const rows = facts.map((fact) => ({
     metric_code: fact.metricCode, period_start: fact.periodStart, period_end: fact.periodEnd,
     period_type: fact.periodType, statement_scope: fact.statementScope, amount: fact.amount,
+    source_amount: fact.sourceAmount, normalization_rule: fact.normalizationRule,
     currency_code: fact.currencyCode ?? null, unit_code: fact.unitCode,
     source_path: fact.sourcePath, validation_status: fact.validationStatus,
   }));
   await withOrganization(organizationId, async (client) => {
     await client.query(
       "INSERT INTO srm.financial_facts(organization_id, supplier_id, snapshot_id, metric_code, " +
-      "period_start, period_end, period_type, statement_scope, amount, currency_code, unit_code, source_path, validation_status) " +
+      "period_start, period_end, period_type, statement_scope, amount, source_amount, normalization_rule, currency_code, unit_code, source_path, validation_status) " +
       "SELECT $1, $2, $3, f.metric_code, f.period_start, f.period_end, f.period_type, f.statement_scope, " +
-      "f.amount, f.currency_code, f.unit_code, f.source_path, f.validation_status " +
+      "f.amount, f.source_amount, f.normalization_rule, f.currency_code, f.unit_code, f.source_path, f.validation_status " +
       "FROM jsonb_to_recordset($4::jsonb) AS f(metric_code text, period_start date, period_end date, " +
-      "period_type text, statement_scope text, amount numeric, currency_code text, unit_code text, " +
+      "period_type text, statement_scope text, amount numeric, source_amount numeric, normalization_rule text, currency_code text, unit_code text, " +
       "source_path text, validation_status text)",
       [organizationId, supplierId, snapshotId, JSON.stringify(rows)],
     );

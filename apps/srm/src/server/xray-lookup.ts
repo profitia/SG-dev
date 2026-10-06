@@ -11,6 +11,8 @@ export type XrayLookupRequest = { identifier: CompanyIdentifier & { type: "NIP" 
 export function toPublicSection<T>(section: SectionEnvelope<T>): Omit<SectionEnvelope<T>, "source"> {
   const warningCodes = section.warnings.map((code) => {
     if (code === "MGBI_NO_STRUCTURED_FINANCIAL_DATA") return "FINANCIAL_NO_STRUCTURED_DATA";
+    if (code === "MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS") return "FINANCIAL_INTERNATIONAL_STANDARD_UNAVAILABLE";
+    if (code === "MGBI_COST_SIGN_UNVERIFIED") return "FINANCIAL_COST_SIGN_UNVERIFIED";
     if (code === "VERCLY_INCOMPLETE_SOURCES") return "KYS_INCOMPLETE_SOURCES";
     if (code.startsWith("VERCLY_SEVERITY_")) return "KYS_PROVIDER_NOTICE";
     return "REPORT_WARNING";
@@ -48,6 +50,7 @@ async function persistSection(
   errorCode: string | null,
   facts: FinancialSourceFact[] = [],
   correlationId?: string | null,
+  sourcePayload?: unknown,
 ): Promise<void> {
   const attemptId = await startAttempt(organizationId, lookup.requestId, sectionName);
   try {
@@ -57,7 +60,7 @@ async function persistSection(
       const snapshotId = await appendSnapshot(organizationId, {
         attemptId, supplierId: lookup.supplierId, section: sectionName,
         dataClass: sectionName === "kys" ? "KYS_REDACTED" : sectionName === "financial" ? "FINANCIAL" : "COMPANY",
-        sourceRecordId: section.source.recordId ?? undefined, payload: section.data,
+        sourceRecordId: section.source.recordId ?? undefined, payload: sourcePayload ?? section.data,
         retrievedAt: new Date(section.retrievedAt),
         effectiveAt: section.effectiveAt && !Number.isNaN(Date.parse(section.effectiveAt)) ? new Date(section.effectiveAt) : undefined,
         ...(sectionName === "kys" ? { retentionUntil: new Date(Date.parse(section.retrievedAt) + 30 * 24 * 60 * 60 * 1000) } : {}),
@@ -84,11 +87,11 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
     })),
     fetchMgbiFinancial(request.identifier).catch(() => ({
       section: { ...emptyCard.financial, status: "ERROR" as const, retrievedAt: new Date().toISOString(), warnings: ["MGBI_NOT_CONFIGURED"] },
-      facts: [], errorCode: "NOT_CONFIGURED",
+      facts: [], sourceData: undefined, errorCode: "NOT_CONFIGURED",
     })),
   ]);
   await persistSection(organizationId, lookup, "general", general.section, general.errorCode);
-  await persistSection(organizationId, lookup, "financial", financial.section, financial.errorCode, financial.facts);
+  await persistSection(organizationId, lookup, "financial", financial.section, financial.errorCode, financial.facts, undefined, financial.sourceData);
 
   return {
     identity: {
