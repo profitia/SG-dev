@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { FinancialDataMount, GeneralCompanyDataMount, VerclyKysMount, type SupplierXRayCard } from "@profitia/srm-xray";
 import { emptyCard } from "../src/demo/fixture";
 
@@ -11,36 +11,6 @@ export default function Home() {
   const [kysError, setKysError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
-  const [access, setAccess] = useState<"checking" | "locked" | "ready">("checking");
-
-  useEffect(() => {
-    let active = true;
-    fetch("/api/development-access", { cache: "no-store" })
-      .then((response) => response.ok ? response.json() : { authorized: false })
-      .then((state) => { if (active) setAccess(state.authorized ? "ready" : "locked"); })
-      .catch(() => { if (active) setAccess("locked"); });
-    return () => { active = false; };
-  }, []);
-
-  async function unlock(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const code = String(new FormData(form).get("code") ?? "");
-    form.reset();
-    setBusy(true);
-    setError(null);
-    try {
-      const response = await fetch("/api/development-access", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }), cache: "no-store",
-      });
-      if (!response.ok) throw new Error("Nieprawidłowy kod dostępu do Development.");
-      setAccess("ready");
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Nie udało się odblokować Development.");
-    } finally { setBusy(false); }
-  }
-
   async function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy || kysBusy) return;
@@ -58,7 +28,6 @@ export default function Home() {
         cache: "no-store",
       });
       const payload = await response.json();
-      if (response.status === 401) setAccess("locked");
       if (!response.ok) throw new Error(typeof payload.error === "string" ? payload.error : "Nie udało się pobrać raportu.");
       setCard(payload as SupplierXRayCard);
     } catch (cause) {
@@ -77,7 +46,6 @@ export default function Home() {
         body: JSON.stringify({ identifier: card.identity.nip }), cache: "no-store",
       });
       const payload = await response.json();
-      if (response.status === 401) setAccess("locked");
       if (!response.ok) throw new Error(typeof payload.error === "string" ? payload.error : "Nie udało się pobrać raportu KYS.");
       setCard((current) => ({ ...current, kys: payload.section as SupplierXRayCard["kys"] }));
     } catch (cause) {
@@ -99,16 +67,6 @@ export default function Home() {
           <strong>DEVELOPMENT — RZECZYWISTE DANE MGBI I VERCLY</strong>
           <p>Najpierw pobieramy dane MGBI. Raport KYS z Vercly uruchamiasz osobnym przyciskiem; jego przygotowanie może potrwać dłużej. Brakujące pola oznaczamy „brak danych”.</p>
         </aside>
-        {access === "checking" && <p role="status">Sprawdzanie dostępu do Development…</p>}
-        {access === "locked" && <form className="appshield-search development-unlock" aria-label="Dostęp do Development" onSubmit={unlock}>
-          <h2>Otwórz środowisko Development</h2>
-          <p>Kod wpisujesz raz na czas sesji. Wyszukiwanie firm nie wymaga ponownego wpisywania kodu.</p>
-          <label htmlFor="development-code">Kod dostępu Development</label>
-          <input id="development-code" name="code" type="password" autoComplete="off" required />
-          <button type="submit" disabled={busy}>{busy ? "Sprawdzanie…" : "Otwórz"}</button>
-          {error && <p className="search-error" role="alert">{error}</p>}
-        </form>}
-        {access === "ready" && <>
         <form className="appshield-search" aria-label="Wyszukaj firmę" onSubmit={search}>
           <label htmlFor="identifier">NIP firmy</label>
           <div className="appshield-search-fields">
@@ -131,7 +89,6 @@ export default function Home() {
           </div>
           {card.kys.status !== "NOT_REQUESTED" && <VerclyKysMount section={card.kys} />}
         </div>}
-        </>}
       </div>
     </main>
   );
