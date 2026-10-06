@@ -1,20 +1,20 @@
 :root { color-scheme: light; font-family: Arial, Helvetica, sans-serif; color: #17252f; background: #f4f7f8; }
 * { box-sizing: border-box; }
 body { margin: 0; }
-.appshield-header { display: flex; justify-content: space-between; align-items: center; padding: 18px max(24px, calc((100vw - 1140px) / 2)); background: #153645; color: white; }
-.appshield-header strong { font-size: 1.25rem; letter-spacing: .1em; }
-.appshield-content { max-width: 1140px; margin: 0 auto; padding: 40px 24px 80px; }
+.appshield-header { display: flex; align-items: center; padding: 18px clamp(16px, 3vw, 48px); background: #153645; color: white; }
+.appshield-header h1 { margin: 0; font-size: clamp(1.3rem, 2vw, 1.7rem); letter-spacing: .025em; }
+.appshield-content { width: 100%; margin: 0 auto; padding: 28px clamp(16px, 3vw, 48px) 80px; }
 .eyebrow { color: #347b79; font-size: .8rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
 .appshield-intro h1 { font-size: clamp(2rem, 4vw, 3rem); margin: 12px 0; }
 .appshield-intro p { max-width: 680px; line-height: 1.5; }
-.appshield-search { background: white; padding: 24px; border: 1px solid #d9e2e5; border-radius: 12px; margin: 32px 0; }
+.appshield-search { background: white; padding: 24px; border: 1px solid #d9e2e5; border-radius: 12px; margin: 0 0 24px; }
 .appshield-search label { display: block; font-weight: 700; margin-bottom: 12px; }
 .appshield-search div { display: flex; gap: 12px; }
 .appshield-search input { min-width: 0; flex: 1; padding: 12px 14px; border: 1px solid #afc2c8; border-radius: 8px; font: inherit; }
 .appshield-search button { padding: 12px 20px; border: 0; border-radius: 8px; background: #317d78; color: white; font: inherit; }
 .appshield-search small { display: block; margin-top: 10px; color: #526972; }
-.xray-card { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(0, 2fr); gap: 20px; align-items: start; }
-.xray-section { background: white; border: 1px solid #d9e2e5; border-radius: 12px; padding: 22px; min-height: 220px; }
+.xray-card { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
+.xray-section { background: white; border: 1px solid #d9e2e5; border-radius: 12px; padding: 22px; min-width: 0; }
 .xray-section-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .xray-section-header h2 { margin: 0; font-size: 1.25rem; }
 .xray-section-header span { white-space: nowrap; font-size: .75rem; padding: 6px 9px; border-radius: 12px; color: #34535d; background: #e9f0f1; }
@@ -69,3 +69,54 @@ body { margin: 0; }
 @media (max-width: 600px) { .appshield-search-fields { flex-direction: column; } }
 @media (max-width: 700px) { .kys-input-grid, .kys-grid { grid-template-columns: 1fr; } }
 @media (max-width: 800px) { .xray-card { grid-template-columns: 1fr; } }
+
+.company-summary { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; background: white; border: 1px solid #d9e2e5; border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; }
+.company-summary h2 { margin: 0 0 7px; font-size: clamp(1.2rem, 2.2vw, 1.7rem); }
+.company-summary p { margin: 0; color: #526972; overflow-wrap: anywhere; }
+.company-report-pill { display: inline-flex; align-items: center; border-radius: 999px; background: #e6f1ef; color: #155f64; padding: 9px 14px; font-weight: 700; white-space: nowrap; }
+.xray-section[aria-label="Dane ogólne"] .xray-facts { grid-template-columns: minmax(130px, .55fr) minmax(160px, 1fr) minmax(130px, .55fr) minmax(160px, 1fr); gap: 13px 16px; }
+.financial-dashboard { min-width: 0; }
+.financial-dashboard-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; color: #526972; font-size: .9rem; margin: 14px 0 22px; }
+.financial-dashboard-meta p { margin: 0; }
+.financial-dashboard-meta p:last-child { font-weight: 700; color: #153645; }
+.financial-scope { display: flex; gap: 5px; border: 1px solid #d9e2e5; border-radius: 8px; padding: 4px; }
+.financial-scope button { border: 0; background: transparent; color: #153645; border-radius: 5px; padding: 7px 12px; cursor: pointer; }
+.financial-scope button[aria-pressed="true"] { background: #153645; color: white; }
+.financial-accordion { margin-top: 12px; border: 1px solid #d9e2e5; border-radius: 10px; overflow: hidden; }
+.financial-accordion > summary { display: flex; align-items: center; gap: 12px; padding: 16px 20px; background: #eaf1f2; color: #153645; font-weight: 700; font-size: 1.05rem; cursor: pointer; list-style: none; }
+.financial-accordion > summary::-webkit-details-marker { display: none; }
+.financial-accordion > summary::before { content: "▸"; display: inline-block; transition: transform .15s ease; }
+.financial-accordion[open] > summary::before { transform: rotate(90deg); }
+.financial-accordion-body { padding: 20px; min-width: 0; }
+.financial-charts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; }
+.financial-chart { min-width: 0; border: 1px solid #e0e8ea; border-radius: 9px; padding: 14px; background: #fbfcfd; }
+.financial-chart h4 { margin: 0 0 10px; color: #153645; }
+.financial-chart p { color: #526972; }
+.financial-chart-scroll { max-width: 100%; overflow-x: auto; }
+.financial-chart svg { display: block; width: 100%; min-width: 480px; height: auto; }
+.financial-table-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; color: #526972; font-size: .85rem; margin: 8px 0 12px; }
+.financial-table-tools button { border: 1px solid #a9c0c7; border-radius: 7px; background: white; color: #155f64; padding: 8px 12px; font: inherit; cursor: pointer; }
+.financial-table-scroll { width: 100%; overflow-x: auto; border: 1px solid #d9e2e5; border-radius: 8px; scrollbar-width: thin; }
+.financial-table { border-collapse: separate; border-spacing: 0; min-width: 100%; width: max-content; font-size: .88rem; font-variant-numeric: tabular-nums; }
+.financial-table th, .financial-table td { padding: 11px 14px; border-bottom: 1px solid #e5ebee; white-space: nowrap; text-align: right; }
+.financial-table thead th { background: #eaf1f2; color: #153645; font-weight: 700; }
+.financial-table thead th:first-child, .financial-table tbody th[scope="row"] { position: sticky; left: 0; z-index: 1; width: 310px; min-width: 310px; max-width: 310px; white-space: normal; text-align: left; }
+.financial-table thead th:first-child { z-index: 2; }
+.financial-table tbody th[scope="row"] { background: white; font-weight: 400; }
+.financial-table tbody tr:nth-child(odd) th[scope="row"], .financial-table tbody tr:nth-child(odd) td { background: #f8fafb; }
+.financial-table tbody tr.financial-table-total th, .financial-table tbody tr.financial-table-total td { font-weight: 700; color: #153645; background: #edf5f4; }
+.financial-table thead th:not(:first-child):not(:last-child), .financial-table tbody td:not(:last-child) { min-width: 132px; }
+.financial-table-group th { background: #dfecef; color: #153645; text-align: left; font-size: .9rem; }
+.financial-row-chart { display: inline-grid; place-items: center; width: 34px; height: 34px; border: 1px solid #a9c0c7; border-radius: 7px; background: white; color: #155f64; cursor: pointer; }
+.financial-row-chart svg { fill: currentColor; }
+.financial-scroll-controls { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.financial-scroll-controls button { width: 36px; height: 36px; border: 1px solid #a9c0c7; border-radius: 7px; background: white; color: #155f64; font-size: 1.2rem; cursor: pointer; }
+.financial-chart-dialog { width: min(1100px, 94vw); max-height: 90vh; border: 0; border-radius: 12px; box-shadow: 0 18px 54px #101b2b45; padding: 24px; }
+.financial-chart-dialog::backdrop { background: #102536a8; }
+.financial-dialog-header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+.financial-dialog-header h3 { margin: 0; color: #153645; }
+.financial-dialog-header button { border: 0; background: transparent; color: #153645; font-size: 1.7rem; cursor: pointer; }
+.financial-chart-dialog > .financial-chart { margin-top: 18px; }
+@media (max-width: 1100px) { .financial-charts { grid-template-columns: 1fr; } }
+@media (max-width: 850px) { .xray-section[aria-label="Dane ogólne"] .xray-facts { grid-template-columns: minmax(110px, .6fr) minmax(0, 1fr); } }
+@media (max-width: 600px) { .appshield-search, .company-summary, .xray-section, .financial-accordion-body { padding: 16px; } .company-report-pill { white-space: normal; } .financial-table thead th:first-child, .financial-table tbody th[scope="row"] { width: 185px; min-width: 185px; max-width: 185px; } }

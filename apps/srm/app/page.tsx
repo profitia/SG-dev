@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { FinancialDataMount, GeneralCompanyDataMount, VerclyKysMount, type SupplierXRayCard } from "@profitia/srm-xray";
+import { FinancialDataMount, GeneralCompanyDataMount, latestAvailableFinancialYear, VerclyKysMount, type SupplierXRayCard } from "@profitia/srm-xray";
 import { emptyCard } from "../src/demo/fixture";
 
 export default function Home() {
@@ -56,27 +56,24 @@ export default function Home() {
 
   return (
     <main className="appshield">
-      <header className="appshield-header"><strong>SRM</strong><nav aria-label="Nawigacja">X-Ray</nav></header>
+      <header className="appshield-header"><h1>SRM X-Ray</h1></header>
       <div className="appshield-content">
-        <div className="appshield-intro">
-          <p className="eyebrow">Supplier Relationship Management</p>
-          <h1>Prześwietlenie firmy</h1>
-          <p>Podaj NIP, aby zobaczyć dane firmy i jej sprawozdania finansowe. Raport KYS pobierzesz osobno.</p>
-        </div>
-        <aside className="demo-notice" role="note">
-          <strong>DEVELOPMENT — RZECZYWISTE DANE MGBI I VERCLY</strong>
-          <p>Najpierw pobieramy dane MGBI. Raport KYS z Vercly uruchamiasz osobnym przyciskiem; jego przygotowanie może potrwać dłużej. Brakujące pola oznaczamy „brak danych”.</p>
-        </aside>
         <form className="appshield-search" aria-label="Wyszukaj firmę" onSubmit={search}>
-          <label htmlFor="identifier">NIP firmy</label>
+          <label htmlFor="identifier">Wpisz numer NIP</label>
           <div className="appshield-search-fields">
-            <input id="identifier" name="identifier" inputMode="numeric" pattern="[0-9]{10}" maxLength={10} placeholder="10 cyfr NIP" required />
+            <input id="identifier" name="identifier" inputMode="numeric" pattern="[0-9]{10}" maxLength={10} placeholder="Wpisz numer NIP" required />
           </div>
-          <button type="submit" disabled={busy || kysBusy}>{busy ? "Pobieranie danych MGBI…" : "Pokaż dane firmy"}</button>
+          <button type="submit" disabled={busy || kysBusy}>{busy ? "Pobieranie danych MGBI…" : "Pokaż dane MGBI"}</button>
           {error && <p className="search-error" role="alert">{error}</p>}
         </form>
-        <p className="harness-link"><a href="/harness">Sprawdź próbki techniczne modułów</a></p>
-        {searched && !busy && !error && <div className="xray-card">
+        {searched && !busy && !error && <>
+          <section className="company-summary" aria-label="Podsumowanie spółki">
+            <div><h2>{card.general.data?.legalName ?? card.identity.name ?? "brak danych"}</h2>
+              <p>NIP: {card.identity.nip ?? "brak danych"} · KRS: {card.identity.krs ?? "brak danych"}</p>
+            </div>
+            <span className="company-report-pill">Ostatni dostępny raport: {latestAvailableFinancialYear(card.financial.data) ?? "brak danych"}</span>
+          </section>
+          <div className="xray-card">
           <GeneralCompanyDataMount section={card.general} />
           <FinancialDataMount section={card.financial} />
           <div className="kys-step">
@@ -88,7 +85,8 @@ export default function Home() {
             {kysError && <p className="search-error" role="alert">{kysError}</p>}
           </div>
           {card.kys.status !== "NOT_REQUESTED" && <VerclyKysMount section={card.kys} />}
-        </div>}
+          </div>
+        </>}
       </div>
     </main>
   );
