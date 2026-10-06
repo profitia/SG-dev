@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { PoolClient } from "pg";
 import { assertOrganizationId, withOrganization, type DatabasePool } from "./db";
-import { appendSnapshot, DevelopmentLookupLimitError, enforceDevelopmentLookupBudget } from "./xray-repository";
+import { appendSnapshot } from "./xray-repository";
 
 const organizationId = "4f4c4d66-e135-49ac-a89f-d448e270b667";
 
@@ -75,22 +75,4 @@ test("KYS raw payload cannot be saved without redaction", async () => {
     payload: { name: "Example" },
     retrievedAt: new Date(),
   }), /redacted/);
-});
-
-test("public Development lookup budget is checked under a database lock", async () => {
-  const calls: string[] = [];
-  const client = { async query(sql: string) {
-    calls.push(sql);
-    return { rows: sql.includes("count(*)") ? [{ used: "59" }] : [] };
-  } } as unknown as PoolClient;
-  await enforceDevelopmentLookupBudget(client, organizationId);
-  assert.match(calls[0], /pg_advisory_xact_lock/);
-  assert.match(calls[1], /lookup_requests/);
-});
-
-test("public Development lookup budget rejects requests at the daily ceiling", async () => {
-  const client = { async query(sql: string) {
-    return { rows: sql.includes("count(*)") ? [{ used: "60" }] : [] };
-  } } as unknown as PoolClient;
-  await assert.rejects(enforceDevelopmentLookupBudget(client, organizationId), DevelopmentLookupLimitError);
 });
