@@ -50,7 +50,7 @@ test("accepts a completed sole proprietor report when VatID matches the JDG NIP"
   let calls = 0;
   const fetcher = (async () => ++calls === 1 ? response(["jdgCorrelation123"]) : response([{
     Header: { CorrelationId: "jdgCorrelation123", Id: "jdgReport123" },
-    Body: { IsComplete: true, Errors: [{ Severity: 0 }], Entity: {
+    Body: { IsComplete: true, Errors: [{ Severity: 0, Resolved: true, Registry: "vat.whitelist.fetched" }], Entity: {
       Name: "Przykładowa JDG",
       Ids: [{ Type: "ID", Value: "different-internal-id" }, { Type: "VatID", Value: "PL7972088368" }],
       Attributes: [{ Name: "NormalizedDetailLegalForm", Value: "SOLE_PROPRIETORSHIP" }],
@@ -58,7 +58,8 @@ test("accepts a completed sole proprietor report when VatID matches the JDG NIP"
     } },
   }])) as typeof fetch;
   const result = await fetchVerclyKys(jdgRequest, { apiKey: "test-token", baseUrl: "https://vercly.example", fetcher, sleep: async () => {} });
-  assert.equal(result.section.status, "PARTIAL");
+  assert.equal(result.section.status, "SUCCESS");
+  assert.deepEqual(result.section.warnings, []);
   assert.equal(result.section.data?.company?.nip, "7972088368");
   assert.equal(result.section.data?.company?.krs, null);
   assert.equal(result.section.data?.company?.legalForm, "SOLE_PROPRIETORSHIP");

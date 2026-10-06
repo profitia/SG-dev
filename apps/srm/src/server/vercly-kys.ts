@@ -110,6 +110,7 @@ function mapReport(report: unknown, requested: VerclyKysRequest, fallbackCorrela
   } : undefined;
   const warnings = items(body.Errors).map(record)
     .filter((entry): entry is Record<string, unknown> => entry !== null)
+    .filter((entry) => entry.Resolved !== true)
     .map((entry) => `VERCLY_SEVERITY_${count(entry.Severity) ?? "UNKNOWN"}`);
   if (entity && attribute(entity, "isAllComplete") === "false") warnings.push("VERCLY_INCOMPLETE_SOURCES");
   const queriedRegisters = items(body.QueriedRegisters).map(string).filter((value): value is string => value !== null).slice(0, 30);
