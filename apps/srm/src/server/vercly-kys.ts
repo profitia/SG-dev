@@ -140,7 +140,8 @@ async function jsonRequest(fetcher: typeof fetch, url: string, init: RequestInit
 
 export async function fetchVerclyKys(request: VerclyKysRequest, options: Options = {}): Promise<VerclyKysResult> {
   if (!/^[0-9]{10}$/.test(request.identifier.value)) throw new Error("Invalid NIP or KRS");
-  if (!request.name.trim() || !request.phone.trim()) throw new Error("Company name and phone are required for FULL verification");
+  const phone = request.phone.replace(/[\s()-]/g, "");
+  if (!request.name.trim() || !/^\+?[0-9]{7,20}$/.test(phone)) throw new Error("Company name and phone are required for FULL verification");
   const website = request.website ? new URL(request.website) : null;
   if (website && website.protocol !== "https:") throw new Error("Company website must use HTTPS");
   const apiKey = options.apiKey ?? process.env.VERCLY_API_KEY;
@@ -159,7 +160,7 @@ export async function fetchVerclyKys(request: VerclyKysRequest, options: Options
         ...(request.identifier.type === "KRS" ? { RegisterId: request.identifier.value } : { Id: request.identifier.value }),
         Country: "PL", Name: request.name.trim(),
         ...(website ? { WWW: website.toString() } : {}),
-        PhoneNo: request.phone.trim(), VerificationType: "FULL",
+        PhoneNo: phone, VerificationType: "FULL",
       }]),
     });
     correlationId = string(items(started)[0]);
