@@ -117,16 +117,25 @@ export interface FinancialFactInput {
 }
 
 export async function appendFinancialFacts(organizationId: string, facts: FinancialFactInput[]): Promise<void> {
+  if (!facts.length) return;
+  const { supplierId, snapshotId } = facts[0];
+  if (facts.some((fact) => fact.supplierId !== supplierId || fact.snapshotId !== snapshotId)) throw new Error("Financial facts must belong to one snapshot");
+  const rows = facts.map((fact) => ({
+    metric_code: fact.metricCode, period_start: fact.periodStart, period_end: fact.periodEnd,
+    period_type: fact.periodType, statement_scope: fact.statementScope, amount: fact.amount,
+    currency_code: fact.currencyCode ?? null, unit_code: fact.unitCode,
+    source_path: fact.sourcePath, validation_status: fact.validationStatus,
+  }));
   await withOrganization(organizationId, async (client) => {
-    for (const fact of facts) {
-      await client.query(
-        "INSERT INTO srm.financial_facts(organization_id, supplier_id, snapshot_id, metric_code, " +
-        "period_start, period_end, period_type, statement_scope, amount, currency_code, unit_code, source_path, validation_status) " +
-        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)",
-        [organizationId, fact.supplierId, fact.snapshotId, fact.metricCode, fact.periodStart, fact.periodEnd,
-          fact.periodType, fact.statementScope, fact.amount, fact.currencyCode ?? null, fact.unitCode,
-          fact.sourcePath, fact.validationStatus],
-      );
-    }
+    await client.query(
+      "INSERT INTO srm.financial_facts(organization_id, supplier_id, snapshot_id, metric_code, " +
+      "period_start, period_end, period_type, statement_scope, amount, currency_code, unit_code, source_path, validation_status) " +
+      "SELECT $1, $2, $3, f.metric_code, f.period_start, f.period_end, f.period_type, f.statement_scope, " +
+      "f.amount, f.currency_code, f.unit_code, f.source_path, f.validation_status " +
+      "FROM jsonb_to_recordset($4::jsonb) AS f(metric_code text, period_start date, period_end date, " +
+      "period_type text, statement_scope text, amount numeric, currency_code text, unit_code text, " +
+      "source_path text, validation_status text)",
+      [organizationId, supplierId, snapshotId, JSON.stringify(rows)],
+    );
   });
 }

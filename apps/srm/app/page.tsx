@@ -70,11 +70,11 @@ export default function Home() {
         <div className="appshield-intro">
           <p className="eyebrow">Supplier Relationship Management</p>
           <h1>Prześwietlenie firmy</h1>
-          <p>Wyszukaj firmę po NIP albo KRS i pobierz raport KYS bezpośrednio z Vercly.</p>
+          <p>Wyszukaj firmę po NIP albo KRS i zobacz dane rejestrowe, finansowe oraz raport KYS.</p>
         </div>
         <aside className="demo-notice" role="note">
-          <strong>DEVELOPMENT — RZECZYWISTE DANE VERCLY</strong>
-          <p>Raport FULL wymaga obecnie nazwy i telefonu firmy. Połączenie z MGBI ma później uzupełniać te dane automatycznie. Brakujące pola raportu są oznaczone „brak danych”.</p>
+          <strong>DEVELOPMENT — RZECZYWISTE DANE MGBI I VERCLY</strong>
+          <p>Do danych MGBI wystarczy NIP lub KRS. Dla pełnego raportu KYS Vercly podaj dodatkowo telefon firmy. Nazwę pobierzemy z MGBI, jeśli jest dostępna. Brakujące pola oznaczamy „brak danych”.</p>
         </aside>
         {access === "checking" && <p role="status">Sprawdzanie dostępu do Development…</p>}
         {access === "locked" && <form className="appshield-search development-unlock" aria-label="Dostęp do Development" onSubmit={unlock}>
@@ -93,10 +93,10 @@ export default function Home() {
             <input id="identifier" name="identifier" inputMode="numeric" pattern="[0-9]{10}" maxLength={10} placeholder="10 cyfr" required />
           </div>
           <div className="kys-input-grid">
-            <label>Nazwa firmy<input name="name" maxLength={200} placeholder="Nazwa prawna" required /></label>
-            <label>Telefon firmy<input name="phone" type="tel" maxLength={40} placeholder="+48..." required /></label>
+            <label>Nazwa firmy (opcjonalnie)<input name="name" maxLength={200} placeholder="Nazwa prawna" /></label>
+            <label>Telefon firmy (dla KYS)<input name="phone" type="tel" maxLength={40} placeholder="+48..." /></label>
           </div>
-          <button type="submit" disabled={busy}>{busy ? "Pobieranie raportu…" : "Pobierz raport KYS"}</button>
+          <button type="submit" disabled={busy}>{busy ? "Pobieranie danych…" : "Prześwietl firmę"}</button>
           {error && <p className="search-error" role="alert">{error}</p>}
         </form>
         <p className="harness-link"><a href="/harness">Sprawdź próbki techniczne modułów</a></p>
