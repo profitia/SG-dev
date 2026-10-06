@@ -17,6 +17,7 @@ test("NIP-only request omits phone, name and FULL, then keeps an allowlisted rep
     return response([{ Header: { CorrelationId: "correlation123", Id: "report456" }, Body: {
       IsComplete: true, QueriedRegisters: ["Regon"], Errors: [{ Severity: 0, Message: "private provider message" }],
       Entity: { Name: "XTB SPÓŁKA AKCYJNA", Ids: [{ Type: "KRS", Value: "0000217580" }, { Type: "VatID", Value: "PL5272443955" }],
+        Krz: { Count: 0 }, Vat: { ActivityStatus: "Czynny" }, Vies: { EuVat: true },
         DepPersons: { Count: 1, Persons: [{ Name: "PRIVATE PERSON", PersonalId: "12345678901" }] },
         Sanctions: [{ ListName: "eu_fsf_sanctions", ListType: "SANCTIONS", Value: false }],
       },
@@ -29,6 +30,7 @@ test("NIP-only request omits phone, name and FULL, then keeps an allowlisted rep
   assert.equal(result.section.data?.company?.krs, "0000217580");
   assert.equal(result.section.data?.company?.nip, "5272443955");
   assert.equal(result.section.data?.relatedPersonsCount, 1);
+  assert.deepEqual(result.section.data?.registryChecks, { krzListed: false, vatActive: true, euVat: true });
   assert.ok(!JSON.stringify(result.section).includes("PRIVATE PERSON"));
   assert.ok(!JSON.stringify(result.section).includes("private provider message"));
 });
@@ -58,4 +60,5 @@ test("retries temporary 404 while Vercly prepares the report", async () => {
     sleep: async (ms) => { sleeps.push(ms); }, pollIntervalMs: 2000 });
   assert.equal(result.section.status, "SUCCESS");
   assert.deepEqual(sleeps, [2000, 2000, 2000]);
+  assert.deepEqual(result.section.data?.registryChecks, { krzListed: null, vatActive: null, euVat: null });
 });

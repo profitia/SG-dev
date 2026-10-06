@@ -9,6 +9,8 @@ import type {
 } from "./contracts";
 import { FinancialDashboard } from "./financial-dashboard";
 
+type DisplaySection<T> = Omit<SectionEnvelope<T>, "source">;
+
 const statusLabel: Record<SectionStatus, string> = {
   SUCCESS: "Dostępne",
   EMPTY: "Brak danych",
@@ -23,10 +25,53 @@ function value(text: string | null | undefined): string {
 }
 
 function warningLabel(code: string): string {
-  if (code.startsWith("VERCLY_SEVERITY_")) return "Vercly zgłosiło uwagę do raportu.";
+  if (code.startsWith("VERCLY_SEVERITY_")) return "Raport zawiera uwagę dostawcy danych.";
   if (code === "VERCLY_INCOMPLETE_SOURCES") return "Część źródeł nie zwróciła danych.";
   if (code === "IDENTIFIER_MISMATCH") return "Dane identyfikacyjne nie zgadzają się z zapytaniem.";
   return "Źródło nie zwróciło pełnych danych.";
+}
+
+const legalFormLabels: Record<string, string> = {
+  JOINT_STOCK: "Spółka akcyjna",
+  SIMPLE_JOINT_STOCK: "Prosta spółka akcyjna",
+  LLC: "Spółka z ograniczoną odpowiedzialnością",
+  LIMITED_LIABILITY: "Spółka z ograniczoną odpowiedzialnością",
+  GENERAL_PARTNERSHIP: "Spółka jawna",
+  LIMITED_PARTNERSHIP: "Spółka komandytowa",
+  LIMITED_JOINT_STOCK_PARTNERSHIP: "Spółka komandytowo-akcyjna",
+  PROFESSIONAL_PARTNERSHIP: "Spółka partnerska",
+  CIVIL_PARTNERSHIP: "Spółka cywilna",
+  SOLE_PROPRIETORSHIP: "Jednoosobowa działalność gospodarcza",
+  COOPERATIVE: "Spółdzielnia",
+  FOUNDATION: "Fundacja",
+  ASSOCIATION: "Stowarzyszenie",
+};
+const activityStatusLabels: Record<string, string> = {
+  ACTIVE: "Aktywny", INACTIVE: "Nieaktywny", SUSPENDED: "Zawieszony",
+  CLOSED: "Zakończony", LIQUIDATION: "W likwidacji", BANKRUPT: "W upadłości",
+  DISSOLVED: "Rozwiązany", DELETED: "Wykreślony",
+};
+const registerLabels: Record<string, string> = {
+  "VAT Information Exchange System": "System wymiany informacji o VAT (VIES)",
+  "National Debt Register": "Krajowy Rejestr Zadłużonych",
+  "National Court Register": "Krajowy Rejestr Sądowy",
+  "Business Register": "Rejestr przedsiębiorców",
+};
+
+function polishCode(input: string | null | undefined, labels: Record<string, string>): string {
+  if (!input) return "nie ustalono";
+  const code = input.trim().toUpperCase().replaceAll(/[^A-Z0-9]+/g, "_");
+  return labels[code] ?? (/^[A-Z][A-Z0-9_]*$/.test(input) ? "nie ustalono" : input);
+}
+
+function yesNo(input: boolean | null | undefined): string {
+  return input === true ? "Tak" : input === false ? "Nie" : "nie ustalono";
+}
+
+function capitalInThousands(input: string | null | undefined): string {
+  if (!input) return "brak danych";
+  const amount = Number(input.replaceAll(" ", "").replace(",", "."));
+  return Number.isFinite(amount) ? `${new Intl.NumberFormat("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount / 1000)} tys. PLN` : "brak danych";
 }
 
 const verclyListLabels: Record<string, string> = {
@@ -49,7 +94,7 @@ function SectionFrame({
   children,
 }: {
   title: string;
-  section: SectionEnvelope<unknown>;
+  section: DisplaySection<unknown>;
   children: ReactNode;
 }) {
   return (
@@ -58,16 +103,13 @@ function SectionFrame({
         <h2>{title}</h2>
         <span>{statusLabel[section.status]}</span>
       </header>
-      <p className="xray-source">
-        Źródło: {section.source.provider} · {section.source.model} · pobrano: {value(section.retrievedAt)}
-      </p>
-      {section.status === "PENDING" ? <p role="status">Raport jest przygotowywany. Poczekaj na wynik…</p> : section.data == null ? <p>brak danych</p> : children}
-      {section.warnings.map((warning, index) => <p className="xray-warning" key={index}>{section.source.provider === "VERCLY" ? warningLabel(warning) : warning}</p>)}
+      {section.status === "PENDING" ? <div role="status"><p>Raport jest przygotowywany. Poczekaj na wynik…</p>{title === "Raport KYS" && <div className="kys-progress" role="progressbar" aria-label="Postęp pobierania raportu KYS" aria-valuetext="Pobieranie trwa"><span /></div>}</div> : section.data == null ? <p>brak danych</p> : children}
+      {section.warnings.map((warning, index) => <p className="xray-warning" key={index}>{warningLabel(warning)}</p>)}
     </section>
   );
 }
 
-export function GeneralCompanyDataMount({ section }: { section: SectionEnvelope<GeneralCompanyData> }) {
+export function GeneralCompanyDataMount({ section }: { section: DisplaySection<GeneralCompanyData> }) {
   const data = section.data;
   return (
     <SectionFrame title="Dane ogólne" section={section}>
@@ -85,7 +127,7 @@ export function GeneralCompanyDataMount({ section }: { section: SectionEnvelope<
   );
 }
 
-export function FinancialDataMount({ section }: { section: SectionEnvelope<FinancialData> }) {
+export function FinancialDataMount({ section }: { section: DisplaySection<FinancialData> }) {
   return (
     <SectionFrame title="Dane finansowe" section={section}>
       {section.data ? <FinancialDashboard data={section.data} /> : <p>brak danych</p>}
@@ -93,7 +135,7 @@ export function FinancialDataMount({ section }: { section: SectionEnvelope<Finan
   );
 }
 
-export function VerclyKysMount({ section }: { section: SectionEnvelope<VerclyKysData> }) {
+export function VerclyKysMount({ section }: { section: DisplaySection<VerclyKysData> }) {
   const data = section.data;
   const company = data?.company;
   const countLabel = (count: number | null | undefined) => count == null ? "brak danych" : `${count} wpisów w raporcie`;
@@ -104,38 +146,35 @@ export function VerclyKysMount({ section }: { section: SectionEnvelope<VerclyKys
         <div className="kys-summary">
           <strong>{value(company?.name)}</strong>
           <span>Poziom ryzyka: {value(data?.riskLevel)}</span>
-          <span>Sankcje: {lists.some((entry) => entry.type.toUpperCase() === "SANCTIONS" && entry.matched) ? "trafienie na liście" : lists.some((entry) => entry.type.toUpperCase() === "SANCTIONS") ? "brak trafienia w sprawdzonych listach" : "brak danych"}</span>
+          <span>Sankcje: {yesNo(lists.some((entry) => entry.type.toUpperCase() === "SANCTIONS" && entry.matched) ? true : lists.some((entry) => entry.type.toUpperCase() === "SANCTIONS") ? false : null)}</span>
           <span>Stan raportu: {data?.isComplete ? "zakończony" : "w toku"}</span>
         </div>
         <div className="kys-grid">
-          <section className="kys-panel" aria-label="Dane rejestrowe Vercly">
+          <section className="kys-panel" aria-label="Dane rejestrowe KYS">
             <h3>Dane rejestrowe</h3>
             <dl className="xray-facts">
               <dt>Nazwa</dt><dd>{value(company?.name)}</dd>
               <dt>KRS</dt><dd>{value(company?.krs)}</dd>
               <dt>NIP</dt><dd>{value(company?.nip)}</dd>
               <dt>REGON</dt><dd>{value(company?.regon)}</dd>
-              <dt>Forma prawna</dt><dd>{value(company?.legalForm)}</dd>
+              <dt>Forma prawna</dt><dd>{polishCode(company?.legalForm, legalFormLabels)}</dd>
               <dt>Adres</dt><dd>{value(company?.address)}</dd>
-              <dt>Kraj</dt><dd>{value(company?.country)}</dd>
-              <dt>Status działalności</dt><dd>{value(company?.activityStatus)}</dd>
+              <dt>Kraj</dt><dd>{company?.country === "PL" ? "Polska" : value(company?.country)}</dd>
+              <dt>Status działalności</dt><dd>{polishCode(company?.activityStatus, activityStatusLabels)}</dd>
               <dt>Data wpisu</dt><dd>{value(company?.registeredAt)}</dd>
               <dt>Ostatnia zmiana</dt><dd>{value(company?.lastChangedAt)}</dd>
               <dt>PKD</dt><dd>{value(company?.mainPkd)}</dd>
-              <dt>Kapitał zakładowy</dt><dd>{value(company?.shareCapital)}</dd>
+              <dt>Kapitał zakładowy</dt><dd>{capitalInThousands(company?.shareCapital)}</dd>
               <dt>Zasady reprezentacji</dt><dd>{value(company?.representation)}</dd>
             </dl>
           </section>
           <section className="kys-panel" aria-label="Rejestry i statusy">
             <h3>Rejestry i statusy</h3>
             <dl className="xray-facts">
-              <dt>Odpytane rejestry</dt><dd>{data?.queriedRegisters.length ? data.queriedRegisters.join(", ") : "brak danych"}</dd>
-              <dt>Zaległości podatkowe</dt><dd>brak danych</dd>
-              <dt>Postępowanie komornicze</dt><dd>brak danych</dd>
-              <dt>Kurator</dt><dd>brak danych</dd>
-              <dt>Likwidacja / zawieszenie</dt><dd>brak danych</dd>
-              <dt>Upadłość / restrukturyzacja</dt><dd>brak danych</dd>
-              <dt>Status VAT / VIES</dt><dd>brak danych</dd>
+              <dt>Odpytane rejestry</dt><dd>{data?.queriedRegisters.length ? data.queriedRegisters.map((name) => registerLabels[name] ?? name).join(", ") : "nie ustalono"}</dd>
+              <dt>Wpis w Krajowym Rejestrze Zadłużonych</dt><dd>{yesNo(data?.registryChecks?.krzListed)}</dd>
+              <dt>Podatnik VAT czynny</dt><dd>{yesNo(data?.registryChecks?.vatActive)}</dd>
+              <dt>Podatnik VAT UE</dt><dd>{yesNo(data?.registryChecks?.euVat)}</dd>
             </dl>
           </section>
         </div>
@@ -152,11 +191,11 @@ export function VerclyKysMount({ section }: { section: SectionEnvelope<VerclyKys
           <section className="kys-panel" aria-label="Listy sankcyjne i ostrzeżenia">
             <h3>Listy sankcyjne i ostrzeżenia</h3>
             {lists.length ? <table className="kys-lists"><thead><tr><th>Lista</th><th>Wynik</th></tr></thead><tbody>
-              {lists.map((entry) => <tr key={`${entry.type}:${entry.name}`}><td>{verclyListLabels[entry.name] ?? entry.name.replaceAll("_", " ")}</td><td>{entry.matched ? "trafienie" : "brak trafienia"}</td></tr>)}
+              {lists.map((entry) => <tr key={`${entry.type}:${entry.name}`}><td>{verclyListLabels[entry.name] ?? entry.name.replaceAll("_", " ")}</td><td>{yesNo(entry.matched)}</td></tr>)}
             </tbody></table> : <p>brak danych</p>}
           </section>
         </div>
-        <p className="kys-note">Stan na dzień: {value(data?.stateAsOf)} · ID raportu: {value(data?.reportId)} · identyfikator zapytania: {value(data?.correlationId)}. Brak wpisów w raporcie nie przesądza o stanie rejestru, którego Vercly nie odpytał.</p>
+        <p className="kys-note">Stan na dzień: {value(data?.stateAsOf)} · ID raportu: {value(data?.reportId)} · identyfikator zapytania: {value(data?.correlationId)}. Brak wpisów w raporcie nie przesądza o stanie rejestru, który nie został sprawdzony.</p>
       </div>
     </SectionFrame>
   );

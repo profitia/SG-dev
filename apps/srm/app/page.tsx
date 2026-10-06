@@ -2,10 +2,22 @@
 
 import { useState, type FormEvent } from "react";
 import { FinancialDataMount, GeneralCompanyDataMount, latestAvailableFinancialYear, VerclyKysMount, type SupplierXRayCard } from "@profitia/srm-xray";
-import { emptyCard } from "../src/demo/fixture";
+
+type DisplayCard = {
+  identity: SupplierXRayCard["identity"];
+  general: Omit<SupplierXRayCard["general"], "source">;
+  financial: Omit<SupplierXRayCard["financial"], "source">;
+  kys: Omit<SupplierXRayCard["kys"], "source">;
+};
+
+const emptySection = () => ({ status: "NOT_REQUESTED" as const, retrievedAt: null, effectiveAt: null, data: null, warnings: [] });
+const emptyCard: DisplayCard = {
+  identity: { krs: null, nip: null, name: null },
+  general: emptySection(), financial: emptySection(), kys: emptySection(),
+};
 
 export default function Home() {
-  const [card, setCard] = useState<SupplierXRayCard>(emptyCard);
+  const [card, setCard] = useState<DisplayCard>(emptyCard);
   const [busy, setBusy] = useState(false);
   const [kysBusy, setKysBusy] = useState(false);
   const [kysError, setKysError] = useState<string | null>(null);
@@ -29,7 +41,7 @@ export default function Home() {
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(typeof payload.error === "string" ? payload.error : "Nie udało się pobrać raportu.");
-      setCard(payload as SupplierXRayCard);
+      setCard(payload as DisplayCard);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Nie udało się pobrać raportu.");
     } finally { setBusy(false); }
@@ -47,10 +59,10 @@ export default function Home() {
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(typeof payload.error === "string" ? payload.error : "Nie udało się pobrać raportu KYS.");
-      setCard((current) => ({ ...current, kys: payload.section as SupplierXRayCard["kys"] }));
+      setCard((current) => ({ ...current, kys: payload.section as DisplayCard["kys"] }));
     } catch (cause) {
       setKysError(cause instanceof Error ? cause.message : "Nie udało się pobrać raportu KYS.");
-      setCard((current) => ({ ...current, kys: { ...current.kys, status: "ERROR", retrievedAt: new Date().toISOString(), data: null, warnings: ["VERCLY_REQUEST_FAILED"] } }));
+      setCard((current) => ({ ...current, kys: { ...current.kys, status: "ERROR", retrievedAt: new Date().toISOString(), data: null, warnings: ["REPORT_WARNING"] } }));
     } finally { setKysBusy(false); }
   }
 
@@ -63,7 +75,7 @@ export default function Home() {
           <div className="appshield-search-fields">
             <input id="identifier" name="identifier" inputMode="numeric" pattern="[0-9]{10}" maxLength={10} placeholder="Wpisz numer NIP" required />
           </div>
-          <button type="submit" disabled={busy || kysBusy}>{busy ? "Pobieranie danych MGBI…" : "Pokaż dane MGBI"}</button>
+          <button type="submit" disabled={busy || kysBusy}>{busy ? "Pobieranie danych…" : "Pokaż dane firmy"}</button>
           {error && <p className="search-error" role="alert">{error}</p>}
         </form>
         {searched && !busy && !error && <>
@@ -78,7 +90,7 @@ export default function Home() {
           <FinancialDataMount section={card.financial} />
           <div className="kys-step">
             <h2>Raport KYS</h2>
-            <p>Raport Vercly jest pobierany dopiero na Twoje żądanie.</p>
+            <p>Raport KYS jest pobierany dopiero na Twoje żądanie.</p>
             <button type="button" onClick={fetchKys} disabled={kysBusy || !card.identity.nip}>
               {kysBusy ? "Przygotowywanie raportu KYS…" : card.kys.status === "NOT_REQUESTED" ? "Pobierz raport KYS" : "Pobierz raport KYS ponownie"}
             </button>
