@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { SupplierXRayMount, type SupplierXRayCard } from "@profitia/srm-xray";
 import { emptyCard } from "../src/demo/fixture";
 
@@ -9,7 +9,35 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
-  const [accessToken, setAccessToken] = useState("");
+  const [access, setAccess] = useState<"checking" | "locked" | "ready">("checking");
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/development-access", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : { authorized: false })
+      .then((state) => { if (active) setAccess(state.authorized ? "ready" : "locked"); })
+      .catch(() => { if (active) setAccess("locked"); });
+    return () => { active = false; };
+  }, []);
+
+  async function unlock(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const code = String(new FormData(form).get("code") ?? "");
+    form.reset();
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/development-access", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }), cache: "no-store",
+      });
+      if (!response.ok) throw new Error("Nieprawidłowy kod dostępu do Development.");
+      setAccess("ready");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Nie udało się odblokować Development.");
+    } finally { setBusy(false); }
+  }
 
   async function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -22,11 +50,12 @@ export default function Home() {
     try {
       const response = await fetch("/api/xray/lookup", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(Object.fromEntries(form.entries())),
         cache: "no-store",
       });
       const payload = await response.json();
+      if (response.status === 401) setAccess("locked");
       if (!response.ok) throw new Error(typeof payload.error === "string" ? payload.error : "Nie udało się pobrać raportu.");
       setCard(payload as SupplierXRayCard);
     } catch (cause) {
@@ -45,8 +74,18 @@ export default function Home() {
         </div>
         <aside className="demo-notice" role="note">
           <strong>DEVELOPMENT — RZECZYWISTE DANE VERCLY</strong>
-          <p>Raport FULL wymaga obecnie nazwy, strony WWW i telefonu firmy. Połączenie z MGBI ma później uzupełniać te dane automatycznie. Brakujące pola raportu są oznaczone „brak danych”.</p>
+          <p>Raport FULL wymaga obecnie nazwy i telefonu firmy. Połączenie z MGBI ma później uzupełniać te dane automatycznie. Brakujące pola raportu są oznaczone „brak danych”.</p>
         </aside>
+        {access === "checking" && <p role="status">Sprawdzanie dostępu do Development…</p>}
+        {access === "locked" && <form className="appshield-search development-unlock" aria-label="Dostęp do Development" onSubmit={unlock}>
+          <h2>Otwórz środowisko Development</h2>
+          <p>Kod wpisujesz raz na czas sesji. Wyszukiwanie firm nie wymaga ponownego wpisywania kodu.</p>
+          <label htmlFor="development-code">Kod dostępu Development</label>
+          <input id="development-code" name="code" type="password" autoComplete="off" required />
+          <button type="submit" disabled={busy}>{busy ? "Sprawdzanie…" : "Otwórz"}</button>
+          {error && <p className="search-error" role="alert">{error}</p>}
+        </form>}
+        {access === "ready" && <>
         <form className="appshield-search" aria-label="Wyszukaj firmę" onSubmit={search}>
           <label htmlFor="identifier">Identyfikator firmy</label>
           <div className="appshield-search-fields">
@@ -55,16 +94,14 @@ export default function Home() {
           </div>
           <div className="kys-input-grid">
             <label>Nazwa firmy<input name="name" maxLength={200} placeholder="Nazwa prawna" required /></label>
-            <label>Strona WWW<input name="website" type="url" maxLength={300} placeholder="https://..." required /></label>
             <label>Telefon firmy<input name="phone" type="tel" maxLength={40} placeholder="+48..." required /></label>
-            <label>Kod dostępu Development<input value={accessToken} onChange={(event) => setAccessToken(event.target.value)} type="password" autoComplete="off" required /></label>
           </div>
           <button type="submit" disabled={busy}>{busy ? "Pobieranie raportu…" : "Pobierz raport KYS"}</button>
-          <small>Kod dostępu jest używany tylko do bieżącego zapytania i nie jest zapisywany w przeglądarce.</small>
           {error && <p className="search-error" role="alert">{error}</p>}
         </form>
         <p className="harness-link"><a href="/harness">Sprawdź próbki techniczne modułów</a></p>
         {searched && !busy && !error && <SupplierXRayMount card={card} />}
+        </>}
       </div>
     </main>
   );

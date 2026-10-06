@@ -3,7 +3,7 @@ import type { SectionEnvelope, VerclyKysData } from "@profitia/srm-xray";
 export type VerclyKysRequest = {
   identifier: { type: "NIP" | "KRS"; value: string };
   name: string;
-  website: string;
+  website?: string;
   phone: string;
 };
 
@@ -74,11 +74,11 @@ function mapReport(report: unknown, requested: VerclyKysRequest, fallbackCorrela
   const reportId = string(header?.Id);
   const complete = body.IsComplete === true;
   const entity = record(body.Entity);
-  const providerId = entity && (requested.identifier.type === "KRS" ? identifier(entity, "ID")
+  const providerId = entity && (requested.identifier.type === "KRS" ? identifier(entity, "KRS")
     : validNip(identifier(entity, "VatID")) ?? validNip(identifier(entity, "ID")));
   if (entity && (!providerId || providerId.replace(/\D/g, "") !== requested.identifier.value)) throw new Error("IDENTIFIER_MISMATCH");
-  const entityId = entity ? identifier(entity, "ID") : null;
-  const vatNip = entity ? validNip(identifier(entity, "VatID")) : null;
+  const entityKrs = entity ? identifier(entity, "KRS") : null;
+  const entityNip = entity ? validNip(identifier(entity, "VatID")) ?? validNip(identifier(entity, "ID")) : null;
 
   // This is an allowlist projection. Never persist the provider response, person records,
   // free-text analysis, raw error messages or personal identifiers.
@@ -92,8 +92,8 @@ function mapReport(report: unknown, requested: VerclyKysRequest, fallbackCorrela
     })) : [];
   const company = entity ? {
     name: string(entity.Name),
-    krs: requested.identifier.type === "KRS" ? providerId : entityId && /^[0-9]{10}$/.test(entityId) && entityId !== providerId ? entityId : null,
-    nip: requested.identifier.type === "NIP" ? providerId : vatNip && vatNip !== providerId ? vatNip : null,
+    krs: requested.identifier.type === "KRS" ? providerId : entityKrs,
+    nip: requested.identifier.type === "NIP" ? providerId : entityNip,
     regon: identifier(entity, "Regon"),
     legalForm: attribute(entity, "NormalizedDetailLegalForm", "DetailLegalForm", "MainLegalForm"),
     address: [attribute(entity, "Street", "KrsAddrStreet"), attribute(entity, "KrsAddrBuildingNo"), attribute(entity, "KrsAddrZipCode"), attribute(entity, "City", "KrsAddrCity")].filter(Boolean).join(", ") || null,
@@ -141,8 +141,8 @@ async function jsonRequest(fetcher: typeof fetch, url: string, init: RequestInit
 export async function fetchVerclyKys(request: VerclyKysRequest, options: Options = {}): Promise<VerclyKysResult> {
   if (!/^[0-9]{10}$/.test(request.identifier.value)) throw new Error("Invalid NIP or KRS");
   if (!request.name.trim() || !request.phone.trim()) throw new Error("Company name and phone are required for FULL verification");
-  const website = new URL(request.website);
-  if (website.protocol !== "https:") throw new Error("Company website must use HTTPS");
+  const website = request.website ? new URL(request.website) : null;
+  if (website && website.protocol !== "https:") throw new Error("Company website must use HTTPS");
   const apiKey = options.apiKey ?? process.env.VERCLY_API_KEY;
   const baseUrl = options.baseUrl ?? process.env.VERCLY_API_BASE_URL;
   if (!apiKey || !baseUrl) return failure("VERCLY_NOT_CONFIGURED", (options.now ?? (() => new Date()))().toISOString());
@@ -156,15 +156,26 @@ export async function fetchVerclyKys(request: VerclyKysRequest, options: Options
   try {
     const started = await jsonRequest(fetcher, new URL("/api/verifications", base).toString(), {
       method: "POST", headers, body: JSON.stringify([{
-        Id: request.identifier.value, Country: "PL", Name: request.name.trim(),
-        WWW: website.toString(), PhoneNo: request.phone.trim(), VerificationType: "FULL",
+        ...(request.identifier.type === "KRS" ? { RegisterId: request.identifier.value } : { Id: request.identifier.value }),
+        Country: "PL", Name: request.name.trim(),
+        ...(website ? { WWW: website.toString() } : {}),
+        PhoneNo: request.phone.trim(), VerificationType: "FULL",
       }]),
     });
     correlationId = string(items(started)[0]);
     if (!correlationId || !/^[A-Za-z0-9_-]{8,100}$/.test(correlationId)) throw new Error("INVALID_CORRELATION_ID");
     const deadline = Date.now() + (options.pollTimeoutMs ?? 60_000);
+    await sleep(options.pollIntervalMs ?? 3_000);
     while (true) {
-      const payload = await jsonRequest(fetcher, new URL(`/api/verifications/${correlationId}`, base).toString(), { method: "GET", headers });
+      let payload: unknown;
+      try {
+        payload = await jsonRequest(fetcher, new URL(`/api/verifications/${correlationId}`, base).toString(), { method: "GET", headers });
+      } catch (error) {
+        if (!(error instanceof Error) || error.message !== "HTTP_404") throw error;
+        if (Date.now() >= deadline) return failure("VERCLY_REPORT_NOT_READY", now().toISOString(), correlationId);
+        await sleep(options.pollIntervalMs ?? 3_000);
+        continue;
+      }
       if (!Array.isArray(payload) || !payload.length) throw new Error("INVALID_REPORT");
       const mapped = mapReport(payload[0], request, correlationId, now().toISOString());
       if (mapped.section.status !== "PENDING") return mapped;
