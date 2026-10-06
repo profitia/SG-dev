@@ -59,6 +59,26 @@ export type VerclyKysData = {
   isComplete: boolean;
   queriedRegisters: readonly string[];
   stateAsOf: string | null;
+  company?: {
+    name: string | null;
+    krs: string | null;
+    nip: string | null;
+    regon: string | null;
+    legalForm: string | null;
+    address: string | null;
+    country: string | null;
+    activityStatus: string | null;
+    registeredAt: string | null;
+    lastChangedAt: string | null;
+    mainPkd: string | null;
+    shareCapital: string | null;
+    representation: string | null;
+  };
+  screenedLists?: readonly { name: string; type: string; matched: boolean }[];
+  beneficialOwnersCount?: number | null;
+  relatedPersonsCount?: number | null;
+  pepPositionsCount?: number | null;
+  riskLevel?: string | null;
 };
 
 export type SupplierXRayCard = {

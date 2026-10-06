@@ -30,6 +30,25 @@ body { margin: 0; }
 .appshield-search-fields { display: flex; gap: 12px; }
 .appshield-search select { padding: 12px 14px; border: 1px solid #afc2c8; border-radius: 8px; background: white; font: inherit; }
 .appshield-search button:disabled { opacity: .5; cursor: not-allowed; }
+.appshield-search button { margin-top: 16px; }
+.kys-input-grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px !important; margin-top: 18px; }
+.kys-input-grid label { margin: 0; font-size: .85rem; }
+.kys-input-grid input { display: block; width: 100%; margin-top: 7px; }
+.xray-card .xray-section:last-child { grid-column: 1 / -1; }
+.kys-report { margin-top: 20px; }
+.kys-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 16px; border-top: 3px solid #52337f; background: #f3f0fa; }
+.kys-summary strong { flex-basis: 100%; font-size: 1.15rem; }
+.kys-summary span { padding: 6px 9px; background: white; border-radius: 5px; font-size: .82rem; }
+.kys-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+.kys-panel { border: 1px solid #d9e2e5; min-width: 0; }
+.kys-panel h3 { margin: 0; padding: 11px 14px; color: white; background: #264c7e; font-size: .9rem; text-transform: uppercase; letter-spacing: .04em; }
+.kys-panel .xray-facts { margin: 0; padding: 14px; }
+.kys-panel .xray-facts dt, .kys-panel .xray-facts dd { padding: 5px 0; border-bottom: 1px solid #edf1f3; }
+.kys-panel > p { padding: 0 14px; }
+.kys-lists { border-collapse: collapse; width: 100%; font-size: .85rem; }
+.kys-lists th, .kys-lists td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #e2e8ec; }
+.kys-lists tr:nth-child(even) { background: #f5f7f8; }
+.kys-note { color: #5b7179; font-size: .78rem; line-height: 1.5; }
 .search-error { color: #a12323; font-weight: 700; }
 .search-caption { color: #34535d; }
 .harness-link { margin: -14px 0 24px; }
@@ -37,3 +56,4 @@ body { margin: 0; }
 .harness-nav { display: flex; flex-wrap: wrap; gap: 16px; margin: 24px 0; }
 .harness-module { max-width: 560px; }
 @media (max-width: 600px) { .appshield-search-fields { flex-direction: column; } }
+@media (max-width: 700px) { .kys-input-grid, .kys-grid { grid-template-columns: 1fr; } }
