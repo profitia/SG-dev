@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { clearDevelopmentSession, hasDevelopmentAccess, hasDevelopmentSession, issueDevelopmentSession, verifyDevelopmentCode } from "./development-access";
+import { clearDevelopmentSession, hasDevelopmentAccess, hasDevelopmentSession, isSameOriginRequest, issueDevelopmentSession, verifyDevelopmentCode } from "./development-access";
 
 test("Development code creates a bounded HttpOnly session for same-origin lookup", () => {
   const previousEnvironment = process.env.TARGET_ENVIRONMENT;
@@ -27,4 +27,17 @@ test("Development code creates a bounded HttpOnly session for same-origin lookup
     if (previousToken === undefined) delete process.env.SRM_DEVELOPMENT_ACCESS_TOKEN;
     else process.env.SRM_DEVELOPMENT_ACCESS_TOKEN = previousToken;
   }
+});
+
+test("accepts a public HTTPS origin behind Render's internal proxy without admitting another site", () => {
+  const url = "http://0.0.0.0:10000/api/development-access";
+  assert.equal(isSameOriginRequest(new Request(url, { method: "POST", headers: {
+    host: "srm-development-runtime.onrender.com", origin: "https://srm-development-runtime.onrender.com",
+  } })), true);
+  assert.equal(isSameOriginRequest(new Request(url, { method: "POST", headers: {
+    host: "srm-development-runtime.onrender.com", origin: "https://attacker.example",
+  } })), false);
+  assert.equal(isSameOriginRequest(new Request(url, { method: "POST", headers: {
+    host: "srm-development-runtime.onrender.com", origin: "http://srm-development-runtime.onrender.com",
+  } })), false);
 });

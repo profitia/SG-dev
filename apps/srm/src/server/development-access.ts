@@ -55,11 +55,21 @@ export function hasDevelopmentSession(request: Request, now = Date.now()): boole
   return equal(signature(match[1], configured), match[3]);
 }
 
+export function isSameOriginRequest(request: Request): boolean {
+  const origin = request.headers.get("origin");
+  if (!origin) return true;
+  try {
+    const from = new URL(origin);
+    const host = request.headers.get("host") ?? new URL(request.url).host;
+    return from.host === host && (from.protocol === "https:" ||
+      (/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host) && from.protocol === "http:"));
+  } catch { return false; }
+}
+
 export function hasDevelopmentAccess(request: Request, now = Date.now()): boolean {
   const configured = secret();
   if (!configured) return false;
   const supplied = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (supplied && equal(configured, supplied)) return true;
-  const origin = request.headers.get("origin");
-  return (!origin || origin === new URL(request.url).origin) && hasDevelopmentSession(request, now);
+  return isSameOriginRequest(request) && hasDevelopmentSession(request, now);
 }
