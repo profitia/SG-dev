@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { FinancialDataMount, GeneralCompanyDataMount, JdgRegistryMount, latestAvailableFinancialYear, VerclyKysMount, type JdgRegistryData, type SectionEnvelope, type SupplierXRayCard } from "@profitia/srm-xray";
 
 type DisplayCard = {
@@ -37,12 +37,22 @@ function KysStep({ section, entityType, busy, error, onFetch, canFetch }: {
 }
 
 export default function Home() {
+  const reportGeneration = useRef(0);
   const [result, setResult] = useState<SearchResult | null>(null);
   const [kys, setKys] = useState<DisplayCard["kys"]>(emptySection());
   const [busy, setBusy] = useState(false);
   const [kysBusy, setKysBusy] = useState(false);
   const [kysError, setKysError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  function newReport() {
+    if (busy) return;
+    reportGeneration.current += 1;
+    setResult(null);
+    setKys(emptySection());
+    setKysBusy(false);
+    setKysError(null);
+    setError(null);
+  }
   async function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy || kysBusy) return;
@@ -72,6 +82,7 @@ export default function Home() {
     const isJdg = result?.entityType === "JDG";
     const nip = isJdg ? result.nip : result?.entityType === "COMPANY" ? result.card.identity.nip : null;
     if (busy || kysBusy || !nip) return;
+    const generation = reportGeneration.current;
     setKysBusy(true);
     setKysError(null);
     const pending = { ...emptySection(), status: "PENDING" as const };
@@ -82,27 +93,32 @@ export default function Home() {
         body: JSON.stringify({ identifier: nip }), cache: "no-store",
       });
       const payload = await response.json();
+      if (generation !== reportGeneration.current) return;
       if (!response.ok) throw new Error(typeof payload.error === "string" ? payload.error : "Nie udało się pobrać raportu KYS.");
       setKys(payload.section as DisplayCard["kys"]);
     } catch (cause) {
+      if (generation !== reportGeneration.current) return;
       setKysError(cause instanceof Error ? cause.message : "Nie udało się pobrać raportu KYS.");
       const failed: DisplayCard["kys"] = { ...emptySection(), status: "ERROR", retrievedAt: new Date().toISOString(), warnings: ["REPORT_WARNING"] };
       setKys(failed);
-    } finally { setKysBusy(false); }
+    } finally { if (generation === reportGeneration.current) setKysBusy(false); }
   }
 
   return (
     <main className="appshield">
-      <header className="appshield-header"><h1>SRM X-Ray</h1></header>
+      <header className="appshield-header">
+        <h1>SRM X-Ray</h1>
+        {result && <button type="button" className="appshield-new-report" onClick={newReport} disabled={busy}>Nowy raport</button>}
+      </header>
       <div className="appshield-content">
-        <form className="appshield-search" aria-label="Wyszukaj firmę" onSubmit={search}>
+        {!result && <form className="appshield-search" aria-label="Wyszukaj firmę" onSubmit={search}>
           <label htmlFor="identifier">Wpisz numer NIP</label>
           <div className="appshield-search-fields">
             <input id="identifier" name="identifier" inputMode="numeric" pattern="[0-9]{10}" maxLength={10} placeholder="Wpisz numer NIP" required />
           </div>
           <button type="submit" disabled={busy || kysBusy}>{busy ? "Sprawdzanie rejestru i pobieranie danych…" : "Pokaż dane firmy"}</button>
           {error && <p className="search-error" role="alert">{error}</p>}
-        </form>
+        </form>}
         {result?.entityType === "JDG" && !busy && <>
           <section className="company-summary" aria-label="Podsumowanie działalności">
             <div><h2>{result.section.data?.entries[0]?.name ?? "brak danych"}</h2><p>NIP: {result.nip} · Rejestr: JDG</p></div>

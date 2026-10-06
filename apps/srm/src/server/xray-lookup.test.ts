@@ -16,6 +16,24 @@ test("public response omits provider provenance and vendor warning codes", () =>
   assert.ok(!publicJson.includes("record"));
 });
 
+test("public report preserves safe, distinct reasons for KYS notices and missing financial facts", () => {
+  const source = { provider: "VERCLY" as const, model: "KYS_NIP", recordId: "private-id" };
+  const kys = toPublicSection({ status: "PARTIAL", source, retrievedAt: null, effectiveAt: null, data: null,
+    warnings: ["VERCLY_SEVERITY_0", "VERCLY_SEVERITY_0", "VERCLY_INCOMPLETE_SOURCES"] });
+  assert.deepEqual(kys.warnings, ["KYS_PROVIDER_NOTICE", "KYS_INCOMPLETE_SOURCES"]);
+  const financial = toPublicSection({ status: "EMPTY", source: { provider: "MGBI", model: "pl-krs-rdf-record", recordId: null },
+    retrievedAt: null, effectiveAt: null, data: null, warnings: ["MGBI_NO_STRUCTURED_FINANCIAL_DATA"] });
+  assert.deepEqual(financial.warnings, ["FINANCIAL_NO_STRUCTURED_DATA"]);
+  assert.ok(!JSON.stringify({ kys, financial }).includes("VERCLY"));
+  assert.ok(!JSON.stringify({ kys, financial }).includes("MGBI"));
+});
+
+test("public report keeps unknown provider errors generic", () => {
+  const section = toPublicSection({ status: "ERROR", source: { provider: "MGBI", model: "pl-krs-rdf-record", recordId: null },
+    retrievedAt: null, effectiveAt: null, data: null, warnings: ["MGBI_HTTP_401"] });
+  assert.deepEqual(section.warnings, ["REPORT_WARNING"]);
+});
+
 test("accepts a checksum-valid NIP as the only search value", () => {
   assert.deepEqual(validateXrayRequest({ identifier: "527-244-39-55" }), {
     identifier: { type: "NIP", value: "5272443955" },
@@ -127,6 +145,28 @@ test("JDG KYS mount shows the sole proprietor form without company-only fields",
   assert.ok(!html.includes("Kapitał zakładowy"));
   assert.ok(!html.includes("Zasady reprezentacji"));
   assert.ok(!html.includes("VERCLY"));
+});
+
+test("JDG KYS notice does not claim the complete report is missing", () => {
+  const section: SectionEnvelope<VerclyKysData> = {
+    status: "PARTIAL", source: { provider: "VERCLY", model: "KYS_NIP", recordId: null },
+    retrievedAt: null, effectiveAt: null, warnings: ["KYS_PROVIDER_NOTICE"],
+    data: { correlationId: "request", reportId: null, isComplete: true, queriedRegisters: [], stateAsOf: null,
+      registryChecks: { krzListed: null, vatActive: null, euVat: null }, screenedLists: [] },
+  };
+  const html = renderToStaticMarkup(createElement(VerclyKysMount, { section, entityType: "JDG" }));
+  assert.match(html, /Raport KYS zawiera uwagę dotyczącą części sprawdzeń/);
+  assert.ok(!html.includes("Źródło nie zwróciło pełnych danych"));
+});
+
+test("financial no-data message identifies absent structured facts", () => {
+  const section: SectionEnvelope<FinancialData> = {
+    status: "EMPTY", source: { provider: "MGBI", model: "pl-krs-rdf-record", recordId: null },
+    retrievedAt: null, effectiveAt: null, data: null, warnings: ["FINANCIAL_NO_STRUCTURED_DATA"],
+  };
+  const html = renderToStaticMarkup(createElement(FinancialDataMount, { section }));
+  assert.match(html, /Nie znaleziono ustrukturyzowanych danych finansowych dla podanego NIP/);
+  assert.ok(!html.includes("Źródło nie zwróciło pełnych danych"));
 });
 
 test("KYS pending state has an honest indeterminate progress indicator", () => {
