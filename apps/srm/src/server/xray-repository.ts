@@ -7,24 +7,6 @@ export type Section = "general" | "financial" | "kys";
 export type PersistedSection = Section | "jdg";
 export type TerminalStatus = "SUCCESS" | "NO_DATA" | "TIMEOUT" | "ERROR";
 
-const developmentDailyLookupLimit = 60;
-
-export class DevelopmentLookupLimitError extends Error {
-  constructor() { super("Development daily lookup limit reached"); }
-}
-
-export async function enforceDevelopmentLookupBudget(client: Pick<PoolClient, "query">, organizationId: string): Promise<void> {
-  // This lock serializes the count and the subsequent lookup insert within
-  // the surrounding transaction, including across Render instances.
-  await client.query("SELECT pg_advisory_xact_lock(hashtext('srm-development-lookups'), hashtext($1::text))", [organizationId]);
-  const usage = await client.query<{ used: string }>(
-    "SELECT count(*)::text AS used FROM srm.lookup_requests WHERE organization_id = $1 " +
-    "AND requested_at >= date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'",
-    [organizationId],
-  );
-  if (Number(usage.rows[0]?.used ?? 0) >= developmentDailyLookupLimit) throw new DevelopmentLookupLimitError();
-}
-
 export async function registerOrganization(organizationId: string, slug: string): Promise<void> {
   await withOrganization(organizationId, async (client) => {
     await client.query("INSERT INTO srm.organizations(id, slug) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING", [organizationId, slug]);
@@ -34,9 +16,6 @@ export async function registerOrganization(organizationId: string, slug: string)
 export async function createLookup(organizationId: string, identifier: Identifier, entityType: "COMPANY" | "JDG" = "COMPANY"): Promise<{ supplierId: string; requestId: string }> {
   if (!/^[0-9]{10}$/.test(identifier.value)) throw new Error("NIP or KRS must have ten digits");
   return withOrganization(organizationId, async (client) => {
-    if (process.env.TARGET_ENVIRONMENT === "development") {
-      await enforceDevelopmentLookupBudget(client, organizationId);
-    }
     const column = identifier.type === "NIP" ? "nip" : "krs";
     const supplier = await client.query<{ id: string }>(
       "INSERT INTO srm.suppliers(organization_id, " + column + ") VALUES ($1, $2) " +

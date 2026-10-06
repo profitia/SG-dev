@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { isSameOriginRequest } from "../../../../src/server/request-origin";
 import { runXrayLookup, toPublicSection, validateXrayRequest } from "../../../../src/server/xray-lookup";
-import { DevelopmentLookupLimitError } from "../../../../src/server/xray-repository";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,7 +25,6 @@ export async function POST(request: Request) {
       kys: toPublicSection(card.kys),
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    if (error instanceof DevelopmentLookupLimitError) return NextResponse.json({ error: "Dzisiejszy limit zapytań Development został osiągnięty. Spróbuj jutro." }, { status: 429 });
     return NextResponse.json({ error: "Nie udało się zapisać raportu. Spróbuj ponownie później." }, { status: 503 });
   }
 }

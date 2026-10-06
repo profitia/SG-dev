@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { searchRegistryByNip } from "../../../../src/server/registry-search";
 import { isSameOriginRequest } from "../../../../src/server/request-origin";
-import { DevelopmentLookupLimitError } from "../../../../src/server/xray-repository";
 import { toPublicSection, validateXrayRequest } from "../../../../src/server/xray-lookup";
 
 export const runtime = "nodejs";
@@ -37,7 +36,6 @@ export async function POST(request: Request) {
     if (result.entityType === "NOT_FOUND") return NextResponse.json({ error: "Nie znaleziono podmiotu o podanym numerze NIP." }, { status: 404, headers });
     return NextResponse.json({ error: "Nie udało się ustalić typu podmiotu. Spróbuj ponownie później." }, { status: 503, headers });
   } catch (error) {
-    if (error instanceof DevelopmentLookupLimitError) return NextResponse.json({ error: "Dzisiejszy limit zapytań Development został osiągnięty. Spróbuj jutro." }, { status: 429 });
     return NextResponse.json({ error: "Nie udało się pobrać i zapisać danych. Spróbuj ponownie później." }, { status: 503 });
   }
 }
