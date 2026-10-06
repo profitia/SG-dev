@@ -85,13 +85,69 @@ export function FinancialDataMount({ section }: { section: SectionEnvelope<Finan
 
 export function VerclyKysMount({ section }: { section: SectionEnvelope<VerclyKysData> }) {
   const data = section.data;
+  const company = data?.company;
+  const countLabel = (count: number | null | undefined) => count == null ? "brak danych" : `${count} wpisów w raporcie`;
+  const lists = data?.screenedLists ?? [];
   return (
     <SectionFrame title="Raport KYS" section={section}>
-      <dl className="xray-facts">
-        <dt>Identyfikator raportu</dt><dd>{value(data?.reportId)}</dd>
-        <dt>Stan na dzień</dt><dd>{value(data?.stateAsOf)}</dd>
-        <dt>Rejestry</dt><dd>{data?.queriedRegisters.length ? data.queriedRegisters.join(", ") : "brak danych"}</dd>
-      </dl>
+      <div className="kys-report">
+        <div className="kys-summary">
+          <strong>{value(company?.name)}</strong>
+          <span>Poziom ryzyka: {value(data?.riskLevel)}</span>
+          <span>Sankcje: {lists.some((entry) => entry.type.toUpperCase() === "SANCTIONS" && entry.matched) ? "trafienie na liście" : lists.some((entry) => entry.type.toUpperCase() === "SANCTIONS") ? "brak trafienia w sprawdzonych listach" : "brak danych"}</span>
+          <span>Stan raportu: {data?.isComplete ? "zakończony" : "w toku"}</span>
+        </div>
+        <div className="kys-grid">
+          <section className="kys-panel" aria-label="Dane rejestrowe Vercly">
+            <h3>Dane rejestrowe</h3>
+            <dl className="xray-facts">
+              <dt>Nazwa</dt><dd>{value(company?.name)}</dd>
+              <dt>KRS</dt><dd>{value(company?.krs)}</dd>
+              <dt>NIP</dt><dd>{value(company?.nip)}</dd>
+              <dt>REGON</dt><dd>{value(company?.regon)}</dd>
+              <dt>Forma prawna</dt><dd>{value(company?.legalForm)}</dd>
+              <dt>Adres</dt><dd>{value(company?.address)}</dd>
+              <dt>Kraj</dt><dd>{value(company?.country)}</dd>
+              <dt>Status działalności</dt><dd>{value(company?.activityStatus)}</dd>
+              <dt>Data wpisu</dt><dd>{value(company?.registeredAt)}</dd>
+              <dt>Ostatnia zmiana</dt><dd>{value(company?.lastChangedAt)}</dd>
+              <dt>PKD</dt><dd>{value(company?.mainPkd)}</dd>
+              <dt>Kapitał zakładowy</dt><dd>{value(company?.shareCapital)}</dd>
+              <dt>Zasady reprezentacji</dt><dd>{value(company?.representation)}</dd>
+            </dl>
+          </section>
+          <section className="kys-panel" aria-label="Rejestry i statusy">
+            <h3>Rejestry i statusy</h3>
+            <dl className="xray-facts">
+              <dt>Odpytane rejestry</dt><dd>{data?.queriedRegisters.length ? data.queriedRegisters.join(", ") : "brak danych"}</dd>
+              <dt>Zaległości podatkowe</dt><dd>brak danych</dd>
+              <dt>Postępowanie komornicze</dt><dd>brak danych</dd>
+              <dt>Kurator</dt><dd>brak danych</dd>
+              <dt>Likwidacja / zawieszenie</dt><dd>brak danych</dd>
+              <dt>Upadłość / restrukturyzacja</dt><dd>brak danych</dd>
+              <dt>Status VAT / VIES</dt><dd>brak danych</dd>
+            </dl>
+          </section>
+        </div>
+        <div className="kys-grid">
+          <section className="kys-panel" aria-label="Osoby i beneficjenci">
+            <h3>Osoby i beneficjenci</h3>
+            <dl className="xray-facts">
+              <dt>Reprezentanci i osoby powiązane</dt><dd>{countLabel(data?.relatedPersonsCount)}</dd>
+              <dt>Beneficjenci rzeczywiści</dt><dd>{countLabel(data?.beneficialOwnersCount)}</dd>
+              <dt>Pozycje PEP</dt><dd>{countLabel(data?.pepPositionsCount)}</dd>
+            </dl>
+            <p className="kys-note">Dane osobowe i identyfikatory osób nie są przechowywane w tej wersji karty.</p>
+          </section>
+          <section className="kys-panel" aria-label="Listy sankcyjne i ostrzeżenia">
+            <h3>Listy sankcyjne i ostrzeżenia</h3>
+            {lists.length ? <table className="kys-lists"><thead><tr><th>Lista</th><th>Wynik</th></tr></thead><tbody>
+              {lists.map((entry) => <tr key={`${entry.type}:${entry.name}`}><td>{entry.name.replaceAll("_", " ")}</td><td>{entry.matched ? "trafienie" : "brak trafienia"}</td></tr>)}
+            </tbody></table> : <p>brak danych</p>}
+          </section>
+        </div>
+        <p className="kys-note">Stan na dzień: {value(data?.stateAsOf)} · ID raportu: {value(data?.reportId)} · identyfikator zapytania: {value(data?.correlationId)}. Brak wpisów w raporcie nie przesądza o stanie rejestru, którego Vercly nie odpytał.</p>
+      </div>
     </SectionFrame>
   );
 }

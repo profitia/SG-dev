@@ -3,9 +3,23 @@ import pg, { type PoolClient } from "pg";
 export type DatabasePool = Pick<pg.Pool, "connect">;
 let sharedPool: pg.Pool | undefined;
 
+export function runtimeConnectionString(environment: Readonly<Record<string, string | undefined>> = process.env): string {
+  if (environment.SRM_APP_DATABASE_URL) return environment.SRM_APP_DATABASE_URL;
+  const host = environment.SRM_APP_DATABASE_HOST;
+  const password = environment.SRM_APP_DATABASE_PASSWORD;
+  if (!host || !password) throw new Error("SRM application database configuration is required");
+  if (!/^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.neon\.tech$/i.test(host)) {
+    throw new Error("SRM application database host is invalid");
+  }
+  const url = new URL(`postgresql://srm_app_runtime@${host}/srm_app`);
+  url.password = password;
+  url.searchParams.set("sslmode", "require");
+  url.searchParams.set("channel_binding", "require");
+  return url.toString();
+}
+
 export function getPool(): pg.Pool {
-  const connectionString = process.env.SRM_APP_DATABASE_URL;
-  if (!connectionString) throw new Error("SRM_APP_DATABASE_URL is required");
+  const connectionString = runtimeConnectionString();
   sharedPool ??= new pg.Pool({ connectionString, max: 8 });
   return sharedPool;
 }

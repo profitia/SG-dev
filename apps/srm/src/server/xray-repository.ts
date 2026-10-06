@@ -85,6 +85,22 @@ export async function appendSnapshot(organizationId: string, input: SnapshotInpu
   });
 }
 
+export async function appendSectionProjection(
+  organizationId: string,
+  input: { supplierId: string; snapshotId: string; section: Section; data: unknown; version: number },
+): Promise<string> {
+  const serialized = JSON.stringify(input.data);
+  if (!serialized || !Number.isSafeInteger(input.version) || input.version < 1) throw new Error("A valid projection is required");
+  return withOrganization(organizationId, async (client) => {
+    const result = await client.query<{ id: string }>(
+      "INSERT INTO srm.section_projections(organization_id, supplier_id, snapshot_id, section, projection_version, data_json) " +
+      "VALUES ($1,$2,$3,$4,$5,$6::jsonb) RETURNING id",
+      [organizationId, input.supplierId, input.snapshotId, input.section, input.version, serialized],
+    );
+    return result.rows[0].id;
+  });
+}
+
 export interface FinancialFactInput {
   supplierId: string;
   snapshotId: string;
