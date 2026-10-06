@@ -82,3 +82,28 @@ test("keeps unknown financial schema out of displayed amounts", () => {
   assert.equal(result.candidates.length, 1);
   assert.deepEqual(result.section.warnings, ["MGBI_FINANCIAL_SCHEMA_OR_PERIOD_UNVERIFIED"]);
 });
+
+test("fetches RDF document details before presenting financial amounts", async () => {
+  const paths: string[] = [];
+  const result = await fetchMgbiFinancial(id, { apiKey: "test-secret", now: () => new Date(timestamp),
+    fetcher: (async (input) => {
+      const path = new URL(String(input)).pathname;
+      paths.push(path);
+      if (path.endsWith("/records")) return new Response(JSON.stringify({ results: [record({ content: undefined })], pages: 1 }), { status: 200 });
+      if (path.endsWith("/records/rdf-1")) return new Response(JSON.stringify(record()), { status: 200 });
+      throw new Error("unexpected endpoint");
+    }) as typeof fetch });
+  assert.deepEqual(paths, ["/v1/models/pl-krs-rdf-record/records", "/v1/models/pl-krs-rdf-record/records/rdf-1"]);
+  assert.equal(result.section.status, "SUCCESS");
+  assert.equal(result.section.data?.periods[0].facts.length, 2);
+});
+
+test("keeps metadata partial when RDF detail is rate limited", async () => {
+  const result = await fetchMgbiFinancial(id, { apiKey: "test-secret", now: () => new Date(timestamp),
+    fetcher: (async (input) => new Response(
+      new URL(String(input)).pathname.endsWith("/records") ? JSON.stringify({ results: [record({ content: undefined })] }) : "",
+      { status: new URL(String(input)).pathname.endsWith("/records") ? 200 : 429 })) as typeof fetch });
+  assert.equal(result.section.status, "PARTIAL");
+  assert.equal(result.section.data?.periods.length, 0);
+  assert.equal(result.section.warnings.includes("MGBI_DETAIL_HTTP_429"), true);
+});

@@ -120,26 +120,82 @@ export async function fetchMgbiFinancial(identifier: CompanyIdentifier, options:
   const apiKey = options.apiKey ?? process.env.MGBI_API_KEY;
   if (!apiKey?.trim()) throw new Error("MGBI_API_KEY is required");
   const scheme = options.authScheme ?? (process.env.MGBI_AUTH_SCHEME === "bearer" ? "bearer" : "raw");
-  const url = new URL("/v1/models/" + MODEL + "/records", options.baseUrl ?? "https://api.mgbi.pl");
-  url.searchParams.set("identifiers." + (identifier.type === "NIP" ? "pl_nip" : "pl_krs"), identifier.value);
-  url.searchParams.set("document.type", "financial_statement");
-  url.searchParams.set("per_page", "20");
-  for (const field of ["identifiers", "document", "content.schema", "content.standardized_fields"]) {
-    url.searchParams.append("content", field);
-  }
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 15_000);
+  const baseUrl = options.baseUrl ?? "https://api.mgbi.pl";
+  const listUrl = new URL("/v1/models/" + MODEL + "/records", baseUrl);
+  listUrl.searchParams.set("identifiers." + (identifier.type === "NIP" ? "pl_nip" : "pl_krs"), identifier.value);
+  listUrl.searchParams.set("document.type", "financial_statement");
+  listUrl.searchParams.set("per_page", "20");
+  const contentFields = ["identifiers", "document", "content.schema", "content.standardized_fields"];
+  for (const field of contentFields) listUrl.searchParams.append("content", field);
   const now = options.now ?? (() => new Date());
+  const headers = { Accept: "application/json", Authorization: scheme === "bearer" ? "Bearer " + apiKey.trim() : apiKey.trim() };
+  async function request(url: URL): Promise<Response> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 15_000);
+    try { return await (options.fetcher ?? fetch)(url, { method: "GET", cache: "no-store", signal: controller.signal, headers }); }
+    finally { clearTimeout(timer); }
+  }
   try {
-    const response = await (options.fetcher ?? fetch)(url, { method: "GET", cache: "no-store", signal: controller.signal,
-      headers: { Accept: "application/json", Authorization: scheme === "bearer" ? "Bearer " + apiKey.trim() : apiKey.trim() } });
+    const response = await request(listUrl);
     const retrievedAt = now().toISOString();
     if (!response.ok) return empty("ERROR", retrievedAt, "MGBI_HTTP_" + response.status, "HTTP_" + response.status);
     let body: unknown;
     try { body = await response.json(); } catch { return empty("ERROR", retrievedAt, "MGBI_INVALID_JSON", "INVALID_JSON"); }
-    const result = mapMgbiFinancialRecords(body, identifier, retrievedAt); return Number(object(body)?.pages ?? 1) > 1 ? { ...result, section: { ...result.section, status: "PARTIAL", warnings: [...result.section.warnings, "MGBI_ADDITIONAL_PAGES_NOT_FETCHED"] } } : result;
+    const listed = object(body)?.results;
+    if (!Array.isArray(listed)) return empty("ERROR", retrievedAt, "MGBI_INVALID_RESPONSE", "INVALID_RESPONSE");
+    const records: unknown[] = [];
+    const warnings: string[] = [];
+    const identityKey = identifier.type === "NIP" ? "pl_nip" : "pl_krs";
+    let rateLimited = false;
+    for (const listedRecord of listed) {
+      const item = object(listedRecord);
+      const recordId = str(item?.id);
+      if (!item || !recordId || str(object(item.identifiers)?.[identityKey]) !== identifier.value) {
+        records.push(listedRecord);
+        continue;
+      }
+      if (!/financial_statement|sprawozdanie_finansowe/i.test(str(object(item.document)?.type) ?? "")) {
+        records.push(listedRecord);
+        continue;
+      }
+      if (object(object(item.content)?.standardized_fields)) {
+        records.push(listedRecord);
+        continue;
+      }
+      if (rateLimited) { records.push(listedRecord); continue; }
+      const detailUrl = new URL("/v1/models/" + MODEL + "/records/" + encodeURIComponent(recordId), baseUrl);
+      for (const field of contentFields) detailUrl.searchParams.append("content", field);
+      try {
+        const detailResponse = await request(detailUrl);
+        if (!detailResponse.ok) {
+          warnings.push("MGBI_DETAIL_HTTP_" + detailResponse.status);
+          if (detailResponse.status === 429) rateLimited = true;
+          records.push(listedRecord);
+          continue;
+        }
+        let detail: unknown;
+        try { detail = await detailResponse.json(); }
+        catch { warnings.push("MGBI_DETAIL_INVALID_JSON"); records.push(listedRecord); continue; }
+        const exact = object(detail);
+        if (str(exact?.id) !== recordId || str(object(exact?.identifiers)?.[identityKey]) !== identifier.value) {
+          warnings.push("MGBI_DETAIL_IDENTIFIER_MISMATCH");
+          records.push(listedRecord);
+          continue;
+        }
+        records.push(detail);
+      } catch (error) {
+        warnings.push(error instanceof Error && error.name === "AbortError" ? "MGBI_DETAIL_TIMEOUT" : "MGBI_DETAIL_NETWORK_ERROR");
+        records.push(listedRecord);
+      }
+    }
+    const mapped = mapMgbiFinancialRecords({ results: records }, identifier, retrievedAt);
+    if (Number(object(body)?.pages ?? 1) > 1) warnings.push("MGBI_ADDITIONAL_PAGES_NOT_FETCHED");
+    if (!warnings.length) return mapped;
+    return { ...mapped, section: { ...mapped.section,
+      status: mapped.section.status === "SUCCESS" ? "PARTIAL" : mapped.section.status,
+      warnings: [...new Set([...mapped.section.warnings, ...warnings])] } };
   } catch (error) {
-    const timedOut = controller.signal.aborted || (error instanceof Error && error.name === "AbortError");
+    const timedOut = error instanceof Error && error.name === "AbortError";
     return empty("ERROR", now().toISOString(), timedOut ? "MGBI_TIMEOUT" : "MGBI_NETWORK_ERROR", timedOut ? "TIMEOUT" : "NETWORK_ERROR");
-  } finally { clearTimeout(timer); }
+  }
 }
