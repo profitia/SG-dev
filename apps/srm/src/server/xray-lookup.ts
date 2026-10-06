@@ -96,9 +96,9 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
   };
 }
 
-export async function runXrayKysLookup(organizationId: string, request: XrayLookupRequest): Promise<SupplierXRayCard["kys"]> {
+export async function runXrayKysLookup(organizationId: string, request: XrayLookupRequest, entityType: "COMPANY" | "JDG" = "COMPANY"): Promise<SupplierXRayCard["kys"]> {
   await registerOrganization(organizationId, "srm-development");
-  const lookup = await createLookup(organizationId, request.identifier);
+  const lookup = await createLookup(organizationId, request.identifier, entityType);
   const result = await fetchVerclyKys({ identifier: request.identifier });
   await persistSection(organizationId, lookup, "kys", result.section, result.errorCode, [], result.correlationId);
   return result.section;

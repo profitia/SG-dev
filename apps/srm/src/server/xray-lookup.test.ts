@@ -111,6 +111,24 @@ test("KYS mount expands provider sanctions codes to list names", () => {
   assert.ok(!html.includes("Źródło:"));
 });
 
+test("JDG KYS mount shows the sole proprietor form without company-only fields", () => {
+  const section: SectionEnvelope<VerclyKysData> = {
+    status: "PARTIAL", source: { provider: "VERCLY", model: "KYS_NIP", recordId: "jdg-report" },
+    retrievedAt: "2026-10-06T00:00:00Z", effectiveAt: null, warnings: ["VERCLY_SEVERITY_0"],
+    data: { correlationId: "jdg-request", reportId: "jdg-report", isComplete: true, queriedRegisters: [], stateAsOf: null,
+      company: { name: "Przykładowa JDG", krs: null, nip: "7972088368", regon: null, legalForm: "SOLE_PROPRIETORSHIP", address: null, country: "PL", activityStatus: "ACTIVE", registeredAt: null, lastChangedAt: null, mainPkd: null, shareCapital: null, representation: null },
+      registryChecks: { krzListed: null, vatActive: null, euVat: null },
+      screenedLists: [{ name: "uk_ofsi_sanctions", type: "SANCTIONS", matched: false }] },
+  };
+  const html = renderToStaticMarkup(createElement(VerclyKysMount, { section, entityType: "JDG" }));
+  assert.match(html, /Jednoosobowa działalność gospodarcza/);
+  assert.match(html, /UK Office of Financial Sanctions Implementation \(OFSI\)/);
+  assert.ok(!html.includes("<dt>KRS</dt>"));
+  assert.ok(!html.includes("Kapitał zakładowy"));
+  assert.ok(!html.includes("Zasady reprezentacji"));
+  assert.ok(!html.includes("VERCLY"));
+});
+
 test("KYS pending state has an honest indeterminate progress indicator", () => {
   const section: SectionEnvelope<VerclyKysData> = {
     status: "PENDING", source: { provider: "VERCLY", model: "KYS_NIP", recordId: null },

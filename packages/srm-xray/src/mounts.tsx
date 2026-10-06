@@ -135,7 +135,7 @@ export function FinancialDataMount({ section }: { section: DisplaySection<Financ
   );
 }
 
-export function VerclyKysMount({ section }: { section: DisplaySection<VerclyKysData> }) {
+export function VerclyKysMount({ section, entityType = "COMPANY" }: { section: DisplaySection<VerclyKysData>; entityType?: "COMPANY" | "JDG" }) {
   const data = section.data;
   const company = data?.company;
   const countLabel = (count: number | null | undefined) => count == null ? "brak danych" : `${count} wpisów w raporcie`;
@@ -154,7 +154,7 @@ export function VerclyKysMount({ section }: { section: DisplaySection<VerclyKysD
             <h3>Dane rejestrowe</h3>
             <dl className="xray-facts">
               <dt>Nazwa</dt><dd>{value(company?.name)}</dd>
-              <dt>KRS</dt><dd>{value(company?.krs)}</dd>
+              {entityType === "COMPANY" && <><dt>KRS</dt><dd>{value(company?.krs)}</dd></>}
               <dt>NIP</dt><dd>{value(company?.nip)}</dd>
               <dt>REGON</dt><dd>{value(company?.regon)}</dd>
               <dt>Forma prawna</dt><dd>{polishCode(company?.legalForm, legalFormLabels)}</dd>
@@ -164,8 +164,8 @@ export function VerclyKysMount({ section }: { section: DisplaySection<VerclyKysD
               <dt>Data wpisu</dt><dd>{value(company?.registeredAt)}</dd>
               <dt>Ostatnia zmiana</dt><dd>{value(company?.lastChangedAt)}</dd>
               <dt>PKD</dt><dd>{value(company?.mainPkd)}</dd>
-              <dt>Kapitał zakładowy</dt><dd>{capitalInThousands(company?.shareCapital)}</dd>
-              <dt>Zasady reprezentacji</dt><dd>{value(company?.representation)}</dd>
+              {entityType === "COMPANY" && <><dt>Kapitał zakładowy</dt><dd>{capitalInThousands(company?.shareCapital)}</dd>
+              <dt>Zasady reprezentacji</dt><dd>{value(company?.representation)}</dd></>}
             </dl>
           </section>
           <section className="kys-panel" aria-label="Rejestry i statusy">
