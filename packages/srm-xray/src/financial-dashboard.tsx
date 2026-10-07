@@ -1,59 +1,91 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import type { FinancialData, FinancialPeriod } from "./contracts";
+import type { FinancialData, FinancialIndicatorResult, FinancialPeriod } from "./contracts";
 import { amountInThousands } from "./financial-labels";
 
 type Scope = FinancialPeriod["scope"];
 type Fact = FinancialPeriod["facts"][number];
 type Row = { code: string; label: string; strong?: boolean };
-type IndicatorPreview = { name: string; description: string; formula: string; requirement?: string };
+type IndicatorPreview = { name: string; description: string; formula: string; requirement?: string; code?: string };
 
 const indicatorGroups: { title: string; description: string; indicators: IndicatorPreview[] }[] = [
   { title: "Płynność", description: "Pokazuje, czy dostawca ma zasoby na najbliższe zobowiązania. Dla kupca to sygnał, czy napięta gotówka może utrudnić terminowe zakupy materiałów, produkcję lub dostawy.", indicators: [
-    { name: "Płynność bieżąca", description: "Pomaga ocenić krótkoterminową zdolność do regulowania zobowiązań. Niska wartość może oznaczać ryzyko przerw w dostawach; bardzo wysoka wymaga sprawdzenia, czy aktywa nie są zamrożone w zapasach i należnościach.", formula: "Aktywa obrotowe ÷ zobowiązania krótkoterminowe" },
-    { name: "Kapitał obrotowy netto", description: "Pokazuje finansowy bufor po pokryciu zobowiązań krótkoterminowych. Ujemna wartość może utrudnić dostawcy sfinansowanie bieżących zamówień i wzrostu produkcji.", formula: "Aktywa obrotowe − zobowiązania krótkoterminowe" },
+    { name: "Płynność bieżąca", description: "Pomaga ocenić krótkoterminową zdolność do regulowania zobowiązań. Niska wartość może oznaczać ryzyko przerw w dostawach; bardzo wysoka wymaga sprawdzenia, czy aktywa nie są zamrożone w zapasach i należnościach.", formula: "Aktywa obrotowe ÷ zobowiązania krótkoterminowe", code: "CURRENT_RATIO" },
+    { name: "Kapitał obrotowy netto", description: "Pokazuje finansowy bufor po pokryciu zobowiązań krótkoterminowych. Ujemna wartość może utrudnić dostawcy sfinansowanie bieżących zamówień i wzrostu produkcji.", formula: "Aktywa obrotowe − zobowiązania krótkoterminowe", code: "NET_WORKING_CAPITAL" },
     { name: "Płynność szybka", description: "Sprawdza pokrycie krótkoterminowych zobowiązań bez zapasów, których nie zawsze można szybko spieniężyć. Jest użyteczna, gdy dostawca utrzymuje duży magazyn.", formula: "(Aktywa obrotowe − zapasy) ÷ zobowiązania krótkoterminowe", requirement: "Wymaga potwierdzonej wartości zapasów." },
   ] },
   { title: "Finansowanie i zadłużenie", description: "Pokazuje, jak dostawca finansuje działalność i jak duże ma obciążenia. Kupiec może dzięki temu ocenić odporność firmy na spadek sprzedaży lub wzrost kosztów finansowania.", indicators: [
-    { name: "Udział zobowiązań i rezerw w aktywach", description: "Wskazuje część majątku finansowaną zobowiązaniami i rezerwami. Rosnący udział może zmniejszać odporność dostawcy na trudniejszy okres; ta pozycja nie oznacza wyłącznie kredytów.", formula: "Zobowiązania i rezerwy ÷ aktywa razem" },
-    { name: "Udział kapitału własnego w aktywach", description: "Pokazuje, ile majątku jest finansowane własnym kapitałem. Wyższy udział może dawać dostawcy większy bufor na straty i nieprzewidziane wydatki.", formula: "Kapitał własny ÷ aktywa razem" },
+    { name: "Udział zobowiązań i rezerw w aktywach", description: "Wskazuje część majątku finansowaną zobowiązaniami i rezerwami. Rosnący udział może zmniejszać odporność dostawcy na trudniejszy okres; ta pozycja nie oznacza wyłącznie kredytów.", formula: "Zobowiązania i rezerwy ÷ aktywa razem × 100%", code: "LIABILITIES_TO_ASSETS" },
+    { name: "Udział kapitału własnego w aktywach", description: "Pokazuje, ile majątku jest finansowane własnym kapitałem. Wyższy udział może dawać dostawcy większy bufor na straty i nieprzewidziane wydatki.", formula: "Kapitał własny ÷ aktywa razem × 100%", code: "EQUITY_TO_ASSETS" },
     { name: "Pokrycie odsetek", description: "Pomaga ocenić, czy wynik operacyjny wystarcza na obsługę odsetek. Słabe pokrycie może ograniczyć środki potrzebne na wykonanie kontraktu.", formula: "Wynik operacyjny ÷ koszty odsetek", requirement: "Wymaga wyodrębnienia odsetek z kosztów finansowych." },
     { name: "Dług netto / EBITDA", description: "Orientacyjnie pokazuje skalę długu wobec wyniku operacyjnego przed amortyzacją. Wysoka wartość może sygnalizować ograniczoną zdolność do nowych inwestycji; EBITDA nie jest gotówką.", formula: "(Dług oprocentowany − środki pieniężne) ÷ EBITDA", requirement: "Wymaga potwierdzenia długu, gotówki i definicji EBITDA." },
   ] },
   { title: "Rentowność i trend", description: "Pokazuje, czy dostawca zarabia na działalności i w jakim kierunku zmienia się jego skala. Dla kupca istotna jest trwałość wyniku, a nie tylko pojedynczy dobry rok.", indicators: [
-    { name: "Marża operacyjna", description: "Pokazuje, jaka część przychodów pozostaje po kosztach podstawowej działalności. Spadek marży może zapowiadać presję na ceny, jakość lub terminowość dostaw.", formula: "Wynik operacyjny ÷ przychody × 100%" },
-    { name: "Marża netto", description: "Pokazuje końcowy wynik przypadający na przychody. Utrzymujące się straty mogą osłabiać zdolność dostawcy do realizacji długich kontraktów.", formula: "Wynik netto ÷ przychody × 100%" },
-    { name: "Zmiana przychodów rok do roku", description: "Pozwala zobaczyć, czy skala działalności rośnie czy maleje. Gwałtowny spadek może wymagać rozmowy o obłożeniu zakładu i ciągłości dostaw; sam wzrost nie dowodzi dobrej kondycji.", formula: "(Przychody bieżące ÷ przychody poprzedniego roku − 1) × 100%" },
-    { name: "Rentowność aktywów (ROA)", description: "Pokazuje, jak skutecznie majątek firmy tworzy wynik. Spadek może sugerować słabsze wykorzystanie zasobów potrzebnych do obsługi zamówień.", formula: "Wynik netto ÷ średnie aktywa × 100%", requirement: "Wymaga porównywalnych danych za dwa lata." },
-    { name: "Rentowność kapitału własnego (ROE)", description: "Pokazuje wynik osiągany na kapitale właścicieli. Pomaga ocenić trwałość finansowania, lecz przy niskim lub ujemnym kapitale może być mylący.", formula: "Wynik netto ÷ średni kapitał własny × 100%", requirement: "Wymaga dwóch lat danych; przy kapitale niedodatnim wynik wymaga osobnej interpretacji." },
+    { name: "Marża operacyjna", description: "Pokazuje, jaka część przychodów pozostaje po kosztach podstawowej działalności. Spadek marży może zapowiadać presję na ceny, jakość lub terminowość dostaw.", formula: "Wynik operacyjny ÷ przychody × 100%", code: "OPERATING_MARGIN" },
+    { name: "Marża netto", description: "Pokazuje końcowy wynik przypadający na przychody. Utrzymujące się straty mogą osłabiać zdolność dostawcy do realizacji długich kontraktów.", formula: "Wynik netto ÷ przychody × 100%", code: "NET_MARGIN" },
+    { name: "Zmiana przychodów rok do roku", description: "Pozwala zobaczyć, czy skala działalności rośnie czy maleje. Gwałtowny spadek może wymagać rozmowy o obłożeniu zakładu i ciągłości dostaw; sam wzrost nie dowodzi dobrej kondycji.", formula: "(Przychody bieżące ÷ przychody poprzedniego roku − 1) × 100%", code: "REVENUE_YOY" },
+    { name: "Rentowność aktywów (ROA)", description: "Pokazuje, jak skutecznie majątek firmy tworzy wynik. Spadek może sugerować słabsze wykorzystanie zasobów potrzebnych do obsługi zamówień.", formula: "Wynik netto ÷ średnie aktywa × 100%", code: "ROA", requirement: "Wymaga porównywalnych danych za dwa lata." },
+    { name: "Rentowność kapitału własnego (ROE)", description: "Pokazuje wynik osiągany na kapitale właścicieli. Pomaga ocenić trwałość finansowania, lecz przy niskim lub ujemnym kapitale może być mylący.", formula: "Wynik netto ÷ średni kapitał własny × 100%", code: "ROE", requirement: "Wymaga dwóch lat danych; przy kapitale niedodatnim wynik wymaga osobnej interpretacji." },
     { name: "Marża EBITDA", description: "Pokazuje relację wyniku przed amortyzacją do przychodów. Ułatwia porównanie trendu operacyjnego, ale nie potwierdza dostępnej gotówki na realizację zamówień.", formula: "(Wynik operacyjny + amortyzacja) ÷ przychody × 100%", requirement: "Wymaga potwierdzonej amortyzacji i jednej definicji EBITDA." },
   ] },
   { title: "Koszty i przepływy pieniężne", description: "Pokazuje wrażliwość kosztów oraz to, czy działalność tworzy gotówkę. Dla kupca są to sygnały, czy dostawca może finansować materiały, pracę i inwestycje bez zakłócania dostaw.", indicators: [
-    { name: "Udział materiałów i energii w kosztach", description: "Pomaga ocenić wrażliwość dostawcy na wzrost cen surowców i energii. Wysoki udział może uzasadniać rozmowę o zabezpieczeniu cen i terminów dostaw.", formula: "Koszty materiałów i energii ÷ koszty działalności operacyjnej × 100%" },
+    { name: "Udział materiałów i energii w kosztach", description: "Pomaga ocenić wrażliwość dostawcy na wzrost cen surowców i energii. Wysoki udział może uzasadniać rozmowę o zabezpieczeniu cen i terminów dostaw.", formula: "Koszty materiałów i energii ÷ koszty działalności operacyjnej × 100%", code: "MATERIALS_ENERGY_SHARE" },
     { name: "Pokrycie zobowiązań przepływami operacyjnymi", description: "Pokazuje, w jakim stopniu bieżąca działalność dostarcza gotówki na krótkoterminowe zobowiązania. Niskie pokrycie może oznaczać większą zależność od finansowania zewnętrznego.", formula: "Przepływy operacyjne ÷ zobowiązania krótkoterminowe", requirement: "Wymaga rachunku przepływów pieniężnych." },
     { name: "Wolne przepływy pieniężne", description: "Przybliżają gotówkę pozostającą po nakładach inwestycyjnych. Ujemna wartość wymaga sprawdzenia, czy wynika z rozwoju firmy, czy z trudności operacyjnych.", formula: "Przepływy operacyjne − nakłady inwestycyjne", requirement: "Wymaga rachunku przepływów i potwierdzenia nakładów inwestycyjnych." },
     { name: "Cykl konwersji gotówki", description: "Pokazuje, jak długo środki są związane w zapasach i należnościach przed odzyskaniem gotówki. Długi cykl może utrudniać finansowanie kolejnych zamówień.", formula: "Dni zapasów + dni należności − dni zobowiązań", requirement: "Wymaga szczegółowych pozycji bilansu, kosztu sprzedaży i porównywalnych okresów." },
   ] },
 ];
 
-function FinancialIndicatorsPreview() {
+const indicatorReasons: Record<string, string> = {
+  MISSING_FIELD: "W zapisanym sprawozdaniu brakuje potrzebnej pozycji.",
+  UNVERIFIED_FIELD: "Wartość źródłowa wymaga potwierdzenia.",
+  UNSUPPORTED_UNIT: "Jednostka lub waluta danych nie jest porównywalna.",
+  UNVERIFIED_COST_SIGN: "Nie potwierdzono sposobu zapisu kosztów.",
+  UNVERIFIED_SOURCE: "Brakuje potwierdzonego dokumentu źródłowego.",
+  INVALID_AMOUNT: "Kwota źródłowa ma nieprawidłowy format.",
+  DOCUMENT_MISMATCH: "Kwoty nie zgadzają się z wybranym sprawozdaniem.",
+  MIXED_SOURCE: "Pozycje okresu pochodzą z różnych pobrań.",
+  PERIOD_NOT_ANNUAL: "Dostępny okres nie obejmuje pełnego roku.",
+  PRIOR_YEAR_NOT_COMPARABLE: "Brakuje porównywalnego poprzedniego roku.",
+  NON_POSITIVE_DENOMINATOR: "Podstawa obliczenia jest zerowa lub ujemna.",
+  NON_POSITIVE_EQUITY: "Średni kapitał własny nie jest dodatni.",
+};
+
+function formattedIndicatorValue(indicator: FinancialIndicatorResult): string {
+  const numeric = Number(indicator.value);
+  if (!Number.isFinite(numeric)) return "Nie można obliczyć";
+  const value = indicator.unit === "PLN" ? numeric / 1000 : numeric;
+  const formatted = new Intl.NumberFormat("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+  return indicator.unit === "PLN" ? `${formatted} tys. zł` : indicator.unit === "RATIO" ? `${formatted}×` : `${formatted}%`;
+}
+
+function FinancialIndicatorsPreview({ data, scope, year }: { data: FinancialData; scope: Scope; year: string }) {
   return <div className="financial-indicators-preview">
     <div className="financial-strength-preview">
       <div><h3>Siła finansowa</h3><p>Przekrojowy obraz płynności, finansowania, rentowności i trendu z kilku lat. Zasady oceny zostaną uzgodnione przed uruchomieniem kalkulacji.</p></div>
       <strong className="financial-indicator-value">W trakcie developmentu</strong>
     </div>
+    <p className="financial-indicators-legend">Ważność dla kupca: <span aria-label="pomocnicza">●○○ pomocnicza</span> · <span aria-label="istotna">●●○ istotna</span> · <span aria-label="kluczowa">●●● kluczowa</span>. Kropki nie oceniają ryzyka firmy.</p>
     {indicatorGroups.map((group) => <section className="financial-indicator-group" key={group.title} aria-label={group.title}>
       <h3>{group.title}</h3>
       <p className="financial-indicator-group-description">{group.description}</p>
-      <div className="financial-indicator-grid">{group.indicators.map((indicator) => <article className="financial-indicator" key={indicator.name}>
-        <div className="financial-indicator-heading"><h4>{indicator.name}</h4><strong className="financial-indicator-value">W trakcie developmentu</strong></div>
-        <p>{indicator.description}</p>
-        <p className="financial-indicator-formula"><span>Jak liczymy:</span> {indicator.formula}</p>
-        {indicator.requirement && <p className="financial-indicator-requirement">{indicator.requirement}</p>}
-      </article>)}</div>
+      <div className="financial-indicator-grid">{group.indicators.map((indicator) => {
+        const result = data.indicators?.find((item) => item.code === indicator.code && item.scope === scope && item.periodEnd.slice(0, 4) === year);
+        const available = result?.status === "AVAILABLE" && result.value !== null;
+        const importance = result ? `${"●".repeat(result.importance)}${"○".repeat(3 - result.importance)}` : null;
+        return <article className="financial-indicator" key={indicator.name}>
+          <div className="financial-indicator-heading"><h4>{indicator.name}</h4>
+            <strong className="financial-indicator-value">{result ? available ? formattedIndicatorValue(result) : "Nie można obliczyć" : "W trakcie developmentu"}</strong></div>
+          {importance && <p className="financial-indicator-importance" aria-label={`Ważność dla kupca: ${result!.importance} z 3`}>{importance} · {result!.importance === 3 ? "kluczowa" : result!.importance === 2 ? "istotna" : "pomocnicza"}</p>}
+          {result && !available && <p className="financial-indicator-reason">{indicatorReasons[result.reasonCode ?? ""] ?? "Nie można potwierdzić danych do obliczenia."}</p>}
+          <p>{indicator.description}</p>
+          <p className="financial-indicator-formula"><span>Jak liczymy:</span> {indicator.formula}</p>
+          {indicator.requirement && <p className="financial-indicator-requirement">{indicator.requirement}</p>}
+        </article>;
+      })}</div>
     </section>)}
-    <p className="financial-indicators-note">Jeśli zabraknie danych albo okresy nie będą porównywalne, przyszły wynik pokaże „Nie można obliczyć” wraz z przyczyną — zamiast zera.</p>
+    <p className="financial-indicators-note">Wyniki za {year} r. pochodzą z potwierdzonych danych finansowych. Brak lub nieporównywalność danych pokazujemy wraz z przyczyną.</p>
   </div>;
 }
 
@@ -282,7 +314,7 @@ export function FinancialDashboard({ data }: { data: FinancialData }) {
     </details>
     <details className="financial-accordion">
       <summary>Analiza wskaźnikowa</summary>
-      <div className="financial-accordion-body"><FinancialIndicatorsPreview /></div>
+      <div className="financial-accordion-body"><FinancialIndicatorsPreview data={data} scope={scope!} year={allPeriods[0].to.slice(0, 4)} /></div>
     </details>
     <dialog className="financial-chart-dialog" ref={dialogRef} onClose={() => setSelectedRow(null)}>
       {selectedRow && <>

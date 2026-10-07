@@ -51,7 +51,23 @@ export type FinancialPeriod = {
   }[];
 };
 
-export type FinancialData = { periods: readonly FinancialPeriod[] };
+export type FinancialIndicatorResult = {
+  code: string;
+  periodStart: string;
+  periodEnd: string;
+  scope: FinancialPeriod["scope"];
+  status: "AVAILABLE" | "UNAVAILABLE";
+  value: string | null;
+  unit: "RATIO" | "PERCENT" | "PLN";
+  importance: 1 | 2 | 3;
+  reasonCode: string | null;
+  formulaVersion: string;
+};
+
+export type FinancialData = {
+  periods: readonly FinancialPeriod[];
+  indicators?: readonly FinancialIndicatorResult[];
+};
 
 export type JdgField = {
   key: string;

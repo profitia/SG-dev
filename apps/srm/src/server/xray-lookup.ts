@@ -3,7 +3,7 @@ import { emptyCard } from "../demo/fixture";
 import { fetchMgbiGeneral, type CompanyIdentifier } from "./mgbi-general";
 import { fetchMgbiFinancial, type FinancialSourceFact } from "./mgbi-financial";
 import { fetchVerclyKys } from "./vercly-kys";
-import { readFreshCompany, recordDemoInterest, saveSharedCompany } from "./shared-catalog";
+import { readFreshCompany, recordDemoInterest, refreshFinancialIndicators, saveSharedCompany } from "./shared-catalog";
 import { appendFinancialFacts, appendSectionProjection, appendSnapshot, createLookup, finishAttempt, purgeExpiredKysPersonal, registerOrganization, startAttempt, type Section } from "./xray-repository";
 
 export type XrayLookupRequest = { identifier: CompanyIdentifier & { type: "NIP" } };
@@ -87,6 +87,9 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
   const lookup = await createLookup(organizationId, request.identifier);
   const cached = await readFreshCompany(organizationId, request.identifier.value);
   if (cached) {
+    const financial = cached.financial.data
+      ? { ...cached.financial, data: { ...cached.financial.data, indicators: await refreshFinancialIndicators(organizationId, request.identifier.value, cached.financial.data) } }
+      : cached.financial;
     await recordDemoInterest(organizationId, request.identifier.value);
     return {
       identity: {
@@ -94,7 +97,7 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
         nip: cached.general.data?.nip ?? request.identifier.value,
         name: cached.general.data?.legalName ?? null,
       },
-      general: cached.general, financial: cached.financial, kys: emptyCard.kys,
+      general: cached.general, financial, kys: emptyCard.kys,
     };
   }
   const [general, financial] = await Promise.all([
@@ -113,6 +116,9 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
     general: general.section, financial: financial.section,
     generalSnapshotId, financialSnapshotId, facts: financial.facts,
   });
+  const financialWithIndicators = financial.section.data
+    ? { ...financial.section, data: { ...financial.section.data, indicators: await refreshFinancialIndicators(organizationId, request.identifier.value, financial.section.data) } }
+    : financial.section;
   if (general.section.data?.nip === request.identifier.value) await recordDemoInterest(organizationId, request.identifier.value);
 
   return {
@@ -122,7 +128,7 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
       name: general.section.data?.legalName ?? null,
     },
     general: general.section,
-    financial: financial.section,
+    financial: financialWithIndicators,
     kys: emptyCard.kys,
   };
 }
