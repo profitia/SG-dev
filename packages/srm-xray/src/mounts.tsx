@@ -6,6 +6,7 @@ import type {
   SectionStatus,
   SupplierXRayCard,
   VerclyKysData,
+  VerclyPerson,
 } from "./contracts";
 import { FinancialDashboard } from "./financial-dashboard";
 
@@ -77,6 +78,21 @@ function capitalInThousands(input: string | null | undefined): string {
   if (!input) return "brak danych";
   const amount = Number(input.replaceAll(" ", "").replace(",", "."));
   return Number.isFinite(amount) ? `${new Intl.NumberFormat("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount / 1000)} tys. PLN` : "brak danych";
+}
+
+function KysPeopleTable({ people }: { people: readonly VerclyPerson[] | undefined }) {
+  if (!people?.length) return <p>brak danych</p>;
+  return <div className="kys-table-scroll"><table className="kys-lists kys-people">
+    <thead><tr><th>Osoba</th><th>Funkcja / powiązanie</th><th>PESEL</th><th>Obywatelstwo</th><th>Rejestr</th><th>Sankcje</th><th>PEP</th></tr></thead>
+    <tbody>{people.map((person, index) => <tr key={`${person.fullName}:${index}`}>
+      <td><strong>{person.fullName}</strong>{person.birthDate && <small>Data urodzenia: {person.birthDate}</small>}</td>
+      <td>{person.positions.join(", ") || "brak danych"}</td>
+      <td className="kys-person-id">{value(person.pesel)}</td>
+      <td>{person.citizenship.join(", ") || "brak danych"}</td>
+      <td>{person.foundIn.join(", ") || "brak danych"}</td>
+      <td>{yesNo(person.sanctionsMatch)}</td><td>{yesNo(person.pepMatch)}</td>
+    </tr>)}</tbody>
+  </table></div>;
 }
 
 const verclyListLabels: Record<string, string> = {
@@ -165,13 +181,22 @@ export function VerclyKysMount({ section, entityType = "COMPANY" }: { section: D
               <dt>REGON</dt><dd>{value(company?.regon)}</dd>
               <dt>Forma prawna</dt><dd>{polishCode(company?.legalForm, legalFormLabels)}</dd>
               <dt>Adres</dt><dd>{value(company?.address)}</dd>
+              <dt>Telefon</dt><dd>{value(company?.phone)}</dd>
+              <dt>Dzielnica / gmina</dt><dd>{value(company?.municipality)}</dd>
+              <dt>Powiat</dt><dd>{value(company?.district)}</dd>
+              <dt>Województwo</dt><dd>{value(company?.voivodship)}</dd>
               <dt>Kraj</dt><dd>{company?.country === "PL" ? "Polska" : value(company?.country)}</dd>
+              <dt>Kraj głównej siedziby</dt><dd>{value(company?.headquarterCountry)}</dd>
               <dt>Status działalności</dt><dd>{polishCode(company?.activityStatus, activityStatusLabels)}</dd>
+              <dt>Data powstania</dt><dd>{value(company?.createdAt)}</dd>
               <dt>Data wpisu</dt><dd>{value(company?.registeredAt)}</dd>
+              <dt>Data rozpoczęcia działalności</dt><dd>{value(company?.commencedAt)}</dd>
               <dt>Ostatnia zmiana</dt><dd>{value(company?.lastChangedAt)}</dd>
               <dt>PKD</dt><dd>{value(company?.mainPkd)}</dd>
               {entityType === "COMPANY" && <><dt>Kapitał zakładowy</dt><dd>{capitalInThousands(company?.shareCapital)}</dd>
-              <dt>Zasady reprezentacji</dt><dd>{value(company?.representation)}</dd></>}
+              <dt>Zasady reprezentacji</dt><dd>{value(company?.representation)}</dd>
+              <dt>Organ rejestrowy</dt><dd>{value(company?.registerAuthority)}</dd>
+              <dt>Forma własności</dt><dd>{value(company?.ownershipForm)}</dd></>}
             </dl>
           </section>
           <section className="kys-panel" aria-label="Rejestry i statusy">
@@ -181,26 +206,47 @@ export function VerclyKysMount({ section, entityType = "COMPANY" }: { section: D
               <dt>Wpis w Krajowym Rejestrze Zadłużonych</dt><dd>{yesNo(data?.registryChecks?.krzListed)}</dd>
               <dt>Podatnik VAT czynny</dt><dd>{yesNo(data?.registryChecks?.vatActive)}</dd>
               <dt>Podatnik VAT UE</dt><dd>{yesNo(data?.registryChecks?.euVat)}</dd>
+              <dt>Podmiot i bezpośrednio powiązani na listach sankcyjnych</dt><dd>{yesNo(data?.screeningSummary?.directlyRelatedSanctions)}</dd>
+              <dt>Beneficjenci i powiązane podmioty na listach sankcyjnych</dt><dd>{yesNo(data?.screeningSummary?.beneficiaryRelatedSanctions)}</dd>
+              <dt>Podmiot na pozostałych listach</dt><dd>{yesNo(data?.screeningSummary?.otherLists)}</dd>
             </dl>
           </section>
         </div>
+        <section className="kys-panel" aria-label="Osoby pełniące funkcje kierownicze i nadzorcze">
+          <h3>Osoby pełniące funkcje kierownicze i nadzorcze</h3>
+          <p className="kys-note">{countLabel(data?.relatedPersonsCount)}</p>
+          <KysPeopleTable people={data?.relatedPersons} />
+        </section>
+        <section className="kys-panel" aria-label="Beneficjenci rzeczywiści">
+          <h3>Beneficjenci rzeczywiści</h3>
+          <p className="kys-note">{countLabel(data?.beneficialOwnersCount)}</p>
+          <KysPeopleTable people={data?.beneficialOwners} />
+        </section>
         <div className="kys-grid">
-          <section className="kys-panel" aria-label="Osoby i beneficjenci">
-            <h3>Osoby i beneficjenci</h3>
-            <dl className="xray-facts">
-              <dt>Reprezentanci i osoby powiązane</dt><dd>{countLabel(data?.relatedPersonsCount)}</dd>
-              <dt>Beneficjenci rzeczywiści</dt><dd>{countLabel(data?.beneficialOwnersCount)}</dd>
-              <dt>Pozycje PEP</dt><dd>{countLabel(data?.pepPositionsCount)}</dd>
-            </dl>
-            <p className="kys-note">Dane osobowe i identyfikatory osób nie są przechowywane w tej wersji karty.</p>
-          </section>
           <section className="kys-panel" aria-label="Listy sankcyjne i ostrzeżenia">
             <h3>Listy sankcyjne i ostrzeżenia</h3>
             {lists.length ? <table className="kys-lists"><thead><tr><th>Lista</th><th>Wynik</th></tr></thead><tbody>
               {lists.map((entry) => <tr key={`${entry.type}:${entry.name}`}><td>{verclyListLabels[entry.name] ?? entry.name.replaceAll("_", " ")}</td><td>{yesNo(entry.matched)}</td></tr>)}
             </tbody></table> : <p>brak danych</p>}
           </section>
+          <section className="kys-panel" aria-label="Osoby na eksponowanych stanowiskach politycznych">
+            <h3>Osoby na eksponowanych stanowiskach politycznych</h3>
+            <p>{countLabel(data?.pepPositionsCount)}</p>
+            <p className="kys-note">Szczegóły są pokazane przy każdej osobie, jeśli dostawca je zwrócił.</p>
+          </section>
         </div>
+        {entityType === "COMPANY" && <section className="kys-panel" aria-label="Struktura właścicielska i powiązane podmioty">
+          <h3>Struktura właścicielska i powiązane podmioty</h3>
+          {data?.relatedEntities?.length ? <div className="kys-table-scroll"><table className="kys-lists"><thead><tr><th>Podmiot</th><th>Powiązanie</th><th>Identyfikatory</th><th>Okres</th><th>Sankcje</th></tr></thead><tbody>
+            {data.relatedEntities.map((entry, index) => <tr key={`${entry.name}:${index}`}>
+              <td><strong>{entry.name}</strong>{entry.stakeDescription && <small>{entry.stakeDescription}</small>}</td>
+              <td>{entry.role === "SHAREHOLDER" ? "Udziałowiec" : value(entry.role)}</td>
+              <td>{[entry.krs && `KRS ${entry.krs}`, entry.nip && `NIP ${entry.nip}`, entry.regon && `REGON ${entry.regon}`].filter(Boolean).join(" · ") || "brak danych"}</td>
+              <td>{[entry.relationshipStart, entry.relationshipEnd].filter(Boolean).join(" – ") || "brak danych"}</td>
+              <td>{yesNo(entry.sanctionsMatch)}</td>
+            </tr>)}
+          </tbody></table></div> : <p>brak danych</p>}
+        </section>}
         <p className="kys-note">Stan na dzień: {value(data?.stateAsOf)} · ID raportu: {value(data?.reportId)} · identyfikator zapytania: {value(data?.correlationId)}. Brak wpisów w raporcie nie przesądza o stanie rejestru, który nie został sprawdzony.</p>
       </div>
     </SectionFrame>

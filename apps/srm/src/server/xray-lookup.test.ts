@@ -132,6 +132,25 @@ test("KYS mount expands provider sanctions codes to list names", () => {
   assert.ok(!html.includes("Źródło:"));
 });
 
+test("KYS mount shows named people, full PESEL and screening results in separate sections", () => {
+  const section: SectionEnvelope<VerclyKysData> = {
+    status: "SUCCESS", source: { provider: "VERCLY", model: "KYS_NIP", recordId: "report" },
+    retrievedAt: null, effectiveAt: null, warnings: [],
+    data: { correlationId: "request", reportId: "report", isComplete: true, queriedRegisters: [], stateAsOf: null,
+      relatedPersonsCount: 1, beneficialOwnersCount: 1,
+      relatedPersons: [{ fullName: "Anna Testowa", pesel: "10987654321", birthDate: null, positions: ["CZŁONEK ZARZĄDU"], citizenship: [], foundIn: [], sanctionsMatch: false, pepMatch: false }],
+      beneficialOwners: [{ fullName: "Jan Przykładowy", pesel: "12345678901", birthDate: null, positions: ["Beneficjent rzeczywisty"], citizenship: ["POLSKA"], foundIn: ["CRBR"], sanctionsMatch: false, pepMatch: false }],
+    },
+  };
+  const html = renderToStaticMarkup(createElement(VerclyKysMount, { section }));
+  assert.match(html, /Osoby pełniące funkcje kierownicze i nadzorcze/);
+  assert.match(html, /Beneficjenci rzeczywiści/);
+  assert.match(html, /10987654321/);
+  assert.match(html, /12345678901/);
+  assert.match(html, /CRBR/);
+  assert.ok(!html.includes("Szczegóły osób i ich identyfikatory nie są udostępniane"));
+});
+
 test("JDG KYS mount shows the sole proprietor form without company-only fields", () => {
   const section: SectionEnvelope<VerclyKysData> = {
     status: "PARTIAL", source: { provider: "VERCLY", model: "KYS_NIP", recordId: "jdg-report" },

@@ -3,7 +3,7 @@ import { emptyCard } from "../demo/fixture";
 import { fetchMgbiGeneral, type CompanyIdentifier } from "./mgbi-general";
 import { fetchMgbiFinancial, type FinancialSourceFact } from "./mgbi-financial";
 import { fetchVerclyKys } from "./vercly-kys";
-import { appendFinancialFacts, appendSectionProjection, appendSnapshot, createLookup, finishAttempt, registerOrganization, startAttempt, type Section } from "./xray-repository";
+import { appendFinancialFacts, appendSectionProjection, appendSnapshot, createLookup, finishAttempt, purgeExpiredKysPersonal, registerOrganization, startAttempt, type Section } from "./xray-repository";
 
 export type XrayLookupRequest = { identifier: CompanyIdentifier & { type: "NIP" } };
 
@@ -55,15 +55,16 @@ async function persistSection(
   const attemptId = await startAttempt(organizationId, lookup.requestId, sectionName);
   try {
     if (section.data && section.retrievedAt && section.status !== "PENDING") {
+      if (sectionName === "kys" && sourcePayload !== undefined) throw new Error("Raw KYS payload must not be persisted");
       // Only normalized company fields and financial facts may enter snapshots.
       // The raw WP response contains personal identifiers.
       const snapshotId = await appendSnapshot(organizationId, {
         attemptId, supplierId: lookup.supplierId, section: sectionName,
-        dataClass: sectionName === "kys" ? "KYS_REDACTED" : sectionName === "financial" ? "FINANCIAL" : "COMPANY",
+        dataClass: sectionName === "kys" ? "KYS_PERSONAL" : sectionName === "financial" ? "FINANCIAL" : "COMPANY",
         sourceRecordId: section.source.recordId ?? undefined, payload: sourcePayload ?? section.data,
         retrievedAt: new Date(section.retrievedAt),
         effectiveAt: section.effectiveAt && !Number.isNaN(Date.parse(section.effectiveAt)) ? new Date(section.effectiveAt) : undefined,
-        ...(sectionName === "kys" ? { retentionUntil: new Date(Date.parse(section.retrievedAt) + 30 * 24 * 60 * 60 * 1000) } : {}),
+        ...(sectionName === "kys" ? { retentionUntil: new Date(Date.parse(section.retrievedAt) + 7 * 24 * 60 * 60 * 1000) } : {}),
       });
       await appendSectionProjection(organizationId, { supplierId: lookup.supplierId, snapshotId, section: sectionName, version: 1, data: section.data });
       if (sectionName === "financial" && facts.length) await appendFinancialFacts(organizationId, facts.map((fact) => ({ ...fact, supplierId: lookup.supplierId, snapshotId })));
@@ -106,6 +107,7 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
 }
 
 export async function runXrayKysLookup(organizationId: string, request: XrayLookupRequest, entityType: "COMPANY" | "JDG" = "COMPANY"): Promise<SupplierXRayCard["kys"]> {
+  await purgeExpiredKysPersonal(organizationId);
   await registerOrganization(organizationId, "srm-development");
   const lookup = await createLookup(organizationId, request.identifier, entityType);
   const result = await fetchVerclyKys({ identifier: request.identifier });

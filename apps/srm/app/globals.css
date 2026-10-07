@@ -72,6 +72,10 @@ body { margin: 0; }
 .kys-lists { border-collapse: collapse; width: 100%; font-size: .85rem; }
 .kys-lists th, .kys-lists td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #e2e8ec; }
 .kys-lists tr:nth-child(even) { background: #f5f7f8; }
+.kys-table-scroll { max-width: 100%; overflow-x: auto; }
+.kys-people { min-width: 850px; }
+.kys-person-id { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kys-lists small { display: block; margin-top: 4px; color: #5b7179; }
 .kys-note { color: #5b7179; font-size: .78rem; line-height: 1.5; }
 .search-error { color: #a12323; font-weight: 700; }
 .search-caption { color: #34535d; }

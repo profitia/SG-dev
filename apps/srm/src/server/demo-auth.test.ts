@@ -24,6 +24,10 @@ test("session is signed, bounded in time, and rejected after tampering or secret
   assert.equal(await verifyDemoSession(sessionSecret, token, now + 1000), true);
   assert.equal(await verifyDemoSession(sessionSecret, token, now + SRM_SESSION_MAX_AGE_SECONDS * 1000), false);
   assert.equal(await verifyDemoSession(sessionSecret, `${token.slice(0, -1)}x`, now + 1000), false);
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  const final = alphabet.indexOf(token.at(-1)!);
+  const equivalentNoncanonical = alphabet[(final & ~3) | ((final + 1) & 3)];
+  assert.equal(await verifyDemoSession(sessionSecret, `${token.slice(0, -1)}${equivalentNoncanonical}`, now + 1000), false);
   assert.equal(await verifyDemoSession(`${sessionSecret}rotated`, token, now + 1000), false);
   assert.equal(await verifyDemoSession(sessionSecret, "not-a-session", now + 1000), false);
 });
