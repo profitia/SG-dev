@@ -14,5 +14,6 @@ test("catalog freshness requires a valid past check within one day", () => {
 test("financial cache requires the current source mapping", () => {
   assert.equal(isCurrentFinancialMapping(null), false);
   assert.equal(isCurrentFinancialMapping({} as never), false);
+  assert.equal(isCurrentFinancialMapping({ catalogMappingVersion: "2026-10-07-extracted-v1" } as never), false);
   assert.equal(isCurrentFinancialMapping({ catalogMappingVersion: FINANCIAL_MAPPING_VERSION } as never), true);
 });

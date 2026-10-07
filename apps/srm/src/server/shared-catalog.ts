@@ -5,7 +5,7 @@ import type { FinancialSourceFact } from "./mgbi-financial";
 import { calculateFinancialIndicators, FINANCIAL_INDICATOR_INPUT_CODES, type CatalogIndicatorFact } from "./financial-indicators";
 
 export const CATALOG_FRESHNESS_MS = 24 * 60 * 60 * 1000;
-export const FINANCIAL_MAPPING_VERSION = "2026-10-07-extracted-v1";
+export const FINANCIAL_MAPPING_VERSION = "2026-10-07-ccc-v2";
 type GeneralSection = SectionEnvelope<GeneralCompanyData>;
 type FinancialSection = SectionEnvelope<FinancialData>;
 type StoredFinancialSection = FinancialSection & { catalogMappingVersion?: string };
