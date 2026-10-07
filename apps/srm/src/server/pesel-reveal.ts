@@ -29,7 +29,7 @@ export function verifyPeselToken(secret: string, token: unknown, now = Date.now(
   const [payload, signature] = token.split(".");
   const expected = Buffer.from(sign(secret, payload), "base64url");
   const received = Buffer.from(signature, "base64url");
-  if (expected.length !== received.length || !timingSafeEqual(expected, received)) return null;
+  if (expected.length !== received.length || !timingSafeEqual(expected, received) || received.toString("base64url") !== signature) return null;
   try {
     const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as Partial<TokenPayload>;
     if (parsed.version !== 1 || typeof parsed.snapshotId !== "string" || !snapshotIdPattern.test(parsed.snapshotId) ||

@@ -3,14 +3,17 @@ import type { JdgField, JdgRegistryData, SectionEnvelope } from "./contracts";
 
 type DisplaySection = Omit<SectionEnvelope<JdgRegistryData>, "source">;
 
-function Field({ field }: { field: JdgField }) {
+function Field({ field, path = [] }: { field: JdgField; path?: readonly string[] }) {
+  if (["terc", "simc", "ulic", "link"].includes(field.key.toLowerCase())) return null;
+  const currentPath = [...path, field.key];
+  const label = field.key === "kod" && path.some((part) => /pkd/i.test(part)) ? "Kod PKD" : field.label;
   if (field.children.length) return (
     <div className="jdg-nested-field">
-      <strong>{field.label}</strong>
-      <dl className="xray-facts">{field.children.map((child, index) => <Field field={child} key={`${child.key}:${index}`} />)}</dl>
+      <strong>{label}</strong>
+      <dl className="xray-facts">{field.children.map((child, index) => <Field field={child} path={currentPath} key={`${child.key}:${index}`} />)}</dl>
     </div>
   );
-  return <><dt>{field.label}</dt><dd>{field.value ?? "brak danych"}</dd></>;
+  return <><dt>{label}</dt><dd>{field.value ?? "brak danych"}</dd></>;
 }
 
 export function JdgRegistryMount({ section }: { section: DisplaySection }) {
