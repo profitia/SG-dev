@@ -5,8 +5,10 @@ import type { FinancialSourceFact } from "./mgbi-financial";
 import { calculateFinancialIndicators, FINANCIAL_INDICATOR_INPUT_CODES, type CatalogIndicatorFact } from "./financial-indicators";
 
 export const CATALOG_FRESHNESS_MS = 24 * 60 * 60 * 1000;
+export const FINANCIAL_MAPPING_VERSION = "2026-10-07-extracted-v1";
 type GeneralSection = SectionEnvelope<GeneralCompanyData>;
 type FinancialSection = SectionEnvelope<FinancialData>;
+type StoredFinancialSection = FinancialSection & { catalogMappingVersion?: string };
 type CatalogSection = "general" | "financial";
 
 export type SharedCompany = { general: GeneralSection; financial: FinancialSection };
@@ -21,16 +23,20 @@ export function isFreshCatalogEntry(checkedAt: Date | string | null, now = new D
   return Number.isFinite(age) && age >= 0 && age < CATALOG_FRESHNESS_MS;
 }
 
+export function isCurrentFinancialMapping(section: StoredFinancialSection | null): boolean {
+  return section?.catalogMappingVersion === FINANCIAL_MAPPING_VERSION;
+}
+
 export async function readFreshCompany(organizationId: string, nip: string, now = new Date()): Promise<SharedCompany | null> {
   return withOrganization(organizationId, async (client) => {
     const result = await client.query<{
-      general_json: GeneralSection | null; financial_json: FinancialSection | null;
+      general_json: GeneralSection | null; financial_json: StoredFinancialSection | null;
       general_checked_at: Date | null; financial_checked_at: Date | null;
     }>("SELECT general_json, financial_json, general_checked_at, financial_checked_at FROM srm.catalog_companies WHERE nip = $1", [nip]);
     const row = result.rows[0];
     if (!row?.general_json?.data || !row.financial_json ||
       !isFreshCatalogEntry(row.general_checked_at, now) || !isFreshCatalogEntry(row.financial_checked_at, now)) return null;
-    if (!Array.isArray(row.financial_json.warnings)) return null;
+    if (!Array.isArray(row.financial_json.warnings) || !isCurrentFinancialMapping(row.financial_json)) return null;
     return { general: row.general_json, financial: row.financial_json };
   });
 }
@@ -42,7 +48,8 @@ async function upsertSection(
 ): Promise<void> {
   if (!section.retrievedAt || (section.status !== "SUCCESS" && section.status !== "PARTIAL" && section.status !== "EMPTY")) return;
   const prefix = sectionName === "general" ? "general" : "financial";
-  const hash = sha256({ status: section.status, data: section.data, warnings: section.warnings });
+  const payload = sectionName === "financial" ? { ...section, catalogMappingVersion: FINANCIAL_MAPPING_VERSION } : section;
+  const hash = sha256({ status: payload.status, data: payload.data, warnings: payload.warnings, catalogMappingVersion: sectionName === "financial" ? FINANCIAL_MAPPING_VERSION : undefined });
   // Only the payload changes on a content delta. checked_at records a successful provider check.
   await client.query(
     `INSERT INTO srm.catalog_companies(nip, ${prefix}_json, ${prefix}_sha256, ${prefix}_checked_at, ${prefix}_source_organization_id, ${prefix}_source_snapshot_id)
@@ -54,7 +61,7 @@ async function upsertSection(
        ${prefix}_source_organization_id = CASE WHEN srm.catalog_companies.${prefix}_sha256 IS DISTINCT FROM EXCLUDED.${prefix}_sha256 THEN EXCLUDED.${prefix}_source_organization_id ELSE srm.catalog_companies.${prefix}_source_organization_id END,
        ${prefix}_source_snapshot_id = CASE WHEN srm.catalog_companies.${prefix}_sha256 IS DISTINCT FROM EXCLUDED.${prefix}_sha256 THEN EXCLUDED.${prefix}_source_snapshot_id ELSE srm.catalog_companies.${prefix}_source_snapshot_id END,
        updated_at = CASE WHEN srm.catalog_companies.${prefix}_sha256 IS DISTINCT FROM EXCLUDED.${prefix}_sha256 THEN now() ELSE srm.catalog_companies.updated_at END`,
-    [nip, JSON.stringify(section), hash, new Date(section.retrievedAt), organizationId, snapshotId],
+    [nip, JSON.stringify(payload), hash, new Date(section.retrievedAt), organizationId, snapshotId],
   );
 }
 
