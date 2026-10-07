@@ -108,7 +108,10 @@ export default function Home() {
     <main className="appshield">
       <header className="appshield-header">
         <h1>SRM X-Ray</h1>
-        {result && <button type="button" className="appshield-new-report" onClick={newReport} disabled={busy}>Nowy raport</button>}
+        <div className="appshield-actions">
+          {result && <button type="button" className="appshield-new-report" onClick={newReport} disabled={busy}>Nowy raport</button>}
+          <form action="/api/auth/logout" method="post"><button type="submit" className="appshield-new-report">Wyloguj się</button></form>
+        </div>
       </header>
       <div className="appshield-content">
         {!result && <form className="appshield-search" aria-label="Wyszukaj firmę" onSubmit={search}>
