@@ -102,7 +102,6 @@ function PeselReveal({ token, onReveal }: { token: string | null | undefined; on
     };
   }, [revealed]);
   return <span className="kys-person-id">
-    <small>PESEL</small>
     {revealed ? <span>{revealed}</span> : token ? <span className="kys-pesel-mask" aria-label="Numer ukryty">•••••••••••</span> : "brak danych"}
     {token && onReveal && <button type="button" className="kys-pesel-button" disabled={busy} onClick={async (event) => {
       event.preventDefault();
@@ -121,21 +120,31 @@ function PeselReveal({ token, onReveal }: { token: string | null | undefined; on
   </span>;
 }
 
-function KysPeopleTable({ people, onRevealPesel, showBirthDate = true }: {
+function KysPeopleTable({ people, onRevealPesel, showBirthDate = true, kind = "manager" }: {
   people: readonly VerclyPerson[] | undefined;
   onRevealPesel?: (token: string) => Promise<string>;
   showBirthDate?: boolean;
+  kind?: "manager" | "beneficiary";
 }) {
   if (!people?.length) return <p>brak danych</p>;
-  return <div className="kys-person-list">{people.map((person, index) => {
-    const preview = [person.positions.join(", "), person.foundIn.join(", ")].filter(Boolean).join(" · ");
+  return <div className="kys-person-scroll"><div className={`kys-person-list kys-person-list--${kind}`}>
+    <div className="kys-person-columns">
+      <span>Imię i nazwisko</span><span>Rola / funkcja</span>
+      {kind === "beneficiary" && <span>Powiązanie / rejestr</span>}
+      <span>PESEL</span><span>Sankcje</span><span>PEP</span><span aria-hidden="true" />
+    </div>
+    {people.map((person, index) => {
+    const position = person.positions.join(", ");
+    const foundIn = person.foundIn.join(", ");
+    const preview = [position, foundIn].filter(Boolean).join(" · ");
     return <details className="kys-person-entry" key={`${person.fullName}:${index}`}>
       <summary className="kys-person-summary">
         <strong className="kys-person-name">{person.fullName}</strong>
-        <span className="kys-person-preview">{preview || "brak danych"}</span>
+        <span className="kys-person-preview">{kind === "beneficiary" ? position || "brak danych" : preview || "brak danych"}</span>
+        {kind === "beneficiary" && <span className="kys-person-preview">{foundIn || "brak danych"}</span>}
         <PeselReveal token={person.peselRevealToken} onReveal={onRevealPesel} />
-        <span className="kys-person-status"><small>Sankcje</small>{yesNo(person.sanctionsMatch)}</span>
-        <span className="kys-person-status"><small>PEP</small>{yesNo(person.pepMatch)}</span>
+        <span className="kys-person-status">{yesNo(person.sanctionsMatch)}</span>
+        <span className="kys-person-status">{yesNo(person.pepMatch)}</span>
         <span className="kys-person-toggle" aria-hidden="true"><span className="kys-person-open-label">Rozwiń</span><span className="kys-person-close-label">Zwiń</span></span>
       </summary>
       <dl className="kys-person-details">
@@ -145,7 +154,7 @@ function KysPeopleTable({ people, onRevealPesel, showBirthDate = true }: {
         {showBirthDate && <><dt>Data urodzenia</dt><dd>{value(person.birthDate)}</dd></>}
       </dl>
     </details>;
-  })}</div>;
+  })}</div></div>;
 }
 
 const verclyListLabels: Record<string, string> = {
@@ -277,7 +286,7 @@ export function VerclyKysMount({ section, entityType = "COMPANY", onRevealPesel 
         <section className="kys-panel" aria-label="Beneficjenci rzeczywiści">
           <h3>Beneficjenci rzeczywiści</h3>
           <p className="kys-note">{countLabel(data?.beneficialOwnersCount)}</p>
-          <KysPeopleTable people={data?.beneficialOwners} onRevealPesel={onRevealPesel} showBirthDate={false} />
+          <KysPeopleTable people={data?.beneficialOwners} onRevealPesel={onRevealPesel} showBirthDate={false} kind="beneficiary" />
         </section>
         <div className="kys-grid">
           <section className="kys-panel" aria-label="Listy sankcyjne i ostrzeżenia">

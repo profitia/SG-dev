@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev --port 3400",
     "build": "next build",
+    "postbuild": "mkdir -p .next/standalone/public && cp -R public/. .next/standalone/public/",
     "start": "next start --port 3400",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test src/server/*.test.ts",

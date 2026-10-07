@@ -9,31 +9,31 @@ type Fact = FinancialPeriod["facts"][number];
 type Row = { code: string; label: string; strong?: boolean };
 type IndicatorPreview = { name: string; description: string; formula: string; requirement?: string };
 
-const indicatorGroups: { title: string; indicators: IndicatorPreview[] }[] = [
-  { title: "Płynność", indicators: [
-    { name: "Płynność bieżąca", description: "Relacja aktywów obrotowych do zobowiązań wymagalnych w krótkim terminie.", formula: "Aktywa obrotowe ÷ zobowiązania krótkoterminowe" },
-    { name: "Kapitał obrotowy netto", description: "Kwota aktywów obrotowych pozostająca po odjęciu zobowiązań krótkoterminowych.", formula: "Aktywa obrotowe − zobowiązania krótkoterminowe" },
-    { name: "Płynność szybka", description: "Pokazuje pokrycie zobowiązań krótkoterminowych bez uwzględniania zapasów.", formula: "(Aktywa obrotowe − zapasy) ÷ zobowiązania krótkoterminowe", requirement: "Wymaga potwierdzonej wartości zapasów." },
+const indicatorGroups: { title: string; description: string; indicators: IndicatorPreview[] }[] = [
+  { title: "Płynność", description: "Pokazuje, czy dostawca ma zasoby na najbliższe zobowiązania. Dla kupca to sygnał, czy napięta gotówka może utrudnić terminowe zakupy materiałów, produkcję lub dostawy.", indicators: [
+    { name: "Płynność bieżąca", description: "Pomaga ocenić krótkoterminową zdolność do regulowania zobowiązań. Niska wartość może oznaczać ryzyko przerw w dostawach; bardzo wysoka wymaga sprawdzenia, czy aktywa nie są zamrożone w zapasach i należnościach.", formula: "Aktywa obrotowe ÷ zobowiązania krótkoterminowe" },
+    { name: "Kapitał obrotowy netto", description: "Pokazuje finansowy bufor po pokryciu zobowiązań krótkoterminowych. Ujemna wartość może utrudnić dostawcy sfinansowanie bieżących zamówień i wzrostu produkcji.", formula: "Aktywa obrotowe − zobowiązania krótkoterminowe" },
+    { name: "Płynność szybka", description: "Sprawdza pokrycie krótkoterminowych zobowiązań bez zapasów, których nie zawsze można szybko spieniężyć. Jest użyteczna, gdy dostawca utrzymuje duży magazyn.", formula: "(Aktywa obrotowe − zapasy) ÷ zobowiązania krótkoterminowe", requirement: "Wymaga potwierdzonej wartości zapasów." },
   ] },
-  { title: "Finansowanie i zadłużenie", indicators: [
-    { name: "Udział zobowiązań i rezerw w aktywach", description: "Pokazuje udział zobowiązań i rezerw w finansowaniu aktywów; nie oznacza wyłącznie kredytów.", formula: "Zobowiązania i rezerwy ÷ aktywa razem" },
-    { name: "Udział kapitału własnego w aktywach", description: "Pokazuje, jaką część aktywów finansuje kapitał własny spółki.", formula: "Kapitał własny ÷ aktywa razem" },
-    { name: "Pokrycie odsetek", description: "Porównuje wynik operacyjny z kosztami samych odsetek.", formula: "Wynik operacyjny ÷ koszty odsetek", requirement: "Wymaga wyodrębnienia odsetek z kosztów finansowych." },
-    { name: "Dług netto / EBITDA", description: "Zestawia dług finansowy pomniejszony o gotówkę z wynikiem EBITDA.", formula: "(Dług oprocentowany − środki pieniężne) ÷ EBITDA", requirement: "Wymaga potwierdzenia długu, gotówki i definicji EBITDA." },
+  { title: "Finansowanie i zadłużenie", description: "Pokazuje, jak dostawca finansuje działalność i jak duże ma obciążenia. Kupiec może dzięki temu ocenić odporność firmy na spadek sprzedaży lub wzrost kosztów finansowania.", indicators: [
+    { name: "Udział zobowiązań i rezerw w aktywach", description: "Wskazuje część majątku finansowaną zobowiązaniami i rezerwami. Rosnący udział może zmniejszać odporność dostawcy na trudniejszy okres; ta pozycja nie oznacza wyłącznie kredytów.", formula: "Zobowiązania i rezerwy ÷ aktywa razem" },
+    { name: "Udział kapitału własnego w aktywach", description: "Pokazuje, ile majątku jest finansowane własnym kapitałem. Wyższy udział może dawać dostawcy większy bufor na straty i nieprzewidziane wydatki.", formula: "Kapitał własny ÷ aktywa razem" },
+    { name: "Pokrycie odsetek", description: "Pomaga ocenić, czy wynik operacyjny wystarcza na obsługę odsetek. Słabe pokrycie może ograniczyć środki potrzebne na wykonanie kontraktu.", formula: "Wynik operacyjny ÷ koszty odsetek", requirement: "Wymaga wyodrębnienia odsetek z kosztów finansowych." },
+    { name: "Dług netto / EBITDA", description: "Orientacyjnie pokazuje skalę długu wobec wyniku operacyjnego przed amortyzacją. Wysoka wartość może sygnalizować ograniczoną zdolność do nowych inwestycji; EBITDA nie jest gotówką.", formula: "(Dług oprocentowany − środki pieniężne) ÷ EBITDA", requirement: "Wymaga potwierdzenia długu, gotówki i definicji EBITDA." },
   ] },
-  { title: "Rentowność i trend", indicators: [
-    { name: "Marża operacyjna", description: "Udział wyniku z działalności operacyjnej w przychodach.", formula: "Wynik operacyjny ÷ przychody × 100%" },
-    { name: "Marża netto", description: "Udział wyniku netto w przychodach; strata pozostanie wartością ujemną.", formula: "Wynik netto ÷ przychody × 100%" },
-    { name: "Zmiana przychodów rok do roku", description: "Pokazuje zmianę skali działalności względem porównywalnego poprzedniego roku.", formula: "(Przychody bieżące ÷ przychody poprzedniego roku − 1) × 100%" },
-    { name: "Rentowność aktywów (ROA)", description: "Porównuje wynik netto z przeciętną wartością aktywów z dwóch lat.", formula: "Wynik netto ÷ średnie aktywa × 100%", requirement: "Wymaga porównywalnych danych za dwa lata." },
-    { name: "Rentowność kapitału własnego (ROE)", description: "Porównuje wynik netto z przeciętnym kapitałem własnym.", formula: "Wynik netto ÷ średni kapitał własny × 100%", requirement: "Wymaga dwóch lat danych; przy kapitale niedodatnim wynik wymaga osobnej interpretacji." },
-    { name: "Marża EBITDA", description: "Pokazuje relację wyniku operacyjnego przed amortyzacją do przychodów; nie jest miarą gotówki.", formula: "(Wynik operacyjny + amortyzacja) ÷ przychody × 100%", requirement: "Wymaga potwierdzonej amortyzacji i jednej definicji EBITDA." },
+  { title: "Rentowność i trend", description: "Pokazuje, czy dostawca zarabia na działalności i w jakim kierunku zmienia się jego skala. Dla kupca istotna jest trwałość wyniku, a nie tylko pojedynczy dobry rok.", indicators: [
+    { name: "Marża operacyjna", description: "Pokazuje, jaka część przychodów pozostaje po kosztach podstawowej działalności. Spadek marży może zapowiadać presję na ceny, jakość lub terminowość dostaw.", formula: "Wynik operacyjny ÷ przychody × 100%" },
+    { name: "Marża netto", description: "Pokazuje końcowy wynik przypadający na przychody. Utrzymujące się straty mogą osłabiać zdolność dostawcy do realizacji długich kontraktów.", formula: "Wynik netto ÷ przychody × 100%" },
+    { name: "Zmiana przychodów rok do roku", description: "Pozwala zobaczyć, czy skala działalności rośnie czy maleje. Gwałtowny spadek może wymagać rozmowy o obłożeniu zakładu i ciągłości dostaw; sam wzrost nie dowodzi dobrej kondycji.", formula: "(Przychody bieżące ÷ przychody poprzedniego roku − 1) × 100%" },
+    { name: "Rentowność aktywów (ROA)", description: "Pokazuje, jak skutecznie majątek firmy tworzy wynik. Spadek może sugerować słabsze wykorzystanie zasobów potrzebnych do obsługi zamówień.", formula: "Wynik netto ÷ średnie aktywa × 100%", requirement: "Wymaga porównywalnych danych za dwa lata." },
+    { name: "Rentowność kapitału własnego (ROE)", description: "Pokazuje wynik osiągany na kapitale właścicieli. Pomaga ocenić trwałość finansowania, lecz przy niskim lub ujemnym kapitale może być mylący.", formula: "Wynik netto ÷ średni kapitał własny × 100%", requirement: "Wymaga dwóch lat danych; przy kapitale niedodatnim wynik wymaga osobnej interpretacji." },
+    { name: "Marża EBITDA", description: "Pokazuje relację wyniku przed amortyzacją do przychodów. Ułatwia porównanie trendu operacyjnego, ale nie potwierdza dostępnej gotówki na realizację zamówień.", formula: "(Wynik operacyjny + amortyzacja) ÷ przychody × 100%", requirement: "Wymaga potwierdzonej amortyzacji i jednej definicji EBITDA." },
   ] },
-  { title: "Koszty i przepływy pieniężne", indicators: [
-    { name: "Udział materiałów i energii w kosztach", description: "Pokazuje, jaką część kosztów operacyjnych stanowią materiały i energia.", formula: "Koszty materiałów i energii ÷ koszty działalności operacyjnej × 100%" },
-    { name: "Pokrycie zobowiązań przepływami operacyjnymi", description: "Zestawia gotówkę z działalności operacyjnej ze zobowiązaniami krótkoterminowymi.", formula: "Przepływy operacyjne ÷ zobowiązania krótkoterminowe", requirement: "Wymaga rachunku przepływów pieniężnych." },
-    { name: "Wolne przepływy pieniężne", description: "Przybliżona gotówka pozostająca po wydatkach inwestycyjnych.", formula: "Przepływy operacyjne − nakłady inwestycyjne", requirement: "Wymaga rachunku przepływów i potwierdzenia nakładów inwestycyjnych." },
-    { name: "Cykl konwersji gotówki", description: "Szacuje liczbę dni od poniesienia wydatku na zapasy do odzyskania gotówki ze sprzedaży.", formula: "Dni zapasów + dni należności − dni zobowiązań", requirement: "Wymaga szczegółowych pozycji bilansu, kosztu sprzedaży i porównywalnych okresów." },
+  { title: "Koszty i przepływy pieniężne", description: "Pokazuje wrażliwość kosztów oraz to, czy działalność tworzy gotówkę. Dla kupca są to sygnały, czy dostawca może finansować materiały, pracę i inwestycje bez zakłócania dostaw.", indicators: [
+    { name: "Udział materiałów i energii w kosztach", description: "Pomaga ocenić wrażliwość dostawcy na wzrost cen surowców i energii. Wysoki udział może uzasadniać rozmowę o zabezpieczeniu cen i terminów dostaw.", formula: "Koszty materiałów i energii ÷ koszty działalności operacyjnej × 100%" },
+    { name: "Pokrycie zobowiązań przepływami operacyjnymi", description: "Pokazuje, w jakim stopniu bieżąca działalność dostarcza gotówki na krótkoterminowe zobowiązania. Niskie pokrycie może oznaczać większą zależność od finansowania zewnętrznego.", formula: "Przepływy operacyjne ÷ zobowiązania krótkoterminowe", requirement: "Wymaga rachunku przepływów pieniężnych." },
+    { name: "Wolne przepływy pieniężne", description: "Przybliżają gotówkę pozostającą po nakładach inwestycyjnych. Ujemna wartość wymaga sprawdzenia, czy wynika z rozwoju firmy, czy z trudności operacyjnych.", formula: "Przepływy operacyjne − nakłady inwestycyjne", requirement: "Wymaga rachunku przepływów i potwierdzenia nakładów inwestycyjnych." },
+    { name: "Cykl konwersji gotówki", description: "Pokazuje, jak długo środki są związane w zapasach i należnościach przed odzyskaniem gotówki. Długi cykl może utrudniać finansowanie kolejnych zamówień.", formula: "Dni zapasów + dni należności − dni zobowiązań", requirement: "Wymaga szczegółowych pozycji bilansu, kosztu sprzedaży i porównywalnych okresów." },
   ] },
 ];
 
@@ -45,6 +45,7 @@ function FinancialIndicatorsPreview() {
     </div>
     {indicatorGroups.map((group) => <section className="financial-indicator-group" key={group.title} aria-label={group.title}>
       <h3>{group.title}</h3>
+      <p className="financial-indicator-group-description">{group.description}</p>
       <div className="financial-indicator-grid">{group.indicators.map((indicator) => <article className="financial-indicator" key={indicator.name}>
         <div className="financial-indicator-heading"><h4>{indicator.name}</h4><strong className="financial-indicator-value">W trakcie developmentu</strong></div>
         <p>{indicator.description}</p>

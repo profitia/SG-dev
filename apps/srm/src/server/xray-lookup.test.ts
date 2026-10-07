@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { FinancialDataMount, latestAvailableFinancialYear, VerclyKysMount, type FinancialData, type SectionEnvelope, type VerclyKysData } from "@profitia/srm-xray";
+import { FinancialDataMount, JdgRegistryMount, latestAvailableFinancialYear, VerclyKysMount, type FinancialData, type JdgRegistryData, type SectionEnvelope, type VerclyKysData } from "@profitia/srm-xray";
 import { toPublicSection, validateXrayRequest } from "./xray-lookup";
 
 test("public response omits provider provenance and vendor warning codes", () => {
@@ -165,12 +165,36 @@ test("KYS mount masks PESEL and keeps beneficiary details aligned without birth 
   assert.equal((html.match(/<details class="kys-person-entry">/g) ?? []).length, 2);
   assert.match(html, /<summary class="kys-person-summary">/);
   assert.match(html, /kys-person-preview/);
-  assert.match(html, /Sankcje<\/small>Nie/);
-  assert.match(html, /PEP<\/small>Tak/);
+  assert.equal((html.match(/>PESEL<\/span>/g) ?? []).length, 2);
+  assert.equal((html.match(/>Sankcje<\/span>/g) ?? []).length, 2);
+  assert.equal((html.match(/>PEP<\/span>/g) ?? []).length, 2);
+  assert.match(html, /Powiązanie \/ rejestr/);
+  assert.match(html, /kys-person-status">Nie/);
+  assert.match(html, /kys-person-status">Tak/);
   assert.match(html, /<dt>Rejestr<\/dt><dd>CRBR, Bardzo długa nazwa podmiotu powiązanego<\/dd>/);
   assert.match(html, /kys-person-open-label">Rozwiń/);
   assert.match(html, /kys-person-close-label">Zwiń/);
   assert.ok(!html.includes("Szczegóły osób i ich identyfikatory nie są udostępniane"));
+});
+
+test("JDG view hides CEIDG address identifiers and labels activity codes as PKD", () => {
+  const section: SectionEnvelope<JdgRegistryData> = {
+    status: "SUCCESS", source: { provider: "CEIDG", model: "firma", recordId: "id" }, retrievedAt: null, effectiveAt: null, warnings: [],
+    data: { entries: [{ recordId: "id", name: "Przykładowa JDG", nip: "7972088368", regon: null, status: "Aktywny", fields: [
+      { key: "adresKorespondencyjny", label: "Adres korespondencyjny", value: null, children: [
+        { key: "terc", label: "TERC", value: "123", children: [] }, { key: "simc", label: "SIMC", value: "456", children: [] },
+        { key: "ulic", label: "ULIC", value: "789", children: [] }, { key: "kod", label: "Kod pocztowy", value: "00-001", children: [] },
+      ] },
+      { key: "pkd", label: "Kody PKD", value: null, children: [
+        { key: "1", label: "Pozycja 1", value: null, children: [{ key: "kod", label: "Kod pocztowy", value: "62.01.Z", children: [] }] },
+      ] },
+      { key: "link", label: "Adres wpisu w CEIDG", value: "https://example.com", children: [] },
+    ] }] },
+  };
+  const html = renderToStaticMarkup(createElement(JdgRegistryMount, { section }));
+  assert.match(html, /Kod pocztowy<\/dt><dd>00-001/);
+  assert.match(html, /Kod PKD<\/dt><dd>62\.01\.Z/);
+  for (const hidden of ["TERC", "SIMC", "ULIC", "Adres wpisu w CEIDG", "https://example.com"]) assert.ok(!html.includes(hidden));
 });
 
 test("JDG KYS mount shows the sole proprietor form without company-only fields", () => {
