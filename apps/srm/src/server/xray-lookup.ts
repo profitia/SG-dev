@@ -3,6 +3,7 @@ import { emptyCard } from "../demo/fixture";
 import { fetchMgbiGeneral, type CompanyIdentifier } from "./mgbi-general";
 import { fetchMgbiFinancial, type FinancialSourceFact } from "./mgbi-financial";
 import { fetchVerclyKys } from "./vercly-kys";
+import { readFreshCompany, recordDemoInterest, saveSharedCompany } from "./shared-catalog";
 import { appendFinancialFacts, appendSectionProjection, appendSnapshot, createLookup, finishAttempt, purgeExpiredKysPersonal, registerOrganization, startAttempt, type Section } from "./xray-repository";
 
 export type XrayLookupRequest = { identifier: CompanyIdentifier & { type: "NIP" } };
@@ -84,6 +85,18 @@ async function persistSection(
 export async function runXrayLookup(organizationId: string, request: XrayLookupRequest): Promise<SupplierXRayCard> {
   await registerOrganization(organizationId, "srm-development");
   const lookup = await createLookup(organizationId, request.identifier);
+  const cached = await readFreshCompany(organizationId, request.identifier.value);
+  if (cached) {
+    await recordDemoInterest(organizationId, request.identifier.value);
+    return {
+      identity: {
+        krs: cached.general.data?.krs ?? null,
+        nip: cached.general.data?.nip ?? request.identifier.value,
+        name: cached.general.data?.legalName ?? null,
+      },
+      general: cached.general, financial: cached.financial, kys: emptyCard.kys,
+    };
+  }
   const [general, financial] = await Promise.all([
     fetchMgbiGeneral(request.identifier).catch(() => ({
       section: { ...emptyCard.general, status: "ERROR" as const, retrievedAt: new Date().toISOString(), warnings: ["MGBI_NOT_CONFIGURED"] },
@@ -94,8 +107,13 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
       facts: [], sourceData: undefined, errorCode: "NOT_CONFIGURED",
     })),
   ]);
-  await persistSection(organizationId, lookup, "general", general.section, general.errorCode);
-  await persistSection(organizationId, lookup, "financial", financial.section, financial.errorCode, financial.facts, undefined, financial.sourceData);
+  const generalSnapshotId = await persistSection(organizationId, lookup, "general", general.section, general.errorCode);
+  const financialSnapshotId = await persistSection(organizationId, lookup, "financial", financial.section, financial.errorCode, financial.facts, undefined, financial.sourceData);
+  await saveSharedCompany(organizationId, request.identifier.value, {
+    general: general.section, financial: financial.section,
+    generalSnapshotId, financialSnapshotId, facts: financial.facts,
+  });
+  if (general.section.data?.nip === request.identifier.value) await recordDemoInterest(organizationId, request.identifier.value);
 
   return {
     identity: {

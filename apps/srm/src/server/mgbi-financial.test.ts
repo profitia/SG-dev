@@ -26,6 +26,35 @@ test("maps JSON standardized fields extracted from an XML financial statement in
   });
 });
 
+test("adds numeric extracted fields and prefers standardized values for matching metrics", () => {
+  const source = structuredClone(record);
+  source.content = { ...source.content, extracted_fields: {
+    bs: { a_ca_cfy: "999", a_fa_cfy: "440000.25", a_fa_pfy: "400000" },
+    cfs: { cffia_e_aoiaaotfa_cfy: "-123.45" },
+  } } as unknown as typeof source.content;
+  const result = mapMgbiFinancialRecords([source], identifier, at);
+  const currentAssets = result.facts.find((fact) => fact.metricCode === "BS_A_CA" && fact.periodEnd === "2025-12-31");
+  const fixedAssets = result.facts.find((fact) => fact.metricCode === "BS_A_FA" && fact.periodEnd === "2025-12-31");
+  const cashFlow = result.facts.find((fact) => fact.metricCode === "CFS_CFFIA_E_AOIAAOTFA");
+  assert.equal(currentAssets?.amount, "119425249.41");
+  assert.equal(currentAssets?.sourcePath, "content.standardized_fields.bs.a_ca_cfy");
+  assert.equal(fixedAssets?.amount, "440000.25");
+  assert.equal(fixedAssets?.sourcePath, "content.extracted_fields.bs.a_fa_cfy");
+  assert.equal(cashFlow?.amount, "-123.45");
+  assert.equal(result.section.data?.periods.some((period) => period.facts.some((fact) => fact.metricCode === "BS_A_FA")), true);
+});
+
+test("maps an extracted-fields-only statement without inventing standardized values", () => {
+  const source = structuredClone(record);
+  source.content = { schema: { name: "JednostkaInnaWZlotych" }, extracted_fields: {
+    bs: { a_ca_cfy: "250", a_ca_pfy: "200" },
+  } } as unknown as typeof source.content;
+  const result = mapMgbiFinancialRecords([source], identifier, at);
+  assert.equal(result.section.status, "SUCCESS");
+  assert.deepEqual(result.facts.map((fact) => fact.amount), ["250", "200"]);
+  assert.ok(result.facts.every((fact) => fact.sourcePath.startsWith("content.extracted_fields.")));
+});
+
 test("verifies both expense sign conventions and returns positive costs while preserving source figures", () => {
   const source = {
     id: "expense-report", identifiers: { pl_krs: identifier.value },

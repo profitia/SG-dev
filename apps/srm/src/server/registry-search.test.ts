@@ -38,6 +38,19 @@ test("CEIDG empty falls through to a verified company", async () => {
   assert.equal(result.entityType, "COMPANY");
 });
 
+test("a fresh company in the shared catalog bypasses CEIDG", async () => {
+  let jdgCalls = 0;
+  let companyCalls = 0;
+  const result = await searchRegistryByNip("org", request, {
+    catalog: async () => true,
+    jdg: async () => { jdgCalls += 1; return jdg("EMPTY"); },
+    company: async () => { companyCalls += 1; return company("SUCCESS", nip); },
+  });
+  assert.equal(result.entityType, "COMPANY");
+  assert.equal(jdgCalls, 0);
+  assert.equal(companyCalls, 1);
+});
+
 test("missing from both registries is distinct from provider failure", async () => {
   const notFound = await searchRegistryByNip("org", request, {
     jdg: async () => jdg("EMPTY"), company: async () => company("EMPTY"),
