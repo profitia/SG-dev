@@ -137,16 +137,22 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
   for (const record of selected) {
     const document = obj(field(record, "document"));
     const standardized = obj(field(record, "content", "standardized_fields"));
+    const extracted = obj(field(record, "content", "extracted_fields"));
     const from = date(document?.period_from_date);
     const to = date(document?.period_to_date);
     const recordId = string(field(record, "id"));
-    if (!standardized || !from || !to || !recordId || from > to) continue;
+    if ((!standardized && !extracted) || !from || !to || !recordId || from > to) continue;
     const scope = document?.type === "consolidated_financial_statement" ? "CONSOLIDATED" : "UNIT";
     const schema = string(field(record, "content", "schema", "name")) ?? "";
     const unitCode = /wtysiacachzlotych/i.test(schema) ? "THOUSAND_PLN" : /wzlotych/i.test(schema) ? "PLN" : "UNKNOWN";
     const validationStatus = unitCode === "PLN" ? "VALID" : "REVIEW";
     const byPeriod = new Map<string, FinancialPeriod>();
-    for (const [sectionName, sectionFields] of Object.entries(standardized)) {
+    // MGBI defines extracted_fields as the complete XML field dictionary and
+    // standardized_fields as its smaller comparable subset. Preserve the subset
+    // as authority when both dictionaries contain the same metric and period.
+    for (const [dictionaryName, dictionary] of [["standardized_fields", standardized], ["extracted_fields", extracted]] as const) {
+      if (!dictionary) continue;
+      for (const [sectionName, sectionFields] of Object.entries(dictionary)) {
       const section = obj(sectionFields);
       if (!section || !/^[a-z]{2,8}$/.test(sectionName)) continue;
       for (const [sourceKey, rawValue] of Object.entries(section)) {
@@ -165,7 +171,7 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
         const fact: FinancialSourceFact = {
           metricCode, periodStart, periodEnd, periodType, statementScope: scope,
           amount: numeric, sourceAmount: numeric, normalizationRule: "SOURCE_VALUE", currencyCode: "PLN", unitCode,
-          sourcePath: `content.standardized_fields.${sectionName}.${sourceKey}`,
+          sourcePath: `content.${dictionaryName}.${sectionName}.${sourceKey}`,
           validationStatus,
         };
         facts.push(fact);
@@ -177,6 +183,7 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
           periods.push(period);
         }
         (period.facts as { metricCode: string; amount: string; currency: string; unit: string }[]).push({ metricCode, amount: numeric, currency: "PLN", unit: unitCode });
+      }
       }
     }
   }
