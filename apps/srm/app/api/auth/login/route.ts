@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { createDemoSession, demoAuthReady, passwordMatches, SRM_SESSION_COOKIE, SRM_SESSION_MAX_AGE_SECONDS } from "../../../../src/server/demo-auth";
-import { isSameOriginRequest } from "../../../../src/server/request-origin";
+import { isSameOriginRequest, sameOriginRedirectUrl } from "../../../../src/server/request-origin";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   if (!isSameOriginRequest(request)) return NextResponse.json({ error: "Nieprawidłowe żądanie." }, { status: 403 });
-  const destination = new URL("/login", request.url);
+  const destination = sameOriginRedirectUrl(request, "/login");
   if (!demoAuthReady()) {
     destination.searchParams.set("error", "configuration");
     return NextResponse.redirect(destination, { status: 303, headers: { "Cache-Control": "no-store" } });
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     response.cookies.delete(SRM_SESSION_COOKIE);
     return response;
   }
-  const response = NextResponse.redirect(new URL("/", request.url), { status: 303, headers: { "Cache-Control": "no-store" } });
+  const response = NextResponse.redirect(sameOriginRedirectUrl(request, "/"), { status: 303, headers: { "Cache-Control": "no-store" } });
   response.cookies.set({
     name: SRM_SESSION_COOKIE,
     value: await createDemoSession(process.env.SRM_DEMO_SESSION_SECRET!),
