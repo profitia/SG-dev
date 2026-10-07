@@ -30,6 +30,15 @@ const NO_FINANCIAL_FACTS = "MGBI_NO_STRUCTURED_FINANCIAL_DATA";
 const INTERNATIONAL_STATEMENT = "MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS";
 const XML_FINANCIAL_FIELDS: Record<string, string> = {
   "Bilans.Aktywa.Aktywa_B.Aktywa_B_I": "BS_A_CA_INV",
+  "Bilans.Aktywa.Aktywa_B.Aktywa_B_II.Aktywa_B_II_1.Aktywa_B_II_1_A": "BS_TRADE_RECEIVABLES_RELATED",
+  "Bilans.Aktywa.Aktywa_B.Aktywa_B_II.Aktywa_B_II_2.Aktywa_B_II_2_A": "BS_TRADE_RECEIVABLES_INVESTEE",
+  "Bilans.Aktywa.Aktywa_B.Aktywa_B_II.Aktywa_B_II_3.Aktywa_B_II_3_A": "BS_TRADE_RECEIVABLES_OTHER",
+  "Bilans.Pasywa.Pasywa_B.Pasywa_B_III.Pasywa_B_III_1.Pasywa_B_III_1_A": "BS_TRADE_PAYABLES_RELATED",
+  "Bilans.Pasywa.Pasywa_B.Pasywa_B_III.Pasywa_B_III_2.Pasywa_B_III_2_A": "BS_TRADE_PAYABLES_INVESTEE",
+  "Bilans.Pasywa.Pasywa_B.Pasywa_B_III.Pasywa_B_III_3.Pasywa_B_III_3_D": "BS_TRADE_PAYABLES_OTHER",
+  "RZiS.RZiSKalk.A": "PALA_NET_SALES",
+  "RZiS.RZiSKalk.B": "PALA_COGS",
+  "RZiS.RZiSKalk.C": "PALA_GROSS_PROFIT",
   "RZiS.RZiSPor.H.H_I": "PALA_INTEREST_EXPENSE",
   "RZiS.RZiSKalk.K.K_I": "PALA_INTEREST_EXPENSE",
   "RachPrzeplywow.PrzeplywyPosr.A.A_III": "CFS_OPERATING_CASH_FLOW",
@@ -78,6 +87,7 @@ function reconcileCosts(periods: FinancialPeriod[], facts: FinancialSourceFact[]
     const values = new Map(period.facts.map((fact) => [fact.metricCode, fact.amount]));
     const equations = [
       { cost: "PALA_OAC", left: "PALA_NRFS", addition: null, result: "PALA_PLFS" },
+      { cost: "PALA_COGS", left: "PALA_NET_SALES", addition: null, result: "PALA_GROSS_PROFIT" },
       { cost: "PALA_OOC", left: "PALA_PLFS", addition: "PALA_OOR", result: "PALA_PLFOA" },
       { cost: "PALA_FC", left: "PALA_PLFOA", addition: "PALA_FR", result: "PALA_GPL" },
       { cost: "PALA_IT", left: "PALA_GPL", addition: null, result: "PALA_NPL" },

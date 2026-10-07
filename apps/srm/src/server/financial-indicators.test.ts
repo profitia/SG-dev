@@ -19,7 +19,7 @@ function fixture(currentValues: Values = current, previousValues: Values = previ
     const facts = Object.entries(values).map(([metricCode, amount]): CatalogIndicatorFact => ({
       metricCode, periodStart: from, periodEnd: to, statementScope: "UNIT", amount,
       currencyCode: "PLN", unitCode: "PLN", sourcePath: `content.standardized_fields.${metricCode}`,
-      validationStatus: "VALID", normalizationRule: metricCode.startsWith("PALA_OAC") ? "VERIFIED_COST_MAGNITUDE_V1" : "SOURCE_VALUE",
+      validationStatus: "VALID", normalizationRule: (metricCode.startsWith("PALA_OAC") || metricCode === "PALA_COGS") ? "VERIFIED_COST_MAGNITUDE_V1" : "SOURCE_VALUE",
       sourceSnapshotId: `00000000-0000-4000-8000-${String(year).padStart(12, "0")}`,
     }));
     const period = { from, to, scope: "standalone" as const, documentId,
@@ -48,7 +48,7 @@ test("first-wave formulas use unrounded stored facts and retain exact source evi
     assert.equal(result.value, value, code);
     assert.equal(result.reasonCode, null);
     assert.equal(result.nip, "5213390341");
-    assert.equal(result.formulaVersion, "1.1");
+    assert.equal(result.formulaVersion, "1.2");
     assert.ok(result.inputFacts.length >= 2, code);
     assert.ok(result.sourceDocumentIds.includes("document-2025:cfy"));
   }
@@ -114,13 +114,13 @@ test("unconfirmed second-wave field mappings never calculate from broader source
     ...current, PALA_FC: "70000", BS_LAE_LAPFL: "2000000",
     CFS_OACF_TA_D: "100000", CFS_CFFIA_E_AOIAAOTFA: "200000",
   });
-  for (const code of ["NET_DEBT_TO_EBITDA", "CASH_CONVERSION_CYCLE"]) {
-    const result = newest(code, data, facts);
-    assert.equal(result.status, "UNAVAILABLE", code);
-    assert.equal(result.value, null, code);
-    assert.equal(result.reasonCode, "SOURCE_MAPPING_UNCONFIRMED", code);
-    assert.equal(result.inputFacts.length, 0, code);
-  }
+  const debt = newest("NET_DEBT_TO_EBITDA", data, facts);
+  assert.equal(debt.reasonCode, "SOURCE_MAPPING_UNCONFIRMED");
+  assert.equal(debt.inputFacts.length, 0);
+  const cycle = newest("CASH_CONVERSION_CYCLE", data, facts);
+  assert.equal(cycle.status, "UNAVAILABLE");
+  assert.equal(cycle.reasonCode, "MISSING_FIELD");
+  assert.equal(cycle.value, null);
 });
 
 test("second-wave calculations use exact inventory, interest expense and cash-flow facts", () => {
@@ -135,4 +135,36 @@ test("second-wave calculations use exact inventory, interest expense and cash-fl
   assert.equal(newest("QUICK_RATIO", data, absent).reasonCode, "MISSING_FIELD");
   const zeroInterest = fixture({ ...values, PALA_INTEREST_EXPENSE: "0" });
   assert.equal(newest("INTEREST_COVERAGE", zeroInterest.data, zeroInterest.facts).reasonCode, "NON_POSITIVE_DENOMINATOR");
+});
+
+test("cash conversion cycle uses exact trade balances and verified cost of goods sold", () => {
+  const cycleCurrent = { ...current,
+    BS_A_CA_INV: "120", BS_TRADE_RECEIVABLES_RELATED: "20", BS_TRADE_RECEIVABLES_INVESTEE: "30",
+    BS_TRADE_RECEIVABLES_OTHER: "150", BS_TRADE_PAYABLES_RELATED: "10",
+    BS_TRADE_PAYABLES_INVESTEE: "20", BS_TRADE_PAYABLES_OTHER: "120",
+    PALA_NET_SALES: "1000", PALA_COGS: "600",
+  };
+  const cyclePrevious = { ...previous,
+    BS_A_CA_INV: "100", BS_TRADE_RECEIVABLES_RELATED: "10", BS_TRADE_RECEIVABLES_INVESTEE: "20",
+    BS_TRADE_RECEIVABLES_OTHER: "140", BS_TRADE_PAYABLES_RELATED: "10",
+    BS_TRADE_PAYABLES_INVESTEE: "20", BS_TRADE_PAYABLES_OTHER: "100",
+  };
+  const { data, facts } = fixture(cycleCurrent, cyclePrevious);
+  const result = newest("CASH_CONVERSION_CYCLE", data, facts);
+  assert.equal(result.status, "AVAILABLE");
+  assert.equal(result.value, "49.275000");
+  assert.equal(result.unit, "DAYS");
+  assert.equal(result.importance, 2);
+  assert.equal(result.inputFacts.length, 16);
+  assert.deepEqual(result.sourceDocumentIds, ["document-2024:cfy", "document-2025:cfy"]);
+  const missing = facts.filter((fact) => !(fact.periodEnd === "2024-12-31" && fact.metricCode === "BS_TRADE_PAYABLES_OTHER"));
+  assert.equal(newest("CASH_CONVERSION_CYCLE", data, missing).reasonCode, "MISSING_FIELD");
+  const costUnverified = facts.map((fact) => fact.metricCode === "PALA_COGS" ? { ...fact, normalizationRule: "SOURCE_VALUE" } : fact);
+  assert.equal(newest("CASH_CONVERSION_CYCLE", data, costUnverified).reasonCode, "UNVERIFIED_COST_SIGN");
+  const zeroCost = fixture({ ...cycleCurrent, PALA_COGS: "0" }, cyclePrevious);
+  assert.equal(newest("CASH_CONVERSION_CYCLE", zeroCost.data, zeroCost.facts).reasonCode, "NON_POSITIVE_DENOMINATOR");
+  const negativeTradeBalance = fixture({ ...cycleCurrent, BS_TRADE_RECEIVABLES_OTHER: "-1" }, cyclePrevious);
+  assert.equal(newest("CASH_CONVERSION_CYCLE", negativeTradeBalance.data, negativeTradeBalance.facts).reasonCode, "INVALID_AMOUNT");
+  const gap = fixture(cycleCurrent, cyclePrevious, 2023);
+  assert.equal(newest("CASH_CONVERSION_CYCLE", gap.data, gap.facts).reasonCode, "PRIOR_YEAR_NOT_COMPARABLE");
 });
