@@ -79,7 +79,7 @@ function FinancialIndicatorsPreview({ data, scope, year }: { data: FinancialData
           <div className="financial-indicator-heading"><h4>{indicator.name}</h4>
             <strong className="financial-indicator-value">{result ? available ? formattedIndicatorValue(result) : "Nie można obliczyć" : "W trakcie developmentu"}</strong></div>
           {importance && <p className="financial-indicator-importance" aria-label={`Ważność dla kupca: ${result!.importance} z 3`}>{importance} · {result!.importance === 3 ? "kluczowa" : result!.importance === 2 ? "istotna" : "pomocnicza"}</p>}
-          {result && !available && <p className="financial-indicator-reason">{indicatorReasons[result.reasonCode ?? ""] ?? "Nie można potwierdzić danych do obliczenia."}</p>}
+          {result && !available && <p className="financial-indicator-reason">{result.code === "CASH_CONVERSION_CYCLE" && result.reasonCode === "MISSING_FIELD" ? "Dostępne sprawozdania spółki nie zawierają wszystkich danych wymaganych do obliczenia cyklu." : indicatorReasons[result.reasonCode ?? ""] ?? "Nie można potwierdzić danych do obliczenia."}</p>}
           <p>{indicator.description}</p>
           <p className="financial-indicator-formula"><span>Jak liczymy:</span> {indicator.formula}</p>
           {indicator.requirement && <p className="financial-indicator-requirement">{indicator.requirement}</p>}

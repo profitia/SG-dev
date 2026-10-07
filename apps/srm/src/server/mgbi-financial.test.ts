@@ -209,3 +209,35 @@ test("maps only verified flat MGBI XML paths for current and prior financial per
   assert.equal(result.facts.find((fact) => fact.metricCode === "CFS_CAPITAL_EXPENDITURE")?.amount, "-150");
   assert.ok(result.facts.every((fact) => !fact.sourcePath.includes("Pesel")));
 });
+
+test("maps exact trade balances and calculative sales without using broader operating costs", () => {
+  const source = structuredClone(record);
+  source.content = { schema: { name: "JednostkaInnaWZlotych" }, extracted_fields: {
+    "Bilans.Aktywa.Aktywa_B.Aktywa_B_I.KwotaA": "120",
+    "Bilans.Aktywa.Aktywa_B.Aktywa_B_I.KwotaB": "100",
+    "Bilans.Aktywa.Aktywa_B.Aktywa_B_II.Aktywa_B_II_1.Aktywa_B_II_1_A.KwotaA": "20",
+    "Bilans.Aktywa.Aktywa_B.Aktywa_B_II.Aktywa_B_II_2.Aktywa_B_II_2_A.KwotaA": "30",
+    "Bilans.Aktywa.Aktywa_B.Aktywa_B_II.Aktywa_B_II_3.Aktywa_B_II_3_A.KwotaA": "150",
+    "Bilans.Pasywa.Pasywa_B.Pasywa_B_III.Pasywa_B_III_1.Pasywa_B_III_1_A.KwotaA": "10",
+    "Bilans.Pasywa.Pasywa_B.Pasywa_B_III.Pasywa_B_III_2.Pasywa_B_III_2_A.KwotaA": "20",
+    "Bilans.Pasywa.Pasywa_B.Pasywa_B_III.Pasywa_B_III_3.Pasywa_B_III_3_D.KwotaA": "120",
+    "RZiS.RZiSKalk.A.KwotaA": "1000",
+    "RZiS.RZiSKalk.B.KwotaA": "-600",
+    "RZiS.RZiSKalk.C.KwotaA": "400",
+    "RZiS.RZiSPor.B.KwotaA": "700",
+  } } as unknown as typeof source.content;
+  const result = mapMgbiFinancialRecords([source], identifier, at);
+  const byCode = new Map(result.facts.map((fact) => [fact.metricCode, fact]));
+  assert.equal(byCode.get("BS_TRADE_RECEIVABLES_OTHER")?.amount, "150");
+  assert.equal(byCode.get("BS_TRADE_PAYABLES_OTHER")?.amount, "120");
+  assert.equal(byCode.get("PALA_NET_SALES")?.amount, "1000");
+  assert.equal(byCode.get("PALA_COGS")?.sourceAmount, "-600");
+  assert.equal(byCode.get("PALA_COGS")?.amount, "600");
+  assert.equal(byCode.get("PALA_COGS")?.normalizationRule, "VERIFIED_COST_MAGNITUDE_V1");
+  assert.equal(result.sourceData?.periods[0].facts.find((fact) => fact.metricCode === "PALA_COGS")?.amount, "-600");
+  assert.ok(!result.facts.some((fact) => fact.sourcePath.endsWith("RZiSPor.B.KwotaA")));
+  const disputed = structuredClone(source);
+  (disputed.content as unknown as { extracted_fields: Record<string, string> }).extracted_fields["RZiS.RZiSKalk.C.KwotaA"] = "900";
+  const unverified = mapMgbiFinancialRecords([disputed], identifier, at);
+  assert.equal(unverified.facts.find((fact) => fact.metricCode === "PALA_COGS")?.validationStatus, "REVIEW");
+});
