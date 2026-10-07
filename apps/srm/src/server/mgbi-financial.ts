@@ -28,6 +28,15 @@ const SOURCE = { provider: "MGBI" as const, model: MODEL, recordId: null };
 const MAX_RESULTS = 100;
 const NO_FINANCIAL_FACTS = "MGBI_NO_STRUCTURED_FINANCIAL_DATA";
 const INTERNATIONAL_STATEMENT = "MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS";
+const XML_FINANCIAL_FIELDS: Record<string, string> = {
+  "Bilans.Aktywa.Aktywa_B.Aktywa_B_I": "BS_A_CA_INV",
+  "RZiS.RZiSPor.H.H_I": "PALA_INTEREST_EXPENSE",
+  "RZiS.RZiSKalk.K.K_I": "PALA_INTEREST_EXPENSE",
+  "RachPrzeplywow.PrzeplywyPosr.A.A_III": "CFS_OPERATING_CASH_FLOW",
+  "RachPrzeplywow.PrzeplywyBezp.A.A_III": "CFS_OPERATING_CASH_FLOW",
+  "RachPrzeplywow.PrzeplywyPosr.B.B_II.B_II_1": "CFS_CAPITAL_EXPENDITURE",
+  "RachPrzeplywow.PrzeplywyBezp.B.B_II.B_II_1": "CFS_CAPITAL_EXPENDITURE",
+};
 
 function obj(value: unknown): RecordObject | null {
   return value !== null && typeof value === "object" && !Array.isArray(value) ? value as RecordObject : null;
@@ -152,6 +161,34 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
     // as authority when both dictionaries contain the same metric and period.
     for (const [dictionaryName, dictionary] of [["standardized_fields", standardized], ["extracted_fields", extracted]] as const) {
       if (!dictionary) continue;
+      if (dictionaryName === "extracted_fields") {
+        // MGBI returns a flat XML path-to-amount map. Persist only audited
+        // financial paths; other extracted fields may contain personal data.
+        for (const [xmlPath, rawValue] of Object.entries(dictionary)) {
+          const match = /^(.*)\.Kwota([AB])$/.exec(xmlPath);
+          const metricCode = match ? XML_FINANCIAL_FIELDS[match[1]] : undefined;
+          const numeric = amount(rawValue);
+          if (!metricCode || numeric === null) continue;
+          const prior = match![2] === "B";
+          const periodStart = prior ? previousYear(from) : from;
+          const periodEnd = prior ? previousYear(to) : to;
+          const unique = [scope, periodStart, periodEnd, metricCode].join(":");
+          if (seen.has(unique)) continue;
+          seen.add(unique);
+          const periodType = periodStart.slice(0, 4) === periodEnd.slice(0, 4) && periodStart.endsWith("-01-01") && periodEnd.endsWith("-12-31") ? "YEAR" : "OTHER";
+          facts.push({ metricCode, periodStart, periodEnd, periodType, statementScope: scope,
+            amount: numeric, sourceAmount: numeric, normalizationRule: "SOURCE_VALUE", currencyCode: "PLN", unitCode,
+            sourcePath: "content.extracted_fields." + xmlPath, validationStatus });
+          const key = recordId + ":" + (prior ? "pfy" : "cfy");
+          let period = byPeriod.get(key);
+          if (!period) {
+            period = { from: periodStart, to: periodEnd, scope: scope === "UNIT" ? "standalone" : "consolidated", documentId: key, facts: [] };
+            byPeriod.set(key, period);
+            periods.push(period);
+          }
+          (period.facts as { metricCode: string; amount: string; currency: string; unit: string }[]).push({ metricCode, amount: numeric, currency: "PLN", unit: unitCode });
+        }
+      }
       for (const [sectionName, sectionFields] of Object.entries(dictionary)) {
       const section = obj(sectionFields);
       if (!section || !/^[a-z]{2,8}$/.test(sectionName)) continue;
