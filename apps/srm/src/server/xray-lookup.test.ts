@@ -77,6 +77,13 @@ test("financial mount groups readable rows, converts PLN to thousands and keeps 
   assert.match(html, /2,00/);
   assert.match(html, /tysiącach złotych/);
   assert.match(html, /Analiza wskaźnikowa/);
+  assert.match(html, /Siła finansowa/);
+  assert.match(html, /Płynność bieżąca/);
+  assert.match(html, /Udział zobowiązań i rezerw w aktywach/);
+  assert.match(html, /Marża netto/);
+  assert.match(html, /Cykl konwersji gotówki/);
+  assert.equal(html.match(/W trakcie developmentu/g)?.length, 18);
+  assert.match(html, /Nie można obliczyć/);
   assert.ok(!html.includes("Źródło:"));
   assert.ok(!html.includes("MGBI"));
   assert.ok(!html.includes("PALA_UNKNOWN"));
