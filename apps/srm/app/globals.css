@@ -157,7 +157,6 @@ body { margin: 0; color: var(--srm-text); background: var(--srm-background); }
 .financial-chart { min-width: 0; border: 1px solid var(--srm-border); border-radius: 9px; padding: 14px; background: var(--srm-background); }
 .financial-chart h4 { margin: 0 0 10px; color: var(--srm-brand); }
 .financial-chart p { color: var(--srm-muted); }
-.financial-indicators-intro { max-width: 82ch; margin: 0 0 18px; color: var(--srm-muted); line-height: 1.55; }
 .financial-strength-preview { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; padding: 18px; border: 1px solid var(--srm-border); border-left: 4px solid var(--srm-data-accent); border-radius: 9px; background: var(--srm-interaction-soft); }
 .financial-strength-preview h3, .financial-indicator-group h3, .financial-indicator h4 { margin: 0; color: var(--srm-brand); }
 .financial-strength-preview p { max-width: 75ch; margin: 7px 0 0; line-height: 1.5; }

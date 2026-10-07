@@ -39,7 +39,6 @@ const indicatorGroups: { title: string; indicators: IndicatorPreview[] }[] = [
 
 function FinancialIndicatorsPreview() {
   return <div className="financial-indicators-preview">
-    <p className="financial-indicators-intro">Wskaźniki pomogą ocenić płynność, finansowanie, rentowność i zmianę sytuacji spółki. To podgląd zakresu analizy; obecnie nie pokazujemy obliczonych wyników ani automatycznej oceny.</p>
     <div className="financial-strength-preview">
       <div><h3>Siła finansowa</h3><p>Przekrojowy obraz płynności, finansowania, rentowności i trendu z kilku lat. Zasady oceny zostaną uzgodnione przed uruchomieniem kalkulacji.</p></div>
       <strong className="financial-indicator-value">W trakcie developmentu</strong>
@@ -59,12 +58,12 @@ function FinancialIndicatorsPreview() {
 
 const incomeGroups: { title: string; rows: Row[] }[] = [
   { title: "Przychody", rows: [
-    { code: "PALA_NRFS", label: "Przychody netto ze sprzedaży i zrównane z nimi", strong: true },
+    { code: "PALA_NRFS", label: "Przychody netto ze sprzedaży i zrównane z nimi" },
     { code: "PALA_OOR", label: "Pozostałe przychody operacyjne" },
     { code: "PALA_FR", label: "Przychody finansowe" },
   ] },
   { title: "Koszty", rows: [
-    { code: "PALA_OAC", label: "Koszty działalności operacyjnej", strong: true },
+    { code: "PALA_OAC", label: "Koszty działalności operacyjnej" },
     { code: "PALA_OAC_MAEC", label: "Zużycie materiałów i energii" },
     { code: "PALA_OAC_ES", label: "Usługi obce" },
     { code: "PALA_OAC_R", label: "Wynagrodzenia" },
