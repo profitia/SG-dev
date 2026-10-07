@@ -82,17 +82,25 @@ function capitalInThousands(input: string | null | undefined): string {
 
 function KysPeopleTable({ people }: { people: readonly VerclyPerson[] | undefined }) {
   if (!people?.length) return <p>brak danych</p>;
-  return <div className="kys-table-scroll"><table className="kys-lists kys-people">
-    <thead><tr><th>Osoba</th><th>Funkcja / powiązanie</th><th>PESEL</th><th>Obywatelstwo</th><th>Rejestr</th><th>Sankcje</th><th>PEP</th></tr></thead>
-    <tbody>{people.map((person, index) => <tr key={`${person.fullName}:${index}`}>
-      <td><strong>{person.fullName}</strong>{person.birthDate && <small>Data urodzenia: {person.birthDate}</small>}</td>
-      <td>{person.positions.join(", ") || "brak danych"}</td>
-      <td className="kys-person-id">{value(person.pesel)}</td>
-      <td>{person.citizenship.join(", ") || "brak danych"}</td>
-      <td>{person.foundIn.join(", ") || "brak danych"}</td>
-      <td>{yesNo(person.sanctionsMatch)}</td><td>{yesNo(person.pepMatch)}</td>
-    </tr>)}</tbody>
-  </table></div>;
+  return <div className="kys-person-list">{people.map((person, index) => {
+    const preview = [person.positions.join(", "), person.foundIn.join(", ")].filter(Boolean).join(" · ");
+    return <details className="kys-person-entry" key={`${person.fullName}:${index}`}>
+      <summary className="kys-person-summary">
+        <strong className="kys-person-name">{person.fullName}</strong>
+        <span className="kys-person-preview">{preview || "brak danych"}</span>
+        <span className="kys-person-id"><small>PESEL</small>{value(person.pesel)}</span>
+        <span className="kys-person-status"><small>Sankcje</small>{yesNo(person.sanctionsMatch)}</span>
+        <span className="kys-person-status"><small>PEP</small>{yesNo(person.pepMatch)}</span>
+        <span className="kys-person-toggle" aria-hidden="true"><span className="kys-person-open-label">Rozwiń</span><span className="kys-person-close-label">Zwiń</span></span>
+      </summary>
+      <dl className="kys-person-details">
+        <dt>Funkcja / powiązanie</dt><dd>{person.positions.join(", ") || "brak danych"}</dd>
+        <dt>Obywatelstwo</dt><dd>{person.citizenship.join(", ") || "brak danych"}</dd>
+        <dt>Rejestr</dt><dd>{person.foundIn.join(", ") || "brak danych"}</dd>
+        <dt>Data urodzenia</dt><dd>{value(person.birthDate)}</dd>
+      </dl>
+    </details>;
+  })}</div>;
 }
 
 const verclyListLabels: Record<string, string> = {
