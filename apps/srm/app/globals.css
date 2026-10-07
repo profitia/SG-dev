@@ -107,15 +107,20 @@ body { margin: 0; color: var(--srm-text); background: var(--srm-background); }
 .kys-person-preview { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; line-height: 1.35; max-height: 2.7em; }
 .kys-person-id { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .kys-person-id small, .kys-person-status small { display: block; color: var(--srm-muted); font-size: .7rem; margin-bottom: 3px; }
+.kys-pesel-mask { display: inline-block; filter: blur(2px); user-select: none; }
+.kys-pesel-button { margin-left: 7px; border: 1px solid var(--srm-interaction); background: #fff; color: var(--srm-interaction); border-radius: 5px; padding: 3px 6px; font-size: .76rem; cursor: pointer; }
+.kys-pesel-button:hover { background: var(--srm-interaction-soft); }
+.kys-pesel-button:focus-visible { outline: 3px solid var(--srm-interaction); outline-offset: 2px; }
+.kys-pesel-error { display: block; white-space: normal; color: var(--srm-error); font-size: .72rem; }
 .kys-person-toggle { justify-self: end; color: var(--srm-interaction); font-weight: 700; white-space: nowrap; }
 .kys-person-toggle::before { content: "⌄"; display: inline-block; margin-right: 6px; transition: transform .15s ease; }
 .kys-person-close-label { display: none; }
 .kys-person-entry[open] .kys-person-toggle::before { transform: rotate(180deg); }
 .kys-person-entry[open] .kys-person-open-label { display: none; }
 .kys-person-entry[open] .kys-person-close-label { display: inline; }
-.kys-person-details { display: grid; grid-template-columns: minmax(140px, 190px) minmax(0, 1fr); gap: 8px 16px; margin: 0; padding: 0 14px 16px; font-size: .85rem; }
-.kys-person-details dt { font-weight: 700; color: var(--srm-brand); }
-.kys-person-details dd { margin: 0; overflow-wrap: anywhere; }
+.kys-person-details { margin: 0; padding: 0 14px 16px; font-size: .85rem; }
+.kys-person-details dt { font-weight: 700; color: var(--srm-brand); margin-top: 10px; }
+.kys-person-details dd { margin: 3px 0 0; overflow-wrap: anywhere; }
 .kys-lists small { display: block; margin-top: 4px; color: var(--srm-muted); }
 .kys-note { color: var(--srm-muted); font-size: .78rem; line-height: 1.5; }
 .search-error { color: var(--srm-error); font-weight: 700; }
@@ -133,7 +138,7 @@ body { margin: 0; color: var(--srm-text); background: var(--srm-background); }
   .kys-person-id { grid-column: 1; }
   .kys-person-toggle { grid-column: 1 / -1; justify-self: start; }
 }
-@media (max-width: 520px) { .kys-person-details { grid-template-columns: 1fr; gap: 4px; } .kys-person-details dd { margin-bottom: 8px; } }
+@media (max-width: 520px) { .kys-person-id { white-space: normal; } }
 
 .company-summary { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; background: white; border: 1px solid var(--srm-border); border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; }
 .company-summary h2 { margin: 0 0 7px; font-size: clamp(1.2rem, 2.2vw, 1.7rem); }

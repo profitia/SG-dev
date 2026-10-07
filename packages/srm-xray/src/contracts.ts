@@ -74,6 +74,7 @@ export type JdgRegistryData = { entries: readonly JdgEntry[] };
 export type VerclyPerson = {
   fullName: string;
   pesel: string | null;
+  peselRevealToken?: string | null;
   birthDate: string | null;
   positions: readonly string[];
   citizenship: readonly string[];

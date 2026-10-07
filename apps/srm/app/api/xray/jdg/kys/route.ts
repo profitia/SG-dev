@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { hasDemoSession } from "../../../../../src/server/demo-auth";
 import { isSameOriginRequest } from "../../../../../src/server/request-origin";
-import { runXrayKysLookup, toPublicSection, validateXrayRequest } from "../../../../../src/server/xray-lookup";
+import { runXrayKysLookup, validateXrayRequest } from "../../../../../src/server/xray-lookup";
+import { toPublicKysSection } from "../../../../../src/server/pesel-reveal";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,8 +20,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Nieprawidłowy NIP." }, { status: 400 });
   }
   try {
-    const section = await runXrayKysLookup(organizationId, input, "JDG");
-    return NextResponse.json({ section: toPublicSection(section) }, { headers: { "Cache-Control": "no-store" } });
+    const { section, snapshotId } = await runXrayKysLookup(organizationId, input, "JDG");
+    return NextResponse.json({ section: toPublicKysSection(section, snapshotId, process.env.SRM_DEMO_SESSION_SECRET ?? "") }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return NextResponse.json({ error: "Nie udało się pobrać lub zapisać raportu KYS. Spróbuj ponownie później." }, { status: 503 });
   }

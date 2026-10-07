@@ -1,4 +1,6 @@
-import React, { type ReactNode } from "react";
+"use client";
+
+import React, { useEffect, useRef, useState, type ReactNode } from "react";
 import type {
   FinancialData,
   GeneralCompanyData,
@@ -79,7 +81,51 @@ function capitalInThousands(input: string | null | undefined): string {
   return Number.isFinite(amount) ? `${new Intl.NumberFormat("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount / 1000)} tys. PLN` : "brak danych";
 }
 
-function KysPeopleTable({ people }: { people: readonly VerclyPerson[] | undefined }) {
+function PeselReveal({ token, onReveal }: { token: string | null | undefined; onReveal?: (token: string) => Promise<string> }) {
+  const [revealed, setRevealed] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(false);
+  const currentToken = useRef(token);
+  currentToken.current = token;
+  useEffect(() => { setRevealed(null); setError(false); }, [token]);
+  useEffect(() => {
+    if (!revealed) return;
+    const timer = window.setTimeout(() => setRevealed(null), 60_000);
+    const hideWhenNotVisible = () => { if (document.hidden) setRevealed(null); };
+    const hideWhenUnfocused = () => setRevealed(null);
+    document.addEventListener("visibilitychange", hideWhenNotVisible);
+    window.addEventListener("blur", hideWhenUnfocused);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", hideWhenNotVisible);
+      window.removeEventListener("blur", hideWhenUnfocused);
+    };
+  }, [revealed]);
+  return <span className="kys-person-id">
+    <small>PESEL</small>
+    {revealed ? <span>{revealed}</span> : token ? <span className="kys-pesel-mask" aria-label="Numer ukryty">•••••••••••</span> : "brak danych"}
+    {token && onReveal && <button type="button" className="kys-pesel-button" disabled={busy} onClick={async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (revealed) { setRevealed(null); return; }
+      setBusy(true);
+      setError(false);
+      try {
+        const pesel = await onReveal(token);
+        if (currentToken.current === token && !document.hidden && document.hasFocus() && /^\d{11}$/.test(pesel)) setRevealed(pesel);
+        else if (currentToken.current === token) setError(true);
+      } catch { if (currentToken.current === token) setError(true); }
+      finally { if (currentToken.current === token) setBusy(false); }
+    }}>{busy ? "Pobieranie…" : revealed ? "Ukryj" : "Pokaż"}</button>}
+    {error && <span className="kys-pesel-error" role="alert">Nie udało się ujawnić numeru.</span>}
+  </span>;
+}
+
+function KysPeopleTable({ people, onRevealPesel, showBirthDate = true }: {
+  people: readonly VerclyPerson[] | undefined;
+  onRevealPesel?: (token: string) => Promise<string>;
+  showBirthDate?: boolean;
+}) {
   if (!people?.length) return <p>brak danych</p>;
   return <div className="kys-person-list">{people.map((person, index) => {
     const preview = [person.positions.join(", "), person.foundIn.join(", ")].filter(Boolean).join(" · ");
@@ -87,7 +133,7 @@ function KysPeopleTable({ people }: { people: readonly VerclyPerson[] | undefine
       <summary className="kys-person-summary">
         <strong className="kys-person-name">{person.fullName}</strong>
         <span className="kys-person-preview">{preview || "brak danych"}</span>
-        <span className="kys-person-id"><small>PESEL</small>{value(person.pesel)}</span>
+        <PeselReveal token={person.peselRevealToken} onReveal={onRevealPesel} />
         <span className="kys-person-status"><small>Sankcje</small>{yesNo(person.sanctionsMatch)}</span>
         <span className="kys-person-status"><small>PEP</small>{yesNo(person.pepMatch)}</span>
         <span className="kys-person-toggle" aria-hidden="true"><span className="kys-person-open-label">Rozwiń</span><span className="kys-person-close-label">Zwiń</span></span>
@@ -96,7 +142,7 @@ function KysPeopleTable({ people }: { people: readonly VerclyPerson[] | undefine
         <dt>Funkcja / powiązanie</dt><dd>{person.positions.join(", ") || "brak danych"}</dd>
         <dt>Obywatelstwo</dt><dd>{person.citizenship.join(", ") || "brak danych"}</dd>
         <dt>Rejestr</dt><dd>{person.foundIn.join(", ") || "brak danych"}</dd>
-        <dt>Data urodzenia</dt><dd>{value(person.birthDate)}</dd>
+        {showBirthDate && <><dt>Data urodzenia</dt><dd>{value(person.birthDate)}</dd></>}
       </dl>
     </details>;
   })}</div>;
@@ -164,7 +210,11 @@ export function FinancialDataMount({ section }: { section: DisplaySection<Financ
   );
 }
 
-export function VerclyKysMount({ section, entityType = "COMPANY" }: { section: DisplaySection<VerclyKysData>; entityType?: "COMPANY" | "JDG" }) {
+export function VerclyKysMount({ section, entityType = "COMPANY", onRevealPesel }: {
+  section: DisplaySection<VerclyKysData>;
+  entityType?: "COMPANY" | "JDG";
+  onRevealPesel?: (token: string) => Promise<string>;
+}) {
   const data = section.data;
   const company = data?.company;
   const countLabel = (count: number | null | undefined) => count == null ? "brak danych" : `${count} wpisów w raporcie`;
@@ -222,12 +272,12 @@ export function VerclyKysMount({ section, entityType = "COMPANY" }: { section: D
         <section className="kys-panel" aria-label="Osoby pełniące funkcje kierownicze i nadzorcze">
           <h3>Osoby pełniące funkcje kierownicze i nadzorcze</h3>
           <p className="kys-note">{countLabel(data?.relatedPersonsCount)}</p>
-          <KysPeopleTable people={data?.relatedPersons} />
+          <KysPeopleTable people={data?.relatedPersons} onRevealPesel={onRevealPesel} />
         </section>
         <section className="kys-panel" aria-label="Beneficjenci rzeczywiści">
           <h3>Beneficjenci rzeczywiści</h3>
           <p className="kys-note">{countLabel(data?.beneficialOwnersCount)}</p>
-          <KysPeopleTable people={data?.beneficialOwners} />
+          <KysPeopleTable people={data?.beneficialOwners} onRevealPesel={onRevealPesel} showBirthDate={false} />
         </section>
         <div className="kys-grid">
           <section className="kys-panel" aria-label="Listy sankcyjne i ostrzeżenia">
