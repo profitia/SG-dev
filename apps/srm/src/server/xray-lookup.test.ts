@@ -139,7 +139,7 @@ test("KYS mount shows named people, full PESEL and screening results in separate
     data: { correlationId: "request", reportId: "report", isComplete: true, queriedRegisters: [], stateAsOf: null,
       relatedPersonsCount: 1, beneficialOwnersCount: 1,
       relatedPersons: [{ fullName: "Anna Testowa", pesel: "10987654321", birthDate: null, positions: ["CZŁONEK ZARZĄDU"], citizenship: [], foundIn: [], sanctionsMatch: false, pepMatch: false }],
-      beneficialOwners: [{ fullName: "Jan Przykładowy", pesel: "12345678901", birthDate: null, positions: ["Beneficjent rzeczywisty"], citizenship: ["POLSKA"], foundIn: ["CRBR"], sanctionsMatch: false, pepMatch: false }],
+      beneficialOwners: [{ fullName: "Jan Przykładowy", pesel: "12345678901", birthDate: null, positions: ["Beneficjent rzeczywisty"], citizenship: ["POLSKA"], foundIn: ["CRBR", "Bardzo długa nazwa podmiotu powiązanego"], sanctionsMatch: false, pepMatch: true }],
     },
   };
   const html = renderToStaticMarkup(createElement(VerclyKysMount, { section }));
@@ -148,6 +148,14 @@ test("KYS mount shows named people, full PESEL and screening results in separate
   assert.match(html, /10987654321/);
   assert.match(html, /12345678901/);
   assert.match(html, /CRBR/);
+  assert.equal((html.match(/<details class="kys-person-entry">/g) ?? []).length, 2);
+  assert.match(html, /<summary class="kys-person-summary">/);
+  assert.match(html, /kys-person-preview/);
+  assert.match(html, /Sankcje<\/small>Nie/);
+  assert.match(html, /PEP<\/small>Tak/);
+  assert.match(html, /<dt>Rejestr<\/dt><dd>CRBR, Bardzo długa nazwa podmiotu powiązanego<\/dd>/);
+  assert.match(html, /kys-person-open-label">Rozwiń/);
+  assert.match(html, /kys-person-close-label">Zwiń/);
   assert.ok(!html.includes("Szczegóły osób i ich identyfikatory nie są udostępniane"));
 });
 
