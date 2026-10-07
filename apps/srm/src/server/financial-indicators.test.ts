@@ -6,7 +6,7 @@ import { calculateFinancialIndicators, type CatalogIndicatorFact } from "./finan
 const current = {
   BS_A_CA: "1500000", BS_LAE_LAPFL_STL: "1000000", BS_LAE_LAPFL: "2000000", BS_A_TA: "5000000",
   BS_LAE_E: "3000000", PALA_PLFOA: "200000", PALA_NRFS: "2000000", PALA_NPL: "-100000",
-  PALA_OAC_MAEC: "300000", PALA_OAC: "1200000",
+  PALA_OAC_MAEC: "300000", PALA_OAC: "1200000", PALA_OAC_D: "100000",
 };
 const previous = { ...current, BS_A_TA: "4000000", BS_LAE_E: "2000000", PALA_NRFS: "1600000" };
 type Values = Record<string, string>;
@@ -40,7 +40,7 @@ test("first-wave formulas use unrounded stored facts and retain exact source evi
     LIABILITIES_TO_ASSETS: "40.000000", EQUITY_TO_ASSETS: "60.000000",
     OPERATING_MARGIN: "10.000000", NET_MARGIN: "-5.000000",
     REVENUE_YOY: "25.000000", MATERIALS_ENERGY_SHARE: "25.000000",
-    ROA: "-2.222222", ROE: "-4.000000",
+    ROA: "-2.222222", ROE: "-4.000000", EBITDA_MARGIN: "15.000000",
   };
   for (const [code, value] of Object.entries(expected)) {
     const result = newest(code, data, facts);
@@ -92,4 +92,33 @@ test("comparisons never combine standalone and consolidated statements", () => {
   assert.equal(newest("REVENUE_YOY", separated, separatedFacts).reasonCode, "PRIOR_YEAR_NOT_COMPARABLE");
   assert.equal(newest("ROA", separated, separatedFacts).reasonCode, "PRIOR_YEAR_NOT_COMPARABLE");
   assert.equal(newest("CURRENT_RATIO", separated, separatedFacts).value, "1.500000");
+});
+
+
+test("EBITDA margin needs verified operating depreciation from the same financial statement", () => {
+  const { data, facts } = fixture();
+  const result = newest("EBITDA_MARGIN", data, facts);
+  assert.equal(result.value, "15.000000");
+  assert.deepEqual(result.inputFacts.map((fact) => fact.metricCode), ["PALA_PLFOA", "PALA_OAC_D", "PALA_NRFS"]);
+  const unverified = facts.map((fact) => fact.metricCode === "PALA_OAC_D" && fact.periodStart === "2025-01-01"
+    ? { ...fact, normalizationRule: "SOURCE_VALUE" } : fact);
+  assert.equal(newest("EBITDA_MARGIN", data, unverified).reasonCode, "UNVERIFIED_COST_SIGN");
+  const missing = facts.filter((fact) => !(fact.metricCode === "PALA_OAC_D" && fact.periodStart === "2025-01-01"));
+  assert.equal(newest("EBITDA_MARGIN", data, missing).reasonCode, "MISSING_FIELD");
+  const zeroRevenue = fixture({ ...current, PALA_NRFS: "0" });
+  assert.equal(newest("EBITDA_MARGIN", zeroRevenue.data, zeroRevenue.facts).reasonCode, "NON_POSITIVE_DENOMINATOR");
+});
+
+test("unconfirmed second-wave field mappings never calculate from broader source totals", () => {
+  const { data, facts } = fixture({
+    ...current, PALA_FC: "70000", BS_LAE_LAPFL: "2000000",
+    CFS_OACF_TA_D: "100000", CFS_CFFIA_E_AOIAAOTFA: "200000",
+  });
+  for (const code of ["QUICK_RATIO", "INTEREST_COVERAGE", "NET_DEBT_TO_EBITDA", "FREE_CASH_FLOW", "CASH_CONVERSION_CYCLE"]) {
+    const result = newest(code, data, facts);
+    assert.equal(result.status, "UNAVAILABLE", code);
+    assert.equal(result.value, null, code);
+    assert.equal(result.reasonCode, "SOURCE_MAPPING_UNCONFIRMED", code);
+    assert.equal(result.inputFacts.length, 0, code);
+  }
 });

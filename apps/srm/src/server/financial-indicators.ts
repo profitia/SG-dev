@@ -5,6 +5,7 @@ export const FINANCIAL_INDICATOR_FORMULA_VERSION = "1.0";
 export const FINANCIAL_INDICATOR_CODES = [
   "CURRENT_RATIO", "NET_WORKING_CAPITAL", "LIABILITIES_TO_ASSETS", "EQUITY_TO_ASSETS",
   "OPERATING_MARGIN", "NET_MARGIN", "REVENUE_YOY", "MATERIALS_ENERGY_SHARE", "ROA", "ROE",
+  "QUICK_RATIO", "EBITDA_MARGIN", "INTEREST_COVERAGE", "NET_DEBT_TO_EBITDA", "FREE_CASH_FLOW", "CASH_CONVERSION_CYCLE",
 ] as const;
 
 export type CatalogIndicatorFact = {
@@ -40,7 +41,7 @@ export type CalculatedFinancialIndicator = FinancialIndicatorResult & {
 
 type IndicatorCode = typeof FINANCIAL_INDICATOR_CODES[number];
 type Unit = FinancialIndicatorResult["unit"];
-type Definition = { code: IndicatorCode; unit: Unit; importance: 1 | 2 | 3; fields: readonly string[]; prior?: string };
+type Definition = { code: IndicatorCode; unit: Unit; importance: 1 | 2 | 3; fields: readonly string[]; prior?: string; mappingUnconfirmed?: true };
 const definitions: readonly Definition[] = [
   { code: "CURRENT_RATIO", unit: "RATIO", importance: 3, fields: ["BS_A_CA", "BS_LAE_LAPFL_STL"] },
   { code: "NET_WORKING_CAPITAL", unit: "PLN", importance: 2, fields: ["BS_A_CA", "BS_LAE_LAPFL_STL"] },
@@ -52,6 +53,14 @@ const definitions: readonly Definition[] = [
   { code: "MATERIALS_ENERGY_SHARE", unit: "PERCENT", importance: 1, fields: ["PALA_OAC_MAEC", "PALA_OAC"] },
   { code: "ROA", unit: "PERCENT", importance: 2, fields: ["PALA_NPL", "BS_A_TA"], prior: "BS_A_TA" },
   { code: "ROE", unit: "PERCENT", importance: 1, fields: ["PALA_NPL", "BS_LAE_E"], prior: "BS_LAE_E" },
+  // The provider field dictionary has not yet been matched to these exact concepts.
+  // Broad totals (financial costs, all liabilities, other investments) are not valid substitutes.
+  { code: "QUICK_RATIO", unit: "RATIO", importance: 3, fields: [], mappingUnconfirmed: true },
+  { code: "EBITDA_MARGIN", unit: "PERCENT", importance: 2, fields: ["PALA_PLFOA", "PALA_OAC_D", "PALA_NRFS"] },
+  { code: "INTEREST_COVERAGE", unit: "RATIO", importance: 3, fields: [], mappingUnconfirmed: true },
+  { code: "NET_DEBT_TO_EBITDA", unit: "RATIO", importance: 2, fields: [], mappingUnconfirmed: true },
+  { code: "FREE_CASH_FLOW", unit: "PLN", importance: 3, fields: [], mappingUnconfirmed: true },
+  { code: "CASH_CONVERSION_CYCLE", unit: "DAYS", importance: 2, fields: [], mappingUnconfirmed: true },
 ];
 
 export const FINANCIAL_INDICATOR_INPUT_CODES = [...new Set(definitions.flatMap((item) => [...item.fields, ...(item.prior ? [item.prior] : [])]))];
@@ -125,6 +134,7 @@ function indicatorFor(
     return result;
   };
   if (!annual(period)) return finish("PERIOD_NOT_ANNUAL");
+  if (definition.mappingUnconfirmed) return finish("SOURCE_MAPPING_UNCONFIRMED");
   if (definition.prior && !prior) return finish("PRIOR_YEAR_NOT_COMPARABLE");
   const values = new Map<string, bigint>();
   for (const [sourcePeriod, codes] of [[period, definition.fields], ...(definition.prior && prior ? [[prior, [definition.prior]] as const] : [])] as const) {
@@ -134,7 +144,7 @@ function indicatorFor(
       if (!fact) return finish("MISSING_FIELD");
       if (fact.validationStatus !== "VALID") return finish("UNVERIFIED_FIELD");
       if (fact.currencyCode !== "PLN" || fact.unitCode !== "PLN") return finish("UNSUPPORTED_UNIT");
-      if ((code === "PALA_OAC" || code === "PALA_OAC_MAEC")
+      if ((code === "PALA_OAC" || code === "PALA_OAC_MAEC" || code === "PALA_OAC_D")
         && fact.normalizationRule !== "VERIFIED_COST_MAGNITUDE_V1") return finish("UNVERIFIED_COST_SIGN");
       if (!fact.sourceSnapshotId) return finish("UNVERIFIED_SOURCE");
       const value = scaledAmount(fact.amount);
@@ -179,10 +189,21 @@ function indicatorFor(
     case "MATERIALS_ENERGY_SHARE":
       return current("PALA_OAC") <= 0n ? finish("NON_POSITIVE_DENOMINATOR")
         : finish(null, percent(current("PALA_OAC_MAEC"), current("PALA_OAC")));
+    case "EBITDA_MARGIN": {
+      const revenue = current("PALA_NRFS");
+      return revenue <= 0n ? finish("NON_POSITIVE_DENOMINATOR")
+        : finish(null, percent(current("PALA_PLFOA") + current("PALA_OAC_D"), revenue));
+    }
     case "ROA": {
       const balance = current("BS_A_TA") + previous("BS_A_TA");
       return balance <= 0n ? finish("NON_POSITIVE_DENOMINATOR") : finish(null, percent(current("PALA_NPL") * 2n, balance));
     }
+    case "QUICK_RATIO":
+    case "INTEREST_COVERAGE":
+    case "NET_DEBT_TO_EBITDA":
+    case "FREE_CASH_FLOW":
+    case "CASH_CONVERSION_CYCLE":
+      return finish("SOURCE_MAPPING_UNCONFIRMED");
     case "ROE": {
       const equity = current("BS_LAE_E") + previous("BS_LAE_E");
       return equity <= 0n ? finish("NON_POSITIVE_EQUITY") : finish(null, percent(current("PALA_NPL") * 2n, equity));
