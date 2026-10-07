@@ -71,6 +71,17 @@ export type JdgEntry = {
 
 export type JdgRegistryData = { entries: readonly JdgEntry[] };
 
+export type VerclyPerson = {
+  fullName: string;
+  pesel: string | null;
+  birthDate: string | null;
+  positions: readonly string[];
+  citizenship: readonly string[];
+  foundIn: readonly string[];
+  sanctionsMatch: boolean | null;
+  pepMatch: boolean | null;
+};
+
 export type VerclyKysData = {
   correlationId: string | null;
   reportId: string | null;
@@ -96,8 +107,35 @@ export type VerclyKysData = {
     mainPkd: string | null;
     shareCapital: string | null;
     representation: string | null;
+    district?: string | null;
+    municipality?: string | null;
+    voivodship?: string | null;
+    headquarterCountry?: string | null;
+    createdAt?: string | null;
+    commencedAt?: string | null;
+    registerAuthority?: string | null;
+    ownershipForm?: string | null;
+    phone?: string | null;
   };
   screenedLists?: readonly { name: string; type: string; matched: boolean }[];
+  screeningSummary?: {
+    directlyRelatedSanctions: boolean | null;
+    beneficiaryRelatedSanctions: boolean | null;
+    otherLists: boolean | null;
+  };
+  relatedEntities?: readonly {
+    name: string;
+    role: string | null;
+    krs: string | null;
+    nip: string | null;
+    regon: string | null;
+    relationshipStart: string | null;
+    relationshipEnd: string | null;
+    stakeDescription: string | null;
+    sanctionsMatch: boolean | null;
+  }[];
+  beneficialOwners?: readonly VerclyPerson[];
+  relatedPersons?: readonly VerclyPerson[];
   beneficialOwnersCount?: number | null;
   relatedPersonsCount?: number | null;
   pepPositionsCount?: number | null;

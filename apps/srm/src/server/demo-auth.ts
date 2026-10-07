@@ -18,7 +18,8 @@ function decodeBase64url(value: string): Uint8Array | null {
   if (!/^[A-Za-z0-9_-]+$/.test(value)) return null;
   try {
     const padded = value.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
-    return Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
+    const decoded = Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
+    return base64url(decoded) === value ? decoded : null;
   } catch { return null; }
 }
 

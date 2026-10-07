@@ -62,6 +62,49 @@ function identifier(entity: Record<string, unknown>, type: string): string | nul
   return string(entry?.Value);
 }
 
+function listed(input: unknown): boolean | null {
+  const values = items(input).map(record).filter((entry): entry is Record<string, unknown> => entry !== null)
+    .map((entry) => entry.Value).filter((value): value is boolean => typeof value === "boolean");
+  return values.length ? values.some(Boolean) : null;
+}
+
+function countListed(input: unknown): boolean | null {
+  const value = count(input);
+  return value === null ? null : value > 0;
+}
+
+function anyKnown(values: (boolean | null)[]): boolean | null {
+  return values.includes(true) ? true : values.every((value) => value === false) ? false : null;
+}
+
+function registryNumber(input: string | null, length: number): string | null {
+  return input && new RegExp(`^[0-9]{${length}}$`).test(input) ? input : null;
+}
+
+function personRows(input: unknown): NonNullable<VerclyKysData["relatedPersons"]> {
+  const group = record(input);
+  return items(group?.Values).map(record)
+    .filter((entry): entry is Record<string, unknown> => entry !== null)
+    .map((entry) => {
+      const pesel = string(entry.Pesel);
+      const positions = [...items(entry.PositionsHeld), ...items(entry.Mandates).map((mandate) => record(mandate)?.Description)]
+        .map(string).filter((value): value is string => value !== null);
+      const citizenship = items(entry.Citizens).map((item) => string(record(item)?.Name))
+        .filter((value): value is string => value !== null);
+      const foundIn = [string(entry.Source), ...items(entry.FoundIn).map((item) => string(record(item)?.CompanyName))]
+        .filter((value): value is string => value !== null);
+      const pepCount = count(record(entry.PepPositions)?.Count);
+      return {
+        fullName: string(entry.FullName) ?? ([string(entry.FirstName), string(entry.SecondName), string(entry.Surname)].filter(Boolean).join(" ") || "Nie podano nazwiska"),
+        pesel,
+        birthDate: string(entry.BirthDate) ?? string(entry.DateOfBirth),
+        positions, citizenship, foundIn,
+        sanctionsMatch: listed(entry.Sanctions),
+        pepMatch: pepCount === null ? null : pepCount > 0,
+      };
+    });
+}
+
 function stateDate(input: unknown): string | null {
   if (typeof input !== "number" || !Number.isFinite(input)) return null;
   const date = new Date(input);
@@ -83,12 +126,12 @@ function mapReport(report: unknown, requested: VerclyKysRequest, fallbackCorrela
   const entityKrs = entity ? identifier(entity, "KRS") : null;
   const entityNip = entity ? validNip(identifier(entity, "VatID")) ?? validNip(identifier(entity, "ID")) : null;
 
-  // This is an allowlist projection. Never persist the provider response, person records,
-  // free-text analysis, raw error messages or personal identifiers.
+  // The projection allowlists person fields confirmed in the FULL response.
+  // Raw provider payloads, addresses and free-text analysis stay excluded.
   const listResults = entity ? items(entity.Sanctions).map(record)
     .filter((entry): entry is Record<string, unknown> => entry !== null)
     .filter((entry) => typeof entry.Value === "boolean" && string(entry.ListName))
-    .slice(0, 50).map((entry) => ({
+    .map((entry) => ({
       name: string(entry.ListName)!,
       type: string(entry.ListType) ?? "LIST",
       matched: entry.Value as boolean,
@@ -99,24 +142,50 @@ function mapReport(report: unknown, requested: VerclyKysRequest, fallbackCorrela
     nip: providerId ?? entityNip,
     regon: identifier(entity, "Regon"),
     legalForm: attribute(entity, "NormalizedDetailLegalForm", "DetailLegalForm", "MainLegalForm"),
-    address: [attribute(entity, "Street", "KrsAddrStreet"), attribute(entity, "KrsAddrBuildingNo"), attribute(entity, "KrsAddrZipCode"), attribute(entity, "City", "KrsAddrCity")].filter(Boolean).join(", ") || null,
+    address: [attribute(entity, "Street", "KrsAddrStreet"), attribute(entity, "BuildingNo", "KrsAddrBuildingNo"), attribute(entity, "ZipCode", "KrsAddrZipCode"), attribute(entity, "City", "KrsAddrCity")].filter(Boolean).join(", ") || null,
     country: attribute(entity, "Country"),
     activityStatus: attribute(entity, "ActivityStatus"),
     registeredAt: attribute(entity, "RegisterEntryDate"),
-    lastChangedAt: attribute(entity, "LastModificationDate", "DateOfChange"),
+    lastChangedAt: attribute(entity, "DateOfChange", "LastModificationDate"),
     mainPkd: attribute(entity, "MainPKD"),
     shareCapital: attribute(entity, "ShareCapitalAmount"),
     representation: attribute(entity, "RepresentationForm"),
+    district: attribute(entity, "District"),
+    municipality: attribute(entity, "Municipality"),
+    voivodship: attribute(entity, "Voivodship"),
+    headquarterCountry: attribute(entity, "HeadquarterCountry"),
+    createdAt: attribute(entity, "CreationDate"),
+    commencedAt: attribute(entity, "CommencementDate"),
+    registerAuthority: attribute(entity, "RegisterAuthority"),
+    ownershipForm: attribute(entity, "OwnershipForm"),
+    phone: attribute(entity, "PhoneNo"),
   } : undefined;
   const warnings = items(body.Errors).map(record)
     .filter((entry): entry is Record<string, unknown> => entry !== null)
     .filter((entry) => entry.Resolved !== true)
     .map((entry) => `VERCLY_SEVERITY_${count(entry.Severity) ?? "UNKNOWN"}`);
   if (entity && attribute(entity, "isAllComplete") === "false") warnings.push("VERCLY_INCOMPLETE_SOURCES");
-  const queriedRegisters = items(body.QueriedRegisters).map(string).filter((value): value is string => value !== null).slice(0, 30);
+  const queriedRegisters = items(body.QueriedRegisters).map(string).filter((value): value is string => value !== null);
   const krzCount = count(record(entity?.Krz)?.Count);
   const vat = record(entity?.Vat);
   const vies = record(entity?.Vies);
+  const sanctionedDirect = countListed(body.SanctionedDepPersonsCount);
+  const sanctionedEntities = countListed(body.SanctionedDepEntitiesCount);
+  const sanctionedConnectedPersons = countListed(body.SanctionedConnectedPersonCount);
+  const sanctionedConnectedEntities = countListed(body.SanctionedConnectedEntitiesCount);
+  const relatedEntities = items(body.DepEntities).map(record)
+    .filter((entry): entry is Record<string, unknown> => entry !== null && string(entry.Name) !== null)
+    .map((entry) => {
+      const mandate = items(entry.Mandates).map(record).find((value) => value !== null);
+      return {
+        name: string(entry.Name)!, role: string(entry.Role),
+        krs: registryNumber(identifier(entry, "Krs"), 10),
+        nip: validNip(identifier(entry, "Nip")),
+        regon: registryNumber(identifier(entry, "Regon"), 9) ?? registryNumber(identifier(entry, "Regon"), 14),
+        relationshipStart: attribute(entry, "Start"), relationshipEnd: attribute(entry, "Koniec"),
+        stakeDescription: string(mandate?.Description), sanctionsMatch: listed(entry.Sanctions),
+      };
+    });
   const data: VerclyKysData = {
     correlationId, reportId, isComplete: complete, queriedRegisters,
     registryChecks: {
@@ -125,6 +194,14 @@ function mapReport(report: unknown, requested: VerclyKysRequest, fallbackCorrela
       euVat: typeof vies?.EuVat === "boolean" ? vies.EuVat : null,
     },
     stateAsOf: stateDate(body.StateAsOfDate), company, screenedLists: listResults,
+    screeningSummary: {
+      directlyRelatedSanctions: anyKnown([listed(items(entity?.Sanctions).filter((item) => record(item)?.ListType === "SANCTIONS")), sanctionedDirect, sanctionedEntities, sanctionedConnectedPersons, sanctionedConnectedEntities]),
+      beneficiaryRelatedSanctions: countListed(body.SanctionedBeneficiariesCount),
+      otherLists: listed(items(entity?.Sanctions).filter((item) => record(item)?.ListType !== "SANCTIONS")),
+    },
+    relatedEntities,
+    beneficialOwners: personRows(entity?.Beneficiaries),
+    relatedPersons: personRows(entity?.DepPersons),
     beneficialOwnersCount: count(record(entity?.Beneficiaries)?.Count),
     relatedPersonsCount: count(record(entity?.DepPersons)?.Count),
     pepPositionsCount: count(record(entity?.PepPositions)?.Count),

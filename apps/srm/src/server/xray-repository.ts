@@ -63,7 +63,7 @@ export interface SnapshotInput {
   supplierId: string;
   section: PersistedSection;
   sourceRecordId?: string;
-  dataClass: "COMPANY" | "FINANCIAL" | "KYS_REDACTED" | "JDG_REGISTRY";
+  dataClass: "COMPANY" | "FINANCIAL" | "KYS_REDACTED" | "KYS_PERSONAL" | "JDG_REGISTRY";
   payload: unknown;
   retrievedAt: Date;
   effectiveAt?: Date;
@@ -71,7 +71,11 @@ export interface SnapshotInput {
 }
 
 export async function appendSnapshot(organizationId: string, input: SnapshotInput): Promise<string> {
-  if (input.section === "kys" && input.dataClass !== "KYS_REDACTED") throw new Error("KYS snapshots must be redacted");
+  if (input.section === "kys" && !["KYS_REDACTED", "KYS_PERSONAL"].includes(input.dataClass)) throw new Error("KYS snapshots must use a classified projection");
+  if (input.dataClass === "KYS_PERSONAL" && (!input.retentionUntil ||
+    input.retentionUntil.getTime() > input.retrievedAt.getTime() + 7 * 24 * 60 * 60 * 1000)) {
+    throw new Error("KYS personal snapshots require retention of at most seven days");
+  }
   if (input.section === "jdg" && input.dataClass !== "JDG_REGISTRY") throw new Error("JDG snapshots must use the registry data class");
   const serialized = JSON.stringify(input.payload);
   if (!serialized) throw new Error("Snapshot payload is required");
@@ -85,6 +89,14 @@ export async function appendSnapshot(organizationId: string, input: SnapshotInpu
         serialized, digest, input.dataClass, input.retrievedAt, input.effectiveAt ?? null, input.retentionUntil ?? null],
     );
     return result.rows[0].id;
+  });
+}
+
+export async function purgeExpiredKysPersonal(organizationId: string): Promise<void> {
+  await withOrganization(organizationId, async (client) => {
+    const expired = "SELECT id FROM srm.source_snapshots WHERE organization_id = $1 AND data_class = 'KYS_PERSONAL' AND retention_until < now()";
+    await client.query(`DELETE FROM srm.section_projections WHERE organization_id = $1 AND snapshot_id IN (${expired})`, [organizationId]);
+    await client.query(`DELETE FROM srm.source_snapshots WHERE organization_id = $1 AND data_class = 'KYS_PERSONAL' AND retention_until < now()`, [organizationId]);
   });
 }
 

@@ -66,6 +66,34 @@ test("accepts a completed sole proprietor report when VatID matches the JDG NIP"
   assert.equal(result.section.data?.screenedLists?.[0]?.matched, false);
 });
 
+test("FULL report keeps confirmed persons and complete PESEL values without raw provider records", async () => {
+  let calls = 0;
+  const fetcher = (async () => ++calls === 1 ? response(["personCorrelation123"]) : response([{
+    Header: { CorrelationId: "personCorrelation123", Id: "personReport123" },
+    Body: { IsComplete: true, Entity: {
+      Ids: [{ Type: "VatID", Value: "PL5272443955" }],
+      Beneficiaries: { Count: 1, Values: [{ FullName: "Jan Przykładowy", Pesel: "12345678901",
+        Mandates: [{ Description: "Beneficjent rzeczywisty" }], Citizens: [{ Name: "POLSKA" }],
+        Source: "CRBR", FoundIn: [{ Type: "Spółka z ograniczoną odpowiedzialnością" }], Sanctions: [{ ListName: "uk_ofsi_sanctions", Value: false }],
+        PepPositions: { Count: 0 }, SecretProviderField: "private raw value" }] },
+      DepPersons: { Count: 1, Values: [{ FullName: "Anna Testowa", Pesel: "10987654321",
+        PositionsHeld: ["CZŁONEK ZARZĄDU"], Sanctions: [{ ListName: "uk_ofsi_sanctions", Value: true }],
+        PepPositions: { Count: 1 } }] },
+    } },
+  }])) as typeof fetch;
+  const result = await fetchVerclyKys(request, { apiKey: "test-token", baseUrl: "https://vercly.example", fetcher, sleep: async () => {} });
+  assert.equal(result.section.status, "SUCCESS");
+  assert.deepEqual(result.section.data?.beneficialOwners, [{
+    fullName: "Jan Przykładowy", pesel: "12345678901", birthDate: null,
+    positions: ["Beneficjent rzeczywisty"], citizenship: ["POLSKA"], foundIn: ["CRBR"],
+    sanctionsMatch: false, pepMatch: false,
+  }]);
+  assert.equal(result.section.data?.relatedPersons?.[0]?.pesel, "10987654321");
+  assert.equal(result.section.data?.relatedPersons?.[0]?.sanctionsMatch, true);
+  assert.equal(result.section.data?.relatedPersons?.[0]?.pepMatch, true);
+  assert.ok(!JSON.stringify(result.section).includes("private raw value"));
+});
+
 test("retries temporary 404 while Vercly prepares the report", async () => {
   let calls = 0;
   const sleeps: number[] = [];

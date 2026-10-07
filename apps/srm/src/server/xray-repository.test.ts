@@ -66,7 +66,7 @@ test("invalid organization identity is rejected before connecting", () => {
   assert.throws(() => assertOrganizationId("not-a-uuid"), /valid organization UUID/);
 });
 
-test("KYS raw payload cannot be saved without redaction", async () => {
+test("KYS payload must use a classified snapshot", async () => {
   await assert.rejects(appendSnapshot(organizationId, {
     attemptId: organizationId,
     supplierId: organizationId,
@@ -74,5 +74,13 @@ test("KYS raw payload cannot be saved without redaction", async () => {
     dataClass: "COMPANY",
     payload: { name: "Example" },
     retrievedAt: new Date(),
-  }), /redacted/);
+  }), /classified/);
+});
+
+test("personal KYS snapshots require a seven-day retention bound before connecting", async () => {
+  const now = new Date("2026-10-07T12:00:00Z");
+  const base = { attemptId: organizationId, supplierId: organizationId, section: "kys" as const,
+    dataClass: "KYS_PERSONAL" as const, payload: { relatedPersons: [{ pesel: "12345678901" }] }, retrievedAt: now };
+  await assert.rejects(appendSnapshot(organizationId, base), /seven days/);
+  await assert.rejects(appendSnapshot(organizationId, { ...base, retentionUntil: new Date("2026-10-15T12:00:00Z") }), /seven days/);
 });
