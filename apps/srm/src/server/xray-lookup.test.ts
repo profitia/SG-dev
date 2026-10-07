@@ -104,6 +104,10 @@ test("financial indicator cards show calculated values, fixed importance and an 
         status: "AVAILABLE", value: "500000.0000", unit: "PLN", importance: 2, reasonCode: null, formulaVersion: "1.0" },
       { code: "ROE", periodStart: "2025-01-01", periodEnd: "2025-12-31", scope: "standalone",
         status: "UNAVAILABLE", value: null, unit: "PERCENT", importance: 1, reasonCode: "NON_POSITIVE_EQUITY", formulaVersion: "1.0" },
+      { code: "EBITDA_MARGIN", periodStart: "2025-01-01", periodEnd: "2025-12-31", scope: "standalone",
+        status: "AVAILABLE", value: "15.000000", unit: "PERCENT", importance: 2, reasonCode: null, formulaVersion: "1.0" },
+      { code: "INTEREST_COVERAGE", periodStart: "2025-01-01", periodEnd: "2025-12-31", scope: "standalone",
+        status: "UNAVAILABLE", value: null, unit: "RATIO", importance: 3, reasonCode: "SOURCE_MAPPING_UNCONFIRMED", formulaVersion: "1.0" },
     ] },
   };
   const html = renderToStaticMarkup(createElement(FinancialDataMount, { section }));
@@ -113,6 +117,8 @@ test("financial indicator cards show calculated values, fixed importance and an 
   assert.match(html, /●●○ · istotna/);
   assert.match(html, /●○○ · pomocnicza/);
   assert.match(html, /Średni kapitał własny nie jest dodatni/);
+  assert.match(html, /15,00%/);
+  assert.match(html, /Nie potwierdzono jeszcze dokładnego mapowania pól źródłowych/);
   assert.ok(!html.includes("MGBI"));
 });
 

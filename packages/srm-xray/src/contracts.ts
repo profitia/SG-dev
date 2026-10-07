@@ -58,7 +58,7 @@ export type FinancialIndicatorResult = {
   scope: FinancialPeriod["scope"];
   status: "AVAILABLE" | "UNAVAILABLE";
   value: string | null;
-  unit: "RATIO" | "PERCENT" | "PLN";
+  unit: "RATIO" | "PERCENT" | "PLN" | "DAYS";
   importance: 1 | 2 | 3;
   reasonCode: string | null;
   formulaVersion: string;
