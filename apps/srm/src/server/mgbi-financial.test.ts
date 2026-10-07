@@ -190,3 +190,22 @@ test("does not attribute unknown or partial missing statements to international 
     assert.deepEqual(result.section.warnings, ["MGBI_NO_STRUCTURED_FINANCIAL_DATA"]);
   }
 });
+
+test("maps only verified flat MGBI XML paths for current and prior financial periods", () => {
+  const source = structuredClone(record);
+  source.content = { ...source.content, extracted_fields: {
+    "Bilans.Aktywa.Aktywa_B.Aktywa_B_I.KwotaA": "120",
+    "Bilans.Aktywa.Aktywa_B.Aktywa_B_I.KwotaB": "90",
+    "RZiS.RZiSPor.H.H_I.KwotaA": "-7",
+    "RachPrzeplywow.PrzeplywyPosr.A.A_III.KwotaA": "400",
+    "RachPrzeplywow.PrzeplywyPosr.B.B_II.B_II_1.KwotaA": "-150",
+    "DaneOsoby.Pesel": "12345678901",
+  } } as unknown as typeof source.content;
+  const result = mapMgbiFinancialRecords([source], identifier, at);
+  assert.equal(result.facts.find((fact) => fact.metricCode === "BS_A_CA_INV" && fact.periodEnd === "2025-12-31")?.amount, "120");
+  assert.equal(result.facts.find((fact) => fact.metricCode === "BS_A_CA_INV" && fact.periodEnd === "2024-12-31")?.amount, "90");
+  assert.equal(result.facts.find((fact) => fact.metricCode === "PALA_INTEREST_EXPENSE")?.sourceAmount, "-7");
+  assert.equal(result.facts.find((fact) => fact.metricCode === "CFS_OPERATING_CASH_FLOW")?.amount, "400");
+  assert.equal(result.facts.find((fact) => fact.metricCode === "CFS_CAPITAL_EXPENDITURE")?.amount, "-150");
+  assert.ok(result.facts.every((fact) => !fact.sourcePath.includes("Pesel")));
+});

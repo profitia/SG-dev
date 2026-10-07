@@ -1,7 +1,7 @@
 import type { FinancialData, FinancialPeriod } from "@profitia/srm-xray";
 type FinancialIndicatorResult = NonNullable<FinancialData["indicators"]>[number];
 
-export const FINANCIAL_INDICATOR_FORMULA_VERSION = "1.0";
+export const FINANCIAL_INDICATOR_FORMULA_VERSION = "1.1";
 export const FINANCIAL_INDICATOR_CODES = [
   "CURRENT_RATIO", "NET_WORKING_CAPITAL", "LIABILITIES_TO_ASSETS", "EQUITY_TO_ASSETS",
   "OPERATING_MARGIN", "NET_MARGIN", "REVENUE_YOY", "MATERIALS_ENERGY_SHARE", "ROA", "ROE",
@@ -55,11 +55,11 @@ const definitions: readonly Definition[] = [
   { code: "ROE", unit: "PERCENT", importance: 1, fields: ["PALA_NPL", "BS_LAE_E"], prior: "BS_LAE_E" },
   // The provider field dictionary has not yet been matched to these exact concepts.
   // Broad totals (financial costs, all liabilities, other investments) are not valid substitutes.
-  { code: "QUICK_RATIO", unit: "RATIO", importance: 3, fields: [], mappingUnconfirmed: true },
+  { code: "QUICK_RATIO", unit: "RATIO", importance: 3, fields: ["BS_A_CA", "BS_A_CA_INV", "BS_LAE_LAPFL_STL"] },
   { code: "EBITDA_MARGIN", unit: "PERCENT", importance: 2, fields: ["PALA_PLFOA", "PALA_OAC_D", "PALA_NRFS"] },
-  { code: "INTEREST_COVERAGE", unit: "RATIO", importance: 3, fields: [], mappingUnconfirmed: true },
+  { code: "INTEREST_COVERAGE", unit: "RATIO", importance: 3, fields: ["PALA_PLFOA", "PALA_INTEREST_EXPENSE"] },
   { code: "NET_DEBT_TO_EBITDA", unit: "RATIO", importance: 2, fields: [], mappingUnconfirmed: true },
-  { code: "FREE_CASH_FLOW", unit: "PLN", importance: 3, fields: [], mappingUnconfirmed: true },
+  { code: "FREE_CASH_FLOW", unit: "PLN", importance: 3, fields: ["CFS_OPERATING_CASH_FLOW", "CFS_CAPITAL_EXPENDITURE"] },
   { code: "CASH_CONVERSION_CYCLE", unit: "DAYS", importance: 2, fields: [], mappingUnconfirmed: true },
 ];
 
@@ -198,10 +198,28 @@ function indicatorFor(
       const balance = current("BS_A_TA") + previous("BS_A_TA");
       return balance <= 0n ? finish("NON_POSITIVE_DENOMINATOR") : finish(null, percent(current("PALA_NPL") * 2n, balance));
     }
-    case "QUICK_RATIO":
-    case "INTEREST_COVERAGE":
+    case "QUICK_RATIO": {
+      const liabilities = current("BS_LAE_LAPFL_STL");
+      const inventory = current("BS_A_CA_INV");
+      const assets = current("BS_A_CA");
+      return liabilities <= 0n ? finish("NON_POSITIVE_DENOMINATOR")
+        : inventory < 0n || inventory > assets ? finish("INVALID_AMOUNT")
+          : finish(null, ratio(assets - inventory, liabilities));
+    }
+    case "INTEREST_COVERAGE": {
+      // The provider labels this exact XML child as interest expense, but
+      // source statements use both signed and unsigned cost conventions.
+      const interest = current("PALA_INTEREST_EXPENSE");
+      const expense = interest < 0n ? -interest : interest;
+      return expense === 0n ? finish("NON_POSITIVE_DENOMINATOR")
+        : finish(null, ratio(current("PALA_PLFOA"), expense));
+    }
+    case "FREE_CASH_FLOW": {
+      const capex = current("CFS_CAPITAL_EXPENDITURE");
+      const outflow = capex < 0n ? -capex : capex;
+      return finish(null, decimal(current("CFS_OPERATING_CASH_FLOW") - outflow, SCALE, 4));
+    }
     case "NET_DEBT_TO_EBITDA":
-    case "FREE_CASH_FLOW":
     case "CASH_CONVERSION_CYCLE":
       return finish("SOURCE_MAPPING_UNCONFIRMED");
     case "ROE": {

@@ -48,7 +48,7 @@ test("first-wave formulas use unrounded stored facts and retain exact source evi
     assert.equal(result.value, value, code);
     assert.equal(result.reasonCode, null);
     assert.equal(result.nip, "5213390341");
-    assert.equal(result.formulaVersion, "1.0");
+    assert.equal(result.formulaVersion, "1.1");
     assert.ok(result.inputFacts.length >= 2, code);
     assert.ok(result.sourceDocumentIds.includes("document-2025:cfy"));
   }
@@ -114,11 +114,25 @@ test("unconfirmed second-wave field mappings never calculate from broader source
     ...current, PALA_FC: "70000", BS_LAE_LAPFL: "2000000",
     CFS_OACF_TA_D: "100000", CFS_CFFIA_E_AOIAAOTFA: "200000",
   });
-  for (const code of ["QUICK_RATIO", "INTEREST_COVERAGE", "NET_DEBT_TO_EBITDA", "FREE_CASH_FLOW", "CASH_CONVERSION_CYCLE"]) {
+  for (const code of ["NET_DEBT_TO_EBITDA", "CASH_CONVERSION_CYCLE"]) {
     const result = newest(code, data, facts);
     assert.equal(result.status, "UNAVAILABLE", code);
     assert.equal(result.value, null, code);
     assert.equal(result.reasonCode, "SOURCE_MAPPING_UNCONFIRMED", code);
     assert.equal(result.inputFacts.length, 0, code);
   }
+});
+
+test("second-wave calculations use exact inventory, interest expense and cash-flow facts", () => {
+  const values = { ...current, BS_A_CA_INV: "200000", PALA_INTEREST_EXPENSE: "-20000",
+    CFS_OPERATING_CASH_FLOW: "400000", CFS_CAPITAL_EXPENDITURE: "-150000" };
+  const { data, facts } = fixture(values);
+  assert.equal(newest("QUICK_RATIO", data, facts).value, "1.300000");
+  assert.equal(newest("INTEREST_COVERAGE", data, facts).value, "10.000000");
+  assert.equal(newest("FREE_CASH_FLOW", data, facts).value, "250000.0000");
+  assert.equal(newest("FREE_CASH_FLOW", data, facts).inputFacts[1].metricCode, "CFS_CAPITAL_EXPENDITURE");
+  const absent = facts.filter((fact) => !(fact.metricCode === "BS_A_CA_INV" && fact.periodEnd === "2025-12-31"));
+  assert.equal(newest("QUICK_RATIO", data, absent).reasonCode, "MISSING_FIELD");
+  const zeroInterest = fixture({ ...values, PALA_INTEREST_EXPENSE: "0" });
+  assert.equal(newest("INTEREST_COVERAGE", zeroInterest.data, zeroInterest.facts).reasonCode, "NON_POSITIVE_DENOMINATOR");
 });
