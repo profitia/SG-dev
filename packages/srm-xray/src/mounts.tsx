@@ -28,7 +28,6 @@ function value(text: string | null | undefined): string {
 function warningLabel(code: string): string {
   if (code === "FINANCIAL_NO_STRUCTURED_DATA") return "Nie mamy obecnie kwot finansowych do wyświetlenia dla tej firmy.";
   if (code === "FINANCIAL_INTERNATIONAL_STANDARD_UNAVAILABLE") return "Sprawozdanie finansowe jest dostępne, ale w obecnym zakresie danych nie możemy pokazać jego kwot. Sporządzono je według międzynarodowych standardów rachunkowości.";
-  if (code === "FINANCIAL_COST_SIGN_UNVERIFIED") return "Nie udało się potwierdzić znaku części kosztów na podstawie odpowiednich sum rachunku zysków i strat. Pokazujemy wartości źródłowe; nie używaj ich do porównań bez sprawdzenia sprawozdania.";
   if (code === "KYS_PROVIDER_NOTICE") return "Raport KYS zawiera uwagę dotyczącą części sprawdzeń.";
   if (code === "KYS_INCOMPLETE_SOURCES") return "Nie wszystkie sprawdzane rejestry zwróciły dane.";
   if (code.startsWith("VERCLY_SEVERITY_")) return "Raport zawiera uwagę dostawcy danych.";
@@ -134,7 +133,7 @@ function SectionFrame({
         <span>{statusLabel[section.status]}</span>
       </header>
       {section.status === "PENDING" ? <div role="status"><p>Raport jest przygotowywany. Poczekaj na wynik…</p>{title === "Raport KYS" && <div className="kys-progress" role="progressbar" aria-label="Postęp pobierania raportu KYS" aria-valuetext="Pobieranie trwa"><span /></div>}</div> : section.data == null ? <p>{missingFinancialReason ? warningLabel(missingFinancialReason) : "brak danych"}</p> : children}
-      {section.warnings.filter((warning) => warning !== missingFinancialReason).map((warning, index) => <p className="xray-warning" key={index}>{warningLabel(warning)}</p>)}
+      {section.warnings.filter((warning) => warning !== missingFinancialReason && warning !== "FINANCIAL_COST_SIGN_UNVERIFIED").map((warning, index) => <p className="xray-warning" key={index}>{warningLabel(warning)}</p>)}
     </section>
   );
 }

@@ -84,6 +84,7 @@ test("financial mount groups readable rows, converts PLN to thousands and keeps 
   assert.match(html, /Cykl konwersji gotówki/);
   assert.equal(html.match(/W trakcie developmentu/g)?.length, 18);
   assert.match(html, /Nie można obliczyć/);
+  assert.ok(!html.includes("Wskaźniki pomogą ocenić płynność"));
   assert.ok(!html.includes("Źródło:"));
   assert.ok(!html.includes("MGBI"));
   assert.ok(!html.includes("PALA_UNKNOWN"));
@@ -101,7 +102,7 @@ test("financial mount starts with eight newest years and offers older columns", 
   });
   const section: SectionEnvelope<FinancialData> = {
     status: "SUCCESS", source: { provider: "MGBI", model: "KRS-RDF", recordId: "record" },
-    retrievedAt: "2026-10-06T00:00:00Z", effectiveAt: "2025-12-31", warnings: [], data: { periods },
+    retrievedAt: "2026-10-06T00:00:00Z", effectiveAt: "2025-12-31", warnings: ["FINANCIAL_COST_SIGN_UNVERIFIED"], data: { periods },
   };
   const html = renderToStaticMarkup(createElement(FinancialDataMount, { section }));
   assert.match(html, /Więcej lat \(2\)/);
@@ -112,6 +113,10 @@ test("financial mount starts with eight newest years and offers older columns", 
   assert.equal(latestAvailableFinancialYear(section.data), "2025");
   assert.ok(html.indexOf(">2025</th>") < html.indexOf(">2018</th>"));
   assert.match(html, /financial-chart-value/);
+  assert.match(html, /financial-table-group"><th scope="rowgroup"[^>]*>Przychody<\/th>/);
+  assert.match(html, /<tr><th scope="row">Przychody netto ze sprzedaży i zrównane z nimi<\/th>/);
+  assert.match(html, /<tr><th scope="row">Koszty działalności operacyjnej<\/th>/);
+  assert.ok(!html.includes("Nie udało się potwierdzić znaku części kosztów"));
 });
 
 test("KYS mount expands provider sanctions codes to list names", () => {
