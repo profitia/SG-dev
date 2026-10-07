@@ -8,3 +8,8 @@ export function isSameOriginRequest(request: Request): boolean {
       (/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host) && from.protocol === "http:"));
   } catch { return false; }
 }
+
+export function sameOriginRedirectUrl(request: Request, path: string): URL {
+  if (!isSameOriginRequest(request)) throw new Error("Untrusted request origin");
+  return new URL(path, request.headers.get("origin")!);
+}
