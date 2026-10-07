@@ -144,21 +144,23 @@ test("KYS mount expands provider sanctions codes to list names", () => {
   assert.ok(!html.includes("Źródło:"));
 });
 
-test("KYS mount shows named people, full PESEL and screening results in separate sections", () => {
+test("KYS mount masks PESEL and keeps beneficiary details aligned without birth date", () => {
   const section: SectionEnvelope<VerclyKysData> = {
     status: "SUCCESS", source: { provider: "VERCLY", model: "KYS_NIP", recordId: "report" },
     retrievedAt: null, effectiveAt: null, warnings: [],
     data: { correlationId: "request", reportId: "report", isComplete: true, queriedRegisters: [], stateAsOf: null,
       relatedPersonsCount: 1, beneficialOwnersCount: 1,
-      relatedPersons: [{ fullName: "Anna Testowa", pesel: "10987654321", birthDate: null, positions: ["CZŁONEK ZARZĄDU"], citizenship: [], foundIn: [], sanctionsMatch: false, pepMatch: false }],
-      beneficialOwners: [{ fullName: "Jan Przykładowy", pesel: "12345678901", birthDate: null, positions: ["Beneficjent rzeczywisty"], citizenship: ["POLSKA"], foundIn: ["CRBR", "Bardzo długa nazwa podmiotu powiązanego"], sanctionsMatch: false, pepMatch: true }],
+      relatedPersons: [{ fullName: "Anna Testowa", pesel: "10987654321", peselRevealToken: "token-1", birthDate: null, positions: ["CZŁONEK ZARZĄDU"], citizenship: [], foundIn: [], sanctionsMatch: false, pepMatch: false }],
+      beneficialOwners: [{ fullName: "Jan Przykładowy", pesel: "12345678901", peselRevealToken: "token-2", birthDate: null, positions: ["Beneficjent rzeczywisty"], citizenship: ["POLSKA"], foundIn: ["CRBR", "Bardzo długa nazwa podmiotu powiązanego"], sanctionsMatch: false, pepMatch: true }],
     },
   };
-  const html = renderToStaticMarkup(createElement(VerclyKysMount, { section }));
+  const html = renderToStaticMarkup(createElement(VerclyKysMount, { section, onRevealPesel: async () => "12345678901" }));
   assert.match(html, /Osoby pełniące funkcje kierownicze i nadzorcze/);
   assert.match(html, /Beneficjenci rzeczywiści/);
-  assert.match(html, /10987654321/);
-  assert.match(html, /12345678901/);
+  assert.ok(!html.includes("10987654321"));
+  assert.ok(!html.includes("12345678901"));
+  assert.equal((html.match(/>Pokaż<\/button>/g) ?? []).length, 2);
+  assert.equal((html.match(/<dt>Data urodzenia<\/dt>/g) ?? []).length, 1);
   assert.match(html, /CRBR/);
   assert.equal((html.match(/<details class="kys-person-entry">/g) ?? []).length, 2);
   assert.match(html, /<summary class="kys-person-summary">/);

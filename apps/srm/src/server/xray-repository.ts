@@ -100,6 +100,21 @@ export async function purgeExpiredKysPersonal(organizationId: string): Promise<v
   });
 }
 
+export async function readKysPersonPesel(
+  organizationId: string, snapshotId: string, list: "relatedPersons" | "beneficialOwners", index: number,
+): Promise<string | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(snapshotId) || !Number.isSafeInteger(index) || index < 0 || index > 10000) return null;
+  return withOrganization(organizationId, async (client) => {
+    const result = await client.query<{ payload_json: { relatedPersons?: { pesel?: unknown }[]; beneficialOwners?: { pesel?: unknown }[] } }>(
+      "SELECT payload_json FROM srm.source_snapshots WHERE organization_id = $1 AND id = $2 " +
+      "AND section = 'kys' AND data_class = 'KYS_PERSONAL' AND retention_until > now()",
+      [organizationId, snapshotId],
+    );
+    const pesel = result.rows[0]?.payload_json?.[list]?.[index]?.pesel;
+    return typeof pesel === "string" && /^\d{11}$/.test(pesel) ? pesel : null;
+  });
+}
+
 export async function appendSectionProjection(
   organizationId: string,
   input: { supplierId: string; snapshotId: string; section: PersistedSection; data: unknown; version: number },

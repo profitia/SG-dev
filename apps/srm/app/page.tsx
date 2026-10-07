@@ -15,13 +15,14 @@ type SearchResult = JdgSearchResult | CompanySearchResult;
 
 const emptySection = () => ({ status: "NOT_REQUESTED" as const, retrievedAt: null, effectiveAt: null, data: null, warnings: [] });
 
-function KysStep({ section, entityType, busy, error, onFetch, canFetch }: {
+function KysStep({ section, entityType, busy, error, onFetch, canFetch, onRevealPesel }: {
   section: DisplayCard["kys"];
   entityType: "COMPANY" | "JDG";
   busy: boolean;
   error: string | null;
   onFetch: () => void;
   canFetch: boolean;
+  onRevealPesel: (token: string) => Promise<string>;
 }) {
   return <>
     <div className="kys-step">
@@ -32,7 +33,7 @@ function KysStep({ section, entityType, busy, error, onFetch, canFetch }: {
       </button>
       {error && <p className="search-error" role="alert">{error}</p>}
     </div>
-    {section.status !== "NOT_REQUESTED" && <VerclyKysMount section={section} entityType={entityType} />}
+    {section.status !== "NOT_REQUESTED" && <VerclyKysMount section={section} entityType={entityType} onRevealPesel={onRevealPesel} />}
   </>;
 }
 
@@ -104,6 +105,18 @@ export default function Home() {
     } finally { if (generation === reportGeneration.current) setKysBusy(false); }
   }
 
+  async function revealPesel(token: string): Promise<string> {
+    const response = await fetch("/api/xray/kys/pesel", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }), cache: "no-store",
+    });
+    if (!response.ok) throw new Error("PESEL reveal failed");
+    const payload: unknown = await response.json();
+    if (!payload || typeof payload !== "object" || !("pesel" in payload) ||
+      typeof payload.pesel !== "string" || !/^\d{11}$/.test(payload.pesel)) throw new Error("Invalid PESEL response");
+    return payload.pesel;
+  }
+
   return (
     <main className="appshield">
       <header className="appshield-header">
@@ -129,7 +142,7 @@ export default function Home() {
           </section>
           <div className="xray-card">
             <JdgRegistryMount section={result.section} />
-            <KysStep section={kys} entityType="JDG" busy={kysBusy} error={kysError} onFetch={fetchKys} canFetch={Boolean(result.section.data?.entries.length)} />
+            <KysStep section={kys} entityType="JDG" busy={kysBusy} error={kysError} onFetch={fetchKys} canFetch={Boolean(result.section.data?.entries.length)} onRevealPesel={revealPesel} />
           </div>
         </>}
         {result?.entityType === "COMPANY" && !busy && <>
@@ -142,7 +155,7 @@ export default function Home() {
           <div className="xray-card">
           <GeneralCompanyDataMount section={result.card.general} />
           <FinancialDataMount section={result.card.financial} />
-          <KysStep section={kys} entityType="COMPANY" busy={kysBusy} error={kysError} onFetch={fetchKys} canFetch={Boolean(result.card.identity.nip)} />
+          <KysStep section={kys} entityType="COMPANY" busy={kysBusy} error={kysError} onFetch={fetchKys} canFetch={Boolean(result.card.identity.nip)} onRevealPesel={revealPesel} />
           </div>
         </>}
       </div>
