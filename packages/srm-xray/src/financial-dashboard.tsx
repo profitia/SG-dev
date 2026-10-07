@@ -7,6 +7,55 @@ import { amountInThousands } from "./financial-labels";
 type Scope = FinancialPeriod["scope"];
 type Fact = FinancialPeriod["facts"][number];
 type Row = { code: string; label: string; strong?: boolean };
+type IndicatorPreview = { name: string; description: string; formula: string; requirement?: string };
+
+const indicatorGroups: { title: string; indicators: IndicatorPreview[] }[] = [
+  { title: "Płynność", indicators: [
+    { name: "Płynność bieżąca", description: "Relacja aktywów obrotowych do zobowiązań wymagalnych w krótkim terminie.", formula: "Aktywa obrotowe ÷ zobowiązania krótkoterminowe" },
+    { name: "Kapitał obrotowy netto", description: "Kwota aktywów obrotowych pozostająca po odjęciu zobowiązań krótkoterminowych.", formula: "Aktywa obrotowe − zobowiązania krótkoterminowe" },
+    { name: "Płynność szybka", description: "Pokazuje pokrycie zobowiązań krótkoterminowych bez uwzględniania zapasów.", formula: "(Aktywa obrotowe − zapasy) ÷ zobowiązania krótkoterminowe", requirement: "Wymaga potwierdzonej wartości zapasów." },
+  ] },
+  { title: "Finansowanie i zadłużenie", indicators: [
+    { name: "Udział zobowiązań i rezerw w aktywach", description: "Pokazuje udział zobowiązań i rezerw w finansowaniu aktywów; nie oznacza wyłącznie kredytów.", formula: "Zobowiązania i rezerwy ÷ aktywa razem" },
+    { name: "Udział kapitału własnego w aktywach", description: "Pokazuje, jaką część aktywów finansuje kapitał własny spółki.", formula: "Kapitał własny ÷ aktywa razem" },
+    { name: "Pokrycie odsetek", description: "Porównuje wynik operacyjny z kosztami samych odsetek.", formula: "Wynik operacyjny ÷ koszty odsetek", requirement: "Wymaga wyodrębnienia odsetek z kosztów finansowych." },
+    { name: "Dług netto / EBITDA", description: "Zestawia dług finansowy pomniejszony o gotówkę z wynikiem EBITDA.", formula: "(Dług oprocentowany − środki pieniężne) ÷ EBITDA", requirement: "Wymaga potwierdzenia długu, gotówki i definicji EBITDA." },
+  ] },
+  { title: "Rentowność i trend", indicators: [
+    { name: "Marża operacyjna", description: "Udział wyniku z działalności operacyjnej w przychodach.", formula: "Wynik operacyjny ÷ przychody × 100%" },
+    { name: "Marża netto", description: "Udział wyniku netto w przychodach; strata pozostanie wartością ujemną.", formula: "Wynik netto ÷ przychody × 100%" },
+    { name: "Zmiana przychodów rok do roku", description: "Pokazuje zmianę skali działalności względem porównywalnego poprzedniego roku.", formula: "(Przychody bieżące ÷ przychody poprzedniego roku − 1) × 100%" },
+    { name: "Rentowność aktywów (ROA)", description: "Porównuje wynik netto z przeciętną wartością aktywów z dwóch lat.", formula: "Wynik netto ÷ średnie aktywa × 100%", requirement: "Wymaga porównywalnych danych za dwa lata." },
+    { name: "Rentowność kapitału własnego (ROE)", description: "Porównuje wynik netto z przeciętnym kapitałem własnym.", formula: "Wynik netto ÷ średni kapitał własny × 100%", requirement: "Wymaga dwóch lat danych; przy kapitale niedodatnim wynik wymaga osobnej interpretacji." },
+    { name: "Marża EBITDA", description: "Pokazuje relację wyniku operacyjnego przed amortyzacją do przychodów; nie jest miarą gotówki.", formula: "(Wynik operacyjny + amortyzacja) ÷ przychody × 100%", requirement: "Wymaga potwierdzonej amortyzacji i jednej definicji EBITDA." },
+  ] },
+  { title: "Koszty i przepływy pieniężne", indicators: [
+    { name: "Udział materiałów i energii w kosztach", description: "Pokazuje, jaką część kosztów operacyjnych stanowią materiały i energia.", formula: "Koszty materiałów i energii ÷ koszty działalności operacyjnej × 100%" },
+    { name: "Pokrycie zobowiązań przepływami operacyjnymi", description: "Zestawia gotówkę z działalności operacyjnej ze zobowiązaniami krótkoterminowymi.", formula: "Przepływy operacyjne ÷ zobowiązania krótkoterminowe", requirement: "Wymaga rachunku przepływów pieniężnych." },
+    { name: "Wolne przepływy pieniężne", description: "Przybliżona gotówka pozostająca po wydatkach inwestycyjnych.", formula: "Przepływy operacyjne − nakłady inwestycyjne", requirement: "Wymaga rachunku przepływów i potwierdzenia nakładów inwestycyjnych." },
+    { name: "Cykl konwersji gotówki", description: "Szacuje liczbę dni od poniesienia wydatku na zapasy do odzyskania gotówki ze sprzedaży.", formula: "Dni zapasów + dni należności − dni zobowiązań", requirement: "Wymaga szczegółowych pozycji bilansu, kosztu sprzedaży i porównywalnych okresów." },
+  ] },
+];
+
+function FinancialIndicatorsPreview() {
+  return <div className="financial-indicators-preview">
+    <p className="financial-indicators-intro">Wskaźniki pomogą ocenić płynność, finansowanie, rentowność i zmianę sytuacji spółki. To podgląd zakresu analizy; obecnie nie pokazujemy obliczonych wyników ani automatycznej oceny.</p>
+    <div className="financial-strength-preview">
+      <div><h3>Siła finansowa</h3><p>Przekrojowy obraz płynności, finansowania, rentowności i trendu z kilku lat. Zasady oceny zostaną uzgodnione przed uruchomieniem kalkulacji.</p></div>
+      <strong className="financial-indicator-value">W trakcie developmentu</strong>
+    </div>
+    {indicatorGroups.map((group) => <section className="financial-indicator-group" key={group.title} aria-label={group.title}>
+      <h3>{group.title}</h3>
+      <div className="financial-indicator-grid">{group.indicators.map((indicator) => <article className="financial-indicator" key={indicator.name}>
+        <div className="financial-indicator-heading"><h4>{indicator.name}</h4><strong className="financial-indicator-value">W trakcie developmentu</strong></div>
+        <p>{indicator.description}</p>
+        <p className="financial-indicator-formula"><span>Jak liczymy:</span> {indicator.formula}</p>
+        {indicator.requirement && <p className="financial-indicator-requirement">{indicator.requirement}</p>}
+      </article>)}</div>
+    </section>)}
+    <p className="financial-indicators-note">Jeśli zabraknie danych albo okresy nie będą porównywalne, przyszły wynik pokaże „Nie można obliczyć” wraz z przyczyną — zamiast zera.</p>
+  </div>;
+}
 
 const incomeGroups: { title: string; rows: Row[] }[] = [
   { title: "Przychody", rows: [
@@ -117,7 +166,7 @@ function MetricChart({ periods, code, title, color }: { periods: readonly Financ
     <h4>{title}</h4>
     <div className="financial-chart-scroll">
       <svg viewBox={`0 0 ${width} 220`} role="img" aria-label={`${title}; wartości w tysiącach złotych, lata ${points.map((point) => point.year).join(", ")}`}>
-        <line x1="20" x2={width - 18} y1={baseline} y2={baseline} stroke="#b9c9cf" strokeWidth="1" />
+        <line x1="20" x2={width - 18} y1={baseline} y2={baseline} stroke="#D9D9D9" strokeWidth="1" />
         {points.map((point, index) => {
           const x = 30 + index * ((width - 60) / points.length);
           const barWidth = Math.min(44, (width - 60) / points.length - 12);
@@ -132,8 +181,8 @@ function MetricChart({ periods, code, title, color }: { periods: readonly Financ
             {point.value !== null && <rect x={x} y={y} width={barWidth} height={Math.max(1, height)} rx="3" fill={color}>
               <title>{`${point.year}: ${formatNumber(point.value)} tys. zł`}</title>
             </rect>}
-            {point.value !== null && <text className="financial-chart-value" x={x + barWidth / 2} y={labelY} textAnchor="middle" fontSize="12" fill="#153645">{formatNumber(point.value)}</text>}
-            <text x={x + barWidth / 2} y="210" textAnchor="middle" fontSize="12" fill="#45606c">{point.year}</text>
+            {point.value !== null && <text className="financial-chart-value" x={x + barWidth / 2} y={labelY} textAnchor="middle" fontSize="12" fill="#242F44">{formatNumber(point.value)}</text>}
+            <text x={x + barWidth / 2} y="210" textAnchor="middle" fontSize="12" fill="#767171">{point.year}</text>
           </g>;
         })}
       </svg>
@@ -220,9 +269,9 @@ export function FinancialDashboard({ data }: { data: FinancialData }) {
       <summary>Rachunek zysków i strat</summary>
       <div className="financial-accordion-body">
         <div className="financial-charts">
-          <MetricChart periods={chartPeriods} code="PALA_NRFS" title="Przychody" color="#173a59" />
-          <MetricChart periods={chartPeriods} code="PALA_OAC" title="Koszty" color="#c47732" />
-          <MetricChart periods={chartPeriods} code="PALA_NPL" title="Wynik finansowy netto" color="#347f78" />
+          <MetricChart periods={chartPeriods} code="PALA_NRFS" title="Przychody" color="#242F44" />
+          <MetricChart periods={chartPeriods} code="PALA_OAC" title="Koszty" color="#006D9E" />
+          <MetricChart periods={chartPeriods} code="PALA_NPL" title="Wynik finansowy netto" color="#0092D9" />
         </div>
         <FinancialTable groups={incomeGroups} periods={eightPeriods} allPeriods={allPeriods} onChart={setSelectedRow} />
       </div>
@@ -233,13 +282,13 @@ export function FinancialDashboard({ data }: { data: FinancialData }) {
     </details>
     <details className="financial-accordion">
       <summary>Analiza wskaźnikowa</summary>
-      <div className="financial-accordion-body"><p>Obliczenia wskaźników będą dostępne w kolejnym etapie.</p></div>
+      <div className="financial-accordion-body"><FinancialIndicatorsPreview /></div>
     </details>
     <dialog className="financial-chart-dialog" ref={dialogRef} onClose={() => setSelectedRow(null)}>
       {selectedRow && <>
         <div className="financial-dialog-header"><h3>{selectedRow.label}</h3><button type="button" onClick={() => dialogRef.current?.close()} aria-label="Zamknij wykres">×</button></div>
         <p>Wartości w tysiącach złotych (tys. zł).</p>
-        <MetricChart periods={allPeriods} code={selectedRow.code} title={selectedRow.label} color="#173a59" />
+        <MetricChart periods={allPeriods} code={selectedRow.code} title={selectedRow.label} color="#242F44" />
       </>}
     </dialog>
   </div>;
