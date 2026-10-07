@@ -172,6 +172,9 @@ body { margin: 0; color: var(--srm-text); background: var(--srm-background); }
 .financial-indicator-formula { padding-top: 10px; border-top: 1px solid var(--srm-border); color: var(--srm-muted); font-size: .83rem; }
 .financial-indicator-formula span { color: var(--srm-brand); font-weight: 700; }
 .financial-indicator-requirement, .financial-indicators-note { color: var(--srm-muted); font-size: .83rem; }
+.financial-indicators-legend { margin: 16px 0; color: var(--srm-text); font-size: .85rem; line-height: 1.5; }
+.financial-indicator-importance { color: var(--srm-brand); font-weight: 700; font-size: .8rem; letter-spacing: .03em; }
+.financial-indicator-reason { color: var(--srm-muted); font-size: .82rem; }
 .financial-indicators-note { margin: 24px 0 0; line-height: 1.5; }
 .financial-chart-scroll { max-width: 100%; overflow-x: auto; }
 .financial-chart svg { display: block; width: 100%; min-width: 640px; height: auto; }

@@ -83,11 +83,37 @@ test("financial mount groups readable rows, converts PLN to thousands and keeps 
   assert.match(html, /Marża netto/);
   assert.match(html, /Cykl konwersji gotówki/);
   assert.equal(html.match(/W trakcie developmentu/g)?.length, 18);
-  assert.match(html, /Nie można obliczyć/);
+  assert.match(html, /Kropki nie oceniają ryzyka firmy/);
   assert.ok(!html.includes("Wskaźniki pomogą ocenić płynność"));
   assert.ok(!html.includes("Źródło:"));
   assert.ok(!html.includes("MGBI"));
   assert.ok(!html.includes("PALA_UNKNOWN"));
+});
+
+test("financial indicator cards show calculated values, fixed importance and an unavailable reason", () => {
+  const section: SectionEnvelope<FinancialData> = {
+    status: "SUCCESS", source: { provider: "MGBI", model: "KRS-RDF", recordId: "record" },
+    retrievedAt: "2026-10-06T00:00:00Z", effectiveAt: "2025-12-31", warnings: [],
+    data: { periods: [{ from: "2025-01-01", to: "2025-12-31", scope: "standalone", documentId: "document-2025:cfy",
+      facts: [{ metricCode: "BS_A_TA", amount: "3000", currency: "PLN", unit: "PLN" },
+        { metricCode: "PALA_NPL", amount: "150", currency: "PLN", unit: "PLN" }] }],
+    indicators: [
+      { code: "CURRENT_RATIO", periodStart: "2025-01-01", periodEnd: "2025-12-31", scope: "standalone",
+        status: "AVAILABLE", value: "1.500000", unit: "RATIO", importance: 3, reasonCode: null, formulaVersion: "1.0" },
+      { code: "NET_WORKING_CAPITAL", periodStart: "2025-01-01", periodEnd: "2025-12-31", scope: "standalone",
+        status: "AVAILABLE", value: "500000.0000", unit: "PLN", importance: 2, reasonCode: null, formulaVersion: "1.0" },
+      { code: "ROE", periodStart: "2025-01-01", periodEnd: "2025-12-31", scope: "standalone",
+        status: "UNAVAILABLE", value: null, unit: "PERCENT", importance: 1, reasonCode: "NON_POSITIVE_EQUITY", formulaVersion: "1.0" },
+    ] },
+  };
+  const html = renderToStaticMarkup(createElement(FinancialDataMount, { section }));
+  assert.match(html, /1,50×/);
+  assert.match(html, /500,00 tys\. zł/);
+  assert.match(html, /●●● · kluczowa/);
+  assert.match(html, /●●○ · istotna/);
+  assert.match(html, /●○○ · pomocnicza/);
+  assert.match(html, /Średni kapitał własny nie jest dodatni/);
+  assert.ok(!html.includes("MGBI"));
 });
 
 test("financial mount starts with eight newest years and offers older columns", () => {

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import type { FinancialData, GeneralCompanyData, SectionEnvelope } from "@profitia/srm-xray";
 import { withOrganization } from "./db";
 import type { FinancialSourceFact } from "./mgbi-financial";
+import { calculateFinancialIndicators, FINANCIAL_INDICATOR_INPUT_CODES, type CatalogIndicatorFact } from "./financial-indicators";
 
 export const CATALOG_FRESHNESS_MS = 24 * 60 * 60 * 1000;
 type GeneralSection = SectionEnvelope<GeneralCompanyData>;
@@ -112,9 +113,11 @@ export async function saveSharedCompany(organizationId: string, nip: string, inp
        WHERE (srm.catalog_financial_facts.amount, srm.catalog_financial_facts.source_amount,
          srm.catalog_financial_facts.normalization_rule, srm.catalog_financial_facts.currency_code,
          srm.catalog_financial_facts.unit_code, srm.catalog_financial_facts.source_path,
-         srm.catalog_financial_facts.validation_status)
+         srm.catalog_financial_facts.validation_status, srm.catalog_financial_facts.source_organization_id,
+         srm.catalog_financial_facts.source_snapshot_id, srm.catalog_financial_facts.retrieved_at)
          IS DISTINCT FROM (EXCLUDED.amount, EXCLUDED.source_amount, EXCLUDED.normalization_rule,
-         EXCLUDED.currency_code, EXCLUDED.unit_code, EXCLUDED.source_path, EXCLUDED.validation_status)`,
+         EXCLUDED.currency_code, EXCLUDED.unit_code, EXCLUDED.source_path, EXCLUDED.validation_status, EXCLUDED.source_organization_id,
+         EXCLUDED.source_snapshot_id, EXCLUDED.retrieved_at)`,
       [JSON.stringify(rows.map((row) => ({ nip: row.nip, metric_code: row.metricCode,
         period_start: row.periodStart, period_end: row.periodEnd, statement_scope: row.statementScope,
         period_type: row.periodType, amount: row.amount, source_amount: row.sourceAmount,
@@ -123,5 +126,57 @@ export async function saveSharedCompany(organizationId: string, nip: string, inp
         source_organization_id: row.sourceOrganizationId, source_snapshot_id: row.sourceSnapshotId,
         retrieved_at: row.retrievedAt })))],
     );
+  });
+}
+
+/** Recalculate from shared validated facts; persist provenance without another provider call. */
+export async function refreshFinancialIndicators(
+  organizationId: string, nip: string, data: FinancialData,
+): Promise<NonNullable<FinancialData["indicators"]>> {
+  return withOrganization(organizationId, async (client) => {
+    const found = await client.query<CatalogIndicatorFact>(
+      `SELECT metric_code AS "metricCode", period_start::text AS "periodStart", period_end::text AS "periodEnd",
+         statement_scope AS "statementScope", amount::text AS amount, currency_code AS "currencyCode",
+         unit_code AS "unitCode", source_path AS "sourcePath", validation_status AS "validationStatus",
+         normalization_rule AS "normalizationRule", source_snapshot_id::text AS "sourceSnapshotId"
+       FROM srm.catalog_financial_facts WHERE nip = $1 AND metric_code = ANY($2::text[])`,
+      [nip, FINANCIAL_INDICATOR_INPUT_CODES],
+    );
+    const calculated = calculateFinancialIndicators(nip, data, found.rows);
+    if (calculated.length) {
+      await client.query(
+        `INSERT INTO srm.catalog_financial_indicators(nip, indicator_code, period_start, period_end,
+           statement_scope, formula_version, status, value, unit, importance, reason_code,
+           input_facts, source_snapshot_ids, source_document_ids)
+         SELECT v.nip, v.indicator_code, v.period_start, v.period_end, v.statement_scope,
+           v.formula_version, v.status, v.value, v.unit, v.importance, v.reason_code,
+           v.input_facts, v.source_snapshot_ids, v.source_document_ids
+         FROM jsonb_to_recordset($1::jsonb) AS v(nip text, indicator_code text, period_start date,
+           period_end date, statement_scope text, formula_version text, status text, value numeric,
+           unit text, importance smallint, reason_code text, input_facts jsonb,
+           source_snapshot_ids uuid[], source_document_ids text[])
+         ON CONFLICT (nip, indicator_code, period_start, period_end, statement_scope, formula_version)
+         DO UPDATE SET status = EXCLUDED.status, value = EXCLUDED.value, unit = EXCLUDED.unit,
+           importance = EXCLUDED.importance, reason_code = EXCLUDED.reason_code,
+           input_facts = EXCLUDED.input_facts, source_snapshot_ids = EXCLUDED.source_snapshot_ids,
+           source_document_ids = EXCLUDED.source_document_ids, computed_at = now()
+         WHERE (srm.catalog_financial_indicators.status, srm.catalog_financial_indicators.value,
+           srm.catalog_financial_indicators.unit, srm.catalog_financial_indicators.importance,
+           srm.catalog_financial_indicators.reason_code, srm.catalog_financial_indicators.input_facts,
+           srm.catalog_financial_indicators.source_snapshot_ids, srm.catalog_financial_indicators.source_document_ids)
+           IS DISTINCT FROM (EXCLUDED.status, EXCLUDED.value, EXCLUDED.unit, EXCLUDED.importance,
+           EXCLUDED.reason_code, EXCLUDED.input_facts, EXCLUDED.source_snapshot_ids, EXCLUDED.source_document_ids)`,
+        [JSON.stringify(calculated.map((item) => ({
+          nip, indicator_code: item.code, period_start: item.periodStart, period_end: item.periodEnd,
+          statement_scope: item.scope === "standalone" ? "UNIT" : "CONSOLIDATED",
+          formula_version: item.formulaVersion, status: item.status, value: item.value,
+          unit: item.unit, importance: item.importance, reason_code: item.reasonCode,
+          input_facts: item.inputFacts, source_snapshot_ids: item.sourceSnapshotIds,
+          source_document_ids: item.sourceDocumentIds,
+        })))],
+      );
+    }
+    return calculated.map(({ inputFacts: _inputFacts, sourceSnapshotIds: _sourceSnapshotIds,
+      sourceDocumentIds: _sourceDocumentIds, nip: _nip, ...publicResult }) => publicResult);
   });
 }
