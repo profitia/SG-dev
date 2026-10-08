@@ -69,6 +69,82 @@ export type FinancialData = {
   indicators?: readonly FinancialIndicatorResult[];
 };
 
+/** Stored-report read contract; it never requests or refreshes a provider. */
+export type ReportFreshness = {
+  retrievedAt: string | null;
+  checkedAt: string | null;
+  cacheExpiresAt: string | null;
+  retentionUntil: string | null;
+  freshness: "FRESH" | "EXPIRED" | "UNKNOWN" | "ABSENT";
+  readSource: "STORED";
+  lastRetrievalMethod: "PROVIDER" | "CACHE" | "UNKNOWN";
+};
+
+export type FinancialFactEvidence = {
+  ref: string;
+  documentRef: string;
+  metricCode: string;
+  periodStart: string;
+  periodEnd: string;
+  scope: FinancialPeriod["scope"];
+  amount: string;
+  sourceAmount: string | null;
+  currency: string;
+  unit: string;
+  validation: "VERIFIED" | "UNVERIFIED" | "UNAVAILABLE";
+  normalization: "NORMALIZED_CONFIRMED" | "SOURCE_VALUE" | "SOURCE_UNCONFIRMED" | "UNKNOWN";
+  normalizationRule: string | null;
+  reasonCode: string | null;
+};
+
+export type FinancialHistoryPoint = FinancialIndicatorResult & {
+  year: string;
+  documentRef: string;
+  definitionRef: { code: string; formulaVersion: string };
+  evidence: readonly FinancialFactEvidence[];
+  comparison: {
+    status: "COMPARABLE" | "NOT_COMPARABLE" | "UNKNOWN";
+    reasonCode: string | null;
+    previousPeriod: { from: string; to: string } | null;
+    delta: string | null;
+    unit: "PERCENTAGE_POINTS" | "RATIO" | "PLN" | "DAYS";
+    direction: "UP" | "DOWN" | "UNCHANGED" | "NO_COMPARISON";
+  };
+};
+
+export type SupplierReportData = {
+  schemaVersion: "1.0";
+  nip: string;
+  entityType: "COMPANY" | "JDG";
+  financial: {
+    status: SectionStatus;
+    source: "MGBI";
+    freshness: ReportFreshness;
+    completeness: "COMPLETE" | "PARTIAL" | "EMPTY" | "UNKNOWN";
+    limitations: readonly string[];
+    mappingVersion: string | null;
+    /** Opaque content identities, never database snapshot or tenant IDs. */
+    sourceVersion: string | null;
+    representationVersion: string | null;
+    periods: readonly {
+      from: string; to: string; year: string; scope: FinancialPeriod["scope"];
+      documentRef: string; facts: readonly FinancialFactEvidence[];
+    }[];
+    history: readonly { code: string; reasonCode: string | null; points: readonly FinancialHistoryPoint[] }[];
+  };
+  kys: {
+    status: SectionStatus;
+    source: "VERCLY";
+    freshness: ReportFreshness;
+    completeness: "COMPLETE" | "PARTIAL" | "EMPTY" | "UNKNOWN";
+    lastAttemptStatus: "PENDING" | "SUCCESS" | "NO_DATA" | "TIMEOUT" | "ERROR" | null;
+    lastAttemptAt: string | null;
+    limitations: readonly string[];
+    /** Metadata only: an expired report's projection/person data is never returned. */
+    reportAvailable: boolean;
+  };
+};
+
 export type JdgField = {
   key: string;
   label: string;
