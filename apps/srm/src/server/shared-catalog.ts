@@ -53,6 +53,18 @@ export async function readFreshCompany(organizationId: string, nip: string, now 
   });
 }
 
+/** Export reads the already stored projection and never initiates a provider request. */
+export async function readSavedFinancialData(organizationId: string, nip: string): Promise<FinancialData | null> {
+  return withOrganization(organizationId, async (client) => {
+    const result = await client.query<{ financial_json: StoredFinancialSection | null }>(
+      "SELECT financial_json FROM srm.catalog_companies WHERE nip = $1", [nip],
+    );
+    const section = result.rows[0]?.financial_json;
+    return section?.data && (section.status === "SUCCESS" || section.status === "PARTIAL")
+      ? section.data : null;
+  });
+}
+
 async function upsertSection(
   client: { query: (sql: string, parameters?: unknown[]) => Promise<unknown> },
   nip: string, sectionName: CatalogSection, section: GeneralSection | FinancialSection,

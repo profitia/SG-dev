@@ -163,6 +163,18 @@ body { margin: 0; color: var(--srm-text); background: var(--srm-background); }
 .financial-chart h4 { margin: 0 0 10px; color: var(--srm-brand); }
 .financial-chart p { color: var(--srm-muted); }
 .financial-strength-preview { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; padding: 18px; border: 1px solid var(--srm-border); border-left: 4px solid var(--srm-data-accent); border-radius: 9px; background: var(--srm-interaction-soft); }
+.financial-excel-export { margin: 16px 0 22px; padding: 14px 16px; border: 1px solid var(--srm-border); border-radius: 9px; background: var(--srm-surface); }
+.financial-excel-export summary { cursor: pointer; color: var(--srm-brand); font-weight: 700; }
+.financial-excel-export p { margin: 12px 0; }
+.financial-excel-years { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 14px 0; }
+.financial-excel-years label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.financial-excel-years input { accent-color: var(--srm-interaction); }
+.financial-excel-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.financial-excel-actions button { padding: 9px 13px; border: 1px solid var(--srm-interaction); border-radius: 7px; background: white; color: var(--srm-interaction); font: inherit; font-weight: 700; cursor: pointer; }
+.financial-excel-actions button:last-child { border-color: var(--srm-brand); background: var(--srm-brand); color: white; }
+.financial-excel-actions button:hover:not(:disabled) { background: var(--srm-interaction-soft); }
+.financial-excel-actions button:last-child:hover:not(:disabled) { background: var(--srm-interaction); color: white; }
+.financial-excel-actions button:disabled { opacity: .55; cursor: not-allowed; }
 .financial-strength-preview h3, .financial-indicator-group h3, .financial-indicator h4 { margin: 0; color: var(--srm-brand); }
 .financial-strength-preview p { max-width: 75ch; margin: 7px 0 0; line-height: 1.5; }
 .financial-indicator-group { margin-top: 26px; }
