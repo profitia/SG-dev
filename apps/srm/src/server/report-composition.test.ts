@@ -148,11 +148,11 @@ test("page composition preserves all feature mounts and hides empty future analy
 test("slot contract shares supplier, metadata, scope and periods without replacing detail reports", async () => {
   const { instance } = controller(); await instance.search(nipA);
   const html = markup(instance.getSnapshot(), { slots: {
-    summary: context => { assert.equal(context.metadata?.nip, nipA); assert.equal(context.financial?.status, "SUCCESS"); assert.equal(context.kys.status, "NOT_REQUESTED"); return React.createElement("p", null, "Treść testowa podsumowania"); },
+    summary: context => { assert.equal(context.metadata?.nip, nipA); assert.equal(context.financial?.status, "SUCCESS"); assert.equal(context.kys.status, "NOT_REQUESTED"); assert.equal(typeof context.onIndicator, "function"); assert.equal(typeof context.onNavigate, "function"); return React.createElement("p", null, "Treść testowa podsumowania"); },
     financial: { liquidity: context => { assert.equal(context.scope, "standalone"); assert.equal(context.periods[0].year, "2025"); return React.createElement("p", null, "Treść testowa finansów"); } },
     observations: () => React.createElement("p", null, "Treść testowa obserwacji"),
   } });
-  assert.ok(html.includes('id="report-summary"')); assert.ok(html.includes('id="report-finance"')); assert.ok(html.includes('id="report-observations"'));
+  assert.ok(html.includes('id="report-summary"')); assert.ok(html.includes("Najważniejsze informacje")); assert.ok(html.includes('id="report-finance"')); assert.ok(html.includes('id="report-observations"'));
   assert.ok(html.includes("Rachunek zysków i strat"));
 });
 

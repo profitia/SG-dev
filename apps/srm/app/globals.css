@@ -390,3 +390,22 @@ body { margin: 0; color: var(--srm-text); background: var(--srm-background); }
   .health-context-controls select { width: 100%; }
   .health-card .health-card-value { font-size: 1.6rem; }
 }
+
+/* Compact factual summary; semantic warnings use copy, never an unapproved risk colour. */
+#report-summary { border-left: 3px solid #006d9e; background: #f7fafc; }
+.summary-period, .summary-note, .summary-kys { color: #46566c; font-size: .9rem; line-height: 1.55; }
+.summary-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2rem; }
+.executive-summary h3 { font-size: 1rem; margin: .8rem 0; }
+.executive-summary ul { padding-left: 1.2rem; margin: 0; }
+.executive-summary li { margin-bottom: .9rem; line-height: 1.55; overflow-wrap: anywhere; }
+.executive-summary li p { margin: .2rem 0; }
+.executive-summary button { background: transparent; border: 0; border-bottom: 1px solid currentColor; color: #006d9e; cursor: pointer; padding: .3rem 0; font: inherit; font-size: .88rem; text-align: left; }
+.executive-summary button:hover { color: #242f44; text-decoration: underline; }
+.executive-summary button:focus-visible, .executive-summary summary:focus-visible { outline: 3px solid #006d9e; outline-offset: 4px; }
+.summary-explanation { font-size: .88rem; color: #46566c; }
+.summary-explanation summary, .summary-more > summary { cursor: pointer; padding: .3rem 0; }
+.summary-more { font-size: .9rem; }
+.summary-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem 1.4rem; border-top: 1px solid #d5dfe8; margin-top: .7rem; padding-top: .7rem; }
+.summary-actions h3 { margin: .2rem 0; }
+.health-card[id] { scroll-margin-top: var(--report-scroll-offset, 100px); }
+@media (max-width: 640px) { .summary-columns { grid-template-columns: minmax(0, 1fr); gap: .5rem; } .executive-summary button, .executive-summary summary { min-height: 44px; display: inline-flex; align-items: center; } }

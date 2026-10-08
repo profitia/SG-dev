@@ -34,3 +34,7 @@ export type { FinancialPeriodSelection } from "./financial-dashboard";
 export { FinancialHealthArea, type FinancialSourceAction } from "./financial-health";
 export { healthGroups, indicatorContent, indicatorPresentation, importanceLabels, financialReason } from "./financial-indicator-content";
 export { FinancialHistory, historyPlot, historyPoints, financialValue, comparisonText } from "./financial-history";
+
+export { ExecutiveSummary } from "./executive-summary";
+export { executiveSummary } from "./executive-summary-rules";
+export type { ExecutiveSummaryInput, ExecutiveSummaryModel, SummaryItem, SummaryEvidence } from "./executive-summary-rules";
