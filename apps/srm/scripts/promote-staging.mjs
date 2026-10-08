@@ -341,147 +341,6 @@ export async function liveEvidence(sha, env = process.env) {
     },
   };
 }
-async function apply(plan, approval, evidence, env, rollback = false) {
-  if (!evidence.service || evidence.service.id !== approval.renderServiceId)
-    throw new Error("Approved exact service identity required");
-  const snapshotPath = path.join(
-    root,
-    "apps/srm/node_modules/.srm-provider-snapshot.json",
-  );
-  const all = await paged(
-    "https://api.render.com/v1",
-    "/services/" + evidence.service.id + "/deploys",
-    env.RENDER_API_KEY,
-  );
-  const latest = all.map((x) => x.deploy ?? x).find((d) => d.status === "live");
-  const actual = evidence.providerSnapshot.renderServices.find(
-    (s) => s.id === evidence.service.id,
-  );
-  Object.assign(actual, {
-    liveStatus: latest ? "live" : "UNVERIFIED",
-    liveDeployId: latest?.id,
-    liveSha: latest?.commit?.id,
-  });
-  fs.writeFileSync(snapshotPath, JSON.stringify(evidence.providerSnapshot));
-  fullPreflight({
-    sha: plan.manifest.sha,
-    taskId: approval.approvalId,
-    approvalId: approval.approvalId,
-    snapshotPath,
-    target: "apps/srm/scripts/promote-staging.mjs",
-  });
-  if (!rollback) assertAuthorization(approval, plan.manifest.sha, "migrate");
-  assertMigrationDestination(env);
-  const client = new pg.Client({ connectionString: env.SRM_APP_DIRECT_URL });
-  let migration;
-  try {
-    await client.connect();
-    const initialize =
-      !rollback && approval.operations.includes("initialize")
-        ? initializationConfig(env)
-        : null;
-    if (initialize)
-      assertAuthorization(approval, plan.manifest.sha, "initialize");
-    migration = await runMigrations(client, { dryRun: rollback, initialize });
-    if (rollback && migration.pending.length)
-      throw new Error("Rollback schema is not fully compatible");
-  } finally {
-    await client.end();
-  }
-  const runtimeDatabase = await verifyRuntimeDatabase(env);
-  let deploy = selectReusableDeploy(all, plan.manifest.sha);
-  fullPreflight({
-    sha: plan.manifest.sha,
-    taskId: approval.approvalId,
-    approvalId: approval.approvalId,
-    snapshotPath,
-    target: "apps/srm/scripts/promote-staging.mjs",
-  });
-  const fresh = await api(
-    "https://api.render.com/v1",
-    "/services/" + evidence.service.id,
-    env.RENDER_API_KEY,
-  );
-  if (
-    fresh.ownerId !== contract.render.workspaceId ||
-    fresh.environmentId !== contract.render.environmentId ||
-    fresh.branch !== "main" ||
-    fresh.autoDeployTrigger !== "off" ||
-    fresh.repo?.replace(/\.git$/, "") !==
-      "https://github.com/" + contract.repository
-  )
-    throw new Error("Provider routing drift");
-  assertRenderService(fresh);
-  assertAuthorization(approval, plan.manifest.sha, rollback ? "rollback" : "deploy");
-  if (!deploy)
-    deploy = await api(
-      "https://api.render.com/v1",
-      "/services/" + evidence.service.id + "/deploys",
-      env.RENDER_API_KEY,
-      "POST",
-      { commitId: plan.manifest.sha, clearCache: "do_not_clear" },
-    );
-  for (let i = 0; i < 240 && deploy.status !== "live"; i++) {
-    if (
-      [
-        "build_failed",
-        "update_failed",
-        "canceled",
-        "pre_deploy_failed",
-        "deactivated",
-      ].includes(deploy.status)
-    )
-      throw new Error(
-        "Deployment failed; preserve migration, use explicit compatible-code rollback",
-      );
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-    deploy = await api(
-      "https://api.render.com/v1",
-      "/services/" + evidence.service.id + "/deploys/" + deploy.id,
-      env.RENDER_API_KEY,
-    );
-  }
-  if (deploy.status !== "live" || deploy.commit?.id !== plan.manifest.sha)
-    throw new Error("Exact SHA deployment not verified");
-  const url = evidence.service.serviceDetails?.url;
-  if (
-    !url?.startsWith("https://") ||
-    new URL(url).hostname !== evidence.service.slug + ".onrender.com"
-  )
-    throw new Error("Provider URL identity mismatch");
-  const health = await fetch(url + "/api/health", {
-    signal: AbortSignal.timeout(30000),
-  });
-  const body = await health.json();
-  if (
-    health.status !== 200 ||
-    body.service !== "srm" ||
-    body.environment !== "staging"
-  )
-    throw new Error("Staging health failed");
-  const passwordSmoke = await verifyPasswordSmoke(
-    url,
-    env.SRM_STAGING_DEMO_PASSWORD,
-  );
-  return {
-    schemaVersion: "1.0",
-    sha: plan.manifest.sha,
-    deployId: deploy.id,
-    serviceId: evidence.service.id,
-    migration,
-    runtimeDatabase,
-    health: "PASS",
-    authentication: "PASS",
-    passwordSmoke,
-    productPersistence: "DEPLOYMENT_TIME_PENDING",
-    rollback: {
-      sha: latest?.commit?.id ?? null,
-      deployId: latest?.id ?? null,
-      schemaRollback: false,
-    },
-    stagingMutated: true,
-  };
-}
 async function main() {
   const args = process.argv.slice(2);
   const value = (k) => args[args.indexOf(k) + 1];
@@ -498,8 +357,16 @@ async function main() {
     console.log(JSON.stringify(simulationPlan(sha), null, 2));
     return;
   }
-  if (mutating)
-    assertAuthorization(authorization, sha, rollback ? "rollback" : "deploy");
+  if (mutating) {
+    if(!args.includes('--process-locked')) {
+      const child=spawnSync('flock',['--nonblock','/tmp/srm-staging-promotion-1247665550.lock','node',fileURLToPath(import.meta.url),...args,'--process-locked'],{env:process.env,encoding:'utf8',maxBuffer:4*1024*1024});
+      if(child.status!==0)throw Error('Exclusive process lock or release execution failed');
+      console.log(child.stdout.trim());return;
+    }
+    const {lifecycleApply}=await import('./staging-lifecycle.mjs');
+    if(authorization?.releaseSha!==sha)throw Error('Explicit approved SHA mismatch');
+    console.log(JSON.stringify(await lifecycleApply(authorization),null,2));return;
+  }
   verifySourceTree(sha);
   const e = await liveEvidence(sha);
   if (rollback && !authorization?.rollbackSchemaCompatible)
@@ -507,9 +374,7 @@ async function main() {
   const plan = buildPlan(e, { sha, authorization, apply: mutating, rollback });
   console.log(
     JSON.stringify(
-      mutating
-        ? await apply(plan, authorization, e, process.env, rollback)
-        : plan,
+      plan,
       null,
       2,
     ),
