@@ -2,7 +2,7 @@
 
 import { FinancialHealthArea } from "@profitia/srm-xray";
 import { useRef, useState, type FormEvent } from "react";
-import { SupplierReport, type SupplierReportContext, type SupplierReportSlots } from "../src/modules/xray/supplier-report";
+import { SupplierReport, reportMessage, type SupplierReportContext, type SupplierReportSlots } from "../src/modules/xray/supplier-report";
 import { useSupplierReport } from "../src/modules/xray/use-supplier-report";
 import { supplierNip } from "../src/modules/xray/report-controller";
 
@@ -40,7 +40,7 @@ export default function Home() {
     if (!response.ok) {
       const payload: unknown = await response.json().catch(() => null);
       throw new Error(payload && typeof payload === "object" && "error" in payload && typeof payload.error === "string"
-        ? payload.error : "Nie udało się pobrać pliku Excel.");
+        ? reportMessage(payload.error) : "Nie udało się pobrać pliku Excel.");
     }
     const filename = response.headers.get("X-Download-Filename") ?? `Financials_${nip}.xlsx`;
     const url = URL.createObjectURL(await response.blob());
@@ -75,7 +75,7 @@ export default function Home() {
         <small id="supplier-search-help">Dane finansowe i rejestrowe są pobierane przy wyszukiwaniu. Raport KYS zamawiasz osobno.</small>
       </form>
       {state.busy && <p role="status" className="report-loading">Wyszukiwanie dostawcy. Poczekaj na wynik…</p>}
-      {state.error && <p role="alert" className="search-error">{state.error}</p>}
+      {state.error && <p role="alert" className="search-error">{reportMessage(state.error)}</p>}
       {!state.result && !state.busy && !state.error && <div className="report-empty"><h2>Raport dostawcy</h2><p>Wpisz NIP, aby zobaczyć dostępne dane finansowe i rejestrowe.</p></div>}
       {state.result && <SupplierReport key={`${state.result.entityType}:${supplierNip(state.result)}`} state={state}
         onFetchKys={controller.fetchKys} onReadMetadata={controller.refreshMetadata} onRevealPesel={revealPesel} onDownloadExcel={downloadFinancialExcel} slots={{ financial: financialSlots }} />}
