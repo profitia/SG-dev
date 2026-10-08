@@ -9,7 +9,7 @@ import { supplierNip } from "../src/modules/xray/report-controller";
 const summarySlot: NonNullable<SupplierReportSlots["summary"]> = context => <ExecutiveSummary input={{
   nip: supplierNip(context.supplier) ?? "", entityType: context.supplier.entityType, metadata: context.metadata,
   scope: context.scope, selectedPeriod: context.selectedPeriod, loading: context.metadataBusy,
-  kysStatus: context.kys.status, kysHasData: !!context.kys.data,
+  kysStatus: context.kys.status, kysHasData: context.kysOverview.available,
 }} onSource={context.onSource} onIndicator={context.onIndicator}
   onFinance={() => context.onNavigate("report-finance")}
   onDetails={() => context.onNavigate(context.supplier.entityType === "JDG" ? "report-registry-details" : "report-financial-details")} />;
