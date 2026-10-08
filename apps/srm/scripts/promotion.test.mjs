@@ -12,7 +12,11 @@ import {
   runMigrations,
   initializationConfig,
 } from "./staging-migrate.mjs";
-import { buildPlan } from "./promote-staging.mjs";
+import {
+  buildPlan,
+  verifyPasswordSmoke,
+  assertRenderService,
+} from "./promote-staging.mjs";
 const sha = "a".repeat(40);
 const approval = () => ({
   schemaVersion: "1.0",
@@ -385,4 +389,117 @@ test("rollback approval does not bypass RESERVED or fabricate Development proven
     () => buildPlan(e, { sha, authorization: a, rollback: true, apply: true }),
     /Deployment-time gate/,
   );
+});
+
+test("password smoke uses real form protocol and verifies denial, invalid password, secure session and page", async () => {
+  const calls = [];
+  const url = "https://srm-staging-test.onrender.com";
+  const stub = async (u, init = {}) => {
+    calls.push([u, init]);
+    if (u.endsWith("/report-data")) return new Response("{}", { status: 401 });
+    if (u.endsWith("/login")) {
+      assert.ok(init.body instanceof URLSearchParams);
+      const valid = init.body.get("password") === "isolated-test-secret";
+      return new Response(null, {
+        status: 303,
+        headers: {
+          location: url + (valid ? "/" : "/login?error=invalid"),
+          ...(valid
+            ? {
+                "set-cookie":
+                  "srm_demo_session=test; HttpOnly; Secure; SameSite=Lax; Path=/",
+              }
+            : {}),
+        },
+      });
+    }
+    assert.equal(init.headers.cookie, "srm_demo_session=test");
+    return new Response("page");
+  };
+  const result = await verifyPasswordSmoke(url, "isolated-test-secret", stub);
+  assert.equal(result.secureCookie, "PASS");
+  assert.equal(calls.length, 4);
+});
+test("password smoke rejects a public API before attempting login", async () => {
+  let n = 0;
+  await assert.rejects(
+    verifyPasswordSmoke("https://staging.test", "test", async () => {
+      n++;
+      return new Response("{}");
+    }),
+    /Unauthenticated/,
+  );
+  assert.equal(n, 1);
+});
+test("CLI simulation never calls providers and cannot combine with apply", () => {
+  const cwd = new URL("..", import.meta.url);
+  const args = ["scripts/promote-staging.mjs", "--simulate", "--sha", sha];
+  const r = spawnSync(process.execPath, args, {
+    cwd,
+    env: { PATH: process.env.PATH },
+    encoding: "utf8",
+  });
+  assert.equal(r.status, 0, r.stderr);
+  const p = JSON.parse(r.stdout);
+  assert.equal(p.mode, "SIMULATION_SYNTHETIC_EVIDENCE");
+  assert.equal(p.releaseProvenance, "NOT_VERIFIED");
+  assert.equal(p.stagingMutated, false);
+  assert.notEqual(p.readiness, "READY");
+  assert.notEqual(
+    spawnSync(process.execPath, [...args, "--apply"], {
+      cwd,
+      env: { PATH: process.env.PATH },
+    }).status,
+    0,
+  );
+});
+
+const serviceFixture = () => ({
+  id: "srv-test",
+  ownerId: contract.render.workspaceId,
+  environmentId: contract.render.environmentId,
+  repo: "https://github.com/" + contract.repository,
+  autoDeployTrigger: "off",
+  branch: "main",
+  rootDir: contract.render.rootDir,
+  type: "web_service",
+  serviceDetails: {
+    region: contract.render.region,
+    plan: contract.render.plan,
+    runtime: "node",
+    numInstances: contract.render.numInstances,
+    healthCheckPath: contract.render.healthCheckPath,
+    envSpecificDetails: {
+      buildCommand: contract.render.buildCommand,
+      startCommand: contract.render.startCommand,
+    },
+    previews: { generation: "off" },
+  },
+});
+test("exact Render runtime contract is accepted", () =>
+  assert.doesNotThrow(() => assertRenderService(serviceFixture())));
+for (const [field, value] of Object.entries({
+  region: "oregon",
+  plan: "free",
+  runtime: "docker",
+  numInstances: 2,
+  healthCheckPath: "/wrong",
+}))
+  test("Render contract rejects " + field, () => {
+    const s = serviceFixture();
+    s.serviceDetails[field] = value;
+    assert.throws(() => assertRenderService(s));
+  });
+test("Render contract rejects altered build, start, root directory and previews", () => {
+  for (const field of ["buildCommand", "startCommand"]) {
+    const s = serviceFixture();
+    s.serviceDetails.envSpecificDetails[field] = "wrong";
+    assert.throws(() => assertRenderService(s));
+  }
+  const s = serviceFixture();
+  s.rootDir = "apps/sg2";
+  assert.throws(() => assertRenderService(s));
+  const p = serviceFixture();
+  p.serviceDetails.previews.generation = "automatic";
+  assert.throws(() => assertRenderService(p));
 });

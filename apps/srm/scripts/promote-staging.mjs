@@ -29,7 +29,7 @@ export function buildPlan(
     !/^[a-f0-9]{40}$/.test(sha ?? "") ||
     !evidence?.approvedMainAncestor ||
     !evidence.ciPassed ||
-    (!rollback && !rollback && evidence.developmentLiveSha !== sha)
+    (!rollback && evidence.developmentLiveSha !== sha)
   )
     throw new Error(
       "Verified approved main revision and Development release required",
@@ -54,6 +54,7 @@ export function buildPlan(
       s.branch !== "main")
   )
     throw new Error("Render service routing or autodeploy mismatch");
+  if (s) assertRenderService(s);
   const t = topology().environments.staging;
   const blockers = [];
   if (
@@ -418,6 +419,7 @@ async function apply(plan, approval, evidence, env, rollback = false) {
       "https://github.com/" + contract.repository
   )
     throw new Error("Provider routing drift");
+  assertRenderService(fresh);
   if (!deploy)
     deploy = await api(
       "https://api.render.com/v1",
@@ -464,40 +466,10 @@ async function apply(plan, approval, evidence, env, rollback = false) {
     body.environment !== "staging"
   )
     throw new Error("Staging health failed");
-  const denied = await fetch(url + "/api/xray/report-data", {
-    method: "POST",
-    body: "{}",
-    headers: { "Content-Type": "application/json" },
-    signal: AbortSignal.timeout(30000),
-  });
-  if (denied.status !== 401)
-    throw new Error("Unauthenticated API not protected");
-  if (!env.SRM_STAGING_DEMO_PASSWORD)
-    throw new Error("Password smoke credential required");
-  const login = await fetch(url + "/api/auth/login", {
-    method: "POST",
-    body: new URLSearchParams({ password: env.SRM_STAGING_DEMO_PASSWORD }),
-    headers: {
-      Origin: url,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    redirect: "manual",
-    signal: AbortSignal.timeout(30000),
-  });
-  const cookie = login.headers.get("set-cookie");
-  if (
-    login.status !== 303 ||
-    login.headers.get("location") !== url + "/" ||
-    !cookie?.includes("HttpOnly") ||
-    !cookie.includes("Secure")
-  )
-    throw new Error("Password login smoke failed");
-  const page = await fetch(url + "/", {
-    headers: { cookie: cookie.split(";")[0] },
-    redirect: "manual",
-    signal: AbortSignal.timeout(30000),
-  });
-  if (page.status !== 200) throw new Error("Authenticated page failed");
+  const passwordSmoke = await verifyPasswordSmoke(
+    url,
+    env.SRM_STAGING_DEMO_PASSWORD,
+  );
   return {
     schemaVersion: "1.0",
     sha: plan.manifest.sha,
@@ -507,6 +479,7 @@ async function apply(plan, approval, evidence, env, rollback = false) {
     runtimeDatabase,
     health: "PASS",
     authentication: "PASS",
+    passwordSmoke,
     productPersistence: "DEPLOYMENT_TIME_PENDING",
     rollback: {
       sha: latest?.commit?.id ?? null,
@@ -527,9 +500,14 @@ async function main() {
   const rollback = args.includes("--rollback");
   if (args.some((a) => a === "--production" || a === "--target"))
     throw new Error("Only Staging is a supported target");
+  if (args.includes("--simulate")) {
+    if (mutating || rollback) throw new Error("Simulation cannot mutate");
+    console.log(JSON.stringify(simulationPlan(sha), null, 2));
+    return;
+  }
   if (mutating)
     assertAuthorization(authorization, sha, rollback ? "rollback" : "deploy");
-  if (mutating) verifySourceTree(sha);
+  verifySourceTree(sha);
   const e = await liveEvidence(sha);
   if (rollback && !authorization?.rollbackSchemaCompatible)
     throw new Error("Explicit compatible rollback approval required");
@@ -624,4 +602,104 @@ export async function verifyRuntimeDatabase(env) {
   } finally {
     await c.end();
   }
+}
+
+export async function verifyPasswordSmoke(url, password, fetcher = fetch) {
+  if (!password) throw new Error("Password smoke credential required");
+  const denied = await fetcher(url + "/api/xray/report-data", {
+    method: "POST",
+    body: "{}",
+    headers: { "Content-Type": "application/json" },
+    signal: AbortSignal.timeout(30000),
+  });
+  if (denied.status !== 401)
+    throw new Error("Unauthenticated API not protected");
+  const loginRequest = (value) =>
+    fetcher(url + "/api/auth/login", {
+      method: "POST",
+      body: new URLSearchParams({ password: value }),
+      headers: {
+        Origin: url,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      redirect: "manual",
+      signal: AbortSignal.timeout(30000),
+    });
+  const invalid = await loginRequest(
+    "deliberately-invalid-staging-smoke-password",
+  );
+  if (
+    invalid.status !== 303 ||
+    invalid.headers.get("location") !== url + "/login?error=invalid"
+  )
+    throw new Error("Incorrect password not rejected");
+  const login = await loginRequest(password);
+  const cookie = login.headers.get("set-cookie");
+  if (
+    login.status !== 303 ||
+    login.headers.get("location") !== url + "/" ||
+    !cookie?.startsWith("srm_demo_session=") ||
+    !/;\s*HttpOnly(?:;|$)/i.test(cookie) ||
+    !/;\s*Secure(?:;|$)/i.test(cookie)
+  )
+    throw new Error("Password login smoke failed");
+  const page = await fetcher(url + "/", {
+    headers: { cookie: cookie.split(";")[0] },
+    redirect: "manual",
+    signal: AbortSignal.timeout(30000),
+  });
+  if (page.status !== 200) throw new Error("Authenticated page failed");
+  return {
+    unauthenticated: "PASS",
+    incorrectPassword: "PASS",
+    login: "PASS",
+    secureCookie: "PASS",
+    authenticatedPage: "PASS",
+  };
+}
+export function simulationPlan(sha) {
+  const evidence = {
+    repositoryId: contract.repositoryId,
+    approvedMainAncestor: true,
+    ciPassed: true,
+    developmentLiveSha: sha,
+    neonProjectId: contract.neon.projectId,
+    neonBranchId: contract.neon.branchId,
+    databaseName: "srm_app",
+    databaseExists: false,
+    runtimeRoleReady: false,
+    organizationReady: false,
+    secretsIsolated: false,
+    githubProtected: false,
+    service: null,
+  };
+  return {
+    mode: "SIMULATION_SYNTHETIC_EVIDENCE",
+    releaseProvenance: "NOT_VERIFIED",
+    ...buildPlan(evidence, { sha }),
+  };
+}
+
+export function assertRenderService(service) {
+  const c = contract.render,
+    d = service?.serviceDetails;
+  if (
+    service?.ownerId !== c.workspaceId ||
+    service.environmentId !== c.environmentId ||
+    service.repo?.replace(/\.git$/, "") !==
+      "https://github.com/" + contract.repository ||
+    service.autoDeployTrigger !== "off" ||
+    service.branch !== "main" ||
+    service.rootDir !== c.rootDir ||
+    service.type !== "web_service" ||
+    d?.region !== c.region ||
+    d.plan !== c.plan ||
+    d.runtime !== "node" ||
+    d.numInstances !== c.numInstances ||
+    d.healthCheckPath !== c.healthCheckPath ||
+    d.envSpecificDetails?.buildCommand !== c.buildCommand ||
+    d.envSpecificDetails?.startCommand !== c.startCommand ||
+    d.previews?.generation !== "off"
+  )
+    throw new Error("Render deployment contract mismatch");
 }

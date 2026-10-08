@@ -342,7 +342,7 @@ async function initializeOrganization(client, config) {
     "GRANT SELECT, INSERT, UPDATE ON srm.suppliers,srm.lookup_requests,srm.provider_attempts,srm.source_snapshots,srm.section_projections,srm.financial_facts TO srm_app_runtime",
   );
   await client.query(
-    "INSERT INTO srm.organizations(id,name) VALUES ($1,'SRM Staging acceptance') ON CONFLICT (id) DO NOTHING",
+    "INSERT INTO srm.organizations(id,slug) VALUES ($1,'srm-staging-acceptance') ON CONFLICT (id) DO NOTHING",
     [config.organizationId],
   );
 }
