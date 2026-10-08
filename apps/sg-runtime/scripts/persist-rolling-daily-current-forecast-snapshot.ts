@@ -32,7 +32,7 @@ function readModelArgs() {
 
 async function main() {
   assertSg2ProducerIdentity(process.env, readArg('seriesId'))
-  const seriesId = readArg('seriesId') || DEFAULT_SERIES_ID
+  const seriesId = readArg('seriesId')
   const modelIds = readModelArgs()
   const results = await persistRollingDailyCurrentForecastSnapshots(seriesId, modelIds)
   console.log(JSON.stringify({ seriesId, results }, null, 2))

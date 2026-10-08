@@ -46,7 +46,7 @@ function readOptionalPositiveIntegerArg(name: string) {
 async function main() {
   assertSg2ProducerIdentity(process.env, readArg('seriesId'))
   const service = createRollingDailyProductionOperationsService()
-  const seriesId = readArg('seriesId') || DEFAULT_ROLLING_DAILY_PRODUCTION_OPERATIONS_SERIES_ID
+  const seriesId = readArg('seriesId')
   const modelIds = readModelArgs()
   const prepareHistorical = readArg('historical') === 'true'
   const maxOriginsPerRun = readOptionalPositiveIntegerArg('maxOriginsPerRun')

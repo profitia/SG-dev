@@ -43,8 +43,8 @@ async function runBounded<T, R>(items: T[], concurrency: number, operation: (ite
 }
 
 async function main() {
-  assertSg2ProducerIdentity(process.env, readArg('seriesId'))
   const seriesIds = readSeriesIds()
+  for (const seriesId of seriesIds) assertSg2ProducerIdentity(process.env, seriesId)
   const concurrency = readConcurrency()
   const startedAt = new Date().toISOString()
   const results = await runBounded(seriesIds, concurrency, async (seriesId) => {

@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client'
 declare global {
   // eslint-disable-next-line no-var
   var __sgRuntimePrisma__: PrismaClient | undefined
+  var __sgRuntimePrismaUrl__: string | undefined
 }
 
 const SG_RUNTIME_SCHEMA = 'sg_runtime_benchmarks'
@@ -42,6 +43,10 @@ if (normalizedDirectUrl) {
   process.env.SG_RUNTIME_DIRECT_URL = normalizedDirectUrl
 }
 
+if (globalThis.__sgRuntimePrisma__ && globalThis.__sgRuntimePrismaUrl__ !== normalizedDatabaseUrl) {
+  throw new Error('SG2_APPLICATION_CLIENT_BINDING_CHANGED: restart with a verified binding before any query.')
+}
+
 export const prisma =
   globalThis.__sgRuntimePrisma__ ??
   new PrismaClient(
@@ -63,4 +68,5 @@ prisma.$use(async (params, next) => {
 
 if (process.env.NODE_ENV !== 'production') {
   globalThis.__sgRuntimePrisma__ = prisma
+  globalThis.__sgRuntimePrismaUrl__ = normalizedDatabaseUrl
 }
