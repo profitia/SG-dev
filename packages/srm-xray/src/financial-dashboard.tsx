@@ -270,7 +270,8 @@ function FragmentGroup({ title, rows, visible, onChart }: { title: string; rows:
   </>;
 }
 
-export function FinancialDashboard({ data, onDownloadExcel }: { data: FinancialData; onDownloadExcel?: (scope: Scope, years: string[]) => Promise<void> }) {
+export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onScopeChange }: { data: FinancialData; onDownloadExcel?: (scope: Scope, years: string[]) => Promise<void>;
+  selectedScope?: Scope | null; onScopeChange?: (scope: Scope) => void }) {
   const initialScope = defaultFinancialScope(data);
   const [requestedScope, setRequestedScope] = useState<Scope | null>(null);
   const [selectedRow, setSelectedRow] = useState<Row | null>(null);
@@ -279,7 +280,8 @@ export function FinancialDashboard({ data, onDownloadExcel }: { data: FinancialD
   const [exportError, setExportError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const scopes = Array.from(new Set(availablePeriods(data).map((period) => period.scope)));
-  const scope = requestedScope && scopes.includes(requestedScope) ? requestedScope : initialScope;
+  const preferredScope = selectedScope === undefined ? requestedScope : selectedScope;
+  const scope = preferredScope && scopes.includes(preferredScope) ? preferredScope : initialScope;
   const allPeriods = scope ? financialPeriodsByScope(data, scope) : [];
   const eightPeriods = allPeriods.slice(0, 8);
   const chartPeriods = eightPeriods;
@@ -299,7 +301,7 @@ export function FinancialDashboard({ data, onDownloadExcel }: { data: FinancialD
     <div className="financial-dashboard-meta">
       <p>Dane finansowe prezentowane są w tysiącach złotych (tys. zł). Wartości na ekranie są zaokrąglone do 0,01 tys. zł.</p>
       {scopes.length > 1 && <div className="financial-scope" role="group" aria-label="Rodzaj sprawozdania">
-        {scopes.map((choice) => <button type="button" key={choice} aria-pressed={scope === choice} onClick={() => setRequestedScope(choice)}>{choice === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</button>)}
+        {scopes.map((choice) => <button type="button" key={choice} aria-pressed={scope === choice} onClick={() => { setRequestedScope(choice); onScopeChange?.(choice); }}>{choice === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</button>)}
       </div>}
       <p>Ostatni dostępny raport: {allPeriods[0].to.slice(0, 4)} · {scope === "standalone" ? "dane jednostkowe" : "dane skonsolidowane"}</p>
     </div>
