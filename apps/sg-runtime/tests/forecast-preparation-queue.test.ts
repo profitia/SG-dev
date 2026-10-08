@@ -84,7 +84,7 @@ test('durable command schema accepts the job kind sent by the Dashboard', () => 
 })
 
 test('worker mode defaults safely and rejects unknown deployment configuration', () => {
-  assert.equal(resolveForecastPreparationWorkerMode(undefined), 'ALL')
+  assert.throws(() => resolveForecastPreparationWorkerMode(undefined), /required/)
   assert.equal(resolveForecastPreparationWorkerMode(' current_only '), 'CURRENT_ONLY')
   assert.equal(resolveForecastPreparationWorkerMode('verification_only'), 'VERIFICATION_ONLY')
   assert.deepEqual(resolveForecastPreparationWorkerJobKinds('ALL'), ['CURRENT', 'VERIFICATION'])
@@ -270,6 +270,7 @@ test('completed verification compute with zero lawful origins is terminal instea
   }) ?? '', /zero lawful comparisons/)
 
   const worker = createForecastPreparationWorker({
+    mode: 'ALL',
     queue: harness.queue,
     prepareVerificationSlice: async () => operationResult,
     resolveReadiness: async () => ({
@@ -345,6 +346,7 @@ test('correlation migration keeps legacy jobs compatible and adds the lookup ind
 test('worker completes a Current job through the canonical preparation owner', async () => {
   const harness = queueHarness(claimedJob('CURRENT'))
   const worker = createForecastPreparationWorker({
+    mode: 'ALL',
     queue: harness.queue,
     prepareCurrent: async (input) => ({
       ...input,
@@ -366,6 +368,7 @@ test('Naive Daily Current completion queues bounded calibration before publishin
   job.modelId = 'naive'
   const harness = queueHarness(job)
   const worker = createForecastPreparationWorker({
+    mode: 'ALL',
     queue: harness.queue,
     prepareCurrent: async (input) => ({
       ...input,
@@ -415,6 +418,7 @@ test('dedicated worker lanes pass mutually exclusive job-kind claims to the shar
 test('observability persistence cannot turn a completed Forecast job into a retry', async () => {
   const harness = queueHarness(claimedJob('CURRENT'))
   const worker = createForecastPreparationWorker({
+    mode: 'ALL',
     queue: harness.queue,
     prepareCurrent: async (input) => ({
       ...input,
@@ -436,6 +440,7 @@ test('worker preserves the durable user correlation in compute diagnostics', asy
   const harness = queueHarness(claimedJob('CURRENT'))
   let observedRequestId: string | null = null
   const worker = createForecastPreparationWorker({
+    mode: 'ALL',
     queue: harness.queue,
     workerId: 'worker-correlation-test',
     prepareCurrent: async (input) => {
@@ -461,6 +466,7 @@ test('worker checkpoints an incomplete Historical Verification slice', async () 
   const harness = queueHarness(claimedJob('VERIFICATION'))
   const observedBatchSizes: number[] = []
   const worker = createForecastPreparationWorker({
+    mode: 'ALL',
     queue: harness.queue,
     prepareVerificationSlice: async (_job, options) => {
       observedBatchSizes.push(options.maxOriginsPerRun)
@@ -483,6 +489,7 @@ test('worker reaches Fast Verification inside one bounded lease and returns FULL
   const observedBatchSizes: number[] = []
   let readinessCall = 0
   const worker = createForecastPreparationWorker({
+    mode: 'ALL',
     queue: harness.queue,
     prepareVerificationSlice: async (_job, options) => {
       observedBatchSizes.push(options.maxOriginsPerRun)
@@ -509,6 +516,7 @@ test('worker publishes Fast Verification readiness without completing the full-h
   const harness = queueHarness(claimedJob('VERIFICATION'))
   const readyKinds: string[] = []
   const worker = createForecastPreparationWorker({
+    mode: 'ALL',
     queue: harness.queue,
     prepareVerificationSlice: async () => undefined,
     resolveReadiness: async () => ({
@@ -539,6 +547,7 @@ test('Naive Daily automatically refreshes native Current bands on the first FAST
   let readinessCall = 0
   let refreshCount = 0
   const worker = createForecastPreparationWorker({
+    mode: 'ALL',
     queue: harness.queue,
     prepareVerificationSlice: async () => undefined,
     resolveReadiness: async () => {
@@ -598,6 +607,7 @@ test('bounded Naive Daily calibration completes after bands are refreshed withou
   const harness = queueHarness(job)
   let readinessCall = 0
   const worker = createForecastPreparationWorker({
+    mode: 'ALL',
     queue: harness.queue,
     prepareVerificationSlice: async () => undefined,
     resolveReadiness: async () => {
@@ -640,6 +650,7 @@ test('worker resumes from the durable adaptive batch checkpoint', async () => {
   const harness = queueHarness(job)
   const observedBatchSizes: number[] = []
   const worker = createForecastPreparationWorker({
+    mode: 'ALL',
     queue: harness.queue,
     prepareVerificationSlice: async (_claimed, options) => {
       observedBatchSizes.push(options.maxOriginsPerRun)
@@ -675,6 +686,7 @@ test('worker resets adaptive verification to one origin after a retryable slice 
   }
   const harness = queueHarness(job)
   const worker = createForecastPreparationWorker({
+    mode: 'ALL',
     queue: harness.queue,
     prepareVerificationSlice: async () => { throw new Error('transient verification failure') },
   })
@@ -688,6 +700,7 @@ test('worker resets adaptive verification to one origin after a retryable slice 
 test('worker marks retryable failure without claiming a second job', async () => {
   const harness = queueHarness(claimedJob('CURRENT'))
   const worker = createForecastPreparationWorker({
+    mode: 'ALL',
     queue: harness.queue,
     prepareCurrent: async () => { throw new Error('transient') },
   })

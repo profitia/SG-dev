@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 
-import { resolveForecastPortfolioBenchmarkSubject } from '@/app/[locale]/page'
+import { resolveForecastPortfolioBenchmarkSubject } from '@/lib/dashboard-variants/forecast-portfolio-subject'
 import {
   RANGE_PRESETS,
   buildForecastControlButtonMeta,

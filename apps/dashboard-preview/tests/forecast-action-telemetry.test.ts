@@ -59,7 +59,7 @@ test('verification polling keeps its own correlation after the active marker is 
 test('Dashboard forwards post-render acknowledgement with the action correlation identity', async () => {
   const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
   const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
-  process.env.SG_RUNTIME_BASE_URL = 'https://runtime.example'
+  process.env.SG_RUNTIME_BASE_URL = 'https://dev-sg2.spendguru.app'
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-token'
   const observed: Array<{ url: string, init?: RequestInit }> = []
 
@@ -80,7 +80,7 @@ test('Dashboard forwards post-render acknowledgement with the action correlation
     }) as typeof fetch)
 
     assert.deepEqual(result, { recorded: true })
-    assert.equal(observed[0]?.url, 'https://runtime.example/api/internal/forecast/action-trace')
+    assert.equal(observed[0]?.url, 'https://dev-sg2.spendguru.app/api/internal/forecast/action-trace')
     assert.equal(new Headers(observed[0]?.init?.headers).get('x-sg-forecast-correlation-id'), 'corr-ui-1')
     assert.equal(new Headers(observed[0]?.init?.headers).get('authorization'), 'Bearer test-token')
   } finally {

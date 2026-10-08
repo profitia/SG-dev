@@ -1,0 +1,166 @@
+{
+  "schemaVersion": "1.0",
+  "projectKey": "SG2",
+  "databasePurpose": "MARKET_DATA",
+  "neonProjectId": "autumn-waterfall-65938876",
+  "verifiedLedgerBranchId": "br-dry-hall-b294222f",
+  "baselineSha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+  "restoredHistoricalFileCount": 7,
+  "productMigrationExecuted": false,
+  "migrations": [
+    {
+      "name": "20260813100520_init_dynamic_market_data_store",
+      "sha256": "488b74fba88cbb0d69079b64f589d8eca482e3fc9f4c10990be0bb24214d5518",
+      "historicalRepository": "profitia/pmos-sg20-development",
+      "historicalSha": "7ccbd4d95b9fc75cc997281ae2adbcbcd9ee02b1",
+      "historicalBlobSha": "2b9d46d3c80fd08f3a3464d645aeba6cdabf3ab1",
+      "evidence": "DIRECTLY_VERIFIED_GITHUB_BYTES_AND_NEON_LEDGER",
+      "databaseApplied": true
+    },
+    {
+      "name": "20260817103000_add_benchmark_metadata_store",
+      "sha256": "aa213e999e76165b3f3185992e9c76ef32471a4aabb97bcc60d7825066624df1",
+      "historicalRepository": "profitia/pmos-sg20-development",
+      "historicalSha": "7ccbd4d95b9fc75cc997281ae2adbcbcd9ee02b1",
+      "historicalBlobSha": "632d58c0a04b4972bee72b9275eadc423ef2c7ba",
+      "evidence": "DIRECTLY_VERIFIED_GITHUB_BYTES_AND_NEON_LEDGER",
+      "databaseApplied": true
+    },
+    {
+      "name": "20260818120000_init_forecast_library_foundation",
+      "sha256": "cad6dc64a5cefce6632ee6f62c5ecf6955f4995f5c8b500a63a6ed6657934036",
+      "historicalRepository": "profitia/pmos-sg20-development",
+      "historicalSha": "7ccbd4d95b9fc75cc997281ae2adbcbcd9ee02b1",
+      "historicalBlobSha": "c12c337459dcb1813f2dd7ea505baca0e70d673f",
+      "evidence": "DIRECTLY_VERIFIED_GITHUB_BYTES_AND_NEON_LEDGER",
+      "databaseApplied": true
+    },
+    {
+      "name": "20260818153000_forecast_target_basis_identity",
+      "sha256": "be59db4ef45d464de48c567668a719fde217ac4d510ac068597207c6e7b76ded",
+      "historicalRepository": "profitia/pmos-sg20-development",
+      "historicalSha": "7ccbd4d95b9fc75cc997281ae2adbcbcd9ee02b1",
+      "historicalBlobSha": "a4906c1eb84e6c116a6ba4cd5d67ad8e48dd1218",
+      "evidence": "DIRECTLY_VERIFIED_GITHUB_BYTES_AND_NEON_LEDGER",
+      "databaseApplied": true
+    },
+    {
+      "name": "20260820103000_rolling_daily_incremental_maintenance",
+      "sha256": "9928c121c76ffc7e6515af647d3734dfbb9d99477c7e13c335f3cb5f05caef5e",
+      "historicalRepository": "profitia/pmos-sg20-development",
+      "historicalSha": "7ccbd4d95b9fc75cc997281ae2adbcbcd9ee02b1",
+      "historicalBlobSha": "eb118a93e29cee68f356b48493dd2fe469b3383b",
+      "evidence": "DIRECTLY_VERIFIED_GITHUB_BYTES_AND_NEON_LEDGER",
+      "databaseApplied": true
+    },
+    {
+      "name": "20260820113000_add_point_in_time_target_basis",
+      "sha256": "4e6da241a148899b14a7e17949e21247388adc2f024e47fbd1422ea318b57c37",
+      "historicalRepository": "profitia/pmos-sg20-development",
+      "historicalSha": "7ccbd4d95b9fc75cc997281ae2adbcbcd9ee02b1",
+      "historicalBlobSha": "6879913d741dde0edfeffc1e6ef7bdce2ce682e7",
+      "evidence": "DIRECTLY_VERIFIED_GITHUB_BYTES_AND_NEON_LEDGER",
+      "databaseApplied": true
+    },
+    {
+      "name": "20260820170000_add_rolling_daily_current_forecast_snapshots",
+      "sha256": "d1e708dd42e1265439a71e8d15559d7cfef7d71ed5cb7d779d84a08f39100cd5",
+      "historicalRepository": "profitia/pmos-sg20-development",
+      "historicalSha": "7ccbd4d95b9fc75cc997281ae2adbcbcd9ee02b1",
+      "historicalBlobSha": "2c21e8adaa9820b639020398cbe201b626e702d1",
+      "evidence": "DIRECTLY_VERIFIED_GITHUB_BYTES_AND_NEON_LEDGER",
+      "databaseApplied": true
+    },
+    {
+      "name": "20260822190000_generic_forecast_method_identity",
+      "sha256": "9ed1591476fce0faa5ae59259debfd4323042adb9b6c65fd65a38a0b38b2e80f",
+      "sourceAuthority": "profitia/SG-dev",
+      "sourceBaselineSha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+      "evidence": "SOURCE_PRESENT_PRE_STAGE1; Stage0 ledger checksum match"
+    },
+    {
+      "name": "20260906202500_forecast_preparation_execution_ledger",
+      "sha256": "e268c9559e35f471cd21fed13ab51c48533df9bf7819ec32a654b02e02668be0",
+      "sourceAuthority": "profitia/SG-dev",
+      "sourceBaselineSha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+      "evidence": "SOURCE_PRESENT_PRE_STAGE1; Stage0 ledger checksum match"
+    },
+    {
+      "name": "20260906221500_forecast_execution_ledger_context_fields",
+      "sha256": "5b5457b8aba7fcb48e53984889a83cbb04ff619b4a6d7f4c7987f135250acfd2",
+      "sourceAuthority": "profitia/SG-dev",
+      "sourceBaselineSha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+      "evidence": "SOURCE_PRESENT_PRE_STAGE1; Stage0 ledger checksum match"
+    },
+    {
+      "name": "20260906235500_forecast_execution_ledger_stage2_contract_fix",
+      "sha256": "8c657c237e12ec8d0ba84e61b9939bace4e4034c645fe97d241283dcf59e0ceb",
+      "sourceAuthority": "profitia/SG-dev",
+      "sourceBaselineSha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+      "evidence": "SOURCE_PRESENT_PRE_STAGE1; Stage0 ledger checksum match"
+    },
+    {
+      "name": "20260907104500_forecast_artifact_training_policy_identity",
+      "sha256": "ffb071556b41198e9b047e92c280aa6c5636953957e9d8498ca13da32618c34b",
+      "sourceAuthority": "profitia/SG-dev",
+      "sourceBaselineSha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+      "evidence": "SOURCE_PRESENT_PRE_STAGE1; Stage0 ledger checksum match"
+    },
+    {
+      "name": "20260907123000_forecast_legacy_policy_identity_constraints",
+      "sha256": "a7b5bbb9a228bb43918fae536f0a563d8ee53119d0ae38bdb727b808b55e68b5",
+      "sourceAuthority": "profitia/SG-dev",
+      "sourceBaselineSha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+      "evidence": "SOURCE_PRESENT_PRE_STAGE1; Stage0 ledger checksum match"
+    },
+    {
+      "name": "20260907164000_rolling_daily_snapshot_exact_identity",
+      "sha256": "24d7d5a72b191ec936f493f47f9fbfa58fc5f006529579647876a73502980bc7",
+      "sourceAuthority": "profitia/SG-dev",
+      "sourceBaselineSha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+      "evidence": "SOURCE_PRESENT_PRE_STAGE1; Stage0 ledger checksum match"
+    },
+    {
+      "name": "20260907203000_rolling_daily_snapshot_legacy_identity_guards",
+      "sha256": "bf99288f9b37487eec7b9f503192d0ded4f4131c559efac02f070c1d8c53fa21",
+      "sourceAuthority": "profitia/SG-dev",
+      "sourceBaselineSha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+      "evidence": "SOURCE_PRESENT_PRE_STAGE1; Stage0 ledger checksum match"
+    },
+    {
+      "name": "20260907_forecast_stage3_canonical_execution_admission",
+      "sha256": "b5ee012af0ee613bce5f44a7ee7a65c264f5cac8a5af67dc99da0135187a5501",
+      "sourceAuthority": "profitia/SG-dev",
+      "sourceBaselineSha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+      "evidence": "SOURCE_PRESENT_PRE_STAGE1; Stage0 ledger checksum match"
+    },
+    {
+      "name": "20260918203500_forecast_artifact_frequency_identity",
+      "sha256": "710527b9abf5f9c358180229dac561a16dd007bc2afefdb36491e37e737753e2",
+      "sourceAuthority": "profitia/SG-dev",
+      "sourceBaselineSha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+      "evidence": "SOURCE_PRESENT_PRE_STAGE1; Stage0 ledger checksum match"
+    },
+    {
+      "name": "20260920120000_forecast_preparation_job_queue",
+      "sha256": "3f6595f1f901aaef48e5dfe7aad18079ff28b512b58c69af649774ed3c49ee92",
+      "sourceAuthority": "profitia/SG-dev",
+      "sourceBaselineSha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+      "evidence": "SOURCE_PRESENT_PRE_STAGE1; Stage0 ledger checksum match"
+    },
+    {
+      "name": "20260920202000_forecast_e2e_correlation_id",
+      "sha256": "a755f5d82492123d0d00d378bfc04220ceefa67b9bae0e400fa51a37057966f0",
+      "sourceAuthority": "profitia/SG-dev",
+      "sourceBaselineSha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+      "evidence": "SOURCE_PRESENT_PRE_STAGE1; Stage0 ledger checksum match"
+    },
+    {
+      "name": "20260920233000_forecast_action_trace_and_resource_summary",
+      "sha256": "5186db0d9c592082828be7212bceb4d76d1b701d93dccb96522b61fef1008247",
+      "sourceAuthority": "profitia/SG-dev",
+      "sourceBaselineSha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+      "evidence": "SOURCE_PRESENT_PRE_STAGE1; Stage0 ledger checksum match"
+    }
+  ]
+}

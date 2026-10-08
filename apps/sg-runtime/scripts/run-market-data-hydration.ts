@@ -1,3 +1,4 @@
+import { assertSg2ProducerIdentity } from '@/lib/environment-identity'
 import './load-env'
 
 import { refreshBenchmarkHistoricalSeries } from '@/lib/market-data/service'
@@ -43,6 +44,7 @@ async function runBounded<T, R>(items: T[], concurrency: number, operation: (ite
 
 async function main() {
   const seriesIds = readSeriesIds()
+  for (const seriesId of seriesIds) assertSg2ProducerIdentity(process.env, seriesId)
   const concurrency = readConcurrency()
   const startedAt = new Date().toISOString()
   const results = await runBounded(seriesIds, concurrency, async (seriesId) => {

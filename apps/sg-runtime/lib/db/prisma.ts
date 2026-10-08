@@ -1,8 +1,11 @@
+import { assertRuntimeDatabaseIdentity } from '@/lib/environment-identity'
+
 import { PrismaClient } from '@prisma/client'
 
 declare global {
   // eslint-disable-next-line no-var
   var __sgRuntimePrisma__: PrismaClient | undefined
+  var __sgRuntimePrismaUrl__: string | undefined
 }
 
 const SG_RUNTIME_SCHEMA = 'sg_runtime_benchmarks'
@@ -31,11 +34,17 @@ const normalizedDirectUrl = ensureSchema(
 )
 
 if (normalizedDatabaseUrl) {
+  assertRuntimeDatabaseIdentity(normalizedDatabaseUrl, 'application')
   process.env.SG_RUNTIME_DATABASE_URL = normalizedDatabaseUrl
 }
 
 if (normalizedDirectUrl) {
+  assertRuntimeDatabaseIdentity(normalizedDirectUrl, 'application')
   process.env.SG_RUNTIME_DIRECT_URL = normalizedDirectUrl
+}
+
+if (globalThis.__sgRuntimePrisma__ && globalThis.__sgRuntimePrismaUrl__ !== normalizedDatabaseUrl) {
+  throw new Error('SG2_APPLICATION_CLIENT_BINDING_CHANGED: restart with a verified binding before any query.')
 }
 
 export const prisma =
@@ -52,6 +61,12 @@ export const prisma =
       : undefined,
   )
 
+prisma.$use(async (params, next) => {
+  assertRuntimeDatabaseIdentity(normalizedDatabaseUrl, 'application')
+  return next(params)
+})
+
 if (process.env.NODE_ENV !== 'production') {
   globalThis.__sgRuntimePrisma__ = prisma
+  globalThis.__sgRuntimePrismaUrl__ = normalizedDatabaseUrl
 }

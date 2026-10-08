@@ -1,3 +1,5 @@
+import { resolveRuntimeServiceUrl } from './lib/environment-identity'
+
 import { NextRequest, NextResponse } from 'next/server'
 import createMiddleware from 'next-intl/middleware'
 
@@ -26,6 +28,9 @@ function createPorrApiUnauthorizedResponse(status: number, message: string) {
 }
 
 export default async function middleware(request: NextRequest) {
+  try { resolveRuntimeServiceUrl() } catch {
+    return NextResponse.json({ error: { code: 'SG2_ENVIRONMENT_IDENTITY_NOT_READY' } }, { status: 503 })
+  }
   const pathname = request.nextUrl.pathname
   const isApiRequest = isDashboardPreviewApiPath(pathname)
   const runtimeConfig = resolveDashboardPreviewPorrDemoRuntimeConfig()

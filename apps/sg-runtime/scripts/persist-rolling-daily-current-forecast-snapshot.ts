@@ -1,3 +1,4 @@
+import { assertSg2ProducerIdentity } from '@/lib/environment-identity'
 import './load-env'
 
 import { persistRollingDailyCurrentForecastSnapshots } from '@/lib/forecast/rolling-daily-current-forecast-snapshot'
@@ -30,7 +31,8 @@ function readModelArgs() {
 }
 
 async function main() {
-  const seriesId = readArg('seriesId') || DEFAULT_SERIES_ID
+  assertSg2ProducerIdentity(process.env, readArg('seriesId'))
+  const seriesId = readArg('seriesId')
   const modelIds = readModelArgs()
   const results = await persistRollingDailyCurrentForecastSnapshots(seriesId, modelIds)
   console.log(JSON.stringify({ seriesId, results }, null, 2))

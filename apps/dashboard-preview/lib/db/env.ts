@@ -1,5 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
-import path from 'node:path'
+import { assertDashboardDatabaseIdentity, assertSg2Environment } from '../environment-identity'
 
 export interface DashboardPreviewEnvironment {
   databaseUrl: string | null
@@ -24,32 +23,11 @@ function normalizeOptionalEnvString(value: string | undefined): string | null {
   return trimmed
 }
 
-function readLocalSgRuntimeMarketDataDatabaseUrl(): string | null {
-  if (process.env.NODE_ENV === 'production') {
-    return null
-  }
-
-  try {
-    const envPath = path.resolve(process.cwd(), '../sg-runtime/.env.local')
-
-    if (!existsSync(envPath)) {
-      return null
-    }
-
-    const envFile = readFileSync(envPath, 'utf8')
-    const match = envFile.match(/^\s*MARKET_DATA_DATABASE_URL\s*=\s*(.+)\s*$/m)
-
-    return normalizeOptionalEnvString(match?.[1])
-  } catch {
-    return null
-  }
-}
-
 export function readDashboardPreviewEnvironment(): DashboardPreviewEnvironment {
+  assertSg2Environment(process.env.APP_ENV)
   const databaseUrl = normalizeOptionalEnvString(process.env.DATABASE_URL)
   const marketDataDatabaseUrl = normalizeOptionalEnvString(process.env.MARKET_DATA_DATABASE_URL)
-    ?? readLocalSgRuntimeMarketDataDatabaseUrl()
-    ?? databaseUrl
+
 
   return {
     databaseUrl,
@@ -64,9 +42,12 @@ export function assertDashboardPreviewDatabaseUrl(): string {
     throw new Error('DATABASE_URL is required for apps/dashboard-preview.')
   }
 
+  assertDashboardDatabaseIdentity(environment.databaseUrl, 'dashboard')
   return environment.databaseUrl
 }
 
 export function readDashboardPreviewMarketDataDatabaseUrl(): string | null {
-  return readDashboardPreviewEnvironment().marketDataDatabaseUrl
+  const url = readDashboardPreviewEnvironment().marketDataDatabaseUrl
+  if (url) assertDashboardDatabaseIdentity(url, 'market')
+  return url
 }

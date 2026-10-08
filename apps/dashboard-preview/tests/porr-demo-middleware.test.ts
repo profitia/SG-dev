@@ -31,6 +31,8 @@ async function createSignedToken(secret: string, now = Date.now()) {
 }
 
 function withEnv(overrides: Record<string, string | undefined>, run: () => Promise<void> | void) {
+  const appEnv = overrides.APP_ENV ?? 'staging'
+  overrides = { APP_ENV: appEnv, SG_RUNTIME_BASE_URL: appEnv === 'development' ? 'https://dev-sg2.spendguru.app' : 'https://demo-sg-porr.spendguru.app', ...overrides }
   const previousEntries = Object.fromEntries(
     Object.keys(overrides).map((key) => [key, process.env[key]]),
   )
@@ -90,7 +92,7 @@ test('PORR middleware accepts a valid shared session for embedded dashboard requ
   }, async () => {
     const token = await createSignedToken('shared-secret')
     const response = await middleware(new NextRequest('https://analytics-demo-sg-porr.spendguru.app/pl?embed=1&variantId=forecast-portfolio-v3', {
-      headers: { cookie: `sg_porr_demo_session=${token}` },
+      headers: { cookie: `sg_porr_demo_session_staging=${token}` },
     }))
 
     assert.notEqual(response.headers.get('location'), 'https://demo-sg-porr.spendguru.app/pl')
@@ -108,7 +110,7 @@ test('Development dashboard accepts only the Development cookie, not the Staging
     const token = await createSignedToken('shared-secret')
     const url = 'https://analytics-dev-sg2.spendguru.app/en?embed=1'
     const stagingCookie = await middleware(new NextRequest(url, {
-      headers: { cookie: `sg_porr_demo_session=${token}` },
+      headers: { cookie: `sg_porr_demo_session_staging=${token}` },
     }))
     assert.equal(stagingCookie.headers.get('location'), 'https://dev-sg2.spendguru.app/en')
 
@@ -131,7 +133,7 @@ test('PORR middleware fails closed when profile is enabled without the shared se
   })
 })
 
-test('existing dashboards-library behavior stays open when the PORR profile is disabled', async () => {
+test('configured canonical dashboard remains open when PORR profile is disabled', async () => {
   await withEnv({
     DASHBOARD_PREVIEW_PORR_DEMO: undefined,
     PORR_DEMO_ENTRY_URL: undefined,
