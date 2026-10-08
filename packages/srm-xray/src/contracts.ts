@@ -99,6 +99,19 @@ export type VerclyPerson = {
   pepMatch: boolean | null;
 };
 
+export type VerclyPepMatch = {
+  personGroup: "beneficialOwners" | "relatedPersons";
+  personIndex: number;
+  personName: string;
+  searchPhrase: string | null;
+  matchedName: string | null;
+  aliases: readonly string[];
+  birthDate: string | null;
+  positions: readonly string[];
+  probabilityPercent: number | null;
+  identifierMatchesPesel: boolean;
+};
+
 export type VerclyKysData = {
   correlationId: string | null;
   reportId: string | null;
@@ -156,6 +169,8 @@ export type VerclyKysData = {
   beneficialOwnersCount?: number | null;
   relatedPersonsCount?: number | null;
   pepPositionsCount?: number | null;
+  /** Normalized person-level PEP evidence; presence also identifies the current KYS projection. */
+  pepMatches?: readonly VerclyPepMatch[];
   riskLevel?: string | null;
 };
 

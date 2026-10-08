@@ -209,6 +209,30 @@ test("KYS mount masks PESEL and keeps beneficiary details aligned without birth 
   assert.ok(!html.includes("Szczegóły osób i ich identyfikatory nie są udostępniane"));
 });
 
+test("KYS mount shows person-level PEP evidence without exposing a PESEL by default", () => {
+  const section: SectionEnvelope<VerclyKysData> = {
+    status: "SUCCESS", source: { provider: "VERCLY", model: "KYS_NIP", recordId: "report" },
+    retrievedAt: null, effectiveAt: null, warnings: [],
+    data: { correlationId: "request", reportId: "report", isComplete: true, queriedRegisters: [], stateAsOf: null,
+      pepPositionsCount: 1,
+      beneficialOwners: [{ fullName: "Jan Przykładowy", pesel: null, peselRevealToken: "person-token", birthDate: null,
+        positions: [], citizenship: ["POLSKA"], foundIn: [], sanctionsMatch: false, pepMatch: true }],
+      pepMatches: [{ personGroup: "beneficialOwners", personIndex: 0, personName: "Jan Przykładowy",
+        searchPhrase: "JAN PRZYKŁADOWY", matchedName: "PRZYKŁADOWY JAN", aliases: ["JAN P."], birthDate: "1980-01-01",
+        positions: ["WICEPREZES ZARZĄDU"], probabilityPercent: 90, identifierMatchesPesel: true }],
+    },
+  };
+  const html = renderToStaticMarkup(createElement(VerclyKysMount, { section, onRevealPesel: async () => "12345678901" }));
+  assert.match(html, /1 dopasowanie w raporcie/);
+  assert.match(html, /PRZYKŁADOWY JAN/);
+  assert.match(html, /WICEPREZES ZARZĄDU/);
+  assert.match(html, /90%/);
+  assert.match(html, /Obywatelstwo: POLSKA/);
+  assert.ok(!html.includes("12345678901"));
+  assert.match(html, /<button type="button" class="kys-pesel-button">Pokaż<\/button>/);
+  assert.ok(!html.includes("person-token"));
+});
+
 test("JDG view hides CEIDG address identifiers and labels activity codes as PKD", () => {
   const section: SectionEnvelope<JdgRegistryData> = {
     status: "SUCCESS", source: { provider: "CEIDG", model: "firma", recordId: "id" }, retrievedAt: null, effectiveAt: null, warnings: [],

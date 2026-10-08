@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { SectionEnvelope, VerclyKysData } from "@profitia/srm-xray";
-import { getOrFetchKys, isFreshKys, kysCacheTtlMs, kysExpiry } from "./kys-cache";
+import { getOrFetchKys, hasCurrentKysProjection, isFreshKys, kysCacheTtlMs, kysExpiry } from "./kys-cache";
 
 const orgA = "11111111-1111-4111-8111-111111111111";
 const orgB = "22222222-2222-4222-8222-222222222222";
@@ -9,7 +9,8 @@ const nip = "5213390341";
 const start = new Date("2026-10-08T10:00:00Z");
 type Section = SectionEnvelope<VerclyKysData>;
 const report = { status: "SUCCESS", source: { provider: "VERCLY", model: "KYS_NIP", recordId: "report-1" },
-  retrievedAt: start.toISOString(), effectiveAt: null, data: { company: { nip }, relatedPersons: [{ fullName: "Test Person", pesel: "12345678901" }] },
+  retrievedAt: start.toISOString(), effectiveAt: null, data: { company: { nip }, pepMatches: [], pepPositionsCount: 0,
+    relatedPersons: [{ fullName: "Test Person", pesel: "12345678901" }] },
   warnings: [] } as unknown as Section;
 
 test("seven days by default, exact expiry boundary and safe configurable shortening", () => {
@@ -21,6 +22,12 @@ test("seven days by default, exact expiry boundary and safe configurable shorten
   assert.equal(isFreshKys(start, expiry, new Date(expiry.getTime() - 1), kysCacheTtlMs({})), true);
   assert.equal(isFreshKys(start, expiry, expiry, kysCacheTtlMs({})), false);
   assert.equal(isFreshKys(start, expiry, new Date(start.getTime() + 25 * 60 * 60 * 1000), kysCacheTtlMs({ SRM_KYS_CACHE_TTL_HOURS: "24" })), false);
+});
+
+test("old normalized KYS cache rows without person-level PEP projection require refresh", () => {
+  assert.equal(hasCurrentKysProjection(report), true);
+  assert.equal(hasCurrentKysProjection({ ...report, data: { ...report.data!, pepMatches: undefined } }), false);
+  assert.equal(hasCurrentKysProjection(null), false);
 });
 
 test("E2E simulation: first provider call, repeated same and other organization hits, expiry refresh", async () => {
