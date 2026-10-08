@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, type ReactNode } from "react";
 import type {
   FinancialData,
+  FinancialPeriod,
   GeneralCompanyData,
   SectionEnvelope,
   SectionStatus,
@@ -216,10 +217,11 @@ export function GeneralCompanyDataMount({ section }: { section: DisplaySection<G
   );
 }
 
-export function FinancialDataMount({ section, onDownloadExcel }: { section: DisplaySection<FinancialData>; onDownloadExcel?: (scope: "standalone" | "consolidated", years: string[]) => Promise<void> }) {
+export function FinancialDataMount({ section, onDownloadExcel, selectedScope, onScopeChange }: { section: DisplaySection<FinancialData>; onDownloadExcel?: (scope: "standalone" | "consolidated", years: string[]) => Promise<void>;
+  selectedScope?: FinancialPeriod["scope"] | null; onScopeChange?: (scope: FinancialPeriod["scope"]) => void }) {
   return (
     <SectionFrame title="Dane finansowe" section={section}>
-      {section.data ? <FinancialDashboard data={section.data} onDownloadExcel={onDownloadExcel} /> : <p>brak danych</p>}
+      {section.data ? <FinancialDashboard data={section.data} onDownloadExcel={onDownloadExcel} selectedScope={selectedScope} onScopeChange={onScopeChange} /> : <p>brak danych</p>}
     </SectionFrame>
   );
 }

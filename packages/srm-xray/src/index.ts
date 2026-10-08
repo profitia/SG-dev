@@ -27,5 +27,5 @@ export {
   SupplierXRayMount,
 } from "./mounts";
 
-export { latestAvailableFinancialYear } from "./financial-dashboard";
+export { latestAvailableFinancialYear, defaultFinancialScope, financialPeriodsByScope } from "./financial-dashboard";
 export { financialLabels } from "./financial-labels";
