@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { PoolClient } from "pg";
 import { withOrganization } from "./db";
+import { kysCacheTtlMs } from "./kys-cache";
 
 export type Identifier = { type: "NIP" | "KRS"; value: string };
 export type Section = "general" | "financial" | "kys";
@@ -31,12 +32,13 @@ export async function createLookup(organizationId: string, identifier: Identifie
   });
 }
 
-export async function startAttempt(organizationId: string, requestId: string, section: PersistedSection, attemptNo = 1): Promise<string> {
+export async function startAttempt(organizationId: string, requestId: string, section: PersistedSection, attemptNo = 1,
+  retrievalMethod: "PROVIDER" | "CACHE" = "PROVIDER"): Promise<string> {
   const provider = section === "kys" ? "VERCLY" : section === "jdg" ? "CEIDG" : "MGBI";
   return withOrganization(organizationId, async (client) => {
     const result = await client.query<{ id: string }>(
-      "INSERT INTO srm.provider_attempts(organization_id, request_id, section, provider, attempt_no, status) VALUES ($1, $2, $3, $4, $5, 'PENDING') RETURNING id",
-      [organizationId, requestId, section, provider, attemptNo],
+      "INSERT INTO srm.provider_attempts(organization_id, request_id, section, provider, attempt_no, status, retrieval_method) VALUES ($1, $2, $3, $4, $5, 'PENDING', $6) RETURNING id",
+      [organizationId, requestId, section, provider, attemptNo, retrievalMethod],
     );
     return result.rows[0].id;
   });
@@ -107,8 +109,9 @@ export async function readKysPersonPesel(
   return withOrganization(organizationId, async (client) => {
     const result = await client.query<{ payload_json: { relatedPersons?: { pesel?: unknown }[]; beneficialOwners?: { pesel?: unknown }[] } }>(
       "SELECT payload_json FROM srm.source_snapshots WHERE organization_id = $1 AND id = $2 " +
-      "AND section = 'kys' AND data_class = 'KYS_PERSONAL' AND retention_until > now()",
-      [organizationId, snapshotId],
+      "AND section = 'kys' AND data_class = 'KYS_PERSONAL' AND retention_until > now() " +
+      "AND retrieved_at + ($3::bigint * interval '1 millisecond') > now()",
+      [organizationId, snapshotId, kysCacheTtlMs()],
     );
     const pesel = result.rows[0]?.payload_json?.[list]?.[index]?.pesel;
     return typeof pesel === "string" && /^\d{11}$/.test(pesel) ? pesel : null;

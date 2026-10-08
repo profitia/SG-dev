@@ -3,6 +3,7 @@ import { emptyCard } from "../demo/fixture";
 import { fetchMgbiGeneral, type CompanyIdentifier } from "./mgbi-general";
 import { fetchMgbiFinancial, type FinancialSourceFact } from "./mgbi-financial";
 import { fetchVerclyKys } from "./vercly-kys";
+import { getOrFetchKys, kysExpiry, purgeExpiredSharedKys } from "./kys-cache";
 import { readFreshCompany, recordDemoInterest, refreshFinancialIndicators, saveSharedCompany } from "./shared-catalog";
 import { appendFinancialFacts, appendSectionProjection, appendSnapshot, createLookup, finishAttempt, purgeExpiredKysPersonal, registerOrganization, startAttempt, type Section } from "./xray-repository";
 
@@ -52,8 +53,9 @@ async function persistSection(
   facts: FinancialSourceFact[] = [],
   correlationId?: string | null,
   sourcePayload?: unknown,
+  retrievalMethod: "PROVIDER" | "CACHE" = "PROVIDER",
 ): Promise<string | null> {
-  const attemptId = await startAttempt(organizationId, lookup.requestId, sectionName);
+  const attemptId = await startAttempt(organizationId, lookup.requestId, sectionName, 1, retrievalMethod);
   try {
     let storedSnapshotId: string | null = null;
     if (section.data && section.retrievedAt && section.status !== "PENDING") {
@@ -66,7 +68,7 @@ async function persistSection(
         sourceRecordId: section.source.recordId ?? undefined, payload: sourcePayload ?? section.data,
         retrievedAt: new Date(section.retrievedAt),
         effectiveAt: section.effectiveAt && !Number.isNaN(Date.parse(section.effectiveAt)) ? new Date(section.effectiveAt) : undefined,
-        ...(sectionName === "kys" ? { retentionUntil: new Date(Date.parse(section.retrievedAt) + 7 * 24 * 60 * 60 * 1000) } : {}),
+        ...(sectionName === "kys" ? { retentionUntil: kysExpiry(section.retrievedAt) } : {}),
       });
       storedSnapshotId = snapshotId;
       await appendSectionProjection(organizationId, { supplierId: lookup.supplierId, snapshotId, section: sectionName, version: 1, data: section.data });
@@ -135,9 +137,13 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
 
 export async function runXrayKysLookup(organizationId: string, request: XrayLookupRequest, entityType: "COMPANY" | "JDG" = "COMPANY"): Promise<{ section: SupplierXRayCard["kys"]; snapshotId: string | null }> {
   await purgeExpiredKysPersonal(organizationId);
+  await purgeExpiredSharedKys(organizationId);
   await registerOrganization(organizationId, "srm-development");
   const lookup = await createLookup(organizationId, request.identifier, entityType);
-  const result = await fetchVerclyKys({ identifier: request.identifier });
-  const snapshotId = await persistSection(organizationId, lookup, "kys", result.section, result.errorCode, [], result.correlationId);
-  return { section: result.section, snapshotId };
+  const result = await getOrFetchKys(organizationId, request.identifier.value, entityType,
+    () => fetchVerclyKys({ identifier: request.identifier }),
+    (section, errorCode, correlationId, method) =>
+      persistSection(organizationId, lookup, "kys", section, errorCode, [], correlationId, undefined, method),
+  );
+  return { section: result.section, snapshotId: result.snapshotId };
 }
