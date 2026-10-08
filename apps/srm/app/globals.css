@@ -97,6 +97,10 @@ body { margin: 0; color: var(--srm-text); background: var(--srm-background); }
 .kys-lists th, .kys-lists td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--srm-border); }
 .kys-lists tr:nth-child(even) { background: var(--srm-background); }
 .kys-table-scroll { max-width: 100%; overflow-x: auto; }
+.kys-pep-panel { margin-top: 16px; }
+.kys-pep-table { min-width: 900px; }
+.kys-pep-table td { vertical-align: top; overflow-wrap: anywhere; }
+.kys-pep-table th:last-child, .kys-pep-table td:last-child { white-space: nowrap; }
 .kys-person-scroll { max-width: 100%; overflow-x: auto; }
 .kys-person-list { display: grid; min-width: 850px; --kys-person-columns: minmax(130px, .75fr) minmax(250px, 2fr) minmax(120px, .75fr) 70px 60px 85px; }
 .kys-person-list--beneficiary { min-width: 1080px; --kys-person-columns: minmax(130px, .75fr) minmax(220px, 1.3fr) minmax(260px, 1.7fr) minmax(120px, .75fr) 70px 60px 85px; }

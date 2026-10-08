@@ -27,6 +27,11 @@ function value(text: string | null | undefined): string {
   return text == null || text === "" ? "brak danych" : text;
 }
 
+function pepMatchCount(count: number): string {
+  const form = new Intl.PluralRules("pl-PL").select(count);
+  return `${count} ${form === "one" ? "dopasowanie" : form === "few" ? "dopasowania" : "dopasowań"} w raporcie`;
+}
+
 function warningLabel(code: string): string {
   if (code === "FINANCIAL_NO_STRUCTURED_DATA") return "Nie mamy obecnie kwot finansowych do wyświetlenia dla tej firmy.";
   if (code === "FINANCIAL_INTERNATIONAL_STANDARD_UNAVAILABLE") return "Sprawozdanie finansowe jest dostępne, ale w obecnym zakresie danych nie możemy pokazać jego kwot. Sporządzono je według międzynarodowych standardów rachunkowości.";
@@ -295,12 +300,30 @@ export function VerclyKysMount({ section, entityType = "COMPANY", onRevealPesel 
               {lists.map((entry) => <tr key={`${entry.type}:${entry.name}`}><td>{verclyListLabels[entry.name] ?? entry.name.replaceAll("_", " ")}</td><td>{yesNo(entry.matched)}</td></tr>)}
             </tbody></table> : <p>brak danych</p>}
           </section>
-          <section className="kys-panel" aria-label="Osoby na eksponowanych stanowiskach politycznych">
-            <h3>Osoby na eksponowanych stanowiskach politycznych</h3>
-            <p>{countLabel(data?.pepPositionsCount)}</p>
-            <p className="kys-note">Szczegóły są pokazane przy każdej osobie, jeśli dostawca je zwrócił.</p>
-          </section>
         </div>
+        <section className="kys-panel kys-pep-panel" aria-label="Osoby na eksponowanych stanowiskach politycznych">
+          <h3>Osoby na eksponowanych stanowiskach politycznych</h3>
+          <p className="kys-note">{data?.pepMatches ? pepMatchCount(data.pepMatches.length) : "brak danych"}</p>
+          {data?.pepMatches?.length ? <div className="kys-table-scroll"><table className="kys-lists kys-pep-table">
+            <thead><tr><th>Dopasowano na podstawie</th><th>Osoba na liście</th><th>Data urodzenia</th><th>Stanowisko</th><th>Prawdopodobieństwo dopasowania</th></tr></thead>
+            <tbody>{data.pepMatches.map((match, index) => {
+              const person = data[match.personGroup]?.[match.personIndex];
+              return <tr key={`${match.personGroup}:${match.personIndex}:${index}`}>
+                <td><strong>{value(match.searchPhrase ?? match.personName)}</strong>
+                  <small>{match.personName}</small>
+                  {match.identifierMatchesPesel && <small>PESEL: <PeselReveal token={person?.peselRevealToken} onReveal={onRevealPesel} /></small>}
+                  {person?.citizenship.length ? <small>Obywatelstwo: {person.citizenship.join(", ")}</small> : null}
+                </td>
+                <td><strong>{value(match.matchedName)}</strong>
+                  {match.aliases.length ? <small>Inne nazwy: {match.aliases.join(", ")}</small> : null}
+                </td>
+                <td>{value(match.birthDate)}</td>
+                <td>{match.positions.length ? match.positions.join("; ") : "Szczegóły stanowiska niedostępne"}</td>
+                <td>{match.probabilityPercent === null ? "nie ustalono" : `${new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 0 }).format(match.probabilityPercent)}%`}</td>
+              </tr>;
+            })}</tbody>
+          </table></div> : <p>Nie stwierdzono dopasowań PEP w danych osób zwróconych przez dostawcę.</p>}
+        </section>
         {entityType === "COMPANY" && <section className="kys-panel" aria-label="Struktura właścicielska i powiązane podmioty">
           <h3>Struktura właścicielska i powiązane podmioty</h3>
           {data?.relatedEntities?.length ? <div className="kys-table-scroll"><table className="kys-lists"><thead><tr><th>Podmiot</th><th>Powiązanie</th><th>Identyfikatory</th><th>Okres</th><th>Sankcje</th></tr></thead><tbody>

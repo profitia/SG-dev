@@ -1,5 +1,7 @@
 import type { SectionEnvelope, VerclyKysData } from "@profitia/srm-xray";
 
+type VerclyPepMatch = NonNullable<VerclyKysData["pepMatches"]>[number];
+
 export type VerclyKysRequest = {
   identifier: { type: "NIP"; value: string };
 };
@@ -24,11 +26,12 @@ type Options = {
 const MODEL = "KYS_NIP";
 const source = (recordId: string | null) => ({ provider: "VERCLY" as const, model: MODEL, recordId });
 const record = (input: unknown): Record<string, unknown> | null => input && typeof input === "object" && !Array.isArray(input) ? input as Record<string, unknown> : null;
-const string = (input: unknown): string | null => {
+const boundedString = (input: unknown, maxLength: number): string | null => {
   if (typeof input !== "string") return null;
   const value = input.trim();
-  return value && !["---", "UNKNOWN", "NONE", "N/A", "NULL"].includes(value.toUpperCase()) ? value.slice(0, 300) : null;
+  return value && !["---", "UNKNOWN", "NONE", "N/A", "NULL"].includes(value.toUpperCase()) ? value.slice(0, maxLength) : null;
 };
+const string = (input: unknown): string | null => boundedString(input, 300);
 const count = (input: unknown): number | null => typeof input === "number" && Number.isSafeInteger(input) && input >= 0 ? input : null;
 const items = (input: unknown): unknown[] => Array.isArray(input) ? input : [];
 
@@ -81,6 +84,36 @@ function registryNumber(input: string | null, length: number): string | null {
   return input && new RegExp(`^[0-9]{${length}}$`).test(input) ? input : null;
 }
 
+function pepScore(input: unknown): number | null {
+  if (typeof input !== "number" && typeof input !== "string") return null;
+  const score = Number(input);
+  if (!Number.isFinite(score) || score < 0 || score > 100) return null;
+  return score <= 1 ? score * 100 : score;
+}
+
+function pepDetails(input: unknown, personGroup: VerclyPepMatch["personGroup"]): VerclyPepMatch[] {
+  const group = record(input);
+  return items(group?.Values).map(record).filter((entry): entry is Record<string, unknown> => entry !== null)
+    .flatMap((entry, personIndex) => {
+      const pep = record(entry.PepPositions);
+      const details = items(pep?.Details).map(record).filter((detail): detail is Record<string, unknown> => detail !== null);
+      if (!details.length && (count(pep?.Count) ?? 0) === 0) return [];
+      const personName = string(entry.FullName) ?? "Nie podano nazwiska";
+      const pesel = string(entry.Pesel);
+      return (details.length ? details : [null]).map((detail) => ({
+        personGroup, personIndex, personName,
+        searchPhrase: string(detail?.SearchPhrase),
+        matchedName: string(detail?.Name),
+        aliases: items(detail?.Aliases).map(string).filter((name): name is string => name !== null),
+        birthDate: string(detail?.Dob),
+        positions: items(detail?.Positions).map((position) => boundedString(position, 2000)).filter((position): position is string => position !== null),
+        probabilityPercent: pepScore(detail?.Score),
+        // Reuse the existing timed PESEL reveal. Never place a second raw identifier in the public PEP row.
+        identifierMatchesPesel: Boolean(pesel && items(detail?.IdNumber).includes(pesel)),
+      }));
+    });
+}
+
 function personRows(input: unknown): NonNullable<VerclyKysData["relatedPersons"]> {
   const group = record(input);
   return items(group?.Values).map(record)
@@ -93,14 +126,16 @@ function personRows(input: unknown): NonNullable<VerclyKysData["relatedPersons"]
         .filter((value): value is string => value !== null);
       const foundIn = [string(entry.Source), ...items(entry.FoundIn).map((item) => string(record(item)?.CompanyName))]
         .filter((value): value is string => value !== null);
-      const pepCount = count(record(entry.PepPositions)?.Count);
+      const pep = record(entry.PepPositions);
+      const pepCount = count(pep?.Count);
+      const hasPepDetails = items(pep?.Details).some((detail) => record(detail) !== null);
       return {
         fullName: string(entry.FullName) ?? ([string(entry.FirstName), string(entry.SecondName), string(entry.Surname)].filter(Boolean).join(" ") || "Nie podano nazwiska"),
         pesel,
         birthDate: string(entry.BirthDate) ?? string(entry.DateOfBirth),
         positions, citizenship, foundIn,
         sanctionsMatch: listed(entry.Sanctions),
-        pepMatch: pepCount === null ? null : pepCount > 0,
+        pepMatch: hasPepDetails || (pepCount !== null && pepCount > 0) ? true : pepCount === 0 ? false : null,
       };
     });
 }
@@ -186,6 +221,10 @@ function mapReport(report: unknown, requested: VerclyKysRequest, fallbackCorrela
         stakeDescription: string(mandate?.Description), sanctionsMatch: listed(entry.Sanctions),
       };
     });
+  const pepMatches = [
+    ...pepDetails(entity?.Beneficiaries, "beneficialOwners"),
+    ...pepDetails(entity?.DepPersons, "relatedPersons"),
+  ];
   const data: VerclyKysData = {
     correlationId, reportId, isComplete: complete, queriedRegisters,
     registryChecks: {
@@ -204,7 +243,8 @@ function mapReport(report: unknown, requested: VerclyKysRequest, fallbackCorrela
     relatedPersons: personRows(entity?.DepPersons),
     beneficialOwnersCount: count(record(entity?.Beneficiaries)?.Count),
     relatedPersonsCount: count(record(entity?.DepPersons)?.Count),
-    pepPositionsCount: count(record(entity?.PepPositions)?.Count),
+    pepPositionsCount: pepMatches.length,
+    pepMatches,
     riskLevel: null,
   };
   return {

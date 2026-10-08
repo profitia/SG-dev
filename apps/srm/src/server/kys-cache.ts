@@ -41,6 +41,10 @@ export function isFreshKys(retrievedAt: string | Date | null, retentionUntil: st
 
 type CacheRow = { report_json: KysSection | null; retrieved_at: Date | null; retention_until: Date | null };
 
+export function hasCurrentKysProjection(section: KysSection | null): boolean {
+  return Array.isArray(section?.data?.pepMatches);
+}
+
 export async function readFreshKys(organizationId: string, nip: string, entityType: KysEntityType,
   now = new Date()): Promise<KysSection | null> {
   return withOrganization(organizationId, async (client) => {
@@ -49,9 +53,10 @@ export async function readFreshKys(organizationId: string, nip: string, entityTy
       [nip, entityType],
     );
     const row = result.rows[0];
-    if (!row?.report_json?.data || !isFreshKys(row.retrieved_at, row.retention_until, now)) return null;
-    if (row.report_json.status !== "SUCCESS") return null;
-    return row.report_json;
+    const section = row?.report_json;
+    if (!section || !hasCurrentKysProjection(section) || !isFreshKys(row.retrieved_at, row.retention_until, now)) return null;
+    if (section.status !== "SUCCESS") return null;
+    return section;
   });
 }
 
@@ -64,12 +69,12 @@ export async function claimKysRefresh(organizationId: string, nip: string, entit
        VALUES ($1, $2, $3, $4)
        ON CONFLICT (nip, entity_type) DO UPDATE SET
          lease_owner = EXCLUDED.lease_owner, lease_until = EXCLUDED.lease_until,
-         report_json = NULL, report_sha256 = NULL, retrieved_at = NULL, retention_until = NULL,
-         source_organization_id = NULL, source_snapshot_id = NULL, updated_at = now()
+         updated_at = now()
        WHERE (srm.catalog_kys_reports.lease_until IS NULL OR srm.catalog_kys_reports.lease_until <= $5)
          AND (srm.catalog_kys_reports.report_json IS NULL
            OR srm.catalog_kys_reports.retention_until <= $5
-           OR srm.catalog_kys_reports.retrieved_at + ($6::bigint * interval '1 millisecond') <= $5)
+           OR srm.catalog_kys_reports.retrieved_at + ($6::bigint * interval '1 millisecond') <= $5
+           OR jsonb_typeof(srm.catalog_kys_reports.report_json #> '{data,pepMatches}') IS DISTINCT FROM 'array')
        RETURNING lease_owner`,
       [nip, entityType, owner, new Date(now.getTime() + LEASE_MS), now, kysCacheTtlMs()],
     );
@@ -79,7 +84,7 @@ export async function claimKysRefresh(organizationId: string, nip: string, entit
 
 export async function saveKysRefresh(organizationId: string, nip: string, entityType: KysEntityType,
   leaseOwner: string, section: KysSection, snapshotId: string | null): Promise<void> {
-  if (section.status !== "SUCCESS" || !section.data || !section.retrievedAt) {
+  if (section.status !== "SUCCESS" || !hasCurrentKysProjection(section) || !section.retrievedAt) {
     throw new Error("Only complete KYS reports may be cached");
   }
   const expiry = kysExpiry(section.retrievedAt);

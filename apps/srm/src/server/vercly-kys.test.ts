@@ -75,10 +75,14 @@ test("FULL report keeps confirmed persons and complete PESEL values without raw 
       Beneficiaries: { Count: 1, Values: [{ FullName: "Jan Przykładowy", Pesel: "12345678901",
         Mandates: [{ Description: "Beneficjent rzeczywisty" }], Citizens: [{ Name: "POLSKA" }],
         Source: "CRBR", FoundIn: [{ Type: "Spółka z ograniczoną odpowiedzialnością" }], Sanctions: [{ ListName: "uk_ofsi_sanctions", Value: false }],
-        PepPositions: { Count: 0 }, SecretProviderField: "private raw value" }] },
+        PepPositions: { Count: 1, Details: [{ SearchPhrase: "JAN PRZYKŁADOWY", Name: "PRZYKŁADOWY JAN",
+          Score: "0.90", Dob: "1980-01-01", Aliases: ["JAN P."],
+          Positions: ["CZŁONEK RADY W SPÓŁCE SKARBU PAŃSTWA"], IdNumber: ["12345678901"],
+          SecretProviderField: "private PEP source value" }] }, SecretProviderField: "private raw value" }] },
       DepPersons: { Count: 1, Values: [{ FullName: "Anna Testowa", Pesel: "10987654321",
         PositionsHeld: ["CZŁONEK ZARZĄDU"], Sanctions: [{ ListName: "uk_ofsi_sanctions", Value: true }],
         PepPositions: { Count: 1 } }] },
+      PepPositions: { Count: 0 },
     } },
   }])) as typeof fetch;
   const result = await fetchVerclyKys(request, { apiKey: "test-token", baseUrl: "https://vercly.example", fetcher, sleep: async () => {} });
@@ -86,12 +90,23 @@ test("FULL report keeps confirmed persons and complete PESEL values without raw 
   assert.deepEqual(result.section.data?.beneficialOwners, [{
     fullName: "Jan Przykładowy", pesel: "12345678901", birthDate: null,
     positions: ["Beneficjent rzeczywisty"], citizenship: ["POLSKA"], foundIn: ["CRBR"],
-    sanctionsMatch: false, pepMatch: false,
+    sanctionsMatch: false, pepMatch: true,
   }]);
   assert.equal(result.section.data?.relatedPersons?.[0]?.pesel, "10987654321");
   assert.equal(result.section.data?.relatedPersons?.[0]?.sanctionsMatch, true);
   assert.equal(result.section.data?.relatedPersons?.[0]?.pepMatch, true);
+  assert.equal(result.section.data?.pepPositionsCount, 2);
+  assert.deepEqual(result.section.data?.pepMatches?.[0], {
+    personGroup: "beneficialOwners", personIndex: 0, personName: "Jan Przykładowy",
+    searchPhrase: "JAN PRZYKŁADOWY", matchedName: "PRZYKŁADOWY JAN", aliases: ["JAN P."],
+    birthDate: "1980-01-01", positions: ["CZŁONEK RADY W SPÓŁCE SKARBU PAŃSTWA"],
+    probabilityPercent: 90, identifierMatchesPesel: true,
+  });
+  assert.equal(result.section.data?.pepMatches?.[1]?.personGroup, "relatedPersons");
+  assert.equal(result.section.data?.pepMatches?.[1]?.matchedName, null);
   assert.ok(!JSON.stringify(result.section).includes("private raw value"));
+  assert.ok(!JSON.stringify(result.section).includes("private PEP source value"));
+  assert.ok(!JSON.stringify(result.section.data?.pepMatches).includes("12345678901"));
 });
 
 test("retries temporary 404 while Vercly prepares the report", async () => {

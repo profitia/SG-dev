@@ -71,7 +71,8 @@ async function persistSection(
         ...(sectionName === "kys" ? { retentionUntil: kysExpiry(section.retrievedAt) } : {}),
       });
       storedSnapshotId = snapshotId;
-      await appendSectionProjection(organizationId, { supplierId: lookup.supplierId, snapshotId, section: sectionName, version: 1, data: section.data });
+      await appendSectionProjection(organizationId, { supplierId: lookup.supplierId, snapshotId, section: sectionName,
+        version: sectionName === "kys" ? 2 : 1, data: section.data });
       if (sectionName === "financial" && facts.length) await appendFinancialFacts(organizationId, facts.map((fact) => ({ ...fact, supplierId: lookup.supplierId, snapshotId })));
     }
     await finishAttempt(organizationId, attemptId, attemptStatus(section.status, errorCode), {
