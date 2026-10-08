@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { SectionEnvelope, VerclyKysData } from "@profitia/srm-xray";
 import { toPublicSection } from "./xray-lookup";
+import { kysCacheTtlMs, kysExpiry } from "./kys-cache";
 
 export type PersonList = "relatedPersons" | "beneficialOwners";
 export type PeselReference = { snapshotId: string; list: PersonList; index: number };
@@ -8,7 +9,6 @@ export type PeselReference = { snapshotId: string; list: PersonList; index: numb
 type TokenPayload = PeselReference & { version: 1; expiresAt: number };
 const snapshotIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const tokenPattern = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
-const sevenDays = 7 * 24 * 60 * 60 * 1000;
 
 function sign(secret: string, payload: string): string {
   return createHmac("sha256", secret).update(payload).digest("base64url");
@@ -35,7 +35,7 @@ export function verifyPeselToken(secret: string, token: unknown, now = Date.now(
     if (parsed.version !== 1 || typeof parsed.snapshotId !== "string" || !snapshotIdPattern.test(parsed.snapshotId) ||
       (parsed.list !== "relatedPersons" && parsed.list !== "beneficialOwners") ||
       !Number.isSafeInteger(parsed.index) || parsed.index! < 0 || parsed.index! > 10000 ||
-      !Number.isSafeInteger(parsed.expiresAt) || parsed.expiresAt! <= now || parsed.expiresAt! > now + sevenDays) return null;
+      !Number.isSafeInteger(parsed.expiresAt) || parsed.expiresAt! <= now || parsed.expiresAt! > now + kysCacheTtlMs()) return null;
     return { snapshotId: parsed.snapshotId, list: parsed.list, index: parsed.index! };
   } catch { return null; }
 }
@@ -45,7 +45,7 @@ export function toPublicKysSection(
 ): Omit<SectionEnvelope<VerclyKysData>, "source"> {
   const display = toPublicSection(section);
   if (!display.data) return display;
-  const expiresAt = section.retrievedAt ? Date.parse(section.retrievedAt) + sevenDays : 0;
+  const expiresAt = section.retrievedAt ? kysExpiry(section.retrievedAt).getTime() : 0;
   const people = (list: PersonList): VerclyKysData["relatedPersons"] => display.data?.[list]?.map((person, index) => ({
     ...person,
     pesel: null,
