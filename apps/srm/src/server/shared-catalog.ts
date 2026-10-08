@@ -4,7 +4,19 @@ import { withOrganization } from "./db";
 import type { FinancialSourceFact } from "./mgbi-financial";
 import { calculateFinancialIndicators, FINANCIAL_INDICATOR_INPUT_CODES, type CatalogIndicatorFact } from "./financial-indicators";
 
-export const CATALOG_FRESHNESS_MS = 24 * 60 * 60 * 1000;
+export const CATALOG_FRESHNESS_MS = 7 * 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+
+/** A shorter setting takes effect for existing entries on the next lookup. */
+export function catalogFreshnessMs(env: Readonly<Record<string, string | undefined>> = process.env): number {
+  const raw = env.SRM_MGBI_CACHE_TTL_HOURS;
+  if (raw === undefined || raw === "") return CATALOG_FRESHNESS_MS;
+  const hours = Number(raw);
+  if (!Number.isInteger(hours) || hours < 1 || hours > 168) {
+    throw new Error("SRM_MGBI_CACHE_TTL_HOURS must be an integer from 1 to 168");
+  }
+  return hours * HOUR_MS;
+}
 export const FINANCIAL_MAPPING_VERSION = "2026-10-07-ccc-v2";
 type GeneralSection = SectionEnvelope<GeneralCompanyData>;
 type FinancialSection = SectionEnvelope<FinancialData>;
@@ -17,10 +29,10 @@ function sha256(value: unknown): string {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 
-export function isFreshCatalogEntry(checkedAt: Date | string | null, now = new Date()): boolean {
+export function isFreshCatalogEntry(checkedAt: Date | string | null, now = new Date(), ttlMs = catalogFreshnessMs()): boolean {
   if (!checkedAt) return false;
   const age = now.getTime() - new Date(checkedAt).getTime();
-  return Number.isFinite(age) && age >= 0 && age < CATALOG_FRESHNESS_MS;
+  return Number.isFinite(age) && age >= 0 && age < ttlMs;
 }
 
 export function isCurrentFinancialMapping(section: StoredFinancialSection | null): boolean {

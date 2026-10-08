@@ -2,6 +2,7 @@ import type { SectionEnvelope, SupplierXRayCard } from "@profitia/srm-xray";
 import { emptyCard } from "../demo/fixture";
 import { fetchMgbiGeneral, type CompanyIdentifier } from "./mgbi-general";
 import { fetchMgbiFinancial, type FinancialSourceFact } from "./mgbi-financial";
+import { saveMgbiArchive } from "./mgbi-archive";
 import { fetchVerclyKys } from "./vercly-kys";
 import { getOrFetchKys, kysExpiry, purgeExpiredSharedKys } from "./kys-cache";
 import { readFreshCompany, recordDemoInterest, refreshFinancialIndicators, saveSharedCompany } from "./shared-catalog";
@@ -106,12 +107,24 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
   const [general, financial] = await Promise.all([
     fetchMgbiGeneral(request.identifier).catch(() => ({
       section: { ...emptyCard.general, status: "ERROR" as const, retrievedAt: new Date().toISOString(), warnings: ["MGBI_NOT_CONFIGURED"] },
-      rawRecord: null, errorCode: "NOT_CONFIGURED",
+      rawRecord: null, rawResponse: undefined, errorCode: "NOT_CONFIGURED",
     })),
     fetchMgbiFinancial(request.identifier).catch(() => ({
       section: { ...emptyCard.financial, status: "ERROR" as const, retrievedAt: new Date().toISOString(), warnings: ["MGBI_NOT_CONFIGURED"] },
-      facts: [], sourceData: undefined, errorCode: "NOT_CONFIGURED",
+      facts: [], sourceData: undefined, rawResponse: undefined, errorCode: "NOT_CONFIGURED",
     })),
+  ]);
+  // Keep complete provider responses in a tenant-scoped store, separate from
+  // the normalized, person-free catalog reused across organizations.
+  await Promise.all([
+    general.rawResponse && general.section.retrievedAt
+      ? saveMgbiArchive(organizationId, request.identifier.value, "pl-krs-wp-record",
+        general.rawResponse.pages, general.rawResponse.recordCount, general.section.retrievedAt, lookup.requestId)
+      : Promise.resolve(),
+    financial.rawResponse && financial.section.retrievedAt
+      ? saveMgbiArchive(organizationId, request.identifier.value, "pl-krs-rdf-record",
+        financial.rawResponse.pages, financial.rawResponse.recordCount, financial.section.retrievedAt, lookup.requestId)
+      : Promise.resolve(),
   ]);
   const generalSnapshotId = await persistSection(organizationId, lookup, "general", general.section, general.errorCode);
   const financialSnapshotId = await persistSection(organizationId, lookup, "financial", financial.section, financial.errorCode, financial.facts, undefined, financial.sourceData);

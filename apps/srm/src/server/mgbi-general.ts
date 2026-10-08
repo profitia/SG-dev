@@ -1,9 +1,11 @@
 import type { GeneralCompanyData, SectionEnvelope } from "@profitia/srm-xray";
+import { fetchMgbiPages } from "./mgbi-archive";
 
 export type CompanyIdentifier = { type: "NIP" | "KRS"; value: string };
 export type MgbiGeneralResult = {
   section: SectionEnvelope<GeneralCompanyData>;
   rawRecord: unknown | null;
+  rawResponse?: { pages: unknown[]; recordCount: number };
   errorCode: string | null;
 };
 export type MgbiGeneralOptions = {
@@ -98,23 +100,19 @@ export async function fetchMgbiGeneral(identifier: CompanyIdentifier, options: M
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   const now = options.now ?? (() => new Date());
   try {
-    const response = await (options.fetcher ?? fetch)(url, {
-      method: "GET",
-      headers: { Accept: "application/json", Authorization: scheme === "bearer" ? `Bearer ${apiKey.trim()}` : apiKey.trim() },
-      signal: controller.signal,
-      cache: "no-store",
-    });
+    const response = await fetchMgbiPages(url,
+      { Accept: "application/json", Authorization: scheme === "bearer" ? `Bearer ${apiKey.trim()}` : apiKey.trim() },
+      controller.signal, options.fetcher);
     const retrievedAt = now().toISOString();
-    if (!response.ok) return empty("ERROR", retrievedAt, `MGBI_HTTP_${response.status}`, `HTTP_${response.status}`);
-    let body: unknown;
-    try { body = await response.json(); } catch { return empty("ERROR", retrievedAt, "MGBI_INVALID_JSON", "INVALID_JSON"); }
-    const results = object(body)?.results;
-    if (!Array.isArray(results)) return empty("ERROR", retrievedAt, "MGBI_INVALID_RESPONSE", "INVALID_RESPONSE");
-    if (results.length === 0) return empty("EMPTY", retrievedAt, "MGBI_NO_RECORD", null);
+    if (response.errorCode) return empty("ERROR", retrievedAt, `MGBI_${response.errorCode}`, response.errorCode);
+    const results = response.records;
+    if (results.length === 0) return { ...empty("EMPTY", retrievedAt, "MGBI_NO_RECORD", null),
+      rawResponse: { pages: response.pages, recordCount: response.count } };
     const key = identifier.type === "NIP" ? "pl_nip" : "pl_krs";
     const record = results.find((candidate) => str(at(candidate, "identifiers", key)) === identifier.value);
     if (!record) return empty("ERROR", retrievedAt, "MGBI_IDENTIFIER_MISMATCH", "IDENTIFIER_MISMATCH");
-    return mapMgbiGeneralRecord(record, retrievedAt);
+    return { ...mapMgbiGeneralRecord(record, retrievedAt),
+      rawResponse: { pages: response.pages, recordCount: response.count } };
   } catch (error) {
     const timedOut = controller.signal.aborted || (error instanceof Error && error.name === "AbortError");
     return empty("ERROR", now().toISOString(), timedOut ? "MGBI_TIMEOUT" : "MGBI_NETWORK_ERROR", timedOut ? "TIMEOUT" : "NETWORK_ERROR");
