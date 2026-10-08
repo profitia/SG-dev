@@ -12,7 +12,7 @@ const fonts = () => ({ regular: readFileSync(join(process.cwd(), "src/server/ass
   bold: readFileSync(join(process.cwd(), "src/server/assets/LiberationSans-Bold.ttf")) });
 /** Sanitize controls/product provider names; preserve selectable Unicode business text. */
 const text = (s: string) => s.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "")
-  .replace(/\b\d{11}\b/g, "***********").replace(/MGBI/gi, "Dane finansowe").replace(/Vercly/gi, "Raport KYS");
+  .replace(/MGBI/gi, "Dane finansowe").replace(/Vercly/gi, "Raport KYS");
 
 /** In-memory structured document, no HTML, attachments, temporary copies or public archive. */
 export async function renderKysPdf(report: KysPdfDocument): Promise<Buffer> {

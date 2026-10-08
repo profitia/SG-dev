@@ -12,7 +12,7 @@ const person = { fullName: "Osoba syntetyczna Żółć Łęcka", pesel: "0123456
   birthDate: "1980-01-02", positions: ["Prezes", "Członek zarządu"], citizenship: ["PL"], foundIn: ["KRS"], sanctionsMatch: null, pepMatch: true };
 export const syntheticKys: VerclyKysData = { correlationId: "SYNTHETIC_QUERY", reportId: "SYNTHETIC_REPORT", isComplete: true,
   queriedRegisters: ["KRAJOWY REJESTR ZADŁUŻONYCH"], stateAsOf: "2026-10-07", company: { name: "Żółta Łąka — dane syntetyczne", nip, krs: "0000000001", regon: null,
-    legalForm: "LLC", address: "Zażółć gęślą jaźń 1", country: "PL", activityStatus: "ACTIVE", registeredAt: "2000-01-01", lastChangedAt: null, mainPkd: "70.22.Z", shareCapital: "5000", representation: "Reprezentacja syntetyczna" },
+    phone: "+48111222333", legalForm: "LLC", address: "Zażółć gęślą jaźń 1", country: "PL", activityStatus: "ACTIVE", registeredAt: "2000-01-01", lastChangedAt: null, mainPkd: "70.22.Z", shareCapital: "5000", representation: "Reprezentacja syntetyczna" },
   registryChecks: { krzListed: false, vatActive: true, euVat: null }, screenedLists: [{ name: "eu_sanctions", type: "SANCTIONS", matched: false }],
   relatedPersons: [person], beneficialOwners: [person], relatedPersonsCount: 1, beneficialOwnersCount: 1,
   pepMatches: [{ personGroup: "beneficialOwners", personIndex: 0, personName: person.fullName, searchPhrase: "01234567890", matchedName: "Dopasowanie syntetyczne",
@@ -30,7 +30,7 @@ function document(data = syntheticKys, entityType: "COMPANY" | "JDG" = "COMPANY"
 test("complete UI-to-PDF projection retains every field group and record with default PESEL masking", () => {
   const d = document(); assert.equal(kysPdfCoverage.length, 8); assert.equal(d.sections.length, 9);
   for (const id of ["identity", "registry", "lists", "people", "beneficiaries", "pep", "relations", "metadata", "limitations"]) assert(d.sections.some(s => s.id === id));
-  const json = JSON.stringify(d); assert(!json.includes("PRIVATE_REVEAL_TOKEN"));
+  const json = JSON.stringify(d); assert(!json.includes("PRIVATE_REVEAL_TOKEN")); assert(!json.includes("01234567890")); assert(json.includes("+48111222333"));
   const people = d.sections.find(s => s.id === "people")!, beneficiaries = d.sections.find(s => s.id === "beneficiaries")!;
   assert(people.records[0].fields.some(([l, v]) => l === "PESEL" && v.includes("***********")));
   assert(people.records[0].fields.some(([l]) => l === "Data urodzenia")); assert(!beneficiaries.records[0].fields.some(([l]) => l === "Data urodzenia"));

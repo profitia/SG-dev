@@ -69,7 +69,7 @@ export function kysPdfDocument(data: VerclyKysData, context: Omit<KysPdfDocument
     { id: "people", title: "5. Osoby pełniące funkcje kierownicze i nadzorcze", note: `Liczba według raportu: ${count(data.relatedPersonsCount)}.`, records: data.relatedPersons?.map((p, i) => personRecord(p, i)) ?? [] },
     { id: "beneficiaries", title: "6. Beneficjenci rzeczywiści", note: `Liczba według raportu: ${count(data.beneficialOwnersCount)}.`, records: data.beneficialOwners?.map((p, i) => personRecord(p, i, true)) ?? [] },
     { id: "pep", title: "7. Dopasowania PEP", note: data.pepMatches ? `${data.pepMatches.length} dopasowań w raporcie. Miara dopasowania nie jest prawdopodobieństwem naruszenia ani potwierdzeniem tożsamości.` : "Nie ustalono dostępności wyników PEP.", records: data.pepMatches?.map((m, i) => ({ title: `${i + 1}. Dopasowanie wymagające weryfikacji`, fields: [
-      ["Dopasowano na podstawie", value(m.searchPhrase ?? m.personName)], ["Osoba użyta do sprawdzenia", value(m.personName)],
+      ["Dopasowano na podstawie", m.identifierMatchesPesel ? value(m.searchPhrase ?? m.personName).replace(/\b\d{11}\b/g, "***********") : value(m.searchPhrase ?? m.personName)], ["Osoba użyta do sprawdzenia", value(m.personName)],
       ...(m.identifierMatchesPesel ? [["PESEL", masked(data[m.personGroup]?.[m.personIndex])]] as const : []),
       ["Obywatelstwo", joined(data[m.personGroup]?.[m.personIndex]?.citizenship)], ["Osoba na liście", value(m.matchedName)],
       ["Inne nazwy", joined(m.aliases)], ["Data urodzenia osoby na liście", value(m.birthDate)], ["Stanowisko", joined(m.positions)],
@@ -88,6 +88,10 @@ export function kysPdfDocument(data: VerclyKysData, context: Omit<KysPdfDocument
     ["Dane osobowe", "PESEL pozostaje zamaskowany. PDF nie uruchamia ujawniania numerów ani ponownego pobrania KYS."],
     ["Ocena kupca", "Raport nie jest certyfikatem zgodności ani oceną bezpieczeństwa; nie zastępuje indywidualnej analizy kupca. Dalsze przechowywanie i obieg pliku wymagają przestrzegania zasad organizacji."],
   ] }] });
-  return { title: "Raport KYS — Weryfikacja dostawcy", companyName: value(c?.name), nip: context.nip, entityType: context.entityType,
-    retrievedAt: context.retrievedAt, generatedAt: context.generatedAt, expiresAt: context.expiresAt, sections };
+  const identifiers = [...(data.relatedPersons ?? []), ...(data.beneficialOwners ?? [])].map(p => p.pesel).filter((p): p is string => !!p && /^\d{11}$/.test(p));
+  const protect = (input: string) => identifiers.reduce((output, id) => output.replaceAll(id, "***********"), input);
+  return { title: "Raport KYS — Weryfikacja dostawcy", companyName: protect(value(c?.name)), nip: context.nip, entityType: context.entityType,
+    retrievedAt: context.retrievedAt, generatedAt: context.generatedAt, expiresAt: context.expiresAt,
+    sections: sections.map(section => ({ ...section, records: section.records.map(record => ({ title: protect(record.title), fields: record.fields.map(([label, content]) => [label, protect(content)] as const) })) })) };
+
 }
