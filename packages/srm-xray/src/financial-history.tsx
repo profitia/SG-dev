@@ -49,43 +49,64 @@ export function comparisonText(point: FinancialHistoryPoint): string {
   const direction = { UP: "Wzrost", DOWN: "Spadek", UNCHANGED: "Bez zmiany", NO_COMPARISON: "Brak porównania" }[comparison.direction];
   return `${direction}: ${financialValue(comparison.delta, comparison.unit)}${comparison.previousPeriod ? ` wobec ${comparison.previousPeriod.from} – ${comparison.previousPeriod.to}` : ""}`;
 }
+/** Select a stored point from pointer position; this is chart layout, not financial calculation. */
+export function nearestHistoryPoint(points: readonly FinancialHistoryPoint[], x: number): number | null {
+  let nearest: number | null = null, distance = Infinity;
+  historyPlot(points).positioned.forEach((item, index) => {
+    if (item.y !== null && Math.abs(item.x - x) < distance) { nearest = index; distance = Math.abs(item.x - x); }
+  });
+  return nearest;
+}
 export function FinancialHistory({ name, points, selectedPeriod }: { name: string; points: readonly FinancialHistoryPoint[]; selectedPeriod?: FinancialPeriodSelection | null }) {
-  const [active, setActive] = useState<number | null>(null);
+  const initial = points.findIndex(point => isSelected(point, selectedPeriod) && hasHistoryValue(point));
+  const [active, setActive] = useState<number | null>(initial >= 0 ? initial : points.findIndex(hasHistoryValue) >= 0 ? points.findIndex(hasHistoryValue) : null);
   const tooltipId = useId();
-  const plot = historyPlot(points), available = points.filter(hasHistoryValue);
-  const activePoint = active !== null ? points[active] : null;
+  const plot = historyPlot(points), available = points.filter(hasHistoryValue), indices = points.flatMap((point, index) => hasHistoryValue(point) ? [index] : []);
+  const activePoint = active !== null ? points[active] : null, activePosition = active !== null ? plot.positioned[active] : null;
   const unit = points[0]?.unit;
+  function step(direction: number) {
+    const index = active === null ? 0 : indices.indexOf(active);
+    setActive(indices[Math.max(0, Math.min(indices.length - 1, index + direction))] ?? null);
+  }
   return <div className="health-history">
-    <h5>Historia: {name}</h5>
-    <p className="health-muted">{points[0]?.scope === "consolidated" ? "Dane skonsolidowane" : "Dane jednostkowe"}{unit ? ` · ${financialUnits[unit]}` : ""} · wszystkie zapisane okresy</p>
+    {available.length === 1 && <p className="health-single-value">{financialValue(available[0].value, available[0].unit)} · {available[0].periodStart} – {available[0].periodEnd}</p>}
     {available.length < 2 ? <p>Brak wystarczających danych historycznych do porównania.</p> : <>
-      <p className="health-muted">Linia łączy wyłącznie okresy o potwierdzonej porównywalności. Najedź, dotknij lub wybierz punkt klawiaturą, aby sprawdzić dokładną wartość.</p>
-      <svg className="health-history-chart" viewBox="0 0 480 208" role="group" aria-label={`Historia: ${name}; jednostka ${unit ? financialUnits[unit] : "nie ustalono"}. Wartości także w tabeli poniżej.`}>
+      <svg className="health-history-chart" viewBox="0 0 480 208" role="group" aria-label={`Historia: ${name}; ${unit ? financialUnits[unit] : "jednostka nieustalona"}. Dokładne wartości także w danych szczegółowych.`}
+        onPointerMove={event => { const cursor = event.currentTarget.createSVGPoint(); cursor.x = event.clientX; cursor.y = event.clientY; const matrix = event.currentTarget.getScreenCTM(); if (matrix) setActive(nearestHistoryPoint(points, cursor.matrixTransform(matrix.inverse()).x)); }}
+        onPointerDown={event => { const cursor = event.currentTarget.createSVGPoint(); cursor.x = event.clientX; cursor.y = event.clientY; const matrix = event.currentTarget.getScreenCTM(); if (matrix) setActive(nearestHistoryPoint(points, cursor.matrixTransform(matrix.inverse()).x)); }}>
         <line x1="72" x2="420" y1={plot.zeroY} y2={plot.zeroY} className="health-chart-axis" />
         {[{ value: plot.maximum, y: 30 }, { value: plot.minimum, y: 170 }].map((tick, i) => <text x="64" y={tick.y + 4} textAnchor="end" key={i}>{new Intl.NumberFormat("pl-PL", { notation: "compact", maximumFractionDigits: 1 }).format(tick.value)}</text>)}
         {plot.segments.map(({ previous, current }, i) => <line data-comparable-segment="true" key={i} x1={previous.x} y1={previous.y!} x2={current.x} y2={current.y!} className="health-chart-line" />)}
+        {activePosition?.y != null && <line data-crosshair="true" x1={activePosition.x} x2={activePosition.x} y1="24" y2="177" className="health-chart-crosshair" />}
         {plot.positioned.map(({ point, x, y }, i) => <g key={`${point.periodStart}:${point.periodEnd}`}>
           {(points.length <= 6 || i === 0 || i === points.length - 1 || isSelected(point, selectedPeriod)) && <text x={x} y="198" textAnchor="middle">{point.year}</text>}
-          {y !== null && <g role="button" tabIndex={0} aria-describedby={active === i ? tooltipId : undefined}
+          {y !== null && <g role="button" tabIndex={0} aria-describedby={active === i ? tooltipId : undefined} aria-pressed={active === i}
             aria-label={`${point.periodStart} – ${point.periodEnd}: ${financialValue(point.value, point.unit)}${isSelected(point, selectedPeriod) ? "; wybrany okres" : ""}`}
-            onMouseEnter={() => setActive(i)} onFocus={() => setActive(i)} onClick={() => setActive(i)} onKeyDown={event => {
-              if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setActive(i); }
+            onFocus={() => setActive(i)} onClick={() => setActive(i)} onKeyDown={event => {
+              if (["Enter", " ", "ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+                event.preventDefault();
+                const target = event.key === "Home" ? indices[0] : event.key === "End" ? indices.at(-1) : event.key === "ArrowLeft" || event.key === "ArrowRight" ? indices[Math.max(0, Math.min(indices.length - 1, indices.indexOf(i) + (event.key === "ArrowLeft" ? -1 : 1)))] : i;
+                if (target !== undefined) { setActive(target); if (target !== i) event.currentTarget.closest("svg")?.querySelectorAll<SVGGElement>('[role="button"]')[indices.indexOf(target)]?.focus(); }
+              }
             }}>
             <circle cx={x} cy={y} r="15" fill="transparent" />
-            <circle cx={x} cy={y} r={isSelected(point, selectedPeriod) ? 7 : 4} className={isSelected(point, selectedPeriod) ? "health-chart-point health-chart-point--selected" : "health-chart-point"} />
+            <circle cx={x} cy={y} r={active === i || isSelected(point, selectedPeriod) ? 7 : 4} data-selected-period={isSelected(point, selectedPeriod)} className={isSelected(point, selectedPeriod) ? "health-chart-point health-chart-point--selected" : "health-chart-point"} />
             <title>{point.periodStart} – {point.periodEnd}: {financialValue(point.value, point.unit)}</title>
           </g>}
         </g>)}
       </svg>
-      <div id={tooltipId} role="status" className="health-chart-tooltip">{activePoint ? <><strong>{activePoint.periodStart} – {activePoint.periodEnd}</strong><span>{financialValue(activePoint.value, activePoint.unit)} · wynik dostępny{isSelected(activePoint, selectedPeriod) ? " · wybrany okres" : ""}</span><span>{comparisonText(activePoint)}</span></> : "Wybierz punkt na wykresie. Pełne wartości znajdziesz także w tabeli."}</div>
+      <div className="health-chart-readout"><button type="button" aria-label="Poprzedni punkt historii" disabled={active === indices[0]} onClick={() => step(-1)}>←</button>
+        <div id={tooltipId} role="status" aria-live="polite" className="health-chart-tooltip">{activePoint && <><strong>{financialValue(activePoint.value, activePoint.unit)}</strong><span>{activePoint.periodStart} – {activePoint.periodEnd}{isSelected(activePoint, selectedPeriod) ? " · wybrany okres" : ""}</span>
+          <span>{activePoint.comparison.status === "COMPARABLE" ? comparisonText(activePoint) : "Brak potwierdzonego porównania"}</span></>}</div>
+        <button type="button" aria-label="Następny punkt historii" disabled={active === indices.at(-1)} onClick={() => step(1)}>→</button></div>
     </>}
-    {points.some(point => point.comparison.status === "UNKNOWN") && <p className="health-data-note">Porównywalność części okresów nie została potwierdzona. Pokazujemy pojedyncze wartości, bez pozornego ciągłego trendu.</p>}
-    {points.length > 0 ? <div className="health-history-table-scroll" tabIndex={0} aria-label={`Historia tabelaryczna: ${name}`}><table className="health-history-table">
-      <caption>Pełne okresy, wartości i potwierdzone zmiany</caption><thead><tr><th scope="col">Okres</th><th scope="col">Wartość</th><th scope="col">Porównanie</th></tr></thead>
+    {points.some(point => point.comparison.status !== "COMPARABLE" && point.comparison.previousPeriod !== null || point.comparison.status === "UNKNOWN") && <details className="health-comparability"><summary>Nie wszystkie okresy można bezpośrednio porównać.</summary><p>Linia łączy wyłącznie okresy z potwierdzoną porównywalnością. Braki, różne dokumenty, zakresy lub niepotwierdzone korekty nie tworzą ciągłego trendu. Przyczyny dla każdego okresu znajdziesz w danych szczegółowych.</p></details>}
+    {points.length > 0 ? <details className="health-history-data"><summary>Dane szczegółowe</summary><div className="health-history-table-scroll" tabIndex={0} aria-label={`Historia tabelaryczna: ${name}`}><table className="health-history-table">
+      <caption>Pełne okresy, dokładne wartości i zapisane zmiany</caption><thead><tr><th scope="col">Okres</th><th scope="col">Wartość</th><th scope="col">Porównanie</th></tr></thead>
       <tbody>{points.map(point => <tr key={`${point.periodStart}:${point.periodEnd}`} aria-current={isSelected(point, selectedPeriod) ? "true" : undefined}>
         <th scope="row">{point.periodStart} – {point.periodEnd}{isSelected(point, selectedPeriod) && <small>Wybrany okres</small>}</th>
         <td>{hasHistoryValue(point) ? financialValue(point.value, point.unit) : "Niedostępny"}{!hasHistoryValue(point) && <small>{financialReason(point.reasonCode)}</small>}</td>
         <td><small>{point.comparison.status === "COMPARABLE" ? "Porównywalne" : point.comparison.status === "UNKNOWN" ? "Porównywalność nieustalona" : "Nieporównywalne"}</small>{comparisonText(point)}</td>
-      </tr>)}</tbody></table></div> : <p>Brak zapisanych wartości historycznych.</p>}
+      </tr>)}</tbody></table></div></details> : <p>Brak zapisanych wartości historycznych.</p>}
   </div>;
 }

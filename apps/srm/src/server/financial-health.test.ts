@@ -4,6 +4,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { FinancialHealthArea, FinancialHistory, FinancialDataMount, healthGroups, indicatorContent, indicatorPresentation, historyPoints, historyPlot, financialValue, comparisonText,
   type FinancialHistoryPoint, type FinancialFactEvidence, type SupplierReportData } from "@profitia/srm-xray";
+import { FinancialIndicatorMethodology } from "../../node_modules/@profitia/srm-xray/src/financial-indicator-dialog";
 import { definitions, FINANCIAL_INDICATOR_CODES } from "./financial-indicators";
 
 const evidence: FinancialFactEvidence = { ref: "opaque-public-fact", documentRef: "opaque-public-document", metricCode: "BS_A_CA", periodStart: "2025-01-01", periodEnd: "2025-12-31", scope: "standalone", amount: "123", sourceAmount: "-123", currency: "PLN", unit: "PLN", validation: "VERIFIED", normalization: "NORMALIZED_CONFIRMED", normalizationRule: "EXISTING_RULE", reasonCode: null };
@@ -37,15 +38,15 @@ test("formatting preserves null, exact decimal zero, negative signs and large am
 });
 test("cards retain unavailable definitions, reasons and importance; no fabricated zero, score or history placeholders", () => {
   const html = areaHtml([point(2025, null)]);
-  assert.match(html, /Niedostępny/); assert.match(html, /brakuje potrzebnej pozycji/); assert.match(html, /Kluczowy/);
-  assert.equal((html.match(/Pokaż historię/g) ?? []).length, 4); assert.match(html, /Jak to obliczamy/);
+  assert.match(html, /Brak danych/); assert.match(html, /Kluczowy/); assert.equal(html.includes("brakuje potrzebnej pozycji"), false);
+  assert.equal((html.match(/Zobacz historię/g) ?? []).length, 4); assert.match(html, /Jak to obliczamy/);
   assert.equal(html.includes('class="health-history"'), false); assert.equal(html.includes("0 ×"), false);
   assert.equal(html.includes("AI"), false); assert.equal(html.includes("Siła finansowa"), false);
 });
 test("selected values use full dates and exact scope; no fallback to latest or another statement basis", () => {
   const html = areaHtml([point(2024, "2"), point(2025, "0"), point(2025, "999", { scope: "consolidated" })]);
-  assert.match(html, /0 ×/); assert.equal(html.includes("999 ×"), false); assert.equal(html.includes("2 ×"), false);
-  const missing = areaHtml([point(2024, "2")]); assert.match(missing, /Brak zapisanego wyniku dla wybranego okresu/); assert.equal(missing.includes("2 ×"), false);
+  assert.match(html, /health-card-value[^>]*>0,0</); assert.equal(html.includes("999"), false);
+  const missing = areaHtml([point(2024, "2")]); assert.match(missing, /Brak danych/); assert.equal(missing.includes("2 ×"), false);
 });
 test("history preserves all periods in ascending order, scopes and unavailable gaps", () => {
   const points = historyPoints([point(2025, null), point(2023, "-2"), point(2024, "0"), point(2025, "999", { scope: "consolidated" })], "CURRENT_RATIO", "standalone");
@@ -82,7 +83,7 @@ test("changes are backend deltas in pp, ratio, PLN and days with neutral directi
   const p = comparable(2025, "100"); p.comparison.status = "UNKNOWN"; assert.equal(comparisonText(p).includes("0,5"), false);
 });
 test("details expose only safe fact projection with validation and unchanged source signs; opaque refs remain hidden", () => {
-  const html = areaHtml([point(2025)]);
+  const html = renderToStaticMarkup(React.createElement(FinancialIndicatorMethodology, { code: "CURRENT_RATIO", point: point(2025), selectedPeriod: { from: "2025-01-01", to: "2025-12-31" } }));
   for (const content of ["Aktywa obrotowe", "Normalizacja potwierdzona", "Zweryfikowana", "123 PLN", "-123 PLN", "1.2"]) assert.ok(html.includes(content), content);
   assert.equal(html.includes("opaque-public"), false); assert.equal(html.includes("EXISTING_RULE"), false);
 });
