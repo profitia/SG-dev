@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { KysOverview, VerclyKysMount, kysOverview, type KysOverviewInput, type SupplierReportData } from "@profitia/srm-xray";
+import { KysOverview, VerclyKysMount, kysOverview, executiveSummary, type KysOverviewInput, type SupplierReportData } from "@profitia/srm-xray";
 
 const now = Date.parse("2026-10-08T12:00:00Z"), nip = "8650004194";
 function fixture(): KysOverviewInput {
@@ -115,4 +115,13 @@ test("positive person and other-list signals keep their party scope and do not c
   assert.match(row(i,"Pozostałe listy").result,/Wymaga weryfikacji/);
   assert.match(row(i,"Beneficjenci — listy").result,/dopasowaniem do list: 1.*dotyczą osób/);
   assert.equal(row(i,"Beneficjenci — listy").target,"beneficiaries");assert.doesNotMatch(html(i),/PRIVATE_|12 wpisów/);
+});
+
+
+test("neutral executive summary consumes view eligibility when cache expires before personal retention", () => {
+  const i=fixture();i.metadata!.kys.freshness.cacheExpiresAt="2026-10-08T12:00:00Z";
+  i.metadata!.financial={periods:[],history:[]} as unknown as SupplierReportData["financial"];
+  const view=kysOverview(i,now);
+  const summary=executiveSummary({nip:i.nip,entityType:i.entityType,metadata:i.metadata,scope:null,selectedPeriod:null,kysStatus:i.section.status,kysHasData:view.available});
+  assert(!view.available);assert.doesNotMatch(summary.kys,/jest dostępny/);assert.match(summary.kys,/Nie można potwierdzić dostępności/);
 });
