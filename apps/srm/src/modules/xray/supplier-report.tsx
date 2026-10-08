@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { defaultFinancialScope, FinancialDataMount, financialPeriodsByScope, GeneralCompanyDataMount, JdgRegistryMount,
+import { defaultFinancialScope, indicatorContent, FinancialDataMount, financialPeriodsByScope, GeneralCompanyDataMount, JdgRegistryMount,
   VerclyKysMount, type FinancialPeriod, type FinancialPeriodSelection, type FinancialFactEvidence, type SupplierReportData } from "@profitia/srm-xray";
 import { ReportNavigation, navigateReportSection } from "./report-navigation";
 export { navigateReportSection } from "./report-navigation";
@@ -18,6 +18,8 @@ export type SupplierReportContext = {
   selectedPeriod: FinancialPeriodSelection | null;
   setPeriod: (period: FinancialPeriodSelection) => void;
   onSource: (fact: FinancialFactEvidence) => void;
+  onIndicator: (code: string, history?: boolean) => void;
+  onNavigate: (id: string) => void;
   periods: SupplierReportData["financial"]["periods"];
   metadataBusy: boolean;
   metadataError: string | null;
@@ -87,10 +89,22 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
       const heading = row.querySelector<HTMLElement>("th"); if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); } row.scrollIntoView({ block: "center" });
     });
   }
+  function onNavigate(id: string) { if (root.current) navigateReportSection(root.current, id); }
+  function onIndicator(code: string, history = false) {
+    if (!root.current || !Object.hasOwn(indicatorContent, code)) return;
+    const card = Array.from(root.current.querySelectorAll<HTMLElement>("[data-financial-indicator]")).find(node => node.dataset.financialIndicator === code);
+    if (!card) return;
+    const methodology = card.querySelector<HTMLDetailsElement>(".health-methodology");
+    if (methodology) methodology.open = true;
+    const button = card.querySelector<HTMLButtonElement>(".health-card-actions button");
+    if (history && button?.getAttribute("aria-expanded") === "false") button.click();
+    navigateReportSection(root.current, card.id);
+    const heading = card.querySelector<HTMLElement>("h4"); heading?.focus({ preventScroll: true });
+  }
   useEffect(() => { if (state.kys.status !== "NOT_REQUESTED" && kysDetails.current) kysDetails.current.open = true; }, [state.kys]);
   if (!state.result) return null;
   const supplier = state.result, metadata = state.metadata;
-  const context: SupplierReportContext = { supplier, metadata, financial, kys: state.kys, scope, setScope, selectedPeriod, setPeriod, onSource, periods,
+  const context: SupplierReportContext = { supplier, metadata, financial, kys: state.kys, scope, setScope, selectedPeriod, setPeriod, onSource, onIndicator, onNavigate, periods,
     metadataBusy: state.metadataBusy, metadataError: state.metadataError };
   const summary = slots.summary?.(context), observations = slots.observations?.(context), kysOverview = slots.kys?.(context);
   const areas = Object.entries(financialAreas).map(([key, title]) => ({ key, title, content: slots.financial?.[key as keyof typeof financialAreas]?.(context) })).filter(area => area.content != null && area.content !== false);
@@ -107,7 +121,7 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
       </div>
     </section>
     <ReportNavigation root={root} items={navigation} />
-    {summary && <section id="report-summary" className="report-content-section" aria-labelledby="report-summary-title"><h2 id="report-summary-title" tabIndex={-1}>Podsumowanie dostawcy</h2>{summary}</section>}
+    {summary && <section id="report-summary" className="report-content-section" aria-labelledby="report-summary-title"><h2 id="report-summary-title" tabIndex={-1}>Najważniejsze informacje</h2>{summary}</section>}
     {!!areas.length && <section id="report-finance" className="report-content-section" aria-labelledby="report-finance-title"><h2 id="report-finance-title" tabIndex={-1}>Kondycja finansowa</h2>
       <p className="health-dashboard-note">Zapisane wyniki finansowe. Istotność wskaźnika nie jest oceną ryzyka; kierunek zmiany nie oznacza poprawy ani pogorszenia kondycji.</p>
       {selectionPeriods.length > 0 && <div className="health-context-controls">

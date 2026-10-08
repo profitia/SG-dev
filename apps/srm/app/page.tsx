@@ -1,10 +1,18 @@
 "use client";
 
-import { FinancialHealthArea } from "@profitia/srm-xray";
+import { ExecutiveSummary, FinancialHealthArea } from "@profitia/srm-xray";
 import { useRef, useState, type FormEvent } from "react";
 import { SupplierReport, reportMessage, type SupplierReportContext, type SupplierReportSlots } from "../src/modules/xray/supplier-report";
 import { useSupplierReport } from "../src/modules/xray/use-supplier-report";
 import { supplierNip } from "../src/modules/xray/report-controller";
+
+const summarySlot: NonNullable<SupplierReportSlots["summary"]> = context => <ExecutiveSummary input={{
+  nip: supplierNip(context.supplier) ?? "", entityType: context.supplier.entityType, metadata: context.metadata,
+  scope: context.scope, selectedPeriod: context.selectedPeriod, loading: context.metadataBusy,
+  kysStatus: context.kys.status, kysHasData: !!context.kys.data,
+}} onSource={context.onSource} onIndicator={context.onIndicator}
+  onFinance={() => context.onNavigate("report-finance")}
+  onDetails={() => context.onNavigate(context.supplier.entityType === "JDG" ? "report-registry-details" : "report-financial-details")} />;
 
 const financialSlots: SupplierReportSlots["financial"] = Object.fromEntries((["liquidity", "debt", "profitability", "cashFlow"] as const).map(area => [area,
   (context: SupplierReportContext) => context.supplier.entityType === "COMPANY" ? <FinancialHealthArea area={area} financial={context.metadata?.financial ?? null}
@@ -78,7 +86,7 @@ export default function Home() {
       {state.error && <p role="alert" className="search-error">{reportMessage(state.error)}</p>}
       {!state.result && !state.busy && !state.error && <div className="report-empty"><h2>Raport dostawcy</h2><p>Wpisz NIP, aby zobaczyć dostępne dane finansowe i rejestrowe.</p></div>}
       {state.result && <SupplierReport key={`${state.result.entityType}:${supplierNip(state.result)}`} state={state}
-        onFetchKys={controller.fetchKys} onReadMetadata={controller.refreshMetadata} onRevealPesel={revealPesel} onDownloadExcel={downloadFinancialExcel} slots={{ financial: financialSlots }} />}
+        onFetchKys={controller.fetchKys} onReadMetadata={controller.refreshMetadata} onRevealPesel={revealPesel} onDownloadExcel={downloadFinancialExcel} slots={{ summary: summarySlot, financial: financialSlots }} />}
     </div>
   </main>;
 }

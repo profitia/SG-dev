@@ -17,8 +17,8 @@ function FinancialHealthCard({ code, points, selectedPeriod, loading, onSource, 
   const unit = point?.unit ?? indicatorPresentation[code].unit;
   const importance = point?.importance ?? indicatorPresentation[code].importance;
   const count = points.filter(hasHistoryValue).length;
-  return <article className="health-card" aria-labelledby={`${id}-title`}>
-    <header><h4 id={`${id}-title`}>{content.name}</h4><span className="health-importance" title="Istotność wskaźnika dla kupca, nie ocena wyniku dostawcy">{importanceLabels[importance]}</span></header>
+  return <article id={`${id}-card`} data-financial-indicator={code} className="health-card" aria-labelledby={`${id}-title`}>
+    <header><h4 id={`${id}-title`} tabIndex={-1}>{content.name}</h4><span className="health-importance" title="Istotność wskaźnika dla kupca, nie ocena wyniku dostawcy">{importanceLabels[importance]}</span></header>
     <p className={`health-card-value ${available ? "" : "health-card-value--missing"}`}>{available ? financialValue(point!.value, unit) : loading ? "Odczytywanie wyników…" : "Niedostępny"}</p>
     <p className="health-card-period">{selectedPeriod ? `${selectedPeriod.from} – ${selectedPeriod.to}` : "Okres nieustalony"}<span>Jednostka: {financialUnits[unit]}</span></p>
     {!available && !loading && <p className="health-data-note">{point ? financialReason(point.reasonCode) : selectedPeriod ? "Brak zapisanego wyniku dla wybranego okresu i zakresu." : "Brak zapisanego okresu finansowego."}</p>}
