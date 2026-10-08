@@ -43,6 +43,12 @@ const approval = (mode = "onboard") => ({
   approvalId: "synthetic-first",
   approvedBy: "synthetic",
   costOwner: "synthetic",
+  costEvidence: {
+    source: "PRIMARY_PROVIDER_QUOTE",
+    url: "https://render.com/pricing",
+    verifiedAt: new Date().toISOString(),
+    monthlyComputeUsd: 7,
+  },
   operations,
   expiresAt: new Date(Date.now() + 3600000).toISOString(),
   mode,
@@ -114,6 +120,7 @@ function fixture() {
   };
   const done = new Set();
   const p = {
+    sourceProof: { source: "SYNTHETIC_ONLY", sha },
     store: {
       read: async () => ({
         head,
@@ -140,6 +147,12 @@ function fixture() {
       ...structuredClone(s),
       capturedAt: new Date().toISOString(),
     }),
+    preparationPreflight: async () => ({ source: "SYNTHETIC_ONLY" }),
+    githubBindings: async () => {
+      writes.push("github-bindings");
+      done.add("github-bindings");
+      return {};
+    },
     githubEnvironment: async () => {
       writes.push("github-environment");
       s.githubEnvironment = { id: 1234, name: "srm-staging" };
@@ -260,6 +273,7 @@ test("synthetic complete first onboarding publishes VERIFIED only after proof", 
   assert.equal(f.state.baseline.sha, sha);
   assert.deepEqual(f.writes, [
     "github-environment",
+    "github-bindings",
     "release-pointer",
     "database",
     "schema",
@@ -767,4 +781,55 @@ test("automatic staging deployment is absent on push and pull request", () => {
       ),
     );
   assert.equal(contract.render.autoDeployTrigger, "off");
+});
+
+import { assertLifecycleService } from "./staging-lifecycle.mjs";
+test("service verification rejects unbudgeted scaling, disk and wrong name", () => {
+  const c = contract.render;
+  const s = {
+    ownerId: c.workspaceId,
+    environmentId: c.environmentId,
+    repo: "https://github.com/" + contract.repository,
+    autoDeployTrigger: "off",
+    branch: "main",
+    rootDir: c.rootDir,
+    type: "web_service",
+    name: c.serviceName,
+    suspended: "not_suspended",
+    serviceDetails: {
+      region: c.region,
+      plan: c.plan,
+      runtime: "node",
+      numInstances: 1,
+      healthCheckPath: c.healthCheckPath,
+      envSpecificDetails: {
+        buildCommand: c.buildCommand,
+        startCommand: c.startCommand,
+      },
+      previews: { generation: "off" },
+    },
+  };
+  assert.equal(assertLifecycleService(s, manifest), true);
+  for (const change of [
+    { name: "foreign" },
+    { serviceDetails: { ...s.serviceDetails, disk: { id: "disk-x" } } },
+    { serviceDetails: { ...s.serviceDetails, autoscaling: { enabled: true } } },
+    { suspended: "suspended" },
+  ])
+    assert.throws(() => assertLifecycleService({ ...s, ...change }, manifest));
+});
+test("missing source proof stops before the ownership publication", async () => {
+  const f = fixture();
+  delete f.p.sourceProof;
+  await assert.rejects(
+    runLifecycle({
+      authorization: approval(),
+      manifest,
+      provider: f.p,
+      owner: "github-run:1",
+    }),
+    /source evidence/,
+  );
+  assert.equal(f.state.generation, 0);
+  assert.equal(f.writes.length, 0);
 });

@@ -46,6 +46,12 @@ const approval = () => ({
   approvalId: "future-approved-test",
   approvedBy: "synthetic-test",
   costOwner: "synthetic-test",
+  costEvidence: {
+    source: "PRIMARY_PROVIDER_QUOTE",
+    url: "https://render.com/pricing",
+    verifiedAt: new Date().toISOString(),
+    monthlyComputeUsd: 7,
+  },
   operations,
   expiresAt: new Date(Date.now() + 3600000).toISOString(),
   mode: "onboard",

@@ -90,6 +90,10 @@ export function verifyLifecycleSource(
       "apps/srm/scripts",
       "apps/srm/deployment/staging-contract.json",
       ".github/workflows/srm-ci.yml",
+      "Canon/v1.0-profitia-environment-and-release-promotion-canon.md",
+      "Canon/registries/governance-manifest-v2.json",
+      "Canon/registries/profitia-projects-v1.json",
+      "Canon/adapters/srm-project-adapter-v2.md",
     ]).status === 0,
     "Promotion mechanism changed; restart from reviewed main",
   );
@@ -246,6 +250,7 @@ export async function runLifecycle({
   let current = await p.store.read();
   const before = await p.snapshot();
   assertSnapshot(before, contract);
+  await p.preparationPreflight(before);
   fail(
     before.neonEndpoint.autoscaling_limit_max_cu <= a.budget.neonMaxCu,
     "Unapproved compute cap",
@@ -281,6 +286,8 @@ export async function runLifecycle({
       ? await p.executorStopped(prior.owner)
       : false;
   let state = claimRelease(current.state, a, m, owner, stopped);
+  fail(p.sourceProof?.sha === m.sha, "Verified source evidence required");
+  state.release.sourceProof = state.release.sourceProof ?? p.sourceProof;
   await p.authority(m.sha, a.approvalId);
   await casPublish(
     p.store,
@@ -373,6 +380,7 @@ export async function runLifecycle({
     if (stopAfter === op) throw Error("Simulated interruption after " + op);
   };
   await step("github-environment", (s) => p.githubEnvironment(s, a));
+  await step("github-bindings", () => p.githubBindings());
   if (a.mode === "onboard")
     await step("release-pointer", (s) => p.pinSource(s, m));
   await step("database", (s) => p.database(s));
@@ -513,11 +521,15 @@ export function createProvider(
       dp.map((x) => [x.envVar.key, x.envVar.value]),
     );
     fail(
-      contract.requiredSecrets.every((k) => values[k] && values[k] !== dev[k]),
+      contract.requiredSecrets.every(
+        (k) => values[k] && values[k] !== dev[k] && values[k] === stageEnv()[k],
+      ),
       "Stage secrets missing or shared with Development",
     );
     fail(
-      contract.requiredConfiguration.every((k) => values[k]),
+      contract.requiredConfiguration.every(
+        (k) => values[k] && values[k] === stageEnv()[k],
+      ),
       "Required Stage configuration absent",
     );
     fail(
@@ -610,6 +622,21 @@ export function createProvider(
       services.length === 1
         ? await paged("/services/" + services[0].id + "/custom-domains")
         : [];
+    for (const service of services) assertLifecycleService(service, manifest);
+    const githubEnvironment = await request(
+      GH,
+      repo + "/environments/srm-staging",
+    );
+    const githubSecretMetadata = githubEnvironment
+      ? await request(
+          GH,
+          repo + "/environments/srm-staging/secrets?per_page=100",
+        )
+      : null;
+    fail(
+      !githubSecretMetadata || githubSecretMetadata.total_count <= 100,
+      "Incomplete protected secret snapshot",
+    );
     const s = {
       source: "LIVE_PROVIDER_APIS",
       capturedAt: new Date().toISOString(),
@@ -622,7 +649,8 @@ export function createProvider(
       services,
       liveDeploy: liveDeploy ?? null,
       domains,
-      githubEnvironment: await request(GH, repo + "/environments/srm-staging"),
+      githubEnvironment,
+      githubSecretMetadata,
     };
     assertSnapshot(s, contract);
     return s;
@@ -694,15 +722,184 @@ export function createProvider(
       !b.allow_deletions?.enabled
     );
   };
-  const verifyService = (s) => {
-    if (s.branch === releasePointer(manifest.sha)) {
-      assertRenderService({ ...s, branch: "main" });
-    } else assertRenderService(s);
+  const verifyService = (s) => assertLifecycleService(s, manifest);
+
+  const mutationFence = async (operation) => {
+    assertLifecycleAuthorization(approval, manifest, contract);
+    lifecyclePreflight(manifest.sha, approval.approvalId);
+    const current = await store.read(),
+      s = await snapshot();
+    assertOperation({
+      operation,
+      authorization: approval,
+      manifest,
+      contract,
+      registry: current.registry,
+      snapshot: s,
+      journal: current.state,
+      owner,
+    });
+  };
+  const bindingsProof = async () => {
+    const value = await request(
+      GH,
+      repo + "/environments/srm-staging/variables/SRM_RELEASE_BINDING_RECEIPT",
+    );
+    if (!value) return null;
+    const receipt = JSON.parse(value.value),
+      ge = await request(GH, repo + "/environments/srm-staging");
+    fail(
+      receipt.environmentId === ge?.id,
+      "Secret binding environment identity drift",
+    );
+    const rows = await request(
+      GH,
+      repo + "/environments/srm-staging/secrets?per_page=100",
+    );
+    fail(rows.total_count <= 100, "Incomplete secret metadata");
+    const keys = [
+      ...contract.requiredSecrets,
+      "SRM_APP_DIRECT_URL",
+      "SRM_RELEASE_GITHUB_TOKEN",
+      "RENDER_API_KEY",
+      "NEON_API_KEY",
+    ];
+    fail(
+      keys.every(
+        (k) =>
+          receipt.updates[k] ===
+          rows.secrets.find((x) => x.name === k)?.updated_at,
+      ),
+      "Secret metadata changed after publication",
+    );
+    for (const name of contract.requiredConfiguration) {
+      const v = await request(
+        GH,
+        repo + "/environments/srm-staging/variables/" + name,
+      );
+      fail(v?.value === stageEnv()[name], "Environment variable binding drift");
+    }
+    return receipt;
   };
   const provider = {
     store,
     authority: lifecyclePreflight,
     snapshot,
+
+    async preparationPreflight(snapshot) {
+      assertMigrationDestination(env);
+      initializationConfig(env);
+      await verifyBindings(stageEnv());
+      fail(
+        ["RENDER_API_KEY", "NEON_API_KEY", "SRM_RELEASE_GITHUB_TOKEN"].every(
+          (k) => env[k],
+        ),
+        "Management credentials missing",
+      );
+      if (approval.mode === "onboard")
+        fail(
+          spawnSync("gh", ["--version"], { encoding: "utf8" }).status === 0,
+          "Official GitHub CLI required for encrypted environment secret upload",
+        );
+      if (snapshot.services[0]) {
+        const values = Object.fromEntries(
+          (
+            await paged("/services/" + snapshot.services[0].id + "/env-vars")
+          ).map((x) => [x.envVar.key, x.envVar.value]),
+        );
+        await verifyBindings(values);
+      }
+    },
+    async githubBindings() {
+      fail(
+        approval.mode === "onboard",
+        "Existing environment binding drift requires a separate approved repair",
+      );
+      const keys = [
+        ...contract.requiredSecrets,
+        "SRM_APP_DIRECT_URL",
+        "SRM_RELEASE_GITHUB_TOKEN",
+        "RENDER_API_KEY",
+        "NEON_API_KEY",
+      ];
+      for (const key of keys) {
+        await mutationFence("github-bindings");
+        const q = spawnSync(
+          "gh",
+          [
+            "secret",
+            "set",
+            key,
+            "--repo",
+            contract.repository,
+            "--env",
+            "srm-staging",
+          ],
+          {
+            input: env[key],
+            env: {
+              ...env,
+              GH_TOKEN: env.SRM_RELEASE_GITHUB_TOKEN,
+              GH_DEBUG: "",
+              GH_PROMPT_DISABLED: "1",
+            },
+            encoding: "utf8",
+          },
+        );
+        fail(q.status === 0, "Encrypted environment secret upload rejected");
+      }
+      for (const [name, value] of Object.entries(stageEnv()).filter(([name]) =>
+        contract.requiredConfiguration.includes(name),
+      )) {
+        const existing = await request(
+          GH,
+          repo + "/environments/srm-staging/variables/" + name,
+        );
+        await request(
+          GH,
+          repo +
+            "/environments/srm-staging/variables" +
+            (existing ? "/" + name : ""),
+          existing ? "PATCH" : "POST",
+          { name, value },
+        );
+      }
+      const rows = await request(
+        GH,
+        repo + "/environments/srm-staging/secrets?per_page=100",
+      );
+      fail(rows.total_count <= 100, "Incomplete secret metadata");
+      const updates = Object.fromEntries(
+        keys.map((k) => [
+          k,
+          rows.secrets.find((x) => x.name === k)?.updated_at,
+        ]),
+      );
+      fail(
+        Object.values(updates).every(Boolean),
+        "Incomplete secret publication acknowledgement",
+      );
+      const receipt = {
+        approvalId: approval.approvalId,
+        environmentId: (await request(GH, repo + "/environments/srm-staging"))
+          .id,
+        updates,
+      };
+      const existing = await request(
+        GH,
+        repo +
+          "/environments/srm-staging/variables/SRM_RELEASE_BINDING_RECEIPT",
+      );
+      await request(
+        GH,
+        repo +
+          "/environments/srm-staging/variables" +
+          (existing ? "/SRM_RELEASE_BINDING_RECEIPT" : ""),
+        existing ? "PATCH" : "POST",
+        { name: "SRM_RELEASE_BINDING_RECEIPT", value: JSON.stringify(receipt) },
+      );
+      return { secretNames: keys, receipt };
+    },
     async executorStopped(previous) {
       if (previous.startsWith("github-run:")) {
         const r = await request(
@@ -863,6 +1060,7 @@ export function createProvider(
       const srv = s.services[0];
       assertRenderService(srv);
       await assertProtection(s.githubEnvironment);
+      fail(await bindingsProof(), "GitHub protected bindings proof missing");
       const values = Object.fromEntries(
         (await paged("/services/" + srv.id + "/env-vars")).map((x) => [
           x.envVar.key,
@@ -914,6 +1112,10 @@ export function createProvider(
       const srv = s.services[0],
         db = s.databases.find((x) => x.name === "srm_app");
       if (srv) verifyService(srv);
+      if (op === "github-bindings") {
+        const receipt = await bindingsProof();
+        return { complete: !!receipt, result: { receipt } };
+      }
       if (op === "github-environment") {
         if (!s.githubEnvironment) return { complete: false };
         try {
@@ -1155,27 +1357,25 @@ export async function lifecycleApply(authorization, env = process.env) {
   const p = createProvider(env, authorization, source, owner);
   const gh = env.SRM_RELEASE_GITHUB_TOKEN;
   fail(gh, "Scoped GitHub management credential required");
-  const checks = await fetch(
-    "https://api.github.com" +
-      repo +
-      "/commits/" +
-      source.sha +
-      "/check-runs?per_page=100",
+  const response = await fetch(
+    GH + repo + "/commits/" + source.sha + "/check-runs?per_page=100",
     {
       headers: { Authorization: "Bearer " + gh },
       signal: AbortSignal.timeout(30000),
     },
   );
-  fail(checks.ok, "CI verification unavailable");
-  const ci = await checks.json();
+  fail(response.ok, "CI verification unavailable");
+  const ci = await response.json(),
+    check = ci.check_runs
+      .filter((x) => x.name === "srm-build" && x.head_sha === source.sha)
+      .sort((a, b) => b.id - a.id)[0];
   fail(
-    ci.total_count <= 100 &&
-      ci.check_runs
-        .filter((x) => x.name === "srm-build" && x.head_sha === source.sha)
-        .sort((a, b) => b.id - a.id)[0]?.conclusion === "success",
+    ci.total_count <= 100 && check?.conclusion === "success",
     "Latest exact source CI required",
   );
-  const dev = await fetch(
+  const previous = await p.store.read(),
+    prior = previous.state.release;
+  const devResponse = await fetch(
     R +
       "/services/" +
       contract.development.renderServiceId +
@@ -1185,16 +1385,62 @@ export async function lifecycleApply(authorization, env = process.env) {
       signal: AbortSignal.timeout(30000),
     },
   );
-  fail(dev.ok, "Development provenance unavailable");
-  const rows = await dev.json();
-  const live = rows.map((x) => x.deploy ?? x).find((x) => x.status === "live");
-  fail(
-    authorization.mode === "rollback" || live?.commit?.id === source.sha,
-    "Approved source is not current Development release",
+  fail(devResponse.ok, "Development provenance unavailable");
+  const rows = (await devResponse.json()).map((x) => x.deploy ?? x);
+  let development = rows.find(
+    (x) => x.status === "live" && x.commit?.id === source.sha,
   );
+  if (authorization.mode === "rollback") {
+    fail(
+      prior?.lastKnownGood?.sha === source.sha,
+      "Rollback must target the recorded last known good Stage release",
+    );
+    development = rows.find(
+      (x) =>
+        ["live", "deactivated"].includes(x.status) &&
+        x.commit?.id === source.sha,
+    );
+  }
+  if (
+    !development &&
+    prior?.approvalId === authorization.approvalId &&
+    prior.manifestDigest === digest(source) &&
+    prior.sourceProof?.source === "LIVE_GITHUB_RENDER" &&
+    prior.sourceProof.sha === source.sha
+  ) {
+    const historic = await fetch(
+      R +
+        "/services/" +
+        contract.development.renderServiceId +
+        "/deploys/" +
+        prior.sourceProof.developmentDeployId,
+      {
+        headers: { Authorization: "Bearer " + env.RENDER_API_KEY },
+        signal: AbortSignal.timeout(30000),
+      },
+    );
+    fail(historic.ok, "Recorded Development release evidence unavailable");
+    const d = await historic.json();
+    if (
+      ["live", "deactivated"].includes(d.status) &&
+      d.commit?.id === source.sha
+    )
+      development = d;
+  }
+  fail(
+    development?.id,
+    "Accepted Development release provenance is unavailable",
+  );
+  p.sourceProof = {
+    source: "LIVE_GITHUB_RENDER",
+    sha: source.sha,
+    ciCheckId: check.id,
+    developmentDeployId: development.id,
+    developmentServiceId: contract.development.renderServiceId,
+    capturedAt: new Date().toISOString(),
+  };
   return runLifecycle({ authorization, manifest: source, provider: p, owner });
 }
-
 export function renderServicePayload(manifest, values, approvalId) {
   fail(
     /^[a-f0-9]{40}$/.test(manifest.sha) && approvalId,
@@ -1263,4 +1509,19 @@ export function deployRetryEvidence(rows, manifest, approval, intent = null) {
     canCreate: relevant.length < limit,
     attempts: relevant.length,
   };
+}
+
+export function assertLifecycleService(s, m) {
+  assertRenderService({
+    ...s,
+    branch: s?.branch === releasePointer(m.sha) ? "main" : s?.branch,
+  });
+  fail(
+    s.name === contract.render.serviceName &&
+      !s.serviceDetails.disk &&
+      !s.serviceDetails.autoscaling?.enabled &&
+      s.suspended === "not_suspended",
+    "Unexpected service name, storage, scaling or suspended state",
+  );
+  return true;
 }

@@ -7,6 +7,7 @@ export const statePath = "Canon/registries/srm-staging-release-state-v1.json";
 export const topologyPath = "Canon/registries/srm-environment-topology-v1.json";
 export const operations = [
   "github-environment",
+  "github-bindings",
   "release-pointer",
   "database",
   "schema",
@@ -110,6 +111,23 @@ export function assertLifecycleAuthorization(a, m, c, now = Date.now()) {
         a.githubReviewerIds.length > 0 &&
         a.githubReviewerIds.every(Number.isSafeInteger),
       "First onboarding approval and exact reviewers required",
+    );
+
+  if (a.mode === "onboard")
+    requireFact(
+      a.costEvidence?.source === "PRIMARY_PROVIDER_QUOTE" &&
+        [
+          "https://render.com/pricing",
+          "https://dashboard.render.com/billing",
+        ].includes(a.costEvidence.url) &&
+        Date.parse(a.costEvidence.verifiedAt) <= now &&
+        now - Date.parse(a.costEvidence.verifiedAt) <= 86400000 &&
+        a.costEvidence.monthlyComputeUsd > 0 &&
+        a.costEvidence.monthlyComputeUsd <= a.budget.renderMonthlyComputeUsd &&
+        a.githubReviewerIds.length <= 6 &&
+        new Set(a.githubReviewerIds).size === a.githubReviewerIds.length &&
+        a.githubReviewerIds.every((x) => x > 0),
+      "Fresh provider price evidence and bounded exact reviewers required",
     );
   return true;
 }
@@ -302,7 +320,13 @@ export function claimRelease(
   );
   const next = structuredClone(state),
     old = next.release;
-  const authorizationDigest = digest({ ...a, expiresAt: undefined });
+  const authorizationDigest = digest({
+    ...a,
+    expiresAt: undefined,
+    costEvidence: a.costEvidence
+      ? { ...a.costEvidence, verifiedAt: undefined }
+      : undefined,
+  });
   if (old && old.phase !== "VERIFIED") {
     requireFact(
       old.approvalId === a.approvalId &&
@@ -449,6 +473,7 @@ export function reconciliation(
     repository: contract.repository,
     repositoryId: contract.repositoryId,
     protectionStatus: "REQUIRED_REVIEWERS_MAIN_ONLY",
+    status: "PROVISIONED",
   });
   t.render.services.runtime = {
     serviceId: service.id,
