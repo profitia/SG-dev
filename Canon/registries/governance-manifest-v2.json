@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.6.0",
+  "manifestVersion": "3.7.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -26,6 +26,7 @@
     {"id": "sg2-execution-adapter", "version": "1.0", "path": "Canon/adapters/sg2-project-adapter-v1.md", "status": "ACTIVE_ADAPTER", "loadOrder": 90, "owner": "SG2", "appliesTo": ["SG2"], "dependsOn": ["agent-execution-canon", "project-profile-registry"]},
     {"id": "srm-execution-adapter", "version": "2.0", "path": "Canon/adapters/srm-project-adapter-v2.md", "status": "ACTIVE_ADAPTER", "loadOrder": 100, "owner": "SRM", "appliesTo": ["SRM"], "dependsOn": ["agent-execution-canon", "project-profile-registry"]},
     {"id": "srm-environment-topology", "version": "1.0", "path": "Canon/registries/srm-environment-topology-v1.json", "status": "ACTIVE", "loadOrder": 105, "owner": "SRM Platform", "appliesTo": ["SRM"], "dependsOn": ["environment-release-promotion", "srm-execution-adapter"]},
+    {"id":"srm-staging-release-state","path":"Canon/registries/srm-staging-release-state-v1.json","version":"1.0","status":"ACTIVE","owner":"Profitia Governance","appliesTo":["SRM"],"loadOrder":106,"dependsOn":["environment-release-promotion","srm-environment-topology"]},
     {"id": "cic-execution-adapter", "version": "1.0", "path": "Canon/adapters/cic-project-adapter-v1.md", "status": "ACTIVE_ADAPTER", "loadOrder": 110, "owner": "CIC", "appliesTo": ["CIC"], "dependsOn": ["agent-execution-canon", "project-profile-registry"]},
     {"id": "srm-business-capability-canon", "version": "1.0", "path": "Canon/v1.0-srm-business-capability-canon.md", "status": "ACTIVE", "loadOrder": 120, "owner": "SRM Product Governance", "appliesTo": ["SRM"], "dependsOn": ["agent-execution-canon", "project-profile-registry", "srm-execution-adapter"]},
     {"id": "srm-architecture-component-placement", "version": "1.0", "path": "Canon/v1.0-srm-architecture-and-component-placement-canon.md", "status": "ACTIVE", "loadOrder": 130, "owner": "SRM Architecture Governance", "appliesTo": ["SRM"], "dependsOn": ["srm-business-capability-canon", "repository-routing", "architecture-baseline", "srm-execution-adapter"]},

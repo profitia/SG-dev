@@ -75,17 +75,31 @@
     "MGBI_AUTH_SCHEME"
   ],
   "deploymentTimeGates": [
-    "S0_EXACT_PROVIDER_ONBOARDING",
-    "STAGING_CREDENTIALS_AND_COST_OWNER",
-    "GITHUB_ENVIRONMENT_PROTECTION",
-    "FIRST_SERVICE_CREATION_WITH_PINNED_SOURCE",
-    "LIVE_HEALTH_AUTH_AND_PERSISTENCE",
-    "ROLLBACK_COMPATIBILITY"
+    "EXPLICIT_RELEASE_AND_FIRST_ONBOARDING_APPROVAL",
+    "SCOPED_MANAGEMENT_AND_ISOLATED_PRODUCT_BINDINGS",
+    "GITHUB_PROTECTION_AND_FROZEN_POINTER_PROOF",
+    "LIVE_EXACT_SOURCE_HEALTH_AUTH_PERSISTENCE",
+    "APPROVED_COST_AND_PROVIDER_ENTITLEMENTS"
   ],
   "rollback": {
     "codeOnly": true,
     "automaticSchemaRollback": false,
     "branchResetAllowed": false,
     "previousDeployAndShaRequired": true
+  },
+  "lifecycle": {
+    "authority": "Profitia Governance",
+    "journal": "Canon/registries/srm-staging-release-state-v1.json",
+    "firstSourceStrategy": "LOCKED_TEMPORARY_RELEASE_POINTER",
+    "pointerPattern": "srm-release-<approved40hexSHA>",
+    "initialServiceBranch": "protected release pointer",
+    "postInitialVerificationBranch": "main",
+    "sourceRebindTriggersDeploy": false,
+    "sourceRebindAutoDeploy": "off",
+    "execution": "EXPLICIT_APPROVED_OPERATOR_OR_PROTECTED_GITHUB_JOB",
+    "baselinePublication": "GITHUB_EXPECTED_HEAD_CAS",
+    "crossProviderAtomicity": false,
+    "leaseStealingAllowed": false,
+    "firstProviderDeployExecuted": false
   }
 }
