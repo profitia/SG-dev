@@ -13,9 +13,9 @@ import {
   requestInteractiveForecastVerificationPreparation,
 } from '@/lib/benchmark-forecast/interactive-current-preparation'
 import type { BenchmarkForecastCurrentPreparationRequest } from '@/lib/benchmark-forecast/forecast-contract'
-import { createReadCurrentForecastCapabilityRouteHandler } from '@/app/api/benchmark-forecast/current/capability/route'
-import { createPrepareCurrentForecastRouteHandler } from '@/app/api/benchmark-forecast/current/prepare/route'
-import { createProgressiveForecastPreparationRouteHandler } from '@/app/api/benchmark-forecast/progressive/route'
+import { createReadCurrentForecastCapabilityRouteHandler } from '@/lib/benchmark-forecast/route-handlers/current-capability'
+import { createPrepareCurrentForecastRouteHandler } from '@/lib/benchmark-forecast/route-handlers/current-prepare'
+import { createProgressiveForecastPreparationRouteHandler } from '@/lib/benchmark-forecast/route-handlers/progressive'
 
 test('interactive current preparation gateway reuses ready variants without prepare POST', async () => {
   let prepareCalls = 0
