@@ -47,7 +47,7 @@ const CCC_BALANCE_FIELDS = [
   "BS_TRADE_RECEIVABLES_OTHER", "BS_TRADE_PAYABLES_RELATED",
   "BS_TRADE_PAYABLES_INVESTEE", "BS_TRADE_PAYABLES_OTHER",
 ] as const;
-const definitions: readonly Definition[] = [
+export const definitions: readonly Definition[] = [
   { code: "CURRENT_RATIO", unit: "RATIO", importance: 3, fields: ["BS_A_CA", "BS_LAE_LAPFL_STL"] },
   { code: "NET_WORKING_CAPITAL", unit: "PLN", importance: 2, fields: ["BS_A_CA", "BS_LAE_LAPFL_STL"] },
   { code: "LIABILITIES_TO_ASSETS", unit: "PERCENT", importance: 3, fields: ["BS_LAE_LAPFL", "BS_A_TA"] },
@@ -101,7 +101,7 @@ function comparablePrior(current: FinancialPeriod, prior: FinancialPeriod): bool
   return prior.scope === current.scope && annual(current) && annual(prior)
     && dateMs(prior.to) + 86_400_000 === dateMs(current.from);
 }
-function selectedPeriods(data: FinancialData): FinancialPeriod[] {
+export function selectedPeriods(data: FinancialData): FinancialPeriod[] {
   const candidates = data.periods.filter((period) => Number.isFinite(dateMs(period.from)) && Number.isFinite(dateMs(period.to)) && period.from <= period.to)
     .sort((a, b) => b.to.localeCompare(a.to) || b.facts.length - a.facts.length);
   const selected = new Map<string, FinancialPeriod>();
