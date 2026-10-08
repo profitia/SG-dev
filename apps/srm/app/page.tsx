@@ -1,6 +1,6 @@
 "use client";
 
-import { ExecutiveSummary, FinancialHealthArea, KysOverview } from "@profitia/srm-xray";
+import { ExecutiveSummary, FinancialHealthArea, KysOverview, type KysPdfSelection } from "@profitia/srm-xray";
 import { useRef, useState, type FormEvent } from "react";
 import { SupplierReport, reportMessage, type SupplierReportContext, type SupplierReportSlots } from "../src/modules/xray/supplier-report";
 import { useSupplierReport } from "../src/modules/xray/use-supplier-report";
@@ -38,6 +38,24 @@ export default function Home() {
     if (!payload || typeof payload !== "object" || !("pesel" in payload) ||
       typeof payload.pesel !== "string" || !/^\d{11}$/.test(payload.pesel)) throw new Error("Invalid PESEL response");
     return payload.pesel;
+  }
+
+  async function downloadKysPdf(selection: KysPdfSelection, signal: AbortSignal): Promise<void> {
+    const response = await fetch("/api/xray/kys/pdf", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(selection), cache: "no-store", signal });
+    if (!response.ok) {
+      const payload: unknown = await response.json().catch(() => null);
+      throw new Error(payload && typeof payload === "object" && "error" in payload && typeof payload.error === "string"
+        ? reportMessage(payload.error) : "Nie udało się przygotować PDF. Spróbuj ponownie.");
+    }
+    if (response.headers.get("Content-Type") !== "application/pdf") throw new Error("Nie udało się przygotować poprawnego PDF.");
+    const blob = await response.blob();
+    if (signal.aborted) return;
+    const filename = response.headers.get("X-Download-Filename") ?? `KYS_${selection.nip}.pdf`;
+    if (!/^KYS_[0-9]{10}(?:_[0-9-]{10})?\.pdf$/.test(filename)) throw new Error("Nieprawidłowa nazwa dokumentu.");
+    const url = URL.createObjectURL(blob), link = document.createElement("a");
+    link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
 
   async function downloadFinancialExcel(scope: "standalone" | "consolidated", years: string[]): Promise<void> {
@@ -88,7 +106,7 @@ export default function Home() {
       {state.error && <p role="alert" className="search-error">{reportMessage(state.error)}</p>}
       {!state.result && !state.busy && !state.error && <div className="report-empty"><h2>Raport dostawcy</h2><p>Wpisz NIP, aby zobaczyć dostępne dane finansowe i rejestrowe.</p></div>}
       {state.result && <SupplierReport key={`${state.result.entityType}:${supplierNip(state.result)}`} state={state}
-        onFetchKys={controller.fetchKys} onReadMetadata={controller.refreshMetadata} onRevealPesel={revealPesel} onDownloadExcel={downloadFinancialExcel} slots={{ summary: summarySlot, financial: financialSlots, kys: kysSlot }} />}
+        onFetchKys={controller.fetchKys} onReadMetadata={controller.refreshMetadata} onRevealPesel={revealPesel} onDownloadExcel={downloadFinancialExcel} onDownloadKysPdf={downloadKysPdf} slots={{ summary: summarySlot, financial: financialSlots, kys: kysSlot }} />}
     </div>
   </main>;
 }

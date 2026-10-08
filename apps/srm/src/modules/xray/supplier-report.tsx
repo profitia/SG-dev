@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { defaultFinancialScope, indicatorContent, useKysOverview, type KysOverviewModel, type KysDetailTarget, FinancialDataMount, financialPeriodsByScope, GeneralCompanyDataMount, JdgRegistryMount,
-  VerclyKysMount, type FinancialPeriod, type FinancialPeriodSelection, type FinancialFactEvidence, type SupplierReportData } from "@profitia/srm-xray";
+  KysPdfButton, type KysPdfSelection, VerclyKysMount, type FinancialPeriod, type FinancialPeriodSelection, type FinancialFactEvidence, type SupplierReportData } from "@profitia/srm-xray";
 import { ReportNavigation, navigateReportSection } from "./report-navigation";
 export { navigateReportSection } from "./report-navigation";
 import { supplierNip, type DisplayCard, type ReportState, type SearchResult } from "./report-controller";
@@ -57,9 +57,10 @@ function FinancialLimitations({ state, onReadMetadata }: { state: ReportState; o
   </>;
 }
 
-export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPesel, onDownloadExcel, slots = {} }: {
+export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPesel, onDownloadExcel, onDownloadKysPdf, slots = {} }: {
   state: ReportState; onFetchKys: () => void; onReadMetadata: () => void;
   onRevealPesel: (token: string) => Promise<string>; onDownloadExcel: (scope: Scope, years: string[]) => Promise<void>;
+  onDownloadKysPdf?: (selection: KysPdfSelection, signal: AbortSignal) => Promise<void>;
   slots?: SupplierReportSlots;
 }) {
   const root = useRef<HTMLDivElement>(null), kysDetails = useRef<HTMLDetailsElement>(null);
@@ -165,6 +166,11 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
       {kysOverview}
       {metadata?.kys.freshness.freshness === "EXPIRED" && <p className="health-data-note">Poprzedni raport KYS stracił ważność. Pobranie wymaga osobnego działania.</p>}
       {(state.kys.status === "PARTIAL" || metadata?.kys.completeness === "PARTIAL") && <p className="health-data-note">Raport KYS jest częściowy. Nie wszystkie sprawdzenia zwróciły dane.</p>}
+      {kysOverviewModel.available && metadata?.kys.exportRef && metadata.kys.freshness.retrievedAt && onDownloadKysPdf && <KysPdfButton
+        key={`${supplierNip(supplier)}:${supplier.entityType}:${metadata.kys.exportRef}`}
+        selection={{ nip: supplierNip(supplier) ?? "", entityType: supplier.entityType, retrievedAt: metadata.kys.freshness.retrievedAt, exportRef: metadata.kys.exportRef }}
+        onDownload={onDownloadKysPdf} />}
+      {kysOverviewModel.available && !metadata?.kys.exportRef && <p role="status">Nie potwierdzono wersji do eksportu PDF. Szczegóły raportu pozostają dostępne.</p>}
       <details className="report-detail" id="report-kys-details" ref={kysDetails}><summary>Pełny raport KYS</summary><div className="report-detail-body">
         {state.kys.status === "NOT_REQUESTED" ? <p>Raport KYS nie został jeszcze pobrany. Zamów go przyciskiem „Pobierz raport KYS”.</p>
           : state.kys.data && !kysOverviewModel.available ? <p role="status">{state.kysBusy || state.metadataBusy ? "Sprawdzanie dostępności raportu…" : kysOverviewModel.message}</p>
