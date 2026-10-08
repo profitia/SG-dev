@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { FinancialDataMount } from "@profitia/srm-xray";
 import { emptyCard, sampleCard } from "../demo/fixture";
 import { emptySection, SupplierReportController, type DisplayCard, type ReportState, type SearchResult } from "../modules/xray/report-controller";
-import { reportDate, SupplierReport } from "../modules/xray/supplier-report";
+import { reportMessage, SupplierReport } from "../modules/xray/supplier-report";
 import { projectReportData } from "./report-data";
 import { FINANCIAL_MAPPING_VERSION } from "./shared-catalog";
 
@@ -138,7 +138,7 @@ test("KYS error and identifier mismatch never fabricate retrieval dates or block
 
 test("page composition preserves all feature mounts and hides empty future analysis", async () => {
   const { instance } = controller(); await instance.search(nipA); const html = markup(instance.getSnapshot());
-  for (const name of ["Dane identyfikacyjne i rejestrowe", "Rachunek zysków i strat", "Bilans", "Analiza wskaźnikowa", "Pobierz do Excela", "Pełny raport KYS", "Źródła i aktualność"]) assert.ok(html.includes(name), name);
+  for (const name of ["Dane identyfikacyjne i rejestrowe", "Rachunek zysków i strat", "Bilans", "Analiza wskaźnikowa", "Pobierz do Excela", "Pełny raport KYS"]) assert.ok(html.includes(name), name);
   for (const id of ["report-summary", "report-finance\"", "report-observations"]) assert.equal(html.includes(id), false);
   assert.match(html, /Raport KYS nie został jeszcze pobrany/);
   assert.equal(html.includes("PRIVATE_DOCUMENT"), false); assert.equal(html.includes("PRIVATE_MODEL"), false);
@@ -163,17 +163,18 @@ test("partial, empty finance and KYS states remain independent and preserve sour
     const result = { ...state.result, card: { ...state.result.card, financial: { ...state.result.card.financial, status, data: null } } };
     for (const kysStatus of ["NOT_REQUESTED", "PENDING", "SUCCESS", "ERROR"] as const) {
       const html = markup({ ...state, result, kys: { ...emptySection(), status: kysStatus }, kysBusy: kysStatus === "PENDING" });
-      assert.ok(html.includes("Pobierz raport KYS") || html.includes("Przygotowywanie raportu KYS")); assert.ok(html.includes("Źródła i aktualność"));
+      assert.ok(html.includes("Pobierz raport KYS") || html.includes("Przygotowywanie raportu KYS")); assert.equal(html.includes("Źródła i aktualność"), false);
     }
   }
-  const html = markup(state); assert.ok(html.includes(reportDate(state.metadata!.financial.freshness.checkedAt)));
+  const before = JSON.stringify(state.metadata); const html = markup(state); assert.equal(JSON.stringify(state.metadata), before);
+  assert.equal(html.includes(state.metadata!.financial.freshness.checkedAt!), false);
   assert.ok(html.includes("Okres finansowy:")); assert.ok(html.includes("2025-01-01 – 2025-12-31"));
-  assert.equal(reportDate(null), "nie ustalono"); assert.equal(reportDate("invalid"), "nie ustalono");
+
 });
 
 test("JDG preserves its registry and explicit KYS without company-financial mount", async () => {
   const { instance } = controller(jdg()); await instance.search(nipA); const html = markup(instance.getSnapshot());
-  assert.ok(html.includes("Test JDG")); assert.ok(html.includes("Pełny raport KYS")); assert.ok(html.includes("nie dotyczy JDG"));
+  assert.ok(html.includes("Test JDG")); assert.ok(html.includes("Pełny raport KYS"));
   assert.equal(html.includes("Sprawozdania finansowe i wskaźniki"), false); assert.equal(html.includes("Pobierz do Excela"), false);
 });
 
@@ -194,4 +195,44 @@ test("Financial Health slots share exact period and source navigation without pr
     return React.createElement("p", null, "Zapisane wyniki");
   } } } });
   assert.equal(calls.length, before);
+});
+
+
+test("C1 presentation hides providers and technical header while retaining contracts, reports and single lower KYS action", async () => {
+  const { instance, calls } = controller(); await instance.search(nipA); const state = instance.getSnapshot();
+  const before = JSON.stringify(state.metadata), html = markup(state, { slots: { financial: { liquidity: () => React.createElement("p", null, "Financial Health") } } });
+  const identity = html.slice(html.indexOf('id="supplier-identity"'), html.indexOf('<nav'));
+  assert.doesNotMatch(html, /MGBI|Vercly|Źródła i aktualność|report-sources|report-status-grid|Ostatnia kontrola źródła|Wygaśnięcie cache/i);
+  assert.doesNotMatch(identity, /Pobrano|Cache|metadane|Nie pobrano/i);
+  assert.match(identity, /NIP:|KRS:|Okres finansowy:/);
+  assert.ok(html.indexOf('id="report-finance"') < html.indexOf('id="report-financial-details"'));
+  assert.ok(html.indexOf('id="report-financial-details"') < html.indexOf('id="report-kys"'));
+  assert.ok(html.indexOf('id="report-kys"') < html.indexOf('id="report-kys-details"'));
+  assert.equal([...html.matchAll(/>Pobierz raport KYS<\/button>/g)].length, 1);
+  for (const target of html.matchAll(/href="#([^"]+)"/g)) assert.ok(html.includes(`id="${target[1]}"`));
+  assert.equal(JSON.stringify(state.metadata), before);
+  assert.equal(state.metadata?.financial.source, "MGBI"); assert.equal(state.metadata?.kys.source, "VERCLY");
+  assert.deepEqual(calls, ["/api/xray/search", "/api/xray/report-data"]);
+});
+
+test("C1 keeps stale, partial and unverified limitations in financial/KYS context, without timestamps", async () => {
+  const { instance } = controller(); await instance.search(nipA); const state = instance.getSnapshot();
+  const data = structuredClone(state.metadata!); data.financial.freshness.freshness = "EXPIRED";
+  data.financial.completeness = "PARTIAL"; data.financial.limitations = ["FINANCIAL_CACHE_EXPIRED", "MAPPING_VERSION_OUTDATED", "FINANCIAL_FACTS_UNVERIFIED"];
+  data.kys.freshness.freshness = "EXPIRED"; data.kys.completeness = "PARTIAL";
+  const html = markup({ ...state, metadata: data });
+  for (const text of ["Dane finansowe mogą być nieaktualne", "Dane finansowe są częściowe", "Część wyników wymaga aktualizacji", "Część danych nie została potwierdzona", "Poprzedni raport KYS stracił ważność", "Raport KYS jest częściowy"]) assert.ok(html.includes(text), text);
+  assert.equal(html.includes(data.financial.freshness.checkedAt!), false);
+  assert.ok(html.indexOf("Dane finansowe mogą") > html.indexOf('id="report-financial-details"'));
+  assert.ok(html.indexOf("Poprzedni raport KYS") > html.indexOf('id="report-kys"'));
+});
+
+test("C1 product error labels preserve internal provider messages and neutral customer errors", async () => {
+  const { instance } = controller(); await instance.search(nipA);
+  const state = { ...instance.getSnapshot(), kysError: "Vercly nie zwróciło pełnych danych.", kys: { ...emptySection(), status: "ERROR" as const } };
+  const html = markup(state); assert.doesNotMatch(html, /Vercly|MGBI/);
+  assert.equal(state.kysError, "Vercly nie zwróciło pełnych danych.");
+  assert.equal(reportMessage("MGBI niedostępne; Vercly niedostępne"), "Dane finansowe i rejestrowe niedostępne; Raport KYS niedostępne");
+  assert.doesNotMatch(reportMessage("MGBI_API_KEY missing VERCLY_TIMEOUT"), /MGBI|VERCLY|API_KEY|TIMEOUT/);
+  assert.equal(reportMessage("Wymagane logowanie."), "Wymagane logowanie.");
 });
