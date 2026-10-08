@@ -104,5 +104,18 @@
     "database": "srm_app",
     "count": 11,
     "method": "actual Neon ledger compared against sha256 of every canonical SQL file"
+  },
+  "git": {
+    "repository": "profitia/SG-dev",
+    "authorityBranch": "main",
+    "reviewedSourceHead": "5bd8156edfd84abd7db19e3eaa8ec1b1c2159659",
+    "baseMain": "437aa3ddc5e132700b1da32abf5fc1ab201d660e",
+    "pullRequest": "https://github.com/profitia/SG-dev/pull/148"
+  },
+  "developmentProviderSnapshot": {
+    "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+    "liveDeployId": "dep-db3t3s2jnfac73ao9pkg",
+    "liveSha": "437aa3ddc5e132700b1da32abf5fc1ab201d660e",
+    "readOnly": true
   }
 }

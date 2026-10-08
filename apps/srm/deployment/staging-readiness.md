@@ -8,7 +8,7 @@ STAGING_READY_TO_DEPLOY = NO. Wykonano i zweryfikowano bezpieczną część przy
 
 ## VERIFIED BASELINE
 
-Authority: profitia/SG-dev (repository ID 1247665550), main. Weryfikowana baza main: 437aa3d (po integracji równoległego release PDF); wcześniejszy provider snapshot dotyczył 3fa60fb3606b41b895d2d7ba08b9d1356138525d. Kod autorowany w izolowanym worktree /workspaces/srm-staging-readiness-20261008 w Codespace srm-pmos-activation-jjxx6vpp9v4x2q9vr, profil SG-dev Codespaces SRM. Oryginalny checkout oraz niezwiązane lokalne worktree zachowano.
+Authority: profitia/SG-dev (repository ID 1247665550), main. Weryfikowana baza main: 437aa3ddc5e132700b1da32abf5fc1ab201d660e (po integracji równoległego release PDF). Kod autorowany w izolowanym worktree /workspaces/srm-staging-readiness-20261008 w Codespace srm-pmos-activation-jjxx6vpp9v4x2q9vr, profil SG-dev Codespaces SRM. Oryginalny checkout oraz niezwiązane lokalne worktree zachowano.
 
 Root AGENTS.md, governance manifest 3.6.0, wspólny Canon, registry środowisk, SRM adapter i aktywne dokumenty SRM załadowano. Wszystkie target paths należą do SRM Runtime / ALIGNED. Nie dodano wyjątków governance; MEMOROS pozostaje kanonicznie wyłączony. Pełny Development preflight z require-begin przechodzi przed zmianami. Stage preflight poprawnie odrzuca RESERVED.
 
@@ -25,7 +25,7 @@ Pełna macierz: [environment-dependency-matrix.md](environment-dependency-matrix
 
 ## GIT EVIDENCE
 
-Branch przygotowania: chore/srm-staging-readiness-20261008. Checkpointy: 9ef47a2, b0b5112, 91b98f8. Finalny PR, CI, merge SHA i publikacja PHR są zapisywane w końcowym handoff oraz kanonicznym Development Flight Record po publikacji. Ten raport nie deklaruje przyszłego merge ani nie przypisuje sobie własnego końcowego SHA.
+Branch przygotowania: chore/srm-staging-readiness-20261008. Checkpointy: 9ef47a2, b0b5112, 91b98f8. PR: https://github.com/profitia/SG-dev/pull/148. Dalsze checkpointy: 3ab915f, 5bd8156. Finalne CI, merge SHA i publikacja PHR są zapisywane w końcowym handoff oraz kanonicznym Development Flight Record po publikacji. Ten raport nie deklaruje przyszłego merge ani nie przypisuje sobie własnego końcowego SHA.
 
 ## DATABASE EVIDENCE
 
@@ -35,13 +35,13 @@ Staging br-broad-butterfly-b11t4v01 ma tylko neondb; brak srm_app i roli runtime
 
 ## RENDER EVIDENCE
 
-Workspace tea-d7lps8rbc2fs73cn80dg, projekt prj-dapbd3hsrm7s73es53fg. Development srv-db1vu6gm7kps73d0e3r0 ma main, Node, Frankfurt, plan 0.5c-512mb, jedną instancję, health /api/health i autoDeploy off. Odczytany live deploy dep-db3s1ljncjis73bje1o0 zawiera SHA 3fa60fb3606b41b895d2d7ba08b9d1356138525d; nie jest stałym przyszłym release target.
+Workspace tea-d7lps8rbc2fs73cn80dg, projekt prj-dapbd3hsrm7s73es53fg. Development srv-db1vu6gm7kps73d0e3r0 ma main, Node, Frankfurt, plan 0.5c-512mb, jedną instancję, health /api/health i autoDeploy off. Aktualny odczyt live deploy dep-db3t3s2jnfac73ao9pkg zawiera SHA 437aa3ddc5e132700b1da32abf5fc1ab201d660e; nie jest stałym przyszłym release target.
 
 Staging environment evm-dapbdbbbc2fs73f4g7gg nie ma usługi SRM. Kontrakt przygotowano bez jej utworzenia, bez domen/DNS i sekretów. Cena Compute odczytana w Dashboard: 7 USD/miesiąc dla wybranego planu. Koszt Neon zależy od taryfy i czasu aktywnego compute; obecny istniejący Stage endpoint ma suspend_timeout=-1. Nie zmieniono jego kosztu ani konfiguracji. Koszt owner zatwierdza przyszły budżet przed aktywacją.
 
 ## VALIDATION
 
-Typecheck, jednostkowe testy SRM, governance manifest, routing/governance regression i build wykonano. Promotion test suite ma odrębny rzeczywisty test PostgreSQL 16, uruchamiany na disposable lokalnym srm_migration_test, nigdy Neon. Sprawdza komplet 11 DDL, retry zero pending, checksums drift, RLS/tenant isolation oraz rollback transakcji po rzeczywistym błędzie SQL (bez pozostawionej roli/schematu). Szczegółowe liczniki i zakresy znajdują się w validation-evidence.json.
+189 testów SRM, 64 testy promotion/migration na realnym localhost PostgreSQL (zero skip), 36 testów governance/routing PASS. Typecheck, jednostkowe testy SRM, governance manifest, routing/governance regression i build wykonano. Promotion test suite ma odrębny rzeczywisty test PostgreSQL 16, uruchamiany na disposable lokalnym srm_migration_test, nigdy Neon. Sprawdza komplet 11 DDL, retry zero pending, checksums drift, RLS/tenant isolation oraz rollback transakcji po rzeczywistym błędzie SQL (bez pozostawionej roli/schematu). Szczegółowe liczniki i zakresy znajdują się w validation-evidence.json.
 
 Zbudowana aplikacja uruchomiona na localhost w Codespace z syntetycznym hasłem i bez poświadczeń providerów/bazy: health Stage PASS, API bez sesji 401, błędne hasło odrzucone, poprawne hasło wydaje Secure/HttpOnly cookie, strona z sesją 200, logo i Next static asset 200, API przy brakującym bindingu bazy 503. To symulacja, nie deployment Staging.
 
