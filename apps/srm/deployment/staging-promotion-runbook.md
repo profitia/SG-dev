@@ -18,7 +18,7 @@ Offline DDL plan and legacy promotion simulator:
 
 ~~~sh
 npm --prefix apps/srm run migrate:staging:plan
-npm --prefix apps/srm run promote:staging -- --simulate
+npm --silent --prefix apps/srm run promote:staging -- --simulate
 ~~~
 
 Full first/normal lifecycle simulation and local SQL are the automated staging-lifecycle tests. Fixtures are explicitly synthetic and do not establish live provider behavior. The existing --plan reports missing current resources as deployment-time prerequisites; the lifecycle implements creating them after approval.
@@ -26,7 +26,7 @@ Full first/normal lifecycle simulation and local SQL are the automated staging-l
 Create a real release manifest using read-only provider access and the accepted SHA:
 
 ~~~sh
-npm --prefix apps/srm run promote:staging -- --manifest --sha "$APPROVED_SHA" > /secure/release-manifest.json
+npm --silent --prefix apps/srm run promote:staging -- --manifest --sha "$APPROVED_SHA" > /secure/release-manifest.json
 ~~~
 
 A schemaVersion 2.0 approval must include: projectKey SRM, targetEnvironment staging, mode onboard/promote/rollback, stagingDeploymentAuthorized=true, stagingMutationsAllowed=true, productionMutationsAllowed=false; manifest, releaseSha and digest(manifest); repository profitia/SG-dev and ID 1247665550; renderWorkspaceId tea-d7lps8rbc2fs73cn80dg, renderProjectId prj-dapbd3hsrm7s73es53fg, renderEnvironmentId evm-dapbdbbbc2fs73f4g7gg; neonProjectId snowy-breeze-40315151, neonBranchId br-broad-butterfly-b11t4v01, neonEndpointId ep-autumn-wildflower-b1mv0vda, databaseName srm_app; unique approvalId, actual approvedBy/costOwner, future expiry <=24h; operations exactly github-environment, github-bindings, release-pointer, database, schema, service, deploy, source-rebind, verify, reconcile.
@@ -38,7 +38,7 @@ Budget: renderPlan 0.5c-512mb, renderInstances 1, renderMonthlyComputeUsd 7 maxi
 After the future explicit authorization, execute from the reviewed SRM operator context:
 
 ~~~sh
-npm --prefix apps/srm run promote:staging -- --apply --sha "$APPROVED_SHA" --authorization /secure/staging-lifecycle-approval-v2.json
+npm --silent --prefix apps/srm run promote:staging -- --apply --sha "$APPROVED_SHA" --authorization /secure/staging-lifecycle-approval-v2.json
 ~~~
 
 No infrastructure design is required at execution. The executor validates IDs/cost/isolated credentials before claiming the journal, creates only approved missing resources, initializes blank schema before creating the runtime, and records every effect. Never run this command during the preparation task.
@@ -70,7 +70,7 @@ Deployment-time client acceptance: real isolated supplier account entitlement/qu
 Use a separately explicit mode=rollback approval, recorded LKG SHA, rollbackSchemaCompatible=true and the same bounded resource/operation contract:
 
 ~~~sh
-npm --prefix apps/srm run promote:staging -- --apply --rollback --sha "$LKG_SHA" --authorization /secure/rollback-lifecycle-approval-v2.json
+npm --silent --prefix apps/srm run promote:staging -- --apply --rollback --sha "$LKG_SHA" --authorization /secure/rollback-lifecycle-approval-v2.json
 ~~~
 
 Historical successful Development release and latest exact CI/main ancestry must be verified. Current complete ledger/DDL and runtime contract must be compatible; rollback SQL stays read-only. No schema down-migration, branch reset or data deletion is inferred. The same verification/reconciliation publishes actual new code baseline. If compatibility cannot be established, use a forward fix through Development or a separate owner data-safety decision.

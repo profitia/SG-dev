@@ -74,7 +74,7 @@ FIRST_PROMOTION_WORKFLOW=PASS
 RETRY_IDEMPOTENCY=PASS
 CONCURRENCY_PROTECTION=PASS
 GOVERNANCE=PASS
-SRM_CI=PASS only when the final PR gates are actually green (see canonical final evidence)
+SRM_CI=PASS ([primary CI run](https://github.com/profitia/SG-dev/actions/runs/37841311277); final publication gates are rechecked before merge)
 PROMOTION_DRY_RUN=PASS (synthetic full lifecycle + actual isolated SQL)
 REAL_PROVIDER_FIRST_DEPLOY=NOT_EXECUTED
 STAGING_DEPLOYMENT_AUTHORIZED=NO
@@ -83,3 +83,5 @@ STAGING_DATABASE_MUTATED=NO
 PRODUCTION_MUTATED=NO
 DEVELOPMENT_RUNTIME_DEPLOYED_BY_THIS_TASK=NO
 BLOCKERS=[]
+
+Published review: [PR #152](https://github.com/profitia/SG-dev/pull/152). Hosted CI independently executed 197 application and 98 promotion/PostgreSQL tests with zero skip, plus 28 shared lifecycle governance tests. Its Staging jobs were skipped for the PR event. Final merge and acknowledged continuity evidence are recorded in the canonical Development handoff.

@@ -114,7 +114,29 @@
     }
   },
   "githubCI": {
-    "status": "PENDING_REQUIRED_BEFORE_MERGE"
+    "status": "PASS",
+    "runId": 37841311277,
+    "url": "https://github.com/profitia/SG-dev/actions/runs/37841311277",
+    "checkedHead": "59e06bcdb0db1b90def629b9a85d9d99514c1848",
+    "application": {
+      "tests": 197,
+      "passed": 197,
+      "skipped": 0
+    },
+    "promotionPostgres16": {
+      "tests": 98,
+      "passed": 98,
+      "skipped": 0
+    },
+    "sharedLifecycleGovernance": {
+      "tests": 28,
+      "passed": 28,
+      "skipped": 0
+    },
+    "governanceRunId": 37841311231,
+    "stagingGuard": "SKIPPED_PR_EVENT",
+    "stagingPromotion": "SKIPPED_PR_EVENT",
+    "finalPublication": "Recheck all latest-head gates before merge; final run and merge SHA recorded in canonical Development PHR"
   },
   "noMutations": {
     "stagingDeployment": false,
@@ -131,7 +153,8 @@
     "database": "srm_pmos",
     "registrationId": "cmuzugimx00005l0q1vjnf6ld",
     "memorOS": "CANONICALLY_DISABLED",
-    "closeout": "FINAL_PHR_RECORD_AFTER_MERGE"
+    "closeout": "FINAL_PHR_RECORD_AFTER_MERGE",
+    "conversationId": "pmos-task-v2:42542c51db23b8879efc438356d982526795e1ba79a1325959e51ca129d51a12"
   },
   "deploymentTimePending": [
     "separate explicit approved release/first-onboarding/cost authorization",
@@ -144,5 +167,6 @@
     "real compatible rollback and final actual baseline"
   ],
   "blockers": [],
-  "executedAt": "2026-10-08T20:41:11.953Z"
+  "executedAt": "2026-10-08T20:41:11.953Z",
+  "pullRequest": "https://github.com/profitia/SG-dev/pull/152"
 }

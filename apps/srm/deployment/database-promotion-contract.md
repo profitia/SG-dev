@@ -35,7 +35,7 @@ To nie łączy się z bazą. Biblioteczny dryRun używa BEGIN READ ONLY i ROLLBA
 Przyszłe wykonanie odbywa się jednym kanonicznym promotorem, z autoryzacją schemaVersion 2.0 mode=onboard/promote. Nie uruchamiać starego samodzielnego apply jako obejścia ordinary RESERVED preflight. Development migrator nadal przyjmuje wyłącznie Development.
 
 ~~~sh
-npm --prefix apps/srm run promote:staging -- --apply --sha "$APPROVED_SHA" --authorization /secure/staging-lifecycle-approval-v2.json
+npm --silent --prefix apps/srm run promote:staging -- --apply --sha "$APPROVED_SHA" --authorization /secure/staging-lifecycle-approval-v2.json
 ~~~
 
 ## Odzyskiwanie i rollback
