@@ -10,7 +10,8 @@
       "capability": "SG Runtime",
       "name": "SG Runtime Core",
       "pathPatterns": [
-        "apps/sg-runtime/**"
+        "apps/sg-runtime/**",
+        "scripts/build-sg-runtime-private-service.sh"
       ],
       "currentOwner": "SG Runtime",
       "currentResponsibility": "Main product runtime, Benchmark Finder, Category Builder, runtime APIs, and runtime persistence orchestration.",
@@ -140,7 +141,9 @@
         ".github/copilot-instructions.md",
         ".github/workflows/governance-preflight.yml",
         ".github/workflows/sg2-staging-release.yml",
-        "scripts/governance/**"
+        "scripts/governance/**",
+        ".github/workflows/sg2-product-ci.yml",
+        ".github/CODEOWNERS"
       ],
       "currentOwner": "Governance Source Layer",
       "currentResponsibility": "Tool-neutral agent entrypoints, adapters, executable preflight, governance validation, and CI enforcement.",
