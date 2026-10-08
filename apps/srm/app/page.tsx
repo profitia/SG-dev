@@ -117,6 +117,29 @@ export default function Home() {
     return payload.pesel;
   }
 
+  async function downloadFinancialExcel(scope: "standalone" | "consolidated", years: string[]): Promise<void> {
+    const nip = result?.entityType === "COMPANY" ? result.card.identity.nip : null;
+    if (!nip) throw new Error("Brak numeru NIP spółki.");
+    const response = await fetch("/api/xray/financial-excel", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nip, scope, years }), cache: "no-store",
+    });
+    if (!response.ok) {
+      const payload: unknown = await response.json().catch(() => null);
+      throw new Error(payload && typeof payload === "object" && "error" in payload && typeof payload.error === "string"
+        ? payload.error : "Nie udało się pobrać pliku Excel.");
+    }
+    const filename = response.headers.get("X-Download-Filename") ?? `Financials_${nip}.xlsx`;
+    const url = URL.createObjectURL(await response.blob());
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+
   return (
     <main className="appshield">
       <header className="appshield-header">
@@ -154,7 +177,7 @@ export default function Home() {
           </section>
           <div className="xray-card">
           <GeneralCompanyDataMount section={result.card.general} />
-          <FinancialDataMount section={result.card.financial} />
+          <FinancialDataMount section={result.card.financial} onDownloadExcel={downloadFinancialExcel} />
           <KysStep section={kys} entityType="COMPANY" busy={kysBusy} error={kysError} onFetch={fetchKys} canFetch={Boolean(result.card.identity.nip)} onRevealPesel={revealPesel} />
           </div>
         </>}

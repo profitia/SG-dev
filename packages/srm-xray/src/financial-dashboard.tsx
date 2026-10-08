@@ -270,16 +270,21 @@ function FragmentGroup({ title, rows, visible, onChart }: { title: string; rows:
   </>;
 }
 
-export function FinancialDashboard({ data }: { data: FinancialData }) {
+export function FinancialDashboard({ data, onDownloadExcel }: { data: FinancialData; onDownloadExcel?: (scope: Scope, years: string[]) => Promise<void> }) {
   const initialScope = defaultFinancialScope(data);
   const [requestedScope, setRequestedScope] = useState<Scope | null>(null);
   const [selectedRow, setSelectedRow] = useState<Row | null>(null);
+  const [yearSelection, setYearSelection] = useState<{ scope: Scope; years: string[] } | null>(null);
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const scopes = Array.from(new Set(availablePeriods(data).map((period) => period.scope)));
   const scope = requestedScope && scopes.includes(requestedScope) ? requestedScope : initialScope;
   const allPeriods = scope ? financialPeriodsByScope(data, scope) : [];
   const eightPeriods = allPeriods.slice(0, 8);
   const chartPeriods = eightPeriods;
+  const availableYears = allPeriods.map((period) => period.to.slice(0, 4));
+  const selectedYears = yearSelection?.scope === scope ? yearSelection.years.filter((year) => availableYears.includes(year)) : availableYears;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -298,6 +303,27 @@ export function FinancialDashboard({ data }: { data: FinancialData }) {
       </div>}
       <p>Ostatni dostępny raport: {allPeriods[0].to.slice(0, 4)} · {scope === "standalone" ? "dane jednostkowe" : "dane skonsolidowane"}</p>
     </div>
+    {onDownloadExcel && <details className="financial-excel-export">
+      <summary>Pobierz do Excela</summary>
+      <p>Wybierz lata do pobrania. Kwoty w pliku będą podane w złotych z dokładnością do dwóch miejsc po przecinku.</p>
+      <div className="financial-excel-years" role="group" aria-label="Lata do pobrania">
+        {availableYears.map((year) => <label key={year}><input type="checkbox" checked={selectedYears.includes(year)} onChange={(event) => {
+          const next = event.target.checked ? [...selectedYears, year] : selectedYears.filter((selected) => selected !== year);
+          setYearSelection({ scope: scope!, years: next });
+        }} />{year}</label>)}
+      </div>
+      <div className="financial-excel-actions">
+        <button type="button" onClick={() => setYearSelection({ scope: scope!, years: availableYears })}>Wszystkie lata</button>
+        <button type="button" disabled={!selectedYears.length || exportBusy} onClick={async () => {
+          setExportBusy(true);
+          setExportError(null);
+          try { await onDownloadExcel(scope!, selectedYears); }
+          catch (error) { setExportError(error instanceof Error ? error.message : "Nie udało się pobrać pliku."); }
+          finally { setExportBusy(false); }
+        }}>{exportBusy ? "Przygotowywanie pliku…" : "Pobierz wybrane lata"}</button>
+      </div>
+      {exportError && <p role="alert" className="search-error">{exportError}</p>}
+    </details>}
     <details className="financial-accordion" open>
       <summary>Rachunek zysków i strat</summary>
       <div className="financial-accordion-body">

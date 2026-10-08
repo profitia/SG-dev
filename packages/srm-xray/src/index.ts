@@ -23,3 +23,4 @@ export {
 } from "./mounts";
 
 export { latestAvailableFinancialYear } from "./financial-dashboard";
+export { financialLabels } from "./financial-labels";

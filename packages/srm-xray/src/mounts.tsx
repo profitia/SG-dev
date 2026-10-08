@@ -216,10 +216,10 @@ export function GeneralCompanyDataMount({ section }: { section: DisplaySection<G
   );
 }
 
-export function FinancialDataMount({ section }: { section: DisplaySection<FinancialData> }) {
+export function FinancialDataMount({ section, onDownloadExcel }: { section: DisplaySection<FinancialData>; onDownloadExcel?: (scope: "standalone" | "consolidated", years: string[]) => Promise<void> }) {
   return (
     <SectionFrame title="Dane finansowe" section={section}>
-      {section.data ? <FinancialDashboard data={section.data} /> : <p>brak danych</p>}
+      {section.data ? <FinancialDashboard data={section.data} onDownloadExcel={onDownloadExcel} /> : <p>brak danych</p>}
     </SectionFrame>
   );
 }
