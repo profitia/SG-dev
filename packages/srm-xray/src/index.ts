@@ -38,3 +38,7 @@ export { FinancialHistory, historyPlot, historyPoints, financialValue, compariso
 export { ExecutiveSummary } from "./executive-summary";
 export { executiveSummary } from "./executive-summary-rules";
 export type { ExecutiveSummaryInput, ExecutiveSummaryModel, SummaryItem, SummaryEvidence } from "./executive-summary-rules";
+
+export { KysOverview, useKysOverview } from "./kys-overview";
+export { kysOverview } from "./kys-overview-model";
+export type { KysDetailTarget, KysOverviewInput, KysOverviewModel } from "./kys-overview-model";

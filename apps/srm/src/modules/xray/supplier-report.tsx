@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { defaultFinancialScope, indicatorContent, FinancialDataMount, financialPeriodsByScope, GeneralCompanyDataMount, JdgRegistryMount,
+import { defaultFinancialScope, indicatorContent, useKysOverview, type KysOverviewModel, type KysDetailTarget, FinancialDataMount, financialPeriodsByScope, GeneralCompanyDataMount, JdgRegistryMount,
   VerclyKysMount, type FinancialPeriod, type FinancialPeriodSelection, type FinancialFactEvidence, type SupplierReportData } from "@profitia/srm-xray";
 import { ReportNavigation, navigateReportSection } from "./report-navigation";
 export { navigateReportSection } from "./report-navigation";
@@ -20,6 +20,7 @@ export type SupplierReportContext = {
   onSource: (fact: FinancialFactEvidence) => void;
   onIndicator: (code: string, history?: boolean) => void;
   onNavigate: (id: string) => void;
+  kysOverview: KysOverviewModel; onKysDetails: (target: KysDetailTarget) => void;
   periods: SupplierReportData["financial"]["periods"];
   metadataBusy: boolean;
   metadataError: string | null;
@@ -63,6 +64,7 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
 }) {
   const root = useRef<HTMLDivElement>(null), kysDetails = useRef<HTMLDetailsElement>(null);
   const financial = state.result?.entityType === "COMPANY" ? state.result.card.financial : null;
+  const kysOverviewModel = useKysOverview({ nip: supplierNip(state.result) ?? "", entityType: state.result?.entityType ?? "COMPANY", section: state.kys, metadata: state.metadata, loading: state.kysBusy || state.metadataBusy });
   const initialScope = defaultFinancialScope(financial?.data);
   const [requestedScope, setRequestedScope] = useState<Scope | null>(null);
   const [requestedPeriod, setRequestedPeriod] = useState<(FinancialPeriodSelection & { scope: Scope }) | null>(null);
@@ -90,6 +92,14 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
     });
   }
   function onNavigate(id: string) { if (root.current) navigateReportSection(root.current, id); }
+  function onKysDetails(group: KysDetailTarget) {
+    if (!root.current || !kysOverviewModel.available) return;
+    const target = Array.from(root.current.querySelectorAll<HTMLElement>("[data-kys-detail]")).find(node => node.dataset.kysDetail === group);
+    if (!target) return;
+    navigateReportSection(root.current, target.id);
+    const heading = target.querySelector<HTMLElement>("h3");
+    if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
+  }
   function onIndicator(code: string, history = false) {
     if (!root.current || !Object.hasOwn(indicatorContent, code)) return;
     const card = Array.from(root.current.querySelectorAll<HTMLElement>("[data-financial-indicator]")).find(node => node.dataset.financialIndicator === code);
@@ -104,7 +114,7 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
   useEffect(() => { if (state.kys.status !== "NOT_REQUESTED" && kysDetails.current) kysDetails.current.open = true; }, [state.kys]);
   if (!state.result) return null;
   const supplier = state.result, metadata = state.metadata;
-  const context: SupplierReportContext = { supplier, metadata, financial, kys: state.kys, scope, setScope, selectedPeriod, setPeriod, onSource, onIndicator, onNavigate, periods,
+  const context: SupplierReportContext = { supplier, metadata, financial, kys: state.kys, scope, setScope, selectedPeriod, setPeriod, onSource, onIndicator, onNavigate, kysOverview: kysOverviewModel, onKysDetails, periods,
     metadataBusy: state.metadataBusy, metadataError: state.metadataError };
   const summary = slots.summary?.(context), observations = slots.observations?.(context), kysOverview = slots.kys?.(context);
   const areas = Object.entries(financialAreas).map(([key, title]) => ({ key, title, content: slots.financial?.[key as keyof typeof financialAreas]?.(context) })).filter(area => area.content != null && area.content !== false);
@@ -149,13 +159,15 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
         {state.kys.status === "NOT_REQUESTED" && metadata?.kys.reportAvailable && <p>Zapisany raport jest dostępny. Użyj przycisku, aby go wyświetlić.</p>}</div>
         <button type="button" onClick={onFetchKys} disabled={state.kysBusy || (supplier.entityType === "JDG" && !supplier.section.data?.entries.length)}>
           {state.kysBusy ? "Przygotowywanie raportu KYS…" : state.kys.status === "NOT_REQUESTED" ? "Pobierz raport KYS" : "Pobierz raport KYS ponownie"}</button>
-        {state.kysError && <p role="alert" className="search-error">{reportMessage(state.kysError)}</p>}{kysOverview}
+        {state.kysError && <p role="alert" className="search-error">{reportMessage(state.kysError)}</p>}
         {state.kys.status !== "NOT_REQUESTED" && <a href="#report-kys-details" onClick={event => { event.preventDefault(); if (root.current) navigateReportSection(root.current, "report-kys-details"); }}>Przejdź do pełnego raportu KYS</a>}
       </div>
+      {kysOverview}
       {metadata?.kys.freshness.freshness === "EXPIRED" && <p className="health-data-note">Poprzedni raport KYS stracił ważność. Pobranie wymaga osobnego działania.</p>}
       {(state.kys.status === "PARTIAL" || metadata?.kys.completeness === "PARTIAL") && <p className="health-data-note">Raport KYS jest częściowy. Nie wszystkie sprawdzenia zwróciły dane.</p>}
       <details className="report-detail" id="report-kys-details" ref={kysDetails}><summary>Pełny raport KYS</summary><div className="report-detail-body">
         {state.kys.status === "NOT_REQUESTED" ? <p>Raport KYS nie został jeszcze pobrany. Zamów go przyciskiem „Pobierz raport KYS”.</p>
+          : state.kys.data && !kysOverviewModel.available ? <p role="status">{state.kysBusy || state.metadataBusy ? "Sprawdzanie dostępności raportu…" : kysOverviewModel.message}</p>
           : <VerclyKysMount section={state.kys} entityType={supplier.entityType} onRevealPesel={onRevealPesel} />}
       </div></details>
     </section>

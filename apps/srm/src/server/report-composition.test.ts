@@ -236,3 +236,12 @@ test("C1 product error labels preserve internal provider messages and neutral cu
   assert.doesNotMatch(reportMessage("MGBI_API_KEY missing VERCLY_TIMEOUT"), /MGBI|VERCLY|API_KEY|TIMEOUT/);
   assert.equal(reportMessage("Wymagane logowanie."), "Wymagane logowanie.");
 });
+
+
+test("full KYS is withheld when stored metadata cannot confirm authorized version or expired retention", async () => {
+  const {instance}=controller(); await instance.search(nipA);
+  const state={...instance.getSnapshot(),kys:{...sampleCard.kys,status:"SUCCESS" as const,data:{...sampleCard.kys.data!,company:{nip:nipA,name:"PRIVATE_EXPIRED_PERSON_REPORT",krs:null,regon:null,legalForm:null,address:null,country:null,activityStatus:null,registeredAt:null,lastChangedAt:null,mainPkd:null,shareCapital:null,representation:null}}}};
+  const html=markup(state);assert.doesNotMatch(html,/PRIVATE_EXPIRED_PERSON_REPORT|data-kys-detail/);assert.match(html,/Nie ustalono ważności/);
+  state.metadata!.kys.freshness.freshness="EXPIRED";
+  assert.match(markup(state),/stracił ważność/);assert.doesNotMatch(markup(state),/PRIVATE_EXPIRED_PERSON_REPORT/);
+});

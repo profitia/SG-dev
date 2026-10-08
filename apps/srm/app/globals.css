@@ -409,3 +409,23 @@ body { margin: 0; color: var(--srm-text); background: var(--srm-background); }
 .summary-actions h3 { margin: .2rem 0; }
 .health-card[id] { scroll-margin-top: var(--report-scroll-offset, 100px); }
 @media (max-width: 640px) { .summary-columns { grid-template-columns: minmax(0, 1fr); gap: .5rem; } .executive-summary button, .executive-summary summary { min-height: 44px; display: inline-flex; align-items: center; } }
+
+/* Compact factual KYS overview; detailed report remains independently navigable. */
+.kys-overview { margin: 22px 0; padding: 20px; border: 1px solid var(--srm-border); border-radius: 10px; background: var(--srm-surface); min-width: 0; }
+.kys-overview h3 { margin: 0 0 8px; color: var(--srm-brand); }
+.kys-overview h4 { margin: 0 0 12px; font-size: .95rem; color: var(--srm-brand); }
+.kys-overview-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 28px; margin-top: 20px; }
+.kys-overview ul { list-style: none; margin: 0; padding: 0; }
+.kys-overview li { margin: 0 0 8px; overflow-wrap: anywhere; }
+.kys-overview li strong { display: block; font-size: .88rem; }
+.kys-overview-execution { display: block; font-size: .8rem; color: var(--srm-text); margin-top: 3px; }
+.kys-overview button { border: 0; background: transparent; color: var(--srm-brand); text-decoration: underline; cursor: pointer; padding: 8px 0; min-height: 44px; font: inherit; font-size: .85rem; }
+.kys-overview button:hover { text-decoration-thickness: 2px; }
+.kys-overview button:focus-visible, .kys-overview summary:focus-visible { outline: 3px solid var(--srm-brand); outline-offset: 3px; }
+.kys-overview-completeness { margin-top: 12px; border-top: 1px solid var(--srm-border); padding-top: 16px; }
+.kys-overview summary { cursor: pointer; padding: 8px 0; min-height: 44px; }
+.kys-overview-completeness li { font-size: .85rem; line-height: 1.6; margin-top: 10px; }
+[data-kys-detail] { scroll-margin-top: var(--report-scroll-offset, 100px); }
+@media (max-width: 640px) { .kys-overview { padding: 16px; } .kys-overview-groups { grid-template-columns: minmax(0, 1fr); gap: 16px; } }
+
+.kys-overview-actions { display: flex; flex-wrap: wrap; gap: 4px 18px; }
