@@ -1,3 +1,4 @@
+import { productEnvironmentReady, productOrganizationId } from "./runtime-environment";
 import { createHash } from "node:crypto";
 import { kysExportRef } from "./kys-pdf-access";
 import type { FinancialData, FinancialFactEvidence, FinancialHistoryPoint, FinancialIndicatorResult, FinancialPeriod, ReportFreshness, SectionEnvelope, SupplierReportData } from "@profitia/srm-xray";
@@ -240,10 +241,10 @@ export function validateReportSelection(input: unknown): ReportSelection {
 export function reportDataHandler(read = readReportData, env: Readonly<Record<string, string | undefined>> = process.env) {
   return async (request: Request): Promise<Response> => {
     const respond = (body: unknown, status = 200) => Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
-    if (env.TARGET_ENVIRONMENT !== "development") return respond({ error: "Środowisko niedostępne." }, 404);
+    if (!productEnvironmentReady(env)) return respond({ error: "Środowisko niedostępne." }, 404);
     if (!await hasDemoSession(request, { SRM_DEMO_PASSWORD: env.SRM_DEMO_PASSWORD, SRM_DEMO_SESSION_SECRET: env.SRM_DEMO_SESSION_SECRET })) return respond({ error: "Wymagane logowanie." }, 401);
     if (!isSameOriginRequest(request)) return respond({ error: "Nieprawidłowe żądanie." }, 403);
-    const organizationId = env.SRM_DEVELOPMENT_ORGANIZATION_ID;
+    const organizationId = productOrganizationId(env);
     if (!organizationId) return respond({ error: "Środowisko SRM nie jest skonfigurowane." }, 503);
     let selection: ReportSelection;
     try { selection = validateReportSelection(await request.json()); }

@@ -1,0 +1,121 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SRM-STAGING-READINESS-20261008",
+  "executedAt": "2026-10-08T17:27:46.917Z",
+  "executionEnvironment": "SG-dev Codespaces SRM",
+  "suites": {
+    "promotion": {
+      "status": "PASS",
+      "summary": [
+        "✔ explicit authorization validates but cannot bypass RESERVED (0.451272ms)",
+        "✔ rollback approval does not bypass RESERVED or fabricate Development provenance (0.881506ms)",
+        "ℹ tests 64",
+        "ℹ pass 63",
+        "ℹ fail 0",
+        "ℹ skipped 1",
+        "ℹ duration_ms 369.695947"
+      ]
+    },
+    "unit": {
+      "status": "PASS",
+      "tests": 189,
+      "passed": 189,
+      "failed": 0,
+      "skipped": 0
+    },
+    "typecheck": {
+      "status": "PASS"
+    },
+    "manifest": {
+      "status": "PASS",
+      "summary": [
+        "  \"errors\": []"
+      ]
+    },
+    "governance-tests": {
+      "status": "PASS",
+      "summary": [
+        "ℹ tests 36",
+        "ℹ pass 36",
+        "ℹ fail 0",
+        "ℹ skipped 0",
+        "ℹ duration_ms 693.458565"
+      ]
+    }
+  },
+  "build": {
+    "status": "PASS",
+    "scope": "final integrated PDF release production build, standalone contains both Liberation fonts"
+  },
+  "runtimeSimulation": {
+    "mode": "ISOLATED_LOCALHOST_SIMULATION",
+    "health": "PASS",
+    "passwordSmoke": {
+      "unauthenticated": "PASS",
+      "incorrectPassword": "PASS",
+      "login": "PASS",
+      "secureCookie": "PASS",
+      "authenticatedPage": "PASS"
+    },
+    "unconfiguredDatabaseFailsClosed": 503,
+    "publicLogo": "PASS",
+    "nextStaticAsset": "PASS",
+    "providerCredentialsPresent": false,
+    "productDatabaseCredentialsPresent": false,
+    "stagingProviderMutated": false
+  },
+  "databaseIntegration": {
+    "status": "PASS",
+    "database": "srm_migration_test",
+    "host": "localhost",
+    "postgresVersion": "16.14",
+    "tests": 64,
+    "passed": 64,
+    "failed": 0,
+    "skipped": 0,
+    "scope": "all11 migrations, atomic initialization/actual SQL error rollback, idempotent retry, checksums drift, FORCE RLS and tenant isolation"
+  },
+  "providerWrites": {
+    "staging": false,
+    "production": false,
+    "developmentProductDatabase": false
+  },
+  "deploymentTimePending": [
+    "live Staging health/TLS",
+    "real credentials/integration entitlements",
+    "real Neon runtime role/RLS",
+    "authenticated persistence",
+    "exact live SHA",
+    "code rollback compatibility",
+    "actual approved cost"
+  ],
+  "criticalImplementationBlockers": [
+    "S0 legal onboarding",
+    "pinned first service source",
+    "canonical provider baseline reconciliation"
+  ],
+  "stagingReadyToDeploy": false,
+  "developmentLedger": {
+    "status": "PASS",
+    "readOnly": true,
+    "verifiedAt": "2026-10-08T17:30:51.819Z",
+    "projectId": "snowy-breeze-40315151",
+    "branchId": "br-dark-surf-b1vrhda9",
+    "database": "srm_app",
+    "count": 11,
+    "method": "actual Neon ledger compared against sha256 of every canonical SQL file"
+  },
+  "git": {
+    "repository": "profitia/SG-dev",
+    "authorityBranch": "main",
+    "reviewedSourceHead": "5bd8156edfd84abd7db19e3eaa8ec1b1c2159659",
+    "baseMain": "437aa3ddc5e132700b1da32abf5fc1ab201d660e",
+    "pullRequest": "https://github.com/profitia/SG-dev/pull/148"
+  },
+  "developmentProviderSnapshot": {
+    "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+    "liveDeployId": "dep-db3t3s2jnfac73ao9pkg",
+    "liveSha": "437aa3ddc5e132700b1da32abf5fc1ab201d660e",
+    "readOnly": true
+  }
+}

@@ -3,19 +3,55 @@ name: SRM CI
 on:
   pull_request:
     paths:
-      - "apps/srm/**"
-      - "packages/srm-xray/**"
-      - ".github/workflows/srm-ci.yml"
+      ["apps/srm/**", "packages/srm-xray/**", ".github/workflows/srm-ci.yml"]
   push:
     branches: [main]
     paths:
-      - "apps/srm/**"
-      - "packages/srm-xray/**"
-      - ".github/workflows/srm-ci.yml"
+      ["apps/srm/**", "packages/srm-xray/**", ".github/workflows/srm-ci.yml"]
+  workflow_dispatch:
+    inputs:
+      approved_sha:
+        description: "Exact accepted Development release SHA (40 characters)"
+        required: true
+        type: string
+      staging_deployment_authorized:
+        description: "Separate explicit Staging deployment authorization"
+        type: choice
+        options: ["NO", "YES"]
+        default: "NO"
+      cost_owner:
+        description: "Owner accepting the approved Staging resource and provider costs"
+        required: true
+        type: string
+      initialize:
+        description: "Authorize first role/schema/synthetic-organization initialization"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  checks: read
+  actions: read
+  deployments: read
 
 jobs:
   srm-build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: srm_test_owner
+          POSTGRES_PASSWORD: isolated_ci_only
+          POSTGRES_DB: srm_migration_test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      SRM_MIGRATION_TEST_URL: postgresql://srm_test_owner:isolated_ci_only@127.0.0.1:5432/srm_migration_test
     defaults:
       run:
         working-directory: apps/srm
@@ -29,4 +65,89 @@ jobs:
       - run: npm ci --install-links
       - run: npm run typecheck
       - run: npm test
+      - run: npm run test:promotion
       - run: npm run build
+
+  srm-staging-guard:
+    if: github.event_name == 'workflow_dispatch' && inputs.staging_deployment_authorized == 'YES'
+    runs-on: ubuntu-latest
+    needs: srm-build
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: npm --prefix apps/srm ci --install-links
+      - name: Reject RESERVED before entering a protected job
+        env:
+          APPROVED_SHA: ${{ inputs.approved_sha }}
+          COST_OWNER: ${{ inputs.cost_owner }}
+          APPROVED_BY: ${{ github.actor }}
+          APPROVAL_ID: SRM-STAGING-${{ github.run_id }}-${{ github.run_attempt }}
+          INITIALIZE: ${{ inputs.initialize }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import {contract,assertAuthorization} from './apps/srm/scripts/staging-migrate.mjs';
+          import {assertDispatchTarget,verifySourceTree} from './apps/srm/scripts/promote-staging.mjs';
+          const a={schemaVersion:'1.0',projectKey:'SRM',targetEnvironment:'staging',stagingDeploymentAuthorized:true,productionMutationsAllowed:false,repository:contract.repository,releaseSha:process.env.APPROVED_SHA,neonProjectId:contract.neon.projectId,neonBranchId:contract.neon.branchId,databaseName:'srm_app',approvalId:process.env.APPROVAL_ID,approvedBy:process.env.APPROVED_BY,costOwner:process.env.COST_OWNER,operations:['deploy','migrate',...(process.env.INITIALIZE==='true'?['initialize']:[])],expiresAt:new Date(Date.now()+3600000).toISOString()};
+          assertAuthorization(a,a.releaseSha,'deploy');
+          assertDispatchTarget();
+          verifySourceTree(a.releaseSha);
+          const response=await fetch('https://api.github.com/repos/'+contract.repository+'/environments/srm-staging',{headers:{Authorization:'Bearer '+process.env.GITHUB_TOKEN,'X-GitHub-Api-Version':'2022-11-28'},signal:AbortSignal.timeout(30000)});
+          if(!response.ok)throw new Error('Registered protected GitHub environment unavailable');
+          assertDispatchTarget(await response.json());
+          const topology=JSON.parse(fs.readFileSync('Canon/registries/srm-environment-topology-v1.json','utf8'));
+          a.renderServiceId=topology.environments.staging.render.services.runtime.serviceId;
+          fs.writeFileSync('/tmp/srm-staging-authorization.json',JSON.stringify(a));
+          JS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: srm-staging-authorization
+          path: /tmp/srm-staging-authorization.json
+          retention-days: 1
+
+  srm-staging-promote:
+    if: github.event_name == 'workflow_dispatch' && inputs.staging_deployment_authorized == 'YES'
+    needs: srm-staging-guard
+    runs-on: ubuntu-latest
+    environment: srm-staging
+    concurrency:
+      group: srm-staging-promotion
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: npm --prefix apps/srm ci --install-links
+      - uses: actions/download-artifact@v4
+        with:
+          name: srm-staging-authorization
+          path: /tmp/srm-staging-approval
+      - name: Promote explicit approved SHA and record sanitized evidence
+        env:
+          APPROVED_SHA: ${{ inputs.approved_sha }}
+          TARGET_ENVIRONMENT: staging
+          SRM_NEON_PROJECT_ID: snowy-breeze-40315151
+          SRM_NEON_BRANCH_ID: br-broad-butterfly-b11t4v01
+          SRM_APP_DIRECT_URL: ${{ secrets.SRM_APP_DIRECT_URL }}
+          SRM_APP_DATABASE_PASSWORD: ${{ secrets.SRM_APP_DATABASE_PASSWORD }}
+          SRM_STAGING_ORGANIZATION_ID: ${{ vars.SRM_STAGING_ORGANIZATION_ID }}
+          SRM_STAGING_DEMO_PASSWORD: ${{ secrets.SRM_DEMO_PASSWORD }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          node apps/srm/scripts/promote-staging.mjs --apply --sha "$APPROVED_SHA" --authorization /tmp/srm-staging-approval/srm-staging-authorization.json > /tmp/srm-staging-evidence.json
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: srm-staging-evidence
+          path: /tmp/srm-staging-evidence.json
+          retention-days: 30

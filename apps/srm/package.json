@@ -10,7 +10,10 @@
     "start": "next start --port 3400",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test src/server/*.test.ts",
-    "migrate:development": "node scripts/migrate.mjs"
+    "migrate:development": "node scripts/migrate.mjs",
+    "test:promotion": "node --test scripts/promotion.test.mjs",
+    "promote:staging": "node scripts/promote-staging.mjs",
+    "migrate:staging:plan": "node scripts/staging-migrate.mjs --plan"
   },
   "dependencies": {
     "@profitia/srm-xray": "file:../../packages/srm-xray",
