@@ -25,9 +25,21 @@ on:
         description: Optional positive limit for bounded historical catch-up per run
         required: false
 
+permissions:
+  contents: read
+
+concurrency:
+  group: sg2-development-forecast-operations
+  cancel-in-progress: false
+
 jobs:
   forecast-production-operations:
     runs-on: ubuntu-latest
+    environment: sg2-development
+    env:
+      APP_ENV: development
+      SG2_FORECAST_PRODUCER_LANES: CURRENT_ONLY,VERIFICATION_ONLY
+      SG2_FORECAST_ALLOWED_SERIES_IDS: ${{ vars.SG2_FORECAST_ALLOWED_SERIES_IDS }}
 
     steps:
       - name: Checkout repository
@@ -47,13 +59,13 @@ jobs:
 
       - name: Validate scheduler configuration
         env:
-          MARKET_DATA_DATABASE_URL: ${{ secrets.MARKET_DATA_DATABASE_URL }}
+          MARKET_DATA_DATABASE_URL: ${{ secrets.SG2_DEVELOPMENT_MARKET_DATA_DATABASE_URL }}
           SERIES_IDS: ${{ github.event.inputs.seriesIds || vars.FORECAST_ENABLED_SERIES_IDS }}
           TARGETS: ${{ github.event.inputs.targets }}
           MODELS: ${{ github.event.inputs.models }}
           MAX_ORIGINS_PER_RUN: ${{ github.event.inputs.maxOriginsPerRun || vars.FORECAST_MAX_ORIGINS_PER_RUN }}
         run: |
-          [[ -n "$MARKET_DATA_DATABASE_URL" ]] || { echo "Missing secret MARKET_DATA_DATABASE_URL"; exit 1; }
+          [[ -n "$MARKET_DATA_DATABASE_URL" ]] || { echo "Missing SG2 Development database credential"; exit 1; }
           series_ids="${SERIES_IDS:-}"
           targets="${TARGETS:-END_OF_PERIOD,MONTHLY_AVERAGE,ROLLING_DAILY_POINT_IN_TIME}"
           models="${MODELS:-naive,damped_holt,ets,arima}"
@@ -66,9 +78,20 @@ jobs:
             exit 1
           fi
 
+      - name: Verify Development database and bounded producer authority (read only)
+        env:
+          MARKET_DATA_DATABASE_URL: ${{ secrets.SG2_DEVELOPMENT_MARKET_DATA_DATABASE_URL }}
+          SERIES_IDS: ${{ github.event.inputs.seriesIds || vars.FORECAST_ENABLED_SERIES_IDS }}
+          PREPARE_HISTORICAL: ${{ github.event.inputs.historical || 'false' }}
+        run: node scripts/governance/sg2-identity-probe.mjs --producer
+
       - name: Install sg-runtime dependencies
         working-directory: apps/sg-runtime
-        run: npm ci
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          test -n "$NPM_TOKEN" || { echo "Missing private package read credential NPM_TOKEN"; exit 1; }
+          npm ci
 
       - name: Prepare forecasting Python environment
         working-directory: tooling/Benchmark-Forecasting
@@ -80,7 +103,7 @@ jobs:
       - name: Run Forecast production operations
         working-directory: apps/sg-runtime
         env:
-          MARKET_DATA_DATABASE_URL: ${{ secrets.MARKET_DATA_DATABASE_URL }}
+          MARKET_DATA_DATABASE_URL: ${{ secrets.SG2_DEVELOPMENT_MARKET_DATA_DATABASE_URL }}
           FORECASTING_LAB_ROOT: ${{ github.workspace }}/tooling/Benchmark-Forecasting
           FORECASTING_PYTHON_BIN: ${{ github.workspace }}/tooling/Benchmark-Forecasting/.venv/bin/python
           SERIES_IDS: ${{ github.event.inputs.seriesIds || vars.FORECAST_ENABLED_SERIES_IDS }}

@@ -47,6 +47,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Require closed SG2 product readiness
+        run: node scripts/governance/sg2-release-readiness.mjs staging "${{ inputs.source_sha }}"
       - name: Trigger only the registered service at the exact revision
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}

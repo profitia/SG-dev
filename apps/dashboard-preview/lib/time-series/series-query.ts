@@ -1,3 +1,4 @@
+import { resolveRuntimeServiceUrl } from '../environment-identity'
 import { subMonths } from './time-utils'
 
 import { listDashboardRecords, listDashboardRecordsWithMetrics } from '@/lib/raw-data/dashboard-record-query'
@@ -38,18 +39,9 @@ type BenchmarkAnalyticsSeriesResponse = {
   }>
 }
 
-const LOCAL_SG_RUNTIME_BASE_URL = 'http://localhost:3001'
 
 function resolveSgRuntimeBaseUrl() {
-  if (process.env.SG_RUNTIME_BASE_URL?.trim()) {
-    return process.env.SG_RUNTIME_BASE_URL.trim()
-  }
-
-  if (process.env.RENDER_EXTERNAL_URL?.trim() || process.env.VERCEL_URL?.trim()) {
-    throw new Error('SG_RUNTIME_BASE_URL is required in deployed dashboard-preview environments.')
-  }
-
-  return LOCAL_SG_RUNTIME_BASE_URL
+  return resolveRuntimeServiceUrl()
 }
 
 function readBenchmarkAnalyticsRange(params: URLSearchParams): BenchmarkAnalyticsRange {

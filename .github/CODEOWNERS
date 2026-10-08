@@ -1,0 +1,12 @@
+# SG2 routing owners. No default owner: SRM/CIC ownership is unchanged.
+/apps/sg-runtime/ @profitia
+/apps/dashboard-preview/ @profitia
+/tooling/Benchmark-Forecasting/ @profitia
+/scripts/build-sg-runtime-private-service.sh @profitia
+/.github/workflows/sg2-product-ci.yml @profitia
+/.github/workflows/sg2-staging-release.yml @profitia
+/.github/workflows/forecast-production-operations.yml @profitia
+/scripts/governance/sg2-* @profitia
+/Canon/registries/sg2-* @profitia
+/Canon/audits/sg2-* @profitia
+/packages/governance/src/sg2-environment-identity.* @profitia

@@ -15,10 +15,7 @@ import {
   type InteractiveForecastPreparationResult,
 } from './forecast-contract'
 
-const LOCAL_SG_RUNTIME_BASE_URL = 'http://localhost:3001'
-const DEPLOYED_SG_RUNTIME_FALLBACK_BASE_URLS = [
-  'https://benchmark-finder-category-builder.onrender.com',
-]
+import { resolveRuntimeServiceUrl } from '../environment-identity'
 const INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH = '/api/internal/forecast/capability'
 const INTERNAL_FORECAST_CAPABILITIES_ROUTE_PATH = '/api/internal/forecast/capabilities'
 const INTERNAL_FORECAST_READINESS_ROUTE_PATH = '/api/internal/forecast/readiness'
@@ -195,15 +192,7 @@ export class SgRuntimeForecastPreparationAuthError extends Error {
 }
 
 function resolveSgRuntimeBaseUrl() {
-  if (process.env.SG_RUNTIME_BASE_URL?.trim()) {
-    return process.env.SG_RUNTIME_BASE_URL.trim()
-  }
-
-  if (process.env.RENDER_EXTERNAL_URL?.trim() || process.env.VERCEL_URL?.trim()) {
-    throw new Error('SG_RUNTIME_BASE_URL is required in deployed dashboard-preview environments.')
-  }
-
-  return LOCAL_SG_RUNTIME_BASE_URL
+  return resolveRuntimeServiceUrl()
 }
 
 function hasExplicitSgRuntimeBaseUrl() {
@@ -211,16 +200,7 @@ function hasExplicitSgRuntimeBaseUrl() {
 }
 
 function resolveSgRuntimeBaseUrls() {
-  const primaryBaseUrl = resolveSgRuntimeBaseUrl()
-  const candidates = [primaryBaseUrl]
-
-  for (const fallbackBaseUrl of DEPLOYED_SG_RUNTIME_FALLBACK_BASE_URLS) {
-    if (!candidates.includes(fallbackBaseUrl)) {
-      candidates.push(fallbackBaseUrl)
-    }
-  }
-
-  return candidates
+  return [resolveSgRuntimeBaseUrl()]
 }
 
 function isMalformedJsonResponseError(error: unknown) {
@@ -537,7 +517,7 @@ export async function readInteractiveForecastCapability(
   options?: ForecastBridgeRequestOptions,
 ) {
   const targetSemantics = resolveForecastTargetSemantics(input.targetBasis)
-  const url = new URL(INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH, LOCAL_SG_RUNTIME_BASE_URL)
+  const url = new URL(INTERNAL_FORECAST_CAPABILITY_ROUTE_PATH, resolveSgRuntimeBaseUrl())
   url.searchParams.set('seriesId', input.seriesId)
   url.searchParams.set('modelId', input.modelId)
   url.searchParams.set('targetSemantics', targetSemantics)
@@ -554,7 +534,7 @@ export async function readInteractiveForecastCapabilitySnapshotBySeriesId(
   traceOptions?: TraceOptions,
   options?: ForecastBridgeRequestOptions,
 ) {
-  const url = new URL(INTERNAL_FORECAST_CAPABILITIES_ROUTE_PATH, LOCAL_SG_RUNTIME_BASE_URL)
+  const url = new URL(INTERNAL_FORECAST_CAPABILITIES_ROUTE_PATH, resolveSgRuntimeBaseUrl())
   url.searchParams.set('seriesId', seriesId)
 
   return readInternalJson<InteractiveForecastCapabilitySeriesSnapshot>(url.pathname + url.search, {
@@ -569,7 +549,7 @@ export async function readInteractiveForecastReadinessSnapshotBySeriesId(
   traceOptions?: TraceOptions,
   options?: ForecastBridgeRequestOptions,
 ) {
-  const url = new URL(INTERNAL_FORECAST_READINESS_ROUTE_PATH, LOCAL_SG_RUNTIME_BASE_URL)
+  const url = new URL(INTERNAL_FORECAST_READINESS_ROUTE_PATH, resolveSgRuntimeBaseUrl())
   url.searchParams.set('seriesId', seriesId)
 
   return readInternalJson<InteractiveForecastCapabilitySeriesSnapshot>(url.pathname + url.search, {
@@ -646,7 +626,7 @@ export async function readDurableForecastPreparationSnapshot(
   traceOptions?: TraceOptions,
   options?: ForecastBridgeRequestOptions,
 ) {
-  const url = new URL(INTERNAL_FORECAST_PREPARATION_JOBS_ROUTE_PATH, LOCAL_SG_RUNTIME_BASE_URL)
+  const url = new URL(INTERNAL_FORECAST_PREPARATION_JOBS_ROUTE_PATH, resolveSgRuntimeBaseUrl())
   url.searchParams.set('seriesId', input.seriesId)
   url.searchParams.set('modelId', input.modelId)
   url.searchParams.set('targetSemantics', resolveForecastTargetSemantics(input.targetBasis))
@@ -727,7 +707,7 @@ export async function requestInteractiveForecastVerificationPreparation(
   traceOptions?: TraceOptions,
   options?: ForecastBridgeRequestOptions,
 ) : Promise<BenchmarkForecastVerificationResult> {
-  const url = new URL(INTERNAL_FORECAST_VERIFICATION_ROUTE_PATH, LOCAL_SG_RUNTIME_BASE_URL)
+  const url = new URL(INTERNAL_FORECAST_VERIFICATION_ROUTE_PATH, resolveSgRuntimeBaseUrl())
   url.searchParams.set('seriesId', input.seriesId)
   url.searchParams.set('model', input.modelId)
   url.searchParams.set('targetBasis', input.targetBasis)

@@ -381,7 +381,7 @@ test('interactive capability bridge preserves transport failure cause in trace a
   const attempts: import('@/lib/benchmark-forecast/interactive-current-preparation').ForecastBridgeAttemptTrace[] = []
 
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
-  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime.example.invalid'
+  process.env.SG_RUNTIME_BASE_URL = 'https://dev-sg2.spendguru.app'
   global.fetch = (async () => {
     const transportError = new Error('fetch failed') as Error & { cause?: unknown; name: string }
     transportError.name = 'TypeError'
@@ -438,7 +438,7 @@ test('interactive capability bridge preserves transport failure cause in trace a
   assert.equal(attempts[0]?.diagnosticContext?.modelId, 'naive')
   assert.equal(attempts[0]?.diagnosticContext?.targetBasis, 'POINT_IN_TIME')
   assert.equal(attempts[0]?.diagnosticContext?.pathname, '/api/internal/forecast/capability?seriesId=lmeofcucashask&modelId=naive&targetSemantics=ROLLING_DAILY_POINT_IN_TIME')
-  assert.equal(attempts[0]?.diagnosticContext?.baseUrl, 'https://sg-runtime.example.invalid')
+  assert.equal(attempts[0]?.diagnosticContext?.baseUrl, 'https://dev-sg2.spendguru.app')
 })
 
 test('interactive current capability route forwards request abort signal to the bridge', async () => {
@@ -602,7 +602,7 @@ test('interactive current capability bridge keeps private auth server-side and f
   let capturedInit: RequestInit | null = null
 
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
-  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime.example.invalid'
+  process.env.SG_RUNTIME_BASE_URL = 'https://dev-sg2.spendguru.app'
   global.fetch = (async (input: URL | RequestInfo | string, init?: RequestInit) => {
     capturedUrl = new URL(String(input))
     capturedInit = init ?? null
@@ -666,7 +666,7 @@ test('interactive capability snapshot bridge keeps private auth server-side and 
   let capturedInit: RequestInit | null = null
 
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
-  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime.example.invalid'
+  process.env.SG_RUNTIME_BASE_URL = 'https://dev-sg2.spendguru.app'
   global.fetch = (async (input: URL | RequestInfo | string, init?: RequestInit) => {
     capturedUrl = new URL(String(input))
     capturedInit = init ?? null
@@ -718,7 +718,7 @@ test('interactive readiness snapshot bridge keeps private auth server-side', asy
   let capturedInit: RequestInit | null = null
 
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
-  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime.example.invalid'
+  process.env.SG_RUNTIME_BASE_URL = 'https://dev-sg2.spendguru.app'
   global.fetch = (async (input: URL | RequestInfo | string, init?: RequestInit) => {
     capturedUrl = new URL(String(input))
     capturedInit = init ?? null
@@ -761,7 +761,7 @@ test('interactive current prepare bridge keeps private auth server-side and forw
   let capturedInit: RequestInit | null = null
 
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
-  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime.example.invalid'
+  process.env.SG_RUNTIME_BASE_URL = 'https://dev-sg2.spendguru.app'
   global.fetch = (async (input: URL | RequestInfo | string, init?: RequestInit) => {
     capturedUrl = new URL(String(input))
     capturedInit = init ?? null
@@ -822,7 +822,7 @@ test('interactive verification prepare bridge keeps private auth server-side for
   let capturedInit: RequestInit | null = null
 
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
-  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime.example.invalid'
+  process.env.SG_RUNTIME_BASE_URL = 'https://dev-sg2.spendguru.app'
   global.fetch = (async (input: URL | RequestInfo | string, init?: RequestInit) => {
     capturedUrl = new URL(String(input))
     capturedInit = init ?? null
@@ -889,7 +889,7 @@ test('interactive verification prepare bridge routes point-in-time warm-up throu
   let capturedInit: RequestInit | null = null
 
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
-  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime.example.invalid'
+  process.env.SG_RUNTIME_BASE_URL = 'https://dev-sg2.spendguru.app'
   global.fetch = (async (input: URL | RequestInfo | string, init?: RequestInit) => {
     capturedUrl = new URL(String(input))
     capturedInit = init ?? null
@@ -950,7 +950,7 @@ test('interactive capability bridge aborts downstream fetch when caller signal a
   let capturedSignal: AbortSignal | null | undefined
 
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
-  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime.example.invalid'
+  process.env.SG_RUNTIME_BASE_URL = 'https://dev-sg2.spendguru.app'
   global.fetch = (((_input: URL | RequestInfo | string, init?: RequestInit) => {
     capturedSignal = init?.signal
 
@@ -984,7 +984,7 @@ test('interactive capability bridge aborts downstream fetch when caller signal a
   assert.equal(capturedSignal?.aborted, true)
 })
 
-test('interactive capability bridge falls back to the public SG Runtime deployment after a localhost timeout', async () => {
+test('interactive capability bridge rejects a missing explicit runtime before contacting any fallback', async () => {
   const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
   const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
   const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
@@ -1027,13 +1027,9 @@ test('interactive capability bridge falls back to the public SG Runtime deployme
   }) as typeof fetch
 
   try {
-    const result = await readInteractiveForecastCapability({
-      seriesId: 'wocaes0280',
-      modelId: 'arima',
-      targetBasis: 'MONTHLY_AVERAGE',
-    })
-
-    assert.equal(result.status, 'NOT_PREPARED')
+    await assert.rejects(() => readInteractiveForecastCapability({
+      seriesId: 'wocaes0280', modelId: 'arima', targetBasis: 'MONTHLY_AVERAGE',
+    }), /SG2_SERVICE_BINDING_REQUIRED/)
   } finally {
     global.fetch = originalFetch
     if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
@@ -1046,10 +1042,7 @@ test('interactive capability bridge falls back to the public SG Runtime deployme
     else process.env.VERCEL_URL = previousVercelUrl
   }
 
-  assert.deepEqual(visited, [
-    'http://localhost:3001',
-    'https://benchmark-finder-category-builder.onrender.com',
-  ])
+  assert.deepEqual(visited, [])
 })
 
 test('interactive capability bridge does not fall back away from an explicit deployed SG Runtime base URL after a timeout', async () => {
@@ -1061,7 +1054,7 @@ test('interactive capability bridge does not fall back away from an explicit dep
   const visited: string[] = []
 
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
-  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime-primary.example.invalid'
+  process.env.SG_RUNTIME_BASE_URL = 'https://dev-sg2.spendguru.app'
   process.env.RENDER_EXTERNAL_URL = 'https://analytics-demo-sg-porr.spendguru.app'
   delete process.env.VERCEL_URL
   global.fetch = (async (input: URL | RequestInfo | string) => {
@@ -1094,7 +1087,7 @@ test('interactive capability bridge does not fall back away from an explicit dep
   }
 
   assert.deepEqual(visited, [
-    'https://sg-runtime-primary.example.invalid',
+    'https://dev-sg2.spendguru.app',
   ])
 })
 
@@ -1109,7 +1102,7 @@ test('interactive capability bridge does not fall back away from an explicit dep
   const visited: string[] = []
 
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
-  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime-primary.example.invalid'
+  process.env.SG_RUNTIME_BASE_URL = 'https://dev-sg2.spendguru.app'
   process.env.RENDER_EXTERNAL_URL = 'https://analytics-demo-sg-porr.spendguru.app'
   delete process.env.VERCEL_URL
 
@@ -1161,11 +1154,11 @@ test('interactive capability bridge does not fall back away from an explicit dep
   }
 
   assert.deepEqual(visited, [
-    'https://sg-runtime-primary.example.invalid',
+    'https://dev-sg2.spendguru.app',
   ])
 })
 
-test('interactive capability bridge falls back after an empty JSON response from the explicit primary SG Runtime base URL', async () => {
+test('interactive capability bridge rejects an empty primary response without contacting a legacy fallback', async () => {
   const previousToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
   const previousBaseUrl = process.env.SG_RUNTIME_BASE_URL
   const previousRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
@@ -1174,14 +1167,14 @@ test('interactive capability bridge falls back after an empty JSON response from
   const visited: string[] = []
 
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'dashboard-preview-token'
-  process.env.SG_RUNTIME_BASE_URL = 'https://sg-runtime-primary.example.invalid'
+  process.env.SG_RUNTIME_BASE_URL = 'https://dev-sg2.spendguru.app'
   process.env.RENDER_EXTERNAL_URL = 'https://analytics-demo-sg-porr.spendguru.app'
   delete process.env.VERCEL_URL
   global.fetch = (async (input: URL | RequestInfo | string) => {
     const url = new URL(String(input))
     visited.push(url.origin)
 
-    if (url.origin === 'https://sg-runtime-primary.example.invalid') {
+    if (url.origin === 'https://dev-sg2.spendguru.app') {
       return new Response('', {
         status: 502,
         headers: { 'content-type': 'application/json' },
@@ -1209,13 +1202,9 @@ test('interactive capability bridge falls back after an empty JSON response from
   }) as typeof fetch
 
   try {
-    const result = await readInteractiveForecastCapability({
-      seriesId: 'wocaes0280',
-      modelId: 'arima',
-      targetBasis: 'MONTHLY_AVERAGE',
-    })
-
-    assert.equal(result.status, 'NOT_PREPARED')
+    await assert.rejects(() => readInteractiveForecastCapability({
+      seriesId: 'wocaes0280', modelId: 'arima', targetBasis: 'MONTHLY_AVERAGE',
+    }), /empty JSON response/)
   } finally {
     global.fetch = originalFetch
     if (previousToken === undefined) delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
@@ -1229,7 +1218,6 @@ test('interactive capability bridge falls back after an empty JSON response from
   }
 
   assert.deepEqual(visited, [
-    'https://sg-runtime-primary.example.invalid',
-    'https://benchmark-finder-category-builder.onrender.com',
+    'https://dev-sg2.spendguru.app',
   ])
 })
