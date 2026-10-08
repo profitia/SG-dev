@@ -14,15 +14,22 @@
     "serviceName": "srm-staging-runtime",
     "serviceId": null,
     "region": "frankfurt",
-    "plan": "starter",
+    "plan": "0.5c-512mb",
     "numInstances": 1,
     "rootDir": "",
     "autoDeployTrigger": "off",
     "previews": "off",
     "healthCheckPath": "/api/health",
-    "buildCommand": "npm --prefix apps/srm ci --install-links && npm --prefix apps/srm run build && mkdir -p apps/srm/.next/standalone/.next && cp -R apps/srm/.next/static apps/srm/.next/standalone/.next/static && cp -R apps/srm/public apps/srm/.next/standalone/public",
+    "buildCommand": "npm --prefix apps/srm ci --install-links && npm --prefix apps/srm run build && mkdir -p apps/srm/.next/standalone/.next && cp -R apps/srm/.next/static apps/srm/.next/standalone/.next/static",
     "startCommand": "cd apps/srm && HOSTNAME=0.0.0.0 node .next/standalone/server.js",
-    "domains": []
+    "domains": [],
+    "estimatedMonthlyComputeUsd": 7,
+    "estimateVerifiedOn": "2026-10-08",
+    "availability": {
+      "instances": 1,
+      "autoscaling": false,
+      "slaRequired": false
+    }
   },
   "neon": {
     "projectId": "snowy-breeze-40315151",
