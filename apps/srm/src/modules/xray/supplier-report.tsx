@@ -106,12 +106,9 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
     if (!root.current || !Object.hasOwn(indicatorContent, code)) return;
     const card = Array.from(root.current.querySelectorAll<HTMLElement>("[data-financial-indicator]")).find(node => node.dataset.financialIndicator === code);
     if (!card) return;
-    const methodology = card.querySelector<HTMLDetailsElement>(".health-methodology");
-    if (methodology) methodology.open = true;
-    const button = card.querySelector<HTMLButtonElement>(".health-card-actions button");
-    if (history && button?.getAttribute("aria-expanded") === "false") button.click();
     navigateReportSection(root.current, card.id);
-    const heading = card.querySelector<HTMLElement>("h4"); heading?.focus({ preventScroll: true });
+    const button = card.querySelector<HTMLButtonElement>(`[data-financial-view="${history ? "history" : "methodology"}"]`);
+    button?.click();
   }
   useEffect(() => { if (state.kys.status !== "NOT_REQUESTED" && kysDetails.current) kysDetails.current.open = true; }, [state.kys]);
   if (!state.result) return null;
@@ -141,7 +138,7 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
         <FinancialPeriodSelector periods={selectionPeriods} selected={selectedPeriod} onSelect={setPeriod} />
       </div>}
       <FinancialLimitations state={state} onReadMetadata={onReadMetadata} />
-      <div className="report-financial-areas">{areas.map(area => <section key={area.key} aria-label={area.title}><h3>{area.title}</h3>{area.content}</section>)}</div></section>}
+      <div className="report-financial-areas">{areas.map(area => <section key={area.key} aria-label={area.title}><h3 className="health-area-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d={area.key === "liquidity" ? "M4 8h16v12H4z M8 8V4h8v4 M4 12h16 M10 15h4" : area.key === "debt" ? "M3 9l9-6 9 6H3z M5 11v8 M10 11v8 M15 11v8 M20 11v8 M3 21h18" : area.key === "profitability" ? "M4 3v17h17 M7 15l5-5 4 3 5-8 M17 5h4v4" : "M3 7h18v12H3z M3 11h18 M15 15h3 M6 7V4h12"} /></svg>{area.title}</h3>{area.content}</section>)}</div></section>}
     {observations && <section id="report-observations" className="report-content-section" aria-labelledby="report-observations-title"><h2 id="report-observations-title" tabIndex={-1}>Obserwacje i kwestie do sprawdzenia</h2>{observations}</section>}
     <section id="report-details" className="report-details" aria-labelledby="report-details-title">
       <div className="report-details-heading"><h2 id="report-details-title" tabIndex={-1}>Dane szczegółowe</h2><p>Pełne zestawienia i dotychczasowe funkcje raportowania.</p></div>

@@ -1,53 +1,47 @@
 "use client";
 
-import React, { useId, useState, type ReactNode } from "react";
+import React, { useId, useState } from "react";
 import type { FinancialFactEvidence, FinancialHistoryPoint, SupplierReportData } from "./contracts";
 import type { FinancialPeriodSelection } from "./financial-dashboard";
-import { financialLabels } from "./financial-labels";
-import { healthGroups, importanceLabels, indicatorContent, indicatorPresentation, financialReason, type HealthArea } from "./financial-indicator-content";
-import { FinancialHistory, comparisonText, financialUnits, financialValue, hasHistoryValue, historyPoints, isSelected } from "./financial-history";
+import { healthGroups, importanceLabels, indicatorContent, indicatorPresentation, type HealthArea } from "./financial-indicator-content";
+import { financialValue, hasHistoryValue, historyPoints, isSelected } from "./financial-history";
+import { compactFinancialValue } from "./financial-value";
+import { FinancialIndicatorDialog, type IndicatorView } from "./financial-indicator-dialog";
 export type FinancialSourceAction = (fact: FinancialFactEvidence) => void;
-function FinancialHealthCard({ code, points, selectedPeriod, loading, onSource, interpretation }: {
+const explanations: Record<string, string> = {
+  CURRENT_RATIO: "Relacja aktywów obrotowych do zobowiązań krótkoterminowych.",
+  QUICK_RATIO: "Relacja aktywów obrotowych bez zapasów do zobowiązań krótkoterminowych.",
+  NET_WORKING_CAPITAL: "Różnica między aktywami obrotowymi a zobowiązaniami krótkoterminowymi.",
+  CASH_CONVERSION_CYCLE: "Czas od wydatku na zapasy do odzyskania gotówki ze sprzedaży.",
+  LIABILITIES_TO_ASSETS: "Jaka część aktywów odpowiada zobowiązaniom i rezerwom.",
+  EQUITY_TO_ASSETS: "Jaka część aktywów jest finansowana kapitałem własnym.",
+  INTEREST_COVERAGE: "Relacja wyniku operacyjnego do kosztów odsetek.",
+  NET_DEBT_TO_EBITDA: "Relacja długu netto do EBITDA.",
+  OPERATING_MARGIN: "Udział wyniku operacyjnego w przychodach.",
+  NET_MARGIN: "Udział wyniku netto w przychodach.",
+  EBITDA_MARGIN: "Udział EBITDA w przychodach.",
+  ROA: "Relacja wyniku netto do średnich aktywów.",
+  ROE: "Relacja wyniku netto do średniego kapitału własnego.",
+  REVENUE_YOY: "Zmiana przychodów względem poprzedniego okresu według zapisanej kalkulacji.",
+  MATERIALS_ENERGY_SHARE: "Udział zużycia materiałów i energii w kosztach działalności operacyjnej.",
+  FREE_CASH_FLOW: "Przepływy operacyjne pomniejszone o nakłady inwestycyjne."
+};
+function FinancialHealthCard({ code, points, selectedPeriod, loading, onSource }: {
   code: string; points: FinancialHistoryPoint[]; selectedPeriod: FinancialPeriodSelection | null;
-  loading: boolean; onSource?: FinancialSourceAction; interpretation?: ReactNode;
+  loading: boolean; onSource?: FinancialSourceAction;
 }) {
-  const [expanded, setExpanded] = useState(false), id = useId();
-  const content = indicatorContent[code], point = points.find(item => isSelected(item, selectedPeriod));
-  const available = point ? hasHistoryValue(point) : false;
-  const unit = point?.unit ?? indicatorPresentation[code].unit;
-  const importance = point?.importance ?? indicatorPresentation[code].importance;
+  const [view, setView] = useState<IndicatorView | null>(null), id = useId();
+  const point = points.find(item => isSelected(item, selectedPeriod)), available = point ? hasHistoryValue(point) : false;
+  const unit = point?.unit ?? indicatorPresentation[code].unit, importance = point?.importance ?? indicatorPresentation[code].importance;
   const count = points.filter(hasHistoryValue).length;
   return <article id={`${id}-card`} data-financial-indicator={code} className="health-card" aria-labelledby={`${id}-title`}>
-    <header><h4 id={`${id}-title`} tabIndex={-1}>{content.name}</h4><span className="health-importance" title="Istotność wskaźnika dla kupca, nie ocena wyniku dostawcy">{importanceLabels[importance]}</span></header>
-    <p className={`health-card-value ${available ? "" : "health-card-value--missing"}`}>{available ? financialValue(point!.value, unit) : loading ? "Odczytywanie wyników…" : "Niedostępny"}</p>
-    <p className="health-card-period">{selectedPeriod ? `${selectedPeriod.from} – ${selectedPeriod.to}` : "Okres nieustalony"}<span>Jednostka: {financialUnits[unit]}</span></p>
-    {!available && !loading && <p className="health-data-note">{point ? financialReason(point.reasonCode) : selectedPeriod ? "Brak zapisanego wyniku dla wybranego okresu i zakresu." : "Brak zapisanego okresu finansowego."}</p>}
-    <p className="health-description">{content.description}</p>
-    {point?.comparison.status === "COMPARABLE" && <p className="health-change">{comparisonText(point)}</p>}
-    <p className="health-muted">Historia: {count} {count === 1 ? "dostępny okres" : "dostępnych okresów"}</p>
-    <div className="health-card-actions"><button type="button" aria-expanded={expanded} aria-controls={`${id}-history`} onClick={() => setExpanded(!expanded)}>{expanded ? "Ukryj historię" : "Pokaż historię"}</button></div>
-    {expanded && <div id={`${id}-history`}><FinancialHistory name={content.name} points={points} selectedPeriod={selectedPeriod} /></div>}
-    <details className="health-methodology"><summary>Jak to obliczamy?</summary><div>
-      <h5>{content.name}</h5><p>{content.description}</p><p><strong>Wzór:</strong> {content.formula}</p>
-      {content.requirement && <p>{content.requirement}</p>}
-      <dl><dt>Jednostka</dt><dd>{financialUnits[unit]}</dd><dt>Wersja metodologii</dt><dd>{point?.formulaVersion || "nie ustalono"}</dd>
-        <dt>Okres</dt><dd>{selectedPeriod ? `${selectedPeriod.from} – ${selectedPeriod.to}` : "nie ustalono"}</dd><dt>Zakres</dt><dd>{point ? point.scope === "standalone" ? "Jednostkowy" : "Skonsolidowany" : "nie ustalono"}</dd>
-        <dt>Status wyniku</dt><dd>{available ? "Dostępny — zapisany wynik backendu" : "Niedostępny"}</dd></dl>
-      {!available && <p>{financialReason(point?.reasonCode)}</p>}
-      <h5>Podstawa obliczenia</h5>
-      {point?.evidence.length ? <ul className="health-evidence">{point.evidence.map(fact => <li key={fact.ref}>
-        <strong>{financialLabels[fact.metricCode]?.label ?? "Pozycja finansowa ze sprawozdania"}</strong>
-        <span>{fact.periodStart} – {fact.periodEnd} · {fact.scope === "standalone" ? "jednostkowe" : "skonsolidowane"}</span>
-        <span>Wartość użyta: {fact.currency === "PLN" && fact.unit === "PLN" ? financialValue(fact.amount, "PLN") : `${fact.amount} ${fact.unit} · ${fact.currency}`}</span>
-        <span>{fact.validation === "VERIFIED" ? "Zweryfikowana" : fact.validation === "UNVERIFIED" ? "Niezweryfikowana" : "Niedostępna"} · {fact.normalization === "NORMALIZED_CONFIRMED" ? "Normalizacja potwierdzona" : fact.normalization === "SOURCE_VALUE" ? "Wartość źródłowa" : "Normalizacja niepotwierdzona"}</span>
-        {fact.sourceAmount !== null && fact.sourceAmount !== fact.amount && <span>Wartość źródłowa: {fact.sourceAmount} {fact.unit} · {fact.currency}</span>}
-        {fact.reasonCode && <span>{financialReason(fact.reasonCode)}</span>}
-        {onSource && <button type="button" onClick={() => onSource(fact)}>Przejdź do sprawozdania</button>}
-      </li>)}</ul> : <p>Brak potwierdzonych pozycji źródłowych dostępnych dla tego wyniku.</p>}
-      <p className="health-muted">Nie wszystkie szczegółowe pozycje są osobnymi wierszami w tabelach. Ich dostępne wartości źródłowe pokazujemy powyżej.</p>
-      <p className="health-muted">Wyniki i walidacja pochodzą z backendu SRM. Nie zmieniamy znaków ani nie obliczamy wskaźników w przeglądarce.</p>
-      {interpretation && <div>{interpretation}</div>}
-    </div></details>
+    <header><h4 id={`${id}-title`} tabIndex={-1}>{indicatorContent[code].name}</h4></header>
+    <p className={`health-card-value ${available ? "" : "health-card-value--missing"}`} title={available ? financialValue(point!.value, unit) : undefined}>{available ? compactFinancialValue(point!.value, unit) : loading ? "Odczytywanie…" : "Brak danych"}</p>
+    <p className="health-description">{explanations[code]}</p>
+    <div className="health-card-meta"><span className="health-importance" title="Istotność wskaźnika dla kupca, nie ocena wyniku dostawcy">{importanceLabels[importance]}</span><span>{count} {count === 1 ? "okres w historii" : "okresów w historii"}</span></div>
+    <div className="health-card-actions"><button type="button" data-financial-view="history" aria-haspopup="dialog" onClick={event => { event.currentTarget.focus({ preventScroll: true }); setView("history"); }}>Zobacz historię</button>
+      <button type="button" data-financial-view="methodology" aria-haspopup="dialog" onClick={event => { event.currentTarget.focus({ preventScroll: true }); setView("methodology"); }}>Jak to obliczamy?</button></div>
+    {view && <FinancialIndicatorDialog code={code} points={points} selectedPeriod={selectedPeriod} initialView={view} onClose={() => setView(null)} onSource={onSource} />}
   </article>;
 }
 export function FinancialHealthArea({ area, financial, scope, selectedPeriod, loading = false, onSource }: {
