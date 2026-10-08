@@ -41,7 +41,7 @@ jobs:
         working-directory: apps/sg-runtime
       - name: SG Runtime and forecast contract regressions (no live compute)
         working-directory: apps/sg-runtime
-        run: node --import tsx --test tests/environment-identity.test.ts tests/forecast-preparation-queue.test.ts tests/forecast-library-service.test.ts tests/forecast-live-input.test.ts tests/runtime-build-contract.test.mjs
+        run: node --import tsx --test tests/environment-identity.test.ts tests/forecast-preparation-queue.test.ts tests/forecast-library-service.test.ts tests/forecast-live-input.test.ts tests/runtime-build-contract.test.mjs tests/current-single-flight.test.ts tests/verification-single-flight.test.ts tests/forecast-preparation-route-contract.test.ts tests/forecast-production-operations.test.ts tests/forecast-identity.test.ts tests/forecast-canonical-history.test.ts tests/rolling-daily-current-ownership.test.ts tests/rolling-daily-current-forecast-snapshot.test.ts tests/rolling-daily-production-operations.test.ts tests/forecast-production-routing.test.ts tests/persistence-ownership.test.ts tests/forecast-history-fingerprint.test.ts
       - run: npm run build
         working-directory: apps/sg-runtime
       - run: npm ci
