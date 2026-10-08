@@ -1,121 +1,172 @@
 {
-  "schemaVersion": "1.0",
-  "taskId": "SRM-STAGING-READINESS-20261008",
-  "executedAt": "2026-10-08T17:27:46.917Z",
+  "schemaVersion": "2.0",
+  "taskId": "SRM-STAGING-ONBOARDING-READINESS-20261008",
+  "integrationBase": "18ee002b4b542c07b1a5ceebc4280d46d8d6a7c2",
+  "implementationCheckpoint": "69617a0",
   "executionEnvironment": "SG-dev Codespaces SRM",
   "suites": {
-    "promotion": {
+    "application": {
       "status": "PASS",
-      "summary": [
-        "✔ explicit authorization validates but cannot bypass RESERVED (0.451272ms)",
-        "✔ rollback approval does not bypass RESERVED or fabricate Development provenance (0.881506ms)",
-        "ℹ tests 64",
-        "ℹ pass 63",
-        "ℹ fail 0",
-        "ℹ skipped 1",
-        "ℹ duration_ms 369.695947"
-      ]
-    },
-    "unit": {
-      "status": "PASS",
-      "tests": 189,
-      "passed": 189,
+      "tests": 197,
+      "passed": 197,
       "failed": 0,
       "skipped": 0
     },
     "typecheck": {
       "status": "PASS"
     },
+    "build": {
+      "status": "PASS",
+      "node": "24.21.0",
+      "runtimeDeploymentExecuted": false
+    },
     "manifest": {
       "status": "PASS",
-      "summary": [
-        "  \"errors\": []"
+      "errors": []
+    },
+    "governance": {
+      "status": "PASS",
+      "tests": 45,
+      "passed": 45,
+      "failed": 0,
+      "skipped": 0
+    },
+    "promotionLocalPostgres": {
+      "status": "PASS",
+      "tests": 98,
+      "passed": 98,
+      "failed": 0,
+      "skipped": 0,
+      "postgres": "16",
+      "host": "127.0.0.1",
+      "database": "srm_migration_test",
+      "providerResource": false,
+      "evidenceLog": "/private/tmp/srm-onboarding-real-pg-tests-final.log",
+      "scope": [
+        "real 11 DDL and transaction failure rollback",
+        "checksum rejection and retry",
+        "committed actual runtime-role persistence",
+        "tenant/no-context/foreign-context denial",
+        "FORCE RLS drift rejection",
+        "synthetic full first/normal/rollback lifecycle and every interruption",
+        "authorization, identity, wrong SHA, moving main, partial provision, ambiguity",
+        "concurrent owner, CAS conflict, stale baseline, post-publication drift",
+        "auto-deployment prevention"
       ]
     },
-    "governance-tests": {
+    "codespacePromotion": {
       "status": "PASS",
-      "summary": [
-        "ℹ tests 36",
-        "ℹ pass 36",
-        "ℹ fail 0",
-        "ℹ skipped 0",
-        "ℹ duration_ms 693.458565"
-      ]
+      "tests": 98,
+      "passed": 96,
+      "failed": 0,
+      "skipped": 2,
+      "skipReason": "Postgres integration separately executed on actual disposable localhost PostgreSQL"
     }
   },
-  "build": {
-    "status": "PASS",
-    "scope": "final integrated PDF release production build, standalone contains both Liberation fonts"
-  },
-  "runtimeSimulation": {
-    "mode": "ISOLATED_LOCALHOST_SIMULATION",
-    "health": "PASS",
-    "passwordSmoke": {
-      "unauthenticated": "PASS",
-      "incorrectPassword": "PASS",
-      "login": "PASS",
-      "secureCookie": "PASS",
-      "authenticatedPage": "PASS"
+  "primaryEvidence": {
+    "renderOpenAPI": {
+      "requestContract": "PASS",
+      "sha256": "36f783c66b60e71df8b5f105f347821e75d531cea21058ab76e5f2d19b6e459a",
+      "realProviderFirstDeploy": "NOT_EXECUTED",
+      "references": [
+        "https://api-docs.render.com/reference/create-service",
+        "https://api-docs.render.com/reference/update-service",
+        "https://api-docs.render.com/reference/create-deploy"
+      ]
     },
-    "unconfiguredDatabaseFailsClosed": 503,
-    "publicLogo": "PASS",
-    "nextStaticAsset": "PASS",
-    "providerCredentialsPresent": false,
-    "productDatabaseCredentialsPresent": false,
-    "stagingProviderMutated": false
+    "github": {
+      "branchProtectionContract": "DOCUMENTED_PRIMARY",
+      "expectedHeadCAS": "DOCUMENTED_PRIMARY",
+      "encryptedEnvironmentSecretCLI": "DOCUMENTED_PRIMARY",
+      "stagingEnvironmentGET": 404,
+      "mainProtectionGET": 404,
+      "protectionsChanged": false
+    },
+    "developmentSchema": {
+      "status": "PASS_READ_ONLY",
+      "project": "snowy-breeze-40315151",
+      "branch": "br-dark-surf-b1vrhda9",
+      "database": "srm_app",
+      "checksumsMatched": 11,
+      "productTables": 15,
+      "forceRlsTables": 15
+    },
+    "renderDevelopment": {
+      "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+      "liveDeployId": "dep-db3v60ks728c73fc2ghg",
+      "liveSha": "18ee002b4b542c07b1a5ceebc4280d46d8d6a7c2",
+      "autoDeploy": "off",
+      "deployedByThisTask": false
+    },
+    "staging": {
+      "canonicalStatus": "RESERVED",
+      "activationStatus": "NOT_ONBOARDED",
+      "renderServiceCount": 0,
+      "neonDatabaseNames": [
+        "neondb"
+      ],
+      "applicationDatabaseAbsent": true
+    },
+    "production": {
+      "branch": "br-nameless-bar-b1wlhjhx",
+      "protected": true,
+      "mutated": false
+    }
   },
-  "databaseIntegration": {
+  "githubCI": {
     "status": "PASS",
-    "database": "srm_migration_test",
-    "host": "localhost",
-    "postgresVersion": "16.14",
-    "tests": 64,
-    "passed": 64,
-    "failed": 0,
-    "skipped": 0,
-    "scope": "all11 migrations, atomic initialization/actual SQL error rollback, idempotent retry, checksums drift, FORCE RLS and tenant isolation"
+    "runId": 37841311277,
+    "url": "https://github.com/profitia/SG-dev/actions/runs/37841311277",
+    "checkedHead": "59e06bcdb0db1b90def629b9a85d9d99514c1848",
+    "application": {
+      "tests": 197,
+      "passed": 197,
+      "skipped": 0
+    },
+    "promotionPostgres16": {
+      "tests": 98,
+      "passed": 98,
+      "skipped": 0
+    },
+    "sharedLifecycleGovernance": {
+      "tests": 28,
+      "passed": 28,
+      "skipped": 0
+    },
+    "governanceRunId": 37841311231,
+    "stagingGuard": "SKIPPED_PR_EVENT",
+    "stagingPromotion": "SKIPPED_PR_EVENT",
+    "finalPublication": "Recheck all latest-head gates before merge; final run and merge SHA recorded in canonical Development PHR"
   },
-  "providerWrites": {
-    "staging": false,
+  "noMutations": {
+    "stagingDeployment": false,
+    "stagingDatabase": false,
     "production": false,
-    "developmentProductDatabase": false
+    "developmentRuntimeDeployment": false,
+    "developmentProductMigration": false,
+    "sg2Continuity": false,
+    "cicContinuity": false
+  },
+  "continuity": {
+    "targetEnvironment": "development",
+    "project": "bold-breeze-68888550",
+    "database": "srm_pmos",
+    "registrationId": "cmuzugimx00005l0q1vjnf6ld",
+    "memorOS": "CANONICALLY_DISABLED",
+    "closeout": "FINAL_PHR_RECORD_AFTER_MERGE",
+    "conversationId": "pmos-task-v2:42542c51db23b8879efc438356d982526795e1ba79a1325959e51ca129d51a12"
   },
   "deploymentTimePending": [
-    "live Staging health/TLS",
-    "real credentials/integration entitlements",
-    "real Neon runtime role/RLS",
-    "authenticated persistence",
-    "exact live SHA",
-    "code rollback compatibility",
-    "actual approved cost"
+    "separate explicit approved release/first-onboarding/cost authorization",
+    "actual isolated provider entitlement and credentials",
+    "actual GitHub protection/ref/encrypted binding acknowledgements",
+    "actual Neon schema/runtime initialization",
+    "first Render live exact source and no-deploy rebind",
+    "real runtime health/authentication/durable SQL persistence",
+    "supplier integration/client UI/assets/export acceptance",
+    "real compatible rollback and final actual baseline"
   ],
-  "criticalImplementationBlockers": [
-    "S0 legal onboarding",
-    "pinned first service source",
-    "canonical provider baseline reconciliation"
-  ],
-  "stagingReadyToDeploy": false,
-  "developmentLedger": {
-    "status": "PASS",
-    "readOnly": true,
-    "verifiedAt": "2026-10-08T17:30:51.819Z",
-    "projectId": "snowy-breeze-40315151",
-    "branchId": "br-dark-surf-b1vrhda9",
-    "database": "srm_app",
-    "count": 11,
-    "method": "actual Neon ledger compared against sha256 of every canonical SQL file"
-  },
-  "git": {
-    "repository": "profitia/SG-dev",
-    "authorityBranch": "main",
-    "reviewedSourceHead": "5bd8156edfd84abd7db19e3eaa8ec1b1c2159659",
-    "baseMain": "437aa3ddc5e132700b1da32abf5fc1ab201d660e",
-    "pullRequest": "https://github.com/profitia/SG-dev/pull/148"
-  },
-  "developmentProviderSnapshot": {
-    "serviceId": "srv-db1vu6gm7kps73d0e3r0",
-    "liveDeployId": "dep-db3t3s2jnfac73ao9pkg",
-    "liveSha": "437aa3ddc5e132700b1da32abf5fc1ab201d660e",
-    "readOnly": true
-  }
+  "blockers": [],
+  "executedAt": "2026-10-08T20:41:11.953Z",
+  "pullRequest": "https://github.com/profitia/SG-dev/pull/152"
 }
