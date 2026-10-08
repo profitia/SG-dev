@@ -11,7 +11,7 @@ import type {
   VerclyKysData,
   VerclyPerson,
 } from "./contracts";
-import { FinancialDashboard } from "./financial-dashboard";
+import { FinancialDashboard, type FinancialPeriodSelection } from "./financial-dashboard";
 
 type DisplaySection<T> = Omit<SectionEnvelope<T>, "source">;
 
@@ -217,11 +217,11 @@ export function GeneralCompanyDataMount({ section }: { section: DisplaySection<G
   );
 }
 
-export function FinancialDataMount({ section, onDownloadExcel, selectedScope, onScopeChange }: { section: DisplaySection<FinancialData>; onDownloadExcel?: (scope: "standalone" | "consolidated", years: string[]) => Promise<void>;
-  selectedScope?: FinancialPeriod["scope"] | null; onScopeChange?: (scope: FinancialPeriod["scope"]) => void }) {
+export function FinancialDataMount({ section, onDownloadExcel, selectedScope, onScopeChange, selectedPeriod }: { section: DisplaySection<FinancialData>; onDownloadExcel?: (scope: "standalone" | "consolidated", years: string[]) => Promise<void>;
+  selectedScope?: FinancialPeriod["scope"] | null; onScopeChange?: (scope: FinancialPeriod["scope"]) => void; selectedPeriod?: FinancialPeriodSelection | null }) {
   return (
     <SectionFrame title="Dane finansowe" section={section}>
-      {section.data ? <FinancialDashboard data={section.data} onDownloadExcel={onDownloadExcel} selectedScope={selectedScope} onScopeChange={onScopeChange} /> : <p>brak danych</p>}
+      {section.data ? <FinancialDashboard data={section.data} onDownloadExcel={onDownloadExcel} selectedScope={selectedScope} onScopeChange={onScopeChange} selectedPeriod={selectedPeriod} /> : <p>brak danych</p>}
     </SectionFrame>
   );
 }

@@ -184,3 +184,14 @@ test("independent FinancialDataMount remains compatible and accepts host scope w
   assert.ok(independent.includes("dane jednostkowe")); assert.ok(controlled.includes("dane skonsolidowane"));
   assert.ok(controlled.includes("Analiza wskaźnikowa"));
 });
+
+test("Financial Health slots share exact period and source navigation without provider operations", async () => {
+  const { instance, calls } = controller(); await instance.search(nipA);
+  const before = calls.length;
+  markup(instance.getSnapshot(), { slots: { financial: { liquidity: context => {
+    assert.deepEqual(context.selectedPeriod, { from: "2025-01-01", to: "2025-12-31" });
+    assert.equal(typeof context.setPeriod, "function"); assert.equal(typeof context.onSource, "function");
+    return React.createElement("p", null, "Zapisane wyniki");
+  } } } });
+  assert.equal(calls.length, before);
+});

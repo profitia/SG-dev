@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { defaultFinancialScope, FinancialDataMount, financialPeriodsByScope, GeneralCompanyDataMount, JdgRegistryMount,
-  VerclyKysMount, type FinancialPeriod, type ReportFreshness, type SectionStatus, type SupplierReportData } from "@profitia/srm-xray";
+  VerclyKysMount, type FinancialPeriod, type FinancialPeriodSelection, type FinancialFactEvidence, type ReportFreshness, type SectionStatus, type SupplierReportData } from "@profitia/srm-xray";
 import { supplierNip, type DisplayCard, type ReportState, type SearchResult } from "./report-controller";
 
 type Scope = FinancialPeriod["scope"];
@@ -13,6 +13,9 @@ export type SupplierReportContext = {
   kys: ReportState["kys"];
   scope: Scope | null;
   setScope: (scope: Scope) => void;
+  selectedPeriod: FinancialPeriodSelection | null;
+  setPeriod: (period: FinancialPeriodSelection) => void;
+  onSource: (fact: FinancialFactEvidence) => void;
   periods: SupplierReportData["financial"]["periods"];
   metadataBusy: boolean;
   metadataError: string | null;
@@ -94,12 +97,35 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
   const root = useRef<HTMLDivElement>(null), kysDetails = useRef<HTMLDetailsElement>(null);
   const financial = state.result?.entityType === "COMPANY" ? state.result.card.financial : null;
   const initialScope = defaultFinancialScope(financial?.data);
-  const [requestedScope, setScope] = useState<Scope | null>(null);
+  const [requestedScope, setRequestedScope] = useState<Scope | null>(null);
+  const [requestedPeriod, setRequestedPeriod] = useState<(FinancialPeriodSelection & { scope: Scope }) | null>(null);
   const scope = requestedScope && financialPeriodsByScope(financial?.data, requestedScope).length ? requestedScope : initialScope;
+  const periods = scope ? state.metadata?.financial.periods.filter(period => period.scope === scope) ?? [] : [];
+  const selectionPeriods = state.metadata ? periods : scope ? financialPeriodsByScope(financial?.data, scope) : [];
+  const selectedPeriod = requestedPeriod?.scope === scope && selectionPeriods.some(period => period.from === requestedPeriod.from && period.to === requestedPeriod.to)
+    ? { from: requestedPeriod.from, to: requestedPeriod.to } : selectionPeriods[0] ? { from: selectionPeriods[0].from, to: selectionPeriods[0].to } : null;
+  function setScope(next: Scope) { setRequestedScope(next); setRequestedPeriod(null); }
+  function setPeriod(next: FinancialPeriodSelection) {
+    if (scope && selectionPeriods.some(period => period.from === next.from && period.to === next.to)) setRequestedPeriod({ ...next, scope });
+  }
+  function onSource(fact: FinancialFactEvidence) {
+    // A source action changes the same shared context; it never reads the provider.
+    if (fact.scope !== scope || !periods.some(period => period.from === fact.periodStart && period.to === fact.periodEnd && period.documentRef === fact.documentRef)) return;
+    setPeriod({ from: fact.periodStart, to: fact.periodEnd });
+    window.requestAnimationFrame(() => {
+      if (!root.current) return;
+      navigateReportSection(root.current, "report-financial-details");
+      const row = Array.from(root.current.querySelectorAll<HTMLElement>("[data-financial-metric]")).find(element => element.dataset.financialMetric === fact.metricCode)?.closest("tr");
+      if (!row) return;
+      let ancestor: HTMLElement | null = row;
+      while (ancestor && ancestor !== root.current) { if (ancestor.tagName === "DETAILS") (ancestor as HTMLDetailsElement).open = true; ancestor = ancestor.parentElement; }
+      const heading = row.querySelector<HTMLElement>("th"); if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); } row.scrollIntoView({ block: "center" });
+    });
+  }
   useEffect(() => { if (state.kys.status !== "NOT_REQUESTED" && kysDetails.current) kysDetails.current.open = true; }, [state.kys]);
   if (!state.result) return null;
   const supplier = state.result, metadata = state.metadata;
-  const context: SupplierReportContext = { supplier, metadata, financial, kys: state.kys, scope, setScope, periods: metadata?.financial.periods.filter(period => period.scope === scope) ?? [],
+  const context: SupplierReportContext = { supplier, metadata, financial, kys: state.kys, scope, setScope, selectedPeriod, setPeriod, onSource, periods,
     metadataBusy: state.metadataBusy, metadataError: state.metadataError };
   const summary = slots.summary?.(context), observations = slots.observations?.(context), kysOverview = slots.kys?.(context);
   const areas = Object.entries(financialAreas).map(([key, title]) => ({ key, title, content: slots.financial?.[key as keyof typeof financialAreas]?.(context) })).filter(area => area.content != null && area.content !== false);
@@ -107,7 +133,7 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
     { id: "report-kys", label: "KYS" }, ...(observations ? [{ id: "report-observations", label: "Obserwacje" }] : []),
     { id: "report-details", label: "Dane szczegółowe" }, { id: "report-sources", label: "Źródła" }].filter(item => item.id !== "report-financial-details" || supplier.entityType === "COMPANY");
   const name = supplier.entityType === "JDG" ? supplier.section.data?.entries[0]?.name : supplier.card.general.data?.legalName ?? supplier.card.identity.name;
-  const latest = context.periods[0];
+  const latest = selectedPeriod;
   return <ReportContext.Provider value={context}><div ref={root} className="supplier-report">
     <section id="supplier-identity" className="report-identity" aria-labelledby="supplier-identity-title">
       <div className="report-identity-heading"><div><p className="report-eyebrow">Raport dostawcy</p><h2 id="supplier-identity-title" tabIndex={-1}>{name ?? "Nazwa niedostępna"}</h2>
@@ -133,6 +159,15 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
     </nav>
     {summary && <section id="report-summary" className="report-content-section" aria-labelledby="report-summary-title"><h2 id="report-summary-title" tabIndex={-1}>Podsumowanie dostawcy</h2>{summary}</section>}
     {!!areas.length && <section id="report-finance" className="report-content-section" aria-labelledby="report-finance-title"><h2 id="report-finance-title" tabIndex={-1}>Kondycja finansowa</h2>
+      <p className="health-dashboard-note">Zapisane wyniki finansowe. Istotność wskaźnika nie jest oceną ryzyka; kierunek zmiany nie oznacza poprawy ani pogorszenia kondycji.</p>
+      {selectionPeriods.length > 0 && <div className="health-context-controls">
+        <div role="group" aria-label="Zakres dashboardu">{(["standalone", "consolidated"] as const).filter(choice => financialPeriodsByScope(financial?.data, choice).length).map(choice => <button key={choice} type="button" aria-pressed={scope === choice} onClick={() => setScope(choice)}>{choice === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</button>)}</div>
+        <label>Okres sprawozdawczy<select aria-label="Okres sprawozdawczy" value={selectedPeriod ? `${selectedPeriod.from}:${selectedPeriod.to}` : ""} onChange={event => { const period = selectionPeriods.find(item => `${item.from}:${item.to}` === event.target.value); if (period) setPeriod(period); }}>
+          {selectionPeriods.map(period => <option key={`${period.from}:${period.to}`} value={`${period.from}:${period.to}`}>{period.from} – {period.to}</option>)}
+        </select></label>
+      </div>}
+      {metadata?.financial.freshness.freshness === "EXPIRED" && <p className="health-data-note">Cache finansowy wygasł. Pokazujemy zapisane wyniki, bez dodatkowego pobierania.</p>}
+      {!metadata && !state.metadataBusy && <p className="health-data-note">Zapisane wyniki dashboardu są niedostępne. Szczegółowe dane pozostają poniżej.</p>}
       <div className="report-financial-areas">{areas.map(area => <section key={area.key} aria-label={area.title}><h3>{area.title}</h3>{area.content}</section>)}</div></section>}
     <section id="report-kys" className="report-content-section report-kys-action" aria-labelledby="report-kys-title">
       <div><h2 id="report-kys-title" tabIndex={-1}>Raport KYS</h2><p>{state.kys.status === "NOT_REQUESTED" ? "Raport KYS nie został jeszcze pobrany w tym widoku." : "Pełny raport i stan pobierania znajdziesz w danych szczegółowych."}</p>
@@ -150,7 +185,7 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
         {supplier.entityType === "JDG" ? <JdgRegistryMount section={supplier.section} /> : <GeneralCompanyDataMount section={supplier.card.general} />}
       </div></details>
       {supplier.entityType === "COMPANY" && <details className="report-detail" id="report-financial-details" open><summary>Sprawozdania finansowe i wskaźniki</summary><div className="report-detail-body">
-        <FinancialDataMount section={supplier.card.financial} onDownloadExcel={onDownloadExcel} selectedScope={scope} onScopeChange={setScope} />
+        <FinancialDataMount section={supplier.card.financial} onDownloadExcel={onDownloadExcel} selectedScope={scope} onScopeChange={setScope} selectedPeriod={selectedPeriod} />
       </div></details>}
       <details className="report-detail" id="report-kys-details" ref={kysDetails}><summary>Pełny raport KYS</summary><div className="report-detail-body">
         {state.kys.status === "NOT_REQUESTED" ? <p>Raport KYS nie został jeszcze pobrany. Zamów go przyciskiem „Pobierz raport KYS”.</p>
