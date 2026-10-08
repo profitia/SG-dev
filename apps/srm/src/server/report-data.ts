@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { kysExportRef } from "./kys-pdf-access";
 import type { FinancialData, FinancialFactEvidence, FinancialHistoryPoint, FinancialIndicatorResult, FinancialPeriod, ReportFreshness, SectionEnvelope, SupplierReportData } from "@profitia/srm-xray";
 import { withOrganization, type DatabasePool } from "./db";
 import { definitions, FINANCIAL_INDICATOR_CODES, FINANCIAL_INDICATOR_FORMULA_VERSION, selectedPeriods, type CalculatedFinancialIndicator, type CatalogIndicatorFact } from "./financial-indicators";
@@ -27,6 +28,7 @@ export type ReportReadRow = {
     hasProjection: boolean;
     currentProjection: boolean;
     completionConfirmed: boolean;
+    snapshotId?: string | null; projectionVersion?: number | null; projectionHash?: string | null; dataClass?: string | null;
   };
 };
 
@@ -204,13 +206,14 @@ LEFT JOIN LATERAL (
   SELECT jsonb_build_object('attemptStatus', a.status, 'attemptAt', a.completed_at,
     'retrievalMethod', a.retrieval_method, 'retrievedAt', s.retrieved_at, 'retentionUntil', s.retention_until,
     'isComplete', p.data_json->'isComplete', 'hasProjection', p.snapshot_id IS NOT NULL,
+    'snapshotId', s.id::text, 'projectionVersion', p.projection_version, 'projectionHash', md5(p.data_json::text || COALESCE((SELECT (kw.report_json->'warnings')::text FROM srm.catalog_kys_reports kw WHERE kw.nip=requested.nip AND kw.entity_type=$3 AND kw.report_json->'data'=p.data_json), '[]')), 'dataClass', s.data_class,
     'currentProjection', COALESCE(jsonb_typeof(p.data_json->'pepMatches') = 'array', false),
     'completionConfirmed', EXISTS (SELECT 1 FROM srm.catalog_kys_reports kc
       WHERE kc.nip = requested.nip AND kc.entity_type = $3
         AND kc.report_json->>'status' = 'SUCCESS' AND kc.report_json->'data' = p.data_json)) AS metadata
   FROM srm.lookup_requests l JOIN srm.provider_attempts a ON a.organization_id = l.organization_id AND a.request_id = l.id AND a.section = 'kys'
-  LEFT JOIN srm.source_snapshots s ON s.organization_id = a.organization_id AND s.attempt_id = a.id AND s.section = 'kys'
-  LEFT JOIN srm.section_projections p ON p.organization_id = s.organization_id AND p.snapshot_id = s.id AND p.section = 'kys'
+  LEFT JOIN srm.source_snapshots s ON s.organization_id = a.organization_id AND s.attempt_id = a.id AND s.supplier_id = l.supplier_id AND s.section = 'kys'
+  LEFT JOIN srm.section_projections p ON p.organization_id = s.organization_id AND p.snapshot_id = s.id AND p.supplier_id = s.supplier_id AND p.section = 'kys'
   WHERE l.organization_id = $2::uuid AND l.identifier_type = 'NIP' AND l.identifier = requested.nip AND l.entity_type = $3
   ORDER BY l.requested_at DESC, a.started_at DESC, p.projection_version DESC LIMIT 1
 ) k ON true`;
@@ -218,7 +221,10 @@ LEFT JOIN LATERAL (
 export async function readReportData(organizationId: string, selection: ReportSelection, now = new Date(), pool?: DatabasePool): Promise<SupplierReportData> {
   return withOrganization(organizationId, async client => {
     const result = await client.query<ReportReadRow>(REPORT_DATA_SQL, [selection.nip, organizationId, selection.entityType, FINANCIAL_INDICATOR_FORMULA_VERSION]);
-    return projectReportData(selection, result.rows[0], now);
+    const row = result.rows[0];
+    const report = projectReportData(selection, row, now);
+    report.kys.exportRef = report.kys.reportAvailable && row.kys ? kysExportRef(organizationId, selection, row.kys, process.env.SRM_DEMO_SESSION_SECRET) : null;
+    return report;
   }, pool);
 }
 

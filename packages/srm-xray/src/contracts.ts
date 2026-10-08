@@ -142,6 +142,8 @@ export type SupplierReportData = {
     limitations: readonly string[];
     /** Metadata only: an expired report's projection/person data is never returned. */
     reportAvailable: boolean;
+    /** Opaque organization/supplier/snapshot binding for an authorized stored PDF; never a database ID. */
+    exportRef?: string | null;
   };
 };
 

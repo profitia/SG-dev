@@ -42,3 +42,7 @@ export type { ExecutiveSummaryInput, ExecutiveSummaryModel, SummaryItem, Summary
 export { KysOverview, useKysOverview } from "./kys-overview";
 export { kysOverview } from "./kys-overview-model";
 export type { KysDetailTarget, KysOverviewInput, KysOverviewModel } from "./kys-overview-model";
+
+export { kysPdfDocument, kysPdfCoverage } from "./kys-pdf-document";
+export type { KysPdfSelection, KysPdfDocument, KysPdfSection, KysPdfRecord } from "./kys-pdf-document";
+export { KysPdfButton } from "./kys-pdf-button";
