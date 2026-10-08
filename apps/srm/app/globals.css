@@ -383,7 +383,7 @@ body { margin: 0; color: var(--srm-text); background: var(--srm-background); }
 .health-evidence button { font-size: .8rem; margin-top: 6px; }
 .health-history { border-top: 1px solid #e0e5eb; margin-top: 16px; }
 .health-history-chart { width: 100%; height: auto; display: block; overflow: visible; }
-.health-history-chart text { fill: #465363; font-size: 13px; }
+.health-history-chart text { fill: #465363; font-size: 24px; }
 .health-chart-axis { stroke: #aab4bf; stroke-width: 1; }
 .health-chart-line { stroke: #006d9e; stroke-width: 2; }
 .health-chart-point { fill: #006d9e; stroke: #fff; stroke-width: 2; }
