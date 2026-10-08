@@ -143,7 +143,7 @@ export function fullPreflight({
       "--execution-environment",
       promotionExecutorEnvironment(),
       "--scope",
-      approvalId,
+      "implementation",
       "--host-conversation-unavailable",
       "--provider-snapshot",
       snapshotPath,

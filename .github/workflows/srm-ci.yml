@@ -144,7 +144,7 @@ jobs:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          npm --prefix apps/srm run promote:staging -- --apply --sha "$APPROVED_SHA" --authorization /tmp/srm-staging-approval/srm-staging-authorization.json > /tmp/srm-staging-evidence.json
+          node apps/srm/scripts/promote-staging.mjs --apply --sha "$APPROVED_SHA" --authorization /tmp/srm-staging-approval/srm-staging-authorization.json > /tmp/srm-staging-evidence.json
       - uses: actions/upload-artifact@v4
         if: success()
         with:

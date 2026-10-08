@@ -412,6 +412,7 @@ async function apply(plan, approval, evidence, env, rollback = false) {
   )
     throw new Error("Provider routing drift");
   assertRenderService(fresh);
+  assertAuthorization(approval, plan.manifest.sha, rollback ? "rollback" : "deploy");
   if (!deploy)
     deploy = await api(
       "https://api.render.com/v1",

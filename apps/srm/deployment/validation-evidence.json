@@ -66,8 +66,14 @@
   },
   "databaseIntegration": {
     "status": "PASS",
-    "scope": "real disposable localhost PostgreSQL16 srm_migration_test, 11 DDL, transaction rollback, RLS and repeat; updated final64 suite result follows",
-    "finalSuite": "PENDING_LOCAL_RECHECK"
+    "database": "srm_migration_test",
+    "host": "localhost",
+    "postgresVersion": "16.14",
+    "tests": 64,
+    "passed": 64,
+    "failed": 0,
+    "skipped": 0,
+    "scope": "all11 migrations, atomic initialization/actual SQL error rollback, idempotent retry, checksums drift, FORCE RLS and tenant isolation"
   },
   "providerWrites": {
     "staging": false,
@@ -88,5 +94,15 @@
     "pinned first service source",
     "canonical provider baseline reconciliation"
   ],
-  "stagingReadyToDeploy": false
+  "stagingReadyToDeploy": false,
+  "developmentLedger": {
+    "status": "PASS",
+    "readOnly": true,
+    "verifiedAt": "2026-10-08T17:30:51.819Z",
+    "projectId": "snowy-breeze-40315151",
+    "branchId": "br-dark-surf-b1vrhda9",
+    "database": "srm_app",
+    "count": 11,
+    "method": "actual Neon ledger compared against sha256 of every canonical SQL file"
+  }
 }
