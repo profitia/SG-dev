@@ -20,7 +20,7 @@ on:
         options: ["NO", "YES"]
         default: "NO"
       cost_owner:
-        description: "Owner accepting Render 7 USD/month, existing Neon max 8 CU, provider/storage/egress/build costs"
+        description: "Owner accepting Render 7 USD/month, existing Neon max 8 CU, provider/storage/egress/build costs, maximum 3 deployment attempts"
         required: true
         type: string
       initialize:
@@ -165,7 +165,7 @@ jobs:
           const old=JSON.parse(fs.readFileSync('/tmp/srm-staging-approval/srm-staging-authorization.json','utf8'));
           const evidence=await liveEvidence(old.releaseSha,{...process.env,GITHUB_TOKEN:process.env.SRM_RELEASE_GITHUB_TOKEN});
           const manifest=manifestFrom({repositoryId:evidence.repositoryId,approvedMainAncestor:evidence.approvedMainAncestor,ciPassed:evidence.ciPassed,developmentLiveSha:evidence.developmentLiveSha},old.releaseSha);
-          const a={...old,schemaVersion:'2.0',mode:'promote',stagingMutationsAllowed:true,manifest,manifestDigest:digest(manifest),repositoryId:contract.repositoryId,renderWorkspaceId:contract.render.workspaceId,renderProjectId:contract.render.projectId,renderEnvironmentId:contract.render.environmentId,neonEndpointId:contract.neon.endpointId,operations,budget:{renderPlan:contract.render.plan,renderInstances:1,renderMonthlyComputeUsd:7,neonMaxCu:8,neonExistingEndpointOnly:true,providerEntitlementsAccepted:true,storageEgressBuildCostsAccepted:true}};
+          const a={...old,schemaVersion:'2.0',mode:'promote',stagingMutationsAllowed:true,manifest,manifestDigest:digest(manifest),repositoryId:contract.repositoryId,renderWorkspaceId:contract.render.workspaceId,renderProjectId:contract.render.projectId,renderEnvironmentId:contract.render.environmentId,neonEndpointId:contract.neon.endpointId,operations,budget:{renderPlan:contract.render.plan,renderInstances:1,renderMonthlyComputeUsd:7,neonMaxCu:8,neonExistingEndpointOnly:true,providerEntitlementsAccepted:true,storageEgressBuildCostsAccepted:true,maxDeploymentAttempts:3}};
           fs.writeFileSync('/tmp/srm-staging-lifecycle-authorization.json',JSON.stringify(a));
 
           JS

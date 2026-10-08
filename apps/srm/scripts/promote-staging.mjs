@@ -357,28 +357,74 @@ async function main() {
     console.log(JSON.stringify(simulationPlan(sha), null, 2));
     return;
   }
+  if (args.includes("--manifest")) {
+    if (mutating || rollback) throw Error("Manifest preparation is read only");
+    const { verifyLifecycleSource, manifestFrom } = await import(
+      "./staging-lifecycle.mjs"
+    );
+    verifyLifecycleSource(sha);
+    const evidence = await liveEvidence(sha, {
+      ...process.env,
+      GITHUB_TOKEN:
+        process.env.SRM_RELEASE_GITHUB_TOKEN ?? process.env.GITHUB_TOKEN,
+    });
+    if (
+      !evidence.ciPassed ||
+      !evidence.approvedMainAncestor ||
+      evidence.developmentLiveSha !== sha
+    )
+      throw Error("Release provenance incomplete");
+    console.log(
+      JSON.stringify(
+        manifestFrom(
+          {
+            repositoryId: evidence.repositoryId,
+            approvedMainAncestor: evidence.approvedMainAncestor,
+            ciPassed: evidence.ciPassed,
+            developmentLiveSha: evidence.developmentLiveSha,
+          },
+          sha,
+        ),
+        null,
+        2,
+      ),
+    );
+    return;
+  }
   if (mutating) {
-    if(!args.includes('--process-locked')) {
-      const child=spawnSync('flock',['--nonblock','/tmp/srm-staging-promotion-1247665550.lock','node',fileURLToPath(import.meta.url),...args,'--process-locked'],{env:process.env,encoding:'utf8',maxBuffer:4*1024*1024});
-      if(child.status!==0)throw Error('Exclusive process lock or release execution failed');
-      console.log(child.stdout.trim());return;
+    if (!args.includes("--process-locked")) {
+      const child = spawnSync(
+        "flock",
+        [
+          "--nonblock",
+          "/tmp/srm-staging-promotion-1247665550.lock",
+          "node",
+          fileURLToPath(import.meta.url),
+          ...args,
+          "--process-locked",
+        ],
+        { env: process.env, encoding: "utf8", maxBuffer: 4 * 1024 * 1024 },
+      );
+      if (child.status !== 0)
+        throw Error("Exclusive process lock or release execution failed");
+      console.log(child.stdout.trim());
+      return;
     }
-    const {lifecycleApply}=await import('./staging-lifecycle.mjs');
-    if(authorization?.releaseSha!==sha)throw Error('Explicit approved SHA mismatch');
-    console.log(JSON.stringify(await lifecycleApply(authorization),null,2));return;
+    const { lifecycleApply } = await import("./staging-lifecycle.mjs");
+    if (
+      authorization?.releaseSha !== sha ||
+      rollback !== (authorization?.mode === "rollback")
+    )
+      throw Error("Explicit approved SHA or rollback mode mismatch");
+    console.log(JSON.stringify(await lifecycleApply(authorization), null, 2));
+    return;
   }
   verifySourceTree(sha);
   const e = await liveEvidence(sha);
   if (rollback && !authorization?.rollbackSchemaCompatible)
     throw new Error("Explicit compatible rollback approval required");
   const plan = buildPlan(e, { sha, authorization, apply: mutating, rollback });
-  console.log(
-    JSON.stringify(
-      plan,
-      null,
-      2,
-    ),
-  );
+  console.log(JSON.stringify(plan, null, 2));
 }
 if (
   process.argv[1] &&
