@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test src/server/*.test.ts",
     "migrate:development": "node scripts/migrate.mjs",
-    "test:promotion": "node --test scripts/promotion.test.mjs",
+    "test:promotion": "node --test --test-concurrency=1 scripts/promotion.test.mjs scripts/staging-lifecycle.test.mjs",
     "promote:staging": "node scripts/promote-staging.mjs",
     "migrate:staging:plan": "node scripts/staging-migrate.mjs --plan"
   },

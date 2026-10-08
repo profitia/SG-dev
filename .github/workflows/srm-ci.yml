@@ -20,7 +20,7 @@ on:
         options: ["NO", "YES"]
         default: "NO"
       cost_owner:
-        description: "Owner accepting the approved Staging resource and provider costs"
+        description: "Owner accepting Render 7 USD/month, existing Neon max 8 CU, provider/storage/egress/build costs"
         required: true
         type: string
       initialize:
@@ -66,6 +66,9 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run test:promotion
+      - name: Shared first-onboarding governance tests
+        working-directory: .
+        run: node --test scripts/governance/srm-release-lifecycle.test.mjs
       - run: npm run build
 
   srm-staging-guard:
@@ -92,11 +95,12 @@ jobs:
           node --input-type=module <<'JS'
           import fs from 'node:fs';
           import {contract,assertAuthorization} from './apps/srm/scripts/staging-migrate.mjs';
-          import {assertDispatchTarget,verifySourceTree} from './apps/srm/scripts/promote-staging.mjs';
+          import {assertDispatchTarget} from './apps/srm/scripts/promote-staging.mjs';
+          import {verifyLifecycleSource} from './apps/srm/scripts/staging-lifecycle.mjs';
           const a={schemaVersion:'1.0',projectKey:'SRM',targetEnvironment:'staging',stagingDeploymentAuthorized:true,productionMutationsAllowed:false,repository:contract.repository,releaseSha:process.env.APPROVED_SHA,neonProjectId:contract.neon.projectId,neonBranchId:contract.neon.branchId,databaseName:'srm_app',approvalId:process.env.APPROVAL_ID,approvedBy:process.env.APPROVED_BY,costOwner:process.env.COST_OWNER,operations:['deploy','migrate',...(process.env.INITIALIZE==='true'?['initialize']:[])],expiresAt:new Date(Date.now()+3600000).toISOString()};
           assertAuthorization(a,a.releaseSha,'deploy');
           assertDispatchTarget();
-          verifySourceTree(a.releaseSha);
+          verifyLifecycleSource(a.releaseSha);
           const response=await fetch('https://api.github.com/repos/'+contract.repository+'/environments/srm-staging',{headers:{Authorization:'Bearer '+process.env.GITHUB_TOKEN,'X-GitHub-Api-Version':'2022-11-28'},signal:AbortSignal.timeout(30000)});
           if(!response.ok)throw new Error('Registered protected GitHub environment unavailable');
           assertDispatchTarget(await response.json());
@@ -143,8 +147,29 @@ jobs:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
+          SRM_RELEASE_GITHUB_TOKEN: ${{ secrets.SRM_RELEASE_GITHUB_TOKEN }}
+          SRM_DEMO_PASSWORD: ${{ secrets.SRM_DEMO_PASSWORD }}
+          SRM_DEMO_SESSION_SECRET: ${{ secrets.SRM_DEMO_SESSION_SECRET }}
+          MGBI_API_KEY: ${{ secrets.MGBI_API_KEY }}
+          VERCLY_API_KEY: ${{ secrets.VERCLY_API_KEY }}
+          CEIDG_API_KEY: ${{ secrets.CEIDG_API_KEY }}
+          VERCLY_API_BASE_URL: ${{ vars.VERCLY_API_BASE_URL }}
+          MGBI_AUTH_SCHEME: ${{ vars.MGBI_AUTH_SCHEME }}
         run: |
-          node apps/srm/scripts/promote-staging.mjs --apply --sha "$APPROVED_SHA" --authorization /tmp/srm-staging-approval/srm-staging-authorization.json > /tmp/srm-staging-evidence.json
+          node --input-type=module <<'JS'
+          const fs=await import('node:fs');
+          const {liveEvidence}=await import('./apps/srm/scripts/promote-staging.mjs');
+          const {manifestFrom,lifecycleApply}=await import('./apps/srm/scripts/staging-lifecycle.mjs');
+          const {contract}=await import('./apps/srm/scripts/staging-migrate.mjs');
+          const {digest,operations}=await import('./scripts/governance/srm-release-lifecycle.mjs');
+          const old=JSON.parse(fs.readFileSync('/tmp/srm-staging-approval/srm-staging-authorization.json','utf8'));
+          const evidence=await liveEvidence(old.releaseSha,{...process.env,GITHUB_TOKEN:process.env.SRM_RELEASE_GITHUB_TOKEN});
+          const manifest=manifestFrom({repositoryId:evidence.repositoryId,approvedMainAncestor:evidence.approvedMainAncestor,ciPassed:evidence.ciPassed,developmentLiveSha:evidence.developmentLiveSha},old.releaseSha);
+          const a={...old,schemaVersion:'2.0',mode:'promote',stagingMutationsAllowed:true,manifest,manifestDigest:digest(manifest),repositoryId:contract.repositoryId,renderWorkspaceId:contract.render.workspaceId,renderProjectId:contract.render.projectId,renderEnvironmentId:contract.render.environmentId,neonEndpointId:contract.neon.endpointId,operations,budget:{renderPlan:contract.render.plan,renderInstances:1,renderMonthlyComputeUsd:7,neonMaxCu:8,neonExistingEndpointOnly:true,providerEntitlementsAccepted:true,storageEgressBuildCostsAccepted:true}};
+          fs.writeFileSync('/tmp/srm-staging-lifecycle-authorization.json',JSON.stringify(a));
+
+          JS
+          node apps/srm/scripts/promote-staging.mjs --apply --sha "$APPROVED_SHA" --authorization /tmp/srm-staging-lifecycle-authorization.json > /tmp/srm-staging-evidence.json
       - uses: actions/upload-artifact@v4
         if: success()
         with:
