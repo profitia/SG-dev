@@ -1,9 +1,15 @@
 "use client";
 
+import { FinancialHealthArea } from "@profitia/srm-xray";
 import { useRef, useState, type FormEvent } from "react";
-import { SupplierReport } from "../src/modules/xray/supplier-report";
+import { SupplierReport, type SupplierReportContext, type SupplierReportSlots } from "../src/modules/xray/supplier-report";
 import { useSupplierReport } from "../src/modules/xray/use-supplier-report";
 import { supplierNip } from "../src/modules/xray/report-controller";
+
+const financialSlots: SupplierReportSlots["financial"] = Object.fromEntries((["liquidity", "debt", "profitability", "cashFlow"] as const).map(area => [area,
+  (context: SupplierReportContext) => context.supplier.entityType === "COMPANY" ? <FinancialHealthArea area={area} financial={context.metadata?.financial ?? null}
+    scope={context.scope} selectedPeriod={context.selectedPeriod} loading={context.metadataBusy} onSource={context.onSource} /> : null,
+]));
 
 export default function Home() {
   const { state, controller } = useSupplierReport();
@@ -72,7 +78,7 @@ export default function Home() {
       {state.error && <p role="alert" className="search-error">{state.error}</p>}
       {!state.result && !state.busy && !state.error && <div className="report-empty"><h2>Raport dostawcy</h2><p>Wpisz NIP, aby zobaczyć dostępne dane finansowe i rejestrowe.</p></div>}
       {state.result && <SupplierReport key={`${state.result.entityType}:${supplierNip(state.result)}`} state={state}
-        onFetchKys={controller.fetchKys} onReadMetadata={controller.refreshMetadata} onRevealPesel={revealPesel} onDownloadExcel={downloadFinancialExcel} />}
+        onFetchKys={controller.fetchKys} onReadMetadata={controller.refreshMetadata} onRevealPesel={revealPesel} onDownloadExcel={downloadFinancialExcel} slots={{ financial: financialSlots }} />}
     </div>
   </main>;
 }

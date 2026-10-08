@@ -29,3 +29,8 @@ export {
 
 export { latestAvailableFinancialYear, defaultFinancialScope, financialPeriodsByScope } from "./financial-dashboard";
 export { financialLabels } from "./financial-labels";
+
+export type { FinancialPeriodSelection } from "./financial-dashboard";
+export { FinancialHealthArea, type FinancialSourceAction } from "./financial-health";
+export { healthGroups, indicatorContent, indicatorPresentation, importanceLabels, financialReason } from "./financial-indicator-content";
+export { FinancialHistory, historyPlot, historyPoints, financialValue, comparisonText } from "./financial-history";

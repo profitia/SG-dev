@@ -7,51 +7,8 @@ import { amountInThousands } from "./financial-labels";
 type Scope = FinancialPeriod["scope"];
 type Fact = FinancialPeriod["facts"][number];
 type Row = { code: string; label: string; strong?: boolean };
-type IndicatorPreview = { name: string; description: string; formula: string; requirement?: string; code?: string };
-
-const indicatorGroups: { title: string; description: string; indicators: IndicatorPreview[] }[] = [
-  { title: "Płynność", description: "Pokazuje, czy dostawca ma zasoby na najbliższe zobowiązania. Dla kupca to sygnał, czy napięta gotówka może utrudnić terminowe zakupy materiałów, produkcję lub dostawy.", indicators: [
-    { name: "Płynność bieżąca", description: "Pomaga ocenić krótkoterminową zdolność do regulowania zobowiązań. Niska wartość może oznaczać ryzyko przerw w dostawach; bardzo wysoka wymaga sprawdzenia, czy aktywa nie są zamrożone w zapasach i należnościach.", formula: "Aktywa obrotowe ÷ zobowiązania krótkoterminowe", code: "CURRENT_RATIO" },
-    { name: "Kapitał obrotowy netto", description: "Pokazuje finansowy bufor po pokryciu zobowiązań krótkoterminowych. Ujemna wartość może utrudnić dostawcy sfinansowanie bieżących zamówień i wzrostu produkcji.", formula: "Aktywa obrotowe − zobowiązania krótkoterminowe", code: "NET_WORKING_CAPITAL" },
-    { name: "Płynność szybka", description: "Sprawdza pokrycie krótkoterminowych zobowiązań bez zapasów, których nie zawsze można szybko spieniężyć. Jest użyteczna, gdy dostawca utrzymuje duży magazyn.", formula: "(Aktywa obrotowe − zapasy) ÷ zobowiązania krótkoterminowe", requirement: "Wymaga potwierdzonej wartości zapasów.", code: "QUICK_RATIO" },
-  ] },
-  { title: "Finansowanie i zadłużenie", description: "Pokazuje, jak dostawca finansuje działalność i jak duże ma obciążenia. Kupiec może dzięki temu ocenić odporność firmy na spadek sprzedaży lub wzrost kosztów finansowania.", indicators: [
-    { name: "Udział zobowiązań i rezerw w aktywach", description: "Wskazuje część majątku finansowaną zobowiązaniami i rezerwami. Rosnący udział może zmniejszać odporność dostawcy na trudniejszy okres; ta pozycja nie oznacza wyłącznie kredytów.", formula: "Zobowiązania i rezerwy ÷ aktywa razem × 100%", code: "LIABILITIES_TO_ASSETS" },
-    { name: "Udział kapitału własnego w aktywach", description: "Pokazuje, ile majątku jest finansowane własnym kapitałem. Wyższy udział może dawać dostawcy większy bufor na straty i nieprzewidziane wydatki.", formula: "Kapitał własny ÷ aktywa razem × 100%", code: "EQUITY_TO_ASSETS" },
-    { name: "Pokrycie odsetek", description: "Pomaga ocenić, czy wynik operacyjny wystarcza na obsługę odsetek. Słabe pokrycie może ograniczyć środki potrzebne na wykonanie kontraktu.", formula: "Wynik operacyjny ÷ koszty odsetek", requirement: "Wymaga wyodrębnienia odsetek z kosztów finansowych.", code: "INTEREST_COVERAGE" },
-    { name: "Dług netto / EBITDA", description: "Orientacyjnie pokazuje skalę długu wobec wyniku operacyjnego przed amortyzacją. Wysoka wartość może sygnalizować ograniczoną zdolność do nowych inwestycji; EBITDA nie jest gotówką.", formula: "(Dług oprocentowany − środki pieniężne) ÷ EBITDA", requirement: "Wymaga potwierdzenia długu, gotówki i definicji EBITDA.", code: "NET_DEBT_TO_EBITDA" },
-  ] },
-  { title: "Rentowność i trend", description: "Pokazuje, czy dostawca zarabia na działalności i w jakim kierunku zmienia się jego skala. Dla kupca istotna jest trwałość wyniku, a nie tylko pojedynczy dobry rok.", indicators: [
-    { name: "Marża operacyjna", description: "Pokazuje, jaka część przychodów pozostaje po kosztach podstawowej działalności. Spadek marży może zapowiadać presję na ceny, jakość lub terminowość dostaw.", formula: "Wynik operacyjny ÷ przychody × 100%", code: "OPERATING_MARGIN" },
-    { name: "Marża netto", description: "Pokazuje końcowy wynik przypadający na przychody. Utrzymujące się straty mogą osłabiać zdolność dostawcy do realizacji długich kontraktów.", formula: "Wynik netto ÷ przychody × 100%", code: "NET_MARGIN" },
-    { name: "Zmiana przychodów rok do roku", description: "Pozwala zobaczyć, czy skala działalności rośnie czy maleje. Gwałtowny spadek może wymagać rozmowy o obłożeniu zakładu i ciągłości dostaw; sam wzrost nie dowodzi dobrej kondycji.", formula: "(Przychody bieżące ÷ przychody poprzedniego roku − 1) × 100%", code: "REVENUE_YOY" },
-    { name: "Rentowność aktywów (ROA)", description: "Pokazuje, jak skutecznie majątek firmy tworzy wynik. Spadek może sugerować słabsze wykorzystanie zasobów potrzebnych do obsługi zamówień.", formula: "Wynik netto ÷ średnie aktywa × 100%", code: "ROA", requirement: "Wymaga porównywalnych danych za dwa lata." },
-    { name: "Rentowność kapitału własnego (ROE)", description: "Pokazuje wynik osiągany na kapitale właścicieli. Pomaga ocenić trwałość finansowania, lecz przy niskim lub ujemnym kapitale może być mylący.", formula: "Wynik netto ÷ średni kapitał własny × 100%", code: "ROE", requirement: "Wymaga dwóch lat danych; przy kapitale niedodatnim wynik wymaga osobnej interpretacji." },
-    { name: "Marża EBITDA", description: "Pokazuje relację wyniku przed amortyzacją do przychodów. Ułatwia porównanie trendu operacyjnego, ale nie potwierdza dostępnej gotówki na realizację zamówień.", formula: "(Wynik operacyjny + amortyzacja) ÷ przychody × 100%", requirement: "Wymaga potwierdzonej amortyzacji i jednej definicji EBITDA.", code: "EBITDA_MARGIN" },
-  ] },
-  { title: "Koszty i przepływy pieniężne", description: "Pokazuje wrażliwość kosztów oraz to, czy działalność tworzy gotówkę. Dla kupca są to sygnały, czy dostawca może finansować materiały, pracę i inwestycje bez zakłócania dostaw.", indicators: [
-    { name: "Udział materiałów i energii w kosztach", description: "Pomaga ocenić wrażliwość dostawcy na wzrost cen surowców i energii. Wysoki udział może uzasadniać rozmowę o zabezpieczeniu cen i terminów dostaw.", formula: "Koszty materiałów i energii ÷ koszty działalności operacyjnej × 100%", code: "MATERIALS_ENERGY_SHARE" },
-    { name: "Pokrycie zobowiązań przepływami operacyjnymi", description: "Pokazuje, w jakim stopniu bieżąca działalność dostarcza gotówki na krótkoterminowe zobowiązania. Niskie pokrycie może oznaczać większą zależność od finansowania zewnętrznego.", formula: "Przepływy operacyjne ÷ zobowiązania krótkoterminowe", requirement: "Wymaga rachunku przepływów pieniężnych." },
-    { name: "Wolne przepływy pieniężne", description: "Przybliżają gotówkę pozostającą po nakładach inwestycyjnych. Ujemna wartość wymaga sprawdzenia, czy wynika z rozwoju firmy, czy z trudności operacyjnych.", formula: "Przepływy operacyjne − nakłady inwestycyjne", requirement: "Wymaga rachunku przepływów i potwierdzenia nakładów inwestycyjnych.", code: "FREE_CASH_FLOW" },
-    { name: "Cykl konwersji gotówki", description: "Pokazuje, jak długo środki są związane w zapasach i należnościach przed odzyskaniem gotówki. Długi cykl może utrudniać finansowanie kolejnych zamówień.", formula: "Dni zapasów + dni należności − dni zobowiązań", requirement: "Wymaga szczegółowych pozycji bilansu, kosztu sprzedaży i porównywalnych okresów.", code: "CASH_CONVERSION_CYCLE" },
-  ] },
-];
-
-const indicatorReasons: Record<string, string> = {
-  MISSING_FIELD: "W zapisanym sprawozdaniu brakuje potrzebnej pozycji.",
-  SOURCE_MAPPING_UNCONFIRMED: "Nie potwierdzono jeszcze dokładnego mapowania pól źródłowych dla tego wzoru.",
-  UNVERIFIED_FIELD: "Wartość źródłowa wymaga potwierdzenia.",
-  UNSUPPORTED_UNIT: "Jednostka lub waluta danych nie jest porównywalna.",
-  UNVERIFIED_COST_SIGN: "Nie potwierdzono sposobu zapisu kosztów.",
-  UNVERIFIED_SOURCE: "Brakuje potwierdzonego dokumentu źródłowego.",
-  INVALID_AMOUNT: "Kwota źródłowa ma nieprawidłowy format.",
-  DOCUMENT_MISMATCH: "Kwoty nie zgadzają się z wybranym sprawozdaniem.",
-  MIXED_SOURCE: "Pozycje okresu pochodzą z różnych pobrań.",
-  PERIOD_NOT_ANNUAL: "Dostępny okres nie obejmuje pełnego roku.",
-  PRIOR_YEAR_NOT_COMPARABLE: "Brakuje porównywalnego poprzedniego roku.",
-  NON_POSITIVE_DENOMINATOR: "Podstawa obliczenia jest zerowa lub ujemna.",
-  NON_POSITIVE_EQUITY: "Średni kapitał własny nie jest dodatni.",
-};
+import { indicatorGroups, indicatorReasons } from "./financial-indicator-content";
+export type FinancialPeriodSelection = { from: string; to: string };
 
 function formattedIndicatorValue(indicator: FinancialIndicatorResult): string {
   const numeric = Number(indicator.value);
@@ -61,7 +18,7 @@ function formattedIndicatorValue(indicator: FinancialIndicatorResult): string {
   return indicator.unit === "PLN" ? `${formatted} tys. zł` : indicator.unit === "RATIO" ? `${formatted}×` : indicator.unit === "DAYS" ? `${formatted} dni` : `${formatted}%`;
 }
 
-function FinancialIndicatorsPreview({ data, scope, year }: { data: FinancialData; scope: Scope; year: string }) {
+function FinancialIndicatorsPreview({ data, scope, period }: { data: FinancialData; scope: Scope; period: FinancialPeriodSelection }) {
   return <div className="financial-indicators-preview">
     <div className="financial-strength-preview">
       <div><h3>Siła finansowa</h3><p>Przekrojowy obraz płynności, finansowania, rentowności i trendu z kilku lat. Zasady oceny zostaną uzgodnione przed uruchomieniem kalkulacji.</p></div>
@@ -72,7 +29,7 @@ function FinancialIndicatorsPreview({ data, scope, year }: { data: FinancialData
       <h3>{group.title}</h3>
       <p className="financial-indicator-group-description">{group.description}</p>
       <div className="financial-indicator-grid">{group.indicators.map((indicator) => {
-        const result = data.indicators?.find((item) => item.code === indicator.code && item.scope === scope && item.periodEnd.slice(0, 4) === year);
+        const result = data.indicators?.find((item) => item.code === indicator.code && item.scope === scope && item.periodStart === period.from && item.periodEnd === period.to);
         const available = result?.status === "AVAILABLE" && result.value !== null;
         const importance = result ? `${"●".repeat(result.importance)}${"○".repeat(3 - result.importance)}` : null;
         return <article className="financial-indicator" key={indicator.name}>
@@ -86,7 +43,7 @@ function FinancialIndicatorsPreview({ data, scope, year }: { data: FinancialData
         </article>;
       })}</div>
     </section>)}
-    <p className="financial-indicators-note">Wyniki za {year} r. pochodzą z potwierdzonych danych finansowych. Brak lub nieporównywalność danych pokazujemy wraz z przyczyną.</p>
+    <p className="financial-indicators-note">Wyniki za {period.from} – {period.to} pochodzą z potwierdzonych danych finansowych. Brak lub nieporównywalność danych pokazujemy wraz z przyczyną.</p>
   </div>;
 }
 
@@ -224,29 +181,32 @@ function MetricChart({ periods, code, title, color }: { periods: readonly Financ
 }
 
 function FinancialTable({
-  groups, periods, allPeriods, onChart,
+  groups, periods, allPeriods, onChart, selectedPeriod,
 }: {
   groups: { title: string; rows: Row[] }[];
   periods: readonly FinancialPeriod[];
   allPeriods: readonly FinancialPeriod[];
   onChart: (row: Row) => void;
+  selectedPeriod?: FinancialPeriodSelection | null;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showMore, setShowMore] = useState(false);
-  const visible = showMore ? allPeriods : periods;
+  const selectedIsOlder = selectedPeriod && !periods.some(period => period.from === selectedPeriod.from && period.to === selectedPeriod.to);
+  const visible = showMore || selectedIsOlder ? allPeriods : periods;
   return <>
     <div className="financial-table-tools">
       <span>Kwoty w tys. zł · kolumny według roku sprawozdania</span>
-      {allPeriods.length > 8 && <button type="button" onClick={() => setShowMore(!showMore)} aria-expanded={showMore}>
+      {selectedIsOlder && <span>Pokazujemy wszystkie lata, aby zachować wybrany starszy okres.</span>}
+      {allPeriods.length > 8 && !selectedIsOlder && <button type="button" onClick={() => setShowMore(!showMore)} aria-expanded={showMore}>
         {showMore ? "Pokaż 8 ostatnich lat" : `Więcej lat (${allPeriods.length - 8})`}
       </button>}
     </div>
     <div className="financial-table-scroll" ref={scrollRef} tabIndex={0} aria-label="Tabela finansowa przewijana poziomo">
       <table className="financial-table">
-        <thead><tr><th scope="col">Pozycja sprawozdania</th>{visible.map((period) => <th scope="col" key={period.documentId} title={`${period.from} – ${period.to}`}>{period.to.slice(0, 4)}</th>)}<th scope="col">Wykres</th></tr></thead>
+        <thead><tr><th scope="col">Pozycja sprawozdania</th>{visible.map((period) => <th scope="col" key={period.documentId} title={`${period.from} – ${period.to}`} aria-current={period.from === selectedPeriod?.from && period.to === selectedPeriod?.to ? "true" : undefined}>{period.to.slice(0, 4)}</th>)}<th scope="col">Wykres</th></tr></thead>
         <tbody>{groups.map((group) => {
           const rows = group.rows.filter((row) => allPeriods.some((period) => numberFor(period, row.code) !== null));
-          return <FragmentGroup key={group.title} title={group.title} rows={rows} visible={visible} onChart={onChart} />;
+          return <FragmentGroup key={group.title} title={group.title} rows={rows} visible={visible} onChart={onChart} selectedPeriod={selectedPeriod} />;
         })}</tbody>
       </table>
     </div>
@@ -257,21 +217,21 @@ function FinancialTable({
   </>;
 }
 
-function FragmentGroup({ title, rows, visible, onChart }: { title: string; rows: Row[]; visible: readonly FinancialPeriod[]; onChart: (row: Row) => void }) {
+function FragmentGroup({ title, rows, visible, onChart, selectedPeriod }: { title: string; rows: Row[]; visible: readonly FinancialPeriod[]; onChart: (row: Row) => void; selectedPeriod?: FinancialPeriodSelection | null }) {
   return <>
     <tr className="financial-table-group"><th scope="rowgroup" colSpan={visible.length + 2}>{title}</th></tr>
     {rows.length ? rows.map((row) => <tr className={row.strong ? "financial-table-total" : undefined} key={row.code}>
       <th scope="row">{row.label}</th>
-      {visible.map((period) => <td key={period.documentId}>{formatNumber(numberFor(period, row.code))}</td>)}
-      <td><button className="financial-row-chart" type="button" aria-label={`Pokaż wykres: ${row.label}`} onClick={() => onChart(row)}>
+      {visible.map((period) => <td key={period.documentId} data-selected-period={period.from === selectedPeriod?.from && period.to === selectedPeriod?.to ? "true" : undefined}>{formatNumber(numberFor(period, row.code))}</td>)}
+      <td><button className="financial-row-chart" data-financial-metric={row.code} type="button" aria-label={`Pokaż wykres: ${row.label}`} onClick={() => onChart(row)}>
         <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><rect x="2" y="10" width="3" height="8" rx="1" /><rect x="8" y="5" width="3" height="13" rx="1" /><rect x="14" y="2" width="3" height="16" rx="1" /></svg>
       </button></td>
     </tr>) : <tr><td colSpan={visible.length + 2}>brak danych</td></tr>}
   </>;
 }
 
-export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onScopeChange }: { data: FinancialData; onDownloadExcel?: (scope: Scope, years: string[]) => Promise<void>;
-  selectedScope?: Scope | null; onScopeChange?: (scope: Scope) => void }) {
+export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onScopeChange, selectedPeriod }: { data: FinancialData; onDownloadExcel?: (scope: Scope, years: string[]) => Promise<void>;
+  selectedScope?: Scope | null; onScopeChange?: (scope: Scope) => void; selectedPeriod?: FinancialPeriodSelection | null }) {
   const initialScope = defaultFinancialScope(data);
   const [requestedScope, setRequestedScope] = useState<Scope | null>(null);
   const [selectedRow, setSelectedRow] = useState<Row | null>(null);
@@ -283,6 +243,7 @@ export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onSco
   const preferredScope = selectedScope === undefined ? requestedScope : selectedScope;
   const scope = preferredScope && scopes.includes(preferredScope) ? preferredScope : initialScope;
   const allPeriods = scope ? financialPeriodsByScope(data, scope) : [];
+  const activePeriod = selectedPeriod === undefined ? allPeriods[0] : allPeriods.find(period => period.from === selectedPeriod?.from && period.to === selectedPeriod?.to);
   const eightPeriods = allPeriods.slice(0, 8);
   const chartPeriods = eightPeriods;
   const availableYears = allPeriods.map((period) => period.to.slice(0, 4));
@@ -303,6 +264,7 @@ export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onSco
       {scopes.length > 1 && <div className="financial-scope" role="group" aria-label="Rodzaj sprawozdania">
         {scopes.map((choice) => <button type="button" key={choice} aria-pressed={scope === choice} onClick={() => { setRequestedScope(choice); onScopeChange?.(choice); }}>{choice === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</button>)}
       </div>}
+      <p>Wybrany okres: {activePeriod ? `${activePeriod.from} – ${activePeriod.to}` : "brak pasującego sprawozdania"}</p>
       <p>Ostatni dostępny raport: {allPeriods[0].to.slice(0, 4)} · {scope === "standalone" ? "dane jednostkowe" : "dane skonsolidowane"}</p>
     </div>
     {onDownloadExcel && <details className="financial-excel-export">
@@ -334,16 +296,16 @@ export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onSco
           <MetricChart periods={chartPeriods} code="PALA_OAC" title="Koszty" color="#006D9E" />
           <MetricChart periods={chartPeriods} code="PALA_NPL" title="Wynik finansowy netto" color="#0092D9" />
         </div>
-        <FinancialTable groups={incomeGroups} periods={eightPeriods} allPeriods={allPeriods} onChart={setSelectedRow} />
+        <FinancialTable groups={incomeGroups} periods={eightPeriods} allPeriods={allPeriods} onChart={setSelectedRow} selectedPeriod={activePeriod} />
       </div>
     </details>
     <details className="financial-accordion" open>
       <summary>Bilans</summary>
-      <div className="financial-accordion-body"><FinancialTable groups={balanceGroups} periods={eightPeriods} allPeriods={allPeriods} onChart={setSelectedRow} /></div>
+      <div className="financial-accordion-body"><FinancialTable groups={balanceGroups} periods={eightPeriods} allPeriods={allPeriods} onChart={setSelectedRow} selectedPeriod={activePeriod} /></div>
     </details>
     <details className="financial-accordion">
       <summary>Analiza wskaźnikowa</summary>
-      <div className="financial-accordion-body"><FinancialIndicatorsPreview data={data} scope={scope!} year={allPeriods[0].to.slice(0, 4)} /></div>
+      <div className="financial-accordion-body">{activePeriod ? <FinancialIndicatorsPreview data={data} scope={scope!} period={activePeriod} /> : <p>Brak wyniku dla wybranego okresu.</p>}</div>
     </details>
     <dialog className="financial-chart-dialog" ref={dialogRef} onClose={() => setSelectedRow(null)}>
       {selectedRow && <>
