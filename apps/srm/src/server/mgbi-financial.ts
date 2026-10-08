@@ -1,5 +1,6 @@
 import type { FinancialData, FinancialPeriod, SectionEnvelope } from "@profitia/srm-xray";
 import type { CompanyIdentifier, MgbiGeneralOptions } from "./mgbi-general";
+import { fetchMgbiPages } from "./mgbi-archive";
 
 type RecordObject = Record<string, unknown>;
 export type FinancialSourceFact = {
@@ -19,13 +20,13 @@ export type FinancialSourceFact = {
 export type MgbiFinancialResult = {
   section: SectionEnvelope<FinancialData>;
   sourceData?: FinancialData;
+  rawResponse?: { pages: unknown[]; recordCount: number };
   facts: FinancialSourceFact[];
   errorCode: string | null;
 };
 
 const MODEL = "pl-krs-rdf-record";
 const SOURCE = { provider: "MGBI" as const, model: MODEL, recordId: null };
-const MAX_RESULTS = 100;
 const NO_FINANCIAL_FACTS = "MGBI_NO_STRUCTURED_FINANCIAL_DATA";
 const INTERNATIONAL_STATEMENT = "MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS";
 const XML_FINANCIAL_FIELDS: Record<string, string> = {
@@ -260,49 +261,21 @@ export async function fetchMgbiFinancial(identifier: CompanyIdentifier, options:
   const scheme = options.authScheme ?? (process.env.MGBI_AUTH_SCHEME === "bearer" ? "bearer" : "raw");
   const url = new URL(`/v1/models/${MODEL}/records`, options.baseUrl ?? "https://api.mgbi.pl");
   url.searchParams.set(identifier.type === "NIP" ? "identifiers.pl_nip" : "identifiers.pl_krs", identifier.value);
-  url.searchParams.set("content.standardized_fields.is_available", "true");
-  url.searchParams.set("per_page", String(MAX_RESULTS));
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 15_000);
   const now = options.now ?? (() => new Date());
   try {
-    const response = await (options.fetcher ?? fetch)(url, {
-      method: "GET", headers: { Accept: "application/json", Authorization: scheme === "bearer" ? `Bearer ${key.trim()}` : key.trim() },
-      signal: controller.signal, cache: "no-store",
-    });
+    // No structured-field filter: the archive must retain every RDF record returned for this NIP,
+    // including statements that cannot yet be mapped into SRM financial facts.
+    const response = await fetchMgbiPages(url,
+      { Accept: "application/json", Authorization: scheme === "bearer" ? `Bearer ${key.trim()}` : key.trim() },
+      controller.signal, options.fetcher);
     const retrievedAt = now().toISOString();
-    if (!response.ok) return empty("ERROR", retrievedAt, `MGBI_HTTP_${response.status}`, `HTTP_${response.status}`);
-    let body: unknown;
-    try { body = await response.json(); } catch { return empty("ERROR", retrievedAt, "MGBI_INVALID_JSON", "INVALID_JSON"); }
-    const results = obj(body)?.results;
-    if (!Array.isArray(results)) return empty("ERROR", retrievedAt, "MGBI_INVALID_RESPONSE", "INVALID_RESPONSE");
-    const count = typeof obj(body)?.count === "number" ? obj(body)!.count as number : results.length;
-    const mapped = mapMgbiFinancialRecords(results, identifier, retrievedAt, count);
-    if (mapped.section.status !== "EMPTY") return mapped;
-
-    // The structured-fields filter excludes reports whose metadata is still available.
-    // Inspect that metadata only for empty results; never request a paid file or record-by-id endpoint.
-    const metadataUrl = new URL(url);
-    metadataUrl.searchParams.delete("content.standardized_fields.is_available");
-    try {
-      const metadataResponse = await (options.fetcher ?? fetch)(metadataUrl, {
-        method: "GET", headers: { Accept: "application/json", Authorization: scheme === "bearer" ? `Bearer ${key.trim()}` : key.trim() },
-        signal: controller.signal, cache: "no-store",
-      });
-      if (!metadataResponse.ok) return mapped;
-      const metadataBody: unknown = await metadataResponse.json();
-      const metadataRecords = obj(metadataBody)?.results;
-      if (!Array.isArray(metadataRecords)) return mapped;
-      const metadataCount = typeof obj(metadataBody)?.count === "number" ? obj(metadataBody)!.count as number : metadataRecords.length;
-      const metadataMapped = mapMgbiFinancialRecords(metadataRecords, identifier, retrievedAt, metadataCount);
-      if (metadataMapped.section.status !== "EMPTY") return metadataMapped;
-      return isInternationalStatementWithoutFacts(metadataRecords, identifier, metadataCount)
-        ? empty("EMPTY", retrievedAt, INTERNATIONAL_STATEMENT, null)
-        : mapped;
-    } catch {
-      // Metadata only refines the empty-state reason; losing it must not hide the known result.
-      return mapped;
-    }
+    if (response.errorCode) return empty("ERROR", retrievedAt, `MGBI_${response.errorCode}`, response.errorCode);
+    const mapped = mapMgbiFinancialRecords(response.records, identifier, retrievedAt, response.count);
+    const result = mapped.section.status === "EMPTY" && isInternationalStatementWithoutFacts(response.records, identifier, response.count)
+      ? empty("EMPTY", retrievedAt, INTERNATIONAL_STATEMENT, null) : mapped;
+    return { ...result, rawResponse: { pages: response.pages, recordCount: response.count } };
   } catch (error) {
     const timeout = controller.signal.aborted || (error instanceof Error && error.name === "AbortError");
     return empty("ERROR", now().toISOString(), timeout ? "MGBI_TIMEOUT" : "MGBI_NETWORK_ERROR", timeout ? "TIMEOUT" : "NETWORK_ERROR");

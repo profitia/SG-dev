@@ -53,6 +53,18 @@ test("queries NIP with a server-side token and exact record match", async () => 
   assert.equal(called, true);
   assert.equal(result.section.status, "SUCCESS");
   assert.deepEqual(result.rawRecord, record);
+  assert.deepEqual(result.rawResponse?.pages, [{ count: 1, results: [record] }]);
+});
+
+test("retains complete WP fields outside the public company projection", async () => {
+  const full = structuredClone(record) as typeof record & { representation?: { pesel: string } };
+  full.representation = { pesel: "12345678901" };
+  const result = await fetchMgbiGeneral({ type: "NIP", value: "1234567890" }, {
+    ...options, fetcher: async () => Response.json({ count: 1, results: [full] }),
+  });
+  assert.equal(result.section.data?.legalName, "Przykład sp. z o.o.");
+  assert.equal(JSON.stringify(result.rawResponse).includes("12345678901"), true);
+  assert.equal(JSON.stringify(result.section.data).includes("12345678901"), false);
 });
 
 test("treats empty and mismatched search results separately", async () => {
