@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, type ReactNode } from "react";
+import React, { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type {
   FinancialData,
   FinancialPeriod,
@@ -231,6 +231,8 @@ export function VerclyKysMount({ section, entityType = "COMPANY", onRevealPesel 
   entityType?: "COMPANY" | "JDG";
   onRevealPesel?: (token: string) => Promise<string>;
 }) {
+  const detailId = useId();
+  const target = (group: string) => ({ id: `${detailId}-${group}`, "data-kys-detail": group, tabIndex: -1 });
   const data = section.data;
   const company = data?.company;
   const countLabel = (count: number | null | undefined) => count == null ? "brak danych" : `${count} wpisów w raporcie`;
@@ -245,7 +247,7 @@ export function VerclyKysMount({ section, entityType = "COMPANY", onRevealPesel 
           <span>Stan raportu: {data?.isComplete ? "zakończony" : "w toku"}</span>
         </div>
         <div className="kys-grid">
-          <section className="kys-panel" aria-label="Dane rejestrowe KYS">
+          <section className="kys-panel" aria-label="Dane rejestrowe KYS" {...target("identity")}>
             <h3>Dane rejestrowe</h3>
             <dl className="xray-facts">
               <dt>Nazwa</dt><dd>{value(company?.name)}</dd>
@@ -273,7 +275,7 @@ export function VerclyKysMount({ section, entityType = "COMPANY", onRevealPesel 
             </dl>
           </section>
           <div className="kys-column">
-          <section className="kys-panel" aria-label="Rejestry i statusy">
+          <section className="kys-panel" aria-label="Rejestry i statusy" {...target("registry")}>
             <h3>Rejestry i statusy</h3>
             <dl className="xray-facts">
               <dt>Odpytane rejestry</dt><dd>{data?.queriedRegisters.length ? data.queriedRegisters.map((name) => registerLabels[name] ?? name).join(", ") : "nie ustalono"}</dd>
@@ -285,7 +287,7 @@ export function VerclyKysMount({ section, entityType = "COMPANY", onRevealPesel 
               <dt>Podmiot na pozostałych listach</dt><dd>{yesNo(data?.screeningSummary?.otherLists)}</dd>
             </dl>
           </section>
-          <section className="kys-panel" aria-label="Listy sankcyjne i ostrzeżenia">
+          <section className="kys-panel" aria-label="Listy sankcyjne i ostrzeżenia" {...target("lists")}>
             <h3>Listy sankcyjne i ostrzeżenia</h3>
             {lists.length ? <table className="kys-lists"><thead><tr><th>Lista</th><th>Wynik</th></tr></thead><tbody>
               {lists.map((entry) => <tr key={`${entry.type}:${entry.name}`}><td>{verclyListLabels[entry.name] ?? entry.name.replaceAll("_", " ")}</td><td>{yesNo(entry.matched)}</td></tr>)}
@@ -293,17 +295,17 @@ export function VerclyKysMount({ section, entityType = "COMPANY", onRevealPesel 
           </section>
           </div>
         </div>
-        <section className="kys-panel" aria-label="Osoby pełniące funkcje kierownicze i nadzorcze">
+        <section className="kys-panel" aria-label="Osoby pełniące funkcje kierownicze i nadzorcze" {...target("people")}>
           <h3>Osoby pełniące funkcje kierownicze i nadzorcze</h3>
           <p className="kys-note">{countLabel(data?.relatedPersonsCount)}</p>
           <KysPeopleTable people={data?.relatedPersons} onRevealPesel={onRevealPesel} />
         </section>
-        <section className="kys-panel" aria-label="Beneficjenci rzeczywiści">
+        <section className="kys-panel" aria-label="Beneficjenci rzeczywiści" {...target("beneficiaries")}>
           <h3>Beneficjenci rzeczywiści</h3>
           <p className="kys-note">{countLabel(data?.beneficialOwnersCount)}</p>
           <KysPeopleTable people={data?.beneficialOwners} onRevealPesel={onRevealPesel} showBirthDate={false} kind="beneficiary" />
         </section>
-        <section className="kys-panel kys-pep-panel" aria-label="Osoby na eksponowanych stanowiskach politycznych">
+        <section className="kys-panel kys-pep-panel" aria-label="Osoby na eksponowanych stanowiskach politycznych" {...target("pep")}>
           <h3>Osoby na eksponowanych stanowiskach politycznych</h3>
           <p className="kys-note">{data?.pepMatches ? pepMatchCount(data.pepMatches.length) : "brak danych"}</p>
           {data?.pepMatches?.length ? <div className="kys-table-scroll"><table className="kys-lists kys-pep-table">
@@ -326,7 +328,7 @@ export function VerclyKysMount({ section, entityType = "COMPANY", onRevealPesel 
             })}</tbody>
           </table></div> : <p>Nie stwierdzono dopasowań PEP w danych osób zwróconych przez dostawcę.</p>}
         </section>
-        {entityType === "COMPANY" && <section className="kys-panel" aria-label="Struktura właścicielska i powiązane podmioty">
+        {entityType === "COMPANY" && <section className="kys-panel" aria-label="Struktura właścicielska i powiązane podmioty" {...target("relations")}>
           <h3>Struktura właścicielska i powiązane podmioty</h3>
           {data?.relatedEntities?.length ? <div className="kys-table-scroll"><table className="kys-lists"><thead><tr><th>Podmiot</th><th>Powiązanie</th><th>Identyfikatory</th><th>Okres</th><th>Sankcje</th></tr></thead><tbody>
             {data.relatedEntities.map((entry, index) => <tr key={`${entry.name}:${index}`}>
