@@ -21,7 +21,7 @@
   --srm-content-padding: 24px;
   --srm-reading-width: 65ch;
   --srm-control-height: 44px;
-  --srm-motion: 160ms;
+  --srm-motion: 200ms;
   --srm-brand: #242F44;
   --srm-interaction: #006D9E;
   --srm-data-accent: #0092D9;
@@ -469,7 +469,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; letter-spacing: -.02em; line-height: 
 .summary-columns { gap: var(--srm-space-6); }
 .report-navigation { border-radius: var(--srm-radius); }
 .report-navigation a { min-height: var(--srm-control-height); min-width: var(--srm-control-height); font-weight: 600; }
-:where(button, a, summary, input, select) { transition: background-color var(--srm-motion), color var(--srm-motion), border-color var(--srm-motion); }
+:where(button, a, summary, input, select) { transition: background-color var(--srm-motion) ease-out, color var(--srm-motion) ease-out, border-color var(--srm-motion) ease-out; }
 .supplier-report button, .appshield-search button, .appshield-new-report, .srm-login-form button { min-height: var(--srm-control-height); min-width: var(--srm-control-height); font-weight: 600; }
 .health-methodology summary, .summary-explanation summary, .summary-more > summary { min-height: var(--srm-control-height); display: flex; align-items: center; }
 .health-card button:hover:not(:disabled), .financial-scope button:hover:not(:disabled):not([aria-pressed="true"]) { background: var(--srm-interaction-soft); border-color: var(--srm-interaction); }
