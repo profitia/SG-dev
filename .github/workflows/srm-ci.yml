@@ -29,4 +29,5 @@ jobs:
       - run: npm ci --install-links
       - run: npm run typecheck
       - run: npm test
+      - run: npm run test:promotion
       - run: npm run build

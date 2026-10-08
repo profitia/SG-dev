@@ -1,3 +1,4 @@
+import { productEnvironmentReady, productOrganizationId } from "../../../../../src/server/runtime-environment";
 import { NextResponse } from "next/server";
 import { hasDemoSession } from "../../../../../src/server/demo-auth";
 import { verifyPeselToken } from "../../../../../src/server/pesel-reveal";
@@ -10,10 +11,10 @@ export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "no-store" };
 
 export async function POST(request: Request) {
-  if (process.env.TARGET_ENVIRONMENT !== "development") return NextResponse.json({ error: "Środowisko niedostępne." }, { status: 404, headers });
+  if (!productEnvironmentReady()) return NextResponse.json({ error: "Środowisko niedostępne." }, { status: 404, headers });
   if (!await hasDemoSession(request)) return NextResponse.json({ error: "Wymagane logowanie." }, { status: 401, headers });
   if (!isSameOriginRequest(request)) return NextResponse.json({ error: "Nieprawidłowe żądanie." }, { status: 403, headers });
-  const organizationId = process.env.SRM_DEVELOPMENT_ORGANIZATION_ID;
+  const organizationId = productOrganizationId();
   if (!organizationId) return NextResponse.json({ error: "Środowisko SRM nie jest skonfigurowane." }, { status: 503, headers });
   let body: unknown;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Nieprawidłowe żądanie." }, { status: 400, headers }); }

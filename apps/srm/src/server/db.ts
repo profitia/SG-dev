@@ -1,10 +1,11 @@
+import { assertProductConnection } from "./runtime-environment";
 import pg, { type PoolClient } from "pg";
 
 export type DatabasePool = Pick<pg.Pool, "connect">;
 let sharedPool: pg.Pool | undefined;
 
 export function runtimeConnectionString(environment: Readonly<Record<string, string | undefined>> = process.env): string {
-  if (environment.SRM_APP_DATABASE_URL) return environment.SRM_APP_DATABASE_URL;
+  if (environment.SRM_APP_DATABASE_URL) { assertProductConnection(environment.SRM_APP_DATABASE_URL, environment); return environment.SRM_APP_DATABASE_URL; }
   const host = environment.SRM_APP_DATABASE_HOST;
   const password = environment.SRM_APP_DATABASE_PASSWORD;
   if (!host || !password) throw new Error("SRM application database configuration is required");
@@ -15,6 +16,7 @@ export function runtimeConnectionString(environment: Readonly<Record<string, str
   url.password = password;
   url.searchParams.set("sslmode", "require");
   url.searchParams.set("channel_binding", "require");
+  assertProductConnection(url.toString(), environment);
   return url.toString();
 }
 

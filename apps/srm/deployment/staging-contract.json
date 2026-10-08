@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "1.0",
+  "projectKey": "SRM",
+  "repository": "profitia/SG-dev",
+  "repositoryId": 1247665550,
+  "authorityBranch": "main",
+  "configurationOwner": "SRM Runtime",
+  "managementMode": "PROVIDER_MANAGED_CONTRACT",
+  "preparationOnly": true,
+  "render": {
+    "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+    "projectId": "prj-dapbd3hsrm7s73es53fg",
+    "environmentId": "evm-dapbdbbbc2fs73f4g7gg",
+    "serviceName": "srm-staging-runtime",
+    "serviceId": null,
+    "region": "frankfurt",
+    "plan": "starter",
+    "numInstances": 1,
+    "rootDir": "",
+    "autoDeployTrigger": "off",
+    "previews": "off",
+    "healthCheckPath": "/api/health",
+    "buildCommand": "npm --prefix apps/srm ci --install-links && npm --prefix apps/srm run build && mkdir -p apps/srm/.next/standalone/.next && cp -R apps/srm/.next/static apps/srm/.next/standalone/.next/static && cp -R apps/srm/public apps/srm/.next/standalone/public",
+    "startCommand": "cd apps/srm && HOSTNAME=0.0.0.0 node .next/standalone/server.js",
+    "domains": []
+  },
+  "neon": {
+    "projectId": "snowy-breeze-40315151",
+    "branchId": "br-broad-butterfly-b11t4v01",
+    "endpointId": "ep-autumn-wildflower-b1mv0vda",
+    "directHost": "ep-autumn-wildflower-b1mv0vda.c-5.eu-central-1.aws.neon.tech",
+    "databaseName": "srm_app",
+    "runtimeRole": "srm_app_runtime"
+  },
+  "development": {
+    "branchId": "br-dark-surf-b1vrhda9",
+    "endpointId": "ep-red-smoke-b16ih64d",
+    "directHost": "ep-red-smoke-b16ih64d.c-5.eu-central-1.aws.neon.tech",
+    "renderServiceId": "srv-db1vu6gm7kps73d0e3r0"
+  },
+  "github": {
+    "environmentName": "srm-staging",
+    "environmentId": null,
+    "dispatchOnly": true
+  },
+  "release": {
+    "approvedMainShaRequired": true,
+    "developmentLiveShaRequired": true,
+    "sameSourceMinimum": true,
+    "immutableArtifactStatus": "PLANNED_HARDENING",
+    "automaticMainPromotion": false
+  },
+  "requiredSecrets": [
+    "SRM_APP_DATABASE_PASSWORD",
+    "SRM_DEMO_PASSWORD",
+    "SRM_DEMO_SESSION_SECRET",
+    "MGBI_API_KEY",
+    "VERCLY_API_KEY",
+    "CEIDG_API_KEY"
+  ],
+  "requiredConfiguration": [
+    "TARGET_ENVIRONMENT",
+    "SRM_NEON_PROJECT_ID",
+    "SRM_NEON_BRANCH_ID",
+    "SRM_APP_DATABASE_HOST",
+    "SRM_STAGING_ORGANIZATION_ID",
+    "VERCLY_API_BASE_URL",
+    "MGBI_AUTH_SCHEME"
+  ],
+  "deploymentTimeGates": [
+    "S0_EXACT_PROVIDER_ONBOARDING",
+    "STAGING_CREDENTIALS_AND_COST_OWNER",
+    "GITHUB_ENVIRONMENT_PROTECTION",
+    "FIRST_SERVICE_CREATION_WITH_PINNED_SOURCE",
+    "LIVE_HEALTH_AUTH_AND_PERSISTENCE",
+    "ROLLBACK_COMPATIBILITY"
+  ],
+  "rollback": {
+    "codeOnly": true,
+    "automaticSchemaRollback": false,
+    "branchResetAllowed": false,
+    "previousDeployAndShaRequired": true
+  }
+}

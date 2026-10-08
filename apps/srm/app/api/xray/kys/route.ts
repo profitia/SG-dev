@@ -1,3 +1,4 @@
+import { productEnvironmentReady, productOrganizationId } from "../../../../src/server/runtime-environment";
 import { NextResponse } from "next/server";
 import { hasDemoSession } from "../../../../src/server/demo-auth";
 import { isSameOriginRequest } from "../../../../src/server/request-origin";
@@ -8,10 +9,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  if (process.env.TARGET_ENVIRONMENT !== "development") return NextResponse.json({ error: "Środowisko niedostępne." }, { status: 404 });
+  if (!productEnvironmentReady()) return NextResponse.json({ error: "Środowisko niedostępne." }, { status: 404 });
   if (!await hasDemoSession(request)) return NextResponse.json({ error: "Wymagane logowanie." }, { status: 401 });
   if (!isSameOriginRequest(request)) return NextResponse.json({ error: "Nieprawidłowe żądanie." }, { status: 403 });
-  const organizationId = process.env.SRM_DEVELOPMENT_ORGANIZATION_ID;
+  const organizationId = productOrganizationId();
   if (!organizationId) return NextResponse.json({ error: "Środowisko SRM nie jest skonfigurowane." }, { status: 503 });
   let body: unknown;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Nieprawidłowe żądanie." }, { status: 400 }); }
