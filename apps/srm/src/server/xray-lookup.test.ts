@@ -76,21 +76,17 @@ test("financial mount groups readable rows, converts PLN to thousands and keeps 
   assert.match(html, /3,00/);
   assert.match(html, /2,00/);
   assert.match(html, /tysiącach złotych/);
-  assert.match(html, /Analiza wskaźnikowa/);
-  assert.match(html, /Siła finansowa/);
-  assert.match(html, /Płynność bieżąca/);
-  assert.match(html, /Udział zobowiązań i rezerw w aktywach/);
-  assert.match(html, /Marża netto/);
-  assert.match(html, /Cykl konwersji gotówki/);
-  assert.equal(html.match(/W trakcie developmentu/g)?.length, 18);
-  assert.match(html, /Kropki nie oceniają ryzyka firmy/);
+  assert.match(html, /Uzupełniająca definicja przepływów/);
+  assert.doesNotMatch(html, /Siła finansowa|Analiza wskaźnikowa/);
+  assert.match(html, /Pokrycie zobowiązań przepływami operacyjnymi/);
+  assert.doesNotMatch(html, /W trakcie developmentu|Kropki nie oceniają ryzyka firmy/);
   assert.ok(!html.includes("Wskaźniki pomogą ocenić płynność"));
   assert.ok(!html.includes("Źródło:"));
   assert.ok(!html.includes("MGBI"));
   assert.ok(!html.includes("PALA_UNKNOWN"));
 });
 
-test("financial indicator cards show calculated values, fixed importance and an unavailable reason", () => {
+test("detailed financial mount removes duplicate indicator presentation without changing stored inputs", () => {
   const section: SectionEnvelope<FinancialData> = {
     status: "SUCCESS", source: { provider: "MGBI", model: "KRS-RDF", recordId: "record" },
     retrievedAt: "2026-10-06T00:00:00Z", effectiveAt: "2025-12-31", warnings: [],
@@ -110,15 +106,13 @@ test("financial indicator cards show calculated values, fixed importance and an 
         status: "UNAVAILABLE", value: null, unit: "RATIO", importance: 3, reasonCode: "SOURCE_MAPPING_UNCONFIRMED", formulaVersion: "1.0" },
     ] },
   };
+  const before = JSON.stringify(section);
   const html = renderToStaticMarkup(createElement(FinancialDataMount, { section }));
-  assert.match(html, /1,50×/);
-  assert.match(html, /500,00 tys\. zł/);
-  assert.match(html, /●●● · kluczowa/);
-  assert.match(html, /●●○ · istotna/);
-  assert.match(html, /●○○ · pomocnicza/);
-  assert.match(html, /Średni kapitał własny nie jest dodatni/);
-  assert.match(html, /15,00%/);
-  assert.match(html, /Nie potwierdzono jeszcze dokładnego mapowania pól źródłowych/);
+  assert.doesNotMatch(html, /Analiza wskaźnikowa|financial-indicator-card|1,50×|500,00 tys\. zł/);
+  assert.match(html, /Pokrycie zobowiązań przepływami operacyjnymi/);
+  assert.match(html, /Brak zatwierdzonej kalkulacji/);
+  assert.equal(JSON.stringify(section), before);
+  assert.equal(section.data!.indicators!.length, 5);
   assert.ok(!html.includes("MGBI"));
 });
 

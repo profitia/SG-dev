@@ -138,7 +138,7 @@ test("KYS error and identifier mismatch never fabricate retrieval dates or block
 
 test("page composition preserves all feature mounts and hides empty future analysis", async () => {
   const { instance } = controller(); await instance.search(nipA); const html = markup(instance.getSnapshot());
-  for (const name of ["Dane identyfikacyjne i rejestrowe", "Rachunek zysków i strat", "Bilans", "Analiza wskaźnikowa", "Pobierz do Excela", "Pełny raport KYS"]) assert.ok(html.includes(name), name);
+  for (const name of ["Dane identyfikacyjne i rejestrowe", "Rachunek zysków i strat", "Bilans", "Uzupełniająca definicja przepływów", "Pobierz do Excela", "Pełny raport KYS"]) assert.ok(html.includes(name), name);
   for (const id of ["report-summary", "report-finance\"", "report-observations"]) assert.equal(html.includes(id), false);
   assert.match(html, /Raport KYS nie został jeszcze pobrany/);
   assert.equal(html.includes("PRIVATE_DOCUMENT"), false); assert.equal(html.includes("PRIVATE_MODEL"), false);
@@ -183,7 +183,7 @@ test("independent FinancialDataMount remains compatible and accepts host scope w
   const independent = renderToStaticMarkup(React.createElement(FinancialDataMount, { section: result.card.financial }));
   const controlled = renderToStaticMarkup(React.createElement(FinancialDataMount, { section: result.card.financial, selectedScope: "consolidated" }));
   assert.ok(independent.includes("dane jednostkowe")); assert.ok(controlled.includes("dane skonsolidowane"));
-  assert.ok(controlled.includes("Analiza wskaźnikowa"));
+  assert.ok(controlled.includes("Uzupełniająca definicja przepływów"));
 });
 
 test("Financial Health slots share exact period and source navigation without provider operations", async () => {

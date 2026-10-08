@@ -547,3 +547,46 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; letter-spacing: -.02em; line-height: 
 }
 
 @media (max-width: 767px) { .health-dialog .health-history-chart text { font-size: 20px; } }
+
+
+/* Supplier Snapshot: presentation of the existing deterministic selection. */
+.summary-columns { grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: var(--srm-space-6); align-items: start; }
+.executive-summary .summary-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--srm-space-4); list-style: none; padding: 0; }
+.executive-summary .summary-facts > li { display: flex; flex-direction: column; gap: var(--srm-space-3); margin: 0; padding: var(--srm-space-5); border: 1px solid var(--srm-border); border-radius: var(--srm-radius); background: var(--srm-surface); min-width: 0; }
+.snapshot-label { display: flex; gap: var(--srm-space-2); align-items: start; font-weight: 600; color: var(--srm-brand); }
+.snapshot-label svg { flex: 0 0 20px; fill: none; stroke: var(--srm-interaction); stroke-width: 1.6; }
+.snapshot-value { color: var(--srm-brand); font-size: clamp(1.625rem, 2vw, 2.25rem); line-height: 1.2; letter-spacing: -.035em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.snapshot-change { color: var(--srm-text-secondary); font-size: var(--srm-font-support); }
+.snapshot-exact { font-size: var(--srm-font-support); margin-top: auto; }
+.snapshot-exact summary { min-height: var(--srm-control-height); cursor: pointer; color: var(--srm-interaction); display: flex; align-items: center; }
+.snapshot-evidence { margin-top: auto; }
+.executive-summary .summary-limitations, .executive-summary .summary-more ul { padding: 0; list-style: none; }
+.executive-summary .summary-limitations li, .executive-summary .summary-more li { display: flex; align-items: start; gap: var(--srm-space-3); }
+.summary-limit-icon { flex: 0 0 24px; text-align: center; border: 1px solid var(--srm-warning); background: var(--srm-warning-soft); color: var(--srm-warning); border-radius: var(--srm-radius-small); font-weight: 600; }
+.summary-period { margin-top: 0; }
+.summary-actions { border-top: 1px solid var(--srm-border); padding-top: var(--srm-space-3); }
+/* Shared period highlight wins over stripe, subtotal and hover backgrounds. */
+.financial-table :is(thead, tbody) tr > :is(th, td)[data-selected-period="true"] { background: var(--srm-interaction-soft); color: var(--srm-brand); box-shadow: inset 2px 0 0 var(--srm-data-accent), inset -2px 0 0 var(--srm-data-accent); }
+.financial-table thead th[data-selected-period="true"] { border-top: 3px solid var(--srm-interaction); }
+.financial-table thead th { position: sticky; top: 0; z-index: 2; }
+.financial-table thead th:first-child { z-index: 3; }
+.financial-table tbody th[scope="rowgroup"] { position: sticky; left: 0; text-align: left; z-index: 1; }
+.financial-table-group td { background: var(--srm-interaction-soft); }
+.financial-supplemental-definition p { max-width: var(--srm-reading-width); line-height: 1.6; }
+/* One KYS type scale and table/disclosure rhythm; personal-data access is unchanged. */
+.kys-report { display: grid; gap: var(--srm-space-5); font-size: var(--srm-font-body); line-height: 1.5; font-variant-numeric: tabular-nums; }
+.kys-report .kys-grid, .kys-report .kys-pep-panel { margin-top: 0; }
+.kys-report .kys-grid, .kys-report .kys-column { gap: var(--srm-space-5); }
+.kys-report .kys-panel { overflow: hidden; background: var(--srm-surface); }
+.kys-report .kys-panel h3 { padding: var(--srm-space-4) var(--srm-space-5); background: var(--srm-background); color: var(--srm-brand); border-bottom: 1px solid var(--srm-border); font-size: var(--srm-font-card); font-weight: 600; text-transform: none; letter-spacing: normal; line-height: 1.5; }
+.kys-report .xray-facts, .kys-report .kys-person-details, .kys-report .kys-person-columns, .kys-report .kys-note { font-size: var(--srm-font-support); line-height: 1.5; }
+.kys-report .xray-facts { padding: var(--srm-space-4) var(--srm-space-5); gap: var(--srm-space-2) var(--srm-space-4); }
+.kys-report :is(.kys-lists th, .kys-lists td, .kys-person-columns, .kys-person-summary) { padding: var(--srm-space-3) var(--srm-space-5); }
+.kys-report .kys-person-columns { background: var(--srm-interaction-soft); font-weight: 600; }
+.kys-report :is(.kys-person-summary:hover, .kys-person-entry[open]) { background: var(--srm-interaction-soft); }
+.kys-report .kys-person-details { padding: 0 var(--srm-space-5) var(--srm-space-4); }
+.kys-report .kys-note { color: var(--srm-text-secondary); }
+.kys-report .kys-lists small, .kys-report .kys-summary span { font-size: var(--srm-font-support); }
+.kys-state-date { margin: 0; padding-top: var(--srm-space-4); border-top: 1px solid var(--srm-border); color: var(--srm-text-secondary); font-size: var(--srm-font-support); }
+@media (max-width: 1300px) { .summary-columns { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 767px) { .executive-summary .summary-facts { grid-template-columns: minmax(0, 1fr); } .executive-summary .summary-facts > li { padding: var(--srm-space-4); } }

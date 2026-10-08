@@ -1,51 +1,14 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import type { FinancialData, FinancialIndicatorResult, FinancialPeriod } from "./contracts";
+import type { FinancialData, FinancialPeriod } from "./contracts";
 import { amountInThousands } from "./financial-labels";
 
 type Scope = FinancialPeriod["scope"];
 type Fact = FinancialPeriod["facts"][number];
 type Row = { code: string; label: string; strong?: boolean };
-import { indicatorGroups, indicatorReasons } from "./financial-indicator-content";
+import { indicatorGroups } from "./financial-indicator-content";
 export type FinancialPeriodSelection = { from: string; to: string };
-
-function formattedIndicatorValue(indicator: FinancialIndicatorResult): string {
-  const numeric = Number(indicator.value);
-  if (!Number.isFinite(numeric)) return "Nie można obliczyć";
-  const value = indicator.unit === "PLN" ? numeric / 1000 : numeric;
-  const formatted = new Intl.NumberFormat("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
-  return indicator.unit === "PLN" ? `${formatted} tys. zł` : indicator.unit === "RATIO" ? `${formatted}×` : indicator.unit === "DAYS" ? `${formatted} dni` : `${formatted}%`;
-}
-
-function FinancialIndicatorsPreview({ data, scope, period }: { data: FinancialData; scope: Scope; period: FinancialPeriodSelection }) {
-  return <div className="financial-indicators-preview">
-    <div className="financial-strength-preview">
-      <div><h3>Siła finansowa</h3><p>Przekrojowy obraz płynności, finansowania, rentowności i trendu z kilku lat. Zasady oceny zostaną uzgodnione przed uruchomieniem kalkulacji.</p></div>
-      <strong className="financial-indicator-value">W trakcie developmentu</strong>
-    </div>
-    <p className="financial-indicators-legend">Ważność dla kupca: <span aria-label="pomocnicza">●○○ pomocnicza</span> · <span aria-label="istotna">●●○ istotna</span> · <span aria-label="kluczowa">●●● kluczowa</span>. Kropki nie oceniają ryzyka firmy.</p>
-    {indicatorGroups.map((group) => <section className="financial-indicator-group" key={group.title} aria-label={group.title}>
-      <h3>{group.title}</h3>
-      <p className="financial-indicator-group-description">{group.description}</p>
-      <div className="financial-indicator-grid">{group.indicators.map((indicator) => {
-        const result = data.indicators?.find((item) => item.code === indicator.code && item.scope === scope && item.periodStart === period.from && item.periodEnd === period.to);
-        const available = result?.status === "AVAILABLE" && result.value !== null;
-        const importance = result ? `${"●".repeat(result.importance)}${"○".repeat(3 - result.importance)}` : null;
-        return <article className="financial-indicator" key={indicator.name}>
-          <div className="financial-indicator-heading"><h4>{indicator.name}</h4>
-            <strong className="financial-indicator-value">{result ? available ? formattedIndicatorValue(result) : "Nie można obliczyć" : "W trakcie developmentu"}</strong></div>
-          {importance && <p className="financial-indicator-importance" aria-label={`Ważność dla kupca: ${result!.importance} z 3`}>{importance} · {result!.importance === 3 ? "kluczowa" : result!.importance === 2 ? "istotna" : "pomocnicza"}</p>}
-          {result && !available && <p className="financial-indicator-reason">{result.code === "CASH_CONVERSION_CYCLE" && result.reasonCode === "MISSING_FIELD" ? "Dostępne sprawozdania spółki nie zawierają wszystkich danych wymaganych do obliczenia cyklu." : indicatorReasons[result.reasonCode ?? ""] ?? "Nie można potwierdzić danych do obliczenia."}</p>}
-          <p>{indicator.description}</p>
-          <p className="financial-indicator-formula"><span>Jak liczymy:</span> {indicator.formula}</p>
-          {indicator.requirement && <p className="financial-indicator-requirement">{indicator.requirement}</p>}
-        </article>;
-      })}</div>
-    </section>)}
-    <p className="financial-indicators-note">Wyniki za {period.from} – {period.to} pochodzą z potwierdzonych danych finansowych. Brak lub nieporównywalność danych pokazujemy wraz z przyczyną.</p>
-  </div>;
-}
 
 const incomeGroups: { title: string; rows: Row[] }[] = [
   { title: "Przychody", rows: [
@@ -203,7 +166,7 @@ function FinancialTable({
     </div>
     <div className="financial-table-scroll" ref={scrollRef} tabIndex={0} aria-label="Tabela finansowa przewijana poziomo">
       <table className="financial-table">
-        <thead><tr><th scope="col">Pozycja sprawozdania</th>{visible.map((period) => <th scope="col" key={period.documentId} title={`${period.from} – ${period.to}`} aria-current={period.from === selectedPeriod?.from && period.to === selectedPeriod?.to ? "true" : undefined}>{period.to.slice(0, 4)}</th>)}<th scope="col">Wykres</th></tr></thead>
+        <thead><tr><th scope="col">Pozycja sprawozdania</th>{visible.map((period) => <th scope="col" key={period.documentId} title={`${period.from} – ${period.to}`} data-selected-period={period.from === selectedPeriod?.from && period.to === selectedPeriod?.to ? "true" : undefined} aria-current={period.from === selectedPeriod?.from && period.to === selectedPeriod?.to ? "true" : undefined}>{period.to.slice(0, 4)}</th>)}<th scope="col">Wykres</th></tr></thead>
         <tbody>{groups.map((group) => {
           const rows = group.rows.filter((row) => allPeriods.some((period) => numberFor(period, row.code) !== null));
           return <FragmentGroup key={group.title} title={group.title} rows={rows} visible={visible} onChart={onChart} selectedPeriod={selectedPeriod} />;
@@ -219,14 +182,14 @@ function FinancialTable({
 
 function FragmentGroup({ title, rows, visible, onChart, selectedPeriod }: { title: string; rows: Row[]; visible: readonly FinancialPeriod[]; onChart: (row: Row) => void; selectedPeriod?: FinancialPeriodSelection | null }) {
   return <>
-    <tr className="financial-table-group"><th scope="rowgroup" colSpan={visible.length + 2}>{title}</th></tr>
+    <tr className="financial-table-group"><th scope="rowgroup">{title}</th>{visible.map(period => <td key={period.documentId} aria-hidden="true" data-selected-period={period.from === selectedPeriod?.from && period.to === selectedPeriod?.to ? "true" : undefined} />)}<td aria-hidden="true" /></tr>
     {rows.length ? rows.map((row) => <tr className={row.strong ? "financial-table-total" : undefined} key={row.code}>
       <th scope="row">{row.label}</th>
       {visible.map((period) => <td key={period.documentId} data-selected-period={period.from === selectedPeriod?.from && period.to === selectedPeriod?.to ? "true" : undefined}>{formatNumber(numberFor(period, row.code))}</td>)}
       <td><button className="financial-row-chart" data-financial-metric={row.code} type="button" aria-label={`Pokaż wykres: ${row.label}`} onClick={() => onChart(row)}>
         <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><rect x="2" y="10" width="3" height="8" rx="1" /><rect x="8" y="5" width="3" height="13" rx="1" /><rect x="14" y="2" width="3" height="16" rx="1" /></svg>
       </button></td>
-    </tr>) : <tr><td colSpan={visible.length + 2}>brak danych</td></tr>}
+    </tr>) : <tr><th scope="row">brak danych</th>{visible.map(period => <td key={period.documentId} data-selected-period={period.from === selectedPeriod?.from && period.to === selectedPeriod?.to ? "true" : undefined}>brak danych</td>)}<td /></tr>}
   </>;
 }
 
@@ -303,9 +266,13 @@ export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onSco
       <summary>Bilans</summary>
       <div className="financial-accordion-body"><FinancialTable groups={balanceGroups} periods={eightPeriods} allPeriods={allPeriods} onChart={setSelectedRow} selectedPeriod={activePeriod} /></div>
     </details>
-    <details className="financial-accordion">
-      <summary>Analiza wskaźnikowa</summary>
-      <div className="financial-accordion-body">{activePeriod ? <FinancialIndicatorsPreview data={data} scope={scope!} period={activePeriod} /> : <p>Brak wyniku dla wybranego okresu.</p>}</div>
+    <details className="financial-accordion financial-supplemental-definition">
+      <summary>Uzupełniająca definicja przepływów</summary>
+      <div className="financial-accordion-body">{indicatorGroups.flatMap(group => group.indicators).filter(indicator => !indicator.code).map(indicator => <section key={indicator.name}>
+        <h3>{indicator.name}</h3><p>{indicator.description}</p>
+        <p><strong>Wzór:</strong> {indicator.formula}</p><p>{indicator.requirement}</p>
+        <p>Definicja informacyjna. Brak zatwierdzonej kalkulacji; nie prezentujemy wartości tego wskaźnika.</p>
+      </section>)}<details><summary>Znaczenie grup wskaźników</summary>{indicatorGroups.map(group => <section key={group.title}><h3>{group.title}</h3><p>{group.description}</p></section>)}</details></div>
     </details>
     <dialog className="financial-chart-dialog" ref={dialogRef} onClose={() => setSelectedRow(null)}>
       {selectedRow && <>
