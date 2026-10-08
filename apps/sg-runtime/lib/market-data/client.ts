@@ -1,3 +1,5 @@
+import { assertRuntimeDatabaseIdentity, assertSg2Environment } from '@/lib/environment-identity'
+
 import { PrismaClient } from '@/generated/market-data-client'
 
 import { noteForecastRequestDiagnosticsPrismaQuery } from '@/lib/forecast/request-diagnostics'
@@ -41,10 +43,13 @@ function attachPrismaQueryTelemetry(prisma: PrismaClient) {
 }
 
 export function getMarketDataPrisma() {
+  assertSg2Environment(process.env.APP_ENV)
   const marketDataDatabaseUrl = normalizeUrl(process.env.MARKET_DATA_DATABASE_URL)
   if (!marketDataDatabaseUrl) {
     return null
   }
+
+  assertRuntimeDatabaseIdentity(marketDataDatabaseUrl, 'market')
 
   const prisma = attachPrismaQueryTelemetry(
     globalThis.__sgRuntimeMarketDataPrisma__ ??

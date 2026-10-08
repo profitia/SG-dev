@@ -1,3 +1,5 @@
+import { assertRuntimeDatabaseIdentity } from '@/lib/environment-identity'
+
 import { PrismaClient } from '@prisma/client'
 
 declare global {
@@ -31,10 +33,12 @@ const normalizedDirectUrl = ensureSchema(
 )
 
 if (normalizedDatabaseUrl) {
+  assertRuntimeDatabaseIdentity(normalizedDatabaseUrl, 'application')
   process.env.SG_RUNTIME_DATABASE_URL = normalizedDatabaseUrl
 }
 
 if (normalizedDirectUrl) {
+  assertRuntimeDatabaseIdentity(normalizedDirectUrl, 'application')
   process.env.SG_RUNTIME_DIRECT_URL = normalizedDirectUrl
 }
 
@@ -51,6 +55,11 @@ export const prisma =
         }
       : undefined,
   )
+
+prisma.$use(async (params, next) => {
+  assertRuntimeDatabaseIdentity(normalizedDatabaseUrl, 'application')
+  return next(params)
+})
 
 if (process.env.NODE_ENV !== 'production') {
   globalThis.__sgRuntimePrisma__ = prisma

@@ -1,8 +1,7 @@
+import { resolveDashboardServiceUrl } from '@/lib/environment-identity'
 import { isPorrDemoProfile, serverEnv } from '@/lib/env'
 import { isPorrDemoForecastBenchmark } from '@/lib/benchmark/porr-demo-forecast-portfolio'
 
-const LOCAL_DASHBOARD_PREVIEW_BASE_URL = 'http://localhost:3002'
-const PRODUCTION_DASHBOARD_PREVIEW_BASE_URL = 'https://dashboards-library.onrender.com'
 export const FORECAST_WARMUP_EXPERIMENT_SEARCH_PARAM = 'forecastWarmupExperiment'
 const FORECAST_WARMUP_QUERY_VALUE = '1'
 
@@ -35,15 +34,7 @@ export type BenchmarkAnalyticsEligibility = {
 }
 
 function resolveDashboardPreviewBaseUrl() {
-  if (serverEnv.DASHBOARD_PREVIEW_BASE_URL) {
-    return serverEnv.DASHBOARD_PREVIEW_BASE_URL
-  }
-
-  if (serverEnv.NODE_ENV === 'production') {
-    return PRODUCTION_DASHBOARD_PREVIEW_BASE_URL
-  }
-
-  return LOCAL_DASHBOARD_PREVIEW_BASE_URL
+  return resolveDashboardServiceUrl()
 }
 
 export function buildDashboardPreviewAnalyticsUrl(

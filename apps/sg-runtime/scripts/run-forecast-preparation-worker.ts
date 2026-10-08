@@ -1,6 +1,7 @@
+import './load-env'
+import { assertSg2WorkerIdentity } from '@/lib/environment-identity'
 import {
   createForecastPreparationWorker,
-  resolveForecastPreparationWorkerMode,
 } from '@/lib/forecast/preparation-queue'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 
@@ -21,7 +22,7 @@ function wait(ms: number) {
 }
 
 async function main() {
-  const mode = resolveForecastPreparationWorkerMode(process.env.FORECAST_PREPARATION_WORKER_MODE)
+  const mode = assertSg2WorkerIdentity(process.env)
   const worker = createForecastPreparationWorker({
     workerId: process.env.RENDER_INSTANCE_ID?.trim() || undefined,
     mode,
@@ -44,6 +45,6 @@ async function main() {
 
 main().catch(async (error) => {
   console.error('[forecast-preparation-worker] fatal failure', error)
-  await getMarketDataPrisma()?.$disconnect().catch(() => undefined)
+  try { await getMarketDataPrisma()?.$disconnect() } catch { /* no client may exist after identity rejection */ }
   process.exitCode = 1
 })

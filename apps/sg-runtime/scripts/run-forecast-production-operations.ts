@@ -1,3 +1,4 @@
+import { assertSg2ProducerIdentity } from '@/lib/environment-identity'
 import './load-env'
 
 import {
@@ -40,6 +41,7 @@ function readOptionalPositiveIntegerArg(name: string) {
 async function main() {
   const seriesId = readArg('seriesId')
   if (!seriesId) throw new Error('Missing required --seriesId=...')
+  assertSg2ProducerIdentity(process.env, seriesId, readArg('historical') === 'true')
 
   const targetSemantics = readList<OperationalForecastTarget>(
     'targets',

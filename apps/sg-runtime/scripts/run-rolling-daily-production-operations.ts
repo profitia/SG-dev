@@ -1,3 +1,4 @@
+import { assertSg2ProducerIdentity } from '@/lib/environment-identity'
 import './load-env'
 
 import {
@@ -43,6 +44,7 @@ function readOptionalPositiveIntegerArg(name: string) {
 }
 
 async function main() {
+  assertSg2ProducerIdentity(process.env, readArg('seriesId'))
   const service = createRollingDailyProductionOperationsService()
   const seriesId = readArg('seriesId') || DEFAULT_ROLLING_DAILY_PRODUCTION_OPERATIONS_SERIES_ID
   const modelIds = readModelArgs()

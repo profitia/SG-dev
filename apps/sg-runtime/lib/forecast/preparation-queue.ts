@@ -70,7 +70,8 @@ export type ForecastPreparationWorkerMode = (typeof FORECAST_PREPARATION_WORKER_
 export type ForecastPreparationJobStatus = (typeof FORECAST_PREPARATION_JOB_STATUSES)[number]
 
 export function resolveForecastPreparationWorkerMode(value: string | undefined): ForecastPreparationWorkerMode {
-  const normalized = value?.trim().toUpperCase() || 'ALL'
+  if (!value?.trim()) throw new Error('FORECAST_PREPARATION_WORKER_MODE is required; no implicit ALL lane.')
+  const normalized = value.trim().toUpperCase()
   if (!FORECAST_PREPARATION_WORKER_MODES.includes(normalized as ForecastPreparationWorkerMode)) {
     throw new Error(`FORECAST_PREPARATION_WORKER_MODE must be one of ${FORECAST_PREPARATION_WORKER_MODES.join(', ')}; received ${JSON.stringify(value)}.`)
   }
@@ -896,7 +897,7 @@ export function createForecastPreparationWorker(options: {
 } = {}) {
   const queue = options.queue ?? createForecastPreparationQueueService()
   const workerId = options.workerId ?? `forecast-worker-${randomUUID()}`
-  const mode = options.mode ?? 'ALL'
+  const mode = resolveForecastPreparationWorkerMode(options.mode)
   const allowedJobKinds = resolveForecastPreparationWorkerJobKinds(mode)
   const heartbeatMs = options.heartbeatMs ?? 60_000
   const operations = createForecastProductionOperationsService()
