@@ -122,7 +122,7 @@ test("public summary exposes no providers, raw refs, scoring, AI placeholder or 
   const html = render(fixture()); assert.doesNotMatch(html, /MGBI|Vercly|PRIVATE_|Financial Health Score|AI w przygotowaniu|Pobierz raport KYS/i);
   assert.match(html, /Najważniejsze fakty/); assert.match(html, /Wymaga sprawdzenia/); assert.match(html, /Dalsza analiza/);
   assert.equal((html.match(/data-summary-rule="(?:revenue|net|working-capital)"/g) ?? []).length, 3);
-  assert.equal((html.match(/Na czym to opieramy\?<\/button>/g) ?? []).length, 3);
+  assert.equal((html.match(/aria-label="Na czym to opieramy\?/g) ?? []).length, 3);
 });
 
 test("KYS is neutral before ordering and current only when actually mounted with fresh authorized metadata", () => {

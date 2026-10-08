@@ -159,6 +159,16 @@ export function FinancialDataMount({ section, onDownloadExcel, selectedScope, on
   );
 }
 
+/** The provider state date is a calendar date, never the render or download time. */
+export function kysStateDate(stateAsOf: string | null | undefined): string {
+  const match = stateAsOf?.match(/^(\d{4})-(\d{2})-(\d{2})(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?)?$/);
+  if (!match || (stateAsOf?.includes("T") && (!Number.isFinite(Date.parse(stateAsOf)) || Number(stateAsOf.slice(11, 13)) > 23))) return "Stan danych: nie ustalono";
+  const [year, month, day] = match.slice(1).map(Number);
+  const date = new Date(0); date.setUTCFullYear(year, month - 1, day);
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return "Stan danych: nie ustalono";
+  return `Stan na dzień ${match[3]}.${match[2]}.${match[1]}`;
+}
+
 export function VerclyKysMount({ section, entityType = "COMPANY", onRevealPesel }: {
   section: DisplaySection<VerclyKysData>;
   entityType?: "COMPANY" | "JDG";
@@ -222,6 +232,7 @@ export function VerclyKysMount({ section, entityType = "COMPANY", onRevealPesel 
           </section>
           <section className="kys-panel" aria-label="Listy sankcyjne i ostrzeżenia" {...target("lists")}>
             <h3>Listy sankcyjne i ostrzeżenia</h3>
+            <p className="kys-note">Dopasowania wymagają weryfikacji. Brak wpisu w zwróconym zakresie nie potwierdza stanu niesprawdzonego rejestru.</p>
             {lists.length ? <table className="kys-lists"><thead><tr><th>Lista</th><th>Wynik</th></tr></thead><tbody>
               {lists.map((entry) => <tr key={`${entry.type}:${entry.name}`}><td>{verclyListLabels[entry.name] ?? entry.name.replaceAll("_", " ")}</td><td>{yesNo(entry.matched)}</td></tr>)}
             </tbody></table> : <p>brak danych</p>}
@@ -240,6 +251,7 @@ export function VerclyKysMount({ section, entityType = "COMPANY", onRevealPesel 
         </section>
         <section className="kys-panel kys-pep-panel" aria-label="Osoby na eksponowanych stanowiskach politycznych" {...target("pep")}>
           <h3>Osoby na eksponowanych stanowiskach politycznych</h3>
+          <p className="kys-note">Dopasowanie wymaga sprawdzenia tożsamości. Wartość dopasowania nie jest prawdopodobieństwem naruszenia.</p>
           <p className="kys-note">{data?.pepMatches ? pepMatchCount(data.pepMatches.length) : "brak danych"}</p>
           {data?.pepMatches?.length ? <div className="kys-table-scroll"><table className="kys-lists kys-pep-table">
             <thead><tr><th>Dopasowano na podstawie</th><th>Osoba na liście</th><th>Data urodzenia</th><th>Stanowisko</th><th>Prawdopodobieństwo dopasowania</th></tr></thead>
@@ -259,7 +271,7 @@ export function VerclyKysMount({ section, entityType = "COMPANY", onRevealPesel 
                 <td>{match.probabilityPercent === null ? "nie ustalono" : `${new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 0 }).format(match.probabilityPercent)}%`}</td>
               </tr>;
             })}</tbody>
-          </table></div> : <p>Nie stwierdzono dopasowań PEP w danych osób zwróconych przez dostawcę.</p>}
+          </table></div> : <p>{data?.pepMatches ? "Nie zwrócono dopasowań PEP w danych osób objętych raportem." : "Nie ustalono dostępności wyników PEP."}</p>}
         </section>
         {entityType === "COMPANY" && <section className="kys-panel" aria-label="Struktura właścicielska i powiązane podmioty" {...target("relations")}>
           <h3>Struktura właścicielska i powiązane podmioty</h3>
@@ -273,7 +285,7 @@ export function VerclyKysMount({ section, entityType = "COMPANY", onRevealPesel 
             </tr>)}
           </tbody></table></div> : <p>brak danych</p>}
         </section>}
-        <p className="kys-note">Stan na dzień: {value(data?.stateAsOf)} · ID raportu: {value(data?.reportId)} · identyfikator zapytania: {value(data?.correlationId)}. Brak wpisów w raporcie nie przesądza o stanie rejestru, który nie został sprawdzony.</p>
+        <p className="kys-state-date">{kysStateDate(data?.stateAsOf)}</p>
       </div>
     </SectionFrame>
   );

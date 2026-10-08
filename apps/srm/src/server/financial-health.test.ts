@@ -87,10 +87,11 @@ test("details expose only safe fact projection with validation and unchanged sou
   for (const content of ["Aktywa obrotowe", "Normalizacja potwierdzona", "Zweryfikowana", "123 PLN", "-123 PLN", "1.2"]) assert.ok(html.includes(content), content);
   assert.equal(html.includes("opaque-public"), false); assert.equal(html.includes("EXISTING_RULE"), false);
 });
-test("legacy indicators honor host full-period selection and retain uncoded cash-flow definition/XLSX", () => {
+test("detailed statements honor host full-period selection and retain uncoded cash-flow definition/XLSX without duplicate ratios", () => {
   const periods = [2025, 2024].map(year => ({ from: `${year}-01-01`, to: `${year}-12-31`, scope: "standalone" as const, documentId: `PRIVATE_${year}`, facts: [{ metricCode: "BS_A_CA", amount: "1000", unit: "PLN", currency: "PLN" }, { metricCode: "PALA_NRFS", amount: "1000", unit: "PLN", currency: "PLN" }] }));
   const indicators = [point(2025, "999"), point(2024, "2")];
   const html = renderToStaticMarkup(React.createElement(FinancialDataMount, { section: { status: "SUCCESS", retrievedAt: null, effectiveAt: null, warnings: [], data: { periods, indicators } }, selectedPeriod: periods[1], selectedScope: "standalone", onDownloadExcel: async () => {} }));
   assert.match(html, /Pokrycie zobowiązań przepływami operacyjnymi/); assert.match(html, /Pobierz do Excela/);
-  assert.ok(html.includes("2,00×")); assert.equal(html.includes("999,00×"), false); assert.match(html, /data-selected-period="true"/); assert.equal(html.includes("PRIVATE_"), false);
+  assert.match(html, /title="2024-01-01 – 2024-12-31" data-selected-period="true"/);
+  assert.doesNotMatch(html, /Analiza wskaźnikowa|2,00×|1,50×/); assert.equal(html.includes("999,00×"), false); assert.match(html, /data-selected-period="true"/); assert.equal(html.includes("PRIVATE_"), false);
 });
