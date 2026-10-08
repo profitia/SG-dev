@@ -245,3 +245,23 @@ test("full KYS is withheld when stored metadata cannot confirm authorized versio
   state.metadata!.kys.freshness.freshness="EXPIRED";
   assert.match(markup(state),/stracił ważność/);assert.doesNotMatch(markup(state),/PRIVATE_EXPIRED_PERSON_REPORT/);
 });
+
+
+test("PDF action is adjacent full KYS only for explicitly displayed bound fresh report; no export from stale or unrelated context", async () => {
+  const { instance } = controller(); await instance.search(nipA);
+  const extra = { onDownloadKysPdf: async () => {} };
+  assert(!markup(instance.getSnapshot(), extra).includes("Pobierz raport KYS (PDF)"));
+  const state = instance.getSnapshot(), acquired = new Date().toISOString(), until = new Date(Date.now() + 3600000).toISOString();
+  const data = { ...sampleCard.kys.data!, company: { ...sampleCard.kys.data?.company!, nip: nipA }, pepMatches: [] };
+  const kys = { ...sampleCard.kys, status: "SUCCESS" as const, retrievedAt: acquired, data };
+  const meta = { ...state.metadata!, kys: { ...state.metadata!.kys, status: "SUCCESS" as const, reportAvailable: true, exportRef: "a".repeat(64),
+    freshness: { ...state.metadata!.kys.freshness, freshness: "FRESH" as const, retrievedAt: acquired, retentionUntil: until, cacheExpiresAt: until } } };
+  const ready = { ...state, kys, metadata: meta };
+  const html = markup(ready, extra);
+  assert(html.includes("Pobierz raport KYS (PDF)")); assert(html.indexOf("Sprawozdania finansowe i wskaźniki") < html.indexOf("Pobierz raport KYS (PDF)"));
+  assert(html.indexOf("Pobierz raport KYS (PDF)") < html.indexOf('id="report-kys-details"'));
+  for (const unavailable of [ { ...ready, kys: { ...kys, status: "NOT_REQUESTED" as const } },
+    { ...ready, metadata: { ...meta, nip: nipB } }, { ...ready, metadata: { ...meta, kys: { ...meta.kys, exportRef: null } } },
+    { ...ready, metadata: { ...meta, kys: { ...meta.kys, freshness: { ...meta.kys.freshness, freshness: "EXPIRED" as const } } } },
+    { ...ready, kysBusy: true } ]) assert(!markup(unavailable, extra).includes("Pobierz raport KYS (PDF)"));
+});
