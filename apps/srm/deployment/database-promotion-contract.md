@@ -1,6 +1,6 @@
 # SRM — Database Promotion & Migration Contract
 
-Task SRM-STAGING-READINESS-20261008. Implementacja przygotowana w Development. Żadnych zapisów do Neon Staging ani Production.
+Task SRM-STAGING-ONBOARDING-READINESS-20261008. Implementacja przygotowana w Development. Żadnych zapisów do Neon Staging ani Production.
 
 ## Tożsamość i źródło DDL
 
@@ -14,11 +14,11 @@ Schematy public i srm. Extensions: plpgsql; gen_random_uuid jest wbudowane w Pos
 
 Runtime srm_app_runtime ma LOGIN, NOSUPERUSER, NOBYPASSRLS, NOCREATEDB, NOCREATEROLE, NOREPLICATION i nie może dziedziczyć privileged role ani neon_superuser. Owner connection służy tylko migracji. Runtime dostaje USAGE srm, SELECT organizations, prawa podstawowych tabel oraz prawa z jawnych migracji; DELETE tylko tam, gdzie kanoniczny retention DDL je przyznaje. Nie przyznaje się runtime dostępu do ledger.
 
-## Pierwsze uruchomienie — po legalnym S0
+## Pierwsze uruchomienie — wyłącznie przyszły autoryzowany lifecycle
 
-Utworzenie bazy Neon nie jest wykonywane tym migratorem. W obecnym tasku nie wolno go wykonywać. S0 musi wcześniej legalnie utworzyć bazę i onboarding/identyfikatory, zgodnie z runbookiem. Ten warunek jest blokerem gotowości, nie pozorną automatyzacją.
+Zaimplementowany staging-lifecycle.mjs tworzy tylko brakującą srm_app na dokładnym zarejestrowanym branchu, po odrębnej autoryzacji first onboarding i kosztów. Przed każdym write weryfikuje provider snapshot, source/governance i journal fence; zapisuje INTENT/DONE oraz rzeczywisty database ID. Nie ustawia ACTIVE przed kompletną weryfikacją. W tym tasku nie wykonano tej operacji.
 
-Po S0 opcja initialize wymaga osobnej operacji initialize w autoryzacji, nowego UUID SRM_STAGING_ORGANIZATION_ID i odrębnego runtime hasła min. 32 znaki. Jedna transakcja: advisory lock, bezpieczna create-if-absent rola, walidacja ledger, wszystkie brakujące migracje, ograniczone grants, jedna syntetyczna organizacja slug srm-staging-acceptance, COMMIT. Istniejącej roli nie obraca się ani nie naprawia automatycznie; niebezpieczne atrybuty blokują. Istniejącej organizacji nie nadpisuje się. Nie kopiujemy danych Dev/Prod: supplier records, personal KYS/PESEL, RAW, snapshots, audit, user records i caches pozostają w źródle. Aplikacja uzupełnia dane tylko przez późniejsze jawnie autoryzowane użycie integracji.
+Następnie biblioteczny runMigrations wykonuje atomowo rolę, wszystkie brakujące migracje, grants i jedną pustą syntetyczną organizację. Przy pierwszym trybie wymagane są osobny UUID i odrębne hasło runtime >=32 znaki. Istniejącej roli nie obraca ani nie naprawia automatycznie; niebezpieczne atrybuty blokują. Zastanej organizacji nie nadpisuje. Nie kopiuje rekordów Development/Production: dostawców, osobowych KYS/PESEL, RAW, snapshots, audytu, users i caches.
 
 ## Upgrade, dry-run i retry
 
@@ -32,16 +32,16 @@ npm --prefix apps/srm run migrate:staging:plan
 
 To nie łączy się z bazą. Biblioteczny dryRun używa BEGIN READ ONLY i ROLLBACK, nie uruchamia DDL ani INSERT. Nie jest testem wykonalności DDL; tę część pokrywa rzeczywisty izolowany Postgres 16.
 
-Przyszłe wykonanie po S0, z chronionymi env i jawną autoryzacją:
+Przyszłe wykonanie odbywa się jednym kanonicznym promotorem, z autoryzacją schemaVersion 2.0 mode=onboard/promote. Nie uruchamiać starego samodzielnego apply jako obejścia ordinary RESERVED preflight. Development migrator nadal przyjmuje wyłącznie Development.
 
 ~~~sh
-node apps/srm/scripts/staging-migrate.mjs --apply --initialize --sha "$APPROVED_SHA" --authorization /secure/approval.json --provider-snapshot /secure/provider-snapshot.json
+npm --prefix apps/srm run promote:staging -- --apply --sha "$APPROVED_SHA" --authorization /secure/staging-lifecycle-approval-v2.json
 ~~~
-
-Gdy schema/role/organization już istnieją, pomija się initialize. Nie publikować connection strings ani password values.
 
 ## Odzyskiwanie i rollback
 
 Po błędzie migracji sprawdzić ledger read-only. Jeśli transakcja nie zatwierdziła się, usunąć przyczynę i ponowić ten sam zatwierdzony manifest; nie resetować brancha. Po COMMIT zachowuje się schema/data także przy błędzie Render. Poprawka wraca przez Development/PR. Rollback kodu wymaga oddzielnej autoryzacji rollback, zaakceptowanego SHA, przechodzącego CI i identycznego kompatybilnego DDL/kontraktu. Nie ma automatycznej migracji w dół, DROP schema ani resetu Neon w ścieżce produktu. DROP w teście jest ograniczony do jednorazowej lokalnej srm_migration_test na localhost; Production/Staging nie są akceptowane przez test runner.
 
 Dowody: real first initialization, retry, actual SQL-error transaction rollback, role attributes, 15 FORCE-RLS tables, no-context/wrong-context tenant rejection, checksum drift. Szczegóły wyników znajdują się w staging-readiness.md i artefaktach SRM CI.
+
+Final lifecycle persistence proof writes only a deterministic synthetic lookup probe under the actual Stage runtime role, then verifies durable own-tenant visibility and no/foreign-context denial. Local PostgreSQL tests cover committed persistence, retry, read-only recovery and FORCE RLS catalog drift. No external supplier request or customer record is seeded.

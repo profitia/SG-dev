@@ -133,9 +133,8 @@ test("CAS never publishes stale or concurrent baseline", async () => {
   await assert.rejects(casPublish(store, "a".repeat(40), {}, "stale"));
 });
 test("ordinary ACTIVE gate retains RESERVED rejection", async () => {
-  const { resolveEnvironmentProfile } = await import(
-    "./environment-profile.mjs"
-  );
+  const { resolveEnvironmentProfile } =
+    await import("./environment-profile.mjs");
   assert.throws(
     () =>
       resolveEnvironmentProfile({
@@ -150,5 +149,25 @@ test("ordinary ACTIVE gate retains RESERVED rejection", async () => {
         governanceRoot: process.cwd(),
       }),
     /not ACTIVE/,
+  );
+});
+
+test("negative generation and unknown lifecycle phase fail closed", () => {
+  const s = {
+    schemaVersion: "1.0",
+    projectKey: "SRM",
+    targetEnvironment: "staging",
+    generation: -1,
+    release: null,
+    baseline: null,
+  };
+  assert.throws(() => claimRelease(s, approval(), m, "test"));
+  assert.throws(() =>
+    claimRelease(
+      { ...s, generation: 0, release: { phase: "UNREVIEWED" } },
+      approval(),
+      m,
+      "test",
+    ),
   );
 });

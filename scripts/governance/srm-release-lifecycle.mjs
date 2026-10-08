@@ -315,7 +315,15 @@ export function claimRelease(
     state?.schemaVersion === "1.0" &&
       state.projectKey === "SRM" &&
       state.targetEnvironment === "staging" &&
-      Number.isSafeInteger(state.generation),
+      Number.isSafeInteger(state.generation) &&
+      state.generation >= 0 &&
+      (!state.release ||
+        [
+          "ONBOARDING_AUTHORIZED",
+          "PROVISIONING",
+          "VERIFYING",
+          "VERIFIED",
+        ].includes(state.release.phase)),
     "Invalid release journal",
   );
   const next = structuredClone(state),

@@ -579,6 +579,7 @@ export function createProvider(
     );
   };
   const snapshot = async () => {
+    const capturedAt = new Date().toISOString();
     const project = await request(R, "/projects/" + contract.render.projectId),
       environment = await request(
         R,
@@ -612,12 +613,13 @@ export function createProvider(
           "/databases",
       )
     )?.databases;
-    const liveDeploy =
+    const deployments =
       services.length === 1
-        ? (await paged("/services/" + services[0].id + "/deploys"))
-            .map((x) => x.deploy ?? x)
-            .find((x) => x.status === "live")
-        : null;
+        ? (await paged("/services/" + services[0].id + "/deploys")).map(
+            (x) => x.deploy ?? x,
+          )
+        : [];
+    const liveDeploy = assertDeploymentInventory(deployments, manifest.sha);
     const domains =
       services.length === 1
         ? await paged("/services/" + services[0].id + "/custom-domains")
@@ -639,7 +641,7 @@ export function createProvider(
     );
     const s = {
       source: "LIVE_PROVIDER_APIS",
-      capturedAt: new Date().toISOString(),
+      capturedAt,
       repository: await request(GH, repo),
       renderProject: project,
       renderEnvironment: environment,
@@ -1524,4 +1526,25 @@ export function assertLifecycleService(s, m) {
     "Unexpected service name, storage, scaling or suspended state",
   );
   return true;
+}
+
+export function assertDeploymentInventory(rows, sha) {
+  fail(
+    rows.filter((x) => x.status === "live").length <= 1,
+    "Ambiguous live deployments",
+  );
+  fail(
+    !rows.some(
+      (x) =>
+        [
+          "created",
+          "queued",
+          "build_in_progress",
+          "pre_deploy_in_progress",
+          "update_in_progress",
+        ].includes(x.status) && x.commit?.id !== sha,
+    ),
+    "Foreign deployment in progress",
+  );
+  return rows.find((x) => x.status === "live") ?? null;
 }

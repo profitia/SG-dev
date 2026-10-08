@@ -100,6 +100,12 @@
     "baselinePublication": "GITHUB_EXPECTED_HEAD_CAS",
     "crossProviderAtomicity": false,
     "leaseStealingAllowed": false,
-    "firstProviderDeployExecuted": false
+    "firstProviderDeployExecuted": false,
+    "authorizationSchemaVersion": "2.0",
+    "protectedBindingReceipt": "SRM_RELEASE_BINDING_RECEIPT",
+    "priceEvidence": "FRESH_PRIMARY_PROVIDER_QUOTE",
+    "deploymentAttempts": "APPROVED_BOUNDED_1_TO_3",
+    "sourceEvidence": "LIVE_CI_AND_DEVELOPMENT_DEPLOY_IDS",
+    "completedRetry": "READ_ONLY_VERIFICATION"
   }
 }

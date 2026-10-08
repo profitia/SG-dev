@@ -1,87 +1,85 @@
-# SRM Staging Readiness Report
+# SRM Staging Readiness — first onboarding and release lifecycle
 
-Task: SRM-STAGING-READINESS-20261008. Profil SRM, TARGET_ENVIRONMENT=development, docelowa promocja staging. Data audytu 2026-10-08. Raport dotyczy przygotowania, nie autoryzacji wdrożenia.
+Task: SRM-STAGING-ONBOARDING-READINESS-20261008. Project SRM; preparation TARGET_ENVIRONMENT=development; release target staging. This report supersedes the three unresolved implementation blockers recorded by PR #148 and its Development PHR. It grants no deployment authorization.
 
-## EXECUTIVE RESULT
+## Executive Result
 
-STAGING_READY_TO_DEPLOY = NO. Wykonano i zweryfikowano bezpieczną część przygotowania A–F. Pierwszy onboarding środowiska RESERVED/NOT_ONBOARDED oraz obsługa zmiany provider baseline pozostają krytyczną brakującą implementacją. Nie przedstawiamy tych luk jako testów możliwych dopiero na działającym Staging. Operacje Staging/Production nie zostały wykonane.
+STAGING_READY_TO_DEPLOY=YES for the current verified provider and repository contract, after the accompanying validation and CI gates pass. The first-onboarding executor, exact first-source strategy and canonical reconciliation are implemented. Real provider first deployment remains NOT_EXECUTED. Staging remains RESERVED/NOT_ONBOARDED. No Staging/Production writes, product Development migrations or Development runtime deployment are part of this task.
 
-## VERIFIED BASELINE
+## Verified Baseline
 
-Authority: profitia/SG-dev (repository ID 1247665550), main. Weryfikowana baza main: 437aa3ddc5e132700b1da32abf5fc1ab201d660e (po integracji równoległego release PDF). Kod autorowany w izolowanym worktree /workspaces/srm-staging-readiness-20261008 w Codespace srm-pmos-activation-jjxx6vpp9v4x2q9vr, profil SG-dev Codespaces SRM. Oryginalny checkout oraz niezwiązane lokalne worktree zachowano.
+Repository profitia/SG-dev, ID 1247665550, authority main. Prior readiness merge 0ba0ce5258735764ee19519115540fee168da55c; integration baseline 18ee002b4b542c07b1a5ceebc4280d46d8d6a7c2 includes parallel PRs #149–151. Source authored only in SRM Codespace srm-pmos-activation-jjxx6vpp9v4x2q9vr, isolated own branches/worktrees, final preparation worktree /tmp/srm-staging-onboarding-readiness-20261008-v3. Existing checkouts and unrelated work preserved. The parallel task was stopped by the user after its last merge; its prior runtime deployment is not attributed to this task.
 
-Root AGENTS.md, governance manifest 3.6.0, wspólny Canon, registry środowisk, SRM adapter i aktywne dokumenty SRM załadowano. Wszystkie target paths należą do SRM Runtime / ALIGNED. Nie dodano wyjątków governance; MEMOROS pozostaje kanonicznie wyłączony. Pełny Development preflight z require-begin przechodzi przed zmianami. Stage preflight poprawnie odrzuca RESERVED.
+Root AGENTS.md, active manifest, shared execution/release Canon and SRM adapter loaded. Development full preflight with task-scoped SRM pmos:begin passes. Routing: apps/srm/** and exact srm-ci.yml = SRM Runtime / ALIGNED; Canon/** and scripts/governance/** = Governance Source Layer / ALIGNED, normative owner Profitia Governance. Manifest adds the durable release-state registry, proposed 3.7.0. Standard RESERVED rejection remains intact. MEMOROS remains canonically disabled.
 
-## IMPLEMENTATION
+## Resolved Blockers and Architecture Decisions
 
-- W istniejącym srm-ci.yml dodano wyłącznie ręczną ścieżkę workflow_dispatch: jawne SHA i YES, koszt owner, guard przed jobem przypisanym do GitHub environment. Push main/PR uruchamiają testy; nie promocję.
-- Promotion CLI wymaga zaakceptowanego pełnego SHA, potwierdzenia main/CI i Development live, zgodności kontraktu i DDL, jawnej autoryzacji ograniczonej w czasie. Weryfikuje metadata GitHub/Render/Neon oraz faktyczny odczyt roli i organizacji bazy. Ponowienie rozpoznaje trwający lub działający deploy dokładnego SHA; nie przyjmuje nieznanego stanu.
-- Osobny staging-migrate zachowuje istniejący Development migrator. Kontroluje projekt, branch, database, owner/direct TLS URL, checksums, kolejność ledger i transakcję. Inicjalizację roli, schematu i syntetycznej organizacji wykonuje atomowo tylko po przyszłej autoryzacji i pełnym preflight. Nie tworzy teraz bazy Neon ani usług.
-- Równoległy release PDF z main zintegrowano bez utraty zmian; eksport KYS korzysta również z własnej organizacji i sesji Staging, z testem odrzucenia Development token i niewłaściwego branchu.
-- Runtime odrzuca cross-environment host/database/role/query override oraz Production. Stage wymaga własnej organizacji; nie korzysta z Development fallback. Development zachowuje bieżącą konfigurację.
-- Pozostaje ten sam model aplikacji i provider-managed Render. Nie zastosowano render.yaml ani mechanizmów SG2. Nie powstała osobna linia rozwoju Staging.
+S0_LEGAL_FIRST_ONBOARDING: a separate explicitly authorized SRM/Staging lifecycle retains independent normal preflight gates and replaces only target-existence/previous-provider-baseline gates with exact operation authorization, current resource snapshots and fenced journal ownership. Execution phases ONBOARDING_AUTHORIZED → PROVISIONING → VERIFYING → VERIFIED belong to the journal, not new environment statuses. The topology stays RESERVED/NOT_ONBOARDED until final actual proof.
 
-Pełna macierz: [environment-dependency-matrix.md](environment-dependency-matrix.md). Baza: [database-promotion-contract.md](database-promotion-contract.md). Kontrakt Render: [staging-contract.json](staging-contract.json). Instrukcja: [staging-promotion-runbook.md](staging-promotion-runbook.md). Dowody: [validation-evidence.json](validation-evidence.json).
+FIRST_RENDER_DEPLOYMENT_SOURCE_NOT_PINNED: native provider-managed Render creation uses srm-release-<approved40hexSHA>, created at the approved main-ancestor SHA and locked with administrator enforcement, force-push/deletion denied. Actual ref/protection are verified before service creation and initial deployment. Every initial deploy must match SHA. After exact live proof, service PATCH moves its source to main with autoDeploy off; Render documents PATCH does not deploy. The locked pointer remains evidence, never a development branch. No image, new runtime, Blueprint or permanent staging development line is introduced. The guarantee is exact source; bit-identical immutable artifact remains PLANNED_HARDENING.
 
-## GIT EVIDENCE
+CANONICAL_PROVIDER_BASELINE_RECONCILIATION: actual provider IDs, live deploy ID/SHA/state, configuration, protected GitHub bindings, full schema ledger/catalog, runtime role, tenant isolation, health/password and committed synthetic persistence proof are reconciled with the approved manifest. GitHub createCommitOnBranch expectedHeadOid publishes topology plus verified journal in one GitHub commit. Provider operations are separate transactions; there is no cross-provider ACID claim. Concurrent/stale writes fail closed.
 
-Branch przygotowania: chore/srm-staging-readiness-20261008. Checkpointy: 9ef47a2, b0b5112, 91b98f8. PR: https://github.com/profitia/SG-dev/pull/148. Dalsze checkpointy: 3ab915f, 5bd8156. Finalne CI, merge SHA i publikacja PHR są zapisywane w końcowym handoff oraz kanonicznym Development Flight Record po publikacji. Ten raport nie deklaruje przyszłego merge ani nie przypisuje sobie własnego końcowego SHA.
+## First-Onboarding Lifecycle and Retry
 
-## DATABASE EVIDENCE
+One executor handles onboard/promote/compatible code rollback. Order: independent authorization/source/CI/Development/cost/binding preflight; durable ownership claim; protected GitHub environment; encrypted environment-scoped secrets/configuration receipt; frozen pointer; missing Neon product database; transactional schema/runtime/blank-organization initialization; pinned Render service creation (automatic first deploy); exact live-source verification; source rebind; runtime verification; baseline reconciliation; final reread and verification.
 
-Produkt Neon: snowy-breeze-40315151. Development br-dark-surf-b1vrhda9 ma srm_app, 11 migracji w ledger zgodnych ze źródłem, schematy public/srm, plpgsql, 15 tabel produktowych FORCE RLS oraz runtime role srm_app_runtime bez superuser/BYPASSRLS. Odczyt katalogu i checksums był read-only.
+Before each operation: fresh authority and provider snapshot, legal exact target, fenced INTENT. After: observe actual effects and store DONE with before/after evidence. Accepted response lost: recover from provider facts; ambiguous absence: stop instead of blind creation retry. Schema failure rolls back its transaction; code deployment failure preserves committed schema/data. Known terminal failures permit only the approved bounded number of attempts. Foreign inflight or ambiguous live deployments block before schema writes. Completed release after lost acknowledgement is verified read-only.
 
-Staging br-broad-butterfly-b11t4v01 ma tylko neondb; brak srm_app i roli runtime. Endpoint ep-autumn-wildflower-b1mv0vda jest istniejącym zasobem, nie onboardingiem aplikacji. Production br-nameless-bar-b1wlhjhx jest protected; sprawdzono wyłącznie metadata. Nie wykonano zapisów do żadnej produktowej bazy Neon. Zapisy continuity dotyczą wyłącznie osobnego projektu bold-breeze-68888550 / srm_pmos (SRM Development), nigdy SG2/CIC.
+A local process lock plus durable executor owner serializes writes. No lease expires into automatic takeover. Another executor can resume the same manifest/authorization only after API proof that the prior GitHub run completed or Codespace shut down. Authorization renewal may extend expiry and refresh the same price evidence; changes to resource/cost/operation scope cannot silently resume. New releases store the previous verified baseline as Last Known Good.
 
-## RENDER EVIDENCE
+## Database and Render Evidence
 
-Workspace tea-d7lps8rbc2fs73cn80dg, projekt prj-dapbd3hsrm7s73es53fg. Development srv-db1vu6gm7kps73d0e3r0 ma main, Node, Frankfurt, plan 0.5c-512mb, jedną instancję, health /api/health i autoDeploy off. Aktualny odczyt live deploy dep-db3t3s2jnfac73ao9pkg zawiera SHA 437aa3ddc5e132700b1da32abf5fc1ab201d660e; nie jest stałym przyszłym release target.
+Fresh read-only product Development inspection: snowy-breeze-40315151 / br-dark-surf-b1vrhda9 / srm_app; 11/11 source SHA256 checksums match; 15/15 product tables FORCE RLS; plpgsql; srm_app_runtime LOGIN without superuser, BYPASSRLS, create DB/role or replication. No product SQL writes performed. Staging br-broad-butterfly-b11t4v01 still has only neondb ID 308649; no srm_app. Production br-nameless-bar-b1wlhjhx remains protected; metadata read only.
 
-Staging environment evm-dapbdbbbc2fs73f4g7gg nie ma usługi SRM. Kontrakt przygotowano bez jej utworzenia, bez domen/DNS i sekretów. Cena Compute odczytana w Dashboard: 7 USD/miesiąc dla wybranego planu. Koszt Neon zależy od taryfy i czasu aktywnego compute; obecny istniejący Stage endpoint ma suspend_timeout=-1. Nie zmieniono jego kosztu ani konfiguracji. Koszt owner zatwierdza przyszły budżet przed aktywacją.
+Render workspace tea-d7lps8rbc2fs73cn80dg, project prj-dapbd3hsrm7s73es53fg. Development srv-db1vu6gm7kps73d0e3r0: main, native Node, Frankfurt, 0.5c-512mb, one instance, autoDeploy off, health /api/health. Fresh live read: dep-db3v60ks728c73fc2ghg, SHA 18ee002b4b542c07b1a5ceebc4280d46d8d6a7c2, completed 2026-10-08T19:47:27Z by the parallel task. This is evidence, not a fixed future release target. Staging Render environment evm-dapbdbbbc2fs73f4g7gg has zero services. GitHub srm-staging GET returns 404. None were created by this preparation.
 
-## VALIDATION
+## Implementation and API Evidence
 
-189 testów SRM, 64 testy promotion/migration na realnym localhost PostgreSQL (zero skip), 36 testów governance/routing PASS. Typecheck, jednostkowe testy SRM, governance manifest, routing/governance regression i build wykonano. Promotion test suite ma odrębny rzeczywisty test PostgreSQL 16, uruchamiany na disposable lokalnym srm_migration_test, nigdy Neon. Sprawdza komplet 11 DDL, retry zero pending, checksums drift, RLS/tenant isolation oraz rollback transakcji po rzeczywistym błędzie SQL (bez pozostawionej roli/schematu). Szczegółowe liczniki i zakresy znajdują się w validation-evidence.json.
+Executable orchestration: apps/srm/scripts/staging-lifecycle.mjs; normative gate/journal/reconciliation: scripts/governance/srm-release-lifecycle.mjs; existing promote-staging.mjs delegates apply to that executor. Existing Development migrator remains unchanged. CI push/PR only tests/builds; guarded manual normal promotion rejects RESERVED before entering a protected environment job. First onboarding runs from an explicitly approved SRM operator context, then subsequent protected manual jobs use the same executor.
 
-Zbudowana aplikacja uruchomiona na localhost w Codespace z syntetycznym hasłem i bez poświadczeń providerów/bazy: health Stage PASS, API bez sesji 401, błędne hasło odrzucone, poprawne hasło wydaje Secure/HttpOnly cookie, strona z sesją 200, logo i Next static asset 200, API przy brakującym bindingu bazy 503. To symulacja, nie deployment Staging.
+Official Render OpenAPI SHA256 36f783c66b60e71df8b5f105f347821e75d531cea21058ab76e5f2d19b6e459a was checked against the actual generated native create-service payload. PASS means request-schema compatibility, not observed first deployment. Primary contracts: [Render create](https://api-docs.render.com/reference/create-service), [configuration PATCH](https://api-docs.render.com/reference/update-service), [explicit commit deploy](https://api-docs.render.com/reference/create-deploy), [GitHub branch protection](https://docs.github.com/en/rest/branches/branch-protection), [GraphQL expected-head commit](https://docs.github.com/en/enterprise-cloud%40latest/graphql/reference/commits), [encrypted secret CLI](https://cli.github.com/manual/gh_secret_set). Provider lock capability/protection, actual first source and no-deploy rebind are reverified live and fail closed if inconsistent.
 
-## RELEASE MECHANISM
+## Validation and Non-Regression
 
-Symulacja offline: npm --prefix apps/srm run promote:staging -- --simulate. Plan rzeczywistych metadata: promote:staging -- --plan --sha <approved40hexSHA>. Pełny kontrakt argumentów i przyszły workflow_dispatch opisuje runbook. Obecnie future apply jest blokowany na S0; nie można uzyskać gotowości przez samo wpisanie ACTIVE do registry.
+Current main integration: typecheck PASS; 197/197 application tests PASS; full build PASS; local real PostgreSQL 16 promotion/migration/persistence suite PASS (zero skip); governance manifest/routing and full governance tests PASS. Detailed final counts/run references are in validation-evidence.json and final Development PHR. Synthetic lifecycle tests exercise every interruption/retry step, normal promotion/rollback, partial provision, incorrect IDs/SHA/schema, moving main, ambiguous responses, concurrent ownership, baseline conflicts/staleness and post-publication drift. Tests explicitly distinguish synthetic provider fixtures from primary live reads and actual local SQL.
 
-## GOVERNANCE & CONTINUITY
+No business application source changed. Parallel cockpit/UX/PDF changes remain included. Development runtime autoDeploy is off; merging preparation does not deploy it. A fresh Development deployment is deliberately not executed and is not reported as verification of this task's runtime.
 
-Development PMOS registration cmuzqa7rt00001hsbdqitngvf, conversationId pmos-task-v2:f600081a7b6e8a43ae49d51d79945fbdf8e2344109a08a4c09efaeae63338c3b, hostConversationId 01a11c3a-6570-7292-99b4-5666c5a2496b. Canonical closeout i PHR należą do Development i zapisują PARTIAL_SUCCESS z brakującym S0. Nie wykonuje się Staging PMOS/PHR. MEMOROS disabled nie ma env override.
+## Release Mechanism
 
-## ROLLBACK
+Future business command “Wypchnij na staging” resolves to the single executor command in staging-promotion-runbook.md, after explicit SHA/resource/cost authorization and secure bindings. The runtime accepts a concrete manifest, never arbitrary new main. First onboarding and later promotion differ only by initial canonical state and mode. A future policy change protecting main blocks before provisioning until a reviewed CAS publication adapter is provided; this task does not disable security.
 
-Schema initialization/updates mają transakcję i ledger. Nie cofa się SQL ani nie resetuje branchy Neon. Code rollback wymaga konkretnego poprzedniego SHA oraz jawnego rollbackSchemaCompatible; aktualny ledger musi w całości zgadzać się z tym SHA (zero pending i zero unknown). Odrzucany jest stary kod sprzed guardów lub innego DDL. Render deploy używa commitId; deactivated deploy nie jest uznawany za obecny live. Symulacyjny rollback plan i SQL rollback przetestowano; provider rollback Staging wymaga aktywnego środowiska i pozostaje DEPLOYMENT_TIME_PENDING.
+## Governance / PMOS / PHR and Git Evidence
 
-## REMAINING RISKS / BLOCKERS
+All preparation continuity uses the NEW task's Development-only registration in Neon bold-breeze-68888550 / srm_pmos. No SG2/CIC or product database receives history. Canonical final save, CLOSEOUT_COMPLETE and acknowledged PHR publication, PR/merge SHA and clean final authority are reported in the final task handoff after they actually succeed. Prior PR #148 PHR remains independent historical PARTIAL_SUCCESS. MEMOROS disabled; no Staging PMOS/PHR.
 
-1. S0 first onboarding: współdzielony fail-closed Canon i comparator wymagają ACTIVE/VERIFIED oraz istniejącego zarejestrowanego provider baseline przed mutacją. Brakuje legalnej, wąsko ograniczonej procedury RESERVED → kontrolowany provisioning → VERIFIED, z etapowymi snapshotami i bez aktywacji w tasku przygotowania.
-2. Exact first-source: Render create-service uruchamia pierwszy deploy dla branch; API tego kroku nie przyjmuje commitId. Istniejąca usługa przyjmuje commitId dla kolejnych deploymentów. Pierwszy serwis potrzebuje sprawdzonego immutable artifact albo kontrolowanego, niezmiennego release pointer. Tego nie zaimplementowano. Samo main + późniejszy redeploy nie gwarantuje pierwszego SHA.
-3. Provider baseline reconciliation po poprawnej promocji: brakuje kanonicznego mechanizmu aktualizacji oczekiwanego deployed SHA/deployId i verified snapshot. Ręczne wpisanie wartości lub wyłączenie porównania obniżyłoby governance.
+Own checkpoints include 6ad6cd6, 9db3765 and f81511e; final publication uses chore/srm-staging-onboarding-readiness-20261008-v3. This document avoids a self-referential future merge SHA. Final PR/CI/merge evidence belongs to the canonical Development closeout.
 
-Rozwiązanie wymaga SRM Runtime wraz z właścicielem wspólnego Profitia Governance lifecycle. Wszystkie te luki trzeba zaimplementować i przetestować przed uznaniem przyszłej jednej komendy za gotową. Nie są to nieznane wymagania aplikacji, tylko znane brakujące mechanizmy kontrolowanego uruchomienia.
+## Rollback / Known Risks / Deployment-Time Pending
 
-## FINAL DECISION
+Rollback selects the recorded LKG SHA, rechecks historical successful Development release and current successful exact CI/main ancestry, and requires identical compatible DDL/runtime contract. SQL remains read-only for rollback; no down-migration/reset. Unknown schema compatibility requires forward fix or a separate owner decision. Tests verify schema transaction recovery and compatible code rollback; real Staging rollback remains live pending.
 
-STAGING_READY_TO_DEPLOY = NO
-STAGING_DEPLOYMENT_AUTHORIZED = NO
-STAGING_DEPLOYED = NO
-STAGING_DATABASE_MUTATED = NO
-PRODUCTION_MUTATED = NO
-DEVELOPMENT_NON_REGRESSION = PASS (testy przygotowania; bieżący publiczny runtime i eventual Development release w final handoff)
-GOVERNANCE = PASS (Development; oczekiwany Stage rejection)
-PROMOTION_DRY_RUN = PASS (symulacja, bez provider writes)
-DATABASE_MIGRATION_READINESS = PASS
-RENDER_DEPLOYMENT_READINESS = FAIL (S0 / pierwszy pinned deploy)
-AUTHENTICATION_READINESS = PASS (kod i rzeczywisty localhost smoke)
-ENVIRONMENT_ISOLATION = PASS
-RELEASE_PROVENANCE = FAIL (pierwszy service-create; kontrola SHA istniejącego serwisu przetestowana)
+Pending activation checks: explicit release and first-onboarding approval; fresh account price/entitlement acceptance and isolated supplier credentials; GitHub lock/reviewer/encryption actual acknowledgements; actual product DB/runtime/schema initialization; exact first live deploy and no-deploy source rebind; real health/TLS/password/committed runtime SQL persistence; supplier API entitlement/acceptance and client UI/assets/export smoke; real rollback and final baseline proof. These are future authorized execution/verification, not missing controller implementation. No provider first deployment PASS is inferred from mocks.
 
-PENDING_DEPLOYMENT_TIME_CHECKS = [Stage live health/TLS/UI, real credentials and supplier API entitlement, real Neon runtime role and RLS, authenticated persistence smoke, exact live SHA, code rollback compatibility, actual approved costs]
-BLOCKERS = [S0 legal onboarding, pinned first service source, canonical provider baseline reconciliation]
+Known risks: existing Neon Stage endpoint has max 8 CU and suspend=-1 (unchanged); usage/egress/provider licensing costs need explicit owner acceptance. API/permissions/price drift fail closed. GitHub CAS commits and provider mutations are not a shared transaction; partially successful provisioning must retain its journal. Required GitHub reviewers still apply to ordinary protected jobs. First operator onboarding uses documented explicit privileged execution, never implicit approval.
 
-Status przygotowania: bezpieczne artefakty opublikowane; pełny cel jednej komendy nieosiągnięty. Staging i Production pozostają poza zakresem mutacji.
+## Final Decision
+
+STAGING_READY_TO_DEPLOY=YES
+LEGAL_FIRST_ONBOARDING=PASS
+FIRST_DEPLOYMENT_SOURCE_PINNING=PASS (implementation + primary API contracts; real first deploy NOT_EXECUTED)
+PROVIDER_BASELINE_RECONCILIATION=PASS
+FIRST_PROMOTION_WORKFLOW=PASS
+RETRY_IDEMPOTENCY=PASS
+CONCURRENCY_PROTECTION=PASS
+GOVERNANCE=PASS
+SRM_CI=PASS only when the final PR gates are actually green (see canonical final evidence)
+PROMOTION_DRY_RUN=PASS (synthetic full lifecycle + actual isolated SQL)
+REAL_PROVIDER_FIRST_DEPLOY=NOT_EXECUTED
+STAGING_DEPLOYMENT_AUTHORIZED=NO
+STAGING_DEPLOYED=NO
+STAGING_DATABASE_MUTATED=NO
+PRODUCTION_MUTATED=NO
+DEVELOPMENT_RUNTIME_DEPLOYED_BY_THIS_TASK=NO
+BLOCKERS=[]

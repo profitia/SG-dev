@@ -833,3 +833,31 @@ test("missing source proof stops before the ownership publication", async () => 
   assert.equal(f.state.generation, 0);
   assert.equal(f.writes.length, 0);
 });
+
+import { assertDeploymentInventory } from "./staging-lifecycle.mjs";
+test("ambiguous or foreign inflight deployment blocks before any schema write", () => {
+  assert.equal(assertDeploymentInventory([], sha), null);
+  assert.equal(
+    assertDeploymentInventory(
+      [{ id: "live", status: "live", commit: { id: sha } }],
+      sha,
+    ).id,
+    "live",
+  );
+  assert.throws(() =>
+    assertDeploymentInventory([{ status: "live" }, { status: "live" }], sha),
+  );
+  for (const status of [
+    "created",
+    "queued",
+    "build_in_progress",
+    "pre_deploy_in_progress",
+    "update_in_progress",
+  ])
+    assert.throws(() =>
+      assertDeploymentInventory(
+        [{ status, commit: { id: "b".repeat(40) } }],
+        sha,
+      ),
+    );
+});
