@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { defaultFinancialScope, indicatorContent, useKysOverview, type KysOverviewModel, type KysDetailTarget, FinancialDataMount, financialPeriodsByScope, GeneralCompanyDataMount, JdgRegistryMount,
   KysPdfButton, type KysPdfSelection, VerclyKysMount, type FinancialPeriod, type FinancialPeriodSelection, type FinancialFactEvidence, type SupplierReportData } from "@profitia/srm-xray";
+import { FinancialPeriodSelector } from "./financial-period-selector";
 import { ReportNavigation, navigateReportSection } from "./report-navigation";
 export { navigateReportSection } from "./report-navigation";
 import { supplierNip, type DisplayCard, type ReportState, type SearchResult } from "./report-controller";
@@ -136,10 +137,8 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
     {!!areas.length && <section id="report-finance" className="report-content-section" aria-labelledby="report-finance-title"><h2 id="report-finance-title" tabIndex={-1}>Kondycja finansowa</h2>
       <p className="health-dashboard-note">Zapisane wyniki finansowe. Istotność wskaźnika nie jest oceną ryzyka; kierunek zmiany nie oznacza poprawy ani pogorszenia kondycji.</p>
       {selectionPeriods.length > 0 && <div className="health-context-controls">
-        <div role="group" aria-label="Zakres dashboardu">{(["standalone", "consolidated"] as const).filter(choice => financialPeriodsByScope(financial?.data, choice).length).map(choice => <button key={choice} type="button" aria-pressed={scope === choice} onClick={() => setScope(choice)}>{choice === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</button>)}</div>
-        <label>Okres sprawozdawczy<select aria-label="Okres sprawozdawczy" value={selectedPeriod ? `${selectedPeriod.from}:${selectedPeriod.to}` : ""} onChange={event => { const period = selectionPeriods.find(item => `${item.from}:${item.to}` === event.target.value); if (period) setPeriod(period); }}>
-          {selectionPeriods.map(period => <option key={`${period.from}:${period.to}`} value={`${period.from}:${period.to}`}>{period.from} – {period.to}</option>)}
-        </select></label>
+        <div className="health-scope-controls" role="group" aria-label="Zakres dashboardu">{(["standalone", "consolidated"] as const).filter(choice => financialPeriodsByScope(financial?.data, choice).length).map(choice => <button key={choice} type="button" aria-pressed={scope === choice} onClick={() => setScope(choice)}>{choice === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</button>)}</div>
+        <FinancialPeriodSelector periods={selectionPeriods} selected={selectedPeriod} onSelect={setPeriod} />
       </div>}
       <FinancialLimitations state={state} onReadMetadata={onReadMetadata} />
       <div className="report-financial-areas">{areas.map(area => <section key={area.key} aria-label={area.title}><h3>{area.title}</h3>{area.content}</section>)}</div></section>}
