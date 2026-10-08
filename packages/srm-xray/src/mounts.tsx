@@ -270,6 +270,7 @@ export function VerclyKysMount({ section, entityType = "COMPANY", onRevealPesel 
               <dt>Forma własności</dt><dd>{value(company?.ownershipForm)}</dd></>}
             </dl>
           </section>
+          <div className="kys-column">
           <section className="kys-panel" aria-label="Rejestry i statusy">
             <h3>Rejestry i statusy</h3>
             <dl className="xray-facts">
@@ -282,6 +283,13 @@ export function VerclyKysMount({ section, entityType = "COMPANY", onRevealPesel 
               <dt>Podmiot na pozostałych listach</dt><dd>{yesNo(data?.screeningSummary?.otherLists)}</dd>
             </dl>
           </section>
+          <section className="kys-panel" aria-label="Listy sankcyjne i ostrzeżenia">
+            <h3>Listy sankcyjne i ostrzeżenia</h3>
+            {lists.length ? <table className="kys-lists"><thead><tr><th>Lista</th><th>Wynik</th></tr></thead><tbody>
+              {lists.map((entry) => <tr key={`${entry.type}:${entry.name}`}><td>{verclyListLabels[entry.name] ?? entry.name.replaceAll("_", " ")}</td><td>{yesNo(entry.matched)}</td></tr>)}
+            </tbody></table> : <p>brak danych</p>}
+          </section>
+          </div>
         </div>
         <section className="kys-panel" aria-label="Osoby pełniące funkcje kierownicze i nadzorcze">
           <h3>Osoby pełniące funkcje kierownicze i nadzorcze</h3>
@@ -293,14 +301,6 @@ export function VerclyKysMount({ section, entityType = "COMPANY", onRevealPesel 
           <p className="kys-note">{countLabel(data?.beneficialOwnersCount)}</p>
           <KysPeopleTable people={data?.beneficialOwners} onRevealPesel={onRevealPesel} showBirthDate={false} kind="beneficiary" />
         </section>
-        <div className="kys-grid">
-          <section className="kys-panel" aria-label="Listy sankcyjne i ostrzeżenia">
-            <h3>Listy sankcyjne i ostrzeżenia</h3>
-            {lists.length ? <table className="kys-lists"><thead><tr><th>Lista</th><th>Wynik</th></tr></thead><tbody>
-              {lists.map((entry) => <tr key={`${entry.type}:${entry.name}`}><td>{verclyListLabels[entry.name] ?? entry.name.replaceAll("_", " ")}</td><td>{yesNo(entry.matched)}</td></tr>)}
-            </tbody></table> : <p>brak danych</p>}
-          </section>
-        </div>
         <section className="kys-panel kys-pep-panel" aria-label="Osoby na eksponowanych stanowiskach politycznych">
           <h3>Osoby na eksponowanych stanowiskach politycznych</h3>
           <p className="kys-note">{data?.pepMatches ? pepMatchCount(data.pepMatches.length) : "brak danych"}</p>
