@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { kysPdfDocument, type KysPdfDocument, type KysPdfSelection } from "@profitia/srm-xray";
 import { authorizeStoredKys, KysPdfError, readStoredKysPdf } from "./kys-pdf-access";
+import { productEnvironmentReady, productOrganizationId } from "./runtime-environment";
 import { hasDemoSession } from "./demo-auth";
 import { isSameOriginRequest } from "./request-origin";
 import { validateReportSelection } from "./report-data";
@@ -107,10 +108,10 @@ export function kysPdfHandler(read = readStoredKysPdf, render = renderKysPdf,
   return async (request: Request): Promise<Response> => {
     const headers = { "Cache-Control": "private, no-store, max-age=0", "Pragma": "no-cache", "X-Content-Type-Options": "nosniff", "Vary": "Cookie" };
     const error = (message: string, status: number) => Response.json({ error: message }, { status, headers });
-    if (env.TARGET_ENVIRONMENT !== "development") return error("Środowisko niedostępne.", 404);
+    if (!productEnvironmentReady(env)) return error("Środowisko niedostępne.", 404);
     if (!await hasDemoSession(request, env)) return error("Wymagane logowanie.", 401);
     if (!isSameOriginRequest(request)) return error("Nieprawidłowe żądanie.", 403);
-    const organizationId = env.SRM_DEVELOPMENT_ORGANIZATION_ID;
+    const organizationId = productOrganizationId(env);
     if (!organizationId) return error("Środowisko SRM nie jest skonfigurowane.", 503);
     let selection: KysPdfSelection;
     try { const body = await request.text(); if (body.length > 1024) throw new Error("Oversized"); selection = validateKysPdfSelection(JSON.parse(body)); }

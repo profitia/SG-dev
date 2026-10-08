@@ -11,11 +11,15 @@ import {
   inspectLedger,
   runMigrations,
   initializationConfig,
+  promotionExecutorEnvironment,
 } from "./staging-migrate.mjs";
 import {
   buildPlan,
   verifyPasswordSmoke,
   assertRenderService,
+  assertDispatchTarget,
+  selectReusableDeploy,
+  inspectProductDatabase,
 } from "./promote-staging.mjs";
 const sha = "a".repeat(40);
 const approval = () => ({
@@ -228,14 +232,21 @@ test("read-only migration inspection cannot run DDL", async () => {
     !queries.some((q) => q.startsWith("CREATE") || q.startsWith("INSERT")),
   );
 });
-test("ordinary CI has no deployment job or environment activation", () => {
+test("ordinary push cannot enter Staging jobs; manual jobs require explicit authorization and pre-environment guard", () => {
   const workflow = fs.readFileSync(
     new URL("../../../.github/workflows/srm-ci.yml", import.meta.url),
     "utf8",
   );
   assert.ok(!workflow.includes("trigger_deploy"));
-  assert.ok(!workflow.includes("environment: srm-staging"));
-  assert.ok(!workflow.includes("promote:staging -- --apply"));
+  assert.ok(
+    workflow.includes(
+      "if: github.event_name == 'workflow_dispatch' && inputs.staging_deployment_authorized == 'YES'",
+    ),
+  );
+  assert.ok(workflow.includes("needs: srm-staging-guard"));
+  assert.ok(workflow.includes("assertDispatchTarget();"));
+  assert.ok(workflow.includes("environment: srm-staging"));
+  assert.ok(workflow.includes("needs: srm-build"));
 });
 test("missing authorization fails before any provider call", () => {
   const r = spawnSync(
@@ -502,4 +513,158 @@ test("Render contract rejects altered build, start, root directory and previews"
   const p = serviceFixture();
   p.serviceDetails.previews.generation = "automatic";
   assert.throws(() => assertRenderService(p));
+});
+
+test("RESERVED cannot enter a protected deployment job even with a forged environment response", () =>
+  assert.throws(
+    () =>
+      assertDispatchTarget({
+        id: 1,
+        protection_rules: [{ type: "required_reviewers" }],
+      }),
+    /Canonical first onboarding/,
+  ));
+test("promotion reports the actual permitted executor and rejects foreign or local hosts", () => {
+  assert.equal(
+    promotionExecutorEnvironment({
+      GITHUB_ACTIONS: "true",
+      GITHUB_REF: "refs/heads/main",
+      GITHUB_REPOSITORY: contract.repository,
+      GITHUB_WORKFLOW: "SRM CI",
+      GITHUB_JOB: "srm-staging-promote",
+    }),
+    "github-actions",
+  );
+  assert.equal(
+    promotionExecutorEnvironment({
+      CODESPACES: "true",
+      CODESPACE_NAME: "test-only",
+      PMOS_PROJECT_NAME: "SRM",
+      PMOS_WORKSPACE_NAME: "SG-dev Codespaces SRM",
+    }),
+    "codespaces",
+  );
+  assert.throws(() => promotionExecutorEnvironment({}));
+  assert.throws(() =>
+    promotionExecutorEnvironment({
+      GITHUB_ACTIONS: "true",
+      GITHUB_REPOSITORY: "profitia/other",
+      GITHUB_WORKFLOW: "SRM CI",
+      GITHUB_JOB: "srm-staging-promote",
+    }),
+  );
+  assert.throws(() =>
+    promotionExecutorEnvironment({
+      CODESPACES: "true",
+      CODESPACE_NAME: "test-only",
+      PMOS_PROJECT_NAME: "SG2",
+      PMOS_WORKSPACE_NAME: "SG-dev Codespaces SRM",
+    }),
+  );
+});
+
+test("organization variable alone is not proof of database readiness", async () => {
+  assert.deepEqual(
+    await inspectProductDatabase(false, {
+      SRM_STAGING_ORGANIZATION_ID: "test-only",
+    }),
+    {
+      status: "BINDING_PENDING",
+      runtimeRoleReady: false,
+      organizationReady: false,
+    },
+  );
+  assert.equal(
+    (await inspectProductDatabase(true, {})).organizationReady,
+    false,
+  );
+});
+test("metadata inspection validates destination before connecting", async () => {
+  let connected = false;
+  await assert.rejects(
+    inspectProductDatabase(
+      true,
+      { ...migrationEnv(), SRM_NEON_BRANCH_ID: contract.development.branchId },
+      () => {
+        connected = true;
+        return {};
+      },
+    ),
+  );
+  assert.equal(connected, false);
+});
+test("metadata proof is read-only and checks actual role privileges and tenant record", async () => {
+  const sqls = [];
+  const c = {
+    async connect() {},
+    async end() {},
+    async query(sql) {
+      sqls.push(sql);
+      return {
+        rows: sql.includes("current_database")
+          ? [{ name: "srm_app" }]
+          : sql.includes("rolcanlogin")
+            ? [
+                {
+                  rolcanlogin: true,
+                  rolsuper: false,
+                  rolbypassrls: false,
+                  rolcreatedb: false,
+                  rolcreaterole: false,
+                  rolreplication: false,
+                },
+              ]
+            : sql.includes("to_regclass")
+              ? [{ table_name: "srm.organizations" }]
+              : sql.startsWith("SELECT id FROM")
+                ? [{ id: "test-only" }]
+                : [],
+      };
+    },
+  };
+  const r = await inspectProductDatabase(
+    true,
+    {
+      ...migrationEnv(),
+      SRM_STAGING_ORGANIZATION_ID: "00000000-0000-4000-8000-000000000008",
+    },
+    () => c,
+  );
+  assert.equal(r.status, "READ_ONLY_VERIFIED");
+  assert.equal(r.runtimeRoleReady, true);
+  assert.equal(r.organizationReady, true);
+  assert.equal(sqls[0], "BEGIN READ ONLY");
+  assert.equal(sqls.at(-1), "ROLLBACK");
+  assert.ok(
+    !sqls.some((s) => /\b(INSERT|UPDATE|DELETE|CREATE|ALTER|GRANT)\b/.test(s)),
+  );
+});
+
+test("rollback creates a new deployment rather than reusing a deactivated old SHA", () => {
+  assert.equal(
+    selectReusableDeploy(
+      [{ id: "old", status: "deactivated", commit: { id: sha } }],
+      sha,
+    ),
+    null,
+  );
+  assert.equal(
+    selectReusableDeploy(
+      [{ id: "failed", status: "build_failed", commit: { id: sha } }],
+      sha,
+    ),
+    null,
+  );
+});
+test("retry reuses only matching live/inflight deployment and blocks unknown state", () => {
+  const d = { id: "pending", status: "build_in_progress", commit: { id: sha } };
+  assert.equal(selectReusableDeploy([{ deploy: d }], sha), d);
+  assert.equal(
+    selectReusableDeploy([{ ...d, commit: { id: "b".repeat(40) } }], sha),
+    null,
+  );
+  assert.throws(
+    () => selectReusableDeploy([{ ...d, status: "unknown" }], sha),
+    /Unknown/,
+  );
 });

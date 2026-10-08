@@ -106,6 +106,13 @@ export function fullPreflight({
   )
     throw new Error("Authority refresh failed");
   if (
+    run(["rev-parse", "HEAD"]).stdout.trim() !==
+    run(["rev-parse", "origin/main"]).stdout.trim()
+  )
+    throw new Error(
+      "Reviewed promotion mechanism must match current origin/main",
+    );
+  if (
     run([
       "diff",
       "--exit-code",
@@ -134,7 +141,7 @@ export function fullPreflight({
       "--workspace",
       "SG-dev Codespaces SRM",
       "--execution-environment",
-      "codespaces",
+      promotionExecutorEnvironment(),
       "--scope",
       approvalId,
       "--host-conversation-unavailable",
@@ -345,4 +352,23 @@ async function initializeOrganization(client, config) {
     "INSERT INTO srm.organizations(id,slug) VALUES ($1,'srm-staging-acceptance') ON CONFLICT (id) DO NOTHING",
     [config.organizationId],
   );
+}
+
+export function promotionExecutorEnvironment(env = process.env) {
+  if (
+    env.GITHUB_ACTIONS === "true" &&
+    env.GITHUB_REF === "refs/heads/main" &&
+    env.GITHUB_REPOSITORY === contract.repository &&
+    env.GITHUB_WORKFLOW === "SRM CI" &&
+    env.GITHUB_JOB === "srm-staging-promote"
+  )
+    return "github-actions";
+  if (
+    env.CODESPACES === "true" &&
+    env.CODESPACE_NAME &&
+    env.PMOS_PROJECT_NAME === "SRM" &&
+    env.PMOS_WORKSPACE_NAME === "SG-dev Codespaces SRM"
+  )
+    return "codespaces";
+  throw new Error("Unverified SRM promotion executor");
 }

@@ -282,6 +282,8 @@ export async function liveEvidence(sha, env = process.env) {
       values.SRM_NEON_BRANCH_ID === contract.neon.branchId &&
       values.SRM_APP_DATABASE_HOST === contract.neon.directHost &&
       values.SRM_STAGING_ORGANIZATION_ID === env.SRM_STAGING_ORGANIZATION_ID &&
+      values.SRM_STAGING_ORGANIZATION_ID !==
+        dv.SRM_DEVELOPMENT_ORGANIZATION_ID &&
       values.SRM_DEMO_PASSWORD?.length >= 16 &&
       values.SRM_DEMO_SESSION_SECRET?.length >= 32 &&
       !values.DATABASE_URL &&
@@ -299,6 +301,7 @@ export async function liveEvidence(sha, env = process.env) {
       ge.id === topology().environments.staging.github.environmentId &&
       ge.protection_rules?.some((r) => r.type === "required_reviewers");
   } catch {}
+  const databaseInspection = await inspectProductDatabase(!!db, env);
   const git = spawnSync(
     "git",
     ["merge-base", "--is-ancestor", sha, "origin/main"],
@@ -313,8 +316,8 @@ export async function liveEvidence(sha, env = process.env) {
     neonBranchId: branch.id,
     databaseName: "srm_app",
     databaseExists: !!db,
-    runtimeRoleReady: roles.some((r) => r.name === "srm_app_runtime"),
-    organizationReady: !!env.SRM_STAGING_ORGANIZATION_ID,
+    runtimeRoleReady: databaseInspection.runtimeRoleReady,
+    organizationReady: databaseInspection.organizationReady,
     secretsIsolated,
     githubProtected,
     service,
@@ -386,18 +389,7 @@ async function apply(plan, approval, evidence, env, rollback = false) {
     await client.end();
   }
   const runtimeDatabase = await verifyRuntimeDatabase(env);
-  let deploy = all
-    .map((x) => x.deploy ?? x)
-    .find(
-      (d) =>
-        d.commit?.id === plan.manifest.sha &&
-        ![
-          "build_failed",
-          "update_failed",
-          "canceled",
-          "pre_deploy_failed",
-        ].includes(d.status),
-    );
+  let deploy = selectReusableDeploy(all, plan.manifest.sha);
   fullPreflight({
     sha: plan.manifest.sha,
     taskId: approval.approvalId,
@@ -544,6 +536,13 @@ export function verifySourceTree(sha) {
   )
     throw new Error("Release is not verified on main");
   if (
+    git(["rev-parse", "HEAD"]).stdout.trim() !==
+    git(["rev-parse", "origin/main"]).stdout.trim()
+  )
+    throw new Error(
+      "Reviewed promotion mechanism must match current origin/main",
+    );
+  if (
     git(["cat-file", "-e", sha + ":apps/srm/src/server/runtime-environment.ts"])
       .status !== 0
   )
@@ -625,9 +624,7 @@ export async function verifyPasswordSmoke(url, password, fetcher = fetch) {
       redirect: "manual",
       signal: AbortSignal.timeout(30000),
     });
-  const invalid = await loginRequest(
-    "deliberately-invalid-staging-smoke-password",
-  );
+  const invalid = await loginRequest("invalid".repeat(100));
   if (
     invalid.status !== 303 ||
     invalid.headers.get("location") !== url + "/login?error=invalid"
@@ -702,4 +699,119 @@ export function assertRenderService(service) {
     d.previews?.generation !== "off"
   )
     throw new Error("Render deployment contract mismatch");
+}
+
+export function assertDispatchTarget(githubEnvironment = null) {
+  const t = topology().environments.staging;
+  if (
+    t.status !== "ACTIVE" ||
+    t.verificationStatus !== "VERIFIED" ||
+    !t.github.environmentId ||
+    !t.neon.databaseId ||
+    !t.render.services?.runtime?.serviceId
+  )
+    throw new Error(
+      "Canonical first onboarding required before protected job activation",
+    );
+  if (
+    githubEnvironment &&
+    (githubEnvironment.id !== t.github.environmentId ||
+      !githubEnvironment.protection_rules?.some(
+        (r) => r.type === "required_reviewers",
+      ))
+  )
+    throw new Error("Exact protected GitHub environment required");
+}
+
+export async function inspectProductDatabase(
+  databaseExists,
+  env,
+  clientFactory = (connectionString) => new pg.Client({ connectionString }),
+) {
+  if (!databaseExists || !env.SRM_APP_DIRECT_URL)
+    return {
+      status: "BINDING_PENDING",
+      runtimeRoleReady: false,
+      organizationReady: false,
+    };
+  assertMigrationDestination(env);
+  const c = clientFactory(env.SRM_APP_DIRECT_URL);
+  try {
+    await c.connect();
+    await c.query("BEGIN READ ONLY");
+    if (
+      (await c.query("SELECT current_database() AS name")).rows[0]?.name !==
+      "srm_app"
+    )
+      throw new Error("Wrong product database");
+    const role = (
+      await c.query(
+        "SELECT rolcanlogin,rolsuper,rolbypassrls,rolcreatedb,rolcreaterole,rolreplication FROM pg_roles WHERE rolname='srm_app_runtime'",
+      )
+    ).rows[0];
+    let safe = false;
+    if (role) {
+      const members = await c.query(
+        "SELECT rolname FROM pg_roles WHERE (rolsuper OR rolbypassrls OR rolcreatedb OR rolcreaterole OR rolname='neon_superuser') AND pg_has_role('srm_app_runtime',oid,'MEMBER')",
+      );
+      safe =
+        role.rolcanlogin &&
+        !role.rolsuper &&
+        !role.rolbypassrls &&
+        !role.rolcreatedb &&
+        !role.rolcreaterole &&
+        !role.rolreplication &&
+        !members.rows.length;
+    }
+    let organizationReady = false;
+    if (
+      (await c.query("SELECT to_regclass('srm.organizations') AS table_name"))
+        .rows[0]?.table_name &&
+      env.SRM_STAGING_ORGANIZATION_ID
+    ) {
+      organizationReady =
+        (
+          await c.query("SELECT id FROM srm.organizations WHERE id=$1::uuid", [
+            env.SRM_STAGING_ORGANIZATION_ID,
+          ])
+        ).rows.length === 1;
+    }
+    await c.query("ROLLBACK");
+    return {
+      status: "READ_ONLY_VERIFIED",
+      runtimeRoleReady: safe,
+      organizationReady,
+    };
+  } finally {
+    await c.end();
+  }
+}
+
+export function selectReusableDeploy(rows, sha) {
+  const terminal = new Set([
+    "deactivated",
+    "build_failed",
+    "pre_deploy_failed",
+    "update_failed",
+    "canceled",
+  ]);
+  const reusable = new Set([
+    "live",
+    "created",
+    "queued",
+    "scheduled",
+    "build_in_progress",
+    "pre_deploy_in_progress",
+    "update_in_progress",
+  ]);
+  for (const row of rows) {
+    const d = row.deploy ?? row;
+    if (d.commit?.id !== sha) continue;
+    if (reusable.has(d.status)) return d;
+    if (!terminal.has(d.status))
+      throw new Error(
+        "Unknown provider deployment state; do not create a duplicate",
+      );
+  }
+  return null;
 }

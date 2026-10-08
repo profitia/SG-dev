@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SRM-STAGING-READINESS-20261008",
+  "executedAt": "2026-10-08T17:27:46.917Z",
+  "executionEnvironment": "SG-dev Codespaces SRM",
+  "suites": {
+    "promotion": {
+      "status": "PASS",
+      "summary": [
+        "✔ explicit authorization validates but cannot bypass RESERVED (0.451272ms)",
+        "✔ rollback approval does not bypass RESERVED or fabricate Development provenance (0.881506ms)",
+        "ℹ tests 64",
+        "ℹ pass 63",
+        "ℹ fail 0",
+        "ℹ skipped 1",
+        "ℹ duration_ms 369.695947"
+      ]
+    },
+    "unit": {
+      "status": "PASS",
+      "tests": 189,
+      "passed": 189,
+      "failed": 0,
+      "skipped": 0
+    },
+    "typecheck": {
+      "status": "PASS"
+    },
+    "manifest": {
+      "status": "PASS",
+      "summary": [
+        "  \"errors\": []"
+      ]
+    },
+    "governance-tests": {
+      "status": "PASS",
+      "summary": [
+        "ℹ tests 36",
+        "ℹ pass 36",
+        "ℹ fail 0",
+        "ℹ skipped 0",
+        "ℹ duration_ms 693.458565"
+      ]
+    }
+  },
+  "build": {
+    "status": "PASS",
+    "scope": "final integrated PDF release production build, standalone contains both Liberation fonts"
+  },
+  "runtimeSimulation": {
+    "mode": "ISOLATED_LOCALHOST_SIMULATION",
+    "health": "PASS",
+    "passwordSmoke": {
+      "unauthenticated": "PASS",
+      "incorrectPassword": "PASS",
+      "login": "PASS",
+      "secureCookie": "PASS",
+      "authenticatedPage": "PASS"
+    },
+    "unconfiguredDatabaseFailsClosed": 503,
+    "publicLogo": "PASS",
+    "nextStaticAsset": "PASS",
+    "providerCredentialsPresent": false,
+    "productDatabaseCredentialsPresent": false,
+    "stagingProviderMutated": false
+  },
+  "databaseIntegration": {
+    "status": "PASS",
+    "scope": "real disposable localhost PostgreSQL16 srm_migration_test, 11 DDL, transaction rollback, RLS and repeat; updated final64 suite result follows",
+    "finalSuite": "PENDING_LOCAL_RECHECK"
+  },
+  "providerWrites": {
+    "staging": false,
+    "production": false,
+    "developmentProductDatabase": false
+  },
+  "deploymentTimePending": [
+    "live Staging health/TLS",
+    "real credentials/integration entitlements",
+    "real Neon runtime role/RLS",
+    "authenticated persistence",
+    "exact live SHA",
+    "code rollback compatibility",
+    "actual approved cost"
+  ],
+  "criticalImplementationBlockers": [
+    "S0 legal onboarding",
+    "pinned first service source",
+    "canonical provider baseline reconciliation"
+  ],
+  "stagingReadyToDeploy": false
+}

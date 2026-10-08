@@ -251,3 +251,16 @@ test("public request boundary rejects environment, login, origin, invalid NIP an
   const failure = await reportDataHandler(async () => { throw Error("SECRET provider payload"); }, env)(request());
   assert.equal(failure.status, 503); assert.equal((await failure.text()).includes("SECRET"), false);
 });
+
+
+test("Staging report read uses only its own configured tenant and rejects wrong branch or Development fallback", async () => {
+  const env = {TARGET_ENVIRONMENT:"staging",SRM_NEON_PROJECT_ID:"snowy-breeze-40315151",SRM_NEON_BRANCH_ID:"br-broad-butterfly-b11t4v01",SRM_STAGING_ORGANIZATION_ID:"00000000-0000-4000-8000-000000000008",SRM_DEVELOPMENT_ORGANIZATION_ID:"00000000-0000-4000-8000-000000000001",SRM_DEMO_PASSWORD:"staging-fixture-password-at-least-16",SRM_DEMO_SESSION_SECRET:"staging-fixture-session-secret-at-least-32"};
+  const token = await createDemoSession(env.SRM_DEMO_SESSION_SECRET);
+  const request = () => new Request("https://staging.test/api/xray/report-data",{method:"POST",headers:{Origin:"https://staging.test",cookie:"srm_demo_session="+token,"Content-Type":"application/json"},body:JSON.stringify({...selection,organizationId:env.SRM_DEVELOPMENT_ORGANIZATION_ID})});
+  let calls = 0;
+  const read = async (org:string,requested:ReportSelection) => {calls++;assert.equal(org,env.SRM_STAGING_ORGANIZATION_ID);assert.deepEqual(requested,selection);return projectReportData(selection,fixture(),now,{});};
+  assert.equal((await reportDataHandler(read,env)(request())).status,200);
+  assert.equal((await reportDataHandler(read,{...env,SRM_NEON_BRANCH_ID:"br-dark-surf-b1vrhda9"})(request())).status,404);
+  assert.equal((await reportDataHandler(read,{...env,SRM_STAGING_ORGANIZATION_ID:undefined})(request())).status,503);
+  assert.equal(calls,1);
+});

@@ -118,3 +118,19 @@ test("actual PDF has embedded fonts, A4, all long records and safe metadata; hug
   assert(!pdf.includes(Buffer.from("01234567890")));
   await assert.rejects(renderKysPdf({ ...d, companyName: "x".repeat(9 * 1024 * 1024) }), /limit/);
 });
+
+test("Staging PDF uses only its own verified organization and session", async () => {
+  const stageOrg="00000000-0000-4000-8000-000000000002";
+  const stageEnv={...env,TARGET_ENVIRONMENT:"staging",SRM_NEON_PROJECT_ID:"snowy-breeze-40315151",SRM_NEON_BRANCH_ID:"br-broad-butterfly-b11t4v01",SRM_STAGING_ORGANIZATION_ID:stageOrg,SRM_DEMO_SESSION_SECRET:"synthetic-staging-session-secret-more-than-32-characters"};
+  const r=row(); const s={...selection(r),exportRef:kysExportRef(stageOrg,{nip,entityType:"COMPANY"},r,stageEnv.SRM_DEMO_SESSION_SECRET)!};
+  const requestStage=async()=>new Request("https://srm.example/api/xray/kys/pdf",{method:"POST",headers:{origin:"https://srm.example",cookie: `srm_demo_session=${await createDemoSession(stageEnv.SRM_DEMO_SESSION_SECRET)}`},body:JSON.stringify(s)});
+  let reads=0;
+  const read=async(id:string)=>{reads++;assert.equal(id,stageOrg);return r;};
+  const render=async()=>Buffer.from("%PDF-stage-test");
+  assert.equal((await kysPdfHandler(read,render,stageEnv,()=>now)(await requestStage())).status,200);
+  assert.equal(reads,2);
+  assert.equal((await kysPdfHandler(read,render,stageEnv,()=>now)(await request())).status,401);
+  assert.equal((await kysPdfHandler(read,render,{...stageEnv,SRM_STAGING_ORGANIZATION_ID:undefined},()=>now)(await requestStage())).status,503);
+  assert.equal((await kysPdfHandler(read,render,{...stageEnv,SRM_NEON_BRANCH_ID:"br-dark-surf-b1vrhda9"},()=>now)(await requestStage())).status,404);
+  assert.equal(reads,2);
+});
