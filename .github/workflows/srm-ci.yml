@@ -83,7 +83,7 @@ jobs:
         with:
           node-version: "24"
       - run: npm --prefix apps/srm ci --install-links
-      - name: Reject RESERVED before entering a protected job
+      - name: Verify registered target and owner-review policy before protected job
         env:
           APPROVED_SHA: ${{ inputs.approved_sha }}
           COST_OWNER: ${{ inputs.cost_owner }}
@@ -103,7 +103,7 @@ jobs:
           verifyLifecycleSource(a.releaseSha);
           const response=await fetch('https://api.github.com/repos/'+contract.repository+'/environments/srm-staging',{headers:{Authorization:'Bearer '+process.env.GITHUB_TOKEN,'X-GitHub-Api-Version':'2022-11-28'},signal:AbortSignal.timeout(30000)});
           if(!response.ok)throw new Error('Registered protected GitHub environment unavailable');
-          assertDispatchTarget(await response.json());
+          a.githubApprovalPolicy=assertDispatchTarget(await response.json());
           const topology=JSON.parse(fs.readFileSync('Canon/registries/srm-environment-topology-v1.json','utf8'));
           a.renderServiceId=topology.environments.staging.render.services.runtime.serviceId;
           fs.writeFileSync('/tmp/srm-staging-authorization.json',JSON.stringify(a));

@@ -22,6 +22,62 @@ export const digest = (value) =>
 const requireFact = (ok, message) => {
   if (!ok) throw Error(message);
 };
+// SRM-only protection policy. This validates observed state; it never changes GitHub.
+export function assertStagingGitHubProtection(ge, c, reviewerIds = null) {
+  requireFact(
+    c.projectKey === "SRM" && c.repository === "profitia/SG-dev" &&
+      c.repositoryId === 1247665550 && c.github.environmentName === "srm-staging" &&
+      ge?.name === c.github.environmentName && Number.isSafeInteger(ge.id) && ge.id > 0,
+    "Exact SRM Staging GitHub environment required",
+  );
+  const rules = ge.protection_rules?.filter((x) => x.type === "required_reviewers");
+  const rule = rules?.[0];
+  requireFact(
+    rules?.length === 1 && Array.isArray(rule.reviewers) && rule.reviewers.length > 0 &&
+      rule.reviewers.every((r) => ["User", "Team"].includes(r.type) &&
+        Number.isSafeInteger(r.reviewer?.id) && r.reviewer.id > 0) &&
+      typeof rule.prevent_self_review === "boolean" &&
+      ge.deployment_branch_policy?.custom_branch_policies === true &&
+      ge.deployment_branch_policy.protected_branches === false,
+    "Required reviewer and main-only branch protection required",
+  );
+  const policy = c.github.soloOperatorApproval;
+  if (policy) {
+    requireFact(
+      policy.id === "SRM-STAGING-SOLO-OPERATOR-20261009" &&
+        policy.projectKey === "SRM" && policy.targetEnvironment === "staging" &&
+        policy.repository === c.repository && policy.repositoryId === c.repositoryId &&
+        policy.environmentName === "srm-staging" && policy.environmentId === 23853126630 &&
+        policy.requiredReviewer?.type === "User" && policy.requiredReviewer.id === 275643368 &&
+        policy.requiredReviewer.login === "profitia" && policy.preventSelfReview === false &&
+        policy.applicationGate === "SEPARATE_EXPLICIT_OWNER_APPROVAL_REQUIRED",
+      "Invalid canonical SRM solo-operator approval policy",
+    );
+    if (ge.id === policy.environmentId) {
+      requireFact(
+        rule.reviewers.length === 1 && rule.reviewers[0].type === "User" &&
+          rule.reviewers[0].reviewer.id === policy.requiredReviewer.id &&
+          rule.reviewers[0].reviewer.login === policy.requiredReviewer.login,
+        "Exact profitia owner reviewer required",
+      );
+    }
+  }
+  requireFact(
+    rule.prevent_self_review === true || (policy && ge.id === policy.environmentId),
+    "Self-review is allowed only for the existing canonical SRM Staging environment",
+  );
+  if (reviewerIds) requireFact(
+    digest(rule.reviewers.map((r) => r.reviewer.id).sort((a, b) => a - b)) ===
+      digest([...reviewerIds].sort((a, b) => a - b)),
+    "Approved exact reviewers required",
+  );
+  return {
+    environmentId: ge.id,
+    reviewerIds: rule.reviewers.map((r) => r.reviewer.id),
+    preventSelfReview: rule.prevent_self_review,
+    mode: rule.prevent_self_review ? "INDEPENDENT_REVIEW" : "SOLO_OPERATOR_OWNER_REVIEW",
+  };
+}
 export function assertLifecycleAuthorization(a, m, c, now = Date.now()) {
   requireFact(
     a?.schemaVersion === "2.0" &&

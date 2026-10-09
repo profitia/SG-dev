@@ -48,7 +48,19 @@
   "github": {
     "environmentName": "srm-staging",
     "environmentId": null,
-    "dispatchOnly": true
+    "dispatchOnly": true,
+    "soloOperatorApproval": {
+      "id": "SRM-STAGING-SOLO-OPERATOR-20261009",
+      "projectKey": "SRM",
+      "targetEnvironment": "staging",
+      "repository": "profitia/SG-dev",
+      "repositoryId": 1247665550,
+      "environmentName": "srm-staging",
+      "environmentId": 23853126630,
+      "requiredReviewer": { "type": "User", "id": 275643368, "login": "profitia" },
+      "preventSelfReview": false,
+      "applicationGate": "SEPARATE_EXPLICIT_OWNER_APPROVAL_REQUIRED"
+    }
   },
   "release": {
     "approvedMainShaRequired": true,

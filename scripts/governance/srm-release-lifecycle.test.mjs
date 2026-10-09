@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import {
   assertProductSecretIsolation,
+  assertStagingGitHubProtection,
   assertLifecycleAuthorization,
   assertSnapshot,
   claimRelease,
@@ -15,6 +16,53 @@ import {
 const c = JSON.parse(
   fs.readFileSync("apps/srm/deployment/staging-contract.json", "utf8"),
 );
+const ownerEnvironment = (preventSelfReview = false) => ({
+  id:23853126630,name:"srm-staging",
+  protection_rules:[{type:"required_reviewers",prevent_self_review:preventSelfReview,
+    reviewers:[{type:"User",reviewer:{id:275643368,login:"profitia"}}]}],
+  deployment_branch_policy:{custom_branch_policies:true,protected_branches:false},
+});
+test("existing SRM Staging accepts solo owner review without removing the reviewer",()=>{
+  const result=assertStagingGitHubProtection(ownerEnvironment(),c);
+  assert.equal(result.mode,"SOLO_OPERATOR_OWNER_REVIEW");
+  assert.deepEqual(result.reviewerIds,[275643368]);
+  assert.equal(result.preventSelfReview,false);
+});
+test("pre-corrective independent review remains valid until separately approved policy application",()=>{
+  assert.equal(assertStagingGitHubProtection(ownerEnvironment(true),c).mode,"INDEPENDENT_REVIEW");
+});
+for(const [label,mutate] of [
+  ["another environment ID",g=>g.id=1],
+  ["Development",g=>g.name="SRM-development"],
+  ["Production",g=>g.name="srm-production"],
+  ["SG2",g=>g.name="sg2-staging"],
+  ["CIC",g=>g.name="cic-staging"],
+  ["no reviewer rule",g=>g.protection_rules=[]],
+  ["empty reviewers",g=>g.protection_rules[0].reviewers=[]],
+  ["another reviewer",g=>g.protection_rules[0].reviewers[0].reviewer.id=1],
+  ["wrong login",g=>g.protection_rules[0].reviewers[0].reviewer.login="other"],
+  ["team reviewer",g=>g.protection_rules[0].reviewers[0].type="Team"],
+  ["additional reviewer",g=>g.protection_rules[0].reviewers.push({type:"User",reviewer:{id:1,login:"other"}})],
+  ["duplicate reviewer rule",g=>g.protection_rules.push(structuredClone(g.protection_rules[0]))],
+  ["unknown self-review state",g=>delete g.protection_rules[0].prevent_self_review],
+  ["unrestricted deployment branches",g=>g.deployment_branch_policy.custom_branch_policies=false],
+])test("solo approval fails closed: "+label,()=>{
+  const ge=ownerEnvironment();mutate(ge);assert.throws(()=>assertStagingGitHubProtection(ge,c));
+});
+test("self-review cannot be enabled by missing policy or environment override",()=>{
+  const copy=structuredClone(c);delete copy.github.soloOperatorApproval;
+  assert.throws(()=>assertStagingGitHubProtection(ownerEnvironment(),copy));
+  assert.throws(()=>assertStagingGitHubProtection(ownerEnvironment(),{...copy,SRM_ALLOW_SELF_REVIEW:true}));
+  assert.doesNotThrow(()=>assertStagingGitHubProtection(ownerEnvironment(true),copy));
+});
+for(const [field,value] of Object.entries({id:"other",projectKey:"SG2",targetEnvironment:"production",repository:"profitia/other",repositoryId:1,environmentName:"sg2-staging",environmentId:1,preventSelfReview:true,applicationGate:"AUTOMATIC"}))
+test("canonical solo approval scope cannot change: "+field,()=>{
+  const copy=structuredClone(c);copy.github.soloOperatorApproval[field]=value;
+  assert.throws(()=>assertStagingGitHubProtection(ownerEnvironment(),copy));
+});
+test("the SRM validator never grants a solo exception to another project contract",()=>{
+  for(const projectKey of ["SG2","CIC"])assert.throws(()=>assertStagingGitHubProtection(ownerEnvironment(),{...c,projectKey}));
+});
 const m = {
   projectKey: "SRM",
   targetEnvironment: "staging",

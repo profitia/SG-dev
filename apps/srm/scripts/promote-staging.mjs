@@ -14,7 +14,7 @@ import {
   runMigrations,
   initializationConfig,
 } from "./staging-migrate.mjs";
-import { assertProductSecretIsolation } from "../../../scripts/governance/srm-release-lifecycle.mjs";
+import { assertProductSecretIsolation, assertStagingGitHubProtection } from "../../../scripts/governance/srm-release-lifecycle.mjs";
 const topology = () =>
   JSON.parse(
     fs.readFileSync(
@@ -302,9 +302,8 @@ export async function liveEvidence(sha, env = process.env) {
       "/repos/" + contract.repository + "/environments/srm-staging",
       env.GITHUB_TOKEN,
     );
-    githubProtected =
-      ge.id === topology().environments.staging.github.environmentId &&
-      ge.protection_rules?.some((r) => r.type === "required_reviewers");
+    assertDispatchTarget(ge);
+    githubProtected = true;
   } catch {}
   const databaseInspection = await inspectProductDatabase(!!db, env);
   const git = spawnSync(
@@ -630,14 +629,11 @@ export function assertDispatchTarget(githubEnvironment = null) {
     throw new Error(
       "Canonical first onboarding required before protected job activation",
     );
-  if (
-    githubEnvironment &&
-    (githubEnvironment.id !== t.github.environmentId ||
-      !githubEnvironment.protection_rules?.some(
-        (r) => r.type === "required_reviewers",
-      ))
-  )
-    throw new Error("Exact protected GitHub environment required");
+  if (githubEnvironment) {
+    if (githubEnvironment.id !== t.github.environmentId)
+      throw new Error("Exact protected GitHub environment required");
+    return assertStagingGitHubProtection(githubEnvironment, contract);
+  }
 }
 
 export async function inspectProductDatabase(
