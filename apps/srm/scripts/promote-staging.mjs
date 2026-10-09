@@ -14,6 +14,7 @@ import {
   runMigrations,
   initializationConfig,
 } from "./staging-migrate.mjs";
+import { assertProductSecretIsolation } from "../../../scripts/governance/srm-release-lifecycle.mjs";
 const topology = () =>
   JSON.parse(
     fs.readFileSync(
@@ -275,8 +276,12 @@ export async function liveEvidence(sha, env = process.env) {
         return [e.key, e.value];
       }),
     );
+    let productSecretsCompliant = false;
+    try {
+      productSecretsCompliant = assertProductSecretIsolation(contract, values, dv);
+    } catch { /* Non-secret plan reports the existing isolation gate. */ }
     secretsIsolated =
-      contract.requiredSecrets.every((k) => values[k] && values[k] !== dv[k]) &&
+      productSecretsCompliant &&
       values.TARGET_ENVIRONMENT === "staging" &&
       values.SRM_NEON_PROJECT_ID === contract.neon.projectId &&
       values.SRM_NEON_BRANCH_ID === contract.neon.branchId &&

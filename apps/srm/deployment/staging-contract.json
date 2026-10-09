@@ -107,5 +107,30 @@
     "deploymentAttempts": "APPROVED_BOUNDED_1_TO_3",
     "sourceEvidence": "LIVE_CI_AND_DEVELOPMENT_DEPLOY_IDS",
     "completedRetry": "READ_ONLY_VERIFICATION"
+  },
+  "vendorCredentialReuse": {
+    "id": "SRM-STAGING-VENDOR-REUSE-20261009",
+    "projectKey": "SRM",
+    "targetEnvironment": "staging",
+    "sourceEnvironment": "development",
+    "owner": "Profit.ia",
+    "approvedBy": "Tomasz Uscinski",
+    "approvalSource": "EXPLICIT_BUSINESS_OWNER_REQUEST",
+    "approvedAt": "2026-10-09T00:00:00Z",
+    "expiresAt": "2026-11-08T00:00:00Z",
+    "repository": "profitia/SG-dev",
+    "repositoryId": 1247665550,
+    "developmentServiceId": "srv-db1vu6gm7kps73d0e3r0",
+    "renderEnvironmentId": "evm-dapbdbbbc2fs73f4g7gg",
+    "neonProjectId": "snowy-breeze-40315151",
+    "neonBranchId": "br-broad-butterfly-b11t4v01",
+    "sharedSecretNames": [
+      "MGBI_API_KEY",
+      "VERCLY_API_KEY",
+      "CEIDG_API_KEY"
+    ],
+    "rollback": "Replace only Stage supplier keys with separate approved credentials; Development, database, login and sessions stay unchanged.",
+    "monitoring": "Review shared supplier quotas and usage/billing; inspect provider 401/403/429 errors and Stage logs after each release.",
+    "expiryAction": "Expired approval rejects future shared-key promotions, reconciliation and retries. Rotate only Stage supplier keys or obtain a reviewed bounded renewal; existing runtime is not automatically stopped."
   }
 }

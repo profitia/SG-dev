@@ -19,6 +19,7 @@ import {
 } from "./promote-staging.mjs";
 import { runGovernancePreflight } from "../../../scripts/governance/governance-preflight.mjs";
 import {
+  assertProductSecretIsolation,
   assertLifecycleAuthorization,
   assertSnapshot,
   assertOperation,
@@ -520,11 +521,10 @@ export function createProvider(
     const dev = Object.fromEntries(
       dp.map((x) => [x.envVar.key, x.envVar.value]),
     );
+    assertProductSecretIsolation(contract, values, dev);
     fail(
-      contract.requiredSecrets.every(
-        (k) => values[k] && values[k] !== dev[k] && values[k] === stageEnv()[k],
-      ),
-      "Stage secrets missing or shared with Development",
+      contract.requiredSecrets.every((k) => values[k] === stageEnv()[k]),
+      "Stage secrets differ from the approved operator bindings",
     );
     fail(
       contract.requiredConfiguration.every(
