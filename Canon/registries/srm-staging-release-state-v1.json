@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "41b6e24778212cea257925468a2141d61640fbf3e1c24bbfef43fa77247ba761",
+  "publicationNonce": "5fd28bc98e7e6d29b45588677c7599df7d4b211911607d05dd56dce88a20b47f",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 30,
+  "generation": 31,
   "release": {
     "authorizationDigest": "c9fb1f717388e2abfe225daee3f1548bcdc7a6ed998c1d89865a5543fd5e574f",
     "authorization": {
@@ -152,7 +152,7 @@
     },
     "mode": "promote",
     "owner": "codespace:srm-pmos-activation-jjxx6vpp9v4x2q9vr",
-    "phase": "VERIFYING",
+    "phase": "VERIFIED",
     "resources": {
       "serviceId": "srv-db496b3tqb8s73eh5sfg",
       "databaseId": 509272,
@@ -4029,14 +4029,77 @@
       "maximumDeploymentAttempts": 1,
       "previousDeployId": "dep-db496brtqb8s73eh5up0",
       "approvedAt": "2026-10-09T08:21:33.783Z"
+    },
+    "proof": {
+      "source": "LIVE_RUNTIME_AND_SQL",
+      "sha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+      "deployId": "dep-db4abe142hec73ali6mg",
+      "serviceId": "srv-db496b3tqb8s73eh5sfg",
+      "branchId": "br-broad-butterfly-b11t4v01",
+      "databaseId": 509272,
+      "githubEnvironmentId": 23853126630,
+      "configuration": "PASS",
+      "githubProtection": "PASS",
+      "schema": "PASS",
+      "runtimeRole": "PASS",
+      "tenantIsolation": "PASS",
+      "health": "PASS",
+      "authentication": "PASS",
+      "persistence": "PASS",
+      "migrations": [
+        {
+          "version": "0001_xray_foundation",
+          "checksum": "14b18a8dfa4f45fb2c5fd6cdbffd4220db4826dead5d8a205e8663a1a9dd8445"
+        },
+        {
+          "version": "0002_ceidg_jdg",
+          "checksum": "365904ec0c70d56f57c7702c0e2516ec114b41737f05c1ff38e9a03004a78a25"
+        },
+        {
+          "version": "0003_financial_cost_normalization",
+          "checksum": "2e4f35bf603a207096562f88d8a0903c799cc906c2475eccb380434c2d6b07da"
+        },
+        {
+          "version": "0004_financial_other_cost_normalization",
+          "checksum": "fb78a2476249daedbe53fe87c2c6e8a66b2a3e06abd31b388603ac1ce3ad3c76"
+        },
+        {
+          "version": "0005_kys_personal",
+          "checksum": "c309f92b4ec31362c3dc6a004def889d37c90b095dcc9624d3f7f91298a3344a"
+        },
+        {
+          "version": "0006_kys_retention_privilege",
+          "checksum": "60629673484b92fd8877aa0a4355bd1e79818d51be3f7f88b4ceee19d9c8d771"
+        },
+        {
+          "version": "0007_shared_financial_catalog",
+          "checksum": "31c0bb7b7b0a54476cfa95033d463b7ee4071d1fac37090082dd4c7ede4f5b54"
+        },
+        {
+          "version": "0008_financial_indicators",
+          "checksum": "e1ab3ac396537fb52c17a99343379068c2a3c8b5be03890f95ce8405c19a91c5"
+        },
+        {
+          "version": "0009_financial_indicator_days",
+          "checksum": "f4a62fcaf826f1db90cbc0a930eafde2e8fe8e290b24c65bcdf9f98ffb45bcd2"
+        },
+        {
+          "version": "0010_kys_shared_cache",
+          "checksum": "1130979f8573048d060a919dc811dd63ee737688ff4533665d9ee16b32189c44"
+        },
+        {
+          "version": "0011_mgbi_raw_reports",
+          "checksum": "202e415b49dbe6d2df232392dc4b058f4aa8ed86f570b531efcee760ffe0d77c"
+        }
+      ]
     }
   },
   "baseline": {
-    "generation": 21,
+    "generation": 31,
     "sha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
-    "deployId": "dep-db496brtqb8s73eh5up0",
+    "deployId": "dep-db4abe142hec73ali6mg",
     "serviceId": "srv-db496b3tqb8s73eh5sfg",
-    "evidenceDigest": "d338e337c8ea483b5303d261c7402e10e04b79fbf73013496205d6d03db7c8f8",
-    "verifiedAt": "2026-10-09T07:43:35.689Z"
+    "evidenceDigest": "5bce72a909c4c84b0d4d655b5199e2b9b070c945eccb9b6f9be894c5d6b33d8d",
+    "verifiedAt": "2026-10-09T08:33:18.026Z"
   }
 }
