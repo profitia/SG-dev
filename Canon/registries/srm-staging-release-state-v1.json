@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "9f97d5d1e8c74073b11c6f83ebde6c4b085793ba69aa4d63b0842c734b3e7fe1",
+  "publicationNonce": "ca5eb32461e00ab3f5e48f736f4c503c2739ec75dfab882cbd283e0d4026c1e4",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 8,
+  "generation": 9,
   "release": {
     "authorizationDigest": "61d3e26061e0e500bbd2236b7af6097a7979559bb45323a7ebfcf7241cda2354",
     "authorization": {
@@ -139,7 +139,8 @@
     "owner": "codespace:srm-pmos-activation-jjxx6vpp9v4x2q9vr",
     "phase": "PROVISIONING",
     "resources": {
-      "githubEnvironmentId": 23853126630
+      "githubEnvironmentId": 23853126630,
+      "databaseId": 509272
     },
     "steps": {
       "github-environment": {
@@ -2269,7 +2270,7 @@
         }
       },
       "database": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-09T07:03:53.874Z",
@@ -2653,10 +2654,10 @@
             ]
           }
         },
-        "snapshotDigest": "26e59adbefd0b9b93fe7116f5f116c853c91c1ca85d4a3b6c5221f819e04d626",
+        "snapshotDigest": "ac1fbc0d1948638a152015fdedd966b0b481e40daa1e17794cc6f1dd389ed45c",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-09T07:03:53.874Z",
+          "capturedAt": "2026-10-09T07:05:02.219Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -2725,8 +2726,8 @@
             "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
-            "updated_at": "2026-10-09T07:03:54Z",
-            "pushed_at": "2026-10-09T07:03:50Z",
+            "updated_at": "2026-10-09T07:04:57Z",
+            "pushed_at": "2026-10-09T07:04:53Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -2893,7 +2894,7 @@
                   "compute_host": "ep-autumn-wildflower-b1mv0vda-qgx.c-5.eu-central-1.aws.neon.tech",
                   "compute_pooled_host": "ep-autumn-wildflower-b1mv0vda-qgx-pooler.c-5.eu-central-1.aws.neon.tech",
                   "created_at": "2026-09-22T17:09:28Z",
-                  "updated_at": "2026-09-22T17:40:26Z",
+                  "updated_at": "2026-10-09T07:05:04Z",
                   "started_at": "2026-09-22T17:40:26Z"
                 }
               ]
@@ -2908,7 +2909,7 @@
             "last_active": "2026-10-09T06:05:10Z",
             "creation_source": "console",
             "created_at": "2026-09-22T17:09:28Z",
-            "updated_at": "2026-10-09T06:05:17Z",
+            "updated_at": "2026-10-09T07:05:04Z",
             "started_at": "2026-09-22T17:40:26Z",
             "proxy_host": "c-5.eu-central-1.aws.neon.tech",
             "suspend_timeout_seconds": -1,
@@ -2923,6 +2924,14 @@
               "owner_name": "neondb_owner",
               "created_at": "2026-09-22T17:06:21Z",
               "updated_at": "2026-09-22T17:06:21Z"
+            },
+            {
+              "id": 509272,
+              "branch_id": "br-broad-butterfly-b11t4v01",
+              "name": "srm_app",
+              "owner_name": "neondb_owner",
+              "created_at": "2026-10-09T07:05:02Z",
+              "updated_at": "2026-10-09T07:05:02Z"
             }
           ],
           "services": [],
@@ -3037,7 +3046,9 @@
             ]
           }
         },
-        "result": {}
+        "result": {
+          "id": 509272
+        }
       }
     },
     "lastKnownGood": null,
