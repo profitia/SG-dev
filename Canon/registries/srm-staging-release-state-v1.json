@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "27bdc035faef6eed8fb52a4ee890815bb925d3c5df2660617fd24de4ce74efeb",
+  "publicationNonce": "4829e5e4f0b3d5de4b406898756d5e2070b050ce7ce54591ab0fbdaa753cd630",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 14,
+  "generation": 15,
   "release": {
     "authorizationDigest": "61d3e26061e0e500bbd2236b7af6097a7979559bb45323a7ebfcf7241cda2354",
     "authorization": {
@@ -4736,7 +4736,7 @@
         }
       },
       "deploy": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-09T07:10:30.565Z",
@@ -5189,10 +5189,10 @@
             ]
           }
         },
-        "snapshotDigest": "beb54a7d58cba521035385271958b3770f9a31d02057632197ac396e09814926",
+        "snapshotDigest": "41568147dbe2f2e2b5c3c29b1059a544a60f596212f6006c4795b49ff5bd36c3",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-09T07:10:30.565Z",
+          "capturedAt": "2026-10-09T07:11:40.537Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -5261,8 +5261,8 @@
             "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
-            "updated_at": "2026-10-09T07:10:31Z",
-            "pushed_at": "2026-10-09T07:10:26Z",
+            "updated_at": "2026-10-09T07:11:29Z",
+            "pushed_at": "2026-10-09T07:11:24Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -5528,10 +5528,23 @@
               "suspended": "not_suspended",
               "suspenders": [],
               "type": "web_service",
-              "updatedAt": "2026-10-09T07:09:33.632132Z"
+              "updatedAt": "2026-10-09T07:11:35.317373Z"
             }
           ],
-          "liveDeploy": null,
+          "liveDeploy": {
+            "id": "dep-db496brtqb8s73eh5up0",
+            "commit": {
+              "id": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+              "message": "Merge pull request #153 from profitia/feat/srm-supplier-snapshot-1a8-uxc-20261008\n\nSRM UX-C: Supplier Snapshot and consistent detailed reports",
+              "createdAt": "2026-10-08T21:16:18Z"
+            },
+            "status": "live",
+            "trigger": "manual",
+            "createdAt": "2026-10-09T07:09:35.705091Z",
+            "updatedAt": "2026-10-09T07:11:35.316022Z",
+            "startedAt": "2026-10-09T07:09:35.677706Z",
+            "finishedAt": "2026-10-09T07:11:35.315739Z"
+          },
           "domains": [],
           "githubEnvironment": {
             "id": 23853126630,
@@ -5642,7 +5655,10 @@
             ]
           }
         },
-        "result": {}
+        "result": {
+          "deployId": "dep-db496brtqb8s73eh5up0",
+          "sha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1"
+        }
       }
     },
     "lastKnownGood": null,
