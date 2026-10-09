@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "bb8b75477e29f296dbc48b1437714cd0853c0521f4dcb1b39ee581b0df6e07e4",
+  "publicationNonce": "7dd758adf91bb058dd3bc2069a8760f303eca9f54aea98168f5ab44823a48b57",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 48,
+  "generation": 49,
   "release": {
     "authorizationDigest": "acdf3cb3dc6a2ef41d39b7bacc04726a89a8af88eeee25b5feed14774f2a208f",
     "authorization": {
@@ -126,7 +126,7 @@
     },
     "mode": "promote",
     "owner": "github-run:37965186441",
-    "phase": "PROVISIONING",
+    "phase": "VERIFYING",
     "resources": {
       "githubEnvironmentId": 23853126630,
       "databaseId": 509272,
@@ -6934,6 +6934,967 @@
         "result": {
           "branch": "main"
         }
+      },
+      "verify": {
+        "status": "INTENT",
+        "before": {
+          "source": "LIVE_PROVIDER_APIS",
+          "capturedAt": "2026-10-09T17:32:49.371Z",
+          "repository": {
+            "id": 1247665550,
+            "node_id": "R_kgDOSl3djg",
+            "name": "SG-dev",
+            "full_name": "profitia/SG-dev",
+            "private": false,
+            "owner": {
+              "login": "profitia",
+              "id": 275643368,
+              "node_id": "U_kgDOEG376A",
+              "avatar_url": "https://avatars.githubusercontent.com/u/275643368?v=4",
+              "gravatar_id": "",
+              "url": "https://api.github.com/users/profitia",
+              "html_url": "https://github.com/profitia",
+              "followers_url": "https://api.github.com/users/profitia/followers",
+              "following_url": "https://api.github.com/users/profitia/following{/other_user}",
+              "gists_url": "https://api.github.com/users/profitia/gists{/gist_id}",
+              "starred_url": "https://api.github.com/users/profitia/starred{/owner}{/repo}",
+              "subscriptions_url": "https://api.github.com/users/profitia/subscriptions",
+              "organizations_url": "https://api.github.com/users/profitia/orgs",
+              "repos_url": "https://api.github.com/users/profitia/repos",
+              "events_url": "https://api.github.com/users/profitia/events{/privacy}",
+              "received_events_url": "https://api.github.com/users/profitia/received_events",
+              "type": "User",
+              "user_view_type": "public",
+              "site_admin": false
+            },
+            "html_url": "https://github.com/profitia/SG-dev",
+            "description": null,
+            "fork": false,
+            "url": "https://api.github.com/repos/profitia/SG-dev",
+            "forks_url": "https://api.github.com/repos/profitia/SG-dev/forks",
+            "keys_url": "https://api.github.com/repos/profitia/SG-dev/keys{/key_id}",
+            "collaborators_url": "https://api.github.com/repos/profitia/SG-dev/collaborators{/collaborator}",
+            "teams_url": "https://api.github.com/repos/profitia/SG-dev/teams",
+            "hooks_url": "https://api.github.com/repos/profitia/SG-dev/hooks",
+            "issue_events_url": "https://api.github.com/repos/profitia/SG-dev/issues/events{/number}",
+            "events_url": "https://api.github.com/repos/profitia/SG-dev/events",
+            "assignees_url": "https://api.github.com/repos/profitia/SG-dev/assignees{/user}",
+            "branches_url": "https://api.github.com/repos/profitia/SG-dev/branches{/branch}",
+            "tags_url": "https://api.github.com/repos/profitia/SG-dev/tags",
+            "blobs_url": "https://api.github.com/repos/profitia/SG-dev/git/blobs{/sha}",
+            "git_tags_url": "https://api.github.com/repos/profitia/SG-dev/git/tags{/sha}",
+            "git_refs_url": "https://api.github.com/repos/profitia/SG-dev/git/refs{/sha}",
+            "trees_url": "https://api.github.com/repos/profitia/SG-dev/git/trees{/sha}",
+            "statuses_url": "https://api.github.com/repos/profitia/SG-dev/statuses/{sha}",
+            "languages_url": "https://api.github.com/repos/profitia/SG-dev/languages",
+            "stargazers_url": "https://api.github.com/repos/profitia/SG-dev/stargazers",
+            "contributors_url": "https://api.github.com/repos/profitia/SG-dev/contributors",
+            "subscribers_url": "https://api.github.com/repos/profitia/SG-dev/subscribers",
+            "subscription_url": "https://api.github.com/repos/profitia/SG-dev/subscription",
+            "commits_url": "https://api.github.com/repos/profitia/SG-dev/commits{/sha}",
+            "git_commits_url": "https://api.github.com/repos/profitia/SG-dev/git/commits{/sha}",
+            "comments_url": "https://api.github.com/repos/profitia/SG-dev/comments{/number}",
+            "issue_comment_url": "https://api.github.com/repos/profitia/SG-dev/issues/comments{/number}",
+            "contents_url": "https://api.github.com/repos/profitia/SG-dev/contents/{+path}",
+            "compare_url": "https://api.github.com/repos/profitia/SG-dev/compare/{base}...{head}",
+            "merges_url": "https://api.github.com/repos/profitia/SG-dev/merges",
+            "archive_url": "https://api.github.com/repos/profitia/SG-dev/{archive_format}{/ref}",
+            "downloads_url": "https://api.github.com/repos/profitia/SG-dev/downloads",
+            "issues_url": "https://api.github.com/repos/profitia/SG-dev/issues{/number}",
+            "pulls_url": "https://api.github.com/repos/profitia/SG-dev/pulls{/number}",
+            "milestones_url": "https://api.github.com/repos/profitia/SG-dev/milestones{/number}",
+            "notifications_url": "https://api.github.com/repos/profitia/SG-dev/notifications{?since,all,participating}",
+            "labels_url": "https://api.github.com/repos/profitia/SG-dev/labels{/name}",
+            "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
+            "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
+            "created_at": "2026-05-23T16:08:41Z",
+            "updated_at": "2026-10-09T17:31:56Z",
+            "pushed_at": "2026-10-09T17:32:46Z",
+            "git_url": "git://github.com/profitia/SG-dev.git",
+            "ssh_url": "git@github.com:profitia/SG-dev.git",
+            "clone_url": "https://github.com/profitia/SG-dev.git",
+            "svn_url": "https://github.com/profitia/SG-dev",
+            "homepage": null,
+            "size": 60274,
+            "stargazers_count": 0,
+            "watchers_count": 0,
+            "language": "TypeScript",
+            "has_issues": true,
+            "has_projects": true,
+            "has_downloads": false,
+            "has_wiki": true,
+            "has_pages": false,
+            "has_discussions": false,
+            "forks_count": 0,
+            "mirror_url": null,
+            "archived": false,
+            "disabled": false,
+            "open_issues_count": 3,
+            "license": null,
+            "allow_forking": true,
+            "is_template": false,
+            "web_commit_signoff_required": false,
+            "has_pull_requests": true,
+            "pull_request_creation_policy": "all",
+            "topics": [],
+            "visibility": "public",
+            "forks": 0,
+            "open_issues": 3,
+            "watchers": 0,
+            "default_branch": "main",
+            "permissions": {
+              "admin": true,
+              "maintain": true,
+              "push": true,
+              "triage": true,
+              "pull": true
+            },
+            "temp_clone_token": "",
+            "allow_squash_merge": true,
+            "allow_merge_commit": true,
+            "allow_rebase_merge": true,
+            "allow_auto_merge": false,
+            "delete_branch_on_merge": false,
+            "allow_update_branch": false,
+            "use_squash_pr_title_as_default": false,
+            "squash_merge_commit_message": "COMMIT_MESSAGES",
+            "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
+            "merge_commit_message": "PR_TITLE",
+            "merge_commit_title": "MERGE_MESSAGE",
+            "security_and_analysis": {
+              "secret_scanning": {
+                "status": "enabled"
+              },
+              "secret_scanning_push_protection": {
+                "status": "enabled"
+              },
+              "dependabot_security_updates": {
+                "status": "disabled"
+              },
+              "secret_scanning_non_provider_patterns": {
+                "status": "disabled"
+              },
+              "secret_scanning_validity_checks": {
+                "status": "disabled"
+              }
+            },
+            "network_count": 0,
+            "subscribers_count": 0
+          },
+          "renderProject": {
+            "createdAt": "2026-09-22T17:10:38.828001Z",
+            "environmentIds": [
+              "evm-dapbd70ae00c73cgrup0",
+              "evm-dapbd3hsrm7s73es53h0",
+              "evm-dapbdbbbc2fs73f4g7gg"
+            ],
+            "id": "prj-dapbd3hsrm7s73es53fg",
+            "name": "SRM",
+            "owner": {
+              "email": "tomasz.uscinski@profitia.pl",
+              "id": "tea-d7lps8rbc2fs73cn80dg",
+              "name": "PROFITIA WORKSPACE",
+              "type": "team"
+            },
+            "updatedAt": "2026-09-22T17:10:38.828001Z"
+          },
+          "renderEnvironment": {
+            "databasesIds": [],
+            "envGroupIds": [],
+            "id": "evm-dapbdbbbc2fs73f4g7gg",
+            "ipAllowList": [
+              {
+                "cidrBlock": "0.0.0.0/0",
+                "description": "everywhere"
+              }
+            ],
+            "name": "Staging",
+            "networkIsolationEnabled": true,
+            "projectId": "prj-dapbd3hsrm7s73es53fg",
+            "protectedStatus": "unprotected",
+            "redisIds": [],
+            "serviceIds": [
+              "srv-db496b3tqb8s73eh5sfg"
+            ]
+          },
+          "neonBranch": {
+            "id": "br-broad-butterfly-b11t4v01",
+            "project_id": "snowy-breeze-40315151",
+            "parent_id": "br-nameless-bar-b1wlhjhx",
+            "parent_lsn": "0/19C70D0",
+            "parent_timestamp": "2026-09-22T17:09:25Z",
+            "name": "Staging",
+            "slug": "br-broad-butterfly-b11t4v01",
+            "project_slug": "snowy-breeze-40315151",
+            "current_state": "ready",
+            "state_changed_at": "2026-09-22T17:09:28Z",
+            "logical_size": 40558592,
+            "creation_source": "console",
+            "primary": false,
+            "default": false,
+            "protected": false,
+            "cpu_used_sec": 0,
+            "compute_time_seconds": 209695,
+            "active_time_seconds": 752832,
+            "written_data_bytes": 0,
+            "data_transfer_bytes": 110742,
+            "created_at": "2026-09-22T17:09:28Z",
+            "updated_at": "2026-10-09T17:22:51Z",
+            "created_by": {
+              "name": "",
+              "image": ""
+            },
+            "init_source": "parent-data"
+          },
+          "neonEndpoint": {
+            "host": "ep-autumn-wildflower-b1mv0vda.c-5.eu-central-1.aws.neon.tech",
+            "hosts": {
+              "read_write_host": "ep-autumn-wildflower-b1mv0vda.c-5.eu-central-1.aws.neon.tech",
+              "read_write_pooled_host": "ep-autumn-wildflower-b1mv0vda-pooler.c-5.eu-central-1.aws.neon.tech"
+            },
+            "id": "ep-autumn-wildflower-b1mv0vda",
+            "name": "srm_app",
+            "slug": "ep-autumn-wildflower-b1mv0vda",
+            "branch_slug": "br-broad-butterfly-b11t4v01",
+            "project_slug": "snowy-breeze-40315151",
+            "project_id": "snowy-breeze-40315151",
+            "branch_id": "br-broad-butterfly-b11t4v01",
+            "autoscaling_limit_min_cu": 0.25,
+            "autoscaling_limit_max_cu": 8,
+            "region_id": "aws-eu-central-1",
+            "type": "read_write",
+            "current_state": "active",
+            "group": {
+              "size": {
+                "min": 1,
+                "max": 1
+              },
+              "allow_readable_secondaries": false,
+              "computes": [
+                {
+                  "binding_id": "qgx",
+                  "current_state": "active",
+                  "role": "read_write",
+                  "compute_host": "ep-autumn-wildflower-b1mv0vda-qgx.c-5.eu-central-1.aws.neon.tech",
+                  "compute_pooled_host": "ep-autumn-wildflower-b1mv0vda-qgx-pooler.c-5.eu-central-1.aws.neon.tech",
+                  "created_at": "2026-09-22T17:09:28Z",
+                  "updated_at": "2026-10-09T07:05:04Z",
+                  "started_at": "2026-09-22T17:40:26Z"
+                }
+              ]
+            },
+            "settings": {
+              "pg_settings": {}
+            },
+            "pooler_enabled": false,
+            "pooler_mode": "transaction",
+            "disabled": false,
+            "passwordless_access": true,
+            "last_active": "2026-10-09T17:23:25Z",
+            "creation_source": "console",
+            "created_at": "2026-09-22T17:09:28Z",
+            "updated_at": "2026-10-09T17:23:32Z",
+            "started_at": "2026-09-22T17:40:26Z",
+            "proxy_host": "c-5.eu-central-1.aws.neon.tech",
+            "suspend_timeout_seconds": -1,
+            "provisioner": "k8s-neonvm",
+            "compute_release_version": "14856"
+          },
+          "databases": [
+            {
+              "id": 308649,
+              "branch_id": "br-broad-butterfly-b11t4v01",
+              "name": "neondb",
+              "owner_name": "neondb_owner",
+              "created_at": "2026-09-22T17:06:21Z",
+              "updated_at": "2026-09-22T17:06:21Z"
+            },
+            {
+              "id": 509272,
+              "branch_id": "br-broad-butterfly-b11t4v01",
+              "name": "srm_app",
+              "owner_name": "neondb_owner",
+              "created_at": "2026-10-09T07:05:02Z",
+              "updated_at": "2026-10-09T07:05:02Z"
+            }
+          ],
+          "services": [
+            {
+              "autoDeploy": "no",
+              "autoDeployTrigger": "off",
+              "branch": "main",
+              "createdAt": "2026-10-09T07:09:33.632132Z",
+              "dashboardUrl": "https://dashboard.render.com/web/srv-db496b3tqb8s73eh5sfg",
+              "environmentId": "evm-dapbdbbbc2fs73f4g7gg",
+              "id": "srv-db496b3tqb8s73eh5sfg",
+              "name": "srm-staging-runtime",
+              "notifyOnFail": "default",
+              "ownerId": "tea-d7lps8rbc2fs73cn80dg",
+              "repo": "https://github.com/profitia/SG-dev",
+              "rootDir": "",
+              "serviceDetails": {
+                "buildPlan": "performance",
+                "cache": {
+                  "profile": "no-cache"
+                },
+                "env": "node",
+                "envSpecificDetails": {
+                  "buildCommand": "npm --prefix apps/srm ci --install-links && npm --prefix apps/srm run build && mkdir -p apps/srm/.next/standalone/.next && cp -R apps/srm/.next/static apps/srm/.next/standalone/.next/static",
+                  "startCommand": "cd apps/srm && HOSTNAME=0.0.0.0 node .next/standalone/server.js"
+                },
+                "healthCheckPath": "/api/health",
+                "ipAllowList": [
+                  {
+                    "cidrBlock": "0.0.0.0/0",
+                    "description": "everywhere"
+                  }
+                ],
+                "maintenanceMode": {
+                  "enabled": false,
+                  "uri": ""
+                },
+                "numInstances": 1,
+                "openPorts": [
+                  {
+                    "port": 10000,
+                    "protocol": "TCP"
+                  }
+                ],
+                "plan": "0.5c-512mb",
+                "previews": {
+                  "generation": "off"
+                },
+                "pullRequestPreviewsEnabled": "no",
+                "region": "frankfurt",
+                "renderSubdomainPolicy": "enabled",
+                "runtime": "node",
+                "sshAddress": "srv-db496b3tqb8s73eh5sfg@ssh.frankfurt.render.com",
+                "url": "https://srm-staging-runtime.onrender.com"
+              },
+              "slug": "srm-staging-runtime",
+              "suspended": "not_suspended",
+              "suspenders": [],
+              "type": "web_service",
+              "updatedAt": "2026-10-09T17:29:49.615913Z"
+            }
+          ],
+          "liveDeploy": {
+            "id": "dep-db4i8g7f3r2c739jn0eg",
+            "commit": {
+              "id": "1e8852923e06df5395d0e154da786875dc070cb7",
+              "message": "Merge pull request #192 from profitia/feat/srm-login-version-scope-20261009\n\nSRM login: show scope of the current release",
+              "createdAt": "2026-10-09T10:02:30Z"
+            },
+            "status": "live",
+            "trigger": "api",
+            "createdAt": "2026-10-09T17:28:32.444912Z",
+            "updatedAt": "2026-10-09T17:30:23.22004Z",
+            "startedAt": "2026-10-09T17:28:32.410048Z",
+            "finishedAt": "2026-10-09T17:29:49.614573Z"
+          },
+          "domains": [
+            {
+              "cursor": "rV-rEE-81aJ0Y3ZsazFtYzczZmhuN3Nn",
+              "customDomain": {
+                "createdAt": "2026-10-09T10:15:15.530951Z",
+                "domainType": "subdomain",
+                "id": "cdm-db4btcvlk1mc73fhn7sg",
+                "name": "demo-srm-porr.spendguru.app",
+                "publicSuffix": "app",
+                "redirectForName": "",
+                "verificationStatus": "verified"
+              }
+            }
+          ],
+          "githubEnvironment": {
+            "id": 23853126630,
+            "node_id": "EN_kwDOSl3djs8AAAAFjcHT5g",
+            "name": "srm-staging",
+            "url": "https://api.github.com/repos/profitia/SG-dev/environments/srm-staging",
+            "html_url": "https://github.com/profitia/SG-dev/deployments/activity_log?environments_filter=srm-staging",
+            "created_at": "2026-10-09T06:57:31Z",
+            "updated_at": "2026-10-09T06:57:31Z",
+            "can_admins_bypass": true,
+            "protection_rules": [
+              {
+                "id": 68213351,
+                "node_id": "GA_kwDOSl3djs4EENpn",
+                "type": "required_reviewers",
+                "prevent_self_review": false,
+                "reviewers": [
+                  {
+                    "type": "User",
+                    "reviewer": {
+                      "login": "profitia",
+                      "id": 275643368,
+                      "node_id": "U_kgDOEG376A",
+                      "avatar_url": "https://avatars.githubusercontent.com/u/275643368?v=4",
+                      "gravatar_id": "",
+                      "url": "https://api.github.com/users/profitia",
+                      "html_url": "https://github.com/profitia",
+                      "followers_url": "https://api.github.com/users/profitia/followers",
+                      "following_url": "https://api.github.com/users/profitia/following{/other_user}",
+                      "gists_url": "https://api.github.com/users/profitia/gists{/gist_id}",
+                      "starred_url": "https://api.github.com/users/profitia/starred{/owner}{/repo}",
+                      "subscriptions_url": "https://api.github.com/users/profitia/subscriptions",
+                      "organizations_url": "https://api.github.com/users/profitia/orgs",
+                      "repos_url": "https://api.github.com/users/profitia/repos",
+                      "events_url": "https://api.github.com/users/profitia/events{/privacy}",
+                      "received_events_url": "https://api.github.com/users/profitia/received_events",
+                      "type": "User",
+                      "user_view_type": "public",
+                      "site_admin": false
+                    }
+                  }
+                ]
+              },
+              {
+                "id": 68213352,
+                "node_id": "GA_kwDOSl3djs4EENpo",
+                "type": "branch_policy"
+              }
+            ],
+            "deployment_branch_policy": {
+              "protected_branches": false,
+              "custom_branch_policies": true
+            }
+          },
+          "githubSecretMetadata": {
+            "total_count": 10,
+            "secrets": [
+              {
+                "name": "CEIDG_API_KEY",
+                "created_at": "2026-10-09T07:00:11Z",
+                "updated_at": "2026-10-09T07:00:11Z"
+              },
+              {
+                "name": "MGBI_API_KEY",
+                "created_at": "2026-10-09T06:59:59Z",
+                "updated_at": "2026-10-09T06:59:59Z"
+              },
+              {
+                "name": "NEON_API_KEY",
+                "created_at": "2026-10-09T07:00:34Z",
+                "updated_at": "2026-10-09T07:00:34Z"
+              },
+              {
+                "name": "RENDER_API_KEY",
+                "created_at": "2026-10-09T07:00:28Z",
+                "updated_at": "2026-10-09T07:00:28Z"
+              },
+              {
+                "name": "SRM_APP_DATABASE_PASSWORD",
+                "created_at": "2026-10-09T06:59:42Z",
+                "updated_at": "2026-10-09T06:59:42Z"
+              },
+              {
+                "name": "SRM_APP_DIRECT_URL",
+                "created_at": "2026-10-09T07:00:17Z",
+                "updated_at": "2026-10-09T07:00:17Z"
+              },
+              {
+                "name": "SRM_DEMO_PASSWORD",
+                "created_at": "2026-10-09T06:59:47Z",
+                "updated_at": "2026-10-09T08:23:40Z"
+              },
+              {
+                "name": "SRM_DEMO_SESSION_SECRET",
+                "created_at": "2026-10-09T06:59:53Z",
+                "updated_at": "2026-10-09T06:59:53Z"
+              },
+              {
+                "name": "SRM_RELEASE_GITHUB_TOKEN",
+                "created_at": "2026-10-09T07:00:23Z",
+                "updated_at": "2026-10-09T07:00:23Z"
+              },
+              {
+                "name": "VERCLY_API_KEY",
+                "created_at": "2026-10-09T07:00:04Z",
+                "updated_at": "2026-10-09T07:00:04Z"
+              }
+            ]
+          }
+        },
+        "snapshotDigest": "4492db12503abd695cfe9d919a92b09fc4b8ef100fc6c4135e78b6ff3be1953c",
+        "snapshot": {
+          "source": "LIVE_PROVIDER_APIS",
+          "capturedAt": "2026-10-09T17:32:49.371Z",
+          "repository": {
+            "id": 1247665550,
+            "node_id": "R_kgDOSl3djg",
+            "name": "SG-dev",
+            "full_name": "profitia/SG-dev",
+            "private": false,
+            "owner": {
+              "login": "profitia",
+              "id": 275643368,
+              "node_id": "U_kgDOEG376A",
+              "avatar_url": "https://avatars.githubusercontent.com/u/275643368?v=4",
+              "gravatar_id": "",
+              "url": "https://api.github.com/users/profitia",
+              "html_url": "https://github.com/profitia",
+              "followers_url": "https://api.github.com/users/profitia/followers",
+              "following_url": "https://api.github.com/users/profitia/following{/other_user}",
+              "gists_url": "https://api.github.com/users/profitia/gists{/gist_id}",
+              "starred_url": "https://api.github.com/users/profitia/starred{/owner}{/repo}",
+              "subscriptions_url": "https://api.github.com/users/profitia/subscriptions",
+              "organizations_url": "https://api.github.com/users/profitia/orgs",
+              "repos_url": "https://api.github.com/users/profitia/repos",
+              "events_url": "https://api.github.com/users/profitia/events{/privacy}",
+              "received_events_url": "https://api.github.com/users/profitia/received_events",
+              "type": "User",
+              "user_view_type": "public",
+              "site_admin": false
+            },
+            "html_url": "https://github.com/profitia/SG-dev",
+            "description": null,
+            "fork": false,
+            "url": "https://api.github.com/repos/profitia/SG-dev",
+            "forks_url": "https://api.github.com/repos/profitia/SG-dev/forks",
+            "keys_url": "https://api.github.com/repos/profitia/SG-dev/keys{/key_id}",
+            "collaborators_url": "https://api.github.com/repos/profitia/SG-dev/collaborators{/collaborator}",
+            "teams_url": "https://api.github.com/repos/profitia/SG-dev/teams",
+            "hooks_url": "https://api.github.com/repos/profitia/SG-dev/hooks",
+            "issue_events_url": "https://api.github.com/repos/profitia/SG-dev/issues/events{/number}",
+            "events_url": "https://api.github.com/repos/profitia/SG-dev/events",
+            "assignees_url": "https://api.github.com/repos/profitia/SG-dev/assignees{/user}",
+            "branches_url": "https://api.github.com/repos/profitia/SG-dev/branches{/branch}",
+            "tags_url": "https://api.github.com/repos/profitia/SG-dev/tags",
+            "blobs_url": "https://api.github.com/repos/profitia/SG-dev/git/blobs{/sha}",
+            "git_tags_url": "https://api.github.com/repos/profitia/SG-dev/git/tags{/sha}",
+            "git_refs_url": "https://api.github.com/repos/profitia/SG-dev/git/refs{/sha}",
+            "trees_url": "https://api.github.com/repos/profitia/SG-dev/git/trees{/sha}",
+            "statuses_url": "https://api.github.com/repos/profitia/SG-dev/statuses/{sha}",
+            "languages_url": "https://api.github.com/repos/profitia/SG-dev/languages",
+            "stargazers_url": "https://api.github.com/repos/profitia/SG-dev/stargazers",
+            "contributors_url": "https://api.github.com/repos/profitia/SG-dev/contributors",
+            "subscribers_url": "https://api.github.com/repos/profitia/SG-dev/subscribers",
+            "subscription_url": "https://api.github.com/repos/profitia/SG-dev/subscription",
+            "commits_url": "https://api.github.com/repos/profitia/SG-dev/commits{/sha}",
+            "git_commits_url": "https://api.github.com/repos/profitia/SG-dev/git/commits{/sha}",
+            "comments_url": "https://api.github.com/repos/profitia/SG-dev/comments{/number}",
+            "issue_comment_url": "https://api.github.com/repos/profitia/SG-dev/issues/comments{/number}",
+            "contents_url": "https://api.github.com/repos/profitia/SG-dev/contents/{+path}",
+            "compare_url": "https://api.github.com/repos/profitia/SG-dev/compare/{base}...{head}",
+            "merges_url": "https://api.github.com/repos/profitia/SG-dev/merges",
+            "archive_url": "https://api.github.com/repos/profitia/SG-dev/{archive_format}{/ref}",
+            "downloads_url": "https://api.github.com/repos/profitia/SG-dev/downloads",
+            "issues_url": "https://api.github.com/repos/profitia/SG-dev/issues{/number}",
+            "pulls_url": "https://api.github.com/repos/profitia/SG-dev/pulls{/number}",
+            "milestones_url": "https://api.github.com/repos/profitia/SG-dev/milestones{/number}",
+            "notifications_url": "https://api.github.com/repos/profitia/SG-dev/notifications{?since,all,participating}",
+            "labels_url": "https://api.github.com/repos/profitia/SG-dev/labels{/name}",
+            "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
+            "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
+            "created_at": "2026-05-23T16:08:41Z",
+            "updated_at": "2026-10-09T17:31:56Z",
+            "pushed_at": "2026-10-09T17:32:46Z",
+            "git_url": "git://github.com/profitia/SG-dev.git",
+            "ssh_url": "git@github.com:profitia/SG-dev.git",
+            "clone_url": "https://github.com/profitia/SG-dev.git",
+            "svn_url": "https://github.com/profitia/SG-dev",
+            "homepage": null,
+            "size": 60274,
+            "stargazers_count": 0,
+            "watchers_count": 0,
+            "language": "TypeScript",
+            "has_issues": true,
+            "has_projects": true,
+            "has_downloads": false,
+            "has_wiki": true,
+            "has_pages": false,
+            "has_discussions": false,
+            "forks_count": 0,
+            "mirror_url": null,
+            "archived": false,
+            "disabled": false,
+            "open_issues_count": 3,
+            "license": null,
+            "allow_forking": true,
+            "is_template": false,
+            "web_commit_signoff_required": false,
+            "has_pull_requests": true,
+            "pull_request_creation_policy": "all",
+            "topics": [],
+            "visibility": "public",
+            "forks": 0,
+            "open_issues": 3,
+            "watchers": 0,
+            "default_branch": "main",
+            "permissions": {
+              "admin": true,
+              "maintain": true,
+              "push": true,
+              "triage": true,
+              "pull": true
+            },
+            "temp_clone_token": "",
+            "allow_squash_merge": true,
+            "allow_merge_commit": true,
+            "allow_rebase_merge": true,
+            "allow_auto_merge": false,
+            "delete_branch_on_merge": false,
+            "allow_update_branch": false,
+            "use_squash_pr_title_as_default": false,
+            "squash_merge_commit_message": "COMMIT_MESSAGES",
+            "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
+            "merge_commit_message": "PR_TITLE",
+            "merge_commit_title": "MERGE_MESSAGE",
+            "security_and_analysis": {
+              "secret_scanning": {
+                "status": "enabled"
+              },
+              "secret_scanning_push_protection": {
+                "status": "enabled"
+              },
+              "dependabot_security_updates": {
+                "status": "disabled"
+              },
+              "secret_scanning_non_provider_patterns": {
+                "status": "disabled"
+              },
+              "secret_scanning_validity_checks": {
+                "status": "disabled"
+              }
+            },
+            "network_count": 0,
+            "subscribers_count": 0
+          },
+          "renderProject": {
+            "createdAt": "2026-09-22T17:10:38.828001Z",
+            "environmentIds": [
+              "evm-dapbd70ae00c73cgrup0",
+              "evm-dapbd3hsrm7s73es53h0",
+              "evm-dapbdbbbc2fs73f4g7gg"
+            ],
+            "id": "prj-dapbd3hsrm7s73es53fg",
+            "name": "SRM",
+            "owner": {
+              "email": "tomasz.uscinski@profitia.pl",
+              "id": "tea-d7lps8rbc2fs73cn80dg",
+              "name": "PROFITIA WORKSPACE",
+              "type": "team"
+            },
+            "updatedAt": "2026-09-22T17:10:38.828001Z"
+          },
+          "renderEnvironment": {
+            "databasesIds": [],
+            "envGroupIds": [],
+            "id": "evm-dapbdbbbc2fs73f4g7gg",
+            "ipAllowList": [
+              {
+                "cidrBlock": "0.0.0.0/0",
+                "description": "everywhere"
+              }
+            ],
+            "name": "Staging",
+            "networkIsolationEnabled": true,
+            "projectId": "prj-dapbd3hsrm7s73es53fg",
+            "protectedStatus": "unprotected",
+            "redisIds": [],
+            "serviceIds": [
+              "srv-db496b3tqb8s73eh5sfg"
+            ]
+          },
+          "neonBranch": {
+            "id": "br-broad-butterfly-b11t4v01",
+            "project_id": "snowy-breeze-40315151",
+            "parent_id": "br-nameless-bar-b1wlhjhx",
+            "parent_lsn": "0/19C70D0",
+            "parent_timestamp": "2026-09-22T17:09:25Z",
+            "name": "Staging",
+            "slug": "br-broad-butterfly-b11t4v01",
+            "project_slug": "snowy-breeze-40315151",
+            "current_state": "ready",
+            "state_changed_at": "2026-09-22T17:09:28Z",
+            "logical_size": 40558592,
+            "creation_source": "console",
+            "primary": false,
+            "default": false,
+            "protected": false,
+            "cpu_used_sec": 0,
+            "compute_time_seconds": 209695,
+            "active_time_seconds": 752832,
+            "written_data_bytes": 0,
+            "data_transfer_bytes": 110742,
+            "created_at": "2026-09-22T17:09:28Z",
+            "updated_at": "2026-10-09T17:22:51Z",
+            "created_by": {
+              "name": "",
+              "image": ""
+            },
+            "init_source": "parent-data"
+          },
+          "neonEndpoint": {
+            "host": "ep-autumn-wildflower-b1mv0vda.c-5.eu-central-1.aws.neon.tech",
+            "hosts": {
+              "read_write_host": "ep-autumn-wildflower-b1mv0vda.c-5.eu-central-1.aws.neon.tech",
+              "read_write_pooled_host": "ep-autumn-wildflower-b1mv0vda-pooler.c-5.eu-central-1.aws.neon.tech"
+            },
+            "id": "ep-autumn-wildflower-b1mv0vda",
+            "name": "srm_app",
+            "slug": "ep-autumn-wildflower-b1mv0vda",
+            "branch_slug": "br-broad-butterfly-b11t4v01",
+            "project_slug": "snowy-breeze-40315151",
+            "project_id": "snowy-breeze-40315151",
+            "branch_id": "br-broad-butterfly-b11t4v01",
+            "autoscaling_limit_min_cu": 0.25,
+            "autoscaling_limit_max_cu": 8,
+            "region_id": "aws-eu-central-1",
+            "type": "read_write",
+            "current_state": "active",
+            "group": {
+              "size": {
+                "min": 1,
+                "max": 1
+              },
+              "allow_readable_secondaries": false,
+              "computes": [
+                {
+                  "binding_id": "qgx",
+                  "current_state": "active",
+                  "role": "read_write",
+                  "compute_host": "ep-autumn-wildflower-b1mv0vda-qgx.c-5.eu-central-1.aws.neon.tech",
+                  "compute_pooled_host": "ep-autumn-wildflower-b1mv0vda-qgx-pooler.c-5.eu-central-1.aws.neon.tech",
+                  "created_at": "2026-09-22T17:09:28Z",
+                  "updated_at": "2026-10-09T07:05:04Z",
+                  "started_at": "2026-09-22T17:40:26Z"
+                }
+              ]
+            },
+            "settings": {
+              "pg_settings": {}
+            },
+            "pooler_enabled": false,
+            "pooler_mode": "transaction",
+            "disabled": false,
+            "passwordless_access": true,
+            "last_active": "2026-10-09T17:23:25Z",
+            "creation_source": "console",
+            "created_at": "2026-09-22T17:09:28Z",
+            "updated_at": "2026-10-09T17:23:32Z",
+            "started_at": "2026-09-22T17:40:26Z",
+            "proxy_host": "c-5.eu-central-1.aws.neon.tech",
+            "suspend_timeout_seconds": -1,
+            "provisioner": "k8s-neonvm",
+            "compute_release_version": "14856"
+          },
+          "databases": [
+            {
+              "id": 308649,
+              "branch_id": "br-broad-butterfly-b11t4v01",
+              "name": "neondb",
+              "owner_name": "neondb_owner",
+              "created_at": "2026-09-22T17:06:21Z",
+              "updated_at": "2026-09-22T17:06:21Z"
+            },
+            {
+              "id": 509272,
+              "branch_id": "br-broad-butterfly-b11t4v01",
+              "name": "srm_app",
+              "owner_name": "neondb_owner",
+              "created_at": "2026-10-09T07:05:02Z",
+              "updated_at": "2026-10-09T07:05:02Z"
+            }
+          ],
+          "services": [
+            {
+              "autoDeploy": "no",
+              "autoDeployTrigger": "off",
+              "branch": "main",
+              "createdAt": "2026-10-09T07:09:33.632132Z",
+              "dashboardUrl": "https://dashboard.render.com/web/srv-db496b3tqb8s73eh5sfg",
+              "environmentId": "evm-dapbdbbbc2fs73f4g7gg",
+              "id": "srv-db496b3tqb8s73eh5sfg",
+              "name": "srm-staging-runtime",
+              "notifyOnFail": "default",
+              "ownerId": "tea-d7lps8rbc2fs73cn80dg",
+              "repo": "https://github.com/profitia/SG-dev",
+              "rootDir": "",
+              "serviceDetails": {
+                "buildPlan": "performance",
+                "cache": {
+                  "profile": "no-cache"
+                },
+                "env": "node",
+                "envSpecificDetails": {
+                  "buildCommand": "npm --prefix apps/srm ci --install-links && npm --prefix apps/srm run build && mkdir -p apps/srm/.next/standalone/.next && cp -R apps/srm/.next/static apps/srm/.next/standalone/.next/static",
+                  "startCommand": "cd apps/srm && HOSTNAME=0.0.0.0 node .next/standalone/server.js"
+                },
+                "healthCheckPath": "/api/health",
+                "ipAllowList": [
+                  {
+                    "cidrBlock": "0.0.0.0/0",
+                    "description": "everywhere"
+                  }
+                ],
+                "maintenanceMode": {
+                  "enabled": false,
+                  "uri": ""
+                },
+                "numInstances": 1,
+                "openPorts": [
+                  {
+                    "port": 10000,
+                    "protocol": "TCP"
+                  }
+                ],
+                "plan": "0.5c-512mb",
+                "previews": {
+                  "generation": "off"
+                },
+                "pullRequestPreviewsEnabled": "no",
+                "region": "frankfurt",
+                "renderSubdomainPolicy": "enabled",
+                "runtime": "node",
+                "sshAddress": "srv-db496b3tqb8s73eh5sfg@ssh.frankfurt.render.com",
+                "url": "https://srm-staging-runtime.onrender.com"
+              },
+              "slug": "srm-staging-runtime",
+              "suspended": "not_suspended",
+              "suspenders": [],
+              "type": "web_service",
+              "updatedAt": "2026-10-09T17:29:49.615913Z"
+            }
+          ],
+          "liveDeploy": {
+            "id": "dep-db4i8g7f3r2c739jn0eg",
+            "commit": {
+              "id": "1e8852923e06df5395d0e154da786875dc070cb7",
+              "message": "Merge pull request #192 from profitia/feat/srm-login-version-scope-20261009\n\nSRM login: show scope of the current release",
+              "createdAt": "2026-10-09T10:02:30Z"
+            },
+            "status": "live",
+            "trigger": "api",
+            "createdAt": "2026-10-09T17:28:32.444912Z",
+            "updatedAt": "2026-10-09T17:30:23.22004Z",
+            "startedAt": "2026-10-09T17:28:32.410048Z",
+            "finishedAt": "2026-10-09T17:29:49.614573Z"
+          },
+          "domains": [
+            {
+              "cursor": "rV-rEE-81aJ0Y3ZsazFtYzczZmhuN3Nn",
+              "customDomain": {
+                "createdAt": "2026-10-09T10:15:15.530951Z",
+                "domainType": "subdomain",
+                "id": "cdm-db4btcvlk1mc73fhn7sg",
+                "name": "demo-srm-porr.spendguru.app",
+                "publicSuffix": "app",
+                "redirectForName": "",
+                "verificationStatus": "verified"
+              }
+            }
+          ],
+          "githubEnvironment": {
+            "id": 23853126630,
+            "node_id": "EN_kwDOSl3djs8AAAAFjcHT5g",
+            "name": "srm-staging",
+            "url": "https://api.github.com/repos/profitia/SG-dev/environments/srm-staging",
+            "html_url": "https://github.com/profitia/SG-dev/deployments/activity_log?environments_filter=srm-staging",
+            "created_at": "2026-10-09T06:57:31Z",
+            "updated_at": "2026-10-09T06:57:31Z",
+            "can_admins_bypass": true,
+            "protection_rules": [
+              {
+                "id": 68213351,
+                "node_id": "GA_kwDOSl3djs4EENpn",
+                "type": "required_reviewers",
+                "prevent_self_review": false,
+                "reviewers": [
+                  {
+                    "type": "User",
+                    "reviewer": {
+                      "login": "profitia",
+                      "id": 275643368,
+                      "node_id": "U_kgDOEG376A",
+                      "avatar_url": "https://avatars.githubusercontent.com/u/275643368?v=4",
+                      "gravatar_id": "",
+                      "url": "https://api.github.com/users/profitia",
+                      "html_url": "https://github.com/profitia",
+                      "followers_url": "https://api.github.com/users/profitia/followers",
+                      "following_url": "https://api.github.com/users/profitia/following{/other_user}",
+                      "gists_url": "https://api.github.com/users/profitia/gists{/gist_id}",
+                      "starred_url": "https://api.github.com/users/profitia/starred{/owner}{/repo}",
+                      "subscriptions_url": "https://api.github.com/users/profitia/subscriptions",
+                      "organizations_url": "https://api.github.com/users/profitia/orgs",
+                      "repos_url": "https://api.github.com/users/profitia/repos",
+                      "events_url": "https://api.github.com/users/profitia/events{/privacy}",
+                      "received_events_url": "https://api.github.com/users/profitia/received_events",
+                      "type": "User",
+                      "user_view_type": "public",
+                      "site_admin": false
+                    }
+                  }
+                ]
+              },
+              {
+                "id": 68213352,
+                "node_id": "GA_kwDOSl3djs4EENpo",
+                "type": "branch_policy"
+              }
+            ],
+            "deployment_branch_policy": {
+              "protected_branches": false,
+              "custom_branch_policies": true
+            }
+          },
+          "githubSecretMetadata": {
+            "total_count": 10,
+            "secrets": [
+              {
+                "name": "CEIDG_API_KEY",
+                "created_at": "2026-10-09T07:00:11Z",
+                "updated_at": "2026-10-09T07:00:11Z"
+              },
+              {
+                "name": "MGBI_API_KEY",
+                "created_at": "2026-10-09T06:59:59Z",
+                "updated_at": "2026-10-09T06:59:59Z"
+              },
+              {
+                "name": "NEON_API_KEY",
+                "created_at": "2026-10-09T07:00:34Z",
+                "updated_at": "2026-10-09T07:00:34Z"
+              },
+              {
+                "name": "RENDER_API_KEY",
+                "created_at": "2026-10-09T07:00:28Z",
+                "updated_at": "2026-10-09T07:00:28Z"
+              },
+              {
+                "name": "SRM_APP_DATABASE_PASSWORD",
+                "created_at": "2026-10-09T06:59:42Z",
+                "updated_at": "2026-10-09T06:59:42Z"
+              },
+              {
+                "name": "SRM_APP_DIRECT_URL",
+                "created_at": "2026-10-09T07:00:17Z",
+                "updated_at": "2026-10-09T07:00:17Z"
+              },
+              {
+                "name": "SRM_DEMO_PASSWORD",
+                "created_at": "2026-10-09T06:59:47Z",
+                "updated_at": "2026-10-09T08:23:40Z"
+              },
+              {
+                "name": "SRM_DEMO_SESSION_SECRET",
+                "created_at": "2026-10-09T06:59:53Z",
+                "updated_at": "2026-10-09T06:59:53Z"
+              },
+              {
+                "name": "SRM_RELEASE_GITHUB_TOKEN",
+                "created_at": "2026-10-09T07:00:23Z",
+                "updated_at": "2026-10-09T07:00:23Z"
+              },
+              {
+                "name": "VERCLY_API_KEY",
+                "created_at": "2026-10-09T07:00:04Z",
+                "updated_at": "2026-10-09T07:00:04Z"
+              }
+            ]
+          }
+        },
+        "result": {}
       }
     },
     "lastKnownGood": {
