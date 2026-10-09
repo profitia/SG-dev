@@ -93,6 +93,7 @@ import {
   CANONICAL_PMOS_PROJECT_NAMES,
   CANONICAL_PMOS_WORKSPACE_NAMES,
   getConfiguredPmosWorkspaceName,
+  findHistoricalPmosProjectProfile,
   isPhrSatisfiedForCloseout,
   normalizePmosProjectName,
   normalizePmosWorkspaceName,
@@ -2372,10 +2373,10 @@ function buildConversationTraceability(baseName: string, closeout: CloseoutEvide
   }
 }
 
-async function refreshPersistedHandoffForCompletedTask(taskId: string): Promise<void> {
-  console.log(`[pmos-save] Refreshing persisted HANDOFF for completed task ${taskId}...`)
-
-  const conversationArtifact = await prisma.conversationArtifact.findFirst({
+// Read persisted authority before touching handoff/archive files. Process configuration
+// can constrain an authorized refresh, but cannot classify a historical artifact.
+export async function readCompletedHandoffRefreshSource(taskId: string, client = prisma, env = process.env) {
+  const conversationArtifact = await client.conversationArtifact.findFirst({
     where: { taskId },
     orderBy: { timestamp: 'desc' },
     select: {
@@ -2403,6 +2404,34 @@ async function refreshPersistedHandoffForCompletedTask(taskId: string): Promise<
     conversationId: conversationArtifact.conversationId,
     flightRecordJson: conversationArtifact.flightRecordJson,
   })
+  const registration = await client.promptExecution.findUnique({ where: { taskId }, select: {
+    project: true, taskId: true, conversationId: true, gateSnapshot: true, status: true,
+  } })
+  const identities = [conversationArtifact.project, artifact.metadata.project, registration?.project]
+    .map(identity => typeof identity === 'string' ? findHistoricalPmosProjectProfile(identity) : null)
+  const profile = identities[0]
+  if (!profile || identities.some(identity => !identity || identity.projectKey !== profile.projectKey)
+    || !registration || registration.status !== 'completed'
+    || conversationArtifact.taskId !== taskId || artifact.metadata.taskId !== taskId
+    || registration.taskId !== taskId || registration.conversationId !== conversationArtifact.conversationId) {
+    throw new Error('Persisted HANDOFF refresh project/task/conversation identity missing or conflicting.')
+  }
+  assertPmosCloseoutIdentity(profile.projectKey, identities[2]!.projectKey, registration.gateSnapshot, artifact.metadata.targetEnvironment)
+  assertTaskConversationBinding(profile.projectKey, taskId, conversationArtifact.conversationId, registration.gateSnapshot, artifact.metadata.hostConversationId)
+  if (profile.projectKey === 'SG2') {
+    throw new Error('SG2 completed snapshot refresh forbidden: use read-only reconciliation of append-only lifecycle evidence.')
+  }
+  // Preserve SRM's lawful refresh, including canonical policy and database boundaries.
+  const configured = resolvePmosProjectProfile({ projectName: env.PMOS_PROJECT_NAME ?? 'SpendGuru 2.0', memorosMode: env.PMOS_MEMOROS_MODE })
+  if (configured.projectKey !== profile.projectKey) throw new Error('HANDOFF refresh process project conflicts with persisted authority.')
+  const databases = await client.$queryRaw<Array<{ databaseName: string }>>`SELECT current_database() AS "databaseName"`
+  assertDatabaseIdentity(databases[0]?.databaseName ?? '', profile.projectKey, env.DATABASE_URL)
+  return { conversationArtifact, artifact }
+}
+
+export async function refreshPersistedHandoffForCompletedTask(taskId: string, client = prisma, env = process.env): Promise<void> {
+  const { conversationArtifact, artifact } = await readCompletedHandoffRefreshSource(taskId, client, env)
+  console.log(`[pmos-save] Refreshing persisted HANDOFF for completed task ${taskId}...`)
   const baseName = buildArtifactBaseName(artifact)
   const closeoutPath = path.join(CLOSEOUTS_DIR, `${baseName}.closeout.json`)
   const closeoutResult = readJsonFileSafe<CloseoutEvidence>(closeoutPath)
@@ -2830,9 +2859,6 @@ async function main() {
   console.log('[pmos-save] Starting PMOS persistence routine...')
 
   if (args.refreshHandoffTaskId) {
-    if (normalizePmosProjectName(process.env.PMOS_PROJECT_NAME ?? 'SpendGuru 2.0') === 'SpendGuru 2.0') {
-      throw new Error('SG2 completed snapshot refresh forbidden: use read-only reconciliation of append-only lifecycle evidence.')
-    }
     await refreshPersistedHandoffForCompletedTask(args.refreshHandoffTaskId)
     console.log('[pmos-save] PMOS handoff refresh COMPLETE.')
     return

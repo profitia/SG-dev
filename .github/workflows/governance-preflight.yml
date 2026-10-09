@@ -73,6 +73,9 @@ jobs:
           node_modules/.bin/tsx --test
           src/lib/pmos/sg2-immutable-lifecycle.test.ts
           src/lib/pmos/sg2-immutable-lifecycle.integration.test.ts
+          src/lib/pmos/flight-record-read.test.ts
+          src/components/conversations/Sg2LifecycleStatus.test.tsx
+          src/components/event-ledger/EventLedgerTable.test.tsx
       - name: Test PMOS lifecycle and PHR gates
         working-directory: apps/pmos
         run: >-

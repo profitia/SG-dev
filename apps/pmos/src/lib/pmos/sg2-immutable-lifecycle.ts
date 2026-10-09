@@ -4,7 +4,7 @@ import {
   hashObject, hashText, verifyArtifactLock, verifyObjectIntegrity,
   type FlightRecordV1, type ArtifactLockMetadata, type IntegrityMetadata,
 } from '../../../../../packages/governance/src'
-import { buildNamespacedPublicationId, requireCanonicalMemorosProjectId, resolvePmosProjectProfile } from './project-profile'
+import { buildNamespacedPublicationId, findHistoricalPmosProjectProfile, requireCanonicalMemorosProjectId, resolvePmosProjectProfile } from './project-profile'
 
 // SG2 only. This namespace never participates in SRM's existing finalizer.
 export const SG2_LIFECYCLE_VERSION = 'sg2-immutable-lifecycle-v1'
@@ -112,6 +112,51 @@ export function finalPersistenceForProfile<T extends { flightRecordJson?: unknow
   if (projectKey !== 'SG2') return projection // SRM unchanged, including its completion snapshot.
   const { flightRecordJson: _immutable, ...derived } = projection
   return derived as T
+}
+
+export type PersistedLifecycleSource = {
+  id: string; project: string | null; taskId: string | null; conversationId: string; flightRecordJson: unknown
+}
+export type PersistedLifecycleRow = {
+  id: string; artifactKind: string; artifactNature: string; version: string; status: string
+  taskId: string; conversationId: string; payload: unknown; sourceRefs: unknown
+}
+
+// Pure PostgreSQL read projection: it does not read, regenerate or attest to local
+// JSON/integrity/lock bytes. The writer's validator remains the chain authority.
+export function validatePersistedLifecycle(source: PersistedLifecycleSource, rows: PersistedLifecycleRow[]): LifecycleEvent[] {
+  const snapshot = source.flightRecordJson as FlightRecordV1 | null
+  const metadata = snapshot?.metadata
+  const project = typeof source.project === 'string' ? findHistoricalPmosProjectProfile(source.project) : null
+  const snapshotProject = typeof metadata?.project === 'string' ? findHistoricalPmosProjectProfile(metadata.project) : null
+  if (project?.projectKey !== 'SG2' || snapshotProject?.projectKey !== 'SG2' || !source.id || !source.taskId || !source.conversationId
+    || metadata?.taskId !== source.taskId || metadata.conversationId !== source.conversationId
+    || ['metadata', 'task', 'analysis', 'findings', 'decisions', 'actions', 'result', 'completionEvidence']
+      .some(key => !snapshot?.[key as keyof FlightRecordV1] || typeof snapshot[key as keyof FlightRecordV1] !== 'object'
+        || Array.isArray(snapshot[key as keyof FlightRecordV1]))) {
+    throw new Error('SG2 persisted read identity missing or conflicting.')
+  }
+  if (!rows.length) return [] // Historical absence is not a fabricated lifecycle.
+  const events = rows.map(row => row.payload as LifecycleEvent).sort((a, b) => a?.sequence - b?.sequence)
+  const seal = events[0]?.source
+  if (!seal || seal.taskId !== source.taskId || seal.conversationId !== source.conversationId
+    || seal.fingerprint !== hashObject(snapshot)
+    || [seal.fingerprint, seal.jsonBytesHash, seal.integrityBytesHash, seal.lockBytesHash]
+      .some(hash => typeof hash !== 'string' || !/^[a-f0-9]{64}$/.test(hash))) {
+    throw new Error('SG2 persisted lifecycle source fingerprint mismatch.')
+  }
+  validateLifecycle(events, seal)
+  if ((events[0].receipt as Record<string, unknown>).conversationArtifactId !== source.id) {
+    throw new Error('SG2 PMOS receipt points to another persisted row.')
+  }
+  for (const row of rows) {
+    const event = row.payload as LifecycleEvent
+    if (row.id !== `${prefix(seal)}${event.step}` || row.taskId !== source.taskId || row.conversationId !== source.conversationId
+      || row.artifactKind !== 'EXECUTION_TRAIL' || row.artifactNature !== 'DERIVED'
+      || row.version !== SG2_LIFECYCLE_VERSION || row.status !== 'GENERATED'
+      || hashObject(row.sourceRefs) !== hashObject(seal)) throw new Error('SG2 persisted lifecycle envelope mismatch.')
+  }
+  return events
 }
 
 export class Sg2ImmutableLifecycle {

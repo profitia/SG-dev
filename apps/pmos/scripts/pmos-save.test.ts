@@ -18,7 +18,81 @@ import {
   writeConversationArtifactFiles,
   projectCanonicalFlightRecordScalarParity,
   publishRequiredSpendGuruPhrBeforePendingClear,
+  readCompletedHandoffRefreshSource,
+  refreshPersistedHandoffForCompletedTask,
 } from './pmos-save'
+
+function refreshFixture(project = 'SpendGuru 2.0') {
+  const artifact = JSON.parse(JSON.stringify(makeArtifact()))
+  artifact.metadata.project = project
+  artifact.metadata.workspace = project === 'SRM' ? 'SG-dev Codespaces SRM' : 'SG-dev'
+  artifact.metadata.scope = 'implementation'
+  artifact.analysis.executionSummary = 'Completed historical fixture'
+  artifact.completionEvidence = { closeoutState: 'CLOSEOUT_COMPLETE', pmosSaveStatus: 'SUCCEEDED', runtimeContextRefreshStatus: 'SUCCEEDED', handoffPublicationStatus: 'SUCCEEDED', archiveCompletenessStatus: 'PASS', executionTrailStatus: 'PRESENT' }
+  const row = { id: 'persisted-base', conversationId: artifact.metadata.conversationId, taskId: artifact.metadata.taskId, project, flightRecordJson: artifact }
+  const registration = { project, taskId: row.taskId, conversationId: row.conversationId, status: 'completed', gateSnapshot: {} }
+  const reads: string[] = []
+  let writes = 0
+  const forbiddenWrite = async () => { writes++; throw new Error('Unexpected persistence write') }
+  const client = {
+    conversationArtifact: { findFirst: async (args: any) => { reads.push('ConversationArtifact'); assert.equal(args.where.taskId, row.taskId); return row }, create: forbiddenWrite, update: forbiddenWrite, upsert: forbiddenWrite },
+    promptExecution: { findUnique: async (args: any) => { reads.push('registration'); assert.equal(args.where.taskId, row.taskId); return registration }, update: forbiddenWrite },
+    artifact: { create: forbiddenWrite, update: forbiddenWrite, upsert: forbiddenWrite },
+    $queryRaw: async () => { reads.push('database identity'); return [{ databaseName: 'srm_pmos' }] },
+  }
+  return { row, registration, artifact, reads, client, writes: () => writes }
+}
+
+for (const configured of ['SpendGuru 2.0', 'SRM', undefined, 'malformed-project']) {
+  test(`SG2 persisted refresh is rejected before writes with process project ${configured ?? '<missing>'}`, async () => {
+    const f = refreshFixture()
+    const archive = path.resolve(import.meta.dirname, '../.pmos/conversations')
+    const before = fs.existsSync(archive) ? fs.readdirSync(archive).map(name => [name, fs.statSync(path.join(archive, name)).mtimeMs]) : []
+    await assert.rejects(() => refreshPersistedHandoffForCompletedTask(f.row.taskId, f.client as never, { PMOS_PROJECT_NAME: configured }), /SG2 completed snapshot refresh forbidden/)
+    assert.deepEqual(f.reads, ['ConversationArtifact', 'registration'])
+    assert.equal(f.writes(), 0)
+    assert.deepEqual(fs.existsSync(archive) ? fs.readdirSync(archive).map(name => [name, fs.statSync(path.join(archive, name)).mtimeMs]) : [], before)
+  })
+}
+
+test('lawful SRM refresh source retains the exact persisted snapshot and database/policy guards', async () => {
+  const f = refreshFixture('SRM')
+  const env = { PMOS_PROJECT_NAME: 'SRM', PMOS_MEMOROS_MODE: 'disabled', DATABASE_URL: 'postgresql://fixture:fixture@ep-dark-frost-b1fmda7e.c-5.eu-central-1.aws.neon.tech/srm_pmos' }
+  const result = await readCompletedHandoffRefreshSource(f.row.taskId, f.client as never, env)
+  assert.strictEqual(result.artifact, f.artifact)
+  assert.deepEqual(f.reads, ['ConversationArtifact', 'registration', 'database identity'])
+  assert.equal(f.writes(), 0)
+  await assert.rejects(() => readCompletedHandoffRefreshSource(f.row.taskId, f.client as never, { ...env, PMOS_PROJECT_NAME: 'SG2', PMOS_MEMOROS_MODE: 'required' }), /process project conflicts/)
+  await assert.rejects(() => readCompletedHandoffRefreshSource(f.row.taskId, f.client as never, { ...env, DATABASE_URL: 'postgresql://fixture:fixture@ep-plain-king-al45f92h.c-3.eu-central-1.aws.neon.tech/neondb' }), /endpoint identity mismatch/)
+  await assert.rejects(() => readCompletedHandoffRefreshSource(f.row.taskId, f.client as never, { ...env, PMOS_MEMOROS_MODE: 'required' }), /conflicts with the canonical SRM/)
+})
+
+for (const mismatch of ['unknown project', 'registration project', 'registration conversation', 'snapshot task', 'snapshot conversation', 'missing registration', 'missing snapshot']) {
+  test(`refresh fails closed for ${mismatch}`, async () => {
+    const f = refreshFixture()
+    if (mismatch === 'unknown project') f.row.project = 'unknown'
+    if (mismatch === 'registration project') f.registration.project = 'SRM'
+    if (mismatch === 'registration conversation') f.registration.conversationId = 'foreign'
+    if (mismatch === 'snapshot task') f.artifact.metadata.taskId = 'FOREIGN-TASK'
+    if (mismatch === 'snapshot conversation') f.artifact.metadata.conversationId = 'foreign'
+    if (mismatch === 'missing registration') f.client.promptExecution.findUnique = async () => null as never
+    if (mismatch === 'missing snapshot') f.row.flightRecordJson = null
+    await assert.rejects(() => refreshPersistedHandoffForCompletedTask(f.row.taskId, f.client as never, {}))
+    assert.equal(f.writes(), 0)
+  })
+}
+
+test('missing ConversationArtifact and historical SG2 alias cannot bypass the persisted guard', async () => {
+  const missing = refreshFixture()
+  missing.client.conversationArtifact.findFirst = async () => null as never
+  await assert.rejects(() => refreshPersistedHandoffForCompletedTask(missing.row.taskId, missing.client as never, { PMOS_PROJECT_NAME: 'SRM' }), /not found/)
+  assert.equal(missing.writes(), 0)
+  const alias = refreshFixture()
+  alias.row.project = 'SpendGuru 2.0 - PCOS Runtime'
+  alias.registration.project = 'sg-dev'
+  await assert.rejects(() => refreshPersistedHandoffForCompletedTask(alias.row.taskId, alias.client as never, { PMOS_PROJECT_NAME: 'SRM' }), /SG2 completed snapshot refresh forbidden/)
+  assert.equal(alias.writes(), 0)
+})
 
 test('normalizing a persisted artifact with absent optional metadata preserves its immutable hash', () => {
   const persisted = {

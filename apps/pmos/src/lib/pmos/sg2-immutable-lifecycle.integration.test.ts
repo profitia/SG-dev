@@ -8,10 +8,12 @@ import { buildNamespacedPublicationId, requireCanonicalMemorosProjectId, resolve
 import { createRequire } from 'node:module'
 // CLI scripts are deliberately excluded from the Next app compilation. The test
 // runner loads the canonical writer rather than defining another persistence path.
-const { createInitialConversationArtifact } = createRequire(import.meta.url)('../../../scripts/pmos-save.ts') as {
+const { createInitialConversationArtifact, refreshPersistedHandoffForCompletedTask } = createRequire(import.meta.url)('../../../scripts/pmos-save.ts') as {
   createInitialConversationArtifact: (client: PrismaClient, data: Prisma.ConversationArtifactCreateInput) => Promise<{ id: string }>
+  refreshPersistedHandoffForCompletedTask: (taskId: string, client: PrismaClient, env: NodeJS.ProcessEnv) => Promise<void>
 }
 import { Sg2ImmutableLifecycle } from './sg2-immutable-lifecycle'
+import { buildSg2LifecycleReadModel } from './flight-record-read'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -88,6 +90,14 @@ test('PostgreSQL: persistence, crash, retry, publication ownership and exact sea
     assert.equal(hashObject(final.flightRecordJson), beforeHash)
     Object.values(f.paths).forEach((p, i) => assert.deepEqual(fs.readFileSync(p), beforeBytes[i]))
     assert.deepEqual((await resumed.events()).map(e => e.step), ['PMOS_SAVE', 'RUNTIME_VERIFIED', 'MEMOROS_INTENT', 'MEMOROS_ACK', 'PHR_INTENT', 'PHR_ACK', 'CLOSEOUT_COMPLETE'])
+    const readRows = await prisma.artifact.findMany({ where: { conversationId: f.snapshot.metadata.conversationId } })
+    const current = buildSg2LifecycleReadModel(final, readRows)!
+    assert.equal(current.currentState, 'CLOSEOUT_COMPLETE')
+    assert.equal(current.snapshotState.closeoutState, 'PMOS_SAVE_SUCCEEDED')
+    assert.equal(current.evidenceIntegrity, 'PASS')
+    assert.equal(current.sourceFingerprint, beforeHash)
+    assert.equal(current.immutableIntegrity, 'NOT_VERIFIED')
+    Object.values(f.paths).forEach((p, i) => assert.deepEqual(fs.readFileSync(p), beforeBytes[i]))
     await assert.rejects(() => resumed.append('RECOVERY_REQUIRED', { status: 'RECOVERY_REQUIRED' }))
     // A changed DB base cannot be legitimized by generating fresh sidecars.
     const foreign = structuredClone(f.snapshot)
@@ -99,6 +109,39 @@ test('PostgreSQL: persistence, crash, retry, publication ownership and exact sea
     await assert.rejects(() => foreignLifecycle.events(), /identity mismatch/)
   } finally {
     await prisma.conversationArtifact.deleteMany({ where: { conversationId: f.snapshot.metadata.conversationId } })
+    await prisma.$disconnect(); f.cleanup()
+  }
+})
+
+test('PostgreSQL: persisted SG2 refresh cannot be bypassed and performs no archive/database writes', { skip: !url }, async () => {
+  const prisma = new PrismaClient({ datasources: { db: { url } } })
+  const f = fixture()
+  const taskId = `SG2-REFRESH-${randomUUID()}`
+  f.snapshot.metadata.taskId = taskId
+  f.snapshot.metadata.conversationId = `isolated:${randomUUID()}`
+  f.snapshot.metadata.scope = 'implementation' as never
+  Object.assign(f.snapshot.metadata, { workspace: 'SG-dev' })
+  f.snapshot.actions.recommendations = []
+  f.snapshot.actions.validationsNotExecuted = []
+  f.snapshot.actions.artifactsModified = []
+  f.snapshot.completionEvidence = { closeoutState: 'CLOSEOUT_COMPLETE', pmosSaveStatus: 'SUCCEEDED', runtimeContextRefreshStatus: 'SUCCEEDED', handoffPublicationStatus: 'SUCCEEDED', archiveCompletenessStatus: 'PASS', executionTrailStatus: 'PRESENT' } as never
+  try {
+    const row = await createInitialConversationArtifact(prisma, { conversationId: f.snapshot.metadata.conversationId, taskId, project: 'SpendGuru 2.0', timestamp: new Date(), domains: [], tags: [], userPrompt: 'isolated', llmResponse: 'isolated', summary: 'isolated', flightRecordJson: f.snapshot as never })
+    await prisma.promptExecution.create({ data: { taskId, conversationId: f.snapshot.metadata.conversationId, project: 'SpendGuru 2.0', title: 'isolated refresh', promptContent: 'isolated', changedFiles: [], status: 'completed', gateSnapshot: {} } })
+    const before = await prisma.conversationArtifact.findUniqueOrThrow({ where: { id: row.id } })
+    const countBefore = await prisma.artifact.count({ where: { conversationId: f.snapshot.metadata.conversationId } })
+    const archiveDir = path.resolve(import.meta.dirname, '../../../.pmos')
+    const inventory = (dir: string): string[] => !fs.existsSync(dir) ? [] : fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => entry.isDirectory() ? inventory(path.join(dir, entry.name)) : [`${path.join(dir, entry.name)}:${fs.statSync(path.join(dir, entry.name)).mtimeMs}:${fs.statSync(path.join(dir, entry.name)).size}`])
+    const beforeFiles = inventory(archiveDir)
+    for (const project of ['SG2', 'SRM', undefined, 'unknown']) {
+      await assert.rejects(() => refreshPersistedHandoffForCompletedTask(taskId, prisma, { NODE_ENV: 'test', PMOS_PROJECT_NAME: project }), /SG2 completed snapshot refresh forbidden/)
+    }
+    assert.deepEqual(await prisma.conversationArtifact.findUniqueOrThrow({ where: { id: row.id } }), before)
+    assert.equal(await prisma.artifact.count({ where: { conversationId: f.snapshot.metadata.conversationId } }), countBefore)
+    assert.deepEqual(inventory(archiveDir), beforeFiles)
+  } finally {
+    await prisma.conversationArtifact.deleteMany({ where: { conversationId: f.snapshot.metadata.conversationId } })
+    await prisma.promptExecution.deleteMany({ where: { taskId } })
     await prisma.$disconnect(); f.cleanup()
   }
 })
