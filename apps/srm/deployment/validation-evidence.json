@@ -205,5 +205,43 @@
       "ci": "PENDING_REAL_POSTGRES16_ZERO_SKIP"
     },
     "runtimeDeploymentExecuted": false
+  },
+  "protectedAuthorityPreparation": {
+    "taskId": "SRM-STAGING-PROTECTED-MAIN-PUBLICATION-20261009",
+    "actualProviderRuleRead": "PASS",
+    "actualRulesetId": 23304085,
+    "protectionChanged": false,
+    "tests": {
+      "local": {
+        "governance-tests": {
+          "tests": 77,
+          "pass": 77,
+          "fail": 0,
+          "skipped": 0
+        },
+        "app-tests": {
+          "tests": 205,
+          "pass": 205,
+          "fail": 0,
+          "skipped": 0
+        },
+        "promotion-tests": {
+          "tests": 108,
+          "pass": 106,
+          "fail": 0,
+          "skipped": 2
+        }
+      },
+      "typecheck": "PASS",
+      "build": "PASS",
+      "manifest": "PASS",
+      "realGitConflict": "PASS",
+      "providerFixtures": "SYNTHETIC_ONLY",
+      "postgres": "GITHUB_CI_PENDING"
+    },
+    "ci": "PENDING",
+    "stagingProviderMutation": false,
+    "developmentRuntimeDeployment": false,
+    "productionMutation": false
   }
 }

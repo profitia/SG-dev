@@ -651,14 +651,14 @@ test("source preflight permits moving main business code but rejects changed mec
     /authority main/,
   );
 });
-test("protected authority main blocks publication without weakening protection", async () => {
+test("malformed protected authority evidence fails closed without writes", async () => {
   const calls = [];
   const store = githubStore(async (base, url, method = "GET") => {
     calls.push(method);
     return { protected: true, commit: { sha } };
   });
-  await assert.rejects(store.read(), /Protected main/);
-  assert.deepEqual(calls, ["GET"]);
+  await assert.rejects(store.read(), /Incomplete authority tree/);
+  assert.deepEqual(calls, ["GET", "GET"]);
 });
 test(
   "real isolated Postgres persistence, idempotency and FORCE RLS catalog",
@@ -860,4 +860,370 @@ test("ambiguous or foreign inflight deployment blocks before any schema write", 
         sha,
       ),
     );
+});
+
+import os from "node:os";
+import { execFileSync, spawnSync } from "node:child_process";
+import {
+  publicationFiles,
+  assertApprovedRuntimeUrl,
+} from "./staging-lifecycle.mjs";
+const journalPath = "Canon/registries/srm-staging-release-state-v1.json";
+const registryPath = "Canon/registries/srm-environment-topology-v1.json";
+test("runtime verification accepts only the explicitly approved Staging URL", () => {
+  assert.doesNotThrow(() =>
+    assertApprovedRuntimeUrl("https://srm-staging-runtime.onrender.com"),
+  );
+  for (const url of [
+    "https://srm-development-runtime.onrender.com",
+    "https://srm-staging-runtime-other.onrender.com",
+    "http://srm-staging-runtime.onrender.com",
+    "https://example.invalid",
+    undefined,
+  ])
+    assert.throws(
+      () => assertApprovedRuntimeUrl(url),
+      /approved Staging runtime URL/,
+    );
+});
+function publicationFixture({
+  protectedMain = true,
+  ciFailure = false,
+  pending = false,
+} = {}) {
+  let head = "0".repeat(40),
+    state = { schemaVersion: "1.0", generation: 0 },
+    registry = { projectKey: "SRM" },
+    candidateFiles = null,
+    pr = null;
+  const calls = [],
+    blobs = new Map(),
+    candidate = "1".repeat(40),
+    merge = "2".repeat(40);
+  let ref = null;
+  const request = async (base, url, method = "GET", body) => {
+    calls.push({ url, method, body });
+    if (url.endsWith("/branches/main"))
+      return { protected: protectedMain, commit: { sha: head } };
+    if (url.includes("/git/trees/")) {
+      const entries = [
+        [journalPath, state],
+        [registryPath, registry],
+      ].map(([path, value]) => {
+        const sha = digest(value);
+        blobs.set(sha, value);
+        return { path, sha, type: "blob" };
+      });
+      return { tree: entries, truncated: false };
+    }
+    if (url.includes("/git/blobs/"))
+      return {
+        content: Buffer.from(
+          JSON.stringify(blobs.get(url.split("/").at(-1))),
+        ).toString("base64"),
+      };
+    if (url === "/repos/profitia/SG-dev")
+      return {
+        id: contract.repositoryId,
+        full_name: contract.repository,
+        allow_merge_commit: true,
+      };
+    if (url.includes("/git/ref/heads/")) return ref;
+    if (url.endsWith("/git/refs") && method === "POST") {
+      ref = { object: { sha: body.sha } };
+      return ref;
+    }
+    if (url === "/graphql") {
+      assert.equal(body.variables.input.expectedHeadOid, head);
+      candidateFiles = Object.fromEntries(
+        body.variables.input.fileChanges.additions.map((f) => [
+          f.path,
+          JSON.parse(Buffer.from(f.contents, "base64").toString()),
+        ]),
+      );
+      if (!protectedMain) {
+        state = candidateFiles[journalPath];
+        head = candidate;
+      } else ref = { object: { sha: candidate } };
+      return { data: { createCommitOnBranch: { commit: { oid: candidate } } } };
+    }
+    if (url.includes("/pulls?")) return pr ? [pr] : [];
+    if (url.includes("/compare/"))
+      return {
+        status: "ahead",
+        ahead_by: 1,
+        base_commit: { sha: "0".repeat(40) },
+        files: Object.keys(candidateFiles).map((filename) => ({
+          filename,
+          status: "modified",
+        })),
+      };
+    if (url.includes("/contents/")) {
+      const path = url.split("/contents/")[1].split("?")[0];
+      return {
+        encoding: "base64",
+        content: Buffer.from(JSON.stringify(candidateFiles[path])).toString(
+          "base64",
+        ),
+      };
+    }
+    if (url.endsWith("/pulls") && method === "POST") {
+      pr = {
+        number: 42,
+        html_url: "https://github.com/profitia/SG-dev/pull/42",
+        state: "open",
+        head: { sha: candidate, repo: { id: contract.repositoryId } },
+        base: { ref: "main" },
+      };
+      return pr;
+    }
+    if (url.includes("/check-runs?")) {
+      if (fixture.onChecks) fixture.onChecks();
+      return {
+        total_count: fixture.pending ? 0 : 2,
+        check_runs: fixture.pending
+          ? []
+          : ["srm-build", "governance"].map((name, i) => ({
+              id: i + 1,
+              name,
+              head_sha: candidate,
+              status: "completed",
+              conclusion: ciFailure ? "failure" : "success",
+            })),
+      };
+    }
+    if (url.endsWith("/pulls/42/merge") && method === "PUT") {
+      assert.equal(body.sha, candidate);
+      assert.equal(body.merge_method, "merge");
+      state = candidateFiles[journalPath];
+      registry = candidateFiles[registryPath] ?? registry;
+      head = merge;
+      pr.merged_at = new Date().toISOString();
+      return { merged: true, sha: merge };
+    }
+    throw Error("Unexpected provider fixture request: " + method + " " + url);
+  };
+  const fixture = {
+    request,
+    calls,
+    pending,
+    get state() {
+      return state;
+    },
+    get head() {
+      return head;
+    },
+    moveMain() {
+      head = "3".repeat(40);
+    },
+    changeJournal() {
+      state = {
+        ...state,
+        generation: state.generation + 1,
+        publicationNonce: "foreign",
+      };
+      head = "4".repeat(40);
+    },
+    changeRegistry() {
+      registry = { ...registry, changed: true };
+      head = "5".repeat(40);
+    },
+  };
+  return fixture;
+}
+test("protected main publishes a fenced journal through a checked PR without protection writes", async () => {
+  const f = publicationFixture(),
+    store = githubStore(f.request),
+    current = await store.read();
+  await store.commit({
+    expectedHead: current.head,
+    files: { [journalPath]: { ...current.state, generation: 1 } },
+    message: "test release intent",
+  });
+  assert.equal(f.state.generation, 1);
+  assert.match(f.state.publicationNonce, /^[a-f0-9]{64}$/);
+  assert.ok(f.calls.some((x) => x.url.endsWith("/pulls/42/merge")));
+  assert.ok(
+    !f.calls.some(
+      (x) => /protection|rulesets/.test(x.url) && x.method !== "GET",
+    ),
+  );
+  assert.ok(
+    f.calls
+      .filter((x) => x.url === "/graphql")
+      .every((x) =>
+        x.body.variables.input.branch.branchName.startsWith("srm-publication-"),
+      ),
+  );
+});
+test("protected publication preserves unrelated movement of main", async () => {
+  const f = publicationFixture(),
+    store = githubStore(f.request),
+    current = await store.read();
+  f.onChecks = () => f.moveMain();
+  await store.commit({
+    expectedHead: current.head,
+    files: { [journalPath]: { ...current.state, generation: 1 } },
+    message: "intent",
+  });
+  assert.equal(f.state.generation, 1);
+});
+for (const mutation of ["changeJournal", "changeRegistry"])
+  test("protected publication refuses concurrent " + mutation, async () => {
+    const f = publicationFixture(),
+      store = githubStore(f.request),
+      current = await store.read();
+    f.onChecks = () => f[mutation]();
+    await assert.rejects(
+      store.commit({
+        expectedHead: current.head,
+        files: { [journalPath]: { ...current.state, generation: 1 } },
+        message: "intent",
+      }),
+      /publication conflict/,
+    );
+    assert.ok(!f.calls.some((x) => x.url.endsWith("/merge")));
+  });
+test("failed publication CI keeps its PR and never merges", async () => {
+  const f = publicationFixture({ ciFailure: true }),
+    store = githubStore(f.request),
+    current = await store.read();
+  await assert.rejects(
+    store.commit({
+      expectedHead: current.head,
+      files: { [journalPath]: { ...current.state, generation: 1 } },
+      message: "intent",
+    }),
+    /CI failed/,
+  );
+  assert.equal(f.state.generation, 0);
+  assert.ok(!f.calls.some((x) => x.url.endsWith("/merge")));
+});
+test("pending publication CI times out with the PR preserved", async () => {
+  let time = 0;
+  const f = publicationFixture({ pending: true });
+  const store = githubStore(f.request, {
+    now: () => time,
+    pause: async () => {
+      time++;
+    },
+    checkTimeoutMs: 2,
+  });
+  const current = await store.read();
+  await assert.rejects(
+    store.commit({
+      expectedHead: current.head,
+      files: { [journalPath]: { ...current.state, generation: 1 } },
+      message: "intent",
+    }),
+    /CI pending/,
+  );
+  assert.equal(f.state.generation, 0);
+  assert.ok(
+    f.calls.some((x) => x.url.endsWith("/pulls") && x.method === "POST"),
+  );
+  f.pending = false;
+  await store.commit({
+    expectedHead: current.head,
+    files: { [journalPath]: { ...current.state, generation: 1 } },
+    message: "intent",
+  });
+  assert.equal(f.state.generation, 1);
+  assert.equal(
+    f.calls.filter((x) => x.url.endsWith("/pulls") && x.method === "POST")
+      .length,
+    1,
+  );
+  assert.equal(f.calls.filter((x) => x.url === "/graphql").length, 1);
+});
+test("unprotected publication retains exact expected-head CAS", async () => {
+  const f = publicationFixture({ protectedMain: false }),
+    store = githubStore(f.request),
+    current = await store.read();
+  f.moveMain();
+  await assert.rejects(
+    store.commit({
+      expectedHead: current.head,
+      files: { [journalPath]: { ...current.state, generation: 1 } },
+      message: "intent",
+    }),
+    /Baseline update conflict/,
+  );
+  assert.ok(f.calls.every((x) => x.method === "GET"));
+});
+test("publication rejects missing journal, skipped generation and unrelated files", async () => {
+  const f = publicationFixture(),
+    store = githubStore(f.request),
+    current = await store.read();
+  for (const files of [
+    { [registryPath]: {} },
+    { [journalPath]: { generation: 2 } },
+    { "apps/srm/src/business.ts": {} },
+  ])
+    await assert.rejects(
+      store.commit({ expectedHead: current.head, files, message: "intent" }),
+    );
+  assert.ok(f.calls.every((x) => x.method === "GET"));
+});
+test("real Git three-way merge rejects racing journal proposals and preserves unrelated development", () => {
+  const dir = fs.mkdtempSync(os.tmpdir() + "/srm-publication-git-");
+  const git = (args) =>
+    execFileSync("git", args, {
+      cwd: dir,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    }).trim();
+  try {
+    git(["init", "--initial-branch=main"]);
+    git(["config", "user.name", "SRM isolated test"]);
+    git(["config", "user.email", "test@example.invalid"]);
+    const f = dir + "/journal.json";
+    const initial = {
+      publicationNonce: "initial",
+      schemaVersion: "1.0",
+      generation: 0,
+    };
+    fs.writeFileSync(f, JSON.stringify(initial, null, 2) + "\n");
+    git(["add", "."]);
+    git(["commit", "-m", "base"]);
+    const base = git(["rev-parse", "HEAD"]),
+      current = { state: initial };
+    const proposals = ["first", "second"].map(
+      (owner) =>
+        publicationFiles(
+          current,
+          { [journalPath]: { ...initial, generation: 1, owner } },
+          base,
+        )[journalPath],
+    );
+    assert.notEqual(
+      proposals[0].publicationNonce,
+      proposals[1].publicationNonce,
+    );
+    git(["switch", "-c", "proposal"]);
+    fs.writeFileSync(f, JSON.stringify(proposals[0], null, 2) + "\n");
+    git(["commit", "-am", "proposal one"]);
+    git(["switch", "main"]);
+    fs.writeFileSync(dir + "/unrelated.txt", "parallel development\n");
+    git(["add", "."]);
+    git(["commit", "-m", "unrelated development"]);
+    git(["merge", "--no-ff", "proposal", "-m", "lawful publication"]);
+    assert.equal(
+      fs.readFileSync(dir + "/unrelated.txt", "utf8"),
+      "parallel development\n",
+    );
+    git(["switch", "-c", "stale", base]);
+    fs.writeFileSync(f, JSON.stringify(proposals[1], null, 2) + "\n");
+    git(["commit", "-am", "proposal two"]);
+    git(["switch", "main"]);
+    const rejected = spawnSync(
+      "git",
+      ["merge", "--no-ff", "stale", "-m", "must conflict"],
+      { cwd: dir, encoding: "utf8" },
+    );
+    assert.notEqual(rejected.status, 0);
+    assert.match(rejected.stdout, /CONFLICT/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
