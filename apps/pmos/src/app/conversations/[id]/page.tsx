@@ -1,7 +1,10 @@
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { buildCanonicalConversationReadModel } from '@/lib/pmos/flight-record-read'
+import { buildCanonicalConversationReadModel, buildSg2LifecycleReadModel } from '@/lib/pmos/flight-record-read'
+import type { PersistedLifecycleSource } from '@/lib/pmos/sg2-immutable-lifecycle'
+import { SG2_LIFECYCLE_VERSION } from '@/lib/pmos/sg2-immutable-lifecycle'
+import { Sg2LifecycleStatus } from '@/components/conversations/Sg2LifecycleStatus'
 import { CopyArtifactButton } from './copy-artifact-button'
 import { getConversationByIdWithFallback } from '@/lib/conversations-read'
 
@@ -32,8 +35,8 @@ export default async function ConversationPage({ params }: { params: { id: strin
 
   if (!artifact) notFound()
 
-  const conversationRows = await db.$queryRaw<Array<{ flightRecordJson: unknown }>>`
-    SELECT flight_record_json AS "flightRecordJson"
+  const conversationRows = await db.$queryRaw<PersistedLifecycleSource[]>`
+    SELECT id, project, task_id AS "taskId", conversation_id AS "conversationId", flight_record_json AS "flightRecordJson"
     FROM conversation_artifacts
     WHERE id = ${params.id}
     LIMIT 1
@@ -59,6 +62,17 @@ export default async function ConversationPage({ params }: { params: { id: strin
   `
 
   const canonical = buildCanonicalConversationReadModel(conversationRows[0]?.flightRecordJson)
+  const source = conversationRows[0]
+  let sg2Lifecycle = source ? buildSg2LifecycleReadModel(source, []) : null
+  if (sg2Lifecycle && source) {
+    // Include malformed envelopes too: a wrong nature/ID must fail verification,
+    // rather than disappear behind the generic DERIVED-only archive filter.
+    const lifecycleRows = await db.artifact.findMany({ where: {
+      conversationId: source.conversationId,
+      OR: [{ id: { startsWith: `${source.conversationId}:SG2_LIFECYCLE:v1:` } }, { version: SG2_LIFECYCLE_VERSION }],
+    } })
+    sg2Lifecycle = buildSg2LifecycleReadModel(source, lifecycleRows)
+  }
   const conversationType = canonical.metadata.conversationType ?? artifact.conversationType ?? 'unknown'
   const importanceLevel = canonical.metadata.importanceLevel ?? artifact.importanceLevel ?? 'medium'
   const etap = canonical.metadata.etap ?? artifact.etap
@@ -115,6 +129,7 @@ export default async function ConversationPage({ params }: { params: { id: strin
       </div>
 
       <div className="px-8 py-6 max-w-4xl space-y-6">
+        {sg2Lifecycle && !canonical.available ? <Sg2LifecycleStatus model={sg2Lifecycle} /> : null}
         {!canonical.available ? (
           <section className="bg-orange-950/20 border border-orange-700/40 rounded-lg p-5">
             <p className="text-xs font-medium uppercase tracking-widest text-orange-300 mb-2">Canonical Record Unavailable</p>
@@ -180,7 +195,7 @@ export default async function ConversationPage({ params }: { params: { id: strin
               <p className="text-text-primary text-sm leading-relaxed">{canonical.result.finalStatus}</p>
             </section>
 
-            <section className="bg-bg-surface border border-bg-border rounded-lg p-5">
+            {sg2Lifecycle ? <Sg2LifecycleStatus model={sg2Lifecycle} /> : <section className="bg-bg-surface border border-bg-border rounded-lg p-5">
               <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-3">Completion Evidence</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <EvidencePill label="closeoutState" value={canonical.completionEvidence.closeoutState} />
@@ -189,7 +204,7 @@ export default async function ConversationPage({ params }: { params: { id: strin
                 <EvidencePill label="archiveCompletenessStatus" value={canonical.completionEvidence.archiveCompletenessStatus} />
                 <EvidencePill label="executionTrailStatus" value={canonical.completionEvidence.executionTrailStatus} />
               </div>
-            </section>
+            </section>}
 
             <section className="bg-bg-surface border border-bg-border rounded-lg p-5 space-y-4">
               <p className="text-xs font-medium uppercase tracking-widest text-text-muted">Derived Artifacts</p>
