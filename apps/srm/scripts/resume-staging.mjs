@@ -1,5 +1,5 @@
 import {contract} from "./staging-migrate.mjs";
-import {assertLifecycleAuthorization,digest} from "../../../scripts/governance/srm-release-lifecycle.mjs";
+import {assertLifecycleAuthorization,authorizationFromRelease,digest} from "../../../scripts/governance/srm-release-lifecycle.mjs";
 const fail = (ok, message) => { if (!ok) throw Error(message); };
 // Pure preparation only. No approval, journal, provider write or takeover occurs here.
 export function prepareResume(state, input, previousRun, now = Date.now()) {
@@ -11,7 +11,7 @@ export function prepareResume(state, input, previousRun, now = Date.now()) {
   const runId = /^github-run:(\d+)$/.exec(r.owner)?.[1];
   fail(runId && String(previousRun?.id) === runId && previousRun.status === "completed" && previousRun.repository?.id === contract.repositoryId && previousRun.repository.full_name === contract.repository, "Previous executor must be proved completed by GitHub");
   fail(input.actor === r.authorization?.approvedBy && input.costOwner === r.authorization.costOwner, "Resume owner or cost scope changed");
-  const a = {...r.authorization,manifest:r.manifest};
+  const a = authorizationFromRelease(r);
   const stable = v => digest({...v,expiresAt:undefined,costEvidence:v.costEvidence ? {...v.costEvidence,verifiedAt:undefined} : undefined});
   fail(stable(a) === r.authorizationDigest, "Stored authorization scope mismatch");
   const expired = Date.parse(a.expiresAt) <= now;

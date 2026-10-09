@@ -89,6 +89,8 @@ Before dispatch inspect every incomplete publication branch/PR. A parent-only br
 
 Preparation of this mechanism is source work in Development with SRM PMOS/PHR. Dispatch, protected review and real Staging continuation are separate operations, never implied by source merge. Recheck source CI, provider bindings, domain, schema checksums, isolation and authorization immediately before execution.
 
+Historical authorization digests use JSON property order. The journal omits the repeated manifest, so restore its published slot immediately before `manifestDigest`, then verify the unchanged recorded authorization digest. Do not normalize/sort or replace existing hashes. New journals retain the exact original key order as non-secret recovery metadata; scope drift or an unknown historical format rejects resume.
+
 ## Post-deployment acceptance and baseline
 
 Automatic proof: exact successful Render SHA/deploy/service/env, main/off and config; protected GitHub environment/binding receipt; exact Neon project/branch/database/direct URL, complete checksum ledger and FORCE RLS catalog; nonprivileged runtime login and own organization; HTTPS health environment staging; wrong-password rejection, secure authenticated session/page; committed idempotent synthetic lookup probe through actual runtime SQL login plus wrong/no-tenant denial. Reconciliation publishes actual identities and proof, not hand-entered expected IDs. Only then ACTIVE/VERIFIED/ONBOARDED is legal; providers are reread after publication.
