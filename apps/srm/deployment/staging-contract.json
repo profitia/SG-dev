@@ -133,5 +133,32 @@
     "rollback": "Replace only Stage supplier keys with separate approved credentials; Development, database, login and sessions stay unchanged.",
     "monitoring": "Review shared supplier quotas and usage/billing; inspect provider 401/403/429 errors and Stage logs after each release.",
     "expiryAction": "Expired approval rejects future shared-key promotions, reconciliation and retries. Rotate only Stage supplier keys or obtain a reviewed bounded renewal; existing runtime is not automatically stopped."
+  },
+  "demoPasswordReuse": {
+    "id": "SRM-STAGING-DEMO-PASSWORD-REUSE-20261009",
+    "projectKey": "SRM",
+    "targetEnvironment": "staging",
+    "sourceEnvironment": "development",
+    "owner": "Profit.ia",
+    "approvedBy": "Tomasz Uscinski",
+    "approvalSource": "EXPLICIT_BUSINESS_OWNER_REQUEST",
+    "approvedAt": "2026-10-09T07:52:00Z",
+    "expiresAt": "2026-11-08T00:00:00Z",
+    "repository": "profitia/SG-dev",
+    "repositoryId": 1247665550,
+    "developmentServiceId": "srv-db1vu6gm7kps73d0e3r0",
+    "stagingServiceId": "srv-db496b3tqb8s73eh5sfg",
+    "githubEnvironmentId": 23853126630,
+    "renderEnvironmentId": "evm-dapbdbbbc2fs73f4g7gg",
+    "neonProjectId": "snowy-breeze-40315151",
+    "neonBranchId": "br-broad-butterfly-b11t4v01",
+    "sharedSecretNames": [
+      "SRM_DEMO_PASSWORD"
+    ],
+    "sessionSecretMustRemainSeparate": true,
+    "databaseCredentialsMustRemainSeparate": true,
+    "rollback": "Set only Stage login password to an independently approved unique password, encrypted in GitHub and Render, redeploy the exact accepted SHA and reconcile live proof. Keep Development credentials unchanged.",
+    "monitoring": "After each release verify login and inspect Stage authentication failures. Compromise of the shared demo password affects both demo logins; keep signed sessions and database credentials isolated.",
+    "expiryAction": "After expiry block new shared-password releases and reconciliation until Stage-only password rotation or a reviewed bounded renewal. Running services are not automatically stopped."
   }
 }

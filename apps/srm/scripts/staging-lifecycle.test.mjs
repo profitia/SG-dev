@@ -86,6 +86,37 @@ function fixture() {
     },
     head = "0".repeat(40),
     counter = 0;
+  // Explicit pre-onboarding fixture; canonical live Stage can now be ACTIVE.
+  registry.environments.staging = {
+  "status": "RESERVED",
+  "activationStatus": "NOT_ONBOARDED",
+  "github": {
+    "environmentName": "srm-staging",
+    "environmentId": null,
+    "exclusiveProjectKey": "SRM",
+    "status": "NOT_PROVISIONED"
+  },
+  "render": {
+    "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+    "projectId": "prj-dapbd3hsrm7s73es53fg",
+    "environmentId": "evm-dapbdbbbc2fs73f4g7gg",
+    "providerLabel": "Staging",
+    "networkIsolation": "ENABLED",
+    "services": {}
+  },
+  "neon": {
+    "projectId": "snowy-breeze-40315151",
+    "branchId": "br-broad-butterfly-b11t4v01",
+    "branchName": "Staging",
+    "parentBranchId": "br-nameless-bar-b1wlhjhx",
+    "branchState": "ready",
+    "branchProtected": false,
+    "applicationDatabaseName": null,
+    "applicationDatabaseStatus": "NOT_CREATED"
+  },
+  "domains": [],
+  "deploymentPolicy": "NOT_ACTIVATED"
+};
   const writes = [];
   let s = {
     source: "LIVE_PROVIDER_APIS",
