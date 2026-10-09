@@ -26,11 +26,12 @@ export function productEnvironmentReady(
 export function productOrganizationId(
   env: RuntimeEnvironment = process.env,
 ): string | undefined {
-  return productEnvironmentReady(env)
+  const id = productEnvironmentReady(env)
     ? env.TARGET_ENVIRONMENT === "staging"
       ? env.SRM_STAGING_ORGANIZATION_ID
       : env.SRM_DEVELOPMENT_ORGANIZATION_ID
     : undefined;
+  return id && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id) ? id : undefined;
 }
 export function assertProductConnection(
   connection: string,

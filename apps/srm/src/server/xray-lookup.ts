@@ -1,3 +1,4 @@
+import { atLookupStage, logProviderOutcome, providerExceptionCode } from "./lookup-diagnostics";
 import type { SectionEnvelope, SupplierXRayCard } from "@profitia/srm-xray";
 import { emptyCard } from "../demo/fixture";
 import { fetchMgbiGeneral, type CompanyIdentifier } from "./mgbi-general";
@@ -6,7 +7,7 @@ import { saveMgbiArchive } from "./mgbi-archive";
 import { fetchVerclyKys } from "./vercly-kys";
 import { getOrFetchKys, kysExpiry, purgeExpiredSharedKys } from "./kys-cache";
 import { readFreshCompany, recordDemoInterest, refreshFinancialIndicators, saveSharedCompany } from "./shared-catalog";
-import { appendFinancialFacts, appendSectionProjection, appendSnapshot, createLookup, finishAttempt, purgeExpiredKysPersonal, registerOrganization, startAttempt, type Section } from "./xray-repository";
+import { appendFinancialFacts, appendSectionProjection, appendSnapshot, createLookup, finishAttempt, purgeExpiredKysPersonal, startAttempt, type Section } from "./xray-repository";
 
 export type XrayLookupRequest = { identifier: CompanyIdentifier & { type: "NIP" } };
 
@@ -56,29 +57,30 @@ async function persistSection(
   sourcePayload?: unknown,
   retrievalMethod: "PROVIDER" | "CACHE" = "PROVIDER",
 ): Promise<string | null> {
-  const attemptId = await startAttempt(organizationId, lookup.requestId, sectionName, 1, retrievalMethod);
+  const attemptId = await atLookupStage("attempt_persistence", () => startAttempt(organizationId, lookup.requestId, sectionName, 1, retrievalMethod), sectionName);
+  if (sectionName === "kys") logProviderOutcome("VERCLY", "kys", section.status, errorCode, retrievalMethod);
   try {
     let storedSnapshotId: string | null = null;
     if (section.data && section.retrievedAt && section.status !== "PENDING") {
       if (sectionName === "kys" && sourcePayload !== undefined) throw new Error("Raw KYS payload must not be persisted");
       // Only normalized company fields and financial facts may enter snapshots.
       // The raw WP response contains personal identifiers.
-      const snapshotId = await appendSnapshot(organizationId, {
+      const snapshotId = await atLookupStage("snapshot_persistence", () => appendSnapshot(organizationId, {
         attemptId, supplierId: lookup.supplierId, section: sectionName,
         dataClass: sectionName === "kys" ? "KYS_PERSONAL" : sectionName === "financial" ? "FINANCIAL" : "COMPANY",
         sourceRecordId: section.source.recordId ?? undefined, payload: sourcePayload ?? section.data,
-        retrievedAt: new Date(section.retrievedAt),
+        retrievedAt: new Date(section.retrievedAt!),
         effectiveAt: section.effectiveAt && !Number.isNaN(Date.parse(section.effectiveAt)) ? new Date(section.effectiveAt) : undefined,
-        ...(sectionName === "kys" ? { retentionUntil: kysExpiry(section.retrievedAt) } : {}),
-      });
+        ...(sectionName === "kys" ? { retentionUntil: kysExpiry(section.retrievedAt!) } : {}),
+      }), sectionName);
       storedSnapshotId = snapshotId;
-      await appendSectionProjection(organizationId, { supplierId: lookup.supplierId, snapshotId, section: sectionName,
-        version: sectionName === "kys" ? 2 : 1, data: section.data });
-      if (sectionName === "financial" && facts.length) await appendFinancialFacts(organizationId, facts.map((fact) => ({ ...fact, supplierId: lookup.supplierId, snapshotId })));
+      await atLookupStage("projection_persistence", () => appendSectionProjection(organizationId, { supplierId: lookup.supplierId, snapshotId, section: sectionName,
+        version: sectionName === "kys" ? 2 : 1, data: section.data }), sectionName);
+      if (sectionName === "financial" && facts.length) await atLookupStage("financial_persistence", () => appendFinancialFacts(organizationId, facts.map((fact) => ({ ...fact, supplierId: lookup.supplierId, snapshotId }))), "financial");
     }
-    await finishAttempt(organizationId, attemptId, attemptStatus(section.status, errorCode), {
+    await atLookupStage("attempt_persistence", () => finishAttempt(organizationId, attemptId, attemptStatus(section.status, errorCode), {
       correlationId: correlationId ?? undefined, providerRecordId: section.source.recordId ?? undefined, errorCode: errorCode ?? undefined,
-    });
+    }), sectionName);
     return storedSnapshotId;
   } catch (error) {
     await finishAttempt(organizationId, attemptId, "ERROR", { errorCode: "SRM_PERSISTENCE_ERROR" }).catch(() => {});
@@ -87,10 +89,11 @@ async function persistSection(
 }
 
 export async function runXrayLookup(organizationId: string, request: XrayLookupRequest): Promise<SupplierXRayCard> {
-  await registerOrganization(organizationId, "srm-development");
-  const lookup = await createLookup(organizationId, request.identifier);
-  const cached = await readFreshCompany(organizationId, request.identifier.value);
+  const lookup = await atLookupStage("lookup_registration", () => createLookup(organizationId, request.identifier));
+  const cached = await atLookupStage("cache_read", () => readFreshCompany(organizationId, request.identifier.value));
   if (cached) {
+    logProviderOutcome("MGBI", "general", cached.general.status, null, "CACHE");
+    logProviderOutcome("MGBI", "financial", cached.financial.status, null, "CACHE");
     const financial = cached.financial.data
       ? { ...cached.financial, data: { ...cached.financial.data, indicators: await refreshFinancialIndicators(organizationId, request.identifier.value, cached.financial.data) } }
       : cached.financial;
@@ -105,18 +108,20 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
     };
   }
   const [general, financial] = await Promise.all([
-    fetchMgbiGeneral(request.identifier).catch(() => ({
+    fetchMgbiGeneral(request.identifier).catch((error) => ({
       section: { ...emptyCard.general, status: "ERROR" as const, retrievedAt: new Date().toISOString(), warnings: ["MGBI_NOT_CONFIGURED"] },
-      rawRecord: null, rawResponse: undefined, errorCode: "NOT_CONFIGURED",
+      rawRecord: null, rawResponse: undefined, errorCode: providerExceptionCode(error),
     })),
-    fetchMgbiFinancial(request.identifier).catch(() => ({
+    fetchMgbiFinancial(request.identifier).catch((error) => ({
       section: { ...emptyCard.financial, status: "ERROR" as const, retrievedAt: new Date().toISOString(), warnings: ["MGBI_NOT_CONFIGURED"] },
-      facts: [], sourceData: undefined, rawResponse: undefined, errorCode: "NOT_CONFIGURED",
+      facts: [], sourceData: undefined, rawResponse: undefined, errorCode: providerExceptionCode(error),
     })),
   ]);
+  logProviderOutcome("MGBI", "general", general.section.status, general.errorCode);
+  logProviderOutcome("MGBI", "financial", financial.section.status, financial.errorCode);
   // Keep complete provider responses in a tenant-scoped store, separate from
   // the normalized, person-free catalog reused across organizations.
-  await Promise.all([
+  await atLookupStage("source_archive", () => Promise.all([
     general.rawResponse && general.section.retrievedAt
       ? saveMgbiArchive(organizationId, request.identifier.value, "pl-krs-wp-record",
         general.rawResponse.pages, general.rawResponse.recordCount, general.section.retrievedAt, lookup.requestId)
@@ -125,13 +130,13 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
       ? saveMgbiArchive(organizationId, request.identifier.value, "pl-krs-rdf-record",
         financial.rawResponse.pages, financial.rawResponse.recordCount, financial.section.retrievedAt, lookup.requestId)
       : Promise.resolve(),
-  ]);
+  ]));
   const generalSnapshotId = await persistSection(organizationId, lookup, "general", general.section, general.errorCode);
   const financialSnapshotId = await persistSection(organizationId, lookup, "financial", financial.section, financial.errorCode, financial.facts, undefined, financial.sourceData);
-  await saveSharedCompany(organizationId, request.identifier.value, {
+  await atLookupStage("catalog_persistence", () => saveSharedCompany(organizationId, request.identifier.value, {
     general: general.section, financial: financial.section,
     generalSnapshotId, financialSnapshotId, facts: financial.facts,
-  });
+  }));
   const financialWithIndicators = financial.section.data
     ? { ...financial.section, data: { ...financial.section.data, indicators: await refreshFinancialIndicators(organizationId, request.identifier.value, financial.section.data) } }
     : financial.section;
@@ -150,12 +155,11 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
 }
 
 export async function runXrayKysLookup(organizationId: string, request: XrayLookupRequest, entityType: "COMPANY" | "JDG" = "COMPANY"): Promise<{ section: SupplierXRayCard["kys"]; snapshotId: string | null }> {
-  await purgeExpiredKysPersonal(organizationId);
-  await purgeExpiredSharedKys(organizationId);
-  await registerOrganization(organizationId, "srm-development");
-  const lookup = await createLookup(organizationId, request.identifier, entityType);
+  await atLookupStage("retention_cleanup", () => purgeExpiredKysPersonal(organizationId), "kys");
+  await atLookupStage("retention_cleanup", () => purgeExpiredSharedKys(organizationId), "kys");
+  const lookup = await atLookupStage("lookup_registration", () => createLookup(organizationId, request.identifier, entityType));
   const result = await getOrFetchKys(organizationId, request.identifier.value, entityType,
-    () => fetchVerclyKys({ identifier: request.identifier }),
+    () => atLookupStage("provider_retrieval", () => fetchVerclyKys({ identifier: request.identifier }), "kys"),
     (section, errorCode, correlationId, method) =>
       persistSection(organizationId, lookup, "kys", section, errorCode, [], correlationId, undefined, method),
   );

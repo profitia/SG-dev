@@ -99,6 +99,7 @@ export async function fetchMgbiGeneral(identifier: CompanyIdentifier, options: M
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   const now = options.now ?? (() => new Date());
+  let mapping = false;
   try {
     const response = await fetchMgbiPages(url,
       { Accept: "application/json", Authorization: scheme === "bearer" ? `Bearer ${apiKey.trim()}` : apiKey.trim() },
@@ -111,10 +112,12 @@ export async function fetchMgbiGeneral(identifier: CompanyIdentifier, options: M
     const key = identifier.type === "NIP" ? "pl_nip" : "pl_krs";
     const record = results.find((candidate) => str(at(candidate, "identifiers", key)) === identifier.value);
     if (!record) return empty("ERROR", retrievedAt, "MGBI_IDENTIFIER_MISMATCH", "IDENTIFIER_MISMATCH");
+    mapping = true;
     return { ...mapMgbiGeneralRecord(record, retrievedAt),
       rawResponse: { pages: response.pages, recordCount: response.count } };
   } catch (error) {
     const timedOut = controller.signal.aborted || (error instanceof Error && error.name === "AbortError");
-    return empty("ERROR", now().toISOString(), timedOut ? "MGBI_TIMEOUT" : "MGBI_NETWORK_ERROR", timedOut ? "TIMEOUT" : "NETWORK_ERROR");
+    const code = timedOut ? "TIMEOUT" : mapping ? "MAPPING_ERROR" : "NETWORK_ERROR";
+    return empty("ERROR", now().toISOString(), `MGBI_${code}`, code);
   } finally { clearTimeout(timer); }
 }

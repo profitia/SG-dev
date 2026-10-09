@@ -80,6 +80,7 @@ export async function fetchCeidgJdg(nip: string, options: {
   if (!token) return { section: { ...base, status: "ERROR", data: null, warnings: ["CEIDG_NOT_CONFIGURED"] }, snapshot: null, errorCode: "NOT_CONFIGURED" };
   if (!/^[0-9]{10}$/.test(nip)) throw new Error("NIP must have ten digits");
 
+  let mapping = false;
   try {
     const url = new URL(options.url ?? endpoint);
     url.searchParams.set("nip", nip);
@@ -90,6 +91,7 @@ export async function fetchCeidgJdg(nip: string, options: {
     if (response.status === 204) return { section: { ...base, status: "EMPTY", data: null }, snapshot: null, errorCode: null };
     if (!response.ok) return { section: { ...base, status: "ERROR", data: null }, snapshot: null, errorCode: `HTTP_${response.status}` };
     const payload: unknown = await response.json();
+    mapping = true;
     if (!isRecord(payload) || !Array.isArray(payload.firma)) return { section: { ...base, status: "ERROR", data: null }, snapshot: null, errorCode: "INVALID_RESPONSE" };
     const records = payload.firma.filter(isRecord);
     const entries = records.map((record) => normalizeCeidgEntry(record, nip)).filter((entry): entry is JdgEntry => entry !== null);
@@ -104,6 +106,6 @@ export async function fetchCeidgJdg(nip: string, options: {
     };
   } catch (error) {
     return { section: { ...base, status: "ERROR", data: null }, snapshot: null,
-      errorCode: error instanceof Error && error.name === "TimeoutError" ? "TIMEOUT" : "FETCH_ERROR" };
+      errorCode: error instanceof Error && error.name === "TimeoutError" ? "TIMEOUT" : error instanceof SyntaxError ? "INVALID_JSON" : mapping ? "MAPPING_ERROR" : "FETCH_ERROR" };
   }
 }

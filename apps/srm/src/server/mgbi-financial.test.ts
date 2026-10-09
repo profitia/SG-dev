@@ -244,3 +244,26 @@ test("maps exact trade balances and calculative sales without using broader oper
   const unverified = mapMgbiFinancialRecords([disputed], identifier, at);
   assert.equal(unverified.facts.find((fact) => fact.metricCode === "PALA_COGS")?.validationStatus, "REVIEW");
 });
+
+test("COGS verification never combines different documents, periods or statement scopes", () => {
+  const statement = (id: string, fields: Record<string, string>, type = "financial_statement") => ({
+    id, identifiers: { pl_krs: identifier.value }, document: { type, period_from_date: "2025-01-01", period_to_date: "2025-12-31" },
+    content: { schema: { name: "JednostkaInnaWZlotych" }, standardized_fields: { pala: fields } },
+  });
+  for (const records of [
+    [statement("cost-document", { cogs_cfy: "-600" }), statement("other-document", { net_sales_cfy: "1000", gross_profit_cfy: "400" })],
+    [statement("different-period", { cogs_cfy: "-600", net_sales_pfy: "1000", gross_profit_pfy: "400" })],
+    [statement("standalone", { cogs_cfy: "-600" }), statement("consolidated", { net_sales_cfy: "1000", gross_profit_cfy: "400" }, "consolidated_financial_statement")],
+  ]) {
+    const result = mapMgbiFinancialRecords(records, identifier, at);
+    const cost = result.facts.find(fact => fact.metricCode === "PALA_COGS")!;
+    assert.equal(cost.amount, "-600"); assert.equal(cost.sourceAmount, "-600");
+    assert.equal(cost.normalizationRule, "UNVERIFIED_COST_SIGN"); assert.equal(cost.validationStatus, "REVIEW");
+  }
+  for (const sourceAmount of ["-600", "600", "0"]) {
+    const magnitude = sourceAmount.replace(/^-/, "");
+    const result = mapMgbiFinancialRecords([statement("reconciled", { cogs_cfy: sourceAmount, net_sales_cfy: "1000", gross_profit_cfy: magnitude === "0" ? "1000" : "400" })], identifier, at);
+    const cost = result.facts.find(fact => fact.metricCode === "PALA_COGS")!;
+    assert.equal(cost.amount, magnitude); assert.equal(cost.sourceAmount, sourceAmount); assert.equal(cost.normalizationRule, "VERIFIED_COST_MAGNITUDE_V1");
+  }
+});

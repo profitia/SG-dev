@@ -299,13 +299,13 @@ for (const dest of [
   );
 test("checksums and contiguous prefix support exact idempotent retry", () => {
   const ms = migrationManifest();
-  assert.equal(ms.length, 11);
+  assert.equal(ms.at(-1).version, "0012_verified_cogs_cost_magnitude");
   const rows = ms.map((m) => ({
     version: m.version,
     checksum_sha256: m.checksum,
   }));
   assert.deepEqual(inspectLedger(rows), []);
-  assert.equal(inspectLedger(rows.slice(0, 5)).length, 6);
+  assert.equal(inspectLedger(rows.slice(0, 5)).length, ms.length - 5);
   assert.throws(() => inspectLedger(rows.slice(1)), /prefix/);
   assert.throws(
     () =>
@@ -440,7 +440,7 @@ test(
         0,
       );
       let r = await runMigrations(c, { initialize });
-      assert.equal(r.applied.length, 11);
+      assert.equal(r.applied.length, migrationManifest().length);
       r = await runMigrations(c);
       assert.equal(r.applied.length, 0);
       const tables = await c.query(

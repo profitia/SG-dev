@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { PoolClient } from "pg";
-import { withOrganization } from "./db";
+import { withOrganization, type DatabasePool } from "./db";
 import { kysCacheTtlMs } from "./kys-cache";
 
 export type Identifier = { type: "NIP" | "KRS"; value: string };
@@ -8,13 +8,8 @@ export type Section = "general" | "financial" | "kys";
 export type PersistedSection = Section | "jdg";
 export type TerminalStatus = "SUCCESS" | "NO_DATA" | "TIMEOUT" | "ERROR";
 
-export async function registerOrganization(organizationId: string, slug: string): Promise<void> {
-  await withOrganization(organizationId, async (client) => {
-    await client.query("INSERT INTO srm.organizations(id, slug) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING", [organizationId, slug]);
-  });
-}
 
-export async function createLookup(organizationId: string, identifier: Identifier, entityType: "COMPANY" | "JDG" = "COMPANY"): Promise<{ supplierId: string; requestId: string }> {
+export async function createLookup(organizationId: string, identifier: Identifier, entityType: "COMPANY" | "JDG" = "COMPANY", pool?: DatabasePool): Promise<{ supplierId: string; requestId: string }> {
   if (!/^[0-9]{10}$/.test(identifier.value)) throw new Error("NIP or KRS must have ten digits");
   return withOrganization(organizationId, async (client) => {
     const column = identifier.type === "NIP" ? "nip" : "krs";
@@ -29,7 +24,7 @@ export async function createLookup(organizationId: string, identifier: Identifie
       [organizationId, supplier.rows[0].id, identifier.type, identifier.value, entityType],
     );
     return { supplierId: supplier.rows[0].id, requestId: request.rows[0].id };
-  });
+  }, pool);
 }
 
 export async function startAttempt(organizationId: string, requestId: string, section: PersistedSection, attemptNo = 1,
