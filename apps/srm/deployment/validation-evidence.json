@@ -237,9 +237,36 @@
       "manifest": "PASS",
       "realGitConflict": "PASS",
       "providerFixtures": "SYNTHETIC_ONLY",
-      "postgres": "GITHUB_CI_PENDING"
+      "postgres": "PASS_GITHUB_POSTGRESQL_16"
     },
-    "ci": "PENDING",
+    "ci": {
+      "status": "PASS",
+      "verifiedCommit": "832383d7684a59eecc893aa093e6bc51009062ad",
+      "srmRunId": 37894114459,
+      "governanceRunId": 37894114464,
+      "srmJobId": 113701413182,
+      "application": {
+        "tests": 205,
+        "pass": 205,
+        "fail": 0,
+        "skipped": 0
+      },
+      "promotion": {
+        "tests": 108,
+        "pass": 108,
+        "fail": 0,
+        "skipped": 0
+      },
+      "sharedGovernance": {
+        "tests": 60,
+        "pass": 60,
+        "fail": 0,
+        "skipped": 0
+      },
+      "typecheck": "PASS",
+      "build": "PASS",
+      "stagingJobs": "SKIPPED"
+    },
     "stagingProviderMutation": false,
     "developmentRuntimeDeployment": false,
     "productionMutation": false
