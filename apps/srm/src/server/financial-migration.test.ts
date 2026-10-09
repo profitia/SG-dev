@@ -28,7 +28,7 @@ test("PostgreSQL: forward migration preserves history, accepts reconciled COGS, 
     const manifest = migrationManifest();
     // Establish the historical ledger first, then apply the new migration.
     if (!(await owner.query("SELECT 1 FROM pg_roles WHERE rolname='srm_app_runtime'")).rows.length) {
-      await owner.query("CREATE ROLE srm_app_runtime LOGIN NOSUPERUSER NOBYPASSRLS"); runtimeCreated = true;
+      await owner.query("CREATE ROLE srm_app_runtime LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD 'isolated-local-only-password-at-least-32'"); runtimeCreated = true;
     }
     for (const m of manifest.slice(0, -1)) {
       await owner.query(m.sql);
