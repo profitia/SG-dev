@@ -1099,6 +1099,54 @@ test("branch created with only the parent resumes the missing publication commit
   assert.equal(f.calls.filter(x=>x.url==="/graphql").length,1);
   assert.equal(f.calls.filter(x=>x.url.endsWith("/git/refs") && x.method==="POST").length,0);
 });
+test("missing branch acknowledgement retains the exact failure gate and never writes a commit", async () => {
+  const f=publicationFixture(); let created=false;
+  const store=githubStore(async(base,url,method,body)=>{
+    const result=await f.request(base,url,method,body);
+    if(url.endsWith('/git/refs') && method==='POST') created=true;
+    if(created && url.includes('/git/ref/heads/')) return null;
+    return result;
+  });
+  const current=await store.read();
+  await assert.rejects(store.commit({expectedHead:current.head,files:{[journalPath]:{...current.state,generation:1}},message:'intent'}),e=>{
+    assert.equal(e.diagnostic.stage,'publication-branch-acknowledgement');
+    assert.equal(e.diagnostic.operation,'verify-publication-branch');
+    assert.equal(e.diagnostic.message,'Publication branch acknowledgement unavailable');
+    assert.match(e.diagnostic.branch,/^srm-publication-[a-f0-9]{24}$/);
+    assert.equal(e.diagnostic.expectedSha,current.head); assert.equal(e.diagnostic.generation,1);
+    assert.equal(e.diagnostic.effect,'OBSERVATION_REQUIRED'); return true;
+  });
+  assert.equal(f.state.generation,0);
+  assert.equal(f.calls.filter(x=>x.url.endsWith('/git/refs') && x.method==='POST').length,1);
+  assert.ok(!f.calls.some(x=>x.url==='/graphql' || x.url.endsWith('/merge')));
+});
+for(const phase of ['repository','branch-read','branch-create','branch-acknowledgement']) test('pre-commit '+phase+' failure identifies its boundary without exposing exception contents',async()=>{
+  const f=publicationFixture();let created=false;
+  const store=githubStore(async(base,url,method,body)=>{
+    if((phase==='repository' && url==='/repos/profitia/SG-dev') ||
+      (phase==='branch-read' && url.includes('/git/ref/heads/')) ||
+      (phase==='branch-create' && method==='POST' && url.endsWith('/git/refs')) ||
+      (phase==='branch-acknowledgement' && created && url.includes('/git/ref/heads/'))) throw Error('token=private postgresql://secret');
+    const result=await f.request(base,url,method,body);
+    if(method==='POST' && url.endsWith('/git/refs'))created=true;
+    return result;
+  });
+  const current=await store.read();
+  await assert.rejects(store.commit({expectedHead:current.head,files:{[journalPath]:{...current.state,generation:1}},message:'intent'}),e=>{
+    assert.equal(e.diagnostic.stage,'publication-'+phase); assert.match(e.diagnostic.branch,/^srm-publication-[a-f0-9]{24}$/);
+    assert.equal(e.diagnostic.expectedSha,current.head); assert.equal(e.diagnostic.generation,1);
+    assert.ok(!JSON.stringify(e.diagnostic).match(/private|postgresql|secret/));return true;
+  });
+  assert.equal(f.state.generation,0); assert.ok(!f.calls.some(x=>x.url==='/graphql' || x.url.endsWith('/merge')));
+});
+test('repository policy rejection reports a static safe reason before branch creation',async()=>{
+  const f=publicationFixture(),store=githubStore((base,url,method,body)=>url==='/repos/profitia/SG-dev' ? {id:contract.repositoryId,full_name:contract.repository,allow_merge_commit:false} : f.request(base,url,method,body));
+  const current=await store.read();
+  await assert.rejects(store.commit({expectedHead:current.head,files:{[journalPath]:{...current.state,generation:1}},message:'intent'}),e=>{
+    assert.equal(e.diagnostic.stage,'publication-repository'); assert.equal(e.diagnostic.message,'Lawful merge publication unavailable');return true;
+  });
+  assert.ok(!f.calls.some(x=>x.method==='POST'));assert.equal(f.state.generation,0);
+});
 test("structured GraphQL rejection preserves diagnostics, parent branch and journal", async () => {
   const f=publicationFixture();
   const store=githubStore((base,url,method,body)=>url==="/graphql" ? Promise.resolve({errors:[{type:"FORBIDDEN",path:["createCommitOnBranch"],message:"Resource not accessible by integration secret-token"}]}) : f.request(base,url,method,body));

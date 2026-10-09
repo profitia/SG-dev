@@ -14,6 +14,10 @@ const messages = [
   [/invalid|validation/i, "GitHub payload validation rejected"],
 ];
 const gateMessages = [
+  "Lawful merge publication unavailable", "Publication branch acknowledgement unavailable",
+  "Publication candidate contains unapproved changes", "Ambiguous publication PR",
+  "Publication PR identity drift", "Publication PR was closed without merge",
+  "Incomplete publication CI",
   "Canonical publication conflict; PR preserved", "Publication branch content drift",
   "Publication CI pending; resume the preserved PR", "Publication CI failed; PR preserved",
   "Approval expired or owner missing", "Authority refresh failed",

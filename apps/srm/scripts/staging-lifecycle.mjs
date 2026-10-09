@@ -275,22 +275,27 @@ export function githubStore(
   const protectedCommit = async (current, expectedHead, files, message) => {
     const nonce = files[statePath].publicationNonce;
     const branch = "srm-publication-" + nonce.slice(0, 24);
-    const identity = await request(GH, repo);
-    fail(
-      identity.id === contract.repositoryId &&
-        identity.full_name === contract.repository &&
-        identity.allow_merge_commit === true,
-      "Lawful merge publication unavailable",
-    );
-    let ref = await request(GH, repo + "/git/ref/heads/" + branch);
+    const context = {branch, expectedSha:expectedHead};
+    await diagnosticStage({...context,stage:"publication-repository",operation:"verify-publication-repository"}, async () => {
+      const identity = await request(GH, repo);
+      fail(
+        identity?.id === contract.repositoryId &&
+          identity.full_name === contract.repository &&
+          identity.allow_merge_commit === true,
+        "Lawful merge publication unavailable",
+      );
+    });
+    let ref = await diagnosticStage({...context,stage:"publication-branch-read",operation:"read-publication-branch"}, () => request(GH, repo + "/git/ref/heads/" + branch));
     if (!ref) {
-      await request(GH, repo + "/git/refs", "POST", {
+      await diagnosticStage({...context,stage:"publication-branch-create",operation:"create-publication-branch",effect:"OBSERVATION_REQUIRED"}, () => request(GH, repo + "/git/refs", "POST", {
         ref: "refs/heads/" + branch,
         sha: expectedHead,
-      });
-      ref = await request(GH, repo + "/git/ref/heads/" + branch);
+      }));
+      ref = await diagnosticStage({...context,stage:"publication-branch-acknowledgement",operation:"read-created-publication-branch",effect:"OBSERVATION_REQUIRED"}, () => request(GH, repo + "/git/ref/heads/" + branch));
     }
-    fail(ref?.object?.sha, "Publication branch acknowledgement unavailable");
+    await diagnosticStage({...context,stage:"publication-branch-acknowledgement",operation:"verify-publication-branch",effect:"OBSERVATION_REQUIRED"}, () => {
+      fail(ref?.object?.sha, "Publication branch acknowledgement unavailable");
+    });
     let candidate = ref.object.sha;
     if (candidate === expectedHead) {
       try { candidate = await writeBranch(branch, expectedHead, files, message); }
