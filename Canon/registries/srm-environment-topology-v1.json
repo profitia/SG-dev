@@ -87,13 +87,16 @@
       "schemaStatus": "INITIALIZED"
     },
     "staging": {
-      "status": "RESERVED",
-      "activationStatus": "NOT_ONBOARDED",
+      "status": "ACTIVE",
+      "activationStatus": "ONBOARDED",
       "github": {
         "environmentName": "srm-staging",
-        "environmentId": null,
+        "environmentId": 23853126630,
         "exclusiveProjectKey": "SRM",
-        "status": "NOT_PROVISIONED"
+        "status": "PROVISIONED",
+        "repository": "profitia/SG-dev",
+        "repositoryId": 1247665550,
+        "protectionStatus": "REQUIRED_REVIEWERS_MAIN_ONLY"
       },
       "render": {
         "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
@@ -101,7 +104,16 @@
         "environmentId": "evm-dapbdbbbc2fs73f4g7gg",
         "providerLabel": "Staging",
         "networkIsolation": "ENABLED",
-        "services": {}
+        "services": {
+          "runtime": {
+            "serviceId": "srv-db496b3tqb8s73eh5sfg",
+            "name": "srm-staging-runtime",
+            "url": "https://srm-staging-runtime.onrender.com",
+            "autoDeploy": false,
+            "baselineSha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+            "baselineDeployId": "dep-db496brtqb8s73eh5up0"
+          }
+        }
       },
       "neon": {
         "projectId": "snowy-breeze-40315151",
@@ -110,11 +122,18 @@
         "parentBranchId": "br-nameless-bar-b1wlhjhx",
         "branchState": "ready",
         "branchProtected": false,
-        "applicationDatabaseName": null,
-        "applicationDatabaseStatus": "NOT_CREATED"
+        "applicationDatabaseName": "srm_app",
+        "applicationDatabaseStatus": "CREATED",
+        "databaseId": 509272,
+        "databaseName": "srm_app",
+        "databaseOwner": "neondb_owner",
+        "runtimeRole": "srm_app_runtime",
+        "purpose": "SRM_APPLICATION_DATA"
       },
       "domains": [],
-      "deploymentPolicy": "NOT_ACTIVATED"
+      "deploymentPolicy": "EXPLICIT_APPROVED_REVISION_ONLY",
+      "verificationStatus": "VERIFIED",
+      "schemaStatus": "INITIALIZED"
     },
     "production": {
       "status": "RESERVED",
