@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "3f96fa46fe037dcdf0cc0cc867cdf623d1d5a5be0133dde502b8fb1393f53e14",
+  "publicationNonce": "87f7cb4b85e6bb937ba208fed9244102c7bf238c5f4340eb1b1872803f3b7df3",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 6,
+  "generation": 7,
   "release": {
     "authorizationDigest": "61d3e26061e0e500bbd2236b7af6097a7979559bb45323a7ebfcf7241cda2354",
     "authorization": {
@@ -1496,7 +1496,7 @@
         }
       },
       "release-pointer": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-09T07:01:39.875Z",
@@ -1880,10 +1880,10 @@
             ]
           }
         },
-        "snapshotDigest": "7f98492a4dce50ea4b231e584410fb93716b297cc0b82aa65b3e9e104aa0efae",
+        "snapshotDigest": "c30ae54cf6a13dbee62eacad075568435f8e56666f848dbd58f1d8cfb6bb41a5",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-09T07:01:39.875Z",
+          "capturedAt": "2026-10-09T07:02:51.964Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -1952,8 +1952,8 @@
             "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
-            "updated_at": "2026-10-09T07:01:40Z",
-            "pushed_at": "2026-10-09T07:01:36Z",
+            "updated_at": "2026-10-09T07:02:45Z",
+            "pushed_at": "2026-10-09T07:02:50Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -2264,7 +2264,9 @@
             ]
           }
         },
-        "result": {}
+        "result": {
+          "pointer": "srm-release-886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1"
+        }
       }
     },
     "lastKnownGood": null,
