@@ -20,6 +20,7 @@ import {
 import { runGovernancePreflight } from "../../../scripts/governance/governance-preflight.mjs";
 import {
   assertProductSecretIsolation,
+  assertStagingGitHubProtection,
   assertLifecycleAuthorization,
   assertSnapshot,
   assertOperation,
@@ -744,21 +745,8 @@ export function createProvider(
     );
   };
   const assertProtection = async (ge) => {
-    fail(
-      ge?.protection_rules?.some(
-        (x) =>
-          x.type === "required_reviewers" &&
-          x.reviewers?.length &&
-          x.prevent_self_review === true &&
-          (approval.mode !== "onboard" ||
-            digest(
-              x.reviewers.map((r) => r.reviewer.id).sort((a, b) => a - b),
-            ) ===
-              digest([...approval.githubReviewerIds].sort((a, b) => a - b))),
-      ) &&
-        ge.deployment_branch_policy?.custom_branch_policies === true &&
-        ge.deployment_branch_policy.protected_branches === false,
-      "Protected exact GitHub environment required",
+    assertStagingGitHubProtection(
+      ge, contract, approval.mode === "onboard" ? approval.githubReviewerIds : null,
     );
     const b = await request(
       GH,

@@ -5,6 +5,7 @@ import {
   runLifecycle,
   manifestFrom,
   releasePointer,
+  createProvider,
 } from "./staging-lifecycle.mjs";
 import { contract } from "./staging-migrate.mjs";
 import {
@@ -661,6 +662,7 @@ test("source preflight permits moving main business code but rejects changed mec
           ...contract,
           lifecycle: undefined,
           deploymentTimeGates: ["old-only"],
+          github: { ...contract.github, soloOperatorApproval: undefined },
         }),
       };
     return { status: 0, stdout: "" };
@@ -681,6 +683,29 @@ test("source preflight permits moving main business code but rejects changed mec
       ),
     /authority main/,
   );
+});
+test("changed approval policy invalidates the old release manifest authorization",async()=>{
+  const oldContract=structuredClone(contract);delete oldContract.github.soloOperatorApproval;
+  const oldManifest={...manifest,contractDigest:digest(oldContract)};
+  const a={...approval("promote"),manifest:oldManifest,manifestDigest:digest(oldManifest)};
+  const f=fixture();
+  await assert.rejects(runLifecycle({authorization:a,manifest,provider:f.p,owner:"github-run:solo-test"}),/immutable manifest/);
+  assert.equal(f.writes.length,0);
+});
+test("the live provider adapter accepts exact owner review and never changes existing GitHub protection",async()=>{
+  const ge={id:23853126630,name:"srm-staging",protection_rules:[{type:"required_reviewers",prevent_self_review:false,reviewers:[{type:"User",reviewer:{id:275643368,login:"profitia"}}]}],deployment_branch_policy:{custom_branch_policies:true,protected_branches:false}};
+  const calls=[];
+  const provider=createProvider({SRM_RELEASE_GITHUB_TOKEN:"synthetic-only"},approval("promote"),manifest,"github-run:solo-test",async(url,options)=>{
+    calls.push({url,method:options.method});
+    return new Response(JSON.stringify(url.includes("deployment-branch-policies")?{total_count:1,branch_policies:[{name:"main",type:"branch"}]}:ge),{status:200});
+  });
+  assert.deepEqual(await provider.githubEnvironment({githubEnvironment:ge},approval("promote")),{protected:true});
+  assert.ok(calls.length>0&&calls.every(x=>x.method==="GET"));
+});
+test("live provider adapter still rejects non-main deployment branch rules",async()=>{
+  const ge={id:23853126630,name:"srm-staging",protection_rules:[{type:"required_reviewers",prevent_self_review:false,reviewers:[{type:"User",reviewer:{id:275643368,login:"profitia"}}]}],deployment_branch_policy:{custom_branch_policies:true,protected_branches:false}};
+  const provider=createProvider({SRM_RELEASE_GITHUB_TOKEN:"synthetic-only"},approval("promote"),manifest,"github-run:solo-test",async(url)=>new Response(JSON.stringify(url.includes("deployment-branch-policies")?{total_count:1,branch_policies:[{name:"other",type:"branch"}]}:ge),{status:200}));
+  await assert.rejects(provider.githubEnvironment({githubEnvironment:ge},approval("promote")),/Main-only/);
 });
 test("malformed protected authority evidence fails closed without writes", async () => {
   const calls = [];

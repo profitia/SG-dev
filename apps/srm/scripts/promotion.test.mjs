@@ -580,11 +580,19 @@ test("RESERVED cannot enter a protected deployment job even with a forged enviro
 });
 test("ACTIVE fixture accepts its exact protected GitHub environment", async (t) => {
   const {assertDispatchTarget} = await isolatedTopologyPromotion(t,true);
-  assert.doesNotThrow(() => assertDispatchTarget({id:1234,protection_rules:[{type:"required_reviewers"}]}));
+  assert.doesNotThrow(() => assertDispatchTarget({id:1234,name:"srm-staging",protection_rules:[{type:"required_reviewers",prevent_self_review:true,reviewers:[{type:"User",reviewer:{id:123,login:"synthetic"}}]}],deployment_branch_policy:{custom_branch_policies:true,protected_branches:false}}));
 });
 test("ACTIVE fixture rejects forged protected GitHub identity", async (t) => {
   const {assertDispatchTarget} = await isolatedTopologyPromotion(t,true);
   assert.throws(() => assertDispatchTarget({id:1,protection_rules:[{type:"required_reviewers"}]}), /Exact protected GitHub environment/);
+});
+test("dispatch rejects empty review rules and self-review on another environment ID", async (t) => {
+  const {assertDispatchTarget} = await isolatedTopologyPromotion(t,true);
+  const ge={id:1234,name:"srm-staging",protection_rules:[{type:"required_reviewers",prevent_self_review:false,reviewers:[{type:"User",reviewer:{id:275643368,login:"profitia"}}]}],deployment_branch_policy:{custom_branch_policies:true,protected_branches:false}};
+  assert.throws(()=>assertDispatchTarget(ge),/only for the existing/);
+  ge.protection_rules[0].prevent_self_review=true;
+  ge.protection_rules[0].reviewers=[];
+  assert.throws(()=>assertDispatchTarget(ge),/Required reviewer/);
 });
 test("promotion reports the actual permitted executor and rejects foreign or local hosts", () => {
   assert.equal(

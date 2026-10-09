@@ -6,6 +6,14 @@ Main is protected by ruleset23304085; use the reviewed protected PR publisher, n
 
 # SRM — first and subsequent Staging promotion runbook
 
+## Existing Staging owner-review corrective — prepared, live application separately authorized
+
+For existing srm-staging ID 23853126630 in profitia/SG-dev only, Canon section 14 and github.soloOperatorApproval permit the same owner profitia ID 275643368 to dispatch and subsequently review a protected workflow. Keep profitia as the sole required reviewer and the sole main branch deployment policy. Existing prevent_self_review=true remains accepted until separate explicit owner consent to change it to false. This section supersedes any independent-review implication below for this exact existing environment; first creation still uses true.
+
+Before changing the live rule, present the tested, reviewed corrective and ask the owner specifically to approve prevent_self_review true -> false for srm-staging. A prior SHA authorization does not suffice. Take a fresh complete GitHub Environment snapshot, branch-policy/ruleset proof and secret-metadata inventory. Run Stage preflight without PMOS, then update only the explicitly approved review setting, preserving reviewers, wait timer, branch policy and all other settings. Record consent and sanitized before/after evidence; verify other environments, main protection and secret metadata are unchanged. Never disable reviews or use administrative bypass. Normal lifecycle execution only observes and validates existing protection, and cannot apply this corrective implicitly.
+
+After the policy operation, rebuild the canonical manifest for the frozen application SHA and revalidate its exact digest and owner authorization. A changed digest requires explicit manifest-bound acceptance; do not fabricate it from an old approval. Dispatch SRM CI at reviewed main with the exact accepted application SHA. Ask the owner to approve the waiting srm-staging job in GitHub. Do not approve it automatically on the owner's behalf: the owner performs the separate review. Verify the reviewed job, Render LIVE exact SHA, isolation and release evidence before accepting the promotion. Preparation tests do not establish successful owner review.
+
 Task SRM-STAGING-ONBOARDING-READINESS-20261008. Preparation is authorized; executing this runbook against Staging is NOT authorized by the task. Stage remains RESERVED/NOT_ONBOARDED. Production and product Development are never write targets. This replaces PR #148's unresolved S0 procedure with the implemented lifecycle.
 
 ## Prerequisites and accepted release
