@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "4ca65ac169b76a61a92471543b836139e6b3694123a283bed9db83cdd513abb6",
+  "publicationNonce": "34cad521fa5f044cb7d7373c2f1fe8d449e0bb388e10aa80c06d3f38d16eacb5",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 25,
+  "generation": 26,
   "release": {
     "authorizationDigest": "c9fb1f717388e2abfe225daee3f1548bcdc7a6ed998c1d89865a5543fd5e574f",
     "authorization": {
@@ -1115,7 +1115,7 @@
         }
       },
       "service": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-09T08:24:59.078Z",
@@ -1581,10 +1581,10 @@
             ]
           }
         },
-        "snapshotDigest": "4e6ac042cb5d32516901ec79714908e6b8bcad78ba591eb2e6adb121329fb1b7",
+        "snapshotDigest": "6f4498faab2db55e2482bda437e889065a8a79439d0a24150c739028ed51c500",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-09T08:24:59.078Z",
+          "capturedAt": "2026-10-09T08:26:20.702Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -1653,8 +1653,8 @@
             "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
-            "updated_at": "2026-10-09T08:24:58Z",
-            "pushed_at": "2026-10-09T08:24:53Z",
+            "updated_at": "2026-10-09T08:26:08Z",
+            "pushed_at": "2026-10-09T08:26:03Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -2048,9 +2048,11 @@
           }
         },
         "result": {
+          "serviceId": "srv-db496b3tqb8s73eh5sfg",
           "secretNames": [
             "SRM_DEMO_PASSWORD"
-          ]
+          ],
+          "unchangedOtherBindings": true
         }
       }
     },
