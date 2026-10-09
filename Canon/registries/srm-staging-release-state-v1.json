@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "1268f7d4bc82ba2a90691cda3cdd16f88b399776fe38ac791d70c473051acf57",
+  "publicationNonce": "bb8b75477e29f296dbc48b1437714cd0853c0521f4dcb1b39ee581b0df6e07e4",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 47,
+  "generation": 48,
   "release": {
     "authorizationDigest": "acdf3cb3dc6a2ef41d39b7bacc04726a89a8af88eeee25b5feed14774f2a208f",
     "authorization": {
@@ -5973,7 +5973,7 @@
         }
       },
       "source-rebind": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-09T17:30:55.261Z",
@@ -6452,10 +6452,10 @@
             ]
           }
         },
-        "snapshotDigest": "e6c07cfdd00a7bb84ab7992b91ce00dbf7d0b1e165dd2d60bf89f15520cfb14e",
+        "snapshotDigest": "17a6daba8c576d07a49f1ce25d3a3f9f773a7fa5e51c06901ff51a4e814480be",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-09T17:30:55.261Z",
+          "capturedAt": "2026-10-09T17:31:54.542Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -6524,8 +6524,8 @@
             "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
-            "updated_at": "2026-10-09T17:30:57Z",
-            "pushed_at": "2026-10-09T17:30:51Z",
+            "updated_at": "2026-10-09T17:31:56Z",
+            "pushed_at": "2026-10-09T17:31:51Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -6931,7 +6931,9 @@
             ]
           }
         },
-        "result": {}
+        "result": {
+          "branch": "main"
+        }
       }
     },
     "lastKnownGood": {
