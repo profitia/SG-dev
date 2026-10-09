@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react'
 
 import type { EventLedgerSourceRecord, EventRow, HandoffArtifactRecord } from '@/lib/event-ledger-query'
+import { findHistoricalPmosProjectProfile } from '../../lib/pmos/project-profile'
 
 type EventRowView = Omit<EventRow, 'timestamp'> & {
   timestamp: string
@@ -188,7 +189,7 @@ function getConversationSource(selectedRecord: EventLedgerSourceRecord): EventLe
   return selectedRecord.sourceTable === 'conversation_artifacts' ? selectedRecord : selectedRecord.linkedConversation
 }
 
-function buildCanonicalConversationView(selectedRecord: EventLedgerSourceRecord): string | null {
+export function buildCanonicalConversationView(selectedRecord: EventLedgerSourceRecord): string | null {
   const conversationSource = getConversationSource(selectedRecord)
 
   if (!conversationSource) {
@@ -275,8 +276,10 @@ function buildCanonicalConversationView(selectedRecord: EventLedgerSourceRecord)
   ].filter((value): value is string => Boolean(value))
 
   if (evidenceLines.length > 0) {
-    lines.push('## Completion Evidence')
+    const sg2 = project ? findHistoricalPmosProjectProfile(project)?.projectKey === 'SG2' : false
+    lines.push(sg2 ? '## Immutable snapshot completion evidence' : '## Completion Evidence')
     lines.push('')
+    if (sg2) lines.push('Point-in-time snapshot only. Current SG2 status requires verified append-only lifecycle evidence.', '')
     lines.push(...evidenceLines)
     lines.push('')
   }

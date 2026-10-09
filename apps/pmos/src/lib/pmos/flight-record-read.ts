@@ -1,3 +1,6 @@
+import { findHistoricalPmosProjectProfile } from './project-profile'
+import { validatePersistedLifecycle, type PersistedLifecycleRow, type PersistedLifecycleSource } from './sg2-immutable-lifecycle'
+
 type FlightRecordLike = {
   metadata: Record<string, unknown>
   task: Record<string, unknown>
@@ -190,5 +193,59 @@ export function buildCanonicalConversationReadModel(value: unknown): CanonicalCo
       archiveCompletenessStatus: asString(flightRecord.completionEvidence.archiveCompletenessStatus),
       executionTrailStatus: asString(flightRecord.completionEvidence.executionTrailStatus),
     },
+  }
+}
+
+export interface Sg2LifecycleReadModel {
+  mode: 'APPEND_ONLY' | 'HISTORICAL_SNAPSHOT_ONLY'
+  currentState: 'CLOSEOUT_COMPLETE' | 'PARTIAL' | 'RECOVERY_REQUIRED' | 'NOT_VERIFIED'
+  evidenceIntegrity: 'PASS' | 'FAIL' | 'NOT_VERIFIED'
+  verificationScope: 'POSTGRESQL_EVIDENCE_ONLY'
+  immutableIntegrity: 'FAIL' | 'NOT_VERIFIED'
+  snapshotState: CanonicalConversationReadModel['completionEvidence']
+  memorosPublication: 'DELIVERED' | 'NOT_VERIFIED'
+  memorosConsumerReadiness: 'NOT_VERIFIED'
+  phrPublication: 'PUBLISHED' | 'IDEMPOTENT' | 'NOT_VERIFIED'
+  recoveryRequired: boolean
+  eventCount: number
+  sourceFingerprint: string | null
+  historicalException: string | null
+  verificationError: string | null
+}
+
+// The existing canonical helper remains a point-in-time projection for every
+// project. Only SG2 gets an additional current-state view, never a JSON rewrite.
+export function buildSg2LifecycleReadModel(source: PersistedLifecycleSource, rows: PersistedLifecycleRow[]): Sg2LifecycleReadModel | null {
+  const snapshot = buildCanonicalConversationReadModel(source.flightRecordJson)
+  const snapshotProject = snapshot.flightRecord?.metadata.project
+  const rowProfile = typeof source.project === 'string' ? findHistoricalPmosProjectProfile(source.project) : null
+  const snapshotProfile = typeof snapshotProject === 'string' ? findHistoricalPmosProjectProfile(snapshotProject) : null
+  if (rowProfile?.projectKey !== 'SG2' && snapshotProfile?.projectKey !== 'SG2') return null // SRM/CIC unchanged.
+  const historicalException = source.taskId === 'SG2-RELEASE-HARDENING-STAGE1-20261008'
+    ? 'Canon/audits/sg2-stage1-pmos-integrity-exception-20261009.md' : null
+  const model: Sg2LifecycleReadModel = {
+    mode: rows.length ? 'APPEND_ONLY' : 'HISTORICAL_SNAPSHOT_ONLY', currentState: 'NOT_VERIFIED',
+    evidenceIntegrity: 'NOT_VERIFIED', verificationScope: 'POSTGRESQL_EVIDENCE_ONLY',
+    immutableIntegrity: historicalException ? 'FAIL' : 'NOT_VERIFIED', snapshotState: snapshot.completionEvidence,
+    memorosPublication: 'NOT_VERIFIED', memorosConsumerReadiness: 'NOT_VERIFIED', phrPublication: 'NOT_VERIFIED',
+    recoveryRequired: false, eventCount: rows.length, sourceFingerprint: null, historicalException, verificationError: null,
+  }
+  try {
+    const events = validatePersistedLifecycle(source, rows)
+    if (!events.length) return model // Display historical claims with their original source, not new-contract PASS.
+    model.evidenceIntegrity = 'PASS'
+    model.sourceFingerprint = events[0].source.fingerprint
+    model.recoveryRequired = events.some(event => event.step === 'RECOVERY_REQUIRED') && events.at(-1)?.step !== 'CLOSEOUT_COMPLETE'
+    model.currentState = events.at(-1)?.step === 'CLOSEOUT_COMPLETE' ? 'CLOSEOUT_COMPLETE'
+      : model.recoveryRequired ? 'RECOVERY_REQUIRED' : 'PARTIAL'
+    if (events.some(event => event.step === 'MEMOROS_ACK')) model.memorosPublication = 'DELIVERED'
+    const phr = events.find(event => event.step === 'PHR_ACK')
+    if (phr) model.phrPublication = (phr.receipt as { publication: { result: { status: 'PUBLISHED' | 'IDEMPOTENT' } } }).publication.result.status
+    // ACK is delivery proof at publication time, not a current downstream readiness probe.
+    return model
+  } catch (error) {
+    model.evidenceIntegrity = 'FAIL'
+    model.verificationError = error instanceof Error ? error.message : 'SG2 lifecycle evidence invalid.'
+    return model
   }
 }
