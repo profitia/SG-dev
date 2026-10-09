@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import pg from "pg";
+import {diagnosticStage, diagnosticError, ReleaseDiagnosticError, githubResponse} from "./release-diagnostics.mjs";
 import {
   root,
   contract,
@@ -231,7 +232,7 @@ export function githubStore(
     };
   };
   const writeBranch = async (branch, expectedHead, files, message) => {
-    const result = await request(GH, "/graphql", "POST", {
+    const result = await diagnosticStage({stage:"publication-commit",operation:"createCommitOnBranch",branch,expectedSha:expectedHead,effect:"OBSERVATION_REQUIRED"}, () => request(GH, "/graphql", "POST", {
       query:
         "mutation($input:CreateCommitOnBranchInput!){createCommitOnBranch(input:$input){commit{oid}}}",
       variables: {
@@ -252,11 +253,9 @@ export function githubStore(
           },
         },
       },
-    });
-    fail(
-      !result.errors && result.data?.createCommitOnBranch?.commit?.oid,
-      "GitHub compare-and-swap rejected",
-    );
+    }));
+    if (result.errors?.length || !result.data?.createCommitOnBranch?.commit?.oid)
+      throw new ReleaseDiagnosticError({stage:"publication-commit",operation:"createCommitOnBranch",branch,expectedSha:expectedHead,category:"GRAPHQL_REJECTION",graphqlErrors:result.errors ?? [],requestReachedGitHub:"HTTP_RESPONSE",effect:"OBSERVATION_REQUIRED"});
     return result.data.createCommitOnBranch.commit.oid;
   };
   const sameCanonical = (a, b) =>
@@ -293,9 +292,23 @@ export function githubStore(
     }
     fail(ref?.object?.sha, "Publication branch acknowledgement unavailable");
     let candidate = ref.object.sha;
-    if (candidate === expectedHead)
-      candidate = await writeBranch(branch, expectedHead, files, message);
-    else await branchFilesMatch(branch, files);
+    if (candidate === expectedHead) {
+      try { candidate = await writeBranch(branch, expectedHead, files, message); }
+      catch (error) {
+        // Observe after rejection/timeout, but never repeat or proceed automatically.
+        let observation = {effect:"OBSERVATION_REQUIRED"};
+        try {
+          const observed = await request(GH, repo + "/git/ref/heads/" + branch);
+          observation.observedSha = observed?.object?.sha;
+          if (observation.observedSha === expectedHead) observation.effect = "NO_COMMIT_OBSERVED";
+          else if (observation.observedSha) {
+            await branchFilesMatch(branch, files);
+            observation.effect = "COMMIT_OBSERVED";
+          }
+        } catch { /* Ambiguous observation is retained, never treated as permission to retry. */ }
+        throw new ReleaseDiagnosticError({...diagnosticError(error,{stage:"publication-commit",operation:"createCommitOnBranch",branch,expectedSha:expectedHead}).diagnostic,...observation});
+      }
+    } else await diagnosticStage({stage:"publication-existing-commit",operation:"verify-publication-branch",branch,expectedSha:expectedHead,observedSha:candidate}, () => branchFilesMatch(branch, files));
     const comparison = await request(
       GH,
       repo + "/compare/" + expectedHead + "..." + candidate,
@@ -428,9 +441,9 @@ export function githubStore(
         "Baseline update conflict; reread and revalidate",
       );
       const fenced = publicationFiles(current, files, expectedHead);
-      if (current.protected)
-        return protectedCommit(current, expectedHead, fenced, message);
-      return writeBranch("main", expectedHead, fenced, message);
+      return diagnosticStage({stage:"publication",operation:"publish-journal",expectedSha:expectedHead,generation:fenced[statePath].generation,approvalId:fenced[statePath].release?.approvalId}, () => current.protected
+        ? protectedCommit(current, expectedHead, fenced, message)
+        : writeBranch("main", expectedHead, fenced, message));
     },
   };
 }
@@ -658,7 +671,7 @@ export function createProvider(
           ? env.RENDER_API_KEY
           : env.NEON_API_KEY;
     fail(token, "Required scoped management credential missing");
-    const res = await fetcher(base + url, {
+    const options = {
       method,
       headers: {
         Authorization: "Bearer " + token,
@@ -668,7 +681,10 @@ export function createProvider(
       },
       body: body ? JSON.stringify(body) : undefined,
       signal: AbortSignal.timeout(30000),
-    });
+    };
+    if (base === GH) return githubResponse(fetcher, base + url, options,
+      url === "/graphql" ? "createCommitOnBranch" : url.endsWith("/git/refs") ? "create-publication-branch" : url.endsWith("/merge") ? "merge-publication-pr" : "github-rest");
+    const res = await fetcher(base + url, options);
     if (res.status === 404 && method === "GET") return null;
     fail(res.ok, "Provider request rejected (" + res.status + ")");
     return res.status === 204 ? null : res.json();

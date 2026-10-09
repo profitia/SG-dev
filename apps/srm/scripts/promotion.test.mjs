@@ -6,6 +6,10 @@ import os from "node:os";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import pg from "pg";
+import {githubResponse,childDiagnostic,diagnosticError,ReleaseDiagnosticError} from "./release-diagnostics.mjs";
+import {prepareResume,assertResumeFence} from "./resume-staging.mjs";
+import {manifestFrom} from "./staging-lifecycle.mjs";
+import {digest,operations} from "../../../scripts/governance/srm-release-lifecycle.mjs";
 import {
   contract,
   migrationManifest,
@@ -25,6 +29,51 @@ import {
   inspectProductDatabase,
 } from "./promote-staging.mjs";
 const sha = "a".repeat(40);
+test("HTTP and GraphQL diagnostics retain request identity but never sensitive payloads",async()=>{
+  const response=(status,body)=>({status,ok:status===200,headers:new Headers({'x-github-request-id':'ABCD:1234'}),json:async()=>body});
+  for(const [status,body,category] of [[403,{message:'Resource not accessible by integration',token:'private'},'HTTP_REJECTION'],[200,{errors:[{type:'UNPROCESSABLE',path:['createCommitOnBranch'],message:'Invalid input postgresql://private:password@host',extensions:{token:'private'}}]},'GRAPHQL_REJECTION']]){
+    await assert.rejects(githubResponse(async()=>response(status,body),'https://api.github.com/graphql',{method:'POST',body:'sensitive'},'createCommitOnBranch'),e=>{
+      assert.equal(e.diagnostic.httpStatus,status);assert.equal(e.diagnostic.requestId,'ABCD:1234');assert.equal(e.diagnostic.category,category);
+      assert.equal(e.diagnostic.requestReachedGitHub,'HTTP_RESPONSE');assert.ok(!JSON.stringify(e.diagnostic).match(/private|password|postgresql/));return true;
+    });
+  }
+  await assert.rejects(githubResponse(async()=>{throw Object.assign(Error('secret connection string'),{name:'TimeoutError'});},'https://api.github.com/graphql',{method:'POST'},'createCommitOnBranch'),e=>{assert.equal(e.diagnostic.requestReachedGitHub,'UNKNOWN');return true;});
+  const e=diagnosticError(Error('password=private'),{stage:'publication',approvalId:'SRM-STAGING-TEST',token:'private'});
+  const forwarded=childDiagnostic('untrusted stderr private\nSRM_RELEASE_DIAGNOSTIC '+JSON.stringify({...e.diagnostic,token:'private',message:'private'}));
+  assert.ok(!JSON.stringify(forwarded).includes('private'));assert.equal(forwarded.approvalId,'SRM-STAGING-TEST');
+  assert.equal(childDiagnostic('untrusted stderr'),null);assert.ok(e instanceof ReleaseDiagnosticError);
+});
+function resumeFixture(now=Date.now()) {
+  const m=manifestFrom({repositoryId:contract.repositoryId,approvedMainAncestor:true,ciPassed:true,developmentLiveSha:sha},sha);
+  const a={schemaVersion:'2.0',projectKey:'SRM',repository:contract.repository,repositoryId:contract.repositoryId,targetEnvironment:'staging',stagingDeploymentAuthorized:true,stagingMutationsAllowed:true,productionMutationsAllowed:false,mode:'promote',releaseSha:sha,manifest:m,manifestDigest:digest(m),approvalId:'SRM-STAGING-123-1',approvedBy:'profitia',costOwner:'Profit.ia',expiresAt:new Date(now-1000).toISOString(),renderWorkspaceId:contract.render.workspaceId,renderProjectId:contract.render.projectId,renderEnvironmentId:contract.render.environmentId,neonProjectId:contract.neon.projectId,neonBranchId:contract.neon.branchId,neonEndpointId:contract.neon.endpointId,databaseName:'srm_app',operations,budget:{renderPlan:contract.render.plan,renderInstances:1,renderMonthlyComputeUsd:7,neonMaxCu:8,neonExistingEndpointOnly:true,providerEntitlementsAccepted:true,storageEgressBuildCostsAccepted:true,maxDeploymentAttempts:3}};
+  const state=JSON.parse(JSON.stringify({schemaVersion:'1.0',projectKey:'SRM',targetEnvironment:'staging',generation:35,release:{approvalId:a.approvalId,manifest:m,manifestDigest:a.manifestDigest,authorizationDigest:digest({...a,expiresAt:undefined}),authorization:{...a,manifest:undefined},mode:'promote',phase:'PROVISIONING',owner:'github-run:123',steps:{'github-environment':{status:'DONE'},'github-bindings':{status:'INTENT'}}}}));
+  return {state,input:{approvalId:a.approvalId,manifestDigest:a.manifestDigest,sha,actor:'profitia',costOwner:'Profit.ia',renewal:'YES'},run:{id:123,status:'completed',repository:{id:contract.repositoryId,full_name:contract.repository}},now};
+}
+test("explicit bounded renewal preserves release identity, scope, steps and ownership fence",()=>{
+  const f=resumeFixture(),before=structuredClone(f.state),p=prepareResume(f.state,f.input,f.run,f.now);
+  assert.equal(p.authorization.approvalId,f.input.approvalId);assert.equal(p.authorization.manifestDigest,f.input.manifestDigest);
+  assert.equal(Date.parse(p.authorization.expiresAt)-f.now,3600000);assert.deepEqual(f.state,before);assertResumeFence(f.state,p);
+  assert.throws(()=>assertResumeFence({...f.state,generation:36},p),/journal changed/);
+  assert.throws(()=>assertResumeFence({...f.state,release:{...f.state.release,owner:'github-run:999'}},p));
+});
+for(const [name,change] of [
+  ['expired approval without explicit renewal',f=>f.input.renewal='NO'],
+  ['new approval identity',f=>f.input.approvalId='SRM-STAGING-999-1'],
+  ['wrong manifest',f=>f.input.manifestDigest='0'.repeat(64)],
+  ['wrong application SHA',f=>f.input.sha='b'.repeat(40)],
+  ['previous executor still running',f=>f.run.status='in_progress'],
+  ['different previous executor',f=>f.run.id=999],
+  ['cross project',f=>f.state.projectKey='SG2'],
+  ['Production',f=>f.state.targetEnvironment='production'],
+  ['different owner',f=>f.input.actor='other'],
+  ['changed cost owner',f=>f.input.costOwner='other'],
+  ['changed operations',f=>f.state.release.authorization.operations=['deploy']],
+  ['already completed release',f=>f.state.release.phase='VERIFIED'],
+])test('resume refuses '+name,()=>{const f=resumeFixture();change(f);assert.throws(()=>prepareResume(f.state,f.input,f.run,f.now));});
+test('workflow retains failed diagnostics and explicit protected resume gates',()=>{
+  const w=fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)),'../../../.github/workflows/srm-ci.yml'),'utf8');
+  for(const token of ['resume_approval_id:','resume_manifest_digest:','resume_authorization_renewal:','environment: srm-staging','assertResumeFence(','if: always()','/tmp/srm-staging-diagnostic.json','--resume-fence'])assert.ok(w.includes(token),token);
+});
 const approval = () => ({
   schemaVersion: "1.0",
   projectKey: "SRM",

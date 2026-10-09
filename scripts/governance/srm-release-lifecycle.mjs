@@ -19,6 +19,18 @@ export const operations = [
 ];
 export const digest = (value) =>
   createHash("sha256").update(JSON.stringify(value)).digest("hex");
+// Preserve published digests: JSON property order is part of the historical
+// digest contract. The journal omits manifest, so reconstruct its original slot.
+export function authorizationFromRelease(release) {
+  const stored = release?.authorization;
+  requireFact(stored && release.manifest && release.authorizationDigest, "Stored release authorization unavailable");
+  const keys = release.authorizationKeyOrder ?? Object.keys(stored).filter(k => k !== "manifest").flatMap(k => k === "manifestDigest" ? ["manifest",k] : [k]);
+  requireFact(Array.isArray(keys) && keys.length === new Set(keys).size && keys.includes("manifest") && keys.every(k => k === "manifest" || Object.hasOwn(stored,k)), "Stored authorization order invalid");
+  const a = Object.fromEntries(keys.map(k => [k,k === "manifest" ? release.manifest : stored[k]]));
+  requireFact(Object.keys(stored).every(k => k === "manifest" || Object.hasOwn(a,k)), "Stored authorization fields missing");
+  requireFact(digest({...a,expiresAt:undefined,costEvidence:a.costEvidence ? {...a.costEvidence,verifiedAt:undefined} : undefined}) === release.authorizationDigest, "Stored authorization scope mismatch");
+  return a;
+}
 const requireFact = (ok, message) => {
   if (!ok) throw Error(message);
 };
@@ -433,6 +445,11 @@ export function claimRelease(
       "Previous executor must be provably stopped before takeover",
     );
     old.owner = owner;
+    if (old.authorization.expiresAt !== a.expiresAt) {
+      requireFact(Date.parse(a.expiresAt) > Date.parse(old.authorization.expiresAt), "Authorization renewal must not shorten or invalidate the approved window");
+      old.authorizationRenewals = [...(old.authorizationRenewals ?? []), {previousExpiresAt:old.authorization.expiresAt,expiresAt:a.expiresAt,owner,approvalId:a.approvalId,manifestDigest:old.manifestDigest}];
+      old.authorization.expiresAt = a.expiresAt;
+    }
   } else {
     requireFact(
       !old || old.approvalId !== a.approvalId,
@@ -440,6 +457,7 @@ export function claimRelease(
     );
     next.release = {
       authorizationDigest,
+      authorizationKeyOrder: Object.keys(a).filter(k => a[k] !== undefined),
       authorization: { ...a, manifest: undefined },
       approvalId: a.approvalId,
       manifestDigest: digest(m),

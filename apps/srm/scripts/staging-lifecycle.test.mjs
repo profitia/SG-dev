@@ -1066,6 +1066,8 @@ function publicationFixture({
     request,
     calls,
     pending,
+    seedParentBranch() { ref = {object:{sha:head}}; },
+    corruptBranch() { candidateFiles[journalPath] = {generation:999}; },
     get state() {
       return state;
     },
@@ -1090,6 +1092,44 @@ function publicationFixture({
   };
   return fixture;
 }
+test("branch created with only the parent resumes the missing publication commit once", async () => {
+  const f=publicationFixture(); f.seedParentBranch(); const store=githubStore(f.request), current=await store.read();
+  await store.commit({expectedHead:current.head,files:{[journalPath]:{...current.state,generation:1}},message:"intent"});
+  assert.equal(f.state.generation,1);
+  assert.equal(f.calls.filter(x=>x.url==="/graphql").length,1);
+  assert.equal(f.calls.filter(x=>x.url.endsWith("/git/refs") && x.method==="POST").length,0);
+});
+test("structured GraphQL rejection preserves diagnostics, parent branch and journal", async () => {
+  const f=publicationFixture();
+  const store=githubStore((base,url,method,body)=>url==="/graphql" ? Promise.resolve({errors:[{type:"FORBIDDEN",path:["createCommitOnBranch"],message:"Resource not accessible by integration secret-token"}]}) : f.request(base,url,method,body));
+  const current=await store.read();
+  await assert.rejects(store.commit({expectedHead:current.head,files:{[journalPath]:{...current.state,generation:1}},message:"intent"}),e=>{
+    assert.equal(e.diagnostic.category,"GRAPHQL_REJECTION");assert.equal(e.diagnostic.effect,"NO_COMMIT_OBSERVED");
+    assert.equal(e.diagnostic.observedSha,current.head);assert.equal(e.diagnostic.generation,1);
+    assert.equal(e.diagnostic.graphqlErrors[0].type,"FORBIDDEN");assert.ok(!JSON.stringify(e.diagnostic).includes("secret-token"));return true;
+  });
+  assert.equal(f.state.generation,0);assert.ok(!f.calls.some(x=>x.url.endsWith("/merge")));
+});
+for(const accepted of [false,true]) test("lost commit response is observed and never blindly retried: accepted="+accepted,async()=>{
+  const f=publicationFixture();let writes=0,lose=true;
+  const store=githubStore(async(base,url,method,body)=>{
+    if(url==="/graphql") {writes++; if(accepted || !lose) {const result=await f.request(base,url,method,body);if(!lose)return result;}
+      if(lose){lose=false;const {ReleaseDiagnosticError}=await import('./release-diagnostics.mjs');throw new ReleaseDiagnosticError({category:"NETWORK_TIMEOUT",requestReachedGitHub:"UNKNOWN",operation:"createCommitOnBranch"});}}
+    return f.request(base,url,method,body);
+  });
+  const current=await store.read(),input={expectedHead:current.head,files:{[journalPath]:{...current.state,generation:1}},message:"intent"};
+  await assert.rejects(store.commit(input),e=>{assert.equal(e.diagnostic.effect,accepted ? "COMMIT_OBSERVED":"NO_COMMIT_OBSERVED");return true;});
+  assert.equal(writes,1);assert.equal(f.state.generation,0);
+  await store.commit(input);assert.equal(f.state.generation,1);assert.equal(writes,accepted?1:2);
+});
+test("conflicting existing publication commit refuses retry without any second write",async()=>{
+  const f=publicationFixture({pending:true});let time=0;
+  const store=githubStore(f.request,{now:()=>time,pause:async()=>{time++;},checkTimeoutMs:1});
+  const current=await store.read(),input={expectedHead:current.head,files:{[journalPath]:{...current.state,generation:1}},message:"intent"};
+  await assert.rejects(store.commit(input));f.corruptBranch();f.pending=false;
+  await assert.rejects(store.commit(input),/Publication branch content drift/);
+  assert.equal(f.calls.filter(x=>x.url==="/graphql").length,1);assert.equal(f.state.generation,0);
+});
 test("protected main publishes a fenced journal through a checked PR without protection writes", async () => {
   const f = publicationFixture(),
     store = githubStore(f.request),
