@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "dc230656a5447e9533f26c34e0a931f20908ab82f6b22d08a4e8f023c3459bb3",
+  "publicationNonce": "f0383209271131afffdd8cf4eee5b9eaf49f2002dc7f8b3c9cfe6aa0c943f5d9",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 19,
+  "generation": 20,
   "release": {
     "authorizationDigest": "61d3e26061e0e500bbd2236b7af6097a7979559bb45323a7ebfcf7241cda2354",
     "authorization": {
