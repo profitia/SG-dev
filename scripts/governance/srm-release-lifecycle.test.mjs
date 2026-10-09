@@ -8,6 +8,7 @@ import {
   assertStagingGitHubProtection,
   assertLifecycleAuthorization,
   assertSnapshot,
+  assertStagingDomainBinding,
   claimRelease,
   digest,
   operations,
@@ -313,4 +314,48 @@ test('demo password approval expires exactly at its deadline',()=>{
 for(const environment of ['development','production'])test('demo approval cannot target '+environment,()=>{
   const {values,development}=demoBindings();
   assert.throws(()=>assertProductSecretIsolation(c,{...values,TARGET_ENVIRONMENT:environment},development,supplierNow));
+});
+
+// Exact existing-domain correction: all values below are synthetic provider observations.
+const domainSnapshot = () => ({
+  services: [{ id: c.existingDomainBinding.serviceId, environmentId: c.render.environmentId }],
+  domains: [{ customDomain: { ...c.existingDomainBinding.domains[0], redirectForName: "" }, cursor: "synthetic" }],
+});
+test("existing verified custom domain is observed with immutable service binding", () => {
+  const s = domainSnapshot();
+  assert.deepEqual(assertStagingDomainBinding(s, c), [{ ...c.existingDomainBinding.domains[0], serviceId:c.existingDomainBinding.serviceId }]);
+  assert.equal(s.domains[0].cursor, "synthetic");
+});
+for (const [label, mutate] of [
+  ["missing inventory",s=>delete s.domains],
+  ["missing domain",s=>s.domains=[]],
+  ["additional domain",s=>s.domains.push(structuredClone(s.domains[0]))],
+  ["changed domain ID",s=>s.domains[0].customDomain.id="cdm-other"],
+  ["changed domain name",s=>s.domains[0].customDomain.name="other.example.com"],
+  ["unverified domain",s=>s.domains[0].customDomain.verificationStatus="pending"],
+  ["missing verification",s=>delete s.domains[0].customDomain.verificationStatus],
+  ["redirect",s=>s.domains[0].customDomain.redirectForName="other.example.com"],
+  ["missing redirect evidence",s=>delete s.domains[0].customDomain.redirectForName],
+  ["foreign explicit service",s=>s.domains[0].customDomain.serviceId="srv-other"],
+  ["wrong service",s=>s.services[0].id="srv-other"],
+  ["multiple services",s=>s.services.push(structuredClone(s.services[0]))],
+  ["wrong environment",s=>s.services[0].environmentId="production"],
+]) test("domain observation rejects "+label, () => {
+  const s=domainSnapshot();mutate(s);assert.throws(()=>assertStagingDomainBinding(s,c));
+});
+for(const [field,value] of Object.entries({id:"other",projectKey:"SG2",targetEnvironment:"development",repository:"profitia/other",repositoryId:1,renderWorkspaceId:"other",renderProjectId:"other",renderEnvironmentId:"other",serviceId:"srv-other",mode:"CREATE"})) test("domain policy rejects scope change: "+field,()=>{
+  const copy=structuredClone(c);copy.existingDomainBinding[field]=value;
+  assert.throws(()=>assertStagingDomainBinding(domainSnapshot(),copy));
+});
+test("Production, Development, SG2, CIC and environment overrides cannot grant domain adoption",()=>{
+  for(const projectKey of ["SG2","CIC"])assert.throws(()=>assertStagingDomainBinding(domainSnapshot(),{...c,projectKey}));
+  const noPolicy={...c,existingDomainBinding:undefined,SRM_ALLOW_DOMAINS:true};
+  assert.throws(()=>assertStagingDomainBinding(domainSnapshot(),noPolicy));
+  assert.deepEqual(assertStagingDomainBinding({services:[],domains:[]},noPolicy),[]);
+  assert.deepEqual(assertStagingDomainBinding({services:[{id:"srv-first-onboarding"}],domains:[]},c),[]);
+});
+test("canonical domain identity cannot be replaced by an arbitrary allowlist",()=>{
+  for(const mutate of [p=>p.domains[0].id="cdm-other",p=>p.domains[0].name="other.example.com",p=>p.domains[0].verificationStatus="pending",p=>p.domains.push(structuredClone(p.domains[0]))]){
+    const copy=structuredClone(c);mutate(copy.existingDomainBinding);assert.throws(()=>assertStagingDomainBinding(domainSnapshot(),copy));
+  }
 });

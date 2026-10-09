@@ -187,6 +187,35 @@ export function assertLifecycleAuthorization(a, m, c, now = Date.now()) {
     );
   return true;
 }
+// Observe an existing binding only. No domain or DNS operation is authorized here.
+export function assertStagingDomainBinding(s, c) {
+  requireFact(Array.isArray(s?.domains) && Array.isArray(s?.services), "Complete domain inventory required");
+  const p = c.existingDomainBinding;
+  if (p) requireFact(
+    c.projectKey === "SRM" && c.repository === "profitia/SG-dev" && c.repositoryId === 1247665550 &&
+      p.id === "SRM-STAGING-EXISTING-DOMAIN-20261009" && p.projectKey === "SRM" &&
+      p.targetEnvironment === "staging" && p.repository === c.repository && p.repositoryId === c.repositoryId &&
+      p.renderWorkspaceId === c.render.workspaceId && p.renderWorkspaceId === "tea-d7lps8rbc2fs73cn80dg" &&
+      p.renderProjectId === c.render.projectId && p.renderProjectId === "prj-dapbd3hsrm7s73es53fg" &&
+      p.renderEnvironmentId === c.render.environmentId && p.renderEnvironmentId === "evm-dapbdbbbc2fs73f4g7gg" &&
+      p.serviceId === "srv-db496b3tqb8s73eh5sfg" && p.mode === "OBSERVE_EXISTING_ONLY" &&
+      Array.isArray(p.domains) && p.domains.length === 1 && p.domains[0].id === "cdm-db4btcvlk1mc73fhn7sg" &&
+      p.domains[0].name === "demo-srm-porr.spendguru.app" && p.domains[0].verificationStatus === "verified",
+    "Invalid canonical SRM existing domain policy",
+  );
+  if (!p || !s.services.some(x => x.id === p.serviceId)) {
+    requireFact(s.domains.length === 0, "Domain binding is outside the exact existing SRM service");
+    return [];
+  }
+  requireFact(s.services.length === 1 && s.services[0].environmentId === p.renderEnvironmentId &&
+    s.domains.length === 1, "Exact existing SRM domain inventory required");
+  const d = s.domains[0]?.customDomain ?? s.domains[0];
+  requireFact(d?.id === p.domains[0].id && d.name === p.domains[0].name &&
+    d.verificationStatus === "verified" && d.redirectForName === "" &&
+    (!Object.hasOwn(d, "serviceId") || d.serviceId === p.serviceId),
+    "Existing SRM domain identity, verification or redirect drift");
+  return [{ id: d.id, name: d.name, verificationStatus: d.verificationStatus, serviceId: p.serviceId }];
+}
 export function assertSnapshot(s, c, now = Date.now()) {
   requireFact(
     s?.source === "LIVE_PROVIDER_APIS" &&
@@ -227,10 +256,10 @@ export function assertSnapshot(s, c, now = Date.now()) {
   requireFact(
     Array.isArray(s.services) &&
       Array.isArray(s.databases) &&
-      Array.isArray(s.domains) &&
-      s.domains.length === 0,
-    "Complete provider scope and empty domain binding required",
+      Array.isArray(s.domains),
+    "Complete provider scope required",
   );
+  assertStagingDomainBinding(s, c);
   requireFact(
     s.services.every((x) => x.environmentId === c.render.environmentId) &&
       s.services.length <= 1,
@@ -291,6 +320,7 @@ export function assertOperation({
     "Neon cost cap drift",
   );
   const t = r.environments.staging;
+  requireFact(Array.isArray(t.domains) && digest(t.domains) === digest(assertStagingDomainBinding(s, c)), "Canonical Staging domain binding drift");
   if (t.status === "ACTIVE")
     requireFact(
       t.github.environmentId === s.githubEnvironment?.id &&
@@ -522,6 +552,8 @@ export function reconciliation(
     digest(proof.migrations) === digest(manifest.migrations),
     "Schema ledger does not match release manifest",
   );
+  const domains = assertStagingDomainBinding(snapshot, contract);
+  if (domains.length) requireFact(Array.isArray(proof.domainBindings) && digest(proof.domainBindings) === digest(domains), "Domain verification proof mismatch");
   const r = structuredClone(registry),
     j = structuredClone(state),
     t = r.environments.staging;
@@ -532,6 +564,7 @@ export function reconciliation(
     schemaStatus: "INITIALIZED",
     deploymentPolicy: "EXPLICIT_APPROVED_REVISION_ONLY",
   });
+  t.domains = domains;
   Object.assign(t.github, {
     environmentId: ge.id,
     repository: contract.repository,
