@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "f762744b47df104253f14a5d4d88563ef046be5ee75934a95754005090682ecf",
+  "publicationNonce": "b190ffb8a886d16393e2eff65d64a4ec5c19b00e9fa5ff607e34010df8b29943",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 43,
+  "generation": 44,
   "release": {
     "authorizationDigest": "acdf3cb3dc6a2ef41d39b7bacc04726a89a8af88eeee25b5feed14774f2a208f",
     "authorization": {
@@ -129,7 +129,8 @@
     "phase": "PROVISIONING",
     "resources": {
       "githubEnvironmentId": 23853126630,
-      "databaseId": 509272
+      "databaseId": 509272,
+      "serviceId": "srv-db496b3tqb8s73eh5sfg"
     },
     "steps": {
       "github-environment": {
@@ -4045,7 +4046,7 @@
         }
       },
       "service": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-09T17:25:20.320Z",
@@ -4524,10 +4525,10 @@
             ]
           }
         },
-        "snapshotDigest": "a7ca549e9a0cd86b4b1ef9f4735307ccef1c937ffae2cb687b4e47e78a90e72d",
+        "snapshotDigest": "d46658203b973b66b414d49ef00c4c54f4c59819323155fc1ecc9f061a6237ab",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-09T17:25:20.320Z",
+          "capturedAt": "2026-10-09T17:26:30.675Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -4597,7 +4598,7 @@
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
             "updated_at": "2026-10-09T17:25:22Z",
-            "pushed_at": "2026-10-09T17:25:17Z",
+            "pushed_at": "2026-10-09T17:26:28Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -5003,7 +5004,9 @@
             ]
           }
         },
-        "result": {}
+        "result": {
+          "id": "srv-db496b3tqb8s73eh5sfg"
+        }
       }
     },
     "lastKnownGood": {
