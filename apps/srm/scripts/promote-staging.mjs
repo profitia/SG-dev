@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import pg from "pg";
+import {ReleaseDiagnosticError, childDiagnostic, reportDiagnostic} from "./release-diagnostics.mjs";
 import {
   root,
   contract,
@@ -410,11 +411,20 @@ async function main() {
         { env: process.env, encoding: "utf8", maxBuffer: 4 * 1024 * 1024 },
       );
       if (child.status !== 0)
-        throw Error("Exclusive process lock or release execution failed");
+        throw new ReleaseDiagnosticError(childDiagnostic(child.stderr) ?? {stage:"executor-lock",operation:"locked-execution",category:"EXECUTOR_FAILURE",requestReachedGitHub:"NOT_SENT"});
       console.log(child.stdout.trim());
       return;
     }
     const { lifecycleApply } = await import("./staging-lifecycle.mjs");
+    if (args.includes("--resume-fence")) {
+      const {assertResumeFence} = await import("./resume-staging.mjs");
+      const {githubStore} = await import("./staging-lifecycle.mjs");
+      const store = githubStore((base,url,method="GET") => {
+        if(method !== "GET") throw Error("Resume verification must be read only");
+        return api(base,url,process.env.SRM_RELEASE_GITHUB_TOKEN);
+      });
+      assertResumeFence((await store.read()).state,JSON.parse(fs.readFileSync(value("--resume-fence"),"utf8")));
+    }
     if (
       authorization?.releaseSha !== sha ||
       rollback !== (authorization?.mode === "rollback")
@@ -434,7 +444,15 @@ if (
   process.argv[1] &&
   path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 )
-  main().catch(() => {
+  main().catch((error) => {
+    let context={stage:"promotion",operation:"apply"};
+    try {
+      const i=process.argv.indexOf("--authorization");
+      const a=JSON.parse(fs.readFileSync(process.argv[i+1],"utf8"));
+      const state=JSON.parse(fs.readFileSync(path.join(root,"Canon/registries/srm-staging-release-state-v1.json"),"utf8"));
+      context={...context,approvalId:a.approvalId,generation:state.generation};
+    } catch { /* Missing context cannot justify emitting an unfiltered exception. */ }
+    reportDiagnostic(error, context, process.env.SRM_RELEASE_DIAGNOSTIC_PATH);
     console.error(
       "SRM promotion failed closed; provider credentials and payloads withheld. Run --plan and review deployment-time gates.",
     );

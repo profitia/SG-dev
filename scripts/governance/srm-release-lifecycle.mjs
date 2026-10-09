@@ -433,6 +433,11 @@ export function claimRelease(
       "Previous executor must be provably stopped before takeover",
     );
     old.owner = owner;
+    if (old.authorization.expiresAt !== a.expiresAt) {
+      requireFact(Date.parse(a.expiresAt) > Date.parse(old.authorization.expiresAt), "Authorization renewal must not shorten or invalidate the approved window");
+      old.authorizationRenewals = [...(old.authorizationRenewals ?? []), {previousExpiresAt:old.authorization.expiresAt,expiresAt:a.expiresAt,owner,approvalId:a.approvalId,manifestDigest:old.manifestDigest}];
+      old.authorization.expiresAt = a.expiresAt;
+    }
   } else {
     requireFact(
       !old || old.approvalId !== a.approvalId,

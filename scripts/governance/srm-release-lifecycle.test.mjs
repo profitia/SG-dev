@@ -171,6 +171,16 @@ test("concurrent promotion and expired executor cannot take lease", () => {
     "github-run:2",
   );
 });
+test("same-scope renewal is retained in the original journal without resetting steps",()=>{
+  const a=approval(),s={schemaVersion:'1.0',projectKey:'SRM',targetEnvironment:'staging',generation:0,release:null};
+  const j=claimRelease(s,a,m,'github-run:1');j.release.steps['github-environment']={status:'DONE'};
+  const renewed={...a,expiresAt:new Date(Date.parse(a.expiresAt)+60000).toISOString()};
+  const next=claimRelease(j,renewed,m,'github-run:2',true);
+  assert.equal(next.release.approvalId,a.approvalId);assert.equal(next.release.authorizationDigest,j.release.authorizationDigest);
+  assert.equal(next.release.authorization.expiresAt,renewed.expiresAt);assert.equal(next.release.authorizationRenewals.length,1);
+  assert.deepEqual(next.release.steps,j.release.steps);assert.equal(j.release.authorization.expiresAt,a.expiresAt);
+  assert.throws(()=>claimRelease(j,{...renewed,budget:{...renewed.budget,maxDeploymentAttempts:99}},m,'github-run:2',true));
+});
 test("CAS never publishes stale or concurrent baseline", async () => {
   let head = "a".repeat(40);
   const store = {
