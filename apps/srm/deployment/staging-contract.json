@@ -97,7 +97,7 @@
     "sourceRebindTriggersDeploy": false,
     "sourceRebindAutoDeploy": "off",
     "execution": "EXPLICIT_APPROVED_OPERATOR_OR_PROTECTED_GITHUB_JOB",
-    "baselinePublication": "GITHUB_EXPECTED_HEAD_CAS",
+    "baselinePublication": "GITHUB_EXPECTED_HEAD_OR_FENCED_PROTECTED_PR",
     "crossProviderAtomicity": false,
     "leaseStealingAllowed": false,
     "firstProviderDeployExecuted": false,
@@ -106,7 +106,8 @@
     "priceEvidence": "FRESH_PRIMARY_PROVIDER_QUOTE",
     "deploymentAttempts": "APPROVED_BOUNDED_1_TO_3",
     "sourceEvidence": "LIVE_CI_AND_DEVELOPMENT_DEPLOY_IDS",
-    "completedRetry": "READ_ONLY_VERIFICATION"
+    "completedRetry": "READ_ONLY_VERIFICATION",
+    "protectedPublicationFence": "CANONICAL_CONTENT_GENERATION_AND_NONCE"
   },
   "vendorCredentialReuse": {
     "id": "SRM-STAGING-VENDOR-REUSE-20261009",

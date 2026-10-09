@@ -173,72 +173,266 @@ export function lifecyclePreflight(sha, approvalId) {
   );
   return result;
 }
-export function githubStore(request) {
-  return {
-    async read() {
-      const b = await request(GH, repo + "/branches/main");
+export function assertApprovedRuntimeUrl(url) {
+  fail(
+    url === "https://" + contract.render.serviceName + ".onrender.com",
+    "Explicitly approved Staging runtime URL mismatch",
+  );
+}
+
+export function publicationFiles(current, files, expectedHead) {
+  fail(files[statePath], "Every publication requires a journal fence");
+  fail(
+    files[statePath].generation === current.state.generation + 1,
+    "Publication generation must advance exactly once",
+  );
+  const nonce = digest({ expectedHead, files });
+  const { publicationNonce: ignored, ...state } = files[statePath];
+  return { ...files, [statePath]: { publicationNonce: nonce, ...state } };
+}
+
+export function githubStore(
+  request,
+  {
+    now = Date.now,
+    pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    checkTimeoutMs = 600000,
+  } = {},
+) {
+  const read = async () => {
+    const b = await request(GH, repo + "/branches/main");
+    fail(b?.commit?.sha, "Authority main unavailable");
+    const head = b.commit.sha;
+    const tree = await request(
+      GH,
+      repo + "/git/trees/" + head + "?recursive=1",
+    );
+    fail(
+      Array.isArray(tree?.tree) && !tree.truncated,
+      "Incomplete authority tree",
+    );
+    const file = async (p) => {
+      const f = tree.tree.find((x) => x.path === p);
+      fail(f?.type === "blob", "Canonical journal missing");
+      return JSON.parse(
+        Buffer.from(
+          (await request(GH, repo + "/git/blobs/" + f.sha)).content,
+          "base64",
+        ).toString(),
+      );
+    };
+    return {
+      head,
+      protected: b.protected === true,
+      state: await file(statePath),
+      registry: await file(topologyPath),
+    };
+  };
+  const writeBranch = async (branch, expectedHead, files, message) => {
+    const result = await request(GH, "/graphql", "POST", {
+      query:
+        "mutation($input:CreateCommitOnBranchInput!){createCommitOnBranch(input:$input){commit{oid}}}",
+      variables: {
+        input: {
+          branch: {
+            repositoryNameWithOwner: contract.repository,
+            branchName: branch,
+          },
+          expectedHeadOid: expectedHead,
+          message: { headline: message },
+          fileChanges: {
+            additions: Object.entries(files).map(([p, v]) => ({
+              path: p,
+              contents: Buffer.from(JSON.stringify(v, null, 2) + "\n").toString(
+                "base64",
+              ),
+            })),
+          },
+        },
+      },
+    });
+    fail(
+      !result.errors && result.data?.createCommitOnBranch?.commit?.oid,
+      "GitHub compare-and-swap rejected",
+    );
+    return result.data.createCommitOnBranch.commit.oid;
+  };
+  const sameCanonical = (a, b) =>
+    digest(a.state) === digest(b.state) &&
+    digest(a.registry) === digest(b.registry);
+  const branchFilesMatch = async (branch, files) => {
+    for (const [p, value] of Object.entries(files)) {
+      const f = await request(GH, repo + "/contents/" + p + "?ref=" + branch);
       fail(
-        b && !b.protected,
-        "Protected main requires a reviewed CAS publication adapter; protections must remain enabled",
+        f?.encoding === "base64" &&
+          digest(JSON.parse(Buffer.from(f.content, "base64").toString())) ===
+            digest(value),
+        "Publication branch content drift",
       );
-      const head = b.commit.sha;
-      const tree = await request(
-        GH,
-        repo + "/git/trees/" + head + "?recursive=1",
-      );
-      fail(!tree.truncated, "Incomplete authority tree");
-      const read = async (p) => {
-        const f = tree.tree.find((x) => x.path === p);
-        fail(f?.type === "blob", "Canonical journal missing");
-        return JSON.parse(
-          Buffer.from(
-            (await request(GH, repo + "/git/blobs/" + f.sha)).content,
-            "base64",
-          ).toString(),
+    }
+  };
+  const protectedCommit = async (current, expectedHead, files, message) => {
+    const nonce = files[statePath].publicationNonce;
+    const branch = "srm-publication-" + nonce.slice(0, 24);
+    const identity = await request(GH, repo);
+    fail(
+      identity.id === contract.repositoryId &&
+        identity.full_name === contract.repository &&
+        identity.allow_merge_commit === true,
+      "Lawful merge publication unavailable",
+    );
+    let ref = await request(GH, repo + "/git/ref/heads/" + branch);
+    if (!ref) {
+      await request(GH, repo + "/git/refs", "POST", {
+        ref: "refs/heads/" + branch,
+        sha: expectedHead,
+      });
+      ref = await request(GH, repo + "/git/ref/heads/" + branch);
+    }
+    fail(ref?.object?.sha, "Publication branch acknowledgement unavailable");
+    let candidate = ref.object.sha;
+    if (candidate === expectedHead)
+      candidate = await writeBranch(branch, expectedHead, files, message);
+    else await branchFilesMatch(branch, files);
+    const comparison = await request(
+      GH,
+      repo + "/compare/" + expectedHead + "..." + candidate,
+    );
+    fail(
+      comparison?.status === "ahead" &&
+        comparison.ahead_by === 1 &&
+        comparison.base_commit?.sha === expectedHead &&
+        Array.isArray(comparison.files) &&
+        comparison.files.length === Object.keys(files).length &&
+        comparison.files.every(
+          (f) => Object.hasOwn(files, f.filename) && f.status === "modified",
+        ),
+      "Publication candidate contains unapproved changes",
+    );
+    const pulls = await request(
+      GH,
+      repo +
+        "/pulls?state=all&head=" +
+        encodeURIComponent(contract.repository.split("/")[0] + ":" + branch) +
+        "&base=main&per_page=100",
+    );
+    fail(Array.isArray(pulls) && pulls.length <= 1, "Ambiguous publication PR");
+    let pr = pulls[0];
+    if (!pr)
+      pr = await request(GH, repo + "/pulls", "POST", {
+        title: "[SRM release] " + message,
+        head: branch,
+        base: "main",
+        body:
+          "Publish the authorized SRM Staging lifecycle journal through the protected authority branch. " +
+          "Only canonical release state and, at final verified reconciliation, environment topology are changed. " +
+          "No application runtime deployment is triggered by this PR.\n\n" +
+          "Publication fence: `" +
+          nonce +
+          "`; generation: " +
+          files[statePath].generation +
+          ". " +
+          "The executor requires successful governance and any applicable SRM checks, plus unchanged canonical input before merging.",
+      });
+    fail(
+      pr?.number &&
+        pr.head?.sha === candidate &&
+        pr.base?.ref === "main" &&
+        pr.head.repo?.id === contract.repositoryId,
+      "Publication PR identity drift",
+    );
+    console.error("SRM_PUBLICATION_PR", pr.html_url);
+    if (!pr.merged_at) {
+      fail(pr.state === "open", "Publication PR was closed without merge");
+      const deadline = now() + checkTimeoutMs;
+      for (;;) {
+        const ci = await request(
+          GH,
+          repo + "/commits/" + candidate + "/check-runs?per_page=100",
         );
-      };
-      return {
-        head,
-        state: await read(statePath),
-        registry: await read(topologyPath),
-      };
-    },
+        fail(
+          ci?.total_count <= 100 && Array.isArray(ci.check_runs),
+          "Incomplete publication CI",
+        );
+        const latest = (name) =>
+          ci.check_runs
+            .filter((x) => x.name === name && x.head_sha === candidate)
+            .sort((a, b) => b.id - a.id)[0];
+        // Journal-only PRs do not match SRM CI's application path filter.
+        // Accepted application source and controller CI are verified separately.
+        const required = [latest("governance")];
+        const srm = latest("srm-build");
+        if (srm) required.push(srm);
+        fail(
+          !required.some(
+            (x) => x?.status === "completed" && x.conclusion !== "success",
+          ),
+          "Publication CI failed; PR preserved",
+        );
+        if (
+          required.every(
+            (x) => x?.status === "completed" && x.conclusion === "success",
+          )
+        )
+          break;
+        fail(
+          now() < deadline,
+          "Publication CI pending; resume the preserved PR",
+        );
+        await pause(5000);
+      }
+      const fresh = await read();
+      fail(
+        sameCanonical(current, fresh),
+        "Canonical publication conflict; PR preserved",
+      );
+      // GitHub's normal merge endpoint enforces all existing protection rules.
+      // The changed nonce is on one stable line. Concurrent canonical proposals
+      // conflict under three-way merge even if they happen after the read above.
+      const result = await request(
+        GH,
+        repo + "/pulls/" + pr.number + "/merge",
+        "PUT",
+        {
+          sha: candidate,
+          merge_method: "merge",
+          commit_title: message,
+        },
+      );
+      fail(
+        result?.merged === true && /^[a-f0-9]{40}$/.test(result.sha),
+        "Protected publication not merged; PR preserved",
+      );
+    }
+    const after = await read();
+    fail(
+      digest(after.state) === digest(files[statePath]) &&
+        digest(after.registry) ===
+          digest(files[topologyPath] ?? current.registry),
+      "Merged canonical publication verification failed",
+    );
+    return after.head;
+  };
+  return {
+    read,
     async commit({ expectedHead, files, message }) {
       fail(
         Object.keys(files).every((x) => [statePath, topologyPath].includes(x)),
         "Publication outside canonical release surfaces",
       );
-      const query =
-        "mutation($input:CreateCommitOnBranchInput!){createCommitOnBranch(input:$input){commit{oid}}}";
-      const result = await request(GH, "/graphql", "POST", {
-        query,
-        variables: {
-          input: {
-            branch: {
-              repositoryNameWithOwner: contract.repository,
-              branchName: "main",
-            },
-            expectedHeadOid: expectedHead,
-            message: { headline: message },
-            fileChanges: {
-              additions: Object.entries(files).map(([p, v]) => ({
-                path: p,
-                contents: Buffer.from(
-                  JSON.stringify(v, null, 2) + "\n",
-                ).toString("base64"),
-              })),
-            },
-          },
-        },
-      });
+      const current = await read();
       fail(
-        !result.errors && result.data?.createCommitOnBranch?.commit?.oid,
-        "GitHub compare-and-swap rejected",
+        current.head === expectedHead,
+        "Baseline update conflict; reread and revalidate",
       );
-      return result.data.createCommitOnBranch.commit.oid;
+      const fenced = publicationFiles(current, files, expectedHead);
+      if (current.protected)
+        return protectedCommit(current, expectedHead, fenced, message);
+      return writeBranch("main", expectedHead, fenced, message);
     },
   };
 }
+
 export async function runLifecycle({
   authorization: a,
   manifest: m,
@@ -1076,6 +1270,7 @@ export function createProvider(
       );
       const runtime = await verifyRuntimeDatabase(env);
       const u = srv.serviceDetails.url;
+      assertApprovedRuntimeUrl(u);
       fail(
         new URL(u).protocol === "https:" &&
           new URL(u).hostname === srv.slug + ".onrender.com",
