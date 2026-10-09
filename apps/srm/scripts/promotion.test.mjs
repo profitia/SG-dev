@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
+import { pathToFileURL, fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import pg from "pg";
 import {
@@ -54,7 +57,63 @@ const evidence = () => ({
   githubProtected: false,
   service: null,
 });
-test("deterministic first-deployment simulation lists all pending gates and never writes", () => {
+
+// Copy real modules into a disposable fixture root; production routing gains no override.
+async function isolatedTopologyPromotion(t, active = false) {
+  const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "srm-promotion-topology-test-"));
+  t.after(() => fs.rmSync(temporaryRoot, { recursive: true, force: true }));
+  for (const relative of ["apps/srm/scripts", "apps/srm/deployment", "apps/srm/db/migrations", "scripts/governance"]) {
+    fs.cpSync(path.join(sourceRoot, relative), path.join(temporaryRoot, relative), { recursive: true });
+  }
+  fs.symlinkSync(path.join(sourceRoot, "apps/srm/node_modules"), path.join(temporaryRoot, "apps/srm/node_modules"), "dir");
+  const topology = JSON.parse(fs.readFileSync(path.join(sourceRoot, "Canon/registries/srm-environment-topology-v1.json"), "utf8"));
+  topology.environments.staging = {
+  "status": "RESERVED",
+  "activationStatus": "NOT_ONBOARDED",
+  "github": {
+    "environmentName": "srm-staging",
+    "environmentId": null,
+    "exclusiveProjectKey": "SRM",
+    "status": "NOT_PROVISIONED"
+  },
+  "render": {
+    "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+    "projectId": "prj-dapbd3hsrm7s73es53fg",
+    "environmentId": "evm-dapbdbbbc2fs73f4g7gg",
+    "providerLabel": "Staging",
+    "networkIsolation": "ENABLED",
+    "services": {}
+  },
+  "neon": {
+    "projectId": "snowy-breeze-40315151",
+    "branchId": "br-broad-butterfly-b11t4v01",
+    "branchName": "Staging",
+    "parentBranchId": "br-nameless-bar-b1wlhjhx",
+    "branchState": "ready",
+    "branchProtected": false,
+    "applicationDatabaseName": null,
+    "applicationDatabaseStatus": "NOT_CREATED"
+  },
+  "domains": [],
+  "deploymentPolicy": "NOT_ACTIVATED"
+};
+  if (active) {
+    const stage = topology.environments.staging;
+    stage.status = "ACTIVE";
+    stage.verificationStatus = "VERIFIED";
+    stage.github.environmentId = 1234;
+    stage.neon.databaseId = 4321;
+    stage.render.services.runtime = { serviceId: "srv-synthetic" };
+  }
+  const target = path.join(temporaryRoot, "Canon/registries/srm-environment-topology-v1.json");
+  fs.mkdirSync(path.dirname(target), {recursive:true});
+  fs.writeFileSync(target, JSON.stringify(topology));
+  return import(pathToFileURL(path.join(temporaryRoot, "apps/srm/scripts/promote-staging.mjs")).href);
+}
+
+test("deterministic RESERVED first-deployment simulation lists all pending gates and never writes", async (t) => {
+  const {buildPlan} = await isolatedTopologyPromotion(t);
   const a = buildPlan(evidence(), { sha });
   assert.equal(a.stagingMutated, false);
   assert.ok(a.blockers.includes("S0_EXACT_PROVIDER_ONBOARDING"));
@@ -515,15 +574,18 @@ test("Render contract rejects altered build, start, root directory and previews"
   assert.throws(() => assertRenderService(p));
 });
 
-test("RESERVED cannot enter a protected deployment job even with a forged environment response", () =>
-  assert.throws(
-    () =>
-      assertDispatchTarget({
-        id: 1,
-        protection_rules: [{ type: "required_reviewers" }],
-      }),
-    /Canonical first onboarding/,
-  ));
+test("RESERVED cannot enter a protected deployment job even with a forged environment response", async (t) => {
+  const {assertDispatchTarget} = await isolatedTopologyPromotion(t);
+  assert.throws(() => assertDispatchTarget({id:1,protection_rules:[{type:"required_reviewers"}]}), /Canonical first onboarding/);
+});
+test("ACTIVE fixture accepts its exact protected GitHub environment", async (t) => {
+  const {assertDispatchTarget} = await isolatedTopologyPromotion(t,true);
+  assert.doesNotThrow(() => assertDispatchTarget({id:1234,protection_rules:[{type:"required_reviewers"}]}));
+});
+test("ACTIVE fixture rejects forged protected GitHub identity", async (t) => {
+  const {assertDispatchTarget} = await isolatedTopologyPromotion(t,true);
+  assert.throws(() => assertDispatchTarget({id:1,protection_rules:[{type:"required_reviewers"}]}), /Exact protected GitHub environment/);
+});
 test("promotion reports the actual permitted executor and rejects foreign or local hosts", () => {
   assert.equal(
     promotionExecutorEnvironment({

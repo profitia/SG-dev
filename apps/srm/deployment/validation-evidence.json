@@ -270,5 +270,72 @@
     "stagingProviderMutation": false,
     "developmentRuntimeDeployment": false,
     "productionMutation": false
+  },
+  "latestLiveEvidence": {
+    "capturedAt": "2026-10-09T07:50:05.266Z",
+    "source": "LIVE_RENDER_NEON_GITHUB_RUNTIME_SQL",
+    "stageStatus": "ACTIVE_VERIFIED_ONBOARDED",
+    "releaseSha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+    "serviceId": "srv-db496b3tqb8s73eh5sfg",
+    "deployId": "dep-db496brtqb8s73eh5up0",
+    "githubEnvironmentId": 23853126630,
+    "neonDatabaseId": 509272,
+    "migrations": 11,
+    "baselineGeneration": 21,
+    "baselinePR": 180,
+    "sourceTestFixPR": 178,
+    "sourceCI": 37899752840,
+    "sourceTests": {
+      "application": 205,
+      "promotionPostgres16": 108,
+      "sharedGovernance": 60,
+      "skipped": 0
+    },
+    "standardStageGovernance": "PASS",
+    "healthAuthenticationPersistenceRoleRlsLedger": "PASS",
+    "developmentConfigAndDeployUnchanged": true,
+    "productionMetadataProtectedUnchanged": true,
+    "stagePasswordRepairApplied": false
+  },
+  "demoPasswordExceptionPreparation": {
+    "taskId": "SRM-STAGING-LOGIN-PASSWORD-EXCEPTION-20261009",
+    "ownerConfirmation": "EXPLICIT_AFTER_SHARED_PASSWORD_REJECTION",
+    "exceptionId": "SRM-STAGING-DEMO-PASSWORD-REUSE-20261009",
+    "expiresAt": "2026-11-08T00:00:00Z",
+    "secretValuesIncluded": false,
+    "stageProviderMutation": false,
+    "tests": {
+      "status": "PASS_LOCAL_WITH_DECLARED_DATABASE_SKIPS",
+      "application": {
+        "tests": 205,
+        "pass": 205,
+        "fail": 0,
+        "skipped": 0
+      },
+      "promotion": {
+        "tests": 110,
+        "pass": 108,
+        "fail": 0,
+        "skipped": 2
+      },
+      "sharedGovernance": {
+        "tests": 91,
+        "pass": 91,
+        "fail": 0,
+        "skipped": 0
+      },
+      "allGovernance": {
+        "tests": 108,
+        "pass": 108,
+        "fail": 0,
+        "skipped": 0
+      },
+      "typecheck": "PASS",
+      "build": "PASS",
+      "manifest": "PASS",
+      "postgres16": "PENDING_EXACT_HEAD_GITHUB_CI"
+    },
+    "ci": "Exact-head PR checks and full SRM PostgreSQL16 CI required before merge; final acknowledged evidence in Development PHR",
+    "fixtureTaskId": "SRM-STAGING-ACTIVE-PROMOTION-FIXTURES-20261009"
   }
 }

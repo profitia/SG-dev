@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import {
   assertProductSecretIsolation,
   assertLifecycleAuthorization,
@@ -133,24 +135,20 @@ test("CAS never publishes stale or concurrent baseline", async () => {
   await casPublish(store, head, {}, "test");
   await assert.rejects(casPublish(store, "a".repeat(40), {}, "stale"));
 });
-test("ordinary ACTIVE gate retains RESERVED rejection", async () => {
-  const { resolveEnvironmentProfile } =
-    await import("./environment-profile.mjs");
-  assert.throws(
-    () =>
-      resolveEnvironmentProfile({
-        profile: {
-          projectKey: "SRM",
-          repository: {
-            environmentTopologyRegistry:
-              "Canon/registries/srm-environment-topology-v1.json",
-          },
-        },
-        targetEnvironment: "staging",
-        governanceRoot: process.cwd(),
-      }),
-    /not ACTIVE/,
-  );
+test("ordinary ACTIVE gate retains explicit RESERVED fixture rejection", async (t) => {
+  const { resolveEnvironmentProfile } = await import("./environment-profile.mjs");
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "srm-reserved-lifecycle-test-"));
+  t.after(() => fs.rmSync(temporaryRoot, {recursive:true,force:true}));
+  const topology = JSON.parse(fs.readFileSync("Canon/registries/srm-environment-topology-v1.json","utf8"));
+  topology.environments.staging.status = "RESERVED";
+  const relative = "Canon/registries/srm-environment-topology-v1.json";
+  const target = path.join(temporaryRoot,relative);
+  fs.mkdirSync(path.dirname(target),{recursive:true});
+  fs.writeFileSync(target,JSON.stringify(topology));
+  assert.throws(() => resolveEnvironmentProfile({
+    profile:{projectKey:"SRM",repository:{environmentTopologyRegistry:relative}},
+    targetEnvironment:"staging",governanceRoot:temporaryRoot,
+  }), /not ACTIVE/);
 });
 
 test("negative generation and unknown lifecycle phase fail closed", () => {
@@ -194,7 +192,7 @@ test('fully isolated product secrets work without an exception or after its expi
 for (const key of ['SRM_APP_DATABASE_PASSWORD', 'SRM_DEMO_PASSWORD', 'SRM_DEMO_SESSION_SECRET']) {
   test('supplier approval never permits sharing ' + key, () => {
     const {values, development} = supplierBindings(); values[key] = development[key];
-    assert.throws(() => assertProductSecretIsolation(c, values, development, supplierNow));
+    assert.throws(() => assertProductSecretIsolation({...c,demoPasswordReuse:null}, values, development, supplierNow));
   });
 }
 for (const [field, value] of Object.entries({id:'other',projectKey:'SG2',targetEnvironment:'production',sourceEnvironment:'staging',owner:'other',approvedBy:null,approvalSource:'ENV_OVERRIDE',repository:'profitia/other',repositoryId:1,developmentServiceId:'other',renderEnvironmentId:'production',neonProjectId:'bold-breeze-68888550',neonBranchId:'br-nameless-bar-b1wlhjhx',approvedAt:'2026-10-11',expiresAt:'2026-11-10',sharedSecretNames:['MGBI_API_KEY','VERCLY_API_KEY','CEIDG_API_KEY','SRM_APP_DATABASE_PASSWORD'],rollback:'',monitoring:'',expiryAction:''})) {
@@ -223,4 +221,48 @@ for (const environment of ['development','production']) test('supplier exception
 for (const [field,value] of Object.entries({projectKey:'CIC',repository:'profitia/other',repositoryId:1})) test('foreign product identity rejects supplier sharing: ' + field, () => {
   const {values,development}=supplierBindings();
   assert.throws(() => assertProductSecretIsolation({...c,[field]:value},values,development,supplierNow));
+});
+
+function demoBindings() {
+  const pair = supplierBindings();
+  pair.values.SRM_DEMO_PASSWORD = pair.development.SRM_DEMO_PASSWORD;
+  return pair;
+}
+test('separately owner-approved demo password and supplier exceptions can coexist', () => {
+  const {values,development}=demoBindings();
+  assert.equal(assertProductSecretIsolation(c,values,development,supplierNow),true);
+});
+test('demo password exception does not require sharing supplier credentials', () => {
+  const {values,development}=demoBindings();
+  for(const key of ['MGBI_API_KEY','VERCLY_API_KEY','CEIDG_API_KEY'])values[key]='isolated-'+key;
+  assert.equal(assertProductSecretIsolation({...c,vendorCredentialReuse:null},values,development,supplierNow),true);
+});
+for(const key of ['SRM_APP_DATABASE_PASSWORD','SRM_DEMO_SESSION_SECRET'])test('both approved exceptions still reject '+key,()=>{
+  const {values,development}=demoBindings();values[key]=development[key];
+  assert.throws(()=>assertProductSecretIsolation(c,values,development,supplierNow));
+});
+test('missing demo approval cannot be enabled through environment override',()=>{
+  const {values,development}=demoBindings();values.SRM_ALLOW_SHARED_DEMO_PASSWORD='true';
+  assert.throws(()=>assertProductSecretIsolation({...c,demoPasswordReuse:null},values,development,supplierNow));
+});
+for(const [field,value] of Object.entries({
+  id:'other',projectKey:'SG2',targetEnvironment:'production',sourceEnvironment:'staging',
+  owner:'other',approvedBy:null,approvalSource:'ENV_OVERRIDE',repository:'profitia/other',
+  repositoryId:1,developmentServiceId:'other',stagingServiceId:'srv-other',githubEnvironmentId:1,
+  renderEnvironmentId:'production',neonProjectId:'bold-breeze-68888550',neonBranchId:'br-nameless-bar-b1wlhjhx',
+  approvedAt:'2026-10-11',expiresAt:'2026-11-10',sharedSecretNames:['SRM_DEMO_PASSWORD','SRM_DEMO_SESSION_SECRET'],
+  rollback:'',monitoring:'',expiryAction:'',sessionSecretMustRemainSeparate:false,databaseCredentialsMustRemainSeparate:false,
+}))test('demo approval fails closed on '+field,()=>{
+  const {values,development}=demoBindings();
+  assert.throws(()=>assertProductSecretIsolation({...c,demoPasswordReuse:{...c.demoPasswordReuse,[field]:value}},values,development,supplierNow));
+});
+test('demo password approval expires exactly at its deadline',()=>{
+  const {values,development}=demoBindings();
+  // Isolate this exception so the supplier exception cannot mask its expiry.
+  for(const key of ['MGBI_API_KEY','VERCLY_API_KEY','CEIDG_API_KEY'])values[key]='isolated-'+key;
+  assert.throws(()=>assertProductSecretIsolation(c,values,development,Date.parse(c.demoPasswordReuse.expiresAt)));
+});
+for(const environment of ['development','production'])test('demo approval cannot target '+environment,()=>{
+  const {values,development}=demoBindings();
+  assert.throws(()=>assertProductSecretIsolation(c,{...values,TARGET_ENVIRONMENT:environment},development,supplierNow));
 });
