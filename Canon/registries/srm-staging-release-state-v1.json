@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "5fd93c74379866528f4f6f76462a6f58a0b52905f4069de4e38c526adf1005b5",
+  "publicationNonce": "8088f61930bc219c740394b8ed3e68b159ba90350a88c936a2f90d1f4d254435",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 12,
+  "generation": 13,
   "release": {
     "authorizationDigest": "61d3e26061e0e500bbd2236b7af6097a7979559bb45323a7ebfcf7241cda2354",
     "authorization": {
@@ -140,7 +140,8 @@
     "phase": "PROVISIONING",
     "resources": {
       "githubEnvironmentId": 23853126630,
-      "databaseId": 509272
+      "databaseId": 509272,
+      "serviceId": "srv-db496b3tqb8s73eh5sfg"
     },
     "steps": {
       "github-environment": {
@@ -3885,7 +3886,7 @@
         }
       },
       "service": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-09T07:08:23.200Z",
@@ -4277,10 +4278,10 @@
             ]
           }
         },
-        "snapshotDigest": "2be5c5fe51923e1c62e2ba5648857b8cb78c451fecbd01ea57443091b2ab862b",
+        "snapshotDigest": "c373e09f1021ea0fafdfcc64d7c76a738a1e6de8ce44ed813803a5c1562bda25",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-09T07:08:23.200Z",
+          "capturedAt": "2026-10-09T07:09:35.800Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -4349,8 +4350,8 @@
             "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
-            "updated_at": "2026-10-09T07:08:23Z",
-            "pushed_at": "2026-10-09T07:08:19Z",
+            "updated_at": "2026-10-09T07:09:27Z",
+            "pushed_at": "2026-10-09T07:09:22Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -4454,7 +4455,9 @@
             "projectId": "prj-dapbd3hsrm7s73es53fg",
             "protectedStatus": "unprotected",
             "redisIds": [],
-            "serviceIds": []
+            "serviceIds": [
+              "srv-db496b3tqb8s73eh5sfg"
+            ]
           },
           "neonBranch": {
             "id": "br-broad-butterfly-b11t4v01",
@@ -4557,7 +4560,66 @@
               "updated_at": "2026-10-09T07:05:02Z"
             }
           ],
-          "services": [],
+          "services": [
+            {
+              "autoDeploy": "no",
+              "autoDeployTrigger": "off",
+              "branch": "srm-release-886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+              "createdAt": "2026-10-09T07:09:33.632132Z",
+              "dashboardUrl": "https://dashboard.render.com/web/srv-db496b3tqb8s73eh5sfg",
+              "environmentId": "evm-dapbdbbbc2fs73f4g7gg",
+              "id": "srv-db496b3tqb8s73eh5sfg",
+              "name": "srm-staging-runtime",
+              "notifyOnFail": "default",
+              "ownerId": "tea-d7lps8rbc2fs73cn80dg",
+              "repo": "https://github.com/profitia/SG-dev",
+              "rootDir": "",
+              "serviceDetails": {
+                "buildPlan": "performance",
+                "cache": {
+                  "profile": "no-cache"
+                },
+                "env": "node",
+                "envSpecificDetails": {
+                  "buildCommand": "npm --prefix apps/srm ci --install-links && npm --prefix apps/srm run build && mkdir -p apps/srm/.next/standalone/.next && cp -R apps/srm/.next/static apps/srm/.next/standalone/.next/static",
+                  "startCommand": "cd apps/srm && HOSTNAME=0.0.0.0 node .next/standalone/server.js"
+                },
+                "healthCheckPath": "/api/health",
+                "ipAllowList": [
+                  {
+                    "cidrBlock": "0.0.0.0/0",
+                    "description": "everywhere"
+                  }
+                ],
+                "maintenanceMode": {
+                  "enabled": false,
+                  "uri": ""
+                },
+                "numInstances": 1,
+                "openPorts": [
+                  {
+                    "port": 10000,
+                    "protocol": "TCP"
+                  }
+                ],
+                "plan": "0.5c-512mb",
+                "previews": {
+                  "generation": "off"
+                },
+                "pullRequestPreviewsEnabled": "no",
+                "region": "frankfurt",
+                "renderSubdomainPolicy": "enabled",
+                "runtime": "node",
+                "sshAddress": "srv-db496b3tqb8s73eh5sfg@ssh.frankfurt.render.com",
+                "url": "https://srm-staging-runtime.onrender.com"
+              },
+              "slug": "srm-staging-runtime",
+              "suspended": "not_suspended",
+              "suspenders": [],
+              "type": "web_service",
+              "updatedAt": "2026-10-09T07:09:33.632132Z"
+            }
+          ],
           "liveDeploy": null,
           "domains": [],
           "githubEnvironment": {
@@ -4669,7 +4731,9 @@
             ]
           }
         },
-        "result": {}
+        "result": {
+          "id": "srv-db496b3tqb8s73eh5sfg"
+        }
       }
     },
     "lastKnownGood": null,
