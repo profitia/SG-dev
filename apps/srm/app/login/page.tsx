@@ -2,6 +2,17 @@ import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
+const currentVersionFeatures = [
+  { name: "Wyszukiwanie dostawców po NIP", description: "automatyczna identyfikacja przedsiębiorstw i pozyskiwanie danych rejestrowych." },
+  { name: "Dane finansowe", description: "pobieranie historycznych sprawozdań, rachunków zysków i strat oraz bilansów." },
+  { name: "Analityka finansowa", description: "interaktywny dashboard kondycji finansowej przedsiębiorstwa." },
+  { name: "16 wskaźników finansowych", description: "analiza płynności, zadłużenia, rentowności i przepływów pieniężnych." },
+  { name: "Historia i metodologia", description: "wykresy wieloletnie, porównania okresów i szczegóły obliczeń." },
+  { name: "Podsumowanie dostawcy", description: "najważniejsze fakty finansowe i zagadnienia wymagające uwagi." },
+  { name: "Compliance / KYS", description: "weryfikacja rejestrów, list sankcyjnych, PEP, beneficjentów i powiązań." },
+  { name: "Eksport raportów", description: "dane finansowe w Excelu oraz szczegółowy raport KYS w PDF." },
+];
+
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
   const environment = process.env.TARGET_ENVIRONMENT === "staging" ? "Staging" : "Development";
@@ -33,7 +44,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <section className="srm-login-release" aria-label="Informacje o wersji">
         <div className="srm-login-release-scroll">
           <p className="srm-login-version">Wersja: 1.0 {environment}</p>
-          <section><h2>Zakres obecnej wersji</h2></section>
+          <section>
+            <h2>Zakres obecnej wersji</h2>
+            <ul className="srm-login-features">
+              {currentVersionFeatures.map(({ name, description }) => <li key={name}><strong>{name}</strong> — {description}</li>)}
+            </ul>
+          </section>
           <section><h2>Change Log względem wersji poprzedniej</h2></section>
           <section><h2>Tematy oczekujące / planowane do kolejnej wersji</h2></section>
           <details className="srm-login-history">
