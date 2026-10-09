@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "c1a793c8c34140344d36bb2d86f4a2d5a2f9ecb508b70429f0a099162f20e3a7",
+  "publicationNonce": "a7deed4c50f2b91597f918c4889281a88521736b5c435db0d504b69dbe2bf559",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 37,
+  "generation": 38,
   "release": {
     "authorizationDigest": "acdf3cb3dc6a2ef41d39b7bacc04726a89a8af88eeee25b5feed14774f2a208f",
     "authorization": {
@@ -125,7 +125,7 @@
       ]
     },
     "mode": "promote",
-    "owner": "github-run:37960793217",
+    "owner": "github-run:37965186441",
     "phase": "PROVISIONING",
     "resources": {
       "githubEnvironmentId": 23853126630
