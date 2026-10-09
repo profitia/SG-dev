@@ -219,6 +219,7 @@ test("stored read uses one parameterized snapshot and tenant context, without wr
   const org = "00000000-0000-4000-8000-000000000001";
   const client = { release() {}, async query(sql: string, params?: unknown[]) { calls.push([sql, params]);
     if (sql.includes("current_database")) return { rows: [{ database_name: "srm_app", bypass_rls: false, superuser: false, neon_superuser_member: false }] };
+    if (sql.includes("FROM srm.organizations")) return { rows: [{ id: org }] };
     return { rows: sql === REPORT_DATA_SQL ? [fixture()] : [] };
   } };
   await readReportData(org, selection, now, { connect: async () => client as unknown as pg.PoolClient });

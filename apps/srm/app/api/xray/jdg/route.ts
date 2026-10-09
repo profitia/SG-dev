@@ -1,3 +1,4 @@
+import { withLookupDiagnostics, logLookupFailure } from "../../../../src/server/lookup-diagnostics";
 import { productEnvironmentReady, productOrganizationId } from "../../../../src/server/runtime-environment";
 import { NextResponse } from "next/server";
 import { hasDemoSession } from "../../../../src/server/demo-auth";
@@ -20,10 +21,13 @@ export async function POST(request: Request) {
   try { nip = validateXrayRequest(body).identifier.value; } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Nieprawidłowe dane." }, { status: 400 });
   }
-  try {
-    const section = await runJdgLookup(organizationId, nip);
-    return NextResponse.json({ nip, section: toPublicSection(section) }, { headers: { "Cache-Control": "no-store" } });
-  } catch (error) {
-    return NextResponse.json({ error: "Nie udało się zapisać danych JDG. Spróbuj ponownie później." }, { status: 503 });
-  }
+  return withLookupDiagnostics(async () => {
+    try {
+      const section = await runJdgLookup(organizationId, nip);
+      return NextResponse.json({ nip, section: toPublicSection(section) }, { headers: { "Cache-Control": "no-store" } });
+    } catch (error) {
+      logLookupFailure(error);
+      return NextResponse.json({ error: "Nie udało się zapisać danych JDG. Spróbuj ponownie później." }, { status: 503 });
+    }
+  });
 }

@@ -13,6 +13,7 @@ function fakePool(databaseName = "srm_app", role = { bypass_rls: false, superuse
     async query(sql: string, parameters?: unknown[]) {
       calls.push({ sql, parameters });
       if (sql.includes("current_database")) return { rows: [{ database_name: databaseName, ...role }] };
+      if (sql.includes("FROM srm.organizations")) return { rows: [{ id: organizationId }], rowCount: 1 };
       return { rows: [], rowCount: 1 };
     },
     release() { released = true; },
@@ -30,7 +31,7 @@ test("transaction binds the organization before a product query and releases it"
   assert.equal(result, 42);
   assert.deepEqual(fake.calls.map((call) => call.sql), [
     "BEGIN", fake.calls[1].sql,
-    "SELECT set_config('srm.organization_id', $1, true)", "SELECT 42", "COMMIT",
+    "SELECT set_config('srm.organization_id', $1, true)", "SELECT id FROM srm.organizations WHERE id = $1", "SELECT 42", "COMMIT",
   ]);
   assert.match(fake.calls[1].sql, /rolbypassrls/);
   assert.deepEqual(fake.calls[2].parameters, [organizationId]);

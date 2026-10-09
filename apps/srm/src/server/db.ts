@@ -1,4 +1,5 @@
-import { assertProductConnection } from "./runtime-environment";
+import { assertProductConnection, productOrganizationId } from "./runtime-environment";
+import { atLookupStage } from "./lookup-diagnostics";
 import pg, { type PoolClient } from "pg";
 
 export type DatabasePool = Pick<pg.Pool, "connect">;
@@ -38,6 +39,9 @@ export async function withOrganization<T>(
   pool: DatabasePool = getPool(),
 ): Promise<T> {
   assertOrganizationId(organizationId);
+  if (process.env.TARGET_ENVIRONMENT && organizationId !== productOrganizationId()) {
+    throw new Error("SRM configured organization identity mismatch");
+  }
   const client = await pool.connect();
   let inTransaction = false;
   try {
@@ -59,6 +63,10 @@ export async function withOrganization<T>(
       throw new Error("SRM application role must enforce row-level security");
     }
     await client.query("SELECT set_config('srm.organization_id', $1, true)", [organizationId]);
+    await atLookupStage("organization_context", async () => {
+      const organization = await client.query("SELECT id FROM srm.organizations WHERE id = $1", [organizationId]);
+      if (organization.rows.length !== 1) throw new Error("SRM organization must be provisioned before runtime use");
+    });
     const result = await action(client);
     await client.query("COMMIT");
     inTransaction = false;

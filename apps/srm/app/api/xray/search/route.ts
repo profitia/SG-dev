@@ -1,3 +1,4 @@
+import { withLookupDiagnostics, logLookupFailure } from "../../../../src/server/lookup-diagnostics";
 import { productEnvironmentReady, productOrganizationId } from "../../../../src/server/runtime-environment";
 import { NextResponse } from "next/server";
 import { hasDemoSession } from "../../../../src/server/demo-auth";
@@ -21,24 +22,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Nieprawidłowe dane." }, { status: 400 });
   }
 
-  try {
-    const result = await searchRegistryByNip(organizationId, input);
-    const headers = { "Cache-Control": "no-store" };
-    if (result.entityType === "JDG") {
-      return NextResponse.json({ entityType: "JDG", nip: result.nip, section: toPublicSection(result.section) }, { headers });
+  return withLookupDiagnostics(async () => {
+    try {
+      const result = await searchRegistryByNip(organizationId, input);
+      const headers = { "Cache-Control": "no-store" };
+      if (result.entityType === "JDG") {
+        return NextResponse.json({ entityType: "JDG", nip: result.nip, section: toPublicSection(result.section) }, { headers });
+      }
+      if (result.entityType === "COMPANY") {
+        const card = result.card;
+        return NextResponse.json({ entityType: "COMPANY", card: {
+          identity: card.identity,
+          general: toPublicSection(card.general),
+          financial: toPublicSection(card.financial),
+          kys: toPublicSection(card.kys),
+        } }, { headers });
+      }
+      if (result.entityType === "NOT_FOUND") return NextResponse.json({ error: "Nie znaleziono podmiotu o podanym numerze NIP." }, { status: 404, headers });
+      return NextResponse.json({ error: "Nie udało się ustalić typu podmiotu. Spróbuj ponownie później." }, { status: 503, headers });
+    } catch (error) {
+      logLookupFailure(error);
+      return NextResponse.json({ error: "Nie udało się pobrać i zapisać danych. Spróbuj ponownie później." }, { status: 503 });
     }
-    if (result.entityType === "COMPANY") {
-      const card = result.card;
-      return NextResponse.json({ entityType: "COMPANY", card: {
-        identity: card.identity,
-        general: toPublicSection(card.general),
-        financial: toPublicSection(card.financial),
-        kys: toPublicSection(card.kys),
-      } }, { headers });
-    }
-    if (result.entityType === "NOT_FOUND") return NextResponse.json({ error: "Nie znaleziono podmiotu o podanym numerze NIP." }, { status: 404, headers });
-    return NextResponse.json({ error: "Nie udało się ustalić typu podmiotu. Spróbuj ponownie później." }, { status: 503, headers });
-  } catch (error) {
-    return NextResponse.json({ error: "Nie udało się pobrać i zapisać danych. Spróbuj ponownie później." }, { status: 503 });
-  }
+  });
 }

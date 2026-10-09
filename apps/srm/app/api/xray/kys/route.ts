@@ -1,3 +1,4 @@
+import { withLookupDiagnostics, logLookupFailure } from "../../../../src/server/lookup-diagnostics";
 import { productEnvironmentReady, productOrganizationId } from "../../../../src/server/runtime-environment";
 import { NextResponse } from "next/server";
 import { hasDemoSession } from "../../../../src/server/demo-auth";
@@ -20,10 +21,13 @@ export async function POST(request: Request) {
   try { input = validateXrayRequest(body); } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Nieprawidłowy NIP." }, { status: 400 });
   }
-  try {
-    const { section, snapshotId } = await runXrayKysLookup(organizationId, input);
-    return NextResponse.json({ section: toPublicKysSection(section, snapshotId, process.env.SRM_DEMO_SESSION_SECRET ?? "") }, { headers: { "Cache-Control": "no-store" } });
-  } catch (error) {
-    return NextResponse.json({ error: "Nie udało się pobrać lub zapisać raportu KYS. Spróbuj ponownie później." }, { status: 503 });
-  }
+  return withLookupDiagnostics(async () => {
+    try {
+      const { section, snapshotId } = await runXrayKysLookup(organizationId, input);
+      return NextResponse.json({ section: toPublicKysSection(section, snapshotId, process.env.SRM_DEMO_SESSION_SECRET ?? "") }, { headers: { "Cache-Control": "no-store" } });
+    } catch (error) {
+      logLookupFailure(error);
+      return NextResponse.json({ error: "Nie udało się pobrać lub zapisać raportu KYS. Spróbuj ponownie później." }, { status: 503 });
+    }
+  });
 }

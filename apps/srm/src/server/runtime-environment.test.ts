@@ -12,8 +12,8 @@ const env = (target: string) => ({
     target === "development"
       ? "br-dark-surf-b1vrhda9"
       : "br-broad-butterfly-b11t4v01",
-  SRM_DEVELOPMENT_ORGANIZATION_ID: "development-only",
-  SRM_STAGING_ORGANIZATION_ID: "staging-only",
+  SRM_DEVELOPMENT_ORGANIZATION_ID: "3ff71c83-ae8f-457d-857c-c65185ea7221",
+  SRM_STAGING_ORGANIZATION_ID: "9bb53ea5-5e6f-4ae7-9c64-33e2a3aa4743",
 });
 const url = (host: string, database = "srm_app") =>
   "postgresql://srm_app_runtime:test-only@" +
@@ -24,8 +24,8 @@ const url = (host: string, database = "srm_app") =>
 const dev = "ep-red-smoke-b16ih64d.c-5.eu-central-1.aws.neon.tech";
 const stage = "ep-autumn-wildflower-b1mv0vda.c-5.eu-central-1.aws.neon.tech";
 test("Development and Staging have separate organizations", () => {
-  assert.equal(productOrganizationId(env("development")), "development-only");
-  assert.equal(productOrganizationId(env("staging")), "staging-only");
+  assert.equal(productOrganizationId(env("development")), "3ff71c83-ae8f-457d-857c-c65185ea7221");
+  assert.equal(productOrganizationId(env("staging")), "9bb53ea5-5e6f-4ae7-9c64-33e2a3aa4743");
   assert.equal(productOrganizationId(env("production")), undefined);
   assert.equal(
     productEnvironmentReady({ TARGET_ENVIRONMENT: "staging" }),
@@ -112,3 +112,10 @@ for (const suffix of [
       ),
     ),
   );
+
+test("logical labels and malformed organization identities never become runtime UUIDs", () => {
+  for (const id of ["demo", "staging", "invalid", "", undefined]) {
+    assert.equal(productOrganizationId({ ...env("development"), SRM_DEVELOPMENT_ORGANIZATION_ID: id }), undefined);
+    assert.equal(productOrganizationId({ ...env("staging"), SRM_STAGING_ORGANIZATION_ID: id }), undefined);
+  }
+});

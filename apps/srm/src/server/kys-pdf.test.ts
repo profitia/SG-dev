@@ -103,6 +103,7 @@ test("SQL uses organization context plus latest attempt/normalized projection on
   const pool = { connect: async () => ({ query: async (sql: string, parameters?: unknown[]) => {
     queries.push(sql);
     if (sql.includes("current_database")) return { rows: [{ database_name: "srm_app", role_name: "srm_runtime", bypass_rls: false, superuser: false, neon_superuser_member: false }] };
+    if (sql.includes("FROM srm.organizations")) return { rows: [{ id: org }] };
     if (sql === KYS_PDF_SQL) { assert.deepEqual(parameters, [org, nip, "COMPANY"]); return { rows: [row()] }; }
     return { rows: [] };
   }, release() {} }) } as unknown as DatabasePool;

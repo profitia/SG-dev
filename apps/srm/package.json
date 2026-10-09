@@ -9,11 +9,12 @@
     "postbuild": "mkdir -p .next/standalone/public && cp -R public/. .next/standalone/public/",
     "start": "next start --port 3400",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/server/*.test.ts",
+    "test": "tsx --test src/server/*.test.ts src/server/integrations/*.test.ts",
     "migrate:development": "node scripts/migrate.mjs",
-    "test:promotion": "node --test --test-concurrency=1 scripts/promotion.test.mjs scripts/staging-lifecycle.test.mjs",
+    "test:promotion": "node --test --test-concurrency=1 scripts/promotion.test.mjs scripts/staging-lifecycle.test.mjs scripts/runtime-permissions.test.mjs",
     "promote:staging": "node scripts/promote-staging.mjs",
-    "migrate:staging:plan": "node scripts/staging-migrate.mjs --plan"
+    "migrate:staging:plan": "node scripts/staging-migrate.mjs --plan",
+    "permissions:development": "node scripts/runtime-permissions.mjs"
   },
   "dependencies": {
     "@profitia/srm-xray": "file:../../packages/srm-xray",

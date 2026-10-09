@@ -82,7 +82,7 @@ function scaledAmount(value: string): bigint {
   return negative ? -result : result;
 }
 
-function reconcileCosts(periods: FinancialPeriod[], facts: FinancialSourceFact[]): boolean {
+function reconcileCosts(periods: FinancialPeriod[], facts: FinancialSourceFact[], sourceDocuments: Map<FinancialSourceFact, string>): boolean {
   let unverified = false;
   for (const period of periods) {
     const values = new Map(period.facts.map((fact) => [fact.metricCode, fact.amount]));
@@ -109,7 +109,7 @@ function reconcileCosts(periods: FinancialPeriod[], facts: FinancialSourceFact[]
       if (!verified) unverified = true;
       for (const displayFact of period.facts) {
         if (displayFact.metricCode !== equation.cost && !(equation.cost === "PALA_OAC" && displayFact.metricCode.startsWith("PALA_OAC_"))) continue;
-        const stored = facts.find((fact) => fact.metricCode === displayFact.metricCode && fact.periodStart === period.from
+        const stored = facts.find((fact) => sourceDocuments.get(fact) === period.documentId && fact.metricCode === displayFact.metricCode && fact.periodStart === period.from
           && fact.periodEnd === period.to && fact.statementScope === (period.scope === "standalone" ? "UNIT" : "CONSOLIDATED"));
         if (!stored) continue;
         const sameSign = scaledAmount(stored.sourceAmount) === 0n || (scaledAmount(stored.sourceAmount) < 0n) === (costValue < 0n);
@@ -153,6 +153,7 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
 
   const periods: FinancialPeriod[] = [];
   const facts: FinancialSourceFact[] = [];
+  const sourceDocuments = new Map<FinancialSourceFact, string>();
   const seen = new Set<string>();
   for (const record of selected) {
     const document = obj(field(record, "document"));
@@ -191,6 +192,7 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
             amount: numeric, sourceAmount: numeric, normalizationRule: "SOURCE_VALUE", currencyCode: "PLN", unitCode,
             sourcePath: "content.extracted_fields." + xmlPath, validationStatus });
           const key = recordId + ":" + (prior ? "pfy" : "cfy");
+          sourceDocuments.set(facts.at(-1)!, key);
           let period = byPeriod.get(key);
           if (!period) {
             period = { from: periodStart, to: periodEnd, scope: scope === "UNIT" ? "standalone" : "consolidated", documentId: key, facts: [] };
@@ -224,6 +226,7 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
         };
         facts.push(fact);
         const key = `${recordId}:${prior ? "pfy" : "cfy"}`;
+        sourceDocuments.set(fact, key);
         let period = byPeriod.get(key);
         if (!period) {
           period = { from: periodStart, to: periodEnd, scope: scope === "UNIT" ? "standalone" : "consolidated", documentId: key, facts: [] };
@@ -237,7 +240,7 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
   }
   if (!facts.length) return empty("EMPTY", retrievedAt, NO_FINANCIAL_FACTS, null);
   const sourceData: FinancialData = structuredClone({ periods });
-  const unverifiedCosts = reconcileCosts(periods, facts);
+  const unverifiedCosts = reconcileCosts(periods, facts, sourceDocuments);
   const incomplete = totalCount > records.length;
   return {
     section: {
@@ -264,6 +267,7 @@ export async function fetchMgbiFinancial(identifier: CompanyIdentifier, options:
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 15_000);
   const now = options.now ?? (() => new Date());
+  let mapping = false;
   try {
     // No structured-field filter: the archive must retain every RDF record returned for this NIP,
     // including statements that cannot yet be mapped into SRM financial facts.
@@ -272,12 +276,14 @@ export async function fetchMgbiFinancial(identifier: CompanyIdentifier, options:
       controller.signal, options.fetcher);
     const retrievedAt = now().toISOString();
     if (response.errorCode) return empty("ERROR", retrievedAt, `MGBI_${response.errorCode}`, response.errorCode);
+    mapping = true;
     const mapped = mapMgbiFinancialRecords(response.records, identifier, retrievedAt, response.count);
     const result = mapped.section.status === "EMPTY" && isInternationalStatementWithoutFacts(response.records, identifier, response.count)
       ? empty("EMPTY", retrievedAt, INTERNATIONAL_STATEMENT, null) : mapped;
     return { ...result, rawResponse: { pages: response.pages, recordCount: response.count } };
   } catch (error) {
     const timeout = controller.signal.aborted || (error instanceof Error && error.name === "AbortError");
-    return empty("ERROR", now().toISOString(), timeout ? "MGBI_TIMEOUT" : "MGBI_NETWORK_ERROR", timeout ? "TIMEOUT" : "NETWORK_ERROR");
+    const code = timeout ? "TIMEOUT" : mapping ? "MAPPING_ERROR" : "NETWORK_ERROR";
+    return empty("ERROR", now().toISOString(), `MGBI_${code}`, code);
   } finally { clearTimeout(timer); }
 }
