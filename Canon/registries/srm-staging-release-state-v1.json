@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "be423732b58b95c15f6d46374c8851d3b913e6d2033051146060b664e26b0872",
+  "publicationNonce": "767d0e4e41aa0c3e0e8133ecfab8954249494c14dd34a77fc1792d7720a1d6d4",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 2,
+  "generation": 3,
   "release": {
     "authorizationDigest": "61d3e26061e0e500bbd2236b7af6097a7979559bb45323a7ebfcf7241cda2354",
     "authorization": {
@@ -138,10 +138,12 @@
     "mode": "onboard",
     "owner": "codespace:srm-pmos-activation-jjxx6vpp9v4x2q9vr",
     "phase": "PROVISIONING",
-    "resources": {},
+    "resources": {
+      "githubEnvironmentId": 23853126630
+    },
     "steps": {
       "github-environment": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-09T06:56:24.151Z",
@@ -419,10 +421,10 @@
           "githubEnvironment": null,
           "githubSecretMetadata": null
         },
-        "snapshotDigest": "c00b7325fd68ded17fee8be52ffb415b943e6dce6ebf34e90d3795052a1c9311",
+        "snapshotDigest": "eb8b86d9028900857dcfab30e1a4f2f5ce954eeaa6e78ab40130f93c6f5bfb75",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-09T06:56:24.151Z",
+          "capturedAt": "2026-10-09T06:57:32.713Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -491,8 +493,8 @@
             "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
-            "updated_at": "2026-10-09T06:56:25Z",
-            "pushed_at": "2026-10-09T06:56:20Z",
+            "updated_at": "2026-10-09T06:57:26Z",
+            "pushed_at": "2026-10-09T06:57:21Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -615,10 +617,10 @@
             "default": false,
             "protected": false,
             "cpu_used_sec": 0,
-            "compute_time_seconds": 197954,
-            "active_time_seconds": 707544,
+            "compute_time_seconds": 199787,
+            "active_time_seconds": 714792,
             "written_data_bytes": 0,
-            "data_transfer_bytes": 929,
+            "data_transfer_bytes": 1942,
             "created_at": "2026-09-22T17:09:28Z",
             "updated_at": "2026-10-09T06:52:54Z",
             "created_by": {
@@ -694,10 +696,67 @@
           "services": [],
           "liveDeploy": null,
           "domains": [],
-          "githubEnvironment": null,
-          "githubSecretMetadata": null
+          "githubEnvironment": {
+            "id": 23853126630,
+            "node_id": "EN_kwDOSl3djs8AAAAFjcHT5g",
+            "name": "srm-staging",
+            "url": "https://api.github.com/repos/profitia/SG-dev/environments/srm-staging",
+            "html_url": "https://github.com/profitia/SG-dev/deployments/activity_log?environments_filter=srm-staging",
+            "created_at": "2026-10-09T06:57:31Z",
+            "updated_at": "2026-10-09T06:57:31Z",
+            "can_admins_bypass": true,
+            "protection_rules": [
+              {
+                "id": 68213351,
+                "node_id": "GA_kwDOSl3djs4EENpn",
+                "type": "required_reviewers",
+                "prevent_self_review": true,
+                "reviewers": [
+                  {
+                    "type": "User",
+                    "reviewer": {
+                      "login": "profitia",
+                      "id": 275643368,
+                      "node_id": "U_kgDOEG376A",
+                      "avatar_url": "https://avatars.githubusercontent.com/u/275643368?v=4",
+                      "gravatar_id": "",
+                      "url": "https://api.github.com/users/profitia",
+                      "html_url": "https://github.com/profitia",
+                      "followers_url": "https://api.github.com/users/profitia/followers",
+                      "following_url": "https://api.github.com/users/profitia/following{/other_user}",
+                      "gists_url": "https://api.github.com/users/profitia/gists{/gist_id}",
+                      "starred_url": "https://api.github.com/users/profitia/starred{/owner}{/repo}",
+                      "subscriptions_url": "https://api.github.com/users/profitia/subscriptions",
+                      "organizations_url": "https://api.github.com/users/profitia/orgs",
+                      "repos_url": "https://api.github.com/users/profitia/repos",
+                      "events_url": "https://api.github.com/users/profitia/events{/privacy}",
+                      "received_events_url": "https://api.github.com/users/profitia/received_events",
+                      "type": "User",
+                      "user_view_type": "public",
+                      "site_admin": false
+                    }
+                  }
+                ]
+              },
+              {
+                "id": 68213352,
+                "node_id": "GA_kwDOSl3djs4EENpo",
+                "type": "branch_policy"
+              }
+            ],
+            "deployment_branch_policy": {
+              "protected_branches": false,
+              "custom_branch_policies": true
+            }
+          },
+          "githubSecretMetadata": {
+            "total_count": 0,
+            "secrets": []
+          }
         },
-        "result": {}
+        "result": {
+          "id": 23853126630
+        }
       }
     },
     "lastKnownGood": null,
