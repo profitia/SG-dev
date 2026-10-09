@@ -6,7 +6,7 @@ import os from "node:os";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import pg from "pg";
-import {githubResponse,childDiagnostic,diagnosticError,ReleaseDiagnosticError} from "./release-diagnostics.mjs";
+import {githubResponse,githubMetadata,reportDiagnostic,childDiagnostic,diagnosticError,ReleaseDiagnosticError} from "./release-diagnostics.mjs";
 import {prepareResume,assertResumeFence} from "./resume-staging.mjs";
 import {manifestFrom} from "./staging-lifecycle.mjs";
 import {digest,operations} from "../../../scripts/governance/srm-release-lifecycle.mjs";
@@ -29,6 +29,29 @@ import {
   inspectProductDatabase,
 } from "./promote-staging.mjs";
 const sha = "a".repeat(40);
+test('successful GitHub request metadata stays out of canonical payloads',async()=>{
+  const body={ref:'refs/heads/srm-publication-'+ 'a'.repeat(24),object:{type:'commit',sha}};
+  const result=await githubResponse(async()=>new Response(JSON.stringify(body),{status:201,headers:{'x-github-request-id':'ABCD:5678'}}),'https://api.github.com/repos/profitia/SG-dev/git/refs',{method:'POST'},'create-publication-branch');
+  assert.deepEqual(result,body);assert.equal(githubMetadata(result).httpStatus,201);assert.equal(githubMetadata(result).requestId,'ABCD:5678');
+  assert.equal(digest(result),digest(body));
+});
+test('typed GET 404 preserves actual HTTP identity only when explicitly requested',async()=>{
+  const fetcher=async()=>new Response(JSON.stringify({message:'Not Found',secret:'do-not-log'}),{status:404,headers:{'x-github-request-id':'ABCD:5678'}});
+  assert.equal(await githubResponse(fetcher,'https://api.github.com/exact-ref',{method:'GET'},'read-publication-branch'),null);
+  await assert.rejects(githubResponse(fetcher,'https://api.github.com/exact-ref',{method:'GET'},'read-publication-branch',{missingIsError:true}),e=>{
+    assert.equal(e.diagnostic.httpStatus,404);assert.equal(e.diagnostic.requestId,'ABCD:5678');assert.ok(!JSON.stringify(e.diagnostic).includes('do-not-log'));return true;
+  });
+});
+test('complete diagnostic schema survives child forwarding without secret values',()=>{
+  const before=console.error;let logged;console.error=s=>{logged=s;};
+  try {
+    const d=reportDiagnostic(new ReleaseDiagnosticError({stage:'publication-branch-acknowledgement',operation:'verify-publication-branch',category:'HTTP_REJECTION',httpStatus:404,requestId:'ABCD:5678',attemptNumber:5,attemptLimit:5,expectedSha:sha,branch:'srm-publication-'+ 'a'.repeat(24),generation:38,approvalId:'SRM-STAGING-37939780926-1',providerEffectObserved:'CREATION_ACKNOWLEDGED',retryDecision:'STOP_ATTEMPT_LIMIT',token:'do-not-log',message:'password=do-not-log'}));
+    for(const field of ['publicationStage','githubOperation','httpStatus','githubRequestId','failureCategory','attemptNumber','attemptLimit','expectedSha','observedSha','branch','journalGeneration','releaseApprovalId','providerEffectObserved','retryDecision'])assert.ok(Object.hasOwn(d,field),field);
+    assert.equal(d.observedSha,'NOT_OBSERVED');assert.ok(!logged.includes('do-not-log'));
+    const forwarded=reportDiagnostic(new ReleaseDiagnosticError(childDiagnostic(logged)));assert.equal(forwarded.httpStatus,404);assert.equal(forwarded.githubRequestId,'ABCD:5678');assert.equal(forwarded.attemptNumber,5);
+    const unknown=reportDiagnostic(Error('token=do-not-log'));assert.equal(unknown.httpStatus,'UNKNOWN');assert.equal(unknown.githubRequestId,'UNKNOWN');assert.equal(unknown.providerEffectObserved,'NOT_OBSERVED');assert.ok(!logged.includes('do-not-log'));
+  } finally {console.error=before;}
+});
 test("HTTP and GraphQL diagnostics retain request identity but never sensitive payloads",async()=>{
   const response=(status,body)=>({status,ok:status===200,headers:new Headers({'x-github-request-id':'ABCD:1234'}),json:async()=>body});
   for(const [status,body,category] of [[403,{message:'Resource not accessible by integration',token:'private'},'HTTP_REJECTION'],[200,{errors:[{type:'UNPROCESSABLE',path:['createCommitOnBranch'],message:'Invalid input postgresql://private:password@host',extensions:{token:'private'}}]},'GRAPHQL_REJECTION']]){

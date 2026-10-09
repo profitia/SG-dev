@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import pg from "pg";
-import {diagnosticStage, diagnosticError, ReleaseDiagnosticError, githubResponse} from "./release-diagnostics.mjs";
+import {diagnosticStage, diagnosticError, ReleaseDiagnosticError, githubResponse, githubMetadata} from "./release-diagnostics.mjs";
 import {
   root,
   contract,
@@ -261,6 +261,48 @@ export function githubStore(
   const sameCanonical = (a, b) =>
     digest(a.state) === digest(b.state) &&
     digest(a.registry) === digest(b.registry);
+  const exactRef = (ref, branch) => ref?.ref === "refs/heads/" + branch &&
+    ref.object?.type === "commit" && /^[a-f0-9]{40}$/.test(ref.object.sha ?? "");
+  const readPublicationRef = (branch, timeoutMs = 30000) => request(GH,
+    repo + "/git/ref/heads/" + branch, "GET", undefined, {missingIsError:true,timeoutMs});
+  const readCreatedRef = async (branch, expectedHead, creation) => {
+    const context = {stage:"publication-branch-acknowledgement",operation:"verify-publication-branch",branch,expectedSha:expectedHead,
+      effect:"OBSERVATION_REQUIRED",providerEffectObserved:"CREATION_ACKNOWLEDGED",
+      creationHttpStatus:githubMetadata(creation).httpStatus,creationRequestId:githubMetadata(creation).requestId};
+    const deadline = now() + 10000, attemptLimit = 5;
+    for (let attemptNumber = 1; attemptNumber <= attemptLimit; attemptNumber++) {
+      let error;
+      try {
+        if (now() >= deadline) throw new ReleaseDiagnosticError({category:"ACKNOWLEDGEMENT_TIMEOUT",retryDecision:"STOP_TIME_LIMIT"});
+        const ref = await readPublicationRef(branch, Math.max(1,Math.min(3000,deadline-now())));
+        if (!ref) throw new ReleaseDiagnosticError({category:"UNCLASSIFIED_MISSING_REF",requestReachedGitHub:"UNKNOWN"});
+        if (!exactRef(ref,branch) || ref.object.sha !== expectedHead)
+          throw new ReleaseDiagnosticError({...context,...githubMetadata(ref),stage:context.stage,operation:context.operation,
+            category:"REF_CONFLICT",message:"Publication branch content drift",observedSha:ref?.object?.sha,
+            providerEffectObserved:"BRANCH_AT_OTHER_SHA",retryDecision:"STOP_IDENTITY_CONFLICT",attemptNumber,attemptLimit});
+        return ref;
+      } catch (caught) { error = diagnosticError(caught).diagnostic; }
+      // Only reads following a validated successful create may recover. Unknown
+      // nulls, authentication/permission rejection and ambiguous writes never retry.
+      const retryable = error.httpStatus === 404 || [500,502,503,504].includes(error.httpStatus) ||
+        error.category === "RATE_LIMITED" || error.category === "NETWORK_TIMEOUT";
+      let retryDecision = error.retryDecision ?? (!retryable ? "STOP_NOT_RETRYABLE" : attemptNumber === attemptLimit ? "STOP_ATTEMPT_LIMIT" : "GET_ONLY_BACKOFF");
+      let waitMs = 250 * 2 ** (attemptNumber-1);
+      if (error.retryGuidanceInvalid) retryDecision = "STOP_RETRY_GUIDANCE";
+      if (error.retryAfterMs !== undefined) waitMs = Math.max(waitMs,error.retryAfterMs);
+      if (error.pollIntervalMs !== undefined) waitMs = Math.max(waitMs,error.pollIntervalMs);
+      if (error.rateLimitRemaining === 0) {
+        if (error.rateLimitResetAt === undefined) retryDecision = "STOP_RETRY_GUIDANCE";
+        else waitMs = Math.max(waitMs,error.rateLimitResetAt*1000-now());
+      } else if (error.category === "RATE_LIMITED" && error.retryAfterMs === undefined) waitMs = Math.max(waitMs,60000);
+      if (retryDecision === "GET_ONLY_BACKOFF" && now()+waitMs >= deadline) retryDecision = "STOP_TIME_LIMIT";
+      if (retryDecision !== "GET_ONLY_BACKOFF")
+        throw new ReleaseDiagnosticError({...error,...context,attemptNumber,attemptLimit,retryDecision,
+          providerEffectObserved:error.providerEffectObserved ?? context.providerEffectObserved,
+          observedSha:error.observedSha,message:error.message ?? "Publication branch acknowledgement unavailable"});
+      await pause(waitMs);
+    }
+  };
   const branchFilesMatch = async (branch, files) => {
     for (const [p, value] of Object.entries(files)) {
       const f = await request(GH, repo + "/contents/" + p + "?ref=" + branch);
@@ -285,16 +327,31 @@ export function githubStore(
         "Lawful merge publication unavailable",
       );
     });
-    let ref = await diagnosticStage({...context,stage:"publication-branch-read",operation:"read-publication-branch"}, () => request(GH, repo + "/git/ref/heads/" + branch));
+    let ref = await diagnosticStage({...context,stage:"publication-branch-read",operation:"read-publication-branch"}, async () => {
+      try { return await readPublicationRef(branch); }
+      catch (error) { if (error instanceof ReleaseDiagnosticError && error.diagnostic.httpStatus === 404) return null; throw error; }
+    });
     if (!ref) {
-      await diagnosticStage({...context,stage:"publication-branch-create",operation:"create-publication-branch",effect:"OBSERVATION_REQUIRED"}, () => request(GH, repo + "/git/refs", "POST", {
-        ref: "refs/heads/" + branch,
-        sha: expectedHead,
-      }));
-      ref = await diagnosticStage({...context,stage:"publication-branch-acknowledgement",operation:"read-created-publication-branch",effect:"OBSERVATION_REQUIRED"}, () => request(GH, repo + "/git/ref/heads/" + branch));
+      let creation;
+      try {
+        creation = await diagnosticStage({...context,stage:"publication-branch-create",operation:"create-publication-branch",effect:"OBSERVATION_REQUIRED"}, () => request(GH, repo + "/git/refs", "POST", {
+          ref: "refs/heads/" + branch,sha: expectedHead,
+        }));
+      } catch (error) {
+        let observed;
+        try { observed = await readPublicationRef(branch); } catch { /* Observation never authorizes a duplicate create. */ }
+        throw new ReleaseDiagnosticError({...diagnosticError(error).diagnostic,...context,stage:"publication-branch-create",operation:"create-publication-branch",
+          observedSha:observed?.object?.sha,effect:observed ? "BRANCH_OBSERVED":"BRANCH_NOT_OBSERVED",
+          providerEffectObserved:exactRef(observed,branch) && observed.object.sha===expectedHead ? "BRANCH_AT_EXPECTED_PARENT":observed ? "BRANCH_AT_OTHER_SHA":"NOT_OBSERVED",
+          retryDecision:"STOP_AMBIGUOUS_CREATE"});
+      }
+      await diagnosticStage({...context,stage:"publication-branch-create",operation:"verify-created-publication-branch"}, () => {
+        fail(exactRef(creation,branch) && creation.object.sha===expectedHead,"Publication branch acknowledgement unavailable");
+      });
+      ref = await readCreatedRef(branch,expectedHead,creation);
     }
     await diagnosticStage({...context,stage:"publication-branch-acknowledgement",operation:"verify-publication-branch",effect:"OBSERVATION_REQUIRED"}, () => {
-      fail(ref?.object?.sha, "Publication branch acknowledgement unavailable");
+      fail(exactRef(ref,branch), "Publication branch acknowledgement unavailable");
     });
     let candidate = ref.object.sha;
     if (candidate === expectedHead) {
@@ -664,7 +721,7 @@ export function createProvider(
   fetcher = fetch,
 ) {
   assertLifecycleAuthorization(approval, manifest, contract);
-  const request = async (base, url, method = "GET", body) => {
+  const request = async (base, url, method = "GET", body, readOptions = {}) => {
     if (method !== "GET") {
       assertLifecycleAuthorization(approval, manifest, contract);
       lifecyclePreflight(manifest.sha, approval.approvalId);
@@ -685,10 +742,10 @@ export function createProvider(
         "X-GitHub-Api-Version": "2022-11-28",
       },
       body: body ? JSON.stringify(body) : undefined,
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(readOptions.timeoutMs ?? 30000),
     };
     if (base === GH) return githubResponse(fetcher, base + url, options,
-      url === "/graphql" ? "createCommitOnBranch" : url.endsWith("/git/refs") ? "create-publication-branch" : url.endsWith("/merge") ? "merge-publication-pr" : "github-rest");
+      url === "/graphql" ? "createCommitOnBranch" : url.endsWith("/git/refs") ? "create-publication-branch" : url.includes("/git/ref/heads/srm-publication-") ? "read-publication-branch" : url.endsWith("/merge") ? "merge-publication-pr" : "github-rest",readOptions);
     const res = await fetcher(base + url, options);
     if (res.status === 404 && method === "GET") return null;
     fail(res.ok, "Provider request rejected (" + res.status + ")");
