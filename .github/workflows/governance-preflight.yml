@@ -26,6 +26,17 @@ on:
 jobs:
   governance:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sg2_test
+          POSTGRES_PASSWORD: isolated_ci_only
+          POSTGRES_DB: sg2_immutable_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U sg2_test -d sg2_immutable_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,6 +57,22 @@ jobs:
       - name: Type-check PMOS
         working-directory: apps/pmos
         run: npm run typecheck && npm run typecheck:lifecycle
+      - name: Initialize isolated SG2 lifecycle test schema
+        working-directory: apps/pmos
+        env:
+          DATABASE_URL: postgresql://sg2_test:isolated_ci_only@127.0.0.1:5432/sg2_immutable_test
+          PGPASSWORD: isolated_ci_only
+        run: |
+          node_modules/.bin/prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > "$RUNNER_TEMP/sg2-immutable-schema.sql"
+          psql -h 127.0.0.1 -U sg2_test -d sg2_immutable_test -v ON_ERROR_STOP=1 -f "$RUNNER_TEMP/sg2-immutable-schema.sql"
+      - name: Test SG2 immutable lifecycle on isolated PostgreSQL
+        working-directory: apps/pmos
+        env:
+          SG2_IMMUTABLE_TEST_DATABASE_URL: postgresql://sg2_test:isolated_ci_only@127.0.0.1:5432/sg2_immutable_test
+        run: >-
+          node_modules/.bin/tsx --test
+          src/lib/pmos/sg2-immutable-lifecycle.test.ts
+          src/lib/pmos/sg2-immutable-lifecycle.integration.test.ts
       - name: Test PMOS lifecycle and PHR gates
         working-directory: apps/pmos
         run: >-

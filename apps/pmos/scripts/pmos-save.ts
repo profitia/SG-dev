@@ -103,7 +103,14 @@ import {
   SRM_PMOS_PROJECT_NAME,
 } from '../src/lib/pmos/project-profile'
 
+import { Sg2ImmutableLifecycle, finalPersistenceForProfile } from '../src/lib/pmos/sg2-immutable-lifecycle'
+
 const prisma = new PrismaClient()
+let sg2Lifecycle: Sg2ImmutableLifecycle | null = null
+export function createInitialConversationArtifact(client: PrismaClient, data: Prisma.ConversationArtifactCreateInput) {
+  return client.conversationArtifact.create({ data })
+}
+
 const SG_DEV_ROOT = path.resolve(__dirname, '../../..')
 
 const PMOS_DIR = path.resolve(__dirname, '../.pmos')
@@ -858,14 +865,15 @@ function copyToRecoveryTarget(sourcePath: string, targetDir: string, fileName: s
   return targetPath
 }
 
-function writeConversationArtifactFiles(params: {
+export function writeConversationArtifactFiles(params: {
   artifact: FlightRecordV1
   baseName: string
   mdPath: string
   jsonPath: string
   integrityPath: string
   lockPath: string
-  recoveryDir: string
+  recoveryDir?: string
+  immutableLifecycle?: Sg2ImmutableLifecycle | null
   handoff?: GptHandoffArtifactV1 | null
   traceability: {
     executionTrailPath?: string | null
@@ -875,7 +883,17 @@ function writeConversationArtifactFiles(params: {
   }
 }): void {
   const { artifact, baseName, mdPath, jsonPath, integrityPath, lockPath, recoveryDir, handoff, traceability } = params
+  const immutableLifecycle = params.immutableLifecycle ?? sg2Lifecycle
   const nextMarkdown = `${buildMarkdown(artifact, traceability, handoff ?? null)}\n`
+  if (immutableLifecycle) {
+    immutableLifecycle.verify()
+    if (hashObject(artifact) !== immutableLifecycle.seal.fingerprint) throw new Error('SG2 immutable writer received a changed snapshot.')
+    // Markdown is a derived handoff projection; JSON, integrity and lock bytes are never rewritten.
+    if (!fs.existsSync(mdPath) || fs.readFileSync(mdPath, 'utf8') !== nextMarkdown) {
+      atomicWriteFileSet([{ filePath: mdPath, content: nextMarkdown }], { label: `sg2-derived-handoff:${artifact.metadata.conversationId}` })
+    }
+    return
+  }
   const currentMarkdown = fs.existsSync(mdPath) ? fs.readFileSync(mdPath, 'utf-8') : null
   const currentJson = fs.existsSync(jsonPath) ? fs.readFileSync(jsonPath, 'utf-8') : null
   const currentIntegrity = readJsonFileSafe<IntegrityMetadata>(integrityPath)
@@ -889,8 +907,8 @@ function writeConversationArtifactFiles(params: {
     return
   }
 
-  if (currentIntegrity.error) quarantineTextArtifact(integrityPath, recoveryDir, `${baseName}-corrupt-integrity`)
-  if (currentLock.error) quarantineTextArtifact(lockPath, recoveryDir, `${baseName}-corrupt-lock`)
+  if (currentIntegrity.error) quarantineTextArtifact(integrityPath, recoveryDir as string, `${baseName}-corrupt-integrity`)
+  if (currentLock.error) quarantineTextArtifact(lockPath, recoveryDir as string, `${baseName}-corrupt-lock`)
 
   atomicWriteFileSet([
     { filePath: mdPath, content: nextMarkdown },
@@ -1362,7 +1380,8 @@ export function projectCanonicalFlightRecordScalarParity(
     project: artifact.metadata.project,
     taskId: artifact.metadata.taskId,
     scope: artifact.metadata.scope,
-    timestamp: artifact.metadata.timestamp,
+    timestamp: normalizePmosProjectName(String(artifact.metadata.project)) === 'SpendGuru 2.0'
+      ? new Date(artifact.metadata.timestamp).toISOString() : artifact.metadata.timestamp,
     ...(artifact.metadata.etap != null ? { etap: artifact.metadata.etap } : {}),
     ...(artifact.metadata.subetap != null ? { subetap: artifact.metadata.subetap } : {}),
     ...(artifact.metadata.conversationType != null ? { conversationType: artifact.metadata.conversationType } : {}),
@@ -1548,7 +1567,12 @@ function reconstructFlightRecordFromDbOrThrow(dbRecord: { conversationId: string
   return reconstructed
 }
 
-function syncFlightRecordCompletionEvidence(artifact: FlightRecordV1, closeout: CloseoutEvidence): FlightRecordV1 {
+export function syncFlightRecordCompletionEvidence(artifact: FlightRecordV1, closeout: CloseoutEvidence, immutableLifecycle = sg2Lifecycle): FlightRecordV1 {
+  if (immutableLifecycle) {
+    immutableLifecycle.verify()
+    if (hashObject(artifact) !== immutableLifecycle.seal.fingerprint) throw new Error('SG2 immutable completion snapshot changed.')
+    return artifact // Later completion belongs only to linked lifecycle evidence.
+  }
   artifact.completionEvidence.closeoutState = closeout.closeoutState
   artifact.completionEvidence.pmosSaveStatus = closeout.pmosSaveStatus
   artifact.completionEvidence.runtimeContextRefreshStatus = closeout.runtimeContextRefreshStatus
@@ -2806,6 +2830,9 @@ async function main() {
   console.log('[pmos-save] Starting PMOS persistence routine...')
 
   if (args.refreshHandoffTaskId) {
+    if (normalizePmosProjectName(process.env.PMOS_PROJECT_NAME ?? 'SpendGuru 2.0') === 'SpendGuru 2.0') {
+      throw new Error('SG2 completed snapshot refresh forbidden: use read-only reconciliation of append-only lifecycle evidence.')
+    }
     await refreshPersistedHandoffForCompletedTask(args.refreshHandoffTaskId)
     console.log('[pmos-save] PMOS handoff refresh COMPLETE.')
     return
@@ -3042,6 +3069,14 @@ async function main() {
   const conversationMdPath = `apps/pmos/.pmos/conversations/${buildArtifactBaseName(artifact)}.md`
 
   const trailPaths = getExecutionTrailPaths(baseName)
+  if (projectProfile.projectKey === 'SG2') {
+    const sealed = await prisma.conversationArtifact.findUnique({ where: { conversationId: artifact.metadata.conversationId }, select: { flightRecordJson: true } })
+    if (sealed?.flightRecordJson != null) {
+      if (hashObject(sealed.flightRecordJson) !== hashObject(artifact)) throw new Error('SG2 retry changes the complete persisted snapshot.')
+      sg2Lifecycle = new Sg2ImmutableLifecycle(prisma, artifact, { jsonPath, integrityPath, lockPath })
+      await sg2Lifecycle.events() // Also verifies the original persisted seal on recovery.
+    }
+  }
   // Phase D — Immutable artifact lock: if lock already exists, verify before overwriting
   if (fs.existsSync(lockPath)) {
     const existingLock = JSON.parse(fs.readFileSync(lockPath, 'utf-8'))
@@ -3159,7 +3194,7 @@ async function main() {
     projectFlightRecordCompletionEvidence(evidence),
     'completionEvidence',
   )
-  if (closeoutCompletionDiffs.length > 0) {
+  if (!sg2Lifecycle && closeoutCompletionDiffs.length > 0) {
     throw new Error([
       `Closeout completion evidence drift detected for ${artifact.metadata.conversationId}`,
       ...closeoutCompletionDiffs.map((diff) => `- ${diff}`),
@@ -3192,6 +3227,7 @@ async function main() {
     if (existing.flightRecordJson != null) {
       const immutableSnapshotDiffs = collectJsonDiffs(canonicalFlightRecordPayload, existing.flightRecordJson)
       if (immutableSnapshotDiffs.length > 0) {
+        if (projectProfile.projectKey === 'SG2') throw new Error('SG2 persisted FlightRecord cannot be replaced, including completionEvidence.')
         const immutableSharedDiffs = collectJsonDiffs(
           stripCompletionEvidence(canonicalFlightRecordPayload),
           stripCompletionEvidence(existing.flightRecordJson as unknown as FlightRecordV1),
@@ -3229,12 +3265,10 @@ async function main() {
       persistedDbRecordId = updated.id
     }
   } else {
-    const created = await prisma.conversationArtifact.create({
-      data: {
-        conversationId: artifact.metadata.conversationId,
-        ...persistenceProjection,
-        ...relationCreateWrites,
-      },
+    const created = await createInitialConversationArtifact(prisma, {
+      conversationId: artifact.metadata.conversationId,
+      ...persistenceProjection,
+      ...relationCreateWrites,
     })
     persistedDbRecordId = created.id
   }
@@ -3302,6 +3336,10 @@ async function main() {
     ].join('\n'))
   }
 
+  if (projectProfile.projectKey === 'SG2') {
+    sg2Lifecycle ??= new Sg2ImmutableLifecycle(prisma, canonicalFlightRecordPayload, { jsonPath, integrityPath, lockPath })
+    await sg2Lifecycle.append('PMOS_SAVE', { status: 'SUCCEEDED', conversationArtifactId: persistedDbRecordId })
+  }
   console.log('[pmos-save] ✓ DB record persisted.')
   writeJson(closeoutEvidencePath, evidence)
 
@@ -3332,6 +3370,9 @@ async function main() {
     ].join('\n'))
   }
 
+  if (sg2Lifecycle) {
+    await sg2Lifecycle.append('RUNTIME_VERIFIED', { status: 'SUCCEEDED', integrityStatus: evidence.runtimeContextIntegrityStatus })
+  }
   evidence.handoffPublicationStatus = 'STARTED'
   evidence.handoffPublicationStartedAt = new Date().toISOString()
   evidence.handoffPublicationError = null
@@ -3395,11 +3436,14 @@ async function main() {
     })
   }
 
-  const memorosPublicationAttempt = await runMemorosPublicationIfEnabled(projectProfile, async () => publishConversationArtifactToMemoros({
-    conversationArtifact: persistedConversationArtifactForPublication,
+  const publishMemoros = async () => publishConversationArtifactToMemoros({
+    conversationArtifact: persistedConversationArtifactForPublication!,
     handoffArtifactId: persistedHandoff?.id ?? null,
     closeoutRef: relativize(closeoutEvidencePath),
-  }))
+  })
+  const memorosPublicationAttempt = await runMemorosPublicationIfEnabled(projectProfile, async () =>
+    sg2Lifecycle ? sg2Lifecycle.publishOnce('MEMOROS', publishMemoros, result => Boolean(result.ack?.sourceRecordId && result.publicationArtifact?.id))
+      : publishMemoros())
   const memorosPublication = memorosPublicationAttempt.result
 
   if (persistedHandoff) {
@@ -3504,10 +3548,10 @@ async function main() {
   }
   syncFlightRecordCompletionEvidence(artifact, evidence)
 
-  canonicalFlightRecordPayload = createCanonicalFlightRecordPayload(artifact)
+  canonicalFlightRecordPayload = sg2Lifecycle ? sg2Lifecycle.snapshot : createCanonicalFlightRecordPayload(artifact)
 
   if (projectProfile.memorosEnabled) {
-    const spendGuruRequiredPhr = publishRequiredSpendGuruPhrBeforePendingClear({
+    const publishRequiredPhr = async () => publishRequiredSpendGuruPhrBeforePendingClear({
       pendingArtifactPath: PENDING_FILE,
       artifact: canonicalFlightRecordPayload,
       closeout: evidence,
@@ -3519,6 +3563,9 @@ async function main() {
       publicationArtifact: memorosPublication?.publicationArtifact ?? null,
       publicationAck: memorosPublication?.ack ?? null,
     })
+    const spendGuruRequiredPhr = sg2Lifecycle
+      ? await sg2Lifecycle.publishOnce('PHR', publishRequiredPhr, result => isSuccessfulPhrPublicationStatus(result.publication.result?.status ?? 'FAILED'))
+      : await publishRequiredPhr()
     phrPublicationResult = spendGuruRequiredPhr.publication
     const publicationOutcome = applyRequiredPhrPublicationOutcome({
       evidence,
@@ -3557,7 +3604,7 @@ async function main() {
   await prisma.conversationArtifact.update({
     where: { conversationId: artifact.metadata.conversationId },
     data: {
-      ...finalPersistenceProjection,
+      ...finalPersistenceForProfile(projectProfile.projectKey, finalPersistenceProjection),
       ...relationUpdateWrites,
     },
   })
@@ -3621,6 +3668,11 @@ async function main() {
     select: { id: true },
   })
 
+  if (sg2Lifecycle) {
+    await sg2Lifecycle.append('CLOSEOUT_COMPLETE', { closeoutState: evidence.closeoutState, pending: 'CLEAR', recoveryRequired: false })
+    sg2Lifecycle.verify()
+  }
+
   if (fs.existsSync(ACTIVE_CLOSEOUT_FILE)) {
     fs.unlinkSync(ACTIVE_CLOSEOUT_FILE)
   }
@@ -3636,10 +3688,15 @@ const isDirectExecution = typeof process.argv[1] === 'string'
 
 if (isDirectExecution) {
   main()
-    .catch((e) => {
+    .catch(async (e) => {
       const error = e as Error
+      if (sg2Lifecycle) {
+        try {
+          await sg2Lifecycle.append('RECOVERY_REQUIRED', { status: 'RECOVERY_REQUIRED' })
+        } catch (lifecycleError) { console.error('[pmos-save] SG2 recovery evidence blocked:', (lifecycleError as Error).message) }
+      }
       if (artifact && evidence && closeoutEvidencePath) {
-        if (persistedConversationArtifactForPublication && evidence.handoffPublicationStatus === 'STARTED' && resolveArtifactProjectProfile(artifact).memorosEnabled) {
+        if (!sg2Lifecycle && persistedConversationArtifactForPublication && evidence.handoffPublicationStatus === 'STARTED' && resolveArtifactProjectProfile(artifact).memorosEnabled) {
         void persistMemorosPublicationArtifact({
           conversationArtifact: persistedConversationArtifactForPublication,
           handoffArtifactId: persistedHandoffArtifactForPublication?.id ?? null,

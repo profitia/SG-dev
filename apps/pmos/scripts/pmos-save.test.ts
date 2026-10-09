@@ -5,7 +5,7 @@ import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 
-import { CloseoutState, createArtifactLock, hashObject, verifyArtifactLock } from '../../../packages/governance/src'
+import { CloseoutState, createArtifactLock, createObjectIntegrityMetadata, hashObject, verifyArtifactLock } from '../../../packages/governance/src'
 
 import {
   applyRequiredPhrPublicationOutcome,
@@ -14,6 +14,8 @@ import {
   buildPhrPublicationReadyHandoff,
   buildSrmPhrPublicationCandidate,
   normalizePendingArtifact,
+  syncFlightRecordCompletionEvidence,
+  writeConversationArtifactFiles,
   projectCanonicalFlightRecordScalarParity,
   publishRequiredSpendGuruPhrBeforePendingClear,
 } from './pmos-save'
@@ -708,4 +710,53 @@ test('PUBLISHED and IDEMPOTENT satisfy the SRM completion gate and only then all
   assert.equal(idempotent.canCompleteTask, true)
   assert.equal(idempotent.canClearPending, true)
   assert.equal(idempotentEvidence.closeoutState, CloseoutState.CLOSEOUT_COMPLETE)
+})
+
+import { PrismaClient } from '@prisma/client'
+import { Sg2ImmutableLifecycle } from '../src/lib/pmos/sg2-immutable-lifecycle'
+
+test('SG2 finalizer preserves actual JSON/integrity/lock bytes while SRM completion sync stays unchanged', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sg2-finalizer-preservation-'))
+  const prisma = new PrismaClient() // No database operation in this test.
+  try {
+    const sg2 = { ...makeSpendGuruArtifact(), completionEvidence: { closeoutState: CloseoutState.PMOS_SAVE_SUCCEEDED, pmosSaveStatus: 'SUCCEEDED', runtimeContextRefreshStatus: 'NOT_STARTED', handoffPublicationStatus: 'NOT_STARTED', archiveCompletenessStatus: 'PASS', executionTrailStatus: 'PARTIAL' } } as never
+    const paths = { jsonPath: path.join(dir, 'record.json'), integrityPath: path.join(dir, 'record.integrity.json'), lockPath: path.join(dir, 'record.lock.json') }
+    fs.writeFileSync(paths.jsonPath, JSON.stringify(sg2))
+    fs.writeFileSync(paths.integrityPath, JSON.stringify(createObjectIntegrityMetadata(sg2, { generatedBy: 'isolated-test', sourceRuntime: 'PMOS', sourceProjection: 'test' })))
+    fs.writeFileSync(paths.lockPath, JSON.stringify(createArtifactLock(sg2)))
+    const bytes = Object.values(paths).map(p => fs.readFileSync(p))
+    const before = hashObject(sg2)
+    const lifecycle = new Sg2ImmutableLifecycle(prisma, sg2, paths)
+    const evidence = { ...makeEvidence(), closeoutState: CloseoutState.CLOSEOUT_COMPLETE, handoffPublicationStatus: 'SUCCEEDED' } as never
+    syncFlightRecordCompletionEvidence(sg2, evidence, lifecycle)
+    writeConversationArtifactFiles({ artifact: sg2, baseName: 'record', mdPath: path.join(dir, 'record.md'), ...paths, traceability: {}, immutableLifecycle: lifecycle })
+    writeConversationArtifactFiles({ artifact: sg2, baseName: 'record', mdPath: path.join(dir, 'record.md'), ...paths, traceability: { closeoutEvidencePath: 'changed-derived-path' }, immutableLifecycle: lifecycle })
+    assert.equal(hashObject(sg2), before)
+    Object.values(paths).forEach((p, i) => assert.deepEqual(fs.readFileSync(p), bytes[i]))
+    const srm = { ...makeArtifact(), completionEvidence: { ...sg2.completionEvidence } } as never
+    syncFlightRecordCompletionEvidence(srm, evidence, null)
+    assert.equal(srm.completionEvidence.closeoutState, CloseoutState.CLOSEOUT_COMPLETE)
+    assert.equal(srm.completionEvidence.runtimeContextRefreshStatus, 'SUCCEEDED')
+    assert.notEqual(hashObject(srm.completionEvidence), hashObject(sg2.completionEvidence))
+    const changed = structuredClone(sg2)
+    changed.completionEvidence.closeoutState = CloseoutState.CLOSEOUT_COMPLETE
+    assert.throws(() => writeConversationArtifactFiles({ artifact: changed, baseName: 'record', mdPath: path.join(dir, 'record.md'), ...paths, traceability: {}, immutableLifecycle: lifecycle }), /changed snapshot/)
+  } finally { await prisma.$disconnect(); fs.rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('SG2 scalar DateTime normalization preserves history and SRM raw parity behavior', () => {
+  const a = makeSpendGuruArtifact()
+  a.metadata.timestamp = '2026-10-09T12:00:00.123456+00:00'
+  const before = hashObject(a)
+  const projected = projectCanonicalFlightRecordScalarParity(a, 'record.md', 'summary')
+  assert.equal((projected.metadata as Record<string, unknown>).timestamp, '2026-10-09T12:00:00.123Z')
+  const equivalent = structuredClone(a)
+  equivalent.metadata.timestamp = '2026-10-09T14:00:00.123+02:00'
+  assert.deepEqual(projectCanonicalFlightRecordScalarParity(equivalent, 'record.md', 'summary'), projected)
+  equivalent.metadata.timestamp = '2026-10-09T12:00:00.124Z'
+  assert.notDeepEqual(projectCanonicalFlightRecordScalarParity(equivalent, 'record.md', 'summary'), projected)
+  assert.equal(hashObject(a), before)
+  const srm = makeArtifact()
+  srm.metadata.timestamp = '2026-10-09T14:00:00.123+02:00'
+  assert.equal((projectCanonicalFlightRecordScalarParity(srm, 'record.md', 'summary').metadata as Record<string, unknown>).timestamp, srm.metadata.timestamp)
 })
