@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "9fc25bb1f56686d3d34d8063c0c71107be4758411138cff6277a177925d69536",
+  "publicationNonce": "41b6e24778212cea257925468a2141d61640fbf3e1c24bbfef43fa77247ba761",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 29,
+  "generation": 30,
   "release": {
     "authorizationDigest": "c9fb1f717388e2abfe225daee3f1548bcdc7a6ed998c1d89865a5543fd5e574f",
     "authorization": {
@@ -2995,7 +2995,7 @@
         }
       },
       "verify": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-09T08:31:00.420Z",
@@ -3461,10 +3461,10 @@
             ]
           }
         },
-        "snapshotDigest": "1d4a7d4f4605c1ebd0c4e166950b3ecee06f1186763d02fa5adf3c33f7b406c0",
+        "snapshotDigest": "ff2cc94348116141751ce80d4bc77fa3f29135f9ff81f603db5974e8178418f7",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-09T08:31:00.420Z",
+          "capturedAt": "2026-10-09T08:32:17.360Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -3533,8 +3533,8 @@
             "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
-            "updated_at": "2026-10-09T08:30:59Z",
-            "pushed_at": "2026-10-09T08:30:54Z",
+            "updated_at": "2026-10-09T08:32:06Z",
+            "pushed_at": "2026-10-09T08:32:01Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -3715,10 +3715,10 @@
             "pooler_mode": "transaction",
             "disabled": false,
             "passwordless_access": true,
-            "last_active": "2026-10-09T08:20:17Z",
+            "last_active": "2026-10-09T08:32:15Z",
             "creation_source": "console",
             "created_at": "2026-09-22T17:09:28Z",
-            "updated_at": "2026-10-09T08:20:17Z",
+            "updated_at": "2026-10-09T08:32:17Z",
             "started_at": "2026-09-22T17:40:26Z",
             "proxy_host": "c-5.eu-central-1.aws.neon.tech",
             "suspend_timeout_seconds": -1,
@@ -3928,7 +3928,71 @@
           }
         },
         "result": {
-          "secretNames": []
+          "proof": {
+            "source": "LIVE_RUNTIME_AND_SQL",
+            "sha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+            "deployId": "dep-db4abe142hec73ali6mg",
+            "serviceId": "srv-db496b3tqb8s73eh5sfg",
+            "branchId": "br-broad-butterfly-b11t4v01",
+            "databaseId": 509272,
+            "githubEnvironmentId": 23853126630,
+            "configuration": "PASS",
+            "githubProtection": "PASS",
+            "schema": "PASS",
+            "runtimeRole": "PASS",
+            "tenantIsolation": "PASS",
+            "health": "PASS",
+            "authentication": "PASS",
+            "persistence": "PASS",
+            "migrations": [
+              {
+                "version": "0001_xray_foundation",
+                "checksum": "14b18a8dfa4f45fb2c5fd6cdbffd4220db4826dead5d8a205e8663a1a9dd8445"
+              },
+              {
+                "version": "0002_ceidg_jdg",
+                "checksum": "365904ec0c70d56f57c7702c0e2516ec114b41737f05c1ff38e9a03004a78a25"
+              },
+              {
+                "version": "0003_financial_cost_normalization",
+                "checksum": "2e4f35bf603a207096562f88d8a0903c799cc906c2475eccb380434c2d6b07da"
+              },
+              {
+                "version": "0004_financial_other_cost_normalization",
+                "checksum": "fb78a2476249daedbe53fe87c2c6e8a66b2a3e06abd31b388603ac1ce3ad3c76"
+              },
+              {
+                "version": "0005_kys_personal",
+                "checksum": "c309f92b4ec31362c3dc6a004def889d37c90b095dcc9624d3f7f91298a3344a"
+              },
+              {
+                "version": "0006_kys_retention_privilege",
+                "checksum": "60629673484b92fd8877aa0a4355bd1e79818d51be3f7f88b4ceee19d9c8d771"
+              },
+              {
+                "version": "0007_shared_financial_catalog",
+                "checksum": "31c0bb7b7b0a54476cfa95033d463b7ee4071d1fac37090082dd4c7ede4f5b54"
+              },
+              {
+                "version": "0008_financial_indicators",
+                "checksum": "e1ab3ac396537fb52c17a99343379068c2a3c8b5be03890f95ce8405c19a91c5"
+              },
+              {
+                "version": "0009_financial_indicator_days",
+                "checksum": "f4a62fcaf826f1db90cbc0a930eafde2e8fe8e290b24c65bcdf9f98ffb45bcd2"
+              },
+              {
+                "version": "0010_kys_shared_cache",
+                "checksum": "1130979f8573048d060a919dc811dd63ee737688ff4533665d9ee16b32189c44"
+              },
+              {
+                "version": "0011_mgbi_raw_reports",
+                "checksum": "202e415b49dbe6d2df232392dc4b058f4aa8ed86f570b531efcee760ffe0d77c"
+              }
+            ]
+          },
+          "newPasswordAuthentication": "PASS",
+          "oldPasswordRejected": "PASS"
         }
       }
     },
