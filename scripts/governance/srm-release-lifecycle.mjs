@@ -530,3 +530,18 @@ export async function casPublish(store, expectedHead, files, message) {
   );
   return store.commit({ expectedHead, files, message });
 }
+
+export function assertProductSecretIsolation(c, values, development, now = Date.now()) {
+  requireFact(c?.projectKey === 'SRM' && c.repository === 'profitia/SG-dev' && c.repositoryId === 1247665550 && values?.TARGET_ENVIRONMENT === 'staging', 'Exact SRM Staging credential scope required');
+  requireFact(Array.isArray(c.requiredSecrets) && c.requiredSecrets.length > 0 && c.requiredSecrets.every(k => typeof values[k] === 'string' && values[k].length > 0 && typeof development[k] === 'string' && development[k].length > 0), 'Product secret presence and Development comparison required');
+  const shared = c.requiredSecrets.filter(k => values[k] === development[k]);
+  if (shared.length === 0) return true;
+  const e = c.vendorCredentialReuse;
+  const allowed = ['MGBI_API_KEY', 'VERCLY_API_KEY', 'CEIDG_API_KEY'];
+  requireFact(e?.id === 'SRM-STAGING-VENDOR-REUSE-20261009' && e.projectKey === 'SRM' && e.targetEnvironment === 'staging' && e.sourceEnvironment === 'development' && e.owner === 'Profit.ia' && e.approvedBy === 'Tomasz Uscinski' && e.approvalSource === 'EXPLICIT_BUSINESS_OWNER_REQUEST', 'Explicit canonical supplier exception required');
+  requireFact(e.repository === c.repository && e.repositoryId === c.repositoryId && e.developmentServiceId === c.development.renderServiceId && e.renderEnvironmentId === c.render.environmentId && e.neonProjectId === c.neon.projectId && e.neonBranchId === c.neon.branchId && c.development.renderServiceId === 'srv-db1vu6gm7kps73d0e3r0' && c.render.environmentId === 'evm-dapbdbbbc2fs73f4g7gg' && c.neon.projectId === 'snowy-breeze-40315151' && c.neon.branchId === 'br-broad-butterfly-b11t4v01', 'Canonical supplier exception resource identity mismatch');
+  const start = Date.parse(e.approvedAt), end = Date.parse(e.expiresAt);
+  requireFact(Number.isFinite(now) && Number.isFinite(start) && Number.isFinite(end) && start <= now && end > now && end - start <= 31 * 86400000 && end > start, 'Supplier exception expired or unbounded');
+  requireFact(Array.isArray(e.sharedSecretNames) && e.sharedSecretNames.length === allowed.length && allowed.every(k => e.sharedSecretNames.includes(k)) && shared.every(k => allowed.includes(k)) && ['rollback', 'monitoring', 'expiryAction'].every(k => typeof e[k] === 'string' && e[k].trim().length > 0), 'Supplier-only exception with rollback and monitoring required');
+  return true;
+}

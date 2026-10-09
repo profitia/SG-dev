@@ -168,5 +168,42 @@
   ],
   "blockers": [],
   "executedAt": "2026-10-08T20:41:11.953Z",
-  "pullRequest": "https://github.com/profitia/SG-dev/pull/152"
+  "pullRequest": "https://github.com/profitia/SG-dev/pull/152",
+  "supplierCredentialException": {
+    "taskId": "SRM-STAGING-VENDOR-CREDENTIAL-EXCEPTION-20261009",
+    "baseSha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+    "exceptionId": "SRM-STAGING-VENDOR-REUSE-20261009",
+    "owner": "Profit.ia",
+    "expiresAt": "2026-11-08T00:00:00Z",
+    "managementNeonReuseAuthorized": false,
+    "stageDatabaseConnection": "VERIFIED_READ_ONLY_NEONDB",
+    "sourceTests": {
+      "status": "PASS",
+      "codespace": {
+        "application": {
+          "tests": 205,
+          "pass": 205,
+          "fail": 0,
+          "skipped": 0
+        },
+        "promotion": {
+          "tests": 98,
+          "pass": 96,
+          "fail": 0,
+          "skipped": 2
+        },
+        "governance": {
+          "tests": 77,
+          "pass": 77,
+          "fail": 0,
+          "skipped": 0
+        }
+      },
+      "typecheck": "PASS",
+      "build": "PASS",
+      "manifest": "PASS",
+      "ci": "PENDING_REAL_POSTGRES16_ZERO_SKIP"
+    },
+    "runtimeDeploymentExecuted": false
+  }
 }

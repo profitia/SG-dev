@@ -85,3 +85,9 @@ DEVELOPMENT_RUNTIME_DEPLOYED_BY_THIS_TASK=NO
 BLOCKERS=[]
 
 Published review: [PR #152](https://github.com/profitia/SG-dev/pull/152). Hosted CI independently executed 197 application and 98 promotion/PostgreSQL tests with zero skip, plus 28 shared lifecycle governance tests. Its Staging jobs were skipped for the PR event. Final merge and acknowledged continuity evidence are recorded in the canonical Development handoff.
+
+## Supplier credential amendment — 2026-10-09
+
+Follow-up Development task SRM-STAGING-VENDOR-CREDENTIAL-EXCEPTION-20261009 implements the business owner approval to share only the three supplier integration keys. Canon section 11 and staging-contract.json bind the exception to exact SRM resources, Profit.ia, an expiry (2026-11-08T00:00:00Z), Stage-only rotation/rollback and post-release quota/error/billing review. All product database, login and session secrets remain distinct; missing Development comparison or any unsupported sharing is rejected. Runtime and read-only planning use one normative validator; environment overrides cannot enable reuse.
+
+Application code and Development deployment remain untouched. Preparation stays separate from the newly authorized business deployment: the actual live candidate is 886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1, and Stage is still RESERVED/NOT_ONBOARDED. The supplied Stage owner connection was verified read-only against neondb; srm_app is absent. A separate Neon management API key is pending because its Development reuse was revoked. Detailed test counts are in validation-evidence.json; final CI/merge/continuity evidence is published in this follow-up task PHR.

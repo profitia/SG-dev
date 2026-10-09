@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import {
+  assertProductSecretIsolation,
   assertLifecycleAuthorization,
   assertSnapshot,
   claimRelease,
@@ -170,4 +171,56 @@ test("negative generation and unknown lifecycle phase fail closed", () => {
       "test",
     ),
   );
+});
+
+const supplierNow = Date.parse('2026-10-10T00:00:00Z');
+function supplierBindings() {
+  const development = Object.fromEntries(c.requiredSecrets.map(k => [k, 'synthetic-development-' + k]));
+  const values = Object.fromEntries(c.requiredSecrets.map(k => [k, 'synthetic-staging-' + k]));
+  values.TARGET_ENVIRONMENT = 'staging';
+  for (const k of ['MGBI_API_KEY', 'VERCLY_API_KEY', 'CEIDG_API_KEY']) values[k] = development[k];
+  return { development, values };
+}
+test('owner-approved three supplier keys may be shared in exact SRM Staging only', () => {
+  const {values, development} = supplierBindings();
+  assert.equal(assertProductSecretIsolation(c, values, development, supplierNow), true);
+});
+test('fully isolated product secrets work without an exception or after its expiry', () => {
+  const {values, development} = supplierBindings();
+  for (const k of c.requiredSecrets) values[k] = 'isolated-stage-' + k;
+  assert.equal(assertProductSecretIsolation({...c, vendorCredentialReuse:null}, values, development, supplierNow), true);
+  assert.equal(assertProductSecretIsolation(c, values, development, Date.parse('2027-01-01')), true);
+});
+for (const key of ['SRM_APP_DATABASE_PASSWORD', 'SRM_DEMO_PASSWORD', 'SRM_DEMO_SESSION_SECRET']) {
+  test('supplier approval never permits sharing ' + key, () => {
+    const {values, development} = supplierBindings(); values[key] = development[key];
+    assert.throws(() => assertProductSecretIsolation(c, values, development, supplierNow));
+  });
+}
+for (const [field, value] of Object.entries({id:'other',projectKey:'SG2',targetEnvironment:'production',sourceEnvironment:'staging',owner:'other',approvedBy:null,approvalSource:'ENV_OVERRIDE',repository:'profitia/other',repositoryId:1,developmentServiceId:'other',renderEnvironmentId:'production',neonProjectId:'bold-breeze-68888550',neonBranchId:'br-nameless-bar-b1wlhjhx',approvedAt:'2026-10-11',expiresAt:'2026-11-10',sharedSecretNames:['MGBI_API_KEY','VERCLY_API_KEY','CEIDG_API_KEY','SRM_APP_DATABASE_PASSWORD'],rollback:'',monitoring:'',expiryAction:''})) {
+  test('invalid supplier exception fails closed: ' + field, () => {
+    const {values, development} = supplierBindings();
+    assert.throws(() => assertProductSecretIsolation({...c,vendorCredentialReuse:{...c.vendorCredentialReuse,[field]:value}},values,development,supplierNow));
+  });
+}
+test('missing canonical exception cannot be replaced by operator environment variables', () => {
+  const {values,development} = supplierBindings(); values.SRM_ALLOW_SHARED_SECRETS='true';
+  assert.throws(() => assertProductSecretIsolation({...c,vendorCredentialReuse:null},values,development,supplierNow));
+});
+test('shared supplier approval expires exactly at its recorded deadline', () => {
+  const {values,development} = supplierBindings();
+  assert.throws(() => assertProductSecretIsolation(c,values,development,Date.parse(c.vendorCredentialReuse.expiresAt)));
+});
+test('missing Development comparison and empty Stage credentials fail closed', () => {
+  const {values,development} = supplierBindings();
+  assert.throws(() => assertProductSecretIsolation(c,values,{...development,MGBI_API_KEY:undefined},supplierNow));
+  assert.throws(() => assertProductSecretIsolation(c,{...values,MGBI_API_KEY:''},development,supplierNow));
+});
+for (const environment of ['development','production']) test('supplier exception cannot target ' + environment, () => {
+  const {values,development}=supplierBindings();
+  assert.throws(() => assertProductSecretIsolation(c,{...values,TARGET_ENVIRONMENT:environment},development,supplierNow));
+});
+for (const [field,value] of Object.entries({projectKey:'CIC',repository:'profitia/other',repositoryId:1})) test('foreign product identity rejects supplier sharing: ' + field, () => {
+  const {values,development}=supplierBindings();
+  assert.throws(() => assertProductSecretIsolation({...c,[field]:value},values,development,supplierNow));
 });
