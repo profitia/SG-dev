@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "2368fee0be8beeab6d7574063482c66b69f5e4bd715e21167587dc88e2c1256e",
+  "publicationNonce": "424d45ae8bca792b1895afbd47f79bc4a1db4e5e5e91d9fd4b3d40c7ec7199d6",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 35,
+  "generation": 36,
   "release": {
     "authorizationDigest": "acdf3cb3dc6a2ef41d39b7bacc04726a89a8af88eeee25b5feed14774f2a208f",
     "authorization": {
@@ -33,7 +33,7 @@
         "verify",
         "reconcile"
       ],
-      "expiresAt": "2026-10-09T14:52:13.198Z",
+      "expiresAt": "2026-10-09T17:41:48.801Z",
       "githubApprovalPolicy": {
         "environmentId": 23853126630,
         "reviewerIds": [
@@ -125,7 +125,7 @@
       ]
     },
     "mode": "promote",
-    "owner": "github-run:37939780926",
+    "owner": "github-run:37960793217",
     "phase": "PROVISIONING",
     "resources": {
       "githubEnvironmentId": 23853126630
@@ -2071,7 +2071,16 @@
       "developmentDeployId": "dep-db4bo7142hec73apgni0",
       "developmentServiceId": "srv-db1vu6gm7kps73d0e3r0",
       "capturedAt": "2026-10-09T14:13:49.789Z"
-    }
+    },
+    "authorizationRenewals": [
+      {
+        "previousExpiresAt": "2026-10-09T14:52:13.198Z",
+        "expiresAt": "2026-10-09T17:41:48.801Z",
+        "owner": "github-run:37960793217",
+        "approvalId": "SRM-STAGING-37939780926-1",
+        "manifestDigest": "adc9bf5156c91f2ed2b6c8b35fde1b189ef85cfbe62df07c961c46d571722fdf"
+      }
+    ]
   },
   "baseline": {
     "generation": 31,
