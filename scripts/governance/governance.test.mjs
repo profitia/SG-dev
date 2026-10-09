@@ -123,7 +123,41 @@ test('SG2 environment topology prevents cross-environment service and database i
   assert.doesNotMatch(JSON.stringify(registry), /postgres(?:ql)?:\/\//i)
 })
 
-test('SRM uses the shared routing registry and activates only verified Development topology', () => {
+// These are synthetic topology fixtures, never provider verification or write targets.
+// Keep rejection tests independent of whether real Staging has been legally onboarded.
+function reservedSrmTopology(registry) {
+  const fixture = structuredClone(registry)
+  for (const name of ['staging', 'production']) {
+    fixture.environments[name].status = 'RESERVED'
+    fixture.environments[name].verificationStatus = 'NOT_ONBOARDED'
+    fixture.environments[name].github.environmentId = null
+  }
+  return fixture
+}
+
+function verifiedSrmStagingTopology(registry) {
+  const fixture = reservedSrmTopology(registry)
+  const staging = fixture.environments.staging
+  staging.status = 'ACTIVE'
+  staging.verificationStatus = 'VERIFIED'
+  staging.github.environmentId = 999999999
+  staging.github.repository = fixture.policy.sourceAuthority
+  staging.github.repositoryId = fixture.policy.sourceRepositoryId
+  staging.render.projectId = fixture.policy.renderProjectId
+  staging.render.services = { runtime: {
+    serviceId: 'srv-synthetic-staging-test',
+    autoDeploy: 'off',
+    baselineDeployId: 'dep-synthetic-staging-test',
+    baselineSha: 'a'.repeat(40),
+  } }
+  staging.neon.projectId = fixture.policy.productNeonProjectId
+  staging.neon.databaseName = fixture.policy.productDatabaseName
+  staging.neon.databaseId = 999999999
+  staging.neon.purpose = 'SRM_APPLICATION_DATA'
+  return fixture
+}
+
+test('SRM resolves verified topology and rejects reserved or prematurely activated fixtures', (t) => {
   const srm = resolveProjectProfile('SRM', repositoryRoot)
   assert.equal(srm.repository.routingRegistry, 'Canon/registries/current-architecture-baseline-v1.json')
   assert.equal(srm.repository.environmentTopologyRegistry, 'Canon/registries/srm-environment-topology-v1.json')
@@ -133,19 +167,25 @@ test('SRM uses the shared routing registry and activates only verified Developme
   const development = resolveEnvironmentProfile({ profile: srm, targetEnvironment: 'development', governanceRoot: repositoryRoot })
   assert.equal(development.environment.neon.databaseName, 'srm_app')
   assert.notEqual(development.environment.neon.projectId, srm.database.projectId)
-  for (const name of ['staging', 'production']) {
-    assert.throws(() => resolveEnvironmentProfile({ profile: srm, targetEnvironment: name, governanceRoot: repositoryRoot }), /not ACTIVE.*RESERVED/)
-  }
-  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'srm-reserved-activation-'))
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'srm-topology-fixture-'))
+  t.after(() => fs.rmSync(temporaryRoot, { recursive: true, force: true }))
   const topologyPath = path.join(temporaryRoot, srm.repository.environmentTopologyRegistry)
   fs.mkdirSync(path.dirname(topologyPath), { recursive: true })
+  const reserved = reservedSrmTopology(registry)
+  fs.writeFileSync(topologyPath, JSON.stringify(reserved))
   for (const name of ['staging', 'production']) {
-    const premature = structuredClone(registry)
+    assert.throws(() => resolveEnvironmentProfile({ profile: srm, targetEnvironment: name, governanceRoot: temporaryRoot }), /not ACTIVE.*RESERVED/)
+    const premature = structuredClone(reserved)
     premature.environments[name].status = 'ACTIVE'
     premature.environments[name].verificationStatus = 'VERIFIED'
     fs.writeFileSync(topologyPath, JSON.stringify(premature))
     assert.throws(() => resolveEnvironmentProfile({ profile: srm, targetEnvironment: name, governanceRoot: temporaryRoot }), /lacks required provider identities/)
+    fs.writeFileSync(topologyPath, JSON.stringify(reserved))
   }
+  const active = verifiedSrmStagingTopology(registry)
+  fs.writeFileSync(topologyPath, JSON.stringify(active))
+  assert.equal(validateEnvironmentTopology(active).valid, true)
+  assert.equal(resolveEnvironmentProfile({ profile: srm, targetEnvironment: 'staging', governanceRoot: temporaryRoot }).environment.verificationStatus, 'VERIFIED')
   const routed = resolveProjectRouting({ profile: srm, targets: ['apps/srm/package.json', 'Canon/registries/srm-environment-topology-v1.json', 'scripts/governance/environment-profile.mjs'], repositoryRoot })
   assert.equal(routed.ok, true)
   assert.deepEqual(routed.results.map((entry) => entry.baselineClassification), ['ALIGNED', 'ALIGNED', 'ALIGNED'])
@@ -173,7 +213,7 @@ test('SRM active environment fails closed on wrong repository, Neon project, or 
   assert.throws(resolve((environment) => { environment.neon.databaseId = null }), /application database identity/)
 })
 
-test('SRM preflight gates Development and blocks reserved environments without PMOS continuity', () => {
+test('SRM preflight preserves RESERVED rejection and requires live evidence for verified Staging', async (t) => {
   const input = {
     mode: 'development', project: 'SRM', target_environment: 'development', task_id: 'srm-environment-test',
     conversation_id: 'srm-environment-test-conversation', title: 'SRM governance test',
@@ -184,13 +224,59 @@ test('SRM preflight gates Development and blocks reserved environments without P
   const development = runGovernancePreflight(input)
   assert.equal(development.gates.TARGET_ENVIRONMENT_GATE.status, 'PASS')
   assert.equal(development.gates.PMOS_CONTROL_PLANE_GATE.status, 'PASS')
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'srm-preflight-fixture-'))
+  t.after(() => fs.rmSync(temporaryRoot, { recursive: true, force: true }))
+  // The module's governance root is intentionally fixed. Copy the real executable
+  // and Canon into an isolated fixture rather than adding an override to production.
+  fs.cpSync(path.join(repositoryRoot, 'Canon'), path.join(temporaryRoot, 'Canon'), { recursive: true })
+  fs.cpSync(path.join(repositoryRoot, 'scripts/governance'), path.join(temporaryRoot, 'scripts/governance'), { recursive: true })
+  fs.copyFileSync(path.join(repositoryRoot, 'scripts/architecture-classify.mjs'), path.join(temporaryRoot, 'scripts/architecture-classify.mjs'))
+  fs.copyFileSync(path.join(repositoryRoot, 'AGENTS.md'), path.join(temporaryRoot, 'AGENTS.md'))
+  const srm = resolveProjectProfile('SRM', repositoryRoot)
+  const original = loadEnvironmentTopology(srm, repositoryRoot).registry
+  const topologyPath = path.join(temporaryRoot, srm.repository.environmentTopologyRegistry)
+  fs.writeFileSync(topologyPath, JSON.stringify(reservedSrmTopology(original)))
+  const { runGovernancePreflight: fixturePreflight } = await import(path.join(temporaryRoot, 'scripts/governance/governance-preflight.mjs'))
   for (const target_environment of ['staging', 'production']) {
-    const result = runGovernancePreflight({ ...input, target_environment })
+    const result = fixturePreflight({ ...input, target_environment })
     assert.equal(result.gates.TARGET_ENVIRONMENT_GATE.status, 'BLOCKED')
     assert.equal(result.gates.PMOS_BEGIN_GATE.status, 'NOT_APPLICABLE')
     assert.equal(result.gates.PMOS_RUNTIME_GATE.status, 'NOT_APPLICABLE')
     assert.equal(result.verdict, 'BLOCKED')
   }
+  const active = verifiedSrmStagingTopology(original)
+  fs.writeFileSync(topologyPath, JSON.stringify(active))
+  const missingProof = fixturePreflight({ ...input, target_environment: 'staging' })
+  assert.equal(missingProof.gates.TARGET_ENVIRONMENT_GATE.status, 'PASS')
+  assert.equal(missingProof.gates.LIVE_PROVIDER_DRIFT_GATE.status, 'BLOCKED')
+  assert.equal(missingProof.gates.PMOS_BEGIN_GATE.status, 'NOT_APPLICABLE')
+  assert.equal(missingProof.gates.PMOS_RUNTIME_GATE.status, 'NOT_APPLICABLE')
+  assert.equal(missingProof.verdict, 'BLOCKED')
+  const staging = active.environments.staging
+  const snapshotPath = path.join(temporaryRoot, 'synthetic-provider-snapshot.json')
+  const snapshot = {
+    capturedAt: new Date().toISOString(),
+    source: { render: 'render-api', neon: 'neon-api' },
+    renderServices: [{
+      id: staging.render.services.runtime.serviceId,
+      environmentId: staging.render.environmentId,
+      repo: 'https://github.com/profitia/SG-dev',
+      autoDeploy: 'off', liveStatus: 'live',
+      liveDeployId: staging.render.services.runtime.baselineDeployId,
+      liveSha: staging.render.services.runtime.baselineSha,
+    }],
+    neonBranches: [{ id: staging.neon.branchId, projectId: staging.neon.projectId, name: staging.neon.branchName }],
+  }
+  fs.writeFileSync(snapshotPath, JSON.stringify(snapshot))
+  const verified = fixturePreflight({ ...input, target_environment: 'staging', provider_snapshot: snapshotPath })
+  assert.equal(verified.gates.TARGET_ENVIRONMENT_GATE.status, 'PASS')
+  assert.equal(verified.gates.LIVE_PROVIDER_DRIFT_GATE.status, 'PASS')
+  assert.equal(verified.gates.PMOS_BEGIN_GATE.status, 'NOT_APPLICABLE')
+  snapshot.renderServices[0].liveSha = 'b'.repeat(40)
+  fs.writeFileSync(snapshotPath, JSON.stringify(snapshot))
+  const drift = fixturePreflight({ ...input, target_environment: 'staging', provider_snapshot: snapshotPath })
+  assert.equal(drift.gates.LIVE_PROVIDER_DRIFT_GATE.status, 'BLOCKED')
+  assert.equal(drift.verdict, 'BLOCKED')
   const wrongExecution = runGovernancePreflight({ ...input, execution_environment: 'staging' })
   assert.equal(wrongExecution.gates.PMOS_CONTROL_PLANE_GATE.status, 'BLOCKED')
 })
