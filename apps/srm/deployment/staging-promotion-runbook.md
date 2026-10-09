@@ -16,6 +16,12 @@ After the policy operation, rebuild the canonical manifest for the frozen applic
 
 Task SRM-STAGING-ONBOARDING-READINESS-20261008. Preparation is authorized; executing this runbook against Staging is NOT authorized by the task. Stage remains RESERVED/NOT_ONBOARDED. Production and product Development are never write targets. This replaces PR #148's unresolved S0 procedure with the implemented lifecycle.
 
+## Exact existing domain — read-only observation
+
+Canon section 15 and staging-contract.json existingDomainBinding authorize observing only demo-srm-porr.spendguru.app, ID cdm-db4btcvlk1mc73fhn7sg, on existing Staging service srv-db496b3tqb8s73eh5sfg. The topology records that binding. Domain/DNS mutations remain outside the lifecycle; first onboarding and other services still require empty domain inventory. Obtain the full fresh provider inventory from the exact service. Reject missing or additional domains, changed IDs/names, unverified status, redirects and mismatched topology before any release ownership or provider write. Include observed binding in live verification and preserve it in final reconciliation.
+
+This source corrective changes the full contract/manifest digest while keeping the frozen application SHA and legacy runtime contract unchanged. After reviewed merge, prepare the concrete new manifest and obtain explicit digest-bound owner acceptance, then dispatch current-main protected SRM workflow for the frozen application SHA only. Ask the owner to review the waiting GitHub deployment. Do not infer either acceptance from the authorization to fix the contract. No DNS, Render configuration, secrets, Neon migration or runtime deployment is part of source preparation.
+
 ## Prerequisites and accepted release
 
 Use a clean reviewed authority main checkout in SG-dev Codespaces SRM (or the existing protected GitHub job after onboarding). Load root AGENTS, current manifest, shared Canon and SRM adapter. Refresh origin/main. The separate lifecycle preflight preserves independent normal gates; ordinary RESERVED tasks still fail. Future Staging has no PMOS/PHR lifecycle and receives no continuity credentials; MEMOROS stays disabled.

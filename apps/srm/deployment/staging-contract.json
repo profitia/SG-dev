@@ -172,5 +172,24 @@
     "rollback": "Set only Stage login password to an independently approved unique password, encrypted in GitHub and Render, redeploy the exact accepted SHA and reconcile live proof. Keep Development credentials unchanged.",
     "monitoring": "After each release verify login and inspect Stage authentication failures. Compromise of the shared demo password affects both demo logins; keep signed sessions and database credentials isolated.",
     "expiryAction": "After expiry block new shared-password releases and reconciliation until Stage-only password rotation or a reviewed bounded renewal. Running services are not automatically stopped."
+  },
+  "existingDomainBinding": {
+    "id": "SRM-STAGING-EXISTING-DOMAIN-20261009",
+    "projectKey": "SRM",
+    "targetEnvironment": "staging",
+    "repository": "profitia/SG-dev",
+    "repositoryId": 1247665550,
+    "renderWorkspaceId": "tea-d7lps8rbc2fs73cn80dg",
+    "renderProjectId": "prj-dapbd3hsrm7s73es53fg",
+    "renderEnvironmentId": "evm-dapbdbbbc2fs73f4g7gg",
+    "serviceId": "srv-db496b3tqb8s73eh5sfg",
+    "mode": "OBSERVE_EXISTING_ONLY",
+    "domains": [
+      {
+        "id": "cdm-db4btcvlk1mc73fhn7sg",
+        "name": "demo-srm-porr.spendguru.app",
+        "verificationStatus": "verified"
+      }
+    ]
   }
 }

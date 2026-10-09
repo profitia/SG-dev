@@ -23,6 +23,7 @@ import {
   assertStagingGitHubProtection,
   assertLifecycleAuthorization,
   assertSnapshot,
+  assertStagingDomainBinding,
   assertOperation,
   claimRelease,
   recordStep,
@@ -452,6 +453,7 @@ export async function runLifecycle({
     "Unapproved compute cap",
   );
   const t = current.registry.environments.staging;
+  fail(Array.isArray(t.domains) && digest(t.domains) === digest(assertStagingDomainBinding(before, contract)), "Canonical Staging domain binding drift");
   const prior = current.state.release;
   if (prior?.phase === "VERIFIED" && prior.approvalId === a.approvalId) {
     fail(
@@ -1241,6 +1243,8 @@ export function createProvider(
       return { branch: "main", autoDeploy: "off" };
     },
     async verify(s, m, writeProbe = false) {
+      assertSnapshot(s, contract);
+      const domainBindings = assertStagingDomainBinding(s, contract);
       const srv = s.services[0];
       assertRenderService(srv);
       await assertProtection(s.githubEnvironment);
@@ -1282,6 +1286,7 @@ export function createProvider(
         branchId: contract.neon.branchId,
         databaseId: s.databases.find((x) => x.name === "srm_app").id,
         githubEnvironmentId: s.githubEnvironment.id,
+        domainBindings,
         configuration: "PASS",
         githubProtection: "PASS",
         schema: "PASS",

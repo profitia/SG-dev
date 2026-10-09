@@ -10,6 +10,7 @@ import {
 import { contract } from "./staging-migrate.mjs";
 import {
   digest,
+  assertStagingDomainBinding,
   operations,
 } from "../../../scripts/governance/srm-release-lifecycle.mjs";
 const sha = "a".repeat(40);
@@ -255,6 +256,7 @@ function fixture() {
         branchId: contract.neon.branchId,
         databaseId: 4321,
         githubEnvironmentId: 1234,
+        domainBindings: assertStagingDomainBinding(s, contract),
         configuration: "PASS",
         githubProtection: "PASS",
         schema: "PASS",
@@ -663,6 +665,7 @@ test("source preflight permits moving main business code but rejects changed mec
           lifecycle: undefined,
           deploymentTimeGates: ["old-only"],
           github: { ...contract.github, soloOperatorApproval: undefined },
+          existingDomainBinding: undefined,
         }),
       };
     return { status: 0, stdout: "" };
@@ -1282,4 +1285,77 @@ test("real Git three-way merge rejects racing journal proposals and preserves un
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("domain corrective invalidates old manifest authorization before any write",async()=>{
+  const oldContract=structuredClone(contract);delete oldContract.existingDomainBinding;
+  const oldManifest={...manifest,contractDigest:digest(oldContract)};
+  const f=fixture();
+  await assert.rejects(runLifecycle({authorization:{...approval(),manifestDigest:digest(oldManifest)},manifest,provider:f.p,owner:"synthetic-domain"}),/immutable manifest/);
+  assert.equal(f.state.generation,0);assert.equal(f.writes.length,0);
+});
+for(const missing of ["domain","topology"])test("existing domain mismatch stops before claiming the journal: "+missing,async()=>{
+  const f=fixture();f.s.services=[{id:contract.existingDomainBinding.serviceId,environmentId:contract.render.environmentId}];
+  if(missing==="topology")f.s.domains=[{customDomain:{...contract.existingDomainBinding.domains[0],redirectForName:""}}];
+  await assert.rejects(runLifecycle({authorization:approval(),manifest,provider:f.p,owner:"synthetic-domain"}),/domain/i);
+  assert.equal(f.state.generation,0);assert.equal(f.writes.length,0);
+});
+async function fixtureWithExistingDomain(){
+  const f=fixture();await runLifecycle({authorization:approval(),manifest,provider:f.p,owner:"synthetic-onboard"});
+  f.s.services[0].id=contract.existingDomainBinding.serviceId;
+  f.registry.environments.staging.render.services.runtime.serviceId=f.s.services[0].id;
+  f.s.domains=[{customDomain:{...contract.existingDomainBinding.domains[0],redirectForName:""}}];
+  f.registry.environments.staging.domains=assertStagingDomainBinding(f.s,contract);
+  const observe=f.p.observe;
+  f.p.observe=async(op,...args)=>op==="service"?{complete:true,result:{},resources:{serviceId:f.s.services[0].id}}:observe(op,...args);
+  return f;
+}
+test("normal promotion records domain evidence and preserves canonical binding",async()=>{
+  const f=await fixtureWithExistingDomain();const expected=structuredClone(f.registry.environments.staging.domains);
+  const r=await runLifecycle({authorization:{...approval("promote"),approvalId:"synthetic-domain-promote"},manifest,provider:f.p,owner:"synthetic-domain"});
+  assert.equal(r.status,"VERIFIED");assert.deepEqual(f.registry.environments.staging.domains,expected);
+  assert.deepEqual(f.state.release.proof.domainBindings,expected);
+  assert.ok(!f.writes.some(x=>/domain|dns/.test(x)));
+});
+test("final publication refuses missing or different domain verification proof",async()=>{
+  for(const proofDomains of [undefined,[],[{id:"cdm-other"}]]){
+    const f=await fixtureWithExistingDomain();const verify=f.p.verify;
+    f.p.verify=async(...args)=>({...await verify(...args),domainBindings:proofDomains});
+    const baseline=structuredClone(f.state.baseline);
+    await assert.rejects(runLifecycle({authorization:{...approval("promote"),approvalId:"synthetic-domain-promote"},manifest,provider:f.p,owner:"synthetic-domain"}),/Domain verification proof/);
+    assert.deepEqual(f.state.baseline,baseline);
+  }
+});
+
+test("provider snapshot reads domains only from exact existing service and never mutates bindings",async()=>{
+  const calls=[];const service={id:contract.existingDomainBinding.serviceId,name:contract.render.serviceName,
+    ownerId:contract.render.workspaceId,environmentId:contract.render.environmentId,repo:"https://github.com/"+contract.repository,
+    autoDeployTrigger:"off",branch:"main",rootDir:contract.render.rootDir,type:"web_service",suspended:"not_suspended",
+    serviceDetails:{region:contract.render.region,plan:contract.render.plan,runtime:"node",numInstances:1,
+      healthCheckPath:contract.render.healthCheckPath,previews:{generation:"off"},
+      envSpecificDetails:{buildCommand:contract.render.buildCommand,startCommand:contract.render.startCommand}}};
+  const domain={customDomain:{...contract.existingDomainBinding.domains[0],redirectForName:""}};
+  const p=createProvider({RENDER_API_KEY:"synthetic",NEON_API_KEY:"synthetic",SRM_RELEASE_GITHUB_TOKEN:"synthetic"},approval("promote"),manifest,"synthetic-domain",async(url,options)=>{
+    calls.push({url,method:options.method});const u=new URL(url);const p=u.pathname;let result;
+    if(u.hostname==="api.render.com"){
+      if(p.endsWith("/custom-domains"))result=[domain];
+      else if(p.endsWith("/deploys"))result=[{deploy:{id:"dep-synthetic",status:"live",commit:{id:sha}}}];
+      else if(p.endsWith("/services"))result=[{service}];
+      else if(p.includes("/projects/"))result={id:contract.render.projectId,owner:{id:contract.render.workspaceId}};
+      else result={id:contract.render.environmentId,projectId:contract.render.projectId,networkIsolationEnabled:true};
+    }else if(u.hostname==="console.neon.tech"){
+      if(p.endsWith("/databases"))result={databases:[]};
+      else if(p.endsWith("/endpoints"))result={endpoints:[{id:contract.neon.endpointId,branch_id:contract.neon.branchId,host:contract.neon.directHost}]};
+      else result={branch:{id:contract.neon.branchId,project_id:contract.neon.projectId,name:"Staging",protected:false}};
+    }else{
+      if(p.endsWith("/secrets"))result={total_count:0,secrets:[]};
+      else if(p.includes("/environments/"))result={id:23853126630,name:"srm-staging"};
+      else result={id:contract.repositoryId,full_name:contract.repository};
+    }
+    return new Response(JSON.stringify(result),{status:200});
+  });
+  const s=await p.snapshot();assert.deepEqual(s.domains,[domain]);
+  assert.ok(calls.every(x=>x.method==="GET"));
+  assert.equal(calls.filter(x=>x.url.includes("custom-domains")).length,1);
+  assert.ok(calls.some(x=>x.url.includes("/services/"+contract.existingDomainBinding.serviceId+"/custom-domains")));
 });

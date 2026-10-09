@@ -130,7 +130,14 @@
         "runtimeRole": "srm_app_runtime",
         "purpose": "SRM_APPLICATION_DATA"
       },
-      "domains": [],
+      "domains": [
+        {
+          "id": "cdm-db4btcvlk1mc73fhn7sg",
+          "name": "demo-srm-porr.spendguru.app",
+          "verificationStatus": "verified",
+          "serviceId": "srv-db496b3tqb8s73eh5sfg"
+        }
+      ],
       "deploymentPolicy": "EXPLICIT_APPROVED_REVISION_ONLY",
       "verificationStatus": "VERIFIED",
       "schemaStatus": "INITIALIZED"
