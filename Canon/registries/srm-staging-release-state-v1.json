@@ -1,9 +1,154 @@
 {
+  "publicationNonce": "bda934ed350449431074de6c3b5ff3ea5b881905fc201fb66c08782290613c23",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 0,
-  "release": null,
+  "generation": 1,
+  "release": {
+    "authorizationDigest": "61d3e26061e0e500bbd2236b7af6097a7979559bb45323a7ebfcf7241cda2354",
+    "authorization": {
+      "schemaVersion": "2.0",
+      "projectKey": "SRM",
+      "targetEnvironment": "staging",
+      "mode": "onboard",
+      "stagingDeploymentAuthorized": true,
+      "stagingMutationsAllowed": true,
+      "productionMutationsAllowed": false,
+      "releaseSha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+      "manifestDigest": "bea4d666d1076aa354fa41c1c1da9e0ef789c429f6a8c52717f925ff045fecfc",
+      "repository": "profitia/SG-dev",
+      "repositoryId": 1247665550,
+      "renderWorkspaceId": "tea-d7lps8rbc2fs73cn80dg",
+      "renderProjectId": "prj-dapbd3hsrm7s73es53fg",
+      "renderEnvironmentId": "evm-dapbdbbbc2fs73f4g7gg",
+      "neonProjectId": "snowy-breeze-40315151",
+      "neonBranchId": "br-broad-butterfly-b11t4v01",
+      "neonEndpointId": "ep-autumn-wildflower-b1mv0vda",
+      "databaseName": "srm_app",
+      "approvalId": "SRM-STAGING-FIRST-DEPLOY-20261009",
+      "approvedBy": "Tomasz Uscinski",
+      "costOwner": "Profit.ia",
+      "approvedAt": "2026-10-09T06:53:40.593Z",
+      "expiresAt": "2026-10-09T18:53:40.593Z",
+      "operations": [
+        "github-environment",
+        "github-bindings",
+        "release-pointer",
+        "database",
+        "schema",
+        "service",
+        "deploy",
+        "source-rebind",
+        "verify",
+        "reconcile"
+      ],
+      "budget": {
+        "renderPlan": "0.5c-512mb",
+        "renderInstances": 1,
+        "renderMonthlyComputeUsd": 7,
+        "neonMaxCu": 8,
+        "neonExistingEndpointOnly": true,
+        "providerEntitlementsAccepted": true,
+        "storageEgressBuildCostsAccepted": true,
+        "maxDeploymentAttempts": 3
+      },
+      "firstOnboardingAuthorized": true,
+      "githubReviewerIds": [
+        275643368
+      ],
+      "costEvidence": {
+        "source": "PRIMARY_PROVIDER_QUOTE",
+        "url": "https://render.com/pricing",
+        "verifiedAt": "2026-10-09T05:41:19.183Z",
+        "monthlyComputeUsd": 7,
+        "renderPlan": "0.5c-512mb",
+        "observedQuote": "Less than 1 CPU; $7/month; 512 MB RAM; 0.5c-512mb"
+      },
+      "approvalEvidence": {
+        "source": "EXPLICIT_BUSINESS_OWNER_CHAT",
+        "hostConversationId": "01a11c3a-6570-7292-99b4-5666c5a2496b",
+        "requestedUrl": "https://srm-staging-runtime.onrender.com/",
+        "approvedVendorReuse": "SRM-STAGING-VENDOR-REUSE-20261009",
+        "developmentRuntimeMutationsAllowed": false
+      }
+    },
+    "approvalId": "SRM-STAGING-FIRST-DEPLOY-20261009",
+    "manifestDigest": "bea4d666d1076aa354fa41c1c1da9e0ef789c429f6a8c52717f925ff045fecfc",
+    "manifest": {
+      "schemaVersion": "2.0",
+      "projectKey": "SRM",
+      "repository": "profitia/SG-dev",
+      "targetEnvironment": "staging",
+      "sha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+      "contractDigest": "aea50a550d90324f8fe12f533a0d663c37e1897a78423269e45c6714315394d2",
+      "source": {
+        "repositoryId": 1247665550,
+        "approvedMainAncestor": true,
+        "ciPassed": true,
+        "developmentLiveSha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1"
+      },
+      "migrations": [
+        {
+          "version": "0001_xray_foundation",
+          "checksum": "14b18a8dfa4f45fb2c5fd6cdbffd4220db4826dead5d8a205e8663a1a9dd8445"
+        },
+        {
+          "version": "0002_ceidg_jdg",
+          "checksum": "365904ec0c70d56f57c7702c0e2516ec114b41737f05c1ff38e9a03004a78a25"
+        },
+        {
+          "version": "0003_financial_cost_normalization",
+          "checksum": "2e4f35bf603a207096562f88d8a0903c799cc906c2475eccb380434c2d6b07da"
+        },
+        {
+          "version": "0004_financial_other_cost_normalization",
+          "checksum": "fb78a2476249daedbe53fe87c2c6e8a66b2a3e06abd31b388603ac1ce3ad3c76"
+        },
+        {
+          "version": "0005_kys_personal",
+          "checksum": "c309f92b4ec31362c3dc6a004def889d37c90b095dcc9624d3f7f91298a3344a"
+        },
+        {
+          "version": "0006_kys_retention_privilege",
+          "checksum": "60629673484b92fd8877aa0a4355bd1e79818d51be3f7f88b4ceee19d9c8d771"
+        },
+        {
+          "version": "0007_shared_financial_catalog",
+          "checksum": "31c0bb7b7b0a54476cfa95033d463b7ee4071d1fac37090082dd4c7ede4f5b54"
+        },
+        {
+          "version": "0008_financial_indicators",
+          "checksum": "e1ab3ac396537fb52c17a99343379068c2a3c8b5be03890f95ce8405c19a91c5"
+        },
+        {
+          "version": "0009_financial_indicator_days",
+          "checksum": "f4a62fcaf826f1db90cbc0a930eafde2e8fe8e290b24c65bcdf9f98ffb45bcd2"
+        },
+        {
+          "version": "0010_kys_shared_cache",
+          "checksum": "1130979f8573048d060a919dc811dd63ee737688ff4533665d9ee16b32189c44"
+        },
+        {
+          "version": "0011_mgbi_raw_reports",
+          "checksum": "202e415b49dbe6d2df232392dc4b058f4aa8ed86f570b531efcee760ffe0d77c"
+        }
+      ]
+    },
+    "mode": "onboard",
+    "owner": "codespace:srm-pmos-activation-jjxx6vpp9v4x2q9vr",
+    "phase": "ONBOARDING_AUTHORIZED",
+    "resources": {},
+    "steps": {},
+    "lastKnownGood": null,
+    "sourceProof": {
+      "source": "LIVE_GITHUB_RENDER",
+      "sha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+      "ciCheckId": 113545522456,
+      "developmentDeployId": "dep-db40hjcs728c73fgajsg",
+      "developmentServiceId": "srv-db1vu6gm7kps73d0e3r0",
+      "capturedAt": "2026-10-09T06:55:25.054Z"
+    }
+  },
   "baseline": null
 }
