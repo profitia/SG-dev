@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { PoolClient } from "pg";
 import { withOrganization, type DatabasePool } from "./db";
+import { lookupRequestId } from "./lookup-diagnostics";
 import { kysCacheTtlMs } from "./kys-cache";
 
 export type Identifier = { type: "NIP" | "KRS"; value: string };
@@ -20,8 +21,8 @@ export async function createLookup(organizationId: string, identifier: Identifie
       [organizationId, identifier.value],
     );
     const request = await client.query<{ id: string }>(
-      "INSERT INTO srm.lookup_requests(organization_id, supplier_id, identifier_type, identifier, entity_type) VALUES ($1, $2, $3, $4, $5) RETURNING id",
-      [organizationId, supplier.rows[0].id, identifier.type, identifier.value, entityType],
+      "INSERT INTO srm.lookup_requests(id, organization_id, supplier_id, identifier_type, identifier, entity_type) VALUES (COALESCE($6::uuid, gen_random_uuid()), $1, $2, $3, $4, $5) RETURNING id",
+      [organizationId, supplier.rows[0].id, identifier.type, identifier.value, entityType, lookupRequestId() ?? null],
     );
     return { supplierId: supplier.rows[0].id, requestId: request.rows[0].id };
   }, pool);

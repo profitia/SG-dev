@@ -7,6 +7,9 @@ export function value(text: string | null | undefined): string {
 export function warningLabel(code: string): string {
   if (code === "FINANCIAL_NO_STRUCTURED_DATA") return "Nie mamy obecnie kwot finansowych do wyświetlenia dla tej firmy.";
   if (code === "FINANCIAL_INTERNATIONAL_STANDARD_UNAVAILABLE") return "Sprawozdanie finansowe jest dostępne, ale w obecnym zakresie danych nie możemy pokazać jego kwot. Sporządzono je według międzynarodowych standardów rachunkowości.";
+  if (code === "FINANCIAL_NO_XML") return "Dla tego sprawozdania nie jest dostępny obsługiwany dokument finansowy XML. Kwoty nie są dostępne.";
+  if (code === "FINANCIAL_UNKNOWN_FORMAT") return "Nie udało się potwierdzić dostępności obsługiwanego dokumentu finansowego. Kwoty pozostają niedostępne.";
+  if (code === "FINANCIAL_UNSUPPORTED_XML") return "Dokument finansowy jest dostępny, ale jego postać nie pozwala obecnie na odczyt kwot.";
   if (code === "KYS_PROVIDER_NOTICE") return "Raport KYS zawiera uwagę dotyczącą części sprawdzeń.";
   if (code === "KYS_INCOMPLETE_SOURCES") return "Nie wszystkie sprawdzane rejestry zwróciły dane.";
   if (code.startsWith("VERCLY_SEVERITY_")) return "Raport zawiera uwagę dostawcy danych.";

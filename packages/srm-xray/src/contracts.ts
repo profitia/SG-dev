@@ -39,6 +39,10 @@ export type GeneralCompanyData = {
 };
 
 export type FinancialPeriod = {
+  accountingStandard?: "POLISH_UOR" | "IAS_IFRS" | "UNKNOWN";
+  accountingStandardBasis?: string;
+  isIasCompliant?: boolean | null;
+  xmlSchema?: { name: string | null; version: string | null };
   from: string;
   to: string;
   scope: "standalone" | "consolidated";

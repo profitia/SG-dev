@@ -182,16 +182,16 @@ test("identifies a complete set of international-standard statements without dis
   } });
   assert.equal(requests, 1);
   assert.equal(result.section.status, "EMPTY");
-  assert.deepEqual(result.section.warnings, ["MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS"]);
+  assert.deepEqual(result.section.warnings, ["MGBI_FINANCIAL_UNKNOWN_FORMAT"]);
 });
 
 test("does not attribute unknown or partial missing statements to international standards", async () => {
   const statement = { id: "ias", identifiers: { pl_krs: identifier.value }, document: { type: "financial_statement", is_ias_compliant: true } };
   const partial = mapMgbiFinancialRecords([statement], identifier, at, 2);
-  assert.deepEqual(partial.section.warnings, ["MGBI_NO_STRUCTURED_FINANCIAL_DATA"]);
+  assert.deepEqual(partial.section.warnings, ["MGBI_FINANCIAL_UNKNOWN_FORMAT"]);
   const unknown = await fetchMgbiFinancial(identifier, { apiKey: "test", fetcher: async () =>
     Response.json({ count: 1, results: [{ ...statement, document: { type: "financial_statement" } }] }) });
-  assert.deepEqual(unknown.section.warnings, ["MGBI_NO_STRUCTURED_FINANCIAL_DATA"]);
+  assert.deepEqual(unknown.section.warnings, ["MGBI_FINANCIAL_UNKNOWN_FORMAT"]);
 });
 
 test("maps only verified flat MGBI XML paths for current and prior financial periods", () => {
@@ -266,4 +266,14 @@ test("COGS verification never combines different documents, periods or statement
     const cost = result.facts.find(fact => fact.metricCode === "PALA_COGS")!;
     assert.equal(cost.amount, magnitude); assert.equal(cost.sourceAmount, sourceAmount); assert.equal(cost.normalizationRule, "VERIFIED_COST_MAGNITUDE_V1");
   }
+});
+
+test("financial ingest never fetches licensed-out PDF/preview URLs or documents with unknown format", async () => {
+ const paths:string[]=[];
+ const pdf={...record,id:"pdf",files:{main_document:{original:{content_type:"application/pdf",url:"https://example.invalid/financial.pdf"},pdf_preview:{url:"https://example.invalid/preview.pdf"}}}};
+ const unknown={id:"unknown",identifiers:record.identifiers,document:{...record.document,is_ias_compliant:true},files:{main_document:{original:{url:"https://example.invalid/unknown"}}}};
+ const result=await fetchMgbiFinancial(identifier,{apiKey:"fixture",fetcher:async(url)=>{paths.push(new URL(String(url)).pathname);return Response.json({count:2,results:[pdf,unknown]});}});
+ assert.deepEqual(paths,["/v1/models/pl-krs-rdf-record/records"]);
+ assert.equal(result.facts.length,0);assert.equal(result.section.status,"EMPTY");
+ assert.deepEqual(result.section.warnings,["MGBI_FINANCIAL_UNKNOWN_FORMAT"]);
 });

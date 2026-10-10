@@ -119,7 +119,7 @@ function SectionFrame({
   section: DisplaySection<unknown>;
   children: ReactNode;
 }) {
-  const missingFinancialReason = section.data == null && section.warnings.find((warning) => warning === "FINANCIAL_NO_STRUCTURED_DATA" || warning === "FINANCIAL_INTERNATIONAL_STANDARD_UNAVAILABLE");
+  const missingFinancialReason = section.data == null && section.warnings.find((warning) => ["FINANCIAL_NO_STRUCTURED_DATA", "FINANCIAL_INTERNATIONAL_STANDARD_UNAVAILABLE", "FINANCIAL_NO_XML", "FINANCIAL_UNKNOWN_FORMAT", "FINANCIAL_UNSUPPORTED_XML"].includes(warning));
   return (
     <section className="xray-section" aria-label={title}>
       <header className="xray-section-header">

@@ -45,6 +45,8 @@ test("E2E simulation: first provider call, repeated same and other organization 
     async save(_org: string, _nip: string, _entity: string, owner: string, section: Section) {
       assert.equal(owner, lease); cached = { section, expiry: kysExpiry(section.retrievedAt!) }; lease = null;
     },
+    async hold() {},
+    async renew() { return true; },
     async release() { lease = null; },
   };
   const fetchReport = async () => {
@@ -79,7 +81,9 @@ test("failed and incomplete reports are not cached", async () => {
   let saved = 0;
   const store = {
     async read() { return null; }, async claim() { claims++; return "owner"; },
-    async save() { saved++; }, async release() {},
+    async save() { saved++; }, async hold() {},
+    async renew() { return true; },
+    async release() {},
   };
   const result = await getOrFetchKys(orgA, nip, "COMPANY",
     async () => ({ section: { ...report, status: "PARTIAL" as const }, errorCode: null, correlationId: null }),
@@ -87,4 +91,51 @@ test("failed and incomplete reports are not cached", async () => {
   assert.equal(result.section.status, "PARTIAL");
   assert.equal(claims, 1);
   assert.equal(saved, 0);
+});
+
+test("a follower never acquires a second paid flight after owner failure, and times out monotonically", async () => {
+ let elapsed = 0, claims = 0, posts = 0;
+ await assert.rejects(getOrFetchKys(orgA, nip, "COMPANY", async () => { posts++; throw new Error("unexpected"); }, async () => null,
+ { elapsedNow: () => elapsed, waitMs: 3000, sleep: async ms => { elapsed += ms; }, store: { read: async () => null, claim: async () => { claims++; return null; }, hold: async () => {}, renew: async () => true, save: async () => {}, release: async () => {} } }), /wait timed out/);
+ assert.equal(claims, 1); assert.equal(posts, 0); assert.equal(elapsed, 3000);
+});
+test("an expired owner cannot persist a tenant projection or overwrite cache", async () => {
+ let persisted = 0, saved = 0;
+ await assert.rejects(getOrFetchKys(orgA, nip, "COMPANY", async () => ({ section: report, errorCode: null, correlationId: null }), async () => { persisted++; return null; },
+ { store: { read: async () => null, claim: async () => "old", hold: async () => {}, renew: async () => false, save: async () => { saved++; }, release: async () => {} } }), /lease expired/);
+ assert.equal(persisted, 0); assert.equal(saved, 0);
+});
+test("an ambiguous POST keeps the lease, preventing an immediate duplicate order", async () => {
+ let released = 0;
+ await getOrFetchKys(orgA, nip, "COMPANY", async () => ({ section: { ...report, status: "ERROR" }, errorCode: "VERCLY_POST_OUTCOME_UNKNOWN", correlationId: null }), async () => null,
+ { store: { read: async () => null, claim: async () => "owner", hold: async () => {}, renew: async () => true, save: async () => {}, release: async () => { released++; } } });
+ assert.equal(released, 0);
+});
+
+
+test("concurrent organizations share one provider order and finalize their own snapshots", async () => {
+ let cache: Section | null = null, lease: string | null = null, calls = 0;
+ let accept: (value: {section: Section;errorCode: null;correlationId: null}) => void = () => {};
+ const provider = new Promise<{section: Section;errorCode: null;correlationId: null}>(resolve => { accept = resolve; });
+ let waiting: () => void = () => {};
+ const followerWaiting = new Promise<void>(resolve => { waiting = resolve; });
+ const store = { read: async () => cache, claim: async () => { if (lease) return null; lease = "owner"; return lease; },
+  renew: async () => lease === "owner", hold: async () => {}, release: async () => { lease = null; },
+  save: async (_org: string, _nip: string, _entity: string, owner: string, section: Section) => { assert.equal(owner,lease);cache=section;lease=null; } };
+ const options = {store, sleep: async () => { waiting(); await new Promise<void>(resolve=>setTimeout(resolve,1)); }};
+ const fetch = () => { calls++; return provider; };
+ const owner = getOrFetchKys(orgA,nip,"COMPANY",fetch,async()=>"snapshot-a",options);
+ await new Promise<void>(resolve=>setTimeout(resolve,0));
+ const follower = getOrFetchKys(orgB,nip,"COMPANY",fetch,async()=>"snapshot-b",options);
+ await followerWaiting; accept({section:report,errorCode:null,correlationId:null});
+ const results = await Promise.all([owner,follower]);
+ assert.equal(calls,1);assert.deepEqual(results.map(r=>r.retrievalMethod),["PROVIDER","CACHE"]);
+ assert.deepEqual(results.map(r=>r.snapshotId),["snapshot-a","snapshot-b"]);
+});
+
+test("accepted paid order with GET failure stays held instead of releasing for another POST", async () => {
+ let holds=0,releases=0;
+ await getOrFetchKys(orgA,nip,"COMPANY",async()=>({section:{...report,status:"ERROR" as const,data:null},errorCode:"HTTP_400",correlationId:"classified",providerOrderAccepted:true}),async()=>null,
+ {store:{read:async()=>null,claim:async()=>"owner",renew:async()=>true,save:async()=>{},hold:async()=>{holds++;},release:async()=>{releases++;}}});
+ assert.equal(holds,1);assert.equal(releases,0);
 });

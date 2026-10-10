@@ -126,3 +126,23 @@ test("retries temporary 404 while Vercly prepares the report", async () => {
   assert.deepEqual(sleeps, [2000, 2000, 2000]);
   assert.deepEqual(result.section.data?.registryChecks, { krzListed: null, vatActive: null, euVat: null });
 });
+
+test("rate-limit Retry-After and transient statuses respect a single POST-to-result monotonic budget", async () => {
+  let elapsed = 0, calls = 0; const waits: number[] = [];
+  const fetcher = (async (_url: unknown, init: RequestInit) => {
+    calls++; if (calls === 1) { assert.equal(init.method, "POST"); elapsed += 1000; return response(["correlation123"]); }
+    if (calls === 2) return new Response("{}", { status: 429, headers: { "Retry-After": "4" } });
+    return response([{ Header: { CorrelationId: "correlation123" }, Body: { IsComplete: true, Entity: { Ids: [{ Type: "VatID", Value: "PL5272443955" }] } } }]);
+  }) as typeof fetch;
+  const result = await fetchVerclyKys(request, { apiKey: "fixture", baseUrl: "https://vercly.example", fetcher, elapsedNow: () => elapsed, pollTimeoutMs: 10000, pollIntervalMs: 2000, sleep: async ms => { waits.push(ms); elapsed += ms; } });
+  assert.equal(result.section.status, "SUCCESS"); assert.deepEqual(waits, [2000, 4000]); assert.equal(calls, 3);
+});
+test("pending report stops at the unified deadline; POST is never retried after an ambiguous transport failure", async () => {
+  let elapsed = 0, calls = 0;
+  const pending = (async () => ++calls === 1 ? response(["correlation123"]) : response([{ Header: { CorrelationId: "correlation123" }, Body: { IsComplete: false } }])) as typeof fetch;
+  const result = await fetchVerclyKys(request, { apiKey: "fixture", baseUrl: "https://vercly.example", fetcher: pending, elapsedNow: () => elapsed, pollTimeoutMs: 5000, sleep: async ms => { elapsed += ms; } });
+  assert.equal(result.errorCode, "VERCLY_TIMEOUT"); assert.equal(elapsed, 5000); assert.equal(calls, 2);
+  calls = 0;
+  const ambiguous = await fetchVerclyKys(request, { apiKey: "fixture", baseUrl: "https://vercly.example", fetcher: (async () => { calls++; throw new Error("connection reset"); }) as typeof fetch });
+  assert.equal(ambiguous.errorCode, "VERCLY_POST_OUTCOME_UNKNOWN"); assert.equal(calls, 1);
+});

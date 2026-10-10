@@ -1,5 +1,6 @@
 import type { FinancialData, FinancialPeriod, SectionEnvelope } from "@profitia/srm-xray";
 import type { CompanyIdentifier, MgbiGeneralOptions } from "./mgbi-general";
+import { projectFinancialDocuments } from "./financial-documents";
 import { fetchMgbiPages } from "./mgbi-archive";
 
 type RecordObject = Record<string, unknown>;
@@ -151,12 +152,15 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
     return type === "financial_statement" || type === "consolidated_financial_statement";
   }).sort((a, b) => (string(field(b, "document", "period_to_date")) ?? "").localeCompare(string(field(a, "document", "period_to_date")) ?? ""));
 
+  const documents = new Map(projectFinancialDocuments(selected).map((document) => [document.recordId, document]));
   const periods: FinancialPeriod[] = [];
   const facts: FinancialSourceFact[] = [];
   const sourceDocuments = new Map<FinancialSourceFact, string>();
   const seen = new Set<string>();
   for (const record of selected) {
     const document = obj(field(record, "document"));
+    const documentMetadata = documents.get(string(field(record, "id")) ?? "");
+    if (documentMetadata?.availability === "NO_XML" || documentMetadata?.availability === "UNSUPPORTED_XML") continue;
     const standardized = obj(field(record, "content", "standardized_fields"));
     const extracted = obj(field(record, "content", "extracted_fields"));
     const from = date(document?.period_from_date);
@@ -195,7 +199,7 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
           sourceDocuments.set(facts.at(-1)!, key);
           let period = byPeriod.get(key);
           if (!period) {
-            period = { from: periodStart, to: periodEnd, scope: scope === "UNIT" ? "standalone" : "consolidated", documentId: key, facts: [] };
+            period = { from: periodStart, to: periodEnd, scope: scope === "UNIT" ? "standalone" : "consolidated", documentId: key, accountingStandard: documents.get(recordId)?.standard, accountingStandardBasis: documents.get(recordId)?.standardBasis, isIasCompliant: documents.get(recordId)?.isIasCompliant, xmlSchema: { name: documents.get(recordId)?.schemaName ?? null, version: documents.get(recordId)?.schemaVersion ?? null }, facts: [] };
             byPeriod.set(key, period);
             periods.push(period);
           }
@@ -229,7 +233,7 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
         sourceDocuments.set(fact, key);
         let period = byPeriod.get(key);
         if (!period) {
-          period = { from: periodStart, to: periodEnd, scope: scope === "UNIT" ? "standalone" : "consolidated", documentId: key, facts: [] };
+          period = { from: periodStart, to: periodEnd, scope: scope === "UNIT" ? "standalone" : "consolidated", documentId: key, accountingStandard: documents.get(recordId)?.standard, accountingStandardBasis: documents.get(recordId)?.standardBasis, isIasCompliant: documents.get(recordId)?.isIasCompliant, xmlSchema: { name: documents.get(recordId)?.schemaName ?? null, version: documents.get(recordId)?.schemaVersion ?? null }, facts: [] };
           byPeriod.set(key, period);
           periods.push(period);
         }
@@ -238,7 +242,11 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
       }
     }
   }
-  if (!facts.length) return empty("EMPTY", retrievedAt, NO_FINANCIAL_FACTS, null);
+  if (!facts.length) {
+    const availability = [...documents.values()].map((document) => document.availability);
+    const warning = availability.length && availability.every(value => value === "NO_XML") ? "MGBI_FINANCIAL_NO_XML" : availability.includes("UNSUPPORTED_XML") ? "MGBI_FINANCIAL_UNSUPPORTED_XML" : availability.includes("UNKNOWN_FORMAT") ? "MGBI_FINANCIAL_UNKNOWN_FORMAT" : NO_FINANCIAL_FACTS;
+    return empty("EMPTY", retrievedAt, warning, null);
+  }
   const sourceData: FinancialData = structuredClone({ periods });
   const unverifiedCosts = reconcileCosts(periods, facts, sourceDocuments);
   const incomplete = totalCount > records.length;
@@ -278,7 +286,7 @@ export async function fetchMgbiFinancial(identifier: CompanyIdentifier, options:
     if (response.errorCode) return empty("ERROR", retrievedAt, `MGBI_${response.errorCode}`, response.errorCode);
     mapping = true;
     const mapped = mapMgbiFinancialRecords(response.records, identifier, retrievedAt, response.count);
-    const result = mapped.section.status === "EMPTY" && isInternationalStatementWithoutFacts(response.records, identifier, response.count)
+    const result = mapped.section.status === "EMPTY" && mapped.section.warnings.includes(NO_FINANCIAL_FACTS) && isInternationalStatementWithoutFacts(response.records, identifier, response.count)
       ? empty("EMPTY", retrievedAt, INTERNATIONAL_STATEMENT, null) : mapped;
     return { ...result, rawResponse: { pages: response.pages, recordCount: response.count } };
   } catch (error) {

@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { SectionEnvelope, VerclyKysData } from "@profitia/srm-xray";
+import { atLookupStage, kysMode, kysOutcome } from "./lookup-diagnostics";
 import { withOrganization } from "./db";
 
 export type KysEntityType = "COMPANY" | "JDG";
@@ -8,11 +9,15 @@ export interface KysCacheStore {
   read(organizationId: string, nip: string, entityType: KysEntityType, now: Date): Promise<KysSection | null>;
   claim(organizationId: string, nip: string, entityType: KysEntityType, now: Date): Promise<string | null>;
   save(organizationId: string, nip: string, entityType: KysEntityType, owner: string, section: KysSection, snapshotId: string | null): Promise<void>;
+  hold(organizationId: string, nip: string, entityType: KysEntityType, owner: string): Promise<void>;
+  renew(organizationId: string, nip: string, entityType: KysEntityType, owner: string, now: Date): Promise<boolean>;
   release(organizationId: string, nip: string, entityType: KysEntityType, owner: string): Promise<void>;
 }
 export const MAX_KYS_CACHE_TTL_HOURS = 168;
 const HOUR_MS = 60 * 60 * 1000;
-const LEASE_MS = 190_000;
+export const KYS_LEASE_MS = 260_000;
+export const KYS_FINALIZATION_BUDGET_MS = 60_000;
+export const KYS_FOLLOWER_BUDGET_MS = 270_000;
 
 /** Shortening this setting immediately makes older cached results ineligible. */
 export function kysCacheTtlMs(env: Readonly<Record<string, string | undefined>> = process.env): number {
@@ -76,7 +81,7 @@ export async function claimKysRefresh(organizationId: string, nip: string, entit
            OR srm.catalog_kys_reports.retrieved_at + ($6::bigint * interval '1 millisecond') <= $5
            OR jsonb_typeof(srm.catalog_kys_reports.report_json #> '{data,pepMatches}') IS DISTINCT FROM 'array')
        RETURNING lease_owner`,
-      [nip, entityType, owner, new Date(now.getTime() + LEASE_MS), now, kysCacheTtlMs()],
+      [nip, entityType, owner, new Date(now.getTime() + KYS_LEASE_MS), now, kysCacheTtlMs()],
     );
     return result.rows[0]?.lease_owner ?? null;
   });
@@ -114,43 +119,91 @@ export async function releaseKysRefresh(organizationId: string, nip: string, ent
 export async function purgeExpiredSharedKys(organizationId: string, now = new Date()): Promise<void> {
   await withOrganization(organizationId, async (client) => {
     await client.query(
-      "DELETE FROM srm.catalog_kys_reports WHERE report_json IS NOT NULL AND (retention_until <= $1 OR retrieved_at + ($2::bigint * interval '1 millisecond') <= $1) AND (lease_until IS NULL OR lease_until <= $1)",
+      "UPDATE srm.catalog_kys_reports SET report_json = NULL, report_sha256 = NULL WHERE report_json IS NOT NULL AND (retention_until <= $1 OR retrieved_at + ($2::bigint * interval '1 millisecond') <= $1)",
       [now, kysCacheTtlMs()],
     );
   });
 }
 
-export async function getOrFetchKys(organizationId: string, nip: string, entityType: KysEntityType,
-  fetchReport: () => Promise<{ section: KysSection; errorCode: string | null; correlationId: string | null }>,
-  persist: (section: KysSection, errorCode: string | null, correlationId: string | null, method: "PROVIDER" | "CACHE") => Promise<string | null>,
-  options: { now?: () => Date; sleep?: (ms: number) => Promise<void>; waitMs?: number;
-    store?: KysCacheStore } = {},
-): Promise<{ section: KysSection; snapshotId: string | null; retrievalMethod: "PROVIDER" | "CACHE" }> {
-  const now = options.now ?? (() => new Date());
-  const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
-  const store = options.store ?? kysStore;
-  const waitMs = options.waitMs ?? 195_000;
-  const deadline = now().getTime() + waitMs;
-  while (true) {
-    const hit = await store.read(organizationId, nip, entityType, now());
-    if (hit) return { section: hit, snapshotId: await persist(hit, null, null, "CACHE"), retrievalMethod: "CACHE" };
-    const owner = await store.claim(organizationId, nip, entityType, now());
-    if (owner) {
-      try {
-        const result = await fetchReport();
-        const snapshotId = await persist(result.section, result.errorCode, result.correlationId, "PROVIDER");
-        if (result.section.status === "SUCCESS" && result.section.data) {
-          await store.save(organizationId, nip, entityType, owner, result.section, snapshotId);
-        } else await store.release(organizationId, nip, entityType, owner);
-        return { section: result.section, snapshotId, retrievalMethod: "PROVIDER" };
-      } catch (error) {
-        await store.release(organizationId, nip, entityType, owner).catch(() => {});
-        throw error;
-      }
-    }
-    if (now().getTime() >= deadline) throw new Error("KYS cache refresh wait timed out");
-    await sleep(1_000);
-  }
+/** An ambiguous paid POST requires explicit reconciliation; lease expiry must not silently order again. */
+export async function holdKysRefresh(organizationId: string, nip: string, entityType: KysEntityType, owner: string): Promise<void> {
+  await withOrganization(organizationId, async (client) => { await client.query("UPDATE srm.catalog_kys_reports SET lease_until = 'infinity'::timestamptz WHERE nip=$1 AND entity_type=$2 AND lease_owner=$3", [nip, entityType, owner]); });
 }
 
-const kysStore = { read: readFreshKys, claim: claimKysRefresh, save: saveKysRefresh, release: releaseKysRefresh };
+export async function renewKysRefresh(organizationId: string, nip: string, entityType: KysEntityType, owner: string, now: Date): Promise<boolean> {
+  return withOrganization(organizationId, async (client) => {
+    const result = await client.query("UPDATE srm.catalog_kys_reports SET lease_until = $5 WHERE nip = $1 AND entity_type = $2 AND lease_owner = $3 AND lease_until > $4", [nip, entityType, owner, now, new Date(now.getTime() + KYS_LEASE_MS)]);
+    return result.rowCount === 1;
+  });
+}
+
+export async function getOrFetchKys(organizationId: string, nip: string, entityType: KysEntityType,
+  fetchReport: () => Promise<{ section: KysSection; errorCode: string | null; correlationId: string | null; providerOrderAccepted?: boolean }>,
+  persist: (section: KysSection, errorCode: string | null, correlationId: string | null, method: "PROVIDER" | "CACHE") => Promise<string | null>,
+  options: { now?: () => Date; sleep?: (ms: number) => Promise<void>; waitMs?: number; elapsedNow?: () => number; signal?: AbortSignal; store?: KysCacheStore } = {},
+): Promise<{ section: KysSection; snapshotId: string | null; retrievalMethod: "PROVIDER" | "CACHE" }> {
+  const now = options.now ?? (() => new Date());
+  const clock = options.elapsedNow ?? (() => performance.now());
+  const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const store = options.store ?? kysStore;
+  const finalize = async (section: KysSection, errorCode: string | null, correlationId: string | null, method: "PROVIDER" | "CACHE", budget = KYS_FINALIZATION_BUDGET_MS) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try { return await atLookupStage("tenant_persistence", () => Promise.race([
+      persist(section, errorCode, correlationId, method),
+      new Promise<never>((_, reject) => { timer = setTimeout(() => { kysOutcome("ERROR", "TIMEOUT"); reject(new Error("KYS finalization timed out")); }, Math.max(1, budget)); }),
+    ]), "kys"); } finally { if (timer) clearTimeout(timer); }
+  };
+  const deadline = clock() + (options.waitMs ?? KYS_FOLLOWER_BUDGET_MS);
+  options.signal?.throwIfAborted();
+  const hit = await atLookupStage("cache_read", () => store.read(organizationId, nip, entityType, now()), "kys");
+  if (hit) {
+    kysMode("CACHE"); kysOutcome(hit.status);
+    return { section: hit, snapshotId: await finalize(hit, null, null, "CACHE"), retrievalMethod: "CACHE" };
+  }
+  const owner = await atLookupStage("lease_acquisition", () => store.claim(organizationId, nip, entityType, now()), "kys");
+  if (owner) {
+    kysMode("PROVIDER"); let ambiguous = true;
+    try {
+      const result = await fetchReport();
+      ambiguous = result.providerOrderAccepted === true && result.section.status !== "SUCCESS" || Boolean(result.errorCode && ["VERCLY_POST_OUTCOME_UNKNOWN", "VERCLY_ABORTED", "VERCLY_TIMEOUT", "VERCLY_NETWORK_ERROR"].includes(result.errorCode));
+      kysOutcome(result.section.status, result.errorCode);
+      // Verify ownership before tenant persistence. Expired owners never publish a new projection.
+      if (!await atLookupStage("lease_acquisition", () => store.renew(organizationId, nip, entityType, owner, now()), "kys")) throw new Error("KYS cache refresh lease expired");
+      let finalizationTimer: ReturnType<typeof setTimeout> | undefined;
+      let snapshotId: string | null;
+      try {
+        snapshotId = await Promise.race([
+          (async () => {
+            // Publish the complete shared report while ownership is valid, before tenant finalization.
+            // A tenant persistence failure cannot cause another paid provider order.
+            if (result.section.status === "SUCCESS" && result.section.data) await atLookupStage("cache_persistence", () => store.save(organizationId, nip, entityType, owner, result.section, null), "kys");
+            else if (ambiguous) await store.hold(organizationId, nip, entityType, owner);
+            return finalize(result.section, result.errorCode, result.correlationId, "PROVIDER");
+          })(),
+          new Promise<never>((_, reject) => { finalizationTimer = setTimeout(() => { kysOutcome("ERROR", "TIMEOUT"); reject(new Error("KYS finalization timed out")); }, KYS_FINALIZATION_BUDGET_MS); }),
+        ]);
+      } finally { if (finalizationTimer) clearTimeout(finalizationTimer); }
+      if (result.section.status !== "SUCCESS" && !ambiguous) await store.release(organizationId, nip, entityType, owner);
+      return { section: result.section, snapshotId, retrievalMethod: "PROVIDER" };
+    } catch (error) {
+      kysOutcome("ERROR", error instanceof Error && error.message.includes("timed out") ? "TIMEOUT" : null);
+      if (ambiguous) await store.hold(organizationId, nip, entityType, owner).catch(() => {});
+      else await store.release(organizationId, nip, entityType, owner).catch(() => {});
+      throw error;
+    }
+  }
+  kysMode("FOLLOWER");
+  // A follower observes the existing flight; it cannot turn a failed/ambiguous flight into another POST.
+  while (clock() < deadline) {
+    options.signal?.throwIfAborted();
+    const section = await atLookupStage("cache_read", () => store.read(organizationId, nip, entityType, now()), "kys");
+    if (section) {
+      kysOutcome(section.status);
+      return { section, snapshotId: await finalize(section, null, null, "CACHE", Math.min(KYS_FINALIZATION_BUDGET_MS, deadline - clock())), retrievalMethod: "CACHE" };
+    }
+    await sleep(Math.min(2_000, Math.max(0, deadline - clock())));
+  }
+  kysOutcome("ERROR", "TIMEOUT");
+  throw new Error("KYS cache refresh wait timed out");
+}
+const kysStore = { read: readFreshKys, claim: claimKysRefresh, save: saveKysRefresh, release: releaseKysRefresh, renew: renewKysRefresh, hold: holdKysRefresh };

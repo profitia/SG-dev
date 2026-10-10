@@ -265,3 +265,12 @@ test("PDF action is adjacent full KYS only for explicitly displayed bound fresh 
     { ...ready, metadata: { ...meta, kys: { ...meta.kys, freshness: { ...meta.kys.freshness, freshness: "EXPIRED" as const } } } },
     { ...ready, kysBusy: true } ]) assert(!markup(unavailable, extra).includes("Pobierz raport KYS (PDF)"));
 });
+
+test("HTTP KYS failure retains opaque server timing for the committed error render without report contents", async () => {
+ const requestId="11111111-1111-4111-8111-111111111111";
+ const {instance}=controller(company(),{"/api/xray/kys":async()=>Response.json({error:"Źródło niedostępne."},{status:503,headers:{"X-SRM-Request-Id":requestId,"X-SRM-KYS-Mode":"PROVIDER","Server-Timing":"total;dur=100"}})});
+ await instance.search(nipA);await instance.fetchKys();const state=instance.getSnapshot();
+ assert.equal(state.kys.status,"ERROR");assert.equal(state.kysTiming?.requestId,requestId);
+ assert.equal(state.kysTiming?.mode,"PROVIDER");assert.ok(state.kysTiming!.apiMs>=0);
+ assert.equal(state.kys.data,null);assert.equal(JSON.stringify(state.kysTiming).includes(nipA),false);
+});

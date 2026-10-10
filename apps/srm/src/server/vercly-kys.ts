@@ -1,3 +1,4 @@
+import { measureLookup } from "./lookup-diagnostics";
 import type { SectionEnvelope, VerclyKysData } from "@profitia/srm-xray";
 
 type VerclyPepMatch = NonNullable<VerclyKysData["pepMatches"]>[number];
@@ -11,6 +12,7 @@ export type VerclyKysResult = {
   correlationId: string | null;
   reportId: string | null;
   errorCode: string | null;
+  providerOrderAccepted?: boolean;
 };
 
 type Options = {
@@ -21,6 +23,8 @@ type Options = {
   sleep?: (ms: number) => Promise<void>;
   pollIntervalMs?: number;
   pollTimeoutMs?: number;
+  elapsedNow?: () => number;
+  signal?: AbortSignal;
 };
 
 const MODEL = "KYS_NIP";
@@ -261,53 +265,66 @@ function failure(code: string, retrievedAt: string, correlationId: string | null
   return { section: { status: "ERROR", source: source(null), retrievedAt, effectiveAt: null, data: null, warnings: [code] }, correlationId, reportId: null, errorCode: code };
 }
 
-async function jsonRequest(fetcher: typeof fetch, url: string, init: RequestInit): Promise<unknown> {
-  const response = await fetcher(url, { ...init, cache: "no-store", signal: AbortSignal.timeout(20_000) });
-  if (!response.ok) throw new Error(`HTTP_${response.status}`);
-  try { return await response.json(); } catch { throw new Error("INVALID_JSON"); }
+export const KYS_PROVIDER_BUDGET_MS = 180_000;
+class HttpFailure extends Error {
+  constructor(readonly status: number, readonly retryAfterMs: number | null) { super(`HTTP_${status}`); }
 }
-
 export async function fetchVerclyKys(request: VerclyKysRequest, options: Options = {}): Promise<VerclyKysResult> {
   if (request.identifier.type !== "NIP" || !validNip(request.identifier.value)) throw new Error("A valid NIP is required");
+  const now = options.now ?? (() => new Date());
   const apiKey = options.apiKey ?? process.env.VERCLY_API_KEY;
   const baseUrl = options.baseUrl ?? process.env.VERCLY_API_BASE_URL;
-  if (!apiKey || !baseUrl) return failure("VERCLY_NOT_CONFIGURED", (options.now ?? (() => new Date()))().toISOString());
+  if (!apiKey || !baseUrl) return failure("VERCLY_NOT_CONFIGURED", now().toISOString());
   const base = new URL(baseUrl);
   if (base.protocol !== "https:") throw new Error("Vercly API must use HTTPS");
+  const clock = options.elapsedNow ?? (() => performance.now());
+  const deadline = clock() + Math.min(options.pollTimeoutMs ?? KYS_PROVIDER_BUDGET_MS, KYS_PROVIDER_BUDGET_MS);
+  const interval = Math.max(2_000, Math.min(5_000, options.pollIntervalMs ?? 3_000));
+  const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(done, ms);
+    function done() { options.signal?.removeEventListener("abort", aborted); resolve(); }
+    function aborted() { clearTimeout(timer); options.signal?.removeEventListener("abort", aborted); reject(new Error("ABORTED")); }
+    options.signal?.addEventListener("abort", aborted, { once: true });
+  }));
+  const remaining = () => { options.signal?.throwIfAborted(); const ms = deadline - clock(); if (ms <= 0) throw new Error("TIMEOUT"); return ms; };
+  const wait = async (ms: number) => { const budget = remaining(); await measureLookup("poll_wait", () => sleep(Math.min(ms, budget))); remaining(); };
   const fetcher = options.fetcher ?? fetch;
-  const now = options.now ?? (() => new Date());
-  const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const headers = { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" };
+  const jsonRequest = (path: string, init: RequestInit) => measureLookup(init.method === "POST" ? "vercly_post" : "vercly_get", async () => {
+    const timeout = AbortSignal.timeout(Math.max(1, Math.floor(Math.min(20_000, remaining()))));
+    const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
+    const response = await fetcher(new URL(path, base).toString(), { ...init, headers, cache: "no-store", signal });
+    const retry = response.headers.get("Retry-After");
+    const seconds = retry === null ? NaN : Number(retry);
+    const retryAfterMs = Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : retry && Number.isFinite(Date.parse(retry)) ? Math.max(0, Date.parse(retry) - now().getTime()) : null;
+    if (!response.ok) throw new HttpFailure(response.status, retryAfterMs);
+    try { return await response.json() as unknown; } catch { throw new Error("INVALID_JSON"); }
+  });
   let correlationId: string | null = null;
+  let postAccepted = false;
   try {
-    const started = await jsonRequest(fetcher, new URL("/api/verifications", base).toString(), {
-      method: "POST", headers, body: JSON.stringify([{
-        Id: request.identifier.value,
-        Country: "PL",
-      }]),
-    });
+    // POST is issued once. An ambiguous outcome is never retried as a new paid order.
+    const started = await jsonRequest("/api/verifications", { method: "POST", body: JSON.stringify([{ Id: request.identifier.value, Country: "PL" }]) });
     correlationId = string(items(started)[0]);
     if (!correlationId || !/^[A-Za-z0-9_-]{8,100}$/.test(correlationId)) throw new Error("INVALID_CORRELATION_ID");
-    const deadline = Date.now() + (options.pollTimeoutMs ?? 180_000);
-    await sleep(options.pollIntervalMs ?? 3_000);
+    postAccepted = true;
+    await wait(interval);
     while (true) {
-      let payload: unknown;
-      try {
-        payload = await jsonRequest(fetcher, new URL(`/api/verifications/${correlationId}`, base).toString(), { method: "GET", headers });
-      } catch (error) {
-        if (!(error instanceof Error) || error.message !== "HTTP_404") throw error;
-        if (Date.now() >= deadline) return failure("VERCLY_REPORT_NOT_READY", now().toISOString(), correlationId);
-        await sleep(options.pollIntervalMs ?? 3_000);
-        continue;
+      remaining(); let payload: unknown;
+      try { payload = await jsonRequest(`/api/verifications/${correlationId}`, { method: "GET" }); }
+      catch (error) {
+        const retryable = error instanceof HttpFailure ? [404, 429, 502, 503, 504].includes(error.status) : !options.signal?.aborted && (error instanceof TypeError || error instanceof Error && error.name === "TimeoutError");
+        if (!retryable) throw error;
+        await wait(Math.max(interval, error instanceof HttpFailure ? error.retryAfterMs ?? interval : interval)); continue;
       }
       if (!Array.isArray(payload) || !payload.length) throw new Error("INVALID_REPORT");
-      const mapped = mapReport(payload[0], request, correlationId, now().toISOString());
-      if (mapped.section.status !== "PENDING") return mapped;
-      if (Date.now() >= deadline) return failure("VERCLY_TIMEOUT", now().toISOString(), correlationId);
-      await sleep(options.pollIntervalMs ?? 3_000);
+      const mapped = await measureLookup("mapping", async () => mapReport(payload[0], request, correlationId!, now().toISOString()));
+      remaining();
+      if (mapped.section.status !== "PENDING") return { ...mapped, providerOrderAccepted: true };
+      await wait(interval);
     }
   } catch (error) {
-    const code = error instanceof Error ? error.message : "VERCLY_UNKNOWN_ERROR";
-    return failure(/^HTTP_\d+$|^[A-Z_]+$/.test(code) ? code : "VERCLY_NETWORK_ERROR", now().toISOString(), correlationId);
+    const code = options.signal?.aborted ? "VERCLY_ABORTED" : !postAccepted && (!(error instanceof HttpFailure) || error.status >= 500 || error.status === 408) ? "VERCLY_POST_OUTCOME_UNKNOWN" : error instanceof Error && (error.name === "TimeoutError" || error.message === "TIMEOUT") ? "VERCLY_TIMEOUT" : error instanceof Error && /^HTTP_\d+$|^[A-Z_]+$/.test(error.message) ? error.message : "VERCLY_NETWORK_ERROR";
+    return { ...failure(code, now().toISOString(), correlationId), providerOrderAccepted: postAccepted };
   }
 }

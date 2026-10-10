@@ -3,6 +3,7 @@ import type { SectionEnvelope, SupplierXRayCard } from "@profitia/srm-xray";
 import { emptyCard } from "../demo/fixture";
 import { fetchMgbiGeneral, type CompanyIdentifier } from "./mgbi-general";
 import { fetchMgbiFinancial, type FinancialSourceFact } from "./mgbi-financial";
+import { saveFinancialDocuments, readFinancialDocuments, applyFinancialDocumentMetadata } from "./financial-documents";
 import { saveMgbiArchive } from "./mgbi-archive";
 import { fetchVerclyKys } from "./vercly-kys";
 import { getOrFetchKys, kysExpiry, purgeExpiredSharedKys } from "./kys-cache";
@@ -16,6 +17,7 @@ export function toPublicSection<T>(section: SectionEnvelope<T>): Omit<SectionEnv
   const warningCodes = section.warnings.map((code) => {
     if (code === "MGBI_NO_STRUCTURED_FINANCIAL_DATA") return "FINANCIAL_NO_STRUCTURED_DATA";
     if (code === "MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS") return "FINANCIAL_INTERNATIONAL_STANDARD_UNAVAILABLE";
+    if (["MGBI_FINANCIAL_NO_XML", "MGBI_FINANCIAL_UNKNOWN_FORMAT", "MGBI_FINANCIAL_UNSUPPORTED_XML"].includes(code)) return code.replace("MGBI_", "");
     if (code === "MGBI_COST_SIGN_UNVERIFIED") return "FINANCIAL_COST_SIGN_UNVERIFIED";
     if (code === "VERCLY_INCOMPLETE_SOURCES") return "KYS_INCOMPLETE_SOURCES";
     if (code.startsWith("VERCLY_SEVERITY_")) return "KYS_PROVIDER_NOTICE";
@@ -94,9 +96,10 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
   if (cached) {
     logProviderOutcome("MGBI", "general", cached.general.status, null, "CACHE");
     logProviderOutcome("MGBI", "financial", cached.financial.status, null, "CACHE");
-    const financial = cached.financial.data
-      ? { ...cached.financial, data: { ...cached.financial.data, indicators: await refreshFinancialIndicators(organizationId, request.identifier.value, cached.financial.data) } }
-      : cached.financial;
+    const savedFinancial = applyFinancialDocumentMetadata(cached.financial, await readFinancialDocuments(organizationId, request.identifier.value));
+    const financial = savedFinancial.data
+      ? { ...savedFinancial, data: { ...savedFinancial.data, indicators: await refreshFinancialIndicators(organizationId, request.identifier.value, savedFinancial.data) } }
+      : savedFinancial;
     await recordDemoInterest(organizationId, request.identifier.value);
     return {
       identity: {
@@ -128,7 +131,7 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
       : Promise.resolve(),
     financial.rawResponse && financial.section.retrievedAt
       ? saveMgbiArchive(organizationId, request.identifier.value, "pl-krs-rdf-record",
-        financial.rawResponse.pages, financial.rawResponse.recordCount, financial.section.retrievedAt, lookup.requestId)
+        financial.rawResponse.pages, financial.rawResponse.recordCount, financial.section.retrievedAt, lookup.requestId).then(() => saveFinancialDocuments(organizationId, request.identifier.value, financial.rawResponse!.pages))
       : Promise.resolve(),
   ]));
   const generalSnapshotId = await persistSection(organizationId, lookup, "general", general.section, general.errorCode);
@@ -154,14 +157,14 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
   };
 }
 
-export async function runXrayKysLookup(organizationId: string, request: XrayLookupRequest, entityType: "COMPANY" | "JDG" = "COMPANY"): Promise<{ section: SupplierXRayCard["kys"]; snapshotId: string | null }> {
-  await atLookupStage("retention_cleanup", () => purgeExpiredKysPersonal(organizationId), "kys");
-  await atLookupStage("retention_cleanup", () => purgeExpiredSharedKys(organizationId), "kys");
+export async function runXrayKysLookup(organizationId: string, request: XrayLookupRequest, entityType: "COMPANY" | "JDG" = "COMPANY", signal?: AbortSignal): Promise<{ section: SupplierXRayCard["kys"]; snapshotId: string | null }> {
+  await atLookupStage("retention_cleanup", () => Promise.all([purgeExpiredKysPersonal(organizationId), purgeExpiredSharedKys(organizationId)]), "kys");
   const lookup = await atLookupStage("lookup_registration", () => createLookup(organizationId, request.identifier, entityType));
   const result = await getOrFetchKys(organizationId, request.identifier.value, entityType,
-    () => atLookupStage("provider_retrieval", () => fetchVerclyKys({ identifier: request.identifier }), "kys"),
+    () => atLookupStage("provider_retrieval", () => fetchVerclyKys({ identifier: request.identifier }, { signal }), "kys"),
     (section, errorCode, correlationId, method) =>
       persistSection(organizationId, lookup, "kys", section, errorCode, [], correlationId, undefined, method),
+    { signal },
   );
   return { section: result.section, snapshotId: result.snapshotId };
 }
