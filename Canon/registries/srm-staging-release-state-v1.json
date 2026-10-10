@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "54e6c1e62b432d5461363c89445bc721d82d7bd95e02f5e5d1c3d68fbed0a5af",
+  "publicationNonce": "64994e8d2165acf21df977ae97c2eb7f9289851b664df42b872a924a1273fd19",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 56,
+  "generation": 57,
   "release": {
     "authorizationDigest": "98b806bbb3e7721ac0b7e03e062366aab6a449e324e2f000ed5050d34a786193",
     "authorizationKeyOrder": [
@@ -1128,7 +1128,7 @@
         }
       },
       "github-bindings": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-10T05:37:59.820Z",
@@ -1607,10 +1607,10 @@
             ]
           }
         },
-        "snapshotDigest": "efad1d1ce845d4f81da9782214deb6af53f118c59d9bbca03ef7f30f8cedb584",
+        "snapshotDigest": "edacfeb249157ea5fb681917a427518e9b000a9a8eeebd2ebdd95f680bd043c7",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-10T05:37:59.820Z",
+          "capturedAt": "2026-10-10T05:39:00.621Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -1680,7 +1680,7 @@
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
             "updated_at": "2026-10-10T05:38:01Z",
-            "pushed_at": "2026-10-10T05:37:57Z",
+            "pushed_at": "2026-10-10T05:38:58Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -2086,7 +2086,24 @@
             ]
           }
         },
-        "result": {}
+        "result": {
+          "receipt": {
+            "approvalId": "SRM-STAGING-LOGIN-PASSWORD-20261009",
+            "environmentId": 23853126630,
+            "updates": {
+              "SRM_APP_DATABASE_PASSWORD": "2026-10-09T06:59:42Z",
+              "SRM_DEMO_PASSWORD": "2026-10-09T08:23:40Z",
+              "SRM_DEMO_SESSION_SECRET": "2026-10-09T06:59:53Z",
+              "MGBI_API_KEY": "2026-10-09T06:59:59Z",
+              "VERCLY_API_KEY": "2026-10-09T07:00:04Z",
+              "CEIDG_API_KEY": "2026-10-09T07:00:11Z",
+              "SRM_APP_DIRECT_URL": "2026-10-09T07:00:17Z",
+              "SRM_RELEASE_GITHUB_TOKEN": "2026-10-09T07:00:23Z",
+              "RENDER_API_KEY": "2026-10-09T07:00:28Z",
+              "NEON_API_KEY": "2026-10-09T07:00:34Z"
+            }
+          }
+        }
       }
     },
     "lastKnownGood": {
