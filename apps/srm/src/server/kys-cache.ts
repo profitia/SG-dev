@@ -138,7 +138,7 @@ export async function renewKysRefresh(organizationId: string, nip: string, entit
 }
 
 export async function getOrFetchKys(organizationId: string, nip: string, entityType: KysEntityType,
-  fetchReport: () => Promise<{ section: KysSection; errorCode: string | null; correlationId: string | null }>,
+  fetchReport: () => Promise<{ section: KysSection; errorCode: string | null; correlationId: string | null; providerOrderAccepted?: boolean }>,
   persist: (section: KysSection, errorCode: string | null, correlationId: string | null, method: "PROVIDER" | "CACHE") => Promise<string | null>,
   options: { now?: () => Date; sleep?: (ms: number) => Promise<void>; waitMs?: number; elapsedNow?: () => number; signal?: AbortSignal; store?: KysCacheStore } = {},
 ): Promise<{ section: KysSection; snapshotId: string | null; retrievalMethod: "PROVIDER" | "CACHE" }> {
@@ -165,7 +165,7 @@ export async function getOrFetchKys(organizationId: string, nip: string, entityT
     kysMode("PROVIDER"); let ambiguous = true;
     try {
       const result = await fetchReport();
-      ambiguous = Boolean(result.errorCode && ["VERCLY_POST_OUTCOME_UNKNOWN", "VERCLY_ABORTED", "VERCLY_TIMEOUT", "VERCLY_NETWORK_ERROR"].includes(result.errorCode));
+      ambiguous = result.providerOrderAccepted === true && result.section.status !== "SUCCESS" || Boolean(result.errorCode && ["VERCLY_POST_OUTCOME_UNKNOWN", "VERCLY_ABORTED", "VERCLY_TIMEOUT", "VERCLY_NETWORK_ERROR"].includes(result.errorCode));
       kysOutcome(result.section.status, result.errorCode);
       // Verify ownership before tenant persistence. Expired owners never publish a new projection.
       if (!await atLookupStage("lease_acquisition", () => store.renew(organizationId, nip, entityType, owner, now()), "kys")) throw new Error("KYS cache refresh lease expired");

@@ -132,3 +132,10 @@ test("concurrent organizations share one provider order and finalize their own s
  assert.equal(calls,1);assert.deepEqual(results.map(r=>r.retrievalMethod),["PROVIDER","CACHE"]);
  assert.deepEqual(results.map(r=>r.snapshotId),["snapshot-a","snapshot-b"]);
 });
+
+test("accepted paid order with GET failure stays held instead of releasing for another POST", async () => {
+ let holds=0,releases=0;
+ await getOrFetchKys(orgA,nip,"COMPANY",async()=>({section:{...report,status:"ERROR" as const,data:null},errorCode:"HTTP_400",correlationId:"classified",providerOrderAccepted:true}),async()=>null,
+ {store:{read:async()=>null,claim:async()=>"owner",renew:async()=>true,save:async()=>{},hold:async()=>{holds++;},release:async()=>{releases++;}}});
+ assert.equal(holds,1);assert.equal(releases,0);
+});

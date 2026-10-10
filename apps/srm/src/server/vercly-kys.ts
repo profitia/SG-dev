@@ -12,6 +12,7 @@ export type VerclyKysResult = {
   correlationId: string | null;
   reportId: string | null;
   errorCode: string | null;
+  providerOrderAccepted?: boolean;
 };
 
 type Options = {
@@ -312,17 +313,18 @@ export async function fetchVerclyKys(request: VerclyKysRequest, options: Options
       remaining(); let payload: unknown;
       try { payload = await jsonRequest(`/api/verifications/${correlationId}`, { method: "GET" }); }
       catch (error) {
-        if (!(error instanceof HttpFailure) || ![404, 429, 502, 503, 504].includes(error.status)) throw error;
-        await wait(Math.max(interval, error.retryAfterMs ?? interval)); continue;
+        const retryable = error instanceof HttpFailure ? [404, 429, 502, 503, 504].includes(error.status) : !options.signal?.aborted && (error instanceof TypeError || error instanceof Error && error.name === "TimeoutError");
+        if (!retryable) throw error;
+        await wait(Math.max(interval, error instanceof HttpFailure ? error.retryAfterMs ?? interval : interval)); continue;
       }
       if (!Array.isArray(payload) || !payload.length) throw new Error("INVALID_REPORT");
       const mapped = await measureLookup("mapping", async () => mapReport(payload[0], request, correlationId!, now().toISOString()));
       remaining();
-      if (mapped.section.status !== "PENDING") return mapped;
+      if (mapped.section.status !== "PENDING") return { ...mapped, providerOrderAccepted: true };
       await wait(interval);
     }
   } catch (error) {
     const code = options.signal?.aborted ? "VERCLY_ABORTED" : !postAccepted && (!(error instanceof HttpFailure) || error.status >= 500 || error.status === 408) ? "VERCLY_POST_OUTCOME_UNKNOWN" : error instanceof Error && (error.name === "TimeoutError" || error.message === "TIMEOUT") ? "VERCLY_TIMEOUT" : error instanceof Error && /^HTTP_\d+$|^[A-Z_]+$/.test(error.message) ? error.message : "VERCLY_NETWORK_ERROR";
-    return failure(code, now().toISOString(), correlationId);
+    return { ...failure(code, now().toISOString(), correlationId), providerOrderAccepted: postAccepted };
   }
 }
