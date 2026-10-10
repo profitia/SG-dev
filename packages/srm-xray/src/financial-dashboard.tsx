@@ -232,7 +232,7 @@ export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onSco
     </div>
     {onDownloadExcel && <details className="financial-excel-export">
       <summary>Pobierz do Excela</summary>
-      <p>Wybierz lata do pobrania. Kwoty w pliku będą podane w złotych z dokładnością do dwóch miejsc po przecinku.</p>
+      <p>Wybierz lata do pobrania. Plik zawiera pełne pozycje bilansu i RZiS wybranych sprawozdań. Kwoty zachowują walutę, skalę i dokładność źródła.</p>
       <div className="financial-excel-years" role="group" aria-label="Lata do pobrania">
         {availableYears.map((year) => <label key={year}><input type="checkbox" checked={selectedYears.includes(year)} onChange={(event) => {
           const next = event.target.checked ? [...selectedYears, year] : selectedYears.filter((selected) => selected !== year);
