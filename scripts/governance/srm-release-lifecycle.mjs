@@ -463,6 +463,7 @@ export function claimRelease(
       manifestDigest: digest(m),
       manifest: m,
       mode: a.mode,
+      publicationIdentityVersion: "2.0",
       owner,
       phase: "ONBOARDING_AUTHORIZED",
       resources: {},
@@ -503,6 +504,40 @@ export function recordStep(
     result,
   };
   next.generation++;
+  return next;
+}
+// Draft read-only evidence for the next fenced publication. This cannot advance
+// generation or complete an existing mutation INTENT. The publisher retains the
+// single-generation transaction boundary and all ordinary operation gates.
+export function recordReadOnlyObservations(state, owner, observations, contract) {
+  requireFact(state.schemaVersion === "1.0" && state.projectKey === "SRM" &&
+    state.targetEnvironment === "staging" && Number.isSafeInteger(state.generation) && state.generation >= 0 &&
+    state.release?.owner === owner &&
+    ["promote", "rollback"].includes(state.release.mode) &&
+    ["ONBOARDING_AUTHORIZED", "PROVISIONING", "VERIFYING"].includes(state.release.phase) && Array.isArray(observations),
+  "Routine release ownership required for grouped observations");
+  const next = structuredClone(state);
+  for (const observation of observations) {
+    const {operation, snapshot, result, resources = {}} = observation;
+    requireFact(observation.complete === true && operations.includes(operation) &&
+      !["release-pointer", "reconcile"].includes(operation) &&
+      !next.release.steps[operation] &&
+      Object.keys(resources).every(k => ["githubEnvironmentId", "databaseId", "serviceId"].includes(k)),
+    "Only independently observed satisfied steps may be grouped");
+    assertSnapshot(snapshot, contract);
+    const identity = {
+      "github-environment": {githubEnvironmentId: snapshot.githubEnvironment?.id},
+      database: {databaseId: snapshot.databases.find(x => x.name === "srm_app")?.id},
+      service: {serviceId: snapshot.services[0]?.id},
+    }[operation] ?? {};
+    requireFact(Object.entries(resources).every(([k,v]) => v != null && identity[k] === v),
+      "Grouped resource identity must match the observed operation");
+    next.release.steps[operation] = {
+      status: "DONE", classification: "READ_ONLY_REUSED", before: snapshot,
+      snapshot, snapshotDigest: digest(snapshot), result,
+    };
+    Object.assign(next.release.resources, resources);
+  }
   return next;
 }
 export function reconciliation(

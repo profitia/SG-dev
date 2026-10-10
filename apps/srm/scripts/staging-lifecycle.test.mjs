@@ -560,7 +560,8 @@ test("baseline compare-and-swap conflict preserves RESERVED and observed live ev
       provider: f.p,
       owner: "github-run:1",
     }),
-    /conflict/,
+    error => error.diagnostic.failureDomain === "RELEASE_BOOKKEEPING" &&
+      error.diagnostic.applicationStatus === "LIVE_SOURCE_OBSERVED",
   );
   assert.equal(f.registry.environments.staging.status, "RESERVED");
   assert.equal(f.s.liveDeploy.commit.id, sha);
@@ -988,6 +989,10 @@ function publicationFixture({
         full_name: contract.repository,
         allow_merge_commit: true,
       };
+    if (url.includes("/git/matching-refs/heads/")) return githubResponse(async()=>new Response(JSON.stringify(ref ? [{
+      ...ref, ref: ref.ref ?? "refs/heads/"+url.split("/git/matching-refs/heads/")[1],
+      object: {type:"commit", ...ref.object},
+    }] : []),{status:200}),base+url,{method},'read-publication-branch');
     if (url.includes("/git/ref/heads/")) return ref && {
       ...ref,ref:ref.ref ?? "refs/heads/"+url.split("/git/ref/heads/")[1],
       object:{type:"commit",...ref.object},
@@ -1299,7 +1304,7 @@ test('existing publication branch with invalid identity cannot trigger creation 
   const f=publicationFixture();f.seedParentBranch();
   const store=githubStore(async(base,url,method,body)=>{
     const result=await f.request(base,url,method,body);
-    return url.includes('/git/ref/heads/') ? {...result,ref:'refs/heads/foreign'} : result;
+    return url.includes('/git/matching-refs/heads/') ? result.map(ref=>({...ref,ref:'refs/heads/foreign'})) : result;
   });
   await assert.rejects(store.commit(publicationInput(await store.read())),/Publication branch acknowledgement unavailable/);
   assert.ok(!f.calls.some(c=>c.method==='POST' || c.url==='/graphql'));assert.equal(f.state.generation,0);
@@ -1347,7 +1352,7 @@ for(const phase of ['repository','branch-read','branch-create','branch-acknowled
   const f=publicationFixture();let created=false;
   const store=githubStore(async(base,url,method,body)=>{
     if((phase==='repository' && url==='/repos/profitia/SG-dev') ||
-      (phase==='branch-read' && url.includes('/git/ref/heads/')) ||
+      (phase==='branch-read' && url.includes('/git/matching-refs/heads/')) ||
       (phase==='branch-create' && method==='POST' && url.endsWith('/git/refs')) ||
       (phase==='branch-acknowledgement' && created && url.includes('/git/ref/heads/'))) throw Error('token=private postgresql://secret');
     const result=await f.request(base,url,method,body);
@@ -1669,4 +1674,159 @@ test("provider snapshot reads domains only from exact existing service and never
   assert.ok(calls.every(x=>x.method==="GET"));
   assert.equal(calls.filter(x=>x.url.includes("custom-domains")).length,1);
   assert.ok(calls.some(x=>x.url.includes("/services/"+contract.existingDomainBinding.serviceId+"/custom-domains")));
+});
+
+async function routineFixture() {
+  const f = fixture();
+  await runLifecycle({authorization:approval(),manifest,provider:f.p,owner:'github-run:1'});
+  f.done.delete('deploy');f.done.delete('verify');
+  f.s.liveDeploy.commit.id='b'.repeat(40);f.state.baseline.sha='b'.repeat(40);
+  f.registry.environments.staging.render.services.runtime.baselineSha='b'.repeat(40);
+  f.writes.length=0;
+  return {...f,get state(){return f.state},get registry(){return f.registry},
+    authorization:{...approval('promote'),approvalId:'synthetic-routine'}};
+}
+test('routine promotion groups no-ops, retains mutation fences and uses six publications',async()=>{
+  const f=await routineFixture(),publications=[];const commit=f.p.store.commit;
+  f.p.store.commit=async input=>{publications.push(structuredClone(input.files[journalPath]));return commit(input)};
+  const deploy=f.p.deploy;f.p.deploy=async()=>{
+    assert.equal(f.state.release.steps.deploy.status,'INTENT');
+    for(const op of ['github-environment','github-bindings','database','schema','service'])
+      assert.equal(f.state.release.steps[op].classification,'READ_ONLY_REUSED');
+    return deploy();
+  };
+  await runLifecycle({authorization:f.authorization,manifest,provider:f.p,owner:'github-run:2'});
+  assert.equal(publications.length,6);assert.deepEqual(f.writes,['deploy']);
+  assert.equal(f.state.release.steps.verify.status,'DONE');assert.equal(f.state.release.phase,'VERIFIED');
+  assert.equal(f.state.baseline.sha,sha);assert.equal(f.state.release.manifestDigest,digest(manifest));
+  for(let i=1;i<publications.length;i++)assert.equal(publications[i].generation,publications[i-1].generation+1);
+});
+test('satisfied observation with null result never invokes a redundant mutation',async()=>{
+  const f=await routineFixture(),observe=f.p.observe;
+  f.p.observe=async(...args)=>{const x=await observe(...args);return args[0]==='database'?{...x,result:null}:x};
+  await runLifecycle({authorization:f.authorization,manifest,provider:f.p,owner:'github-run:2'});
+  assert.deepEqual(f.writes,['deploy']);assert.equal(f.state.release.steps.database.result,null);
+});
+for(const [method,operation] of [['githubEnvironment','github-environment'],['githubBindings','github-bindings'],['pinSource','release-pointer'],['database','database'],['schema','schema'],['service','service'],['deploy','deploy'],['rebind','source-rebind'],['verify','verify']])
+test('lost effect acknowledgement at '+operation+' is reconciled without a duplicate effect',async()=>{
+  const f=fixture(),a=approval(),original=f.p[method];let lost=false;
+  f.p[method]=async(...args)=>{const result=await original(...args);if(!lost){lost=true;throw Error('lost acknowledgement')}return result};
+  await assert.rejects(runLifecycle({authorization:a,manifest,provider:f.p,owner:'github-run:1'}));
+  assert.equal(f.state.release.steps[operation].status,'INTENT');
+  const priorEffects=f.writes.filter(x=>x===operation).length;
+  await runLifecycle({authorization:a,manifest,provider:f.p,owner:'github-run:1'});
+  assert.equal(f.writes.filter(x=>x===operation).length,priorEffects);
+  assert.equal(f.state.release.phase,'VERIFIED');assert.equal(f.state.baseline.sha,sha);
+});
+for(const operation of ['schema','deploy','source-rebind','verify'])for(const acknowledgementLost of [false,true])
+test(operation+' DONE publication interruption preserves effect and exact resume ('+acknowledgementLost+')',async()=>{
+  const f=fixture(),a=approval(),commit=f.p.store.commit;let failed=false;
+  f.p.store.commit=async input=>{
+    if(!failed && input.files[journalPath]?.release?.steps[operation]?.status==='DONE'){
+      failed=true;if(acknowledgementLost)await commit(input);throw Error('publication interrupted');
+    }return commit(input);
+  };
+  await assert.rejects(runLifecycle({authorization:a,manifest,provider:f.p,owner:'github-run:1'}),e=>e.diagnostic.failureDomain==='RELEASE_BOOKKEEPING');
+  const before=f.writes.filter(x=>x===operation).length;
+  await runLifecycle({authorization:a,manifest,provider:f.p,owner:'github-run:1'});
+  assert.equal(f.writes.filter(x=>x===operation).length,before);assert.equal(f.state.release.phase,'VERIFIED');
+});
+test('lost final reconciliation acknowledgement resumes VERIFIED read-only',async()=>{
+  const f=fixture(),a=approval(),commit=f.p.store.commit;let lost=false;
+  f.p.store.commit=async input=>{const r=await commit(input);if(!lost&&input.files[journalPath]?.release?.phase==='VERIFIED'){lost=true;throw Error('lost final acknowledgement')}return r};
+  await assert.rejects(runLifecycle({authorization:a,manifest,provider:f.p,owner:'github-run:1'}));
+  const before=f.writes.length;f.p.store.commit=async()=>{assert.fail('Completed release cannot publish again')};
+  const result=await runLifecycle({authorization:a,manifest,provider:f.p,owner:'github-run:1'});
+  assert.equal(result.recovered,true);assert.equal(f.writes.length,before);
+});
+test('routine grouped observations fail closed after authorization expires before deploy',async()=>{
+  const f=await routineFixture(),observe=f.p.observe;
+  f.p.observe=async(...args)=>{const result=await observe(...args);if(args[0]==='service')f.authorization.expiresAt=new Date(Date.now()-1).toISOString();return result};
+  await assert.rejects(runLifecycle({authorization:f.authorization,manifest,provider:f.p,owner:'github-run:2'}),/expired/);
+  assert.deepEqual(f.writes,[]);assert.equal(f.state.release.steps.deploy,undefined);
+});
+test('unpublished read observations are independently obtained again on same-owner resume',async()=>{
+  const f=await routineFixture();let publications=0;const commit=f.p.store.commit;
+  f.p.store.commit=async input=>{publications++;return commit(input)};
+  await assert.rejects(runLifecycle({authorization:f.authorization,manifest,provider:f.p,owner:'github-run:2',stopAfter:'database'}));
+  assert.equal(publications,1);assert.equal(f.state.release.steps.database,undefined);assert.deepEqual(f.writes,[]);
+  const observe=f.p.observe,again=[];f.p.observe=async(...args)=>{again.push(args[0]);return observe(...args)};
+  await runLifecycle({authorization:f.authorization,manifest,provider:f.p,owner:'github-run:2'});
+  assert.ok(again.includes('database'));assert.equal(publications,6);assert.deepEqual(f.writes,['deploy']);
+});
+test('immutable Git object cache reduces a publication to 19 requests while refreshing main',async()=>{
+  const f=publicationFixture(),store=githubStore(f.request);
+  const input=publicationInput(await store.read());await store.commit(input);
+  assert.equal(f.calls.length,19);assert.equal(f.calls.filter(x=>x.url.endsWith('/branches/main')).length,4);
+  assert.equal(f.calls.filter(x=>x.url.includes('/git/trees/')).length,2);
+  assert.equal(f.calls.filter(x=>x.url.includes('/git/blobs/')).length,3);
+  assert.equal(f.calls.filter(x=>x.url==='/graphql').length,1);
+});
+test('empty successful inventory avoids polling a missing exact ref and retains exact post-create verification',async()=>{
+  const f=publicationFixture();let time=100000;const requests=[],pauses=[];
+  const adapter=createGithubRequester(async(full,options)=>{
+    const url=full.slice('https://api.github.com'.length);requests.push({url,method:options.method});
+    const result=await f.request('https://api.github.com',url,options.method,options.body?JSON.parse(options.body):undefined);
+    return new Response(JSON.stringify(result),{status:options.method==='POST'&&url.endsWith('/git/refs')?201:200,
+      headers:{'x-poll-interval':url.includes('/matching-refs/')?'300':'0'}});
+  },{authorizationExpiresAt:new Date(time+3600000).toISOString(),now:()=>time,pause:async ms=>{pauses.push(ms);time+=ms},emit:()=>{}});
+  const store=githubStore((base,url,method='GET',body,options)=>adapter(base+url,{method,body:body?JSON.stringify(body):undefined},'github-rest',options),{now:()=>time,pause:async ms=>{pauses.push(ms);time+=ms}});
+  await store.commit(publicationInput(await store.read()));
+  assert.deepEqual(pauses,[]);const exact=requests.filter(x=>x.url.includes('/git/ref/heads/'));
+  assert.equal(exact.length,1);assert.ok(requests.findIndex(x=>x.method==='POST'&&x.url.endsWith('/git/refs'))<requests.indexOf(exact[0]));
+});
+for(const inventory of [null,{},[{ref:'refs/heads/foreign',object:{type:'commit',sha}}],Array(2).fill({ref:'other'})])
+test('malformed or prefix-collision inventory never authorizes creation '+JSON.stringify(inventory),async()=>{
+  const f=publicationFixture(),store=githubStore((base,url,method,body)=>url.includes('/matching-refs/')?inventory:f.request(base,url,method,body));
+  await assert.rejects(store.commit(publicationInput(await store.read())));
+  assert.ok(!f.calls.some(x=>x.method!=='GET'));
+});
+
+test('unchanged-owner resume rejects a concurrent canonical generation before any mutation',async()=>{
+  const f=await routineFixture();
+  await assert.rejects(runLifecycle({authorization:f.authorization,manifest,provider:f.p,owner:'github-run:2',stopAfter:'database'}));
+  const authority=f.p.authority;let raced=false;
+  f.p.authority=async(...args)=>{await authority(...args);if(!raced){raced=true;f.state.generation++}};
+  await assert.rejects(runLifecycle({authorization:f.authorization,manifest,provider:f.p,owner:'github-run:2'}),/Resume journal changed/);
+  assert.deepEqual(f.writes,[]);
+});
+test('routine no-effect completion is truthful, preserves provider state and requires two publications',async()=>{
+  const f=fixture();await runLifecycle({authorization:approval(),manifest,provider:f.p,owner:'github-run:1'});
+  const before=f.writes.length;let publications=0;const commit=f.p.store.commit;
+  f.p.store.commit=async input=>{publications++;return commit(input)};
+  const result=await runLifecycle({authorization:{...approval('promote'),approvalId:'synthetic-no-effect'},manifest,provider:f.p,owner:'github-run:2'});
+  assert.equal(publications,2);assert.equal(f.writes.length,before);assert.equal(result.stagingMutated,false);assert.deepEqual(result.mutations,[]);
+});
+
+test('new publication transition retains one branch when only observed evidence time changes',async()=>{
+  const {publicationBranch}=await import('./staging-lifecycle.mjs');
+  const f=publicationFixture({pending:true});let time=0;
+  const store=githubStore(f.request,{now:()=>time,pause:async()=>{time++},checkTimeoutMs:1});
+  const current=await store.read();const release={publicationIdentityVersion:'2.0',approvalId:'SRM-STAGING-test',manifestDigest:'m',authorizationDigest:'a',owner:'github-run:1',mode:'promote',phase:'PROVISIONING',steps:{deploy:{status:'INTENT',snapshot:{capturedAt:'first'}}}};
+  const input={expectedHead:current.head,files:{[journalPath]:{...current.state,generation:1,release}},message:'intent'};
+  await assert.rejects(store.commit(input),/CI pending/);
+  const fresh=structuredClone(input);fresh.files[journalPath].release.steps.deploy.snapshot.capturedAt='second';
+  const originalFiles=publicationFiles(current,input.files,input.expectedHead),freshFiles=publicationFiles(current,fresh.files,fresh.expectedHead);
+  assert.notEqual(originalFiles[journalPath].publicationNonce,freshFiles[journalPath].publicationNonce);
+  assert.equal(publicationBranch(current,originalFiles),publicationBranch({...current,head:'b'.repeat(40)},freshFiles));
+  await assert.rejects(store.commit(fresh),/Publication branch content drift/);
+  assert.equal(f.calls.filter(x=>x.method==='POST'&&x.url.endsWith('/git/refs')).length,1);
+  assert.equal(f.calls.filter(x=>x.method==='POST'&&x.url.endsWith('/pulls')).length,1);
+  assert.equal(f.calls.filter(x=>x.url==='/graphql').length,1);
+  f.pending=false;await store.commit(input);assert.equal(f.state.generation,1);
+});
+test('historical publication branch identity and nonce remain unchanged',async()=>{
+  const {publicationBranch}=await import('./staging-lifecycle.mjs');const f=publicationFixture(),current=await githubStore(f.request).read();
+  const files=publicationFiles(current,publicationInput(current).files,current.head);
+  assert.equal(publicationBranch(current,files),'srm-publication-'+files[journalPath].publicationNonce.slice(0,24));
+});
+
+
+test('successful and completed-release stdout retain adapter request evidence',async()=>{
+  const f=fixture(),a=approval();const safe={scope:'SHARED_GITHUB_ADAPTER',attempts:12,endpoints:[]};
+  f.p.githubRequestMetrics=()=>structuredClone(safe);
+  const first=await runLifecycle({authorization:a,manifest,provider:f.p,owner:'github-run:1'});
+  assert.deepEqual(first.githubRequestMetrics,safe);
+  const reused=await runLifecycle({authorization:a,manifest,provider:f.p,owner:'github-run:1'});
+  assert.deepEqual(reused.githubRequestMetrics,safe);assert.equal(reused.stagingMutated,false);
 });

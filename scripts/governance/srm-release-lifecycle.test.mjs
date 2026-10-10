@@ -10,6 +10,8 @@ import {
   assertSnapshot,
   assertStagingDomainBinding,
   claimRelease,
+  recordStep,
+  recordReadOnlyObservations,
   authorizationFromRelease,
   digest,
   operations,
@@ -383,4 +385,45 @@ test("canonical domain identity cannot be replaced by an arbitrary allowlist",()
   for(const mutate of [p=>p.domains[0].id="cdm-other",p=>p.domains[0].name="other.example.com",p=>p.domains[0].verificationStatus="pending",p=>p.domains.push(structuredClone(p.domains[0]))]){
     const copy=structuredClone(c);mutate(copy.existingDomainBinding);assert.throws(()=>assertStagingDomainBinding(domainSnapshot(),copy));
   }
+});
+
+function groupedObservationFixture() {
+  const snapshot={source:'LIVE_PROVIDER_APIS',capturedAt:new Date().toISOString(),
+    repository:{id:c.repositoryId,full_name:c.repository},
+    renderProject:{id:c.render.projectId,owner:{id:c.render.workspaceId}},
+    renderEnvironment:{id:c.render.environmentId,projectId:c.render.projectId,networkIsolationEnabled:true},
+    neonBranch:{id:c.neon.branchId,project_id:c.neon.projectId,name:'Staging',protected:false},
+    neonEndpoint:{id:c.neon.endpointId,branch_id:c.neon.branchId,host:c.neon.directHost},
+    databases:[{id:99,branch_id:c.neon.branchId,name:'srm_app',owner_name:'neondb_owner'}],services:[],domains:[]};
+  const state=claimRelease({schemaVersion:'1.0',projectKey:'SRM',targetEnvironment:'staging',generation:0,release:null},
+    {...approval(),mode:'promote'},m,'github-run:1');
+  return {state,observation:{operation:'database',complete:true,snapshot,result:{id:99},resources:{databaseId:99}}};
+}
+test('grouped read proof is a draft, becomes durable with exactly one INTENT generation and preserves original state',()=>{
+  const {state,observation}=groupedObservationFixture();const grouped=recordReadOnlyObservations(state,'github-run:1',[observation],c);
+  assert.equal(grouped.generation,state.generation);assert.equal(state.release.steps.database,undefined);
+  assert.equal(grouped.release.steps.database.classification,'READ_ONLY_REUSED');assert.equal(grouped.release.resources.databaseId,99);
+  const intent=recordStep(grouped,'github-run:1','deploy','INTENT',observation.snapshot);
+  assert.equal(intent.generation,state.generation+1);assert.equal(intent.release.steps.database.status,'DONE');
+});
+for(const [label,mutate] of [
+  ['onboarding',f=>f.state.release.mode='onboard'],['completed release',f=>f.state.release.phase='VERIFIED'],
+  ['unknown phase',f=>f.state.release.phase='UNKNOWN'],['wrong owner',f=>f.state.release.owner='github-run:2'],
+  ['SG2',f=>f.state.projectKey='SG2'],['CIC',f=>f.state.projectKey='CIC'],['Production',f=>f.state.targetEnvironment='production'],
+  ['incomplete observation',f=>f.observation.complete=false],['old mutation INTENT',f=>f.state.release.steps.database={status:'INTENT'}],
+  ['old DONE',f=>f.state.release.steps.database={status:'DONE'}],['reconciliation',f=>f.observation.operation='reconcile'],
+  ['release pointer',f=>f.observation.operation='release-pointer'],['stale snapshot',f=>f.observation.snapshot.capturedAt=new Date(Date.now()-900001).toISOString()],
+  ['foreign Neon branch',f=>f.observation.snapshot.neonBranch.id='br-foreign'],
+  ['foreign database ID',f=>f.observation.resources.databaseId=1],['resource assigned to wrong operation',f=>f.observation.operation='schema'],
+  ['unexpected resource',f=>f.observation.resources.owner='other'],
+])test('grouped observation fails closed: '+label,()=>{
+  const f=groupedObservationFixture();mutate(f);assert.throws(()=>recordReadOnlyObservations(f.state,'github-run:1',[f.observation],c));
+});
+
+test('publication identity v2 applies only to new releases; historical resume is not rewritten',()=>{
+  const a=approval(),empty={schemaVersion:'1.0',projectKey:'SRM',targetEnvironment:'staging',generation:0,release:null};
+  const created=claimRelease(empty,a,m,'github-run:1');assert.equal(created.release.publicationIdentityVersion,'2.0');
+  delete created.release.publicationIdentityVersion;
+  const resumed=claimRelease(created,a,m,'github-run:1');assert.equal(resumed.release.publicationIdentityVersion,undefined);
+  assert.equal(resumed.release.approvalId,created.release.approvalId);assert.equal(resumed.release.authorizationDigest,created.release.authorizationDigest);
 });

@@ -10,6 +10,7 @@ const endpointPatterns = [
   [/^$/, "repository"], [/^\/branches\/main$/, "authority-branch"],
   [/^\/git\/trees\/[a-f0-9]{40}$/, "git-tree"], [/^\/git\/blobs\/[a-f0-9]{40}$/, "git-blob"],
   [/^\/git\/ref\/heads\/srm-publication-[a-f0-9]{24}$/, "publication-ref"],
+  [/^\/git\/matching-refs\/heads\/srm-publication-[a-f0-9]{24}$/, "publication-ref-inventory"],
   [/^\/git\/ref\/heads\/srm-release-[a-f0-9]{40}$/, "release-ref"],
   [/^\/git\/refs$/, "create-ref"], [/^\/contents\/Canon\/registries\/srm-(staging-release-state|environment-topology)-v1\.json$/, "canonical-content"],
   [/^\/compare\/[a-f0-9]{40}\.\.\.[a-f0-9]{40}$/, "publication-compare"],
@@ -79,6 +80,9 @@ export function sanitizeDiagnostic(d = {}) {
     providerEffectCertainty: ["NO_MUTATION","AMBIGUOUS","ACKNOWLEDGED","UNKNOWN"].includes(d.providerEffectCertainty) ? d.providerEffectCertainty : undefined,
     networkRetrySafe: typeof d.networkRetrySafe === "boolean" ? d.networkRetrySafe : undefined,
     retryDeadlineAt: number(d.retryDeadlineAt), retryBudgetRemaining: number(d.retryBudgetRemaining),
+    durationMs: number(d.durationMs),
+    failureDomain: ["RELEASE_BOOKKEEPING", "PROVIDER_OPERATION"].includes(d.failureDomain) ? d.failureDomain : undefined,
+    applicationStatus: ["LIVE_SOURCE_OBSERVED", "NOT_CONFIRMED"].includes(d.applicationStatus) ? d.applicationStatus : undefined,
     message: [...messages.map(([,v]) => v), ...gateMessages].includes(d.message) ? d.message : undefined,
     httpStatus: Number.isInteger(d.httpStatus) && d.httpStatus >= 100 && d.httpStatus <= 599 ? d.httpStatus : undefined,
     requestId: text(d.requestId, /^[a-fA-F0-9:-]{1,100}$/),
@@ -177,6 +181,7 @@ export function createGithubRequester(fetcher, {
   authorizationExpiresAt, now = Date.now, pause = ms => new Promise(resolve => setTimeout(resolve,ms)), random = Math.random,
   attemptLimit = 3, readDeadlineMs = 660000, executionDeadlineMs = 3600000, retryBudget = 20,
   diagnosticContext = () => ({}),
+  onRequest = () => {},
   emit = d => console.error("SRM_GITHUB_RECOVERY " + JSON.stringify({...d,journalGeneration:d.generation ?? "UNKNOWN"})),
 } = {}) {
   if (!Number.isSafeInteger(attemptLimit) || attemptLimit < 1 || attemptLimit > 5 ||
@@ -206,8 +211,12 @@ export function createGithubRequester(fetcher, {
       gate(attemptNumber);
       const notBefore = Math.max(rateNotBefore,pollNotBefore.get(url) ?? 0);
       if (notBefore > now()) { gate(attemptNumber,notBefore); await pause(notBefore-now()); gate(attemptNumber); }
+      const startedAt = now();
+      let responseObserved = false;
       try {
         const result = await githubResponse(fetcher,url,{...options,signal:AbortSignal.timeout(Math.max(1,Math.min(readOptions.timeoutMs ?? 30000,deadline-now())))},operation,{...readOptions,now,observeMetadata:metadata=>{
+          responseObserved = true;
+          onRequest(sanitizeDiagnostic({...context,...metadata,attemptNumber,durationMs:Math.max(0,now()-startedAt)}));
           // Include null/204/missing responses, whose payload has no WeakMap key.
           if (metadata.pollIntervalMs !== undefined) pollNotBefore.set(url,now()+metadata.pollIntervalMs);
           if (metadata.rateLimitRemaining === 0) rateNotBefore = metadata.rateLimitResetAt === undefined ? Infinity : metadata.rateLimitResetAt*1000+1000;
@@ -219,6 +228,7 @@ export function createGithubRequester(fetcher, {
         return result;
       } catch (error) {
         const d = diagnosticError(error).diagnostic;
+        if (!responseObserved) onRequest(sanitizeDiagnostic({...context,...d,attemptNumber,durationMs:Math.max(0,now()-startedAt)}));
         const transient = [500,502,503,504].includes(d.httpStatus) || d.category === "RATE_LIMITED" || d.networkRetrySafe === true;
         let decision = d.requestReachedGitHub === "NOT_SENT" ? "STOP_NOT_RETRYABLE" : managed ? "DEFER_TO_ACKNOWLEDGEMENT" : !eligible && identity.requestType === "MUTATION" ? "STOP_AMBIGUOUS_WRITE" :
           !eligible || !transient ? "STOP_NOT_RETRYABLE" : attemptNumber === limit ? "STOP_ATTEMPT_LIMIT" : remaining === 0 ? "STOP_RETRY_BUDGET" : "GET_ONLY_BACKOFF";
@@ -242,6 +252,33 @@ export function createGithubRequester(fetcher, {
         remaining--; emit(diagnostic); await pause(waitMs);
       }
     }
+  };
+}
+export function createGithubRequestMetrics() {
+  const rows = new Map();
+  return {
+    record(input) {
+      const d = sanitizeDiagnostic(input);
+      if (!d.httpMethod || !d.endpoint || !d.requestType) return;
+      const key = d.httpMethod + " " + d.endpoint;
+      const row = rows.get(key) ?? {
+        httpMethod: d.httpMethod, endpoint: d.endpoint, requestType: d.requestType,
+        attempts: 0, httpResponses: 0, networkFailures: 0, retriedAttempts: 0,
+        durationMs: 0, statuses: {},
+      };
+      row.attempts++;
+      if (d.httpStatus !== undefined) row.httpResponses++;
+      else row.networkFailures++;
+      if (d.attemptNumber > 1) row.retriedAttempts++;
+      row.durationMs += d.durationMs ?? 0;
+      const status = d.httpStatus ?? "NO_HTTP_RESPONSE";
+      row.statuses[status] = (row.statuses[status] ?? 0) + 1;
+      rows.set(key, row);
+    },
+    read() {
+      const endpoints = structuredClone([...rows.values()]);
+      return {scope: "SHARED_GITHUB_ADAPTER", attempts: endpoints.reduce((n, r) => n + r.attempts, 0), endpoints};
+    },
   };
 }
 export function childDiagnostic(stderr) {
