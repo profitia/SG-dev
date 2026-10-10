@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
 import type { PoolClient } from "pg";
 import { withOrganization, type DatabasePool } from "./db";
-import { lookupRequestId } from "./lookup-diagnostics";
 import { kysCacheTtlMs } from "./kys-cache";
 
 export type Identifier = { type: "NIP" | "KRS"; value: string };
@@ -20,9 +19,10 @@ export async function createLookup(organizationId: string, identifier: Identifie
       "DO UPDATE SET updated_at = now() RETURNING id",
       [organizationId, identifier.value],
     );
+    // Each lookup has its own database identity; HTTP correlation remains request-local.
     const request = await client.query<{ id: string }>(
-      "INSERT INTO srm.lookup_requests(id, organization_id, supplier_id, identifier_type, identifier, entity_type) VALUES (COALESCE($6::uuid, gen_random_uuid()), $1, $2, $3, $4, $5) RETURNING id",
-      [organizationId, supplier.rows[0].id, identifier.type, identifier.value, entityType, lookupRequestId() ?? null],
+      "INSERT INTO srm.lookup_requests(organization_id, supplier_id, identifier_type, identifier, entity_type) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+      [organizationId, supplier.rows[0].id, identifier.type, identifier.value, entityType],
     );
     return { supplierId: supplier.rows[0].id, requestId: request.rows[0].id };
   }, pool);
