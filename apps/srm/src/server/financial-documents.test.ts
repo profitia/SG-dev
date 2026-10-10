@@ -33,3 +33,17 @@ test("saved empty MSR reports disclose unresolved format and preserve technical 
  assert.deepEqual(applyFinancialDocumentMetadata(section,docs).warnings,["MGBI_FINANCIAL_UNKNOWN_FORMAT"]);
  assert.deepEqual(applyFinancialDocumentMetadata({...section,status:"ERROR"},docs).warnings,section.warnings);
 });
+
+test("an explicit XML UOR declaration conflicts with an IAS provider flag without leaking explanatory text", () => {
+ const input=record(); const originalRows=projectFinancialDocuments([input])[0].rows;
+ Object.assign(input.content.extracted_fields,{"WprowadzenieDoSprawozdaniaFinansowego.P_7.P_7D":"Sprawozdanie finansowe zostało sporządzone zgodnie z zasadami rachunkowości obowiązującymi w Polsce, określonymi w ustawie o\u00a0rachunkowości."});
+ const [document]=projectFinancialDocuments([input]);
+ assert.equal(document.standard,"UNKNOWN"); assert.equal(document.isIasCompliant,true);
+ assert.equal(document.standardBasis,"MGBI_IAS_FLAG_CONFLICTS_WITH_XML_UOR_DECLARATION");
+ assert.deepEqual(document.rows,originalRows); assert.equal(JSON.stringify(document).includes("obowiązującymi w Polsce"),false);
+});
+test("a generic reference to UOR does not replace the reported IAS standard", () => {
+ const input=record();Object.assign(input.content.extracted_fields,{"WprowadzenieDoSprawozdaniaFinansowego.P_7.P_7D":"Noty zawierają odniesienie do ustawy o rachunkowości. Sprawozdanie sporządzono zgodnie z MSSF."});
+ const [document]=projectFinancialDocuments([input]);assert.equal(document.standard,"IAS_IFRS");
+ assert.equal(document.standardBasis,"MGBI_DOCUMENT_IAS_FLAG");
+});
