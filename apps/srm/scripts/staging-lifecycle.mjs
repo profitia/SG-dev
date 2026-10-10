@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import pg from "pg";
-import {diagnosticStage, diagnosticError, ReleaseDiagnosticError, githubResponse, githubMetadata} from "./release-diagnostics.mjs";
+import {diagnosticStage, diagnosticError, ReleaseDiagnosticError, createGithubRequester, githubMetadata} from "./release-diagnostics.mjs";
 import {
   root,
   contract,
@@ -276,8 +276,8 @@ export function githubStore(
     digest(a.registry) === digest(b.registry);
   const exactRef = (ref, branch) => ref?.ref === "refs/heads/" + branch &&
     ref.object?.type === "commit" && /^[a-f0-9]{40}$/.test(ref.object.sha ?? "");
-  const readPublicationRef = (branch, timeoutMs = 30000) => request(GH,
-    repo + "/git/ref/heads/" + branch, "GET", undefined, {missingIsError:true,timeoutMs});
+  const readPublicationRef = (branch, timeoutMs = 30000, acknowledgementManaged = false, deadlineAt) => request(GH,
+    repo + "/git/ref/heads/" + branch, "GET", undefined, {missingIsError:true,timeoutMs,acknowledgementManaged,deadlineAt});
   const readCreatedRef = async (branch, expectedHead, creation) => {
     const context = {stage:"publication-branch-acknowledgement",operation:"verify-publication-branch",branch,expectedSha:expectedHead,
       effect:"OBSERVATION_REQUIRED",providerEffectObserved:"CREATION_ACKNOWLEDGED",
@@ -291,7 +291,7 @@ export function githubStore(
       try {
         assertPublicationAuthorization(context);
         if (now() >= deadline) throw new ReleaseDiagnosticError({category:"ACKNOWLEDGEMENT_TIMEOUT",retryDecision:"STOP_TIME_LIMIT"});
-        const ref = await readPublicationRef(branch, Math.max(1,Math.min(30000,deadline-now())));
+        const ref = await readPublicationRef(branch, Math.max(1,Math.min(30000,deadline-now())),true,deadline);
         assertPublicationAuthorization(context);
         if (!ref) throw new ReleaseDiagnosticError({category:"UNCLASSIFIED_MISSING_REF",requestReachedGitHub:"UNKNOWN"});
         if (!exactRef(ref,branch) || ref.object.sha !== expectedHead)
@@ -303,8 +303,8 @@ export function githubStore(
       // Only reads following a validated successful create may recover. Unknown
       // nulls, authentication/permission rejection and ambiguous writes never retry.
       const retryable = error.httpStatus === 404 || [500,502,503,504].includes(error.httpStatus) ||
-        error.category === "RATE_LIMITED" || error.category === "NETWORK_TIMEOUT";
-      let retryDecision = error.retryDecision ?? (!retryable ? "STOP_NOT_RETRYABLE" : attemptNumber === attemptLimit ? "STOP_ATTEMPT_LIMIT" : "GET_ONLY_BACKOFF");
+        error.category === "RATE_LIMITED" || error.category === "NETWORK_TIMEOUT" || error.networkRetrySafe === true;
+      let retryDecision = (error.retryDecision === "DEFER_TO_ACKNOWLEDGEMENT" ? undefined : error.retryDecision) ?? (!retryable ? "STOP_NOT_RETRYABLE" : attemptNumber === attemptLimit ? "STOP_ATTEMPT_LIMIT" : "GET_ONLY_BACKOFF");
       let waitMs = 250 * 2 ** (attemptNumber-1);
       if (error.retryGuidanceInvalid) retryDecision = "STOP_RETRY_GUIDANCE";
       if (error.retryAfterMs !== undefined) waitMs = Math.max(waitMs,error.retryAfterMs);
@@ -745,8 +745,20 @@ export function createProvider(
   fetcher = fetch,
 ) {
   assertLifecycleAuthorization(approval, manifest, contract);
+  let observedJournalGeneration;
+  const githubRequest = createGithubRequester(async(url,options)=>{
+    // A server cooldown may delay the call. Refresh governance at the actual
+    // write boundary, after waiting, rather than relying on a stale preflight.
+    if(options.method !== "GET") {
+      await diagnosticStage({stage:"github-write-preflight",requestReachedGitHub:"NOT_SENT"},()=>{
+        assertLifecycleAuthorization(approval,manifest,contract);
+        lifecyclePreflight(manifest.sha,approval.approvalId);
+      });
+    }
+    return fetcher(url,options);
+  },{authorizationExpiresAt:approval.expiresAt,diagnosticContext:()=>({generation:observedJournalGeneration,approvalId:approval.approvalId})});
   const request = async (base, url, method = "GET", body, readOptions = {}) => {
-    if (method !== "GET") {
+    if (method !== "GET" && base !== GH) {
       assertLifecycleAuthorization(approval, manifest, contract);
       lifecyclePreflight(manifest.sha, approval.approvalId);
     }
@@ -768,7 +780,7 @@ export function createProvider(
       body: body ? JSON.stringify(body) : undefined,
       signal: AbortSignal.timeout(readOptions.timeoutMs ?? 30000),
     };
-    if (base === GH) return githubResponse(fetcher, base + url, options,
+    if (base === GH) return githubRequest(base + url, options,
       url === "/graphql" ? "createCommitOnBranch" : url.endsWith("/git/refs") ? "create-publication-branch" : url.includes("/git/ref/heads/srm-publication-") ? "read-publication-branch" : url.endsWith("/merge") ? "merge-publication-pr" : "github-rest",readOptions);
     const res = await fetcher(base + url, options);
     if (res.status === 404 && method === "GET") return null;
@@ -796,6 +808,10 @@ export function createProvider(
     throw Error("Pagination bound");
   };
   const store = githubStore(request, {authorizationExpiresAt:approval.expiresAt});
+  const readJournal = store.read;
+  store.read = async()=>{
+    const result = await readJournal();observedJournalGeneration = result.state.generation;return result;
+  };
   const stageEnv = () =>
     Object.fromEntries(
       [...contract.requiredSecrets, ...contract.requiredConfiguration].map(
@@ -1073,6 +1089,7 @@ export function createProvider(
     store,
     authority: lifecyclePreflight,
     snapshot,
+    sourceChecks: sha => request(GH,repo+"/commits/"+sha+"/check-runs?per_page=100"),
 
     async preparationPreflight(snapshot) {
       assertMigrationDestination(env);
@@ -1647,17 +1664,7 @@ export async function lifecycleApply(authorization, env = process.env) {
       ? "github-run:" + env.GITHUB_RUN_ID
       : "codespace:" + env.CODESPACE_NAME;
   const p = createProvider(env, authorization, source, owner);
-  const gh = env.SRM_RELEASE_GITHUB_TOKEN;
-  fail(gh, "Scoped GitHub management credential required");
-  const response = await fetch(
-    GH + repo + "/commits/" + source.sha + "/check-runs?per_page=100",
-    {
-      headers: { Authorization: "Bearer " + gh },
-      signal: AbortSignal.timeout(30000),
-    },
-  );
-  fail(response.ok, "CI verification unavailable");
-  const ci = await response.json(),
+  const ci = await p.sourceChecks(source.sha),
     check = ci.check_runs
       .filter((x) => x.name === "srm-build" && x.head_sha === source.sha)
       .sort((a, b) => b.id - a.id)[0];
