@@ -51,11 +51,12 @@ export function sanitizeDiagnostic(d = {}) {
     approvalId: text(d.approvalId, /^SRM-STAGING-[A-Za-z0-9_-]{1,80}$/),
     attemptNumber: number(d.attemptNumber), attemptLimit: number(d.attemptLimit),
     retryAfterMs: number(d.retryAfterMs), pollIntervalMs: number(d.pollIntervalMs),
+    acknowledgementDeadlineAt: number(d.acknowledgementDeadlineAt), retryNotBeforeAt: number(d.retryNotBeforeAt),
     rateLimitRemaining: number(d.rateLimitRemaining), rateLimitResetAt: number(d.rateLimitResetAt),
     retryGuidanceInvalid: d.retryGuidanceInvalid === true ? true : undefined,
     creationHttpStatus: number(d.creationHttpStatus), creationRequestId: text(d.creationRequestId, /^[a-fA-F0-9:-]{1,100}$/),
     providerEffectObserved: ["CREATION_ACKNOWLEDGED", "BRANCH_AT_EXPECTED_PARENT", "BRANCH_AT_OTHER_SHA", "NOT_OBSERVED"].includes(d.providerEffectObserved) ? d.providerEffectObserved : undefined,
-    retryDecision: ["GET_ONLY_BACKOFF", "STOP_ATTEMPT_LIMIT", "STOP_TIME_LIMIT", "STOP_RETRY_GUIDANCE", "STOP_NOT_RETRYABLE", "STOP_AMBIGUOUS_CREATE", "STOP_IDENTITY_CONFLICT"].includes(d.retryDecision) ? d.retryDecision : undefined,
+    retryDecision: ["GET_ONLY_BACKOFF", "STOP_ATTEMPT_LIMIT", "STOP_TIME_LIMIT", "STOP_RETRY_GUIDANCE", "STOP_NOT_RETRYABLE", "STOP_AMBIGUOUS_CREATE", "STOP_IDENTITY_CONFLICT", "STOP_AUTHORIZATION_EXPIRED", "STOP_AUTHORIZATION_WINDOW"].includes(d.retryDecision) ? d.retryDecision : undefined,
     graphqlErrors: Array.isArray(d.graphqlErrors) ? d.graphqlErrors.slice(0,10).map(e => ({
       type: ["FORBIDDEN","UNAUTHORIZED","NOT_FOUND","UNPROCESSABLE","RATE_LIMITED","BAD_USER_INPUT","INTERNAL","CONFLICT"].includes(e.type) ? e.type : "OTHER",
       path: Array.isArray(e.path) ? e.path.filter(x => Number.isSafeInteger(x) || ["createCommitOnBranch","commit","oid","input","branch","expectedHeadOid","fileChanges","additions"].includes(x)).slice(0,10) : [],
@@ -84,7 +85,7 @@ export async function diagnosticStage(context, action) {
     throw new ReleaseDiagnosticError(diagnostic);
   }
 }
-export async function githubResponse(fetcher, url, options, operation, {missingIsError = false} = {}) {
+export async function githubResponse(fetcher, url, options, operation, {missingIsError = false, now = Date.now} = {}) {
   const context = {stage:"github-request",operation,effect:"OBSERVATION_REQUIRED"};
   let response;
   try { response = await fetcher(url, options); }
@@ -98,14 +99,15 @@ export async function githubResponse(fetcher, url, options, operation, {missingI
   };
   const retryAfter = response.headers?.get("retry-after");
   if (retryAfter !== null && retryAfter !== undefined) {
-    const delay = /^\d+(?:\.\d+)?$/.test(retryAfter) ? Number(retryAfter) * 1000 : Date.parse(retryAfter) - Date.now();
+    const delay = /^\d+(?:\.\d+)?$/.test(retryAfter) ? Number(retryAfter) * 1000 : Date.parse(retryAfter) - now();
     if (Number.isFinite(delay) && delay >= 0 && Number.isSafeInteger(Math.ceil(delay))) metadata.retryAfterMs = Math.ceil(delay);
     else metadata.retryGuidanceInvalid = true;
   }
   metadata.rateLimitRemaining = headerInteger("x-ratelimit-remaining");
   metadata.rateLimitResetAt = headerInteger("x-ratelimit-reset");
   const pollSeconds = headerInteger("x-poll-interval");
-  if (pollSeconds !== undefined) metadata.pollIntervalMs = pollSeconds * 1000;
+  if (pollSeconds !== undefined && number(pollSeconds * 1000) !== undefined) metadata.pollIntervalMs = pollSeconds * 1000;
+  else if (response.headers?.get("x-poll-interval") != null) metadata.retryGuidanceInvalid = true;
   if (response.status === 404 && options.method === "GET" && !missingIsError) return null;
   if (response.status === 204 && response.ok) return null;
   let body;

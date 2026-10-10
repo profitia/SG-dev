@@ -42,6 +42,23 @@ test('typed GET 404 preserves actual HTTP identity only when explicitly requeste
     assert.equal(e.diagnostic.httpStatus,404);assert.equal(e.diagnostic.requestId,'ABCD:5678');assert.ok(!JSON.stringify(e.diagnostic).includes('do-not-log'));return true;
   });
 });
+test('GitHub HTTP-date retry guidance uses an injected clock and safe metadata',async()=>{
+  await assert.rejects(githubResponse(async()=>new Response(JSON.stringify({message:'rate limit exceeded',token:'do-not-log'}),{status:429,headers:{'retry-after':'Thu, 01 Jan 1970 00:02:00 GMT','x-poll-interval':'300','x-github-request-id':'ABCD:1234'}}),'https://api.github.com/exact-ref',{method:'GET'},'read-publication-branch',{missingIsError:true,now:()=>100000}),e=>{
+    assert.equal(e.diagnostic.retryAfterMs,20000);assert.equal(e.diagnostic.pollIntervalMs,300000);assert.equal(e.diagnostic.category,'RATE_LIMITED');
+    assert.ok(!JSON.stringify(e.diagnostic).includes('do-not-log'));return true;
+  });
+});
+for(const interval of ['invalid','-1','1.5','9007199254740991'])test('malformed or overflowing GitHub polling guidance fails closed: '+interval,async()=>{
+  await assert.rejects(githubResponse(async()=>new Response(JSON.stringify({message:'Not Found'}),{status:404,headers:{'x-poll-interval':interval}}),'https://api.github.com/exact-ref',{method:'GET'},'read-publication-branch',{missingIsError:true}),e=>{
+    assert.equal(e.diagnostic.retryGuidanceInvalid,true);assert.equal(e.diagnostic.pollIntervalMs,undefined);return true;
+  });
+});
+test('resumable acknowledgement timing is allowlisted through child diagnostics',()=>{
+  const d=diagnosticError(new ReleaseDiagnosticError({category:'HTTP_REJECTION',httpStatus:404,retryDecision:'STOP_AUTHORIZATION_WINDOW',acknowledgementDeadlineAt:200000,retryNotBeforeAt:400000,authorization:'secret-value'})).diagnostic;
+  const forwarded=childDiagnostic('SRM_RELEASE_DIAGNOSTIC '+JSON.stringify(d));
+  assert.equal(forwarded.retryDecision,'STOP_AUTHORIZATION_WINDOW');assert.equal(forwarded.acknowledgementDeadlineAt,200000);assert.equal(forwarded.retryNotBeforeAt,400000);
+  assert.ok(!JSON.stringify(forwarded).includes('secret-value'));
+});
 test('complete diagnostic schema survives child forwarding without secret values',()=>{
   const before=console.error;let logged;console.error=s=>{logged=s;};
   try {
