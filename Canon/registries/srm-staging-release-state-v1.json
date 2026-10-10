@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "5d8724544e3fed77186eddeb237b72b557facdc5d2d1a74df11eec221c5bd742",
+  "publicationNonce": "11f58f2fdab3be04f9a0af257b18c2594f6eb49ad8a6e03949ea3f549f25f2dd",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 60,
+  "generation": 61,
   "release": {
     "authorizationDigest": "98b806bbb3e7721ac0b7e03e062366aab6a449e324e2f000ed5050d34a786193",
     "authorizationKeyOrder": [
@@ -3070,7 +3070,7 @@
         }
       },
       "schema": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-10T05:42:05.796Z",
@@ -3549,10 +3549,10 @@
             ]
           }
         },
-        "snapshotDigest": "e93bf9b061f1621fd04029d3cc471f327ab318e043444e5fefdc0d58fa11bfa8",
+        "snapshotDigest": "4defa320250d0d69fab52afab6fb8da2613a004d0f791bc14005a1ce833a2d5c",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-10T05:42:05.796Z",
+          "capturedAt": "2026-10-10T05:43:12.812Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -3621,8 +3621,8 @@
             "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
-            "updated_at": "2026-10-10T05:42:07Z",
-            "pushed_at": "2026-10-10T05:42:03Z",
+            "updated_at": "2026-10-10T05:43:08Z",
+            "pushed_at": "2026-10-10T05:43:04Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -3752,7 +3752,7 @@
             "written_data_bytes": 0,
             "data_transfer_bytes": 176113,
             "created_at": "2026-09-22T17:09:28Z",
-            "updated_at": "2026-10-10T05:32:52Z",
+            "updated_at": "2026-10-10T05:42:51Z",
             "created_by": {
               "name": "",
               "image": ""
@@ -4028,7 +4028,58 @@
             ]
           }
         },
-        "result": {}
+        "result": {
+          "migrations": [
+            {
+              "version": "0001_xray_foundation",
+              "checksum": "14b18a8dfa4f45fb2c5fd6cdbffd4220db4826dead5d8a205e8663a1a9dd8445"
+            },
+            {
+              "version": "0002_ceidg_jdg",
+              "checksum": "365904ec0c70d56f57c7702c0e2516ec114b41737f05c1ff38e9a03004a78a25"
+            },
+            {
+              "version": "0003_financial_cost_normalization",
+              "checksum": "2e4f35bf603a207096562f88d8a0903c799cc906c2475eccb380434c2d6b07da"
+            },
+            {
+              "version": "0004_financial_other_cost_normalization",
+              "checksum": "fb78a2476249daedbe53fe87c2c6e8a66b2a3e06abd31b388603ac1ce3ad3c76"
+            },
+            {
+              "version": "0005_kys_personal",
+              "checksum": "c309f92b4ec31362c3dc6a004def889d37c90b095dcc9624d3f7f91298a3344a"
+            },
+            {
+              "version": "0006_kys_retention_privilege",
+              "checksum": "60629673484b92fd8877aa0a4355bd1e79818d51be3f7f88b4ceee19d9c8d771"
+            },
+            {
+              "version": "0007_shared_financial_catalog",
+              "checksum": "31c0bb7b7b0a54476cfa95033d463b7ee4071d1fac37090082dd4c7ede4f5b54"
+            },
+            {
+              "version": "0008_financial_indicators",
+              "checksum": "e1ab3ac396537fb52c17a99343379068c2a3c8b5be03890f95ce8405c19a91c5"
+            },
+            {
+              "version": "0009_financial_indicator_days",
+              "checksum": "f4a62fcaf826f1db90cbc0a930eafde2e8fe8e290b24c65bcdf9f98ffb45bcd2"
+            },
+            {
+              "version": "0010_kys_shared_cache",
+              "checksum": "1130979f8573048d060a919dc811dd63ee737688ff4533665d9ee16b32189c44"
+            },
+            {
+              "version": "0011_mgbi_raw_reports",
+              "checksum": "202e415b49dbe6d2df232392dc4b058f4aa8ed86f570b531efcee760ffe0d77c"
+            },
+            {
+              "version": "0012_verified_cogs_cost_magnitude",
+              "checksum": "e4775e05a15deee9412a4d76ba4e518acdeaa280ce153df0f169f299241a16ac"
+            }
+          ]
+        }
       }
     },
     "lastKnownGood": {
