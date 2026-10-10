@@ -129,7 +129,15 @@ The acknowledgement budget defaults to 11 minutes and at most five reads, with i
 
 Use an existing GitHub operator credential with actual Contents, Pull requests, check/Actions read, branch/environment administration and secret/variable rights. Codespaces integration credentials can lack administration. Credentials belong only in the protected operator/GitHub environment, never the Render runtime. Verify the exact approved https://srm-staging-runtime.onrender.com URL before runtime login tests.
 
-## Owner-approved demo-password repair
+## GitHub read resilience and ambiguous writes
+
+The shared release GitHub adapter identifies the HTTP method and an allowlisted endpoint name for every response/error. Raw URLs, headers, payloads, variable values and credentials never enter diagnostics. Only recognized read-only REST GETs in the exact SRM authority repository (or executor Codespace status) may recover from HTTP 500/502/503/504, classified connection failures/timeouts and actual rate limits. Ordinary 401/403/404, unknown endpoints and serialization errors stop. The special validated HTTP 201 → 404 publication acknowledgement retains its separate five-read bound; the adapter delegates to that loop rather than multiplying attempts.
+
+Default read recovery permits three attempts, an 11-minute read deadline and 20 additional attempts shared by the executor. Injected options have hard maxima of five attempts, 30 minutes per read and one hour of execution. Effective deadlines never exceed authorization expiry. Backoff grows exponentially with bounded jitter. Valid Retry-After, same-endpoint X-Poll-Interval and primary/secondary rate-limit delays take precedence; their cooldowns survive subsequent requests. A delay outside the remaining window stops with resumable diagnostics, without extending approval. Recovery events and terminal errors retain method, endpoint, request ID, actual decision, attempt/budget and provider-effect certainty; generic fallback is NOT_EVALUATED/UNKNOWN, never a claimed rejection or absence of side effects.
+
+POST/PATCH/PUT/DELETE and GraphQL mutations are never automatically replayed after an ambiguous response. Preserve the exact branch/commit/PR and reconcile independent provider reads in a separately authorized same-release resume. Do not rerun a completed deployment or migration. A 502 alone cannot establish the original method or endpoint: run 38030271387 retained only github-rest and no method/path; the historical identity remains unresolved. The reviewed adapter makes subsequent failures identifiable. See [GitHub REST guidance](https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api).
+
+## Owner-approved demo-password repair procedure
 
 Canonical demoPasswordReuse is independent of vendorCredentialReuse, applies only to SRM_DEMO_PASSWORD on the exact existing Stage service and expires2026-11-08T00:00:00Z. Explicit owner confirmation was received after explaining that the supplied password equals Development. Missing/wrong/expired approval rejects sharing; separate database and session secrets remain mandatory.
 

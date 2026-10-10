@@ -6,7 +6,7 @@ import os from "node:os";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import pg from "pg";
-import {githubResponse,githubMetadata,reportDiagnostic,childDiagnostic,diagnosticError,ReleaseDiagnosticError} from "./release-diagnostics.mjs";
+import {githubResponse,githubMetadata,reportDiagnostic,childDiagnostic,diagnosticError,ReleaseDiagnosticError,createGithubRequester,githubRequestIdentity} from "./release-diagnostics.mjs";
 import {prepareResume,assertResumeFence} from "./resume-staging.mjs";
 import {manifestFrom} from "./staging-lifecycle.mjs";
 import {digest,operations} from "../../../scripts/governance/srm-release-lifecycle.mjs";
@@ -29,6 +29,140 @@ import {
   inspectProductDatabase,
 } from "./promote-staging.mjs";
 const sha = "a".repeat(40);
+const githubBase = 'https://api.github.com/repos/profitia/SG-dev';
+function readRecoveryFixture(responses, settings={}) {
+  let time=100000;const calls=[],pauses=[],events=[];
+  const request=createGithubRequester(async(url,options)=>{
+    calls.push({url,method:options.method});const r=responses.shift();
+    if(r instanceof Error)throw r;
+    return new Response(JSON.stringify(r?.body??{commit:{sha}}),{status:r?.status??200,headers:{'x-github-request-id':'ABCD:1234',...r?.headers}});
+  },{authorizationExpiresAt:new Date(time+3600000).toISOString(),now:()=>time,pause:async ms=>{pauses.push(ms);time+=ms;},random:()=>0,emit:d=>events.push(d),...settings});
+  return {request,calls,pauses,events,advance(ms){time+=ms;}};
+}
+for(const status of [500,502,503,504])test('known GET recovers transient GitHub '+status+' preserving exact request identity',async()=>{
+  const f=readRecoveryFixture([{status},{status:200}]);const url=githubBase+'/branches/main';
+  assert.equal((await f.request(url,{method:'GET'},'github-rest')).commit.sha,sha);
+  assert.deepEqual(f.calls,[{url,method:'GET'},{url,method:'GET'}]);assert.deepEqual(f.pauses,[250]);
+  assert.equal(f.events[0].endpoint,'authority-branch');assert.equal(f.events[0].retryDecision,'GET_ONLY_BACKOFF');
+  assert.equal(f.events[1].retryDecision,'RECOVERED');assert.equal(f.events[1].attemptNumber,2);
+});
+test('persistent read 502 terminates within attempt budget with precise forwarded diagnostics',async()=>{
+  const f=readRecoveryFixture(Array.from({length:3},()=>({status:502})));
+  await assert.rejects(f.request(githubBase+'/branches/main',{method:'GET'},'github-rest'),e=>{
+    const d=childDiagnostic('SRM_RELEASE_DIAGNOSTIC '+JSON.stringify(e.diagnostic));
+    assert.equal(d.httpMethod,'GET');assert.equal(d.endpoint,'authority-branch');assert.equal(d.requestType,'READ_ONLY');
+    assert.equal(d.providerEffectCertainty,'NO_MUTATION');assert.equal(d.requestId,'ABCD:1234');
+    assert.equal(d.retryDecision,'STOP_ATTEMPT_LIMIT');assert.equal(d.attemptNumber,3);return true;
+  });assert.equal(f.calls.length,3);assert.deepEqual(f.pauses,[250,500]);
+});
+for(const error of [Object.assign(Error('private timeout'),{name:'TimeoutError'}),Object.assign(TypeError('private connection'),{cause:{code:'ECONNRESET'}})])
+test('known read safely recovers network '+error.name,async()=>{
+  const f=readRecoveryFixture([error,{status:200}]);await f.request(githubBase+'/branches/main',{method:'GET'},'github-rest');
+  assert.equal(f.calls.length,2);assert.equal(f.events[0].networkRetrySafe,true);assert.ok(!JSON.stringify(f.events).includes('private'));
+});
+test('unclassified local error never becomes network retry permission',async()=>{
+  const f=readRecoveryFixture([TypeError('private programming error')]);await assert.rejects(f.request(githubBase+'/branches/main',{method:'GET'},'github-rest'),e=>e.diagnostic.retryDecision==='STOP_NOT_RETRYABLE');assert.equal(f.calls.length,1);
+});
+for(const [status,headers,expected] of [
+  [429,{'retry-after':'2'},2000], [502,{'retry-after':'Thu, 01 Jan 1970 00:02:00 GMT'},20000],
+  [403,{'x-ratelimit-remaining':'0','x-ratelimit-reset':'102'},3000], [429,{},60000],
+  [502,{'x-poll-interval':'300'},300000],
+])test('GitHub server delay is respected for '+status+' '+JSON.stringify(headers),async()=>{
+  const f=readRecoveryFixture([{status,headers},{status:200}]);await f.request(githubBase+'/branches/main',{method:'GET'},'github-rest');assert.deepEqual(f.pauses,[expected]);
+});
+test('secondary rate limit backoff increases exponentially',async()=>{
+  const f=readRecoveryFixture([{status:429},{status:429},{status:200}]);await f.request(githubBase+'/branches/main',{method:'GET'},'github-rest');assert.deepEqual(f.pauses,[60000,120000]);
+});
+test('rate limit cooldown also fences another endpoint and a subsequent write',async()=>{
+  const f=readRecoveryFixture([{status:429,headers:{'retry-after':'2'}},{status:200}],{attemptLimit:1});
+  await assert.rejects(f.request(githubBase+'/branches/main',{method:'GET'},'github-rest'));
+  await f.request(githubBase+'/pulls',{method:'POST',body:'sensitive'},'github-rest');assert.deepEqual(f.pauses,[2000]);assert.equal(f.calls.length,2);
+});
+test('successful polling guidance is retained for the same exact endpoint',async()=>{
+  const f=readRecoveryFixture([{status:200,headers:{'x-poll-interval':'300'}},{status:200}]);
+  for(let i=0;i<2;i++)await f.request(githubBase+'/branches/main',{method:'GET'},'github-rest');assert.deepEqual(f.pauses,[300000]);
+});
+for(const headers of [{'retry-after':'invalid'},{'x-poll-interval':'invalid'},{'x-ratelimit-remaining':'0'}])
+test('unsafe retry guidance fails closed '+JSON.stringify(headers),async()=>{
+  const f=readRecoveryFixture([{status:429,headers}]);await assert.rejects(f.request(githubBase+'/branches/main',{method:'GET'},'github-rest'),e=>e.diagnostic.retryDecision==='STOP_RETRY_GUIDANCE');assert.equal(f.calls.length,1);
+});
+for(const status of [401,403,404])test('ordinary GitHub '+status+' is never treated as transient',async()=>{
+  const f=readRecoveryFixture([{status}]);await assert.rejects(f.request(githubBase+'/branches/main',{method:'GET'},'github-rest',{missingIsError:true}),e=>e.diagnostic.retryDecision==='STOP_NOT_RETRYABLE');assert.equal(f.calls.length,1);assert.deepEqual(f.pauses,[]);
+});
+test('unknown endpoint or wrong repository never receives read retry authority or leaks URL',async()=>{
+  for(const url of [githubBase+'/unknown?token=private','https://api.github.com/repos/foreign/SG-dev/branches/main']){
+    const f=readRecoveryFixture([{status:502}]);await assert.rejects(f.request(url,{method:'GET'},'github-rest'),e=>{
+      assert.equal(e.diagnostic.endpoint,'unrecognized');assert.equal(e.diagnostic.retryEligibility,'INELIGIBLE');assert.ok(!JSON.stringify(e.diagnostic).match(/private|foreign|https/));return true;
+    });assert.equal(f.calls.length,1);
+  }
+});
+for(const [method,path] of [['POST','/pulls'],['PATCH','/environments/srm-staging/variables/SRM_RELEASE_BINDING_RECEIPT'],['PUT','/pulls/234/merge'],['DELETE','/git/refs']])
+test('ambiguous write '+method+' 502 is never repeated',async()=>{
+  const f=readRecoveryFixture([{status:502,body:{message:'credential=private',payload:'sensitive'}}]);
+  await assert.rejects(f.request(githubBase+path,{method,body:'sensitive'},'github-rest'),e=>{
+    assert.equal(e.diagnostic.requestType,'MUTATION');assert.equal(e.diagnostic.providerEffectCertainty,'AMBIGUOUS');assert.equal(e.diagnostic.retryDecision,'STOP_AMBIGUOUS_WRITE');assert.equal(e.diagnostic.attemptLimit,1);
+    assert.ok(!JSON.stringify(e.diagnostic).match(/credential|private|sensitive/));return true;
+  });assert.equal(f.calls.length,1);assert.deepEqual(f.pauses,[]);
+});
+test('GraphQL mutation timeout never retries or appears read-only',async()=>{
+  const f=readRecoveryFixture([Object.assign(Error('private'),{name:'TimeoutError'})]);await assert.rejects(f.request('https://api.github.com/graphql',{method:'POST',body:'private'},'createCommitOnBranch'),e=>e.diagnostic.retryDecision==='STOP_AMBIGUOUS_WRITE'&&e.diagnostic.endpoint==='commit-mutation');assert.equal(f.calls.length,1);
+});
+test('authorization window cannot be extended to fit mandatory delay',async()=>{
+  const f=readRecoveryFixture([{status:502,headers:{'retry-after':'2'}}],{authorizationExpiresAt:new Date(101000).toISOString()});
+  await assert.rejects(f.request(githubBase+'/branches/main',{method:'GET'},'github-rest'),e=>e.diagnostic.retryDecision==='STOP_AUTHORIZATION_WINDOW');assert.equal(f.calls.length,1);assert.deepEqual(f.pauses,[]);
+});
+test('authorization is checked again after pause and before any next read or write',async()=>{
+  let time=100000,calls=0;const r=createGithubRequester(async()=>{calls++;return new Response('{}',{status:502});},{authorizationExpiresAt:new Date(101000).toISOString(),now:()=>time,pause:async()=>{time=101000;},random:()=>0,emit:()=>{}});
+  await assert.rejects(r(githubBase+'/branches/main',{method:'GET'},'github-rest'),e=>e.diagnostic.retryDecision==='STOP_AUTHORIZATION_EXPIRED');
+  await assert.rejects(r(githubBase+'/pulls',{method:'POST'},'github-rest'),e=>e.diagnostic.retryDecision==='STOP_AUTHORIZATION_EXPIRED');assert.equal(calls,1);
+});
+for(const settings of [{readDeadlineMs:200},{executionDeadlineMs:200}])test('configured deadline bounds recovery '+JSON.stringify(settings),async()=>{
+  const f=readRecoveryFixture([{status:502}],settings);await assert.rejects(f.request(githubBase+'/branches/main',{method:'GET'},'github-rest'),e=>e.diagnostic.retryDecision==='STOP_TIME_LIMIT');assert.equal(f.calls.length,1);
+});
+test('shared additional-read retry budget cannot reset on the next operation',async()=>{
+  const f=readRecoveryFixture([{status:502},{status:200},{status:502}],{retryBudget:1});await f.request(githubBase+'/branches/main',{method:'GET'},'github-rest');
+  await assert.rejects(f.request(githubBase+'/pulls?state=all',{method:'GET'},'github-rest'),e=>e.diagnostic.retryDecision==='STOP_RETRY_BUDGET');assert.equal(f.calls.length,3);
+});
+test('jitter is injected, bounded and does not shorten server minimum',async()=>{
+  const f=readRecoveryFixture([{status:502},{status:200}],{random:()=>0.5});await f.request(githubBase+'/branches/main',{method:'GET'},'github-rest');assert.deepEqual(f.pauses,[375]);
+});
+test('acknowledgement owner receives a single attempt with explicit deferral',async()=>{
+  const f=readRecoveryFixture([{status:502}]);await assert.rejects(f.request(githubBase+'/git/ref/heads/srm-publication-'+ 'a'.repeat(24),{method:'GET'},'read-publication-branch',{missingIsError:true,acknowledgementManaged:true}),e=>e.diagnostic.retryDecision==='DEFER_TO_ACKNOWLEDGEMENT');assert.equal(f.calls.length,1);assert.deepEqual(f.pauses,[]);
+});
+for(const settings of [{attemptLimit:6},{retryBudget:21},{readDeadlineMs:1800001},{executionDeadlineMs:3600001}])test('retry configuration fails closed beyond hard limits '+JSON.stringify(settings),()=>{
+  assert.throws(()=>readRecoveryFixture([],settings),/INVALID_RETRY_BOUNDS/);
+});
+test('endpoint identifiers do not contain variable names, SHAs or personal/provider payloads',()=>{
+  const i=githubRequestIdentity(githubBase+'/commits/'+sha+'/check-runs?token=private','GET');assert.equal(i.endpoint,'commit-checks');assert.ok(!JSON.stringify(i).includes(sha));
+});
+test('retry diagnostics retain only the observed journal generation and original approval identity',async()=>{
+  const f=readRecoveryFixture([{status:502},{status:200}],{diagnosticContext:()=>({generation:65,approvalId:'SRM-STAGING-38027365352-1',token:'private'})});
+  await f.request(githubBase+'/branches/main',{method:'GET'},'github-rest');assert.equal(f.events[0].generation,65);assert.equal(f.events[1].approvalId,'SRM-STAGING-38027365352-1');assert.ok(!JSON.stringify(f.events).includes('private'));
+});
+test('a blocked write preflight remains NOT_SENT and never appears as ambiguous provider effect',async()=>{
+  const f=readRecoveryFixture([new ReleaseDiagnosticError({stage:'github-write-preflight',category:'RELEASE_GATE',requestReachedGitHub:'NOT_SENT',message:'Independent governance preflight blocked'})]);
+  await assert.rejects(f.request(githubBase+'/pulls',{method:'POST'},'github-rest'),e=>{
+    assert.equal(e.diagnostic.stage,'github-write-preflight');assert.equal(e.diagnostic.requestReachedGitHub,'NOT_SENT');assert.equal(e.diagnostic.retryDecision,'STOP_NOT_RETRYABLE');assert.equal(e.diagnostic.providerEffectCertainty,'UNKNOWN');return true;
+  });assert.equal(f.calls.length,1);
+});
+test('null missing-response polling guidance survives before a subsequent exact read',async()=>{
+  const f=readRecoveryFixture([{status:404,headers:{'x-poll-interval':'300'}},{status:200}]);
+  assert.equal(await f.request(githubBase+'/branches/main',{method:'GET'},'github-rest'),null);
+  await f.request(githubBase+'/branches/main',{method:'GET'},'github-rest');assert.deepEqual(f.pauses,[300000]);
+});
+test('acknowledgement caller deadline also bounds adapter cooldown waits',async()=>{
+  const f=readRecoveryFixture([{status:404,headers:{'x-poll-interval':'300'}},{status:200}]);
+  assert.equal(await f.request(githubBase+'/branches/main',{method:'GET'},'github-rest'),null);
+  await assert.rejects(f.request(githubBase+'/branches/main',{method:'GET'},'github-rest',{acknowledgementManaged:true,deadlineAt:200000}),e=>e.diagnostic.retryDecision==='STOP_TIME_LIMIT');
+  assert.equal(f.calls.length,1);assert.deepEqual(f.pauses,[]);
+});
+test('non-JSON transient response recovers safely; successful invalid JSON fails mapping without retry',async()=>{
+  for(const status of [200,502]){
+    let calls=0;const r=createGithubRequester(async()=>{calls++;return calls===1 ? new Response('private payload',{status}) : new Response('{}');},{authorizationExpiresAt:new Date(3600000).toISOString(),now:()=>100000,pause:async()=>{},emit:()=>{}});
+    if(status===502){await r(githubBase+'/branches/main',{method:'GET'},'github-rest');assert.equal(calls,2);}
+    else await assert.rejects(r(githubBase+'/branches/main',{method:'GET'},'github-rest'),e=>e.diagnostic.category==='INVALID_JSON'&&e.diagnostic.retryDecision==='STOP_NOT_RETRYABLE'&&!JSON.stringify(e.diagnostic).includes('private'));
+  }
+});
 test('successful GitHub request metadata stays out of canonical payloads',async()=>{
   const body={ref:'refs/heads/srm-publication-'+ 'a'.repeat(24),object:{type:'commit',sha}};
   const result=await githubResponse(async()=>new Response(JSON.stringify(body),{status:201,headers:{'x-github-request-id':'ABCD:5678'}}),'https://api.github.com/repos/profitia/SG-dev/git/refs',{method:'POST'},'create-publication-branch');
@@ -66,7 +200,7 @@ test('complete diagnostic schema survives child forwarding without secret values
     for(const field of ['publicationStage','githubOperation','httpStatus','githubRequestId','failureCategory','attemptNumber','attemptLimit','expectedSha','observedSha','branch','journalGeneration','releaseApprovalId','providerEffectObserved','retryDecision'])assert.ok(Object.hasOwn(d,field),field);
     assert.equal(d.observedSha,'NOT_OBSERVED');assert.ok(!logged.includes('do-not-log'));
     const forwarded=reportDiagnostic(new ReleaseDiagnosticError(childDiagnostic(logged)));assert.equal(forwarded.httpStatus,404);assert.equal(forwarded.githubRequestId,'ABCD:5678');assert.equal(forwarded.attemptNumber,5);
-    const unknown=reportDiagnostic(Error('token=do-not-log'));assert.equal(unknown.httpStatus,'UNKNOWN');assert.equal(unknown.githubRequestId,'UNKNOWN');assert.equal(unknown.providerEffectObserved,'NOT_OBSERVED');assert.ok(!logged.includes('do-not-log'));
+    const unknown=reportDiagnostic(Error('token=do-not-log'));assert.equal(unknown.httpStatus,'UNKNOWN');assert.equal(unknown.githubRequestId,'UNKNOWN');assert.equal(unknown.providerEffectObserved,'UNKNOWN');assert.equal(unknown.retryDecision,'NOT_EVALUATED');assert.ok(!logged.includes('do-not-log'));
   } finally {console.error=before;}
 });
 test("HTTP and GraphQL diagnostics retain request identity but never sensitive payloads",async()=>{

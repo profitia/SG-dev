@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import {githubResponse, ReleaseDiagnosticError} from "./release-diagnostics.mjs";
+import {githubResponse, ReleaseDiagnosticError,createGithubRequester} from "./release-diagnostics.mjs";
 import {
   runLifecycle,
   manifestFrom,
@@ -1121,6 +1121,41 @@ function acknowledgementFixture({failures=[],createdEffect=true,creationLost=fal
   const store=githubStore(request,{...storeOptions,now:()=>time,pause:async ms=>{pauses.push(ms);time+=ms;}});
   return {f,store,pauses,advance(ms){time+=ms;},get reads(){return reads;},get creates(){return creates;}};
 }
+function resilientPublicationFixture({compareFailure=false,ackFailures=[],lostPr=false}={}) {
+  const f=publicationFixture();let time=100000,created=false,failedCompare=false,failedPr=false;const events=[],pauses=[];
+  const adapter=createGithubRequester(async(full,options)=>{
+    const url=full.slice('https://api.github.com'.length),method=options.method;
+    if(compareFailure && url.includes('/compare/') && !failedCompare){failedCompare=true;return new Response('{}',{status:502});}
+    if(created && url.includes('/git/ref/heads/') && ackFailures.length){
+      const status=ackFailures.shift();return new Response('{}',{status,headers:{'x-poll-interval':'300'}});
+    }
+    const result=await f.request('https://api.github.com',url,method,options.body ? JSON.parse(options.body) : undefined);
+    if(method==='POST' && url.endsWith('/git/refs'))created=true;
+    if(lostPr && method==='POST' && url.endsWith('/pulls') && !failedPr){failedPr=true;return new Response('{}',{status:502});}
+    return new Response(JSON.stringify(result??{message:'Not Found'}),{status:result===null ? 404 : method==='POST' && url.endsWith('/git/refs') ? 201 : 200});
+  },{authorizationExpiresAt:new Date(time+3600000).toISOString(),now:()=>time,pause:async ms=>{pauses.push(ms);time+=ms;},random:()=>0,emit:d=>events.push(d)});
+  const store=githubStore((base,url,method='GET',body,options)=>adapter(base+url,{method,body:body ? JSON.stringify(body) : undefined},url==='/graphql' ? 'createCommitOnBranch' : 'github-rest',options),{
+    now:()=>time,pause:async ms=>{pauses.push(ms);time+=ms;},authorizationExpiresAt:new Date(time+3600000).toISOString(),
+  });return {f,store,pauses,events};
+}
+test('adapter read 502 recovery preserves branch, candidate, PR and journal identity',async()=>{
+  const x=resilientPublicationFixture({compareFailure:true});await x.store.commit(publicationInput(await x.store.read()));
+  assert.equal(x.f.state.generation,1);assert.equal(x.events.at(-1).retryDecision,'RECOVERED');assert.equal(x.events.at(-1).endpoint,'publication-compare');
+  for(const ending of ['/git/refs','/pulls'])assert.equal(x.f.calls.filter(c=>c.method==='POST'&&c.url.endsWith(ending)).length,1);
+  assert.equal(x.f.calls.filter(c=>c.url==='/graphql').length,1);
+});
+test('adapter never nests retries inside acknowledged creation observation',async()=>{
+  const x=resilientPublicationFixture({ackFailures:[404,502]});await x.store.commit(publicationInput(await x.store.read()));
+  assert.deepEqual(x.pauses,[300000,300000]);assert.deepEqual(x.events,[]);assert.equal(x.f.state.generation,1);
+  assert.equal(x.f.calls.filter(c=>c.method==='POST'&&c.url.endsWith('/git/refs')).length,1);
+});
+test('ambiguous PR write 502 stops, then independently reconciles without a duplicate publication',async()=>{
+  const x=resilientPublicationFixture({lostPr:true}),input=publicationInput(await x.store.read());
+  await assert.rejects(x.store.commit(input),e=>e.diagnostic.httpMethod==='POST'&&e.diagnostic.endpoint==='publication-prs'&&e.diagnostic.retryDecision==='STOP_AMBIGUOUS_WRITE');
+  assert.equal(x.f.state.generation,0);assert.deepEqual(x.pauses,[]);await x.store.commit(input);
+  assert.equal(x.f.state.generation,1);assert.equal(x.f.calls.filter(c=>c.method==='POST'&&c.url.endsWith('/pulls')).length,1);
+  assert.equal(x.f.calls.filter(c=>c.method==='POST'&&c.url.endsWith('/git/refs')).length,1);assert.equal(x.f.calls.filter(c=>c.url==='/graphql').length,1);
+});
 const publicationInput=current=>({expectedHead:current.head,files:{[journalPath]:{...current.state,generation:1}},message:'acknowledgement test'});
 test('created branch immediate exact GET publishes once without backoff',async()=>{
   const x=acknowledgementFixture();await x.store.commit(publicationInput(await x.store.read()));
