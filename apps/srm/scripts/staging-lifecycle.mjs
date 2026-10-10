@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import pg from "pg";
-import {diagnosticStage, diagnosticError, ReleaseDiagnosticError, createGithubRequester, githubMetadata} from "./release-diagnostics.mjs";
+import {diagnosticStage, diagnosticError, ReleaseDiagnosticError, createGithubRequester, createGithubRequestMetrics, githubMetadata} from "./release-diagnostics.mjs";
 import {
   root,
   contract,
@@ -28,6 +28,7 @@ import {
   assertOperation,
   claimRelease,
   recordStep,
+  recordReadOnlyObservations,
   reconciliation,
   digest,
   casPublish,
@@ -194,6 +195,23 @@ export function publicationFiles(current, files, expectedHead) {
   return { ...files, [statePath]: { publicationNonce: nonce, ...state } };
 }
 
+export function publicationBranch(current, files) {
+  const state = files[statePath], release = state.release;
+  // Historical unfinished releases keep their original identity. New releases
+  // reserve one branch for each canonical transition, independent of fresh
+  // observation timestamps or unrelated movement of main. The full-content
+  // nonce and exact candidate comparison remain separate, mandatory fences.
+  const identity = release?.publicationIdentityVersion === "2.0" ? digest({
+    canonicalInput: {state: current.state, registry: current.registry},
+    generation: state.generation, paths: Object.keys(files).sort(),
+    approvalId: release.approvalId, manifestDigest: release.manifestDigest,
+    authorizationDigest: release.authorizationDigest, owner: release.owner,
+    mode: release.mode, phase: release.phase,
+    steps: Object.fromEntries(Object.entries(release.steps).map(([op,step]) => [op,step.status])),
+  }) : state.publicationNonce;
+  return "srm-publication-" + identity.slice(0,24);
+}
+
 export function githubStore(
   request,
   {
@@ -214,14 +232,23 @@ export function githubStore(
     if (now() >= authorizationDeadline) throw new ReleaseDiagnosticError({...context,category:"AUTHORIZATION_EXPIRED",
       message:"Approval expired or owner missing",requestReachedGitHub:"NOT_SENT",retryDecision:"STOP_AUTHORIZATION_EXPIRED"});
   };
+  // Git objects are immutable. Never cache the moving main ref or provider truth.
+  // Bound the cache and clone results so callers cannot change cached evidence.
+  const objects = new Map();
+  const immutable = async (url) => {
+    if (!objects.has(url)) {
+      const value = await request(GH, url);
+      fail(value && typeof value === "object", "Immutable Git object unavailable");
+      if (objects.size >= 32) objects.delete(objects.keys().next().value);
+      objects.set(url, structuredClone(value));
+    }
+    return structuredClone(objects.get(url));
+  };
   const read = async () => {
     const b = await request(GH, repo + "/branches/main");
     fail(b?.commit?.sha, "Authority main unavailable");
     const head = b.commit.sha;
-    const tree = await request(
-      GH,
-      repo + "/git/trees/" + head + "?recursive=1",
-    );
+    const tree = await immutable(repo + "/git/trees/" + head + "?recursive=1");
     fail(
       Array.isArray(tree?.tree) && !tree.truncated,
       "Incomplete authority tree",
@@ -231,7 +258,7 @@ export function githubStore(
       fail(f?.type === "blob", "Canonical journal missing");
       return JSON.parse(
         Buffer.from(
-          (await request(GH, repo + "/git/blobs/" + f.sha)).content,
+          (await immutable(repo + "/git/blobs/" + f.sha)).content,
           "base64",
         ).toString(),
       );
@@ -336,7 +363,7 @@ export function githubStore(
   };
   const protectedCommit = async (current, expectedHead, files, message) => {
     const nonce = files[statePath].publicationNonce;
-    const branch = "srm-publication-" + nonce.slice(0, 24);
+    const branch = publicationBranch(current, files);
     const context = {branch, expectedSha:expectedHead};
     await diagnosticStage({...context,stage:"publication-repository",operation:"verify-publication-repository"}, async () => {
       const identity = await request(GH, repo);
@@ -348,8 +375,13 @@ export function githubStore(
       );
     });
     let ref = await diagnosticStage({...context,stage:"publication-branch-read",operation:"read-publication-branch"}, async () => {
-      try { return await readPublicationRef(branch); }
-      catch (error) { if (error instanceof ReleaseDiagnosticError && error.diagnostic.httpStatus === 404) return null; throw error; }
+      // Inventory is a read of matching refs, not a poll of a missing exact ref.
+      // Prefix collisions and malformed/permission responses fail closed. After
+      // validated creation, the separate exact-ref read still verifies identity.
+      const matches = await request(GH, repo + "/git/matching-refs/heads/" + branch);
+      fail(githubMetadata(matches).httpStatus === 200 && Array.isArray(matches) && matches.length <= 1 &&
+        matches.every(ref => exactRef(ref, branch)), "Publication branch acknowledgement unavailable");
+      return matches[0] ?? null;
     });
     if (!ref) {
       assertPublicationAuthorization({...context,stage:"publication-branch-create",operation:"create-publication-branch"});
@@ -545,6 +577,12 @@ export async function runLifecycle({
   fail(m.contractDigest === digest(contract), "Deployment contract mismatch");
   let current = await p.store.read();
   const before = await p.snapshot();
+  let diagnosticSnapshot = before;
+  const publish = (head, files, message) => diagnosticStage({
+    stage: "journal-publication", operation: "publish-journal", failureDomain: "RELEASE_BOOKKEEPING",
+    applicationStatus: diagnosticSnapshot.liveDeploy?.status === "live" &&
+      diagnosticSnapshot.liveDeploy.commit?.id === m.sha ? "LIVE_SOURCE_OBSERVED" : "NOT_CONFIRMED",
+  }, () => casPublish(p.store, head, files, message));
   assertSnapshot(before, contract);
   await p.preparationPreflight(before);
   fail(
@@ -570,6 +608,9 @@ export async function runLifecycle({
       registryHead: current.head,
       proof,
       recovered: true,
+      stagingMutated: false,
+      mutations: [],
+      githubRequestMetrics: p.githubRequestMetrics?.(),
     };
   }
   fail(
@@ -586,13 +627,21 @@ export async function runLifecycle({
   fail(p.sourceProof?.sha === m.sha, "Verified source evidence required");
   state.release.sourceProof = state.release.sourceProof ?? p.sourceProof;
   await p.authority(m.sha, a.approvalId);
-  await casPublish(
-    p.store,
+  const ownershipChanged = digest(state.release) !== digest(current.state.release);
+  if (ownershipChanged) await publish(
     current.head,
     { [statePath]: state },
     "SRM release ownership " + a.approvalId,
   );
-  current = await p.store.read();
+  const refreshed = await p.store.read();
+  if (!ownershipChanged) fail(digest(refreshed.state) === digest(current.state) &&
+    digest(refreshed.registry) === digest(current.registry), "Resume journal changed before operation");
+  current = refreshed;
+  state = current.state;
+  let observations = [];
+  const mutations = [];
+  const withObservations = () => observations.length
+    ? recordReadOnlyObservations(state, owner, observations, contract) : state;
   const save = async (files, label) => {
     assertLifecycleAuthorization(a, m, contract);
     const observed = await p.store.read();
@@ -603,12 +652,14 @@ export async function runLifecycle({
       "Concurrent journal update",
     );
     await p.authority(m.sha, a.approvalId);
-    await casPublish(p.store, observed.head, files, label);
+    await publish(observed.head, files, label);
     current = await p.store.read();
     state = current.state;
+    observations = [];
   };
   const step = async (op, action) => {
     let snap = await p.snapshot();
+    diagnosticSnapshot = snap;
     assertOperation({
       operation: op,
       authorization: a,
@@ -625,12 +676,20 @@ export async function runLifecycle({
       fail(observed?.complete, "Completed step drift: " + op);
       return;
     }
+    if (!old && observed?.complete && a.mode !== "onboard") {
+      observations.push({...observed, operation: op, snapshot: snap});
+      if (stopAfter === op) throw Error("Simulated interruption after " + op);
+      return;
+    }
     if (!old) {
-      const next = recordStep(state, owner, op, "INTENT", snap);
+      const next = recordStep(withObservations(), owner, op, "INTENT", snap);
       await save({ [statePath]: next }, "SRM release intent " + op);
+    } else if (observations.length && !observed?.complete) {
+      const next = recordStep(withObservations(), owner, op, "INTENT", snap);
+      await save({ [statePath]: next }, "SRM release recovered intent " + op);
     }
     let result = observed?.complete ? observed.result : null;
-    if (!result) {
+    if (!observed?.complete) {
       if (
         old?.status === "INTENT" &&
         ["database", "service", "deploy"].includes(op) &&
@@ -658,14 +717,17 @@ export async function runLifecycle({
         journal: state,
         owner,
       });
-      result = await action(snap, state);
+      result = await diagnosticStage({stage:"provider-operation",operation:op,failureDomain:"PROVIDER_OPERATION"},
+        () => action(snap, state));
+      mutations.push(op);
     }
     snap = await p.snapshot();
+    diagnosticSnapshot = snap;
     assertSnapshot(snap, contract);
     const after = await p.observe(op, snap, state, m, a);
     fail(after?.complete, "Provider post-operation verification failed: " + op);
     const next = recordStep(
-      state,
+      withObservations(),
       owner,
       op,
       "DONE",
@@ -688,6 +750,7 @@ export async function runLifecycle({
   await step("verify", (s) => p.verify(s, m, true));
   const snap = await p.snapshot(),
     proof = await p.verify(snap, m);
+  diagnosticSnapshot = snap;
   const latest = await p.store.read();
   fail(
     latest.state.generation === state.generation &&
@@ -697,7 +760,7 @@ export async function runLifecycle({
   await p.authority(m.sha, a.approvalId);
   const next = reconciliation(
     latest.registry,
-    state,
+    withObservations(),
     snap,
     proof,
     contract,
@@ -705,8 +768,7 @@ export async function runLifecycle({
     m,
     owner,
   );
-  await casPublish(
-    p.store,
+  await publish(
     latest.head,
     { [topologyPath]: next.registry, [statePath]: next.state },
     "SRM verified provider baseline " + a.approvalId,
@@ -734,7 +796,9 @@ export async function runLifecycle({
     serviceId: proof.serviceId,
     registryHead: final.head,
     proof,
-    stagingMutated: true,
+    stagingMutated: mutations.length > 0,
+    mutations,
+    githubRequestMetrics: p.githubRequestMetrics?.(),
   };
 }
 export function createProvider(
@@ -746,6 +810,7 @@ export function createProvider(
 ) {
   assertLifecycleAuthorization(approval, manifest, contract);
   let observedJournalGeneration;
+  const metrics = createGithubRequestMetrics();
   const githubRequest = createGithubRequester(async(url,options)=>{
     // A server cooldown may delay the call. Refresh governance at the actual
     // write boundary, after waiting, rather than relying on a stale preflight.
@@ -756,7 +821,8 @@ export function createProvider(
       });
     }
     return fetcher(url,options);
-  },{authorizationExpiresAt:approval.expiresAt,diagnosticContext:()=>({generation:observedJournalGeneration,approvalId:approval.approvalId})});
+  },{authorizationExpiresAt:approval.expiresAt,diagnosticContext:()=>({generation:observedJournalGeneration,approvalId:approval.approvalId}),
+    onRequest:d=>{metrics.record(d);console.error("SRM_GITHUB_REQUEST " + JSON.stringify(d));}});
   const request = async (base, url, method = "GET", body, readOptions = {}) => {
     if (method !== "GET" && base !== GH) {
       assertLifecycleAuthorization(approval, manifest, contract);
@@ -1087,6 +1153,7 @@ export function createProvider(
   };
   const provider = {
     store,
+    githubRequestMetrics: metrics.read,
     authority: lifecyclePreflight,
     snapshot,
     sourceChecks: sha => request(GH,repo+"/commits/"+sha+"/check-runs?per_page=100"),

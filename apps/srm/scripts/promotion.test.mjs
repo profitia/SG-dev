@@ -6,7 +6,7 @@ import os from "node:os";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import pg from "pg";
-import {githubResponse,githubMetadata,reportDiagnostic,childDiagnostic,diagnosticError,ReleaseDiagnosticError,createGithubRequester,githubRequestIdentity} from "./release-diagnostics.mjs";
+import {githubResponse,githubMetadata,reportDiagnostic,childDiagnostic,diagnosticError,ReleaseDiagnosticError,createGithubRequester,createGithubRequestMetrics,githubRequestIdentity} from "./release-diagnostics.mjs";
 import {prepareResume,assertResumeFence} from "./resume-staging.mjs";
 import {manifestFrom} from "./staging-lifecycle.mjs";
 import {digest,operations} from "../../../scripts/governance/srm-release-lifecycle.mjs";
@@ -960,4 +960,37 @@ test("retry reuses only matching live/inflight deployment and blocks unknown sta
     () => selectReusableDeploy([{ ...d, status: "unknown" }], sha),
     /Unknown/,
   );
+});
+
+test('per-request metrics record actual attempts and safe endpoint identity without payloads',async()=>{
+  const observed=[];const f=readRecoveryFixture([{status:502,body:{message:'private credential'}},{status:200,body:{token:'private-token'}}],{onRequest:d=>observed.push(d)});
+  await f.request(githubBase+'/git/matching-refs/heads/srm-publication-'+ 'a'.repeat(24),{method:'GET',headers:{Authorization:'private-secret'}},'read-publication-branch');
+  assert.deepEqual(observed.map(x=>x.httpStatus),[502,200]);assert.deepEqual(observed.map(x=>x.attemptNumber),[1,2]);
+  assert.ok(observed.every(x=>x.endpoint==='publication-ref-inventory'&&x.requestType==='READ_ONLY'&&x.durationMs===0));
+  assert.ok(!JSON.stringify(observed).match(/private|credential|Authorization|https/));
+});
+test('network request metrics include the attempted read before a successful retry',async()=>{
+  const observed=[];const f=readRecoveryFixture([Object.assign(Error('secret'),{name:'TimeoutError'}),{status:200}],{onRequest:d=>observed.push(d)});
+  await f.request(githubBase+'/branches/main',{method:'GET'},'github-rest');
+  assert.equal(observed.length,2);assert.equal(observed[0].category,'NETWORK_TIMEOUT');assert.equal(observed[1].httpStatus,200);
+  assert.ok(!JSON.stringify(observed).includes('secret'));
+});
+
+
+test('GitHub request metrics retain exact safe attempt counts and detached evidence',async()=>{
+  const metrics=createGithubRequestMetrics();
+  const f=readRecoveryFixture([{status:502,body:{secret:'never-store'}},{status:200}],{onRequest:d=>metrics.record(d)});
+  await f.request('https://api.github.com/repos/profitia/SG-dev/git/matching-refs/heads/srm-publication-'+ 'a'.repeat(24),{method:'GET'},'github-rest');
+  const result=metrics.read();assert.equal(result.attempts,2);assert.equal(result.endpoints[0].retriedAttempts,1);
+  assert.deepEqual(result.endpoints[0].statuses,{'200':1,'502':1});
+  assert.ok(!JSON.stringify(result).includes('never-store'));result.endpoints[0].attempts=99;
+  assert.equal(metrics.read().attempts,2);
+});
+test('request metric keys cannot contain secret URLs or payloads',()=>{
+  const metrics=createGithubRequestMetrics();
+  metrics.record({httpMethod:'GET',endpoint:'https://secret.example/key',requestType:'READ_ONLY',authorization:'private'});
+  assert.equal(metrics.read().attempts,0);
+  metrics.record({httpMethod:'GET',endpoint:'publication-ref',requestType:'READ_ONLY',durationMs:7,attemptNumber:1,body:{private:'secret'}});
+  assert.equal(metrics.read().endpoints[0].networkFailures,1);assert.equal(metrics.read().endpoints[0].durationMs,7);
+  assert.ok(!JSON.stringify(metrics.read()).includes('secret'));
 });
