@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "ae80b5f7c74ee60a95c800a66c207a0288a62b21f21ef2a47ff9ffd8ccf72a4d",
+  "publicationNonce": "dcff460eac09453f74766768cf3636f69e62ce3ae4f654dd009d8327fb05b641",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 64,
+  "generation": 65,
   "release": {
     "authorizationDigest": "98b806bbb3e7721ac0b7e03e062366aab6a449e324e2f000ed5050d34a786193",
     "authorizationKeyOrder": [
@@ -5046,7 +5046,7 @@
         }
       },
       "deploy": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-10T05:46:16.974Z",
@@ -5525,10 +5525,10 @@
             ]
           }
         },
-        "snapshotDigest": "724a98daa9d3bbce146a7cdd145b1fa6a9e83fca1e09feecb3ad3d4290777f47",
+        "snapshotDigest": "053422d81d53d7453f86c76989fbe64d1c967bec835fbf6dfbc1bbb9a2ddab55",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-10T05:46:16.974Z",
+          "capturedAt": "2026-10-10T05:48:39.615Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -5597,8 +5597,8 @@
             "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
-            "updated_at": "2026-10-10T05:46:18Z",
-            "pushed_at": "2026-10-10T05:46:14Z",
+            "updated_at": "2026-10-10T05:47:18Z",
+            "pushed_at": "2026-10-10T05:47:14Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -5864,22 +5864,22 @@
               "suspended": "not_suspended",
               "suspenders": [],
               "type": "web_service",
-              "updatedAt": "2026-10-09T17:29:49.615913Z"
+              "updatedAt": "2026-10-10T05:48:36.603788Z"
             }
           ],
           "liveDeploy": {
-            "id": "dep-db4i8g7f3r2c739jn0eg",
+            "id": "dep-db4t2qijnfac738eghmg",
             "commit": {
-              "id": "1e8852923e06df5395d0e154da786875dc070cb7",
-              "message": "Merge pull request #192 from profitia/feat/srm-login-version-scope-20261009\n\nSRM login: show scope of the current release",
-              "createdAt": "2026-10-09T10:02:30Z"
+              "id": "9a153f3f2a9a040842b0b752b6910b132f023d5b",
+              "message": "Merge pull request #218 from profitia/fix/srm-unified-runtime-financial-20261010\n\nSRM: restore fresh lookups and persist reconciled COGS",
+              "createdAt": "2026-10-09T22:41:52Z"
             },
             "status": "live",
             "trigger": "api",
-            "createdAt": "2026-10-09T17:28:32.444912Z",
-            "updatedAt": "2026-10-09T17:30:23.22004Z",
-            "startedAt": "2026-10-09T17:28:32.410048Z",
-            "finishedAt": "2026-10-09T17:29:49.614573Z"
+            "createdAt": "2026-10-10T05:47:22.125545Z",
+            "updatedAt": "2026-10-10T05:48:36.602541Z",
+            "startedAt": "2026-10-10T05:47:22.098442Z",
+            "finishedAt": "2026-10-10T05:48:36.602164Z"
           },
           "domains": [
             {
@@ -6004,7 +6004,10 @@
             ]
           }
         },
-        "result": {}
+        "result": {
+          "deployId": "dep-db4t2qijnfac738eghmg",
+          "sha": "9a153f3f2a9a040842b0b752b6910b132f023d5b"
+        }
       }
     },
     "lastKnownGood": {
