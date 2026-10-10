@@ -450,7 +450,7 @@ for (const dest of [
   );
 test("checksums and contiguous prefix support exact idempotent retry", () => {
   const ms = migrationManifest();
-  assert.equal(ms.at(-1).version, "0012_verified_cogs_cost_magnitude");
+  assert.equal(ms.at(-1).version, "0013_financial_source_documents");
   const rows = ms.map((m) => ({
     version: m.version,
     checksum_sha256: m.checksum,

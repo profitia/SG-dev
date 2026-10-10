@@ -1,10 +1,39 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { randomUUID } from "node:crypto";
 
-export type LookupStage = "search" | "organization_context" | "lookup_registration" | "cache_read" | "provider_retrieval" | "source_archive" | "snapshot_persistence" | "projection_persistence" | "financial_persistence" | "attempt_persistence" | "catalog_persistence" | "report_assembly" | "retention_cleanup";
+export type LookupStage = "search" | "organization_context" | "lookup_registration" | "cache_read" | "provider_retrieval" | "source_archive" | "snapshot_persistence" | "projection_persistence" | "financial_persistence" | "attempt_persistence" | "catalog_persistence" | "report_assembly" | "retention_cleanup" | "lease_acquisition" | "tenant_persistence" | "cache_persistence" | "response_preparation" | "vercly_post" | "vercly_get" | "poll_wait" | "mapping";
 type Section = "general" | "financial" | "jdg" | "kys";
 type Provider = "MGBI" | "CEIDG" | "VERCLY";
-const context = new AsyncLocalStorage<{ requestId: string }>();
+type Diagnostics = { requestId: string; timings: Record<string, { ms: number; count: number }>; mode?: "PROVIDER" | "CACHE" | "FOLLOWER"; outcome?: string };
+const context = new AsyncLocalStorage<Diagnostics>();
+export const lookupRequestId = () => context.getStore()?.requestId;
+export function kysMode(mode: Diagnostics["mode"]) { const value = context.getStore(); if (value) value.mode = mode; }
+export function kysOutcome(status: string, code: string | null = null) {
+  const value = context.getStore(); if (value && !(status === "ERROR" && !code && value.outcome === "TIMEOUT")) value.outcome = code?.includes("TIMEOUT") || code?.includes("NOT_READY") ? "TIMEOUT" : status === "ERROR" ? "ERROR" : status;
+}
+export async function measureLookup<T>(stage: LookupStage, action: () => Promise<T>): Promise<T> {
+  const started = performance.now();
+  try { return await action(); } finally {
+    const value = context.getStore();
+    if (value) { const previous = value.timings[stage] ?? { ms: 0, count: 0 }; previous.ms += performance.now() - started; previous.count++; value.timings[stage] = previous; }
+  }
+}
+/** Request-local counters only. Neither provider IDs nor report content enter telemetry. */
+export async function withKysDiagnostics(action: () => Promise<Response>, signal: AbortSignal): Promise<Response> {
+  const value: Diagnostics = { requestId: randomUUID(), timings: {} };
+  const started = performance.now(); let status = 500;
+  return context.run(value, async () => {
+    try {
+      const response = await action(); status = response.status;
+      response.headers.set("X-SRM-Request-Id", value.requestId);
+      response.headers.set("X-SRM-KYS-Mode", value.mode ?? "UNAVAILABLE");
+      response.headers.set("Server-Timing", ["total;dur=" + (performance.now() - started).toFixed(3), ...Object.entries(value.timings).map(([key, timing]) => key + ";dur=" + timing.ms.toFixed(3))].join(", "));
+      return response;
+    } finally {
+      console.info(JSON.stringify({ event: "srm_kys_timing", ...base(), mode: value.mode ?? "UNAVAILABLE", outcome: signal.aborted ? "ABORTED" : status >= 400 ? value.outcome === "TIMEOUT" ? "TIMEOUT" : "ERROR" : value.outcome ?? "SUCCESS", httpStatus: status, totalMs: Number((performance.now() - started).toFixed(3)), stages: value.timings }));
+    }
+  });
+}
 
 export class LookupStageError extends Error {
   constructor(readonly stage: LookupStage, cause: unknown, readonly section?: Section) {
@@ -13,17 +42,17 @@ export class LookupStageError extends Error {
 }
 
 export function withLookupDiagnostics<T>(action: () => Promise<T>): Promise<T> {
-  return context.run({ requestId: randomUUID() }, action);
+  return context.getStore() ? action() : context.run({ requestId: randomUUID(), timings: {} }, action);
 }
 
 export async function atLookupStage<T>(stage: LookupStage, action: () => Promise<T>, section?: Section): Promise<T> {
-  try { return await action(); } catch (error) {
+  try { return await measureLookup(stage, action); } catch (error) {
     if (error instanceof LookupStageError) throw error;
     throw new LookupStageError(stage, error, section);
   }
 }
 
-const providerCodes = new Set(["NOT_CONFIGURED", "TIMEOUT", "NETWORK_ERROR", "FETCH_ERROR", "INVALID_JSON", "INVALID_RESPONSE", "INVALID_REPORT", "IDENTIFIER_MISMATCH", "CORRELATION_MISMATCH", "INVALID_CORRELATION_ID", "RESULT_LIMIT", "INCOMPLETE_RESPONSE", "POLLING_TIMEOUT", "MAPPING_ERROR"]);
+const providerCodes = new Set(["NOT_CONFIGURED", "TIMEOUT", "NETWORK_ERROR", "FETCH_ERROR", "INVALID_JSON", "INVALID_RESPONSE", "INVALID_REPORT", "IDENTIFIER_MISMATCH", "CORRELATION_MISMATCH", "INVALID_CORRELATION_ID", "RESULT_LIMIT", "INCOMPLETE_RESPONSE", "POLLING_TIMEOUT", "MAPPING_ERROR", "POST_OUTCOME_UNKNOWN", "ABORTED"]);
 export function safeProviderCode(code: unknown): string {
   const normalized = typeof code === "string" ? code.replace(/^(MGBI|VERCLY|CEIDG)_/, "") : "";
   if (normalized === "REPORT_NOT_READY") return "POLLING_TIMEOUT";

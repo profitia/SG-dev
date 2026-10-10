@@ -110,6 +110,19 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
     const button = card.querySelector<HTMLButtonElement>(`[data-financial-view="${history ? "history" : "methodology"}"]`);
     button?.click();
   }
+  const renderedKysRequest = useRef<string | null>(null);
+  useEffect(() => {
+    const timing = state.kysTiming;
+    if (!timing || state.kysBusy || state.metadataBusy || renderedKysRequest.current === timing.requestId) return;
+    let second = 0;
+    const first = requestAnimationFrame(() => { second = requestAnimationFrame(() => {
+      renderedKysRequest.current = timing.requestId;
+      const totalMs = performance.now() - timing.startedAt;
+      // After the committed report and two animation frames: includes the browser's paint opportunity.
+      console.info(JSON.stringify({ event: "srm_kys_render_timing", requestId: timing.requestId, mode: timing.mode, outcome: state.kys.status, apiMs: timing.apiMs, totalMs, afterApiMs: totalMs - timing.apiMs, serverTiming: timing.serverTiming }));
+    }); });
+    return () => { cancelAnimationFrame(first); cancelAnimationFrame(second); };
+  }, [state.kysTiming, state.kysBusy, state.metadataBusy, state.kys.status]);
   useEffect(() => { if (state.kys.status !== "NOT_REQUESTED" && kysDetails.current) kysDetails.current.open = true; }, [state.kys]);
   if (!state.result) return null;
   const supplier = state.result, metadata = state.metadata;

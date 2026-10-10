@@ -1,4 +1,4 @@
-import { withLookupDiagnostics, logLookupFailure } from "../../../../../src/server/lookup-diagnostics";
+import { withLookupDiagnostics, withKysDiagnostics, measureLookup, logLookupFailure } from "../../../../../src/server/lookup-diagnostics";
 import { productEnvironmentReady, productOrganizationId } from "../../../../../src/server/runtime-environment";
 import { NextResponse } from "next/server";
 import { hasDemoSession } from "../../../../../src/server/demo-auth";
@@ -9,7 +9,9 @@ import { toPublicKysSection } from "../../../../../src/server/pesel-reveal";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request) {
+export async function POST(request: Request) { return withKysDiagnostics(() => handlePost(request), request.signal); }
+
+async function handlePost(request: Request) {
   if (!productEnvironmentReady()) return NextResponse.json({ error: "Środowisko niedostępne." }, { status: 404 });
   if (!await hasDemoSession(request)) return NextResponse.json({ error: "Wymagane logowanie." }, { status: 401 });
   if (!isSameOriginRequest(request)) return NextResponse.json({ error: "Nieprawidłowe żądanie." }, { status: 403 });
@@ -23,8 +25,8 @@ export async function POST(request: Request) {
   }
   return withLookupDiagnostics(async () => {
     try {
-      const { section, snapshotId } = await runXrayKysLookup(organizationId, input, "JDG");
-      return NextResponse.json({ section: toPublicKysSection(section, snapshotId, process.env.SRM_DEMO_SESSION_SECRET ?? "") }, { headers: { "Cache-Control": "no-store" } });
+      const { section, snapshotId } = await runXrayKysLookup(organizationId, input, "JDG", request.signal);
+      return measureLookup("response_preparation", async () => NextResponse.json({ section: toPublicKysSection(section, snapshotId, process.env.SRM_DEMO_SESSION_SECRET ?? "") }, { headers: { "Cache-Control": "no-store" } }));
     } catch (error) {
       logLookupFailure(error);
       return NextResponse.json({ error: "Nie udało się pobrać lub zapisać raportu KYS. Spróbuj ponownie później." }, { status: 503 });

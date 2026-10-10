@@ -182,16 +182,16 @@ test("identifies a complete set of international-standard statements without dis
   } });
   assert.equal(requests, 1);
   assert.equal(result.section.status, "EMPTY");
-  assert.deepEqual(result.section.warnings, ["MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS"]);
+  assert.deepEqual(result.section.warnings, ["MGBI_FINANCIAL_UNKNOWN_FORMAT"]);
 });
 
 test("does not attribute unknown or partial missing statements to international standards", async () => {
   const statement = { id: "ias", identifiers: { pl_krs: identifier.value }, document: { type: "financial_statement", is_ias_compliant: true } };
   const partial = mapMgbiFinancialRecords([statement], identifier, at, 2);
-  assert.deepEqual(partial.section.warnings, ["MGBI_NO_STRUCTURED_FINANCIAL_DATA"]);
+  assert.deepEqual(partial.section.warnings, ["MGBI_FINANCIAL_UNKNOWN_FORMAT"]);
   const unknown = await fetchMgbiFinancial(identifier, { apiKey: "test", fetcher: async () =>
     Response.json({ count: 1, results: [{ ...statement, document: { type: "financial_statement" } }] }) });
-  assert.deepEqual(unknown.section.warnings, ["MGBI_NO_STRUCTURED_FINANCIAL_DATA"]);
+  assert.deepEqual(unknown.section.warnings, ["MGBI_FINANCIAL_UNKNOWN_FORMAT"]);
 });
 
 test("maps only verified flat MGBI XML paths for current and prior financial periods", () => {

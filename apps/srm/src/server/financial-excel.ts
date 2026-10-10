@@ -1,18 +1,8 @@
 import ExcelJS from "exceljs";
-import { financialLabels, type FinancialData, type FinancialPeriod } from "@profitia/srm-xray";
+import { type FinancialData, type FinancialPeriod } from "@profitia/srm-xray";
 
 type Scope = FinancialPeriod["scope"];
-type Group = { title: string; codes: readonly string[] };
-
-const incomeGroups: readonly Group[] = [
-  { title: "Przychody", codes: ["PALA_NRFS", "PALA_NET_SALES", "PALA_NRFS_CIIOP", "PALA_NRFS_MCOPFIPOTE", "PALA_OOR", "PALA_FR"] },
-  { title: "Koszty", codes: ["PALA_OAC", "PALA_COGS", "PALA_OAC_D", "PALA_OAC_MAEC", "PALA_OAC_ES", "PALA_OAC_TAC", "PALA_OAC_TACI_ED", "PALA_OAC_R", "PALA_OAC_SIAOBI", "PALA_OAC_OCBT", "PALA_OAC_VOGAMS", "PALA_OOC", "PALA_FC", "PALA_INTEREST_EXPENSE", "PALA_IT"] },
-  { title: "Wynik finansowy", codes: ["PALA_PLFS", "PALA_GROSS_PROFIT", "PALA_PLFOA", "PALA_GPL", "PALA_NPL"] },
-];
-const balanceGroups: readonly Group[] = [
-  { title: "Aktywa", codes: ["BS_A_FA", "BS_A_CA", "BS_A_CA_INV", "BS_TRADE_RECEIVABLES_RELATED", "BS_TRADE_RECEIVABLES_INVESTEE", "BS_TRADE_RECEIVABLES_OTHER", "BS_A_TA"] },
-  { title: "Pasywa", codes: ["BS_LAE_E", "BS_LAE_NC", "BS_LAE_LAPFL", "BS_LAE_LAPFL_LTL", "BS_LAE_LAPFL_STL", "BS_TRADE_PAYABLES_RELATED", "BS_TRADE_PAYABLES_INVESTEE", "BS_TRADE_PAYABLES_OTHER"] },
-];
+import type { FinancialSourceDocument } from "./financial-documents";
 
 export type FinancialExcelSelection = { nip: string; scope: Scope; years: string[] };
 
@@ -46,18 +36,11 @@ export function periodsForExcel(data: FinancialData, scope: Scope): FinancialPer
   return [...byYear.values()].sort((a, b) => b.to.localeCompare(a.to));
 }
 
-/** Convert source PLN or thousands of PLN to grosz before giving Excel a numeric cell. */
-export function amountInPln(amount: string, currency: string, unit: string): number | null {
-  if (currency !== "PLN" || (unit !== "PLN" && unit !== "THOUSAND_PLN") || !/^-?\d{1,20}(?:\.\d{1,4})?$/.test(amount)) return null;
-  const negative = amount.startsWith("-");
-  const [whole, fraction = ""] = (negative ? amount.slice(1) : amount).split(".");
-  let tenThousandths = BigInt(whole) * 10000n + BigInt(fraction.padEnd(4, "0"));
-  if (unit === "THOUSAND_PLN") tenThousandths *= 1000n;
-  const cents = (tenThousandths + 50n) / 100n;
-  // Excel keeps about 15 significant decimal digits. Larger amounts cannot
-  // honestly be represented to a grosz as numeric worksheet cells.
-  if (cents > 99_999_999_999_999n) return null;
-  return Number(negative ? -cents : cents) / 100;
+/** Preserve source decimals. Excel's fifteen-digit limit must never silently round a source amount. */
+export function exactExcelAmount(amount: string | null): string | number | null {
+  if (amount === null) return null;
+  const significant = amount.replace(/^-/, "").replace(".", "").replace(/^0+/, "");
+  return significant.length <= 15 && Number.isFinite(Number(amount)) ? Number(amount) : amount;
 }
 
 export function financialExcelDate(now: Date): string {
@@ -67,48 +50,58 @@ export function financialExcelDate(now: Date): string {
   return `${parts.year}${parts.month}${parts.day}`;
 }
 
-function addSheet(workbook: ExcelJS.Workbook, name: string, groups: readonly Group[], periods: readonly FinancialPeriod[], scope: Scope): void {
-  const sheet = workbook.addWorksheet(name, { views: [{ state: "frozen", xSplit: 1, ySplit: 2 }] });
-  sheet.getColumn(1).width = 68;
-  for (let index = 0; index < periods.length; index++) sheet.getColumn(index + 2).width = 20;
-  sheet.addRow(["Pozycja (PLN)", ...periods.map((period) => period.to.slice(0, 4))]);
-  sheet.addRow(["Okres / zakres", ...periods.map((period) => `${period.from} – ${period.to} · ${scope === "standalone" ? "jednostkowe" : "skonsolidowane"}`)]);
-  for (const row of [sheet.getRow(1), sheet.getRow(2)]) {
-    row.font = { bold: true, color: { argb: "FFFFFFFF" } };
-    row.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF242F44" } };
-  }
-  sheet.getRow(2).height = 29;
-  for (const group of groups) {
-    const present = group.codes.filter((code) => periods.some((period) => period.facts.some((fact) => fact.metricCode === code)));
-    if (!present.length) continue;
-    const heading = sheet.addRow([group.title]);
+function addSheet(workbook: ExcelJS.Workbook, name: string, section: "Bilans" | "RZiS", documents: readonly { document: FinancialSourceDocument; years: string[] }[]): void {
+  const sheet = workbook.addWorksheet(name, { views: [{ state: "frozen", xSplit: 2, ySplit: 1 }] });
+  sheet.getColumn(1).width = 72; sheet.getColumn(2).width = 90;
+  for (const { document, years } of documents) {
+    const heading = sheet.addRow([`${section} · ${years.join(", ")} · ${document.scope === "standalone" ? "jednostkowe" : "skonsolidowane"}`]);
     heading.font = { bold: true, color: { argb: "FFFFFFFF" } };
-    heading.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF006D9E" } };
-    for (const code of present) {
-      const row = sheet.addRow([financialLabels[code]?.label ?? code, ...periods.map((period) => {
-        const fact = period.facts.find((candidate) => candidate.metricCode === code);
-        return fact ? amountInPln(fact.amount, fact.currency, fact.unit) : null;
-      })]);
-      for (let column = 2; column <= periods.length + 1; column++) row.getCell(column).numFmt = '#,##0.00;[Red](#,##0.00);–';
-      if (code === "PALA_NPL" || code === "BS_A_TA" || code === "BS_LAE_LAPFL") row.font = { bold: true };
+    heading.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF242F44" } };
+    sheet.addRow(["Dokument / źródło", `${document.provider}/${document.model}/${document.recordId} · document_id=${document.documentId ?? "nieustalony"} · korekta=${document.correction ?? "nieustalona"} · złożono=${document.filingDate ?? "nieustalone"}`]);
+    sheet.addRow(["Okres dokumentu / standard", `${document.from} – ${document.to} · ${document.standard} · is_ias_compliant=${document.isIasCompliant ?? "nieustalone"} · ${document.standardBasis}`]);
+    sheet.addRow(["Waluta / skala wartości źródłowych", `${document.currency ?? "nieustalona"} · mnożnik jednostki ${document.scale ?? "nieustalony"} · bez przeliczania kwot`]);
+    sheet.addRow(["Pochodzenie XML", `${document.schemaName} ${document.schemaVersion} · ${document.formatBasis} · ${document.availability} · ${document.validation}`]);
+    sheet.addRow(["Wersja / suma kontrolna", `${document.mappingVersion} · SHA256 ${document.checksum}`]);
+    sheet.addRow(["Precyzja / braki", "Kwoty ponad 15 cyfr zapisano jako dokładny tekst. Puste komórki oznaczają brak kwoty; zero pozostaje zerem. Kolumny porównawcze bez potwierdzonych dat zachowują oznaczenie XML."]);
+    const columns = document.columns;
+    const header = sheet.addRow(["Pozycja / etykieta źródłowa", "Ścieżka źródłowa", ...columns.map((column) => column.sourceColumn + (column.from && column.to ? ` · ${column.from} – ${column.to}` : " · okres nieustalony"))]);
+    header.font = { bold: true }; header.alignment = { wrapText: true }; header.height = 40;
+    for (let index = 0; index < columns.length; index++) sheet.getColumn(index + 3).width = 29;
+    for (const item of document.rows.filter((row) => row.section === section)) {
+      // ExcelJS string values remain string cells, even when source labels begin with '=' or '+'.
+      const row = sheet.addRow([item.label, item.sourcePath, ...columns.map((column) => exactExcelAmount(item.amounts[column.sourceColumn] ?? null))]);
+      row.outlineLevel = Math.min(7, Math.max(0, item.depth - 1));
+      for (let index = 0; index < columns.length; index++) {
+        const amount = item.amounts[columns[index].sourceColumn];
+        const cell = row.getCell(index + 3);
+        if (typeof cell.value === "string") cell.note = "Dokładna kwota źródłowa jako tekst — limit precyzji Excela.";
+        if (typeof cell.value === "number") cell.numFmt = "#,##0" + (amount?.includes(".") ? "." + "0".repeat(amount.split(".")[1].length) : "");
+        if (amount === null || amount === undefined) cell.note = "Brak wartości w kolumnie źródłowej.";
+      }
     }
+    sheet.addRow([]);
   }
-  sheet.pageSetup.fitToPage = true;
-  sheet.pageSetup.fitToWidth = 1;
-  sheet.pageSetup.fitToHeight = 0;
+  sheet.pageSetup = { fitToPage: true, fitToWidth: 1, fitToHeight: 0, orientation: "landscape" };
 }
 
-export async function buildFinancialExcel(data: FinancialData, selection: FinancialExcelSelection, now = new Date()): Promise<{ filename: string; bytes: Buffer }> {
-  const available = periodsForExcel(data, selection.scope);
-  const byYear = new Map(available.map((period) => [period.to.slice(0, 4), period]));
-  if (selection.years.some((year) => !byYear.has(year))) throw new Error("Wybrane lata nie są dostępne w zapisanym raporcie.");
-  const periods = selection.years.map((year) => byYear.get(year)!).sort((a, b) => b.to.localeCompare(a.to));
-  const date = financialExcelDate(now);
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = "SRM X-Ray";
-  workbook.created = now;
-  workbook.title = `Dane finansowe ${selection.nip}`;
-  addSheet(workbook, `ProfitLoss_${selection.nip}_${date}`, incomeGroups, periods, selection.scope);
-  addSheet(workbook, `Balance_${selection.nip}_${date}`, balanceGroups, periods, selection.scope);
+export async function buildFinancialExcel(data: FinancialData, selection: FinancialExcelSelection, now = new Date(), sourceDocuments: readonly FinancialSourceDocument[] = []): Promise<{ filename: string; bytes: Buffer }> {
+  const available = new Map(periodsForExcel(data, selection.scope).map((period) => [period.to.slice(0, 4), period]));
+  if (selection.years.some((year) => !available.has(year))) throw new Error("Wybrane lata nie są dostępne w zapisanym raporcie.");
+  const selected = new Map<string, { document: FinancialSourceDocument; years: string[] }>();
+  for (const year of [...selection.years].sort().reverse()) {
+    const period = available.get(year)!;
+    const recordId = period.documentId.replace(/:(cfy|pfy)$/, "");
+    const document = sourceDocuments.find((candidate) => candidate.recordId === recordId && candidate.scope === selection.scope);
+    if (!document || document.availability !== "XML_SUPPORTED" || document.validation !== "VALID" || !document.rows.some((row) => row.section === "Bilans") || !document.rows.some((row) => row.section === "RZiS")) {
+      throw new Error("Pełne dane bilansu i RZiS z XML nie są dostępne dla wybranego raportu w tej organizacji.");
+    }
+    const previous = selected.get(recordId);
+    if (previous) previous.years.push(year); else selected.set(recordId, { document, years: [year] });
+  }
+  const documents = [...selected.values()];
+  const date = financialExcelDate(now), workbook = new ExcelJS.Workbook();
+  workbook.creator = "SRM X-Ray"; workbook.created = now; workbook.title = `Dane finansowe ${selection.nip}`;
+  addSheet(workbook, `ProfitLoss_${selection.nip}_${date}`, "RZiS", documents);
+  addSheet(workbook, `Balance_${selection.nip}_${date}`, "Bilans", documents);
   return { filename: `Financials_${selection.nip}_${date}.xlsx`, bytes: Buffer.from(await workbook.xlsx.writeBuffer()) };
 }
