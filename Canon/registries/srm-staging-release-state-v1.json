@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "f19924bb689a2575425336eb2ea358d33971ecc048a2bcd22b61cd15a9669fbd",
+  "publicationNonce": "f4c9ae4f0e6bc5bc05e0e4ffcabb2eb18e4f7d6018f0ebe8f198fd82fc83d278",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 67,
+  "generation": 68,
   "release": {
     "authorizationDigest": "98b806bbb3e7721ac0b7e03e062366aab6a449e324e2f000ed5050d34a786193",
     "authorizationKeyOrder": [
@@ -6010,7 +6010,7 @@
         }
       },
       "source-rebind": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-10T07:16:45.429Z",
@@ -6489,10 +6489,10 @@
             ]
           }
         },
-        "snapshotDigest": "2426ebce12cfd3040680e73076c8fddd1406c87a841e5123f2ce7aac425ac4c4",
+        "snapshotDigest": "f9cde4fedaebf0b3a523004cd6191090f465cf3b5432f32991e7ddc4ef9878ba",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-10T07:16:45.429Z",
+          "capturedAt": "2026-10-10T07:22:42.447Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -6561,8 +6561,8 @@
             "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
-            "updated_at": "2026-10-10T07:16:29Z",
-            "pushed_at": "2026-10-10T07:16:24Z",
+            "updated_at": "2026-10-10T07:22:44Z",
+            "pushed_at": "2026-10-10T07:22:40Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -6743,10 +6743,10 @@
             "pooler_mode": "transaction",
             "disabled": false,
             "passwordless_access": true,
-            "last_active": "2026-10-10T07:10:21Z",
+            "last_active": "2026-10-10T07:16:40Z",
             "creation_source": "console",
             "created_at": "2026-09-22T17:09:28Z",
-            "updated_at": "2026-10-10T07:10:32Z",
+            "updated_at": "2026-10-10T07:16:46Z",
             "started_at": "2026-09-22T17:40:26Z",
             "proxy_host": "c-5.eu-central-1.aws.neon.tech",
             "suspend_timeout_seconds": -1,
@@ -6968,7 +6968,9 @@
             ]
           }
         },
-        "result": {}
+        "result": {
+          "branch": "main"
+        }
       }
     },
     "lastKnownGood": {
