@@ -2,7 +2,8 @@ import ExcelJS from "exceljs";
 import { type FinancialData, type FinancialPeriod } from "@profitia/srm-xray";
 
 type Scope = FinancialPeriod["scope"];
-import type { FinancialSourceDocument } from "./financial-documents";
+import { financialRowPresentation } from "./financial-schema-labels";
+import type { FinancialSourceDocument, FinancialSourceRow } from "./financial-documents";
 
 export type FinancialExcelSelection = { nip: string; scope: Scope; years: string[] };
 
@@ -50,38 +51,60 @@ export function financialExcelDate(now: Date): string {
   return `${parts.year}${parts.month}${parts.day}`;
 }
 
+function documentProvenance(document: FinancialSourceDocument): string {
+  return [`Dokument: ${document.provider}/${document.model}/${document.recordId}; document_id=${document.documentId ?? "nieustalony"}`,
+    `Zakres: ${document.scope}; okres: ${document.from} – ${document.to}; korekta=${document.correction ?? "nieustalona"}; złożono=${document.filingDate ?? "nieustalone"}`,
+    `Standard: ${document.standard}; is_ias_compliant=${document.isIasCompliant ?? "nieustalone"}; ${document.standardBasis}`,
+    `Waluta: ${document.currency ?? "nieustalona"}; mnożnik jednostki: ${document.scale ?? "nieustalony"}; kwoty bez przeliczeń`,
+    `XML: ${document.schemaName} ${document.schemaVersion}; wariant=${document.schemaVariant ?? "nieustalony"}; ${document.schemaSystemCode ?? ""}; ${document.formatBasis}; ${document.availability}; ${document.validation}`,
+    `Mapowanie: ${document.mappingVersion}; SHA256 ${document.checksum}`].join("\n");
+}
+
 function addSheet(workbook: ExcelJS.Workbook, name: string, section: "Bilans" | "RZiS", documents: readonly { document: FinancialSourceDocument; years: string[] }[]): void {
-  const sheet = workbook.addWorksheet(name, { views: [{ state: "frozen", xSplit: 2, ySplit: 1 }] });
-  sheet.getColumn(1).width = 72; sheet.getColumn(2).width = 90;
-  for (const { document, years } of documents) {
-    const heading = sheet.addRow([`${section} · ${years.join(", ")} · ${document.scope === "standalone" ? "jednostkowe" : "skonsolidowane"}`]);
-    heading.font = { bold: true, color: { argb: "FFFFFFFF" } };
-    heading.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF242F44" } };
-    sheet.addRow(["Dokument / źródło", `${document.provider}/${document.model}/${document.recordId} · document_id=${document.documentId ?? "nieustalony"} · korekta=${document.correction ?? "nieustalona"} · złożono=${document.filingDate ?? "nieustalone"}`]);
-    sheet.addRow(["Okres dokumentu / standard", `${document.from} – ${document.to} · ${document.standard} · is_ias_compliant=${document.isIasCompliant ?? "nieustalone"} · ${document.standardBasis}`]);
-    sheet.addRow(["Waluta / skala wartości źródłowych", `${document.currency ?? "nieustalona"} · mnożnik jednostki ${document.scale ?? "nieustalony"} · bez przeliczania kwot`]);
-    sheet.addRow(["Pochodzenie XML", `${document.schemaName} ${document.schemaVersion} · ${document.formatBasis} · ${document.availability} · ${document.validation}`]);
-    sheet.addRow(["Wersja / suma kontrolna", `${document.mappingVersion} · SHA256 ${document.checksum}`]);
-    sheet.addRow(["Precyzja / braki", "Kwoty ponad 15 cyfr zapisano jako dokładny tekst. Puste komórki oznaczają brak kwoty; zero pozostaje zerem. Kolumny porównawcze bez potwierdzonych dat zachowują oznaczenie XML."]);
-    const columns = document.columns;
-    const header = sheet.addRow(["Pozycja / etykieta źródłowa", "Ścieżka źródłowa", ...columns.map((column) => column.sourceColumn + (column.from && column.to ? ` · ${column.from} – ${column.to}` : " · okres nieustalony"))]);
-    header.font = { bold: true }; header.alignment = { wrapText: true }; header.height = 40;
-    for (let index = 0; index < columns.length; index++) sheet.getColumn(index + 3).width = 29;
-    for (const item of document.rows.filter((row) => row.section === section)) {
-      // ExcelJS string values remain string cells, even when source labels begin with '=' or '+'.
-      const row = sheet.addRow([item.label, item.sourcePath, ...columns.map((column) => exactExcelAmount(item.amounts[column.sourceColumn] ?? null))]);
-      row.outlineLevel = Math.min(7, Math.max(0, item.depth - 1));
-      for (let index = 0; index < columns.length; index++) {
-        const amount = item.amounts[columns[index].sourceColumn];
-        const cell = row.getCell(index + 3);
-        if (typeof cell.value === "string") cell.note = "Dokładna kwota źródłowa jako tekst — limit precyzji Excela.";
-        if (typeof cell.value === "number") cell.numFmt = "#,##0" + (amount?.includes(".") ? "." + "0".repeat(amount.split(".")[1].length) : "");
-        if (amount === null || amount === undefined) cell.note = "Brak wartości w kolumnie źródłowej.";
-      }
-    }
-    sheet.addRow([]);
+  const sheet = workbook.addWorksheet(name, { views: [{ state: "frozen", xSplit: 1, ySplit: 1 }] });
+  sheet.getColumn(1).width = 85;
+  const columns = documents.flatMap(({ document, years }) => document.columns.map(column => ({ document, column, years })));
+  const header = sheet.addRow(["Pozycja", ...columns.map(({ document, column, years }) =>
+    (column.from && column.to ? `${column.from} – ${column.to}` : `${column.sourceColumn} · okres nieustalony · raport ${years.join(", ")}`)
+      + ` (${document.currency ?? "waluta nieustalona"}${document.scale === "1000" ? ", tys." : ""})`)]);
+  header.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  header.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF242F44" } };
+  header.alignment = { wrapText: true, vertical: "middle" }; header.height = 55;
+  header.getCell(1).note = "Wszystkie dostępne pozycje wybranych sprawozdań. Kwoty ponad 15 cyfr są dokładnym tekstem. Puste komórki oznaczają brak wartości; zero pozostaje zerem. Pochodzenie dokumentów i pozycji zapisano w komentarzach. Różne dokumenty i kolumny porównawcze pozostają rozdzielone.";
+  columns.forEach(({ document, column }, index) => {
+    sheet.getColumn(index + 2).width = 29;
+    header.getCell(index + 2).note = `${documentProvenance(document)}\nKolumna XML: ${column.sourceColumn}; rola=${column.role}; ${column.basis}`;
+  });
+  type DisplayRow = { label: string; depth: number; order: number; family: string; sources: Map<string, { row: FinancialSourceRow; basis: string }> };
+  const rows = new Map<string, DisplayRow>();
+  for (const { document } of documents) for (const item of document.rows.filter(row => row.section === section)) {
+    const presentation = financialRowPresentation(document, item);
+    const family = document.schemaName?.replace(/(WZlotych|WTysiacachZlotych)$/, "") ?? document.schemaName ?? "";
+    // Merge only the same source position with the same verified meaning across selected documents.
+    // Amounts always stay in that document's own columns; name or amount alone is never an identity.
+    const key = JSON.stringify([family, item.sourcePath.replaceAll(">", "."), presentation.label]);
+    let row = rows.get(key);
+    if (!row) { row = { label: presentation.label, depth: item.depth, order: presentation.order, family, sources: new Map() }; rows.set(key, row); }
+    row.sources.set(document.recordId, { row: item, basis: presentation.basis });
   }
-  sheet.pageSetup = { fitToPage: true, fitToWidth: 1, fitToHeight: 0, orientation: "landscape" };
+  for (const item of [...rows.values()].sort((a, b) => a.family.localeCompare(b.family) || a.order - b.order ||
+    [...a.sources.values()][0].row.sourcePath.localeCompare([...b.sources.values()][0].row.sourcePath, "pl", { numeric: true }))) {
+    // Explicit string cells prevent a provider label beginning '=' or '+' becoming a formula.
+    const row = sheet.addRow([item.label, ...columns.map(({ document, column }) => exactExcelAmount(item.sources.get(document.recordId)?.row.amounts[column.sourceColumn] ?? null))]);
+    row.getCell(1).alignment = { indent: Math.min(7, Math.max(0, item.depth - (section === "RZiS" ? 2 : 1))), wrapText: true };
+    row.getCell(1).note = [...item.sources].map(([recordId, source]) => `Dokument: ${recordId}\nŚcieżka źródłowa: ${source.row.sourcePath}\nEtykieta: ${source.basis}`).join("\n\n");
+    row.outlineLevel = Math.min(7, Math.max(0, item.depth - (section === "RZiS" ? 2 : 1)));
+    for (let index = 0; index < columns.length; index++) {
+      const { document, column } = columns[index];
+      const source = item.sources.get(document.recordId), amount = source?.row.amounts[column.sourceColumn];
+      const cell = row.getCell(index + 2);
+      const note = source ? `Dokument: ${document.recordId}\nŚcieżka źródłowa: ${source.row.sourcePath}.${column.sourceColumn}` : "Pozycja nie występuje w tym dokumencie.";
+      cell.note = note + (typeof cell.value === "string" ? "\nDokładna kwota źródłowa jako tekst — limit precyzji Excela." : amount == null ? "\nBrak wartości w kolumnie źródłowej." : "");
+      if (typeof cell.value === "number") cell.numFmt = "#,##0" + (amount?.includes(".") ? "." + "0".repeat(amount.split(".")[1].length) : "");
+    }
+  }
+  sheet.autoFilter = { from: "A1", to: { row: sheet.rowCount, column: columns.length + 1 } };
+  sheet.pageSetup = { fitToPage: true, fitToWidth: 1, fitToHeight: 0, orientation: "landscape", printTitlesRow: "1:1" };
 }
 
 export async function buildFinancialExcel(data: FinancialData, selection: FinancialExcelSelection, now = new Date(), sourceDocuments: readonly FinancialSourceDocument[] = []): Promise<{ filename: string; bytes: Buffer }> {
