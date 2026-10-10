@@ -597,7 +597,7 @@ test(
       const tables = await c.query(
         "SELECT count(*)::int AS count FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='srm' AND c.relkind='r' AND c.relname<>'schema_migrations' AND c.relrowsecurity AND c.relforcerowsecurity",
       );
-      assert.equal(tables.rows[0].count, 15);
+      assert.equal(tables.rows[0].count, 16);
       const role = (
         await c.query(
           "SELECT rolcanlogin,rolsuper,rolbypassrls FROM pg_roles WHERE rolname='srm_app_runtime'",

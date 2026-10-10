@@ -267,3 +267,13 @@ test("COGS verification never combines different documents, periods or statement
     assert.equal(cost.amount, magnitude); assert.equal(cost.sourceAmount, sourceAmount); assert.equal(cost.normalizationRule, "VERIFIED_COST_MAGNITUDE_V1");
   }
 });
+
+test("financial ingest never fetches licensed-out PDF/preview URLs or documents with unknown format", async () => {
+ const paths:string[]=[];
+ const pdf={...record,id:"pdf",files:{main_document:{original:{content_type:"application/pdf",url:"https://example.invalid/financial.pdf"},pdf_preview:{url:"https://example.invalid/preview.pdf"}}}};
+ const unknown={id:"unknown",identifiers:record.identifiers,document:{...record.document,is_ias_compliant:true},files:{main_document:{original:{url:"https://example.invalid/unknown"}}}};
+ const result=await fetchMgbiFinancial(identifier,{apiKey:"fixture",fetcher:async(url)=>{paths.push(new URL(String(url)).pathname);return Response.json({count:2,results:[pdf,unknown]});}});
+ assert.deepEqual(paths,["/v1/models/pl-krs-rdf-record/records"]);
+ assert.equal(result.facts.length,0);assert.equal(result.section.status,"EMPTY");
+ assert.deepEqual(result.section.warnings,["MGBI_FINANCIAL_UNKNOWN_FORMAT"]);
+});
