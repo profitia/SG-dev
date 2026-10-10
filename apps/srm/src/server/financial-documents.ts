@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type { FinancialData, SectionEnvelope } from "@profitia/srm-xray";
 import { withOrganization } from "./db";
 
-export const FINANCIAL_DOCUMENT_MAPPING_VERSION = "2026-10-10-xml-financial-v2";
+export const FINANCIAL_DOCUMENT_MAPPING_VERSION = "2026-10-10-xml-financial-v3";
 export type AccountingStandard = "POLISH_UOR" | "IAS_IFRS" | "UNKNOWN";
 export type FinancialAvailability = "XML_SUPPORTED" | "NO_XML" | "UNKNOWN_FORMAT" | "UNSUPPORTED_XML";
 export type FinancialSourceRow = { section: "Bilans" | "RZiS"; sourcePath: string; label: string; depth: number;
@@ -11,7 +11,7 @@ export type FinancialSourceDocument = {
   recordId: string; documentId: string | null; scope: "standalone" | "consolidated"; from: string | null; to: string | null;
   standard: AccountingStandard; isIasCompliant: boolean | null; standardBasis: string;
   provider: "MGBI"; model: "pl-krs-rdf-record"; format: "XML" | "PDF" | "UNKNOWN";
-  availability: FinancialAvailability; formatBasis: string; schemaName: string | null; schemaVersion: string | null;
+  availability: FinancialAvailability; formatBasis: string; schemaName: string | null; schemaVersion: string | null; schemaVariant?: string | null; schemaSystemCode?: string | null;
   currency: string | null; scale: string | null; correction: boolean | null; filingDate: string | null;
   checksum: string; mappingVersion: string; validation: "VALID" | "REVIEW";
   columns: { sourceColumn: string; role: "CURRENT" | "COMPARATIVE" | "UNKNOWN"; from: string | null; to: string | null; basis: string }[];
@@ -86,7 +86,8 @@ export function projectFinancialDocuments(records: unknown[]): FinancialSourceDo
       scope: document.type === "consolidated_financial_statement" ? "consolidated" as const : "standalone" as const,
       from, to, standard, isIasCompliant, standardBasis: standardConflict ? "MGBI_IAS_FLAG_CONFLICTS_WITH_XML_UOR_DECLARATION" : isIasCompliant === true ? "MGBI_DOCUMENT_IAS_FLAG" : standard === "POLISH_UOR" ? "MGBI_DOCUMENT_FLAG_AND_POLISH_XML_SCHEMA" : "UNDETERMINED",
       provider: "MGBI" as const, model: "pl-krs-rdf-record" as const, format, availability, formatBasis: mime ? "MGBI_ORIGINAL_CONTENT_TYPE" : hasXmlFields && recognized ? "MGBI_XML_DICTIONARY_AND_SCHEMA" : "UNDETERMINED",
-      schemaName, schemaVersion, currency, scale, correction: typeof document.is_correction === "boolean" ? document.is_correction : null, filingDate: date(document.filing_date),
+      schemaName, schemaVersion, schemaVariant: text(normalized.get("Naglowek.WariantSprawozdania")),
+      schemaSystemCode: text(normalized.get("Naglowek.KodSprawozdania.@kodSystemowy")), currency, scale, correction: typeof document.is_correction === "boolean" ? document.is_correction : null, filingDate: date(document.filing_date),
       checksum: createHash("sha256").update(JSON.stringify(raw)).digest("hex"), mappingVersion: FINANCIAL_DOCUMENT_MAPPING_VERSION,
       validation: availability === "XML_SUPPORTED" && from && to && from <= to && currency && scale && rows.size ? "VALID" as const : "REVIEW" as const,
       columns, rows: [...rows.values()].sort((a,b) => a.sourcePath.replaceAll(">", ".").localeCompare(b.sourcePath.replaceAll(">", "."), "pl", { numeric: true })) }];

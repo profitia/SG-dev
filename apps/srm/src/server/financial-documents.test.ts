@@ -47,3 +47,9 @@ test("a generic reference to UOR does not replace the reported IAS standard", ()
  const [document]=projectFinancialDocuments([input]);assert.equal(document.standard,"IAS_IFRS");
  assert.equal(document.standardBasis,"MGBI_DOCUMENT_IAS_FLAG");
 });
+
+test("XML schema variant and system code are retained per document without altering source amounts", () => {
+ const input=record();Object.assign(input.content.extracted_fields,{"Naglowek.WariantSprawozdania":"2","Naglowek.KodSprawozdania.@kodSystemowy":"SFJINZ (2)"});
+ const [d]=projectFinancialDocuments([input]);assert.equal(d.schemaVariant,"2");assert.equal(d.schemaSystemCode,"SFJINZ (2)");
+ assert.equal(d.rows[0].amounts.KwotaA,"1234567890123456.789");
+});
