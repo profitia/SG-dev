@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "ee76d05622ec05cf5068e8cde08912ae76f068eb198015478b253081fe76fae0",
+  "publicationNonce": "ad0c4a0fb104de9878ce999987ed0324e9794d93dfa493061dada337bb719995",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 54,
+  "generation": 55,
   "release": {
     "authorizationDigest": "98b806bbb3e7721ac0b7e03e062366aab6a449e324e2f000ed5050d34a786193",
     "authorizationKeyOrder": [
@@ -160,10 +160,12 @@
     "mode": "promote",
     "owner": "github-run:38027865466",
     "phase": "PROVISIONING",
-    "resources": {},
+    "resources": {
+      "githubEnvironmentId": 23853126630
+    },
     "steps": {
       "github-environment": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-10T05:26:59.603Z",
@@ -642,10 +644,10 @@
             ]
           }
         },
-        "snapshotDigest": "6de07683fd665487e07a39ee9b1af045648eba05e3e58abfd0fe554c89a7c59e",
+        "snapshotDigest": "12cad161b036f4f1be833a1020ce1e5d87ddcb49c3a5d0b5ae2d49e61c1ab81a",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-10T05:26:59.603Z",
+          "capturedAt": "2026-10-10T05:37:11.771Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -714,8 +716,8 @@
             "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
-            "updated_at": "2026-10-10T05:27:01Z",
-            "pushed_at": "2026-10-10T05:26:57Z",
+            "updated_at": "2026-10-10T05:37:10Z",
+            "pushed_at": "2026-10-10T05:37:06Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -845,7 +847,7 @@
             "written_data_bytes": 0,
             "data_transfer_bytes": 170624,
             "created_at": "2026-09-22T17:09:28Z",
-            "updated_at": "2026-10-10T05:22:53Z",
+            "updated_at": "2026-10-10T05:32:52Z",
             "created_by": {
               "name": "",
               "image": ""
@@ -896,10 +898,10 @@
             "pooler_mode": "transaction",
             "disabled": false,
             "passwordless_access": true,
-            "last_active": "2026-10-10T05:25:27Z",
+            "last_active": "2026-10-10T05:32:05Z",
             "creation_source": "console",
             "created_at": "2026-09-22T17:09:28Z",
-            "updated_at": "2026-10-10T05:25:32Z",
+            "updated_at": "2026-10-10T05:32:16Z",
             "started_at": "2026-09-22T17:40:26Z",
             "proxy_host": "c-5.eu-central-1.aws.neon.tech",
             "suspend_timeout_seconds": -1,
@@ -1121,7 +1123,9 @@
             ]
           }
         },
-        "result": {}
+        "result": {
+          "id": 23853126630
+        }
       }
     },
     "lastKnownGood": {
