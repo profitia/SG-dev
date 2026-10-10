@@ -200,8 +200,20 @@ export function githubStore(
     now = Date.now,
     pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     checkTimeoutMs = 600000,
+    acknowledgementTimeoutMs = 660000,
+    acknowledgementAttemptLimit = 5,
+    authorizationExpiresAt,
   } = {},
 ) {
+  fail(Number.isSafeInteger(acknowledgementTimeoutMs) && acknowledgementTimeoutMs > 0 && acknowledgementTimeoutMs <= 1800000 &&
+    Number.isSafeInteger(acknowledgementAttemptLimit) && acknowledgementAttemptLimit >= 1 && acknowledgementAttemptLimit <= 5,
+  "Invalid publication acknowledgement bounds");
+  const authorizationDeadline = authorizationExpiresAt === undefined ? Infinity : Date.parse(authorizationExpiresAt);
+  fail(authorizationDeadline === Infinity || Number.isFinite(authorizationDeadline), "Invalid publication authorization expiry");
+  const assertPublicationAuthorization = (context = {}) => {
+    if (now() >= authorizationDeadline) throw new ReleaseDiagnosticError({...context,category:"AUTHORIZATION_EXPIRED",
+      message:"Approval expired or owner missing",requestReachedGitHub:"NOT_SENT",retryDecision:"STOP_AUTHORIZATION_EXPIRED"});
+  };
   const read = async () => {
     const b = await request(GH, repo + "/branches/main");
     fail(b?.commit?.sha, "Authority main unavailable");
@@ -232,6 +244,7 @@ export function githubStore(
     };
   };
   const writeBranch = async (branch, expectedHead, files, message) => {
+    assertPublicationAuthorization({stage:"publication-commit",operation:"createCommitOnBranch",branch,expectedSha:expectedHead});
     const result = await diagnosticStage({stage:"publication-commit",operation:"createCommitOnBranch",branch,expectedSha:expectedHead,effect:"OBSERVATION_REQUIRED"}, () => request(GH, "/graphql", "POST", {
       query:
         "mutation($input:CreateCommitOnBranchInput!){createCommitOnBranch(input:$input){commit{oid}}}",
@@ -269,12 +282,17 @@ export function githubStore(
     const context = {stage:"publication-branch-acknowledgement",operation:"verify-publication-branch",branch,expectedSha:expectedHead,
       effect:"OBSERVATION_REQUIRED",providerEffectObserved:"CREATION_ACKNOWLEDGED",
       creationHttpStatus:githubMetadata(creation).httpStatus,creationRequestId:githubMetadata(creation).requestId};
-    const deadline = now() + 10000, attemptLimit = 5;
+    // GitHub's X-Poll-Interval is a minimum delay for this same endpoint,
+    // including 404 observation after an acknowledged create. Never shorten it
+    // to fit a local timeout or extend the release owner's authorization.
+    const deadline = Math.min(now() + acknowledgementTimeoutMs, authorizationDeadline), attemptLimit = acknowledgementAttemptLimit;
     for (let attemptNumber = 1; attemptNumber <= attemptLimit; attemptNumber++) {
       let error;
       try {
+        assertPublicationAuthorization(context);
         if (now() >= deadline) throw new ReleaseDiagnosticError({category:"ACKNOWLEDGEMENT_TIMEOUT",retryDecision:"STOP_TIME_LIMIT"});
-        const ref = await readPublicationRef(branch, Math.max(1,Math.min(3000,deadline-now())));
+        const ref = await readPublicationRef(branch, Math.max(1,Math.min(30000,deadline-now())));
+        assertPublicationAuthorization(context);
         if (!ref) throw new ReleaseDiagnosticError({category:"UNCLASSIFIED_MISSING_REF",requestReachedGitHub:"UNKNOWN"});
         if (!exactRef(ref,branch) || ref.object.sha !== expectedHead)
           throw new ReleaseDiagnosticError({...context,...githubMetadata(ref),stage:context.stage,operation:context.operation,
@@ -295,9 +313,11 @@ export function githubStore(
         if (error.rateLimitResetAt === undefined) retryDecision = "STOP_RETRY_GUIDANCE";
         else waitMs = Math.max(waitMs,error.rateLimitResetAt*1000-now());
       } else if (error.category === "RATE_LIMITED" && error.retryAfterMs === undefined) waitMs = Math.max(waitMs,60000);
-      if (retryDecision === "GET_ONLY_BACKOFF" && now()+waitMs >= deadline) retryDecision = "STOP_TIME_LIMIT";
+      if (retryDecision === "GET_ONLY_BACKOFF" && now()+waitMs >= deadline)
+        retryDecision = deadline === authorizationDeadline ? "STOP_AUTHORIZATION_WINDOW" : "STOP_TIME_LIMIT";
       if (retryDecision !== "GET_ONLY_BACKOFF")
         throw new ReleaseDiagnosticError({...error,...context,attemptNumber,attemptLimit,retryDecision,
+          acknowledgementDeadlineAt:deadline,retryNotBeforeAt:retryable ? now()+waitMs : undefined,
           providerEffectObserved:error.providerEffectObserved ?? context.providerEffectObserved,
           observedSha:error.observedSha,message:error.message ?? "Publication branch acknowledgement unavailable"});
       await pause(waitMs);
@@ -332,6 +352,7 @@ export function githubStore(
       catch (error) { if (error instanceof ReleaseDiagnosticError && error.diagnostic.httpStatus === 404) return null; throw error; }
     });
     if (!ref) {
+      assertPublicationAuthorization({...context,stage:"publication-branch-create",operation:"create-publication-branch"});
       let creation;
       try {
         creation = await diagnosticStage({...context,stage:"publication-branch-create",operation:"create-publication-branch",effect:"OBSERVATION_REQUIRED"}, () => request(GH, repo + "/git/refs", "POST", {
@@ -346,7 +367,7 @@ export function githubStore(
           retryDecision:"STOP_AMBIGUOUS_CREATE"});
       }
       await diagnosticStage({...context,stage:"publication-branch-create",operation:"verify-created-publication-branch"}, () => {
-        fail(exactRef(creation,branch) && creation.object.sha===expectedHead,"Publication branch acknowledgement unavailable");
+        fail(githubMetadata(creation).httpStatus === 201 && exactRef(creation,branch) && creation.object.sha===expectedHead,"Publication branch acknowledgement unavailable");
       });
       ref = await readCreatedRef(branch,expectedHead,creation);
     }
@@ -395,7 +416,8 @@ export function githubStore(
     );
     fail(Array.isArray(pulls) && pulls.length <= 1, "Ambiguous publication PR");
     let pr = pulls[0];
-    if (!pr)
+    if (!pr) {
+      assertPublicationAuthorization({...context,stage:"publication-pr-create",operation:"create-publication-pr"});
       pr = await request(GH, repo + "/pulls", "POST", {
         title: "[SRM release] " + message,
         head: branch,
@@ -411,6 +433,7 @@ export function githubStore(
           ". " +
           "The executor requires successful governance and any applicable SRM checks, plus unchanged canonical input before merging.",
       });
+    }
     fail(
       pr?.number &&
         pr.head?.sha === candidate &&
@@ -466,6 +489,7 @@ export function githubStore(
       // GitHub's normal merge endpoint enforces all existing protection rules.
       // The changed nonce is on one stable line. Concurrent canonical proposals
       // conflict under three-way merge even if they happen after the read above.
+      assertPublicationAuthorization({...context,stage:"publication-pr-merge",operation:"merge-publication-pr"});
       const result = await request(
         GH,
         repo + "/pulls/" + pr.number + "/merge",
@@ -771,7 +795,7 @@ export function createProvider(
     }
     throw Error("Pagination bound");
   };
-  const store = githubStore(request);
+  const store = githubStore(request, {authorizationExpiresAt:approval.expiresAt});
   const stageEnv = () =>
     Object.fromEntries(
       [...contract.requiredSecrets, ...contract.requiredConfiguration].map(

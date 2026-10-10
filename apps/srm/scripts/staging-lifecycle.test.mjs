@@ -994,7 +994,7 @@ function publicationFixture({
     };
     if (url.endsWith("/git/refs") && method === "POST") {
       ref = { ref:body.ref, object: { type:"commit",sha: body.sha } };
-      return ref;
+      return githubResponse(async()=>new Response(JSON.stringify(ref),{status:201,headers:{'x-github-request-id':'ABCD:5678'}}),base+url,{method},'create-publication-branch');
     }
     if (url === "/graphql") {
       assert.equal(body.variables.input.expectedHeadOid, head);
@@ -1096,7 +1096,7 @@ function publicationFixture({
   };
   return fixture;
 }
-function acknowledgementFixture({failures=[],createdEffect=true,creationLost=false,transformRef=x=>x}={}) {
+function acknowledgementFixture({failures=[],createdEffect=true,creationLost=false,transformRef=x=>x,storeOptions={}}={}) {
   const f=publicationFixture(); let created=false,reads=0,creates=0,time=100000;const pauses=[];
   const request=async(base,url,method,body,options)=>{
     if(method==='POST' && url.endsWith('/git/refs')) {
@@ -1118,8 +1118,8 @@ function acknowledgementFixture({failures=[],createdEffect=true,creationLost=fal
     }
     return f.request(base,url,method,body);
   };
-  const store=githubStore(request,{now:()=>time,pause:async ms=>{pauses.push(ms);time+=ms;}});
-  return {f,store,pauses,get reads(){return reads;},get creates(){return creates;}};
+  const store=githubStore(request,{...storeOptions,now:()=>time,pause:async ms=>{pauses.push(ms);time+=ms;}});
+  return {f,store,pauses,advance(ms){time+=ms;},get reads(){return reads;},get creates(){return creates;}};
 }
 const publicationInput=current=>({expectedHead:current.head,files:{[journalPath]:{...current.state,generation:1}},message:'acknowledgement test'});
 test('created branch immediate exact GET publishes once without backoff',async()=>{
@@ -1168,14 +1168,86 @@ for(const failure of [
   {status:403,message:'API rate limit exceeded',headers:{'x-ratelimit-remaining':'0'},decision:'STOP_RETRY_GUIDANCE'},
   {status:404,headers:{'x-ratelimit-remaining':'0','x-ratelimit-reset':'160'},decision:'STOP_TIME_LIMIT'},
 ]) test('required retry delay outside budget or invalid guidance fails closed: '+JSON.stringify(failure),async()=>{
-  const x=acknowledgementFixture({failures:[failure]});await assert.rejects(x.store.commit(publicationInput(await x.store.read())),e=>{
+  const x=acknowledgementFixture({failures:[failure],storeOptions:{acknowledgementTimeoutMs:10000}});await assert.rejects(x.store.commit(publicationInput(await x.store.read())),e=>{
     assert.equal(e.diagnostic.retryDecision,failure.decision);return true;
   });assert.equal(x.reads,1);assert.deepEqual(x.pauses,[]);assert.ok(!x.f.calls.some(c=>c.url==='/graphql'));
 });
 test('elapsed acknowledgement deadline prohibits another GET',async()=>{
-  const x=acknowledgementFixture({failures:[{timeout:true,elapsed:10000}]});
+  const x=acknowledgementFixture({failures:[{timeout:true,elapsed:10000}],storeOptions:{acknowledgementTimeoutMs:10000}});
   await assert.rejects(x.store.commit(publicationInput(await x.store.read())),e=>{assert.equal(e.diagnostic.retryDecision,'STOP_TIME_LIMIT');return true;});
   assert.equal(x.reads,1);assert.deepEqual(x.pauses,[]);
+});
+test('validated 201 then transient 404 respects GitHub 300-second polling and publishes exactly once',async()=>{
+  const x=acknowledgementFixture({failures:[{status:404,headers:{'x-poll-interval':'300'}},{status:404,headers:{'x-poll-interval':'300'}}]});
+  await x.store.commit(publicationInput(await x.store.read()));
+  assert.deepEqual(x.pauses,[300000,300000]);assert.equal(x.reads,3);assert.equal(x.creates,1);
+  assert.equal(x.f.state.generation,1);assert.equal(x.f.calls.filter(c=>c.url==='/graphql').length,1);
+  assert.equal(x.f.calls.filter(c=>c.method==='POST' && c.url.endsWith('/pulls')).length,1);
+});
+test('mandatory delay outside configured acknowledgement bound preserves resumable parent branch',async()=>{
+  const x=acknowledgementFixture({failures:[{status:404,headers:{'x-poll-interval':'300'}}],storeOptions:{acknowledgementTimeoutMs:10000}});
+  await assert.rejects(x.store.commit(publicationInput(await x.store.read())),e=>{
+    assert.equal(e.diagnostic.creationHttpStatus,201);assert.equal(e.diagnostic.creationRequestId,'ABCD:5678');
+    assert.equal(e.diagnostic.retryDecision,'STOP_TIME_LIMIT');assert.equal(e.diagnostic.retryNotBeforeAt,400000);
+    assert.equal(e.diagnostic.acknowledgementDeadlineAt,110000);return true;
+  });
+  assert.deepEqual(x.pauses,[]);assert.equal(x.creates,1);assert.equal(x.f.state.generation,0);
+  x.advance(300000);
+  await x.store.commit(publicationInput(await x.store.read()));
+  assert.equal(x.creates,1);assert.equal(x.f.state.generation,1);
+});
+test('retry cannot extend release authorization even when acknowledgement budget remains',async()=>{
+  const x=acknowledgementFixture({failures:[{status:404,headers:{'x-poll-interval':'300'}}],storeOptions:{authorizationExpiresAt:new Date(200000).toISOString()}});
+  await assert.rejects(x.store.commit(publicationInput(await x.store.read())),e=>{
+    assert.equal(e.diagnostic.retryDecision,'STOP_AUTHORIZATION_WINDOW');assert.equal(e.diagnostic.acknowledgementDeadlineAt,200000);return true;
+  });
+  assert.deepEqual(x.pauses,[]);assert.equal(x.creates,1);assert.ok(!x.f.calls.some(c=>c.url==='/graphql'));
+});
+test('authorization expiring during observation prohibits a publication commit',async()=>{
+  let x; x=acknowledgementFixture({transformRef:r=>{x.advance(1000);return r;},storeOptions:{authorizationExpiresAt:new Date(100500).toISOString()}});
+  await assert.rejects(x.store.commit(publicationInput(await x.store.read())),e=>e.diagnostic.retryDecision==='STOP_AUTHORIZATION_EXPIRED');
+  assert.equal(x.creates,1);assert.ok(!x.f.calls.some(c=>c.url==='/graphql'));
+});
+test('authorization expiring during protected CI prohibits merge and preserves the existing PR',async()=>{
+  const x=acknowledgementFixture({storeOptions:{authorizationExpiresAt:new Date(100500).toISOString()}});
+  x.f.onChecks=()=>x.advance(1000);
+  await assert.rejects(x.store.commit(publicationInput(await x.store.read())),e=>e.diagnostic.retryDecision==='STOP_AUTHORIZATION_EXPIRED');
+  assert.equal(x.f.calls.filter(c=>c.method==='POST' && c.url.endsWith('/pulls')).length,1);
+  assert.ok(!x.f.calls.some(c=>c.url.endsWith('/merge')));assert.equal(x.f.state.generation,0);
+});
+test('expired release cannot create a publication branch',async()=>{
+  const x=acknowledgementFixture({storeOptions:{authorizationExpiresAt:new Date(100000).toISOString()}});
+  await assert.rejects(x.store.commit(publicationInput(await x.store.read())),e=>e.diagnostic.retryDecision==='STOP_AUTHORIZATION_EXPIRED');
+  assert.equal(x.creates,0);assert.ok(!x.f.calls.some(c=>c.method==='POST'));
+});
+test('acknowledgement configuration rejects unbounded, invalid or excessive limits',()=>{
+  for(const options of [{acknowledgementTimeoutMs:0},{acknowledgementTimeoutMs:1800001},{acknowledgementTimeoutMs:Infinity},{acknowledgementAttemptLimit:6},{acknowledgementAttemptLimit:0},{authorizationExpiresAt:'invalid'}])
+    assert.throws(()=>githubStore(()=>{},options));
+});
+for(const status of [200,202])test('an exact creation body without HTTP 201 never authorizes recovery: '+status,async()=>{
+  const f=publicationFixture(); const store=githubStore(async(base,url,method,body)=>{
+    const result=await f.request(base,url,method,body);
+    return method==='POST' && url.endsWith('/git/refs') ? githubResponse(async()=>new Response(JSON.stringify(result),{status}),base+url,{method},'create-publication-branch') : result;
+  });
+  await assert.rejects(store.commit(publicationInput(await store.read())),/Publication branch acknowledgement unavailable/);
+  assert.ok(!f.calls.some(c=>c.url==='/graphql'));assert.equal(f.calls.filter(c=>c.method==='POST').length,1);
+});
+test('lost create acknowledgement resumes the observed parent without creating another branch',async()=>{
+  const x=acknowledgementFixture({creationLost:true});const input=publicationInput(await x.store.read());
+  await assert.rejects(x.store.commit(input),e=>e.diagnostic.retryDecision==='STOP_AMBIGUOUS_CREATE');
+  await x.store.commit(input);
+  assert.equal(x.creates,1);assert.equal(x.f.calls.filter(c=>c.url==='/graphql').length,1);assert.equal(x.f.state.generation,1);
+});
+test('lost PR acknowledgement resumes exact existing candidate and PR without duplicate writes',async()=>{
+  const f=publicationFixture();let lost=false;
+  const store=githubStore(async(base,url,method,body)=>{
+    const result=await f.request(base,url,method,body);
+    if(method==='POST' && url.endsWith('/pulls') && !lost){lost=true;throw new ReleaseDiagnosticError({category:'NETWORK_TIMEOUT',requestReachedGitHub:'UNKNOWN'});}
+    return result;
+  });const input=publicationInput(await store.read());await assert.rejects(store.commit(input));await store.commit(input);
+  assert.equal(f.calls.filter(c=>c.method==='POST' && c.url.endsWith('/git/refs')).length,1);
+  assert.equal(f.calls.filter(c=>c.url==='/graphql').length,1);assert.equal(f.calls.filter(c=>c.method==='POST' && c.url.endsWith('/pulls')).length,1);
+  assert.equal(f.state.generation,1);
 });
 for(const transformRef of [r=>({...r,object:{...r.object,sha:'9'.repeat(40)}}),r=>({...r,ref:'refs/heads/foreign'})])
 test('created branch identity/SHA conflict never advances or overwrites',async()=>{
