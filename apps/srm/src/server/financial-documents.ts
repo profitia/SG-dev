@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type { FinancialData, SectionEnvelope } from "@profitia/srm-xray";
 import { withOrganization } from "./db";
 
-export const FINANCIAL_DOCUMENT_MAPPING_VERSION = "2026-10-10-xml-financial-v1";
+export const FINANCIAL_DOCUMENT_MAPPING_VERSION = "2026-10-10-xml-financial-v2";
 export type AccountingStandard = "POLISH_UOR" | "IAS_IFRS" | "UNKNOWN";
 export type FinancialAvailability = "XML_SUPPORTED" | "NO_XML" | "UNKNOWN_FORMAT" | "UNSUPPORTED_XML";
 export type FinancialSourceRow = { section: "Bilans" | "RZiS"; sourcePath: string; label: string; depth: number;
@@ -69,7 +69,14 @@ export function projectFinancialDocuments(records: unknown[]): FinancialSourceDo
     const currency = xmlCurrency && /^[A-Z]{3}$/.test(xmlCurrency) ? xmlCurrency : recognized ? "PLN" : null;
     const scale = recognized && /WTysiacachZlotych$/i.test(schemaName!) ? "1000" : recognized && /WZlotych$/i.test(schemaName!) ? "1" : null;
     const isIasCompliant = typeof document.is_ias_compliant === "boolean" ? document.is_ias_compliant : null;
-    const standard: AccountingStandard = isIasCompliant === true ? "IAS_IFRS" : isIasCompliant === false && recognized ? "POLISH_UOR" : "UNKNOWN";
+    // A provider flag cannot override an explicit contradictory XML accounting declaration.
+    // Inspect only the accounting-basis field; its text never enters the financial projection.
+    const basisText = (text(normalized.get("WprowadzenieDoSprawozdaniaFinansowego.P_7.P_7D")) ?? "")
+      .slice(0, 2000).normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/\s+/g, " ").toLowerCase();
+    const declaresPolishUor = /sprawozdanie finansowe.{0,80}sporzadzon.{0,350}ustaw.{0,30}o rachunkowosci/.test(basisText)
+      && !/(mssf|\bmsr\b|ifrs|international financial reporting)/.test(basisText);
+    const standardConflict = isIasCompliant === true && declaresPolishUor;
+    const standard: AccountingStandard = standardConflict ? "UNKNOWN" : isIasCompliant === true ? "IAS_IFRS" : isIasCompliant === false && recognized ? "POLISH_UOR" : "UNKNOWN";
     // KwotaB1 is a separate source column. Its dates cannot be inferred from the current year.
     const columns = [...sourceColumns].sort().map((sourceColumn) => ({ sourceColumn,
       role: sourceColumn === "KwotaA" ? "CURRENT" as const : sourceColumn === "KwotaB" ? "COMPARATIVE" as const : "UNKNOWN" as const,
@@ -77,7 +84,7 @@ export function projectFinancialDocuments(records: unknown[]): FinancialSourceDo
       basis: sourceColumn === "KwotaA" ? "XML_HEADER" : "SOURCE_COLUMN_DATES_UNRESOLVED" }));
     return [{ recordId: String(record.id), documentId: typeof document.document_id === "number" || typeof document.document_id === "string" ? String(document.document_id) : null,
       scope: document.type === "consolidated_financial_statement" ? "consolidated" as const : "standalone" as const,
-      from, to, standard, isIasCompliant, standardBasis: isIasCompliant === true ? "MGBI_DOCUMENT_IAS_FLAG" : standard === "POLISH_UOR" ? "MGBI_DOCUMENT_FLAG_AND_POLISH_XML_SCHEMA" : "UNDETERMINED",
+      from, to, standard, isIasCompliant, standardBasis: standardConflict ? "MGBI_IAS_FLAG_CONFLICTS_WITH_XML_UOR_DECLARATION" : isIasCompliant === true ? "MGBI_DOCUMENT_IAS_FLAG" : standard === "POLISH_UOR" ? "MGBI_DOCUMENT_FLAG_AND_POLISH_XML_SCHEMA" : "UNDETERMINED",
       provider: "MGBI" as const, model: "pl-krs-rdf-record" as const, format, availability, formatBasis: mime ? "MGBI_ORIGINAL_CONTENT_TYPE" : hasXmlFields && recognized ? "MGBI_XML_DICTIONARY_AND_SCHEMA" : "UNDETERMINED",
       schemaName, schemaVersion, currency, scale, correction: typeof document.is_correction === "boolean" ? document.is_correction : null, filingDate: date(document.filing_date),
       checksum: createHash("sha256").update(JSON.stringify(raw)).digest("hex"), mappingVersion: FINANCIAL_DOCUMENT_MAPPING_VERSION,
