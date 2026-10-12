@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "41a73fdd462e3910e43afd53d29fdf13b536cc49bbb6d2ae5710e4724ffa7317",
+  "publicationNonce": "ff3a05a2ab9b5829e49a2613e2fbb8df16af5a042c80890a8556c040ec7fdec1",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 81,
+  "generation": 82,
   "release": {
     "authorizationDigest": "8b28f4166438bb2e50337e784efeba3e02fbddc6d0b733c11d437cbf27126285",
     "authorizationKeyOrder": [
@@ -5060,7 +5060,7 @@
         }
       },
       "deploy": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-12T17:45:41.501Z",
@@ -5539,10 +5539,10 @@
             ]
           }
         },
-        "snapshotDigest": "d25fce92d3694899166061ab66e852d23cafd75449bb223d1224d36a2bfae39e",
+        "snapshotDigest": "8ef732a7b0fbcb8eda491980489497217f6ba198df34a4cee34e2a6ca9e435db",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-12T17:45:41.501Z",
+          "capturedAt": "2026-10-12T17:48:00.878Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -5611,8 +5611,8 @@
             "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
-            "updated_at": "2026-10-12T17:45:25Z",
-            "pushed_at": "2026-10-12T17:45:20Z",
+            "updated_at": "2026-10-12T17:46:41Z",
+            "pushed_at": "2026-10-12T17:46:36Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -5878,22 +5878,22 @@
               "suspended": "not_suspended",
               "suspenders": [],
               "type": "web_service",
-              "updatedAt": "2026-10-12T15:48:54.498035Z"
+              "updatedAt": "2026-10-12T17:47:59.878536Z"
             }
           ],
           "liveDeploy": {
-            "id": "dep-db6g267avr4c73bbm03g",
+            "id": "dep-db6hq0lg1s2s739b67o0",
             "commit": {
-              "id": "3a68f37bcd6dcb9c8819e7ea467add561e20c8e2",
-              "message": "Merge pull request #249 from profitia/feat/srm-finance-scanner-20261012\n\nSRM: Supplier Finance Scanner i wybór wskaźników według okresu",
-              "createdAt": "2026-10-12T13:42:14Z"
+              "id": "bbcdccd28e7e01695bfaec9a36323124a05469af",
+              "message": "Merge pull request #258 from profitia/feat/srm-inactive-company-state-20261012\n\nSRM: dated inactive supplier notice for deregistered companies and JDG",
+              "createdAt": "2026-10-12T17:09:33Z"
             },
             "status": "live",
             "trigger": "api",
-            "createdAt": "2026-10-12T15:47:37.038349Z",
-            "updatedAt": "2026-10-12T15:49:22.009255Z",
-            "startedAt": "2026-10-12T15:47:37.006062Z",
-            "finishedAt": "2026-10-12T15:48:54.496598Z"
+            "createdAt": "2026-10-12T17:46:42.617235Z",
+            "updatedAt": "2026-10-12T17:47:59.877351Z",
+            "startedAt": "2026-10-12T17:46:42.58532Z",
+            "finishedAt": "2026-10-12T17:47:59.877075Z"
           },
           "domains": [
             {
@@ -6018,7 +6018,10 @@
             ]
           }
         },
-        "result": {}
+        "result": {
+          "deployId": "dep-db6hq0lg1s2s739b67o0",
+          "sha": "bbcdccd28e7e01695bfaec9a36323124a05469af"
+        }
       }
     },
     "lastKnownGood": {
