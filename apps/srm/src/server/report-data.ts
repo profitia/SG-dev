@@ -1,5 +1,6 @@
 import { productEnvironmentReady, productOrganizationId } from "./runtime-environment";
-import { createHash } from "node:crypto";
+import { financialScanner } from "./financial-scanner";
+import { createHmac, createHash } from "node:crypto";
 import { kysExportRef } from "./kys-pdf-access";
 import type { FinancialData, FinancialFactEvidence, FinancialHistoryPoint, FinancialIndicatorResult, FinancialPeriod, ReportFreshness, SectionEnvelope, SupplierReportData } from "@profitia/srm-xray";
 import { withOrganization, type DatabasePool } from "./db";
@@ -173,6 +174,7 @@ export function projectReportData(selection: ReportSelection, row: ReportReadRow
       : section.status === "SUCCESS" && periods.every(p => p.facts.length && p.facts.every(f => f.validation === "VERIFIED")) ? "COMPLETE" : "PARTIAL",
     limitations, mappingVersion: section?.catalogMappingVersion ?? null, sourceVersion,
     representationVersion: section ? opaque([selection.nip, sourceVersion, periods, history]) : null, periods, history };
+  financial.scanner = financialScanner(financial);
   const k = row.kys, retrievedAt = iso(k?.retrievedAt), retentionUntil = iso(k?.retentionUntil), ttl = kysCacheTtlMs(env);
   const cacheExpiresAt = retrievedAt && retentionUntil ? new Date(Math.min(Date.parse(retentionUntil), Date.parse(retrievedAt) + ttl)).toISOString() : null;
   const fresh = isFreshKys(retrievedAt, retentionUntil, now, ttl);
@@ -249,7 +251,14 @@ export function reportDataHandler(read = readReportData, env: Readonly<Record<st
     let selection: ReportSelection;
     try { selection = validateReportSelection(await request.json()); }
     catch { return respond({ error: "Nieprawidłowy NIP lub rodzaj dostawcy." }, 400); }
-    try { return respond(await read(organizationId, selection)); }
+    try {
+      const report = await read(organizationId, selection);
+      // Demo sessions represent a technical actor. Isolate preferences by the
+      // authenticated session and organization; never persist financial values.
+      if (env.SRM_DEMO_SESSION_SECRET) report.preferenceScope = createHmac("sha256", env.SRM_DEMO_SESSION_SECRET)
+        .update(JSON.stringify([organizationId, request.headers.get("cookie") ?? "", "scanner-preferences-v1"])).digest("hex");
+      return respond(report);
+    }
     catch { return respond({ error: "Nie udało się odczytać zapisanego raportu." }, 503); }
   };
 }

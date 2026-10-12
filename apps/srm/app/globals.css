@@ -22,19 +22,19 @@
   --srm-reading-width: 65ch;
   --srm-control-height: 44px;
   --srm-motion: 200ms;
-  --srm-brand: #242F44;
-  --srm-interaction: #006D9E;
-  --srm-data-accent: #0092D9;
+  --srm-brand: #003366;
+  --srm-interaction: #005A9C;
+  --srm-data-accent: #66B2FF;
   --srm-surface: #FFFFFF;
-  --srm-background: #F4F6FA;
-  --srm-text: #3B3838;
-  --srm-muted: #767171;
+  --srm-background: #F8F9FA;
+  --srm-text: #294D70;
+  --srm-muted: #526A82;
   --srm-disabled: #A6A6A6;
-  --srm-border: #D9D9D9;
+  --srm-border: #D6E0E9;
   --srm-input-border: #D6E2EA;
   --srm-interaction-soft: #E6EDF5;
   --srm-text-secondary: #485E88;
-  --srm-focus: #006D9E;
+  --srm-focus: #005A9C;
   --srm-navigation-hover: #2D3B56;
   --srm-shadow: 0 3px 10px #242F441A;
   --srm-error: #8F1D1D;
@@ -592,3 +592,14 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; letter-spacing: -.02em; line-height: 
 .kys-state-date { margin: 0; padding-top: var(--srm-space-4); border-top: 1px solid var(--srm-border); color: var(--srm-text-secondary); font-size: var(--srm-font-support); }
 @media (max-width: 1300px) { .summary-columns { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 767px) { .executive-summary .summary-facts { grid-template-columns: minmax(0, 1fr); } .executive-summary .summary-facts > li { padding: var(--srm-space-4); } }
+
+/* Supplier Intelligence Dashboard — approved MagicPath brand roles. */
+.appshield-header { background:white;color:var(--srm-brand);border-bottom:1px solid var(--srm-border); }
+.appshield-header h1{font-size:20px;letter-spacing:-.35px}
+.appshield-header .appshield-new-report{color:var(--srm-interaction);font-size:12px;border-radius:7px;font-weight:500}
+.appshield-header .appshield-new-report:hover{background:#EAF3FF}
+.appshield-header :where(button,a):focus-visible{outline-color:var(--srm-focus)}
+.report-identity{border:0;background:transparent;padding:10px 0 22px;box-shadow:none}
+.report-identity h2{color:var(--srm-brand)}
+.report-scanner{padding:0;border:0;background:transparent}
+.appshield-search--compact{padding:16px 20px;border-radius:10px}

@@ -8,7 +8,8 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
-    }
+    },
+    "./financial-scanner.css": "./src/financial-scanner.css"
   },
   "peerDependencies": {
     "react": "^19.2.0"

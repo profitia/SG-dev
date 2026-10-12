@@ -36,7 +36,7 @@ test("host skin has full-width report, self-hosted Inter and single semantic pal
   const css = readFileSync("app/globals.css", "utf8");
   assert.match(css, /\.report-page \{ width: 100%; max-width: none;/);
   assert.match(css, /url\("\/fonts\/InterVariable.woff2"\)/);
-  assert.match(css, /--srm-brand: #242F44/); assert.match(css, /--srm-interaction: #006D9E/);
+  assert.match(css, /--srm-brand: #003366/); assert.match(css, /--srm-interaction: #005A9C/);
   assert.match(css, /font-variant-numeric: tabular-nums/);
   assert.doesNotMatch(css, /1680px|@import|fonts\.googleapis|body[^}]*overflow-x:\s*hidden/);
   assert.match(readFileSync("public/fonts/LICENSE-Inter.txt", "utf8"), /SIL OPEN FONT LICENSE Version 1.1/);

@@ -36,7 +36,7 @@ const financialAreas = { liquidity: "Płynność i kapitał obrotowy", debt: "Za
   profitability: "Rentowność i stabilność wyników", cashFlow: "Gotówka i przepływy pieniężne" } as const;
 type Slot = (context: SupplierReportContext) => ReactNode;
 /** Optional content boundaries. Unimplemented sections have no DOM or navigation item. */
-export type SupplierReportSlots = { summary?: Slot; financial?: Partial<Record<keyof typeof financialAreas, Slot>>; kys?: Slot; observations?: Slot };
+export type SupplierReportSlots = { summary?: Slot; scanner?: Slot; financial?: Partial<Record<keyof typeof financialAreas, Slot>>; kys?: Slot; observations?: Slot };
 /** Product error copy only; provider identity stays in the original contract and audit. */
 export function reportMessage(message: string): string {
   if (/(?:MGBI|VERCLY)_[A-Z0-9_]+/i.test(message)) return "Nie można teraz odczytać danych raportu. Spróbuj ponownie.";
@@ -128,23 +128,25 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
   const supplier = state.result, metadata = state.metadata;
   const context: SupplierReportContext = { supplier, metadata, financial, kys: state.kys, scope, setScope, selectedPeriod, setPeriod, onSource, onIndicator, onNavigate, kysOverview: kysOverviewModel, onKysDetails, periods,
     metadataBusy: state.metadataBusy, metadataError: state.metadataError };
-  const summary = slots.summary?.(context), observations = slots.observations?.(context), kysOverview = slots.kys?.(context);
+  const scanner = slots.scanner?.(context);
+  const summary = scanner ? null : slots.summary?.(context), observations = slots.observations?.(context), kysOverview = slots.kys?.(context);
   const areas = Object.entries(financialAreas).map(([key, title]) => ({ key, title, content: slots.financial?.[key as keyof typeof financialAreas]?.(context) })).filter(area => area.content != null && area.content !== false);
   const navigation = [{ id: summary ? "report-summary" : "supplier-identity", label: "Podsumowanie" },
-    ...(areas.length || supplier.entityType === "COMPANY" ? [{ id: areas.length ? "report-finance" : "report-financial-details", label: "Finanse" }] : []),
+    ...(scanner || areas.length || supplier.entityType === "COMPANY" ? [{ id: scanner || areas.length ? "report-finance" : "report-financial-details", label: "Finanse" }] : []),
     ...(observations ? [{ id: "report-observations", label: "Obserwacje" }] : []),
     { id: "report-details", label: "Dane szczegółowe" }, { id: "report-kys", label: "KYS" }];
   const name = supplier.entityType === "JDG" ? supplier.section.data?.entries[0]?.name : supplier.card.general.data?.legalName ?? supplier.card.identity.name;
   return <ReportContext.Provider value={context}><div ref={root} className="supplier-report">
     <section id="supplier-identity" className="report-identity" aria-labelledby="supplier-identity-title">
-      <div className="report-identity-heading"><div><p className="report-eyebrow">Raport dostawcy</p><h2 id="supplier-identity-title" tabIndex={-1}>{name ?? "Nazwa niedostępna"}</h2>
+      <div className="report-identity-heading"><div>{!scanner && <p className="report-eyebrow">Raport dostawcy</p>}<h2 id="supplier-identity-title" tabIndex={-1}>{name ?? "Nazwa niedostępna"}</h2>
         <p>NIP: {supplierNip(supplier)} · {supplier.entityType === "JDG" ? "Jednoosobowa działalność gospodarcza" : `KRS: ${supplier.card.identity.krs ?? "nie ustalono"}`}</p></div>
-        {selectedPeriod && <p className="report-period-label">Okres finansowy: <strong>{selectedPeriod.from} – {selectedPeriod.to}</strong><span>{scope === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</span></p>}
+        {!scanner && selectedPeriod && <p className="report-period-label">Okres finansowy: <strong>{selectedPeriod.from} – {selectedPeriod.to}</strong><span>{scope === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</span></p>}
       </div>
     </section>
-    <ReportNavigation root={root} items={navigation} />
+    {!scanner && <ReportNavigation root={root} items={navigation} />}
+    {scanner && <section id="report-finance" className="report-content-section report-scanner" aria-labelledby="scanner-title">{scanner}<FinancialLimitations state={state} onReadMetadata={onReadMetadata} /></section>}
     {summary && <section id="report-summary" className="report-content-section" aria-labelledby="report-summary-title"><h2 id="report-summary-title" tabIndex={-1}>Najważniejsze informacje</h2>{summary}</section>}
-    {!!areas.length && <section id="report-finance" className="report-content-section" aria-labelledby="report-finance-title"><h2 id="report-finance-title" tabIndex={-1}>Kondycja finansowa</h2>
+    {!scanner && !!areas.length && <section id="report-finance" className="report-content-section" aria-labelledby="report-finance-title"><h2 id="report-finance-title" tabIndex={-1}>Kondycja finansowa</h2>
       <p className="health-dashboard-note">Zapisane wyniki finansowe. Istotność wskaźnika nie jest oceną ryzyka; kierunek zmiany nie oznacza poprawy ani pogorszenia kondycji.</p>
       {selectionPeriods.length > 0 && <div className="health-context-controls">
         <div className="health-scope-controls" role="group" aria-label="Zakres dashboardu">{(["standalone", "consolidated"] as const).filter(choice => financialPeriodsByScope(financial?.data, choice).length).map(choice => <button key={choice} type="button" aria-pressed={scope === choice} onClick={() => setScope(choice)}>{choice === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</button>)}</div>
@@ -159,7 +161,7 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
         {supplier.entityType === "JDG" ? <JdgRegistryMount section={supplier.section} /> : <GeneralCompanyDataMount section={supplier.card.general} />}
       </div></details>
       {supplier.entityType === "COMPANY" && <details className="report-detail" id="report-financial-details" open><summary>Sprawozdania finansowe i wskaźniki</summary><div className="report-detail-body">
-        {!areas.length && <FinancialLimitations state={state} onReadMetadata={onReadMetadata} />}
+        {!scanner && !areas.length && <FinancialLimitations state={state} onReadMetadata={onReadMetadata} />}
         <FinancialDataMount section={supplier.card.financial} onDownloadExcel={onDownloadExcel} selectedScope={scope} onScopeChange={setScope} selectedPeriod={selectedPeriod} />
       </div></details>}
     </section>
