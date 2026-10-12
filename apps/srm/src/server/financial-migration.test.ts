@@ -3,6 +3,7 @@ import test from "node:test";
 import pg from "pg";
 import { withOrganization } from "./db";
 import { createLookup } from "./xray-repository";
+import { readCompanyRegistration, readSupplierRegistrationStatus } from "./company-activity";
 import { mapMgbiFinancialRecords } from "./mgbi-financial";
 import { migrationManifest, runMigrations } from "../../scripts/staging-migrate.mjs";
 
@@ -69,6 +70,20 @@ test("PostgreSQL: forward migration preserves history, accepts reconciled COGS, 
     await owner.query("INSERT INTO srm.catalog_financial_facts(nip,metric_code,period_start,period_end,statement_scope,period_type,amount,source_amount,normalization_rule,currency_code,unit_code,source_path,validation_status,retrieved_at) VALUES('1111111111','PALA_COGS','2025-01-01','2025-12-31','UNIT','YEAR',600,-600,'VERIFIED_COST_MAGNITUDE_V1','PLN','PLN','fixture','VALID',now())");
     await assert.rejects(owner.query("UPDATE srm.catalog_financial_facts SET amount=601 WHERE metric_code='PALA_COGS'"), (error: unknown) => (error as { code: string }).code === "23514");
     assert.ok(company.supplierId !== jdg.supplierId);
+    const archivedCompany = { id: "archive-registration", identifiers: { pl_nip: "1111111111" }, content: { current_excerpt: null,
+      full_excerpt: { naglowekP: { stanPozycji: 2, wpis: [{ numerWpisu: 20, opis: "WYKREŚLENIE Z KRAJOWEGO REJESTRU SĄDOWEGO", dataWpisu: "19.01.2009" }] } } } };
+    await owner.query("INSERT INTO srm.mgbi_source_archives(organization_id,nip,model,payload_json,payload_sha256,record_count,first_retrieved_at,last_checked_at,source_request_id) VALUES($1,'1111111111','pl-krs-wp-record',$2,repeat('b',64),1,now(),now(),$3)", [organizationId, JSON.stringify({ pages: [{ results: [archivedCompany] }] }), company.requestId]);
+    assert.deepEqual(await readCompanyRegistration(organizationId,"1111111111",pool),{status:"DEREGISTERED",deregisteredAt:"2009-01-19"});
+    assert.deepEqual(await readCompanyRegistration(foreignId,"1111111111",pool),{status:"UNKNOWN",deregisteredAt:null});
+    await owner.query("GRANT SELECT ON srm.section_projections,srm.source_snapshots TO srm_app_runtime");
+    const jdgAttempt=(await owner.query("INSERT INTO srm.provider_attempts(organization_id,request_id,section,provider,attempt_no,status) VALUES($1,$2,'jdg','CEIDG',1,'PENDING') RETURNING id",[organizationId,jdg.requestId])).rows[0].id;
+    const jdgSnapshot=(await owner.query("INSERT INTO srm.source_snapshots(organization_id,attempt_id,supplier_id,section,payload_json,payload_sha256,data_class,retrieved_at,retention_until) VALUES($1,$2,$3,'jdg','{}',repeat('c',64),'JDG_REGISTRY',now(),now()+interval '30 days') RETURNING id",[organizationId,jdgAttempt,jdg.supplierId])).rows[0].id;
+    await owner.query("INSERT INTO srm.section_projections(organization_id,supplier_id,snapshot_id,section,projection_version,data_json) VALUES($1,$2,$3,'jdg',1,$4)",[organizationId,jdg.supplierId,jdgSnapshot,JSON.stringify({entries:[{status:"Wykreślony",fields:[{key:"dataWykreslenia",value:"2018-08-18"}]}]})]);
+    assert.equal(await readSupplierRegistrationStatus(organizationId,"2222222222","JDG",pool),"DEREGISTERED");
+    assert.equal(await readSupplierRegistrationStatus(foreignId,"2222222222","JDG",pool),"UNKNOWN");
+    // The same NIP and shared person-free catalog never authorize another tenant's archive.
+    await owner.query("UPDATE srm.catalog_companies SET general_json=$1,general_sha256=repeat('d',64),general_checked_at=now(),general_source_organization_id=$2,general_source_snapshot_id=$3 WHERE nip='1111111111'",[JSON.stringify({source:{recordId:"different-record"}}),organizationId,snapshot]);
+    assert.deepEqual(await readCompanyRegistration(organizationId,"1111111111",pool),{status:"UNKNOWN",deregisteredAt:null});
   } finally {
     await pool.end(); await owner.end();
     try {

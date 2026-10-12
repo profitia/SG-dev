@@ -1,3 +1,5 @@
+import { isDeregisteredCompany } from "@profitia/srm-xray";
+import { readSupplierRegistrationStatus, readCompanyRegistration } from "./company-activity";
 import { atLookupStage, logProviderOutcome, providerExceptionCode } from "./lookup-diagnostics";
 import type { SectionEnvelope, SupplierXRayCard } from "@profitia/srm-xray";
 import { emptyCard } from "../demo/fixture";
@@ -90,10 +92,26 @@ async function persistSection(
   }
 }
 
+export async function fetchCompanyFinancial(data: SupplierXRayCard["general"]["data"], identifier: CompanyIdentifier, provider: typeof fetchMgbiFinancial = fetchMgbiFinancial) {
+  return isDeregisteredCompany(data)
+    ? { section: emptyCard.financial, facts: [], rawResponse: undefined, sourceData: undefined, errorCode: null }
+    : await provider(identifier).catch((error) => ({
+      section: { ...emptyCard.financial, status: "ERROR" as const, retrievedAt: new Date().toISOString(), warnings: ["MGBI_NOT_CONFIGURED"] },
+      facts: [], sourceData: undefined, rawResponse: undefined, errorCode: providerExceptionCode(error),
+    }));
+}
+
 export async function runXrayLookup(organizationId: string, request: XrayLookupRequest): Promise<SupplierXRayCard> {
   const lookup = await atLookupStage("lookup_registration", () => createLookup(organizationId, request.identifier));
   const cached = await atLookupStage("cache_read", () => readFreshCompany(organizationId, request.identifier.value));
   if (cached) {
+    const registration = await readCompanyRegistration(organizationId, request.identifier.value);
+    const general = { ...cached.general, data: cached.general.data && { ...cached.general.data,
+      registrationStatus: registration.status, deregisteredAt: registration.deregisteredAt } };
+    if (isDeregisteredCompany(general.data)) return {
+      identity: { krs: general.data?.krs ?? null, nip: request.identifier.value, name: general.data?.legalName ?? null },
+      general, financial: emptyCard.financial, kys: emptyCard.kys,
+    };
     logProviderOutcome("MGBI", "general", cached.general.status, null, "CACHE");
     logProviderOutcome("MGBI", "financial", cached.financial.status, null, "CACHE");
     const savedFinancial = applyFinancialDocumentMetadata(cached.financial, await readFinancialDocuments(organizationId, request.identifier.value));
@@ -107,21 +125,16 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
         nip: cached.general.data?.nip ?? request.identifier.value,
         name: cached.general.data?.legalName ?? null,
       },
-      general: cached.general, financial, kys: emptyCard.kys,
+      general, financial, kys: emptyCard.kys,
     };
   }
-  const [general, financial] = await Promise.all([
-    fetchMgbiGeneral(request.identifier).catch((error) => ({
+  const general = await fetchMgbiGeneral(request.identifier).catch((error) => ({
       section: { ...emptyCard.general, status: "ERROR" as const, retrievedAt: new Date().toISOString(), warnings: ["MGBI_NOT_CONFIGURED"] },
       rawRecord: null, rawResponse: undefined, errorCode: providerExceptionCode(error),
-    })),
-    fetchMgbiFinancial(request.identifier).catch((error) => ({
-      section: { ...emptyCard.financial, status: "ERROR" as const, retrievedAt: new Date().toISOString(), warnings: ["MGBI_NOT_CONFIGURED"] },
-      facts: [], sourceData: undefined, rawResponse: undefined, errorCode: providerExceptionCode(error),
-    })),
-  ]);
+    }));
+  const financial = await fetchCompanyFinancial(general.section.data, request.identifier);
   logProviderOutcome("MGBI", "general", general.section.status, general.errorCode);
-  logProviderOutcome("MGBI", "financial", financial.section.status, financial.errorCode);
+  if (!isDeregisteredCompany(general.section.data)) logProviderOutcome("MGBI", "financial", financial.section.status, financial.errorCode);
   // Keep complete provider responses in a tenant-scoped store, separate from
   // the normalized, person-free catalog reused across organizations.
   await atLookupStage("source_archive", () => Promise.all([
@@ -135,7 +148,7 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
       : Promise.resolve(),
   ]));
   const generalSnapshotId = await persistSection(organizationId, lookup, "general", general.section, general.errorCode);
-  const financialSnapshotId = await persistSection(organizationId, lookup, "financial", financial.section, financial.errorCode, financial.facts, undefined, financial.sourceData);
+  const financialSnapshotId = isDeregisteredCompany(general.section.data) ? null : await persistSection(organizationId, lookup, "financial", financial.section, financial.errorCode, financial.facts, undefined, financial.sourceData);
   await atLookupStage("catalog_persistence", () => saveSharedCompany(organizationId, request.identifier.value, {
     general: general.section, financial: financial.section,
     generalSnapshotId, financialSnapshotId, facts: financial.facts,
@@ -158,6 +171,8 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
 }
 
 export async function runXrayKysLookup(organizationId: string, request: XrayLookupRequest, entityType: "COMPANY" | "JDG" = "COMPANY", signal?: AbortSignal): Promise<{ section: SupplierXRayCard["kys"]; snapshotId: string | null }> {
+  if (await readSupplierRegistrationStatus(organizationId, request.identifier.value, entityType) === "DEREGISTERED")
+    return { section: emptyCard.kys, snapshotId: null };
   await atLookupStage("retention_cleanup", () => Promise.all([purgeExpiredKysPersonal(organizationId), purgeExpiredSharedKys(organizationId)]), "kys");
   const lookup = await atLookupStage("lookup_registration", () => createLookup(organizationId, request.identifier, entityType));
   const result = await getOrFetchKys(organizationId, request.identifier.value, entityType,

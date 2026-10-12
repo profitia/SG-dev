@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { KysPdfSelection, VerclyKysData } from "@profitia/srm-xray";
+import { readSupplierRegistrationStatus } from "./company-activity";
 import { withOrganization, type DatabasePool } from "./db";
 import { isFreshKys, kysCacheTtlMs } from "./kys-cache";
 
@@ -46,6 +47,7 @@ export const KYS_PDF_SQL = `SELECT a.status AS "attemptStatus", s.id::text AS "s
   WHERE l.organization_id=$1::uuid AND l.identifier_type='NIP' AND l.identifier=$2 AND l.entity_type=$3
   ORDER BY l.requested_at DESC, a.started_at DESC, p.projection_version DESC LIMIT 1`;
 export async function readStoredKysPdf(organizationId: string, selection: Selection, pool?: DatabasePool): Promise<StoredKysPdf | null> {
+  if (await readSupplierRegistrationStatus(organizationId, selection.nip, selection.entityType, pool) === "DEREGISTERED") return null;
   return withOrganization(organizationId, async client => (await client.query<StoredKysPdf>(KYS_PDF_SQL,
     [organizationId, selection.nip, selection.entityType])).rows[0] ?? null, pool);
 }

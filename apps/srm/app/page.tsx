@@ -6,7 +6,7 @@ import { ExecutiveSummary, FinancialScannerMount, KysOverview, type KysPdfSelect
 import { useRef, useState, type FormEvent } from "react";
 import { SupplierReport, reportMessage, type SupplierReportSlots } from "../src/modules/xray/supplier-report";
 import { useSupplierReport } from "../src/modules/xray/use-supplier-report";
-import { supplierNip } from "../src/modules/xray/report-controller";
+import { supplierNip, inactiveSupplier } from "../src/modules/xray/report-controller";
 
 const summarySlot: NonNullable<SupplierReportSlots["summary"]> = context => <ExecutiveSummary input={{
   nip: supplierNip(context.supplier) ?? "", entityType: context.supplier.entityType, metadata: context.metadata,
@@ -25,7 +25,8 @@ export default function Home() {
   const { state, controller } = useSupplierReport();
   const [identifier, setIdentifier] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  function newReport() { controller.reset(); setIdentifier(""); inputRef.current?.focus(); }
+  const inactive = inactiveSupplier(state.result);
+  function newReport() { controller.reset(); setIdentifier(""); requestAnimationFrame(() => inputRef.current?.focus()); }
   async function search(event: FormEvent<HTMLFormElement>) { event.preventDefault(); await controller.search(identifier); }
 
   async function revealPesel(token: string): Promise<string> {
@@ -82,16 +83,16 @@ export default function Home() {
   }
 
   return <main className="appshield">
-    <a className="report-skip-link" href="#supplier-search">Przejdź do wyszukiwania</a>
+    {!inactive && <a className="report-skip-link" href="#supplier-search">Przejdź do wyszukiwania</a>}
     <header className="appshield-header">
       <h1>Supplier Intelligence Dashboard</h1>
       <div className="appshield-actions">
         {(state.result || state.busy) && <button type="button" className="appshield-new-report" onClick={newReport}>Nowy raport</button>}
-        <form action="/api/auth/logout" method="post"><button type="submit" className="appshield-new-report">Wyloguj się</button></form>
+        {!inactive && <form action="/api/auth/logout" method="post"><button type="submit" className="appshield-new-report">Wyloguj się</button></form>}
       </div>
     </header>
     <div className="appshield-content report-page">
-      <form id="supplier-search" tabIndex={-1} className={`appshield-search ${state.result ? "appshield-search--compact" : ""}`} aria-label="Wyszukaj dostawcę" onSubmit={search}>
+      {!inactive && <form id="supplier-search" tabIndex={-1} className={`appshield-search ${state.result ? "appshield-search--compact" : ""}`} aria-label="Wyszukaj dostawcę" onSubmit={search}>
         <label htmlFor="identifier">Numer NIP dostawcy</label>
         <div className="appshield-search-fields">
           <input ref={inputRef} id="identifier" name="identifier" inputMode="numeric" pattern="[0-9]{10}" maxLength={14}
@@ -101,7 +102,7 @@ export default function Home() {
           <button type="submit" disabled={state.busy}>{state.busy ? "Wyszukiwanie…" : "Wyszukaj dostawcę"}</button>
         </div>
         <small id="supplier-search-help">Dane finansowe i rejestrowe są pobierane przy wyszukiwaniu. Raport KYS zamawiasz osobno.</small>
-      </form>
+      </form>}
       {state.busy && <p role="status" className="report-loading">Wyszukiwanie dostawcy. Poczekaj na wynik…</p>}
       {state.error && <p role="alert" className="search-error">{reportMessage(state.error)}</p>}
       {!state.result && !state.busy && !state.error && <div className="report-empty"><h2>Raport dostawcy</h2><p>Wpisz NIP, aby zobaczyć dostępne dane finansowe i rejestrowe.</p></div>}

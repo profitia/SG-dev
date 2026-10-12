@@ -226,7 +226,8 @@ test("stored read uses one parameterized snapshot and tenant context, without wr
   assert.equal(calls.filter(([sql]) => sql === REPORT_DATA_SQL).length, 1);
   assert.deepEqual(calls.find(([sql]) => sql === REPORT_DATA_SQL)![1], [selection.nip, org, "COMPANY", "1.2"]);
   assert.ok(calls.some(([sql, params]) => sql.includes("set_config") && params?.[0] === org));
-  assert.equal(calls.some(([sql]) => /\b(INSERT|UPDATE|DELETE|payload_json)\b/.test(sql)), false);
+  assert.equal(calls.some(([sql]) => /\b(INSERT|UPDATE|DELETE)\b/.test(sql)), false);
+  assert.equal(REPORT_DATA_SQL.includes("payload_json"), false);
   assert.match(REPORT_DATA_SQL, /l\.organization_id = \$2::uuid/);
   assert.match(REPORT_DATA_SQL, /l\.entity_type = \$3/);
 });

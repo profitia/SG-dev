@@ -1,3 +1,4 @@
+import { isDeregisteredJdg } from "@profitia/srm-xray";
 import type { JdgRegistryData, SectionEnvelope, SupplierReportData, SupplierXRayCard } from "@profitia/srm-xray";
 
 export type DisplayCard = { identity: SupplierXRayCard["identity"]; general: Omit<SupplierXRayCard["general"], "source">;
@@ -15,6 +16,7 @@ export type ReportState = {
 export const emptySection = (): DisplayCard["kys"] => ({ status: "NOT_REQUESTED", retrievedAt: null, effectiveAt: null, data: null, warnings: [] });
 const initialState = (): ReportState => ({ result: null, busy: false, error: null, kys: emptySection(), kysBusy: false, kysError: null,
   metadata: null, metadataBusy: false, metadataError: null });
+export function inactiveSupplier(result: SearchResult | null): boolean { return result?.entityType === "JDG" ? isDeregisteredJdg(result.section.data) : result?.entityType === "COMPANY" && result.card.general.data?.registrationStatus === "DEREGISTERED"; }
 export function supplierNip(result: SearchResult | null): string | null { return result?.entityType === "JDG" ? result.nip : result?.card.identity.nip ?? null; }
 function message(error: unknown, fallback: string): string { return error instanceof Error ? error.message : fallback; }
 
@@ -54,12 +56,12 @@ export class SupplierReportController {
       const payload = await this.json("/api/xray/search", { identifier }, new AbortController()) as SearchResult;
       if (generation !== this.generation) return;
       if ((payload?.entityType !== "JDG" && payload?.entityType !== "COMPANY") || supplierNip(payload) !== identifier) throw new Error("Dane dostawcy nie zgadzają się z wyszukiwanym numerem NIP.");
-      this.update({ result: payload, busy: false }); await this.refreshMetadata();
+      this.update({ result: payload, busy: false }); if (!inactiveSupplier(payload)) await this.refreshMetadata();
     } catch (error) { if (generation === this.generation) this.update({ error: message(error, "Nie udało się pobrać raportu.") }); }
     finally { if (generation === this.generation) this.update({ busy: false }); }
   };
   refreshMetadata = async () => {
-    const result = this.state.result, nip = supplierNip(result); if (!result || !nip) return;
+    const result = this.state.result, nip = supplierNip(result); if (!result || !nip || inactiveSupplier(result)) return;
     const generation = this.generation, sequence = ++this.metadataSequence;
     this.metadataRequest?.abort(); const request = new AbortController(); this.metadataRequest = request;
     this.update({ metadataBusy: true, metadataError: null });
@@ -73,7 +75,7 @@ export class SupplierReportController {
   };
   fetchKys = async () => {
     const result = this.state.result, nip = supplierNip(result);
-    if (this.state.busy || this.state.kysBusy || !result || !nip) return;
+    if (this.state.busy || this.state.kysBusy || !result || !nip || inactiveSupplier(result)) return;
     const generation = this.generation, startedAt = performance.now();
     this.update({ kysTiming: undefined, kysBusy: true, kysError: null, kys: { ...emptySection(), status: "PENDING" } });
     try {
