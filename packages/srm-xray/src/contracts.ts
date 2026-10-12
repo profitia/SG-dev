@@ -116,8 +116,26 @@ export type FinancialHistoryPoint = FinancialIndicatorResult & {
   };
 };
 
+export type ScannerAxisCode = "NET_RESULT" | "REVENUE" | "CURRENT_RATIO" | "OPERATING_MARGIN" | "OPERATING_COST_RATIO" | "LIABILITIES_TO_ASSETS";
+/** Read-only UI projection over stored facts. Relative scoring remains unavailable
+ * until the financial module supplies verified lineage and a qualified reference. */
+export type FinancialScannerProjection = {
+  version: "1.0"; methodologyVersion: "1.0.0"; qualification: "PARTIAL_SOURCE_VIEW";
+  sourceVersion: string | null;
+  periods: readonly {
+    id: string; from: string; to: string; scope: FinancialPeriod["scope"]; documentRef: string;
+    axes: readonly {
+      code: ScannerAxisCode; rawValue: string | null; unit: "PLN" | "PERCENT" | "RATIO";
+      normalizedScore: string | null; basis: "POLICY" | "HISTORICAL_BEST";
+      reasonCode: string | null; alerts: readonly string[];
+      tone: "positive" | "caution" | "negative" | "unknown";
+    }[];
+  }[];
+};
 export type SupplierReportData = {
   schemaVersion: "1.0";
+  /** Opaque authenticated organization/session preference namespace; never data authority. */
+  preferenceScope?: string;
   nip: string;
   entityType: "COMPANY" | "JDG";
   financial: {
@@ -129,6 +147,7 @@ export type SupplierReportData = {
     mappingVersion: string | null;
     /** Opaque content identities, never database snapshot or tenant IDs. */
     sourceVersion: string | null;
+    scanner?: FinancialScannerProjection;
     representationVersion: string | null;
     periods: readonly {
       from: string; to: string; year: string; scope: FinancialPeriod["scope"];

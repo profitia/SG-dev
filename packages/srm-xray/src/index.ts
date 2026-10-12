@@ -11,6 +11,8 @@ export type {
   FinancialFactEvidence,
   FinancialHistoryPoint,
   SupplierReportData,
+  ScannerAxisCode,
+  FinancialScannerProjection,
   JdgField,
   JdgEntry,
   JdgRegistryData,
@@ -46,3 +48,5 @@ export type { KysDetailTarget, KysOverviewInput, KysOverviewModel } from "./kys-
 export { kysPdfDocument, kysPdfCoverage } from "./kys-pdf-document";
 export type { KysPdfSelection, KysPdfDocument, KysPdfSection, KysPdfRecord } from "./kys-pdf-document";
 export { KysPdfButton } from "./kys-pdf-button";
+
+export { FinancialScannerMount } from "./financial-scanner";

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { FinancialDataMount } from "@profitia/srm-xray";
+import { FinancialDataMount, FinancialScannerMount } from "@profitia/srm-xray";
 import { emptyCard, sampleCard } from "../demo/fixture";
 import { emptySection, SupplierReportController, type DisplayCard, type ReportState, type SearchResult } from "../modules/xray/report-controller";
 import { reportMessage, SupplierReport } from "../modules/xray/supplier-report";
@@ -273,4 +273,22 @@ test("HTTP KYS failure retains opaque server timing for the committed error rend
  assert.equal(state.kys.status,"ERROR");assert.equal(state.kysTiming?.requestId,requestId);
  assert.equal(state.kysTiming?.mode,"PROVIDER");assert.ok(state.kysTiming!.apiMs>=0);
  assert.equal(state.kys.data,null);assert.equal(JSON.stringify(state.kysTiming).includes(nipA),false);
+});
+
+
+test("scanner composition replaces legacy summary and health cards while preserving detail and KYS mounts", async () => {
+ const { instance, calls }=controller(); await instance.search(nipA); const state=instance.getSnapshot();
+ const before=JSON.stringify(state.metadata);
+ const html=markup(state,{slots:{
+  scanner:context=>{assert.equal(context.metadata?.nip,nipA);return React.createElement(FinancialScannerMount,{report:context.metadata});},
+  summary:()=>React.createElement("div",null,"Legacy summary marker"),
+  financial:{liquidity:()=>React.createElement("div",null,"Legacy health marker")}
+ }});
+ assert.match(html,/Supplier Finance Scanner/);
+ assert.doesNotMatch(html,/Legacy summary marker|Legacy health marker|report-summary|Okres finansowy:/);
+ assert.ok(html.indexOf('id="report-finance"')>html.indexOf('id="supplier-identity"'));
+ assert.ok(html.indexOf('id="report-finance"')<html.indexOf('id="report-financial-details"'));
+ for(const title of ["Rachunek zysków i strat","Bilans","Pobierz do Excela","Pełny raport KYS"])assert.ok(html.includes(title),title);
+ assert.equal(JSON.stringify(state.metadata),before);
+ assert.deepEqual(calls,["/api/xray/search","/api/xray/report-data"]);
 });

@@ -1,8 +1,10 @@
 "use client";
 
-import { ExecutiveSummary, FinancialHealthArea, KysOverview, type KysPdfSelection } from "@profitia/srm-xray";
+import "@profitia/srm-xray/financial-scanner.css";
+
+import { ExecutiveSummary, FinancialScannerMount, KysOverview, type KysPdfSelection } from "@profitia/srm-xray";
 import { useRef, useState, type FormEvent } from "react";
-import { SupplierReport, reportMessage, type SupplierReportContext, type SupplierReportSlots } from "../src/modules/xray/supplier-report";
+import { SupplierReport, reportMessage, type SupplierReportSlots } from "../src/modules/xray/supplier-report";
 import { useSupplierReport } from "../src/modules/xray/use-supplier-report";
 import { supplierNip } from "../src/modules/xray/report-controller";
 
@@ -16,10 +18,8 @@ const summarySlot: NonNullable<SupplierReportSlots["summary"]> = context => <Exe
 
 const kysSlot: NonNullable<SupplierReportSlots["kys"]> = context => <KysOverview model={context.kysOverview} onDetails={context.onKysDetails} />;
 
-const financialSlots: SupplierReportSlots["financial"] = Object.fromEntries((["liquidity", "debt", "profitability", "cashFlow"] as const).map(area => [area,
-  (context: SupplierReportContext) => context.supplier.entityType === "COMPANY" ? <FinancialHealthArea area={area} financial={context.metadata?.financial ?? null}
-    scope={context.scope} selectedPeriod={context.selectedPeriod} loading={context.metadataBusy} onSource={context.onSource} /> : null,
-]));
+const scannerSlot: NonNullable<SupplierReportSlots["scanner"]> = context => context.supplier.entityType === "COMPANY"
+  ? <FinancialScannerMount report={context.metadata} loading={context.metadataBusy} /> : null;
 
 export default function Home() {
   const { state, controller } = useSupplierReport();
@@ -84,7 +84,7 @@ export default function Home() {
   return <main className="appshield">
     <a className="report-skip-link" href="#supplier-search">Przejdź do wyszukiwania</a>
     <header className="appshield-header">
-      <h1>SRM X-Ray</h1>
+      <h1>Supplier Intelligence Dashboard</h1>
       <div className="appshield-actions">
         {(state.result || state.busy) && <button type="button" className="appshield-new-report" onClick={newReport}>Nowy raport</button>}
         <form action="/api/auth/logout" method="post"><button type="submit" className="appshield-new-report">Wyloguj się</button></form>
@@ -106,7 +106,7 @@ export default function Home() {
       {state.error && <p role="alert" className="search-error">{reportMessage(state.error)}</p>}
       {!state.result && !state.busy && !state.error && <div className="report-empty"><h2>Raport dostawcy</h2><p>Wpisz NIP, aby zobaczyć dostępne dane finansowe i rejestrowe.</p></div>}
       {state.result && <SupplierReport key={`${state.result.entityType}:${supplierNip(state.result)}`} state={state}
-        onFetchKys={controller.fetchKys} onReadMetadata={controller.refreshMetadata} onRevealPesel={revealPesel} onDownloadExcel={downloadFinancialExcel} onDownloadKysPdf={downloadKysPdf} slots={{ summary: summarySlot, financial: financialSlots, kys: kysSlot }} />}
+        onFetchKys={controller.fetchKys} onReadMetadata={controller.refreshMetadata} onRevealPesel={revealPesel} onDownloadExcel={downloadFinancialExcel} onDownloadKysPdf={downloadKysPdf} slots={{ summary: summarySlot, scanner: scannerSlot, kys: kysSlot }} />}
     </div>
   </main>;
 }
