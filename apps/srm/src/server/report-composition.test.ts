@@ -292,3 +292,28 @@ test("scanner composition replaces legacy summary and health cards while preserv
  assert.equal(JSON.stringify(state.metadata),before);
  assert.deepEqual(calls,["/api/xray/search","/api/xray/report-data"]);
 });
+
+
+test("deregistered company has one dated notice, no analysis/KYS/exports or metadata requests, and resets to new report",async()=>{
+ const result=company();assert.equal(result.entityType,"COMPANY");if(result.entityType!=="COMPANY")return;
+ result.card.general.data!.registrationStatus="DEREGISTERED";result.card.general.data!.deregisteredAt="2009-01-19";
+ const {instance,calls}=controller(result);await instance.search(nipA);await instance.fetchKys();await instance.refreshMetadata();
+ assert.deepEqual(calls,["/api/xray/search"]);assert.equal(instance.getSnapshot().metadata,null);
+ const html=markup({...instance.getSnapshot(),kys:{...sampleCard.kys},metadata:metadata()},{slots:{scanner:()=>{throw Error("inactive scanner mounted")},kys:()=>{throw Error("inactive KYS mounted")}}});
+ assert.match(html,/Spółka została wykreślona z KRS 19\.01\.2009 r\. i jest nieaktywna/);
+ assert.match(html,/Moduł publikuje dane finansowe i raporty tylko dla aktywnych spółek/);
+ assert.equal((html.match(/role="status"/g)||[]).length,1);
+ assert.doesNotMatch(html,/Supplier Finance Scanner|Nazwa niedostępna|Raport KYS|Dane szczegółowe|button|<nav|Pobierz|PRIVATE_DOCUMENT/);
+ result.card.general.data!.deregisteredAt=null;const withoutDate=controller(result);await withoutDate.instance.search(nipA);assert.match(markup(withoutDate.instance.getSnapshot()),/Spółka jest wykreślona z KRS i jest nieaktywna/);
+ instance.reset();assert.equal(instance.getSnapshot().result,null);assert.equal(instance.getSnapshot().metadata,null);
+});
+
+test("removed JDG has only the dated CEIDG notice and never mounts registry or KYS",async()=>{
+ const result=jdg();if(result.entityType!=="JDG")throw Error("fixture");
+ result.section.data={entries:[{...result.section.data!.entries[0],status:"Wykreślony",fields:[{key:"dataWykreslenia",label:"Data wykreślenia",value:"2018-08-18",children:[]}]}]};
+ const {instance,calls}=controller(result);await instance.search(nipA);await instance.fetchKys();await instance.refreshMetadata();assert.deepEqual(calls,["/api/xray/search"]);
+ const html=markup({...instance.getSnapshot(),kys:{...sampleCard.kys}},{slots:{kys:()=>{throw Error("inactive KYS")}}});
+ assert.match(html,/Działalność jest wykreślona z CEIDG od 18\.08\.2018 r\. i jest nieaktywna/);
+ assert.doesNotMatch(html,/Test JDG|Dane szczegółowe|Raport KYS|button|<nav|Pobierz/);assert.equal((html.match(/role="status"/g)||[]).length,1);
+ instance.reset();assert.equal(instance.getSnapshot().result,null);
+});

@@ -1,3 +1,4 @@
+import { readSupplierRegistrationStatus } from "./company-activity";
 import { productEnvironmentReady, productOrganizationId } from "./runtime-environment";
 import { financialScanner } from "./financial-scanner";
 import { createHmac, createHash } from "node:crypto";
@@ -222,6 +223,8 @@ LEFT JOIN LATERAL (
 ) k ON true`;
 
 export async function readReportData(organizationId: string, selection: ReportSelection, now = new Date(), pool?: DatabasePool): Promise<SupplierReportData> {
+  if (await readSupplierRegistrationStatus(organizationId, selection.nip, selection.entityType, pool) === "DEREGISTERED")
+    return projectReportData(selection, { nip: selection.nip, financial_json: null, financial_sha256: null, financial_checked_at: null, facts: [], indicators: [], kys: null }, now);
   return withOrganization(organizationId, async client => {
     const result = await client.query<ReportReadRow>(REPORT_DATA_SQL, [selection.nip, organizationId, selection.entityType, FINANCIAL_INDICATOR_FORMULA_VERSION]);
     const row = result.rows[0];

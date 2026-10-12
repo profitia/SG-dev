@@ -6,7 +6,8 @@ import { defaultFinancialScope, indicatorContent, useKysOverview, type KysOvervi
 import { FinancialPeriodSelector } from "./financial-period-selector";
 import { ReportNavigation, navigateReportSection } from "./report-navigation";
 export { navigateReportSection } from "./report-navigation";
-import { supplierNip, type DisplayCard, type ReportState, type SearchResult } from "./report-controller";
+import { inactiveCompanyMessage, inactiveJdgMessage } from "@profitia/srm-xray";
+import { supplierNip, inactiveSupplier, type DisplayCard, type ReportState, type SearchResult } from "./report-controller";
 
 type Scope = FinancialPeriod["scope"];
 export type SupplierReportContext = {
@@ -125,6 +126,7 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
   }, [state.kysTiming, state.kysBusy, state.metadataBusy, state.kys.status]);
   useEffect(() => { if (state.kys.status !== "NOT_REQUESTED" && kysDetails.current) kysDetails.current.open = true; }, [state.kys]);
   if (!state.result) return null;
+  if (inactiveSupplier(state.result)) return <div ref={root} className="supplier-report"><section className="report-identity"><p role="status">{state.result.entityType === "JDG" ? inactiveJdgMessage(state.result.section.data) : inactiveCompanyMessage(state.result.card.general.data)}</p></section></div>;
   const supplier = state.result, metadata = state.metadata;
   const context: SupplierReportContext = { supplier, metadata, financial, kys: state.kys, scope, setScope, selectedPeriod, setPeriod, onSource, onIndicator, onNavigate, kysOverview: kysOverviewModel, onKysDetails, periods,
     metadataBusy: state.metadataBusy, metadataError: state.metadataError };

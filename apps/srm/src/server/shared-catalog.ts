@@ -1,3 +1,5 @@
+import { readCompanyRegistrationStatus } from "./company-activity";
+import { isDeregisteredCompany } from "@profitia/srm-xray";
 import { createHash } from "node:crypto";
 import type { FinancialData, GeneralCompanyData, SectionEnvelope } from "@profitia/srm-xray";
 import { withOrganization } from "./db";
@@ -46,6 +48,8 @@ export async function readFreshCompany(organizationId: string, nip: string, now 
       general_checked_at: Date | null; financial_checked_at: Date | null;
     }>("SELECT general_json, financial_json, general_checked_at, financial_checked_at FROM srm.catalog_companies WHERE nip = $1", [nip]);
     const row = result.rows[0];
+    if (row?.general_json?.data && isFreshCatalogEntry(row.general_checked_at, now) && isDeregisteredCompany(row.general_json.data))
+      return { general: row.general_json, financial: { status: "NOT_REQUESTED", source: { provider: "MGBI", model: "pl-krs-rdf-record", recordId: null }, data: null, retrievedAt: null, effectiveAt: null, warnings: [] } };
     if (!row?.general_json?.data || !row.financial_json ||
       !isFreshCatalogEntry(row.general_checked_at, now) || !isFreshCatalogEntry(row.financial_checked_at, now)) return null;
     if (!Array.isArray(row.financial_json.warnings) || !isCurrentFinancialMapping(row.financial_json)) return null;
@@ -55,6 +59,7 @@ export async function readFreshCompany(organizationId: string, nip: string, now 
 
 /** Export reads the already stored projection and never initiates a provider request. */
 export async function readSavedFinancialData(organizationId: string, nip: string): Promise<FinancialData | null> {
+  if (await readCompanyRegistrationStatus(organizationId, nip) === "DEREGISTERED") return null;
   return withOrganization(organizationId, async (client) => {
     const result = await client.query<{ financial_json: StoredFinancialSection | null }>(
       "SELECT financial_json FROM srm.catalog_companies WHERE nip = $1", [nip],

@@ -28,6 +28,9 @@ export type SectionEnvelope<T> = {
 };
 
 export type GeneralCompanyData = {
+  /** Historical projections may omit status; missing fields never prove removal. */
+  registrationStatus?: "ACTIVE" | "DEREGISTERED" | "UNKNOWN";
+  deregisteredAt?: string | null;
   legalName: string | null;
   legalForm: string | null;
   krs: string | null;

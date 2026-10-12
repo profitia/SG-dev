@@ -21,6 +21,7 @@ export type {
 } from "./contracts";
 
 export { JdgRegistryMount } from "./jdg";
+export { INACTIVE_COMPANY_MESSAGE, inactiveCompanyMessage, isDeregisteredCompany, jdgDeregistration, isDeregisteredJdg, inactiveJdgMessage } from "./company-activity";
 
 export {
   GeneralCompanyDataMount,

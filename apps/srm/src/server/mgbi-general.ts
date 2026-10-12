@@ -1,5 +1,6 @@
 import type { GeneralCompanyData, SectionEnvelope } from "@profitia/srm-xray";
 import { fetchMgbiPages } from "./mgbi-archive";
+import { companyRegistration } from "./company-activity";
 
 export type CompanyIdentifier = { type: "NIP" | "KRS"; value: string };
 export type MgbiGeneralResult = {
@@ -58,7 +59,10 @@ export function mapMgbiGeneralRecord(record: unknown, retrievedAt: string): Mgbi
   const subject = at(excerpt, "dane", "dzial1", "danePodmiotu");
   const rawAddress = at(excerpt, "dane", "dzial1", "siedzibaIAdres", "adres");
   const activity = at(excerpt, "dane", "dzial3", "przedmiotDzialalnosci", "przedmiotPrzewazajacejDzialalnosci");
+  const registration = companyRegistration(record);
   const data: GeneralCompanyData = {
+    registrationStatus: registration.status,
+    deregisteredAt: registration.deregisteredAt,
     legalName: str(at(subject, "nazwa")) ?? str(at(header, "nazwa")),
     legalForm: str(at(subject, "formaPrawna")),
     krs: str(identifiers?.pl_krs) ?? str(at(header, "numerKRS")),
