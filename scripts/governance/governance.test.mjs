@@ -532,7 +532,7 @@ test('project boundary policy fails closed on missing, malformed or wildcard all
   assert.equal(validateProjectBoundaryPolicy({ surfaces: [] }).enforced, false)
 })
 
-test('unknown Architecture stays blocked while synthetic future routing respects boundaries', () => {
+test('unknown Architecture stays blocked while registered future surfaces respect boundaries', () => {
   assert.throws(() => resolveProjectProfile('ARCHITECTURE', repositoryRoot), /Unknown project/)
   // This object tests a pure resolver. It is not an ACTIVE runtime profile.
   const fixture = { ...resolveProjectProfile('SG2', repositoryRoot), projectKey: 'ARCHITECTURE' }
@@ -541,7 +541,12 @@ test('unknown Architecture stays blocked while synthetic future routing respects
   for (const target of ['apps/sg-runtime/app/page.tsx', 'apps/srm/src/server/db.ts']) {
     assert.equal(resolveProjectRouting({ profile: fixture, targets: [target], repositoryRoot }).ok, false)
   }
-  assert.equal(resolveProjectRouting({ profile: fixture, targets: ['apps/architecture-lab/package.json'], repositoryRoot }).ok, false)
+  for (const target of ['apps/architecture-lab/package.json', 'packages/platform-contracts/package.json']) {
+    assert.equal(resolveProjectRouting({ profile: fixture, targets: [target], repositoryRoot }).ok, true)
+    for (const key of ['SG2', 'SRM']) {
+      assert.equal(resolveProjectRouting({ profile: resolveProjectProfile(key, repositoryRoot), targets: [target], repositoryRoot }).ok, false)
+    }
+  }
   const preflight = runGovernancePreflight({
     mode: 'development', project: 'ARCHITECTURE', target_environment: 'development', task_id: 'synthetic-architecture-test',
     hostConversationUnavailable: true, title: 'Synthetic unknown profile rejection', workspace: 'fixture', execution_environment: 'ci', scope: 'governance',
