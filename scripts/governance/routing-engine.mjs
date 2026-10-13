@@ -3,6 +3,27 @@ import path from 'node:path'
 
 import { loadRegistry, normalizeInputPath, resolveBaselinePaths, validateRegistry } from '../architecture-classify.mjs'
 
+const PROJECT_BOUNDARY_POLICY = 'EXPLICIT_SURFACE_PROJECT_KEYS'
+
+export function validateProjectBoundaryPolicy(registry, { required = false } = {}) {
+  const errors = []
+  if (registry.projectBoundaryPolicy === undefined && !required) {
+    return { valid: true, enforced: false, errors }
+  }
+  if (registry.projectBoundaryPolicy !== PROJECT_BOUNDARY_POLICY) {
+    return { valid: false, enforced: false, errors: [`Registry projectBoundaryPolicy must equal ${PROJECT_BOUNDARY_POLICY}.`] }
+  }
+  for (const surface of registry.surfaces) {
+    const keys = surface.allowedProjectKeys
+    if (!Array.isArray(keys) || keys.length === 0
+      || keys.some((key) => typeof key !== 'string' || !/^[A-Z][A-Z0-9_-]*$/.test(key))
+      || new Set(keys).size !== keys.length) {
+      errors.push(`Surface ${surface.id} requires unique, non-empty canonical allowedProjectKeys.`)
+    }
+  }
+  return { valid: errors.length === 0, enforced: true, errors }
+}
+
 function matchesBootstrapPattern(pattern, target) {
   if (pattern.endsWith('/**')) {
     const prefix = pattern.slice(0, -3).replace(/\/$/, '')
@@ -59,11 +80,30 @@ export function resolveProjectRouting({ profile, targets, repositoryRoot }) {
     const registry = loadRegistry(registryPath)
     const validation = validateRegistry(registry)
     if (!validation.valid) return { ok: false, results: [], error: validation.errors.join(' | ') }
-    const results = resolveBaselinePaths({ registry, inputPaths: targets, repoRoot: repositoryRoot })
+    // SG-dev requires this contract; a separate repository retains its own
+    // registered routing contract until it explicitly adopts the policy.
+    const boundary = validateProjectBoundaryPolicy(registry, {
+      required: profile.repository.slug.toLowerCase() === 'profitia/sg-dev',
+    })
+    if (!boundary.valid) return { ok: false, results: [], error: boundary.errors.join(' | ') }
+    const resolved = resolveBaselinePaths({ registry, inputPaths: targets, repoRoot: repositoryRoot })
+    const surfaces = new Map(registry.surfaces.map((surface) => [surface.id, surface]))
+    const results = boundary.enforced ? resolved.map((entry) => {
+      if (entry.resolutionStatus !== 'RESOLVED') return entry
+      const allowedProjectKeys = surfaces.get(entry.matchedSurfaceId).allowedProjectKeys
+      return {
+        ...entry,
+        allowedProjectKeys,
+        projectBoundaryStatus: allowedProjectKeys.includes(profile.projectKey) ? 'ALLOWED' : 'DENIED',
+      }
+    }) : resolved
+    const denied = results.filter((entry) => entry.projectBoundaryStatus === 'DENIED')
     return {
-      ok: results.length > 0 && results.every((entry) => entry.resolutionStatus === 'RESOLVED'),
+      ok: results.length > 0 && results.every((entry) => entry.resolutionStatus === 'RESOLVED') && denied.length === 0,
       results,
-      error: null,
+      error: denied.length > 0
+        ? `Project ${profile.projectKey} cannot mutate: ${denied.map((entry) => entry.normalizedPath).join(', ')}.`
+        : null,
     }
   } catch (error) {
     return { ok: false, results: [], error: error.message }

@@ -9,9 +9,11 @@ import { CloseoutState, createArtifactLock, hashObject, verifyArtifactLock } fro
 
 import {
   applyRequiredPhrPublicationOutcome,
+  applyPhrOnlyPublicationOutcome,
   applySrmPhrPublicationOutcome,
   buildConversationArtifactSummary,
   buildPhrPublicationReadyHandoff,
+  buildPhrOnlyPublicationCandidate,
   buildSrmPhrPublicationCandidate,
   normalizePendingArtifact,
   projectCanonicalFlightRecordScalarParity,
@@ -240,7 +242,7 @@ function makeRetryEvidence(params: {
   } as never
 }
 
-function makeFinalizationContext(status: 'PUBLISHED' | 'IDEMPOTENT' | 'FAILED' | 'FAILED_RETRYABLE', pending: 'CLEAR' | 'OCCUPIED') {
+function makeFinalizationContext(status: 'PUBLISHED' | 'IDEMPOTENT' | 'FAILED' | 'FAILED_RETRYABLE' | 'CONFLICT', pending: 'CLEAR' | 'OCCUPIED') {
   return {
     publicationArtifact: null,
     publicationAck: null,
@@ -708,4 +710,84 @@ test('PUBLISHED and IDEMPOTENT satisfy the SRM completion gate and only then all
   assert.equal(idempotent.canCompleteTask, true)
   assert.equal(idempotent.canClearPending, true)
   assert.equal(idempotentEvidence.closeoutState, CloseoutState.CLOSEOUT_COMPLETE)
+})
+
+// Synthetic, pure-function fixture: this never registers ARCHITECTURE or writes
+// to a real PMOS database. Operational activation is a later onboarding stage.
+function makeArchitectureFixture() {
+  const profile = {
+    ...resolvePmosProjectProfile({ projectName: 'SRM' }),
+    projectKey: 'ARCHITECTURE',
+    displayName: 'Architecture Fixture',
+    projectName: 'Architecture Fixture',
+    aliases: [],
+    workspaces: ['synthetic-architecture-workspace'],
+    database: { provider: 'neon' as const, projectId: 'synthetic-pmos-project', databaseName: 'fixture_pmos', allowedHosts: ['fixture.invalid'] },
+  }
+  const source = makeArtifact()
+  const artifact = {
+    ...source,
+    metadata: { ...source.metadata, project: profile.projectName, taskId: 'ARCHITECTURE-FIXTURE-0001', conversationId: 'synthetic-architecture-conversation' },
+    task: { originalTaskRequest: 'Probe a synthetic Architecture closeout' },
+  }
+  return { profile, artifact }
+}
+
+test('PHR-only candidate uses the actual task profile and keeps deterministic retry content', () => {
+  const { profile, artifact } = makeArchitectureFixture()
+  const params = { artifact, closeout: makeEvidence(), closeoutRef: 'synthetic/closeout.json', projectProfile: profile }
+  const first = buildPhrOnlyPublicationCandidate(params)
+  const second = buildPhrOnlyPublicationCandidate({ ...params, closeout: { ...makeEvidence(), pmosSaveDbRecordId: 'different-local-row', handoffPublicationCompletedAt: '2026-10-01T00:00:00.000Z' } })
+  assert.equal(hashObject(first), hashObject(second))
+  assert.equal(first.handoff.taskId, artifact.metadata.taskId)
+  assert.equal(first.handoff.conversationId, artifact.metadata.conversationId)
+  assert.equal(first.closeout.manualRecoveryInstructions[0], 'PHR publication is the mandatory completion gate for Architecture Fixture closeout.')
+  assert.equal(first.handoff.payload.completedWork.includes('Finalized: PHR publication is the mandatory completion gate for Architecture Fixture closeout.'), true)
+  assert.equal(first.handoff.payload.currentState.includes('PHR_COMPLETION_GATE = REQUIRED'), true)
+  assert.equal(first.handoff.payload.currentState.includes('PENDING_ARTIFACT_SLOT_FINAL = OCCUPIED'), true)
+  assert.equal(first.handoff.payload.currentState.includes('PHR_PUBLICATION_POSTCONDITION = SATISFIED_ON_PUBLISHER_SUCCESS'), true)
+  assert.doesNotMatch(JSON.stringify(first), /SRM closeout/)
+})
+
+test('PHR-only candidate rejects wrong task identity and incompatible continuity policies', () => {
+  const { profile, artifact } = makeArchitectureFixture()
+  const params = { artifact, closeout: makeEvidence(), closeoutRef: 'synthetic/closeout.json', projectProfile: profile }
+  assert.throws(() => buildPhrOnlyPublicationCandidate({ ...params, artifact: makeArtifact() }), /project does not match/)
+  assert.throws(() => buildPhrOnlyPublicationCandidate({ ...params, projectProfile: resolvePmosProjectProfile({ projectName: DEFAULT_PMOS_PROJECT_NAME }) }), /MEMOROS disabled and PHR required/)
+  assert.throws(() => buildPhrOnlyPublicationCandidate({ ...params, projectProfile: { ...profile, phrRequiredForCloseout: false } }), /MEMOROS disabled and PHR required/)
+})
+
+test('new profile PHR failures preserve recovery and never satisfy completion', () => {
+  const { profile, artifact } = makeArchitectureFixture()
+  for (const status of ['FAILED', 'FAILED_RETRYABLE', 'CONFLICT'] as const) {
+    const evidence = makeEvidence()
+    const outcome = applyPhrOnlyPublicationOutcome({ evidence, publication: { status, error: 'synthetic failure' }, projectName: profile.projectName })
+    assert.equal(outcome.canCompleteTask, false)
+    assert.equal(outcome.canClearPending, false)
+    assert.equal(evidence.recoveryRequired, true)
+    assert.match(evidence.recoveryReason, /Architecture Fixture/)
+    assert.doesNotMatch(evidence.recoveryReason, /SRM/)
+    const summary = buildConversationArtifactSummary(artifact, evidence, makeFinalizationContext(status, 'OCCUPIED'))
+    assert.doesNotMatch(summary, /FINAL_VERDICT = PASS/)
+    assert.doesNotMatch(summary, /PENDING_ARTIFACT_SLOT_FINAL = CLEAR/)
+  }
+})
+
+test('new profile PHR completion requires publisher success while SG2 retains MEMOROS policy', () => {
+  const { profile, artifact } = makeArchitectureFixture()
+  for (const status of ['PUBLISHED', 'IDEMPOTENT'] as const) {
+    const evidence = makeEvidence()
+    const outcome = applyPhrOnlyPublicationOutcome({ evidence, publication: { status, error: null }, projectName: profile.projectName })
+    assert.equal(outcome.canCompleteTask, true)
+    assert.equal(outcome.canClearPending, true)
+    assert.equal(evidence.closeoutState, CloseoutState.CLOSEOUT_COMPLETE)
+    const summary = buildConversationArtifactSummary(artifact, evidence, makeFinalizationContext(status, 'CLEAR'))
+    assert.match(summary, /FINAL_VERDICT = PASS/)
+    assert.match(summary, /Architecture Fixture closeout/)
+    assert.doesNotMatch(summary, /SRM closeout/)
+  }
+  assert.equal(resolvePmosProjectProfile({ projectName: DEFAULT_PMOS_PROJECT_NAME }).memorosMode, 'required')
+  assert.equal(resolvePmosProjectProfile({ projectName: 'CIC' }).memorosMode, 'required')
+  assert.equal(resolvePmosProjectProfile({ projectName: 'SRM' }).memorosMode, 'disabled')
+  assert.throws(() => resolvePmosProjectProfile({ projectName: 'ARCHITECTURE' }), /Unknown PMOS project/)
 })

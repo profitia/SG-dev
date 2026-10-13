@@ -17,7 +17,10 @@
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": null,
       "cleanupReason": null,
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SG2"
+      ]
     },
     {
       "id": "SG2-BASE-002",
@@ -31,7 +34,10 @@
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": null,
       "cleanupReason": null,
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SG2"
+      ]
     },
     {
       "id": "SG2-BASE-003",
@@ -45,7 +51,10 @@
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": null,
       "cleanupReason": null,
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SG2"
+      ]
     },
     {
       "id": "SG2-BASE-016",
@@ -59,7 +68,10 @@
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": null,
       "cleanupReason": null,
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SRM"
+      ]
     },
     {
       "id": "SG2-BASE-004",
@@ -73,7 +85,10 @@
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": "SG2-BASE-003",
       "cleanupReason": null,
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SG2"
+      ]
     },
     {
       "id": "SG2-BASE-005",
@@ -87,7 +102,10 @@
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": null,
       "cleanupReason": null,
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SG2"
+      ]
     },
     {
       "id": "SG2-BASE-006",
@@ -101,7 +119,12 @@
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": null,
       "cleanupReason": null,
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ]
     },
     {
       "id": "SG2-BASE-007",
@@ -115,7 +138,12 @@
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": null,
       "cleanupReason": null,
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ]
     },
     {
       "id": "SG2-BASE-019",
@@ -129,7 +157,12 @@
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": null,
       "cleanupReason": null,
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ]
     },
     {
       "id": "SG2-BASE-020",
@@ -147,7 +180,12 @@
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": "SG2-BASE-019",
       "cleanupReason": null,
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ]
     },
     {
       "id": "SG2-BASE-014",
@@ -161,7 +199,10 @@
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": null,
       "cleanupReason": null,
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SG2"
+      ]
     },
     {
       "id": "SG2-BASE-008",
@@ -175,7 +216,10 @@
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": null,
       "cleanupReason": null,
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SG2"
+      ]
     },
     {
       "id": "SG2-BASE-009",
@@ -189,7 +233,10 @@
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": null,
       "cleanupReason": null,
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SG2"
+      ]
     },
     {
       "id": "SG2-BASE-010",
@@ -203,7 +250,12 @@
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": null,
       "cleanupReason": null,
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ]
     },
     {
       "id": "SG2-BASE-011",
@@ -217,7 +269,10 @@
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": null,
       "cleanupReason": null,
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SG2"
+      ]
     },
     {
       "id": "SG2-BASE-017",
@@ -231,7 +286,10 @@
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": null,
       "cleanupReason": null,
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SRM"
+      ]
     },
     {
       "id": "SG2-BASE-018",
@@ -245,7 +303,10 @@
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": null,
       "cleanupReason": null,
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SRM"
+      ]
     },
     {
       "id": "SG2-BASE-012",
@@ -259,7 +320,10 @@
       "baselineClassification": "LEGACY",
       "parentSurfaceId": "SG2-BASE-003",
       "cleanupReason": "DUPLICATED_PERSISTENCE_AUTHORITY",
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SG2"
+      ]
     },
     {
       "id": "SG2-BASE-013",
@@ -273,7 +337,10 @@
       "baselineClassification": "LEGACY",
       "parentSurfaceId": "SG2-BASE-003",
       "cleanupReason": "CROSS_APP_SERVING_BOUNDARY_REQUIRES_RECONCILIATION",
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SG2"
+      ]
     },
     {
       "id": "SG2-BASE-015",
@@ -287,7 +354,10 @@
       "baselineClassification": "LEGACY",
       "parentSurfaceId": "SG2-BASE-008",
       "cleanupReason": "MISSING_RUNTIME_AUTHORITY_REFERENCE",
-      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261"
+      "classificationReferenceSha": "3a291dae20af3f07c340bb7f371eced612182261",
+      "allowedProjectKeys": [
+        "SG2"
+      ]
     },
     {
       "id": "SRM-BASE-001",
@@ -301,7 +371,10 @@
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": null,
       "cleanupReason": null,
-      "classificationReferenceSha": "f5d671280b330edb51388d9d7c6d603bf504d7d6"
+      "classificationReferenceSha": "f5d671280b330edb51388d9d7c6d603bf504d7d6",
+      "allowedProjectKeys": [
+        "SRM"
+      ]
     }
   ],
   "cleanupFindings": [
@@ -327,5 +400,6 @@
       "representedAsLegacySurface": false,
       "reason": "The issue is an authority, documentation, and entrypoint mismatch rather than evidence that the functioning implementation path is itself a legacy architecture surface."
     }
-  ]
+  ],
+  "projectBoundaryPolicy": "EXPLICIT_SURFACE_PROJECT_KEYS"
 }

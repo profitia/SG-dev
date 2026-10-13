@@ -9,7 +9,7 @@ import { validateGovernanceManifest } from './validate-governance-manifest.mjs'
 import { compareProviderSnapshot, loadEnvironmentTopology, resolveEnvironmentProfile, validateEnvironmentTopology } from './environment-profile.mjs'
 import { runGovernancePreflight } from './governance-preflight.mjs'
 import { resolveHistoricalProjectProfile, resolveProjectProfile } from './project-profile.mjs'
-import { resolveProjectRouting } from './routing-engine.mjs'
+import { resolveProjectRouting, validateProjectBoundaryPolicy } from './routing-engine.mjs'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 
@@ -472,4 +472,98 @@ test('manifest validation rejects an active dependency on a superseded document'
   const result = validateGovernanceManifest(tempRoot)
   assert.equal(result.valid, false)
   assert.match(result.errors.join('\n'), /depends on superseded/)
+})
+
+test('project routing permits product owners and declared shared tooling', () => {
+  for (const [key, targets] of [
+    ['SG2', ['apps/sg-runtime/lib/api/middleware.ts', 'apps/dashboard-preview/app/page.tsx']],
+    ['SRM', ['apps/srm/src/server/db.ts', 'packages/srm-xray/src/contracts.ts', '.github/workflows/srm-ci.yml']],
+  ]) {
+    const profile = resolveProjectProfile(key, repositoryRoot)
+    const result = resolveProjectRouting({ profile, targets, repositoryRoot })
+    assert.equal(result.ok, true, result.error)
+    assert.equal(result.results.every((entry) => entry.projectBoundaryStatus === 'ALLOWED'), true)
+    const shared = resolveProjectRouting({ profile, targets: ['Canon/registries/profitia-projects-v1.json', 'apps/pmos/scripts/pmos-save.ts', 'scripts/governance/routing-engine.mjs'], repositoryRoot })
+    assert.equal(shared.ok, true, shared.error)
+  }
+})
+
+test('project routing rejects cross-product writes without changing physical ownership', () => {
+  for (const [key, deniedPath, owner] of [
+    ['SG2', 'apps/srm/src/server/db.ts', 'SRM Runtime'],
+    ['SG2', 'packages/srm-xray/src/contracts.ts', 'SRM X-Ray Module'],
+    ['SRM', 'apps/sg-runtime/lib/api/middleware.ts', 'SG Runtime'],
+    ['SRM', 'apps/dashboard-preview/prisma-market-data/schema.prisma', 'Dashboard Preview'],
+  ]) {
+    const result = resolveProjectRouting({ profile: resolveProjectProfile(key, repositoryRoot), targets: ['Canon/registries/profitia-projects-v1.json', deniedPath], repositoryRoot })
+    assert.equal(result.ok, false)
+    assert.equal(result.results[0].projectBoundaryStatus, 'ALLOWED')
+    assert.equal(result.results[1].resolutionStatus, 'RESOLVED')
+    assert.equal(result.results[1].projectBoundaryStatus, 'DENIED')
+    assert.equal(result.results[1].currentOwner, owner)
+    assert.match(result.error, /cannot mutate/)
+  }
+})
+
+test('project boundary policy fails closed on missing, malformed or wildcard allowlists', (t) => {
+  const profile = resolveProjectProfile('SG2', repositoryRoot)
+  const original = JSON.parse(fs.readFileSync(path.join(repositoryRoot, profile.repository.routingRegistry), 'utf8'))
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'project-boundary-policy-'))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const registryPath = path.join(root, profile.repository.routingRegistry)
+  fs.mkdirSync(path.dirname(registryPath), { recursive: true })
+  const cases = [
+    (r) => { delete r.projectBoundaryPolicy },
+    (r) => { r.projectBoundaryPolicy = 'ALLOW_ALL' },
+    (r) => { delete r.surfaces[0].allowedProjectKeys },
+    (r) => { r.surfaces[0].allowedProjectKeys = [] },
+    (r) => { r.surfaces[0].allowedProjectKeys = ['*'] },
+    (r) => { r.surfaces[0].allowedProjectKeys = ['SG2', 'SG2'] },
+    (r) => { r.surfaces[0].allowedProjectKeys = ['sg2'] },
+  ]
+  for (const mutate of cases) {
+    const fixture = structuredClone(original)
+    mutate(fixture)
+    fs.writeFileSync(registryPath, JSON.stringify(fixture))
+    const result = resolveProjectRouting({ profile, targets: ['Canon/registries/profitia-projects-v1.json'], repositoryRoot: root })
+    assert.equal(result.ok, false)
+    assert.match(result.error, /projectBoundaryPolicy|allowedProjectKeys/)
+  }
+  assert.equal(validateProjectBoundaryPolicy({ surfaces: [] }).enforced, false)
+})
+
+test('unknown Architecture stays blocked while synthetic future routing respects boundaries', () => {
+  assert.throws(() => resolveProjectProfile('ARCHITECTURE', repositoryRoot), /Unknown project/)
+  // This object tests a pure resolver. It is not an ACTIVE runtime profile.
+  const fixture = { ...resolveProjectProfile('SG2', repositoryRoot), projectKey: 'ARCHITECTURE' }
+  const shared = resolveProjectRouting({ profile: fixture, targets: ['Canon/registries/profitia-projects-v1.json', 'apps/pmos/scripts/pmos-save.ts'], repositoryRoot })
+  assert.equal(shared.ok, true)
+  for (const target of ['apps/sg-runtime/app/page.tsx', 'apps/srm/src/server/db.ts']) {
+    assert.equal(resolveProjectRouting({ profile: fixture, targets: [target], repositoryRoot }).ok, false)
+  }
+  assert.equal(resolveProjectRouting({ profile: fixture, targets: ['apps/architecture-lab/package.json'], repositoryRoot }).ok, false)
+  const preflight = runGovernancePreflight({
+    mode: 'development', project: 'ARCHITECTURE', target_environment: 'development', task_id: 'synthetic-architecture-test',
+    hostConversationUnavailable: true, title: 'Synthetic unknown profile rejection', workspace: 'fixture', execution_environment: 'ci', scope: 'governance',
+    targets: ['Canon/registries/profitia-projects-v1.json'], legacyExceptions: [], repository_root: repositoryRoot,
+    ci: true, offline: true, allowDirty: true, requireBegin: false, skipRuntime: true, checkEstate: false,
+  })
+  assert.equal(preflight.gates.PROJECT_PROFILE_GATE.status, 'BLOCKED')
+  assert.equal(preflight.verdict, 'BLOCKED')
+})
+
+test('full preflight blocks cross-product targets and preserves legacy exception gates', () => {
+  const input = {
+    mode: 'development', project: 'SG2', target_environment: 'development', task_id: 'synthetic-boundary-test',
+    hostConversationUnavailable: true, title: 'Synthetic project boundary rejection', workspace: 'SG-dev', execution_environment: 'ci', scope: 'governance',
+    targets: ['apps/srm/src/server/db.ts'], legacyExceptions: [], repository_root: repositoryRoot,
+    ci: true, offline: true, allowDirty: true, requireBegin: false, skipRuntime: true, checkEstate: false,
+  }
+  assert.equal(runGovernancePreflight(input).gates.ROUTING_GATE.status, 'BLOCKED')
+  const legacyPath = 'apps/dashboard-preview/prisma-market-data/schema.prisma'
+  const legacy = runGovernancePreflight({ ...input, targets: [legacyPath] })
+  assert.equal(legacy.gates.ROUTING_GATE.status, 'BLOCKED')
+  assert.match(legacy.gates.ROUTING_GATE.details.join(' '), /Legacy target requires explicit exception/)
+  const exception = runGovernancePreflight({ ...input, targets: [legacyPath], legacyExceptions: [legacyPath] })
+  assert.equal(exception.gates.ROUTING_GATE.status, 'PASS')
 })
