@@ -109,6 +109,15 @@ test('enforces project-specific database name and Neon endpoint identity', () =>
   assert.throws(() => expectedDatabaseName('unknown'), /Unknown PMOS project/)
 })
 
+test('Architecture rejects owner credentials, foreign host suffixes and unencrypted connections', () => {
+  const correct = 'postgresql://architecture_pmos_runtime:fixture@ep-solitary-unit-b9b3imd3.c-7.eu-central-1.aws.neon.tech/architecture_pmos?sslmode=require'
+  assert.doesNotThrow(() => assertDatabaseIdentity('architecture_pmos', 'ARCHITECTURE', correct))
+  assert.throws(() => assertDatabaseIdentity('architecture_pmos', 'ARCHITECTURE', correct.replace('architecture_pmos_runtime:', 'neondb_owner:')), /runtime role/)
+  assert.throws(() => assertDatabaseIdentity('architecture_pmos', 'ARCHITECTURE', correct.replace('.c-7.eu-central-1.aws.neon.tech', '.foreign.example')), /identity mismatch/)
+  assert.throws(() => assertDatabaseIdentity('architecture_pmos', 'ARCHITECTURE', correct.replace('sslmode=require', 'sslmode=disable')), /runtime role/)
+  assert.throws(() => assertDatabaseIdentity('architecture_sg_lab', 'ARCHITECTURE', correct), /database identity mismatch/)
+})
+
 test('idempotence accepts the same registration and rejects identity drift', () => {
   const parsed = validateExecutionRegistrationInput(input)
   const existing = {

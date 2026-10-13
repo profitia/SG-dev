@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "1.0",
+  "projectKey": "ARCHITECTURE",
+  "targetEnvironment": "development",
+  "status": "DATABASES_INITIALIZED_LIMITED_ROLES_VERIFIED_RUNTIME_ACCEPTANCE_PENDING",
+  "organizationId": "org-nameless-field-92563437",
+  "resources": [
+    {
+      "key": "pmos",
+      "kind": "PMOS",
+      "neonProjectId": "billowing-credit-07394675",
+      "branchId": "br-curly-dream-b94be6uh",
+      "endpointId": "ep-solitary-unit-b9b3imd3",
+      "databaseId": 17811,
+      "databaseName": "architecture_pmos",
+      "ownerRole": "neondb_owner",
+      "runtimeRole": "architecture_pmos_runtime",
+      "host": "ep-solitary-unit-b9b3imd3.c-7.eu-central-1.aws.neon.tech",
+      "ownerUrlEnvironmentKey": "ARCHITECTURE_PMOS_OWNER_URL",
+      "schemaPath": "apps/pmos/prisma/schema.prisma"
+    },
+    {
+      "key": "sg-lab",
+      "kind": "LAB",
+      "consumerProjectKey": "SG2",
+      "neonProjectId": "fancy-cell-49425728",
+      "branchId": "br-divine-fog-baohc5ay",
+      "endpointId": "ep-dry-hat-bafvyimb",
+      "databaseId": 16758,
+      "databaseName": "architecture_sg_lab",
+      "ownerRole": "architecture_sg_lab_owner",
+      "runtimeRole": "architecture_sg_lab_runtime",
+      "host": "ep-dry-hat-bafvyimb.c-8.eu-central-1.aws.neon.tech",
+      "ownerUrlEnvironmentKey": "ARCHITECTURE_SG_LAB_OWNER_URL"
+    },
+    {
+      "key": "srm-lab",
+      "kind": "LAB",
+      "consumerProjectKey": "SRM",
+      "neonProjectId": "fancy-cell-49425728",
+      "branchId": "br-divine-fog-baohc5ay",
+      "endpointId": "ep-dry-hat-bafvyimb",
+      "databaseId": 16767,
+      "databaseName": "architecture_srm_lab",
+      "ownerRole": "architecture_sg_lab_owner",
+      "runtimeRole": "architecture_srm_lab_runtime",
+      "host": "ep-dry-hat-bafvyimb.c-8.eu-central-1.aws.neon.tech",
+      "ownerUrlEnvironmentKey": "ARCHITECTURE_SRM_LAB_OWNER_URL"
+    }
+  ],
+  "validation": {
+    "purpose": "EMPTY_PMOS_SCHEMA_VALIDATION_ONLY",
+    "neonProjectId": "billowing-credit-07394675",
+    "parentBranchId": "br-curly-dream-b94be6uh",
+    "branchId": "br-floral-cell-b96289m1",
+    "endpointId": "ep-raspy-paper-b9phc1va",
+    "host": "ep-raspy-paper-b9phc1va.c-7.eu-central-1.aws.neon.tech",
+    "maximumCu": 0.25,
+    "suspendSeconds": 300,
+    "ownerUrlEnvironmentKey": "ARCHITECTURE_PMOS_VALIDATION_OWNER_URL",
+    "afterValidation": "SUSPEND_ENDPOINT_AND_RETAIN_EVIDENCE"
+  }
+}

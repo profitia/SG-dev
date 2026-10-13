@@ -51,6 +51,43 @@
       "continuity": {"pmos": "required", "memoros": "required", "phr": "required", "memorosProjectId": "cmubasxat03t71glbo4x0nhfn"},
       "adapter": "Canon/adapters/cic-project-adapter-v1.md",
       "status": "ACTIVE"
+    },
+    {
+      "projectKey": "ARCHITECTURE",
+      "displayName": "ARCHITECTURE",
+      "aliases": [
+        "architecture",
+        "Architecture Platform"
+      ],
+      "workspaces": [
+        "SG-dev Architecture"
+      ],
+      "repository": {
+        "slug": "profitia/SG-dev",
+        "defaultBranch": "main",
+        "routingRegistry": "Canon/registries/current-architecture-baseline-v1.json",
+        "environmentTopologyRegistry": "Canon/registries/architecture-environment-topology-v1.json"
+      },
+      "database": {
+        "purpose": "PMOS_CONTINUITY",
+        "provider": "neon",
+        "projectId": "billowing-credit-07394675",
+        "databaseName": "architecture_pmos",
+        "runtimeRole": "architecture_pmos_runtime",
+        "allowedHosts": [
+          "ep-solitary-unit-b9b3imd3.c-7.eu-central-1.aws.neon.tech",
+          "ep-solitary-unit-b9b3imd3-pooler.c-7.eu-central-1.aws.neon.tech"
+        ]
+      },
+      "continuity": {
+        "pmos": "required",
+        "controlPlaneEnvironment": "development",
+        "memoros": "disabled",
+        "phr": "required",
+        "memorosProjectId": null
+      },
+      "adapter": "Canon/adapters/architecture-project-adapter-v1.md",
+      "status": "ACTIVE"
     }
   ]
 }

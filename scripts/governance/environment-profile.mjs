@@ -62,6 +62,22 @@ export function resolveEnvironmentProfile({ profile, targetEnvironment, governan
       throw new Error(`TARGET_ENVIRONMENT ${normalized} lacks a registered SRM application database identity.`)
     }
   }
+  if (profile.projectKey === 'ARCHITECTURE') {
+    const onboarding = JSON.parse(fs.readFileSync(path.join(governanceRoot, 'Canon/registries/architecture-onboarding-v1.json'), 'utf8'))
+    const pmos = onboarding.resources.find((resource) => resource.key === 'pmos')
+    const laboratories = onboarding.resources.filter((resource) => resource.kind === 'LAB')
+    if (environment.github.repositoryId !== registry.policy.sourceRepositoryId || environment.render.projectId !== registry.policy.renderProjectId
+      || profile.database.projectId !== pmos?.neonProjectId || profile.database.databaseName !== pmos?.databaseName || profile.database.runtimeRole !== pmos?.runtimeRole) {
+      throw new Error('Architecture provider or continuity identity mismatch.')
+    }
+    if (environment.neon.projectId === profile.database.projectId || laboratories.length !== 2
+      || environment.neon.branchId !== laboratories[0].branchId || environment.neon.projectId !== laboratories[0].neonProjectId
+      || environment.neon.databaseName !== laboratories[0].databaseName || environment.neon.runtimeRole !== laboratories[0].runtimeRole
+      || environment.neon.databases?.length !== 2
+      || laboratories.some((resource) => !environment.neon.databases.some((database) => database.databaseId === resource.databaseId && database.databaseName === resource.databaseName && database.runtimeRole === resource.runtimeRole && database.consumerProjectKey === resource.consumerProjectKey))) {
+      throw new Error('Architecture laboratory identity mismatch; product and PMOS databases cannot be substituted.')
+    }
+  }
   return { targetEnvironment: normalized, environment, registryPath }
 }
 

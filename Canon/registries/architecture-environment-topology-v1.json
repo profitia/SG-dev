@@ -1,0 +1,130 @@
+{
+  "schemaVersion": "1.0",
+  "registryId": "architecture-environment-topology",
+  "projectKey": "ARCHITECTURE",
+  "owner": "Architecture Platform",
+  "onboardingStatus": "DEVELOPMENT_IDENTITIES_REGISTERED",
+  "policy": {
+    "sourceAuthority": "profitia/SG-dev",
+    "sourceRepositoryId": 1247665550,
+    "authorityBranch": "main",
+    "renderProjectId": "prj-db717krrjlhs739jgo0g",
+    "environmentBranchesAllowed": false,
+    "crossEnvironmentWritesAllowed": false,
+    "pmosScope": "DEVELOPMENT_CONTINUITY_ONLY",
+    "continuityControlPlaneEnvironment": "development",
+    "productAndPmosDatabasesMayBeShared": false
+  },
+  "continuityControlPlane": {
+    "logicalEnvironment": "development",
+    "servesGovernedTasksTargeting": [
+      "development"
+    ],
+    "stagingOrProductionContinuityAllowed": false,
+    "render": {
+      "serviceId": "srv-db78d82j9qps73bej0c0",
+      "serviceType": "private_service",
+      "publicUrl": null,
+      "internalAddress": "http://architecture-development-pmos:3203",
+      "autoDeploy": false
+    },
+    "neon": {
+      "projectId": "billowing-credit-07394675",
+      "branchId": "br-curly-dream-b94be6uh",
+      "databaseId": 17811,
+      "databaseName": "architecture_pmos",
+      "runtimeRole": "architecture_pmos_runtime",
+      "schemaStatus": "INITIALIZED"
+    }
+  },
+  "environments": {
+    "development": {
+      "status": "ACTIVE",
+      "verificationStatus": "IDENTITIES_VERIFIED_RUNTIME_ACCEPTANCE_PENDING",
+      "github": {
+        "environmentName": "architecture-development",
+        "environmentId": 24168168252,
+        "repository": "profitia/SG-dev",
+        "repositoryId": 1247665550,
+        "exclusiveProjectKey": "ARCHITECTURE",
+        "protectionStatus": "MAIN_ONLY"
+      },
+      "render": {
+        "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+        "projectId": "prj-db717krrjlhs739jgo0g",
+        "environmentId": "evm-db717krrjlhs739jgo1g",
+        "networkIsolation": "ENABLED",
+        "services": {
+          "pmos": {
+            "serviceId": "srv-db78d82j9qps73bej0c0",
+            "name": "architecture-development-pmos",
+            "type": "private_service",
+            "publicUrl": null,
+            "autoDeploy": false,
+            "acceptanceStatus": "PENDING_EXACT_SHA_DEPLOY"
+          }
+        }
+      },
+      "neon": {
+        "projectId": "fancy-cell-49425728",
+        "branchId": "br-divine-fog-baohc5ay",
+        "branchName": "development",
+        "databaseId": 16758,
+        "databaseName": "architecture_sg_lab",
+        "runtimeRole": "architecture_sg_lab_runtime",
+        "purpose": "ARCHITECTURE_TECHNICAL_LAB",
+        "databases": [
+          {
+            "databaseId": 16758,
+            "databaseName": "architecture_sg_lab",
+            "runtimeRole": "architecture_sg_lab_runtime",
+            "consumerProjectKey": "SG2"
+          },
+          {
+            "databaseId": 16767,
+            "databaseName": "architecture_srm_lab",
+            "runtimeRole": "architecture_srm_lab_runtime",
+            "consumerProjectKey": "SRM"
+          }
+        ]
+      },
+      "domains": [],
+      "deploymentPolicy": "MANUAL_EXACT_SHA",
+      "schemaStatus": "TECHNICAL_PROBES_INITIALIZED_NO_PRODUCT_MIGRATION"
+    },
+    "staging": {
+      "status": "RESERVED",
+      "verificationStatus": "NOT_ONBOARDED",
+      "github": {
+        "environmentName": "architecture-staging",
+        "environmentId": null,
+        "exclusiveProjectKey": "ARCHITECTURE"
+      },
+      "render": {
+        "environmentId": null,
+        "services": {}
+      },
+      "neon": {
+        "branchId": null
+      },
+      "domains": []
+    },
+    "production": {
+      "status": "RESERVED",
+      "verificationStatus": "NOT_ONBOARDED",
+      "github": {
+        "environmentName": "architecture-production",
+        "environmentId": null,
+        "exclusiveProjectKey": "ARCHITECTURE"
+      },
+      "render": {
+        "environmentId": null,
+        "services": {}
+      },
+      "neon": {
+        "branchId": null
+      },
+      "domains": []
+    }
+  }
+}

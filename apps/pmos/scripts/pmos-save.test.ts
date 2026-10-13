@@ -713,7 +713,7 @@ test('PUBLISHED and IDEMPOTENT satisfy the SRM completion gate and only then all
 })
 
 // Synthetic, pure-function fixture: this never registers ARCHITECTURE or writes
-// to a real PMOS database. Operational activation is a later onboarding stage.
+// to a real PMOS database. It is not proof of operational activation.
 function makeArchitectureFixture() {
   const profile = {
     ...resolvePmosProjectProfile({ projectName: 'SRM' }),
@@ -789,5 +789,6 @@ test('new profile PHR completion requires publisher success while SG2 retains ME
   assert.equal(resolvePmosProjectProfile({ projectName: DEFAULT_PMOS_PROJECT_NAME }).memorosMode, 'required')
   assert.equal(resolvePmosProjectProfile({ projectName: 'CIC' }).memorosMode, 'required')
   assert.equal(resolvePmosProjectProfile({ projectName: 'SRM' }).memorosMode, 'disabled')
-  assert.throws(() => resolvePmosProjectProfile({ projectName: 'ARCHITECTURE' }), /Unknown PMOS project/)
+  assert.equal(resolvePmosProjectProfile({ projectName: 'ARCHITECTURE' }).memorosMode, 'disabled')
+  assert.throws(() => resolvePmosProjectProfile({ projectName: 'UNREGISTERED_ARCHITECTURE' }), /Unknown PMOS project/)
 })

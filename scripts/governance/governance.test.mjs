@@ -532,10 +532,12 @@ test('project boundary policy fails closed on missing, malformed or wildcard all
   assert.equal(validateProjectBoundaryPolicy({ surfaces: [] }).enforced, false)
 })
 
-test('unknown Architecture stays blocked while registered future surfaces respect boundaries', () => {
-  assert.throws(() => resolveProjectProfile('ARCHITECTURE', repositoryRoot), /Unknown project/)
-  // This object tests a pure resolver. It is not an ACTIVE runtime profile.
-  const fixture = { ...resolveProjectProfile('SG2', repositoryRoot), projectKey: 'ARCHITECTURE' }
+test('registered Architecture respects Development and owned surface boundaries', () => {
+  const fixture = resolveProjectProfile('ARCHITECTURE', repositoryRoot)
+  assert.equal(fixture.database.databaseName, 'architecture_pmos')
+  assert.equal(fixture.database.runtimeRole, 'architecture_pmos_runtime')
+  assert.equal(resolveEnvironmentProfile({ profile: fixture, targetEnvironment: 'development', governanceRoot: repositoryRoot }).environment.render.projectId, 'prj-db717krrjlhs739jgo0g')
+  for (const targetEnvironment of ['staging', 'production']) assert.throws(() => resolveEnvironmentProfile({ profile: fixture, targetEnvironment, governanceRoot: repositoryRoot }), /not ACTIVE/)
   const shared = resolveProjectRouting({ profile: fixture, targets: ['Canon/registries/profitia-projects-v1.json', 'apps/pmos/scripts/pmos-save.ts'], repositoryRoot })
   assert.equal(shared.ok, true)
   for (const target of ['apps/sg-runtime/app/page.tsx', 'apps/srm/src/server/db.ts']) {
@@ -549,12 +551,14 @@ test('unknown Architecture stays blocked while registered future surfaces respec
   }
   const preflight = runGovernancePreflight({
     mode: 'development', project: 'ARCHITECTURE', target_environment: 'development', task_id: 'synthetic-architecture-test',
-    hostConversationUnavailable: true, title: 'Synthetic unknown profile rejection', workspace: 'fixture', execution_environment: 'ci', scope: 'governance',
+    hostConversationUnavailable: true, title: 'Synthetic registered profile boundary test', workspace: 'fixture', execution_environment: 'ci', scope: 'governance',
     targets: ['Canon/registries/profitia-projects-v1.json'], legacyExceptions: [], repository_root: repositoryRoot,
     ci: true, offline: true, allowDirty: true, requireBegin: false, skipRuntime: true, checkEstate: false,
   })
-  assert.equal(preflight.gates.PROJECT_PROFILE_GATE.status, 'BLOCKED')
-  assert.equal(preflight.verdict, 'BLOCKED')
+  assert.equal(preflight.gates.PROJECT_PROFILE_GATE.status, 'PASS')
+  // CI validates registered source routing only; it is not a live PMOS proof.
+  assert.equal(preflight.verdict, 'PASS')
+  assert.equal(preflight.gates.PMOS_RUNTIME_GATE.status, 'NOT_APPLICABLE')
 })
 
 test('full preflight blocks cross-product targets and preserves legacy exception gates', () => {
@@ -571,4 +575,24 @@ test('full preflight blocks cross-product targets and preserves legacy exception
   assert.match(legacy.gates.ROUTING_GATE.details.join(' '), /Legacy target requires explicit exception/)
   const exception = runGovernancePreflight({ ...input, targets: [legacyPath], legacyExceptions: [legacyPath] })
   assert.equal(exception.gates.ROUTING_GATE.status, 'PASS')
+})
+
+test('Architecture rejects substitution of laboratory database, role and continuity project', (t) => {
+  const profile = resolveProjectProfile('ARCHITECTURE', repositoryRoot)
+  const original = loadEnvironmentTopology(profile, repositoryRoot).registry
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-topology-negative-'))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  fs.mkdirSync(path.join(root, 'Canon/registries'), { recursive: true })
+  fs.copyFileSync(path.join(repositoryRoot, 'Canon/registries/architecture-onboarding-v1.json'), path.join(root, 'Canon/registries/architecture-onboarding-v1.json'))
+  for (const mutate of [
+    (environment) => { environment.neon.projectId = profile.database.projectId },
+    (environment) => { environment.neon.databases[0].databaseName = 'neondb' },
+    (environment) => { environment.neon.databases[1].runtimeRole = 'neondb_owner' },
+    (environment) => { environment.render.projectId = 'prj-foreign' },
+  ]) {
+    const fixture = structuredClone(original)
+    mutate(fixture.environments.development)
+    fs.writeFileSync(path.join(root, profile.repository.environmentTopologyRegistry), JSON.stringify(fixture))
+    assert.throws(() => resolveEnvironmentProfile({ profile, targetEnvironment: 'development', governanceRoot: root }), /identity mismatch/)
+  }
 })

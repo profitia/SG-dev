@@ -15,7 +15,7 @@ type RegistryProject = {
   legacyAliases?: string[]
   workspaces: string[]
   repository: { slug: string; defaultBranch: string; routingRegistry: string | null; routingBootstrapPaths?: string[] }
-  database: { provider: 'neon'; projectId: string; databaseName: string; allowedHosts: string[] }
+  database: { provider: 'neon'; projectId: string; databaseName: string; allowedHosts: string[]; runtimeRole?: string }
   continuity: { pmos: PmosContinuityMode; controlPlaneEnvironment?: PmosControlPlaneEnvironment; memoros: PmosMemorosMode; phr: PmosContinuityMode; memorosProjectId: string | null }
   adapter: string
   status: 'ACTIVE' | 'SUPERSEDED'
