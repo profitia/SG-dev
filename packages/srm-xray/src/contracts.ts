@@ -39,6 +39,8 @@ export type GeneralCompanyData = {
   registeredAddress: string | null;
   registeredAt: string | null;
   mainPkd: string | null;
+  /** Optional current registry hint; not yet a verified website. */
+  website?: string | null;
 };
 
 export type FinancialPeriod = {
@@ -283,4 +285,15 @@ export type SupplierXRayCard = {
   general: SectionEnvelope<GeneralCompanyData>;
   financial: SectionEnvelope<FinancialData>;
   kys: SectionEnvelope<VerclyKysData>;
+};
+
+/** Independent website enrichment; no financial scores or provider payloads. */
+export type SupplierWebIdentityData = {
+  status: "FOUND" | "NOT_FOUND" | "UNAVAILABLE" | "PENDING";
+  websiteUrl: string | null;
+  logoDataUrl: string | null;
+  evidenceUrl: string | null;
+  logoSourceUrl: string | null;
+  method: "REGISTRY_AND_WEBSITE" | "WEBSITE_IDENTITY" | null;
+  checkedAt: string | null;
 };

@@ -89,3 +89,13 @@ test("returns safe error states for provider and network failures", async () => 
 test("rejects invalid identifiers before the provider call", async () => {
   await assert.rejects(fetchMgbiGeneral({ type: "KRS", value: "123" }, options), /ten-digit/);
 });
+
+test("current website is optional; historical arrays are not current website hints", () => {
+  const current = structuredClone(record);
+  Object.assign(current.content.current_excerpt.dane.dzial1.siedzibaIAdres, { adresStronyInternetowej: "https://example.pl" });
+  assert.equal(mapMgbiGeneralRecord(current, date().toISOString()).section.data?.website, "https://example.pl");
+  assert.equal(mapMgbiGeneralRecord(current, date().toISOString()).section.status, "SUCCESS");
+  assert.equal(mapMgbiGeneralRecord(record, date().toISOString()).section.data?.website, null);
+  Object.assign(current.content.current_excerpt.dane.dzial1.siedzibaIAdres, { adresStronyInternetowej: ["https://old.example.pl"] });
+  assert.equal(mapMgbiGeneralRecord(current, date().toISOString()).section.data?.website, null);
+});
