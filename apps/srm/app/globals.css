@@ -603,3 +603,19 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; letter-spacing: -.02em; line-height: 
 .report-identity h2{color:var(--srm-brand)}
 .report-scanner{padding:0;border:0;background:transparent}
 .appshield-search--compact{padding:16px 20px;border-radius:10px}
+
+/* Supplier identity: preserve each company's own logo colours and aspect ratio. */
+.supplier-web-identity { display: flex; align-items: center; gap: 20px; min-width: 0; }
+.supplier-web-logo { flex: 0 0 96px; width: 96px; height: 80px; display: grid; place-items: center; padding: 8px; box-sizing: border-box; border: 1px solid #d6e2ec; border-radius: 14px; background: #fff; color: #7893ac; }
+.supplier-web-logo img { display: block; width: 80px; height: 64px; object-fit: contain; }
+.supplier-web-details { min-width: 0; }
+.supplier-web-address { min-height: 24px; margin-top: 8px; font-size: 14px; line-height: 24px; color: #58748e; }
+.supplier-web-address a { display: inline-block; color: #005a9c; text-decoration: underline; text-underline-offset: 3px; transition: transform 180ms ease, color 180ms ease; overflow-wrap: anywhere; }
+.supplier-web-address a:hover { transform: scale(1.02); color: #003366; }
+.supplier-web-address a:focus-visible { outline: 2px solid #005a9c; outline-offset: 4px; border-radius: 3px; }
+@media (max-width: 600px) {
+  .supplier-web-identity { align-items: flex-start; gap: 12px; }
+  .supplier-web-logo { flex-basis: 64px; width: 64px; height: 64px; }
+  .supplier-web-logo img { width: 48px; height: 48px; }
+}
+@media (prefers-reduced-motion: reduce) { .supplier-web-address a { transition: none; } .supplier-web-address a:hover { transform: none; } }
