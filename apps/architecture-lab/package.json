@@ -1,0 +1,9 @@
+{
+  "name": "@profitia/architecture-lab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Technical isolated Development probe CLI, without product or tenant data",
+  "scripts": { "test": "node --test test/*.test.mjs", "build": "node --check scripts/probe.mjs", "probe": "node --env-file=.env.local scripts/probe.mjs" },
+  "dependencies": { "pg": "8.23.1" }
+}

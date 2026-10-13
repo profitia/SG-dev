@@ -10,24 +10,45 @@
       "directoryName": "sg2",
       "workspaceName": "SG-dev",
       "devcontainer": ".devcontainer/sg2/devcontainer.json",
-      "packages": ["apps/pmos", "apps/sg-runtime", "apps/dashboard-preview"],
-      "ports": {"pmos": 3201, "runtime": 3001, "dashboard": 3002}
+      "packages": [
+        "apps/pmos",
+        "apps/sg-runtime",
+        "apps/dashboard-preview"
+      ],
+      "ports": {
+        "pmos": 3201,
+        "runtime": 3001,
+        "dashboard": 3002
+      }
     },
     {
       "projectKey": "SRM",
       "directoryName": "srm",
       "workspaceName": "SG-dev Codespaces SRM",
       "devcontainer": ".devcontainer/srm/devcontainer.json",
-      "packages": ["apps/pmos", "apps/srm"],
-      "ports": {"pmos": 3202, "runtime": 3400}
+      "packages": [
+        "apps/pmos",
+        "apps/srm"
+      ],
+      "ports": {
+        "pmos": 3202,
+        "runtime": 3400
+      }
     },
     {
       "projectKey": "ARCHITECTURE",
       "directoryName": "architecture",
       "workspaceName": "SG-dev Architecture",
       "devcontainer": ".devcontainer/architecture/devcontainer.json",
-      "packages": ["apps/pmos"],
-      "ports": {"pmos": 3203, "lab": 3500}
+      "packages": [
+        "apps/pmos",
+        "packages/platform-contracts",
+        "apps/architecture-lab"
+      ],
+      "ports": {
+        "pmos": 3203,
+        "lab": 3500
+      }
     }
   ]
 }
