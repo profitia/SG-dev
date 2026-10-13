@@ -1,0 +1,15 @@
+{
+  "name": "SG-dev SG2",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+  "features": {"ghcr.io/devcontainers/features/node:1": {"version": "24"}},
+  "customizations": {"codespaces": {"repositories": {"profitia/project-history-repository": {"permissions": {"contents": "write"}}}}},
+  "containerEnv": {
+    "PMOS_PROJECT_NAME": "SpendGuru 2.0",
+    "PMOS_WORKSPACE_NAME": "SG-dev",
+    "PMOS_EXECUTION_ENVIRONMENT": "codespaces",
+    "TARGET_ENVIRONMENT": "development",
+    "PMOS_MEMOROS_MODE": "required"
+  },
+  "forwardPorts": [3001, 3002, 3201],
+  "portsAttributes": {"3001": {"label": "SG2 Runtime"}, "3002": {"label": "SG2 Dashboard"}, "3201": {"label": "SG2 PMOS"}}
+}

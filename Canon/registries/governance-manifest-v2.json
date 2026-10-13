@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.14.0",
+  "manifestVersion": "3.15.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -44,6 +44,8 @@
     {"id": "architecture-development-resource-setup", "version": "1.2", "path": "Canon/runbooks/architecture-development-resource-setup-v1.md", "status": "ACTIVE", "loadOrder": 230, "owner": "Profitia Architecture Governance", "appliesTo": ["SG2", "SRM"], "dependsOn": ["architecture-parallel-development-onboarding-plan", "e0-a-01-02-implementation-verification-20261013"]},
     {"id": "e0-a-03-resource-configuration-verification-20261013", "version": "1.0", "path": "Canon/evidence/2026-10-13-e0-a-03-resource-configuration-verification.md", "status": "ACTIVE", "loadOrder": 240, "owner": "Profitia Architecture Governance", "appliesTo": ["SG2", "SRM"], "dependsOn": ["architecture-development-resource-setup"]},
     {"id": "e0-a-03-shared-organization-acceptance-20261013", "version": "1.0", "path": "Canon/evidence/2026-10-13-e0-a-03-shared-organization-acceptance.md", "status": "ACTIVE", "loadOrder": 250, "owner": "Profitia Architecture Governance", "appliesTo": ["SG2", "SRM"], "dependsOn": ["e0-a-03-resource-configuration-verification-20261013", "architecture-parallel-development-onboarding-plan"]},
+    {"id": "development-workspaces", "version": "1.0", "path": "Canon/registries/development-workspaces-v1.json", "status": "ACTIVE", "loadOrder": 260, "owner": "Profitia Governance", "appliesTo": ["SG2", "SRM"], "dependsOn": ["architecture-parallel-development-onboarding-plan"]},
+    {"id": "parallel-development-workspaces-runbook", "version": "1.0", "path": "Canon/runbooks/parallel-development-workspaces-v1.md", "status": "ACTIVE", "loadOrder": 270, "owner": "Profitia Governance", "appliesTo": ["SG2", "SRM"], "dependsOn": ["development-workspaces"]},
     {"id": "sg2-agent-execution-canon-v2", "version": "2.0", "path": "Canon/v2.0-mandatory-agent-execution-canon.md", "status": "SUPERSEDED", "loadOrder": null, "owner": "SG2 Governance Source Layer", "dependsOn": [], "supersededBy": "agent-execution-canon"},
     {"id": "developer-lifecycle-v1", "version": "1.0", "path": "Canon/v1.0-developer-lifecycle-specification.md", "status": "SUPERSEDED", "loadOrder": null, "owner": "SG2 Governance Source Layer", "dependsOn": [], "supersededBy": "developer-lifecycle"},
     {"id": "repository-routing-v1", "version": "1.0", "path": "Canon/v1.0-repository-routing-and-module-ownership-canon.md", "status": "SUPERSEDED", "loadOrder": null, "owner": "SG2 Architecture Governance", "dependsOn": [], "supersededBy": "repository-routing"},
