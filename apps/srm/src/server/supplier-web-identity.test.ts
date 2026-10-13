@@ -111,7 +111,7 @@ test("isolated Postgres: cache leases, identity invalidation and forced tenant i
     } finally { c.release(); }
   } finally {
     await runtime?.end(); await owner?.end();
-    if (databaseCreated) await admin.query("DROP DATABASE srm_app WITH (FORCE)");
+    if (databaseCreated) await admin.query("DROP DATABASE srm_app");
     for (const role of createdRoles) await admin.query("DROP ROLE " + role);
     await admin.end();
   }
