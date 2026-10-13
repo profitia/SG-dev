@@ -14,7 +14,8 @@
     "test:promotion": "node --test --test-concurrency=1 scripts/promotion.test.mjs scripts/staging-lifecycle.test.mjs scripts/runtime-permissions.test.mjs",
     "promote:staging": "node scripts/promote-staging.mjs",
     "migrate:staging:plan": "node scripts/staging-migrate.mjs --plan",
-    "permissions:development": "node scripts/runtime-permissions.mjs"
+    "permissions:development": "node scripts/runtime-permissions.mjs",
+    "test:platform-contract": "node --test scripts/platform-contract.test.mjs"
   },
   "dependencies": {
     "@profitia/srm-xray": "file:../../packages/srm-xray",
